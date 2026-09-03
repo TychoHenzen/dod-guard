@@ -5,7 +5,6 @@ import { BrowserFocusNavigation } from "./focus-navigation.js";
 type Focus = { view_id: string; symbol_id: string; name: string };
 
 describe("browser focus navigation", () => {
-  // covers: code-explorer/browser-navigation :: Selecting a local result recenters navigation :: User selects a search candidate
   it("recenters a search candidate through the shared focus action and appends one view", async () => {
     const calls: Record<string, unknown>[] = [];
     const navigation = new BrowserFocusNavigation(
@@ -24,8 +23,6 @@ describe("browser focus navigation", () => {
       ["view-old", "view-new"],
     );
   });
-
-  // covers: code-explorer/browser-navigation :: Selecting a local result recenters navigation :: User follows a visible handle
   it("routes a visible handle result through the same focus action while retaining the previous view", async () => {
     const calls: Record<string, unknown>[] = [];
     const navigation = new BrowserFocusNavigation(
@@ -40,8 +37,6 @@ describe("browser focus navigation", () => {
     assert.equal(navigation.state().history[0]?.view_id, "view-old");
     assert.equal(navigation.state().focus.view_id, "view-handle");
   });
-
-  // covers: code-explorer/browser-navigation :: Selecting a local result recenters navigation :: Focus request fails
   it("preserves the current view and history when focus fails", async () => {
     const initial: Focus = { view_id: "view-old", symbol_id: "old", name: "Old" };
     const navigation = new BrowserFocusNavigation(initial, async () => ({ state: "backend_unavailable" }));

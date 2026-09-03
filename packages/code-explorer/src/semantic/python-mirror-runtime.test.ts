@@ -39,8 +39,6 @@ function unsafe(files: Record<string, string>): void {
     fixture.dispose();
   }
 }
-
-// covers: code-explorer/language-adapters :: Known project-controlled execution hooks stay disabled :: Python project selects an interpreter or external path
 it("rejects pyrightconfig and pyproject execution hooks before mirror creation", () => {
   for (const key of [
     "extends",

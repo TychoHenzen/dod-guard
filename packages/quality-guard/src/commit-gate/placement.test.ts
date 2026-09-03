@@ -6,8 +6,6 @@ import { analyzePlacement } from "./placement.js";
 const config = parseQualityConfig(
   '{"directTypeLimit":2,"genericBuckets":["utils"],"generatedPaths":["generated/**"],"testPaths":["test/**"]}',
 );
-
-// covers: quality-guard/architecture-analysis :: Placement analysis detects flat and generic accumulation :: Overloaded directory gains another class
 test("reports an added type when its direct production directory was already overloaded", () => {
   const result = analyzePlacement(
     [
@@ -38,8 +36,6 @@ test("reports an added type when its direct production directory was already ove
     },
   ]);
 });
-
-// covers: quality-guard/architecture-analysis :: Placement analysis detects flat and generic accumulation :: Type is placed in a domain directory
 test("does not report a type added below the limit in a non-generic domain directory", () => {
   const result = analyzePlacement(
     [{ path: "src/billing/Invoice.ts", types: ["Invoice"] }],

@@ -55,7 +55,6 @@ function reportFor(options) {
         workspaceDebris: [],
     };
 }
-// covers: fossil/cli :: Analyze command :: Defaults are applied
 test("passes normalized defaults and the current directory to analyze", async () => {
     const calls = [];
     let invocation = 0;
@@ -103,7 +102,6 @@ test("passes normalized defaults and the current directory to analyze", async ()
         },
     ]);
 });
-// covers: fossil/cli :: Analyze command :: Explicit options are applied
 test("normalizes every explicit analyze option", async () => {
     const calls = [];
     await runFossilCli([
@@ -149,7 +147,6 @@ test("normalizes every explicit analyze option", async () => {
         },
     ]);
 });
-// covers: fossil/cli :: Argument validation :: Invalid arguments use the usage exit
 test("rejects invalid argument forms with usage diagnostics before analysis", async () => {
     const invalidArguments = [
         ["--days", "0"],
@@ -186,7 +183,6 @@ test("rejects invalid argument forms with usage diagnostics before analysis", as
         assert.match(stderr.join(""), /Usage: fossil analyze/);
     }
 });
-// covers: fossil/cli :: Programmatic API parity :: CLI and API agree
 test("returns and serializes the same finalized report through one analysis core", async () => {
     const options = {
         days: 90,
@@ -225,7 +221,6 @@ test("rejects malformed direct API option shapes before calling the analysis cor
         assert.equal(coreCalls, 0);
     }
 });
-// covers: fossil/cli :: Process outcomes :: No findings is successful
 test("reports zero findings after a completed empty analysis", async () => {
     const stdout = [];
     await runFossilCli(["node", "fossil", "analyze"], {
@@ -234,7 +229,6 @@ test("reports zero findings after a completed empty analysis", async () => {
     });
     assert.equal(stdout.join(""), "0 findings\n");
 });
-// covers: fossil/cli :: Versioned JSON output :: Nonfatal warnings remain successful data
 test("retains sorted nonfatal warnings in successful API and CLI JSON reports", async () => {
     const options = {
         days: 90,
@@ -268,7 +262,6 @@ test("retains sorted nonfatal warnings in successful API and CLI JSON reports", 
     assert.deepEqual(JSON.parse(stdout.join("")).warnings, expectedWarnings);
     assert.deepEqual(report.warnings, warnings);
 });
-// covers: fossil/cli :: Programmatic API parity :: Typed API failure maps to CLI status
 test("maps typed analysis failures to exit codes without success output", async () => {
     const cases = [
         ["invalid_options", 2],
@@ -295,7 +288,6 @@ test("maps typed analysis failures to exit codes without success output", async 
         assert.equal(Buffer.byteLength(stderr[0]) <= 4_096, true);
     }
 });
-// covers: fossil/cli :: Process outcomes :: Non-repository is an analysis failure
 test("maps a non-repository analysis failure to one bounded stderr diagnostic and exit code one", async () => {
     const stdout = [];
     const stderr = [];

@@ -13,7 +13,6 @@ import { createBackendStatusReport } from "./backend-status.js";
 import { createNativeProjectRoot } from "./project-root.js";
 import { createRuntimeAdapters } from "./runtime-bootstrap.js";
 
-// covers: code-explorer/language-adapters :: Production runtime uses a checked-in adapter selection record :: Runtime starts without spike dependencies
 it("loads only the checked-in runtime record when spike resources are absent", () => {
   const record = loadAdapterSelectionRecord();
   const inspected: Array<readonly [string, string]> = [];
@@ -35,8 +34,6 @@ it("loads only the checked-in runtime record when spike resources are absent", (
   assert.deepEqual(policy.prepare("rust"), { status: "unavailable", code: "backend_unavailable" });
   assert.deepEqual(inspected, [["rust", "rust-analyzer"]]);
 });
-
-// covers: code-explorer/language-adapters :: Production runtime uses a checked-in adapter selection record :: Approved C# executable is absent
 it("does not substitute an unrecorded C# server when the approved executable is absent", () => {
   const inspected: Array<readonly [string, string]> = [];
   const policy = createRuntimeLaunchPolicy({

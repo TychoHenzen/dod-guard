@@ -18,8 +18,6 @@ function launchSnapshot(projects, readablePaths = new Set(projects.map((project)
   const admin = createAdmin(storeFor(projects), { isProject: (path) => readablePaths.has(path) });
   return { admin, snapshot: admin.listProjects() };
 }
-
-// covers: openspec-dashboard/code-explorer-launch :: Launch authority is a capability-bound registry snapshot :: Registered readable project is selected
 test("selects only the current registered canonical project path", () => {
   const { admin, snapshot } = launchSnapshot([{ name: "one", path: "C:/projects/one" }]);
   assert.deepEqual(admin.selectLaunch(0, { registry_revision: snapshot.registry_revision }), {
@@ -27,8 +25,6 @@ test("selects only the current registered canonical project path", () => {
     path: "C:/projects/one",
   });
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Launch authority is a capability-bound registry snapshot :: Registry changed after rendering
 test("rejects inserted, removed, and reordered registry snapshots before index selection", () => {
   const projects = [
     { name: "one", path: "C:/projects/one" },
@@ -48,8 +44,6 @@ test("rejects inserted, removed, and reordered registry snapshots before index s
     );
   }
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Launch authority is a capability-bound registry snapshot :: Browser includes a project path
 test("rejects path-like and unknown request fields before selecting a registry entry", () => {
   const { admin, snapshot } = launchSnapshot([{ name: "one", path: "C:/projects/one" }]);
   for (const body of [
@@ -61,8 +55,6 @@ test("rejects path-like and unknown request fields before selecting a registry e
     assert.throws(() => admin.selectLaunch(0, body), (error) => error.message === "invalid_launch_request");
   }
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Launch authority is a capability-bound registry snapshot :: Registry index does not exist
 test("rejects a missing index from a matching registry snapshot", () => {
   const { admin, snapshot } = launchSnapshot([{ name: "one", path: "C:/projects/one" }]);
   assert.throws(
@@ -70,8 +62,6 @@ test("rejects a missing index from a matching registry snapshot", () => {
     (error) => error.message === "project_not_registered",
   );
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Launch authority is a capability-bound registry snapshot :: Registered project is no longer readable
 test("rejects an unreadable matching registry entry", () => {
   const projects = [{ name: "one", path: "C:/projects/one" }];
   const { admin, snapshot } = launchSnapshot(projects, new Set());
@@ -112,8 +102,6 @@ function packagedFiles(root) {
     [`${root}/.claude-plugin/plugin.json`]: { text: '{"name":"code-explorer"}' },
   };
 }
-
-// covers: openspec-dashboard/code-explorer-launch :: Code Explorer discovery accepts only its packaged entry :: Operator override names a packaged entry
 test("freezes a valid override without inspecting the fallback", () => {
   const fs = fileSystem(packagedFiles("C:/cache/code-explorer"));
   const entry = discoverCodeExplorer({
@@ -124,14 +112,10 @@ test("freezes a valid override without inspecting the fallback", () => {
   assert.equal(entry, "C:/cache/code-explorer/dist/bundle.js");
   assert.ok(fs.reads.every((path) => !path.startsWith("C:/monorepo/")));
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Code Explorer discovery accepts only its packaged entry :: Operator override is absent
 test("freezes the valid monorepo bundle when no override is set", () => {
   const fs = fileSystem(packagedFiles("C:/monorepo/packages/code-explorer"));
   assert.equal(discoverCodeExplorer({ monorepoRoot: "C:/monorepo", env: {}, fs }), "C:/monorepo/packages/code-explorer/dist/bundle.js");
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Code Explorer discovery accepts only its packaged entry :: Selected package contract is invalid
 test("rejects invalid override metadata without falling back or spawning", () => {
   const files = {
     ...packagedFiles("C:/monorepo/packages/code-explorer"),
@@ -150,8 +134,6 @@ test("rejects invalid override metadata without falling back or spawning", () =>
     (error) => error.message === "code_explorer_unavailable",
   );
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Code Explorer discovery accepts only its packaged entry :: Registered project contains an executable candidate
 test("ignores project-local executable candidates", () => {
   const fs = fileSystem({
     ...packagedFiles("C:/monorepo/packages/code-explorer"),
@@ -161,8 +143,6 @@ test("ignores project-local executable candidates", () => {
   assert.equal(entry, "C:/monorepo/packages/code-explorer/dist/bundle.js");
   assert.ok(fs.reads.every((path) => !path.startsWith("C:/projects/")));
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Child launch is fixed, shell-free, and environment-minimal :: New child is started
 test("spawns the fixed Node command with only the allowlisted environment", () => {
   let call;
   const child = { stdout: {}, stderr: {} };
@@ -190,8 +170,6 @@ test("spawns the fixed Node command with only the allowlisted environment", () =
     },
   ]);
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Child launch is fixed, shell-free, and environment-minimal :: Project name contains shell syntax
 test("passes shell metacharacters as one inert project-root argument", () => {
   let call;
   const projectPath = 'C:/projects/a & "b"; $(whoami)';
@@ -208,8 +186,6 @@ test("passes shell metacharacters as one inert project-root argument", () => {
   assert.equal(call[1][3], projectPath);
   assert.equal(call[2].shell, false);
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Child launch is fixed, shell-free, and environment-minimal :: Dashboard environment contains credentials or Node options
 test("drops credentials, Node injection, overrides, and project values from the child environment", () => {
   let options;
   spawnCodeExplorer({
@@ -264,16 +240,12 @@ function launchRequest(overrides = {}) {
 }
 
 const launchAuthority = { capability: "a".repeat(64), host: "127.0.0.1:4400", origin: "http://127.0.0.1:4400" };
-
-// covers: openspec-dashboard/code-explorer-launch :: The launch HTTP route is capability-protected and bounded :: Capability-bound launch request is valid
 test("accepts only a generated 256-bit browser capability on the fixed launch route", () => {
   const caps = createCapabilities((bytes) => Buffer.alloc(bytes, 1));
   assert.equal(caps.browser, "01".repeat(32));
   assert.equal(caps.replacement, "01".repeat(32));
   assertLaunchRequest(launchRequest(), launchAuthority);
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: The launch HTTP route is capability-protected and bounded :: Another origin targets launch
 test("rejects another origin, missing origin, host mismatch, and preflight before body work", () => {
   for (const request of [
     launchRequest({ origin: "http://evil.invalid" }),
@@ -284,8 +256,6 @@ test("rejects another origin, missing origin, host mismatch, and preflight befor
     assert.throws(() => assertLaunchRequest(request, launchAuthority), (error) => error.message === "invalid_launch_request");
   }
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: The launch HTTP route is capability-protected and bounded :: Local process forges browser headers
 test("rejects missing and guessed capabilities before the body is read", () => {
   for (const capability of [undefined, "b".repeat(64), "a".repeat(63)]) {
     assert.throws(
@@ -294,8 +264,6 @@ test("rejects missing and guessed capabilities before the body is read", () => {
     );
   }
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: The launch HTTP route is capability-protected and bounded :: Launch body exceeds its boundary
 test("stops at 1 KiB of received body bytes before parsing", async () => {
   const body = new PassThrough();
   const outcome = readLaunchBody(body);
@@ -304,8 +272,6 @@ test("stops at 1 KiB of received body bytes before parsing", async () => {
   await assert.rejects(outcome, (error) => error.message === "launch_request_limit");
   assert.equal(body.isPaused(), true);
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: The launch HTTP route is capability-protected and bounded :: Launch route uses another method or body shape
 test("rejects another route method and non-JSON content type at the HTTP boundary", () => {
   for (const request of [
     { ...launchRequest(), method: "GET" },
@@ -315,8 +281,6 @@ test("rejects another route method and non-JSON content type at the HTTP boundar
     assert.throws(() => assertLaunchRequest(request, launchAuthority), (error) => error.message === "invalid_launch_request");
   }
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Readiness uses bounded incremental line parsing :: Child reports valid chunked readiness
 test("parses a CRLF readiness line split across arbitrary UTF-8 chunks", () => {
   let time = 0;
   const parser = createReadinessParser({ now: () => time });
@@ -326,8 +290,6 @@ test("parses a CRLF readiness line split across arbitrary UTF-8 chunks", () => {
   time = 29_999;
   assert.deepEqual(parser.deadline(), { url: "http://127.0.0.1:4410/", state: "open" });
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Readiness uses bounded incremental line parsing :: Child prints a non-loopback URL
 test("rejects every readiness URL outside the exact loopback contract", () => {
   for (const url of ["https://127.0.0.1:4410/", "http://localhost:4410/", "http://127.0.0.1:4409/", "http://127.0.0.1:4410/x", "http://u@127.0.0.1:4410/"]) {
     const parser = createReadinessParser();
@@ -335,15 +297,11 @@ test("rejects every readiness URL outside the exact loopback contract", () => {
     assert.equal(validateExplorerUrl(url), null);
   }
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Readiness uses bounded incremental line parsing :: Child exits or ends a partial line before readiness
 test("does not treat a partial final line or child exit as readiness", () => {
   const parser = createReadinessParser();
   parser.feed("stdout", Buffer.from("Code Explorer: http://127.0.0.1:4410/"));
   assert.deepEqual(parser.end(), { error: "code_explorer_start_failed" });
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Readiness uses bounded incremental line parsing :: Readiness deadline is reached
 test("expires at the exact 30-second monotonic deadline", () => {
   let time = 0;
   const parser = createReadinessParser({ now: () => time });
@@ -352,8 +310,6 @@ test("expires at the exact 30-second monotonic deadline", () => {
   time = 30_000;
   assert.deepEqual(parser.deadline(), { error: "code_explorer_start_timeout" });
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Readiness uses bounded incremental line parsing :: Stream output crosses its byte ceiling
 test("counts each stream before decoding across chunk shapes", () => {
   for (const chunks of [[65_536], [1, 65_535]]) {
     const parser = createReadinessParser();
@@ -382,8 +338,6 @@ function child() {
 function lifecycle({ now = () => 0, start, probe = async () => true, stop = async () => {}, identity = (path) => path } = {}) {
   return createCodeExplorerManager({ now, start, probe, stop, projectIdentity: identity });
 }
-
-// covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Two requests race for one project
 test("coalesces racing starts for the same canonical path and filesystem identity", async () => {
   const pending = deferred();
   let starts = 0;
@@ -400,8 +354,6 @@ test("coalesces racing starts for the same canonical path and filesystem identit
   assert.deepEqual(await first, { state: "open", url: "http://127.0.0.1:4410/", reused: false });
   assert.deepEqual(await second, { state: "open", url: "http://127.0.0.1:4410/", reused: false });
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Request targets a healthy child
 test("reuses only a live child after an exact successful root probe", async () => {
   let starts = 0;
   let probes = 0;
@@ -422,8 +374,6 @@ test("reuses only a live child after an exact successful root probe", async () =
   assert.equal(starts, 1);
   assert.equal(probes, 1);
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Probe redirects or connects elsewhere
 test("replaces records when the direct probe rejects redirects, another address, overflow, timeout, or another status", async () => {
   for (const probe of [false, async () => { throw new Error("redirect"); }]) {
     let starts = 0;
@@ -440,8 +390,6 @@ test("replaces records when the direct probe rejects redirects, another address,
     assert.equal(stopped, 1);
   }
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Request targets a different project
 test("keeps separate lifecycle records for distinct project identities", async () => {
   let starts = 0;
   const manager = lifecycle({ start: () => ({ child: child(), url: `http://127.0.0.1:${4410 + starts++}/` }) });
@@ -449,8 +397,6 @@ test("keeps separate lifecycle records for distinct project identities", async (
   assert.notEqual(one.url, two.url);
   assert.equal(manager.records().length, 2);
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Starts are coalesced and healthy children are reused :: Recorded child or project identity changed
 test("removes dead children and records whose project filesystem identity changed", async () => {
   let identity = "volume-a:file-1";
   let starts = 0;
@@ -490,8 +436,6 @@ test("canonical root reuse follows the device and inode pair after root replacem
   assert.equal((await manager.launch(root)).reused, false);
   assert.equal(starts, 2);
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Managed child capacity is finite :: Idle capacity can be reclaimed
 test("evicts the least recently used open child at the exact 30-minute idle boundary", async () => {
   let time = 0;
   let starts = 0;
@@ -510,8 +454,6 @@ test("evicts the least recently used open child at the exact 30-minute idle boun
   assert.deepEqual(stopped, ["C:/projects/0"]);
   assert.equal(manager.records().length, 8);
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Managed child capacity is finite :: Every capacity slot is active
 test("does not evict starting or recently used capacity and returns retryable capacity", async () => {
   let time = 0;
   const pending = [];
@@ -614,8 +556,6 @@ test("direct probe rejects a redirect, non-loopback socket, overflow, and timeou
     assert.equal(await probeCodeExplorer("http://127.0.0.1:4410/", { request }), false);
   }
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Launch failures are stable and redacted :: Child writes a verbose failure
 test("redacts verbose child failures into stable launch envelopes", () => {
   const verbose = new Error("Error: C:/users/me/project TOKEN=secret capability=abc\n at start (bundle.js:1)");
   assert.deepEqual(launchFailure(verbose), {
@@ -624,8 +564,6 @@ test("redacts verbose child failures into stable launch envelopes", () => {
     retryable: true,
   });
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Launch failures are stable and redacted :: One project launch fails
 test("a failed project envelope does not alter another project's reusable launch result", async () => {
   const manager = lifecycle({
     start: ({ projectPath }) => {
@@ -649,8 +587,6 @@ test("a failed project envelope does not alter another project's reusable launch
     reused: true,
   });
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Launch failures are stable and redacted :: User retries after failure
 test("a corrected retry starts a fresh bounded launch", async () => {
   let starts = 0;
   let corrected = false;
@@ -670,8 +606,6 @@ test("a corrected retry starts a fresh bounded launch", async () => {
   });
   assert.equal(starts, 2);
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: The bridge does not proxy navigation or write project content :: Browser requests navigation through the dashboard
 test("rejects navigation-operation launch bodies without forwarding an operation", () => {
   const { admin } = launchSnapshot([{ name: "one", path: "C:/projects/one" }]);
   for (const operation of ["search", "focus", "follow", "history", "status", "arbitrary"]) {

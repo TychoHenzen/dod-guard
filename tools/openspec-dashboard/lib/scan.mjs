@@ -1,8 +1,8 @@
-// scan.mjs - find candidate OpenSpec projects under bounded roots.
+// scan.mjs - find candidate quality-report projects under bounded roots.
 //
 // Bounded on purpose: only the configured roots, only three levels down, and
-// never into dependency or build output. A directory holding openspec/ is a
-// project, so the walk stops there rather than searching inside it.
+// never into dependency or build output. A directory holding a saved quality
+// report is a project, so the walk stops there.
 
 import { readdirSync } from "node:fs";
 import { join } from "node:path";

@@ -1,0 +1,24 @@
+{
+  "name": "dod-guard",
+  "version": "5.0.0",
+  "description": "Delivery review and repository maintenance skills.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  },
+  "repository": "https://github.com/TychoHenzen/dod-guard",
+  "license": "MIT",
+  "keywords": ["verification", "skills", "git"],
+  "interface": {
+    "displayName": "dod-guard",
+    "shortDescription": "Delivery review and repository maintenance skills.",
+    "longDescription": "Provides issue delivery, review, refactoring, migration, and repository maintenance workflows.",
+    "developerName": "tychohenzen",
+    "category": "Developer Tools",
+    "capabilities": ["Skills"],
+    "defaultPrompt": [
+      "Pick up the next linked GitHub Project issue.",
+      "Review this implementation before its pull request."
+    ]
+  }
+}

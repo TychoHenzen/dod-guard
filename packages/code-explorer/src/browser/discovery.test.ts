@@ -17,7 +17,6 @@ function fakeCore(replies: Reply[]) {
 }
 
 describe("browser discovery", () => {
-  // covers: code-explorer/browser-navigation :: Browser discovery preserves service ranking and filters :: User searches with a misspelling
   it("renders fuzzy candidates in the exact service order with their labels and scores", async () => {
     const core = fakeCore([
       {
@@ -37,8 +36,6 @@ describe("browser discovery", () => {
     );
     assert.deepEqual(core.calls[0], { query: "prase" });
   });
-
-  // covers: code-explorer/browser-navigation :: Browser discovery preserves service ranking and filters :: User narrows search filters
   it("sends the combined filters and replaces rather than merges results", async () => {
     const core = fakeCore([
       {
@@ -65,8 +62,6 @@ describe("browser discovery", () => {
     });
     assert.equal(discovery.state().candidates[0]?.name, "production");
   });
-
-  // covers: code-explorer/browser-navigation :: Browser discovery preserves service ranking and filters :: User clears the query
   it("shows grouped landmarks without running a blank symbol search", async () => {
     const core = fakeCore([
       { data: { landmarks: [{ group: "Modules", items: [{ name: "lib", path: "src/lib.rs", kind: "module" }] }] } },
@@ -79,8 +74,6 @@ describe("browser discovery", () => {
     assert.match(renderDiscovery(discovery.state()), /Modules/);
     assert.match(renderDiscovery(discovery.state()), /src\/lib\.rs/);
   });
-
-  // covers: code-explorer/browser-navigation :: Browser discovery preserves service ranking and filters :: Results are omitted by a limit
   it("shows the service omitted count and refinement guidance", async () => {
     const core = fakeCore([{ data: { candidates: [], omitted_count: 17, refinement_guidance: "Add a path filter" } }]);
     const discovery = new BrowserDiscoveryController(core.search);

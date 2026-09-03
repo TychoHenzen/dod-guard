@@ -32,8 +32,6 @@ const structuralCandidate: StructuralDiscoveryCandidate = {
   },
   location: structuralLocation,
 };
-
-// covers: code-explorer/language-adapters :: Semantic results remain authoritative :: Structural candidate conflicts with a semantic definition
 it("retains only the validated semantic relation when structural discovery conflicts", () => {
   const semanticRelation: SemanticRelation = {
     relation: "definition",
@@ -50,8 +48,6 @@ it("retains only the validated semantic relation when structural discovery confl
     discovery_only: [structuralCandidate],
   });
 });
-
-// covers: code-explorer/language-adapters :: Semantic results remain authoritative :: Reference resembles a function call
 it("does not promote a reference-shaped structural candidate into a call relation", () => {
   const reference: SemanticRelation = {
     relation: "references",

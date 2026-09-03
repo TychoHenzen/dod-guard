@@ -14,7 +14,6 @@ import {
   unsupportedCandidateReferenceGraph,
 } from "./ref-analyzer.js";
 
-// covers: fossil/reference-analysis :: Bounded source scanning :: Oversized source degrades reference evidence
 test("skips oversized sources before reading content and retains later bounded sources", () => {
   const maximumBytes = 1_048_576;
   const contentReads: string[] = [];
@@ -57,8 +56,6 @@ test("skips oversized sources before reading content and retains later bounded s
   ]);
   assert.equal(result.acceptedBytes, maximumBytes + 7);
 });
-
-// covers: fossil/reference-analysis :: Bounded source scanning :: Binary file is not regex parsed
 test("omits binary content from bounded reference sources and continues with later text", () => {
   const sourceContents = new Map([
     ["src/binary.ts", "text\0not-source"],
@@ -88,8 +85,6 @@ test("omits binary content from bounded reference sources and continues with lat
   assert.equal(result.acceptedBytes, 12);
   assert.equal(JSON.stringify(result.sources).includes("text\0not-source"), false);
 });
-
-// covers: fossil/reference-analysis :: Bounded source scanning :: Total scan budget stops further content reads
 test("stops all later source reads when the total content budget is reached or exceeded", () => {
   const exactMetadataReads: string[] = [];
   const exactContentReads: string[] = [];
@@ -150,8 +145,6 @@ test("stops all later source reads when the total content budget is reached or e
     ],
   );
 });
-
-// covers: fossil/reference-analysis :: Repository-contained source reads :: File changes during scanning
 test("keeps only stable source reads and records scan races as unavailable evidence", () => {
   const snapshot = (identity: string, isRegularFile = true, canonicalPath = `C:/repo/${identity}`, byteLength = 7) => ({
     identity,
@@ -226,8 +219,6 @@ test("keeps only stable source reads and records scan races as unavailable evide
   assert.equal(JSON.stringify(result.warnings).includes("C:/private/outside.ts"), false);
   assert.equal(JSON.stringify(result.warnings).includes("sensitive filesystem error"), false);
 });
-
-// covers: fossil/reference-analysis :: Repository-contained source reads :: Directory symlink is not traversed
 test("keeps a directory symlink candidate unavailable without reading its content", () => {
   const contentReads: string[] = [];
   const result = readStableReferenceSources(
@@ -260,8 +251,6 @@ test("keeps a directory symlink candidate unavailable without reading its conten
     },
   ]);
 });
-
-// covers: fossil/reference-analysis :: Repository-contained source reads :: Relative import cannot escape the repository
 test("rejects lexical and canonical relative-import escapes without exposing external paths", () => {
   const externalPath = "C:/private/secret.ts";
   const result = analyzeJavaScriptReferencesWithinBoundary(
@@ -309,8 +298,6 @@ test("rejects lexical and canonical relative-import escapes without exposing ext
   ]);
   assert.equal(JSON.stringify(result.warnings).includes(externalPath), false);
 });
-
-// covers: fossil/reference-analysis :: Replaceable reference backend :: Unsupported language degrades to Git evidence
 test("marks unsupported candidate references unavailable without producing edges", () => {
   const candidates = [
     { path: "src/candidate.lua", language: "unsupported" as const },
@@ -326,8 +313,6 @@ test("marks unsupported candidate references unavailable without producing edges
     unavailablePaths: ["src/candidate.lua"],
   });
 });
-
-// covers: fossil/reference-analysis :: Replaceable reference backend :: Unreadable source does not stop analysis
 test("continues after an unreadable source without exposing its read error", () => {
   const attemptedPaths: string[] = [];
   const sources = [
@@ -356,8 +341,6 @@ test("continues after an unreadable source without exposing its read error", () 
     { code: "reference_unreadable", message: "Reference source could not be read.", path: "src/candidate.ts" },
   ]);
 });
-
-// covers: fossil/reference-analysis :: TypeScript and JavaScript references :: JavaScript module forms create graph edges
 test("resolves static, require, and dynamic relative module forms against current files", () => {
   const graph = analyzeJavaScriptReferences([
     {
@@ -440,8 +423,6 @@ test("resolves static, require, and dynamic relative module forms against curren
   );
   assert.deepEqual(graph.unavailablePaths, []);
 });
-
-// covers: fossil/reference-analysis :: C# references :: Unambiguous C# namespace resolves
 test("resolves one namespace-level C# using to its unique current path suffix", () => {
   const graph = analyzeReferences([
     {
@@ -475,8 +456,6 @@ test("resolves one namespace-level C# using to its unique current path suffix", 
   );
   assert.deepEqual(graph.unresolved, []);
 });
-
-// covers: fossil/reference-analysis :: C# references :: Ambiguous C# namespace is not invented
 test("retains all sorted C# namespace matches as unresolved evidence", () => {
   const graph = analyzeReferences([
     {
@@ -510,8 +489,6 @@ test("retains all sorted C# namespace matches as unresolved evidence", () => {
     ],
   );
 });
-
-// covers: fossil/reference-analysis :: Rust references :: Rust module statement creates graph edge
 test("resolves sibling, module-directory, and nearest-Cargo-root Rust modules", () => {
   const graph = analyzeReferences([
     {
@@ -586,8 +563,6 @@ test("resolves sibling, module-directory, and nearest-Cargo-root Rust modules", 
     ],
   );
 });
-
-// covers: fossil/reference-analysis :: Reference strength :: Normal direct use is strong
 test("keeps an ordinary imported candidate use as a strong inbound reference", () => {
   const graph = analyzeJavaScriptReferences([
     {
@@ -603,8 +578,6 @@ test("keeps an ordinary imported candidate use as a strong inbound reference", (
     [{ sourcePath: "src/live.ts", targetPath: "src/candidate.ts", strength: "strong" }],
   );
 });
-
-// covers: fossil/reference-analysis :: Reference strength :: Try or catch use is weak
 test("marks imports used only in balanced try or catch bodies as weak", () => {
   const graph = analyzeJavaScriptReferences([
     {
@@ -637,8 +610,6 @@ test("marks imports used only in balanced try or catch bodies as weak", () => {
     ["weak", "weak", "weak", "weak", "weak"],
   );
 });
-
-// covers: fossil/reference-analysis :: Reference strength :: Conditional fallback use is weak
 test("marks fallback conditional and default-expression uses as weak", () => {
   const graph = analyzeJavaScriptReferences([
     {
@@ -681,8 +652,6 @@ test("marks fallback conditional and default-expression uses as weak", () => {
     ["weak", "weak", "weak", "weak", "weak", "strong"],
   );
 });
-
-// covers: fossil/reference-analysis :: Reference strength :: Guarded use is weak
 test("marks C# and Rust uses confined to guards as weak", () => {
   const graph = analyzeReferences([
     {
@@ -711,8 +680,6 @@ test("marks C# and Rust uses confined to guards as weak", () => {
     ["weak", "strong", "weak", "strong", "strong"],
   );
 });
-
-// covers: fossil/reference-analysis :: Vestigial references :: Fossils do not keep each other alive
 test("regrades only candidate-to-candidate edges without mutating the graph", () => {
   const graph = {
     edges: [
@@ -752,8 +719,6 @@ test("regrades only candidate-to-candidate edges without mutating the graph", ()
   );
   assert.equal(graph.edges[0].strength, "strong");
 });
-
-// covers: fossil/reference-analysis :: Replaceable reference backend :: Potentially relevant unresolved reference is incomplete evidence
 test("marks only tail or uniquely named unresolved candidate paths unavailable", () => {
   const graph = {
     edges: [],
@@ -786,8 +751,6 @@ test("marks only tail or uniquely named unresolved candidate paths unavailable",
   assert.equal(result.complete, false);
   assert.deepEqual(graph.unavailablePaths, ["existing.ts"]);
 });
-
-// covers: fossil/reference-analysis :: Reference strength :: Mixed normal and fallback use is strong
 test("keeps a mixed fallback and ordinary import use strong", () => {
   const graph = analyzeJavaScriptReferences([
     {

@@ -6,7 +6,6 @@ import { it } from "node:test";
 import { createFilteredWorkspace } from "./filtered-workspace.js";
 import { createNativeProjectRoot } from "./project-root.js";
 
-// covers: code-explorer/symbol-discovery :: Sensitive paths are never indexed or returned :: Project configuration tries to include a denied path
 it("creates a native backend root before initialization without sensitive content", () => {
   const project = mkdtempSync(join(tmpdir(), "code-explorer-sensitive-native-"));
   try {

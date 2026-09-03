@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CHECK_IGNORE_ARGUMENTS, filterWorkspaceDiscoveryPaths, hasInboundWorkspaceUsage, IGNORED_DISCOVERY_ARGUMENTS, inspectWorkspaceFileMetadata, inspectWorkspaceFileMetadataWithWarnings, oldIgnoredWorkspaceCandidates, oldUntrackedWorkspaceCandidates, omitUsedWorkspaceCandidates, parseNulDelimitedPaths, parseVerboseCheckIgnore, UNTRACKED_DISCOVERY_ARGUMENTS, workspaceDebrisFinding, } from "./workspace-debris.js";
-// covers: fossil/workspace-debris :: Workspace file discovery :: Old untracked file is eligible
 test("parses NUL-delimited untracked paths and selects an old regular file", () => {
     const unusualPath = "scratch/line\nbreak.ts";
     assert.deepEqual(UNTRACKED_DISCOVERY_ARGUMENTS, ["ls-files", "-z", "--others", "--exclude-standard"]);
@@ -12,7 +11,6 @@ test("parses NUL-delimited untracked paths and selects an old regular file", () 
     ], 10 * 24 * 60 * 60 * 1_000, 7);
     assert.deepEqual(candidates, [{ path: "scratch/old.ts", kind: "untracked", modifiedTimestampMs: 0 }]);
 });
-// covers: fossil/workspace-debris :: Workspace file discovery :: Old ignored file is eligible
 test("retains NUL-delimited ignore rule provenance for an old ignored regular file", () => {
     assert.deepEqual(IGNORED_DISCOVERY_ARGUMENTS, ["ls-files", "-z", "--others", "--ignored", "--exclude-standard"]);
     assert.deepEqual(CHECK_IGNORE_ARGUMENTS, ["check-ignore", "-z", "-v", "--stdin"]);
@@ -38,20 +36,17 @@ test("retains NUL-delimited ignore rule provenance for an old ignored regular fi
         },
     ]);
 });
-// covers: fossil/workspace-debris :: Workspace file discovery :: Recent workspace file is omitted
 test("omits recent untracked and ignored workspace files", () => {
     const now = 10 * 24 * 60 * 60 * 1_000;
     const recentTimestampMs = now - 24 * 60 * 60 * 1_000;
     assert.deepEqual(oldUntrackedWorkspaceCandidates([{ path: "scratch/recent.ts", isRegularFile: true, modifiedTimestampMs: recentTimestampMs }], now, 7), []);
     assert.deepEqual(oldIgnoredWorkspaceCandidates([{ path: "scratch/recent.cache", isRegularFile: true, modifiedTimestampMs: recentTimestampMs }], [{ path: "scratch/recent.cache", rule: "*.cache", source: "repository" }], now, 7), []);
 });
-// covers: fossil/workspace-debris :: Portable age evidence :: Unavailable creation time does not block analysis
 test("uses old modification time when creation metadata is unavailable", () => {
     const now = 10 * 24 * 60 * 60 * 1_000;
     const candidates = oldUntrackedWorkspaceCandidates([{ path: "scratch/old-without-birth.ts", isRegularFile: true, modifiedTimestampMs: 0 }], now, 7);
     assert.deepEqual(candidates, [{ path: "scratch/old-without-birth.ts", kind: "untracked", modifiedTimestampMs: 0 }]);
 });
-// covers: fossil/workspace-debris :: Workspace file discovery :: Age threshold is inclusive
 test("includes untracked and ignored files exactly on the modification-age cutoff", () => {
     const now = 10 * 24 * 60 * 60 * 1_000;
     const cutoff = now - 7 * 24 * 60 * 60 * 1_000;
@@ -65,7 +60,6 @@ test("includes untracked and ignored files exactly on the modification-age cutof
         },
     ]);
 });
-// covers: fossil/workspace-debris :: Portable age evidence :: One captured time controls age boundaries
 test("uses one captured time for immediately adjacent modification-age boundaries", () => {
     const analysisTimestampMs = 10 * 24 * 60 * 60 * 1_000;
     const cutoff = analysisTimestampMs - 7 * 24 * 60 * 60 * 1_000;
@@ -79,7 +73,6 @@ test("uses one captured time for immediately adjacent modification-age boundarie
         { path: "scratch/at.ts", kind: "untracked", modifiedTimestampMs: cutoff },
     ]);
 });
-// covers: fossil/workspace-debris :: Usage evidence search :: Referenced old file is omitted
 test("omits old candidates with resolved imports, exact paths, or a unique basename", () => {
     const candidate = { path: "scratch/old.ts", kind: "untracked", modifiedTimestampMs: 0 };
     const sources = [
@@ -102,7 +95,6 @@ test("omits old candidates with resolved imports, exact paths, or a unique basen
     assert.deepEqual(omitUsedWorkspaceCandidates([candidate], sources, inventory), []);
     assert.equal(workspaceDebrisFinding(candidate, sources, inventory, "C:/repo", []), undefined);
 });
-// covers: fossil/workspace-debris :: Usage evidence search :: Unreferenced old file is reported
 test("reports an unreferenced old candidate as separate workspace debris", () => {
     const finding = workspaceDebrisFinding({ path: "scratch/old.ts", kind: "untracked", modifiedTimestampMs: 0 }, [{ path: "src/live.ts", language: "typescript", content: "export const live = true;\n" }], ["src/live.ts", "scratch/old.ts"], "C:/repo", ["dynamic runtime loading"]);
     assert.deepEqual(finding, {
@@ -119,7 +111,6 @@ test("reports an unreferenced old candidate as separate workspace debris", () =>
         unobservedReferenceMechanisms: ["dynamic runtime loading"],
     });
 });
-// covers: fossil/workspace-debris :: Review-only reporting :: Finding preserves uncertainty
 test("labels a high-confidence-looking debris candidate for review with mtime uncertainty", () => {
     const finding = workspaceDebrisFinding({ path: "scratch/very-old.ts", kind: "untracked", modifiedTimestampMs: 0 }, [], ["scratch/very-old.ts"], "C:/repo", ["runtime reflection"]);
     assert.ok(finding);
@@ -130,7 +121,6 @@ test("labels a high-confidence-looking debris candidate for review with mtime un
     assert.deepEqual(finding.unobservedReferenceMechanisms, ["runtime reflection"]);
     assert.equal(JSON.stringify(finding).toLowerCase().includes("delete"), false);
 });
-// covers: fossil/workspace-debris :: Safe workspace boundaries :: Dependency store is excluded
 test("excludes dependency-store paths before metadata reads and ignored candidate evaluation", () => {
     const metadataReads = [];
     const metadata = inspectWorkspaceFileMetadata(["node_modules/old.cache", "scratch\\old.cache"], (path) => {
@@ -150,7 +140,6 @@ test("excludes dependency-store paths before metadata reads and ignored candidat
         },
     ]);
 });
-// covers: fossil/workspace-debris :: Safe workspace boundaries :: Sensitive file is excluded
 test("excludes mixed-case sensitive files, extensions, prefixes, and directories before metadata reads", () => {
     const metadataReads = [];
     const metadata = inspectWorkspaceFileMetadata(["config/.ENV.Production", "certs/Client.PEM", "secrets/CredentialsBackup", ".AwS\\config", "scratch/allowed.ts"], (path) => {
@@ -160,7 +149,6 @@ test("excludes mixed-case sensitive files, extensions, prefixes, and directories
     assert.deepEqual(metadataReads, ["scratch/allowed.ts"]);
     assert.deepEqual(metadata, [{ path: "scratch/allowed.ts", isRegularFile: true, modifiedTimestampMs: 0 }]);
 });
-// covers: fossil/workspace-debris :: Safe workspace boundaries :: External symlink is excluded
 test("drops no-follow symbolic-link and junction metadata without inspecting resolved targets", () => {
     const metadataReads = [];
     const metadata = inspectWorkspaceFileMetadata(["scratch/external-link", "scratch/junction", "scratch/regular.ts"], (path) => {
@@ -184,7 +172,6 @@ test("drops no-follow symbolic-link and junction metadata without inspecting res
         },
     ]);
 });
-// covers: fossil/workspace-debris :: Workspace file discovery :: Unreadable discovered path is distinguished
 test("warns for an unreadable discovered path and continues without creating candidate metadata", () => {
     const metadataReads = [];
     const result = inspectWorkspaceFileMetadataWithWarnings(["scratch/unreadable.ts", "scratch/later.ts"], (path) => {
@@ -207,7 +194,6 @@ test("warns for an unreadable discovered path and continues without creating can
         { path: "scratch/later.ts", kind: "untracked", modifiedTimestampMs: 0 },
     ]);
 });
-// covers: fossil/workspace-debris :: Safe workspace boundaries :: Caller exclusion hides a path completely
 test("filters caller-excluded paths before metadata reads, warnings, and ignore provenance input", () => {
     const discoveredPaths = filterWorkspaceDiscoveryPaths(["ignored\\hidden.cache", "scratch/allowed.ts"], ["ignored/**", "[malformed", "x".repeat(257)]);
     const metadataReads = [];

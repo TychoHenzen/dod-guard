@@ -13,8 +13,6 @@ const symbol = {
   kind: "function",
   location: { path: "src\\lib.rs", range: { start: { line: 2, character: 3 }, end: { line: 2, character: 9 } } },
 };
-
-// covers: code-explorer/mcp-navigation :: Focusing a symbol creates a bounded explicit view :: Function focus succeeds
 it("focuses one semantic function into a new immutable view with visible handles", async () => {
   const server = createServer({
     adapters: [
@@ -54,8 +52,6 @@ it("focuses one semantic function into a new immutable view with visible handles
   );
   assert.notEqual(view.view_id, (second.data as ReturnType<typeof createFocusView>).view_id);
 });
-
-// covers: code-explorer/mcp-navigation :: Focusing a symbol creates a bounded explicit view :: Symbol content exceeds the response budget
 it("returns a UTF-8-safe prefix and byte accounting when a focus body exceeds its budget", () => {
   const view = createFocusView(symbol, { body: `${"a".repeat(1023)}😀suffix` }, 1024);
   assert.equal(view.content.body, "a".repeat(1023));
@@ -67,8 +63,6 @@ it("returns a UTF-8-safe prefix and byte accounting when a focus body exceeds it
     total_bytes: 1033,
   });
 });
-
-// covers: code-explorer/mcp-navigation :: Focusing a symbol creates a bounded explicit view :: Symbol has no retrievable body
 it("returns semantic identity without reading a whole file when the backend supplies no content", async () => {
   const server = createServer({ adapters: [focusAdapter(undefined)] });
   const sessionId = await startSession(server);
@@ -90,8 +84,6 @@ it("returns semantic identity without reading a whole file when the backend supp
     total_bytes: 0,
   });
 });
-
-// covers: code-explorer/workspace-freshness :: Views remain immutable after creation :: Client follows a handle from an older view
 it("returns stale_view generations without dispatching semantics for an old view", async () => {
   const manifests = [new Map([["src/lib.rs", "one"]]), new Map([["src/lib.rs", "two"]])];
   const freshness = new WorkspaceFreshness({ reconcile: async () => ({ manifest: manifests.shift() ?? new Map() }) });
@@ -128,8 +120,6 @@ it("returns stale_view generations without dispatching semantics for an old view
   });
   assert.equal(requests, 1);
 });
-
-// covers: code-explorer/workspace-freshness :: Views remain immutable after creation :: Client restores old history
 it("restores an old immutable view with its original generation and stale label", async () => {
   const manifests = [new Map([["src/lib.rs", "one"]]), new Map([["src/lib.rs", "two"]])];
   const freshness = new WorkspaceFreshness({ reconcile: async () => ({ manifest: manifests.shift() ?? new Map() }) });

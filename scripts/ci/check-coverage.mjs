@@ -26,12 +26,11 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const BASELINE = join(ROOT, ".github", "quality", "coverage-baseline.json");
-const PACKAGES = ["dod-guard", "quality-guard", "fossil"];
+const PACKAGES = ["quality-guard", "fossil"];
 const METRICS = ["statements", "branches", "functions", "lines"];
 
-// Slack in percentage points. dod-guard drives a real server over stdio, and a
-// run where one of those exits slower reports a hair less. A drop that matters
-// is worth whole points, so this is wide enough for timing and no wider.
+// Slack in percentage points covers small platform-dependent differences. A
+// drop that matters is worth whole points, so this is no wider than needed.
 const TOLERANCE = 0.25;
 
 const NOTE = "Coverage each package holds today. A drop below its own number fails CI.";

@@ -67,10 +67,7 @@ function positiveInteger(value: unknown, location: string): number {
   return value;
 }
 
-/**
- * ASSUMPTION: OpenSpec specifies configuration semantics, but not JSON shapes.
- * This parser deliberately uses explicit named records and direction objects.
- */
+/** Parse the explicit named records and direction objects in the configuration. */
 export function parseQualityConfig(source: string): QualityConfig {
   let parsed: unknown;
   try {

@@ -33,7 +33,7 @@
 
 **7. `# ASSUMPTION:` code comments the model emits and greps.** Extend the standard codetag convention (TODO, FIXME, XXX, HACK - formalized in PEP 350) with an `ASSUMPTION:` (or `AI-ASSUMPTION:`) tag. Instruct the agent: whenever it makes a non-obvious choice about intent or an API, drop an inline `# ASSUMPTION: <what and why>` comment. Now the assumptions live *next to the code they affect* (so they rot far less than a central doc), and you - or the agent - can `grep -rn "ASSUMPTION"` for a one-command audit. You can wire the same grep into CI to surface or count them. Why it beats a central list: locality. The note can't drift away from the code because it's attached to it.
 
-**8. Spec-driven development for larger features.** Tools like GitHub Spec Kit (Specify, Plan, Tasks, Implement) and OpenSpec (Propose, Apply, Archive) turn intent into a reviewed artifact before code. OpenSpec is especially relevant here: it separates "current truth - what IS built" (`specs/`) from "what SHOULD change" (`changes/` proposals with ADDED/MODIFIED/REMOVED deltas), and *archives* changes once shipped. That lifecycle is exactly the proposed/accepted/superseded distinction you want, enforced by a CLI. Spec-driven workflows target three named failure modes: intent drift, context decay, and unverifiable output. Trade-off: real overhead - practitioners say skip it for small fixes and reserve it for work where "you'd be annoyed if the agent interpreted requirements differently than you meant."
+**8. Issue-driven development for larger features.** A concise GitHub Issue records the intended outcome, constraints, and verifiable acceptance criteria. Sub-issues divide independently completable outcomes. The feature branch and pull request preserve the implementation and review evidence without maintaining a second task-document system.
 
 ### Tier 3 - Verification that catches what slips through (grounding)
 
@@ -61,7 +61,7 @@ Evaluated directly: it's the wrong primary tool. It bloats context (raising cost
 7. Keep CLAUDE.md/AGENTS.md under ~200 lines, put only what the agent can't infer from code, and audit it against reality regularly - the "Context Rot" study (arXiv:2606.09090) found a README/wiki consistency checker flagged stale code-element references in 23.0% of a 356-repository sample.
 
 **Reserve for larger or high-stakes work (Tier 3):**
-8. Use spec-driven tooling (Spec Kit or OpenSpec) for features where misinterpretation would be expensive.
+8. Use GitHub Issues and acceptance sub-issues when misinterpretation would be expensive.
 9. Write/own the key tests; make the agent verify against them and re-run the suite. Tell it *which* tests matter, not just "do TDD."
 10. Run a fresh-session, different-model critic pass on the diff before merging; keep human review as the real gate.
 

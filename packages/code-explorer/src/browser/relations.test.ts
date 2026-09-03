@@ -3,7 +3,6 @@ import { describe, it } from "node:test";
 import { BrowserRelationsController, type RelationReply, renderRelationGroup } from "./relations.js";
 
 describe("lazy browser relations", () => {
-  // covers: code-explorer/browser-navigation :: Semantic relations load only on demand :: Focus view first opens
   it("starts supported and unavailable groups without eager relation requests", () => {
     const calls: Record<string, unknown>[] = [];
     const relations = new BrowserRelationsController(
@@ -17,8 +16,6 @@ describe("lazy browser relations", () => {
     assert.equal(relations.state("callers").state, "unavailable");
     assert.equal(calls.length, 0);
   });
-
-  // covers: code-explorer/browser-navigation :: Semantic relations load only on demand :: User opens a relation group
   it("dispatches one bounded follow request for an opened group and caches its result", async () => {
     const calls: Record<string, unknown>[] = [];
     const relations = new BrowserRelationsController(
@@ -34,8 +31,6 @@ describe("lazy browser relations", () => {
     assert.equal(relations.state("references").state, "loaded");
     assert.equal(relations.state("references").omitted_count, 3);
   });
-
-  // covers: code-explorer/browser-navigation :: Semantic relations load only on demand :: Relation is unsupported
   it("keeps an unavailable relation closed without a substitute request", async () => {
     const relations = new BrowserRelationsController(
       { view_id: "view-1", handle: "source-handle", supported: [], unavailable: ["callees"] },
@@ -47,8 +42,6 @@ describe("lazy browser relations", () => {
     assert.equal(relations.state("callees").state, "unavailable");
     assert.match(renderRelationGroup(relations.state("callees")), /unavailable/);
   });
-
-  // covers: code-explorer/browser-navigation :: Semantic relations load only on demand :: Result belongs to an external dependency
   it("renders external results as display-only identities", async () => {
     const relations = new BrowserRelationsController(
       { view_id: "view-1", handle: "source-handle", supported: ["definition"], unavailable: [] },

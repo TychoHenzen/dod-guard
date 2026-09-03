@@ -6,7 +6,6 @@ import { it } from "node:test";
 import { createServer } from "../index.js";
 import type { ProjectRoot } from "../semantic/project-root.js";
 
-// covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Working tree contains source changes
 it("reports modified tracked and untracked supported paths without exposing an absolute root", async () => {
   const server = createServer({
     workspace_status: () => ({
@@ -22,8 +21,6 @@ it("reports modified tracked and untracked supported paths without exposing an a
   assert.deepEqual(response.data.untracked_paths, [{ path: "src/new.ts", state: "untracked" }]);
   assert.equal(JSON.stringify(response).includes(":\\"), false);
 });
-
-// covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Generated path is excluded
 it("reports active generated exclusions while leaving the exclusion path out of normal navigation", async () => {
   const server = createServer({ workspace_status: () => ({ active_exclusions: ["dist/**"], excluded_path_count: 1 }) });
   const response = await server.call("code_status", { action: "status" });

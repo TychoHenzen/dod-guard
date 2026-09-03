@@ -48,8 +48,6 @@ function adapter(calls: string[]): LanguageAdapter {
     },
   };
 }
-
-// covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Frozen project root disappears
 it("makes a changed or missing frozen root status-only and stops backends", async () => {
   const calls: string[] = [];
   const gate = new RootAccessGate(
@@ -59,8 +57,6 @@ it("makes a changed or missing frozen root status-only and stops backends", asyn
   assert.deepEqual(await gate.check(), { state: "project_root_unavailable", restart_required: true });
   assert.deepEqual(calls, ["stop"]);
 });
-
-// covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Project root is temporarily inaccessible
 it("reports inaccessible root during the bounded recovery window", async () => {
   let now = 0;
   const gate = new RootAccessGate(
@@ -72,8 +68,6 @@ it("reports inaccessible root during the bounded recovery window", async () => {
   now = 29_999;
   assert.deepEqual(await gate.check(), { state: "project_root_inaccessible", restart_required: false });
 });
-
-// covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Same root identity becomes accessible again
 it("restarts selected backends after the same root recovers within thirty seconds", async () => {
   let result: "ready" | "inaccessible" = "inaccessible";
   const calls: string[] = [];
@@ -87,8 +81,6 @@ it("restarts selected backends after the same root recovers within thirty second
   assert.deepEqual(await gate.check(), { state: "ready", restart_required: false });
   assert.deepEqual(calls, ["stop", "start"]);
 });
-
-// covers: code-explorer/workspace-freshness :: Workspace status exposes freshness-relevant state :: Root accessibility does not recover
 it("requires restart after thirty seconds of inaccessible root", async () => {
   let now = 0;
   const gate = new RootAccessGate(

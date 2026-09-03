@@ -7,8 +7,6 @@ const source = symbol("source", "Source", "function", "src/source.rs", 0);
 const type = symbol("type", "Type", "struct", "src/types.rs", 4);
 const reference = symbol("reference", "reference", "function", "src/references.rs", 8);
 const caller = symbol("caller", "caller", "function", "src/caller.rs", 12);
-
-// covers: code-explorer/mcp-navigation :: A visible handle can follow semantic relations :: Visible type follows to its definition
 it("focuses a project-local definition and cites its source location", async () => {
   const server = createServer({ adapters: [relationAdapter("definition")] });
   const { sessionId, viewId, handle } = await visibleHandle(server, "type");
@@ -44,8 +42,6 @@ it("focuses a project-local definition and cites its source location", async () 
   assert.equal(typeof focus.view_id, "string");
   assert.equal(typeof focus.handle, "string");
 });
-
-// covers: code-explorer/mcp-navigation :: A visible handle can follow semantic relations :: Client requests references
 it("returns bounded deterministic source-located references with next-focus handles", async () => {
   const server = createServer({ adapters: [relationAdapter("references")] });
   const { sessionId, viewId, handle } = await visibleHandle(server, "reference");
@@ -76,8 +72,6 @@ it("returns bounded deterministic source-located references with next-focus hand
     ),
   );
 });
-
-// covers: code-explorer/mcp-navigation :: A visible handle can follow semantic relations :: Client requests callers or callees
 it("returns only backend-proven callers and callees with call sites", async () => {
   for (const relation of ["callers", "callees"] as const) {
     const server = createServer({ adapters: [relationAdapter(relation)] });
@@ -96,8 +90,6 @@ it("returns only backend-proven callers and callees with call sites", async () =
     assert.deepEqual(candidate.call_site, { path: "src/caller.rs", range: caller.location.range });
   }
 });
-
-// covers: code-explorer/mcp-navigation :: A visible handle can follow semantic relations :: Requested semantic relation is unavailable
 it("reports unavailable relations without relabeling references as calls", async () => {
   const server = createServer({ adapters: [relationAdapter("references", { callers: { state: "unavailable" } })] });
   const { sessionId, viewId, handle } = await visibleHandle(server, "callable");

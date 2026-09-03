@@ -34,8 +34,6 @@ test("absoluteVerdict blocks presence errors without a numeric bound", () => {
   assert.equal(blocking.length, 1);
   assert.match(blocking[0], /2 types in one file/);
 });
-
-// covers: quality-guard/write-gate :: Write-time success is not commit evidence :: Project-level rule could not run
 test("file-local feedback excludes project rules and points to the staged gate", () => {
   assert.equal(FILE_RULES.includes("duplicate-block"), false);
   assert.equal(FILE_RULES.includes("dead-export"), false);

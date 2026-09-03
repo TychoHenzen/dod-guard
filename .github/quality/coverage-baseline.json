@@ -1,12 +1,6 @@
 {
   "note": "Coverage each package holds today. A drop below its own number fails CI.",
   "packages": {
-    "dod-guard": {
-      "statements": 94.4,
-      "branches": 89.24,
-      "functions": 93.33,
-      "lines": 94.4
-    },
     "quality-guard": {
       "statements": 91.68,
       "branches": 85.16,

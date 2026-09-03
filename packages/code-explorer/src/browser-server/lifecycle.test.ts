@@ -41,20 +41,15 @@ async function post(url: URL, body: string): Promise<{ status: number; body: str
 }
 
 describe("browser server lifecycle", () => {
-  // covers: code-explorer/browser-server :: The package starts a project-scoped browser server :: Server starts from the working directory
   it("uses the working directory project vector when serve has no project argument", () => {
     assert.deepEqual(parseServeArguments(["serve"]), { project_root: ".", no_open: false });
   });
-
-  // covers: code-explorer/browser-server :: The package starts a project-scoped browser server :: Startup argument selects the project
   it("preserves an explicit project argument instead of substituting the working directory", () => {
     assert.deepEqual(parseServeArguments(["serve", "--project-root", "..", "--no-open"]), {
       project_root: "..",
       no_open: true,
     });
   });
-
-  // covers: code-explorer/browser-server :: The package starts a project-scoped browser server :: Browser request contains a project path
   it("rejects a browser request that attempts to replace the frozen project root", async () => {
     const listener = await nativePortBinder.listen("127.0.0.1", 4429, new AbortController().signal);
     try {
@@ -70,8 +65,6 @@ describe("browser server lifecycle", () => {
       await listener.close(AbortSignal.timeout(1_000));
     }
   });
-
-  // covers: code-explorer/browser-server :: The package starts a project-scoped browser server :: Startup project is invalid
   it("fails before binding when the selected project root is invalid", async () => {
     let bound = false;
     await assert.rejects(
@@ -112,8 +105,6 @@ describe("browser server lifecycle", () => {
     assert.equal(coreAborted, true);
     assert.deepEqual(stopped, [4410]);
   });
-
-  // covers: code-explorer/browser-server :: The server is reachable only through loopback :: Preferred port is available
   it("binds the preferred loopback port and reports its exact URL", async () => {
     const attempts: Array<[string, number]> = [];
     const stopped: number[] = [];
@@ -136,8 +127,6 @@ describe("browser server lifecycle", () => {
     await service.close();
     assert.deepEqual(stopped, [4410]);
   });
-
-  // covers: code-explorer/browser-server :: The server is reachable only through loopback :: Preferred port is occupied
   it("tries ascending loopback ports and reports the first available port", async () => {
     const attempts: number[] = [];
     const output: string[] = [];
@@ -159,8 +148,6 @@ describe("browser server lifecycle", () => {
     assert.deepEqual(output, ["Code Explorer: http://127.0.0.1:4412/"]);
     await service.close();
   });
-
-  // covers: code-explorer/browser-server :: The server is reachable only through loopback :: Every configured port is occupied
   it("returns browser_port_unavailable without opening a browser when all ports are occupied", async () => {
     let opens = 0;
     await assert.rejects(
@@ -183,8 +170,6 @@ describe("browser server lifecycle", () => {
     );
     assert.equal(opens, 0);
   });
-
-  // covers: code-explorer/browser-server :: Startup opens the local browser unless disabled :: Default launch succeeds
   it("prints once then opens the exact listening URL", async () => {
     const opened: string[] = [];
     const lines: string[] = [];
@@ -204,8 +189,6 @@ describe("browser server lifecycle", () => {
     assert.deepEqual(opened, ["http://127.0.0.1:4410/"]);
     await service.close();
   });
-
-  // covers: code-explorer/browser-server :: Startup opens the local browser unless disabled :: Automatic opening is disabled
   it("does not request a browser launch for no-open", async () => {
     let opened = false;
     const service = await startBrowserServer({
@@ -222,8 +205,6 @@ describe("browser server lifecycle", () => {
     assert.equal(opened, false);
     await service.close();
   });
-
-  // covers: code-explorer/browser-server :: Startup opens the local browser unless disabled :: Operating system cannot open the browser
   it("keeps serving when browser opening fails", async () => {
     const errors: string[] = [];
     const service = await startBrowserServer({

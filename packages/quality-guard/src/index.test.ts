@@ -63,8 +63,6 @@ function resultText(result: unknown): string {
   const content = (result as { content?: unknown }).content as Array<{ type: string; text?: string }> | undefined;
   return content?.[0]?.type === "text" ? (content[0].text ?? "") : "";
 }
-
-// covers: quality-guard/mcp-tools :: Server exposes three tools :: Client lists the tools
 test("the MCP server lists scan, baseline, waiver, and commit-gate tools", async () => {
   const connection = await connect();
   try {
@@ -84,8 +82,6 @@ test("the MCP server lists scan, baseline, waiver, and commit-gate tools", async
     await connection.close();
   }
 });
-
-// covers: quality-guard/mcp-tools :: Commit-gate tool uses the authoritative decision :: Agent checks a staged change
 test("the MCP commit-gate tool returns the staged decision JSON", async () => {
   const root = stagedFixture();
   const connection = await connect();
@@ -107,8 +103,6 @@ test("the MCP commit-gate tool returns the staged decision JSON", async () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
-
-// covers: quality-guard/mcp-tools :: Commit-gate tool uses the authoritative decision :: Refactor tool call omits target
 test("the MCP commit-gate tool returns a concise refactor usage error", async () => {
   const connection = await connect();
   try {

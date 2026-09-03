@@ -6,7 +6,6 @@ import type { ArchitectureFileFact } from "./encapsulation.js";
 import { analyzeRefactorProgress } from "./refactor-progress.js";
 import { evaluateResponsibilityMap, parseResponsibilityMap } from "./responsibility-map.js";
 
-// covers: quality-guard/architecture-analysis :: Refactor analysis reports structural progress :: Responsibility moves to a focused module
 test("reports an operation ownership move and reduced dependency on the old owner as structural progress", () => {
   const before: ArchitectureFileFact[] = [
     {
@@ -69,8 +68,6 @@ test("reports an operation ownership move and reduced dependency on the old owne
   assert.equal(result.indicators.dependencyEdges.status, "improved");
   assert.equal(result.indicators.compatibilityPaths.status, "unchanged");
 });
-
-// covers: quality-guard/architecture-analysis :: Refactor analysis reports structural progress :: Refactor only renames and reformats
 test("reports no architectural progress when only names and formatting change", () => {
   const before: ArchitectureFileFact[] = [
     {
@@ -101,8 +98,6 @@ test("reports no architectural progress when only names and formatting change", 
     ["unchanged", "unchanged", "unchanged", "unchanged", "unchanged"],
   );
 });
-
-// covers: quality-guard/commit-gate :: Refactor intent requires structural evidence :: Local metrics improve without ownership change
 test("requires declared ownership progress instead of accepting local metric improvements", () => {
   const before: ArchitectureFileFact[] = [
     {
@@ -147,8 +142,6 @@ test("requires declared ownership progress instead of accepting local metric imp
   assert.ok(result.findings.some((finding) => finding.reason.startsWith("refactor-structural-progress:")));
   assert.deepEqual(result.refactorProgress?.indicators, progress.indicators);
 });
-
-// covers: quality-guard/commit-gate :: Refactor intent requires structural evidence :: Declared structural outcome is achieved
 test("recognizes when the declared ownership outcome is achieved", () => {
   const before: ArchitectureFileFact[] = [
     {

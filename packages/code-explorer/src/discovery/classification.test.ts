@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { it } from "node:test";
 import { classifyProjectPath, loadClassificationConfig, matchesDiscoveryFilters } from "./classification.js";
 
-// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client filters by symbol kind and path
 it("applies path, language, kind, content, and generated filters before ranking", () => {
   const production = classifyProjectPath("src/helper.ts");
   assert.equal(
@@ -20,9 +19,6 @@ it("applies path, language, kind, content, and generated filters before ranking"
   assert.equal(matchesDiscoveryFilters("src/helper.ts", production, { kinds: ["class"] }, { kind: "function" }), false);
   assert.equal(matchesDiscoveryFilters("target/helper.ts", classifyProjectPath("target/helper.ts"), {}, {}), false);
 });
-
-// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client requests production content
-// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: File classification is unknown
 it("keeps unknown only in the default search and excludes it from test and production-only filters", () => {
   const unknown = classifyProjectPath("tools/helper.ts");
   assert.deepEqual(unknown, { content: "unknown", source: "unknown" });
@@ -30,8 +26,6 @@ it("keeps unknown only in the default search and excludes it from test and produ
   assert.equal(matchesDiscoveryFilters("tools/helper.ts", unknown, { content: "production" }, {}), false);
   assert.equal(matchesDiscoveryFilters("tools/helper.ts", unknown, { content: "tests" }, {}), false);
 });
-
-// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Classification rules conflict
 it("lets the last matching explicit override classify a generated path as production", () => {
   const config = {
     generated: [],
@@ -60,26 +54,18 @@ it("applies ordered class arrays and ordered overrides after those arrays", () =
     source: "configuration_override",
   });
 });
-
-// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Generated content uses the default policy
 it("excludes generated content before ranking unless explicitly requested", () => {
   const generated = classifyProjectPath("target/helper.ts");
   assert.equal(matchesDiscoveryFilters("target/helper.ts", generated, {}, {}), false);
 });
-
-// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client includes generated content
 it("includes generated content when the client requests it", () => {
   const generated = classifyProjectPath("target/helper.ts");
   assert.equal(matchesDiscoveryFilters("target/helper.ts", generated, { include_generated: true }, {}), true);
 });
-
-// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Client requests production content
 it("excludes test content before ranking when production content is requested", () => {
   const test = classifyProjectPath("tests/helper.test.ts");
   assert.equal(matchesDiscoveryFilters("tests/helper.test.ts", test, { content: "production" }, {}), false);
 });
-
-// covers: code-explorer/symbol-discovery :: Search filters narrow results before the limit :: Classification configuration is malformed
 it("falls back to defaults and reports a malformed classification configuration", () => {
   const root = mkdtempSync(join(tmpdir(), "code-explorer-classification-"));
   try {

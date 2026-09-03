@@ -6,7 +6,6 @@ import { it } from "node:test";
 import { createNativeProjectRoot } from "../semantic/project-root.js";
 import { createDiscoveryPipeline } from "./pipeline.js";
 
-// covers: code-explorer/symbol-discovery :: Broad searches return a refinement response :: Candidate count exceeds the limit
 it("returns bounded candidates with exact omissions and available narrowing filters", () => {
   const root = mkdtempSync(join(tmpdir(), "code-explorer-discovery-response-"));
   try {
@@ -28,8 +27,6 @@ it("returns bounded candidates with exact omissions and available narrowing filt
     rmSync(root, { recursive: true, force: true });
   }
 });
-
-// covers: code-explorer/symbol-discovery :: Broad searches return a refinement response :: No candidate matches
 it("returns an honest empty response with the applied filters", () => {
   const root = mkdtempSync(join(tmpdir(), "code-explorer-discovery-empty-"));
   try {

@@ -78,8 +78,6 @@ test("Codex added runs scope linter findings to their final lines", () => {
   ]);
   rmSync(directory, { recursive: true });
 });
-
-// covers: quality-guard/write-gate :: Gate declines work it cannot judge :: Markdown file written
 test("unsupported tools and Markdown writes have no quality-gate target", () => {
   assert.deepEqual(hookTargets({ tool_name: "Bash", tool_input: {} }), []);
   const directory = mkdtempSync(resolve(tmpdir(), "quality-guard-markdown-"));

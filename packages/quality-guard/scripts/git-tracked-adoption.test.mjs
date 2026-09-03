@@ -41,8 +41,6 @@ function writeBaselineFile(root, files, counts) {
 function fakeInput(filePath) {
   return { tool_name: "Edit", tool_input: { file_path: filePath } };
 }
-
-// covers: quality-guard/write-gate :: A new file is held to normal hard bounds :: New file exceeds normal file limit
 test("an unseen source file over the normal bound blocks without changing the baseline", () => {
   const root = tempRepo();
   const filePath = writeTargetFile(root, "big.js", OVER_BOUND_LINES);
@@ -58,8 +56,6 @@ test("an unseen source file over the normal bound blocks without changing the ba
 
   rmSync(root, { recursive: true, force: true });
 });
-
-// covers: quality-guard/write-gate :: A blocked write records nothing :: Oversized new file is blocked
 test("a blocked tracked source write preserves the tracked baseline byte-for-byte", () => {
   const root = tempRepo();
   const filePath = writeTargetFile(root, "blocked.js", OVER_BOUND_LINES);
@@ -91,8 +87,6 @@ test("an untracked source file is held to the same normal bound", () => {
 
   rmSync(root, { recursive: true, force: true });
 });
-
-// covers: quality-guard/write-gate :: A new file is held to normal hard bounds :: New file contains a second top-level type
 test("an unseen source file with two top-level types blocks without baseline adoption", () => {
   const root = tempRepo();
   const filePath = join(root, "two-types.js");
@@ -125,8 +119,6 @@ test("a tracked file the baseline already knows still blocks on a regression", (
 
   rmSync(root, { recursive: true, force: true });
 });
-
-// covers: quality-guard/write-gate :: Write-time success is not commit evidence :: File-local write passes
 test("a clean file-local write passes without changing the baseline", () => {
   const root = tempRepo();
   const filePath = writeTargetFile(root, "file-local.js", 10);
@@ -142,8 +134,6 @@ test("a clean file-local write passes without changing the baseline", () => {
 
   rmSync(root, { recursive: true, force: true });
 });
-
-// covers: quality-guard/write-gate :: A blocked write records nothing :: Write is allowed after adoption
 test("an allowed tracked source write preserves the adopted baseline byte-for-byte", () => {
   const root = tempRepo();
   const filePath = writeTargetFile(root, "allowed.js", 10);
@@ -159,8 +149,6 @@ test("an allowed tracked source write preserves the adopted baseline byte-for-by
 
   rmSync(root, { recursive: true, force: true });
 });
-
-// covers: quality-guard/write-gate :: Gate declines work it cannot judge :: Repository has no baseline
 test("a missing baseline still runs file-local hard-bound checks", () => {
     const root = tempRepo();
     const filePath = writeTargetFile(root, "no-baseline.js", OVER_BOUND_LINES);

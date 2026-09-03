@@ -11,8 +11,6 @@ function deferred(): { promise: Promise<void>; resolve: () => void } {
   let resolve!: () => void;
   return { promise: new Promise<void>((done) => (resolve = done)), resolve };
 }
-
-// covers: code-explorer/workspace-freshness :: Project generation work has one global order :: Two sessions request refresh concurrently
 it("coalesces concurrent session refreshes into one globally ordered publication", async () => {
   const manifests = [manifest("one"), manifest("two")];
   const freshness = new WorkspaceFreshness({ reconcile: async () => manifests.shift() ?? manifest("two") });
@@ -33,8 +31,6 @@ it("coalesces concurrent session refreshes into one globally ordered publication
   assert.deepEqual(left, right);
   assert.equal(left.pending_generation, null);
 });
-
-// covers: code-explorer/workspace-freshness :: Project generation work has one global order :: Search races with a generation reservation
 it("captures current and pending generations in FIFO accepted-request order", async () => {
   const pending = deferred();
   let analyses = 0;

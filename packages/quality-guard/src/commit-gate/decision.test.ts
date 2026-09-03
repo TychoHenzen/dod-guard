@@ -13,8 +13,6 @@ const snapshot: Snapshot = {
     { kind: "modify", before: { path: "src/a.ts", content: "before" }, after: { path: "src/a.ts", content: "after" } },
   ],
 };
-
-// covers: quality-guard/architecture-analysis :: Every finding is reproducible :: Identical staged snapshot is analyzed twice
 test("normalizes findings into stable identifiers and order", () => {
   const one = createFinding({
     severity: "review",
@@ -39,8 +37,6 @@ test("required-analysis errors cannot return a clean decision", () => {
   assert.equal(result.verdict, "FAIL");
   assert.deepEqual(result.errors, ["cannot read staged source"]);
 });
-
-// covers: quality-guard/commit-gate :: Architectural acknowledgements bind to staged content :: Source changes after acknowledgement
 test("fingerprint excludes only the tracked decision record and changes for source or configuration", () => {
   const config = parseQualityConfig("{}");
   const original = fingerprintSnapshot(snapshot, config);
@@ -74,8 +70,6 @@ test("fingerprint excludes only the tracked decision record and changes for sour
   );
   assert.notEqual(fingerprintSnapshot(snapshot, parseQualityConfig('{"directTypeLimit": 13}')), original);
 });
-
-// covers: quality-guard/commit-gate :: Verdict states have fixed precedence :: Failure and review finding coexist
 test("a deterministic failure wins while preserving review findings", () => {
   const result = decideQuality({
     snapshot,
@@ -92,8 +86,6 @@ test("a deterministic failure wins while preserving review findings", () => {
   assert.ok(result.findings.some((finding) => finding.severity === "review"));
   assert.ok(result.findings.some((finding) => finding.severity === "fail"));
 });
-
-// covers: quality-guard/commit-gate :: Verdict states have fixed precedence :: All evidence is accepted
 test("accepted review evidence produces pass when deterministic checks pass", () => {
   const review = createFinding({
     severity: "review",
@@ -115,8 +107,6 @@ test("accepted review evidence produces pass when deterministic checks pass", ()
   assert.equal(result.verdict, "PASS");
   assert.equal(result.errors.length, 0);
 });
-
-// covers: quality-guard/commit-gate :: Architectural acknowledgements bind to staged content :: Finding is acknowledged for the current stage
 test("current acknowledgement records accept only matching review findings", () => {
   const review = createFinding({
     severity: "review",
@@ -146,8 +136,6 @@ test("current acknowledgement records accept only matching review findings", () 
   assert.equal(result.verdict, "PASS");
   assert.deepEqual(result.staleAcknowledgements, []);
 });
-
-// covers: quality-guard/commit-gate :: Non-source commits report their limited scope :: Documentation-only commit
 test("documentation-only changes report that no source decision was required", () => {
   const result = decideQuality({
     snapshot: {

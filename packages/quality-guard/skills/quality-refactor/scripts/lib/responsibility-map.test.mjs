@@ -39,29 +39,21 @@ function discovery() {
     ],
   };
 }
-
-// covers: quality-guard/quality-refactor :: responsibility map drives architectural work :: Existing class owns unrelated responsibilities
 test("discovery separates responsibilities even without a scanner symptom", () => {
   const result = validateResponsibilityDiscovery(discovery());
   assert.equal(result.stagedMap.responsibilities.length, 2);
   assert.deepEqual(result.structuralOutcomes[1].evidence.scannerSymptoms, []);
 });
-
-// covers: quality-guard/quality-refactor :: responsibility map drives architectural work :: Scanner reports local symptoms
 test("discovery attaches scanner symptoms to their responsibility cause", () => {
   const result = validateResponsibilityDiscovery(discovery());
   assert.deepEqual(result.structuralOutcomes[0].evidence.scannerSymptoms, ["file-length", "complexity"]);
   assert.match(result.structuralOutcomes[0].evidence.cause, /share an owner/);
 });
-
-// covers: quality-guard/quality-refactor :: desired ownership is defined before implementation tasks :: Responsibility needs a new module
 test("discovery requires a desired owner, directory, and dependency direction", () => {
   const incomplete = discovery();
   delete incomplete.structuralOutcomes[0].directory;
   assert.throws(() => validateResponsibilityDiscovery(incomplete), /directory/);
 });
-
-// covers: quality-guard/quality-refactor :: desired ownership is defined before implementation tasks :: Public contract must remain stable
 test("discovery records stable contracts and compatibility removals", () => {
   const result = validateResponsibilityDiscovery(discovery());
   assert.deepEqual(result.structuralOutcomes[0].stableContracts, ["InvoiceService.calculate"]);

@@ -156,3 +156,14 @@ main { display: flex; flex: 1; min-height: 0; }
 .tree-folder[open] > .tree-summary::before { transform: rotate(90deg); }
 .tree-summary:hover { background: #202730; }
 .tree-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quality-report { max-width: 1100px; margin: 0 auto; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 16px 0 24px; }
+.metric { display: flex; flex-direction: column; padding: 14px; border: 1px solid var(--line); border-radius: 8px; }
+.metric-value { font-size: 1.8rem; font-weight: 700; }
+.metric.error .metric-value, .finding.error strong { color: #d45d5d; }
+.metric.warn .metric-value, .finding.warn strong { color: #c99836; }
+.quality-file { border-bottom: 1px solid var(--line); padding: 9px 0; }
+.quality-file summary { display: flex; justify-content: space-between; gap: 16px; cursor: pointer; }
+.findings { display: grid; gap: 8px; padding-left: 22px; }
+.finding { display: grid; grid-template-columns: minmax(130px, auto) auto 1fr; gap: 8px; }
+.architecture-json { white-space: pre-wrap; overflow-wrap: anywhere; }

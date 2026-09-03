@@ -1,0 +1,9 @@
+{
+  "name": "dod-guard",
+  "version": "5.0.0",
+  "description": "GitHub issue delivery and repository-maintenance plugin. Ships 6 skills: /next-ticket, /clean-house, /codex-migrate, /doc-reconcile, /skill-debug, and /skill-migrate.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  }
+}

@@ -15,7 +15,6 @@ function finding(path, kind) {
         unobservedReferenceMechanisms: [],
     };
 }
-// covers: fossil/workspace-debris :: Review-only reporting :: Large ignored tree is summarized
 test("summarizes ignored trees of at least twenty findings only in normal table rows", () => {
     const findings = [
         ...Array.from({ length: 20 }, (_, index) => finding(`generated/file-${index}.tmp`, "ignored")),
@@ -34,7 +33,6 @@ test("summarizes ignored trees of at least twenty findings only in normal table 
     assert.deepEqual(verboseRows.map((row) => row.kind), Array.from({ length: 22 }, () => "finding"));
     assert.deepEqual(findings, before);
 });
-// covers: fossil/cli :: Table output :: Burst table keeps context together
 test("renders burst context and normalized survivors before score-sorted candidates", () => {
     const burst = {
         id: "burst-1",
@@ -123,7 +121,6 @@ test("renders burst context and normalized survivors before score-sorted candida
     const olderRows = burstTableRows([olderBurst]);
     assert.deepEqual(burstTableRows([olderBurst, burst]), [...newerRows, ...olderRows]);
 });
-// covers: fossil/cli :: Table output :: Verbose table explains a candidate
 test("adds exactly one verbose explanation immediately after each candidate", () => {
     const activity = (path, createdInBurst, burstCommits, postBurstCommits) => ({
         identity: path,
@@ -204,7 +201,6 @@ test("adds exactly one verbose explanation immediately after each candidate", ()
         },
     ]);
 });
-// covers: fossil/cli :: Table output :: Redirected table contains no ANSI escapes
 test("renders ANSI styling only when the caller marks table output as a TTY", () => {
     const rows = [
         {
@@ -237,7 +233,6 @@ test("renders ANSI styling only when the caller marks table output as a TTY", ()
     assert.match(redirected, /created in burst; 2 burst commits, 0 post-burst commits/);
     assert.equal(tty.startsWith("\u001b[1mBurst burst-1"), true);
 });
-// covers: fossil/cli :: Table output :: Repository text cannot control the terminal
 test("escapes control characters from repository-derived table text", () => {
     const rows = [
         {
@@ -308,7 +303,6 @@ test("escapes controls in whole-report warnings and workspace debris rows", () =
     assert.equal(redirected.includes("possible\\u001b\\u0085workspace debris"), true);
     assert.equal(redirected.includes("ignored directory ignored\\u001b\\u0085: 20 findings"), true);
 });
-// covers: fossil/cli :: Versioned JSON output :: JSON output is machine-readable
 test("serializes one complete schema-versioned JSON report without table prose", () => {
     const report = {
         schemaVersion: 1,
@@ -371,7 +365,6 @@ test("serializes one complete schema-versioned JSON report without table prose",
     assert.equal(output.includes("Burst "), false);
     assert.equal(output.includes("survivor "), false);
 });
-// covers: fossil/cli :: Versioned JSON output :: JSON distinguishes row and path totals
 test("derives burst-path and unique normalized candidate totals in JSON", () => {
     const candidate = (path, burstId) => ({
         classification: "advisory",

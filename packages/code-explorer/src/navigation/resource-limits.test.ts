@@ -3,7 +3,6 @@ import { it } from "node:test";
 import { createServer } from "../index.js";
 import type { LanguageAdapter } from "../semantic/language-adapter.js";
 
-// covers: code-explorer/mcp-navigation :: Navigation work has enforceable resource limits :: Request exceeds a declared limit
 it("rejects oversized query, filter, candidate, and body limits before backend dispatch", async () => {
   let calls = 0;
   const server = createServer({ adapters: [countingAdapter(() => calls++)] });
@@ -23,8 +22,6 @@ it("rejects oversized query, filter, candidate, and body limits before backend d
   }
   assert.equal(calls, 0);
 });
-
-// covers: code-explorer/mcp-navigation :: Navigation work has enforceable resource limits :: Backend request times out
 it("returns retryable backend_timeout and releases the backend slot", async () => {
   const server = createServer({
     backend_timeout_ms: 5,
@@ -38,8 +35,6 @@ it("returns retryable backend_timeout and releases the backend slot", async () =
   });
   assert.deepEqual(result, { schema_version: 1, code: "backend_timeout", message: "backend_timeout", retryable: true });
 });
-
-// covers: code-explorer/mcp-navigation :: Navigation work has enforceable resource limits :: Refresh is already running
 it("joins an active project refresh instead of starting another adapter refresh", async () => {
   let refreshes = 0;
   let release: (() => void) | undefined;
@@ -64,8 +59,6 @@ it("joins an active project refresh instead of starting another adapter refresh"
   await Promise.all([first, second]);
   assert.equal(refreshes, 1);
 });
-
-// covers: code-explorer/mcp-navigation :: Navigation work has enforceable resource limits :: Filter value is oversized
 it("rejects oversized filter values and serialized requests before any backend dispatch", async () => {
   let calls = 0;
   const server = createServer({ adapters: [countingAdapter(() => calls++)] });

@@ -44,8 +44,6 @@ function fakeChild() {
     exit() { this.exitCode = 0; listeners.get("exit")?.(); },
   };
 }
-
-// covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Dashboard stops with open explorers
 test("managed shutdown closes admission, signals every direct child, and waits for exit", async () => {
   const child = fakeChild();
   const manager = createCodeExplorerManager({ projectIdentity: (path) => path, start: async () => ({ child, url: "http://127.0.0.1:4410/" }) });
@@ -60,8 +58,6 @@ test("managed shutdown closes admission, signals every direct child, and waits f
   child.exit();
   await stopping;
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Dashboard stops during startup
 test("shutdown settles joined starts and terminates a child that reports after shutdown", async () => {
   const started = deferred();
   const child = fakeChild();
@@ -77,8 +73,6 @@ test("shutdown settles joined starts and terminates a child that reports after s
   child.exit();
   await stopping;
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Responsive dashboard replacement starts
 test("authenticated replacement sends its capability only to a connected loopback owner", async () => {
   let received;
   const server = createServer((request, response) => {
@@ -92,8 +86,6 @@ test("authenticated replacement sends its capability only to a connected loopbac
   assert.equal(received, "a".repeat(64));
   await new Promise((resolve) => server.close(resolve));
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Ownership file is exposed or replaceable
 test("ownership refuses a linked dashboard directory and leaves it untouched", async () => {
   if (process.platform === "win32") return;
   const home = mkdtempSync(join(tmpdir(), "dashboard-owner-"));
@@ -107,16 +99,12 @@ test("ownership refuses a linked dashboard directory and leaves it untouched", a
     rmSync(outside, { recursive: true, force: true });
   }
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Ownership record contains an unsafe control target
 test("rejects unsafe control targets without attempting a request", async () => {
   for (const target of ["https://127.0.0.1:4400/api/admin/shutdown", "http://127.0.0.1:4400/other", "http://x@127.0.0.1:4400/api/admin/shutdown", "http://127.0.0.1:4400/api/admin/shutdown?x=1"]) {
     assert.equal(validateControlTarget(target), null);
     await assert.rejects(requestAuthenticatedShutdown({ control_url: target, replacement_capability: "a".repeat(64) }), /dashboard_replacement_failed/);
   }
 });
-
-// covers: openspec-dashboard/code-explorer-launch :: Managed shutdown is identity-safe :: Prior dashboard ownership cannot be proved
 test("fails closed when a prior owner cannot authenticate shutdown", async () => {
   const home = mkdtempSync(join(tmpdir(), "dashboard-owner-"));
   try {
@@ -126,6 +114,29 @@ test("fails closed when a prior owner cannot authenticate shutdown", async () =>
     const first = createDashboardOwnership({ home, platform, verifyWindowsAcl });
     await first.claim({ control_url: "http://127.0.0.1:4400/api/admin/shutdown", replacement_capability: "a".repeat(64) });
     await assert.rejects(owner.claim({ control_url: "http://127.0.0.1:4401/api/admin/shutdown", replacement_capability: "b".repeat(64) }), /dashboard_replacement_failed/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("reclaims a private ownership record after its recorded process exited", async () => {
+  const home = mkdtempSync(join(tmpdir(), "dashboard-owner-"));
+  try {
+    const options = {
+      home,
+      platform: "win32",
+      protectWindowsAcl: () => {},
+      verifyWindowsAcl: () => true,
+    };
+    const first = createDashboardOwnership(options);
+    await first.claim({ pid: 123, control_url: "http://127.0.0.1:4400/api/admin/shutdown", replacement_capability: "a".repeat(64) });
+    const replacement = createDashboardOwnership({
+      ...options,
+      requestShutdown: async () => { throw new Error("offline"); },
+      isProcessAlive: () => false,
+    });
+
+    await replacement.claim({ pid: 456, control_url: "http://127.0.0.1:4401/api/admin/shutdown", replacement_capability: "b".repeat(64) });
   } finally {
     rmSync(home, { recursive: true, force: true });
   }
@@ -152,7 +163,7 @@ test("writes ownership JSON through its exclusive descriptor and closes it once 
       unlink: () => { throw new Error("must not remove a path after a failed proof"); },
       writeFile: () => { throw new Error("path write must not occur"); },
     };
-    const owner = createDashboardOwnership({ home: "C:\\home", fs, platform: "win32", verifyWindowsAcl: () => true });
+    const owner = createDashboardOwnership({ home: "C:\\home", fs, platform: "win32", protectWindowsAcl: () => {}, verifyWindowsAcl: () => true });
     const claim = owner.claim({ control_url: "http://127.0.0.1:4400/api/admin/shutdown", replacement_capability: "a".repeat(64) });
     if (writeFails) await assert.rejects(claim, /dashboard_replacement_failed/);
     else await claim;
@@ -160,6 +171,36 @@ test("writes ownership JSON through its exclusive descriptor and closes it once 
     assert.equal(writes[0][0], 71);
     assert.deepEqual(closes, [71]);
   }
+});
+
+test("hardens Windows ownership paths before verifying their ACL", async () => {
+  let protectedAcl = false;
+  const fs = {
+    exists: () => false,
+    realpath: (path) => path,
+    mkdir: () => {},
+    chmod: () => {},
+    open: () => 71,
+    write: () => {},
+    close: () => {},
+    lstat: (path) => ({ isSymbolicLink: () => false, isDirectory: () => !path.endsWith("dashboard-owner.json") }),
+    stat: () => ({ uid: 1, mode: 0o100600 }),
+    readFile: () => { throw new Error("unused"); },
+    unlink: () => {},
+  };
+  const owner = createDashboardOwnership({
+    home: "C:\\home",
+    fs,
+    platform: "win32",
+    protectWindowsAcl: () => { protectedAcl = true; },
+    verifyWindowsAcl: () => protectedAcl,
+  });
+
+  await owner.claim({
+    control_url: "http://127.0.0.1:4400/api/admin/shutdown",
+    replacement_capability: "a".repeat(64),
+  });
+  assert.equal(protectedAcl, true);
 });
 
 test("real fixture shutdown waits for its direct child and cleans its descendant", { timeout: 10_000 }, async () => {
