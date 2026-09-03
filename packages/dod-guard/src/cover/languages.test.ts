@@ -15,6 +15,7 @@ test("language adapters cover each supported extension with an unresolved comman
     [".rb", "ruby"],
     [".java", "java"],
     [".kt", "kotlin"],
+    [".cs", "csharp"],
     [".sh", "shell"],
     [".bash", "shell"],
   ]);
@@ -52,6 +53,7 @@ test("language adapters resolve configured runners for every supported language 
     [".rb", "ruby", "bundle exec ruby"],
     [".java", "java", "./gradlew test"],
     [".kt", "kotlin", "./gradlew test"],
+    [".cs", "csharp", "dotnet test"],
     [".sh", "shell", "bash"],
   ] as const;
 
@@ -204,6 +206,33 @@ test("Kotlin: // covers: above fun testX binds", () => {
   const bindings = markersInFile("MyTest.kt", content);
   assert.equal(bindings.length, 1);
   assert.equal(bindings[0].testName, "testSomething");
+});
+
+test("C#: // covers: above a test attribute binds the method", () => {
+  const content = ["// covers: mygroup/mycap :: req :: csharp", "[Fact]", "public async Task ResolvesCircuit() {"].join(
+    "\n",
+  );
+  const bindings = markersInFile("CircuitTests.cs", content);
+  assert.equal(bindings.length, 1);
+  assert.equal(bindings[0].testName, "ResolvesCircuit");
+});
+
+test("C#: stacked markers and extra attributes bind the same test method", () => {
+  const content = [
+    "// covers: mygroup/mycap :: req :: first",
+    "// covers: mygroup/mycap :: req :: second",
+    "[TestCase]",
+    "[RequireGodotRuntime]",
+    "public void RunsInGodot() {",
+  ].join("\n");
+  const bindings = markersInFile("GodotTests.cs", content);
+  assert.deepEqual(
+    bindings.map(({ scenarioId, testName }) => ({ scenarioId, testName })),
+    [
+      { scenarioId: "mygroup/mycap::req||first", testName: "RunsInGodot" },
+      { scenarioId: "mygroup/mycap::req||second", testName: "RunsInGodot" },
+    ],
+  );
 });
 
 test("scenario-id format with :: and || delimiters binds the same as spaced format", () => {

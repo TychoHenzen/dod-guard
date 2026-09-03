@@ -86,6 +86,7 @@ Supported extensions: `.ts`/`.js`/`.mjs`/`.cjs` (`//`, `test(`/`it(`),
 `.py` (`#`, `def test_`), `.go` (`//`, `func Test`),
 `.rs` (`//`, `#[test]` then `fn`), `.rb` (`#`, `def test_` or `it`),
 `.java`/`.kt` (`//`, `void test`/`fun test` or `@Test` then method),
+`.cs` (`//`, a common test attribute then method),
 `.sh`/`.bash` (`#`, `test_()` function).
 
 **`openspec/test-globs.json`.** Optional project-level override for

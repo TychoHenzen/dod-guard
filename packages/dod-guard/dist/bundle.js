@@ -21522,6 +21522,29 @@ var KOTLIN_SPEC = {
   language: "kotlin",
   resolveWholeFileCommand: configuredCommand("kotlin")
 };
+var CSHARP_METHOD_RE = /^\s*(?:(?:public|private|protected|internal|static|virtual|override|sealed|abstract|async|new|extern|unsafe|partial)\s+)*(?:[\w.<>,\[\]?]+\s+)+(\w+)\s*\(/;
+var CSHARP_TEST_ATTRIBUTE_RE = /^\s*\[(?:[\w.]+\.)?(?:Fact|Theory|Test|TestCase|TestMethod|DataTestMethod)(?:Attribute)?(?:\s*\(|\s*\])/;
+function findCsharpMethodLine(lines, from) {
+  let line = skipBlanks(lines, from);
+  while (line < lines.length && SLASH_MARKER.test(lines[line])) line = skipBlanks(lines, line + 1);
+  let hasTestAttribute = false;
+  while (line < lines.length && /^\s*\[/.test(lines[line])) {
+    hasTestAttribute ||= CSHARP_TEST_ATTRIBUTE_RE.test(lines[line]);
+    line = skipBlanks(lines, line + 1);
+  }
+  return hasTestAttribute && line < lines.length && CSHARP_METHOD_RE.test(lines[line]) ? line : null;
+}
+var CSHARP_SPEC = {
+  language: "csharp",
+  markerRe: SLASH_MARKER,
+  findTestName: (lines, from) => {
+    const methodLine = findCsharpMethodLine(lines, from);
+    if (methodLine === null) return null;
+    return lines[methodLine].match(CSHARP_METHOD_RE)?.[1] ?? null;
+  },
+  findTestBody: (lines, from) => extractBraceBody(lines, findCsharpMethodLine(lines, from)),
+  resolveWholeFileCommand: configuredCommand("csharp")
+};
 var LANG_TABLE = /* @__PURE__ */ new Map([
   [".ts", JS_SPEC],
   [".js", JS_SPEC],
@@ -21533,6 +21556,7 @@ var LANG_TABLE = /* @__PURE__ */ new Map([
   [".rb", RB_SPEC],
   [".java", JAVA_KT_SPEC],
   [".kt", KOTLIN_SPEC],
+  [".cs", CSHARP_SPEC],
   [".sh", SH_SPEC],
   [".bash", SH_SPEC]
 ]);
@@ -21552,6 +21576,8 @@ var DEFAULT_TEST_GLOBS = [
   "**/*_spec.rb",
   "**/*Test.java",
   "**/*Test.kt",
+  "**/*Test.cs",
+  "**/*Tests.cs",
   "**/test_*.sh",
   "**/test_*.bash"
 ];

@@ -20,6 +20,8 @@ const DEFAULT_TEST_GLOBS: string[] = [
   "**/*_spec.rb",
   "**/*Test.java",
   "**/*Test.kt",
+  "**/*Test.cs",
+  "**/*Tests.cs",
   "**/test_*.sh",
   "**/test_*.bash",
 ];

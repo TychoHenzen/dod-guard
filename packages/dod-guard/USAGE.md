@@ -105,7 +105,7 @@ OpenSpec change and marks how each one binds to a test. Never implements.
   line directly above the test declaration, added at implementation time
   and checked by `dod-guard cover`. The marker must be above the
   declaration, never inside the function body. Uses `//` for
-  JS/TS/Go/Rust/Java/Kotlin, `#` for Python/Ruby/shell)
+  JS/TS/Go/Rust/Java/Kotlin/C#, `#` for Python/Ruby/shell)
 
 **Key output:** An OpenSpec change id you can hand to `/step-by-step`,
 `/cheap-step`, or `/adversarial-workflow`.

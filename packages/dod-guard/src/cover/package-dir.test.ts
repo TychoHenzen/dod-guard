@@ -9,6 +9,7 @@ test("testGlobsForGroup returns broad defaults covering all supported languages"
   assert.ok(globs.some((g) => g.includes("test_*.py")));
   assert.ok(globs.some((g) => g.includes("*_test.go")));
   assert.ok(globs.some((g) => g.includes("*Test.java")));
+  assert.ok(globs.some((g) => g.includes("*Tests.cs")));
   assert.ok(globs.some((g) => g.includes("test_*.sh")));
 });
 
