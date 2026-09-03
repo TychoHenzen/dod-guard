@@ -45,9 +45,9 @@
         "status": "ok",
         "error": null
       },
-      "lines": 158,
+      "lines": 177,
       "error_count": 0,
-      "recent_commits": 5,
+      "recent_commits": 6,
       "fingerprint": "90106dc85efd93c50aa9662e93c960904573796a9a201e82f087614e549c3191",
       "dirty": true
     },
@@ -840,13 +840,21 @@
       "dirty": true
     },
     "packages/code-explorer/src/discovery/pipeline.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-09-03",
+      "last_result": {
+        "total": 146,
+        "caught": 59,
+        "missed": 63,
+        "timeout": 0,
+        "unviable": 24,
+        "status": "ok",
+        "error": null
+      },
       "lines": 160,
       "error_count": 0,
       "recent_commits": 4,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "d5f992b221845e2db6062a6330ce5d45af4706f573f86ed76fbf6cdb5ad77c19",
+      "dirty": false
     },
     "packages/code-explorer/src/discovery/sensitive-paths.ts": {
       "last_tested": null,
@@ -946,13 +954,21 @@
       "dirty": true
     },
     "packages/code-explorer/src/semantic/backend-launch-policy.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-09-03",
+      "last_result": {
+        "total": 721,
+        "caught": 410,
+        "missed": 217,
+        "timeout": 1,
+        "unviable": 93,
+        "status": "ok",
+        "error": null
+      },
       "lines": 496,
       "error_count": 0,
       "recent_commits": 2,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "f64c20feb01291645abfe7744eb0d5f04d1a0fa1969ae04d069ab95a976bc224",
+      "dirty": false
     },
     "packages/code-explorer/src/semantic/backend-result-validator.ts": {
       "last_tested": null,
@@ -1112,13 +1128,21 @@
       "dirty": true
     },
     "packages/code-explorer/src/semantic/runtime-bootstrap.ts": {
-      "last_tested": null,
-      "last_result": null,
+      "last_tested": "2026-09-03",
+      "last_result": {
+        "total": 169,
+        "caught": 12,
+        "missed": 27,
+        "timeout": 0,
+        "unviable": 130,
+        "status": "ok",
+        "error": null
+      },
       "lines": 183,
       "error_count": 0,
       "recent_commits": 4,
-      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
-      "dirty": true
+      "fingerprint": "51e88f5d076a742a556d4284a5d3fd5eca49d93906b816cce22390b6de0b051e",
+      "dirty": false
     },
     "packages/code-explorer/src/semantic/runtime-lsp-backend.ts": {
       "last_tested": null,
@@ -1329,9 +1353,9 @@
     "packages/quality-guard/src/commit-gate/dependency.ts": {
       "last_tested": null,
       "last_result": null,
-      "lines": 131,
+      "lines": 155,
       "error_count": 0,
-      "recent_commits": 2,
+      "recent_commits": 3,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
@@ -1365,9 +1389,9 @@
     "packages/quality-guard/src/commit-gate/placement.ts": {
       "last_tested": null,
       "last_result": null,
-      "lines": 98,
+      "lines": 118,
       "error_count": 0,
-      "recent_commits": 2,
+      "recent_commits": 3,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
     },
@@ -1397,61 +1421,37 @@
       "recent_commits": 4,
       "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
       "dirty": true
+    },
+    "packages/quality-guard/src/commit-gate/current-architecture.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 21,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
+    },
+    "packages/quality-guard/src/report.ts": {
+      "last_tested": null,
+      "last_result": null,
+      "lines": 116,
+      "error_count": 0,
+      "recent_commits": 1,
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "dirty": true
     }
   },
   "cumulative": {
-    "total_mutants": 27350,
-    "caught": 10871,
-    "missed": 8356,
-    "timeout": 131,
-    "unviable": 7992,
+    "total_mutants": 28386,
+    "caught": 11352,
+    "missed": 8663,
+    "timeout": 132,
+    "unviable": 8239,
     "error": 45,
-    "runs": 179,
-    "files_tested": 179
+    "runs": 182,
+    "files_tested": 182
   },
   "runs": [
-    {
-      "date": "2026-07-18",
-      "commit": "6492b5457dda754a68c0f69eaee899acc3cf50ea",
-      "file": "packages/dod-guard/src/checker.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run --tap.testFiles '[\"packages/dod-guard/dist/checker.test.js\"]' --tap.nodeArgs '[\"--experimental-test-module-mocks\"]' --mutate \"packages/dod-guard/dist/checker.js\" --concurrency 2 --reporters clear-text,json\nerror: unknown option '--tap.testFiles'\n"
-      }
-    },
-    {
-      "date": "2026-07-19",
-      "commit": "30dfdd6b3e817d4b5e360cf9db0dc28633f4a8c4",
-      "file": "packages/dod-guard/src/index.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/index.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new ConfigEr"
-      }
-    },
-    {
-      "date": "2026-07-19",
-      "commit": "30dfdd6b3e817d4b5e360cf9db0dc28633f4a8c4",
-      "file": "packages/dod-guard/src/tree-utils.ts",
-      "result": {
-        "total": 0,
-        "caught": 0,
-        "missed": 0,
-        "timeout": 0,
-        "unviable": 0,
-        "status": "error",
-        "error": "Command failed: npx stryker run stryker.config.json --mutate \"packages/dod-guard/dist/tree-utils.js\" --concurrency 2 --reporters clear-text,json\nfile:///home/runner/work/dod-guard/dod-guard/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:65\n                    throw new Con"
-      }
-    },
     {
       "date": "2026-07-19",
       "commit": "30dfdd6b3e817d4b5e360cf9db0dc28633f4a8c4",
@@ -2806,6 +2806,48 @@
         "missed": 110,
         "timeout": 0,
         "unviable": 37,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-09-03",
+      "commit": "f71897e68a27bde77b0940a1b8cc67dd2c7253bc",
+      "file": "packages/code-explorer/src/semantic/runtime-bootstrap.ts",
+      "result": {
+        "total": 169,
+        "caught": 12,
+        "missed": 27,
+        "timeout": 0,
+        "unviable": 130,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-09-03",
+      "commit": "f71897e68a27bde77b0940a1b8cc67dd2c7253bc",
+      "file": "packages/code-explorer/src/semantic/backend-launch-policy.ts",
+      "result": {
+        "total": 721,
+        "caught": 410,
+        "missed": 217,
+        "timeout": 1,
+        "unviable": 93,
+        "status": "ok",
+        "error": null
+      }
+    },
+    {
+      "date": "2026-09-03",
+      "commit": "f71897e68a27bde77b0940a1b8cc67dd2c7253bc",
+      "file": "packages/code-explorer/src/discovery/pipeline.ts",
+      "result": {
+        "total": 146,
+        "caught": 59,
+        "missed": 63,
+        "timeout": 0,
+        "unviable": 24,
         "status": "ok",
         "error": null
       }

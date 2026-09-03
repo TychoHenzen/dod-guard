@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "default",
   "createdAt": "2026-08-31T21:21:47.366Z",
-  "total": 1829,
+  "total": 1837,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/Demo.cs",
@@ -394,6 +394,7 @@
     "packages/quality-guard/src/commit-gate/types.ts",
     "packages/quality-guard/src/index.test.ts",
     "packages/quality-guard/src/index.ts",
+    "packages/quality-guard/src/report.ts",
     "packages/quality-guard/src/scanner.test.ts",
     "packages/quality-guard/src/scanner.ts",
     "packages/quality-guard/src/skips.test.ts",
@@ -1170,6 +1171,11 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/strip.test.mjs::comment-bloat": 4,
     "packages/dod-guard/src/complete/run.ts::comment-restates-code": 2,
     "packages/fossil/src/git-history-core.ts::comment-restates-code": 1,
-    "packages/quality-guard/src/commit-gate/config.ts::assumption-marker": 1
+    "packages/quality-guard/src/commit-gate/config.ts::assumption-marker": 1,
+    "packages/quality-guard/src/report.ts::dead-export": 4,
+    "packages/quality-guard/src/report.ts::types-per-file": 1,
+    "packages/quality-guard/src/report.ts::test-only-export": 1,
+    "packages/quality-guard/src/report.ts::file-length": 1,
+    "packages/quality-guard/src/report.ts::complexity": 1
   }
 }

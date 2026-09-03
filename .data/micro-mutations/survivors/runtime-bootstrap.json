@@ -1,0 +1,229 @@
+{
+  "source": "packages/code-explorer/src/semantic/runtime-bootstrap.ts",
+  "date": "2026-09-03T11:35:58.595Z",
+  "summary": {
+    "total": 169,
+    "killed": 12,
+    "survived": 27,
+    "timeout": 0,
+    "unviable": 130
+  },
+  "survivors": [
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "1",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 9,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "0",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 8,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "108",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 100,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "109",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 100,
+      "dist_col": 26
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "110",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 101,
+      "dist_col": 72
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "111",
+      "mutator": "OptionalChaining",
+      "replacement": "inner?.shutdown()",
+      "dist_line": 102,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "112",
+      "mutator": "OptionalChaining",
+      "replacement": "inner.shutdown",
+      "dist_line": 102,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "115",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 107,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "121",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 111,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "123",
+      "mutator": "LogicalOperator",
+      "replacement": "!inner && refreshed.changed",
+      "dist_line": 111,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "124",
+      "mutator": "BooleanLiteral",
+      "replacement": "inner",
+      "dist_line": 111,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "127",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 114,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "128",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 117,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "129",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 117,
+      "dist_col": 77
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "131",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 123,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "133",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 124,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "134",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 125,
+      "dist_col": 37
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "135",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 125,
+      "dist_col": 69
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "137",
+      "mutator": "OptionalChaining",
+      "replacement": "inner.start()",
+      "dist_line": 129,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "139",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 133,
+      "dist_col": 20
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "142",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 134,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "146",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 137,
+      "dist_col": 31
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "147",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 138,
+      "dist_col": 60
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "148",
+      "mutator": "OptionalChaining",
+      "replacement": "inner?.shutdown()",
+      "dist_line": 139,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "149",
+      "mutator": "OptionalChaining",
+      "replacement": "inner.shutdown",
+      "dist_line": 139,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "150",
+      "mutator": "ObjectLiteral",
+      "replacement": "{}",
+      "dist_line": 142,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/semantic/runtime-bootstrap.js",
+      "id": "151",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 142,
+      "dist_col": 30
+    }
+  ]
+}

@@ -1,0 +1,517 @@
+{
+  "source": "packages/code-explorer/src/discovery/pipeline.ts",
+  "date": "2026-09-03T11:36:37.541Z",
+  "summary": {
+    "total": 146,
+    "killed": 59,
+    "survived": 63,
+    "timeout": 0,
+    "unviable": 24
+  },
+  "survivors": [
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "3",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 12,
+      "dist_col": 15
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "4",
+      "mutator": "StringLiteral",
+      "replacement": "``",
+      "dist_line": 14,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "24",
+      "mutator": "MethodExpression",
+      "replacement": "symbols.map(symbol => normalizeBackendSymbol(root, symbol))",
+      "dist_line": 35,
+      "dist_col": 32
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "37",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 50,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "38",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 50,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "39",
+      "mutator": "EqualityOperator",
+      "replacement": "candidate.type !== \"symbol\"",
+      "dist_line": 50,
+      "dist_col": 27
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "40",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 50,
+      "dist_col": 46
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "41",
+      "mutator": "OptionalChaining",
+      "replacement": "allowedSymbols.find(symbol => symbol.id === candidate.identity).language",
+      "dist_line": 51,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "42",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 51,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "43",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 51,
+      "dist_col": 55
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "44",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 51,
+      "dist_col": 55
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "45",
+      "mutator": "EqualityOperator",
+      "replacement": "symbol.id !== candidate.identity",
+      "dist_line": 51,
+      "dist_col": 55
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "46",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 53,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "54",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 58,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "59",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 65,
+      "dist_col": 64
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "61",
+      "mutator": "StringLiteral",
+      "replacement": "\"Stryker was here!\"",
+      "dist_line": 65,
+      "dist_col": 86
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "60",
+      "mutator": "Regex",
+      "replacement": "/\\.\\//",
+      "dist_line": 65,
+      "dist_col": 77
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "63",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 66,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "62",
+      "mutator": "BooleanLiteral",
+      "replacement": "isAbsoluteBackendPath(portablePath)",
+      "dist_line": 66,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "64",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 66,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "65",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 66,
+      "dist_col": 47
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "67",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 67,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "68",
+      "mutator": "LogicalOperator",
+      "replacement": "!portablePath && portablePath.split(\"/\").includes(\"..\")",
+      "dist_line": 67,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "71",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 67,
+      "dist_col": 63
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "70",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 67,
+      "dist_col": 49
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "81",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 76,
+      "dist_col": 38
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "82",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 77,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "83",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 77,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "84",
+      "mutator": "LogicalOperator",
+      "replacement": "path.startsWith(\"/\") && /^[A-Za-z]:\\//.test(path)",
+      "dist_line": 77,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "86",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 77,
+      "dist_col": 28
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "85",
+      "mutator": "MethodExpression",
+      "replacement": "path.endsWith(\"/\")",
+      "dist_line": 77,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "88",
+      "mutator": "Regex",
+      "replacement": "/^[^A-Za-z]:\\//",
+      "dist_line": 77,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "87",
+      "mutator": "Regex",
+      "replacement": "/[A-Za-z]:\\//",
+      "dist_line": 77,
+      "dist_col": 36
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "92",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 82,
+      "dist_col": 41
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "93",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 83,
+      "dist_col": 9
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "94",
+      "mutator": "MethodExpression",
+      "replacement": "root.protectedRead(path).bytes",
+      "dist_line": 84,
+      "dist_col": 24
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "96",
+      "mutator": "Regex",
+      "replacement": "/(?:^|\\n)\\s(?:\\/\\/|#|\\/\\*)\\s*(?:<auto-generated>|auto-generated\\b|generated by\\b)/iu",
+      "dist_line": 85,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "95",
+      "mutator": "Regex",
+      "replacement": "/(?:\\n)\\s*(?:\\/\\/|#|\\/\\*)\\s*(?:<auto-generated>|auto-generated\\b|generated by\\b)/iu",
+      "dist_line": 85,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "98",
+      "mutator": "Regex",
+      "replacement": "/(?:^|\\n)\\s*(?:\\/\\/|#|\\/\\*)\\s(?:<auto-generated>|auto-generated\\b|generated by\\b)/iu",
+      "dist_line": 85,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "97",
+      "mutator": "Regex",
+      "replacement": "/(?:^|\\n)\\S*(?:\\/\\/|#|\\/\\*)\\s*(?:<auto-generated>|auto-generated\\b|generated by\\b)/iu",
+      "dist_line": 85,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "99",
+      "mutator": "Regex",
+      "replacement": "/(?:^|\\n)\\s*(?:\\/\\/|#|\\/\\*)\\S*(?:<auto-generated>|auto-generated\\b|generated by\\b)/iu",
+      "dist_line": 85,
+      "dist_col": 16
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "103",
+      "mutator": "ArrayDeclaration",
+      "replacement": "[\"Stryker was here\"]",
+      "dist_line": 92,
+      "dist_col": 19
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "110",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 97,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "111",
+      "mutator": "LogicalOperator",
+      "replacement": "(isSensitiveProjectPath(relative) || isClassificationConfigPath(relative)) && lstatSync(absolute).isSymbolicLink()",
+      "dist_line": 97,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "112",
+      "mutator": "ConditionalExpression",
+      "replacement": "false",
+      "dist_line": 97,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "113",
+      "mutator": "LogicalOperator",
+      "replacement": "isSensitiveProjectPath(relative) && isClassificationConfigPath(relative)",
+      "dist_line": 97,
+      "dist_col": 17
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "118",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 102,
+      "dist_col": 21
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "120",
+      "mutator": "ConditionalExpression",
+      "replacement": "true",
+      "dist_line": 105,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "122",
+      "mutator": "LogicalOperator",
+      "replacement": "entry.isFile() || languageForPath(relative)",
+      "dist_line": 105,
+      "dist_col": 22
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "124",
+      "mutator": "BlockStatement",
+      "replacement": "{}",
+      "dist_line": 112,
+      "dist_col": 35
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "125",
+      "mutator": "MethodExpression",
+      "replacement": "path.split(\"/\").every(part => /^(node_modules|\\.git|\\.hg|\\.svn|\\.venv|venv)$/iu.test(part))",
+      "dist_line": 113,
+      "dist_col": 12
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "126",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 113,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "127",
+      "mutator": "ArrowFunction",
+      "replacement": "() => undefined",
+      "dist_line": 113,
+      "dist_col": 33
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "128",
+      "mutator": "Regex",
+      "replacement": "/(node_modules|\\.git|\\.hg|\\.svn|\\.venv|venv)$/iu",
+      "dist_line": 113,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "129",
+      "mutator": "Regex",
+      "replacement": "/^(node_modules|\\.git|\\.hg|\\.svn|\\.venv|venv)/iu",
+      "dist_line": 113,
+      "dist_col": 43
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "132",
+      "mutator": "OptionalChaining",
+      "replacement": "path.split(\".\").at(-1).toLowerCase",
+      "dist_line": 116,
+      "dist_col": 23
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "136",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 118,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "137",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 119,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "138",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 120,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "139",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 121,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "141",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 123,
+      "dist_col": 14
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "142",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 124,
+      "dist_col": 13
+    },
+    {
+      "file": "packages/code-explorer/dist/discovery/pipeline.js",
+      "id": "143",
+      "mutator": "StringLiteral",
+      "replacement": "\"\"",
+      "dist_line": 125,
+      "dist_col": 14
+    }
+  ]
+}
