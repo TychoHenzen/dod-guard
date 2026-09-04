@@ -41,7 +41,10 @@ request. Close a code-backed sub-issue only after its commit is pushed. Keep the
 parent issue and Project item In Progress until a human merges the pull request.
 
 Agents may create and update the draft pull request. They must not approve it,
-mark it ready, merge it, or close the parent issue.
+mark it ready, merge it, or close the parent issue unless the user explicitly
+invokes `/complete-pr` to accept the current pull request head. That command
+owns the guarded ready, auto-merge, issue confirmation, and branch deletion
+flow.
 
 `master` requires a pull request and these current checks:
 

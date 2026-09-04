@@ -59,6 +59,18 @@ evidence is recorded in a comment.
 agent must not approve its pull request, mark it ready, merge it, or close the
 parent issue. Use `/review-pr-branch` for the read-only review.
 
+After review, explicitly accept and complete the current draft:
+
+```text
+/dod-guard:complete-pr 42
+```
+
+`complete-pr` records the accepted head before marking the draft ready. It
+enables guarded auto-merge, updates a stale base only from the accepted head,
+waits for required checks, confirms the merge and linked issue state, then
+deletes the unchanged remote head branch. Conflicts, failed checks, permission
+errors, unexpected pushes, and changed branch refs stop the command.
+
 ## Release a marketplace change
 
 After the changed plugin has its own manifest version bump and local gates

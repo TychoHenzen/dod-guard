@@ -1,7 +1,7 @@
 {
   "name": "dod-guard",
-  "version": "5.0.1",
-  "description": "GitHub issue delivery, repository maintenance, and marketplace release skills.",
+  "version": "5.0.2",
+  "description": "GitHub issue delivery, guarded accepted-PR completion, repository maintenance, and marketplace release skills.",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"
@@ -11,14 +11,15 @@
   "keywords": ["verification", "skills", "git"],
   "interface": {
     "displayName": "dod-guard",
-    "shortDescription": "Issue delivery, repository maintenance, and marketplace release skills.",
-    "longDescription": "Provides issue delivery, review, refactoring, migration, repository maintenance, and marketplace release workflows.",
+    "shortDescription": "Issue delivery, accepted-PR completion, maintenance, and release skills.",
+    "longDescription": "Provides issue delivery, guarded accepted-PR completion, review, migration, repository maintenance, and marketplace release workflows.",
     "developerName": "tychohenzen",
     "category": "Developer Tools",
     "capabilities": ["Skills"],
     "defaultPrompt": [
       "Pick up the next linked GitHub Project issue.",
-      "Review this implementation before its pull request."
+      "Review this implementation before its pull request.",
+      "Complete this explicitly accepted draft pull request."
     ]
   }
 }
