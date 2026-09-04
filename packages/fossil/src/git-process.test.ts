@@ -44,8 +44,6 @@ async function assertResourceLimit(result: Promise<unknown>, message: string): P
       error instanceof FossilAnalysisError && error.code === "resource_limit" && error.message === message,
   );
 }
-
-// covers: fossil/cli :: Safe Git execution :: Repository path is data, not a command
 test("passes a metacharacter-containing repository path as one non-shell Git argument", () => {
   const calls: Array<{ command: string; arguments_: readonly string[]; options: object }> = [];
   const repositoryPath = "C:/repos/space & echo injected; $(whoami)";
@@ -76,8 +74,6 @@ test("passes a metacharacter-containing repository path as one non-shell Git arg
   assert.equal(calls[0].arguments_[6], repositoryPath);
   assert.equal(calls[0].arguments_.filter((argument) => argument === repositoryPath).length, 1);
 });
-
-// covers: fossil/cli :: Safe Git execution :: Git cannot open an interactive process
 test("overrides hostile pager and prompt settings while preserving unrelated environment values", () => {
   const calls: Array<{ arguments_: readonly string[]; options: { readonly env: NodeJS.ProcessEnv } }> = [];
   const environment = {
@@ -125,8 +121,6 @@ test("overrides hostile pager and prompt settings while preserving unrelated env
     GIT_TERMINAL_PROMPT: "1",
   });
 });
-
-// covers: fossil/cli :: Safe Git execution :: Repository Git helper is disabled
 test("adds config overrides that disable repository filesystem monitors and external diff helpers", () => {
   const calls: Array<{ arguments_: readonly string[] }> = [];
   const runGit: GitSpawn = (_command, arguments_) => {
@@ -144,8 +138,6 @@ test("adds config overrides that disable repository filesystem monitors and exte
     "diff.external=",
   ]);
 });
-
-// covers: fossil/cli :: Safe Git execution :: Unsupported Git version fails capability check
 test("rejects unsupported Git capability evidence before calling the history reader", async () => {
   assert.deepEqual(parseGitVersion("git version 2.30.0.windows.1\n"), { major: 2, minor: 30 });
   assert.deepEqual(assertSupportedGitVersion("git version 3.0.0\n"), { major: 3, minor: 0 });
@@ -176,8 +168,6 @@ test("rejects unsupported Git capability evidence before calling the history rea
     "history",
   );
 });
-
-// covers: fossil/cli :: Analysis resource bounds :: Git byte or status limit terminates ingestion
 test("terminates Git ingestion when stdout exceeds its limit without resolving partial output", async () => {
   const exact = pipedChild();
   const exactResult = collectBoundedGitOutput(exact.child, { limits: { maximumStdoutBytes: 3 } });

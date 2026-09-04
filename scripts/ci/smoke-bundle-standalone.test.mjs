@@ -16,7 +16,7 @@ describe("smoke-bundle-standalone", () => {
     const bundles = await discoverBundles();
     deepStrictEqual(
       bundles.map((bundle) => bundle.name),
-      ["code-explorer", "dod-guard", "quality-guard"],
+      ["code-explorer", "quality-guard"],
       "only plugin-manifest workspaces receive the MCP standalone smoke",
     );
     const realCode = await runBundles(bundles);

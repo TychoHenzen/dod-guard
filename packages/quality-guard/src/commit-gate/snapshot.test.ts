@@ -22,8 +22,6 @@ function fixture(): string {
   git(root, ["commit", "-m", "base"]);
   return root;
 }
-
-// covers: quality-guard/architecture-analysis :: Analysis compares staged architecture with its base :: Staged file differs from the working tree
 test("reads staged objects rather than later working tree edits", () => {
   const root = fixture();
   try {
@@ -37,8 +35,6 @@ test("reads staged objects rather than later working tree edits", () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
-
-// covers: quality-guard/architecture-analysis :: Analysis compares staged architecture with its base :: Type moves between directories
 test("normalizes staged rename, addition, edit, and deletion snapshots", () => {
   const root = fixture();
   try {
@@ -62,8 +58,6 @@ test("normalizes staged rename, addition, edit, and deletion snapshots", () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
-
-// covers: quality-guard/commit-gate :: Local and CI execution agree :: Commit bypasses the local hook
 test("reconstructs committed changes against the first parent", () => {
   const root = fixture();
   try {

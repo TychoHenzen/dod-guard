@@ -40,8 +40,6 @@ function definition(overrides: Record<string, unknown> = {}) {
 }
 
 const options = { allowedLanguages: ["rust"] as const, root, currentGeneration: 1 };
-
-// covers: code-explorer/language-adapters :: Backend results are validated before use :: Backend returns an invalid range
 it("rejects a negative or out-of-file range before a result receives a handle", () => {
   const invalid = definition({
     relations: [
@@ -54,15 +52,11 @@ it("rejects a negative or out-of-file range before a result receives a handle", 
 
   assert.deepEqual(validateBackendResult(invalid, options), { status: "rejected", code: "invalid_backend_result" });
 });
-
-// covers: code-explorer/language-adapters :: Backend results are validated before use :: Backend returns an oversized payload
 it("rejects a response larger than one MiB without returning its payload", () => {
   const oversized = { ...definition(), padding: "x".repeat(1024 * 1024) };
 
   assert.deepEqual(validateBackendResult(oversized, options), { status: "rejected", code: "backend_response_limit" });
 });
-
-// covers: code-explorer/language-adapters :: Backend results are validated before use :: Backend returns another language unexpectedly
 it("rejects a result for an undeclared adapter language and records a redacted gap", () => {
   const unexpected = definition({
     relations: [
@@ -79,8 +73,6 @@ it("rejects a result for an undeclared adapter language and records a redacted g
     adapter_gap: "unexpected_language",
   });
 });
-
-// covers: code-explorer/language-adapters :: Backend results are validated before use :: Backend returns a virtual document
 it("degrades an adapter and withholds a virtual document relation", () => {
   const virtual = definition({
     relations: [

@@ -50,8 +50,6 @@ function changePointCommits(fileSets: readonly (readonly string[])[], gapsBefore
     };
   });
 }
-
-// covers: fossil/cli :: Analysis resource bounds :: Commit limit fails explicitly
 test("accepts exactly one hundred thousand included commits and rejects the next one", () => {
   const commit = { hash: "included", committerTimestampMs: 0, changes: [] };
   assert.equal(
@@ -77,8 +75,6 @@ test("accepts exactly one hundred thousand included commits and rejects the next
 test("disables external diff helpers for non-merge history output", () => {
   assert.equal(nonMergeGitLogArguments().includes("--no-ext-diff"), true);
 });
-
-// covers: fossil/burst-analysis :: History activity model :: Merge commits do not add activity
 test("omits merge-only activity while retaining reachable non-merge commits", async () => {
   const repository = await temporaryRepository();
   await repository.writeSourceFile("src/base.ts", "export const base = true;\n");
@@ -104,8 +100,6 @@ test("omits merge-only activity while retaining reachable non-merge commits", as
   assert.deepEqual(activePaths.sort(), ["src/base.ts", "src/feature.ts", "src/main.ts"]);
   assert.ok(!activePaths.includes("src/merge-only.ts"));
 });
-
-// covers: fossil/burst-analysis :: History activity model :: Commit time is deterministic
 test("orders parsed commits by UTC epoch then ordinal hash without mutating sort input", () => {
   const commits = parseNonMergeGitLog(
     "\u001ez\u00001700000001\u0000M\u0000later.ts\u0000\u001eb\u00001700000000\u0000A\u0000second.ts\u0000\u001ea\u00001700000000\u0000A\u0000first.ts\u0000",
@@ -129,8 +123,6 @@ test("orders parsed commits by UTC epoch then ordinal hash without mutating sort
     ["z", "b", "a"],
   );
 });
-
-// covers: fossil/cli :: Safe Git execution :: Unusual filename remains one structured path
 test("preserves whitespace, newline, quote, and control-byte filenames as individual Git changes", () => {
   const paths = ["src/white space.ts", "src/line\nbreak.ts", 'src/"quoted".ts', "src/control-\u0001.ts"];
   const commits = parseNonMergeGitLog(
@@ -146,8 +138,6 @@ test("preserves whitespace, newline, quote, and control-byte filenames as indivi
     { status: "type-changed", path: paths[3] },
   ]);
 });
-
-// covers: fossil/burst-analysis :: History activity model :: Future commit time is incomplete evidence
 test("reports future commits and leaves their temporal cluster unfinished", () => {
   const analysisTimestampMs = 10_000;
   const cluster = [
@@ -172,8 +162,6 @@ test("reports future commits and leaves their temporal cluster unfinished", () =
   ]);
   assert.deepEqual(retainClosedTemporalClusters([cluster], analysisTimestampMs, 1_000), []);
 });
-
-// covers: fossil/burst-analysis :: History completeness reporting :: Shallow history is reported
 test("reports shallow history without treating malformed Git output as complete", () => {
   assert.deepEqual(shallowRepositoryArguments(), ["rev-parse", "--is-shallow-repository"]);
   assert.deepEqual(shallowHistoryWarnings("true\n"), [
@@ -185,8 +173,6 @@ test("reports shallow history without treating malformed Git output as complete"
   assert.deepEqual(shallowHistoryWarnings("false\r\n"), []);
   assert.throws(() => shallowHistoryWarnings("unknown\n"), /Unexpected Git shallow-repository response/);
 });
-
-// covers: fossil/burst-analysis :: History completeness reporting :: Sparse checkout is reported
 test("reports sparse checkout without treating malformed Git output as complete", () => {
   assert.deepEqual(sparseCheckoutArguments(), ["config", "--bool", "--get", "core.sparseCheckout"]);
   assert.deepEqual(sparseCheckoutWarnings("true\n"), [
@@ -199,8 +185,6 @@ test("reports sparse checkout without treating malformed Git output as complete"
   assert.deepEqual(sparseCheckoutWarnings(""), []);
   assert.throws(() => sparseCheckoutWarnings("enabled\n"), /Unexpected Git sparse-checkout response/);
 });
-
-// covers: fossil/burst-analysis :: History completeness reporting :: Empty repository has no bursts
 test("returns empty history evidence and no burst clusters for an empty repository", () => {
   const history = parseNonMergeGitLog("");
   const nonemptyHistory = [{ hash: "commit", committerTimestampMs: 1_000, changes: [] }];
@@ -215,8 +199,6 @@ test("returns empty history evidence and no burst clusters for an empty reposito
   assert.deepEqual(retainClosedTemporalClusters(temporalClusters, 10_000, 1_000), []);
   assert.deepEqual(retainQualifiedClosedClusters(temporalClusters), []);
 });
-
-// covers: fossil/burst-analysis :: History activity model :: Rename preserves logical identity
 test("collapses successive Git renames into one logical file at its final path", async () => {
   const repository = await temporaryRepository();
   await repository.writeSourceFile("src/first.ts", "export const value = 1;\n");
@@ -241,8 +223,6 @@ test("collapses successive Git renames into one logical file at its final path",
     existsAtHead: true,
   });
 });
-
-// covers: fossil/burst-analysis :: History activity model :: Copy or delete-recreate starts another identity
 test("keeps copied and recreated paths in separate logical generations", () => {
   const activities = resolveRenameActivities([
     {
@@ -309,8 +289,6 @@ test("keeps copied and recreated paths in separate logical generations", () => {
   assert.equal(recreations[1].currentPath, "src/recreated.ts");
   assert.equal(recreations[1].existsAtHead, true);
 });
-
-// covers: fossil/burst-analysis :: History activity model :: Extension filter limits history
 test("filters whole rename identities without discarding cross-extension source history", () => {
   const fullHistory = [
     {
@@ -352,8 +330,6 @@ test("filters whole rename identities without discarding cross-extension source 
   );
   assert.deepEqual(filterHistoryByExtensions(fullHistory, new Set()), fullHistory);
 });
-
-// covers: fossil/burst-analysis :: History activity model :: Extension values are normalized
 test("normalizes extension dots and case before case-insensitive path matching", () => {
   const extensions = normalizeExtensions(["ts", ".TS", "Js", ".js"]);
   const history = [
@@ -372,8 +348,6 @@ test("normalizes extension dots and case before case-insensitive path matching",
   assert.deepEqual(extensions, [".ts", ".js"]);
   assert.deepEqual(filterHistoryByExtensions(history, new Set(extensions)), [history[0]]);
 });
-
-// covers: fossil/burst-analysis :: Temporal burst detection :: Gap above threshold splits commits
 test("splits chronological commits when an adjacent gap is one millisecond above the threshold", () => {
   const commits = [
     { hash: "first", committerTimestampMs: 1_000, changes: [] },
@@ -388,8 +362,6 @@ test("splits chronological commits when an adjacent gap is one millisecond above
     [["first", "second"], ["third"]],
   );
 });
-
-// covers: fossil/burst-analysis :: Temporal burst detection :: Gap at threshold keeps commits together
 test("keeps chronological commits together when their adjacent gap equals the threshold", () => {
   const clusters = splitTemporalClusters(
     [
@@ -404,8 +376,6 @@ test("keeps chronological commits together when their adjacent gap equals the th
     [["first", "second"]],
   );
 });
-
-// covers: fossil/burst-analysis :: File-set change-point detection :: Disjoint close work becomes separate bursts
 test("splits close disjoint work when inverse-frequency weighting suppresses the shared file", () => {
   const hour = 60 * 60 * 1_000;
   const paths = [
@@ -443,8 +413,6 @@ test("splits close disjoint work when inverse-frequency weighting suppresses the
     ],
   );
 });
-
-// covers: fossil/burst-analysis :: File-set change-point detection :: Small partition prevents a close split
 test("keeps close low-similarity work together when a side is too small", () => {
   const hour = 60 * 60 * 1_000;
   const fourCommitPartition = ["left-a.ts", "left-b.ts", "left-c.ts", "left-a.ts"];
@@ -474,8 +442,6 @@ test("keeps close low-similarity work together when a side is too small", () => 
   assert.deepEqual(splitAtChangePoint(fewerThanFiveCommits), [fewerThanFiveCommits]);
   assert.deepEqual(splitAtChangePoint(fewerThanThreeFiles), [fewerThanThreeFiles]);
 });
-
-// covers: fossil/burst-analysis :: File-set change-point detection :: Deterministic recursive split order
 test("ranks close change points deterministically and recursively splits both sides", () => {
   const hour = 60 * 60 * 1_000;
   const uniqueFileSets = Array.from({ length: 11 }, (_, index) => [
@@ -545,8 +511,6 @@ test("ranks close change points deterministically and recursively splits both si
     Array.from({ length: 6 }, (_, group) => Array.from({ length: 5 }, (_, offset) => `point-${group * 5 + offset}`)),
   );
 });
-
-// covers: fossil/burst-analysis :: File-set change-point detection :: Close split refines temporal clustering
 test("builds final burst activity from recursive close-split partitions", () => {
   const hour = 60 * 60 * 1_000;
   const group = (name: string, start: number) => [
@@ -630,8 +594,6 @@ test("builds final burst activity from recursive close-split partitions", () => 
   );
   assert.ok(bursts.every((burst) => burst.closed));
 });
-
-// covers: fossil/burst-analysis :: Burst qualification :: Ordinary small cluster is dropped
 test("drops closed clusters below either qualification minimum", () => {
   const fewerThanFiveCommits = [
     { hash: "one", committerTimestampMs: 1, changes: [{ status: "added" as const, path: "one.ts" }] },
@@ -666,8 +628,6 @@ test("drops closed clusters below either qualification minimum", () => {
     exactMinimum,
   ]);
 });
-
-// covers: fossil/burst-analysis :: Burst qualification :: Recent temporal cluster remains unfinished
 test("excludes recent qualifying clusters before closed-cluster qualification", () => {
   const analysisTimestampMs = 10_000;
   const gapMilliseconds = 1_000;
@@ -685,8 +645,6 @@ test("excludes recent qualifying clusters before closed-cluster qualification", 
   assert.deepEqual(inactiveClusters, [closed]);
   assert.deepEqual(retainQualifiedClosedClusters(inactiveClusters), [closed]);
 });
-
-// covers: fossil/burst-analysis :: Consolidation classification :: Absolute survivor threshold
 test("selects only files with at least three post-burst commits", () => {
   const files = [
     {
@@ -710,8 +668,6 @@ test("selects only files with at least three post-burst commits", () => {
   assert.deepEqual(selectAbsoluteSurvivors(files), [files[0]]);
   assert.equal(files[1].postBurstCommits, 2);
 });
-
-// covers: fossil/burst-analysis :: Consolidation classification :: Relative survivor threshold
 test("selects positive relative survivors inclusively with absolute survivors", () => {
   const files = [
     {
@@ -751,8 +707,6 @@ test("selects positive relative survivors inclusively with absolute survivors", 
   assert.deepEqual(selectRelativeSurvivors(files), [files[1], files[3]]);
   assert.deepEqual(selectSurvivors(files), [files[0], files[1], files[3]]);
 });
-
-// covers: fossil/burst-analysis :: Consolidation classification :: Zero post-burst maximum creates no relative survivor
 test("does not select relative survivors when every post-burst count is zero", () => {
   const files = [
     {
@@ -776,8 +730,6 @@ test("does not select relative survivors when every post-burst count is zero", (
   assert.deepEqual(selectRelativeSurvivors(files), []);
   assert.deepEqual(selectSurvivors(files), []);
 });
-
-// covers: fossil/burst-analysis :: Consolidation classification :: Quiet current file becomes a candidate
 test("selects only current files that meet neither survivor rule", () => {
   const files = [
     {
@@ -824,8 +776,6 @@ test("selects only current files that meet neither survivor rule", () => {
 
   assert.deepEqual(selectFossilCandidates(files), [files[0]]);
 });
-
-// covers: fossil/burst-analysis :: Consolidation classification :: Deleted file is not fossilized
 test("records deleted non-survivors separately from current candidates", () => {
   const files = [
     {

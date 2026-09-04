@@ -45,8 +45,6 @@ function policy(overrides: Partial<BackendIdentity> & { endpoint?: "stdio" | str
     inspect: () => ({ ...identity, ...overrides }),
   });
 }
-
-// covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Project config names another executable
 it("ignores project backend commands and keeps the allowlisted command", () => {
   const launch = policy().prepare("rust", { command: "project-owned-server", arguments: ["--unsafe"] });
 
@@ -69,23 +67,17 @@ it("ignores project backend commands and keeps the allowlisted command", () => {
     event: "project_backend_config_ignored",
   });
 });
-
-// covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Backend requests a workspace edit
 it("rejects protocol write requests without retaining their payload", () => {
   const result = policy().handleBackendRequest("workspace/applyEdit", { changes: { "/project/a.rs": [] } });
 
   assert.deepEqual(result, { accepted: false, code: "backend_write_rejected" });
 });
-
-// covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Allowlisted executable is missing
 it("does not install or substitute a missing allowlisted executable", () => {
   assert.deepEqual(policy({ canonical_path: undefined }).prepare("rust"), {
     status: "unavailable",
     code: "backend_unavailable",
   });
 });
-
-// covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Backend advertises a remote endpoint
 it("rejects non-loopback backend endpoints", () => {
   assert.deepEqual(policy().setEndpoint("rust", "https://example.test/lsp"), {
     status: "unavailable",
@@ -104,8 +96,6 @@ it("rejects non-loopback backend endpoints", () => {
     status: "ready",
   });
 });
-
-// covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Allowlisted executable changes before restart
 it("refuses a restart when its accepted identity tuple changes", () => {
   let current = identity;
   const launch = createBackendLaunchPolicy({
@@ -228,8 +218,6 @@ it("rejects a Python package metadata byte replacement before spawn", () => {
   });
   assert.deepEqual(launch.prepare("python"), { status: "unavailable", code: "backend_identity_changed" });
 });
-
-// covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Executable changes during launch
 it("rejects and terminates a process when verification changes after initialization", () => {
   let current = identity;
   const launch = createBackendLaunchPolicy({
@@ -245,8 +233,6 @@ it("rejects and terminates a process when verification changes after initializat
     terminate: true,
   });
 });
-
-// covers: code-explorer/language-adapters :: Backend launch configuration is server-owned :: Host cannot prove executable identity
 it("refuses launch before spawn when device or file identity cannot be proved", () => {
   assert.deepEqual(policy({ device: undefined }).prepare("rust"), {
     status: "unavailable",
@@ -346,8 +332,6 @@ it("snapshots server-owned launch data and freezes returned preparations", () =>
     TypeError,
   );
 });
-
-// covers: code-explorer/language-adapters :: Known project-controlled execution hooks stay disabled :: Rust project contains executable build hooks
 it("uses Rust safe options without project executable hooks", () => {
   const launch = policy().prepare("rust");
   assert.equal(launch.status, "ready");
@@ -360,8 +344,6 @@ it("uses Rust safe options without project executable hooks", () => {
     projectConfiguration: { enable: false },
   });
 });
-
-// covers: code-explorer/language-adapters :: Known project-controlled execution hooks stay disabled :: C# project contains executable analyzers
 it("rejects an allowlist mode without verified C# analyzer-safe sentinel evidence", () => {
   const launch = createBackendLaunchPolicy({
     project_root: "/project",
@@ -383,8 +365,6 @@ it("rejects an allowlist mode without verified C# analyzer-safe sentinel evidenc
   assert.deepEqual(safe.safeOptions("csharp"), { analyzers: false, source_generators: false });
   assert.equal(safe.prepare("csharp").status, "ready");
 });
-
-// covers: code-explorer/language-adapters :: Known project-controlled execution hooks stay disabled :: Python project selects an interpreter or external path
 it("rejects Python interpreter and external analysis selection before launch", () => {
   assert.deepEqual(createPythonMirrorPlan({ venvPath: ".venv", extraPaths: ["/outside"] }, []), {
     status: "unavailable",
@@ -412,8 +392,6 @@ it("rejects Python interpreter and external analysis selection before launch", (
     { PATH: "/host/bin" },
   );
 });
-
-// covers: code-explorer/language-adapters :: Known project-controlled execution hooks stay disabled :: Python configuration changes after validation
 it("invalidates the old Python mirror when project configuration changes", () => {
   const text = "x = 1";
   const mirror = createPythonMirrorPlan({}, [{ path: "src/a.py", sha256: digest(text), text }], {
@@ -457,8 +435,6 @@ it("materializes only hash-verified mirror sources and locks them read-only", ()
     code: "unsafe_backend_mode",
   });
 });
-
-// covers: code-explorer/language-adapters :: Known project-controlled execution hooks stay disabled :: Backend lacks a verified safe configuration
 it("does not launch a mode whose sentinel proof is absent", () => {
   assert.deepEqual(policyAllowlist({ sentinel_passed: false }), [
     {

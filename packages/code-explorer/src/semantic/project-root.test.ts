@@ -33,8 +33,6 @@ function filesystem(entries: Record<string, Entry>) {
 }
 
 const root = "C:/repo";
-
-// covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: Client supplies a parent-directory path
 it("rejects a client parent path before it can reach a backend", () => {
   const guard = createProjectRoot({
     cwd: root,
@@ -56,8 +54,6 @@ it("rejects a sensitive path before a protected read can reach a backend", () =>
   });
   assert.throws(() => root.protectedRead(".env"), { code: "path_outside_project" });
 });
-
-// covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: In-root symlink targets an external file
 it("rejects an apparent project path when its canonical target escapes the root", () => {
   const guard = createProjectRoot({
     cwd: root,
@@ -70,8 +66,6 @@ it("rejects an apparent project path when its canonical target escapes the root"
 
   assert.throws(() => guard.resolveClientPath("linked.rs"), /path_outside_project/);
 });
-
-// covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: Startup root is invalid
 it("reports an invalid startup root without exposing the rejected absolute path", () => {
   assert.throws(
     () => createProjectRoot({ cwd: "C:/missing", filesystem: filesystem({}), platform: "win32" }),
@@ -85,8 +79,6 @@ it("reports an invalid startup root without exposing the rejected absolute path"
     },
   );
 });
-
-// covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: Backend returns a symlinked external file
 it("classifies an escaped backend path as external without retaining a local path", () => {
   const guard = createProjectRoot({
     cwd: root,
@@ -112,8 +104,6 @@ it("normalizes a Windows-form backend path to a portable project-relative path",
 
   assert.deepEqual(guard.classifyBackendPath("src\\module\\file.rs"), { relative_path: "src/module/file.rs" });
 });
-
-// covers: code-explorer/language-adapters :: One server process is confined to one canonical project root :: Local path changes during a protected read
 it("fails a protected read when opened-file identity changes", () => {
   const fs = filesystem({
     [root]: { realpath: root, dev: 1, ino: 1 },

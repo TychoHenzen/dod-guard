@@ -47,18 +47,12 @@ function assertCompleted(language: string): void {
     assert.equal(typeof record.operation_states[operation], "string", operation);
   assert.equal(JSON.stringify(record).includes("code-explorer-browser-"), false);
 }
-
-// covers: code-explorer/browser-navigation :: The same browser workflow supports Rust, Python, and C# :: Rust practice project is explored
 it("records the completed live Rust browser workflow", () => {
   assertCompleted("rust");
 });
-
-// covers: code-explorer/browser-navigation :: The same browser workflow supports Rust, Python, and C# :: Python practice project is explored
 it("records the completed live Python browser workflow", () => {
   assertCompleted("python");
 });
-
-// covers: code-explorer/browser-navigation :: The same browser workflow supports Rust, Python, and C# :: C# practice project is explored
 it("records the completed live C# browser workflow", () => {
   assertCompleted("csharp");
 });

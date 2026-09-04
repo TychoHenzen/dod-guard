@@ -15,8 +15,6 @@ function backend(state: "ready" | "unavailable" | "failed", failureCode?: string
   fake.setResult(result);
   return fake;
 }
-
-// covers: code-explorer/language-adapters :: Backend readiness and gaps are observable :: Required language server is missing
 it("reports a missing backend without attempting semantic work", () => {
   const adapter = createRustAdapter({
     backend: backend("unavailable"),
@@ -30,8 +28,6 @@ it("reports a missing backend without attempting semantic work", () => {
   assert.equal(report.backends[0].last_transition_time > 0, true);
   assert.deepEqual(report.backends[0].capabilities.definition, { state: "unavailable" });
 });
-
-// covers: code-explorer/language-adapters :: Backend readiness and gaps are observable :: Backend lacks call hierarchy
 it("keeps supported navigation ready when call hierarchy is unavailable", () => {
   const adapter = createRustAdapter({
     backend: backend("ready"),
@@ -48,8 +44,6 @@ it("keeps supported navigation ready when call hierarchy is unavailable", () => 
   assert.deepEqual(status.capabilities.definition, { state: "ready" });
   assert.deepEqual(status.capabilities.references, { state: "ready" });
 });
-
-// covers: code-explorer/language-adapters :: Backend readiness and gaps are observable :: Backend initialization fails
 it("isolates a stable initialization failure from ready adapters", () => {
   const failed = createRustAdapter({
     backend: backend("failed", "initialization_failed"),
@@ -68,8 +62,6 @@ it("isolates a stable initialization failure from ready adapters", () => {
   assert.equal(report.backends[1].state, "ready");
   assert.equal(JSON.stringify(report).includes("protocol"), false);
 });
-
-// covers: code-explorer/language-adapters :: Backend readiness and gaps are observable :: Every semantic backend is unavailable
 it("keeps discovery-only data separate when every backend is unavailable", () => {
   const adapter = createRustAdapter({
     backend: backend("unavailable"),
@@ -83,8 +75,6 @@ it("keeps discovery-only data separate when every backend is unavailable", () =>
     relations: "backend_unavailable",
   });
 });
-
-// covers: code-explorer/language-adapters :: Backend readiness and gaps are observable :: Backend version is incompatible
 it("reports an incompatible backend without treating it as ready", () => {
   const adapter = createRustAdapter({
     backend: backend("ready"),

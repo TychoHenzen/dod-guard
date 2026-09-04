@@ -1,24 +1,25 @@
-# CI - triggers on master pushes only. Nothing in this repo publishes to npm.
+# CI - validates pull requests and the resulting master commits. Nothing in
+# this repo publishes to npm.
 #
 # The marketplace installs plugins straight from a git checkout of this repo,
-# bundle included. static-analysis rebuilds every package's dist/bundle.js and
-# commits any drift back to master, so the tracked bundle is always what CI,
-# not a developer's working tree, produced. A release is: push to master, wait
-# for this workflow to go green, then run /plugin update.
+# bundle included. Feature branches must carry rebuilt bundles and tightened
+# baselines. CI reproduces them and rejects drift without writing to the branch.
 #
 # Gates, in the order they can stop a release:
 #   build-test        compile + unit tests
-#   plugin-config     plugin.json / .mcp.json / marketplace.json / skills / agents consistency, OpenSpec spec validation
-#   static-analysis   Biome plus four ratchets (quality, test presence, advisories, coverage), then rebuilds and commits the tracked bundles
+#   plugin-config     plugin.json / .mcp.json / marketplace.json / skills / agents consistency
+#   static-analysis   Biome plus quality, test presence, advisory, and coverage ratchets, then rejects generated-file drift
 #   package-integrity whether the built bundle actually speaks MCP
 #
 # The ratchets compare against baselines in .github/quality/. Existing debt is
-# allowed; anything worse fails. When a ratchet improves, CI rewrites the
-# baseline in the same commit as the Biome autofixes, so the bar only rises.
+# allowed; anything worse fails. When a ratchet improves, its tightened baseline
+# must already be committed on the feature branch.
 
 name: ci
 
 on:
+  pull_request:
+    branches: [master]
   push:
     branches: [master]
   workflow_dispatch:
@@ -27,6 +28,9 @@ env:
   # Biome owns line width (120); ratcheting it here would fight the formatter.
   QUALITY_RULES: file-length,function-length,complexity,param-count,nesting-depth,types-per-file,duplicate-block,else-branch,unnamed-tuple,dead-export,unused-local,test-only-export,commented-out-code,todo-marker,stateless-method,comment-bloat,comment-restates-code,assumption-marker
   QUALITY_SCAN: packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs
+
+permissions:
+  contents: read
 
 jobs:
   # ── Always runs ──────────────────────────────────────────────────────
@@ -44,16 +48,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      # dod-guard's own tests shell out to the real openspec CLI
-      # (fetchInstructions/fetchStatus in src/openspec/steps-cli.test.ts).
-      - name: Install the openspec CLI
-        run: npm install -g @fission-ai/openspec@1.8.0
       # code-explorer's packaged-browser test launches the real Chromium binary.
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - run: npm test
-        env:
-          OPENSPEC_TELEMETRY: 0
 
   plugin-config:
     needs: build-test
@@ -73,29 +71,10 @@ jobs:
       # Names, sources, hook targets, skill/agent frontmatter, encoding, git-tracked shipping.
       - name: Plugin configuration is consistent
         run: node scripts/ci/validate-plugins.mjs
-      # OpenSpec owns a change's artifacts, dod-guard owns proof, a skill owns
-      # choreography. This fails a skill that has taken back one of the others.
-      - name: Skills leave OpenSpec's job to OpenSpec
-        run: |
-          node --test scripts/ci/check-skill-hygiene.test.mjs
-          node scripts/ci/check-skill-hygiene.mjs
-      - name: Spec hygiene (compound requirement warnings)
-        run: |
-          node --test scripts/ci/check-spec-hygiene.test.mjs
-          node scripts/ci/check-spec-hygiene.mjs
-      - name: OpenSpec changes are valid
-        env:
-          OPENSPEC_TELEMETRY: 0
-        run: |
-          npm install -g @fission-ai/openspec@1.8.0
-          openspec validate --all --strict --no-interactive
-
   static-analysis:
     needs: build-test
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -107,27 +86,30 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # actionlint delegates embedded run scripts to the runner's ShellCheck.
+      - name: Actionlint rejects an invalid workflow and unsafe shell
+        run: |
+          command -v shellcheck
+          if go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 scripts/ci/fixtures/actionlint-invalid-shell.yml; then
+            echo "actionlint accepted the invalid fixture"
+            exit 1
+          fi
+      - name: Validate GitHub Actions workflows
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+
       # A lockfile that npm ci rewrites means the committed one is stale.
       - name: Lockfile is in sync
         run: git diff --exit-code -- package-lock.json
 
       - run: npm run build
 
-      # The coverage ratchet below runs dod-guard's own suite under c8, and
-      # steps-cli.test.ts shells out to the real openspec CLI.
-      - name: Install the openspec CLI
-        run: npm install -g @fission-ai/openspec@1.8.0
-
-      # Builds dod-guard itself, because a released binary can't see this
-      # checkout's own scenarios and markers - same reason the retired
-      # check-trace.mjs did this. Unscoped, this also rebuilds and refreshes
-      # both tracked dist/bundle.js files, so CI, not a developer's
-      # working tree, is what builds what ships.
+      # Rebuild every tracked workspace bundle before the drift check.
       - run: npm run bundle
 
-      # Autofix: apply Biome fixes, commit + push if any changes.
-      - name: Biome autofix
-        run: npx @biomejs/biome check --write --unsafe packages/*/src/ scripts/ci/ --no-errors-on-unmatched
+      # Reproduce formatting locally. The drift check below rejects any fix the
+      # feature branch did not commit.
+      - name: Reproduce Biome formatting
+        run: npx @biomejs/biome format --write --no-errors-on-unmatched
 
       # ── Ratchets: record the outcome, tighten on improvement, fail at the end ──
 
@@ -140,6 +122,7 @@ jobs:
         run: |
           node "$QUALITY_SCAN" packages \
             --exclude=/dist/ --exclude=node_modules \
+            --profile=strict \
             --rules="$QUALITY_RULES" \
             --baseline=.github/quality/quality-baseline.json \
             --fail-on=regression | tee quality-report.txt
@@ -150,6 +133,7 @@ jobs:
           if ! grep -q "Improvements: 0 " quality-report.txt; then
             node "$QUALITY_SCAN" packages \
               --exclude=/dist/ --exclude=node_modules \
+              --profile=strict \
               --rules="$QUALITY_RULES" \
               --write-baseline=.github/quality/quality-baseline.json
           fi
@@ -168,7 +152,10 @@ jobs:
           exit "${PIPESTATUS[0]}"
       - name: Tighten test presence baseline
         if: steps.tests-present.outcome == 'success'
-        run: grep -q "fixed:" tests-present.txt && node scripts/ci/check-tests-present.mjs --write-baseline || true
+        run: |
+          if grep -q "fixed:" tests-present.txt; then
+            node scripts/ci/check-tests-present.mjs --write-baseline || true
+          fi
 
       # A consumed .quality-skip is a deliberate bypass of the quality gate.
       # It must not reach a release without a human signing it off.
@@ -183,44 +170,27 @@ jobs:
           exit "${PIPESTATUS[0]}"
       - name: Tighten audit baseline
         if: steps.audit.outcome == 'success'
-        run: grep -q "fixed:" audit-report.txt && node scripts/ci/check-audit.mjs --write-baseline || true
+        run: |
+          if grep -q "fixed:" audit-report.txt; then
+            node scripts/ci/check-audit.mjs --write-baseline || true
+          fi
 
       - name: Coverage ratchet (per package)
         id: coverage
         continue-on-error: true
-        env:
-          OPENSPEC_TELEMETRY: 0
         run: |
           node scripts/ci/check-coverage.mjs | tee coverage-report.txt
           exit "${PIPESTATUS[0]}"
       - name: Tighten coverage baseline
         if: steps.coverage.outcome == 'success'
-        run: grep -qE "improved:|adopted:" coverage-report.txt && node scripts/ci/check-coverage.mjs --write-baseline || true
-
-      - name: Coverage-gate ratchet (scenarios)
-        id: coverage-gate
-        continue-on-error: true
         run: |
-          node scripts/ci/check-coverage-gate.mjs | tee coverage-gate-report.txt
-          exit "${PIPESTATUS[0]}"
-      - name: Tighten coverage-gate baseline
-        if: steps.coverage-gate.outcome == 'success'
-        run: grep -qE "improved:|adopted:" coverage-gate-report.txt && node scripts/ci/check-coverage-gate.mjs --write-baseline || true
-
-      - name: Commit & push autofixes and tightened baselines
-        run: |
-          rm -f quality-report.txt tests-present.txt audit-report.txt coverage-report.txt coverage-gate-report.txt
-          if ! git diff --exit-code --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "chore: apply Biome autofixes, tightened baselines and rebuilt bundles [skip ci]"
-            git push origin master
+          if grep -qE "improved:|adopted:" coverage-report.txt; then
+            node scripts/ci/check-coverage.mjs --write-baseline || true
           fi
 
       # Strict check: must be clean after autofix.
       - name: Biome strict check
-        run: npx @biomejs/biome check packages/*/src/ scripts/ci/ --max-diagnostics=200 --no-errors-on-unmatched
+        run: npx @biomejs/biome check --max-diagnostics=200 --no-errors-on-unmatched
 
       # Ratchets run with continue-on-error so baselines still get pushed; enforce here.
       - name: Enforce ratchet outcomes
@@ -230,12 +200,21 @@ jobs:
           if [ "${{ steps.tests-present.outcome }}" = "failure" ]; then FAILED="$FAILED test-presence"; fi
           if [ "${{ steps.audit.outcome }}" = "failure" ]; then FAILED="$FAILED advisories"; fi
           if [ "${{ steps.coverage.outcome }}" = "failure" ]; then FAILED="$FAILED coverage"; fi
-          if [ "${{ steps.coverage-gate.outcome }}" = "failure" ]; then FAILED="$FAILED coverage-gate"; fi
           if [ -n "$FAILED" ]; then
             echo "RATCHET FAILED for:$FAILED — see the step logs above"
             exit 1
           fi
           echo "All ratchets held."
+
+      - name: Tracked generated files are current
+        run: |
+          rm -f quality-report.txt tests-present.txt audit-report.txt coverage-report.txt
+          if ! git diff --exit-code --quiet; then
+            echo "Generated files, formatting, or ratchet baselines are stale."
+            echo "Regenerate them on the feature branch and commit the result."
+            git diff --stat
+            exit 1
+          fi
 
   package-integrity:
     needs: build-test
@@ -258,7 +237,7 @@ jobs:
       - name: Bundle MCP handshake
         run: |
           FAILED=""
-          for pkg in dod-guard quality-guard code-explorer; do
+          for pkg in quality-guard code-explorer; do
             node scripts/ci/smoke-bundle.mjs "$pkg" || FAILED="$FAILED $pkg"
           done
           [ -z "$FAILED" ] || { echo "BUNDLE SMOKE FAILED for:$FAILED"; exit 1; }

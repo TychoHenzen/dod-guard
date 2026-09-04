@@ -35,8 +35,8 @@ function report(file, message) {
 }
 
 function summarize(packages, standalone, counts) {
-  const skillCount = packages.reduce((n, p) => n + p.skills.length, 0);
-  const agentCount = packages.reduce((n, p) => n + p.agents.length, 0);
+  const skillCount = packages.reduce((n, p) => n + p.skills.length, counts.standaloneSkillCount);
+  const agentCount = packages.reduce((n, p) => n + p.agents.length, counts.standaloneAgentCount);
   const pluginCount = packages.length + standalone.length;
   const { styleCount, jsonCount, contentCount } = counts;
   return `${pluginCount} plugins, ${skillCount} skills, ${agentCount} agents, ${styleCount} output styles, ${jsonCount} JSON files, ${contentCount} shipped docs`;
@@ -65,13 +65,21 @@ function main() {
   for (const pkg of packages) checkPackage(pkg, packages);
   checkMarketplace(join(ROOT, ".claude-plugin", "marketplace.json"), packages, true);
 
-  const styleCount = checkStandalonePlugins(standalone, report);
+  const standaloneCounts = checkStandalonePlugins(standalone, report);
   const jsonCount = checkJsonSyntax(ROOT, report);
   checkOrphanPluginContent(ROOT, report);
   const contentCount = checkShippedContent(ROOT, report);
   checkGitTracked([...packages, ...standalone], report, isTracked);
 
-  return emitResult(summarize(packages, standalone, { styleCount, jsonCount, contentCount }));
+  return emitResult(
+    summarize(packages, standalone, {
+      styleCount: standaloneCounts.styleCount,
+      standaloneSkillCount: standaloneCounts.skillCount,
+      standaloneAgentCount: standaloneCounts.agentCount,
+      jsonCount,
+      contentCount,
+    }),
+  );
 }
 
 process.exitCode = main();

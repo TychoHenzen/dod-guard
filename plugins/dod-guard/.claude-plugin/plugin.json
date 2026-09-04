@@ -1,0 +1,9 @@
+{
+  "name": "dod-guard",
+  "version": "5.0.2",
+  "description": "GitHub issue delivery, guarded accepted-PR completion, repository maintenance, and marketplace release. Ships 11 skills, including /add-backlog-idea, /next-ticket, /submit-draft-pr, /complete-pr, and /publish.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/tychohenzen"
+  }
+}

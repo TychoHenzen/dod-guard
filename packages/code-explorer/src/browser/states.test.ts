@@ -5,7 +5,6 @@ import { BrowserRelationsController, renderRelationGroup } from "./relations.js"
 import { BrowserWorkspaceController, renderBrowserArea } from "./states.js";
 
 describe("browser local area states", () => {
-  // covers: code-explorer/browser-navigation :: Empty, loading, and failure states preserve context :: Search has no matches
   it("renders a proved empty search result rather than a guessed replacement", async () => {
     const discovery = new BrowserDiscoveryController(async () => ({ data: { candidates: [] } }));
 
@@ -14,8 +13,6 @@ describe("browser local area states", () => {
     assert.equal(discovery.state().areaState, "empty");
     assert.match(renderDiscovery(discovery.state()), /data-state="empty"/);
   });
-
-  // covers: code-explorer/browser-navigation :: Empty, loading, and failure states preserve context :: One relation fails
   it("contains a failed relation group without removing another loaded group", async () => {
     const relations = new BrowserRelationsController(
       { view_id: "view", handle: "handle", supported: ["references", "callers"], unavailable: [] },
@@ -30,8 +27,6 @@ describe("browser local area states", () => {
     assert.match(renderRelationGroup(relations.state("references")), /reference/);
     assert.match(renderRelationGroup(relations.state("callers")), /data-state="failed"/);
   });
-
-  // covers: code-explorer/browser-navigation :: Empty, loading, and failure states preserve context :: Workspace has no published generation
   it("keeps the unavailable workspace cause visible and disables navigation at generation zero", () => {
     const workspace = new BrowserWorkspaceController();
     const state = workspace.update({

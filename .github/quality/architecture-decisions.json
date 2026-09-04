@@ -1,1 +1,457 @@
-[]
+[
+  {
+    "findingId": "0091b041a18b2a1d9d0d91cea36a4b26c1dce98b5b91fdc6a9e30ccaf8197477",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "00acfcba4545341442337468c6dbd2551d1b017e42320429f05242702eaf5969",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "030ceb115ff82a72e9b1d74ec17443ae12815516ee5f592cba858979870a59bf",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "037cb35e29af45fe9fb47dc286a8c3e8e7e2c3ae492c94e205cdc0175f99fa3a",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "03a7e3dade2057e487a708e202c0735b8b13899911d2e20663bd612b5e2f640f",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "03c7c5813641f742ea6a8c2446f7a98f639570ea2f7a0292727144bf3a37e902",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "0810ed70f8ec8e9ff9eae387618a57dc162c91655925cdd46d37e927a3c1c454",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "0d42b6365e7a581540d5d47457863b7019c954ca1d8c2de240da370387298859",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "0f5d61805d0ae1dc60431c9ba0faa42b83951a113d74d5b00c3816d10c9bf1a6",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "189ad63bde692a5b4d7aceecb2d4ec8029a10776642d5504b0479e21258fb570",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "1983b867436df143b2dd94d3f87e3abaced676307b98182c2f4b622456f620e3",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "1a488baf769cfd9834ea72c361d99c1917c5ce7964ed3b4c14431a8db424014c",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "1cff041000ac7dec61f1c81858fa35ceea426f5140b531edfaadbd445e90eb3f",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "223834108f06f5e2a9f310a681d7b73a7b95d74125ba626080a177b36369fadd",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "256b889f23b920fbaedc139662cf78d3c9c4337f7bf619b94bdbaafcfae4ec2d",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "27c9ed322b9ee0542b6e741b97d3791c2e9e4db28a19f4c6898452ca5468da3f",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "2d72e46ce1fba306b254f4c07cc7431bb3d2e027c5ceecaf2d8a761e7217d0f0",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "31328c20feab18e5d70217e03a159f62dc71b80f6aae92341bf4e13a14f72b1b",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "34ed575be96fd55cff20d81f66c87f47c6a029c6451e4ac5027be424580cb2e8",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "408e9984d8deb8b05ddd7dad2fa3e5ed4d274ed203c3ed0daf4d79177f861ed5",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "40f6cfa57e13492766c7f5775918ebe023c6b0d551fc779e4b20b54eb43c5fbd",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "49aa58a23c378c241537776ef4c4c58e91e3fab968f4d768bfeae297ac832577",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "4ee00ad07fbdd1c96d221e3a27b4a9b978f88e8902cba7babdb35f66d91d997a",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "5034bddbda89ac7f546a23a5f37727a4352ca0d0538c8ab69a28630b7f321652",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "539e1711aab6ad99e9f21a696d0a429f367d3a2b45a88c29ed6a43ed39fcd83e",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "57043a1acc4a1ee46caaff61578360a75fcffe4bd864ce46e793b77c9c843ff0",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "596d0573e5c38f7e6401b5d92ae9420a7439a9b59bbbff048cc4fade73a90b39",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "64c49260e54420e6a8f55f9ddb7d7152f29cb98f2c1bc6a5c203010d2afe7ed6",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "75c3253f57e1455b21778548103e26baa9a0d9df6fafb0f3ce23e7d9dad5b445",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "81aa2c6f46295e88c84463e2efd08b2c89d1d652ece08a8be6bf1d8f6141abd0",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "8326ea3ff37c71b5a7acf0545795c9fedea61a988f77e5958060971a2521e773",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "840ccb17f6861ac616beef785a8b0d5a5a52473f4f7fec03539ebe75ae37f860",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "87ef8bf03358190fc6c1ea2f6badf0ee771954e81e1b83206f0e49aea61128c2",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "8d421158b390b9193446da1ee3a2a94be94c68afdb3100e9cfde8e7641a93df0",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "8dba7d967d0852b5ddbab4ee994c468fb676cdc3b128f5d6d6bd0c4d2cdf5937",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "92ad3027f33ca2ece2362e369f28b5ef50e90449a61bc674e27a210e5835a8ef",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "941b28edda32f44fae01cdee142ade384353f6a3a1b6f82637d0eb7a46ad529e",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "963b256d2b4a190f745ecd09c44337bc68f72fe04c0d4d10c0d8d67ca3a3b7cd",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "97b0d4bd4aa8e6f35033be0088d3532318f1ba094639504a5b5e7ac5b44d1863",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "992efcdd3dc9ce9c3f08d86a7abfdb11b2ef7f3a5c316e898ed789d58cecf147",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "9b4699928cf3ad3377df6506c1cf72ce6455b638050da15cc989e36d0e4037bc",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "9c3d12b5b246fc5b8025383ad3c3a2da69b154c870fce827abaffe88e550e147",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "9d00c4a23cf42e9627e36f58c98152a2f6b3c0bf662d300f172f65b667232cb5",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "a0d8bc68189459b323072e1a74372d1866be281c4852eee6c04ce1f5dcf65637",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "a18f526c921f40aac9e786e7090f06d4d56628bbbc97d49c3dbfc58c7ab76fb5",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "a22f8eb533353f21d4f97179c3c876755de65054bf59e40d6005fe78cf78355c",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "a25ab79c16ed5b3611cca8c9b911ae7f75a0d3b541eb1c33be13206480e8318e",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "a65599e986b333b5d987795c941279542a90767509a4a31f439d852acd820e1f",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "b0a5197eb445dfdeda7709b3cde1a16853bae15e8d3f8cd266637040f133bb45",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "b7ab5868abbdf6a7f838e9499705b2b0ee95d9377747693c3994f18991916c40",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "c3f047b34b47e13e94a29326c9ea086978fdef06e624c162c131ae665c62dfc4",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "c82d5d1ee716445eb4f7a2f30c9970ade9e3f0cf5e62b116078f514d98932955",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "c9adaca68ee3af0fed633b989eef01e83e7af0012b7327214f84afc24f892315",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "cd970f372e0962d7cddae38cc2c8fca25e7f75b29d8a899a235981dea460b1dd",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "d41b858a52ff74f6ca943d4cc14a343fe7613b578115dc8cb2825cc7fe6455c2",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "db1e38e62575140a38242a452f9bf6f6dd39d74cfb898dfbfea9ac4051935d4b",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "dbc46f1ad7bf034cbe647862b4d206b8d850dc99836039a516b61c0a78db2b8c",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "dbfe1558104b525da7b4ba99fed2b529026d13fd1781228a4093f5fb9881c250",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "e3d86ed320ace86509430f1dc03b6609314b917342009055edc057095e1afc92",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "e6c2b1880e62097c1f217253724a8f0388900efd35300f12646d0a78782ea54e",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "ebb527fc6aa8189a8bfe680b8927e175fdc8094301d741a79046f0e8a569d06b",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "ec636d502cb6e07370979f7942b809c23b2f17d30638d775b2f0dad04609d0d0",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "f0ea08116efdfceb60adfdbe4c53b62452eed7ce21cd28b233ea5280f5f31214",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "f7be43a18b17f7491bc847617f7ecabe87661e8ee85cbdf82ccb2a53c623b66c",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "ff7fbcc614cf2bb8666257a14237c058932b9c7d24092ffd9972cfef0c8fa63e",
+    "fingerprint": "0f0ccdb0b691a1800f6a018ff752a427c290af52274fa9014a3c5b18471f83de",
+    "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
+    "author": "Codex",
+    "time": "2026-09-04T09:25:48.147Z"
+  }
+]

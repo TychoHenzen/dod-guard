@@ -43,7 +43,7 @@ export function createAdmin(store, { isProject: projectExists = isProject } = {}
     const project = store.get().projects[Number(raw)];
     if (!project) throw new HttpError(404, `no project registered at position ${raw}`);
     if (!isProject(project.path)) {
-      throw new HttpError(410, `${project.path} no longer holds an openspec directory`);
+      throw new HttpError(410, `${project.path} no longer holds .quality/quality-report.json`);
     }
     return project;
   }

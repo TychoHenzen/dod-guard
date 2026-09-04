@@ -32,8 +32,6 @@ function createFixture(): { readonly directory: string; readonly referenceBytes:
   git(directory, "commit", "-qm", "tracked source");
   return { directory, referenceBytes: Buffer.byteLength(tracked) + Buffer.byteLength(oldWorkspace) };
 }
-
-// covers: fossil/cli :: Production repository analysis :: Inventory includes eligible contained sources
 test("composes tracked and eligible referenced workspace sources into inventory evidence", async () => {
   const fixture = createFixture();
   try {

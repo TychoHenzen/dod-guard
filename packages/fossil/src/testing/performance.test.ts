@@ -12,8 +12,6 @@ import {
 } from "./performance.js";
 
 const execFileAsync = promisify(execFile);
-
-// covers: fossil/cli :: Analysis performance :: Target-size fixture meets runtime bound
 test("defines the target fixture and enforces three fresh JSON analysis runs below ten seconds", async () => {
   const input = fastImportStream(TARGET_PERFORMANCE_FIXTURE);
   const commitRecords = input.match(/^commit refs\/heads\/main$/gm) ?? [];

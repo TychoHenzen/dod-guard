@@ -28,7 +28,7 @@ const ROOT_CANDIDATES = [
 const slash = (path) => resolve(path).replace(/\\/g, "/");
 
 export function isProject(dir) {
-  return existsSync(join(dir, "openspec"));
+  return existsSync(join(dir, ".quality", "quality-report.json"));
 }
 
 function entryFor(dir) {

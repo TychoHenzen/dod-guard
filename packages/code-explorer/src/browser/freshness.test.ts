@@ -51,7 +51,6 @@ function harness(initialGeneration = 4) {
 }
 
 describe("browser freshness", () => {
-  // covers: code-explorer/browser-navigation :: Freshness remains visible without replacing the focus :: New generation is pending
   it("shows pending generation while retaining the current readable focus", async () => {
     const fixture = harness();
     fixture.statuses.push({
@@ -65,8 +64,6 @@ describe("browser freshness", () => {
     assert.equal(fixture.controller.state().status?.pending_generation, 5);
     assert.equal(fixture.controller.state().navigationLocked, false);
   });
-
-  // covers: code-explorer/browser-navigation :: Freshness remains visible without replacing the focus :: Current view becomes stale
   it("locks follows when polling observes a newer published generation, and does not poll hidden tabs", async () => {
     const fixture = harness();
     fixture.statuses.push({ state: "ok", data: { generation: 5, workspace_state: "ready", readiness: "ready" } });
@@ -81,8 +78,6 @@ describe("browser freshness", () => {
     await fixture.controller.poll();
     assert.equal(fixture.statuses.length, 0);
   });
-
-  // covers: code-explorer/browser-navigation :: Freshness remains visible without replacing the focus :: User selects Refocus
   it("refocuses the recorded identity once and unlocks the replacement view", async () => {
     const fixture = harness();
     fixture.statuses.push({ state: "ok", data: { generation: 5, workspace_state: "ready", readiness: "ready" } });
@@ -95,8 +90,6 @@ describe("browser freshness", () => {
     assert.equal(fixture.controller.state().focus.generation, 5);
     assert.equal(fixture.controller.state().navigationLocked, false);
   });
-
-  // covers: code-explorer/browser-navigation :: Freshness remains visible without replacing the focus :: Refresh fails
   it("keeps the complete view and exposes a stable local refresh failure", async () => {
     const fixture = harness();
     fixture.statuses.push({

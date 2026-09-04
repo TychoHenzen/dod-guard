@@ -21,8 +21,6 @@ function resultFor(request: SemanticRequest): SemanticResult {
   }
   return { operation: request.operation, revision, relations: [] };
 }
-
-// covers: code-explorer/language-adapters :: Rust, Python, and C# share one capability-aware navigation contract :: Python project is ready
 it("reports a compatible Python backend ready and forwards every shared request shape", async () => {
   const backend = new FakeSemanticAdapter();
   backend.setReady();

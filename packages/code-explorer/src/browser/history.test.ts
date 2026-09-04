@@ -14,7 +14,6 @@ function view(view_id: string, symbol_id: string): BrowserViewSnapshot {
 }
 
 describe("browser view history", () => {
-  // covers: code-explorer/browser-navigation :: Back and Forward restore explicit views :: User selects Back
   it("restores the prior immutable source, relation, graph, and history position without a request", () => {
     const old = view("view-old", "old");
     const current = view("view-current", "current");
@@ -33,8 +32,6 @@ describe("browser view history", () => {
       position: 0,
     });
   });
-
-  // covers: code-explorer/browser-navigation :: Back and Forward restore explicit views :: User selects Forward
   it("restores the next recorded view after Back", () => {
     const history = new BrowserViewHistory(view("view-old", "old"));
     history.append(view("view-current", "current"));
@@ -46,8 +43,6 @@ describe("browser view history", () => {
     assert.deepEqual(restored?.source, { body: "source view-current" });
     assert.equal(history.state().position, 1);
   });
-
-  // covers: code-explorer/browser-navigation :: Back and Forward restore explicit views :: User navigates after Back
   it("replaces the abandoned Forward branch and its snapshots after new navigation", () => {
     const history = new BrowserViewHistory(view("view-old", "old"));
     history.append(view("view-forward", "forward"));

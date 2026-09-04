@@ -8,8 +8,6 @@ import { analyzeResponsibilityGrowth, extractArchitectureFacts } from "./archite
 const HERE = dirname(fileURLToPath(import.meta.url));
 const beforeTypeScript = readFileSync(join(HERE, "target", "architecture-before.ts"), "utf8");
 const afterTypeScript = readFileSync(join(HERE, "target", "architecture-after.ts"), "utf8");
-
-// covers: quality-guard/architecture-analysis :: Responsibility growth carries concrete evidence :: Existing class gains a new dependency and operation
 test("responsibility growth names the existing type, dependency, and added operation", () => {
   const result = analyzeResponsibilityGrowth(
     extractArchitectureFacts({ path: "src/invoice-service.ts", content: beforeTypeScript }),
@@ -28,8 +26,6 @@ test("responsibility growth names the existing type, dependency, and added opera
     },
   ]);
 });
-
-// covers: quality-guard/architecture-analysis :: Responsibility growth carries concrete evidence :: Method changes without structural growth
 test("method-body edits do not create responsibility-growth findings", () => {
   const before = extractArchitectureFacts({ path: "src/invoice-service.ts", content: beforeTypeScript });
   const after = extractArchitectureFacts({
@@ -55,8 +51,6 @@ test("shared facts normalize types, members, visibility, imports, and references
     assert.ok(result.facts.types[0]?.members.some((member) => member.kind === "method"), path);
   }
 });
-
-// covers: quality-guard/architecture-analysis :: Every finding is reproducible :: Required analysis cannot complete
 test("a changed supported file that cannot yield required facts reports an explicit error", () => {
   const result = extractArchitectureFacts({ path: "src/broken.ts", content: "export class Broken {" });
   assert.equal(result.facts, null);

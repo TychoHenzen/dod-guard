@@ -3,7 +3,6 @@ import { test } from "node:test";
 import { parseQualityConfig } from "./config.js";
 import { analyzeDependencies } from "./dependency.js";
 
-// covers: quality-guard/architecture-analysis :: Dependency boundaries are enforceable :: Policy imports a forbidden driver
 test("reports a staged forbidden dependency with both normalized paths and the import", () => {
   const config = parseQualityConfig(
     '{"pathGroups":{"policy":["src/policy/**"],"infrastructure":["src/drivers/**"]},"dependencyDirections":[{"from":"policy","to":"infrastructure","allowed":false}]}',
@@ -31,8 +30,6 @@ test("reports a staged forbidden dependency with both normalized paths and the i
     },
   ]);
 });
-
-// covers: quality-guard/architecture-analysis :: Dependency boundaries are enforceable :: Staged edge closes a cycle
 test("reports the complete normalized cycle closed by a staged edge", () => {
   const config = parseQualityConfig("{}");
   const result = analyzeDependencies(
