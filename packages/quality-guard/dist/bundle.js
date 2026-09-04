@@ -21831,6 +21831,7 @@ function analyzeCurrentDependencies(files, config2) {
 }
 
 // src/commit-gate/encapsulation.ts
+var GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
 function key(type, member) {
   return `${type.name}.${member.name}`;
 }
@@ -22467,8 +22468,9 @@ function extractFactInventory(files, requiredPaths) {
 import { execFileSync as execFileSync2 } from "node:child_process";
 var SOURCE_PATH3 = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
 var DISTRIBUTION_PATH = /(?:^|[/\\])dist(?:[/\\]|$)/;
+var GIT_OUTPUT_MAX_BUFFER2 = 64 * 1024 * 1024;
 function git(root, args, encoding = "utf8") {
-  return execFileSync2("git", args, { cwd: root, encoding });
+  return execFileSync2("git", args, { cwd: root, encoding, maxBuffer: GIT_OUTPUT_MAX_BUFFER2 });
 }
 function objectContent(root, spec) {
   return git(root, ["show", spec]);

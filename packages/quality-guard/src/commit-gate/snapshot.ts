@@ -21,6 +21,7 @@ export interface Snapshot {
 
 const SOURCE_PATH = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
 const DISTRIBUTION_PATH = /(?:^|[/\\])dist(?:[/\\]|$)/;
+const GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
 
 interface GitSource {
   base: string;
@@ -29,7 +30,7 @@ interface GitSource {
 }
 
 function git(root: string, args: string[], encoding: "utf8" | "buffer" = "utf8"): string | Buffer {
-  return execFileSync("git", args, { cwd: root, encoding });
+  return execFileSync("git", args, { cwd: root, encoding, maxBuffer: GIT_OUTPUT_MAX_BUFFER });
 }
 
 function objectContent(root: string, spec: string): string {

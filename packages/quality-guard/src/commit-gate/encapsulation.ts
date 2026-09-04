@@ -54,6 +54,8 @@ interface HistoryCommit {
   paths: string[];
 }
 
+const GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
+
 function key(type: ArchitectureTypeFact, member: ArchitectureMemberFact): string {
   return `${type.name}.${member.name}`;
 }
@@ -138,6 +140,7 @@ export function readFirstParentHistory(root: string, maxFirstParentCommits: numb
     {
       cwd: root,
       encoding: "buffer",
+      maxBuffer: GIT_OUTPUT_MAX_BUFFER,
     },
   );
   const commits: HistoryCommit[] = [];
