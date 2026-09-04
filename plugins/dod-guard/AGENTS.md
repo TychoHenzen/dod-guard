@@ -16,6 +16,8 @@ definitions. It has no package workspace, MCP server, or bundle.
   only after its verification evidence exists.
 - Use `/review-pr` for four-angle Git or GitHub inline review and Azure DevOps
   Markdown review reports. It never changes the reviewed branch.
+- Use `/fix-pr-review` to revalidate and fix selected review findings. It
+  updates provider state only after verified commits are pushed.
 - Use `/complete-pr` only when the user explicitly accepts the current pull request.
   It owns guarded ready, auto-merge, issue confirmation, and remote branch
   deletion.
