@@ -1,5 +1,24 @@
 # Using dod-guard
 
+## Set up a repository
+
+Run from the local project that should join the dod-guard workflow:
+
+```text
+/dod-guard:setup-repository
+```
+
+The skill preserves existing Git and project configuration. When no GitHub
+remote exists, it collects the owner, repository name, visibility, and default
+branch before creating one. It pushes reviewed files, waits for generated
+quality checks, links one Project with `Backlog`, `Todo`, `In Progress`, and
+`Done`, enables supported security settings, and then protects the default
+branch.
+
+Unsupported plan features, failed checks, ambiguous Projects, and likely
+credentials stop setup with a mutation ledger. The skill never rewrites
+history, force-pushes, or silently replaces configuration.
+
 ## Backlog to draft PR
 
 Capture one or more requested features without designing them:

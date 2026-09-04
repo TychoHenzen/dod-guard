@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "dod-guard",
-      "description": "GitHub issue delivery, guarded accepted-PR completion, repository maintenance, and marketplace release. Ships 11 skills, including backlog capture, /next-ticket, /submit-draft-pr, /complete-pr, and /publish.",
+      "description": "GitHub repository setup, issue delivery, guarded accepted-PR completion, maintenance, and marketplace release. Ships 12 skills, including /setup-repository, /next-ticket, /submit-draft-pr, /complete-pr, and /publish.",
       "source": "./plugins/dod-guard",
       "category": "productivity"
     },
