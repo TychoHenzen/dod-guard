@@ -3,3 +3,4 @@ import "./code-explorer-launch.test.mjs";
 import "./code-explorer-ui.test.mjs";
 import "./managed-shutdown.test.mjs";
 import "./quality-report.test.mjs";
+import "./quality-renderer.test.mjs";

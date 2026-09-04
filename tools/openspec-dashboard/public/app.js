@@ -27,6 +27,13 @@ const state = {
   filter: "",
   scan: null,
   foldState: new Map(),
+  quality: {
+    severity: "all",
+    rule: "all",
+    sort: "path",
+    expanded: true,
+    folderState: new Map(),
+  },
 };
 
 const problem = (err) => el("p", { class: "error" }, err.message);
@@ -57,7 +64,27 @@ function paintTabs() {
 
 function paintLists() {
   replace(dom.lists);
-  if (state.report) replace(dom.detail, renderQuality(state.report, state.filter));
+  if (!state.report) {
+    return;
+  }
+  replace(dom.detail, renderQuality(state.report, {
+    ...state.quality,
+    text: state.filter,
+  }, {
+    onSeverity: (severity) => updateQuality({ severity }),
+    onRule: (rule) => updateQuality({ rule }),
+    onSort: (sort) => updateQuality({ sort }),
+    onExpand: (expanded) => {
+      state.quality.folderState.clear();
+      updateQuality({ expanded });
+    },
+    onFolderToggle: (path, open) => state.quality.folderState.set(path, open),
+  }));
+}
+
+function updateQuality(update) {
+  Object.assign(state.quality, update);
+  paintLists();
 }
 
 async function show(build) {
