@@ -18,6 +18,18 @@ test("CI Biome commands use the configured maintained-file coverage", () => {
   }
 });
 
+test("static analysis runs the strict structural ratchet without line-length", () => {
+  const workflow = readFileSync(WORKFLOW, "utf8");
+  const rules = workflow.match(/^\s*QUALITY_RULES:\s*(.+)$/m)?.[1].split(",");
+  const strictScans = workflow.match(/--profile=strict/g) ?? [];
+
+  assert.ok(rules, "QUALITY_RULES must remain declared in the workflow");
+  assert.equal(rules.includes("line-length"), false, "Biome owns line length");
+  assert.equal(strictScans.length, 2, "the ratchet and baseline regeneration must both use the strict profile");
+  assert.match(workflow, /--baseline=\.github\/quality\/quality-baseline\.json \\\n\s*--fail-on=regression/);
+  assert.match(workflow, /--write-baseline=\.github\/quality\/quality-baseline\.json/);
+});
+
 function git(root, args) {
   execFileSync("git", args, { cwd: root, stdio: "ignore" });
 }
