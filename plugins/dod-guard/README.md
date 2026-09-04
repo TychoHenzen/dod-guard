@@ -3,6 +3,14 @@
 A code-free plugin for GitHub issue delivery and focused repository
 maintenance.
 
+## Repository setup
+
+`/setup-repository` connects a local project to GitHub, merges applicable
+quality gates and delivery instructions, links one Project, enables supported
+security settings, and protects the observed default branch after its checks
+pass. It preserves existing Git history, remotes, instructions, ignore rules,
+and tool configuration.
+
 ## Delivery workflow
 
 `/add-backlog-idea` splits a brain dump into independently deliverable Backlog
@@ -27,6 +35,7 @@ human review followed by `/complete-pr` is the explicit acceptance boundary.
 
 | Skill | Purpose |
 |---|---|
+| `/setup-repository` | Bootstrap a local project into the protected dod-guard GitHub workflow. |
 | `/add-backlog-idea` | Capture each independently deliverable feature as a Backlog issue. |
 | `/refine-backlog-item` | Turn a Backlog issue into a Todo PBI and independent subtasks. |
 | `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
