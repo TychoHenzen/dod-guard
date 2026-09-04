@@ -131,6 +131,17 @@ function requestIdConflict(): CodeExplorerError {
   return codeExplorerError("request_id_conflict");
 }
 
+function readyViewEnvelope(view: FocusView, freshness: FreshnessStatus, historyPosition: number): CodeExplorerEnvelope {
+  return {
+    schema_version: 1,
+    project_id: "project",
+    project_generation: freshness.current_generation,
+    pending_generation: freshness.pending_generation,
+    state: "ready",
+    data: { ...view, history_position: historyPosition },
+  };
+}
+
 function hasValidRequestId(value: string): boolean {
   const bytes = Buffer.byteLength(value, "utf8");
   return bytes >= 16 && bytes <= 128;
@@ -383,6 +394,15 @@ export function createServer(
       }
       if (name === "code_focus") {
         const focus = schemas.code_focus.parse(arguments_);
+        const saveView = (view: FocusView): CodeExplorerEnvelope | CodeExplorerError => {
+          if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
+          viewHistory.push(view.view_id);
+          return readyViewEnvelope(
+            view,
+            capturedFreshness,
+            sessions.historyPosition(connectionId, focus.session_id) ?? 0,
+          );
+        };
         if (focus.symbol_id.startsWith("file:") && options.projectRoot) {
           const filePath = focus.symbol_id.slice("file:".length);
           const body = options.projectRoot.protectedRead(filePath).bytes;
@@ -402,16 +422,7 @@ export function createServer(
             focus.body_limit_bytes,
             capturedFreshness.current_generation,
           );
-          if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
-          viewHistory.push(view.view_id);
-          return {
-            schema_version: 1,
-            project_id: "project",
-            project_generation: capturedFreshness.current_generation,
-            pending_generation: capturedFreshness.pending_generation,
-            state: "ready",
-            data: { ...view, history_position: sessions.historyPosition(connectionId, focus.session_id) ?? 0 },
-          };
+          return saveView(view);
         }
         const selected = await collectFocusedSymbol(options.adapters ?? [], focus.symbol_id, (operation) =>
           backendRequests.run(focus.session_id, operation),
@@ -424,16 +435,7 @@ export function createServer(
               focus.body_limit_bytes,
               capturedFreshness.current_generation,
             );
-            if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
-            viewHistory.push(view.view_id);
-            return {
-              schema_version: 1,
-              project_id: "project",
-              project_generation: capturedFreshness.current_generation,
-              pending_generation: capturedFreshness.pending_generation,
-              state: "ready",
-              data: { ...view, history_position: sessions.historyPosition(connectionId, focus.session_id) ?? 0 },
-            };
+            return saveView(view);
           } catch (error) {
             if (error instanceof FocusBodyLimitError) return resourceLimit();
             throw error;

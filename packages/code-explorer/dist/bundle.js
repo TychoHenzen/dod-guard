@@ -22474,11 +22474,6 @@ var ProjectGenerationScheduler = class {
   }
 };
 
-// src/freshness/workspace-freshness.ts
-import { createHash } from "node:crypto";
-import { readdir as readdir3, readFile as readFile2, stat as stat4 } from "node:fs/promises";
-import { join as join6, relative as relative3 } from "node:path";
-
 // ../../node_modules/chokidar/esm/index.js
 import { stat as statcb } from "fs";
 import { stat as stat3, readdir as readdir2 } from "fs/promises";
@@ -24170,6 +24165,69 @@ function watch(paths, options = {}) {
 }
 var esm_default = { watch, FSWatcher };
 
+// src/freshness/native-manifest.ts
+import { createHash } from "node:crypto";
+import { readdir as readdir3, readFile as readFile2, stat as stat4 } from "node:fs/promises";
+import { join as join6, relative as relative3 } from "node:path";
+async function reconcileNativeManifest(options) {
+  const started = (options.now ?? Date.now)();
+  try {
+    const files = await supportedFiles(options.root, options.supported, started, options.now ?? Date.now);
+    const manifest = /* @__PURE__ */ new Map();
+    for (let offset = 0; offset < files.length; offset += 64) {
+      const stable = await stableBatch(options, files.slice(offset, offset + 64));
+      for (const [file, hash] of stable) {
+        if (hash === "incomplete_write") return { cause: hash };
+        if (hash === "scan_limit") return { cause: hash };
+        manifest.set(file, hash);
+      }
+    }
+    return { manifest };
+  } catch (error2) {
+    return { cause: error2 instanceof Error && error2.message === "scan_limit" ? "scan_limit" : "freshness_unavailable" };
+  }
+}
+async function stableBatch(options, files) {
+  return await Promise.all(
+    files.map(
+      async (file) => [file, await stableHash(join6(options.root, file), options.now ?? Date.now, options.sleep ?? delay)]
+    )
+  );
+}
+async function supportedFiles(root, supported, started, now) {
+  const output = [];
+  const visit = async (directory) => {
+    if (now() - started > 6e4 || output.length > 5e4) throw new Error("scan_limit");
+    for (const entry of await readdir3(directory, { withFileTypes: true })) {
+      const absolute = join6(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (!/^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(entry.name)) await visit(absolute);
+      } else {
+        const path5 = relative3(root, absolute).replaceAll("\\", "/");
+        if (supported(path5)) output.push(path5);
+      }
+    }
+  };
+  await visit(root);
+  if (output.length > 5e4) throw new Error("scan_limit");
+  return output.sort();
+}
+async function stableHash(path5, now, sleep) {
+  const started = now();
+  for (; ; ) {
+    const before = await stat4(path5);
+    if (before.size > 4 * 1024 * 1024) return "scan_limit";
+    await sleep(100);
+    const after = await stat4(path5);
+    if (before.size === after.size && before.mtimeMs === after.mtimeMs)
+      return createHash("sha256").update(await readFile2(path5)).digest("hex");
+    if (now() - started >= 1e4) return "incomplete_write";
+  }
+}
+function delay(milliseconds) {
+  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
+}
+
 // src/freshness/workspace-freshness.ts
 var coalesceMilliseconds = 100;
 function canPublishGeneration(currentGeneration, analyzedGeneration, captured, prepublication) {
@@ -24374,65 +24432,6 @@ function createNativeWorkspaceFreshness(options) {
     verify: () => reconcileNativeManifest(options),
     watch_paths: [options.root]
   });
-}
-async function reconcileNativeManifest(options) {
-  const started = (options.now ?? Date.now)();
-  try {
-    const files = await supportedFiles(options.root, options.supported, started, options.now ?? Date.now);
-    const manifest = /* @__PURE__ */ new Map();
-    for (let offset = 0; offset < files.length; offset += 64) {
-      const batch = files.slice(offset, offset + 64);
-      const stable = await Promise.all(
-        batch.map(
-          async (file) => [
-            file,
-            await stableHash(join6(options.root, file), options.now ?? Date.now, options.sleep ?? delay)
-          ]
-        )
-      );
-      for (const [file, hash] of stable) {
-        if (hash === "incomplete_write") return { cause: hash };
-        if (hash === "scan_limit") return { cause: hash };
-        manifest.set(file, hash);
-      }
-    }
-    return { manifest };
-  } catch (error2) {
-    return { cause: error2 instanceof Error && error2.message === "scan_limit" ? "scan_limit" : "freshness_unavailable" };
-  }
-}
-async function supportedFiles(root, supported, started, now) {
-  const output = [];
-  const visit = async (directory) => {
-    if (now() - started > 6e4 || output.length > 5e4) throw new Error("scan_limit");
-    for (const entry of await readdir3(directory, { withFileTypes: true })) {
-      const absolute = join6(directory, entry.name);
-      if (entry.isDirectory()) {
-        if (!/^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(entry.name)) await visit(absolute);
-      } else {
-        const path5 = relative3(root, absolute).replaceAll("\\", "/");
-        if (supported(path5)) output.push(path5);
-      }
-    }
-  };
-  await visit(root);
-  if (output.length > 5e4) throw new Error("scan_limit");
-  return output.sort();
-}
-async function stableHash(path5, now, sleep) {
-  const started = now();
-  for (; ; ) {
-    const before = await stat4(path5);
-    if (before.size > 4 * 1024 * 1024) return "scan_limit";
-    await sleep(100);
-    const after = await stat4(path5);
-    if (before.size === after.size && before.mtimeMs === after.mtimeMs)
-      return createHash("sha256").update(await readFile2(path5)).digest("hex");
-    if (now() - started >= 1e4) return "incomplete_write";
-  }
-}
-function delay(milliseconds) {
-  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
 }
 
 // src/navigation/error.ts
@@ -27131,6 +27130,16 @@ function staleView() {
 function requestIdConflict() {
   return codeExplorerError("request_id_conflict");
 }
+function readyViewEnvelope(view, freshness, historyPosition) {
+  return {
+    schema_version: 1,
+    project_id: "project",
+    project_generation: freshness.current_generation,
+    pending_generation: freshness.pending_generation,
+    state: "ready",
+    data: { ...view, history_position: historyPosition }
+  };
+}
 function hasValidRequestId(value) {
   const bytes = Buffer5.byteLength(value, "utf8");
   return bytes >= 16 && bytes <= 128;
@@ -27343,6 +27352,15 @@ function createServer2(options = {}) {
       }
       if (name === "code_focus") {
         const focus = schemas.code_focus.parse(arguments_);
+        const saveView = (view) => {
+          if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
+          viewHistory.push(view.view_id);
+          return readyViewEnvelope(
+            view,
+            capturedFreshness,
+            sessions.historyPosition(connectionId, focus.session_id) ?? 0
+          );
+        };
         if (focus.symbol_id.startsWith("file:") && options.projectRoot) {
           const filePath = focus.symbol_id.slice("file:".length);
           const body = options.projectRoot.protectedRead(filePath).bytes;
@@ -27362,16 +27380,7 @@ function createServer2(options = {}) {
             focus.body_limit_bytes,
             capturedFreshness.current_generation
           );
-          if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
-          viewHistory.push(view.view_id);
-          return {
-            schema_version: 1,
-            project_id: "project",
-            project_generation: capturedFreshness.current_generation,
-            pending_generation: capturedFreshness.pending_generation,
-            state: "ready",
-            data: { ...view, history_position: sessions.historyPosition(connectionId, focus.session_id) ?? 0 }
-          };
+          return saveView(view);
         }
         const selected = await collectFocusedSymbol(
           options.adapters ?? [],
@@ -27386,16 +27395,7 @@ function createServer2(options = {}) {
               focus.body_limit_bytes,
               capturedFreshness.current_generation
             );
-            if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
-            viewHistory.push(view.view_id);
-            return {
-              schema_version: 1,
-              project_id: "project",
-              project_generation: capturedFreshness.current_generation,
-              pending_generation: capturedFreshness.pending_generation,
-              state: "ready",
-              data: { ...view, history_position: sessions.historyPosition(connectionId, focus.session_id) ?? 0 }
-            };
+            return saveView(view);
           } catch (error2) {
             if (error2 instanceof FocusBodyLimitError) return resourceLimit();
             throw error2;

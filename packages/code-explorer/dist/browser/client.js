@@ -452,12 +452,13 @@ function startApplication(storage, startedState, root2) {
   root2.innerHTML = renderBrowserBody(store.state(), window.innerWidth);
   let currentSymbol;
   const showFocus = (reply) => renderFocus(reply, (symbolId) => currentSymbol = symbolId);
-  const focus = async (symbolId) => showFocus(
-    await browserRequest(storage, "/api/focus", { request_id: crypto.randomUUID(), symbol_id: symbolId })
-  );
+  const focus = async (symbolId) => showFocus(await browserRequest(storage, "/api/focus", { request_id: crypto.randomUUID(), symbol_id: symbolId }));
   let discovery = createDiscovery(storage, []);
   bindSymbols(focus);
-  bindSearch(() => discovery, () => renderDiscoveryArea(discovery, focus));
+  bindSearch(
+    () => discovery,
+    () => renderDiscoveryArea(discovery, focus)
+  );
   void browserRequest(storage, "/api/search", { request_id: crypto.randomUUID(), query: "" }).then((reply) => {
     discovery = createDiscovery(storage, landmarkGroups(reply));
     renderDiscoveryArea(discovery, focus);

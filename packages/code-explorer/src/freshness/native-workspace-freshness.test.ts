@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
-import { reconcileNativeManifest } from "./workspace-freshness.js";
+import { createNativeWorkspaceFreshness } from "./workspace-freshness.js";
 
 it("hashes project files concurrently without traversing dependency or VCS directories", async () => {
   const root = mkdtempSync(join(tmpdir(), "code-explorer-freshness-"));
@@ -14,18 +14,22 @@ it("hashes project files concurrently without traversing dependency or VCS direc
     writeFileSync(join(root, "node_modules", "ignored.ts"), "ignored\n");
     writeFileSync(join(root, ".git", "ignored.ts"), "ignored\n");
     const waiting: Array<() => void> = [];
-    const result = reconcileNativeManifest({
+    const freshness = createNativeWorkspaceFreshness({
       root,
       supported: (path) => path.endsWith(".ts"),
       sleep: () => new Promise<void>((resolve) => waiting.push(resolve)),
     });
+    const result = freshness.reconcile();
     for (let index = 0; index < 1_000 && waiting.length < 2; index += 1)
       await new Promise((resolve) => setTimeout(resolve, 1));
     assert.equal(waiting.length, 2);
     for (const resolve of waiting) resolve();
-    const manifest = await result;
-    assert.ok("manifest" in manifest);
-    if ("manifest" in manifest) assert.deepEqual([...manifest.manifest.keys()], ["src/a.ts", "src/b.ts"]);
+    for (let index = 0; index < 1_000 && waiting.length < 4; index += 1)
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    assert.equal(waiting.length, 4);
+    for (const resolve of waiting.slice(2)) resolve();
+    await result;
+    assert.equal(freshness.status().state, "ready");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
