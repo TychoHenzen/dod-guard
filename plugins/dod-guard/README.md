@@ -18,9 +18,10 @@ issues. `/refine-backlog-item` turns one into a Todo PBI. `/next-ticket`
 implements and pushes that PBI. `/submit-draft-pr` submits its verified draft
 pull request. `/review-pr` checks the final branch or pull request with four
 independent reviewers. After review, `/complete-pr` treats its invocation as
-acceptance of the current head and completes the guarded merge. Each skill
-resolves the current repository and requires exactly one open GitHub Project
-explicitly linked to it.
+acceptance of the current head and completes the guarded merge.
+`/fix-pr-review` revalidates and fixes selected review findings before that
+acceptance. Each delivery skill resolves the current repository and requires
+exactly one open GitHub Project explicitly linked to it.
 
 One issue becomes one branch and one draft pull request:
 
@@ -42,6 +43,7 @@ human review followed by `/complete-pr` is the explicit acceptance boundary.
 | `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
 | `/review-pr` | Review Git or GitHub inline with four agents, or produce one Azure DevOps report. |
+| `/fix-pr-review` | Revalidate and fix selected GitHub, local Git, or Azure review findings. |
 | `/complete-pr` | Complete an explicitly accepted draft through guarded auto-merge and branch deletion. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |

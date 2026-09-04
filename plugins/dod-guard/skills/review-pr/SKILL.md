@@ -150,8 +150,10 @@ Before publication, confirm the provider head still equals `headSha`. Stop if
 it changed.
 
 - Local Git: emit each accepted finding through the active client's inline
-  code-comment artifact. In Codex use `::code-comment`; in Claude Code use its
-  clickable `file:line` review finding. Do not post externally.
+  code-comment artifact. Number the accepted findings `LOCAL-1`, `LOCAL-2`,
+  and so on in their titles so `/fix-pr-review` can select them later. In Codex
+  use `::code-comment`; in Claude Code use its clickable `file:line` review
+  finding. Do not post externally.
 - GitHub: create one `COMMENT` review whose comments use `commit_id=headSha`,
   the validated path, final line, and `side=RIGHT`. Use one PR-level comment
   only for accepted records without an honest line. Never submit `APPROVE` or
