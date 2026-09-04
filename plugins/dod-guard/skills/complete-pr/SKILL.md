@@ -1,6 +1,6 @@
 ---
 name: complete-pr
-description: Complete an explicitly accepted draft pull request through guarded auto-merge, required checks, linked-issue confirmation, and remote branch deletion.
+description: Complete an explicitly accepted open pull request through guarded auto-merge, required checks, linked-issue confirmation, and remote branch deletion.
 ---
 
 # Complete PR
@@ -16,8 +16,9 @@ or an earlier command.
 3. Resolve the repository and default branch with
    `gh repo view --json nameWithOwner,defaultBranchRef,url`.
 4. Resolve the one open pull request for the current branch, or use the pull
-   request number supplied by the user. Require an open draft whose head belongs
-   to the current repository and whose base is the default branch.
+   request number supplied by the user. Accept either a draft or ready pull
+   request whose head belongs to the current repository and whose base is the
+   default branch.
 5. Read the pull request, linked issue, review result, and latest verification
    evidence. Stop if the draft does not represent the reviewed and verified code.
 
@@ -29,7 +30,8 @@ Resolve this skill's directory from the loaded `SKILL.md`, then run:
 node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number>
 ```
 
-The helper records the accepted head SHA before making the draft ready. It then:
+The helper records the accepted head SHA first. If the pull request is a draft,
+it marks it ready. If it is already ready, it preserves that state. It then:
 
 - enables repository auto-merge when needed;
 - enables merge-commit auto-merge with `--match-head-commit`;

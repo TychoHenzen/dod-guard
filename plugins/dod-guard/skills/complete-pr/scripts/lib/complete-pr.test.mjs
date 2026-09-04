@@ -129,6 +129,21 @@ test("waits for required checks, confirms merge, and deletes the trusted remote 
   ]);
 });
 
+test("accepts an already-ready pull request without marking it ready again", async () => {
+  const client = new FixtureClient({
+    pulls: [
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+    ],
+  });
+
+  const result = await completePullRequest(client, immediateOptions);
+
+  assert.equal(result.mergeCommitSha, "merge-1");
+  assert.equal(client.calls.some(([name]) => name === "markReady"), false);
+});
+
 test("accepts repeated guarded base updates and pins auto-merge to each trusted head", async () => {
   const client = new FixtureClient({
     checks: [pendingChecks, pendingChecks, passingChecks],

@@ -42,8 +42,8 @@ function inspectRequiredChecks(checks) {
 }
 
 function validateInitialState(repository, pullRequest) {
-  if (pullRequest.state !== "OPEN" || !pullRequest.isDraft) {
-    stop("not_verified_draft", "The selected pull request must be an open draft.");
+  if (pullRequest.state !== "OPEN") {
+    stop("not_open_pull_request", "The selected pull request must be open.");
   }
   if (pullRequest.isCrossRepository || pullRequest.headRepository !== repository.nameWithOwner) {
     stop("cross_repository_head", "The pull request head must belong to the current repository.");
@@ -179,9 +179,11 @@ async function completePullRequest(client, overrides = {}) {
 
   const acceptedHead = pullRequest.headSha;
   const pullNumber = pullRequest.number;
-  await client.markReady(pullNumber);
-  pullRequest = await client.getPullRequest(pullNumber);
-  requireTrustedHead(pullRequest, acceptedHead);
+  if (pullRequest.isDraft) {
+    await client.markReady(pullNumber);
+    pullRequest = await client.getPullRequest(pullNumber);
+    requireTrustedHead(pullRequest, acceptedHead);
+  }
 
   if (!repository.autoMergeAllowed) {
     await client.enableRepositoryAutoMerge();
