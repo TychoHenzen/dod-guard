@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { open, readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 import type { ReconcileResult } from "./types.js";
 
@@ -69,14 +69,19 @@ async function stableHash(
 ): Promise<string | "incomplete_write" | "scan_limit"> {
   const started = now();
   for (;;) {
-    const before = await stat(path);
-    if (before.size > 4 * 1024 * 1024) return "scan_limit";
-    await sleep(100);
-    const after = await stat(path);
-    if (before.size === after.size && before.mtimeMs === after.mtimeMs)
-      return createHash("sha256")
-        .update(await readFile(path))
-        .digest("hex");
+    const file = await open(path, "r");
+    try {
+      const before = await file.stat();
+      if (before.size > 4 * 1024 * 1024) return "scan_limit";
+      await sleep(100);
+      const after = await file.stat();
+      if (before.size === after.size && before.mtimeMs === after.mtimeMs)
+        return createHash("sha256")
+          .update(await file.readFile())
+          .digest("hex");
+    } finally {
+      await file.close();
+    }
     if (now() - started >= 10_000) return "incomplete_write";
   }
 }

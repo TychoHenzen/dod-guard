@@ -24040,8 +24040,8 @@ var FSWatcher = class extends EventEmitter {
     }
     return this._userIgnored(path5, stats);
   }
-  _isntIgnored(path5, stat5) {
-    return !this._isIgnored(path5, stat5);
+  _isntIgnored(path5, stat4) {
+    return !this._isIgnored(path5, stat4);
   }
   /**
    * Provides a set of common helpers and properties relating to symlink handling.
@@ -24167,7 +24167,7 @@ var esm_default = { watch, FSWatcher };
 
 // src/freshness/native-manifest.ts
 import { createHash } from "node:crypto";
-import { readdir as readdir3, readFile as readFile2, stat as stat4 } from "node:fs/promises";
+import { open as open2, readdir as readdir3 } from "node:fs/promises";
 import { join as join6, relative as relative3 } from "node:path";
 async function reconcileNativeManifest(options) {
   const started = (options.now ?? Date.now)();
@@ -24215,12 +24215,17 @@ async function supportedFiles(root, supported, started, now) {
 async function stableHash(path5, now, sleep) {
   const started = now();
   for (; ; ) {
-    const before = await stat4(path5);
-    if (before.size > 4 * 1024 * 1024) return "scan_limit";
-    await sleep(100);
-    const after = await stat4(path5);
-    if (before.size === after.size && before.mtimeMs === after.mtimeMs)
-      return createHash("sha256").update(await readFile2(path5)).digest("hex");
+    const file = await open2(path5, "r");
+    try {
+      const before = await file.stat();
+      if (before.size > 4 * 1024 * 1024) return "scan_limit";
+      await sleep(100);
+      const after = await file.stat();
+      if (before.size === after.size && before.mtimeMs === after.mtimeMs)
+        return createHash("sha256").update(await file.readFile()).digest("hex");
+    } finally {
+      await file.close();
+    }
     if (now() - started >= 1e4) return "incomplete_write";
   }
 }
@@ -25723,11 +25728,11 @@ function inspectFile(candidate, root, projectRoot) {
     if (!link.isFile() || link.isSymbolicLink()) return void 0;
     const canonicalPath = realpathSync2.native(candidate);
     if (!isWithin2(root, canonicalPath) || projectRoot && isWithin2(projectRoot, canonicalPath)) return void 0;
-    const stat5 = statSync3(canonicalPath, { bigint: true });
+    const stat4 = statSync3(canonicalPath, { bigint: true });
     return {
       canonical_path: canonicalPath,
-      device: String(stat5.dev),
-      file_id: String(stat5.ino),
+      device: String(stat4.dev),
+      file_id: String(stat4.ino),
       sha256: createHash4("sha256").update(readFileSync4(canonicalPath)).digest("hex"),
       regular_file: true,
       link_or_reparse_point: false
