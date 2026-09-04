@@ -7,7 +7,8 @@ definitions. It has no package workspace, MCP server, or bundle.
 
 - Resolve repository identity with `gh repo view`.
 - Select only the single open Project explicitly linked to that repository.
-- Use `/add-backlog-idea` to capture unrefined work in its target repository.
+- Use `/add-backlog-idea` to split an unrefined brain dump into one Backlog
+  issue per independently deliverable feature in its target repository.
   Backlog items are issues, not drafts. Use `/refine-backlog-item` to create a
   Todo PBI with observable acceptance criteria and only independent sub-issues.
 - Use one `codex/<issue>-<slug>` branch and one draft pull request per issue.

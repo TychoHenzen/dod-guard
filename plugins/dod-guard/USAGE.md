@@ -2,14 +2,20 @@
 
 ## Backlog to draft PR
 
-Capture a request without designing it:
+Capture one or more requested features without designing them:
 
 ```text
-/dod-guard:add-backlog-idea TychoHenzen/dod-guard Add a validation report for stale plugin assets
+/dod-guard:add-backlog-idea TychoHenzen/dod-guard Add a stale-asset report using tracked plugin files, and show installed and available plugin versions in the marketplace list
 ```
 
-The repository argument is the backlog item's target repository. Backlog items
-are real issues, not drafts, so the Project Repository field stays populated.
+The repository argument is every backlog item's target repository. The skill
+creates one issue for each outcome that can be implemented, verified, and
+closed independently and is useful on its own. Different implementation parts
+of one user-visible capability stay in one issue. A single outcome still
+creates one issue.
+
+Backlog items are real issues, not drafts, so the Project Repository field
+stays populated. The result maps every identified feature to its issue URL.
 
 Refine one Backlog item into a Todo PBI and any independently completable
 subtasks:

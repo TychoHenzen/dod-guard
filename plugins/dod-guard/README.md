@@ -5,10 +5,11 @@ maintenance.
 
 ## Delivery workflow
 
-`/add-backlog-idea` captures work. `/refine-backlog-item` turns it into a Todo
-PBI. `/next-ticket` implements and pushes that PBI. `/submit-draft-pr` submits
-its verified draft pull request. Each skill resolves the current repository and
-requires exactly one open GitHub Project explicitly linked to it.
+`/add-backlog-idea` splits a brain dump into independently deliverable Backlog
+issues. `/refine-backlog-item` turns one into a Todo PBI. `/next-ticket`
+implements and pushes that PBI. `/submit-draft-pr` submits its verified draft
+pull request. Each skill resolves the current repository and requires exactly
+one open GitHub Project explicitly linked to it.
 
 One issue becomes one branch and one draft pull request:
 
@@ -24,7 +25,7 @@ Merging and approval remain human actions.
 
 | Skill | Purpose |
 |---|---|
-| `/add-backlog-idea` | Capture a requested idea as a Backlog issue in its chosen repository. |
+| `/add-backlog-idea` | Capture each independently deliverable feature as a Backlog issue. |
 | `/refine-backlog-item` | Turn a Backlog issue into a Todo PBI and independent subtasks. |
 | `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
