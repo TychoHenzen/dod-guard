@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "dod-guard",
-      "description": "GitHub repository setup, issue delivery, guarded accepted-PR completion, maintenance, and marketplace release. Ships 12 skills, including /setup-repository, /next-ticket, /submit-draft-pr, /complete-pr, and /publish.",
+      "description": "GitHub repository setup, issue delivery, four-agent Git and GitHub PR review, Azure DevOps review reports, guarded completion, maintenance, and marketplace release. Ships 13 skills and 6 agents.",
       "source": "./plugins/dod-guard",
       "category": "productivity"
     },

@@ -402,7 +402,6 @@ describe("code-explorer package boundary", () => {
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [join(installed, "dist", "bundle.js"), "--project-root", project],
-      cwd: project,
       env: { PATH: "" },
     });
     try {
