@@ -1,30 +1,16 @@
-export type LandmarkItem = { symbol_id: string; name: string; path: string; kind: string };
-export type LandmarkGroup = { group: string; items: readonly (string | LandmarkItem)[] };
-export type FocusedSymbol = { name: string; path: string; kind: string };
+import type { BrowserShellState } from "./app-types.js";
+import type { BrowserOperation } from "./browser-operation.js";
+import type { LandmarkGroup } from "./landmark-types.js";
+
 export type BrowserAction = {
   operation: BrowserOperation | string;
-  symbol?: FocusedSymbol;
+  symbol?: { name: string; path: string; kind: string };
   drawer?: "discovery" | "relations" | undefined;
 };
 
-export type BrowserOperation =
-  | "search"
-  | "focus"
-  | "back"
-  | "forward"
-  | "refocus"
-  | "refresh"
-  | "status"
-  | "set_filters"
-  | "set_drawer";
-
-export type BrowserShellState = {
-  landmarks: readonly LandmarkGroup[];
-  focus?: FocusedSymbol;
-  activeDrawer?: "discovery" | "relations";
-  status: string;
-  navigationEnabled: boolean;
-};
+export type { BrowserShellState } from "./app-types.js";
+export type { BrowserOperation } from "./browser-operation.js";
+export type { LandmarkGroup } from "./landmark-types.js";
 
 const visibleOperations: readonly BrowserOperation[] = [
   "search",

@@ -53,6 +53,88 @@ function renderBrowserBody(state, viewportWidth) {
   return `<header class="status-strip"><span data-area="status">${escapeText(state.status)}</span><nav aria-label="Navigation"><button type="button" data-operation="back"${disabled}>Back</button><button type="button" data-operation="forward"${disabled}>Forward</button><button type="button" data-operation="refocus"${disabled}>Refocus</button><button type="button" data-operation="refresh">Refresh</button></nav></header><main class="explorer-shell ${narrow ? "narrow" : "desktop"}">${discoveryDrawer}<aside id="discovery-pane" data-pane="discovery"><h2>Landmarks</h2><label>Search <input type="search" data-operation="search"${disabled}></label><div data-area="discovery">${renderLandmarks(state.landmarks)}</div></aside><section data-pane="focus"><h1>Focused source</h1><div data-area="source">${focus}</div><div data-area="graph" data-state="empty">No graph loaded</div></section><aside id="relations-pane" data-pane="relations"><h2>Relations</h2><p data-state="empty-relations">No relations loaded</p></aside>${relationDrawer}</main>`;
 }
 
+// src/browser/browser-reply.ts
+function landmarkItem(value) {
+  if (!value || typeof value !== "object") return void 0;
+  const item = value;
+  if (!hasStrings(item, ["symbol_id", "name", "path", "kind"])) return void 0;
+  return { symbol_id: item.symbol_id, name: item.name, path: item.path, kind: item.kind };
+}
+function compactLandmarkItem(value) {
+  const item = landmarkItem(value);
+  return item ? [item] : [];
+}
+function landmarkGroup(value) {
+  if (!value || typeof value !== "object") return void 0;
+  const candidate = value;
+  if (!hasStrings(candidate, ["group"])) return void 0;
+  if (!Array.isArray(candidate.symbols)) return void 0;
+  return {
+    group: candidate.group,
+    items: candidate.symbols.flatMap(compactLandmarkItem)
+  };
+}
+function landmarkGroups(reply) {
+  const groups = Array.isArray(reply.data?.landmarks) ? reply.data.landmarks : [];
+  return groups.flatMap((value) => {
+    const group = landmarkGroup(value);
+    return group ? [group] : [];
+  });
+}
+function sourceGeneration(reply) {
+  if (typeof reply.data?.project_generation === "number") return reply.data.project_generation;
+  return typeof reply.project_generation === "number" ? reply.project_generation : 0;
+}
+function hasStrings(value, keys) {
+  return keys.every((key) => typeof value[key] === "string");
+}
+function numberField(value, key) {
+  return typeof value?.[key] === "number" ? value[key] : 0;
+}
+function firstStringField(value, keys) {
+  for (const key of keys) {
+    if (typeof value[key] === "string") return value[key];
+  }
+  return void 0;
+}
+function focusedSource(reply) {
+  const data = Object(reply.data);
+  const content = Object(data.content);
+  const body = firstStringField(content, ["body", "declaration"]);
+  if (!hasStrings(data, ["view_id", "symbol_id", "name", "kind", "path"])) return void 0;
+  if (typeof body !== "string") return void 0;
+  return {
+    view_id: data.view_id,
+    symbol: { name: data.name, kind: data.kind, path: data.path, symbol_id: data.symbol_id },
+    generation: sourceGeneration(reply),
+    body,
+    handles: [],
+    returned_bytes: numberField(content, "returned_bytes"),
+    total_bytes: numberField(content, "total_bytes"),
+    limit_bytes: numberField(content, "limit_bytes"),
+    truncated: content.truncated === true
+  };
+}
+
+// src/browser/browser-request.ts
+function ownership(storage) {
+  const session = storage.get("browser_session_id");
+  const tab = storage.get("tab_instance_id");
+  return session && tab ? { "x-code-explorer-session": session, "x-code-explorer-tab": tab } : void 0;
+}
+async function browserRequest(storage, path, body) {
+  const headers = ownership(storage);
+  if (!headers) throw new Error("invalid_browser_session");
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...headers },
+    body: JSON.stringify(body)
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.code ?? "workspace_unavailable");
+  return payload;
+}
+
 // src/browser/discovery.ts
 function escapeText2(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
@@ -245,55 +327,6 @@ function renderGraphArea(graph, options = {}) {
   }
 }
 
-// src/browser/session.ts
-var BrowserSessionClient = class {
-  constructor(options) {
-    this.options = options;
-  }
-  options;
-  async start() {
-    const navigation = this.options.navigationType();
-    if (!navigation) return { state: "browser_capability_unavailable" };
-    const storedSession = this.options.storage.get("browser_session_id");
-    const storedTab = this.options.storage.get("tab_instance_id");
-    const restore = navigation === "reload" && !!storedSession && !!storedTab;
-    if (!restore) this.options.storage.clear();
-    const tabId = restore ? storedTab ?? this.options.randomId() : this.options.randomId();
-    return this.options.lock(`code-explorer-tab:${tabId}`, async (available) => {
-      if (!available) {
-        if (!restore) return { state: "browser_capability_unavailable" };
-        this.options.storage.clear();
-        return this.create(this.options.randomId(), "browser_session_replaced");
-      }
-      if (restore) {
-        const reply = await this.options.request(
-          { action: "restore", tab_instance_id: tabId, document_start: "reload" },
-          { "x-code-explorer-session": storedSession ?? "", "x-code-explorer-tab": tabId }
-        );
-        if (reply.state !== "browser_session_expired" && reply.state !== "invalid_browser_session") return reply;
-        return this.recoverExpired();
-      }
-      return this.create(tabId);
-    });
-  }
-  async recoverExpired() {
-    this.options.storage.clear();
-    return this.create(this.options.randomId(), "browser_session_expired");
-  }
-  async create(tabId, prior) {
-    const reply = await this.options.request(
-      { action: "create", tab_instance_id: tabId, document_start: "new" },
-      { "x-code-explorer-tab": tabId }
-    );
-    const sessionId = reply.data?.browser_session_id;
-    if (sessionId) {
-      this.options.storage.set("tab_instance_id", tabId);
-      this.options.storage.set("browser_session_id", sessionId);
-    }
-    return prior ? { ...reply, state: prior } : reply;
-  }
-};
-
 // src/browser/source.ts
 function escapeText4(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
@@ -357,132 +390,135 @@ function renderFocusedSource(source) {
   return `<article class="focused-source" data-view-id="${escapeText4(source.view_id)}" data-truncated="${source.truncated}"><header><p>${metadata}</p><p>${counts}</p></header><pre>${renderTextWithLineNumbers(segments, source.view_id)}</pre></article>`;
 }
 
-// src/browser/client.ts
-function ownership(storage) {
-  const session = storage.get("browser_session_id");
-  const tab = storage.get("tab_instance_id");
-  return session && tab ? { "x-code-explorer-session": session, "x-code-explorer-tab": tab } : void 0;
+// src/browser/application.ts
+function renderFocus(reply, setCurrent) {
+  const source = focusedSource(reply);
+  if (!source) throw new Error("invalid_browser_view");
+  setCurrent(source.symbol.symbol_id);
+  const sourceHost = document.querySelector('[data-area="source"]');
+  const graphHost = document.querySelector('[data-area="graph"]');
+  if (sourceHost) sourceHost.innerHTML = renderFocusedSource(source);
+  if (graphHost) graphHost.outerHTML = renderGraphArea(projectOneHopGraph(source.symbol, []));
 }
-async function browserRequest(storage, path, body) {
-  const headers = ownership(storage);
-  if (!headers) throw new Error("invalid_browser_session");
-  const response = await fetch(path, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body)
-  });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.code ?? "workspace_unavailable");
-  return payload;
-}
-function landmarkGroups(reply) {
-  const groups = Array.isArray(reply.data?.landmarks) ? reply.data.landmarks : [];
-  return groups.flatMap((value) => {
-    if (!value || typeof value !== "object") return [];
-    const group = value;
-    if (typeof group.group !== "string" || !Array.isArray(group.symbols)) return [];
-    const items = group.symbols.flatMap((symbol) => {
-      if (!symbol || typeof symbol !== "object") return [];
-      const item = symbol;
-      return typeof item.symbol_id === "string" && typeof item.name === "string" && typeof item.path === "string" && typeof item.kind === "string" ? [{ symbol_id: item.symbol_id, name: item.name, path: item.path, kind: item.kind }] : [];
+function bindSymbols(focus) {
+  for (const button of document.querySelectorAll("[data-symbol-id]")) {
+    button.addEventListener("click", () => {
+      const symbolId = button.dataset.symbolId;
+      if (symbolId) void focus(symbolId);
     });
-    return [{ group: group.group, items }];
+  }
+}
+function bindSearch(discovery, render) {
+  document.querySelector('[data-operation="search"]')?.addEventListener("change", async (event) => {
+    const query = event.target.value;
+    if (discovery().state().query === query.trim()) return;
+    await discovery().search(query);
+    render();
   });
 }
-function focusedSource(reply) {
-  const data = reply.data;
-  const content = data?.content;
-  const body = content?.body ?? content?.declaration;
-  if (typeof data?.view_id !== "string" || typeof data.symbol_id !== "string" || typeof data.name !== "string" || typeof data.kind !== "string" || typeof data.path !== "string" || typeof body !== "string")
-    return void 0;
-  return {
-    view_id: data.view_id,
-    symbol: { name: data.name, kind: data.kind, path: data.path, symbol_id: data.symbol_id },
-    generation: typeof data.project_generation === "number" ? data.project_generation : typeof reply.project_generation === "number" ? reply.project_generation : 0,
-    body,
-    handles: [],
-    returned_bytes: typeof content?.returned_bytes === "number" ? content.returned_bytes : 0,
-    total_bytes: typeof content?.total_bytes === "number" ? content.total_bytes : 0,
-    limit_bytes: typeof content?.limit_bytes === "number" ? content.limit_bytes : 0,
-    truncated: content?.truncated === true
-  };
+function renderDiscoveryArea(discovery, focus) {
+  const host = document.querySelector('[data-area="discovery"]');
+  if (host) host.innerHTML = renderDiscovery(discovery.state());
+  bindSymbols(focus);
 }
-function startApplication(storage, startedState, root2) {
-  const landmarks = [];
-  const store = createBrowserStore({
-    status: startedState,
-    landmarks
-  });
-  root2.innerHTML = renderBrowserBody(store.state(), window.innerWidth);
-  let discovery = new BrowserDiscoveryController(
+function createDiscovery(storage, landmarks) {
+  return new BrowserDiscoveryController(
     (request) => browserRequest(storage, "/api/search", {
       request_id: crypto.randomUUID(),
       ...request
     }),
     landmarks
   );
-  let currentSymbol;
-  const renderFocus = (reply) => {
-    const source = focusedSource(reply);
-    if (!source) throw new Error("invalid_browser_view");
-    currentSymbol = source.symbol.symbol_id;
-    const sourceHost = document.querySelector('[data-area="source"]');
-    const graphHost = document.querySelector('[data-area="graph"]');
-    if (sourceHost) sourceHost.innerHTML = renderFocusedSource(source);
-    if (graphHost) graphHost.outerHTML = renderGraphArea(projectOneHopGraph(source.symbol, []));
-  };
-  const focus = async (symbolId) => renderFocus(await browserRequest(storage, "/api/focus", { request_id: crypto.randomUUID(), symbol_id: symbolId }));
-  const bindSymbols = () => {
-    for (const button of document.querySelectorAll("[data-symbol-id]")) {
-      button.addEventListener("click", () => {
-        const symbolId = button.dataset.symbolId;
-        if (symbolId) void focus(symbolId);
-      });
-    }
-  };
-  const bindSearch = () => {
-    document.querySelector('[data-operation="search"]')?.addEventListener("change", async (event) => {
-      const query = event.target.value;
-      if (discovery.state().query === query.trim()) return;
-      await discovery.search(query);
-      renderDiscoveryArea();
-    });
-  };
-  const renderDiscoveryArea = () => {
-    const host = document.querySelector('[data-area="discovery"]');
-    if (host) host.innerHTML = renderDiscovery(discovery.state());
-    bindSymbols();
-    bindSearch();
-  };
-  bindSymbols();
-  bindSearch();
-  void Promise.resolve().then(() => browserRequest(storage, "/api/search", { request_id: crypto.randomUUID(), query: "" })).then((reply) => {
-    const loaded = landmarkGroups(reply);
-    discovery = new BrowserDiscoveryController(
-      (request) => browserRequest(storage, "/api/search", {
-        request_id: crypto.randomUUID(),
-        ...request
-      }),
-      loaded
-    );
-    renderDiscoveryArea();
-  }).catch(() => void 0);
+}
+function bindHistory(storage, render) {
   for (const operation of ["back", "forward"]) {
     document.querySelector(`[data-operation="${operation}"]`)?.addEventListener("click", async () => {
-      renderFocus(
-        await browserRequest(storage, "/api/history", { request_id: crypto.randomUUID(), action: operation })
-      );
+      render(await browserRequest(storage, "/api/history", { request_id: crypto.randomUUID(), action: operation }));
     });
   }
-  document.querySelector('[data-operation="refocus"]')?.addEventListener("click", () => {
-    if (currentSymbol) void focus(currentSymbol);
-  });
+}
+function bindRefresh(storage) {
   document.querySelector('[data-operation="refresh"]')?.addEventListener("click", async () => {
-    const reply = await browserRequest(storage, "/api/status", { action: "refresh", request_id: crypto.randomUUID() });
+    const reply = await browserRequest(storage, "/api/status", {
+      action: "refresh",
+      request_id: crypto.randomUUID()
+    });
     const status = document.querySelector('[data-area="status"]');
     if (status) status.textContent = reply.state ?? "ready";
   });
 }
+function startApplication(storage, startedState, root2) {
+  const store = createBrowserStore({ status: startedState, landmarks: [] });
+  root2.innerHTML = renderBrowserBody(store.state(), window.innerWidth);
+  let currentSymbol;
+  const showFocus = (reply) => renderFocus(reply, (symbolId) => currentSymbol = symbolId);
+  const focus = async (symbolId) => showFocus(
+    await browserRequest(storage, "/api/focus", { request_id: crypto.randomUUID(), symbol_id: symbolId })
+  );
+  let discovery = createDiscovery(storage, []);
+  bindSymbols(focus);
+  bindSearch(() => discovery, () => renderDiscoveryArea(discovery, focus));
+  void browserRequest(storage, "/api/search", { request_id: crypto.randomUUID(), query: "" }).then((reply) => {
+    discovery = createDiscovery(storage, landmarkGroups(reply));
+    renderDiscoveryArea(discovery, focus);
+  }).catch(() => void 0);
+  bindHistory(storage, showFocus);
+  document.querySelector('[data-operation="refocus"]')?.addEventListener("click", () => {
+    if (currentSymbol) void focus(currentSymbol);
+  });
+  bindRefresh(storage);
+}
+
+// src/browser/session.ts
+var BrowserSessionClient = class {
+  constructor(options) {
+    this.options = options;
+  }
+  options;
+  async start() {
+    const navigation = this.options.navigationType();
+    if (!navigation) return { state: "browser_capability_unavailable" };
+    const storedSession = this.options.storage.get("browser_session_id");
+    const storedTab = this.options.storage.get("tab_instance_id");
+    const restore = navigation === "reload" && !!storedSession && !!storedTab;
+    if (!restore) this.options.storage.clear();
+    const tabId = restore ? storedTab ?? this.options.randomId() : this.options.randomId();
+    return this.options.lock(`code-explorer-tab:${tabId}`, async (available) => {
+      if (!available) {
+        if (!restore) return { state: "browser_capability_unavailable" };
+        this.options.storage.clear();
+        return this.create(this.options.randomId(), "browser_session_replaced");
+      }
+      if (restore) {
+        const reply = await this.options.request(
+          { action: "restore", tab_instance_id: tabId, document_start: "reload" },
+          { "x-code-explorer-session": storedSession ?? "", "x-code-explorer-tab": tabId }
+        );
+        if (reply.state !== "browser_session_expired" && reply.state !== "invalid_browser_session") return reply;
+        return this.recoverExpired();
+      }
+      return this.create(tabId);
+    });
+  }
+  async recoverExpired() {
+    this.options.storage.clear();
+    return this.create(this.options.randomId(), "browser_session_expired");
+  }
+  async create(tabId, prior) {
+    const reply = await this.options.request(
+      { action: "create", tab_instance_id: tabId, document_start: "new" },
+      { "x-code-explorer-tab": tabId }
+    );
+    const sessionId = reply.data?.browser_session_id;
+    if (sessionId) {
+      this.options.storage.set("tab_instance_id", tabId);
+      this.options.storage.set("browser_session_id", sessionId);
+    }
+    return prior ? { ...reply, state: prior } : reply;
+  }
+};
+
+// src/browser/client.ts
 var root = document.querySelector("#code-explorer");
 if (root) {
   root.textContent = "Loading Code Explorer";
