@@ -142,7 +142,7 @@ jobs:
       # authoritative decision against HEAD and its first parent, so a commit
       # that bypassed the local hook cannot bypass the release gate.
       - name: Committed-tree quality decision
-        run: node packages/quality-guard/dist/bundle.js check --committed HEAD --json
+        run: node packages/quality-guard/dist/bundle.js check --committed HEAD --skip-structural --json
 
       - name: Test presence ratchet
         id: tests-present

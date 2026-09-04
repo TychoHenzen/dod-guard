@@ -22,6 +22,7 @@ export interface CheckOptions {
   json: boolean;
   intent: "change" | "refactor";
   target?: string;
+  skipStructural?: boolean;
 }
 
 export interface CommandResult {
@@ -99,10 +100,13 @@ export function parseCheckArguments(args: string[]): CheckOptions | CommandResul
   let json = false;
   let intent: "change" | "refactor" = "change";
   let target: string | undefined;
+  let skipStructural = false;
   for (let index = 2; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--json") {
       json = true;
+    } else if (arg === "--skip-structural") {
+      skipStructural = true;
     } else if (arg === "--intent") {
       const value = args[++index];
       if (value !== "change" && value !== "refactor") return usage(`unsupported intent ${value ?? ""}`.trim());
@@ -122,7 +126,7 @@ export function parseCheckArguments(args: string[]): CheckOptions | CommandResul
   }
   if (intent === "refactor" && !target) return usage("refactor intent requires --target");
   if (target && !validTarget(target)) return usage("--target must be a repository-relative path");
-  return { json, intent, target };
+  return { json, intent, target, ...(skipStructural ? { skipStructural: true } : {}) };
 }
 
 /** Parses the public acknowledgement command. Its fields become tracked review evidence. */
@@ -286,7 +290,7 @@ function decisionForSnapshot(
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
-    scanner: scannerEvidence(root, targetRef),
+    scanner: options.skipStructural ? { findings: [] } : scannerEvidence(root, targetRef),
     acknowledgementRecords,
     refactorMap,
   });

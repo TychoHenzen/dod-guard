@@ -32,6 +32,7 @@ test("static analysis runs the strict structural ratchet without line-length", (
   assert.equal(strictScans.length, 2, "the ratchet and baseline regeneration must both use the strict profile");
   assert.match(workflow, /--baseline=\.github\/quality\/quality-baseline\.json \\\n\s*--fail-on=regression/);
   assert.match(workflow, /--write-baseline=\.github\/quality\/quality-baseline\.json/);
+  assert.match(workflow, /check --committed HEAD --skip-structural --json/);
 });
 
 test("static analysis pins actionlint and proves ShellCheck-backed rejection", () => {

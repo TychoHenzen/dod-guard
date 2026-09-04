@@ -22600,10 +22600,13 @@ function parseCheckArguments(args) {
   let json = false;
   let intent = "change";
   let target;
+  let skipStructural = false;
   for (let index = 2; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--json") {
       json = true;
+    } else if (arg === "--skip-structural") {
+      skipStructural = true;
     } else if (arg === "--intent") {
       const value = args[++index];
       if (value !== "change" && value !== "refactor") return usage(`unsupported intent ${value ?? ""}`.trim());
@@ -22623,7 +22626,7 @@ function parseCheckArguments(args) {
   }
   if (intent === "refactor" && !target) return usage("refactor intent requires --target");
   if (target && !validTarget(target)) return usage("--target must be a repository-relative path");
-  return { json, intent, target };
+  return { json, intent, target, ...skipStructural ? { skipStructural: true } : {} };
 }
 function parseAcknowledgeArguments(args) {
   if (args[0] !== "acknowledge") return acknowledgeUsage();
@@ -22755,7 +22758,7 @@ function decisionForSnapshot(root, snapshot, baseRef, targetRef, options) {
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
-    scanner: scannerEvidence(root, targetRef),
+    scanner: options.skipStructural ? { findings: [] } : scannerEvidence(root, targetRef),
     acknowledgementRecords,
     refactorMap
   });

@@ -71,10 +71,15 @@ acknowledgements live in `.github/quality/architecture-decisions.json`; each
 record includes the staged fingerprint, so it expires after relevant source
 content changes.
 
-The CI static-analysis job runs `quality-guard check --committed HEAD --json`
+The CI static-analysis job runs `quality-guard check --committed HEAD --skip-structural --json`
 after the structural ratchet. It uses the same decision core against `HEAD`
 and its first parent. A local Git hook may run the staged command for earlier
 feedback, but CI does not depend on that hook having run.
+
+CI runs the structural ratchet before the committed decision and passes
+`--skip-structural` to the latter. This avoids scanning the same committed tree
+twice while retaining the committed architecture and Git-tree checks. The
+standalone committed command still runs the structural scanner by default.
 
 ## Cross-language boundary
 
