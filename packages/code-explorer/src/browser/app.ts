@@ -1,6 +1,4 @@
-import type { BrowserShellState } from "./app-types.js";
-import type { BrowserOperation } from "./browser-operation.js";
-import type { LandmarkGroup } from "./landmark-types.js";
+import type { BrowserOperation, BrowserShellState, LandmarkGroup } from "./types.js";
 
 export type BrowserAction = {
   operation: BrowserOperation | string;
@@ -8,9 +6,7 @@ export type BrowserAction = {
   drawer?: "discovery" | "relations" | undefined;
 };
 
-export type { BrowserShellState } from "./app-types.js";
-export type { BrowserOperation } from "./browser-operation.js";
-export type { LandmarkGroup } from "./landmark-types.js";
+export type { BrowserOperation, BrowserShellState, LandmarkGroup } from "./types.js";
 
 const visibleOperations: readonly BrowserOperation[] = [
   "search",

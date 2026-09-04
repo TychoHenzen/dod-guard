@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { sessionHarness as harness } from "./session-test-fixture.js";
+import { sessionHarness as harness } from "./session-fixture.test.js";
 
 describe("browser tab session", () => {
   it("restores only a reload with a prior tab session", async () => {

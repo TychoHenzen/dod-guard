@@ -1,6 +1,6 @@
 import { after, before, describe, it } from "node:test";
-import { assertFileSearch, assertSymbolSearch } from "./packaged-browser-actions.js";
-import { type PackagedBrowserFixture, startPackagedBrowserFixture } from "./packaged-browser-fixture.js";
+import { assertFileSearch, assertSymbolSearch } from "./application-actions.test.js";
+import { type PackagedBrowserFixture, startPackagedBrowserFixture } from "./application-fixture.test.js";
 
 let fixture: PackagedBrowserFixture;
 

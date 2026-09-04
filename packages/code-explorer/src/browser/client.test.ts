@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { installClientFixture } from "./client-test-fixture.js";
+import { installClientFixture } from "./client-fixture.test.js";
 
 test("reports the browser server state in the application root", async (context) => {
   const fixture = installClientFixture();

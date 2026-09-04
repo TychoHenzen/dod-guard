@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
-import type { ReconcileResult } from "./freshness-contract.js";
+import type { ReconcileResult } from "./types.js";
 
 export type NativeManifestOptions = {
   root: string;

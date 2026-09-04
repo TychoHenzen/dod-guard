@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { BrowserDiscoveryController, renderDiscovery } from "./discovery.js";
-import { fakeDiscoveryCore } from "./discovery-test-fixture.js";
+import { fakeDiscoveryCore } from "./discovery-fixture.test.js";
 
 describe("browser discovery results", () => {
   it("renders fuzzy candidates in the service order with labels and scores", async () => {

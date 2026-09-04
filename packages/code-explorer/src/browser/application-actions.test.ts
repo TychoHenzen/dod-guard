@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { Page } from "@playwright/test";
-import type { CoreCall } from "./packaged-browser-core.js";
+import type { CoreCall } from "./application-core.test.js";
 
 export async function assertSymbolSearch(page: Page, coreCalls: CoreCall[]): Promise<void> {
   const script = page.waitForResponse((response) => response.url().endsWith("/client.js"));

@@ -1,6 +1,6 @@
 import chokidar from "chokidar";
-import type { FreshnessCause, FreshnessStatus, Manifest, ReconcileResult } from "./freshness-contract.js";
 import { type NativeManifestOptions, reconcileNativeManifest } from "./native-manifest.js";
+import type { FreshnessCause, FreshnessStatus, Manifest, ReconcileResult } from "./types.js";
 
 export type {
   FreshnessCause,
@@ -8,7 +8,7 @@ export type {
   FreshnessStatus,
   Manifest,
   ReconcileResult,
-} from "./freshness-contract.js";
+} from "./types.js";
 export type WorkspaceWatcher = {
   on(event: "all" | "error", listener: (...args: unknown[]) => void): WorkspaceWatcher;
   close(): Promise<void>;
