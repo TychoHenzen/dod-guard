@@ -11,13 +11,22 @@ implementation subtasks.
 
 ## Resolve the destination
 
-1. Confirm the target repository is explicit. Stop and ask for it if it is not.
-2. Run `gh auth status`. Stop if the active credential lacks `repo` or
+1. If the user supplied a target repository, use it. Otherwise run
+   `gh repo view --json nameWithOwner,defaultBranchRef,url` from the current
+   working directory. If it succeeds, use that repository.
+2. If no target was supplied and the current directory is not a valid GitHub
+   repository, run `gh api user --jq .login`, then
+   `gh repo list <login> --limit 100 --json nameWithOwner,description,url`.
+   Show the available repositories as a numbered list and ask the user to
+   choose one. Do not create anything until they choose.
+3. Run `gh auth status`. Stop if the active credential lacks `repo` or
    `project` access.
-3. Resolve the target with `gh repo view <target> --json nameWithOwner,defaultBranchRef,url`.
-4. Query that repository's `projectsV2` connection. Keep only open projects.
+4. Resolve the selected target with
+   `gh repo view <target> --json nameWithOwner,defaultBranchRef,url` when it
+   was supplied or chosen from the list.
+5. Query that repository's `projectsV2` connection. Keep only open projects.
    Stop unless exactly one open Project is explicitly linked to the repository.
-5. Resolve exactly one `Status` field and one case-insensitive `Backlog` option.
+6. Resolve exactly one `Status` field and one case-insensitive `Backlog` option.
    Stop if either is absent or ambiguous.
 
 ## Create the idea
