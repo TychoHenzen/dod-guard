@@ -1,5 +1,5 @@
 import { createBrowserStore, renderBrowserBody } from "./app.js";
-import { focusedSource, landmarkGroups, type BrowserReply } from "./browser-reply.js";
+import { type BrowserReply, focusedSource, landmarkGroups } from "./browser-reply.js";
 import { browserRequest } from "./browser-request.js";
 import { BrowserDiscoveryController, type DiscoveryReply, renderDiscovery } from "./discovery.js";
 import { projectOneHopGraph } from "./graph.js";

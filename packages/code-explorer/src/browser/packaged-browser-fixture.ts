@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Browser, chromium } from "@playwright/test";
 import { BrowserHttpRouter } from "../browser-server/http-router.js";
-import { createPackagedCore, type CoreCall } from "./packaged-browser-core.js";
+import { type CoreCall, createPackagedCore } from "./packaged-browser-core.js";
 
 export type PackagedBrowserFixture = {
   browser: Browser;
