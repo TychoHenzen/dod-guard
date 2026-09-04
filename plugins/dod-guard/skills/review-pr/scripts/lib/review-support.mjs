@@ -8,7 +8,6 @@ const AZURE_PULL_URL =
 const AZURE_PULL_NUMBER = /^(?:ado:)?(\d+)$/i;
 const HTML_BREAK = /<br\s*\/?>/gi;
 const HTML_PARAGRAPH_END = /<\/p>/gi;
-const HTML_TAG = /<[^>]+>/g;
 const HTML_TEXT_ENTITY = /&(nbsp|amp|lt|gt|quot|#39);/gi;
 const MANY_NEWLINES = /\n{3,}/g;
 const AUTHORIZATION_SECRET = /\b(Authorization\s*:\s*(?:Bearer|Basic)\s+)[^\s"']+/gi;
@@ -72,11 +71,23 @@ function normalizeReviewTarget(input, currentBranch) {
   return { provider: "git", ref: value, source: "named-ref" };
 }
 
+function removeHtmlTags(value) {
+  const text = [];
+  let insideTag = false;
+  for (const character of value) {
+    if (character === "<") {
+      insideTag = true;
+    } else if (character === ">" && insideTag) {
+      insideTag = false;
+    } else if (!insideTag) {
+      text.push(character);
+    }
+  }
+  return text.join("");
+}
+
 function stripHtml(value = "") {
-  return value
-    .replace(HTML_BREAK, "\n")
-    .replace(HTML_PARAGRAPH_END, "\n")
-    .replace(HTML_TAG, "")
+  return removeHtmlTags(value.replace(HTML_BREAK, "\n").replace(HTML_PARAGRAPH_END, "\n"))
     .replace(HTML_TEXT_ENTITY, (entity) => HTML_TEXT_ENTITIES[entity.slice(1, -1).toLowerCase()])
     .replace(MANY_NEWLINES, "\n\n")
     .trim();
