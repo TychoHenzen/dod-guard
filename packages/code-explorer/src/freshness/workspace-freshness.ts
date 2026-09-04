@@ -1,18 +1,14 @@
 import chokidar from "chokidar";
+import type { FreshnessCause, FreshnessStatus, Manifest, ReconcileResult } from "./freshness-contract.js";
 import { type NativeManifestOptions, reconcileNativeManifest } from "./native-manifest.js";
 
-export type FreshnessCause = "freshness_unavailable" | "incomplete_write" | "scan_limit" | "workspace_churn";
-export type FreshnessState = "initializing" | "ready" | "refreshing" | "degraded" | "refresh_failed";
-export type FreshnessStatus = {
-  current_generation: number;
-  pending_generation: number | null;
-  state: FreshnessState;
-  mode: "watching" | "polling";
-  degraded_cause?: FreshnessCause;
-};
-
-export type Manifest = ReadonlyMap<string, string>;
-export type ReconcileResult = { manifest: Manifest } | { cause: FreshnessCause };
+export type {
+  FreshnessCause,
+  FreshnessState,
+  FreshnessStatus,
+  Manifest,
+  ReconcileResult,
+} from "./freshness-contract.js";
 export type WorkspaceWatcher = {
   on(event: "all" | "error", listener: (...args: unknown[]) => void): WorkspaceWatcher;
   close(): Promise<void>;
