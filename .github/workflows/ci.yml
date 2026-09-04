@@ -109,7 +109,7 @@ jobs:
       # Reproduce formatting locally. The drift check below rejects any fix the
       # feature branch did not commit.
       - name: Reproduce Biome formatting
-        run: npx @biomejs/biome check --write --unsafe --no-errors-on-unmatched
+        run: npx @biomejs/biome format --write --no-errors-on-unmatched
 
       # ── Ratchets: record the outcome, tighten on improvement, fail at the end ──
 

@@ -12,12 +12,14 @@ const CODEQL_CONFIG = resolve(".github/codeql/codeql-config.yml");
 
 test("CI Biome commands use the configured maintained-file coverage", () => {
   const workflow = readFileSync(WORKFLOW, "utf8");
-  const commands = workflow.match(/run: npx @biomejs\/biome check[^\n]+/g) ?? [];
+  const commands = workflow.match(/run: npx @biomejs\/biome (?:check|format)[^\n]+/g) ?? [];
 
   assert.equal(commands.length, 2);
   for (const command of commands) {
     assert.doesNotMatch(command, /packages\/\*\/src|scripts\/ci/);
   }
+  assert.match(commands[0], /biome format --write/);
+  assert.match(commands[1], /biome check --max-diagnostics/);
 });
 
 test("static analysis runs the strict structural ratchet without line-length", () => {
