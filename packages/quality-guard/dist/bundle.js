@@ -23073,6 +23073,12 @@ var server = createQualityGuardServer();
 var _filename = fileURLToPath2(import.meta.url);
 async function main() {
   const args = process.argv.slice(2);
+  if (args[0] === "report") {
+    const root = args.find((arg) => arg.startsWith("--root="))?.slice("--root=".length);
+    process.stdout.write(`${JSON.stringify(runQualityReport({ root }), null, 2)}
+`);
+    return;
+  }
   if (args[0] === "check" || args[0] === "acknowledge") {
     const result = runCheckCommand(args);
     process.stdout.write(`${result.output}

@@ -9,12 +9,17 @@ import { launchResult } from "./launch-result.mjs";
 import { createAdmin } from "./project-admin.mjs";
 import { readQualityReport } from "./quality-report.mjs";
 
-export function createApi({ store, launchAdmission = () => true, launchCodeExplorer }) {
+export function createApi({ store, launchAdmission = () => true, launchCodeExplorer, refreshQualityReport }) {
   const admin = createAdmin(store);
 
   function projectRoute(segments) {
     const project = admin.pick(segments[2]);
-    if (segments[3] === "quality") return readQualityReport(project.path);
+    if (segments[3] === "quality" && segments[4] === "refresh") {
+      if (method !== "POST") throw new HttpError(400, "invalid_quality_refresh_request");
+      if (!refreshQualityReport) throw new HttpError(503, "quality_refresh_unavailable");
+      return refreshQualityReport(project.path);
+    }
+    if (segments[3] === "quality" && segments.length === 4) return readQualityReport(project.path);
     throw new HttpError(404, `unknown project route: ${segments.slice(3).join("/")}`);
   }
 
