@@ -16,10 +16,12 @@ and tool configuration.
 `/add-backlog-idea` splits a brain dump into independently deliverable Backlog
 issues. `/refine-backlog-item` turns one into a Todo PBI. `/next-ticket`
 implements and pushes that PBI. `/submit-draft-pr` submits its verified draft
-pull request. After review, `/complete-pr` treats its explicit invocation as
-acceptance of the current head and completes the guarded merge. Each skill
-resolves the current repository and requires exactly one open GitHub Project
-explicitly linked to it.
+pull request. `/review-pr` checks the final branch or pull request with four
+independent reviewers. After review, `/complete-pr` treats its invocation as
+acceptance of the current head and completes the guarded merge.
+`/fix-pr-review` revalidates and fixes selected review findings before that
+acceptance. Each delivery skill resolves the current repository and requires
+exactly one open GitHub Project explicitly linked to it.
 
 One issue becomes one branch and one draft pull request:
 
@@ -40,6 +42,8 @@ human review followed by `/complete-pr` is the explicit acceptance boundary.
 | `/refine-backlog-item` | Turn a Backlog issue into a Todo PBI and independent subtasks. |
 | `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
+| `/review-pr` | Review Git or GitHub inline with four agents, or produce one Azure DevOps report. |
+| `/fix-pr-review` | Revalidate and fix selected GitHub, local Git, or Azure review findings. |
 | `/complete-pr` | Complete an explicitly accepted draft through guarded auto-merge and branch deletion. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
@@ -48,4 +52,7 @@ human review followed by `/complete-pr` is the explicit acceptance boundary.
 | `/skill-debug` | Compare skill instructions with recorded executions. |
 | `/skill-migrate` | Migrate agent instruction artifacts for current models. |
 
-The plugin has no MCP server or runtime bundle.
+`review-pr-feature`, `review-pr-design`, `review-pr-reliability`, and
+`review-pr-hygiene` provide the independent review angles. The coordinator
+validates final-state lines and removes duplicate root causes before publishing
+comments. The plugin has no MCP server or runtime bundle.
