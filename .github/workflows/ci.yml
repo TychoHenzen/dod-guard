@@ -152,7 +152,10 @@ jobs:
           exit "${PIPESTATUS[0]}"
       - name: Tighten test presence baseline
         if: steps.tests-present.outcome == 'success'
-        run: grep -q "fixed:" tests-present.txt && node scripts/ci/check-tests-present.mjs --write-baseline || true
+        run: |
+          if grep -q "fixed:" tests-present.txt; then
+            node scripts/ci/check-tests-present.mjs --write-baseline || true
+          fi
 
       # A consumed .quality-skip is a deliberate bypass of the quality gate.
       # It must not reach a release without a human signing it off.
@@ -167,7 +170,10 @@ jobs:
           exit "${PIPESTATUS[0]}"
       - name: Tighten audit baseline
         if: steps.audit.outcome == 'success'
-        run: grep -q "fixed:" audit-report.txt && node scripts/ci/check-audit.mjs --write-baseline || true
+        run: |
+          if grep -q "fixed:" audit-report.txt; then
+            node scripts/ci/check-audit.mjs --write-baseline || true
+          fi
 
       - name: Coverage ratchet (per package)
         id: coverage
@@ -177,7 +183,10 @@ jobs:
           exit "${PIPESTATUS[0]}"
       - name: Tighten coverage baseline
         if: steps.coverage.outcome == 'success'
-        run: grep -qE "improved:|adopted:" coverage-report.txt && node scripts/ci/check-coverage.mjs --write-baseline || true
+        run: |
+          if grep -qE "improved:|adopted:" coverage-report.txt; then
+            node scripts/ci/check-coverage.mjs --write-baseline || true
+          fi
 
       # Strict check: must be clean after autofix.
       - name: Biome strict check
