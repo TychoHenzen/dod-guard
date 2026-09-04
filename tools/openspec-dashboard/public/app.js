@@ -77,7 +77,7 @@ async function openProject(index, refresh = false) {
   paintTabs();
   paintLists();
   try {
-    state.report = await api.getQuality(index);
+    state.report = refresh ? await api.refreshQuality(index) : await api.getQuality(index);
   } catch (err) {
     replace(dom.detail, problem(err));
   }

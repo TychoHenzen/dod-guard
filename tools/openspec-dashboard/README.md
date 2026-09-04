@@ -1,6 +1,6 @@
 # Quality dashboard
 
-A local, read-only browser for `.quality/quality-report.json` files.
+A local browser for `.quality/quality-report.json` files.
 
 ## Run
 
@@ -22,9 +22,9 @@ Each registered project is a tab. The selected report shows:
 - architecture findings grouped by category;
 - filtering across paths, rules, and messages.
 
-Refresh rereads the JSON file. The dashboard never runs the scanner and never
-edits a project. `Code Explorer` remains available for the selected readable
-project.
+Refresh regenerates the report with the repository's quality-guard scanner,
+writes it to the project's ignored `.quality/` directory, and displays it.
+`Code Explorer` remains available for the selected readable project.
 
 Projects qualify when they contain `.quality/quality-report.json`. The `+`
 button scans configured roots for more projects. Registry state remains in

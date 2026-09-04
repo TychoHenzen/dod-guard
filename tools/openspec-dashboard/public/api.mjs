@@ -26,6 +26,7 @@ export const addProjects = (paths) => post("/api/projects", { add: paths });
 export const removeProject = (path) => post("/api/projects", { remove: path });
 
 export const getQuality = (id) => request(`/api/project/${id}/quality`);
+export const refreshQuality = (id) => post(`/api/project/${id}/quality/refresh`, {});
 
 export const launchCodeExplorer = ({ index, registryRevision }) =>
   request(`/api/project/${index}/code-explorer`, {

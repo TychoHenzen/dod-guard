@@ -1,6 +1,6 @@
 {
   "name": "quality-guard",
-  "version": "0.5.8",
+  "version": "0.5.11",
   "description": "Structural code quality analysis, commit decisions, and guided refactoring.",
   "author": {
     "name": "tychohenzen",

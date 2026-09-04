@@ -14,6 +14,7 @@ import { createCodeExplorerManager } from "./lib/code-explorer-manager.mjs";
 import { discoverCodeExplorer, startCodeExplorer } from "./lib/code-explorer-launch.mjs";
 import { createDashboardOwnership } from "./lib/dashboard-ownership.mjs";
 import { createProjectIdentity } from "./lib/project-identity.mjs";
+import { createQualityReportRefresher } from "./lib/quality-report.mjs";
 import { assertLaunchRequest, createCapabilities, LAUNCH_PATH, readLaunchBody } from "./lib/launch-http.mjs";
 import { launchFailure } from "./lib/launch-result.mjs";
 import { createStore } from "./lib/registry.mjs";
@@ -22,6 +23,7 @@ import { serveStatic } from "./lib/static.mjs";
 const __dir = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dir, "public");
 const MONOREPO_ROOT = dirname(dirname(__dir));
+const QUALITY_GUARD_BUNDLE = join(MONOREPO_ROOT, "packages", "quality-guard", "dist", "bundle.js");
 const HOST = "127.0.0.1";
 const capabilities = createCapabilities();
 const FIRST_PORT = Number(process.env.OPENSPEC_DASHBOARD_PORT ?? 4400);
@@ -47,6 +49,7 @@ const handle = createApi({
   store: createStore(),
   launchAdmission: () => acceptingLaunches,
   launchCodeExplorer: (projectPath) => children.launch(projectIdentity.canonicalPath(projectPath)),
+  refreshQualityReport: createQualityReportRefresher({ bundlePath: QUALITY_GUARD_BUNDLE }),
 });
 
 function sendJson(res, status, payload) {

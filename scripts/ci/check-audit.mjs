@@ -80,8 +80,8 @@ function main(argv) {
   const added = [...current.values()].filter((a) => !allowed.has(a.id));
   const fixed = baseline.known.filter((a) => !current.has(String(a.id)));
 
-  const devReport = runAudit(false).metadata?.vulnerabilities ?? {};
-  process.stdout.write(`all dependencies (dev included): ${JSON.stringify(devReport)}\n`);
+  // The ratchet only blocks advisories in published dependencies. Do not run a
+  // second network audit for dev dependencies that cannot affect the decision.
   for (const advisory of fixed)
     process.stdout.write(
       `  fixed: ${advisory.package} (${advisory.id}) no longer vulnerable — rerun with --write-baseline\n`,

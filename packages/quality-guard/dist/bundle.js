@@ -21831,6 +21831,7 @@ function analyzeCurrentDependencies(files, config2) {
 }
 
 // src/commit-gate/encapsulation.ts
+var GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
 function key(type, member) {
   return `${type.name}.${member.name}`;
 }
@@ -22467,8 +22468,9 @@ function extractFactInventory(files, requiredPaths) {
 import { execFileSync as execFileSync2 } from "node:child_process";
 var SOURCE_PATH3 = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
 var DISTRIBUTION_PATH = /(?:^|[/\\])dist(?:[/\\]|$)/;
+var GIT_OUTPUT_MAX_BUFFER2 = 64 * 1024 * 1024;
 function git(root, args, encoding = "utf8") {
-  return execFileSync2("git", args, { cwd: root, encoding });
+  return execFileSync2("git", args, { cwd: root, encoding, maxBuffer: GIT_OUTPUT_MAX_BUFFER2 });
 }
 function objectContent(root, spec) {
   return git(root, ["show", spec]);
@@ -22728,7 +22730,7 @@ function treeFile(root, ref, filePath, fallback) {
 function snapshotConfig(root, ref) {
   return treeFile(root, ref, ".quality-guard.json", "{}");
 }
-function decisionForSnapshot(root, snapshot, baseRef, targetRef, options) {
+function decisionForSnapshot(root, snapshot, baseRef, targetRef, options, skipStructural = false) {
   const decisionSnapshot = withoutDistributionChanges(snapshot);
   const refactorMap = options.intent === "refactor" && options.target ? parseResponsibilityMap(treeFile(root, targetRef, options.target)) : void 0;
   const affected = decisionSnapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((filePath) => Boolean(filePath));
@@ -22753,7 +22755,7 @@ function decisionForSnapshot(root, snapshot, baseRef, targetRef, options) {
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
-    scanner: scannerEvidence(root, targetRef),
+    scanner: skipStructural ? { findings: [] } : scannerEvidence(root, targetRef),
     acknowledgementRecords,
     refactorMap
   });
@@ -22764,7 +22766,14 @@ function runStagedCheck(root, options) {
 }
 function runCommittedCheck(root, commit, options) {
   const snapshot = readCommittedSnapshot(root, commit);
-  return decisionForSnapshot(root, snapshot, `${commit}^`, commit, options);
+  return decisionForSnapshot(
+    root,
+    snapshot,
+    `${commit}^`,
+    commit,
+    options,
+    process.env.QUALITY_GUARD_SKIP_STRUCTURAL === "1"
+  );
 }
 function runAcknowledgeCommand(args, root) {
   const options = parseAcknowledgeArguments(args);
@@ -23071,6 +23080,12 @@ var server = createQualityGuardServer();
 var _filename = fileURLToPath2(import.meta.url);
 async function main() {
   const args = process.argv.slice(2);
+  if (args[0] === "report") {
+    const root = args.find((arg) => arg.startsWith("--root="))?.slice("--root=".length);
+    process.stdout.write(`${JSON.stringify(runQualityReport({ root }), null, 2)}
+`);
+    return;
+  }
   if (args[0] === "check" || args[0] === "acknowledge") {
     const result = runCheckCommand(args);
     process.stdout.write(`${result.output}

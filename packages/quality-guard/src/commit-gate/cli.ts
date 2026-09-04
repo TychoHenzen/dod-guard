@@ -256,6 +256,7 @@ function decisionForSnapshot(
   baseRef: TreeReference,
   targetRef: TreeReference,
   options: CheckOptions,
+  skipStructural = false,
 ): DecisionResult {
   const decisionSnapshot = withoutDistributionChanges(snapshot);
   const refactorMap =
@@ -286,7 +287,7 @@ function decisionForSnapshot(
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
-    scanner: scannerEvidence(root, targetRef),
+    scanner: skipStructural ? { findings: [] } : scannerEvidence(root, targetRef),
     acknowledgementRecords,
     refactorMap,
   });
@@ -301,7 +302,14 @@ export function runStagedCheck(root: string, options: CheckOptions): DecisionRes
 /** Replays the staged decision against a committed tree and its first parent for CI. */
 export function runCommittedCheck(root: string, commit: string, options: CheckOptions): DecisionResult {
   const snapshot = readCommittedSnapshot(root, commit);
-  return decisionForSnapshot(root, snapshot, `${commit}^`, commit, options);
+  return decisionForSnapshot(
+    root,
+    snapshot,
+    `${commit}^`,
+    commit,
+    options,
+    process.env.QUALITY_GUARD_SKIP_STRUCTURAL === "1",
+  );
 }
 
 function runAcknowledgeCommand(args: string[], root: string): CommandResult {

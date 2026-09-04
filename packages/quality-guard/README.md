@@ -17,6 +17,10 @@ Run the staged decision before committing:
 quality-guard check --staged --json
 ```
 
+`quality-guard report --root=<repository>` regenerates the dashboard report
+for a repository and writes the JSON result to standard output. It is
+read-only with respect to the repository.
+
 For a responsibility-moving refactor, provide a repository-relative responsibility map:
 
 ```bash
