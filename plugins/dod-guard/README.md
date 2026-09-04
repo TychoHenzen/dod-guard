@@ -8,18 +8,20 @@ maintenance.
 `/add-backlog-idea` splits a brain dump into independently deliverable Backlog
 issues. `/refine-backlog-item` turns one into a Todo PBI. `/next-ticket`
 implements and pushes that PBI. `/submit-draft-pr` submits its verified draft
-pull request. Each skill resolves the current repository and requires exactly
-one open GitHub Project explicitly linked to it.
+pull request. After review, `/complete-pr` treats its explicit invocation as
+acceptance of the current head and completes the guarded merge. Each skill
+resolves the current repository and requires exactly one open GitHub Project
+explicitly linked to it.
 
 One issue becomes one branch and one draft pull request:
 
 ```text
-backlog idea -> Todo PBI and subtasks -> codex/<issue>-<slug> -> verified commits -> draft PR
+backlog idea -> Todo PBI -> codex/<issue>-<slug> -> verified commits -> draft PR -> accepted merge
 ```
 
 The issue holds the requested outcome and acceptance sub-issues. The branch
-holds implementation. The pull request holds the result and verification.
-Merging and approval remain human actions.
+holds implementation. The pull request holds the result and verification. A
+human review followed by `/complete-pr` is the explicit acceptance boundary.
 
 ## Skills
 
@@ -29,6 +31,7 @@ Merging and approval remain human actions.
 | `/refine-backlog-item` | Turn a Backlog issue into a Todo PBI and independent subtasks. |
 | `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
+| `/complete-pr` | Complete an explicitly accepted draft through guarded auto-merge and branch deletion. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
 | `/codex-migrate` | Adapt Claude-oriented repository instructions for Codex. |
