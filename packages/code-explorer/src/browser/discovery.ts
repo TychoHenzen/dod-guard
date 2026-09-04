@@ -6,15 +6,16 @@ export type DiscoveryFilters = {
   include_generated?: boolean;
 };
 
-export type DiscoveryCandidate = {
+type DiscoveryCandidateMatch = {
   identity?: string;
-  name: string;
   match_class: string;
-  score: number;
+  match_score: number;
   classification?: string;
   path: string;
-  kind: string;
 };
+export type DiscoveryCandidate =
+  | (DiscoveryCandidateMatch & { type: "file" })
+  | (DiscoveryCandidateMatch & { type: "symbol"; name: string; kind: string });
 
 export type BrowserLandmark = { symbol_id?: string; name: string; path: string; kind: string };
 export type BrowserLandmarkGroup = { group: string; items: readonly BrowserLandmark[] };
@@ -22,6 +23,7 @@ export type DiscoveryReply = {
   data: {
     candidates?: readonly DiscoveryCandidate[];
     omitted_count?: number;
+    omitted_candidate_count?: number;
     refinement_guidance?: string;
   };
 };
@@ -99,7 +101,7 @@ export class BrowserDiscoveryController {
       this.current = {
         ...this.current,
         candidates,
-        omittedCount: reply.data.omitted_count ?? 0,
+        omittedCount: reply.data.omitted_candidate_count ?? reply.data.omitted_count ?? 0,
         refinementGuidance: reply.data.refinement_guidance,
         mode: "results",
         areaState: candidates.length === 0 ? "empty" : "ready",
@@ -132,10 +134,14 @@ export function renderDiscovery(state: DiscoveryState): string {
   if (state.mode === "landmarks")
     return `<section data-discovery="landmarks">${renderLandmarks(state.landmarks)}</section>`;
   const candidates = state.candidates
-    .map(
-      (candidate) =>
-        `<li data-match-class="${escapeText(candidate.match_class)}">${candidate.identity ? `<button type="button" data-symbol-id="${escapeText(candidate.identity)}">${escapeText(candidate.name)}</button>` : `<strong>${escapeText(candidate.name)}</strong>`} <span>${escapeText(candidate.match_class)} ${candidate.score}</span> <span>${escapeText(candidate.path)} · ${escapeText(candidate.kind)}</span></li>`,
-    )
+    .map((candidate) => {
+      const name = candidate.type === "file" ? (candidate.path.split("/").at(-1) ?? candidate.path) : candidate.name;
+      const kind = candidate.type === "file" ? "file" : candidate.kind;
+      const label = candidate.identity
+        ? `<button type="button" data-symbol-id="${escapeText(candidate.identity)}">${escapeText(name)}</button>`
+        : `<strong>${escapeText(name)}</strong>`;
+      return `<li data-match-class="${escapeText(candidate.match_class)}">${label} <span>${escapeText(candidate.match_class)} ${candidate.match_score}</span> <span>${escapeText(candidate.path)} · ${escapeText(kind)}</span></li>`;
+    })
     .join("");
   const omitted = state.omittedCount > 0 ? `<p>${state.omittedCount} omitted</p>` : "";
   const guidance = state.refinementGuidance ? `<p>${escapeText(state.refinementGuidance)}</p>` : "";

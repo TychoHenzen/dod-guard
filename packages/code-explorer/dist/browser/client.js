@@ -104,7 +104,7 @@ var BrowserDiscoveryController = class {
       this.current = {
         ...this.current,
         candidates,
-        omittedCount: reply.data.omitted_count ?? 0,
+        omittedCount: reply.data.omitted_candidate_count ?? reply.data.omitted_count ?? 0,
         refinementGuidance: reply.data.refinement_guidance,
         mode: "results",
         areaState: candidates.length === 0 ? "empty" : "ready"
@@ -127,9 +127,12 @@ function renderDiscovery(state) {
     return `<section data-discovery="results" data-state="${state.areaState}">${state.error ?? state.areaState}</section>`;
   if (state.mode === "landmarks")
     return `<section data-discovery="landmarks">${renderLandmarks2(state.landmarks)}</section>`;
-  const candidates = state.candidates.map(
-    (candidate) => `<li data-match-class="${escapeText2(candidate.match_class)}">${candidate.identity ? `<button type="button" data-symbol-id="${escapeText2(candidate.identity)}">${escapeText2(candidate.name)}</button>` : `<strong>${escapeText2(candidate.name)}</strong>`} <span>${escapeText2(candidate.match_class)} ${candidate.score}</span> <span>${escapeText2(candidate.path)} \xB7 ${escapeText2(candidate.kind)}</span></li>`
-  ).join("");
+  const candidates = state.candidates.map((candidate) => {
+    const name = candidate.type === "file" ? candidate.path.split("/").at(-1) ?? candidate.path : candidate.name;
+    const kind = candidate.type === "file" ? "file" : candidate.kind;
+    const label = candidate.identity ? `<button type="button" data-symbol-id="${escapeText2(candidate.identity)}">${escapeText2(name)}</button>` : `<strong>${escapeText2(name)}</strong>`;
+    return `<li data-match-class="${escapeText2(candidate.match_class)}">${label} <span>${escapeText2(candidate.match_class)} ${candidate.match_score}</span> <span>${escapeText2(candidate.path)} \xB7 ${escapeText2(kind)}</span></li>`;
+  }).join("");
   const omitted = state.omittedCount > 0 ? `<p>${state.omittedCount} omitted</p>` : "";
   const guidance = state.refinementGuidance ? `<p>${escapeText2(state.refinementGuidance)}</p>` : "";
   return `<section data-discovery="results" data-state="${state.areaState}"><ul>${candidates}</ul>${omitted}${guidance}</section>`;
