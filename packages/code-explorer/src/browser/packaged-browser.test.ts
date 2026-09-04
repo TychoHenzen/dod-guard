@@ -9,21 +9,11 @@ import { BrowserHttpRouter } from "../browser-server/http-router.js";
 let browser: Browser;
 let endpoint = "";
 let closeServer: (() => Promise<void>) | undefined;
+const coreCalls: Array<{ name: string; arguments_: Record<string, unknown> }> = [];
 
 before(async () => {
+  let router: BrowserHttpRouter;
   const server = createServer((request, response) => {
-    const address = server.address();
-    const port = typeof address === "object" && address ? address.port : 0;
-    const router = new BrowserHttpRouter({
-      origin: `http://127.0.0.1:${port}`,
-      assetRoot: path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "browser"),
-      call: async () => ({
-        schema_version: 1,
-        code: "invalid_browser_session",
-        message: "invalid_browser_session",
-        retryable: false,
-      }),
-    });
     const chunks: Buffer[] = [];
     request.on("data", (chunk: Buffer) => chunks.push(chunk));
     request.on("end", () => {
@@ -46,6 +36,25 @@ before(async () => {
   const address = server.address();
   assert.equal(typeof address, "object");
   endpoint = `http://127.0.0.1:${(address as { port: number }).port}`;
+  router = new BrowserHttpRouter({
+    origin: endpoint,
+    assetRoot: path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "browser"),
+    call: async (name, arguments_) => {
+      coreCalls.push({ name, arguments_ });
+      if (name === "code_status" && arguments_.action === "start_session") {
+        return { schema_version: 1, state: "ready", data: { session_id: "core-session" } };
+      }
+      if (name === "code_status" && arguments_.action === "status") {
+        return await new Promise<Record<string, unknown>>(() => {});
+      }
+      return {
+        schema_version: 1,
+        code: "invalid_request",
+        message: "invalid_request",
+        retryable: false,
+      };
+    },
+  });
   closeServer = () => new Promise((resolve) => server.close(() => resolve()));
   browser = await chromium.launch({ headless: true });
 });
@@ -64,6 +73,11 @@ describe("packaged browser", () => {
     assert.equal((await script).status(), 200);
     assert.equal((await style).status(), 200);
     await assert.doesNotReject(() => page.locator("#code-explorer").waitFor({ state: "visible" }));
-    assert.match((await page.locator("#code-explorer").textContent()) ?? "", /Code Explorer/);
+    await page.locator('#code-explorer:not([data-state="loading"])').waitFor({ timeout: 2_000 });
+    assert.deepEqual(coreCalls, [
+      { name: "code_status", arguments_: { action: "start_session" } },
+      { name: "code_status", arguments_: { action: "status" } },
+    ]);
+    assert.equal(await page.locator("#code-explorer").textContent(), "Code Explorer: created");
   });
 });
