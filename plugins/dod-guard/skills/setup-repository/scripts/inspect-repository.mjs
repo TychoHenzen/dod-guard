@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { open, readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { promisify } from "node:util";
@@ -196,27 +196,32 @@ function sourceExtension(file) {
 async function credentialFindingsForFile(root, file) {
   const findings = [];
   const fileRelative = relative(root, file);
-  const fileStats = await stat(file);
-  if (SUSPICIOUS_SECRET_FILE.test(fileRelative) && !SAFE_SECRET_EXAMPLES.test(path.basename(file))) {
-    findings.push({ file: fileRelative, line: null, signal: "secret-like-filename" });
-  }
-  if (fileStats.size > TEXT_LIMIT_BYTES) return findings;
-
-  let content;
+  const fileHandle = await open(file, "r");
   try {
-    content = await readFile(file, "utf8");
-  } catch {
-    return findings;
-  }
-  if (content.includes("\0")) return findings;
+    const fileStats = await fileHandle.stat();
+    if (SUSPICIOUS_SECRET_FILE.test(fileRelative) && !SAFE_SECRET_EXAMPLES.test(path.basename(file))) {
+      findings.push({ file: fileRelative, line: null, signal: "secret-like-filename" });
+    }
+    if (fileStats.size > TEXT_LIMIT_BYTES) return findings;
 
-  const lines = content.split(/\r?\n/);
-  for (let index = 0; index < lines.length; index += 1) {
-    for (const [signal, pattern] of SECRET_PATTERNS) {
-      if (pattern.test(lines[index])) {
-        findings.push({ file: fileRelative, line: index + 1, signal });
+    let content;
+    try {
+      content = await fileHandle.readFile("utf8");
+    } catch {
+      return findings;
+    }
+    if (content.includes("\0")) return findings;
+
+    const lines = content.split(/\r?\n/);
+    for (let index = 0; index < lines.length; index += 1) {
+      for (const [signal, pattern] of SECRET_PATTERNS) {
+        if (pattern.test(lines[index])) {
+          findings.push({ file: fileRelative, line: index + 1, signal });
+        }
       }
     }
+  } finally {
+    await fileHandle.close();
   }
 
   return findings;
