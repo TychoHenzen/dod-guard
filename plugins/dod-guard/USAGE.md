@@ -63,8 +63,15 @@ pass, use:
 ```
 
 It delegates draft pull-request creation to `/submit-draft-pr`. After a human
-merges and CI passes, run `/plugin update` and `/reload-plugins` in Claude
-Code. This repository does not publish npm packages or tags.
+merges and CI passes, refresh both clients:
+
+```text
+Claude Code: /plugin update, then /reload-plugins
+Codex: codex plugin marketplace upgrade dod-guard-monorepo
+Codex: codex plugin add dod-guard@dod-guard-monorepo
+```
+
+This repository does not publish npm packages or tags.
 
 ## Quality dashboard
 

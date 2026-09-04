@@ -10,23 +10,24 @@ completed change in this monorepo.
 
 ## Release model
 
-This repository is a Claude Code plugin marketplace. Nothing publishes to npm.
-A plugin release is a reviewed pull request merged into `master`, followed by a
-green CI run and the user's `/plugin update` plus `/reload-plugins`.
+This repository is a Claude Code and Codex plugin marketplace. Nothing
+publishes to npm. A plugin release is a reviewed pull request merged into
+`master`, followed by a green CI run and each client's marketplace refresh.
 
 The root `.claude-plugin/marketplace.json` is the only marketplace manifest.
-Every changed shipped plugin needs a version bump in its own
-`.claude-plugin/plugin.json`. That version is the cache key, so without the
-bump `/plugin update` can retain old plugin content.
+Every changed shipped plugin needs matching version bumps in
+`.claude-plugin/plugin.json` and, when present, `.codex-plugin/plugin.json`.
+Those versions are cache keys, so a client can retain old plugin content without
+the bump.
 
 ## Procedure
 
 1. Inspect `git status --short`, the current branch, and `gh repo view`. A
    dirty workspace is the release input. Include every pending change in this
    release. Do not filter or leave changes behind.
-2. Confirm each changed plugin's `plugin.json` version and description match its
-   shipped skills or agents. Update the root marketplace description if it
-   states a changed skill count.
+2. Confirm each changed plugin's Claude Code and Codex manifest versions and
+   descriptions match its shipped skills or agents. Update the root marketplace
+   description if it states a changed skill count.
 3. Invoke `/commit` for all pending changes. `/commit` owns staging, the commit
    message, push, and remote sync. Do not manually stage, commit, or push a
    subset of the release.
@@ -47,8 +48,16 @@ bump `/plugin update` can retain old plugin content.
    ready, merge, or close that pull request.
 6. After a human merges it, inspect the merge commit's CI run. It must pass
    `build-test`, `plugin-config`, `static-analysis`, and `package-integrity`.
-7. Tell the user to run `/plugin update` and `/reload-plugins`. Do not copy
-   files into a plugin cache manually.
+7. After the merge commit has green CI, refresh both clients:
+
+   ```text
+   Claude Code: /plugin update, then /reload-plugins
+   Codex: codex plugin marketplace upgrade dod-guard-monorepo
+   Codex: codex plugin add dod-guard@dod-guard-monorepo
+   ```
+
+   Confirm `codex plugin list` reports the released version. Do not copy files
+   into either client cache manually.
 
 ## Boundaries
 
