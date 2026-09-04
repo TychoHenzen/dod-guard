@@ -2,6 +2,7 @@
 
 import { readFileSync, realpathSync, statSync } from "node:fs";
 import { spawn as spawnChild } from "node:child_process";
+import { homedir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { HttpError } from "./http-error.mjs";
 import { createReadinessParser } from "./readiness.mjs";
@@ -69,12 +70,37 @@ function validateEntry(entry, fs) {
 }
 
 /** Resolve and validate the single startup-selected Code Explorer bundle. */
-export function discoverCodeExplorer({ monorepoRoot, env = process.env, fs = systemFs }) {
-  const selected =
-    env.CODE_EXPLORER_JS === undefined
-      ? join(monorepoRoot, "packages", "code-explorer", "dist", "bundle.js")
-      : env.CODE_EXPLORER_JS;
-  return validateEntry(selected, fs);
+export function discoverCodeExplorer({ monorepoRoot, installedRoot, env = process.env, fs = systemFs }) {
+  if (env.CODE_EXPLORER_JS !== undefined) {
+    return validateEntry(env.CODE_EXPLORER_JS, fs);
+  }
+
+  try {
+    return validateEntry(join(monorepoRoot, "packages", "code-explorer", "dist", "bundle.js"), fs);
+  } catch {
+    const fallbackRoot = installedRoot ?? installedCodeExplorerRoot({ monorepoRoot, env, fs });
+    return validateEntry(join(fallbackRoot, "dist", "bundle.js"), fs);
+  }
+}
+
+/** Resolve the exact Codex cache package that matches this checkout's plugin version. */
+export function installedCodeExplorerRoot({ monorepoRoot, env = process.env, fs = systemFs, home = homedir() }) {
+  const metadata = parseMetadata(fs, join(monorepoRoot, "packages", "code-explorer", "package.json"));
+  if (typeof metadata?.version !== "string" || metadata.version.length === 0) {
+    unavailable();
+  }
+  const codexRoot = env.CODEX_HOME ?? join(home, ".codex");
+  return join(codexRoot, "plugins", "cache", "dod-guard-monorepo", "code-explorer", metadata.version);
+}
+
+function readinessFailureStage(error) {
+  if (error === "code_explorer_start_timeout") {
+    return "readiness_timeout";
+  }
+  if (error === "invalid_code_explorer_url") {
+    return "invalid_url";
+  }
+  return "readiness_failed";
 }
 
 function childEnvironment(env) {
@@ -110,11 +136,13 @@ export function startCodeExplorer({
   createParser = createReadinessParser,
   setTimer = setTimeout,
   clearTimer = clearTimeout,
+  report = () => undefined,
 }) {
   let child;
   try {
     child = spawnCodeExplorer({ entry, projectPath, monorepoRoot, env, execPath, spawn });
   } catch {
+    report("child_start_failed");
     return Promise.reject(new HttpError(503, "code_explorer_start_failed"));
   }
 
@@ -130,12 +158,18 @@ export function startCodeExplorer({
         return;
       }
       child.kill?.();
+      if (!result?.reported) {
+        report(readinessFailureStage(result?.error));
+      }
       reject(new HttpError(503, result?.error ?? "code_explorer_start_failed"));
     };
     const consume = (stream) => (chunk) => finish(parser.feed(stream, chunk));
     child.stdout?.on?.("data", consume("stdout"));
     child.stderr?.on?.("data", consume("stderr"));
-    child.once?.("error", () => finish({ error: "code_explorer_start_failed" }));
+    child.once?.("error", () => {
+      report("child_start_failed");
+      finish({ error: "code_explorer_start_failed", reported: true });
+    });
     child.once?.("exit", () => finish(parser.end()));
     const timer = setTimer(() => finish(parser.deadline() ?? { error: "code_explorer_start_timeout" }), 30_000);
   });
