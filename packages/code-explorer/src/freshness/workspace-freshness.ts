@@ -281,11 +281,22 @@ export async function reconcileNativeManifest(options: NativeManifestOptions): P
   try {
     const files = await supportedFiles(options.root, options.supported, started, options.now ?? Date.now);
     const manifest = new Map<string, string>();
-    for (const file of files) {
-      const stable = await stableHash(join(options.root, file), options.now ?? Date.now, options.sleep ?? delay);
-      if (stable === "incomplete_write") return { cause: stable };
-      if (stable === "scan_limit") return { cause: stable };
-      manifest.set(file, stable);
+    for (let offset = 0; offset < files.length; offset += 64) {
+      const batch = files.slice(offset, offset + 64);
+      const stable = await Promise.all(
+        batch.map(
+          async (file) =>
+            [
+              file,
+              await stableHash(join(options.root, file), options.now ?? Date.now, options.sleep ?? delay),
+            ] as const,
+        ),
+      );
+      for (const [file, hash] of stable) {
+        if (hash === "incomplete_write") return { cause: hash };
+        if (hash === "scan_limit") return { cause: hash };
+        manifest.set(file, hash);
+      }
     }
     return { manifest };
   } catch (error) {
@@ -304,8 +315,9 @@ async function supportedFiles(
     if (now() - started > 60_000 || output.length > 50_000) throw new Error("scan_limit");
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const absolute = join(directory, entry.name);
-      if (entry.isDirectory()) await visit(absolute);
-      else {
+      if (entry.isDirectory()) {
+        if (!/^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(entry.name)) await visit(absolute);
+      } else {
         const path = relative(root, absolute).replaceAll("\\", "/");
         if (supported(path)) output.push(path);
       }

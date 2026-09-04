@@ -45,7 +45,62 @@ before(async () => {
         return { schema_version: 1, state: "ready", data: { session_id: "core-session" } };
       }
       if (name === "code_status" && arguments_.action === "status") {
-        return await new Promise<Record<string, unknown>>(() => {});
+        return { schema_version: 1, state: "ready", data: {} };
+      }
+      if (name === "code_search" && arguments_.query === "") {
+        return {
+          schema_version: 1,
+          state: "ready",
+          data: {
+            landmarks: [
+              {
+                group: "entry_points",
+                symbols: [{ symbol_id: "symbol-main", name: "main", path: "src/main.ts", kind: "function" }],
+              },
+            ],
+          },
+        };
+      }
+      if (name === "code_search" && arguments_.query === "main") {
+        return {
+          schema_version: 1,
+          state: "ready",
+          data: {
+            candidates: [
+              {
+                identity: "symbol-main",
+                name: "main",
+                match_class: "exact",
+                score: 1,
+                path: "src/main.ts",
+                kind: "function",
+              },
+            ],
+          },
+        };
+      }
+      if (name === "code_focus" && arguments_.symbol_id === "symbol-main") {
+        return {
+          schema_version: 1,
+          project_generation: 1,
+          state: "ready",
+          data: {
+            view_id: "view-main",
+            project_generation: 1,
+            symbol_id: "symbol-main",
+            name: "main",
+            kind: "function",
+            path: "src/main.ts",
+            content: {
+              body: "export function main() { return 1; }",
+              truncated: false,
+              limit_bytes: 32768,
+              returned_bytes: 36,
+              total_bytes: 36,
+            },
+            handles: [],
+          },
+        };
       }
       return {
         schema_version: 1,
@@ -73,11 +128,23 @@ describe("packaged browser", () => {
     assert.equal((await script).status(), 200);
     assert.equal((await style).status(), 200);
     await assert.doesNotReject(() => page.locator("#code-explorer").waitFor({ state: "visible" }));
-    await page.locator('#code-explorer:not([data-state="loading"])').waitFor({ timeout: 2_000 });
-    assert.deepEqual(coreCalls, [
-      { name: "code_status", arguments_: { action: "start_session" } },
-      { name: "code_status", arguments_: { action: "status" } },
-    ]);
-    assert.equal(await page.locator("#code-explorer").textContent(), "Code Explorer: created");
+    await page.locator('[data-operation="search"]').waitFor({ timeout: 2_000 });
+    assert.equal(await page.locator('[data-pane="relations"] h2').textContent(), "Relations");
+    await page.locator('[data-operation="search"]').fill("main");
+    await page.locator('[data-operation="search"]').blur();
+    await page.locator('[data-discovery="results"] [data-symbol-id="symbol-main"]').waitFor({ timeout: 2_000 });
+    await page.locator('[data-symbol-id="symbol-main"]').click();
+    await page.locator('.focused-source[data-view-id="view-main"]').waitFor({ timeout: 2_000 });
+    assert.match((await page.locator(".focused-source").textContent()) ?? "", /export function main/);
+    assert.deepEqual(
+      coreCalls.map(({ name, arguments_ }) => [name, arguments_.action ?? arguments_.query ?? arguments_.symbol_id]),
+      [
+        ["code_status", "start_session"],
+        ["code_status", "status"],
+        ["code_search", ""],
+        ["code_search", "main"],
+        ["code_focus", "symbol-main"],
+      ],
+    );
   });
 });

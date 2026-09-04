@@ -7,6 +7,7 @@ export type DiscoveryFilters = {
 };
 
 export type DiscoveryCandidate = {
+  identity?: string;
   name: string;
   match_class: string;
   score: number;
@@ -15,7 +16,7 @@ export type DiscoveryCandidate = {
   kind: string;
 };
 
-export type BrowserLandmark = { name: string; path: string; kind: string };
+export type BrowserLandmark = { symbol_id?: string; name: string; path: string; kind: string };
 export type BrowserLandmarkGroup = { group: string; items: readonly BrowserLandmark[] };
 export type DiscoveryReply = {
   data: {
@@ -114,7 +115,12 @@ function renderLandmarks(landmarks: readonly BrowserLandmarkGroup[]): string {
   return landmarks
     .map(
       (group) =>
-        `<section class="landmark-group"><h3>${escapeText(group.group)}</h3><ul>${group.items.map((item) => `<li>${escapeText(item.name)} <span>${escapeText(item.kind)} · ${escapeText(item.path)}</span></li>`).join("")}</ul></section>`,
+        `<section class="landmark-group"><h3>${escapeText(group.group)}</h3><ul>${group.items
+          .map(
+            (item) =>
+              `<li>${item.symbol_id ? `<button type="button" data-symbol-id="${escapeText(item.symbol_id)}">${escapeText(item.name)}</button>` : escapeText(item.name)} <span>${escapeText(item.kind)} · ${escapeText(item.path)}</span></li>`,
+          )
+          .join("")}</ul></section>`,
     )
     .join("");
 }
@@ -128,7 +134,7 @@ export function renderDiscovery(state: DiscoveryState): string {
   const candidates = state.candidates
     .map(
       (candidate) =>
-        `<li data-match-class="${escapeText(candidate.match_class)}"><strong>${escapeText(candidate.name)}</strong> <span>${escapeText(candidate.match_class)} ${candidate.score}</span> <span>${escapeText(candidate.path)} · ${escapeText(candidate.kind)}</span></li>`,
+        `<li data-match-class="${escapeText(candidate.match_class)}">${candidate.identity ? `<button type="button" data-symbol-id="${escapeText(candidate.identity)}">${escapeText(candidate.name)}</button>` : `<strong>${escapeText(candidate.name)}</strong>`} <span>${escapeText(candidate.match_class)} ${candidate.score}</span> <span>${escapeText(candidate.path)} · ${escapeText(candidate.kind)}</span></li>`,
     )
     .join("");
   const omitted = state.omittedCount > 0 ? `<p>${state.omittedCount} omitted</p>` : "";

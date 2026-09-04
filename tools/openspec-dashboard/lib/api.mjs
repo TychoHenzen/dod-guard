@@ -12,7 +12,7 @@ import { readQualityReport } from "./quality-report.mjs";
 export function createApi({ store, launchAdmission = () => true, launchCodeExplorer, refreshQualityReport }) {
   const admin = createAdmin(store);
 
-  function projectRoute(segments) {
+  function projectRoute(method, segments) {
     const project = admin.pick(segments[2]);
     if (segments[3] === "quality" && segments[4] === "refresh") {
       if (method !== "POST") throw new HttpError(400, "invalid_quality_refresh_request");
@@ -36,7 +36,7 @@ export function createApi({ store, launchAdmission = () => true, launchCodeExplo
     }
     if (segments[1] === "projects") return method === "POST" ? admin.mutate(body) : admin.listProjects();
     if (segments[1] === "scan") return admin.candidates();
-    if (segments[1] === "project") return projectRoute(segments);
+    if (segments[1] === "project") return projectRoute(method, segments);
     throw new HttpError(404, `unknown route: ${pathname}`);
   };
 }

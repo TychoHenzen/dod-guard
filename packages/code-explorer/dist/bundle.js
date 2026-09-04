@@ -24380,11 +24380,21 @@ async function reconcileNativeManifest(options) {
   try {
     const files = await supportedFiles(options.root, options.supported, started, options.now ?? Date.now);
     const manifest = /* @__PURE__ */ new Map();
-    for (const file of files) {
-      const stable = await stableHash(join6(options.root, file), options.now ?? Date.now, options.sleep ?? delay);
-      if (stable === "incomplete_write") return { cause: stable };
-      if (stable === "scan_limit") return { cause: stable };
-      manifest.set(file, stable);
+    for (let offset = 0; offset < files.length; offset += 64) {
+      const batch = files.slice(offset, offset + 64);
+      const stable = await Promise.all(
+        batch.map(
+          async (file) => [
+            file,
+            await stableHash(join6(options.root, file), options.now ?? Date.now, options.sleep ?? delay)
+          ]
+        )
+      );
+      for (const [file, hash] of stable) {
+        if (hash === "incomplete_write") return { cause: hash };
+        if (hash === "scan_limit") return { cause: hash };
+        manifest.set(file, hash);
+      }
     }
     return { manifest };
   } catch (error2) {
@@ -24397,8 +24407,9 @@ async function supportedFiles(root, supported, started, now) {
     if (now() - started > 6e4 || output.length > 5e4) throw new Error("scan_limit");
     for (const entry of await readdir3(directory, { withFileTypes: true })) {
       const absolute = join6(directory, entry.name);
-      if (entry.isDirectory()) await visit(absolute);
-      else {
+      if (entry.isDirectory()) {
+        if (!/^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(entry.name)) await visit(absolute);
+      } else {
         const path5 = relative3(root, absolute).replaceAll("\\", "/");
         if (supported(path5)) output.push(path5);
       }
@@ -27332,6 +27343,36 @@ function createServer2(options = {}) {
       }
       if (name === "code_focus") {
         const focus = schemas.code_focus.parse(arguments_);
+        if (focus.symbol_id.startsWith("file:") && options.projectRoot) {
+          const filePath = focus.symbol_id.slice("file:".length);
+          const body = options.projectRoot.protectedRead(filePath).bytes;
+          const lineCount = body.split("\n").length;
+          const view = createFocusView(
+            {
+              id: focus.symbol_id,
+              name: path4.posix.basename(filePath),
+              language: path4.posix.extname(filePath).slice(1) || "text",
+              kind: "file",
+              location: {
+                path: filePath,
+                range: { start: { line: 0, character: 0 }, end: { line: lineCount, character: 0 } }
+              }
+            },
+            { body, visible_symbols: [] },
+            focus.body_limit_bytes,
+            capturedFreshness.current_generation
+          );
+          if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
+          viewHistory.push(view.view_id);
+          return {
+            schema_version: 1,
+            project_id: "project",
+            project_generation: capturedFreshness.current_generation,
+            pending_generation: capturedFreshness.pending_generation,
+            state: "ready",
+            data: { ...view, history_position: sessions.historyPosition(connectionId, focus.session_id) ?? 0 }
+          };
+        }
         const selected = await collectFocusedSymbol(
           options.adapters ?? [],
           focus.symbol_id,
@@ -27466,14 +27507,15 @@ function createServer2(options = {}) {
             data: { landmarks: currentLandmarks.landmarks, landmark_state: currentLandmarks.state }
           };
         }
-        const semanticSymbols = await collectSemanticSymbols(
+        const semantic = await collectSemanticSymbols(
           options.adapters ?? [],
           search.query,
           (operation) => backendRequests.run(void 0, operation)
         );
         let results;
         try {
-          results = discovery.searchResult(search.query, search, semanticSymbols);
+          results = discovery.searchResult(search.query, search, semantic.symbols);
+          if (results.candidates.length === 0 && semantic.failure) throw semantic.failure;
         } catch (error2) {
           if (error2 instanceof ProjectPathError && error2.code === "path_outside_project") return pathOutsideProject();
           throw error2;
@@ -27592,10 +27634,11 @@ async function collectSemanticSymbols(adapters, query, run) {
   const replies = await Promise.allSettled(
     adapters.map((adapter) => run(() => adapter.request({ operation: "search", query })))
   );
-  throwBackendLimitFailure(replies);
-  return replies.flatMap(
+  const symbols = replies.flatMap(
     (reply) => reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : []
   );
+  const failure = replies.find((reply) => reply.status === "rejected")?.reason;
+  return { symbols, failure };
 }
 async function collectFocusedSymbol(adapters, symbolId, run) {
   const replies = await Promise.allSettled(

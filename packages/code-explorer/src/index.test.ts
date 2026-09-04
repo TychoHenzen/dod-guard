@@ -828,6 +828,41 @@ describe("code-explorer package boundary", () => {
     }
   });
 
+  it("keeps file discovery available when a semantic backend is unavailable", async () => {
+    const root = mkdtempSync(join(tmpdir(), "code-explorer-server-file-fallback-"));
+    try {
+      mkdirSync(join(root, "src"));
+      writeFileSync(join(root, "src", "client.ts"), "export const client = true;\n");
+      const unavailable = adapterWithSymbols([]);
+      unavailable.request = async () => {
+        throw new Error("backend_unavailable");
+      };
+      const server = createServer({ projectRoot: createNativeProjectRoot(root), adapters: [unavailable] });
+
+      const result = await server.call("code_search", { query: "client.ts" });
+
+      assert.equal("code" in result, false);
+      if ("code" in result) throw new Error("expected file discovery response");
+      assert.deepEqual(
+        (result.data.candidates as { path: string }[]).map(({ path }) => path),
+        ["src/client.ts"],
+      );
+      const candidate = (result.data.candidates as { identity: string }[])[0];
+      const sessionId = await startSession(server);
+      const focused = await server.call("code_focus", {
+        session_id: sessionId,
+        request_id: "file-focus-request-0001",
+        symbol_id: candidate?.identity,
+      });
+      assert.equal("code" in focused, false);
+      if ("code" in focused) throw new Error("expected file focus response");
+      assert.equal(focused.data.path, "src/client.ts");
+      assert.match((focused.data.content as { body: string }).body, /export const client/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("returns native workspace symbols through code_search after classification and filters", async () => {
     const root = mkdtempSync(join(tmpdir(), "code-explorer-server-symbols-"));
     try {

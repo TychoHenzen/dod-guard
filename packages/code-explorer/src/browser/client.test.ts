@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 test("reports the browser server state in the application root", async (context) => {
-  const globals = ["document", "fetch", "sessionStorage", "navigator", "performance", "crypto"] as const;
+  const globals = ["document", "fetch", "sessionStorage", "navigator", "performance", "crypto", "window"] as const;
   const originals = new Map(globals.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
   context.after(() => {
     for (const [name, descriptor] of originals) {
@@ -16,17 +16,22 @@ test("reports the browser server state in the application root", async (context)
   const requests: Array<{ path: string; options: RequestInit }> = [];
   const root = {
     textContent: "",
+    innerHTML: "",
     setAttribute: (name: string, value: string) => attributes.set(name, value),
   };
   Object.defineProperty(globalThis, "document", {
     configurable: true,
-    value: { querySelector: () => root },
+    value: {
+      querySelector: (selector: string) => (selector === "#code-explorer" ? root : null),
+      querySelectorAll: () => [],
+    },
   });
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { innerWidth: 1280 } });
   Object.defineProperty(globalThis, "fetch", {
     configurable: true,
     value: async (path: string, options: RequestInit) => {
       requests.push({ path, options });
-      if (path === "/api/status") return await new Promise<Response>(() => {});
+      if (path === "/api/status" || path === "/api/search") return await new Promise<Response>(() => {});
       return { ok: true, json: async () => ({ state: "created", data: { browser_session_id: "browser-session" } }) };
     },
   });
@@ -57,11 +62,11 @@ test("reports the browser server state in the application root", async (context)
   await import(modulePath);
   await new Promise<void>((resolve) => setImmediate(resolve));
 
-  assert.equal(root.textContent, "Code Explorer: created");
+  assert.match(root.innerHTML, /Focused source/);
   assert.equal(attributes.get("data-state"), "ready");
   assert.deepEqual(
     requests.map(({ path }) => path),
-    ["/api/session", "/api/status"],
+    ["/api/session", "/api/status", "/api/search"],
   );
   assert.deepEqual(requests[1]?.options.headers, {
     "content-type": "application/json",

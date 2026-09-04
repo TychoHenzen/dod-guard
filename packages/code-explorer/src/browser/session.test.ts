@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { BrowserSessionClient } from "./session.js";
 
 type Stored = Record<string, string>;
-function harness(type: string, lockAvailable = true, prefix = "id") {
+function harness(type: string, lockAvailable = true, prefix = "id", restoreState = "created") {
   const storage: Stored = {};
   const requests: Array<{ body: Record<string, unknown>; headers: Record<string, string> }> = [];
   const client = new BrowserSessionClient({
@@ -24,6 +24,7 @@ function harness(type: string, lockAvailable = true, prefix = "id") {
     })(),
     request: async (body, headers) => {
       requests.push({ body, headers });
+      if (body.action === "restore") return { state: restoreState };
       return { state: "created", data: { browser_session_id: `${prefix}-server` } };
     },
   });
@@ -82,6 +83,17 @@ describe("browser tab session", () => {
     storage.tab_instance_id = "tab";
     await client.start();
     await client.recoverExpired();
+    assert.equal(requests[1]?.body.action, "create");
+    assert.notEqual(storage.browser_session_id, "old");
+  });
+  it("replaces a session lost when the browser server restarted", async () => {
+    const { client, storage, requests } = harness("reload", true, "id", "invalid_browser_session");
+    storage.browser_session_id = "old";
+    storage.tab_instance_id = "tab";
+
+    const result = await client.start();
+
+    assert.equal(result.state, "browser_session_expired");
     assert.equal(requests[1]?.body.action, "create");
     assert.notEqual(storage.browser_session_id, "old");
   });

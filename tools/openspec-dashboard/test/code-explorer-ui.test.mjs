@@ -4,6 +4,8 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { launchCodeExplorer, setDashboardCapability } from "../public/api.mjs";
+import { takeDashboardCapability } from "../public/capability.mjs";
 import { createCodeExplorerAction, selectedCodeExplorerAction } from "../public/code-explorer-action.mjs";
 
 const registry = {
@@ -13,6 +15,41 @@ const registry = {
     { id: 1, name: "missing", readable: false },
   ],
 };
+test("keeps the fragment capability only in tab-scoped storage across a reload", () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  const replaced = [];
+  const capability = "a".repeat(64);
+  assert.equal(
+    takeDashboardCapability(
+      { hash: `#${capability}`, pathname: "/", search: "" },
+      { replaceState: (...args) => replaced.push(args) },
+      storage,
+    ),
+    capability,
+  );
+  assert.equal(takeDashboardCapability({ hash: "", pathname: "/", search: "" }, { replaceState() {} }, storage), capability);
+  assert.equal(replaced.length, 1);
+});
+test("preserves a structured launch API error code", async (context) => {
+  const original = globalThis.fetch;
+  context.after(() => {
+    globalThis.fetch = original;
+  });
+  globalThis.fetch = async () => ({
+    ok: false,
+    statusText: "Forbidden",
+    json: async () => ({ code: "invalid_dashboard_capability", message: "invalid_dashboard_capability" }),
+  });
+  setDashboardCapability("a".repeat(64));
+  await assert.rejects(
+    launchCodeExplorer({ index: 0, registryRevision: "b".repeat(64) }),
+    (error) => error.message === "invalid_dashboard_capability",
+  );
+});
 test("enables Code Explorer for the selected readable registry entry", () => {
   assert.deepEqual(selectedCodeExplorerAction({ ...registry, active: 0 }), {
     disabled: false,
