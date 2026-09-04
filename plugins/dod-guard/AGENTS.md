@@ -1,6 +1,6 @@
 # dod-guard plugin
 
-This directory is a code-free plugin. It ships skills and two supporting agent
+This directory is a code-free plugin. It ships skills and six supporting agent
 definitions. It has no package workspace, MCP server, or bundle.
 
 ## Delivery contract
@@ -14,6 +14,10 @@ definitions. It has no package workspace, MCP server, or bundle.
 - Use one `codex/<issue>-<slug>` branch and one draft pull request per issue.
 - Use `/next-ticket` to execute and push a ready PBI. Use `/submit-draft-pr`
   only after its verification evidence exists.
+- Use `/review-pr` for four-angle Git or GitHub inline review and Azure DevOps
+  Markdown review reports. It never changes the reviewed branch.
+- Use `/fix-pr-review` to revalidate and fix selected review findings. It
+  updates provider state only after verified commits are pushed.
 - Use `/complete-pr` only when the user explicitly accepts the current pull request.
   It owns guarded ready, auto-merge, issue confirmation, and remote branch
   deletion.
