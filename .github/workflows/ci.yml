@@ -98,7 +98,7 @@ jobs:
       # Reproduce formatting locally. The drift check below rejects any fix the
       # feature branch did not commit.
       - name: Reproduce Biome formatting
-        run: npx @biomejs/biome check --write --unsafe packages/*/src/ scripts/ci/ --no-errors-on-unmatched
+        run: npx @biomejs/biome check --write --unsafe --no-errors-on-unmatched
 
       # ── Ratchets: record the outcome, tighten on improvement, fail at the end ──
 
@@ -168,7 +168,7 @@ jobs:
 
       # Strict check: must be clean after autofix.
       - name: Biome strict check
-        run: npx @biomejs/biome check packages/*/src/ scripts/ci/ --max-diagnostics=200 --no-errors-on-unmatched
+        run: npx @biomejs/biome check --max-diagnostics=200 --no-errors-on-unmatched
 
       # Ratchets run with continue-on-error so baselines still get pushed; enforce here.
       - name: Enforce ratchet outcomes

@@ -1,11 +1,22 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 
 const BUNDLE = resolve("packages/quality-guard/dist/bundle.js");
+const WORKFLOW = resolve(".github/workflows/ci.yml");
+
+test("CI Biome commands use the configured maintained-file coverage", () => {
+  const workflow = readFileSync(WORKFLOW, "utf8");
+  const commands = workflow.match(/run: npx @biomejs\/biome check[^\n]+/g) ?? [];
+
+  assert.equal(commands.length, 2);
+  for (const command of commands) {
+    assert.doesNotMatch(command, /packages\/\*\/src|scripts\/ci/);
+  }
+});
 
 function git(root, args) {
   execFileSync("git", args, { cwd: root, stdio: "ignore" });
