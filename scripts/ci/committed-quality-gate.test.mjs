@@ -7,6 +7,8 @@ import { test } from "node:test";
 
 const BUNDLE = resolve("packages/quality-guard/dist/bundle.js");
 const WORKFLOW = resolve(".github/workflows/ci.yml");
+const CODEQL_WORKFLOW = resolve(".github/workflows/codeql.yml");
+const CODEQL_CONFIG = resolve(".github/codeql/codeql-config.yml");
 
 test("CI Biome commands use the configured maintained-file coverage", () => {
   const workflow = readFileSync(WORKFLOW, "utf8");
@@ -38,6 +40,23 @@ test("static analysis pins actionlint and proves ShellCheck-backed rejection", (
   assert.match(workflow, /command -v shellcheck/);
   assert.match(workflow, /actionlint-invalid-shell\.yml/);
   assert.match(workflow, new RegExp(`${actionlint.replaceAll(".", "\\.")}\\n`));
+});
+
+test("CodeQL scans source and workflows with the extended security suite", () => {
+  const workflow = readFileSync(CODEQL_WORKFLOW, "utf8");
+  const config = readFileSync(CODEQL_CONFIG, "utf8");
+  const codeqlSha = "fddeee1a7ece751b577e409a89057319e3172939";
+
+  assert.match(workflow, /push:\n\s*branches: \[master\]/);
+  assert.match(workflow, /pull_request:\n\s*branches: \[master\]/);
+  assert.match(workflow, /language: \[javascript-typescript, actions\]/);
+  assert.equal(workflow.split(`github/codeql-action/init@${codeqlSha}`).length - 1, 1);
+  assert.equal(workflow.split(`github/codeql-action/analyze@${codeqlSha}`).length - 1, 1);
+  assert.match(workflow, /permissions:\n\s*contents: read\n\s*security-events: write/);
+  assert.match(config, /uses: security-extended/);
+  for (const excluded of ["**/dist/**", "docs/archive/**", "**/fixtures/**", "/target/**"]) {
+    assert.match(config, new RegExp(excluded.replaceAll("*", "\\*").replaceAll("/", "\\/")));
+  }
 });
 
 function git(root, args) {
