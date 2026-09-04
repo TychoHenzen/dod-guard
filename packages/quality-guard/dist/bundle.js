@@ -22600,13 +22600,10 @@ function parseCheckArguments(args) {
   let json = false;
   let intent = "change";
   let target;
-  let skipStructural = false;
   for (let index = 2; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--json") {
       json = true;
-    } else if (arg === "--skip-structural") {
-      skipStructural = true;
     } else if (arg === "--intent") {
       const value = args[++index];
       if (value !== "change" && value !== "refactor") return usage(`unsupported intent ${value ?? ""}`.trim());
@@ -22626,7 +22623,7 @@ function parseCheckArguments(args) {
   }
   if (intent === "refactor" && !target) return usage("refactor intent requires --target");
   if (target && !validTarget(target)) return usage("--target must be a repository-relative path");
-  return { json, intent, target, ...skipStructural ? { skipStructural: true } : {} };
+  return { json, intent, target };
 }
 function parseAcknowledgeArguments(args) {
   if (args[0] !== "acknowledge") return acknowledgeUsage();
@@ -22733,7 +22730,7 @@ function treeFile(root, ref, filePath, fallback) {
 function snapshotConfig(root, ref) {
   return treeFile(root, ref, ".quality-guard.json", "{}");
 }
-function decisionForSnapshot(root, snapshot, baseRef, targetRef, options) {
+function decisionForSnapshot(root, snapshot, baseRef, targetRef, options, skipStructural = false) {
   const decisionSnapshot = withoutDistributionChanges(snapshot);
   const refactorMap = options.intent === "refactor" && options.target ? parseResponsibilityMap(treeFile(root, targetRef, options.target)) : void 0;
   const affected = decisionSnapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((filePath) => Boolean(filePath));
@@ -22758,7 +22755,7 @@ function decisionForSnapshot(root, snapshot, baseRef, targetRef, options) {
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
-    scanner: options.skipStructural ? { findings: [] } : scannerEvidence(root, targetRef),
+    scanner: skipStructural ? { findings: [] } : scannerEvidence(root, targetRef),
     acknowledgementRecords,
     refactorMap
   });
@@ -22769,7 +22766,14 @@ function runStagedCheck(root, options) {
 }
 function runCommittedCheck(root, commit, options) {
   const snapshot = readCommittedSnapshot(root, commit);
-  return decisionForSnapshot(root, snapshot, `${commit}^`, commit, options);
+  return decisionForSnapshot(
+    root,
+    snapshot,
+    `${commit}^`,
+    commit,
+    options,
+    process.env.QUALITY_GUARD_SKIP_STRUCTURAL === "1"
+  );
 }
 function runAcknowledgeCommand(args, root) {
   const options = parseAcknowledgeArguments(args);

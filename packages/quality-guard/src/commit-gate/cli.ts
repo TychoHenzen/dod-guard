@@ -22,7 +22,6 @@ export interface CheckOptions {
   json: boolean;
   intent: "change" | "refactor";
   target?: string;
-  skipStructural?: boolean;
 }
 
 export interface CommandResult {
@@ -100,13 +99,10 @@ export function parseCheckArguments(args: string[]): CheckOptions | CommandResul
   let json = false;
   let intent: "change" | "refactor" = "change";
   let target: string | undefined;
-  let skipStructural = false;
   for (let index = 2; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--json") {
       json = true;
-    } else if (arg === "--skip-structural") {
-      skipStructural = true;
     } else if (arg === "--intent") {
       const value = args[++index];
       if (value !== "change" && value !== "refactor") return usage(`unsupported intent ${value ?? ""}`.trim());
@@ -126,7 +122,7 @@ export function parseCheckArguments(args: string[]): CheckOptions | CommandResul
   }
   if (intent === "refactor" && !target) return usage("refactor intent requires --target");
   if (target && !validTarget(target)) return usage("--target must be a repository-relative path");
-  return { json, intent, target, ...(skipStructural ? { skipStructural: true } : {}) };
+  return { json, intent, target };
 }
 
 /** Parses the public acknowledgement command. Its fields become tracked review evidence. */
@@ -260,6 +256,7 @@ function decisionForSnapshot(
   baseRef: TreeReference,
   targetRef: TreeReference,
   options: CheckOptions,
+  skipStructural = false,
 ): DecisionResult {
   const decisionSnapshot = withoutDistributionChanges(snapshot);
   const refactorMap =
@@ -290,7 +287,7 @@ function decisionForSnapshot(
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
-    scanner: options.skipStructural ? { findings: [] } : scannerEvidence(root, targetRef),
+    scanner: skipStructural ? { findings: [] } : scannerEvidence(root, targetRef),
     acknowledgementRecords,
     refactorMap,
   });
@@ -305,7 +302,14 @@ export function runStagedCheck(root: string, options: CheckOptions): DecisionRes
 /** Replays the staged decision against a committed tree and its first parent for CI. */
 export function runCommittedCheck(root: string, commit: string, options: CheckOptions): DecisionResult {
   const snapshot = readCommittedSnapshot(root, commit);
-  return decisionForSnapshot(root, snapshot, `${commit}^`, commit, options);
+  return decisionForSnapshot(
+    root,
+    snapshot,
+    `${commit}^`,
+    commit,
+    options,
+    process.env.QUALITY_GUARD_SKIP_STRUCTURAL === "1",
+  );
 }
 
 function runAcknowledgeCommand(args: string[], root: string): CommandResult {
