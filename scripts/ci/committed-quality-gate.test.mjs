@@ -30,6 +30,16 @@ test("static analysis runs the strict structural ratchet without line-length", (
   assert.match(workflow, /--write-baseline=\.github\/quality\/quality-baseline\.json/);
 });
 
+test("static analysis pins actionlint and proves ShellCheck-backed rejection", () => {
+  const workflow = readFileSync(WORKFLOW, "utf8");
+  const actionlint = "go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12";
+
+  assert.equal(workflow.split(actionlint).length - 1, 2);
+  assert.match(workflow, /command -v shellcheck/);
+  assert.match(workflow, /actionlint-invalid-shell\.yml/);
+  assert.match(workflow, new RegExp(`${actionlint.replaceAll(".", "\\.")}\\n`));
+});
+
 function git(root, args) {
   execFileSync("git", args, { cwd: root, stdio: "ignore" });
 }
