@@ -1,7 +1,7 @@
 {
   "name": "dod-guard",
-  "version": "5.1.0",
-  "description": "GitHub repository setup, issue delivery, guarded accepted-PR completion, maintenance, and marketplace release. Ships 12 skills.",
+  "version": "5.2.0",
+  "description": "GitHub repository setup, issue delivery, four-agent Git and GitHub PR review, Azure DevOps review reports, guarded completion, maintenance, and marketplace release. Ships 13 skills and 6 agents.",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"
@@ -11,15 +11,15 @@
   "keywords": ["verification", "skills", "git"],
   "interface": {
     "displayName": "dod-guard",
-    "shortDescription": "Repository setup, issue delivery, PR completion, maintenance, and release.",
-    "longDescription": "Provides protected repository setup, issue delivery, guarded accepted-PR completion, review, migration, repository maintenance, and marketplace release workflows.",
+    "shortDescription": "Repository setup, issue delivery, PR review and completion, maintenance, and release.",
+    "longDescription": "Provides protected repository setup, issue delivery, four-agent Git and GitHub pull-request review, Azure DevOps review reports, guarded completion, migration, repository maintenance, and marketplace release workflows.",
     "developerName": "tychohenzen",
     "category": "Developer Tools",
     "capabilities": ["Skills"],
     "defaultPrompt": [
       "Set up this local project for the dod-guard GitHub workflow.",
       "Pick up the next linked GitHub Project issue.",
-      "Review this implementation before its pull request.",
+      "Review the current branch or pull request against its linked PBI.",
       "Complete this explicitly accepted draft pull request."
     ]
   }

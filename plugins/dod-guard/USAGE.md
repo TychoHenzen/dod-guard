@@ -76,7 +76,28 @@ evidence is recorded in a comment.
 
 `submit-draft-pr` adds `Closes #<issue>` only after the evidence exists. The
 agent must not approve its pull request, mark it ready, merge it, or close the
-parent issue. Use `/review-pr-branch` for the read-only review.
+parent issue.
+
+Review the current branch, a named Git ref, or a GitHub pull request without
+checking it out:
+
+```text
+/dod-guard:review-pr
+/dod-guard:review-pr origin/codex/42-example
+/dod-guard:review-pr https://github.com/owner/repository/pull/42
+```
+
+The skill loads the linked PBI and subtasks, then runs feature, design,
+reliability, and hygiene reviewers independently. Local Git findings use the
+active client's inline code comments. GitHub findings become one comment-only
+review on validated changed lines.
+
+Azure DevOps is an additional explicit mode. It writes one Markdown report and
+posts no inline comments:
+
+```text
+/dod-guard:review-pr https://dev.azure.com/owner/project/_git/repository/pullrequest/42 reports/review-42.md
+```
 
 After review, explicitly accept and complete the current pull request:
 
