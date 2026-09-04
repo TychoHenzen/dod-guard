@@ -1,0 +1,612 @@
+{
+  "project_root": "C:\\Users\\siriu\\mcp-servers\\dod-guard",
+  "cycle": {
+    "phase": "done",
+    "cycle_number": 0,
+    "last_file_processed": null,
+    "files_verified_this_cycle": [],
+    "files_fixed_this_cycle": [],
+    "hook_instruction_hash": null,
+    "started_at": null,
+    "last_updated": "2026-07-08T21:27:00Z"
+  },
+  "last_full_run": "2026-07-08T19:15:00Z",
+  "last_partial_run": "2026-07-08T19:15:00Z",
+  "files": {
+    "src/assertions.test.ts": {
+      "hash": "8bd9623184363eb0cdd66bae3cf116adc850e9fe16db08cfbfed4a08b2dc7509",
+      "last_verified": "2026-07-08T06:35:00Z",
+      "scores": {
+        "assertion_quality": 9,
+        "determinism": 10,
+        "isolation": 9,
+        "clarity": 9,
+        "coverage_depth": 8,
+        "speed": 10,
+        "diagnostics": 10,
+        "assertion_triviality": 10
+      },
+      "overall": 9.2,
+      "total_assertions": 74,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "Well-engineered test suite with deterministic execution via fake exec, thorough diagnostics, strong coverage."
+    },
+    "src/author.test.ts": {
+      "hash": "3834300080708032adc9c9c978dd93f6540a26a28d93676c0a6a13045c903218",
+      "last_verified": "2026-07-08T01:55:00Z",
+      "scores": {
+        "assertion_quality": 8,
+        "determinism": 10,
+        "isolation": 10,
+        "clarity": 9,
+        "coverage_depth": 8,
+        "speed": 10,
+        "diagnostics": 9,
+        "assertion_triviality": 10
+      },
+      "overall": 9.1,
+      "total_assertions": 0,
+      "trivial_assertions": 0,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "assertion_quality",
+          "location": "TDD proof marker test",
+          "detail": "Single assertion only checks description text. Does not verify TDD-specific formatting.",
+          "suggestion": "Assert TDD-specific markers."
+        },
+        {
+          "severity": "low",
+          "category": "coverage_depth",
+          "location": "Missing round-trip test",
+          "detail": "No update-then-render round-trip test.",
+          "suggestion": "Add updateDocFromCheckResult then renderMarkdown round-trip test."
+        }
+      ],
+      "summary": "Strong test suite with excellent determinism and isolation. Minor gap in assertion depth and round-trip coverage."
+    },
+    "src/baseline.test.ts": {
+      "hash": "cc4d8ec5832fc37b815955b8471907131b55d5356b82f11e5ce4b9b8c48074bd",
+      "last_verified": "2026-07-08T15:45:00Z",
+      "scores": {
+        "assertion_quality": 8,
+        "determinism": 10,
+        "isolation": 10,
+        "clarity": 9,
+        "coverage_depth": 8,
+        "speed": 10,
+        "diagnostics": 9,
+        "assertion_triviality": 10
+      },
+      "overall": 9.1,
+      "total_assertions": 48,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "All assertions now have custom diagnostic messages. Comprehensive baseline enforcement tests for all category tiers."
+    },
+    "src/brevity.test.ts": {
+      "hash": "5c9958a4650804b803a48441f0acd926001729ed8ea070d757cf6b62ce6b3255",
+      "last_verified": "2026-07-08T15:45:00Z",
+      "scores": {
+        "assertion_quality": 8,
+        "determinism": 9,
+        "isolation": 8,
+        "clarity": 8,
+        "coverage_depth": 8,
+        "speed": 9,
+        "diagnostics": 9,
+        "assertion_triviality": 10
+      },
+      "overall": 8.6,
+      "total_assertions": 39,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "Added error-path tests (nonexistent dir, binary files), all assertions have diagnostic messages. Replace violations.some() with filter().length for precise violation counts."
+    },
+    "src/checker.test.ts": {
+      "hash": "ce2ff9ce935b4482b297fdb90725c61178790d9d0029200c9116ca9ea952c7e7",
+      "last_verified": "2026-07-08T15:45:00Z",
+      "scores": {
+        "assertion_quality": 8,
+        "determinism": 9,
+        "isolation": 9,
+        "clarity": 8,
+        "coverage_depth": 8,
+        "speed": 8,
+        "diagnostics": 9,
+        "assertion_triviality": 10
+      },
+      "overall": 8.6,
+      "total_assertions": 97,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "Added success-path tests for mutation and regression predicates via injectable execFn. Well-architected suite with strong diagnostics."
+    },
+    "src/command-check.test.ts": {
+      "hash": "b6f927ec3b75dcfa95e5eba866583a7feb925582b1ada2eacbc23f33a35df38c",
+      "last_verified": "2026-07-08T15:45:00Z",
+      "scores": {
+        "assertion_quality": 8,
+        "determinism": 8,
+        "isolation": 9,
+        "clarity": 8,
+        "coverage_depth": 8,
+        "speed": 10,
+        "diagnostics": 8,
+        "assertion_triviality": 10
+      },
+      "overall": 8.5,
+      "total_assertions": 34,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "Added edge-case tests (Windows paths, UNC, nested quotes, case-insensitive suggestions). All assertions have diagnostic messages."
+    },
+    "src/manual.test.ts": {
+      "hash": "4e723283550cdb7632a397c3ef5847e549457877908e730e4bc82ed4a3bcb1e8",
+      "last_verified": "2026-07-08T14:04:1800Z",
+      "scores": {
+        "assertion_quality": 9,
+        "determinism": 10,
+        "isolation": 10,
+        "clarity": 10,
+        "coverage_depth": 8,
+        "speed": 10,
+        "diagnostics": 10,
+        "assertion_triviality": 10
+      },
+      "overall": 9.5,
+      "total_assertions": 0,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "Perfect test suite. Added fingerprint edge-case tests for coverage depth (stable hash, command/description divergence)."
+    },
+    "src/notify.test.ts": {
+      "hash": "fbe60c9a53e0df20d3457c33429fb9867445b6f8a7ceb584f11c9c862ca6cf3b",
+      "last_verified": "2026-07-08T14:15:00Z",
+      "scores": {
+        "assertion_quality": 9,
+        "determinism": 10,
+        "isolation": 10,
+        "clarity": 9,
+        "coverage_depth": 9,
+        "speed": 9,
+        "diagnostics": 10,
+        "assertion_triviality": 10
+      },
+      "overall": 9.5,
+      "total_assertions": 32,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "Mocked spawn via mock.module for full behavioral coverage. All resolution paths tested. Structural and edge-case tests round out coverage."
+    },
+    "src/observability.test.ts": {
+      "hash": "d450289d071eb5a050a38bef8297789d14f8857b131f78b78824c1f539734508",
+      "last_verified": "2026-07-06T22:15:00Z",
+      "scores": {
+        "assertion_quality": 8,
+        "determinism": 8,
+        "isolation": 9,
+        "clarity": 9,
+        "coverage_depth": 8,
+        "speed": 9,
+        "diagnostics": 10,
+        "assertion_triviality": 10
+      },
+      "overall": 8.6,
+      "total_assertions": 0,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "Well-structured test suite with excellent diagnostics and isolation. Per-test tmpdir and multi-language coverage."
+    },
+    "src/parser.test.ts": {
+      "hash": "41303e6829da126cd0e9923bb545cf4a776500103de95b35a3326133fa6bb836",
+      "last_verified": "2026-07-08T15:45:00Z",
+      "scores": {
+        "assertion_quality": 9,
+        "determinism": 10,
+        "isolation": 10,
+        "clarity": 9,
+        "coverage_depth": 9,
+        "speed": 10,
+        "diagnostics": 10,
+        "assertion_triviality": 10
+      },
+      "overall": 9.5,
+      "total_assertions": 75,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "All tests now use parseMarkdownFromString (instant, zero I/O). Added error-path test for nonexistent file. 104ms total runtime."
+    },
+    "src/regression.test.ts": {
+      "hash": "3be862028893811bb1c809d652d39448cac169a520b0c5cdb0d41fa0e8f42903",
+      "last_verified": "2026-07-08T15:45:00Z",
+      "scores": {
+        "assertion_quality": 9,
+        "determinism": 10,
+        "isolation": 10,
+        "clarity": 9,
+        "coverage_depth": 8,
+        "speed": 10,
+        "diagnostics": 9,
+        "assertion_triviality": 10
+      },
+      "overall": 9.3,
+      "total_assertions": 0,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "All assertions now have custom diagnostic messages describing expected behavior. Deterministic, fast."
+    },
+    "src/store.test.ts": {
+      "hash": "7269d93f224c33ddbc27f5dbbe32904ed326d2b6f859f1975f1022cc371c56e3",
+      "last_verified": "2026-07-08T15:45:00Z",
+      "scores": {
+        "assertion_quality": 9,
+        "determinism": 9,
+        "isolation": 9,
+        "clarity": 9,
+        "coverage_depth": 9,
+        "speed": 8,
+        "diagnostics": 10,
+        "assertion_triviality": 10
+      },
+      "overall": 9.1,
+      "total_assertions": 22,
+      "trivial_assertions": 0,
+      "findings": [],
+      "summary": "Per-test store dir isolation via beforeEach. Added corrupt JSON, idempotent remove, large amendments edge-case tests."
+    }
+  },
+  "coverage": {
+    "total_source_files": 14,
+    "tested": 14,
+    "possibly_tested": 0,
+    "untested": 0,
+    "untested_files": [],
+    "entry_points_untested": [],
+    "lines_pct": 90.29,
+    "branches_pct": 81.14
+  },
+  "source_quality": {
+    "src/assertions.ts": {
+      "hash": "15e6cbef",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 206,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 1,
+        "error_handlers_logged": 1,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 6,
+        "long_lines": 5,
+        "long_functions": 1,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 1
+      }
+    },
+    "src/author.ts": {
+      "hash": "10f9a515",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 262,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 0,
+        "error_handlers_logged": 0,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 5,
+        "long_lines": 3,
+        "long_functions": 1,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 4
+      }
+    },
+    "src/baseline.ts": {
+      "hash": "8821c18c",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 213,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 0,
+        "error_handlers_logged": 0,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 6,
+        "long_lines": 4,
+        "long_functions": 0,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 2
+      }
+    },
+    "src/brevity.ts": {
+      "hash": "c40fc8de",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 385,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 1,
+        "error_handlers_logged": 1,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 7,
+        "long_lines": 1,
+        "long_functions": 1,
+        "file_too_long": true,
+        "mixed_cohesion_functions": 1
+      }
+    },
+    "src/checker.ts": {
+      "hash": "f82328f2",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 505,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 1,
+        "error_handlers_logged": 1,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 2,
+        "long_lines": 8,
+        "long_functions": 1,
+        "file_too_long": true,
+        "mixed_cohesion_functions": 6
+      }
+    },
+    "src/command-check.ts": {
+      "hash": "24b65d87",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 180,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 1,
+        "error_handlers_logged": 1,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 7,
+        "long_lines": 0,
+        "long_functions": 0,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 5
+      }
+    },
+    "src/format-result.ts": {
+      "hash": "40c56f0f",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 105,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 0,
+        "error_handlers_logged": 0,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 6,
+        "long_lines": 4,
+        "long_functions": 1,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 1
+      }
+    },
+    "src/index.ts": {
+      "hash": "f2cec946",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 948,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 2,
+        "error_handlers": 2,
+        "error_handlers_logged": 2,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 3,
+        "long_lines": 47,
+        "long_functions": 1,
+        "file_too_long": true,
+        "mixed_cohesion_functions": 2
+      }
+    },
+    "src/manual.ts": {
+      "hash": "25307c91",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 78,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 0,
+        "error_handlers_logged": 0,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 9,
+        "long_lines": 2,
+        "long_functions": 0,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 0
+      }
+    },
+    "src/notify.ts": {
+      "hash": "c692b6ab",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 165,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 3,
+        "error_handlers": 3,
+        "error_handlers_logged": 3,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 9,
+        "long_lines": 0,
+        "long_functions": 1,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 0
+      }
+    },
+    "src/observability.ts": {
+      "hash": "7d7643fa",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 715,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 0,
+        "error_handlers": 0,
+        "error_handlers_logged": 0,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 7,
+        "long_lines": 1,
+        "long_functions": 1,
+        "file_too_long": true,
+        "mixed_cohesion_functions": 1
+      }
+    },
+    "src/parser.ts": {
+      "hash": "185f4a36",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 298,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 0,
+        "error_handlers_logged": 0,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 4,
+        "long_lines": 0,
+        "long_functions": 3,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 4
+      }
+    },
+    "src/regression.ts": {
+      "hash": "9ca8e519",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 28,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 0,
+        "error_handlers_logged": 0,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 10,
+        "long_lines": 0,
+        "long_functions": 0,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 0
+      }
+    },
+    "src/store.ts": {
+      "hash": "0fbe7383",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 87,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 4,
+        "error_handlers": 4,
+        "error_handlers_logged": 4,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 8,
+        "long_lines": 0,
+        "long_functions": 0,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 2
+      }
+    },
+    "src/types.ts": {
+      "hash": "f38b18df",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 230,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 0,
+        "error_handlers_logged": 0,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 10,
+        "long_lines": 1,
+        "long_functions": 0,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 0
+      }
+    },
+    "src/find-functions.ts": {
+      "hash": "8750df22",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 214,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 0,
+        "error_handlers_logged": 0,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 7,
+        "long_lines": 2,
+        "long_functions": 1,
+        "file_too_long": false,
+        "mixed_cohesion_functions": 1
+      }
+    },
+    "src/evaluate-proof.ts": {
+      "hash": "540b69f2",
+      "last_analyzed": "2026-07-08T19:00:00Z",
+      "lines": 301,
+      "functions": 0,
+      "observability": {
+        "score": 10,
+        "log_statements": 1,
+        "error_handlers": 0,
+        "error_handlers_logged": 0,
+        "anti_patterns": []
+      },
+      "brevity": {
+        "score": 6,
+        "long_lines": 0,
+        "long_functions": 1,
+        "file_too_long": true,
+        "mixed_cohesion_functions": 2
+      }
+    }
+  }
+}
