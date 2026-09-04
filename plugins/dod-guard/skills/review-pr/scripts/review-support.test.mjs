@@ -75,6 +75,20 @@ test("normalizes Azure PBI fields and child work items", () => {
   });
 });
 
+test("keeps encoded Azure markup inert while decoding entities once", () => {
+  const result = normalizeAzureHierarchy({
+    fields: {
+      "Microsoft.VSTS.Common.AcceptanceCriteria":
+        "<p>Visible &amp; correct: &lt;scri<strong>pt&gt;alert(1)&lt;/script&gt;</p>",
+      "System.Description": "<p>&amp;lt;script&amp;gt;</p>",
+    },
+    id: 41,
+  });
+
+  assert.equal(result.acceptanceCriteria, "Visible & correct: &lt;script&gt;alert(1)&lt;/script&gt;");
+  assert.equal(result.body, "&lt;script&gt;");
+});
+
 test("redacts provider credentials throughout a review context", () => {
   const fakeGitHubToken = ["ghp", "aaaaaaaaaaaaaaaaaaaa"].join("_");
   const redacted = redactSecrets({

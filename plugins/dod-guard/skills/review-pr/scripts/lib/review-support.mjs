@@ -9,6 +9,7 @@ const AZURE_PULL_NUMBER = /^(?:ado:)?(\d+)$/i;
 const HTML_BREAK = /<br\s*\/?>/gi;
 const HTML_PARAGRAPH_END = /<\/p>/gi;
 const HTML_TAG = /<[^>]+>/g;
+const HTML_TEXT_ENTITY = /&(nbsp|amp|lt|gt|quot|#39);/gi;
 const MANY_NEWLINES = /\n{3,}/g;
 const AUTHORIZATION_SECRET = /\b(Authorization\s*:\s*(?:Bearer|Basic)\s+)[^\s"']+/gi;
 const GITHUB_SECRET = /\b(gh[pousr]_)[A-Za-z0-9_]{8,}\b/g;
@@ -22,6 +23,14 @@ const DIFF_FILE_PREFIX_LENGTH = 4;
 const BLOCKER_RANK = 3;
 const MAJOR_RANK = 2;
 const MINOR_RANK = 1;
+const HTML_TEXT_ENTITIES = Object.freeze({
+  "#39": "'",
+  amp: "&",
+  gt: "&gt;",
+  lt: "&lt;",
+  nbsp: " ",
+  quot: '"',
+});
 
 function stop(message) {
   throw new Error(message);
@@ -68,12 +77,7 @@ function stripHtml(value = "") {
     .replace(HTML_BREAK, "\n")
     .replace(HTML_PARAGRAPH_END, "\n")
     .replace(HTML_TAG, "")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
+    .replace(HTML_TEXT_ENTITY, (entity) => HTML_TEXT_ENTITIES[entity.slice(1, -1).toLowerCase()])
     .replace(MANY_NEWLINES, "\n\n")
     .trim();
 }
