@@ -1,0 +1,10 @@
+name: invalid-actionlint-fixture
+
+on: push
+
+jobs:
+  invalid:
+    runs-on: ubuntu-latest
+    default: {}
+    steps:
+      - run: echo $UNQUOTED
