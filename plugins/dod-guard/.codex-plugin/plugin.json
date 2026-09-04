@@ -1,6 +1,6 @@
 {
   "name": "dod-guard",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "GitHub issue delivery, guarded accepted-PR completion, repository maintenance, and marketplace release skills.",
   "author": {
     "name": "tychohenzen",
