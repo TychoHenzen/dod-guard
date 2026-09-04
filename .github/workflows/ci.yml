@@ -86,6 +86,17 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # actionlint delegates embedded run scripts to the runner's ShellCheck.
+      - name: Actionlint rejects an invalid workflow and unsafe shell
+        run: |
+          command -v shellcheck
+          if go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 scripts/ci/fixtures/actionlint-invalid-shell.yml; then
+            echo "actionlint accepted the invalid fixture"
+            exit 1
+          fi
+      - name: Validate GitHub Actions workflows
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+
       # A lockfile that npm ci rewrites means the committed one is stale.
       - name: Lockfile is in sync
         run: git diff --exit-code -- package-lock.json
@@ -98,7 +109,7 @@ jobs:
       # Reproduce formatting locally. The drift check below rejects any fix the
       # feature branch did not commit.
       - name: Reproduce Biome formatting
-        run: npx @biomejs/biome check --write --unsafe packages/*/src/ scripts/ci/ --no-errors-on-unmatched
+        run: npx @biomejs/biome format --write --no-errors-on-unmatched
 
       # ── Ratchets: record the outcome, tighten on improvement, fail at the end ──
 
@@ -111,6 +122,7 @@ jobs:
         run: |
           node "$QUALITY_SCAN" packages \
             --exclude=/dist/ --exclude=node_modules \
+            --profile=strict \
             --rules="$QUALITY_RULES" \
             --baseline=.github/quality/quality-baseline.json \
             --fail-on=regression | tee quality-report.txt
@@ -121,6 +133,7 @@ jobs:
           if ! grep -q "Improvements: 0 " quality-report.txt; then
             node "$QUALITY_SCAN" packages \
               --exclude=/dist/ --exclude=node_modules \
+              --profile=strict \
               --rules="$QUALITY_RULES" \
               --write-baseline=.github/quality/quality-baseline.json
           fi
@@ -139,7 +152,10 @@ jobs:
           exit "${PIPESTATUS[0]}"
       - name: Tighten test presence baseline
         if: steps.tests-present.outcome == 'success'
-        run: grep -q "fixed:" tests-present.txt && node scripts/ci/check-tests-present.mjs --write-baseline || true
+        run: |
+          if grep -q "fixed:" tests-present.txt; then
+            node scripts/ci/check-tests-present.mjs --write-baseline || true
+          fi
 
       # A consumed .quality-skip is a deliberate bypass of the quality gate.
       # It must not reach a release without a human signing it off.
@@ -154,7 +170,10 @@ jobs:
           exit "${PIPESTATUS[0]}"
       - name: Tighten audit baseline
         if: steps.audit.outcome == 'success'
-        run: grep -q "fixed:" audit-report.txt && node scripts/ci/check-audit.mjs --write-baseline || true
+        run: |
+          if grep -q "fixed:" audit-report.txt; then
+            node scripts/ci/check-audit.mjs --write-baseline || true
+          fi
 
       - name: Coverage ratchet (per package)
         id: coverage
@@ -164,11 +183,14 @@ jobs:
           exit "${PIPESTATUS[0]}"
       - name: Tighten coverage baseline
         if: steps.coverage.outcome == 'success'
-        run: grep -qE "improved:|adopted:" coverage-report.txt && node scripts/ci/check-coverage.mjs --write-baseline || true
+        run: |
+          if grep -qE "improved:|adopted:" coverage-report.txt; then
+            node scripts/ci/check-coverage.mjs --write-baseline || true
+          fi
 
       # Strict check: must be clean after autofix.
       - name: Biome strict check
-        run: npx @biomejs/biome check packages/*/src/ scripts/ci/ --max-diagnostics=200 --no-errors-on-unmatched
+        run: npx @biomejs/biome check --max-diagnostics=200 --no-errors-on-unmatched
 
       # Ratchets run with continue-on-error so baselines still get pushed; enforce here.
       - name: Enforce ratchet outcomes

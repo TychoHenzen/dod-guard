@@ -1,11 +1,65 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 
 const BUNDLE = resolve("packages/quality-guard/dist/bundle.js");
+const WORKFLOW = resolve(".github/workflows/ci.yml");
+const CODEQL_WORKFLOW = resolve(".github/workflows/codeql.yml");
+const CODEQL_CONFIG = resolve(".github/codeql/codeql-config.yml");
+
+test("CI Biome commands use the configured maintained-file coverage", () => {
+  const workflow = readFileSync(WORKFLOW, "utf8");
+  const commands = workflow.match(/run: npx @biomejs\/biome (?:check|format)[^\n]+/g) ?? [];
+
+  assert.equal(commands.length, 2);
+  for (const command of commands) {
+    assert.doesNotMatch(command, /packages\/\*\/src|scripts\/ci/);
+  }
+  assert.match(commands[0], /biome format --write/);
+  assert.match(commands[1], /biome check --max-diagnostics/);
+});
+
+test("static analysis runs the strict structural ratchet without line-length", () => {
+  const workflow = readFileSync(WORKFLOW, "utf8");
+  const rules = workflow.match(/^\s*QUALITY_RULES:\s*(.+)$/m)?.[1].split(",");
+  const strictScans = workflow.match(/--profile=strict/g) ?? [];
+
+  assert.ok(rules, "QUALITY_RULES must remain declared in the workflow");
+  assert.equal(rules.includes("line-length"), false, "Biome owns line length");
+  assert.equal(strictScans.length, 2, "the ratchet and baseline regeneration must both use the strict profile");
+  assert.match(workflow, /--baseline=\.github\/quality\/quality-baseline\.json \\\n\s*--fail-on=regression/);
+  assert.match(workflow, /--write-baseline=\.github\/quality\/quality-baseline\.json/);
+});
+
+test("static analysis pins actionlint and proves ShellCheck-backed rejection", () => {
+  const workflow = readFileSync(WORKFLOW, "utf8");
+  const actionlint = "go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12";
+
+  assert.equal(workflow.split(actionlint).length - 1, 2);
+  assert.match(workflow, /command -v shellcheck/);
+  assert.match(workflow, /actionlint-invalid-shell\.yml/);
+  assert.match(workflow, new RegExp(`${actionlint.replaceAll(".", "\\.")}\\n`));
+});
+
+test("CodeQL scans source and workflows with the extended security suite", () => {
+  const workflow = readFileSync(CODEQL_WORKFLOW, "utf8");
+  const config = readFileSync(CODEQL_CONFIG, "utf8");
+  const codeqlSha = "fddeee1a7ece751b577e409a89057319e3172939";
+
+  assert.match(workflow, /push:\n\s*branches: \[master\]/);
+  assert.match(workflow, /pull_request:\n\s*branches: \[master\]/);
+  assert.match(workflow, /language: \[javascript-typescript, actions\]/);
+  assert.equal(workflow.split(`github/codeql-action/init@${codeqlSha}`).length - 1, 1);
+  assert.equal(workflow.split(`github/codeql-action/analyze@${codeqlSha}`).length - 1, 1);
+  assert.match(workflow, /permissions:\n\s*contents: read\n\s*security-events: write/);
+  assert.match(config, /uses: security-extended/);
+  for (const excluded of ["**/dist/**", "docs/archive/**", "**/fixtures/**", "/target/**"]) {
+    assert.match(config, new RegExp(excluded.replaceAll("*", "\\*").replaceAll("/", "\\/")));
+  }
+});
 
 function git(root, args) {
   execFileSync("git", args, { cwd: root, stdio: "ignore" });

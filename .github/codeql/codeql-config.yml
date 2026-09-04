@@ -1,0 +1,12 @@
+name: dod-guard-codeql
+
+queries:
+  - uses: security-extended
+
+paths-ignore:
+  - "**/dist/**"
+  - "docs/archive/**"
+  - "openspec/changes/archive/**"
+  - "packages/code-explorer/spike/**"
+  - "**/fixtures/**"
+  - "packages/quality-guard/skills/quality-refactor/scripts/lib/target/**"
