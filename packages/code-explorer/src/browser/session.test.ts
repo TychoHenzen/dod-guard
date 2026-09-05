@@ -1,34 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { BrowserSessionClient } from "./session.js";
-
-type Stored = Record<string, string>;
-function harness(type: string, lockAvailable = true, prefix = "id") {
-  const storage: Stored = {};
-  const requests: Array<{ body: Record<string, unknown>; headers: Record<string, string> }> = [];
-  const client = new BrowserSessionClient({
-    storage: {
-      get: (key) => storage[key] ?? null,
-      set: (key, value) => {
-        storage[key] = value;
-      },
-      clear: () => {
-        for (const key of Object.keys(storage)) delete storage[key];
-      },
-    },
-    navigationType: () => type,
-    lock: async (_name, action) => action(lockAvailable),
-    randomId: (() => {
-      let id = 0;
-      return () => `${prefix}-${++id}`;
-    })(),
-    request: async (body, headers) => {
-      requests.push({ body, headers });
-      return { state: "created", data: { browser_session_id: `${prefix}-server` } };
-    },
-  });
-  return { client, storage, requests };
-}
+import { sessionHarness as harness } from "./session-fixture.test.js";
 
 describe("browser tab session", () => {
   it("restores only a reload with a prior tab session", async () => {
@@ -47,8 +19,8 @@ describe("browser tab session", () => {
     assert.notEqual(requests[0]?.body.tab_instance_id, "copied-tab");
   });
   it("creates an independent server session for a second tab", async () => {
-    const first = harness("navigate", true, "first");
-    const second = harness("navigate", true, "second");
+    const first = harness("navigate", { prefix: "first" });
+    const second = harness("navigate", { prefix: "second" });
     await first.client.start();
     await second.client.start();
     assert.notEqual(first.storage.browser_session_id, second.storage.browser_session_id);
@@ -62,7 +34,7 @@ describe("browser tab session", () => {
     assert.deepEqual(requests[0]?.headers, { "x-code-explorer-session": "owned", "x-code-explorer-tab": "owned-tab" });
   });
   it("rotates a reload that loses the old tab lock race", async () => {
-    const { client, storage, requests } = harness("reload", false);
+    const { client, storage, requests } = harness("reload", { lockAvailable: false });
     storage.browser_session_id = "old";
     storage.tab_instance_id = "old-tab";
     const result = await client.start();
@@ -82,6 +54,17 @@ describe("browser tab session", () => {
     storage.tab_instance_id = "tab";
     await client.start();
     await client.recoverExpired();
+    assert.equal(requests[1]?.body.action, "create");
+    assert.notEqual(storage.browser_session_id, "old");
+  });
+  it("replaces a session lost when the browser server restarted", async () => {
+    const { client, storage, requests } = harness("reload", { restoreState: "invalid_browser_session" });
+    storage.browser_session_id = "old";
+    storage.tab_instance_id = "tab";
+
+    const result = await client.start();
+
+    assert.equal(result.state, "browser_session_expired");
     assert.equal(requests[1]?.body.action, "create");
     assert.notEqual(storage.browser_session_id, "old");
   });

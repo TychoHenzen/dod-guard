@@ -32,9 +32,13 @@ const PORT_ATTEMPTS = 20;
 let acceptingLaunches = false;
 const projectIdentity = createProjectIdentity();
 let codeExplorerEntry;
+const reportCodeExplorer = (stage) => process.stderr.write(`Code Explorer launch: ${stage}\n`);
 try {
-  codeExplorerEntry = discoverCodeExplorer({ monorepoRoot: MONOREPO_ROOT });
+  codeExplorerEntry = discoverCodeExplorer({
+    monorepoRoot: MONOREPO_ROOT,
+  });
 } catch {
+  reportCodeExplorer("bundle_discovery_failed");
   // The dashboard can still read projects when Code Explorer is not installed.
   codeExplorerEntry = null;
 }
@@ -42,7 +46,12 @@ const children = createCodeExplorerManager({
   projectIdentity: projectIdentity.identity,
   start: async ({ projectPath }) => {
     if (!codeExplorerEntry) throw new Error("code_explorer_unavailable");
-    return startCodeExplorer({ entry: codeExplorerEntry, projectPath, monorepoRoot: MONOREPO_ROOT });
+    return startCodeExplorer({
+      entry: codeExplorerEntry,
+      projectPath,
+      monorepoRoot: MONOREPO_ROOT,
+      report: reportCodeExplorer,
+    });
   },
 });
 const handle = createApi({

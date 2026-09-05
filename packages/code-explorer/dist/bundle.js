@@ -22474,11 +22474,6 @@ var ProjectGenerationScheduler = class {
   }
 };
 
-// src/freshness/workspace-freshness.ts
-import { createHash } from "node:crypto";
-import { readdir as readdir3, readFile as readFile2, stat as stat4 } from "node:fs/promises";
-import { join as join6, relative as relative3 } from "node:path";
-
 // ../../node_modules/chokidar/esm/index.js
 import { stat as statcb } from "fs";
 import { stat as stat3, readdir as readdir2 } from "fs/promises";
@@ -24045,8 +24040,8 @@ var FSWatcher = class extends EventEmitter {
     }
     return this._userIgnored(path5, stats);
   }
-  _isntIgnored(path5, stat5) {
-    return !this._isIgnored(path5, stat5);
+  _isntIgnored(path5, stat4) {
+    return !this._isIgnored(path5, stat4);
   }
   /**
    * Provides a set of common helpers and properties relating to symlink handling.
@@ -24169,6 +24164,74 @@ function watch(paths, options = {}) {
   return watcher;
 }
 var esm_default = { watch, FSWatcher };
+
+// src/freshness/native-manifest.ts
+import { createHash } from "node:crypto";
+import { open as open2, readdir as readdir3 } from "node:fs/promises";
+import { join as join6, relative as relative3 } from "node:path";
+async function reconcileNativeManifest(options) {
+  const started = (options.now ?? Date.now)();
+  try {
+    const files = await supportedFiles(options.root, options.supported, started, options.now ?? Date.now);
+    const manifest = /* @__PURE__ */ new Map();
+    for (let offset = 0; offset < files.length; offset += 64) {
+      const stable = await stableBatch(options, files.slice(offset, offset + 64));
+      for (const [file, hash] of stable) {
+        if (hash === "incomplete_write") return { cause: hash };
+        if (hash === "scan_limit") return { cause: hash };
+        manifest.set(file, hash);
+      }
+    }
+    return { manifest };
+  } catch (error2) {
+    return { cause: error2 instanceof Error && error2.message === "scan_limit" ? "scan_limit" : "freshness_unavailable" };
+  }
+}
+async function stableBatch(options, files) {
+  return await Promise.all(
+    files.map(
+      async (file) => [file, await stableHash(join6(options.root, file), options.now ?? Date.now, options.sleep ?? delay)]
+    )
+  );
+}
+async function supportedFiles(root, supported, started, now) {
+  const output = [];
+  const visit = async (directory) => {
+    if (now() - started > 6e4 || output.length > 5e4) throw new Error("scan_limit");
+    for (const entry of await readdir3(directory, { withFileTypes: true })) {
+      const absolute = join6(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (!/^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(entry.name)) await visit(absolute);
+      } else {
+        const path5 = relative3(root, absolute).replaceAll("\\", "/");
+        if (supported(path5)) output.push(path5);
+      }
+    }
+  };
+  await visit(root);
+  if (output.length > 5e4) throw new Error("scan_limit");
+  return output.sort();
+}
+async function stableHash(path5, now, sleep) {
+  const started = now();
+  for (; ; ) {
+    const file = await open2(path5, "r");
+    try {
+      const before = await file.stat();
+      if (before.size > 4 * 1024 * 1024) return "scan_limit";
+      await sleep(100);
+      const after = await file.stat();
+      if (before.size === after.size && before.mtimeMs === after.mtimeMs)
+        return createHash("sha256").update(await file.readFile()).digest("hex");
+    } finally {
+      await file.close();
+    }
+    if (now() - started >= 1e4) return "incomplete_write";
+  }
+}
+function delay(milliseconds) {
+  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
+}
 
 // src/freshness/workspace-freshness.ts
 var coalesceMilliseconds = 100;
@@ -24374,54 +24437,6 @@ function createNativeWorkspaceFreshness(options) {
     verify: () => reconcileNativeManifest(options),
     watch_paths: [options.root]
   });
-}
-async function reconcileNativeManifest(options) {
-  const started = (options.now ?? Date.now)();
-  try {
-    const files = await supportedFiles(options.root, options.supported, started, options.now ?? Date.now);
-    const manifest = /* @__PURE__ */ new Map();
-    for (const file of files) {
-      const stable = await stableHash(join6(options.root, file), options.now ?? Date.now, options.sleep ?? delay);
-      if (stable === "incomplete_write") return { cause: stable };
-      if (stable === "scan_limit") return { cause: stable };
-      manifest.set(file, stable);
-    }
-    return { manifest };
-  } catch (error2) {
-    return { cause: error2 instanceof Error && error2.message === "scan_limit" ? "scan_limit" : "freshness_unavailable" };
-  }
-}
-async function supportedFiles(root, supported, started, now) {
-  const output = [];
-  const visit = async (directory) => {
-    if (now() - started > 6e4 || output.length > 5e4) throw new Error("scan_limit");
-    for (const entry of await readdir3(directory, { withFileTypes: true })) {
-      const absolute = join6(directory, entry.name);
-      if (entry.isDirectory()) await visit(absolute);
-      else {
-        const path5 = relative3(root, absolute).replaceAll("\\", "/");
-        if (supported(path5)) output.push(path5);
-      }
-    }
-  };
-  await visit(root);
-  if (output.length > 5e4) throw new Error("scan_limit");
-  return output.sort();
-}
-async function stableHash(path5, now, sleep) {
-  const started = now();
-  for (; ; ) {
-    const before = await stat4(path5);
-    if (before.size > 4 * 1024 * 1024) return "scan_limit";
-    await sleep(100);
-    const after = await stat4(path5);
-    if (before.size === after.size && before.mtimeMs === after.mtimeMs)
-      return createHash("sha256").update(await readFile2(path5)).digest("hex");
-    if (now() - started >= 1e4) return "incomplete_write";
-  }
-}
-function delay(milliseconds) {
-  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
 }
 
 // src/navigation/error.ts
@@ -25713,11 +25728,11 @@ function inspectFile(candidate, root, projectRoot) {
     if (!link.isFile() || link.isSymbolicLink()) return void 0;
     const canonicalPath = realpathSync2.native(candidate);
     if (!isWithin2(root, canonicalPath) || projectRoot && isWithin2(projectRoot, canonicalPath)) return void 0;
-    const stat5 = statSync3(canonicalPath, { bigint: true });
+    const stat4 = statSync3(canonicalPath, { bigint: true });
     return {
       canonical_path: canonicalPath,
-      device: String(stat5.dev),
-      file_id: String(stat5.ino),
+      device: String(stat4.dev),
+      file_id: String(stat4.ino),
       sha256: createHash4("sha256").update(readFileSync4(canonicalPath)).digest("hex"),
       regular_file: true,
       link_or_reparse_point: false
@@ -27120,6 +27135,16 @@ function staleView() {
 function requestIdConflict() {
   return codeExplorerError("request_id_conflict");
 }
+function readyViewEnvelope(view, freshness, historyPosition) {
+  return {
+    schema_version: 1,
+    project_id: "project",
+    project_generation: freshness.current_generation,
+    pending_generation: freshness.pending_generation,
+    state: "ready",
+    data: { ...view, history_position: historyPosition }
+  };
+}
 function hasValidRequestId(value) {
   const bytes = Buffer5.byteLength(value, "utf8");
   return bytes >= 16 && bytes <= 128;
@@ -27332,6 +27357,36 @@ function createServer2(options = {}) {
       }
       if (name === "code_focus") {
         const focus = schemas.code_focus.parse(arguments_);
+        const saveView = (view) => {
+          if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
+          viewHistory.push(view.view_id);
+          return readyViewEnvelope(
+            view,
+            capturedFreshness,
+            sessions.historyPosition(connectionId, focus.session_id) ?? 0
+          );
+        };
+        if (focus.symbol_id.startsWith("file:") && options.projectRoot) {
+          const filePath = focus.symbol_id.slice("file:".length);
+          const body = options.projectRoot.protectedRead(filePath).bytes;
+          const lineCount = body.split("\n").length;
+          const view = createFocusView(
+            {
+              id: focus.symbol_id,
+              name: path4.posix.basename(filePath),
+              language: path4.posix.extname(filePath).slice(1) || "text",
+              kind: "file",
+              location: {
+                path: filePath,
+                range: { start: { line: 0, character: 0 }, end: { line: lineCount, character: 0 } }
+              }
+            },
+            { body, visible_symbols: [] },
+            focus.body_limit_bytes,
+            capturedFreshness.current_generation
+          );
+          return saveView(view);
+        }
         const selected = await collectFocusedSymbol(
           options.adapters ?? [],
           focus.symbol_id,
@@ -27345,16 +27400,7 @@ function createServer2(options = {}) {
               focus.body_limit_bytes,
               capturedFreshness.current_generation
             );
-            if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
-            viewHistory.push(view.view_id);
-            return {
-              schema_version: 1,
-              project_id: "project",
-              project_generation: capturedFreshness.current_generation,
-              pending_generation: capturedFreshness.pending_generation,
-              state: "ready",
-              data: { ...view, history_position: sessions.historyPosition(connectionId, focus.session_id) ?? 0 }
-            };
+            return saveView(view);
           } catch (error2) {
             if (error2 instanceof FocusBodyLimitError) return resourceLimit();
             throw error2;
@@ -27466,14 +27512,15 @@ function createServer2(options = {}) {
             data: { landmarks: currentLandmarks.landmarks, landmark_state: currentLandmarks.state }
           };
         }
-        const semanticSymbols = await collectSemanticSymbols(
+        const semantic = await collectSemanticSymbols(
           options.adapters ?? [],
           search.query,
           (operation) => backendRequests.run(void 0, operation)
         );
         let results;
         try {
-          results = discovery.searchResult(search.query, search, semanticSymbols);
+          results = discovery.searchResult(search.query, search, semantic.symbols);
+          if (results.candidates.length === 0 && semantic.failure) throw semantic.failure;
         } catch (error2) {
           if (error2 instanceof ProjectPathError && error2.code === "path_outside_project") return pathOutsideProject();
           throw error2;
@@ -27592,10 +27639,11 @@ async function collectSemanticSymbols(adapters, query, run) {
   const replies = await Promise.allSettled(
     adapters.map((adapter) => run(() => adapter.request({ operation: "search", query })))
   );
-  throwBackendLimitFailure(replies);
-  return replies.flatMap(
+  const symbols = replies.flatMap(
     (reply) => reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : []
   );
+  const failure = replies.find((reply) => reply.status === "rejected")?.reason;
+  return { symbols, failure };
 }
 async function collectFocusedSymbol(adapters, symbolId, run) {
   const replies = await Promise.allSettled(
