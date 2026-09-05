@@ -68,7 +68,8 @@ tracked files, JSON syntax, descriptions, and credential leaks.
 ## Quality dashboard
 
 Run `quality-dashboard.cmd`. It reads `.quality/quality-report.json` from each
-registered project. It never runs a scanner or changes project content.
+registered project. Refresh runs the bundled quality-guard report command and
+replaces that project's saved report. Other report views only read saved data.
 
 ## Release boundary
 

@@ -38,6 +38,25 @@ const state = {
 
 const problem = (err) => el("p", { class: "error" }, err.message);
 const notice = (text) => el("p", { class: "empty" }, text);
+let viewRequest = 0;
+const reportRefreshes = new Map();
+
+function requestReport(index, refresh) {
+  const path = state.projects[index].path;
+  if (reportRefreshes.has(path)) return reportRefreshes.get(path);
+  if (!refresh) return api.getQuality(index);
+  const pending = api.refreshQuality(index).finally(() => reportRefreshes.delete(path));
+  reportRefreshes.set(path, pending);
+  return pending;
+}
+
+function clearReport(message) {
+  state.report = null;
+  dom.filter.disabled = true;
+  dom.refresh.disabled = true;
+  replace(dom.lists);
+  replace(dom.detail, notice(message));
+}
 
 api.setDashboardCapability(takeDashboardCapability());
 
@@ -88,27 +107,40 @@ function updateQuality(update) {
 }
 
 async function show(build) {
-  replace(dom.detail, notice("Loading..."));
+  const request = ++viewRequest;
+  clearReport("Loading...");
   try {
-    replace(dom.detail, await build());
+    const view = await build();
+    if (request === viewRequest) replace(dom.detail, view);
   } catch (err) {
-    replace(dom.detail, problem(err));
+    if (request === viewRequest) replace(dom.detail, problem(err));
   }
 }
 
 async function openProject(index, refresh = false) {
+  const request = ++viewRequest;
   state.active = index;
   state.selection = null;
-  state.report = null;
+  const regenerating = refresh || reportRefreshes.has(state.projects[index].path);
+  clearReport(regenerating ? "Regenerating quality report..." : "Loading...");
   syncCodeExplorerAction();
   paintTabs();
-  paintLists();
   try {
-    state.report = refresh ? await api.refreshQuality(index) : await api.getQuality(index);
+    const report = await requestReport(index, refresh);
+    if (request !== viewRequest) return;
+    state.report = report;
+    const hasRule = report.files?.some((file) =>
+      file.findings?.some((finding) => (finding.rule ?? finding.kind ?? "finding") === state.quality.rule));
+    if (!hasRule) state.quality.rule = "all";
+    paintLists();
+    dom.filter.disabled = false;
   } catch (err) {
+    if (request !== viewRequest) return;
+    state.report = null;
     replace(dom.detail, problem(err));
+  } finally {
+    if (request === viewRequest) dom.refresh.disabled = false;
   }
-  paintLists();
 }
 
 async function reloadProjects(keepActive = true) {
@@ -119,7 +151,10 @@ async function reloadProjects(keepActive = true) {
   syncCodeExplorerAction();
   paintTabs();
   if (state.projects.length) await openProject(Math.max(index, 0));
-  else replace(dom.detail, notice("No project registered yet. Use + to find one."));
+  else {
+    ++viewRequest;
+    clearReport("No project registered yet. Use + to find one.");
+  }
 }
 
 function openScan() {
