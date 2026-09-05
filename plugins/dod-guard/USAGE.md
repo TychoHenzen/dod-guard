@@ -61,8 +61,15 @@ be completed independently.
 2. Creates and pushes `codex/<issue>-<slug>` from the current default branch.
 3. Assigns the issue and moves it to `In Progress`.
 4. Implements and verifies the acceptance criteria.
-5. Commits and pushes reviewed files.
-6. Stops with the verified branch pushed.
+5. Runs one fresh independent completion review, then commits and pushes.
+
+The reviewer receives the PBI, linked sub-issues, repository instructions, final
+diff and files, and verification evidence. The coordinator checks every challenge
+and records it as `resolved`, `invalid`, or `irrelevant` with evidence. Valid gaps
+block commit and implementation push until repaired, verified, and reviewed again.
+The initial branch-only push remains permitted. An unavailable or failed review
+also blocks completion. The result reports every disposition before stopping
+with the verified branch pushed. This review edits no files or remote comments.
 
 Submit or refresh its draft pull request in a separate step:
 
