@@ -14,7 +14,9 @@ and tool configuration.
 ## Delivery workflow
 
 `/add-backlog-idea` splits a brain dump into independently deliverable Backlog
-issues. `/refine-backlog-item` turns one into a Todo PBI. `/next-ticket`
+issues. `/refine-backlog-item` researches one and assigns justified priority,
+Fibonacci effort, and standard labels before Todo. Epics stay in Backlog until
+split into independently deliverable PBIs. `/next-ticket`
 implements and pushes that PBI. `/submit-draft-pr` submits its verified draft
 pull request. `/review-pr` checks the final branch or pull request with four
 independent reviewers. After review, `/complete-pr` treats its invocation as

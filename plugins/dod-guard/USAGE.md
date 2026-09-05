@@ -43,6 +43,13 @@ subtasks:
 /dod-guard:refine-backlog-item 42
 ```
 
+Refinement reads affected code, callers, and tests before choosing priority,
+Fibonacci effort, and standard labels from the repository's live descriptions.
+Missing scale labels stop refinement. Implementation notes record the evidence.
+Re-refinement from Backlog replaces stale estimates. Unknown priority records
+the missing information. Effort 13 stays in Backlog and requires independent
+issues before implementation. Body, labels, and links are verified before Todo.
+
 Start or continue the Todo PBI from a clean checkout:
 
 From a clean Git checkout:

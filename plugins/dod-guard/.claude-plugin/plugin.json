@@ -1,7 +1,7 @@
 {
   "name": "dod-guard",
-  "version": "5.3.0",
-  "description": "GitHub repository setup, issue delivery, four-agent PR review and finding fixes for GitHub, Git, and Azure DevOps, guarded completion, maintenance, and marketplace release. Ships 14 skills and 6 agents.",
+  "version": "5.4.0",
+  "description": "GitHub repository setup, issue delivery with researched priority and effort, four-agent PR review and finding fixes for GitHub, Git, and Azure DevOps, guarded completion, maintenance, and marketplace release. Ships 14 skills and 6 agents.",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"
