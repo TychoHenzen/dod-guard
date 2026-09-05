@@ -450,10 +450,7 @@ function resetRelationPane(pane) {
   pane.dataset.state = "empty";
   const empty = Object.assign(document.createElement("p"), { textContent: "No relations loaded" });
   empty.dataset.state = "empty-relations";
-  pane.replaceChildren(
-    Object.assign(document.createElement("h2"), { textContent: "Relations" }),
-    empty
-  );
+  pane.replaceChildren(Object.assign(document.createElement("h2"), { textContent: "Relations" }), empty);
 }
 function resetSourceRelations() {
   const pane = document.querySelector('[data-pane="relations"]');
