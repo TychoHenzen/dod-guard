@@ -112,6 +112,11 @@ when a slot frees:
 3. `review-pr-reliability`
 4. `review-pr-hygiene`
 
+Reviewers are expected to finish at different times. This is intentional:
+safety and reliability checks often need more evidence than a UI wiring check.
+Wait for every reviewer to finish and do not send progress, reminder, or rush
+messages to a reviewer that is still working.
+
 When Codex does not expose those names as callable agent types, read the shipped
 agent definition and start one fresh default subagent with that exact definition
 and reviewer name in its prompt. Record the returned agent ID, reviewer name,
@@ -153,10 +158,19 @@ or inaccessible core behavior. `MAJOR` means incorrect or incomplete behavior,
 missing effective proof, a race, or a design defect needing rework. `MINOR`
 means a concrete non-blocking maintainability defect.
 
-Run `validate-review-result` for each reviewer before using its findings. Stop
-the review when a result is malformed or feature coverage is incomplete. Do
-not translate severities, repair output manually, or silently discard a
-reviewer's result.
+Run `validate-review-result` for each reviewer before using its findings. If a
+reviewer finishes with malformed output or incomplete feature coverage, keep
+the other reviewers running until they finish. Then send one bounded correction
+request to the completed reviewer asking for the same review in the exact JSON
+schema and, for the feature reviewer, every `reviewRequirements` string
+verbatim. Revalidate the corrected result. Do not interrupt or rush a reviewer
+that is still working.
+
+If the corrected result still fails validation, exclude only that reviewer's
+unvalidated findings, record the validation failure, and continue with the
+remaining validated reviewers. Do not cancel the whole review, invent missing
+coverage, translate severities, repair output manually, or silently discard a
+validation failure. Report the failed reviewer and its validation error.
 
 ## Validate and deduplicate
 
