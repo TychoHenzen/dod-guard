@@ -35,7 +35,7 @@ export class BrowserSessionClient {
           { action: "restore", tab_instance_id: tabId, document_start: "reload" },
           { "x-code-explorer-session": storedSession ?? "", "x-code-explorer-tab": tabId },
         );
-        if (reply.state !== "browser_session_expired") return reply;
+        if (reply.state !== "browser_session_expired" && reply.state !== "invalid_browser_session") return reply;
         return this.recoverExpired();
       }
       return this.create(tabId);

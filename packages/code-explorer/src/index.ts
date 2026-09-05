@@ -131,6 +131,17 @@ function requestIdConflict(): CodeExplorerError {
   return codeExplorerError("request_id_conflict");
 }
 
+function readyViewEnvelope(view: FocusView, freshness: FreshnessStatus, historyPosition: number): CodeExplorerEnvelope {
+  return {
+    schema_version: 1,
+    project_id: "project",
+    project_generation: freshness.current_generation,
+    pending_generation: freshness.pending_generation,
+    state: "ready",
+    data: { ...view, history_position: historyPosition },
+  };
+}
+
 function hasValidRequestId(value: string): boolean {
   const bytes = Buffer.byteLength(value, "utf8");
   return bytes >= 16 && bytes <= 128;
@@ -383,6 +394,36 @@ export function createServer(
       }
       if (name === "code_focus") {
         const focus = schemas.code_focus.parse(arguments_);
+        const saveView = (view: FocusView): CodeExplorerEnvelope | CodeExplorerError => {
+          if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
+          viewHistory.push(view.view_id);
+          return readyViewEnvelope(
+            view,
+            capturedFreshness,
+            sessions.historyPosition(connectionId, focus.session_id) ?? 0,
+          );
+        };
+        if (focus.symbol_id.startsWith("file:") && options.projectRoot) {
+          const filePath = focus.symbol_id.slice("file:".length);
+          const body = options.projectRoot.protectedRead(filePath).bytes;
+          const lineCount = body.split("\n").length;
+          const view = createFocusView(
+            {
+              id: focus.symbol_id,
+              name: path.posix.basename(filePath),
+              language: (path.posix.extname(filePath).slice(1) || "text") as SymbolIdentity["language"],
+              kind: "file",
+              location: {
+                path: filePath,
+                range: { start: { line: 0, character: 0 }, end: { line: lineCount, character: 0 } },
+              },
+            },
+            { body, visible_symbols: [] },
+            focus.body_limit_bytes,
+            capturedFreshness.current_generation,
+          );
+          return saveView(view);
+        }
         const selected = await collectFocusedSymbol(options.adapters ?? [], focus.symbol_id, (operation) =>
           backendRequests.run(focus.session_id, operation),
         );
@@ -394,16 +435,7 @@ export function createServer(
               focus.body_limit_bytes,
               capturedFreshness.current_generation,
             );
-            if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
-            viewHistory.push(view.view_id);
-            return {
-              schema_version: 1,
-              project_id: "project",
-              project_generation: capturedFreshness.current_generation,
-              pending_generation: capturedFreshness.pending_generation,
-              state: "ready",
-              data: { ...view, history_position: sessions.historyPosition(connectionId, focus.session_id) ?? 0 },
-            };
+            return saveView(view);
           } catch (error) {
             if (error instanceof FocusBodyLimitError) return resourceLimit();
             throw error;
@@ -515,12 +547,13 @@ export function createServer(
             data: { landmarks: currentLandmarks.landmarks, landmark_state: currentLandmarks.state },
           };
         }
-        const semanticSymbols = await collectSemanticSymbols(options.adapters ?? [], search.query, (operation) =>
+        const semantic = await collectSemanticSymbols(options.adapters ?? [], search.query, (operation) =>
           backendRequests.run(undefined, operation),
         );
         let results: ReturnType<DiscoveryPipeline["searchResult"]>;
         try {
-          results = discovery.searchResult(search.query, search, semanticSymbols);
+          results = discovery.searchResult(search.query, search, semantic.symbols);
+          if (results.candidates.length === 0 && semantic.failure) throw semantic.failure;
         } catch (error) {
           if (error instanceof ProjectPathError && error.code === "path_outside_project") return pathOutsideProject();
           throw error;
@@ -665,10 +698,11 @@ async function collectSemanticSymbols(adapters: readonly LanguageAdapter[], quer
   const replies = await Promise.allSettled(
     adapters.map((adapter) => run(() => adapter.request({ operation: "search", query }))),
   );
-  throwBackendLimitFailure(replies);
-  return replies.flatMap((reply) =>
+  const symbols = replies.flatMap((reply) =>
     reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : [],
   );
+  const failure = replies.find((reply): reply is PromiseRejectedResult => reply.status === "rejected")?.reason;
+  return { symbols, failure };
 }
 
 async function collectFocusedSymbol(adapters: readonly LanguageAdapter[], symbolId: string, run: BackendOperation) {

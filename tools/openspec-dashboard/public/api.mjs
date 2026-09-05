@@ -3,7 +3,7 @@
 async function request(path, options) {
   const res = await fetch(path, options);
   const data = await res.json().catch(() => ({ error: res.statusText }));
-  if (!res.ok) throw new Error(data.error ?? res.statusText);
+  if (!res.ok) throw new Error(data.code ?? data.error ?? res.statusText);
   return data;
 }
 

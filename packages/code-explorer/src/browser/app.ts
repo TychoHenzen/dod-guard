@@ -1,29 +1,12 @@
-export type LandmarkGroup = { group: string; items: readonly string[] };
-export type FocusedSymbol = { name: string; path: string; kind: string };
+import type { BrowserOperation, BrowserShellState, LandmarkGroup } from "./types.js";
+
 export type BrowserAction = {
   operation: BrowserOperation | string;
-  symbol?: FocusedSymbol;
+  symbol?: { name: string; path: string; kind: string };
   drawer?: "discovery" | "relations" | undefined;
 };
 
-export type BrowserOperation =
-  | "search"
-  | "focus"
-  | "back"
-  | "forward"
-  | "refocus"
-  | "refresh"
-  | "status"
-  | "set_filters"
-  | "set_drawer";
-
-export type BrowserShellState = {
-  landmarks: readonly LandmarkGroup[];
-  focus?: FocusedSymbol;
-  activeDrawer?: "discovery" | "relations";
-  status: string;
-  navigationEnabled: boolean;
-};
+export type { BrowserOperation, BrowserShellState, LandmarkGroup } from "./types.js";
 
 const visibleOperations: readonly BrowserOperation[] = [
   "search",
@@ -73,7 +56,13 @@ function renderLandmarks(landmarks: readonly LandmarkGroup[]): string {
   return landmarks
     .map(
       ({ group, items }) =>
-        `<section class="landmark-group"><h3>${escapeText(group)}</h3><ul>${items.map((item) => `<li>${escapeText(item)}</li>`).join("")}</ul></section>`,
+        `<section class="landmark-group"><h3>${escapeText(group)}</h3><ul>${items
+          .map((item) =>
+            typeof item === "string"
+              ? `<li>${escapeText(item)}</li>`
+              : `<li><button type="button" data-symbol-id="${escapeText(item.symbol_id)}">${escapeText(item.name)}</button> <span>${escapeText(item.kind)} · ${escapeText(item.path)}</span></li>`,
+          )
+          .join("")}</ul></section>`,
     )
     .join("");
 }
@@ -85,6 +74,11 @@ function drawerButton(name: "discovery" | "relations", open: boolean): string {
 
 /** Produces the application shell from text-only state, with no untrusted markup interpolation. */
 export function renderBrowserShell(state: BrowserShellState, viewportWidth: number): string {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Code Explorer</title></head><body>${renderBrowserBody(state, viewportWidth)}</body></html>`;
+}
+
+/** Renders the application body for the packaged page that already owns the document head. */
+export function renderBrowserBody(state: BrowserShellState, viewportWidth: number): string {
   const narrow = viewportWidth < 900;
   const discoveryDrawer = narrow ? drawerButton("discovery", state.activeDrawer === "discovery") : "";
   const relationDrawer = narrow ? drawerButton("relations", state.activeDrawer === "relations") : "";
@@ -92,5 +86,5 @@ export function renderBrowserShell(state: BrowserShellState, viewportWidth: numb
     ? `<article class="focused-symbol"><h2>${escapeText(state.focus.name)}</h2><p>${escapeText(state.focus.kind)} · ${escapeText(state.focus.path)}</p></article>`
     : '<p data-state="empty-focus">Select a symbol</p>';
   const disabled = state.navigationEnabled ? "" : " disabled";
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Code Explorer</title></head><body><header class="status-strip"><span>${escapeText(state.status)}</span><nav aria-label="Navigation"><button type="button" data-operation="back"${disabled}>Back</button><button type="button" data-operation="forward"${disabled}>Forward</button><button type="button" data-operation="refocus"${disabled}>Refocus</button><button type="button" data-operation="refresh">Refresh</button></nav></header><main class="explorer-shell ${narrow ? "narrow" : "desktop"}">${discoveryDrawer}<aside id="discovery-pane" data-pane="discovery"><h2>Landmarks</h2><label>Search <input type="search" data-operation="search"${disabled}></label>${renderLandmarks(state.landmarks)}</aside><section data-pane="focus"><h1>Focused source</h1>${focus}</section><aside id="relations-pane" data-pane="relations"><h2>Relations</h2><p data-state="empty-relations">No relations loaded</p></aside>${relationDrawer}</main></body></html>`;
+  return `<header class="status-strip"><span data-area="status">${escapeText(state.status)}</span><nav aria-label="Navigation"><button type="button" data-operation="back"${disabled}>Back</button><button type="button" data-operation="forward"${disabled}>Forward</button><button type="button" data-operation="refocus"${disabled}>Refocus</button><button type="button" data-operation="refresh">Refresh</button></nav></header><main class="explorer-shell ${narrow ? "narrow" : "desktop"}">${discoveryDrawer}<aside id="discovery-pane" data-pane="discovery"><h2>Landmarks</h2><label>Search <input type="search" data-operation="search"${disabled}></label><div data-area="discovery">${renderLandmarks(state.landmarks)}</div></aside><section data-pane="focus"><h1>Focused source</h1><div data-area="source">${focus}</div><div data-area="graph" data-state="empty">No graph loaded</div></section><aside id="relations-pane" data-pane="relations"><h2>Relations</h2><p data-state="empty-relations">No relations loaded</p></aside>${relationDrawer}</main>`;
 }

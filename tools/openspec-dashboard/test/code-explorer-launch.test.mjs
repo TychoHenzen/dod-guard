@@ -3,7 +3,12 @@ import { EventEmitter } from "node:events";
 import test from "node:test";
 import { PassThrough } from "node:stream";
 import { createAdmin } from "../lib/project-admin.mjs";
-import { discoverCodeExplorer, spawnCodeExplorer, startCodeExplorer } from "../lib/code-explorer-launch.mjs";
+import {
+  discoverCodeExplorer,
+  installedCodeExplorerRoot,
+  spawnCodeExplorer,
+  startCodeExplorer,
+} from "../lib/code-explorer-launch.mjs";
 import { assertLaunchRequest, createCapabilities, readLaunchBody } from "../lib/launch-http.mjs";
 import { createReadinessParser, validateExplorerUrl } from "../lib/readiness.mjs";
 import { createCodeExplorerManager, probeCodeExplorer } from "../lib/code-explorer-manager.mjs";
@@ -113,8 +118,35 @@ test("freezes a valid override without inspecting the fallback", () => {
   assert.ok(fs.reads.every((path) => !path.startsWith("C:/monorepo/")));
 });
 test("freezes the valid monorepo bundle when no override is set", () => {
-  const fs = fileSystem(packagedFiles("C:/monorepo/packages/code-explorer"));
-  assert.equal(discoverCodeExplorer({ monorepoRoot: "C:/monorepo", env: {}, fs }), "C:/monorepo/packages/code-explorer/dist/bundle.js");
+  const fs = fileSystem({
+    ...packagedFiles("C:/monorepo/packages/code-explorer"),
+    ...packagedFiles("C:/cache/code-explorer/0.1.2"),
+  });
+  assert.equal(
+    discoverCodeExplorer({ monorepoRoot: "C:/monorepo", installedRoot: "C:/cache/code-explorer/0.1.2", env: {}, fs }),
+    "C:/monorepo/packages/code-explorer/dist/bundle.js",
+  );
+  assert.ok(fs.reads.every((path) => !path.startsWith("C:/cache/")));
+});
+test("discovers the supported installed Codex cache package when the monorepo bundle is absent", () => {
+  const installedRoot = "C:/Users/me/.codex/plugins/cache/dod-guard-monorepo/code-explorer/0.1.2";
+  const fs = fileSystem({
+    "C:/shipped-dashboard/packages/code-explorer/package.json": { text: '{"version":"0.1.2"}' },
+    ...packagedFiles(installedRoot),
+  });
+  assert.equal(
+    discoverCodeExplorer({ monorepoRoot: "C:/shipped-dashboard", env: { CODEX_HOME: "C:/Users/me/.codex" }, fs }),
+    `${installedRoot}/dist/bundle.js`,
+  );
+  assert.ok(fs.reads.every((path) => !path.startsWith("C:/projects/")));
+});
+test("derives the installed Codex cache package from the tracked plugin version", () => {
+  const root = "C:/monorepo";
+  const fs = fileSystem({
+    [`${root}/packages/code-explorer/package.json`]: { text: '{"version":"0.1.2"}' },
+  });
+  const installed = installedCodeExplorerRoot({ monorepoRoot: root, env: {}, fs, home: "C:/Users/me" });
+  assert.equal(installed.replaceAll("\\", "/"), "C:/Users/me/.codex/plugins/cache/dod-guard-monorepo/code-explorer/0.1.2");
 });
 test("rejects invalid override metadata without falling back or spawning", () => {
   const files = {
@@ -125,7 +157,13 @@ test("rejects invalid override metadata without falling back or spawning", () =>
   };
   const fs = fileSystem(files);
   assert.throws(
-    () => discoverCodeExplorer({ monorepoRoot: "C:/monorepo", env: { CODE_EXPLORER_JS: "C:/cache/code-explorer/dist/bundle.js" }, fs }),
+    () =>
+      discoverCodeExplorer({
+        monorepoRoot: "C:/monorepo",
+        installedRoot: "C:/cache/code-explorer/0.1.2",
+        env: { CODE_EXPLORER_JS: "C:/cache/code-explorer/dist/bundle.js" },
+        fs,
+      }),
     (error) => error.message === "code_explorer_unavailable",
   );
   assert.ok(fs.reads.every((path) => !path.startsWith("C:/monorepo/")));
@@ -223,6 +261,28 @@ test("waits for bounded readiness before returning the spawned child", async () 
   });
   stdout.emit("data", Buffer.from("Code Explorer: http://127.0.0.1:4410/\n"));
   assert.deepEqual(await launched, { child, url: "http://127.0.0.1:4410/" });
+});
+test("reports safe failure stages without changing the public error", async () => {
+  for (const [result, stage] of [
+    [{ error: "invalid_code_explorer_url" }, "invalid_url"],
+    [{ error: "code_explorer_start_timeout" }, "readiness_timeout"],
+    [{ error: "code_explorer_start_failed" }, "readiness_failed"],
+  ]) {
+    const reports = [];
+    const stream = new EventEmitter();
+    const child = { stdout: stream, stderr: new EventEmitter(), once() {}, kill() {} };
+    const launched = startCodeExplorer({
+      entry: "C:/trusted/dist/bundle.js",
+      projectPath: "C:/project",
+      monorepoRoot: "C:/monorepo",
+      spawn: () => child,
+      createParser: () => ({ feed: () => result }),
+      report: (value) => reports.push(value),
+    });
+    stream.emit("data", Buffer.from("redacted child output"));
+    await assert.rejects(launched, (error) => error.message === result.error);
+    assert.deepEqual(reports, [stage]);
+  }
 });
 
 function launchRequest(overrides = {}) {
