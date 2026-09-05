@@ -1,6 +1,6 @@
 ---
 name: next-ticket
-description: Execute a refined GitHub Project PBI through a feature branch, verified commits, and a pushed branch. Use when the user asks to pick up, start, or continue a ready PBI. Use submit-draft-pr to create its pull request.
+description: Execute a refined GitHub Project PBI through implementation, independent completion review, verified commits, and a pushed branch. Use when the user asks to pick up, start, or continue a ready PBI. Use submit-draft-pr to create its pull request.
 ---
 
 # Next ticket
@@ -9,7 +9,8 @@ Use the current Git checkout as the source of truth. Never choose a project by
 title similarity or from a remembered owner.
 
 After selection, create the PBI's feature branch, assign the issue, move it
-to In Progress, implement it, verify it, commit it, and push the branch.
+to In Progress, implement it, verify it, review completion, commit it, and push
+the branch.
 
 ## Preconditions
 
@@ -136,6 +137,55 @@ Map each acceptance criterion to fresh evidence. Stop before committing when a
 criterion is unmet, a required check fails, or required proof cannot run. State
 the exact failed command or unverified criterion.
 
+## Independent completion review
+
+After implementation and initial verification, invoke one fresh independent
+reviewer through the active client's subagent tool. Do not reuse an implementer
+or substitute your own review. If independent review is unavailable or fails,
+stop before committing or pushing implementation changes and report the missing
+review. The initial branch-only push in Start the ticket remains permitted.
+
+Give the reviewer the parent PBI's full description, implementation notes, and
+acceptance criteria. Include every linked sub-issue and its pushed evidence when closed.
+Supply all applicable repository instructions and the complete final diff against the
+fetched default-branch base, including staged, unstaged, and new files.
+Include relevant final files and callers, plus current commands, results, and user-path
+evidence mapped to each criterion. State explicitly when there are no sub-issues.
+Provide this context directly, without requiring earlier conversation history.
+
+Use this review brief:
+
+> Challenge the claim that this PBI and every linked sub-issue are complete.
+> Favor false positives: report concrete requirement or evidence gaps even when
+> uncertain. For each challenge, give an ID, the requirement, file or evidence
+> location, the suspected gap, and the check that could resolve it. State when
+> no gaps are found. Stay read-only. Do not edit code, expand the PBI, publish
+> comments, commit, push, approve, mark ready, merge, or close a pull request or
+> issue. Unsupported preferences are not new requirements.
+
+Independently check every challenge against the PBI contract and final files.
+Keep each challenge and its disposition in the session's completion evidence:
+
+- `resolved`: a valid gap was fixed, with the changed location and fresh passing
+  verification that proves the requirement now holds.
+- `invalid`: current files or verification disprove the claimed gap, with the
+  exact evidence.
+- `irrelevant`: the challenge asks for behavior outside the PBI, with the
+  requirement or scope boundary that excludes it.
+
+A valid unresolved gap blocks completion, commit, and implementation push.
+Return to the owning implementation step, fix it, and rerun affected checks.
+Then repeat independent review with the updated diff, files, verification, and
+challenge dispositions. Do not label an unresolved gap resolved or dismiss a
+finding solely because tests pass. Stop if required evidence cannot be obtained.
+Any later implementation change invalidates the reviewed state and requires
+affected verification and another review before commit and push.
+
+Proceed only after review has completed and every challenge has an evidenced
+disposition. Record a no-gap result explicitly. Stop or close the reviewer when
+its work is finished. Keep this gate local to ticket execution. `/review-pr`
+continues to own branch and pull-request review.
+
 ## Commit and push
 
 Inspect `git status`, the complete diff, and the staged diff. Preserve unrelated
@@ -148,4 +198,5 @@ branch to its existing upstream. Do not force-push or rewrite existing commits.
 ## Result
 
 Report the repository, linked project, selected issue, branch, commit, checks,
-and pushed branch. Name any check that could not run. Stop after the push.
+and pushed branch. Include the completion-review result and every challenge's
+disposition with evidence. Name any check that could not run. Stop after the push.

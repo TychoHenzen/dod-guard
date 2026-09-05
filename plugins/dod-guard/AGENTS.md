@@ -12,8 +12,9 @@ definitions. It has no package workspace, MCP server, or bundle.
   Backlog items are issues, not drafts. Use `/refine-backlog-item` to create a
   Todo PBI with observable acceptance criteria and only independent sub-issues.
 - Use one `codex/<issue>-<slug>` branch and one draft pull request per issue.
-- Use `/next-ticket` to execute and push a ready PBI. Use `/submit-draft-pr`
-  only after its verification evidence exists.
+- Use `/next-ticket` to execute a ready PBI. One independent completion reviewer
+  challenges the final implementation before commit and push. Resolve or reject
+  every challenge with evidence. Use `/submit-draft-pr` after verification.
 - Use `/review-pr` for four-angle Git or GitHub inline review and Azure DevOps
   Markdown review reports. It never changes the reviewed branch.
 - Use `/fix-pr-review` to revalidate and fix selected review findings. It

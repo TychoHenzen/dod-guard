@@ -15,7 +15,9 @@ and tool configuration.
 
 `/add-backlog-idea` splits a brain dump into independently deliverable Backlog
 issues. `/refine-backlog-item` turns one into a Todo PBI. `/next-ticket`
-implements and pushes that PBI. `/submit-draft-pr` submits its verified draft
+implements that PBI and runs one independent completion review before committing
+and pushing implementation changes. Every challenge needs an evidenced
+disposition. `/submit-draft-pr` submits its verified draft
 pull request. `/review-pr` checks the final branch or pull request with four
 independent reviewers. After review, `/complete-pr` treats its invocation as
 acceptance of the current head and completes the guarded merge.
@@ -40,7 +42,7 @@ human review followed by `/complete-pr` is the explicit acceptance boundary.
 | `/setup-repository` | Bootstrap a local project into the protected dod-guard GitHub workflow. |
 | `/add-backlog-idea` | Capture each independently deliverable feature as a Backlog issue. |
 | `/refine-backlog-item` | Turn a Backlog issue into a Todo PBI and independent subtasks. |
-| `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
+| `/next-ticket` | Execute a Todo PBI through independent completion review and verified, pushed commits. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
 | `/review-pr` | Review Git or GitHub inline with four agents, or produce one Azure DevOps report. |
 | `/fix-pr-review` | Revalidate and fix selected GitHub, local Git, or Azure review findings. |
