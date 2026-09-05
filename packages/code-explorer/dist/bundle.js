@@ -21439,12 +21439,6 @@ var StdioServerTransport = class {
   }
 };
 
-// src/browser-server/lifecycle.ts
-import { spawn } from "node:child_process";
-import { createServer } from "node:http";
-import path3 from "node:path";
-import { fileURLToPath } from "node:url";
-
 // src/semantic/project-root.ts
 import { closeSync, constants, fstatSync, openSync, readFileSync, realpathSync, statSync } from "node:fs";
 import * as path from "node:path";
@@ -21645,6 +21639,14 @@ function isRelativeProjectPath(value, pathApi) {
 import { statSync as statSync2 } from "node:fs";
 import { readFile, realpath } from "node:fs/promises";
 import path2 from "node:path";
+
+// src/browser-server/browser-session-reply.ts
+function withBrowserSession(reply, browserSessionId) {
+  const replyData = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : {};
+  return { ...reply, data: { ...replyData, browser_session_id: browserSessionId } };
+}
+
+// src/browser-server/http-router.ts
 var maxBodyBytes = 64 * 1024;
 var maxResponseBytes = 1024 * 1024;
 var idleMilliseconds = 30 * 60 * 1e3;
@@ -21765,7 +21767,7 @@ var BrowserHttpRouter = class {
       if (typeof coreSessionId !== "string") return json(500, browserError("internal_error"));
       const browserSessionId2 = crypto.randomUUID();
       this.sessions.set(browserSessionId2, { coreSessionId, tabId, lastAcceptedAt: this.now() });
-      return json(200, { ...reply, state: "created", data: { browser_session_id: browserSessionId2 } });
+      return json(200, withBrowserSession(reply, browserSessionId2));
     }
     const browserSessionId = headers["x-code-explorer-session"];
     const session = browserSessionId ? this.sessions.get(browserSessionId) : void 0;
@@ -21853,6 +21855,10 @@ var BrowserHttpRouter = class {
 };
 
 // src/browser-server/lifecycle.ts
+import { spawn } from "node:child_process";
+import { createServer } from "node:http";
+import path3 from "node:path";
+import { fileURLToPath } from "node:url";
 var BrowserServerError = class extends Error {
   constructor(code) {
     super(code);
@@ -22035,6 +22041,43 @@ var nativeBrowserOpener = {
     });
   }
 };
+
+// src/browser-server/embedded-runtime.ts
+function loopbackOrigin(origin) {
+  const parsed = new URL(origin);
+  if (parsed.protocol !== "http:" || parsed.hostname !== "127.0.0.1" || !parsed.port) {
+    throw new BrowserServerError("invalid_request");
+  }
+  return parsed;
+}
+async function startEmbeddedBrowserRuntime(options) {
+  const parsedOrigin = loopbackOrigin(options.origin);
+  const projectRoot = createNativeProjectRoot(options.projectRoot);
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  options.signal?.addEventListener("abort", abort, { once: true });
+  const core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
+  const router = new BrowserHttpRouter({
+    origin: parsedOrigin.origin,
+    assetRoot: options.assetRoot,
+    call: core.call ?? (async () => ({
+      schema_version: 1,
+      code: "workspace_unavailable",
+      message: "workspace_unavailable",
+      retryable: true
+    }))
+  });
+  let closing;
+  return {
+    projectRoot,
+    handle: (request) => router.handle(request),
+    close: () => closing ??= (async () => {
+      controller.abort();
+      await core.close(AbortSignal.timeout(1e4));
+      options.signal?.removeEventListener("abort", abort);
+    })()
+  };
+}
 
 // src/discovery/landmarks.ts
 function landmarksNotReady() {
@@ -27697,6 +27740,7 @@ function relationCandidate(candidate, relation, adapter, sessions, connectionId,
     backend_name: status.backend_name,
     backend_version: status.backend_version,
     symbol_id: view.symbol_id,
+    display_name: symbol.name,
     path: symbol.location.path.replaceAll("\\", "/"),
     kind: symbol.kind,
     range: sourceRange,
@@ -27736,6 +27780,15 @@ function createRuntimeCoreFactory() {
       };
     }
   };
+}
+async function createEmbeddedBrowserRuntime(options) {
+  return startEmbeddedBrowserRuntime({
+    projectRoot: options.project_root,
+    origin: options.origin,
+    signal: options.signal,
+    assetRoot: path4.join(path4.dirname(filename), "browser"),
+    coreFactory: options.core_factory ?? createRuntimeCoreFactory()
+  });
 }
 async function main() {
   const arguments_ = process.argv.slice(2);
@@ -27803,6 +27856,7 @@ if (isMainModule()) {
   });
 }
 export {
+  createEmbeddedBrowserRuntime,
   createRuntimeCoreFactory,
   createServer2 as createServer,
   toMcpToolResult

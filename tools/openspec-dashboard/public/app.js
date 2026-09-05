@@ -185,4 +185,6 @@ dom.filter.addEventListener("input", (event) => {
 dom.refresh.addEventListener("click", () => openProject(state.active, true));
 dom.codeExplorer.addEventListener("click", () => void codeExplorerAction.launch());
 
-reloadProjects().catch((err) => replace(dom.detail, problem(err)));
+api.refreshDashboardCapability()
+  .then(() => reloadProjects())
+  .catch((err) => replace(dom.detail, problem(err)));

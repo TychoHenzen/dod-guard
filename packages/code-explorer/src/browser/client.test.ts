@@ -14,7 +14,7 @@ test("reports the browser server state in the application root", async (context)
   assert.equal(fixture.attributes.get("data-state"), "ready");
   assert.deepEqual(
     fixture.requests.map(({ path }) => path),
-    ["/api/session", "/api/status", "/api/search"],
+    ["api/session", "api/status", "api/search"],
   );
   assert.deepEqual(fixture.requests[1]?.options.headers, {
     "content-type": "application/json",

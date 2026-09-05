@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdtempSync, rmSync, symlinkSync } from "node:fs";
 import { createServer } from "node:http";
@@ -33,45 +32,81 @@ function deferred() {
   return { promise, resolve };
 }
 
-function fakeChild() {
-  const listeners = new Map();
-  return {
-    exitCode: null,
-    signalCode: null,
-    killed: 0,
-    once(name, listener) { listeners.set(name, listener); },
-    kill() { this.killed += 1; },
-    exit() { this.exitCode = 0; listeners.get("exit")?.(); },
-  };
-}
-test("managed shutdown closes admission, signals every direct child, and waits for exit", async () => {
-  const child = fakeChild();
-  const manager = createCodeExplorerManager({ projectIdentity: (path) => path, start: async () => ({ child, url: "http://127.0.0.1:4410/" }) });
+test("managed shutdown closes admission and waits for every in-process runtime", async () => {
+  const closed = deferred();
+  const runtime = { close: () => closed.promise };
+  const manager = createCodeExplorerManager({
+    projectIdentity: (path) => path,
+    origin: "http://127.0.0.1:4400",
+    start: async () => runtime,
+  });
   await manager.launch("one");
   const stopping = manager.shutdown();
-  assert.equal(child.killed, 1);
   await assert.rejects(manager.launch("two"), (error) => error.message === "dashboard_shutting_down");
   let settled = false;
   void stopping.then(() => { settled = true; });
   await Promise.resolve();
   assert.equal(settled, false);
-  child.exit();
+  closed.resolve();
   await stopping;
 });
-test("shutdown settles joined starts and terminates a child that reports after shutdown", async () => {
+test("shutdown settles joined starts and closes a runtime that reports after shutdown", async () => {
   const started = deferred();
-  const child = fakeChild();
-  const manager = createCodeExplorerManager({ projectIdentity: (path) => path, start: () => started.promise });
+  let closes = 0;
+  const runtime = { close: async () => { closes += 1; } };
+  const manager = createCodeExplorerManager({
+    projectIdentity: (path) => path,
+    origin: "http://127.0.0.1:4400",
+    start: () => started.promise,
+  });
   const one = manager.launch("one");
   const two = manager.launch("one");
   const stopping = manager.shutdown();
+  started.resolve(runtime);
   await assert.rejects(one, (error) => error.message === "dashboard_shutting_down");
   await assert.rejects(two, (error) => error.message === "dashboard_shutting_down");
-  started.resolve({ child, url: "http://127.0.0.1:4410/" });
-  await Promise.resolve();
-  assert.equal(child.killed, 1);
-  child.exit();
   await stopping;
+  assert.equal(closes, 1);
+});
+test("shutdown aborts a non-settling start and returns at its deadline", async () => {
+  const started = deferred();
+  let aborted = false;
+  const manager = createCodeExplorerManager({
+    projectIdentity: (path) => path,
+    origin: "http://127.0.0.1:4400",
+    shutdownTimeoutMs: 1,
+    start: ({ signal }) => {
+      signal.addEventListener("abort", () => { aborted = true; }, { once: true });
+      started.resolve();
+      return new Promise(() => {});
+    },
+  });
+  void manager.launch("one");
+  await started.promise;
+  await manager.shutdown();
+  assert.equal(aborted, true);
+});
+test("shutdown deadline includes a capacity reservation blocked in runtime close", async () => {
+  let now = 0;
+  const closeStarted = deferred();
+  const never = new Promise(() => {});
+  const manager = createCodeExplorerManager({
+    projectIdentity: (path) => path,
+    origin: "http://127.0.0.1:4400",
+    now: () => now,
+    shutdownTimeoutMs: 1,
+    start: async () => ({
+      close: () => {
+        closeStarted.resolve();
+        return never;
+      },
+    }),
+  });
+  await Promise.all(Array.from({ length: 8 }, (_, index) => manager.launch(`project-${index}`)));
+  now = 1_800_001;
+  void manager.launch("project-8");
+  await closeStarted.promise;
+  await manager.shutdown();
 });
 test("authenticated replacement sends its capability only to a connected loopback owner", async () => {
   let received;
@@ -201,19 +236,4 @@ test("hardens Windows ownership paths before verifying their ACL", async () => {
     replacement_capability: "a".repeat(64),
   });
   assert.equal(protectedAcl, true);
-});
-
-test("real fixture shutdown waits for its direct child and cleans its descendant", { timeout: 10_000 }, async () => {
-  const parent = spawn(process.execPath, [join(import.meta.dirname, "fixtures", "process-tree-parent.mjs")], { stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
-  const [line] = (await once(parent.stdout, "data"));
-  const descendantPid = Number(String(line).trim());
-  const manager = createCodeExplorerManager({ projectIdentity: (path) => path, start: async () => ({ child: parent, url: "http://127.0.0.1:4410/" }) });
-  await manager.launch("fixture");
-  const exited = once(parent, "exit");
-  await manager.shutdown();
-  const [code, signal] = await exited;
-  assert.ok(code === 0 || signal === "SIGTERM");
-  // Windows reports SIGTERM as process termination. Its child-tree cleanup is
-  // owned by the packaged explorer, so this fixture proves no dashboard tree kill.
-  if (process.platform !== "win32") assert.throws(() => process.kill(descendantPid, 0));
 });

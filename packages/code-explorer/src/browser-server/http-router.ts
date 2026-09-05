@@ -1,6 +1,7 @@
 import { statSync } from "node:fs";
 import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
+import { withBrowserSession } from "./browser-session-reply.js";
 
 export type BrowserCoreReply = Record<string, unknown>;
 export type BrowserCoreCall = (name: string, arguments_: Record<string, unknown>) => Promise<BrowserCoreReply>;
@@ -178,7 +179,7 @@ export class BrowserHttpRouter {
       if (typeof coreSessionId !== "string") return json(500, browserError("internal_error"));
       const browserSessionId = crypto.randomUUID();
       this.sessions.set(browserSessionId, { coreSessionId, tabId, lastAcceptedAt: this.now() });
-      return json(200, { ...reply, state: "created", data: { browser_session_id: browserSessionId } });
+      return json(200, withBrowserSession(reply, browserSessionId));
     }
     const browserSessionId = headers["x-code-explorer-session"];
     const session = browserSessionId ? this.sessions.get(browserSessionId) : undefined;

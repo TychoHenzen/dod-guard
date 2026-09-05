@@ -174,6 +174,20 @@ describe("browser HTTP boundary", () => {
       data: { workspace: "ready" },
     });
   });
+  it("preserves degraded root access when creating a browser session", async () => {
+    const router = new BrowserHttpRouter({
+      origin,
+      call: async () => ({
+        schema_version: 1,
+        state: "degraded",
+        data: { session_id: "core", root_access: "root_access_denied" },
+      }),
+    });
+    const created = JSON.parse((await request(router, {})).body);
+    assert.equal(created.state, "degraded");
+    assert.equal(created.data.root_access, "root_access_denied");
+    assert.equal(typeof created.data.browser_session_id, "string");
+  });
   it("returns stable capacity errors", async () => {
     const router = new BrowserHttpRouter({ origin, maxSessions: 0, call: async () => ({ schema_version: 1 }) });
     const response = await request(router, {});

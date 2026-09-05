@@ -40,6 +40,8 @@ export type DiscoveryState = {
   error?: string;
 };
 
+const latestSearches = new WeakMap<BrowserDiscoveryController, Record<string, unknown>>();
+
 function escapeText(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -73,6 +75,7 @@ export class BrowserDiscoveryController {
   }
 
   async search(query: string, filters: DiscoveryFilters = {}): Promise<DiscoveryState> {
+    latestSearches.delete(this);
     const normalized = query.trim();
     if (normalized.length === 0) {
       this.current = {
@@ -89,6 +92,7 @@ export class BrowserDiscoveryController {
       return this.current;
     }
     const request: Record<string, unknown> = { query: normalized };
+    latestSearches.set(this, request);
     if (filters.path_globs) request.path_globs = [...filters.path_globs];
     if (filters.languages) request.languages = [...filters.languages];
     if (filters.kinds) request.kinds = [...filters.kinds];
@@ -97,6 +101,7 @@ export class BrowserDiscoveryController {
     this.current = { ...this.current, query: normalized, filters, areaState: "loading", error: undefined };
     try {
       const reply = await this.searchCore(request);
+      if (latestSearches.get(this) !== request) return this.current;
       const candidates = reply.data.candidates ?? [];
       this.current = {
         ...this.current,
@@ -107,6 +112,7 @@ export class BrowserDiscoveryController {
         areaState: candidates.length === 0 ? "empty" : "ready",
       };
     } catch {
+      if (latestSearches.get(this) !== request) return this.current;
       this.current = { ...this.current, mode: "results", areaState: "failed", error: "backend_unavailable" };
     }
     return this.current;

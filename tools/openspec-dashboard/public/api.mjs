@@ -13,6 +13,15 @@ export function setDashboardCapability(capability) {
   dashboardCapability = capability;
 }
 
+export async function refreshDashboardCapability() {
+  const result = await request("/api/browser-capability", { cache: "no-store" });
+  if (typeof result.capability !== "string" || !/^[0-9a-f]{64}$/.test(result.capability)) {
+    throw new Error("invalid_dashboard_capability");
+  }
+  dashboardCapability = result.capability;
+  return result.capability;
+}
+
 const post = (path, body) =>
   request(path, {
     method: "POST",
@@ -28,8 +37,8 @@ export const removeProject = (path) => post("/api/projects", { remove: path });
 export const getQuality = (id) => request(`/api/project/${id}/quality`);
 export const refreshQuality = (id) => post(`/api/project/${id}/quality/refresh`, {});
 
-export const launchCodeExplorer = ({ index, registryRevision }) =>
-  request(`/api/project/${index}/code-explorer`, {
+async function postCodeExplorerLaunch({ index, registryRevision }) {
+  return request(`/api/project/${index}/code-explorer`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -37,3 +46,17 @@ export const launchCodeExplorer = ({ index, registryRevision }) =>
     },
     body: JSON.stringify({ registry_revision: registryRevision }),
   });
+}
+
+export const launchCodeExplorer = async (snapshot) => {
+  await refreshDashboardCapability();
+  try {
+    return await postCodeExplorerLaunch(snapshot);
+  } catch (error) {
+    if (error instanceof Error && error.message === "invalid_dashboard_capability") {
+      await refreshDashboardCapability();
+      return postCodeExplorerLaunch(snapshot);
+    }
+    throw error;
+  }
+};

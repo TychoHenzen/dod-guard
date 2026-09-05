@@ -37,10 +37,17 @@ describe("browser reply parsing", () => {
         kind: "function",
         path: "src/main.ts",
         content: { body: "export function main() {}", returned_bytes: 25, total_bytes: 25, limit_bytes: 100 },
+        handles: [{ handle: "handle-main", name: "main", symbol_id: "main" }],
       },
     });
     assert.equal(source?.generation, 2);
     assert.equal(source?.body, "export function main() {}");
+    assert.deepEqual(source?.handles[0], {
+      handle: "handle-main",
+      start: 16,
+      end: 20,
+      relations: ["definition", "references", "callers", "callees", "type", "implementation"],
+    });
     assert.equal(focusedSource({ data: { view_id: "missing-fields" } }), undefined);
   });
 });

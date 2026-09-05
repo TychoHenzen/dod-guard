@@ -7,6 +7,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { startEmbeddedBrowserRuntime } from "./browser-server/embedded-runtime.js";
 import {
   BrowserServerError,
   type ExplorerCoreFactory,
@@ -82,6 +83,8 @@ export type CodeExplorerServer = {
   closeConnection(): void;
   close(): Promise<void>;
 };
+
+export type { EmbeddedBrowserRuntime } from "./browser-server/embedded-runtime.js";
 
 function isToolName(name: string): name is ToolName {
   return toolNames.includes(name as ToolName);
@@ -795,6 +798,7 @@ function relationCandidate(
     backend_name: status.backend_name,
     backend_version: status.backend_version,
     symbol_id: view.symbol_id,
+    display_name: symbol.name,
     path: symbol.location.path.replaceAll("\\", "/"),
     kind: symbol.kind,
     range: sourceRange,
@@ -838,6 +842,22 @@ export function createRuntimeCoreFactory(): ExplorerCoreFactory {
       };
     },
   };
+}
+
+/** Mount the package-owned browser boundary inside an existing loopback HTTP listener. */
+export async function createEmbeddedBrowserRuntime(options: {
+  project_root: string;
+  origin: string;
+  signal?: AbortSignal;
+  core_factory?: ExplorerCoreFactory;
+}) {
+  return startEmbeddedBrowserRuntime({
+    projectRoot: options.project_root,
+    origin: options.origin,
+    signal: options.signal,
+    assetRoot: path.join(path.dirname(filename), "browser"),
+    coreFactory: options.core_factory ?? createRuntimeCoreFactory(),
+  });
 }
 
 async function main(): Promise<void> {

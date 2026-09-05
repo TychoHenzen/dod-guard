@@ -53,6 +53,73 @@ function renderBrowserBody(state, viewportWidth) {
   return `<header class="status-strip"><span data-area="status">${escapeText(state.status)}</span><nav aria-label="Navigation"><button type="button" data-operation="back"${disabled}>Back</button><button type="button" data-operation="forward"${disabled}>Forward</button><button type="button" data-operation="refocus"${disabled}>Refocus</button><button type="button" data-operation="refresh">Refresh</button></nav></header><main class="explorer-shell ${narrow ? "narrow" : "desktop"}">${discoveryDrawer}<aside id="discovery-pane" data-pane="discovery"><h2>Landmarks</h2><label>Search <input type="search" data-operation="search"${disabled}></label><div data-area="discovery">${renderLandmarks(state.landmarks)}</div></aside><section data-pane="focus"><h1>Focused source</h1><div data-area="source">${focus}</div><div data-area="graph" data-state="empty">No graph loaded</div></section><aside id="relations-pane" data-pane="relations"><h2>Relations</h2><p data-state="empty-relations">No relations loaded</p></aside>${relationDrawer}</main>`;
 }
 
+// src/browser/browser-request.ts
+function ownership(storage) {
+  const session = storage.get("browser_session_id");
+  const tab = storage.get("tab_instance_id");
+  return session && tab ? { "x-code-explorer-session": session, "x-code-explorer-tab": tab } : void 0;
+}
+async function browserRequest(storage, path, body) {
+  const headers = ownership(storage);
+  if (!headers) throw new Error("invalid_browser_session");
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...headers },
+    body: JSON.stringify(body)
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.code ?? "workspace_unavailable");
+  return payload;
+}
+
+// src/browser/application-events.ts
+function showActionError(error) {
+  showActionStatus(error instanceof Error ? error.message : "backend_unavailable");
+}
+function showActionStatus(value) {
+  const status = document.querySelector('[data-area="status"]');
+  if (status) status.textContent = value;
+}
+function bindHistory(storage, navigate) {
+  for (const operation of ["back", "forward"]) {
+    document.querySelector(`[data-operation="${operation}"]`)?.addEventListener("click", () => {
+      void navigate(
+        () => browserRequest(storage, "api/history", { request_id: crypto.randomUUID(), action: operation })
+      );
+    });
+  }
+}
+function bindRefresh(storage) {
+  document.querySelector('[data-operation="refresh"]')?.addEventListener("click", async () => {
+    try {
+      const reply = await browserRequest(storage, "api/status", { action: "refresh", request_id: crypto.randomUUID() });
+      const status = document.querySelector('[data-area="status"]');
+      if (status) status.textContent = reply.state ?? "ready";
+    } catch (error) {
+      showActionError(error);
+    }
+  });
+}
+
+// src/browser/source-handles.ts
+var relationNames = ["definition", "references", "callers", "callees", "type", "implementation"];
+function sourceHandles(data, body) {
+  const candidates = Array.isArray(data.handles) ? data.handles : [];
+  const handles = [];
+  let occupiedUntil = 0;
+  for (const value of candidates) {
+    if (!value || typeof value !== "object") continue;
+    const candidate = value;
+    if (typeof candidate.handle !== "string" || typeof candidate.name !== "string") continue;
+    const start = body.indexOf(candidate.name, occupiedUntil);
+    if (start < 0) continue;
+    const end = start + candidate.name.length;
+    handles.push({ handle: candidate.handle, start, end, relations: relationNames });
+    occupiedUntil = end;
+  }
+  return handles;
+}
+
 // src/browser/browser-reply.ts
 function landmarkItem(value) {
   if (!value || typeof value !== "object") return void 0;
@@ -108,7 +175,7 @@ function focusedSource(reply) {
     symbol: { name: data.name, kind: data.kind, path: data.path, symbol_id: data.symbol_id },
     generation: sourceGeneration(reply),
     body,
-    handles: [],
+    handles: sourceHandles(data, body),
     returned_bytes: numberField(content, "returned_bytes"),
     total_bytes: numberField(content, "total_bytes"),
     limit_bytes: numberField(content, "limit_bytes"),
@@ -116,26 +183,8 @@ function focusedSource(reply) {
   };
 }
 
-// src/browser/browser-request.ts
-function ownership(storage) {
-  const session = storage.get("browser_session_id");
-  const tab = storage.get("tab_instance_id");
-  return session && tab ? { "x-code-explorer-session": session, "x-code-explorer-tab": tab } : void 0;
-}
-async function browserRequest(storage, path, body) {
-  const headers = ownership(storage);
-  if (!headers) throw new Error("invalid_browser_session");
-  const response = await fetch(path, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body)
-  });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.code ?? "workspace_unavailable");
-  return payload;
-}
-
 // src/browser/discovery.ts
+var latestSearches = /* @__PURE__ */ new WeakMap();
 function escapeText2(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 }
@@ -158,6 +207,7 @@ var BrowserDiscoveryController = class {
     return this.current;
   }
   async search(query, filters = {}) {
+    latestSearches.delete(this);
     const normalized = query.trim();
     if (normalized.length === 0) {
       this.current = {
@@ -174,6 +224,7 @@ var BrowserDiscoveryController = class {
       return this.current;
     }
     const request = { query: normalized };
+    latestSearches.set(this, request);
     if (filters.path_globs) request.path_globs = [...filters.path_globs];
     if (filters.languages) request.languages = [...filters.languages];
     if (filters.kinds) request.kinds = [...filters.kinds];
@@ -182,6 +233,7 @@ var BrowserDiscoveryController = class {
     this.current = { ...this.current, query: normalized, filters, areaState: "loading", error: void 0 };
     try {
       const reply = await this.searchCore(request);
+      if (latestSearches.get(this) !== request) return this.current;
       const candidates = reply.data.candidates ?? [];
       this.current = {
         ...this.current,
@@ -192,6 +244,7 @@ var BrowserDiscoveryController = class {
         areaState: candidates.length === 0 ? "empty" : "ready"
       };
     } catch {
+      if (latestSearches.get(this) !== request) return this.current;
       this.current = { ...this.current, mode: "results", areaState: "failed", error: "backend_unavailable" };
     }
     return this.current;
@@ -390,8 +443,91 @@ function renderFocusedSource(source) {
   return `<article class="focused-source" data-view-id="${escapeText4(source.view_id)}" data-truncated="${source.truncated}"><header><p>${metadata}</p><p>${counts}</p></header><pre>${renderTextWithLineNumbers(segments, source.view_id)}</pre></article>`;
 }
 
-// src/browser/application.ts
-function renderFocus(reply, setCurrent) {
+// src/browser/source-relations.ts
+var latestRelationRequests = /* @__PURE__ */ new WeakMap();
+function resetRelationPane(pane) {
+  latestRelationRequests.set(pane, {});
+  pane.dataset.state = "empty";
+  const empty = Object.assign(document.createElement("p"), { textContent: "No relations loaded" });
+  empty.dataset.state = "empty-relations";
+  pane.replaceChildren(
+    Object.assign(document.createElement("h2"), { textContent: "Relations" }),
+    empty
+  );
+}
+function resetSourceRelations() {
+  const pane = document.querySelector('[data-pane="relations"]');
+  if (pane) resetRelationPane(pane);
+}
+function relationCandidates(reply) {
+  const data = Object(reply.data);
+  if (Array.isArray(data.candidates)) return data.candidates;
+  return data.focus ? [data.focus] : [];
+}
+function appendCandidates(pane, values, focus) {
+  for (const value of values) {
+    if (!value || typeof value !== "object") continue;
+    const candidate = value;
+    const label = String(candidate.display_name ?? candidate.name ?? candidate.symbol_id ?? "relation");
+    if (typeof candidate.symbol_id !== "string") {
+      pane.append(Object.assign(document.createElement("p"), { textContent: label }));
+      continue;
+    }
+    const target = Object.assign(document.createElement("button"), { type: "button", textContent: label });
+    target.addEventListener("click", () => void focus(candidate.symbol_id));
+    pane.append(target);
+  }
+}
+async function followRelation(pane, storage, focus, input) {
+  const request = {};
+  latestRelationRequests.set(pane, request);
+  pane.dataset.state = "loading";
+  try {
+    const reply = await browserRequest(storage, "api/follow", {
+      request_id: crypto.randomUUID(),
+      view_id: input.viewId,
+      handle: input.handle,
+      relation: input.relation,
+      limit: 50
+    });
+    if (latestRelationRequests.get(pane) !== request) return;
+    pane.replaceChildren(Object.assign(document.createElement("h2"), { textContent: `Relations: ${input.relation}` }));
+    pane.dataset.state = reply.state ?? "ready";
+    const candidates = relationCandidates(reply);
+    if (candidates.length === 0)
+      pane.append(Object.assign(document.createElement("p"), { textContent: reply.state ?? "empty" }));
+    appendCandidates(pane, candidates, focus);
+  } catch (error) {
+    if (latestRelationRequests.get(pane) !== request) return;
+    pane.dataset.state = "failed";
+    pane.append(
+      Object.assign(document.createElement("p"), {
+        textContent: error instanceof Error ? error.message : "backend_unavailable"
+      })
+    );
+  }
+}
+function bindSourceRelations(storage, focus) {
+  const pane = document.querySelector('[data-pane="relations"]');
+  if (!pane) return;
+  for (const mark of document.querySelectorAll("mark[data-handle]")) {
+    mark.addEventListener("click", () => {
+      const handle = mark.dataset.handle;
+      const viewId = mark.dataset.viewId;
+      resetRelationPane(pane);
+      if (!(handle && viewId)) return;
+      for (const relation of mark.dataset.relations?.split(" ").filter(Boolean) ?? []) {
+        const button = Object.assign(document.createElement("button"), { type: "button", textContent: relation });
+        button.dataset.relation = relation;
+        button.addEventListener("click", () => void followRelation(pane, storage, focus, { handle, viewId, relation }));
+        pane.append(button);
+      }
+    });
+  }
+}
+
+// src/browser/focus-actions.ts
+function renderFocus(reply, setCurrent, afterRender) {
   const source = focusedSource(reply);
   if (!source) throw new Error("invalid_browser_view");
   setCurrent(source.symbol.symbol_id);
@@ -399,7 +535,39 @@ function renderFocus(reply, setCurrent) {
   const graphHost = document.querySelector('[data-area="graph"]');
   if (sourceHost) sourceHost.innerHTML = renderFocusedSource(source);
   if (graphHost) graphHost.outerHTML = renderGraphArea(projectOneHopGraph(source.symbol, []));
+  resetSourceRelations();
+  afterRender();
 }
+function createFocusActions(storage) {
+  let currentSymbol;
+  let focus;
+  let latestNavigation = {};
+  const showFocus = (reply) => renderFocus(
+    reply,
+    (symbolId) => currentSymbol = symbolId,
+    () => bindSourceRelations(storage, focus)
+  );
+  const navigate = async (request) => {
+    const navigation = {};
+    latestNavigation = navigation;
+    try {
+      const reply = await request();
+      if (latestNavigation !== navigation) return;
+      showFocus(reply);
+      showActionStatus(reply.state ?? "ready");
+    } catch (error) {
+      if (latestNavigation !== navigation) return;
+      showActionError(error);
+    }
+  };
+  focus = (symbolId) => navigate(() => browserRequest(storage, "api/focus", { request_id: crypto.randomUUID(), symbol_id: symbolId }));
+  document.querySelector('[data-operation="refocus"]')?.addEventListener("click", () => {
+    if (currentSymbol) void focus(currentSymbol);
+  });
+  return { focus, navigate };
+}
+
+// src/browser/application.ts
 function bindSymbols(focus) {
   for (const button of document.querySelectorAll("[data-symbol-id]")) {
     button.addEventListener("click", () => {
@@ -409,11 +577,14 @@ function bindSymbols(focus) {
   }
 }
 function bindSearch(discovery, render) {
-  document.querySelector('[data-operation="search"]')?.addEventListener("change", async (event) => {
+  let pending;
+  document.querySelector('[data-operation="search"]')?.addEventListener("input", (event) => {
     const query = event.target.value;
-    if (discovery().state().query === query.trim()) return;
-    await discovery().search(query);
-    render();
+    clearTimeout(pending);
+    pending = setTimeout(() => {
+      if (discovery().state().query === query.trim()) return;
+      void discovery().search(query).then(render);
+    }, 150);
   });
 }
 function renderDiscoveryArea(discovery, focus) {
@@ -423,50 +594,32 @@ function renderDiscoveryArea(discovery, focus) {
 }
 function createDiscovery(storage, landmarks) {
   return new BrowserDiscoveryController(
-    (request) => browserRequest(storage, "/api/search", {
+    (request) => browserRequest(storage, "api/search", {
       request_id: crypto.randomUUID(),
       ...request
     }),
     landmarks
   );
 }
-function bindHistory(storage, render) {
-  for (const operation of ["back", "forward"]) {
-    document.querySelector(`[data-operation="${operation}"]`)?.addEventListener("click", async () => {
-      render(await browserRequest(storage, "/api/history", { request_id: crypto.randomUUID(), action: operation }));
-    });
-  }
-}
-function bindRefresh(storage) {
-  document.querySelector('[data-operation="refresh"]')?.addEventListener("click", async () => {
-    const reply = await browserRequest(storage, "/api/status", {
-      action: "refresh",
-      request_id: crypto.randomUUID()
-    });
-    const status = document.querySelector('[data-area="status"]');
-    if (status) status.textContent = reply.state ?? "ready";
-  });
+function loadLandmarks(storage, apply) {
+  void browserRequest(storage, "api/search", { request_id: crypto.randomUUID(), query: "" }).then((reply) => apply(landmarkGroups(reply))).catch(() => void 0);
 }
 function startApplication(storage, startedState, root2) {
   const store = createBrowserStore({ status: startedState, landmarks: [] });
   root2.innerHTML = renderBrowserBody(store.state(), window.innerWidth);
-  let currentSymbol;
-  const showFocus = (reply) => renderFocus(reply, (symbolId) => currentSymbol = symbolId);
-  const focus = async (symbolId) => showFocus(await browserRequest(storage, "/api/focus", { request_id: crypto.randomUUID(), symbol_id: symbolId }));
+  const { focus, navigate } = createFocusActions(storage);
   let discovery = createDiscovery(storage, []);
   bindSymbols(focus);
   bindSearch(
     () => discovery,
     () => renderDiscoveryArea(discovery, focus)
   );
-  void browserRequest(storage, "/api/search", { request_id: crypto.randomUUID(), query: "" }).then((reply) => {
-    discovery = createDiscovery(storage, landmarkGroups(reply));
+  loadLandmarks(storage, (landmarks) => {
+    if (discovery.state().query) return;
+    discovery = createDiscovery(storage, landmarks);
     renderDiscoveryArea(discovery, focus);
-  }).catch(() => void 0);
-  bindHistory(storage, showFocus);
-  document.querySelector('[data-operation="refocus"]')?.addEventListener("click", () => {
-    if (currentSymbol) void focus(currentSymbol);
   });
+  bindHistory(storage, navigate);
   bindRefresh(storage);
 }
 
@@ -538,7 +691,7 @@ if (root) {
     lock: async (name, action) => await navigator.locks.request(name, { ifAvailable: true }, (lock) => action(lock !== null)),
     randomId: () => crypto.randomUUID(),
     request: async (body, headers) => {
-      const response = await fetch("/api/session", {
+      const response = await fetch("api/session", {
         method: "POST",
         headers: { "content-type": "application/json", ...headers },
         body: JSON.stringify(body)
@@ -549,10 +702,11 @@ if (root) {
   });
   void session.start().then((started) => {
     if (!ownership(storage)) throw new Error(started.state);
-    root.textContent = `Code Explorer: ${started.state}`;
-    root.setAttribute("data-state", "ready");
-    void browserRequest(storage, "/api/status", { action: "status" }).catch(() => void 0);
-    startApplication(storage, started.state, root);
+    const visibleState = started.data?.root_access === "root_access_denied" ? "root_access_denied" : started.state;
+    root.textContent = `Code Explorer: ${visibleState}`;
+    root.setAttribute("data-state", visibleState === "root_access_denied" ? "unavailable" : "ready");
+    void browserRequest(storage, "api/status", { action: "status" }).catch(() => void 0);
+    startApplication(storage, visibleState, root);
   }).catch(() => {
     root.textContent = "Code Explorer: workspace_unavailable";
     root.setAttribute("data-state", "unavailable");

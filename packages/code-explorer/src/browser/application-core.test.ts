@@ -1,6 +1,13 @@
 export type CoreCall = { name: string; arguments_: Record<string, unknown> };
 
-function focused(symbolId: string, name: string, kind: string, path: string, body: string) {
+function focused(
+  symbolId: string,
+  name: string,
+  kind: string,
+  path: string,
+  body: string,
+  handles: Array<{ handle: string; name: string; symbol_id: string }> = [],
+) {
   return {
     schema_version: 1,
     project_generation: 1,
@@ -19,7 +26,7 @@ function focused(symbolId: string, name: string, kind: string, path: string, bod
         returned_bytes: Buffer.byteLength(body),
         total_bytes: Buffer.byteLength(body),
       },
-      handles: [],
+      handles,
     },
   };
 }
@@ -84,7 +91,9 @@ export function createPackagedCore(calls: CoreCall[]) {
       };
     }
     if (name === "code_focus" && arguments_.symbol_id === "symbol-main") {
-      return focused("symbol-main", "main", "function", "src/main.ts", "export function main() { return 1; }");
+      return focused("symbol-main", "main", "function", "src/main.ts", "export function main() { return 1; }", [
+        { handle: "handle-main", name: "main", symbol_id: "symbol-main" },
+      ]);
     }
     if (name === "code_focus" && arguments_.symbol_id === "file:src/browser/client.ts") {
       return focused(
@@ -94,6 +103,9 @@ export function createPackagedCore(calls: CoreCall[]) {
         "src/browser/client.ts",
         "export const client = true;",
       );
+    }
+    if (name === "code_follow" && arguments_.handle === "handle-main") {
+      return { schema_version: 1, state: "ready", data: { relation: arguments_.relation, candidates: [] } };
     }
     return { schema_version: 1, code: "invalid_request", message: "invalid_request", retryable: false };
   };

@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApi } from "./lib/api.mjs";
 import { createCodeExplorerManager } from "./lib/code-explorer-manager.mjs";
-import { discoverCodeExplorer, startCodeExplorer } from "./lib/code-explorer-launch.mjs";
+import { discoverCodeExplorer, loadCodeExplorer } from "./lib/code-explorer-launch.mjs";
 import { createDashboardOwnership } from "./lib/dashboard-ownership.mjs";
 import { createProjectIdentity } from "./lib/project-identity.mjs";
 import { createQualityReportRefresher } from "./lib/quality-report.mjs";
@@ -31,33 +31,31 @@ const PORT_ATTEMPTS = 20;
 
 let acceptingLaunches = false;
 const projectIdentity = createProjectIdentity();
-let codeExplorerEntry;
+let codeExplorerRuntimeFactory;
 const reportCodeExplorer = (stage) => process.stderr.write(`Code Explorer launch: ${stage}\n`);
 try {
-  codeExplorerEntry = discoverCodeExplorer({
+  const codeExplorerEntry = discoverCodeExplorer({
     monorepoRoot: MONOREPO_ROOT,
   });
+  codeExplorerRuntimeFactory = loadCodeExplorer(codeExplorerEntry);
 } catch {
   reportCodeExplorer("bundle_discovery_failed");
   // The dashboard can still read projects when Code Explorer is not installed.
-  codeExplorerEntry = null;
+  codeExplorerRuntimeFactory = null;
 }
-const children = createCodeExplorerManager({
+const runtimes = createCodeExplorerManager({
   projectIdentity: projectIdentity.identity,
-  start: async ({ projectPath }) => {
-    if (!codeExplorerEntry) throw new Error("code_explorer_unavailable");
-    return startCodeExplorer({
-      entry: codeExplorerEntry,
-      projectPath,
-      monorepoRoot: MONOREPO_ROOT,
-      report: reportCodeExplorer,
-    });
+  origin: () => `http://${HOST}:${port}`,
+  start: async ({ projectPath, origin, signal }) => {
+    if (!codeExplorerRuntimeFactory) throw new Error("code_explorer_unavailable");
+    const createRuntime = await codeExplorerRuntimeFactory;
+    return createRuntime({ project_root: projectPath, origin, signal });
   },
 });
 const handle = createApi({
   store: createStore(),
   launchAdmission: () => acceptingLaunches,
-  launchCodeExplorer: (projectPath) => children.launch(projectIdentity.canonicalPath(projectPath)),
+  launchCodeExplorer: (projectPath) => runtimes.launch(projectIdentity.canonicalPath(projectPath)),
   refreshQualityReport: createQualityReportRefresher({ bundlePath: QUALITY_GUARD_BUNDLE }),
 });
 
@@ -78,9 +76,58 @@ function readBody(req) {
   });
 }
 
+function readBrowserBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let bytes = 0;
+    req.on("data", (chunk) => {
+      bytes += chunk.length;
+      if (bytes <= 65_537) chunks.push(chunk);
+    });
+    req.on("end", () => resolve(bytes > 65_537 ? Buffer.alloc(65_537) : Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+async function handleCodeExplorer(req, res, url) {
+  const routed = runtimes.resolve(url.pathname);
+  if (!routed) {
+    sendJson(res, 404, { error: "unknown route" });
+    return;
+  }
+  try {
+    const result = await routed.runtime.handle({
+      method: req.method ?? "GET",
+      path: `${routed.path}${url.search}`,
+      headers: Object.fromEntries(
+        Object.entries(req.headers).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
+      ),
+      body: await readBrowserBody(req),
+    });
+    res.writeHead(result.status, result.headers);
+    res.end(result.body);
+  } catch {
+    sendJson(res, 503, { code: "workspace_unavailable", message: "workspace_unavailable", retryable: true });
+  }
+}
+
 async function handleApi(req, res, url) {
   const launch = LAUNCH_PATH.test(url.pathname);
   try {
+    if (url.pathname === "/api/browser-capability") {
+      const remote = req.socket.remoteAddress?.replace("::ffff:", "");
+      if (req.method !== "GET" || req.headers.host !== `${HOST}:${port}` || remote !== HOST) {
+        sendJson(res, 404, { error: "unknown route" });
+        return;
+      }
+      res.writeHead(200, {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "no-store",
+        "x-content-type-options": "nosniff",
+      });
+      res.end(JSON.stringify({ capability: capabilities.browser }));
+      return;
+    }
     if (url.pathname === "/api/admin/shutdown") {
       if (req.method !== "POST" || req.socket.remoteAddress?.replace("::ffff:", "") !== HOST || req.headers["x-openspec-dashboard-replacement-capability"] !== capabilities.replacement) {
         sendJson(res, 404, { error: "unknown route" });
@@ -106,6 +153,10 @@ async function handleApi(req, res, url) {
 
 const server = createServer((req, res) => {
   const url = new URL(req.url, `http://${HOST}`);
+  if (url.pathname.startsWith("/code-explorer/")) {
+    void handleCodeExplorer(req, res, url);
+    return;
+  }
   if (url.pathname.startsWith("/api/")) {
     void handleApi(req, res, url);
     return;
@@ -119,7 +170,7 @@ let shutdownPromise;
 function managedShutdown() {
   if (shutdownPromise) return shutdownPromise;
   acceptingLaunches = false;
-  shutdownPromise = children.shutdown().then(
+  shutdownPromise = runtimes.shutdown().then(
     () =>
       new Promise((resolve) => {
         server.close(() => {

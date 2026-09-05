@@ -1,23 +1,11 @@
 import { createBrowserStore, renderBrowserBody } from "./app.js";
-import { type BrowserReply, focusedSource, landmarkGroups } from "./browser-reply.js";
+import { bindHistory, bindRefresh } from "./application-events.js";
+import { landmarkGroups } from "./browser-reply.js";
 import { browserRequest } from "./browser-request.js";
 import { BrowserDiscoveryController, type DiscoveryReply, renderDiscovery } from "./discovery.js";
-import { projectOneHopGraph } from "./graph.js";
-import { renderGraphArea } from "./graph-navigation.js";
+import { createFocusActions } from "./focus-actions.js";
 import type { BrowserStorage } from "./session.js";
-import { renderFocusedSource } from "./source.js";
-
-type FocusAction = (symbolId: string) => Promise<void>;
-
-function renderFocus(reply: BrowserReply, setCurrent: (symbolId: string) => void): void {
-  const source = focusedSource(reply);
-  if (!source) throw new Error("invalid_browser_view");
-  setCurrent(source.symbol.symbol_id);
-  const sourceHost = document.querySelector<HTMLElement>('[data-area="source"]');
-  const graphHost = document.querySelector<HTMLElement>('[data-area="graph"]');
-  if (sourceHost) sourceHost.innerHTML = renderFocusedSource(source);
-  if (graphHost) graphHost.outerHTML = renderGraphArea(projectOneHopGraph(source.symbol, []));
-}
+import type { FocusAction } from "./source-relations.js";
 
 function bindSymbols(focus: FocusAction): void {
   for (const button of document.querySelectorAll<HTMLElement>("[data-symbol-id]")) {
@@ -29,11 +17,14 @@ function bindSymbols(focus: FocusAction): void {
 }
 
 function bindSearch(discovery: () => BrowserDiscoveryController, render: () => void): void {
-  document.querySelector<HTMLInputElement>('[data-operation="search"]')?.addEventListener("change", async (event) => {
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  document.querySelector<HTMLInputElement>('[data-operation="search"]')?.addEventListener("input", (event) => {
     const query = (event.target as HTMLInputElement).value;
-    if (discovery().state().query === query.trim()) return;
-    await discovery().search(query);
-    render();
+    clearTimeout(pending);
+    pending = setTimeout(() => {
+      if (discovery().state().query === query.trim()) return;
+      void discovery().search(query).then(render);
+    }, 150);
   });
 }
 
@@ -46,7 +37,7 @@ function renderDiscoveryArea(discovery: BrowserDiscoveryController, focus: Focus
 function createDiscovery(storage: BrowserStorage, landmarks: ReturnType<typeof landmarkGroups>) {
   return new BrowserDiscoveryController(
     (request) =>
-      browserRequest(storage, "/api/search", {
+      browserRequest(storage, "api/search", {
         request_id: crypto.randomUUID(),
         ...request,
       }) as Promise<DiscoveryReply>,
@@ -54,47 +45,27 @@ function createDiscovery(storage: BrowserStorage, landmarks: ReturnType<typeof l
   );
 }
 
-function bindHistory(storage: BrowserStorage, render: (reply: BrowserReply) => void): void {
-  for (const operation of ["back", "forward"] as const) {
-    document.querySelector<HTMLElement>(`[data-operation="${operation}"]`)?.addEventListener("click", async () => {
-      render(await browserRequest(storage, "/api/history", { request_id: crypto.randomUUID(), action: operation }));
-    });
-  }
-}
-
-function bindRefresh(storage: BrowserStorage): void {
-  document.querySelector<HTMLElement>('[data-operation="refresh"]')?.addEventListener("click", async () => {
-    const reply = await browserRequest(storage, "/api/status", {
-      action: "refresh",
-      request_id: crypto.randomUUID(),
-    });
-    const status = document.querySelector<HTMLElement>('[data-area="status"]');
-    if (status) status.textContent = reply.state ?? "ready";
-  });
+function loadLandmarks(storage: BrowserStorage, apply: (groups: ReturnType<typeof landmarkGroups>) => void): void {
+  void browserRequest(storage, "api/search", { request_id: crypto.randomUUID(), query: "" })
+    .then((reply) => apply(landmarkGroups(reply)))
+    .catch(() => undefined);
 }
 
 export function startApplication(storage: BrowserStorage, startedState: string, root: HTMLDivElement): void {
   const store = createBrowserStore({ status: startedState, landmarks: [] });
   root.innerHTML = renderBrowserBody(store.state(), window.innerWidth);
-  let currentSymbol: string | undefined;
-  const showFocus = (reply: BrowserReply) => renderFocus(reply, (symbolId) => (currentSymbol = symbolId));
-  const focus: FocusAction = async (symbolId) =>
-    showFocus(await browserRequest(storage, "/api/focus", { request_id: crypto.randomUUID(), symbol_id: symbolId }));
+  const { focus, navigate } = createFocusActions(storage);
   let discovery = createDiscovery(storage, []);
   bindSymbols(focus);
   bindSearch(
     () => discovery,
     () => renderDiscoveryArea(discovery, focus),
   );
-  void browserRequest(storage, "/api/search", { request_id: crypto.randomUUID(), query: "" })
-    .then((reply) => {
-      discovery = createDiscovery(storage, landmarkGroups(reply));
-      renderDiscoveryArea(discovery, focus);
-    })
-    .catch(() => undefined);
-  bindHistory(storage, showFocus);
-  document.querySelector<HTMLElement>('[data-operation="refocus"]')?.addEventListener("click", () => {
-    if (currentSymbol) void focus(currentSymbol);
+  loadLandmarks(storage, (landmarks) => {
+    if (discovery.state().query) return;
+    discovery = createDiscovery(storage, landmarks);
+    renderDiscoveryArea(discovery, focus);
   });
+  bindHistory(storage, navigate);
   bindRefresh(storage);
 }

@@ -24,6 +24,7 @@ it("focuses a project-local definition and cites its source location", async () 
     relation: string;
     relation_source: string;
     backend_name: string;
+    display_name: string;
     path: string;
     kind: string;
     range: unknown;
@@ -35,6 +36,7 @@ it("focuses a project-local definition and cites its source location", async () 
   assert.equal(focus.relation, "definition");
   assert.equal(focus.relation_source, "semantic");
   assert.equal(focus.backend_name, "fixture-lsp");
+  assert.equal(focus.display_name, "Type");
   assert.equal(focus.path, "src/types.rs");
   assert.equal(focus.kind, "struct");
   assert.deepEqual(focus.range, type.location.range);

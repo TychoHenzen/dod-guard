@@ -4,12 +4,18 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Browser, chromium } from "@playwright/test";
 import { BrowserHttpRouter } from "../browser-server/http-router.js";
-import { type CoreCall, createPackagedCore } from "./application-core.test.js";
+import type { CoreCall } from "./application-core.test.js";
+import { createFixtureBehavior } from "./application-fixture-behavior.test.js";
 
 export type PackagedBrowserFixture = {
   browser: Browser;
   endpoint: string;
   coreCalls: CoreCall[];
+  failNextFocus: () => void;
+  failNextRefresh: () => void;
+  holdNextLandmarks: () => () => void;
+  holdNextFocus: (symbolId: string) => () => void;
+  holdNextRelation: (relation: string) => () => void;
   close: () => Promise<void>;
 };
 
@@ -39,16 +45,22 @@ export async function startPackagedBrowserFixture(): Promise<PackagedBrowserFixt
   assert.equal(typeof address, "object");
   const endpoint = `http://127.0.0.1:${(address as { port: number }).port}`;
   const coreCalls: CoreCall[] = [];
+  const behavior = createFixtureBehavior(coreCalls);
   router = new BrowserHttpRouter({
     origin: endpoint,
     assetRoot: path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "browser"),
-    call: createPackagedCore(coreCalls),
+    call: behavior.call,
   });
   const browser = await chromium.launch({ headless: true });
   return {
     browser,
     endpoint,
     coreCalls,
+    failNextFocus: behavior.failNextFocus,
+    failNextRefresh: behavior.failNextRefresh,
+    holdNextLandmarks: behavior.holdNextLandmarks,
+    holdNextFocus: behavior.holdNextFocus,
+    holdNextRelation: behavior.holdNextRelation,
     close: async () => {
       await browser.close();
       await new Promise<void>((resolve) => server.close(() => resolve()));

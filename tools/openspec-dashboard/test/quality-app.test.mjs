@@ -27,7 +27,7 @@ function fixture() {
     },
   };
   runInNewContext(source.replace(/^import .*;\r?\n/gm, "")
-    .replace(/reloadProjects\(\)\.catch[^\n]+/, "")
+    .replace(/api\.refreshDashboardCapability\(\)\s*\.then\(\(\) => reloadProjects\(\)\)\s*\.catch\([^;]+;/, "")
     + '\nstate.projects = [{ path: "A" }, { path: "B" }];', context);
   return { context, nodes, pending };
 }

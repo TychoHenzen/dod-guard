@@ -50,6 +50,53 @@ test("preserves a structured launch API error code", async (context) => {
     (error) => error.message === "invalid_dashboard_capability",
   );
 });
+test("replaces a stale tab capability with the current dashboard process capability", async (context) => {
+  const original = globalThis.fetch;
+  context.after(() => {
+    globalThis.fetch = original;
+  });
+  let current = "c".repeat(64);
+  const requests = [];
+  globalThis.fetch = async (path, options) => {
+    requests.push([path, options]);
+    return {
+      ok: true,
+      json: async () => path === "/api/browser-capability" ? { capability: current } : { state: "open" },
+    };
+  };
+  setDashboardCapability("a".repeat(64));
+  await launchCodeExplorer({ index: 0, registryRevision: "b".repeat(64) });
+  assert.equal(requests[1][1].headers["x-openspec-dashboard-capability"], current);
+  current = "d".repeat(64);
+  await launchCodeExplorer({ index: 0, registryRevision: "b".repeat(64) });
+  assert.equal(requests[3][1].headers["x-openspec-dashboard-capability"], current);
+});
+test("retries once when the dashboard restarts between capability read and launch", async (context) => {
+  const original = globalThis.fetch;
+  context.after(() => {
+    globalThis.fetch = original;
+  });
+  const first = "a".repeat(64);
+  const replacement = "b".repeat(64);
+  let request = 0;
+  globalThis.fetch = async (path, options) => {
+    request += 1;
+    if (path === "/api/browser-capability") {
+      return { ok: true, json: async () => ({ capability: request === 1 ? first : replacement }) };
+    }
+    if (request === 2) {
+      return {
+        ok: false,
+        statusText: "Forbidden",
+        json: async () => ({ code: "invalid_dashboard_capability" }),
+      };
+    }
+    assert.equal(options.headers["x-openspec-dashboard-capability"], replacement);
+    return { ok: true, json: async () => ({ state: "open" }) };
+  };
+  assert.deepEqual(await launchCodeExplorer({ index: 0, registryRevision: "c".repeat(64) }), { state: "open" });
+  assert.equal(request, 4);
+});
 test("enables Code Explorer for the selected readable registry entry", () => {
   assert.deepEqual(selectedCodeExplorerAction({ ...registry, active: 0 }), {
     disabled: false,
@@ -175,7 +222,7 @@ test("reports a blocked browser tab without requesting launch", async () => {
   assert.equal(requests, 0);
   assert.equal(controller.renderState().code, "browser_tab_blocked");
 });
-test("leaves a managed child reusable when its placeholder closes during startup", async () => {
+test("leaves an embedded runtime reusable when its placeholder closes during startup", async () => {
   const pending = deferred();
   const port = windowPort();
   const controller = createCodeExplorerAction({ windowPort: port, request: () => pending.promise });
@@ -213,7 +260,7 @@ test("never rebinds a late result to a new selection", async () => {
   assert.equal(controller.renderState().index, 1);
   assert.equal(controller.renderState().state, "idle");
 });
-test("starts a later request so the server can replace a stale managed child", async () => {
+test("starts a later request so the server can replace a stale embedded runtime", async () => {
   const port = windowPort();
   const results = [
     { state: "open", url: "http://127.0.0.1:4410/", reused: false },
