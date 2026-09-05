@@ -17,7 +17,10 @@ and performance hazards. Check basic defensive security, including injection,
 authorization, secrets, unsafe deserialization, and trust boundaries. Tie each
 finding to an observable failure at the final head.
 
-Return a JSON array only. Return `[]` when no actionable defect exists. Each
-finding must contain `severity`, `file`, `line`, `problem`, `impact`,
+Return one JSON object only with `reviewer: "review-pr-reliability"`,
+`coverage`, and `findings`. Coverage records the assigned concerns checked, a
+`VERIFIED|FINDING` status, and concrete final-state evidence. Return an empty
+`findings` array when no actionable defect exists. Finding severity is exactly
+`BLOCKER`, `MAJOR`, or `MINOR`. Each finding must contain `severity`, `file`, `line`, `problem`, `impact`,
 `requirement`, `correction`, `rootCause`, and `evidence`. Cite a changed
 final-state line. Do not report taste, praise, summaries, or speculative risks.

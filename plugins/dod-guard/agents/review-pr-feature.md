@@ -17,7 +17,10 @@ or internal helpers do not prove reachability. Check production and user-path
 tests, edge cases, and whether characterization tests merely preserve current
 output. Prefer flat, self-contained Arrange, Act, Assert tests.
 
-Return a JSON array only. Return `[]` when no actionable defect exists. Each
-finding must contain `severity`, `file`, `line`, `problem`, `impact`,
+Return one JSON object only with `reviewer: "review-pr-feature"`, `coverage`,
+and `findings`. Coverage must contain every context `reviewRequirements` string
+verbatim, a `VERIFIED|FINDING` status, and concrete final-state evidence. Return
+an empty `findings` array when no actionable defect exists. Finding severity is
+exactly `BLOCKER`, `MAJOR`, or `MINOR`. Each finding must contain `severity`, `file`, `line`, `problem`, `impact`,
 `requirement`, `correction`, `rootCause`, and `evidence`. Cite a changed
 final-state line. Do not report taste, praise, summaries, or speculative risks.

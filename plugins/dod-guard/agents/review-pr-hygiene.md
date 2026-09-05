@@ -18,7 +18,10 @@ comments, inconsistent style, unexplained non-intuitive choices, and other LLM
 artifacts that make maintenance harder. Do not duplicate design findings unless
 the hygiene defect has a distinct root cause.
 
-Return a JSON array only. Return `[]` when no actionable defect exists. Each
-finding must contain `severity`, `file`, `line`, `problem`, `impact`,
+Return one JSON object only with `reviewer: "review-pr-hygiene"`, `coverage`,
+and `findings`. Coverage records the assigned concerns checked, a
+`VERIFIED|FINDING` status, and concrete final-state evidence. Return an empty
+`findings` array when no actionable defect exists. Finding severity is exactly
+`BLOCKER`, `MAJOR`, or `MINOR`. Each finding must contain `severity`, `file`, `line`, `problem`, `impact`,
 `requirement`, `correction`, `rootCause`, and `evidence`. Cite a changed
 final-state line. Do not report taste, praise, summaries, or speculative risks.
