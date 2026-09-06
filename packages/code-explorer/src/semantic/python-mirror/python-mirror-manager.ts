@@ -1,11 +1,7 @@
 import type { ProjectRoot } from "../project-root/project-root.js";
 import { refreshManager } from "./python-mirror-manager-actions.js";
+import type { ActiveMirror } from "./python-mirror-manager-types.js";
 import type { PythonMirrorApi } from "./python-mirror-runtime-types.js";
-
-export type ActiveMirror = {
-  mirror: PythonMirrorApi["mirror"];
-  fingerprint: string;
-};
 
 export function createPythonMirrorManager(
   root: ProjectRoot,

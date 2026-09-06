@@ -1,6 +1,6 @@
 import type { ProjectRoot } from "../project-root/project-root.js";
 import { createMirror } from "./python-mirror-generation.js";
-import type { ActiveMirror } from "./python-mirror-manager.js";
+import type { ActiveMirror } from "./python-mirror-manager-types.js";
 import type { PythonMirrorApi } from "./python-mirror-runtime-types.js";
 import { snapshotPythonProject } from "./python-mirror-snapshot.js";
 
