@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { adapter, root } from "../testing/root-access-test-support.js";
 import { RootAccessGate } from "../semantic/project-root/root-access.js";
+import { adapter, root } from "../testing/root-access-test-support.js";
 
 it("makes a changed or missing frozen root status-only and sto", async () => {
   const calls: string[] = [];

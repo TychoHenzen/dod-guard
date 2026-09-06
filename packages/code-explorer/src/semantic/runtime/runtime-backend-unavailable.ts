@@ -1,5 +1,5 @@
-import type { SemanticRequest, SemanticResult } from "../contracts/contract.js";
 import type { InjectedSemanticBackend } from "../adapters/language-adapter.js";
+import type { SemanticRequest, SemanticResult } from "../contracts/contract.js";
 
 async function unavailableQuery(
   _request: SemanticRequest,

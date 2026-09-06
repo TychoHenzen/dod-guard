@@ -1,3 +1,6 @@
+import type {
+  ProtectedDocumentContent,
+} from "../project-root/protected-document-content.js";
 import { DirectLspError } from "./direct-lsp-error.js";
 import type { DirectLspRuntimeState } from "./direct-lsp-runtime-state.js";
 import type { DirectLspStatus } from "./direct-lsp-status.js";
@@ -5,9 +8,6 @@ import {
   isProtectedFileUri,
   statusSnapshot,
 } from "./direct-lsp-status-snapshot.js";
-import type {
-  ProtectedDocumentContent,
-} from "../project-root/protected-document-content.js";
 
 export { shutdownRuntime } from "./direct-lsp-runtime-shutdown.js";
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { languages, relationNames } from "../contracts/contract.js";
 import {
   runtimeCapabilities,
   sentinelEvidence,
@@ -6,7 +7,6 @@ import {
   versionProbe,
   win32CommandRoot,
 } from "./adapter-selection-schema-parts.js";
-import { languages, relationNames } from "../contracts/contract.js";
 
 const runtimeBackendSchema = z
   .object({

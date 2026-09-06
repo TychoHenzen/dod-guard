@@ -1,3 +1,4 @@
+import type { Language } from "../contracts/contract.js";
 import type { BackendAllowlistEntry } from "./backend-allowlist-entry.js";
 import type { BackendIdentity } from "./backend-identity.js";
 import {
@@ -13,7 +14,6 @@ import {
   deepFreeze,
   snapshotAllowlistEntry,
 } from "./backend-launch-snapshot.js";
-import type { Language } from "../contracts/contract.js";
 
 export function createBackendLaunchPolicy(
   options: launchOptions.BackendLaunchPolicyOptions,

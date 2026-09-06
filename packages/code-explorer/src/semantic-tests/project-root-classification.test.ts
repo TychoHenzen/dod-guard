@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { filesystem } from "../testing/project-root-test-support.js";
 import { createProjectRoot } from "../semantic/project-root/project-root.js";
+import { filesystem } from "../testing/project-root-test-support.js";
 
 const root = "C:/repo";
 

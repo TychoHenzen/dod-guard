@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
+import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
 import {
   degradedCapabilities,
   degradedProcess,
   runtimeEntrySymbol,
   runtimeOptions,
 } from "../testing/runtime-lsp-test-support.js";
-import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
 
 it("publishes a relation-level degraded status from the runtim", async () => {
   const process = degradedProcess();

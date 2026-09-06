@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import * as support from "../testing/adapter-selection-test-support.js";
 import {
   evidenceAligns,
   parseAdapterSelectionEvidence,
   parseAdapterSelectionRecord,
 } from "../semantic/adapter-selection/adapter-selection.js";
 import type { AdapterSelectionRecord } from "../semantic/adapter-selection/adapter-selection-record.js";
+import * as support from "../testing/adapter-selection-test-support.js";
 
 it("binds each production authorization to the exact sentinel binary", () => {
   const recordInput = support.loadAdapterSelectionJson(

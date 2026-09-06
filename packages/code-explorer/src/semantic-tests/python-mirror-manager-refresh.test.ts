@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "node:test";
-import { project } from "../testing/python-mirror-runtime-test-support.js";
 import { createPythonMirrorManager } from "../semantic/python-mirror/python-mirror-runtime.js";
+import { project } from "../testing/python-mirror-runtime-test-support.js";
 
 it("terminates the old backend before an unsafe replacement an", async () => {
   const fixture = project({ "src/a.py": "x = 1\n" });

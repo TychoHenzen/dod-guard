@@ -1,3 +1,4 @@
+import type { Language } from "../contracts/contract.js";
 import type { BackendAllowlistEntry } from "./backend-allowlist-entry.js";
 import type { BackendIdentity } from "./backend-identity.js";
 import type { BackendLaunchFailure } from "./backend-launch-failure.js";
@@ -5,7 +6,6 @@ import { sameIdentity } from "./backend-launch-identity.js";
 import { inspect } from "./backend-launch-inspection.js";
 import { isPermittedEndpoint } from "./backend-launch-paths.js";
 import type * as launchOptions from "./backend-launch-policy-options.js";
-import type { Language } from "../contracts/contract.js";
 
 export function confirmBackend(input: {
   language: Language;

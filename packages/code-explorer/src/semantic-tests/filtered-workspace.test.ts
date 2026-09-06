@@ -10,8 +10,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
-import { createFilteredWorkspace } from "../semantic/workspace/filtered-workspace.js";
 import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
+import { createFilteredWorkspace } from "../semantic/workspace/filtered-workspace.js";
 
 it("creates a native backend root before initialization without sens", () => {
   const project = mkdtempSync(

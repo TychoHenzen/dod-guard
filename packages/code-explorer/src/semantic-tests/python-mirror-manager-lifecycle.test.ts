@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { existsSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "node:test";
-import { project } from "../testing/python-mirror-runtime-test-support.js";
 import {
   createNativePythonMirror,
   createPythonMirrorManager,
 } from "../semantic/python-mirror/python-mirror-runtime.js";
+import { project } from "../testing/python-mirror-runtime-test-support.js";
 
 function linkConfiguration(root: string): void {
   symlinkSync(

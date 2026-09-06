@@ -1,7 +1,7 @@
 import {
   closeSync,
-  fstatSync,
   type Dirent,
+  fstatSync,
   lstatSync,
   openSync,
   readdirSync,

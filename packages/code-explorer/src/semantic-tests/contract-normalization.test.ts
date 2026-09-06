@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { location } from "../testing/contract-test-support.js";
 import {
   type BackendStatus,
   parseSemanticResult,
   type RelationCapabilities,
   type SemanticResult,
 } from "../semantic/contracts/contract.js";
+import { location } from "../testing/contract-test-support.js";
 
 it("uses normalized symbols, source locations, revisions, and relati", () => {
   const revision = {

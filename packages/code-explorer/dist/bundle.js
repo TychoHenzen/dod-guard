@@ -22738,6 +22738,94 @@ function isStableIdentityPart2(value) {
   return typeof value === "bigint" || Number.isSafeInteger(value);
 }
 
+// src/semantic/project-root/root-access-status.ts
+function rootAccessStatus(state) {
+  return {
+    state,
+    restart_required: state === "project_root_unavailable"
+  };
+}
+
+// src/semantic/project-root/root-access.ts
+var RootAccessGate = class {
+  constructor(root, adapters, now = Date.now) {
+    this.root = root;
+    this.adapters = adapters;
+    this.now = now;
+  }
+  root;
+  adapters;
+  now;
+  state = "ready";
+  #inaccessibleSince;
+  #retryTimer;
+  async check() {
+    if (!this.root) return this.status();
+    if (this.state === "project_root_unavailable") return this.status();
+    const result = this.root.revalidate();
+    if (result === "ready") return this.#handleReady();
+    return this.#handleRootFailure(result);
+  }
+  status() {
+    return rootAccessStatus(this.state);
+  }
+  #handleRootFailure(result) {
+    if (result === "inaccessible" && this.#withinRecoveryWindow())
+      return this.#handleTransientInaccessibility();
+    return this.#handleUnavailable();
+  }
+  async #handleReady() {
+    if (this.state === "project_root_inaccessible") await this.#restart();
+    this.state = "ready";
+    this.#inaccessibleSince = void 0;
+    this.#clearRetry();
+    return this.status();
+  }
+  async #handleTransientInaccessibility() {
+    this.state = "project_root_inaccessible";
+    await this.#stop();
+    this.#scheduleRetry();
+    return this.status();
+  }
+  async #handleUnavailable() {
+    this.state = "project_root_unavailable";
+    this.#clearRetry();
+    await this.#stop();
+    return this.status();
+  }
+  #withinRecoveryWindow() {
+    this.#inaccessibleSince ??= this.now();
+    return this.now() - this.#inaccessibleSince < 3e4;
+  }
+  async #stop() {
+    await Promise.all(
+      this.adapters.flatMap(
+        (adapter) => adapter.shutdown ? [adapter.shutdown()] : []
+      )
+    );
+  }
+  async #restart() {
+    await Promise.all(
+      this.adapters.flatMap(
+        (adapter) => adapter.start ? [adapter.start()] : []
+      )
+    );
+  }
+  #scheduleRetry() {
+    if (this.#retryTimer !== void 0) return;
+    this.#retryTimer = setTimeout(() => {
+      this.#retryTimer = void 0;
+      void this.check();
+    }, 5e3);
+    this.#retryTimer.unref?.();
+  }
+  #clearRetry() {
+    if (this.#retryTimer === void 0) return;
+    clearTimeout(this.#retryTimer);
+    this.#retryTimer = void 0;
+  }
+};
+
 // src/semantic/python-mirror/python-mirror-generation.ts
 import { join as join10 } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -23401,94 +23489,6 @@ async function disposeManager(active, setActive, shutdown) {
   active()?.mirror.dispose();
   setActive(void 0);
 }
-
-// src/semantic/project-root/root-access-status.ts
-function rootAccessStatus(state) {
-  return {
-    state,
-    restart_required: state === "project_root_unavailable"
-  };
-}
-
-// src/semantic/project-root/root-access.ts
-var RootAccessGate = class {
-  constructor(root, adapters, now = Date.now) {
-    this.root = root;
-    this.adapters = adapters;
-    this.now = now;
-  }
-  root;
-  adapters;
-  now;
-  state = "ready";
-  #inaccessibleSince;
-  #retryTimer;
-  async check() {
-    if (!this.root) return this.status();
-    if (this.state === "project_root_unavailable") return this.status();
-    const result = this.root.revalidate();
-    if (result === "ready") return this.#handleReady();
-    return this.#handleRootFailure(result);
-  }
-  status() {
-    return rootAccessStatus(this.state);
-  }
-  #handleRootFailure(result) {
-    if (result === "inaccessible" && this.#withinRecoveryWindow())
-      return this.#handleTransientInaccessibility();
-    return this.#handleUnavailable();
-  }
-  async #handleReady() {
-    if (this.state === "project_root_inaccessible") await this.#restart();
-    this.state = "ready";
-    this.#inaccessibleSince = void 0;
-    this.#clearRetry();
-    return this.status();
-  }
-  async #handleTransientInaccessibility() {
-    this.state = "project_root_inaccessible";
-    await this.#stop();
-    this.#scheduleRetry();
-    return this.status();
-  }
-  async #handleUnavailable() {
-    this.state = "project_root_unavailable";
-    this.#clearRetry();
-    await this.#stop();
-    return this.status();
-  }
-  #withinRecoveryWindow() {
-    this.#inaccessibleSince ??= this.now();
-    return this.now() - this.#inaccessibleSince < 3e4;
-  }
-  async #stop() {
-    await Promise.all(
-      this.adapters.flatMap(
-        (adapter) => adapter.shutdown ? [adapter.shutdown()] : []
-      )
-    );
-  }
-  async #restart() {
-    await Promise.all(
-      this.adapters.flatMap(
-        (adapter) => adapter.start ? [adapter.start()] : []
-      )
-    );
-  }
-  #scheduleRetry() {
-    if (this.#retryTimer !== void 0) return;
-    this.#retryTimer = setTimeout(() => {
-      this.#retryTimer = void 0;
-      void this.check();
-    }, 5e3);
-    this.#retryTimer.unref?.();
-  }
-  #clearRetry() {
-    if (this.#retryTimer === void 0) return;
-    clearTimeout(this.#retryTimer);
-    this.#retryTimer = void 0;
-  }
-};
 
 // src/semantic/adapters/native-backend-inspector.ts
 import { isAbsolute as isAbsolute2 } from "node:path";
@@ -24755,6 +24755,44 @@ function readiness(status) {
 var { createDirectLspSemanticBackend: createDirectLspSemanticBackend2 } = direct_lsp_semantic_backend_exports;
 var { relationCapabilitiesFromInitialize: relationCapabilitiesFromInitialize2 } = direct_lsp_semantic_capabilities_exports;
 
+// src/semantic/adapters/native-lsp-process.ts
+import { spawn } from "node:child_process";
+function spawnNativeLspProcess(executable, arguments_, environment) {
+  const child = spawn(executable, arguments_, {
+    shell: false,
+    stdio: ["pipe", "pipe", "ignore"],
+    // Do not inherit project-controlled PATH, Python, or package settings.
+    // The policy has already selected an absolute executable and arguments.
+    env: { ...environment }
+  });
+  return createProcessHandlers(child);
+}
+function createProcessHandlers(child) {
+  const write = (chunk) => {
+    child.stdin.write(chunk);
+  };
+  const onStdout = (listener) => {
+    child.stdout.on("data", (chunk) => listener(new Uint8Array(chunk)));
+  };
+  const onExit = (listener) => {
+    child.once("exit", listener);
+  };
+  const onError = (listener) => {
+    child.once("error", listener);
+  };
+  const kill = () => {
+    child.stdin.destroy();
+    child.kill();
+  };
+  return {
+    write,
+    onStdout,
+    onExit,
+    onError,
+    kill
+  };
+}
+
 // src/semantic/direct-lsp/direct-lsp-error.ts
 var DirectLspError = class extends Error {
   constructor(code) {
@@ -25778,44 +25816,6 @@ function createDirectLspRuntime(options) {
 // src/semantic/direct-lsp/direct-lsp.ts
 function createDirectLspClient(options) {
   return createDirectLspRuntime(options);
-}
-
-// src/semantic/adapters/native-lsp-process.ts
-import { spawn } from "node:child_process";
-function spawnNativeLspProcess(executable, arguments_, environment) {
-  const child = spawn(executable, arguments_, {
-    shell: false,
-    stdio: ["pipe", "pipe", "ignore"],
-    // Do not inherit project-controlled PATH, Python, or package settings.
-    // The policy has already selected an absolute executable and arguments.
-    env: { ...environment }
-  });
-  return createProcessHandlers(child);
-}
-function createProcessHandlers(child) {
-  const write = (chunk) => {
-    child.stdin.write(chunk);
-  };
-  const onStdout = (listener) => {
-    child.stdout.on("data", (chunk) => listener(new Uint8Array(chunk)));
-  };
-  const onExit = (listener) => {
-    child.once("exit", listener);
-  };
-  const onError = (listener) => {
-    child.once("error", listener);
-  };
-  const kill = () => {
-    child.stdin.destroy();
-    child.kill();
-  };
-  return {
-    write,
-    onStdout,
-    onExit,
-    onError,
-    kill
-  };
 }
 
 // src/semantic/runtime/runtime-lsp-start-process.ts

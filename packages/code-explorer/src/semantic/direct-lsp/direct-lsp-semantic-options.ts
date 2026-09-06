@@ -4,8 +4,8 @@ import type {
   RelationCapabilities,
   SymbolIdentity,
 } from "../contracts/contract.js";
-import type { ReadOnlyLspClient } from "./direct-lsp-semantic-client.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
+import type { ReadOnlyLspClient } from "./direct-lsp-semantic-client.js";
 
 export type DirectLspSemanticOptions = {
   language: Language;

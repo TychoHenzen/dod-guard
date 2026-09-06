@@ -1,8 +1,8 @@
 import type { DirectLspOptions } from "./direct-lsp-options.js";
 import { boundedTimeout } from "./direct-lsp-protocol.js";
-import { clone, deepFreeze } from "./direct-lsp-values.js";
 import { defaultDirectLspScheduler } from "./direct-lsp-runtime-scheduler.js";
 import { DirectLspRuntimeStateCore } from "./direct-lsp-runtime-state-core.js";
+import { clone, deepFreeze } from "./direct-lsp-values.js";
 
 export class DirectLspRuntimeState extends DirectLspRuntimeStateCore {
   readonly options: DirectLspOptions;

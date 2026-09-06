@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
+import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
 import {
   assertReplacementDocuments,
   Process,
   restartingSourceFixture,
   runtimeSourceOptions,
 } from "../testing/runtime-lsp-test-support.js";
-import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
 
 it("reopens one protected source document for a replacement pr", async () => {
   const { backend, first, replacement, scheduler } = restartingSourceFixture();

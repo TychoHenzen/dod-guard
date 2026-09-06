@@ -1,3 +1,4 @@
+import type { InjectedSemanticBackend } from "../adapters/language-adapter.js";
 import type {
   BackendLaunchPolicy,
 } from "../backend-launch/backend-launch-policy.js";
@@ -5,7 +6,6 @@ import type {
   RelationCapabilities,
   SemanticRequest,
 } from "../contracts/contract.js";
-import type { InjectedSemanticBackend } from "../adapters/language-adapter.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
 import { createPythonMirrorManager } from
   "../python-mirror/python-mirror-runtime.js";

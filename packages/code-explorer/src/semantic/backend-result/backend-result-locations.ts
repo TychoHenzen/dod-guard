@@ -1,9 +1,9 @@
-import type * as validation from "./backend-result-validation-options.js";
 import type {
   RelationResult,
   SemanticResult,
   SymbolIdentity,
 } from "../contracts/contract.js";
+import type * as validation from "./backend-result-validation-options.js";
 
 export function symbolsIn(result: SemanticResult): readonly SymbolIdentity[] {
   if (result.operation === "search") return result.symbols;

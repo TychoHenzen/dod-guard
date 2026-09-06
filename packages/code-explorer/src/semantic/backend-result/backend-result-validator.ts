@@ -1,5 +1,9 @@
 import { Buffer } from "node:buffer";
 import {
+  parseSemanticResult,
+  type SemanticResult,
+} from "../contracts/contract.js";
+import {
   projectLocationsIn,
   symbolsIn,
   validateLocation,
@@ -12,10 +16,6 @@ import {
 } from "./backend-result-safety.js";
 import type { BackendResultValidation } from "./backend-result-validation.js";
 import type * as validation from "./backend-result-validation-options.js";
-import {
-  parseSemanticResult,
-  type SemanticResult,
-} from "../contracts/contract.js";
 
 const MAX_BACKEND_PAYLOAD_BYTES = 1024 * 1024;
 export type { BackendResultValidation } from "./backend-result-validation.js";

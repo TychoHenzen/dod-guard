@@ -1,8 +1,8 @@
 import { lstatSync } from "node:fs";
 import { join } from "node:path";
 import type { ProjectRoot } from "../project-root/project-root.js";
-import type { PythonMirrorPlan } from "./python-mirror-plan.js";
 import { sha256 } from "./python-mirror-path.js";
+import type { PythonMirrorPlan } from "./python-mirror-plan.js";
 import { mirrorTreeMatches, readRegularFile } from "./python-mirror-tree.js";
 import { BUNDLED_TYPESHED } from "./python-mirror-typeshed.js";
 

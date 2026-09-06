@@ -2,10 +2,10 @@ import {
   RESTART_DELAYS_MS,
   RESTART_WINDOW_MS,
 } from "./direct-lsp-protocol.js";
-import type { DirectLspScheduler } from "./direct-lsp-scheduler.js";
 import type {
   DirectLspRuntimeTelemetry,
 } from "./direct-lsp-runtime-telemetry.js";
+import type { DirectLspScheduler } from "./direct-lsp-scheduler.js";
 
 export class DirectLspRuntimeRestarts {
   #crashTimes: number[] = [];

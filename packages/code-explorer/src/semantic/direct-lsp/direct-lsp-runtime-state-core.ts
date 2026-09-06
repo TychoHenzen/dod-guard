@@ -2,7 +2,6 @@ import type { DirectLspError } from "./direct-lsp-error.js";
 import type { Pending } from "./direct-lsp-pending.js";
 import type { LspProcess } from "./direct-lsp-process.js";
 import { encodeMessage } from "./direct-lsp-protocol.js";
-import type { DirectLspStatus } from "./direct-lsp-status.js";
 import { DirectLspRuntimeBuffers } from "./direct-lsp-runtime-buffers.js";
 import { DirectLspRuntimeDocuments } from "./direct-lsp-runtime-documents.js";
 import { DirectLspRuntimeLifecycle } from "./direct-lsp-runtime-lifecycle.js";
@@ -10,6 +9,7 @@ import { DirectLspRuntimeRequests } from "./direct-lsp-runtime-requests.js";
 import { DirectLspRuntimeRestarts } from "./direct-lsp-runtime-restarts.js";
 import { defaultDirectLspScheduler } from "./direct-lsp-runtime-scheduler.js";
 import { DirectLspRuntimeTelemetry } from "./direct-lsp-runtime-telemetry.js";
+import type { DirectLspStatus } from "./direct-lsp-status.js";
 
 export class DirectLspRuntimeStateCore {
   readonly scheduler: typeof defaultDirectLspScheduler;

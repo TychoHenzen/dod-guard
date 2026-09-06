@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import * as support from "../testing/adapter-selection-test-support.js";
 import {
   evidenceAligns,
   parseAdapterSelectionEvidence,
@@ -8,6 +7,7 @@ import {
 } from "../semantic/adapter-selection/adapter-selection.js";
 import type { AdapterSelectionEvidence } from "../semantic/adapter-selection/adapter-selection-evidence.js";
 import type { AdapterSelectionRecord } from "../semantic/adapter-selection/adapter-selection-record.js";
+import * as support from "../testing/adapter-selection-test-support.js";
 
 it("rejects measured evidence when any runtime authorization field changes", () => {
   const recordInput = support.loadAdapterSelectionJson(

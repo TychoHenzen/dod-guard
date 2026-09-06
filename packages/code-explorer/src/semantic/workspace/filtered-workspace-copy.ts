@@ -8,12 +8,12 @@ import {
 import { dirname, join } from "node:path";
 import { isClassificationConfigPath } from "../../discovery/config-path.js";
 import { isSensitiveProjectPath } from "../../discovery/sensitive-paths.js";
+import type { ProjectRoot } from "../project-root/project-root.js";
 import {
   isBackendIrrelevant,
   isBackendSourceFile,
   relativePathFor,
 } from "./filtered-workspace-rules.js";
-import type { ProjectRoot } from "../project-root/project-root.js";
 
 export function copyFilteredDirectory(input: {
   absoluteDirectory: string;

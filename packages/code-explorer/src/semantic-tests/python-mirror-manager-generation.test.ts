@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "node:test";
-import { project } from "../testing/python-mirror-runtime-test-support.js";
 import { createPythonMirrorManager } from "../semantic/python-mirror/python-mirror-runtime.js";
+import { project } from "../testing/python-mirror-runtime-test-support.js";
 
 async function expectGeneration(
   manager: ReturnType<typeof createPythonMirrorManager>,

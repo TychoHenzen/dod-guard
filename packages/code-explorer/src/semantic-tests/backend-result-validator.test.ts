@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
+import { validateBackendResult } from "../semantic/backend-result/backend-result-validator.js";
 import {
   definition,
   options,
 } from "../testing/backend-result-validator-test-support.js";
-import { validateBackendResult } from "../semantic/backend-result/backend-result-validator.js";
 
 it("rejects a negative or out-of-file range before a result receives", () => {
   const invalid = definition({

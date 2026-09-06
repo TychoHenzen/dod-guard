@@ -3,10 +3,10 @@ import {
   loadAdapterSelectionRecord,
   resolveTrustedCommandRoots,
 } from "../adapter-selection/adapter-selection.js";
-import type { RelationCapabilities } from "../contracts/contract.js";
 import type { LanguageAdapter } from "../adapters/language-adapter.js";
 import { createNativeBackendInspector } from
   "../adapters/native-backend-inspector.js";
+import type { RelationCapabilities } from "../contracts/contract.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
 import type * as adapterInput from "./runtime-adapter-record-input.js";
 import { createNativeRuntimeAdapter } from "./runtime-native-adapter.js";

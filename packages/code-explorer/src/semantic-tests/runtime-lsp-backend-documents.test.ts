@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
+import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
 import {
   assertSourceDocumentOpened,
   Process,
   pythonMirrorOptions,
   runtimeSourceOptions,
 } from "../testing/runtime-lsp-test-support.js";
-import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
 
 it("opens approved initial Python mirror documents before work", async () => {
   const process = new Process([], {}, () => []);

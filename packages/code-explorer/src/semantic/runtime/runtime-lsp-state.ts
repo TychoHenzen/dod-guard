@@ -1,5 +1,5 @@
-import type { createDirectLspClient } from "../direct-lsp/direct-lsp.js";
 import type { InjectedSemanticBackend } from "../adapters/language-adapter.js";
+import type { createDirectLspClient } from "../direct-lsp/direct-lsp.js";
 import type { RuntimeLspBackendOptions } from "./runtime-lsp-options.js";
 
 export type RuntimeLspState = {

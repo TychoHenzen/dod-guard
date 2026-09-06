@@ -1,11 +1,11 @@
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { copyFilteredDirectory } from "./filtered-workspace-copy.js";
 import {
   createNativeProjectRoot,
   type ProjectRoot,
 } from "../project-root/project-root.js";
+import { copyFilteredDirectory } from "./filtered-workspace-copy.js";
 
 type FilteredWorkspace = {
   root: ProjectRoot<number>;

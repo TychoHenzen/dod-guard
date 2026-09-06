@@ -1,3 +1,6 @@
+import type {
+  ProtectedDocumentContent,
+} from "../project-root/protected-document-content.js";
 import type { DirectLspOptions } from "./direct-lsp-options.js";
 import type { LspProcess } from "./direct-lsp-process.js";
 import {
@@ -9,9 +12,6 @@ import {
 import { requestBackend } from "./direct-lsp-runtime-query.js";
 import { startRuntime } from "./direct-lsp-runtime-start.js";
 import { DirectLspRuntimeState } from "./direct-lsp-runtime-state.js";
-import type {
-  ProtectedDocumentContent,
-} from "../project-root/protected-document-content.js";
 
 export function createDirectLspRuntime(options: DirectLspOptions) {
   const state = new DirectLspRuntimeState(options);

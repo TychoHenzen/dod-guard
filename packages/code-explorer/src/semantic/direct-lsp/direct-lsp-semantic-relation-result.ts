@@ -1,7 +1,7 @@
 import type { SymbolIdentity } from "../contracts/contract.js";
 import type * as semanticOptions from "./direct-lsp-semantic-options.js";
-import * as relationSymbol from "./direct-lsp-semantic-relation-symbol.js";
 import type { Relation } from "./direct-lsp-semantic-relation.js";
+import * as relationSymbol from "./direct-lsp-semantic-relation-symbol.js";
 
 export function hierarchyRelation(input: {
   relation: "callers" | "callees";

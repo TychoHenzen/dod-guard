@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
+import { createRustAdapter } from "../semantic/adapters/language-adapter.js";
+import type { SemanticRequest } from "../semantic/contracts/contract.js";
 import { FakeSemanticAdapter } from "../testing/fake-semantic-adapter.js";
 import {
   adapterRequests,
   createAdapterResult,
   invalidSemanticResultBackend,
 } from "../testing/language-adapter-test-support.js";
-import type { SemanticRequest } from "../semantic/contracts/contract.js";
-import { createRustAdapter } from "../semantic/adapters/language-adapter.js";
 
 function rustAdapter(
   backend: Parameters<typeof createRustAdapter>[0]["backend"],

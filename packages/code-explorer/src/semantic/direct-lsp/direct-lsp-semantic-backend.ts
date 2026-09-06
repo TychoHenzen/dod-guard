@@ -1,9 +1,9 @@
+import type { InjectedSemanticBackend } from "../adapters/language-adapter.js";
 import type { RelationName, SymbolIdentity } from "../contracts/contract.js";
 import type { DirectLspStatus } from "./direct-lsp.js";
 import * as semanticCapabilities from "./direct-lsp-semantic-capabilities.js";
 import type * as semanticOptions from "./direct-lsp-semantic-options.js";
 import { createSemanticQuery } from "./direct-lsp-semantic-query.js";
-import type { InjectedSemanticBackend } from "../adapters/language-adapter.js";
 
 type Readiness = () => ReturnType<InjectedSemanticBackend["readiness"]>;
 

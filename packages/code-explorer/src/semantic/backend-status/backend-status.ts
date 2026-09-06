@@ -1,5 +1,5 @@
-import type { BackendStatus } from "../contracts/contract.js";
 import type { LanguageAdapter } from "../adapters/language-adapter.js";
+import type { BackendStatus } from "../contracts/contract.js";
 
 export type BackendStatusReport = {
   backends: readonly BackendStatus[];

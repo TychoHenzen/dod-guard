@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
+import { createPythonAdapter } from "../semantic/adapters/language-adapter.js";
 import { FakeSemanticAdapter } from "../testing/fake-semantic-adapter.js";
 import {
   adapterRequests,
   createAdapterResult,
 } from "../testing/language-adapter-test-support.js";
-import { createPythonAdapter } from "../semantic/adapters/language-adapter.js";
 
 it("reports a compatible Python backend ready and forwards eve", async () => {
   const backend = new FakeSemanticAdapter();

@@ -1,3 +1,4 @@
+import type { Language } from "../contracts/contract.js";
 import type { BackendAllowlistEntry } from "./backend-allowlist-entry.js";
 import type { BackendIdentity } from "./backend-identity.js";
 import type { BackendLaunchFailure } from "./backend-launch-failure.js";
@@ -12,7 +13,6 @@ import {
 } from "./backend-launch-preparation-result.js";
 import { readyPreparation } from "./backend-launch-ready-preparation.js";
 import { safeModeIsProven } from "./backend-launch-safety.js";
-import type { Language } from "../contracts/contract.js";
 
 export function prepareBackend(input: {
   language: Language;

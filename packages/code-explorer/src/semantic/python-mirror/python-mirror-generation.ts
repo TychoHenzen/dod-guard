@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { createPythonMirrorPlan } from "./python-mirror.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
+import { createPythonMirrorPlan } from "./python-mirror.js";
 import {
   createDisposer,
   createMirrorTree,

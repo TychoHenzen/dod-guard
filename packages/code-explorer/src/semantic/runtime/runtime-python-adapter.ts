@@ -1,9 +1,9 @@
-import type { RelationCapabilities } from "../contracts/contract.js";
 import {
   createPythonAdapter,
   type LanguageAdapter,
   type LanguageAdapterOptions,
 } from "../adapters/language-adapter.js";
+import type { RelationCapabilities } from "../contracts/contract.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
 import type { RuntimeAdapterInput } from "./runtime-adapter-input.js";
 import { runtimeAdapterMetadata } from "./runtime-adapter-metadata.js";

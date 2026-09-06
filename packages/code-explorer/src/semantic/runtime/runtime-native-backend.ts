@@ -3,8 +3,8 @@ import type {
   BackendLaunchPolicy,
 } from "../backend-launch/backend-launch-policy.js";
 import type { Language, RelationCapabilities } from "../contracts/contract.js";
-import { createFilteredWorkspace } from "../workspace/filtered-workspace.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
+import { createFilteredWorkspace } from "../workspace/filtered-workspace.js";
 import { createRuntimeLspBackend } from "./runtime-lsp-backend.js";
 
 export function createNativeRuntimeBackend(input: {

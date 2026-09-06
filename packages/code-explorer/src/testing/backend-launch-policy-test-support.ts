@@ -4,8 +4,8 @@ import {
   type BackendIdentity,
   createBackendLaunchPolicy,
 } from "../semantic/backend-launch/backend-launch-policy.js";
-import { createPythonMirrorPlan } from "../semantic/python-mirror/python-mirror.js";
 import type { BackendLaunchPreparation } from "../semantic/backend-launch/backend-launch-preparation.js";
+import { createPythonMirrorPlan } from "../semantic/python-mirror/python-mirror.js";
 
 export type { BackendIdentity };
 export { assert, createBackendLaunchPolicy, createPythonMirrorPlan };

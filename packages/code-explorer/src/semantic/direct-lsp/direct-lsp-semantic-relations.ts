@@ -1,7 +1,7 @@
 import type { RelationName, SymbolIdentity } from "../contracts/contract.js";
 import { asRecord, lspLocation } from "./direct-lsp-semantic-location.js";
-import type { Relation } from "./direct-lsp-semantic-relation.js";
 import type * as semanticOptions from "./direct-lsp-semantic-options.js";
+import type { Relation } from "./direct-lsp-semantic-relation.js";
 import { hierarchyRelation } from "./direct-lsp-semantic-relation-result.js";
 
 export function hierarchyRelations(input: {

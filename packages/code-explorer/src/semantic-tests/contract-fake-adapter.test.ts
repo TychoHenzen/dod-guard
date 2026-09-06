@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
+import type { SemanticRequest } from "../semantic/contracts/contract.js";
 import { searchResult } from "../testing/contract-test-support.js";
 import { FakeSemanticAdapter } from "../testing/fake-semantic-adapter.js";
-import type { SemanticRequest } from "../semantic/contracts/contract.js";
 
 it("lets the fake adapter control shared requests, normalized", async () => {
   const adapter = new FakeSemanticAdapter();

@@ -1,7 +1,5 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { loadAdapterSelectionRecord } from "./adapter-selection-loader.js";
-import type { AdapterSelectionRecord } from "./adapter-selection-record.js";
 import type {
   BackendAllowlistEntry,
 } from "../backend-launch/backend-allowlist-entry.js";
@@ -12,6 +10,8 @@ import {
 import type { Language } from "../contracts/contract.js";
 import type * as runtimeOptions from
   "../runtime/runtime-launch-policy-options.js";
+import { loadAdapterSelectionRecord } from "./adapter-selection-loader.js";
+import type { AdapterSelectionRecord } from "./adapter-selection-record.js";
 
 type TrustedCommandRoot =
   AdapterSelectionRecord["trusted_command_roots"]["win32"][number];
