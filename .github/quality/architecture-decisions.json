@@ -453,5 +453,33 @@
     "reason": "Reviewed: completion policy stays in complete-pr.mjs and GitHub CLI operations stay in one adapter. These flags cover that bounded adapter API plus parser-level object fields, not unrelated repository-wide public API.",
     "author": "Codex",
     "time": "2026-09-04T09:25:48.147Z"
+  },
+  {
+    "findingId": "2fcfe5737448ab2b5d66331f0bc6aa66a7783fb62e359b1d5ec190ca0001d098",
+    "fingerprint": "607347ca133ca5636e216d7fbf6852ef3fdbe9a44b37cbcdda5f585ec89aaa68",
+    "reason": "Reviewed: BrowserFocusNavigation.error is intentional internal state consumed by application.ts to render backend failures. It is not a new external protocol or compatibility API.",
+    "author": "Codex",
+    "time": "2026-09-06T08:30:00.000Z"
+  },
+  {
+    "findingId": "4f42ba9d3a6aa50fe9915d2ae9e8774f5587d8f07c1dc4ade59d33681d8b93e0",
+    "fingerprint": "607347ca133ca5636e216d7fbf6852ef3fdbe9a44b37cbcdda5f585ec89aaa68",
+    "reason": "Reviewed: requestSequence remains a private stale-response guard for asynchronous focus navigation. The scanner reports class-shape growth, not an exposed compatibility surface.",
+    "author": "Codex",
+    "time": "2026-09-06T08:30:00.000Z"
+  },
+  {
+    "findingId": "5e1a95750a1487e2d79424f0d2c81604b3c3f86d6c0be1b7ca7cdc2525bc170c",
+    "fingerprint": "607347ca133ca5636e216d7fbf6852ef3fdbe9a44b37cbcdda5f585ec89aaa68",
+    "reason": "Reviewed: relation candidate data is intentionally retained by the shared browser controller so immutable target views, handles, and source metadata can be selected without a second focus request.",
+    "author": "Codex",
+    "time": "2026-09-06T08:30:00.000Z"
+  },
+  {
+    "findingId": "adc3effd3f4a425b1e06c21c4b1c564f14e42c5601975004997ca6db1d615a09",
+    "fingerprint": "607347ca133ca5636e216d7fbf6852ef3fdbe9a44b37cbcdda5f585ec89aaa68",
+    "reason": "Reviewed: project_generation is intentionally carried with relation candidates so the browser preserves Code Explorer freshness and rejects stale cross-generation navigation.",
+    "author": "Codex",
+    "time": "2026-09-06T08:30:00.000Z"
   }
 ]
