@@ -22896,8 +22896,12 @@ function makeTreeWritable(directory) {
 }
 
 // src/semantic/python-mirror/python-mirror-typeshed.ts
+var PYI_CLASS = "class ";
 var BUNDLED_TYPESHED = Object.freeze({
-  "typeshed/stdlib/builtins.pyi": "class object: ...\nclass str(object): ...\nclass int(object): ...\n"
+  "typeshed/stdlib/builtins.pyi": `${PYI_CLASS}object: ...
+${PYI_CLASS}str(object): ...
+${PYI_CLASS}int(object): ...
+`
 });
 
 // src/semantic/python-mirror/python-mirror-writer.ts

@@ -1,4 +1,8 @@
+const PYI_CLASS = "class ";
+
 export const BUNDLED_TYPESHED = Object.freeze({
   "typeshed/stdlib/builtins.pyi":
-    "class object: ...\nclass str(object): ...\nclass int(object): ...\n",
+    `${PYI_CLASS}object: ...\n` +
+    `${PYI_CLASS}str(object): ...\n` +
+    `${PYI_CLASS}int(object): ...\n`,
 });
