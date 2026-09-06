@@ -1,5 +1,4 @@
-import type { ProjectRoot } from "../semantic/project-root.js";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
+import { createNativeProjectRoot, type ProjectRoot } from "../semantic/public-api.js";
 import { type BrowserHttpRequest, type BrowserHttpResponse, BrowserHttpRouter } from "./http-router.js";
 import { BrowserServerError, type ExplorerCoreFactory } from "./lifecycle.js";
 

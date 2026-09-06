@@ -1,60 +1,18 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import type { LanguageAdapter } from "./language-adapter.js";
-import type { ProjectRoot } from "./project-root.js";
+import { adapter, root } from "../testing/root-access-test-support.js";
 import { RootAccessGate } from "./root-access.js";
 
-function root(revalidate: () => "ready" | "inaccessible" | "unavailable"): ProjectRoot {
-  return {
-    canonicalPath: "/private/project",
-    revalidate,
-    resolveClientPath: () => "",
-    classifyBackendPath: () => ({ external: true }),
-    openProtected: () => {
-      throw new Error("unused");
-    },
-    protectedRead: () => {
-      throw new Error("unused");
-    },
-  };
-}
-
-function adapter(calls: string[]): LanguageAdapter {
-  return {
-    status: () => ({
-      language: "rust",
-      backend_name: "fixture",
-      backend_version: "1",
-      discovery_source: "injected",
-      state: "ready",
-      capabilities: {
-        definition: { state: "ready" },
-        references: { state: "ready" },
-        type_definition: { state: "ready" },
-        implementation: { state: "ready" },
-        callers: { state: "ready" },
-        callees: { state: "ready" },
-      },
-      last_transition_time: 0,
-    }),
-    request: async () => {
-      throw new Error("unused");
-    },
-    shutdown: async () => {
-      calls.push("stop");
-    },
-    start: async () => {
-      calls.push("start");
-    },
-  };
-}
-it("makes a changed or missing frozen root status-only and stops backends", async () => {
+it("makes a changed or missing frozen root status-only and sto", async () => {
   const calls: string[] = [];
   const gate = new RootAccessGate(
     root(() => "unavailable"),
     [adapter(calls)],
   );
-  assert.deepEqual(await gate.check(), { state: "project_root_unavailable", restart_required: true });
+  assert.deepEqual(await gate.check(), {
+    state: "project_root_unavailable",
+    restart_required: true,
+  });
   assert.deepEqual(calls, ["stop"]);
 });
 it("reports inaccessible root during the bounded recovery window", async () => {
@@ -64,11 +22,17 @@ it("reports inaccessible root during the bounded recovery window", async () => {
     [],
     () => now,
   );
-  assert.deepEqual(await gate.check(), { state: "project_root_inaccessible", restart_required: false });
+  assert.deepEqual(await gate.check(), {
+    state: "project_root_inaccessible",
+    restart_required: false,
+  });
   now = 29_999;
-  assert.deepEqual(await gate.check(), { state: "project_root_inaccessible", restart_required: false });
+  assert.deepEqual(await gate.check(), {
+    state: "project_root_inaccessible",
+    restart_required: false,
+  });
 });
-it("restarts selected backends after the same root recovers within thirty seconds", async () => {
+it("restarts selected backends after the same root recovers wi", async () => {
   let result: "ready" | "inaccessible" = "inaccessible";
   const calls: string[] = [];
   const gate = new RootAccessGate(
@@ -78,7 +42,10 @@ it("restarts selected backends after the same root recovers within thirty second
   );
   await gate.check();
   result = "ready";
-  assert.deepEqual(await gate.check(), { state: "ready", restart_required: false });
+  assert.deepEqual(await gate.check(), {
+    state: "ready",
+    restart_required: false,
+  });
   assert.deepEqual(calls, ["stop", "start"]);
 });
 it("requires restart after thirty seconds of inaccessible root", async () => {
@@ -90,5 +57,8 @@ it("requires restart after thirty seconds of inaccessible root", async () => {
   );
   await gate.check();
   now = 30_000;
-  assert.deepEqual(await gate.check(), { state: "project_root_unavailable", restart_required: true });
+  assert.deepEqual(await gate.check(), {
+    state: "project_root_unavailable",
+    restart_required: true,
+  });
 });

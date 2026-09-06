@@ -1,0 +1,49 @@
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { createRuntimeLaunchPolicy } from "./adapter-selection.js";
+import type { Language, RelationCapabilities } from "./contract.js";
+import { createFilteredWorkspace } from "./filtered-workspace.js";
+import type { ProjectRoot } from "./project-root.js";
+import { createRuntimeLspBackend } from "./runtime-lsp-backend.js";
+
+export function createNativeRuntimeBackend(input: {
+  backend: {
+    language: Language;
+    safe_initialization_options: Record<string, unknown>;
+  };
+  policy: ReturnType<typeof createRuntimeLaunchPolicy>;
+  capabilities: RelationCapabilities;
+  root: ProjectRoot;
+  filtered: ReturnType<typeof createFilteredWorkspace> | undefined;
+}): ReturnType<typeof createRuntimeLspBackend> {
+  const { backend, policy, capabilities, root, filtered } = input;
+  return createRuntimeLspBackend({
+    language: backend.language,
+    root,
+    root_uri: pathToFileURL(root.canonicalPath).href,
+    revision: { generation: 0, manifest_sha256: "runtime" },
+    symbols: new Map(),
+    capabilities,
+    initial_document_paths: initialDocuments(backend.language, filtered),
+    safe_initialization_options: backend.safe_initialization_options,
+    toBackendUri: (location) =>
+      pathToFileURL(root.resolveClientPath(location.path)).href,
+    fromBackendUri: (uri) => backendPath(root, uri),
+    prepare: () => policy.prepare(backend.language),
+    confirmInitialized: () => policy.confirmInitialized(backend.language),
+  });
+}
+
+function initialDocuments(
+  language: string,
+  filtered: ReturnType<typeof createFilteredWorkspace> | undefined,
+): readonly string[] | undefined {
+  return language === "csharp"
+    ? filtered?.sourcePaths().filter((path) => /\.cs$/iu.test(path))
+    : undefined;
+}
+
+function backendPath(root: ProjectRoot, uri: string): string | undefined {
+  if (!uri.startsWith("file:")) return undefined;
+  const classified = root.classifyBackendPath(fileURLToPath(uri));
+  return "relative_path" in classified ? classified.relative_path : undefined;
+}

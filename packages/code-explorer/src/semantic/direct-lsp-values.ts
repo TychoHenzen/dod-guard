@@ -1,0 +1,12 @@
+export function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+export function deepFreeze<T>(value: T): T {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value as Record<string, unknown>))
+      deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
+}

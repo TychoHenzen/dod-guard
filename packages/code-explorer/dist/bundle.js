@@ -7201,7 +7201,7 @@ var require_dist = __commonJS({
 // src/index.ts
 import { Buffer as Buffer5 } from "node:buffer";
 import { execFileSync } from "node:child_process";
-import { readFileSync as readFileSync6, realpathSync as realpathSync3 } from "node:fs";
+import { readFileSync as readFileSync9, realpathSync as realpathSync3 } from "node:fs";
 import * as path4 from "node:path";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 
@@ -19403,11 +19403,11 @@ var Protocol = class {
           return reject(response);
         }
         try {
-          const parseResult = safeParse2(resultSchema, response.result);
-          if (!parseResult.success) {
-            reject(parseResult.error);
+          const parseResult2 = safeParse2(resultSchema, response.result);
+          if (!parseResult2.success) {
+            reject(parseResult2.error);
           } else {
-            resolve5(parseResult.data);
+            resolve5(parseResult2.data);
           }
         } catch (error2) {
           reject(error2);
@@ -20105,9 +20105,9 @@ var Server = class extends Protocol {
       this.setRequestHandler(SetLevelRequestSchema, async (request, extra) => {
         const transportSessionId = extra.sessionId || extra.requestInfo?.headers["mcp-session-id"] || void 0;
         const { level } = request.params;
-        const parseResult = LoggingLevelSchema.safeParse(level);
-        if (parseResult.success) {
-          this._loggingLevels.set(transportSessionId, parseResult.data);
+        const parseResult2 = LoggingLevelSchema.safeParse(level);
+        if (parseResult2.success) {
+          this._loggingLevels.set(transportSessionId, parseResult2.data);
         }
         return {};
       });
@@ -20687,13 +20687,13 @@ var McpServer = class {
     }
     const inputObj = normalizeObjectSchema(tool.inputSchema);
     const schemaToParse = inputObj ?? tool.inputSchema;
-    const parseResult = await safeParseAsync2(schemaToParse, args);
-    if (!parseResult.success) {
-      const error2 = "error" in parseResult ? parseResult.error : "Unknown error";
+    const parseResult2 = await safeParseAsync2(schemaToParse, args);
+    if (!parseResult2.success) {
+      const error2 = "error" in parseResult2 ? parseResult2.error : "Unknown error";
       const errorMessage = getParseErrorMessage(error2);
       throw new McpError(ErrorCode.InvalidParams, `Input validation error: Invalid arguments for tool ${toolName}: ${errorMessage}`);
     }
-    return parseResult.data;
+    return parseResult2.data;
   }
   /**
    * Validates tool output against the tool's output schema.
@@ -20712,9 +20712,9 @@ var McpServer = class {
       throw new McpError(ErrorCode.InvalidParams, `Output validation error: Tool ${toolName} has an output schema but no structured content was provided`);
     }
     const outputObj = normalizeObjectSchema(tool.outputSchema);
-    const parseResult = await safeParseAsync2(outputObj, result.structuredContent);
-    if (!parseResult.success) {
-      const error2 = "error" in parseResult ? parseResult.error : "Unknown error";
+    const parseResult2 = await safeParseAsync2(outputObj, result.structuredContent);
+    if (!parseResult2.success) {
+      const error2 = "error" in parseResult2 ? parseResult2.error : "Unknown error";
       const errorMessage = getParseErrorMessage(error2);
       throw new McpError(ErrorCode.InvalidParams, `Output validation error: Invalid structured content for tool ${toolName}: ${errorMessage}`);
     }
@@ -20925,13 +20925,13 @@ var McpServer = class {
       }
       if (prompt.argsSchema) {
         const argsObj = normalizeObjectSchema(prompt.argsSchema);
-        const parseResult = await safeParseAsync2(argsObj, request.params.arguments);
-        if (!parseResult.success) {
-          const error2 = "error" in parseResult ? parseResult.error : "Unknown error";
+        const parseResult2 = await safeParseAsync2(argsObj, request.params.arguments);
+        if (!parseResult2.success) {
+          const error2 = "error" in parseResult2 ? parseResult2.error : "Unknown error";
           const errorMessage = getParseErrorMessage(error2);
           throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request.params.name}: ${errorMessage}`);
         }
-        const args = parseResult.data;
+        const args = parseResult2.data;
         const cb = prompt.callback;
         return await Promise.resolve(cb(args, extra));
       } else {
@@ -21439,13 +21439,1117 @@ var StdioServerTransport = class {
   }
 };
 
+// src/semantic/adapter-selection-comparison.ts
+function arraysEqual(left, right) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+function versionProbeMatches(backend, run) {
+  return versionProbesEqual(
+    backend.authorization.version_probe,
+    run.version_probe
+  ) && backend.authorization.version_probe.executable === run.executable && arraysEqual(
+    backend.authorization.version_probe.entrypoints,
+    run.entrypoints
+  );
+}
+function versionProbesEqual(left, right) {
+  return [
+    left.method === right.method,
+    left.command_root === right.command_root,
+    left.executable === right.executable,
+    arraysEqual(left.entrypoints, right.entrypoints),
+    arraysEqual(left.arguments, right.arguments),
+    left.command_template === right.command_template
+  ].every(Boolean);
+}
+
+// src/semantic/adapter-selection-evidence-check.ts
+function evidenceAligns(record2, evidence) {
+  return record2.runtime_backends.every(
+    (backend) => backendEvidenceAligns({ backend, record: record2, evidence })
+  ) && arraysEqual(
+    record2.trusted_command_roots.win32,
+    evidence.platforms.win32.command_roots
+  ) && arraysEqual(
+    record2.trusted_command_roots.posix,
+    evidence.platforms.posix.command_roots
+  );
+}
+function backendEvidenceAligns(input) {
+  const backend = input.backend;
+  const run = input.evidence.sentinel_runs[backend.language];
+  const platform = input.evidence.platforms[backend.sentinel_evidence.platform];
+  return [
+    fixtureMatches(backend, input.evidence, run),
+    backend.compatible_version === run.backend_version,
+    backend.platform_executables[backend.sentinel_evidence.platform] === run.executable,
+    entrypointsMatch(backend, run),
+    authorizationMatches(backend, run),
+    versionProbeMatches(backend, run),
+    platform.command_roots.includes(
+      backend.authorization.version_probe.command_root
+    ),
+    backend.sentinel_evidence.passed === (platform.status === "passed" && run.side_effect_absent)
+  ].every(Boolean);
+}
+function fixtureMatches(backend, evidence, run) {
+  return backend.sentinel_evidence.fixture_sha256 === evidence.fixture_tree_hashes[backend.language] && backend.sentinel_evidence.fixture_sha256 === run.fixture_sha256;
+}
+function entrypointsMatch(backend, run) {
+  const platform = backend.sentinel_evidence.platform;
+  return arraysEqual(backend.platform_entrypoints[platform], run.entrypoints) && backend.platform_entrypoints[platform].length === backend.authorization.entrypoint_sha256s.length && run.entrypoints.length === run.entrypoint_sha256s.length;
+}
+function authorizationMatches(backend, run) {
+  return backend.authorization.executable_sha256 === run.executable_sha256 && arraysEqual(
+    backend.authorization.entrypoint_sha256s,
+    run.entrypoint_sha256s
+  ) && backend.authorization.package_metadata_sha256 === run.package_metadata_sha256 && (backend.language === "python" ? backend.authorization.package_metadata_sha256 !== null : backend.authorization.package_metadata_sha256 === null);
+}
+
+// src/semantic/adapter-selection-loader.ts
+import { readFileSync as readFileSync2 } from "node:fs";
+import { dirname as dirname2, join as join2 } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// src/semantic/adapter-selection-schema-parts.ts
+var sha256 = external_exports.string().regex(/^[a-f0-9]{64}$/i);
+var win32CommandRoot = external_exports.enum([
+  "cargo_home_bin",
+  "dotnet_tools",
+  "node_install",
+  "npm_global",
+  "code_explorer_backends"
+]);
+var posixCommandRoot = external_exports.literal("posix_code_explorer_backends");
+var commandRoot = external_exports.union([win32CommandRoot, posixCommandRoot]);
+var versionProbe = external_exports.object({
+  method: external_exports.enum(["command", "package_json", "windows_file_version"]),
+  command_root: commandRoot,
+  executable: external_exports.string().min(1),
+  entrypoints: external_exports.array(external_exports.string().min(1)),
+  arguments: external_exports.array(external_exports.string()),
+  command_template: external_exports.string().min(1)
+}).strict();
+var runtimeCapabilities = external_exports.record(external_exports.enum(["ready", "unavailable", "failed"])).refine((value) => Object.keys(value).length > 0);
+var sentinelEvidence = external_exports.object({
+  fixture: external_exports.string().min(1),
+  platform: external_exports.enum(["win32", "posix"]),
+  fixture_sha256: external_exports.string().min(1),
+  side_effect_absent: external_exports.boolean(),
+  result: external_exports.enum(["passed", "unproven", "failed"]),
+  passed: external_exports.boolean()
+}).strict().superRefine((evidence, context) => {
+  if (evidence.passed && !(evidence.result === "passed" && evidence.side_effect_absent))
+    context.addIssue({
+      code: external_exports.ZodIssueCode.custom,
+      message: "passing sentinel evidence is inconsistent"
+    });
+});
+
+// src/semantic/adapter-selection-evidence-schema.ts
+var sentinelRunSchema = external_exports.object({
+  executable: external_exports.string().min(1),
+  executable_sha256: sha256,
+  entrypoints: external_exports.array(external_exports.string().min(1)),
+  entrypoint_sha256s: external_exports.array(sha256),
+  package_metadata_sha256: sha256.nullable(),
+  backend_version: external_exports.string().min(1),
+  fixture_sha256: sha256,
+  version_probe: versionProbe,
+  startup: external_exports.literal(true),
+  definition_navigation: external_exports.literal(true),
+  side_effect_absent: external_exports.literal(true),
+  stderr: external_exports.string().max(1024),
+  positive_control: external_exports.object({
+    initialized: external_exports.literal(true),
+    definition_responded: external_exports.literal(true),
+    side_effect_absent: external_exports.literal(false)
+  }).strict()
+}).strict();
+function platformEvidenceSchema(root) {
+  return external_exports.object({
+    status: external_exports.enum(["passed", "unproven"]),
+    command_roots: external_exports.array(root),
+    commands: external_exports.array(external_exports.string()),
+    bounded_output: external_exports.string(),
+    backend_versions: external_exports.record(external_exports.string(), external_exports.string().nullable()),
+    positive_controls: external_exports.record(external_exports.string(), external_exports.string())
+  }).strict();
+}
+var evidenceSchema = external_exports.object({
+  schema_version: external_exports.literal(1),
+  recorded_at: external_exports.string().datetime(),
+  purpose: external_exports.string().min(1),
+  platforms: external_exports.object({
+    win32: platformEvidenceSchema(win32CommandRoot),
+    posix: platformEvidenceSchema(posixCommandRoot)
+  }).strict(),
+  fixture_tree_hashes: external_exports.object({
+    rust: sha256,
+    python: sha256,
+    csharp: sha256
+  }).strict(),
+  sentinel_runs: external_exports.object({
+    rust: sentinelRunSchema,
+    python: sentinelRunSchema.extend({
+      package_metadata_sha256: sha256,
+      environment: external_exports.object({
+        PATH: external_exports.literal(""),
+        PYTHONPATH: external_exports.literal(""),
+        VIRTUAL_ENV: external_exports.literal(""),
+        CONDA_PREFIX: external_exports.literal("")
+      }).strict()
+    }),
+    csharp: sentinelRunSchema
+  }).strict()
+}).strict();
+
+// src/semantic/contract-values.ts
+var languages = ["rust", "python", "csharp"];
+var relationNames = [
+  "definition",
+  "references",
+  "type_definition",
+  "implementation",
+  "callers",
+  "callees"
+];
+
+// src/semantic/contract-request-schema.ts
+var semanticRequestSchema = external_exports.discriminatedUnion("operation", [
+  external_exports.object({
+    operation: external_exports.literal("search"),
+    query: external_exports.string()
+  }).strict(),
+  external_exports.object({
+    operation: external_exports.literal("focus"),
+    symbol_id: external_exports.string().min(1)
+  }).strict(),
+  ...relationNames.map(
+    (operation) => external_exports.object({
+      operation: external_exports.literal(operation),
+      symbol_id: external_exports.string().min(1)
+    }).strict()
+  )
+]);
+
+// src/semantic/contract-schemas.ts
+var positionSchema = external_exports.object({
+  line: external_exports.number().int().nonnegative(),
+  character: external_exports.number().int().nonnegative()
+}).strict();
+var rangeSchema = external_exports.object({ start: positionSchema, end: positionSchema }).strict();
+var relativePathSchema = external_exports.string().min(1).refine(
+  (path5) => !(path5.startsWith("/") || /^[A-Za-z]:[\\/]/.test(path5) || path5.split(/[\\/]/).includes(".."))
+);
+var projectLocationSchema = external_exports.object({ path: relativePathSchema, range: rangeSchema }).strict();
+var externalLocationSchema = external_exports.object({ external: external_exports.literal(true) }).strict();
+var sourceLocationSchema = external_exports.union([
+  projectLocationSchema,
+  externalLocationSchema
+]);
+var symbolSchema = external_exports.object({
+  id: external_exports.string().min(1),
+  name: external_exports.string().min(1),
+  qualified_name: external_exports.string().min(1).optional(),
+  language: external_exports.enum(languages),
+  kind: external_exports.string().min(1),
+  location: projectLocationSchema
+}).strict();
+var revisionSchema = external_exports.object({
+  generation: external_exports.number().int().nonnegative(),
+  manifest_sha256: external_exports.string().min(1)
+}).strict();
+
+// src/semantic/contract-result-schema.ts
+var visibleSymbolSchema = external_exports.object({
+  name: external_exports.string().min(1),
+  symbol_id: external_exports.string().min(1)
+}).strict();
+var focusContentSchema = external_exports.object({
+  body: external_exports.string().optional(),
+  declaration: external_exports.string().optional(),
+  visible_symbols: external_exports.array(visibleSymbolSchema).optional()
+}).strict().optional();
+function relationSchema(operation) {
+  return external_exports.object({
+    operation: external_exports.literal(operation),
+    revision: revisionSchema,
+    relations: external_exports.array(
+      external_exports.union([
+        external_exports.object({
+          relation: external_exports.literal(operation),
+          symbol: symbolSchema,
+          location: sourceLocationSchema,
+          call_site: projectLocationSchema.optional()
+        }).strict(),
+        external_exports.object({
+          relation: external_exports.literal(operation),
+          external: externalLocationSchema.extend({
+            display_name: external_exports.string().min(1).optional()
+          })
+        }).strict()
+      ])
+    )
+  }).strict();
+}
+var semanticResultSchema = external_exports.discriminatedUnion("operation", [
+  external_exports.object({
+    operation: external_exports.literal("search"),
+    revision: revisionSchema,
+    symbols: external_exports.array(symbolSchema)
+  }).strict(),
+  external_exports.object({
+    operation: external_exports.literal("focus"),
+    revision: revisionSchema,
+    symbol: symbolSchema,
+    content: focusContentSchema
+  }).strict(),
+  ...relationNames.map(relationSchema)
+]);
+
+// src/semantic/contract.ts
+function parseSemanticRequest(input) {
+  const parsed = semanticRequestSchema.safeParse(input);
+  if (!parsed.success) throw new Error("invalid semantic request");
+  return parsed.data;
+}
+function parseSemanticResult(input) {
+  const parsed = semanticResultSchema.safeParse(input);
+  if (!parsed.success) throw new Error("invalid semantic result");
+  return parsed.data;
+}
+
+// src/semantic/adapter-selection-record-schema.ts
+var runtimeBackendSchema = external_exports.object({
+  language: external_exports.enum(languages),
+  platform_executables: external_exports.object({
+    posix: external_exports.string().min(1),
+    win32: external_exports.string().min(1)
+  }).strict(),
+  platform_entrypoints: external_exports.object({
+    posix: external_exports.array(external_exports.string().min(1)),
+    win32: external_exports.array(external_exports.string().min(1))
+  }).strict(),
+  compatible_version: external_exports.string().min(1),
+  arguments: external_exports.array(external_exports.string()),
+  endpoint: external_exports.literal("stdio"),
+  environment: external_exports.record(external_exports.string()),
+  safe_initialization_options: external_exports.record(external_exports.unknown()),
+  capabilities: external_exports.object(
+    Object.fromEntries(
+      relationNames.map((name) => [
+        name,
+        external_exports.enum(["ready", "unavailable", "failed"])
+      ])
+    )
+  ).strict(),
+  sentinel_evidence: sentinelEvidence,
+  authorization: external_exports.object({
+    executable_sha256: sha256,
+    entrypoint_sha256s: external_exports.array(sha256),
+    package_metadata_sha256: sha256.nullable(),
+    version_probe: versionProbe
+  }).strict()
+}).strict();
+var recordSchema = external_exports.object({
+  schema_version: external_exports.literal(1),
+  source_dependency_versions: external_exports.object({
+    serena: external_exports.string().min(1),
+    "@p1va/symbols": external_exports.string().min(1)
+  }).strict(),
+  evidence_artifact: external_exports.literal("adapter-selection-evidence.json"),
+  trusted_command_roots: external_exports.object({
+    posix: external_exports.array(external_exports.literal("posix_code_explorer_backends")).min(1),
+    win32: external_exports.array(win32CommandRoot).min(1)
+  }).strict(),
+  selected_paths: external_exports.object({
+    rust: external_exports.literal("direct_standard_public_lsp"),
+    python: external_exports.literal("direct_standard_public_lsp"),
+    csharp: external_exports.literal("direct_standard_public_lsp")
+  }).strict(),
+  runtime_backends: external_exports.array(runtimeBackendSchema)
+}).strict().superRefine((record2, context) => {
+  for (const language of languages) {
+    const count = record2.runtime_backends.filter(
+      (backend) => backend.language === language
+    ).length;
+    if (count !== 1)
+      context.addIssue({
+        code: external_exports.ZodIssueCode.custom,
+        message: `exactly one ${language} backend is required`
+      });
+  }
+});
+
+// src/semantic/adapter-selection-root.ts
+import { readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+function findPackageRoot(start) {
+  let directory = resolve(start);
+  while (true) {
+    if (isCodeExplorerPackage(directory)) return directory;
+    const parent = dirname(directory);
+    if (parent === directory)
+      throw new Error("invalid adapter selection record");
+    directory = parent;
+  }
+}
+function isCodeExplorerPackage(directory) {
+  try {
+    const parseJson2 = JSON.parse;
+    const packageInfo2 = parseJson2(
+      readFileSync(join(directory, "package.json"), "utf8")
+    );
+    return packageInfo2.name === "code-explorer";
+  } catch {
+    return false;
+  }
+}
+function deepFreeze(value) {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value))
+      deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+// src/semantic/adapter-selection-parser.ts
+function parseAdapterSelectionEvidence(input) {
+  const parsed = evidenceSchema.safeParse(input);
+  if (!parsed.success) throw new Error("invalid adapter selection evidence");
+  return deepFreeze(parsed.data);
+}
+function parseAdapterSelectionRecord(input) {
+  const parsed = recordSchema.safeParse(input);
+  if (!parsed.success) throw new Error("invalid adapter selection record");
+  return deepFreeze(parsed.data);
+}
+
+// src/semantic/adapter-selection-loader.ts
+function loadAdapterSelectionRecord() {
+  const packageRoot = findPackageRoot(dirname2(fileURLToPath(import.meta.url)));
+  const record2 = parseFile(
+    join2(packageRoot, "adapter-selection.json"),
+    parseAdapterSelectionRecord,
+    "invalid adapter selection record"
+  );
+  const evidence = parseFile(
+    join2(packageRoot, record2.evidence_artifact),
+    parseAdapterSelectionEvidence,
+    "invalid adapter selection evidence"
+  );
+  if (!evidenceAligns(record2, evidence))
+    throw new Error("invalid adapter selection evidence");
+  return record2;
+}
+function parseFile(path5, parse3, errorMessage) {
+  try {
+    return parse3(JSON.parse(readFileSync2(path5, "utf8")));
+  } catch {
+    throw new Error(errorMessage);
+  }
+}
+
+// src/semantic/adapter-selection-policy.ts
+import { homedir } from "node:os";
+import { join as join3 } from "node:path";
+
+// src/semantic/backend-launch-paths.ts
+import { posix, win32 } from "node:path";
+function samePath(left, right, platform) {
+  if (platform === "posix") return left === right;
+  return win32.normalize(left).toLowerCase() === win32.normalize(right).toLowerCase();
+}
+function isWithin(root, candidate, platform) {
+  const path5 = platform === "win32" ? win32 : posix;
+  const relativePath = path5.relative(
+    path5.resolve(root),
+    path5.resolve(candidate)
+  );
+  return relativePath === "" || isChildPath(relativePath, path5.sep, path5);
+}
+function isChildPath(relativePath, separator, path5) {
+  return !relativePath.startsWith(`..${separator}`) && relativePath !== ".." && !path5.isAbsolute(relativePath);
+}
+function basename(value, platform) {
+  return (platform === "win32" ? win32 : posix).basename(value);
+}
+function platformForHost() {
+  return process.platform === "win32" ? "win32" : "posix";
+}
+function isPermittedEndpoint(endpoint) {
+  if (endpoint === "stdio") return true;
+  try {
+    const url = new URL(endpoint);
+    return localHost(url.hostname);
+  } catch {
+    return false;
+  }
+}
+function localHost(hostname2) {
+  return /^127(?:\.\d{1,3}){3}$/.test(hostname2) || hostname2 === "[::1]" || hostname2 === "::1";
+}
+
+// src/semantic/backend-launch-entrypoints.ts
+function sameEntrypoints(left, right, platform) {
+  return sameEntryCount(left, right) && everyEntryMatches(left, right, platform);
+}
+function sameEntryCount(left, right) {
+  return (left?.length ?? 0) === (right?.length ?? 0);
+}
+function everyEntryMatches(left, right, platform) {
+  return (left ?? []).every(
+    (file, index) => sameEntry(file, right?.[index], platform)
+  );
+}
+function sameEntry(file, other, platform) {
+  if (!(other && file.canonical_path && other.canonical_path)) return false;
+  if (!samePath(file.canonical_path, other.canonical_path, platform))
+    return false;
+  return sameFileCore(file, other);
+}
+function sameFileCore(left, right) {
+  return left.device === right.device && left.file_id === right.file_id && left.sha256 === right.sha256;
+}
+
+// src/semantic/backend-launch-snapshot.ts
+function snapshotAllowlistEntry(entry) {
+  return {
+    language: entry.language,
+    executable_basename: entry.executable_basename,
+    entrypoint_basenames: entry.entrypoint_basenames ? [...entry.entrypoint_basenames] : [],
+    executable_sha256: entry.executable_sha256,
+    entrypoint_sha256s: entry.entrypoint_sha256s ? [...entry.entrypoint_sha256s] : [],
+    package_metadata_sha256: entry.package_metadata_sha256 ?? null,
+    compatible_version: entry.compatible_version,
+    arguments: [...entry.arguments],
+    endpoint: entry.endpoint,
+    environment: { ...entry.environment },
+    safe_initialization_options: cloneValue(entry.safe_initialization_options),
+    sentinel_passed: entry.sentinel_passed
+  };
+}
+function cloneValue(value) {
+  if (Array.isArray(value)) return value.map(cloneValue);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [
+        key,
+        cloneValue(child)
+      ])
+    );
+  return value;
+}
+function deepFreeze2(value) {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value))
+      deepFreeze2(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+// src/semantic/backend-launch-identity.ts
+function sameIdentity(left, right, platform) {
+  if (!sameCoreIdentity(left, right, platform)) return false;
+  if (!sameEntrypoints(left.entrypoints, right.entrypoints, platform))
+    return false;
+  return sameFileIdentity(
+    left.package_metadata,
+    right.package_metadata,
+    platform
+  );
+}
+function sameCoreIdentity(left, right, platform) {
+  return samePath(left.canonical_path, right.canonical_path, platform) && left.device === right.device && left.file_id === right.file_id && left.sha256 === right.sha256 && left.version === right.version;
+}
+function sameFileIdentity(left, right, platform) {
+  if (!(left && right)) return left === right;
+  return sameFilePath(left, right, platform) && sameFileCore(left, right);
+}
+function sameFilePath(left, right, platform) {
+  return Boolean(
+    left.canonical_path && right.canonical_path && samePath(left.canonical_path, right.canonical_path, platform)
+  );
+}
+function resolveArguments(template, entrypoints) {
+  return deepFreeze2(
+    template.map((argument) => resolveArgument(argument, entrypoints))
+  );
+}
+function resolveArgument(argument, entrypoints) {
+  const match = /^\{entrypoint:(\d+)\}$/.exec(argument);
+  if (!match) return argument;
+  const path5 = entrypoints?.[Number(match[1])]?.canonical_path;
+  if (!path5) throw new Error("backend_identity_unverifiable");
+  return path5;
+}
+
+// src/semantic/backend-inspection-result.ts
+function rejected(code) {
+  return { status: "rejected", code };
+}
+
+// src/semantic/backend-file-identity.ts
+function isCompleteBackendFile(file) {
+  return Boolean(
+    file.device && file.file_id && file.sha256 && file.regular_file && !file.link_or_reparse_point
+  );
+}
+
+// src/semantic/backend-launch-inspection-executable.ts
+function validateExecutable(entry, identity, options) {
+  const version2 = identity.version;
+  if (!launchIdentityComplete(identity))
+    return rejected("backend_identity_unverifiable");
+  if (!version2) return rejected("backend_identity_unverifiable");
+  return validateExecutablePath({ entry, identity, options }) ?? validateExecutableEvidence(identity, entry, version2);
+}
+function validateExecutablePath(input) {
+  const platform = input.options.platform ?? platformForHost();
+  return safeExecutablePath({ ...input, platform }) ? void 0 : rejected("backend_identity_unverifiable");
+}
+function validateExecutableEvidence(identity, entry, version2) {
+  if (!validHash(identity.sha256))
+    return rejected("backend_identity_unverifiable");
+  if (identity.sha256 !== entry.executable_sha256)
+    return rejected("backend_identity_changed");
+  if (!versionMatches(version2, entry.compatible_version))
+    return rejected("version_incompatible");
+  return void 0;
+}
+function launchIdentityComplete(identity) {
+  return completeIdentity(identity) && !!identity.version;
+}
+function completeIdentity(identity) {
+  return isCompleteBackendFile(identity);
+}
+function safeExecutablePath(input) {
+  return !!(input.identity.canonical_path && !isWithin(
+    input.options.project_root,
+    input.identity.canonical_path,
+    input.platform
+  ) && samePath(
+    basename(input.identity.canonical_path, input.platform),
+    input.entry.executable_basename,
+    input.platform
+  ));
+}
+function validHash(value) {
+  return !!value && /^[a-f0-9]{64}$/i.test(value);
+}
+function versionMatches(version2, compatibleRange) {
+  if (!compatibleRange.startsWith("^")) return version2 === compatibleRange;
+  const [major] = compatibleRange.slice(1).split(".");
+  return version2.split(".")[0] === major;
+}
+
+// src/semantic/backend-launch-entrypoint-validation.ts
+function validateEntrypoint(input) {
+  const platform = input.options.platform ?? platformForHost();
+  const failure = invalidEntrypoint(input, platform);
+  if (failure) return failure;
+  return input.file.sha256 === input.checksum ? void 0 : rejected("backend_identity_changed");
+}
+function invalidEntrypoint(input, platform) {
+  if (!isCompleteBackendFile(input.file))
+    return rejected("backend_identity_unverifiable");
+  if (!safeEntryPath({ ...input, platform }))
+    return rejected("backend_identity_unverifiable");
+  if (!validHash2(input.file.sha256))
+    return rejected("backend_identity_unverifiable");
+  return void 0;
+}
+function safeEntryPath(input) {
+  if (!input.file.canonical_path) return false;
+  if (isWithin(
+    input.options.project_root,
+    input.file.canonical_path,
+    input.platform
+  ))
+    return false;
+  return samePath(
+    basename(input.file.canonical_path, input.platform),
+    input.expected,
+    input.platform
+  );
+}
+function validHash2(value) {
+  return !!value && /^[a-f0-9]{64}$/i.test(value);
+}
+
+// src/semantic/backend-launch-inspection-files.ts
+function validateEntrypoints(entry, identity, options) {
+  const expected = entrypointNames(entry);
+  const actual = entrypointFiles(identity);
+  if (!sameEntrypointCount(actual, expected))
+    return rejected("backend_identity_unverifiable");
+  return firstEntrypointFailure({
+    actual,
+    expected,
+    entry,
+    options
+  });
+}
+function entrypointNames(entry) {
+  return entry.entrypoint_basenames ?? [];
+}
+function entrypointFiles(identity) {
+  return identity.entrypoints ?? [];
+}
+function sameEntrypointCount(actual, expected) {
+  return actual.length === expected.length;
+}
+function firstEntrypointFailure(input) {
+  for (const [index, file] of input.actual.entries()) {
+    const failure = validateEntrypoint({
+      file,
+      expected: input.expected[index] ?? "",
+      checksum: input.entry.entrypoint_sha256s?.[index],
+      options: input.options
+    });
+    if (failure) return failure;
+  }
+  return void 0;
+}
+
+// src/semantic/backend-launch-inspection-metadata.ts
+function validatePackageMetadata(entry, identity, options) {
+  const expected = entry.package_metadata_sha256;
+  if (!metadataHashConfigured(expected))
+    return missingMetadataResult(identity.package_metadata);
+  const metadata = identity.package_metadata;
+  if (!metadata) return rejected("backend_identity_changed");
+  const platform = options.platform ?? platformForHost();
+  return validateMetadataEvidence({
+    metadata,
+    expected,
+    options,
+    platform
+  });
+}
+function metadataHashConfigured(value) {
+  return value !== null && value !== void 0;
+}
+function missingMetadataResult(metadata) {
+  return metadata ? rejected("backend_identity_changed") : void 0;
+}
+function validateMetadataEvidence(input) {
+  if (!isCompleteBackendFile(input.metadata))
+    return rejected("backend_identity_changed");
+  if (!safeMetadataPath(input.metadata, input.options, input.platform))
+    return rejected("backend_identity_changed");
+  return validHash3(input.metadata.sha256) && input.metadata.sha256 === input.expected ? void 0 : rejected("backend_identity_changed");
+}
+function safeMetadataPath(metadata, options, platform) {
+  if (!metadata.canonical_path) return false;
+  if (isWithin(options.project_root, metadata.canonical_path, platform))
+    return false;
+  return basename(metadata.canonical_path, platform) === "package.json";
+}
+function validHash3(value) {
+  return !!value && /^[a-f0-9]{64}$/i.test(value);
+}
+
+// src/semantic/backend-launch-inspection.ts
+function inspect(entry, options) {
+  const identity = options.inspect(
+    entry.language,
+    entry.executable_basename,
+    entry.entrypoint_basenames ?? []
+  );
+  if (!identity?.canonical_path) return rejected("backend_unavailable");
+  const failure = firstInspectionFailure([
+    () => validateExecutable(entry, identity, options),
+    () => validateEntrypoints(entry, identity, options),
+    () => validatePackageMetadata(entry, identity, options)
+  ]);
+  if (failure) return failure;
+  return {
+    status: "accepted",
+    identity
+  };
+}
+function firstInspectionFailure(checks) {
+  for (const check2 of checks) {
+    const failure = check2();
+    if (failure) return failure;
+  }
+  return void 0;
+}
+
+// src/semantic/backend-launch-policy-confirm.ts
+function confirmBackend(input) {
+  const prior = input.accepted.get(input.language);
+  if (!prior)
+    return {
+      status: "unavailable",
+      code: "backend_unavailable",
+      terminate: true
+    };
+  const inspected = inspect(prior.entry, input.options);
+  if (inspected.status === "accepted" && sameIdentity(prior.identity, inspected.identity, input.platform))
+    return { status: "ready" };
+  input.accepted.delete(input.language);
+  return {
+    status: "unavailable",
+    code: inspected.status === "accepted" || inspected.code === "version_incompatible" ? "backend_identity_changed" : inspected.code,
+    terminate: true
+  };
+}
+function endpointStatus(language, endpoint, allowlist) {
+  const entry = allowlist.find((candidate) => candidate.language === language);
+  return entry?.endpoint === endpoint && isPermittedEndpoint(endpoint) ? { status: "ready" } : {
+    status: "unavailable",
+    code: "backend_endpoint_rejected"
+  };
+}
+function rejectBackendRequest(method) {
+  return {
+    accepted: false,
+    code: method === "workspace/applyEdit" || method.startsWith("workspace/") ? "backend_write_rejected" : "backend_request_rejected"
+  };
+}
+function safeOptions(language, allowlist) {
+  return allowlist.find((entry) => entry.language === language)?.safe_initialization_options;
+}
+
+// src/semantic/backend-launch-preparation-result.ts
+function preparationFailure(code) {
+  return code === "version_incompatible" ? "unsupported_backend_version" : code;
+}
+function unavailable(code) {
+  return { status: "unavailable", code };
+}
+function defaultPlatform() {
+  return platformForHost();
+}
+
+// src/semantic/backend-launch-ready-preparation.ts
+function readyPreparation(entry, identity, projectConfiguration) {
+  return {
+    status: "ready",
+    executable: identity.canonical_path,
+    version: identity.version,
+    arguments: resolveArguments(entry.arguments, identity.entrypoints),
+    shell: false,
+    environment: entry.environment,
+    endpoint: entry.endpoint,
+    safe_initialization_options: entry.safe_initialization_options,
+    ...projectConfiguration === void 0 ? {} : { event: "project_backend_config_ignored" }
+  };
+}
+
+// src/semantic/backend-launch-safety.ts
+function safeModeIsProven(entry) {
+  const options = entry.safe_initialization_options;
+  if (entry.language === "rust") return safeRustMode(options);
+  if (entry.language === "csharp")
+    return options.analyzers === false && options.source_generators === false;
+  return options.use_project_environment === false && options.mirror_only === true;
+}
+function safeRustMode(options) {
+  const cargo = options.cargo;
+  return settingDisabled(cargo, "buildScripts") && settingDisabled(cargo, "procMacro") && settingDisabled(cargo, "checkOnSave") && settingDisabled(options, "projectConfiguration");
+}
+function settingDisabled(options, key) {
+  return options?.[key]?.enable === false;
+}
+
+// src/semantic/backend-launch-policy-prepare.ts
+function prepareBackend(input) {
+  const entry = input.allowlist.find(
+    (candidate) => candidate.language === input.language
+  );
+  if (!entry) return unavailable("backend_unavailable");
+  const inspected = inspect(entry, input.options);
+  if (inspected.status !== "accepted")
+    return unavailable(preparationFailure(inspected.code));
+  return prepareAccepted(input, entry, inspected.identity);
+}
+function prepareAccepted(input, entry, identity) {
+  if (!(entry.sentinel_passed && safeModeIsProven(entry)))
+    return unavailable("unsafe_backend_mode");
+  const identityFailure = acceptIdentity(input, identity);
+  if (identityFailure) return unavailable(identityFailure);
+  input.accepted.set(input.language, { entry, identity });
+  return readyPreparation(entry, identity, input.projectConfiguration);
+}
+function acceptIdentity(input, identity) {
+  const prior = input.accepted.get(input.language);
+  if (!prior || sameIdentity(prior.identity, identity, input.platform))
+    return void 0;
+  input.accepted.delete(input.language);
+  return "backend_identity_changed";
+}
+
+// src/semantic/backend-launch-policy-factory.ts
+function createBackendLaunchPolicy(options) {
+  const platform = options.platform ?? defaultPlatform();
+  const allowlist = deepFreeze2(options.allowlist.map(snapshotAllowlistEntry));
+  const policyOptions = { ...options, allowlist, platform };
+  const accepted = /* @__PURE__ */ new Map();
+  return createPolicyMethods({
+    allowlist,
+    policyOptions,
+    accepted,
+    platform
+  });
+}
+function createPolicyMethods(input) {
+  return {
+    prepare: prepareMethod(input),
+    confirmInitialized: confirmMethod(input),
+    setEndpoint: endpointMethod(input),
+    handleBackendRequest: requestMethod,
+    safeOptions: safeOptionsMethod(input)
+  };
+}
+function prepareMethod(input) {
+  return (language, projectConfiguration) => prepareBackend({
+    language,
+    projectConfiguration,
+    allowlist: input.allowlist,
+    options: input.policyOptions,
+    accepted: input.accepted,
+    platform: input.platform
+  });
+}
+function confirmMethod(input) {
+  return (language) => confirmBackend({
+    language,
+    accepted: input.accepted,
+    options: input.policyOptions,
+    platform: input.platform
+  });
+}
+function endpointMethod(input) {
+  return (language, endpoint) => endpointStatus(language, endpoint, input.allowlist);
+}
+function requestMethod(method, _params) {
+  return rejectBackendRequest(method);
+}
+function safeOptionsMethod(input) {
+  return (language) => safeOptions(language, input.allowlist);
+}
+
+// src/semantic/python-mirror-validation.ts
+import { createHash } from "node:crypto";
+import { posix as posix2, win32 as win322 } from "node:path";
+var PROHIBITED_KEYS = /* @__PURE__ */ new Set([
+  "extends",
+  "venvPath",
+  "venv",
+  "extraPaths",
+  "typeshedPath",
+  "stubPath",
+  "executionEnvironments",
+  "pythonPath",
+  "python.pythonPath",
+  "python.venvPath",
+  "python.analysis.extraPaths"
+]);
+function containsUnsafePythonConfiguration(value, key) {
+  return unsafeConfigurationValue(value, key);
+}
+function unsafeConfigurationValue(value, key) {
+  if (isProhibitedKey(key)) return true;
+  if (typeof value === "string") return unsafePath(value);
+  if (Array.isArray(value)) return arrayHasUnsafeValue(value);
+  return recordHasUnsafeValue(value);
+}
+function isProhibitedKey(key) {
+  return key !== void 0 && PROHIBITED_KEYS.has(key);
+}
+function recordHasUnsafeValue(value) {
+  if (!isUnsafeRecord(value)) return false;
+  return Object.entries(value).some(
+    ([name, child]) => containsUnsafePythonConfiguration(child, name)
+  );
+}
+function isUnsafeRecord(value) {
+  return !!value && typeof value === "object";
+}
+function arrayHasUnsafeValue(value) {
+  return value.some((item) => containsUnsafePythonConfiguration(item));
+}
+function isSafePythonMirrorFile(file) {
+  return validMirrorPath(file) && validMirrorHash(file);
+}
+function validMirrorPath(file) {
+  return [
+    file.path.endsWith(".py") || file.path.endsWith(".pyi"),
+    !file.symlink,
+    !file.sensitive,
+    !unsafePath(file.path),
+    !file.path.split(/[\\/]/).includes("..")
+  ].every(Boolean);
+}
+function validMirrorHash(file) {
+  return /^[a-f0-9]{64}$/i.test(file.sha256) && createHash("sha256").update(file.text).digest("hex") === file.sha256;
+}
+function unsafePath(value) {
+  return posix2.isAbsolute(value) || win322.isAbsolute(value) || value.split(/[\\/]/).includes("..");
+}
+function uriToMirrorPath(uri, root) {
+  if (!uri.startsWith(`${root}/`)) return void 0;
+  try {
+    const path5 = decodeURIComponent(uri.slice(root.length + 1));
+    return unsafePath(path5) ? void 0 : path5;
+  } catch {
+    return void 0;
+  }
+}
+
+// src/semantic/python-mirror-plan-ready.ts
+function readyPlan(manifest, files, options) {
+  return {
+    status: "ready",
+    manifest,
+    files,
+    generation: options.generation,
+    minimal_pyrightconfig: Object.freeze({}),
+    bundled_typeshed: Object.freeze([...options.bundled_typeshed]),
+    resolveUri: (uri, generation, sha2563) => resolvePlanUri({ uri, generation, sha256: sha2563, options, manifest }),
+    onProjectConfigurationChanged: projectConfigurationChanged
+  };
+}
+function resolvePlanUri(input) {
+  const path5 = uriToMirrorPath(input.uri, input.options.mirror_uri_root);
+  return path5 && input.generation === input.options.generation && input.manifest[path5] === input.sha256 ? { status: "accepted", original_path: path5 } : {
+    status: "rejected",
+    code: "unsafe_backend_mode"
+  };
+}
+function projectConfigurationChanged() {
+  return {
+    status: "rebuild_required",
+    terminate_old_backend: true
+  };
+}
+
+// src/semantic/python-mirror-plan-builder.ts
+var DEFAULT_OPTIONS = {
+  generation: 0,
+  mirror_uri_root: "file:///code-explorer-mirror",
+  bundled_typeshed: []
+};
+function createPythonMirrorPlan(configuration, files, options = DEFAULT_OPTIONS) {
+  if (unsafeMirrorInput(configuration, files, options))
+    return {
+      status: "unavailable",
+      code: "unsafe_backend_mode"
+    };
+  const manifest = Object.freeze(
+    Object.fromEntries(files.map((file) => [file.path, file.sha256]))
+  );
+  const mirrored = Object.freeze(
+    files.map(
+      ({ path: path5, sha256: sha2563, text }) => Object.freeze({ path: path5, sha256: sha2563, text })
+    )
+  );
+  writeMirror(options, mirrored);
+  return readyPlan(manifest, mirrored, options);
+}
+function unsafeMirrorInput(configuration, files, options) {
+  return containsUnsafePythonConfiguration(configuration) || files.some((file) => !isSafePythonMirrorFile(file)) || options.bundled_typeshed.some(unsafePath);
+}
+function writeMirror(options, files) {
+  if (!options.filesystem) return;
+  options.filesystem.writeFile("pyrightconfig.json", "{}");
+  for (const file of files) options.filesystem.writeFile(file.path, file.text);
+  options.filesystem.makeReadOnly();
+}
+
+// src/semantic/adapter-selection-policy.ts
+function createRuntimeLaunchPolicy(options) {
+  const platform = options.platform ?? (process.platform === "win32" ? "win32" : "posix");
+  return createBackendLaunchPolicy({
+    ...options,
+    platform,
+    allowlist: runtimeAllowlist(loadRecord(), platform)
+  });
+}
+function loadRecord() {
+  return loadAdapterSelectionRecord();
+}
+function runtimeAllowlist(record2, platform) {
+  return record2.runtime_backends.map((backend) => ({
+    language: backend.language,
+    executable_basename: backend.platform_executables[platform],
+    entrypoint_basenames: backend.platform_entrypoints[platform],
+    executable_sha256: backend.authorization.executable_sha256,
+    entrypoint_sha256s: backend.authorization.entrypoint_sha256s,
+    package_metadata_sha256: backend.authorization.package_metadata_sha256,
+    compatible_version: backend.compatible_version,
+    arguments: backend.arguments,
+    endpoint: backend.endpoint,
+    environment: backend.environment,
+    safe_initialization_options: backend.safe_initialization_options,
+    sentinel_passed: backend.sentinel_evidence.platform === platform && backend.sentinel_evidence.passed
+  }));
+}
+function resolveTrustedCommandRoots(identifiers) {
+  return identifiers.map((identifier) => trustedCommandRoots()[identifier]);
+}
+function trustedCommandRoots() {
+  const home = homedir();
+  const programFiles = process.env.ProgramFiles ?? "C:\\Program Files";
+  const appData = process.env.APPDATA ?? join3(home, "AppData", "Roaming");
+  return {
+    cargo_home_bin: join3(cargoHome(home), "bin"),
+    dotnet_tools: join3(home, ".dotnet", "tools"),
+    node_install: join3(programFiles, "nodejs"),
+    npm_global: join3(appData, "npm"),
+    code_explorer_backends: codeExplorerBackends(programFiles)
+  };
+}
+function cargoHome(home) {
+  return process.env.CARGO_HOME ?? join3(home, ".cargo");
+}
+function codeExplorerBackends(programFiles) {
+  return process.env.CODE_EXPLORER_BACKENDS_ROOT ?? join3(programFiles, "Code Explorer", "backends");
+}
+
+// src/semantic/backend-status.ts
+function createBackendStatusReport(adapters) {
+  const backends = adapters.map((adapter) => adapter.status());
+  const anyReady = backends.some(
+    ({ state }) => state === "ready" || state === "degraded" || state === "refreshing"
+  );
+  return {
+    backends,
+    navigation: anyReady ? {
+      discovery: "semantic",
+      focus: "ready",
+      relations: "ready"
+    } : {
+      discovery: "discovery_only",
+      focus: "backend_unavailable",
+      relations: "backend_unavailable"
+    }
+  };
+}
+
 // src/semantic/project-root.ts
-import { closeSync, constants, fstatSync, openSync, readFileSync, realpathSync, statSync } from "node:fs";
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  openSync,
+  readFileSync as readFileSync3,
+  realpathSync,
+  statSync
+} from "node:fs";
+
+// src/semantic/project-root-factory.ts
 import * as path from "node:path";
 
 // src/discovery/sensitive-paths.ts
 import { lstatSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join as join4 } from "node:path";
 function isSensitiveProjectPath(path5) {
   const normalized = path5.replaceAll("\\", "/").replace(/^\.\//, "");
   if (!normalized || normalized.startsWith("/") || normalized.split("/").some((part) => part === "..")) return true;
@@ -21454,7 +22558,7 @@ function isSensitiveProjectPath(path5) {
   return parts.some((part) => /^(\.git|\.hg|\.svn)$/iu.test(part)) || /^\.env(?:\..+)?$/iu.test(file) || /\.(pem|key|pfx|p12)$/iu.test(file) || /^(id_rsa|id_dsa|id_ecdsa|id_ed25519|\.npmrc|\.pypirc|nuget\.config)$/iu.test(file);
 }
 function countSensitivePathsUnderRoot(root) {
-  const visit = (directory, relativeDirectory) => {
+  const visit2 = (directory, relativeDirectory) => {
     let count = 0;
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const relativePath = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
@@ -21462,19 +22566,19 @@ function countSensitivePathsUnderRoot(root) {
         count += 1;
         continue;
       }
-      const absolute = join(directory, entry.name);
-      if (entry.isDirectory() && !lstatSync(absolute).isSymbolicLink()) count += visit(absolute, relativePath);
+      const absolute = join4(directory, entry.name);
+      if (entry.isDirectory() && !lstatSync(absolute).isSymbolicLink()) count += visit2(absolute, relativePath);
     }
     return count;
   };
   try {
-    return visit(root, "");
+    return visit2(root, "");
   } catch {
     return 0;
   }
 }
 
-// src/semantic/project-root.ts
+// src/semantic/project-root-error.ts
 var ProjectPathError = class extends Error {
   constructor(code, root_source) {
     super(code);
@@ -21484,89 +22588,259 @@ var ProjectPathError = class extends Error {
   code;
   root_source;
 };
-function createProjectRoot(options) {
-  const pathApi = options.platform === "win32" ? path.win32 : path.posix;
-  const configuredRoot = options.projectRoot ?? options.cwd;
-  const root = canonicalize(configuredRoot, options.filesystem);
-  if (!root) throw new ProjectPathError("invalid_project_root", options.projectRoot ? "project_root" : "cwd");
-  const isDescendant = (candidate) => {
-    const normalizedRoot = normalize(root.path, options.platform);
-    const normalizedCandidate = normalize(candidate, options.platform);
-    return normalizedCandidate === normalizedRoot || normalizedCandidate.startsWith(`${normalizedRoot}/`);
-  };
-  const assertRootStable = () => {
-    const current = canonicalize(configuredRoot, options.filesystem);
-    if (!current) throw new ProjectPathError("path_identity_unavailable");
-    if (!(sameCanonicalPath(current.path, root.path, options.platform) && sameIdentity(current.identity, root.identity))) {
-      throw new ProjectPathError("path_identity_changed");
-    }
-  };
-  const resolveClientPath = (relativePath) => {
-    if (!isRelativeProjectPath(relativePath, pathApi) || isSensitiveProjectPath(relativePath))
-      throw new ProjectPathError("path_outside_project");
-    const candidate = pathApi.resolve(root.path, relativePath);
-    const resolved = canonicalize(candidate, options.filesystem);
-    if (!(resolved && isDescendant(resolved.path))) throw new ProjectPathError("path_outside_project");
-    return resolved.path;
-  };
+
+// src/semantic/project-root-identity.ts
+function canonicalize(candidate, filesystem) {
+  try {
+    const resolved = filesystem.realpath(candidate);
+    return {
+      path: resolved,
+      identity: identityFor(resolved, filesystem)
+    };
+  } catch {
+    return void 0;
+  }
+}
+function identityFor(candidate, filesystem) {
+  try {
+    const identity = filesystem.stat(candidate);
+    if (!stableIdentity(identity)) throw new Error("unstable identity");
+    return identity;
+  } catch {
+    throw new ProjectPathError("path_identity_unavailable");
+  }
+}
+function identityForHandle(handle, filesystem) {
+  try {
+    const identity = filesystem.fstat(handle);
+    if (!stableIdentity(identity)) throw new Error("unstable identity");
+    return identity;
+  } catch {
+    throw new ProjectPathError("path_identity_unavailable");
+  }
+}
+function stableIdentity(identity) {
+  return isStableIdentityPart(identity.dev) && isStableIdentityPart(identity.ino);
+}
+function isStableIdentityPart(value) {
+  return typeof value === "bigint" || Number.isSafeInteger(value);
+}
+function sameIdentity2(left, right) {
+  return left.ino === right.ino && (left.dev === right.dev || isZero(left.dev) || isZero(right.dev));
+}
+function isZero(value) {
+  return value === 0 || value === BigInt(0);
+}
+function sameCanonicalPath(left, right, platform) {
+  return normalize(left, platform) === normalize(right, platform);
+}
+function normalize(value, platform) {
+  const noExtendedPrefix = platform === "win32" && value.startsWith("\\\\?\\") ? value.slice(4) : value;
+  const slashSeparated = noExtendedPrefix.replaceAll("\\", "/").replace(/\/+$/, "");
+  return platform === "win32" ? slashSeparated.toLocaleLowerCase("en-US") : slashSeparated;
+}
+function isRelativeProjectPath(value, pathApi) {
+  return value.length > 0 && !pathApi.isAbsolute(value) && !value.split(/[\\/]/).includes("..");
+}
+
+// src/semantic/project-root-actions.ts
+function createRootActions(input) {
+  const isDescendant = (candidate) => isWithinRoot(candidate, input.root.path, input.options.platform);
+  const assertRootStable = () => assertStable(input.options, input.configuredRoot, input.root);
+  const resolveClientPath = (relativePath) => resolvePath({ ...input, relativePath, isDescendant });
   return {
-    canonicalPath: root.path,
-    revalidate() {
-      try {
-        const path5 = options.filesystem.realpath(configuredRoot);
-        const identity = options.filesystem.stat(path5);
-        if (!(isStableIdentityPart(identity.dev) && isStableIdentityPart(identity.ino))) return "unavailable";
-        const current = { path: path5, identity };
-        return sameCanonicalPath(current.path, root.path, options.platform) && sameIdentity(current.identity, root.identity) ? "ready" : "unavailable";
-      } catch (error2) {
-        const code = error2 instanceof Error && "code" in error2 ? error2.code : void 0;
-        return code === "EACCES" || code === "EPERM" || code === "EBUSY" || code === "EIO" ? "inaccessible" : "unavailable";
-      }
-    },
-    resolveClientPath,
-    classifyBackendPath(candidate) {
-      const portableCandidate = candidate.replaceAll("\\", "/");
-      const candidatePath = pathApi.isAbsolute(portableCandidate) ? portableCandidate : pathApi.resolve(root.path, portableCandidate);
-      const resolved = canonicalize(candidatePath, options.filesystem);
-      if (!(resolved && isDescendant(resolved.path))) return { external: true };
-      return { relative_path: pathApi.relative(root.path, resolved.path).replaceAll("\\", "/") };
-    },
-    openProtected(relativePath) {
-      assertRootStable();
-      const checkedPath = resolveClientPath(relativePath);
-      const checkedIdentity = identityFor(checkedPath, options.filesystem);
-      let handle;
-      try {
-        handle = options.filesystem.open(checkedPath, { noFollow: true });
-        const openedIdentity = identityForHandle(handle, options.filesystem);
-        assertRootStable();
-        const finalIdentity = identityFor(checkedPath, options.filesystem);
-        if (!(sameIdentity(checkedIdentity, openedIdentity) && sameIdentity(checkedIdentity, finalIdentity))) {
-          throw new ProjectPathError("path_identity_changed");
-        }
-        return { path: checkedPath, handle };
-      } catch (error2) {
-        if (handle !== void 0) options.filesystem.close(handle);
-        if (error2 instanceof ProjectPathError) throw error2;
-        throw new ProjectPathError("path_identity_unavailable");
-      }
-    },
-    protectedRead(relativePath) {
-      const protectedPath = this.openProtected(relativePath);
-      try {
-        const bytes = options.filesystem.read(protectedPath.handle);
-        assertRootStable();
-        const finalPath = canonicalize(protectedPath.path, options.filesystem);
-        if (!(finalPath && sameCanonicalPath(finalPath.path, protectedPath.path, options.platform) && sameIdentity(finalPath.identity, identityForHandle(protectedPath.handle, options.filesystem)))) {
-          throw new ProjectPathError("path_identity_changed");
-        }
-        return { path: protectedPath.path, bytes };
-      } finally {
-        options.filesystem.close(protectedPath.handle);
-      }
-    }
+    isDescendant,
+    assertRootStable,
+    resolveClientPath
   };
 }
+function isWithinRoot(candidate, root, platform) {
+  const normalizedRoot = normalize(root, platform);
+  const normalizedCandidate = normalize(candidate, platform);
+  return normalizedCandidate === normalizedRoot || normalizedCandidate.startsWith(`${normalizedRoot}/`);
+}
+function assertStable(options, configuredRoot, root) {
+  const current2 = canonicalize(configuredRoot, options.filesystem);
+  if (!current2) throw new ProjectPathError("path_identity_unavailable");
+  if (!(sameCanonicalPath(current2.path, root.path, options.platform) && sameIdentity2(current2.identity, root.identity)))
+    throw new ProjectPathError("path_identity_changed");
+}
+function resolvePath(input) {
+  if (!isRelativeProjectPath(input.relativePath, input.pathApi) || isSensitiveProjectPath(input.relativePath))
+    throw new ProjectPathError("path_outside_project");
+  const candidate = input.pathApi.resolve(input.root.path, input.relativePath);
+  const resolved = canonicalize(candidate, input.options.filesystem);
+  if (!(resolved && input.isDescendant(resolved.path)))
+    throw new ProjectPathError("path_outside_project");
+  return resolved.path;
+}
+
+// src/semantic/project-root-classify.ts
+function classifyBackendPath(input) {
+  const portableCandidate = input.candidate.replaceAll("\\", "/");
+  const candidatePath = input.pathApi.isAbsolute(portableCandidate) ? portableCandidate : input.pathApi.resolve(input.root.path, portableCandidate);
+  const resolved = canonicalize(candidatePath, input.filesystem);
+  if (!(resolved && input.isDescendant(resolved.path)))
+    return { external: true };
+  return {
+    relative_path: input.pathApi.relative(input.root.path, resolved.path).replaceAll("\\", "/")
+  };
+}
+
+// src/semantic/project-root-protected.ts
+function openProtected(input) {
+  input.assertRootStable();
+  const checkedPath = input.resolveClientPath(input.relativePath);
+  const checkedIdentity = identityFor(checkedPath, input.options.filesystem);
+  let handle;
+  try {
+    handle = input.options.filesystem.open(checkedPath, {
+      noFollow: true
+    });
+    const openedIdentity = identityForHandle(handle, input.options.filesystem);
+    input.assertRootStable();
+    const finalIdentity = identityFor(checkedPath, input.options.filesystem);
+    if (!(sameIdentity2(checkedIdentity, openedIdentity) && sameIdentity2(checkedIdentity, finalIdentity)))
+      throw new ProjectPathError("path_identity_changed");
+    return { path: checkedPath, handle };
+  } catch (error2) {
+    if (handle !== void 0) input.options.filesystem.close(handle);
+    if (error2 instanceof ProjectPathError) throw error2;
+    throw new ProjectPathError("path_identity_unavailable");
+  }
+}
+function protectedRead(input) {
+  const protectedPath = openProtected(input);
+  try {
+    const bytes = input.options.filesystem.read(protectedPath.handle);
+    input.assertRootStable();
+    const finalPath = canonicalize(
+      protectedPath.path,
+      input.options.filesystem
+    );
+    if (!sameFinalPath(finalPath, protectedPath, input))
+      throw new ProjectPathError("path_identity_changed");
+    return { path: protectedPath.path, bytes };
+  } finally {
+    input.options.filesystem.close(protectedPath.handle);
+  }
+}
+function sameFinalPath(finalPath, protectedPath, input) {
+  return Boolean(
+    finalPath && sameCanonicalPath(
+      finalPath.path,
+      protectedPath.path,
+      input.options.platform
+    ) && sameIdentity2(
+      finalPath.identity,
+      identityForHandle(protectedPath.handle, input.options.filesystem)
+    )
+  );
+}
+
+// src/semantic/project-root-methods.ts
+function rootMethods(input) {
+  return {
+    resolveClientPath: input.actions.resolveClientPath,
+    classifyBackendPath: (candidate) => classify(input, candidate),
+    openProtected: (relativePath) => open(input, relativePath),
+    protectedRead: (relativePath) => read(input, relativePath)
+  };
+}
+function classify(input, candidate) {
+  return classifyBackendPath({
+    candidate,
+    filesystem: input.options.filesystem,
+    root: input.root,
+    pathApi: input.pathApi,
+    isDescendant: input.actions.isDescendant
+  });
+}
+function open(input, relativePath) {
+  return openProtected({
+    relativePath,
+    options: input.options,
+    root: input.root,
+    resolveClientPath: input.actions.resolveClientPath,
+    assertRootStable: input.actions.assertRootStable
+  });
+}
+function read(input, relativePath) {
+  return protectedRead({
+    relativePath,
+    options: input.options,
+    root: input.root,
+    resolveClientPath: input.actions.resolveClientPath,
+    assertRootStable: input.actions.assertRootStable
+  });
+}
+
+// src/semantic/project-root-revalidation.ts
+function revalidateRoot(options, configuredRoot, root) {
+  try {
+    const current2 = currentIdentity(options.filesystem, configuredRoot);
+    return sameRoot(current2, root, options.platform) ? "ready" : "unavailable";
+  } catch (error2) {
+    return isInaccessible(error2) ? "inaccessible" : "unavailable";
+  }
+}
+function isInaccessible(error2) {
+  if (!(error2 instanceof Error && "code" in error2)) return false;
+  const code = error2.code;
+  return ["EACCES", "EPERM", "EBUSY", "EIO"].includes(code ?? "");
+}
+function currentIdentity(filesystem, configuredRoot) {
+  const path5 = filesystem.realpath(configuredRoot);
+  const identity = filesystem.stat(path5);
+  if (!((typeof identity.dev === "bigint" || Number.isSafeInteger(identity.dev)) && (typeof identity.ino === "bigint" || Number.isSafeInteger(identity.ino))))
+    throw new Error("unstable identity");
+  return { path: path5, identity };
+}
+function sameRoot(current2, root, platform) {
+  return sameCanonicalPath(current2.path, root.path, platform) && sameIdentity2(current2.identity, root.identity);
+}
+
+// src/semantic/project-root-factory.ts
+function createProjectRoot(options) {
+  return buildProjectRoot(options, rootContext(options));
+}
+function rootContext(options) {
+  const pathApi = rootPathApi(options.platform);
+  const configuredRoot = configuredRootFor(options);
+  const root = canonicalize(configuredRoot, options.filesystem);
+  if (!root)
+    throw new ProjectPathError(
+      "invalid_project_root",
+      options.projectRoot ? "project_root" : "cwd"
+    );
+  return {
+    configuredRoot,
+    root,
+    pathApi,
+    actions: createRootActions({
+      options,
+      configuredRoot,
+      root,
+      pathApi
+    })
+  };
+}
+function rootPathApi(platform) {
+  return platform === "win32" ? path.win32 : path.posix;
+}
+function configuredRootFor(options) {
+  return options.projectRoot ?? options.cwd;
+}
+function buildProjectRoot(options, context) {
+  const { root, configuredRoot, pathApi, actions } = context;
+  return {
+    canonicalPath: root.path,
+    revalidate: () => revalidateRoot(options, configuredRoot, root),
+    ...rootMethods({ options, root, pathApi, actions })
+  };
+}
+
+// src/semantic/project-root.ts
 function createNativeProjectRoot(projectRoot) {
   return createProjectRoot({
     cwd: process.cwd(),
@@ -21577,66 +22851,3032 @@ function createNativeProjectRoot(projectRoot) {
       stat: (candidate) => identityFromStat(statSync(candidate, { bigint: true })),
       open: (candidate) => openSync(candidate, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)),
       fstat: (handle) => identityFromStat(fstatSync(handle, { bigint: true })),
-      read: (handle) => readFileSync(handle, "utf8"),
+      read: (handle) => readFileSync3(handle, "utf8"),
       close: closeSync
     }
   });
 }
-function canonicalize(candidate, filesystem) {
+function identityFromStat(stats) {
+  if (!(isStableIdentityPart2(stats.dev) && isStableIdentityPart2(stats.ino))) {
+    throw new Error("unstable identity");
+  }
+  return { dev: stats.dev, ino: stats.ino };
+}
+function isStableIdentityPart2(value) {
+  return typeof value === "bigint" || Number.isSafeInteger(value);
+}
+
+// src/semantic/python-mirror-generation.ts
+import { join as join10 } from "node:path";
+import { pathToFileURL } from "node:url";
+
+// src/semantic/python-mirror-filesystem.ts
+import { mkdirSync as mkdirSync2, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join as join7 } from "node:path";
+
+// src/semantic/python-mirror-permissions.ts
+import { chmodSync, existsSync, readdirSync as readdirSync2 } from "node:fs";
+import { join as join5 } from "node:path";
+function makeTreeReadOnly(directory) {
+  for (const entry of readdirSync2(directory, { withFileTypes: true })) {
+    const target = join5(directory, entry.name);
+    if (entry.isDirectory()) {
+      makeTreeReadOnly(target);
+      continue;
+    }
+    chmodSync(target, 292);
+  }
+  chmodSync(directory, 365);
+}
+function makeTreeWritable(directory) {
+  if (!existsSync(directory)) return;
+  for (const entry of readdirSync2(directory, { withFileTypes: true })) {
+    const target = join5(directory, entry.name);
+    if (entry.isDirectory()) {
+      makeTreeWritable(target);
+      continue;
+    }
+    chmodSync(target, 420);
+  }
+  chmodSync(directory, 493);
+}
+
+// src/semantic/python-mirror-typeshed.ts
+var BUNDLED_TYPESHED = Object.freeze({
+  "typeshed/stdlib/builtins.pyi": "class object: ...\nclass str(object): ...\nclass int(object): ...\n"
+});
+
+// src/semantic/python-mirror-writer.ts
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname as dirname3, join as join6 } from "node:path";
+function writeMirrorFile(root, relativePath, text) {
+  const target = join6(root, relativePath);
+  mkdirSync(dirname3(target), {
+    recursive: true,
+    mode: 493
+  });
+  writeFileSync(target, text, {
+    encoding: "utf8",
+    mode: 292
+  });
+}
+
+// src/semantic/python-mirror-filesystem.ts
+function createMirrorTree(generation, snapshot) {
+  const serviceRoot = mkdtempSync(join7(tmpdir(), "code-explorer-pyright-"));
+  const mirrorRoot = join7(serviceRoot, `generation-${generation}`);
   try {
-    const resolved = filesystem.realpath(candidate);
-    return { path: resolved, identity: identityFor(resolved, filesystem) };
+    mkdirSync2(mirrorRoot, { recursive: true, mode: 493 });
+    writeMirrorFile(mirrorRoot, "pyrightconfig.json", "{}\n");
+    for (const input of snapshot.inputs)
+      writeMirrorFile(mirrorRoot, input.path, input.text);
+    for (const [path5, text] of Object.entries(BUNDLED_TYPESHED))
+      writeMirrorFile(mirrorRoot, path5, text);
+    makeTreeReadOnly(mirrorRoot);
+    return { serviceRoot, mirrorRoot };
+  } catch (error2) {
+    makeTreeWritable(serviceRoot);
+    rmSync(serviceRoot, { recursive: true, force: true });
+    throw error2;
+  }
+}
+function createDisposer(serviceRoot) {
+  let disposed = false;
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+    process.removeListener("exit", dispose);
+    makeTreeWritable(serviceRoot);
+    rmSync(serviceRoot, { recursive: true, force: true });
+  };
+  process.once("exit", dispose);
+  return { dispose, disposed: () => disposed };
+}
+
+// src/semantic/python-mirror-path.ts
+import { createHash as createHash2 } from "node:crypto";
+import { relative } from "node:path";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+function relativeMirrorPath(uri, mirrorRoot) {
+  try {
+    if (!uri.startsWith("file:")) return void 0;
+    const path5 = fileURLToPath2(uri);
+    const relativePath = relative(mirrorRoot, path5).replaceAll("\\", "/");
+    return validRelativePath(relativePath) ? relativePath : void 0;
   } catch {
     return void 0;
   }
 }
-function identityFor(candidate, filesystem) {
+function validRelativePath(value) {
+  return value.length > 0 && !value.startsWith("../") && value !== "..";
+}
+function sha2562(value) {
+  return createHash2("sha256").update(value).digest("hex");
+}
+function samePath2(left, right) {
+  return process.platform === "win32" ? left.toLowerCase() === right.toLowerCase() : left === right;
+}
+
+// src/semantic/python-mirror-verification.ts
+import { lstatSync as lstatSync3, readFileSync as readFileSync5 } from "node:fs";
+import { join as join9 } from "node:path";
+
+// src/semantic/python-mirror-tree.ts
+import { lstatSync as lstatSync2, readdirSync as readdirSync3, readFileSync as readFileSync4 } from "node:fs";
+import { join as join8 } from "node:path";
+function mirrorTreeMatches(root, expected) {
   try {
-    const identity = filesystem.stat(candidate);
-    if (!(isStableIdentityPart(identity.dev) && isStableIdentityPart(identity.ino)))
-      throw new Error("unstable identity");
-    return identity;
+    const actual = /* @__PURE__ */ new Map();
+    collectTree(root, "", actual);
+    return actual.size === expected.size && [...expected].every(([path5, digest]) => actual.get(path5) === digest);
   } catch {
-    throw new ProjectPathError("path_identity_unavailable");
+    return false;
   }
 }
-function identityForHandle(handle, filesystem) {
-  try {
-    const identity = filesystem.fstat(handle);
-    if (!(isStableIdentityPart(identity.dev) && isStableIdentityPart(identity.ino)))
-      throw new Error("unstable identity");
-    return identity;
-  } catch {
-    throw new ProjectPathError("path_identity_unavailable");
+function collectTree(directory, relativeDirectory, actual) {
+  for (const entry of readdirSync3(directory, {
+    withFileTypes: true
+  })) {
+    collectEntry({
+      directory,
+      relativeDirectory,
+      actual,
+      entry
+    });
   }
 }
-function sameIdentity(left, right) {
-  return left.ino === right.ino && (left.dev === right.dev || isZero(left.dev) || isZero(right.dev));
+function collectEntry(input) {
+  const path5 = join8(input.directory, input.entry.name);
+  const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
+  if (lstatSync2(path5).isSymbolicLink()) throw new Error("link");
+  if (input.entry.isDirectory()) {
+    collectTree(path5, relativePath, input.actual);
+    return;
+  }
+  if (input.entry.isFile()) {
+    input.actual.set(relativePath, sha2562(readFileSync4(path5, "utf8")));
+    return;
+  }
+  throw new Error("unsupported");
 }
-function isZero(value) {
-  return value === 0 || value === BigInt(0);
+
+// src/semantic/python-mirror-verification.ts
+function expectedTreeFor(snapshot) {
+  return new Map([
+    ["pyrightconfig.json", sha2562("{}\n")],
+    ...snapshot.inputs.map((input) => [input.path, input.sha256]),
+    ...Object.entries(BUNDLED_TYPESHED).map(
+      ([path5, text]) => [path5, sha2562(text)]
+    )
+  ]);
 }
-function identityFromStat(stats) {
-  if (!(isStableIdentityPart(stats.dev) && isStableIdentityPart(stats.ino))) throw new Error("unstable identity");
-  return { dev: stats.dev, ino: stats.ino };
+function verifyMirrorPath(input) {
+  const expected = input.manifest.get(input.path);
+  if (!expected || input.disposed) return false;
+  try {
+    return mirrorFilesMatch(input, expected);
+  } catch {
+    return false;
+  }
 }
-function isStableIdentityPart(value) {
-  return typeof value === "bigint" || Number.isSafeInteger(value);
+function mirrorFilesMatch(input, expected) {
+  const original = input.root.protectedRead(input.path).bytes;
+  const mirrorPath = join9(input.mirrorRoot, input.path);
+  if (lstatSync3(mirrorPath).isSymbolicLink()) return false;
+  return [
+    mirrorTreeMatches(input.mirrorRoot, input.expectedTree),
+    sha2562(original) === expected.original_sha256,
+    sha2562(readFileSync5(mirrorPath, "utf8")) === expected.mirror_sha256
+  ].every(Boolean);
 }
-function sameCanonicalPath(left, right, platform) {
-  return normalize(left, platform) === normalize(right, platform);
+
+// src/semantic/python-mirror-generation.ts
+function createMirror(root, generation, snapshot) {
+  const context = createMirrorContext(root, generation, snapshot);
+  return {
+    root: context.paths.mirrorRoot,
+    generation,
+    sourcePaths: () => snapshot.inputs.map(({ path: path5 }) => path5),
+    uriFor: (path5) => context.verify(path5) ? pathToFileURL(join10(context.paths.mirrorRoot, path5)).href : "",
+    pathForUri: (uri) => {
+      const path5 = relativeMirrorPath(uri, context.paths.mirrorRoot);
+      return path5 && context.verify(path5) ? path5 : void 0;
+    },
+    dispose: context.dispose.dispose,
+    disposeAfterShutdown
+  };
+  async function disposeAfterShutdown(shutdown) {
+    await shutdown();
+    context.dispose.dispose();
+  }
 }
-function normalize(value, platform) {
-  const noExtendedPrefix = platform === "win32" ? value.replace(/^\\\\\?\\/, "") : value;
-  const slashSeparated = noExtendedPrefix.replaceAll("\\", "/").replace(/\/+$/, "");
-  return platform === "win32" ? slashSeparated.toLocaleLowerCase("en-US") : slashSeparated;
+function createMirrorContext(root, generation, snapshot) {
+  const plan = createPythonMirrorPlan(snapshot.configuration, snapshot.inputs, {
+    generation,
+    mirror_uri_root: "file:///pending-python-mirror",
+    bundled_typeshed: Object.keys(BUNDLED_TYPESHED)
+  });
+  if (plan.status !== "ready") throw new Error("unsafe_backend_mode");
+  const paths = createMirrorTree(generation, snapshot);
+  const dispose = createDisposer(paths.serviceRoot);
+  return {
+    paths,
+    dispose,
+    verify: createVerifier({
+      root,
+      mirrorRoot: paths.mirrorRoot,
+      snapshot,
+      dispose
+    })
+  };
 }
-function isRelativeProjectPath(value, pathApi) {
-  return value.length > 0 && !pathApi.isAbsolute(value) && !value.split(/[\\/]/).includes("..");
+function createVerifier(input) {
+  const expectedTree = expectedTreeFor(input.snapshot);
+  const manifest = new Map(
+    input.snapshot.inputs.map((file) => [
+      file.path,
+      {
+        original_sha256: file.sha256,
+        mirror_sha256: file.sha256
+      }
+    ])
+  );
+  return (path5) => verifyMirrorPath({
+    path: path5,
+    root: input.root,
+    mirrorRoot: input.mirrorRoot,
+    expectedTree,
+    manifest,
+    disposed: input.dispose.disposed()
+  });
+}
+
+// src/semantic/python-mirror-config.ts
+import { existsSync as existsSync2, lstatSync as lstatSync4 } from "node:fs";
+import { join as join11 } from "node:path";
+function readProjectPythonConfiguration(root) {
+  const config2 = {};
+  const pyright = protectedOptionalRead(root, "pyrightconfig.json");
+  if (pyright !== void 0) config2.pyrightconfig = parseJson(pyright);
+  const pyproject = protectedOptionalRead(root, "pyproject.toml");
+  if (pyproject !== void 0) {
+    const parsed = parseToolPyright(pyproject);
+    if (parsed === void 0) throw new Error("unsafe_backend_mode");
+    if (Object.keys(parsed).length) config2.tool_pyright = parsed;
+  }
+  return config2;
+}
+function parseJson(source) {
+  try {
+    const parsed = JSON.parse(source);
+    if (!isRecord(parsed)) throw new Error("invalid");
+    return parsed;
+  } catch {
+    throw new Error("unsafe_backend_mode");
+  }
+}
+function protectedOptionalRead(root, path5) {
+  const absolute = join11(root.canonicalPath, path5);
+  if (!existsSync2(absolute)) return void 0;
+  if (lstatSync4(absolute).isSymbolicLink())
+    throw new Error("unsafe_backend_mode");
+  return root.protectedRead(path5).bytes;
+}
+function parseToolPyright(toml) {
+  const lines = toml.replace(/^\uFEFF/, "").split(/\r?\n/);
+  let active = false;
+  const result = {};
+  for (const raw of lines) {
+    const parsed = parseToolLine(raw, active);
+    active = parsed.active;
+    if (parsed.invalid) return void 0;
+    if (parsed.assignment)
+      result[parsed.assignment[0]] = parseTomlValue(parsed.assignment[1]);
+  }
+  return result;
+}
+function parseToolLine(raw, active) {
+  const line = raw.replace(/\s+#.*$/, "").trim();
+  if (!line) return { active, invalid: false };
+  if (/^\[.*\]$/.test(line))
+    return {
+      active: line === "[tool.pyright]",
+      invalid: false
+    };
+  if (!active) return { active, invalid: false };
+  const match = /^([A-Za-z0-9_.-]+)\s*=\s*(.+)$/.exec(line);
+  return match ? {
+    active,
+    invalid: false,
+    assignment: [match[1], match[2]]
+  } : { active, invalid: true };
+}
+function parseTomlValue(value) {
+  const trimmed = value.trim();
+  if (/^(true|false)$/.test(trimmed)) return trimmed === "true";
+  if (/^["'].*["']$/.test(trimmed)) return trimmed.slice(1, -1);
+  if (!/^\[.*\]$/.test(trimmed)) return trimmed;
+  const inner = trimmed.slice(1, -1).trim();
+  return inner ? inner.split(",").map(parseTomlValue) : [];
+}
+function isRecord(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+// src/semantic/python-mirror-inputs.ts
+import { lstatSync as lstatSync5, readdirSync as readdirSync5 } from "node:fs";
+import { join as join13 } from "node:path";
+
+// src/discovery/config-path.ts
+import { readdirSync as readdirSync4 } from "node:fs";
+import { join as join12 } from "node:path";
+var configName = ".code-explorer.json";
+function isClassificationConfigPath(path5, platform = process.platform) {
+  if (path5.includes("/") || path5.includes("\\")) return false;
+  return platform === "win32" ? path5.toLocaleLowerCase("en-US") === configName : path5 === configName;
+}
+function findClassificationConfigPath(projectRoot, platform = process.platform) {
+  return readdirSync4(projectRoot, { withFileTypes: true }).find(
+    (entry) => entry.isFile() && isClassificationConfigPath(entry.name, platform)
+  )?.name;
+}
+function classificationConfigPath(projectRoot, platform = process.platform) {
+  const name = findClassificationConfigPath(projectRoot, platform);
+  return name ? join12(projectRoot, name) : void 0;
+}
+
+// src/semantic/python-mirror-inputs.ts
+function collectPythonFiles(root) {
+  return visit(root, root.canonicalPath, "");
+}
+function visit(root, directory, relativeDirectory) {
+  return readdirSync5(directory, {
+    withFileTypes: true
+  }).flatMap(
+    (entry) => visitEntry({
+      root,
+      directory,
+      relativeDirectory,
+      entry
+    })
+  );
+}
+function visitEntry(input) {
+  const absolute = join13(input.directory, input.entry.name);
+  const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
+  if (lstatSync5(absolute).isSymbolicLink())
+    throw new Error("unsafe_backend_mode");
+  if (input.entry.isDirectory())
+    return visitDirectory(input.root, absolute, relativePath);
+  return visitPythonFile(input.root, absolute, relativePath);
+}
+function visitPythonFile(root, absolute, relativePath) {
+  if (!isPythonFile(relativePath)) return [];
+  const resolved = root.resolveClientPath(relativePath);
+  if (!samePath2(resolved, absolute)) throw new Error("unsafe_backend_mode");
+  return [relativePath];
+}
+function visitDirectory(root, absolute, relativePath) {
+  return isExcludedPythonDirectory(relativePath) ? [] : visit(root, absolute, relativePath);
+}
+function isPythonFile(path5) {
+  return (path5.endsWith(".py") || path5.endsWith(".pyi")) && !isSensitiveProjectPath(path5) && !isClassificationConfigPath(path5);
+}
+function isExcludedPythonDirectory(path5) {
+  return isSensitiveProjectPath(path5) || path5.split("/").some((part) => /^(\.venv|venv|node_modules|__pycache__)$/iu.test(part));
+}
+
+// src/semantic/python-mirror-snapshot.ts
+function snapshotPythonProject(root) {
+  const configuration = readProjectPythonConfiguration(root);
+  const inputs = collectPythonFiles(root).map((path5) => {
+    const text = root.protectedRead(path5).bytes;
+    return { path: path5, text, sha256: sha2562(text) };
+  });
+  return {
+    configuration,
+    inputs,
+    fingerprint: sha2562(
+      [
+        JSON.stringify(configuration),
+        inputs.map((input) => `${input.path}:${input.sha256}`).join("\n")
+      ].join("\n")
+    )
+  };
+}
+
+// src/semantic/python-mirror-manager-actions.ts
+async function refreshManager(input) {
+  const snapshot = snapshotOrUndefined(input.root);
+  if (!snapshot) return unavailableRefresh(input);
+  const active = input.active();
+  if (active?.fingerprint === snapshot.fingerprint)
+    return unchangedMirror(active);
+  await retireActive(input);
+  return createFreshMirror(input, snapshot);
+}
+async function unavailableRefresh(input) {
+  await retireActive(input);
+  return {
+    status: "unavailable",
+    code: "unsafe_backend_mode"
+  };
+}
+function unchangedMirror(active) {
+  return {
+    status: "ready",
+    mirror: active.mirror,
+    changed: false
+  };
+}
+function snapshotOrUndefined(root) {
+  try {
+    return snapshotPythonProject(root);
+  } catch {
+    return void 0;
+  }
+}
+function createFreshMirror(input, snapshot) {
+  try {
+    const mirror = createMirror(input.root, input.nextGeneration(), snapshot);
+    input.setActive({
+      mirror,
+      fingerprint: snapshot.fingerprint
+    });
+    return {
+      status: "ready",
+      mirror,
+      changed: true
+    };
+  } catch {
+    return {
+      status: "unavailable",
+      code: "unsafe_backend_mode"
+    };
+  }
+}
+async function retireActive(input) {
+  const active = input.active();
+  if (!active) return;
+  input.setActive(void 0);
+  try {
+    await active.mirror.disposeAfterShutdown(input.terminateOldBackend);
+  } catch {
+  }
+}
+
+// src/semantic/python-mirror-manager.ts
+function createPythonMirrorManager(root, terminateOldBackend = () => {
+}) {
+  let active;
+  let nextGeneration = 0;
+  return {
+    current: () => active?.mirror,
+    refresh: () => refreshManager({
+      root,
+      active: () => active,
+      setActive: (value) => {
+        active = value;
+      },
+      nextGeneration: () => nextGeneration++,
+      terminateOldBackend
+    }),
+    disposeAfterShutdown: (shutdown) => disposeManager(
+      () => active,
+      (value) => active = value,
+      shutdown
+    )
+  };
+}
+async function disposeManager(active, setActive, shutdown) {
+  await shutdown();
+  active()?.mirror.dispose();
+  setActive(void 0);
+}
+
+// src/semantic/root-access-status.ts
+function rootAccessStatus(state) {
+  return {
+    state,
+    restart_required: state === "project_root_unavailable"
+  };
+}
+
+// src/semantic/root-access.ts
+var RootAccessGate = class {
+  constructor(root, adapters, now = Date.now) {
+    this.root = root;
+    this.adapters = adapters;
+    this.now = now;
+  }
+  root;
+  adapters;
+  now;
+  state = "ready";
+  #inaccessibleSince;
+  #retryTimer;
+  async check() {
+    if (!this.root) return this.status();
+    if (this.state === "project_root_unavailable") return this.status();
+    const result = this.root.revalidate();
+    if (result === "ready") return this.#handleReady();
+    return this.#handleRootFailure(result);
+  }
+  status() {
+    return rootAccessStatus(this.state);
+  }
+  #handleRootFailure(result) {
+    if (result === "inaccessible" && this.#withinRecoveryWindow())
+      return this.#handleTransientInaccessibility();
+    return this.#handleUnavailable();
+  }
+  async #handleReady() {
+    if (this.state === "project_root_inaccessible") await this.#restart();
+    this.state = "ready";
+    this.#inaccessibleSince = void 0;
+    this.#clearRetry();
+    return this.status();
+  }
+  async #handleTransientInaccessibility() {
+    this.state = "project_root_inaccessible";
+    await this.#stop();
+    this.#scheduleRetry();
+    return this.status();
+  }
+  async #handleUnavailable() {
+    this.state = "project_root_unavailable";
+    this.#clearRetry();
+    await this.#stop();
+    return this.status();
+  }
+  #withinRecoveryWindow() {
+    this.#inaccessibleSince ??= this.now();
+    return this.now() - this.#inaccessibleSince < 3e4;
+  }
+  async #stop() {
+    await Promise.all(
+      this.adapters.flatMap(
+        (adapter) => adapter.shutdown ? [adapter.shutdown()] : []
+      )
+    );
+  }
+  async #restart() {
+    await Promise.all(
+      this.adapters.flatMap(
+        (adapter) => adapter.start ? [adapter.start()] : []
+      )
+    );
+  }
+  #scheduleRetry() {
+    if (this.#retryTimer !== void 0) return;
+    this.#retryTimer = setTimeout(() => {
+      this.#retryTimer = void 0;
+      void this.check();
+    }, 5e3);
+    this.#retryTimer.unref?.();
+  }
+  #clearRetry() {
+    if (this.#retryTimer === void 0) return;
+    clearTimeout(this.#retryTimer);
+    this.#retryTimer = void 0;
+  }
+};
+
+// src/semantic/native-backend-inspector.ts
+import { isAbsolute as isAbsolute2 } from "node:path";
+
+// src/semantic/native-backend-candidate.ts
+import { join as join16 } from "node:path";
+
+// src/semantic/native-backend-candidate-details.ts
+import { dirname as dirname4, join as join14 } from "node:path";
+
+// src/semantic/native-backend-file.ts
+import { createHash as createHash3 } from "node:crypto";
+import { lstatSync as lstatSync6, readFileSync as readFileSync6, realpathSync as realpathSync2, statSync as statSync2 } from "node:fs";
+import { isAbsolute, relative as relative2, resolve as resolve2, sep } from "node:path";
+function inspectNativeFile(candidate, root, projectRoot) {
+  try {
+    const link = lstatSync6(candidate);
+    if (!link.isFile() || link.isSymbolicLink()) return void 0;
+    const canonicalPath = realpathSync2.native(candidate);
+    if (!safeFilePath(root, canonicalPath, projectRoot)) return void 0;
+    const stat4 = statSync2(canonicalPath, { bigint: true });
+    return {
+      canonical_path: canonicalPath,
+      device: String(stat4.dev),
+      file_id: String(stat4.ino),
+      sha256: createHash3("sha256").update(readFileSync6(canonicalPath)).digest("hex"),
+      regular_file: true,
+      link_or_reparse_point: false
+    };
+  } catch {
+    return void 0;
+  }
+}
+function safeFilePath(root, candidate, projectRoot) {
+  return isWithin2(root, candidate) && !(projectRoot && isWithin2(projectRoot, candidate));
+}
+function isWithin2(root, candidate) {
+  const path5 = relative2(resolve2(root), resolve2(candidate));
+  return path5 === "" || isChild(path5);
+}
+function isChild(path5) {
+  return !path5.startsWith(`..${sep}`) && path5 !== ".." && !isAbsolute(path5);
+}
+
+// src/semantic/native-backend-candidate-details.ts
+function findPackageMetadata(input, entrypoints) {
+  if (input.language !== "python") return void 0;
+  const entrypoint = entrypoints[0]?.canonical_path;
+  const root = entrypoint ? input.roots.find((candidate) => isWithin2(candidate, entrypoint)) : void 0;
+  return entrypoint && root ? inspectNativeFile(
+    join14(dirname4(entrypoint), "package.json"),
+    root,
+    input.projectRoot
+  ) : void 0;
+}
+function candidateIdentity(input, details) {
+  if (input.language === "python" && !details.packageMetadata) return void 0;
+  return {
+    ...details.executable,
+    version: details.version,
+    entrypoints: details.files,
+    ...details.packageMetadata ? { package_metadata: details.packageMetadata } : {}
+  };
+}
+function pinnedRoslynExecutable(root, executableBasename) {
+  return join14(
+    root,
+    ".store",
+    "roslyn-language-server",
+    "5.11.0-1.26380.4",
+    "roslyn-language-server.win-x64",
+    "5.11.0-1.26380.4",
+    "tools",
+    "net10.0",
+    "win-x64",
+    executableBasename
+  );
+}
+
+// src/semantic/native-backend-version.ts
+import { spawnSync } from "node:child_process";
+import { readFileSync as readFileSync7 } from "node:fs";
+import { dirname as dirname5, join as join15 } from "node:path";
+function probeVersion(language, executable, entrypoints) {
+  if (language === "csharp")
+    return peFileVersion(executable) ?? commandVersion(executable);
+  if (language === "python")
+    return pyrightPackageVersion(entrypoints[0]?.canonical_path);
+  return commandVersion(executable);
+}
+function commandVersion(executable) {
+  const probe = spawnSync(executable, ["--version"], {
+    encoding: "utf8",
+    shell: false,
+    timeout: 5e3,
+    windowsHide: true
+  });
+  return probe.status === 0 ? firstVersion(`${probe.stdout}
+${probe.stderr}`) : void 0;
+}
+function peFileVersion(path5) {
+  const source = readFileSync7(path5).toString("utf16le");
+  const version2 = /ProductVersion\0(v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/.exec(
+    source
+  )?.[1];
+  return version2?.replace(/^v/, "") ?? firstVersion(source.match(/FileVersion[\s\S]{0,160}/)?.[0] ?? "");
+}
+function pyrightPackageVersion(entrypoint) {
+  if (!entrypoint) return void 0;
+  try {
+    const parseJson2 = JSON.parse;
+    const packageJson = parseJson2(
+      readFileSync7(join15(dirname5(entrypoint), "package.json"), "utf8")
+    );
+    return typeof packageJson.version === "string" && /^\d+\.\d+\.\d+$/.test(packageJson.version) ? packageJson.version : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function firstVersion(output) {
+  return output.match(
+    /(?:^|[^0-9])v?(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/
+  )?.[1];
+}
+
+// src/semantic/native-backend-candidate.ts
+function inspectBackendCandidate(input) {
+  const executable = inspectExecutable(input);
+  if (!hasCanonicalPath(executable)) return void 0;
+  const entrypoints = findEntrypoints(input);
+  return completeCandidate(input, executable, entrypoints);
+}
+function hasCanonicalPath(identity) {
+  return Boolean(identity?.canonical_path);
+}
+function completeCandidate(input, executable, entrypoints) {
+  if (entrypoints.some((entrypoint) => !entrypoint)) return void 0;
+  const files = entrypoints;
+  const version2 = probeVersion(
+    input.language,
+    executable.canonical_path,
+    files
+  );
+  if (!version2) return void 0;
+  const packageMetadata = findPackageMetadata(input, files);
+  return candidateIdentity(input, {
+    executable,
+    files,
+    version: version2,
+    packageMetadata
+  });
+}
+function inspectExecutable(input) {
+  const candidate = input.language === "csharp" ? pinnedRoslynExecutable(input.root, input.executableBasename) : join16(input.root, input.executableBasename);
+  return inspectNativeFile(candidate, input.root, input.projectRoot);
+}
+function findEntrypoints(input) {
+  return input.entrypointBasenames.map(
+    (name) => input.roots.map(
+      (entrypointRoot) => inspectNativeFile(
+        join16(entrypointRoot, "node_modules", "pyright", name),
+        entrypointRoot,
+        input.projectRoot
+      )
+    ).find(Boolean)
+  );
+}
+
+// src/semantic/native-backend-inspector.ts
+function createNativeBackendInspector(commandRoots, projectRoot) {
+  const roots = commandRoots.filter(
+    (root) => isAbsolute2(root) && !(projectRoot && isWithin2(projectRoot, root))
+  );
+  return (language, executableBasename, entrypointBasenames = []) => {
+    for (const root of roots) {
+      const candidate = inspectBackendCandidate({
+        language,
+        root,
+        projectRoot,
+        executableBasename,
+        entrypointBasenames,
+        roots
+      });
+      if (candidate) return candidate;
+    }
+    return void 0;
+  };
+}
+
+// src/semantic/filtered-workspace.ts
+import { existsSync as existsSync3, mkdtempSync as mkdtempSync2, rmSync as rmSync2 } from "node:fs";
+import { tmpdir as tmpdir2 } from "node:os";
+import { join as join18 } from "node:path";
+
+// src/semantic/filtered-workspace-copy.ts
+import {
+  lstatSync as lstatSync7,
+  mkdirSync as mkdirSync3,
+  readdirSync as readdirSync6,
+  writeFileSync as writeFileSync2
+} from "node:fs";
+import { dirname as dirname6, join as join17 } from "node:path";
+
+// src/semantic/filtered-workspace-rules.ts
+function relativePathFor(directory, name) {
+  return directory ? `${directory}/${name}` : name;
+}
+function isBackendIrrelevant(path5) {
+  return path5.split("/").some((part) => BACKEND_IRRELEVANT.test(part));
+}
+var BACKEND_IRRELEVANT = new RegExp(
+  [
+    "^(node_modules|dist|target|bin|obj|\\.venv|coverage|docs|reports|",
+    "\\.serena|\\.idea|\\.claude|\\.codex|\\.github|\\.data|",
+    "\\.evo|\\.skill-migrate|\\.tighten)$"
+  ].join(""),
+  "iu"
+);
+function isBackendSourceFile(path5) {
+  return /\.(rs|cs|csx|fs|vb|toml|json|sln|csproj|props|targets)$/iu.test(path5) || /(^|\/)(Cargo\.lock|Cargo\.toml|Directory\.Build\.props)$/iu.test(path5);
+}
+
+// src/semantic/filtered-workspace-copy.ts
+function copyFilteredDirectory(input) {
+  return readdirSync6(input.absoluteDirectory, {
+    withFileTypes: true
+  }).reduce(
+    (excluded, entry) => excluded + copyFilteredEntry({ ...input, entry }),
+    0
+  );
+}
+function copyFilteredEntry(input) {
+  const relativePath = relativePathFor(
+    input.relativeDirectory,
+    input.entry.name
+  );
+  const reason = skipReason(
+    relativePath,
+    input.absoluteDirectory,
+    input.entry.name
+  );
+  if (reason === "sensitive") return 1;
+  if (reason) return 0;
+  if (input.entry.isDirectory()) return copyDirectory(input, relativePath);
+  copySource(input, relativePath);
+  return 0;
+}
+function copyDirectory(input, relativePath) {
+  const target = join17(input.serviceRoot, relativePath);
+  mkdirSync3(target, { recursive: true });
+  return copyFilteredDirectory({
+    ...input,
+    absoluteDirectory: join17(input.absoluteDirectory, input.entry.name),
+    relativeDirectory: relativePath
+  });
+}
+function copySource(input, relativePath) {
+  if (!(input.entry.isFile() && isBackendSourceFile(relativePath))) return;
+  const target = join17(input.serviceRoot, relativePath);
+  mkdirSync3(dirname6(target), { recursive: true });
+  writeFileSync2(
+    target,
+    input.sourceRoot.protectedRead(relativePath).bytes,
+    "utf8"
+  );
+  input.sourcePaths.push(relativePath);
+}
+function skipReason(relativePath, absoluteDirectory, name) {
+  if (isSensitiveProjectPath(relativePath)) return "sensitive";
+  if (isClassificationConfigPath(relativePath)) return "ignored";
+  if (isBackendIrrelevant(relativePath)) return "ignored";
+  if (lstatSync7(join17(absoluteDirectory, name)).isSymbolicLink())
+    return "ignored";
+  return void 0;
+}
+
+// src/semantic/filtered-workspace.ts
+function createFilteredWorkspace(sourceRoot) {
+  const serviceRoot = mkdtempSync2(join18(tmpdir2(), "code-explorer-native-"));
+  const sourcePaths = [];
+  try {
+    const excluded = copyFilteredDirectory({
+      absoluteDirectory: sourceRoot.canonicalPath,
+      relativeDirectory: "",
+      serviceRoot,
+      sourceRoot,
+      sourcePaths
+    });
+    return {
+      root: createNativeProjectRoot(serviceRoot),
+      sensitive_paths_excluded: excluded,
+      sourcePaths: () => [...sourcePaths],
+      dispose: () => disposeWorkspace(serviceRoot)
+    };
+  } catch (error2) {
+    disposeWorkspace(serviceRoot);
+    throw error2;
+  }
+}
+function disposeWorkspace(serviceRoot) {
+  if (existsSync3(serviceRoot))
+    rmSync2(serviceRoot, { recursive: true, force: true });
+}
+
+// src/semantic/runtime-adapter-metadata.ts
+function runtimeAdapterMetadata(input) {
+  return {
+    backend_name: input.backendName,
+    backend_version: input.prepared.status === "ready" ? input.prepared.version : "unobserved",
+    discovery_source: "server_path",
+    unavailable_failure_code: input.prepared.status === "unavailable" ? input.prepared.code : "backend_unavailable",
+    capabilities: input.capabilities
+  };
+}
+
+// src/semantic/language-adapter-status-fields.ts
+function adapterState(input) {
+  if (!input.options.compatible) return "unavailable";
+  if (input.timedOut) return "failed";
+  if (input.backendState === "ready" && hasUnavailableCapability(input.capabilities))
+    return "degraded";
+  return input.backendState;
+}
+function failureFields(input) {
+  if (!input.options.compatible)
+    return { failure_code: "unsupported_backend_version" };
+  if (input.backendState.state === "unavailable")
+    return { failure_code: unavailableFailure(input) };
+  if (input.timedOut) return { failure_code: "initialization_timeout" };
+  if (input.backendState.state === "failed")
+    return {
+      failure_code: input.backendState.failure_code
+    };
+  return {};
+}
+function unavailableFailure(input) {
+  return input.backendState.failure_code ?? input.options.unavailable_failure_code ?? "backend_unavailable";
+}
+function configuredCapabilities(overrides) {
+  const defaults = Object.fromEntries(
+    relationNames.map((relation) => [relation, { state: "ready" }])
+  );
+  return { ...defaults, ...overrides };
+}
+function unavailableCapabilities(capabilities) {
+  return Object.fromEntries(
+    Object.keys(capabilities).map((relation) => [
+      relation,
+      { state: "unavailable" }
+    ])
+  );
+}
+function hasUnavailableCapability(capabilities) {
+  return Object.values(capabilities).some(({ state }) => state !== "ready");
+}
+function defaultBackendName(language) {
+  if (language === "rust") return "rust-analyzer";
+  if (language === "python") return "pyright-langserver";
+  return "roslyn-language-server";
+}
+
+// src/semantic/language-adapter-status.ts
+function createBackendStatus(input) {
+  const backendState = input.options.backend.readiness();
+  const initializingSince = nextInitializingSince(
+    backendState.state,
+    input.initializingSince,
+    input.now
+  );
+  const timedOut = backendState.state === "initializing" && input.now() - (initializingSince ?? input.now()) >= 3e4;
+  const state = adapterState({
+    options: input.options,
+    backendState: backendState.state,
+    timedOut,
+    capabilities: input.capabilities
+  });
+  const status = {
+    language: input.language,
+    backend_name: input.options.backend_name ?? defaultBackendName(input.language),
+    backend_version: input.options.backend_version,
+    discovery_source: input.options.discovery_source ?? "injected",
+    state,
+    capabilities: state === "unavailable" || state === "failed" ? unavailableCapabilities(input.capabilities) : input.capabilities,
+    last_transition_time: 0,
+    ...failureFields({
+      options: input.options,
+      backendState,
+      timedOut
+    })
+  };
+  return { status, initializingSince };
+}
+function nextInitializingSince(state, current2, now) {
+  if (state === "initializing") return current2 ?? now();
+  return void 0;
+}
+
+// src/semantic/language-adapter-status-reader.ts
+function createStatusReader(input) {
+  let initializingSince;
+  let lastSignature;
+  let lastTransitionTime = input.now();
+  return () => {
+    const current2 = createBackendStatus({
+      ...input,
+      capabilities: input.capabilities(),
+      initializingSince
+    });
+    initializingSince = current2.initializingSince;
+    const signature = [
+      current2.status.state,
+      current2.status.failure_code ?? ""
+    ].join(":");
+    if (lastSignature === void 0 || signature !== lastSignature) {
+      lastSignature = signature;
+      lastTransitionTime = input.now();
+    }
+    return {
+      ...current2.status,
+      last_transition_time: lastTransitionTime
+    };
+  };
+}
+
+// src/semantic/language-adapter-factory.ts
+function createLanguageAdapter(language, options) {
+  const backend = options.backend;
+  const lifecycle = lifecycleMethods(backend);
+  const capabilities = configuredCapabilities(options.capabilities);
+  const now = options.now ?? Date.now;
+  return {
+    status: createStatusReader({
+      language,
+      options,
+      capabilities: () => backend.capabilities?.() ?? capabilities,
+      now
+    }),
+    request: (request) => Promise.resolve().then(() => requestBackend(backend, request)),
+    ...lifecycle
+  };
+}
+function requestBackend(backend, request) {
+  return backend.query(parseSemanticRequest(request)).then(parseSemanticResult);
+}
+function lifecycleMethods(backend) {
+  return {
+    ...backend.start ? { start: backend.start } : {},
+    ...backend.shutdown ? { shutdown: backend.shutdown } : {},
+    ...backend.refresh ? { refresh: backend.refresh } : {}
+  };
+}
+
+// src/semantic/language-adapter.ts
+function createRustAdapter(options) {
+  return createLanguageAdapter("rust", options);
+}
+function createPythonAdapter(options) {
+  return createLanguageAdapter("python", options);
+}
+function createCSharpAdapter(options) {
+  return createLanguageAdapter("csharp", options);
+}
+
+// src/semantic/runtime-adapter-selection.ts
+function createSelectedAdapter(language, options) {
+  if (language === "rust") return createRustAdapter(options);
+  if (language === "python") return createPythonAdapter(options);
+  return createCSharpAdapter(options);
+}
+function withFilteredShutdown(adapter, filtered) {
+  return {
+    ...adapter,
+    shutdown: () => shutdownFiltered(adapter, filtered)
+  };
+}
+async function shutdownFiltered(adapter, filtered) {
+  try {
+    await adapter.shutdown?.();
+  } finally {
+    filtered.dispose();
+  }
+}
+
+// src/semantic/runtime-backend-unavailable.ts
+async function unavailableQuery(_request) {
+  throw new Error("backend_unavailable");
+}
+var unavailableBackend = {
+  readiness: () => ({ state: "unavailable" }),
+  query: unavailableQuery
+};
+
+// src/semantic/runtime-native-backend.ts
+import { fileURLToPath as fileURLToPath3, pathToFileURL as pathToFileURL2 } from "node:url";
+
+// src/semantic/direct-lsp-semantic-backend.ts
+var direct_lsp_semantic_backend_exports = {};
+__export(direct_lsp_semantic_backend_exports, {
+  createDirectLspSemanticBackend: () => createDirectLspSemanticBackend
+});
+
+// src/semantic/direct-lsp-semantic-capabilities.ts
+var direct_lsp_semantic_capabilities_exports = {};
+__export(direct_lsp_semantic_capabilities_exports, {
+  relationCapabilitiesFromInitialize: () => relationCapabilitiesFromInitialize
+});
+function relationCapabilitiesFromInitialize(status) {
+  const capabilities = status.server_capabilities ?? {};
+  const supported = (name) => capabilities[name] !== void 0 && capabilities[name] !== false;
+  return {
+    definition: capabilityState(supported("definitionProvider")),
+    references: capabilityState(supported("referencesProvider")),
+    type_definition: capabilityState(supported("typeDefinitionProvider")),
+    implementation: capabilityState(supported("implementationProvider")),
+    callers: capabilityState(supported("callHierarchyProvider")),
+    callees: capabilityState(supported("callHierarchyProvider"))
+  };
+}
+function capabilityState(supported) {
+  return { state: supported ? "ready" : "unavailable" };
+}
+
+// src/semantic/backend-result-validator.ts
+import { Buffer as Buffer2 } from "node:buffer";
+
+// src/semantic/backend-result-locations.ts
+function symbolsIn(result) {
+  if (result.operation === "search") return result.symbols;
+  if (result.operation === "focus") return [result.symbol];
+  return result.relations.flatMap(
+    (relation) => "symbol" in relation ? [relation.symbol] : []
+  );
+}
+function projectLocationsIn(result) {
+  if (result.operation === "search")
+    return result.symbols.map(({ location }) => location);
+  if (result.operation === "focus") return [result.symbol.location];
+  return result.relations.flatMap((relation) => relationLocations(relation));
+}
+function relationLocations(relation) {
+  if (!("symbol" in relation)) return [];
+  return "external" in relation.location ? [relation.symbol.location] : [relation.symbol.location, relation.location];
+}
+function validateSymbol(symbol, options) {
+  if (!options.allowedLanguages.includes(symbol.language))
+    throw new Error("unexpected language");
+  validateLocation(symbol.location, options);
+}
+function validateLocation(location, options) {
+  options.root.resolveClientPath(location.path);
+  const source = options.root.protectedRead(location.path).bytes;
+  if (!rangeFits(source, location.range)) throw new Error("invalid range");
+}
+function rangeFits(source, range) {
+  const lines = source.split("\n").map((line) => line.replace(/\r$/, ""));
+  return positionFits(lines, range.start) && positionFits(lines, range.end) && comparePositions(range.start, range.end) <= 0;
+}
+function positionFits(lines, position) {
+  return position.line >= 0 && position.line < lines.length && position.character >= 0 && position.character <= lines[position.line].length;
+}
+function comparePositions(left, right) {
+  return left.line === right.line ? left.character - right.character : left.line - right.line;
+}
+
+// src/semantic/backend-result-safety.ts
+function containsVirtualDocument(input) {
+  if (!isRecordOrArray(input)) return false;
+  if (Array.isArray(input)) return input.some(containsVirtualDocument);
+  return virtualRecord(input);
+}
+function virtualRecord(record2) {
+  if (typeof record2.uri === "string" && !record2.uri.startsWith("file:"))
+    return true;
+  return Object.values(record2).some(containsVirtualDocument);
+}
+function containsUnexpectedLanguage(input, allowedLanguages) {
+  if (!isRecordOrArray(input)) return false;
+  if (Array.isArray(input))
+    return input.some(
+      (item) => containsUnexpectedLanguage(item, allowedLanguages)
+    );
+  return unexpectedLanguageRecord(input, allowedLanguages);
+}
+function unexpectedLanguageRecord(record2, allowedLanguages) {
+  if ("language" in record2 && typeof record2.language === "string" && !allowedLanguages.includes(record2.language))
+    return true;
+  return Object.values(record2).some(
+    (item) => containsUnexpectedLanguage(item, allowedLanguages)
+  );
+}
+function containsStaleRevision(input, currentGeneration) {
+  if (!isRecordOrArray(input) || Array.isArray(input)) return false;
+  const revision = input.revision;
+  return isRecord2(revision) && revision.generation !== currentGeneration;
+}
+function isRecordOrArray(value) {
+  return !!value && typeof value === "object";
+}
+function isRecord2(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+// src/semantic/backend-result-validator.ts
+var MAX_BACKEND_PAYLOAD_BYTES = 1024 * 1024;
+function validateBackendResult(input, options) {
+  const safety = validateSafety(input, options);
+  if (safety) return safety;
+  const result = parseResult(input);
+  if (!result)
+    return {
+      status: "rejected",
+      code: "invalid_backend_result"
+    };
+  return validateParsedResult(result, options);
+}
+function validateSafety(input, options) {
+  if (payloadSize(input) > MAX_BACKEND_PAYLOAD_BYTES)
+    return {
+      status: "rejected",
+      code: "backend_response_limit"
+    };
+  if (containsVirtualDocument(input) || containsStaleRevision(input, options.currentGeneration))
+    return {
+      status: "unavailable",
+      code: "invalid_backend_result",
+      adapter_state: "degraded"
+    };
+  if (containsUnexpectedLanguage(input, options.allowedLanguages))
+    return {
+      status: "rejected",
+      code: "invalid_backend_result",
+      adapter_gap: "unexpected_language"
+    };
+  return void 0;
+}
+function parseResult(input) {
+  try {
+    return parseSemanticResult(input);
+  } catch {
+    return void 0;
+  }
+}
+function validateParsedResult(result, options) {
+  try {
+    for (const symbol of symbolsIn(result)) validateSymbol(symbol, options);
+    for (const location of projectLocationsIn(result))
+      validateLocation(location, options);
+    return { status: "accepted", result };
+  } catch {
+    return {
+      status: "rejected",
+      code: "invalid_backend_result"
+    };
+  }
+}
+function payloadSize(input) {
+  try {
+    return Buffer2.byteLength(JSON.stringify(input), "utf8");
+  } catch {
+    return MAX_BACKEND_PAYLOAD_BYTES + 1;
+  }
+}
+
+// src/semantic/direct-lsp-semantic-accept.ts
+function acceptResult(result, input) {
+  const checked = validateBackendResult(result, {
+    allowedLanguages: [input.options.language],
+    root: input.options.root,
+    currentGeneration: input.options.revision.generation
+  });
+  if (checked.status !== "accepted") throw new Error(checked.code);
+  retainReturnedSymbols(checked.result, input.symbols);
+  return checked.result;
+}
+function retainReturnedSymbols(result, symbols) {
+  if (result.operation === "search") return retainSearch(result, symbols);
+  if (result.operation === "focus") {
+    symbols.set(result.symbol.id, result.symbol);
+    return;
+  }
+  for (const relation of result.relations)
+    if ("symbol" in relation) symbols.set(relation.symbol.id, relation.symbol);
+}
+function retainSearch(result, symbols) {
+  for (const symbol of result.symbols) symbols.set(symbol.id, symbol);
+}
+function openSourceDocument(source, options) {
+  if (!options.client.openProtectedDocument) return;
+  const uri = options.toBackendUri(source.location);
+  const document = options.root.protectedRead(source.location.path);
+  options.client.openProtectedDocument(uri, {
+    language_id: options.language,
+    bytes: document.bytes
+  });
+}
+
+// src/semantic/direct-lsp-semantic-availability.ts
+function assertAvailable(request, input) {
+  if (unavailableRelation(request, input.unavailableRelations))
+    throw new Error("backend_unavailable");
+  assertSymbolAvailable(request, input.symbols);
+  assertRelationAvailable(request, input.options);
+}
+function assertSymbolAvailable(request, symbols) {
+  if (request.operation !== "search" && !symbols.has(request.symbol_id))
+    throw new Error("backend_unavailable");
+}
+function assertRelationAvailable(request, options) {
+  if (isRelation(request) && relationCapabilitiesFromInitialize(
+    options.client.status()
+  )[request.operation].state !== "ready")
+    throw new Error("backend_unavailable");
+}
+function unavailableRelation(request, unavailableRelations) {
+  return isRelation(request) && unavailableRelations.has(request.operation);
+}
+function isRelation(request) {
+  return request.operation !== "search" && request.operation !== "focus";
+}
+
+// src/semantic/direct-lsp-semantic-location.ts
+function lspLocation(target, options) {
+  const uri = target?.uri ?? target?.targetUri;
+  const range = target?.range ?? target?.targetRange;
+  if (!(typeof uri === "string" && validRange(range))) return void 0;
+  const path5 = options.fromBackendUri(uri);
+  if (path5)
+    return {
+      path: path5,
+      range
+    };
+  if (uri.startsWith("file:")) return { external: true };
+  throw new Error("invalid_backend_result");
+}
+function asRecord(value) {
+  return value && typeof value === "object" ? value : void 0;
+}
+function validRange(value) {
+  const range = value;
+  return !!(Number.isInteger(range?.start?.line) && Number.isInteger(range.start?.character) && Number.isInteger(range?.end?.line) && Number.isInteger(range.end?.character));
+}
+
+// src/semantic/direct-lsp-semantic-document-symbols.ts
+function documentSymbols(raw, uri) {
+  const values = Array.isArray(raw) ? raw : [];
+  return values.flatMap((value) => documentSymbolAt(value, uri));
+}
+function documentSymbolAt(value, uri) {
+  const symbol = asRecord(value);
+  if (!symbol) return [];
+  const range = validRange(symbol.selectionRange) ? symbol.selectionRange : symbol.range;
+  const current2 = validRange(range) ? [
+    {
+      name: symbol.name,
+      kind: symbol.kind,
+      location: { uri, range }
+    }
+  ] : [];
+  return [...current2, ...documentSymbols(symbol.children, uri)];
+}
+
+// src/semantic/direct-lsp-semantic-protocol.ts
+var LSP_METHODS = {
+  definition: "textDocument/definition",
+  references: "textDocument/references",
+  type_definition: "textDocument/typeDefinition",
+  implementation: "textDocument/implementation",
+  callers: "textDocument/prepareCallHierarchy",
+  callees: "textDocument/prepareCallHierarchy",
+  search: "workspace/symbol"
+};
+function methodFor(operation) {
+  return LSP_METHODS[operation] ?? "workspace/symbol";
+}
+function paramsFor(request, source, options) {
+  if (request.operation === "search") return { query: request.query };
+  if (!source) throw new Error("backend_unavailable");
+  const textDocument = {
+    uri: options.toBackendUri(source.location)
+  };
+  const position = source.location.range.start;
+  return request.operation === "references" ? {
+    textDocument,
+    position,
+    context: { includeDeclaration: true }
+  } : { textDocument, position };
+}
+
+// src/semantic/direct-lsp-semantic-source-symbol.ts
+function sourceSymbol(input) {
+  return {
+    name: input.name,
+    kind: input.kind,
+    location: symbolLocation(input)
+  };
+}
+function symbolLocation(input) {
+  return {
+    uri: input.uri,
+    range: {
+      start: {
+        line: input.lineNumber,
+        character: input.character
+      },
+      end: {
+        line: input.lineNumber,
+        character: input.character + input.name.length
+      }
+    }
+  };
+}
+
+// src/semantic/direct-lsp-semantic-csharp-symbols.ts
+function csharpSourceSymbols(source, uri) {
+  return source.split(/\r?\n/).flatMap((line, lineNumber) => csharpSymbolsAt(line, lineNumber, uri));
+}
+function csharpSymbolsAt(line, lineNumber, uri) {
+  return [
+    csharpTypeSymbol(line, lineNumber, uri),
+    csharpMethodSymbol(line, lineNumber, uri)
+  ].filter((symbol) => symbol !== void 0);
+}
+function csharpTypeSymbol(line, lineNumber, uri) {
+  const match = /\b(class|interface|struct|enum)\s+([A-Za-z_]\w*)/.exec(line);
+  if (!match) return void 0;
+  return sourceSymbol({
+    name: match[2],
+    kind: match[1] === "interface" ? 11 : 5,
+    character: line.indexOf(match[2]),
+    lineNumber,
+    uri
+  });
+}
+var CSHARP_METHOD = new RegExp(
+  String.raw`^\s*(?:(?:public|private|protected|internal|static|` + String.raw`virtual|override|abstract|async|sealed|new|partial|` + String.raw`extern)\s+)*` + String.raw`(?:[A-Za-z_][\w<>[\],.?]*\s+)([A-Za-z_]\w*)\s*\(`
+);
+function csharpMethodSymbol(line, lineNumber, uri) {
+  const match = CSHARP_METHOD.exec(line);
+  if (!match) return void 0;
+  return sourceSymbol({
+    name: match[1],
+    kind: 6,
+    character: line.indexOf(match[1]),
+    lineNumber,
+    uri
+  });
+}
+
+// src/semantic/direct-lsp-semantic-source-symbols.ts
+function sourcePathSymbols(language, source, uri) {
+  if (language === "python") return pythonSourceSymbols(source, uri);
+  if (language === "csharp") return csharpSourceSymbols(source, uri);
+  return [];
+}
+function pythonSourceSymbols(source, uri) {
+  return source.split(/\r?\n/).flatMap((line, lineNumber) => pythonSymbolAt(line, lineNumber, uri));
+}
+function pythonSymbolAt(line, lineNumber, uri) {
+  const match = /^(\s*)(?:(async)\s+)?(def|class)\s+([A-Za-z_]\w*)/.exec(line);
+  if (!match) return [];
+  return [
+    sourceSymbol({
+      name: match[4],
+      kind: match[3] === "class" ? 5 : 12,
+      character: line.indexOf(match[4], match[1].length),
+      lineNumber,
+      uri
+    })
+  ];
+}
+
+// src/semantic/direct-lsp-semantic-request.ts
+async function requestLsp(request, source, options) {
+  if (request.operation === "focus") return void 0;
+  if (request.operation === "search") return requestSearch(request, options);
+  if (request.operation === "callers" || request.operation === "callees")
+    return requestHierarchy(request, source, options);
+  return options.client.request(
+    methodFor(request.operation),
+    paramsFor(request, source, options)
+  );
+}
+async function requestSearch(request, options) {
+  const paths = options.discovery_document_paths;
+  if (!paths?.length)
+    return options.client.request("workspace/symbol", {
+      query: request.query
+    });
+  const symbols = [];
+  for (const path5 of paths) {
+    const uri = options.toBackendUri(emptyLocation(path5));
+    const reply = await options.client.request("textDocument/documentSymbol", {
+      textDocument: { uri }
+    });
+    const semantic = documentSymbols(reply, uri);
+    symbols.push(
+      ...semantic.length > 0 ? semantic : sourcePathSymbols(
+        options.language,
+        options.root.protectedRead(path5).bytes,
+        uri
+      ).slice(0, 4096 - symbols.length)
+    );
+    if (symbols.length >= 4096) break;
+  }
+  return symbols;
+}
+function requestHierarchy(request, source, options) {
+  if (!source) throw new Error("backend_unavailable");
+  return requestHierarchyItem(request, source, options);
+}
+async function requestHierarchyItem(request, source, options) {
+  const prepared = await options.client.request(
+    "textDocument/prepareCallHierarchy",
+    paramsFor(request, source, options)
+  );
+  const item = Array.isArray(prepared) ? prepared[0] : prepared;
+  if (!item || typeof item !== "object") return [];
+  const method = request.operation === "callers" ? "callHierarchy/incomingCalls" : "callHierarchy/outgoingCalls";
+  return options.client.request(method, { item });
+}
+function emptyLocation(path5) {
+  return {
+    path: path5,
+    range: {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 0 }
+    }
+  };
+}
+
+// src/semantic/direct-lsp-semantic-locations.ts
+function locations(raw, options) {
+  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return values.flatMap((value) => locationFromValue(value, options));
+}
+function locationFromValue(value, options) {
+  const item = asRecord(value);
+  const target = targetFromItem(item);
+  if (!target) return [];
+  const range = validTargetRange(target);
+  if (!range) return [];
+  return locationForUri(target.uri ?? target.targetUri, range, options);
+}
+function validTargetRange(target) {
+  const range = target.range ?? target.targetRange;
+  return validRange(range) ? range : void 0;
+}
+function locationForUri(uri, range, options) {
+  const path5 = typeof uri === "string" ? options.fromBackendUri(uri) : void 0;
+  if (path5)
+    return [
+      {
+        path: path5,
+        range
+      }
+    ];
+  if (typeof uri === "string" && uri.startsWith("file:"))
+    return [{ external: true }];
+  throw new Error("invalid_backend_result");
+}
+function targetFromItem(item) {
+  const hierarchy = hierarchyTarget(item);
+  if (hierarchy) return hierarchy;
+  return locationTarget(item);
+}
+function hierarchyTarget(item) {
+  return asRecord(item?.from ?? item?.to);
+}
+function locationTarget(item) {
+  if (item?.targetUri) return item;
+  const location = asRecord(item?.location);
+  return location ?? item;
+}
+
+// src/semantic/direct-lsp-semantic-location-results.ts
+function locationResult(input) {
+  return {
+    operation: input.request.operation,
+    revision: input.options.revision,
+    relations: locations(input.raw, input.options).map(
+      (location, index) => relationFromLocation({
+        operation: input.request.operation,
+        location,
+        index,
+        options: input.options
+      })
+    )
+  };
+}
+function relationFromLocation(input) {
+  if ("external" in input.location)
+    return {
+      relation: input.operation,
+      external: { external: true }
+    };
+  return {
+    relation: input.operation,
+    symbol: symbolFor(input.location, input.index, input.options),
+    location: input.location
+  };
+}
+function symbolFor(location, index, options) {
+  return {
+    id: `${options.language}:${location.path}:${index}`,
+    name: location.path,
+    language: options.language,
+    kind: "symbol",
+    location
+  };
+}
+
+// src/semantic/direct-lsp-semantic-relation-symbol.ts
+function symbolFromRelationLocation(input) {
+  return {
+    id: `${input.options.language}:${input.location.path}:${input.index}`,
+    name: typeof input.target?.name === "string" ? input.target.name : input.location.path,
+    language: input.options.language,
+    kind: String(input.target?.kind ?? "symbol"),
+    location: input.location
+  };
+}
+
+// src/semantic/direct-lsp-semantic-relation-result.ts
+function hierarchyRelation(input) {
+  if ("external" in input.location)
+    return [
+      {
+        relation: input.relation,
+        external: { external: true }
+      }
+    ];
+  return [
+    {
+      relation: input.relation,
+      symbol: symbolFromRelationLocation({
+        target: input.target,
+        location: input.location,
+        index: input.index,
+        options: input.options
+      }),
+      location: input.location,
+      ..."external" in input.callSite ? {} : { call_site: input.callSite }
+    }
+  ];
+}
+
+// src/semantic/direct-lsp-semantic-relations.ts
+function hierarchyRelations(input) {
+  const values = Array.isArray(input.raw) ? input.raw : [];
+  return values.flatMap(
+    (value, index) => hierarchyRelationAt({ ...input, value, index })
+  );
+}
+function hierarchyRelationAt(input) {
+  const entry = asRecord(input.value);
+  const target = asRecord(
+    entry?.[input.relation === "callers" ? "from" : "to"]
+  );
+  const location = lspLocation(target, input.options);
+  if (!location) return [];
+  const callSite = hierarchyCallSite({
+    relation: input.relation,
+    source: input.source,
+    options: input.options,
+    target,
+    entry,
+    fallback: location
+  });
+  if (!callSite) return [];
+  return hierarchyRelation({
+    ...input,
+    target,
+    location,
+    callSite
+  });
+}
+function hierarchyCallSite(input) {
+  if (!Array.isArray(input.entry?.fromRanges)) return input.fallback;
+  const uri = input.relation === "callees" && input.source ? input.options.toBackendUri(input.source.location) : input.target?.uri;
+  return lspLocation({ uri, range: input.entry.fromRanges[0] }, input.options);
+}
+
+// src/semantic/direct-lsp-semantic-workspace.ts
+function workspaceSymbols(raw, options) {
+  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return values.flatMap(
+    (value, index) => workspaceSymbolAt(value, index, options)
+  );
+}
+function workspaceSymbolAt(value, index, options) {
+  const item = asRecord(value);
+  const location = lspLocation(asRecord(item?.location) ?? item, options);
+  if (!localLocation(location)) return [];
+  return [
+    {
+      id: `${options.language}:${location.path}:${index}`,
+      name: workspaceSymbolName(item, location.path),
+      language: options.language,
+      kind: workspaceSymbolKind(item?.kind),
+      location
+    }
+  ];
+}
+function localLocation(value) {
+  return value !== void 0 && !("external" in value);
+}
+function workspaceSymbolName(item, fallback) {
+  return typeof item?.name === "string" ? item.name : fallback;
+}
+function workspaceSymbolKind(value) {
+  if (typeof value === "string" && value.length > 0)
+    return value.toLocaleLowerCase("en-US");
+  const kinds = {
+    5: "class",
+    6: "method",
+    12: "function"
+  };
+  return typeof value === "number" && kinds[value] ? kinds[value] : "symbol";
+}
+
+// src/semantic/direct-lsp-semantic-results.ts
+function normalizeResult(input) {
+  if (input.request.operation === "search")
+    return {
+      operation: "search",
+      revision: input.options.revision,
+      symbols: workspaceSymbols(input.raw, input.options)
+    };
+  if (input.request.operation === "focus")
+    return focusResult(input.source, input.options);
+  return relationResult({
+    request: input.request,
+    raw: input.raw,
+    source: input.source,
+    options: input.options
+  });
+}
+function focusResult(source, options) {
+  if (!source) throw new Error("backend_unavailable");
+  const document = options.root.protectedRead(source.location.path);
+  return {
+    operation: "focus",
+    revision: options.revision,
+    symbol: source,
+    content: {
+      body: document.bytes,
+      visible_symbols: [{ name: source.name, symbol_id: source.id }]
+    }
+  };
+}
+function relationResult(input) {
+  const capability = relationCapabilitiesFromInitialize(
+    input.options.client.status()
+  )[input.request.operation];
+  if (capability.state !== "ready") throw new Error("backend_unavailable");
+  const request = input.request;
+  if (isHierarchyRelation(request))
+    return hierarchyResult({ ...input, request });
+  return locationResult(input);
+}
+function isHierarchyRelation(request) {
+  return request.operation === "callers" || request.operation === "callees";
+}
+function hierarchyResult(input) {
+  return {
+    operation: input.request.operation,
+    revision: input.options.revision,
+    relations: hierarchyRelations({
+      raw: input.raw,
+      relation: input.request.operation,
+      source: input.source,
+      options: input.options
+    })
+  };
+}
+
+// src/semantic/direct-lsp-semantic-execute.ts
+async function executeSemanticQuery(request, input) {
+  assertAvailable(request, input);
+  const source = sourceFor(request, input.symbols);
+  openSourceIfNeeded(request, source, input.options);
+  try {
+    const result = await normalizeRequest(request, source, input.options);
+    return acceptResult(result, input);
+  } catch (error2) {
+    markUnavailable(request, input.unavailableRelations);
+    throw error2;
+  }
+}
+async function normalizeRequest(request, source, options) {
+  const raw = await requestLsp(request, source, options);
+  return normalizeResult({ request, raw, source, options });
+}
+function openSourceIfNeeded(request, source, options) {
+  if (source && request.operation !== "focus")
+    openSourceDocument(source, options);
+}
+function sourceFor(request, symbols) {
+  return request.operation === "search" ? void 0 : symbols.get(request.symbol_id);
+}
+function markUnavailable(request, unavailableRelations) {
+  if (isRelation2(request)) unavailableRelations.add(request.operation);
+}
+function isRelation2(request) {
+  return request.operation !== "search" && request.operation !== "focus";
+}
+
+// src/semantic/direct-lsp-semantic-query.ts
+function createSemanticQuery(input) {
+  const queryInput = input;
+  return (request) => executeSemanticQuery(request, queryInput);
+}
+
+// src/semantic/direct-lsp-semantic-backend.ts
+function createDirectLspSemanticBackend(options) {
+  const unavailableRelations = /* @__PURE__ */ new Set();
+  const symbols = new Map(options.symbols);
+  return {
+    readiness: createReadiness(options, unavailableRelations),
+    capabilities: createCapabilities(options, unavailableRelations),
+    query: createSemanticQuery({
+      options,
+      unavailableRelations,
+      symbols
+    })
+  };
+}
+function createReadiness(options, unavailableRelations) {
+  return () => unavailableRelations.size > 0 && options.client.status().state === "ready" ? { state: "degraded" } : readiness(options.client.status());
+}
+function createCapabilities(options, unavailableRelations) {
+  return () => {
+    const capabilities = relationCapabilitiesFromInitialize(
+      options.client.status()
+    );
+    for (const relation of unavailableRelations)
+      capabilities[relation] = { state: "unavailable" };
+    return capabilities;
+  };
+}
+function readiness(status) {
+  return status.state === "failed" ? { state: "failed", failure_code: "backend_failed" } : { state: status.state };
+}
+
+// src/semantic/direct-lsp-semantic.ts
+var { createDirectLspSemanticBackend: createDirectLspSemanticBackend2 } = direct_lsp_semantic_backend_exports;
+var { relationCapabilitiesFromInitialize: relationCapabilitiesFromInitialize2 } = direct_lsp_semantic_capabilities_exports;
+
+// src/semantic/direct-lsp-error.ts
+var DirectLspError = class extends Error {
+  constructor(code) {
+    super(code);
+    this.code = code;
+  }
+  code;
+};
+
+// src/semantic/direct-lsp-values.ts
+function clone2(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+function deepFreeze3(value) {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value))
+      deepFreeze3(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+// src/semantic/direct-lsp-wire.ts
+var CRLFCRLF = new Uint8Array([13, 10, 13, 10]);
+var LF_LF = new Uint8Array([10, 10]);
+function encodeMessage(message) {
+  const body = new TextEncoder().encode(JSON.stringify(message));
+  return concat(
+    new TextEncoder().encode(`Content-Length: ${body.byteLength}\r
+\r
+`),
+    body
+  );
+}
+function concat(left, right) {
+  const result = new Uint8Array(left.length + right.length);
+  result.set(left);
+  result.set(right, left.length);
+  return result;
+}
+function indexOf(haystack, needle) {
+  for (let index = 0; index <= haystack.length - needle.length; index++) {
+    if (needle.every((value, offset) => haystack[index + offset] === value))
+      return index;
+  }
+  return -1;
+}
+function contains(haystack, needle) {
+  return indexOf(haystack, needle) >= 0;
+}
+
+// src/semantic/direct-lsp-protocol.ts
+var MAX_BODY_BYTES = 1024 * 1024;
+var SHUTDOWN_TIMEOUT_MS = 5e3;
+var RESTART_WINDOW_MS = 6e4;
+var RESTART_DELAYS_MS = [250, 1e3];
+var PERMITTED_NOTIFICATIONS = /* @__PURE__ */ new Set([
+  "window/logMessage",
+  "window/showMessage",
+  "telemetry/event",
+  "$/progress",
+  "textDocument/publishDiagnostics"
+]);
+var READ_ONLY_METHODS = /* @__PURE__ */ new Set([
+  "textDocument/definition",
+  "textDocument/references",
+  "textDocument/typeDefinition",
+  "textDocument/implementation",
+  "textDocument/prepareCallHierarchy",
+  "callHierarchy/incomingCalls",
+  "callHierarchy/outgoingCalls",
+  "textDocument/documentSymbol",
+  "workspace/symbol"
+]);
+function boundedTimeout(value) {
+  return Number.isFinite(value) && value > 0 ? Math.min(Math.floor(value), SHUTDOWN_TIMEOUT_MS) : SHUTDOWN_TIMEOUT_MS;
+}
+function isRpcMessage(value) {
+  return !!value && typeof value === "object" && value.jsonrpc === "2.0";
+}
+function isInitializeResult(value) {
+  if (!value || typeof value !== "object") return false;
+  const capabilities = value.capabilities;
+  return !!capabilities && typeof capabilities === "object" && !Array.isArray(capabilities);
+}
+function isRequestId(value) {
+  return typeof value === "string" || typeof value === "number" && Number.isFinite(value);
+}
+function isPositiveSafeInteger(value) {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+function pythonConfiguration(section) {
+  return [
+    "python.pythonPath",
+    "python.venvPath",
+    "python.analysis.extraPaths"
+  ].includes(section ?? "") ? [] : null;
+}
+
+// src/semantic/direct-lsp-runtime-state.ts
+var defaultScheduler = {
+  now: Date.now,
+  setTimeout: (callback, delayMs) => setTimeout(callback, delayMs),
+  clearTimeout: (handle) => clearTimeout(handle)
+};
+function createRuntimeState(options) {
+  return {
+    options,
+    scheduler: options.scheduler ?? defaultScheduler,
+    capabilities: deepFreeze3(clone2(options.capabilities)),
+    initializationOptions: deepFreeze3(
+      clone2(options.safe_initialization_options)
+    ),
+    timeoutMs: boundedTimeout(options.request_timeout_ms ?? 1e4),
+    process: void 0,
+    epoch: 0,
+    state: "initializing",
+    bytes: new Uint8Array(0),
+    stopping: false,
+    stopped: false,
+    crashTimes: [],
+    timeoutTimes: [],
+    exitResolver: void 0,
+    pending: /* @__PURE__ */ new Map(),
+    events: [],
+    restartDelays: [],
+    openedDocumentUris: /* @__PURE__ */ new Set(),
+    serverCapabilities: void 0,
+    nextId: 1
+  };
+}
+function current(state, epoch) {
+  return epoch === state.epoch;
+}
+function send(state, message, expectedEpoch = state.epoch) {
+  if (state.process && current(state, expectedEpoch))
+    state.process.write(encodeMessage(message));
+}
+function rejectInflight(state, code) {
+  for (const entry of state.pending.values()) {
+    state.scheduler.clearTimeout(entry.timer);
+    entry.reject(new DirectLspError(code));
+  }
+  state.pending.clear();
+}
+
+// src/semantic/direct-lsp-status-snapshot.ts
+function isProtectedFileUri(uri, rootUri) {
+  const document = parseFileUri(uri);
+  const root = parseFileUri(rootUri);
+  if (!document) return false;
+  if (!root) return false;
+  return isProtectedDocument(document, root);
+}
+function isProtectedDocument(document, root) {
+  if (document.protocol !== "file:") return false;
+  if (document.search || document.hash) return false;
+  const rootPath = root.pathname.endsWith("/") ? root.pathname : `${root.pathname}/`;
+  return document.pathname.startsWith(rootPath);
+}
+function parseFileUri(value) {
+  try {
+    return new URL(value);
+  } catch {
+    return void 0;
+  }
+}
+function statusSnapshot(input) {
+  return {
+    state: input.state,
+    events: [...input.events],
+    restart_delays_ms: [...input.restartDelays],
+    ...input.serverCapabilities ? {
+      server_capabilities: deepFreeze3(clone2(input.serverCapabilities))
+    } : {}
+  };
+}
+
+// src/semantic/direct-lsp-runtime-failure.ts
+function fail(input) {
+  const expectedEpoch = input.expectedEpoch ?? input.state.epoch;
+  if (!canFail(input.state, expectedEpoch)) return;
+  input.state.state = "failed";
+  rejectInflight(input.state, input.code);
+  input.state.process?.kill();
+  if (input.restart) recordRestart(input.state, input.onRestart);
+}
+function failWithRestart(input) {
+  fail({
+    state: input.state,
+    code: input.code ?? "backend_crashed",
+    restart: true,
+    expectedEpoch: input.expectedEpoch,
+    onRestart: input.onRestart
+  });
+}
+function canFail(state, expectedEpoch) {
+  if (!current(state, expectedEpoch)) return false;
+  return state.state !== "failed" && state.state !== "unavailable";
+}
+function recordRestart(state, onRestart) {
+  state.crashTimes = state.crashTimes.filter(
+    (time3) => time3 >= state.scheduler.now() - RESTART_WINDOW_MS
+  );
+  state.crashTimes.push(state.scheduler.now());
+  if (state.crashTimes.length > RESTART_DELAYS_MS.length) {
+    state.state = "unavailable";
+    return;
+  }
+  const delay2 = RESTART_DELAYS_MS[state.crashTimes.length - 1];
+  state.restartDelays.push(delay2);
+  state.scheduler.setTimeout(() => {
+    const replacement = state.options.restart?.();
+    if (replacement && onRestart)
+      void onRestart(replacement).catch(() => void 0);
+  }, delay2);
+}
+
+// src/semantic/direct-lsp-runtime-request.ts
+function sendRequest(input) {
+  const expectedEpoch = input.expectedEpoch ?? input.state.epoch;
+  const id = input.state.nextId++;
+  return registerRequest(input, id, expectedEpoch);
+}
+function registerRequest(input, id, expectedEpoch) {
+  return new Promise((resolve5, reject) => {
+    const timer = input.state.scheduler.setTimeout(() => {
+      onRequestTimeout({
+        ...input,
+        id,
+        expectedEpoch,
+        reject
+      });
+    }, boundedTimeout(input.timeout));
+    input.state.pending.set(id, { resolve: resolve5, reject, timer });
+    send(
+      input.state,
+      {
+        jsonrpc: "2.0",
+        id,
+        method: input.method,
+        params: input.params
+      },
+      expectedEpoch
+    );
+  });
+}
+function onRequestTimeout(input) {
+  if (!(current(input.state, input.expectedEpoch) && input.state.pending.delete(input.id)))
+    return;
+  send(
+    input.state,
+    {
+      jsonrpc: "2.0",
+      method: "$/cancelRequest",
+      params: { id: input.id }
+    },
+    input.expectedEpoch
+  );
+  input.reject(new DirectLspError("backend_timeout"));
+  trimTimeouts(input.state);
+  const timeoutCount = recordTimeout(input.state);
+  if (timeoutCount >= 2) failAfterTimeout(input);
+}
+function recordTimeout(state) {
+  state.timeoutTimes.push(state.scheduler.now());
+  return state.timeoutTimes.length;
+}
+function failAfterTimeout(input) {
+  failWithRestart(input);
+}
+function trimTimeouts(state) {
+  const cutoff = state.scheduler.now() - 6e4;
+  state.timeoutTimes = state.timeoutTimes.filter((time3) => time3 >= cutoff);
+}
+
+// src/semantic/direct-lsp-runtime-shutdown.ts
+async function shutdownRuntime(input) {
+  if (!input.state.process || input.state.state === "unavailable") return;
+  const expectedEpoch = input.state.epoch;
+  input.state.stopping = true;
+  try {
+    await sendRequest({
+      state: input.state,
+      method: "shutdown",
+      params: null,
+      timeout: SHUTDOWN_TIMEOUT_MS,
+      expectedEpoch,
+      onRestart: input.onRestart
+    });
+  } catch {
+  }
+  if (!current(input.state, expectedEpoch)) return;
+  await sendExit({ ...input, expectedEpoch });
+}
+async function sendExit(input) {
+  const exited = new Promise((resolve5) => {
+    input.state.exitResolver = resolve5;
+  });
+  send(
+    input.state,
+    { jsonrpc: "2.0", method: "exit", params: {} },
+    input.expectedEpoch
+  );
+  const timeout = input.state.scheduler.setTimeout(
+    () => forceShutdown(input),
+    SHUTDOWN_TIMEOUT_MS
+  );
+  await exited;
+  input.state.scheduler.clearTimeout(timeout);
+  input.state.exitResolver = void 0;
+}
+function forceShutdown(input) {
+  if (!input.state.stopped && current(input.state, input.expectedEpoch)) {
+    input.state.stopping = false;
+    failWithRestart(input);
+  }
+  input.state.exitResolver?.();
+}
+
+// src/semantic/direct-lsp-runtime-operations.ts
+function openProtectedDocument(state, uri, content) {
+  if (state.state !== "ready") throw stateError(state);
+  if (!isProtectedFileUri(uri, state.options.root_uri) || typeof content.bytes !== "string")
+    throw new DirectLspError("backend_write_rejected");
+  if (state.openedDocumentUris.has(uri)) return;
+  send(state, {
+    jsonrpc: "2.0",
+    method: "textDocument/didOpen",
+    params: {
+      textDocument: {
+        uri,
+        languageId: content.language_id,
+        version: 0,
+        text: content.bytes
+      }
+    }
+  });
+  state.openedDocumentUris.add(uri);
+}
+function stateError(state) {
+  return new DirectLspError(
+    state.state === "unavailable" ? "backend_crashed" : "backend_failed"
+  );
+}
+function refreshRuntime(state) {
+  state.crashTimes = [];
+  state.timeoutTimes = [];
+  if (state.state === "unavailable") state.state = "initializing";
+}
+function statusRuntime(state) {
+  return statusSnapshot({
+    state: state.state,
+    events: state.events,
+    restartDelays: state.restartDelays,
+    serverCapabilities: state.serverCapabilities
+  });
+}
+
+// src/semantic/direct-lsp-runtime-query.ts
+async function requestBackend2(input) {
+  if (!READ_ONLY_METHODS.has(input.method))
+    throw new DirectLspError("backend_write_rejected");
+  if (input.state.state !== "ready")
+    throw new DirectLspError(
+      input.state.state === "unavailable" ? "backend_crashed" : "backend_failed"
+    );
+  return requestWithRetry(input, false);
+}
+async function requestWithRetry(input, retried) {
+  try {
+    return await sendRequest({
+      ...input,
+      timeout: input.state.timeoutMs
+    });
+  } catch (error2) {
+    if (!(error2 instanceof DirectLspError) || error2.code !== "backend_content_modified")
+      throw error2;
+    if (retried) throw new DirectLspError("backend_failed");
+    return requestWithRetry(input, true);
+  }
+}
+
+// src/semantic/direct-lsp-frame-parser.ts
+function decodeHeader(bytes) {
+  if (bytes.some((value) => value > 127)) return void 0;
+  try {
+    const header = new TextDecoder("ascii", {
+      fatal: true
+    }).decode(bytes);
+    return /^Content-Length: [0-9]+$/.test(header) ? header : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function bodyLength(header) {
+  const length = Number(header.slice("Content-Length: ".length));
+  return Number.isSafeInteger(length) ? length : void 0;
+}
+function decodeBody(bytes) {
+  try {
+    const value = JSON.parse(
+      new TextDecoder("utf-8", { fatal: true }).decode(bytes)
+    );
+    return isRpcMessage(value) ? value : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function concatBytes(left, right) {
+  const result = new Uint8Array(left.length + right.length);
+  result.set(left);
+  result.set(right, left.length);
+  return result;
+}
+
+// src/semantic/direct-lsp-runtime-protocol-failure.ts
+function protocolFailure(input) {
+  fail({
+    state: input.state,
+    code: "backend_failed",
+    restart: false,
+    expectedEpoch: input.expectedEpoch,
+    onRestart: input.onRestart
+  });
+}
+
+// src/semantic/direct-lsp-runtime-message-handlers.ts
+function handleServerRequest(input, message) {
+  if (!isRequestId(message.id)) return protocolFailure(input);
+  const method = message.method;
+  recordRejectedRequest(input.state, method);
+  if (isPythonConfiguration(input.state, method))
+    return handlePythonConfiguration(input, message);
+  send(
+    input.state,
+    {
+      jsonrpc: "2.0",
+      id: message.id,
+      error: { code: -32601, message: "Method not found" }
+    },
+    input.expectedEpoch
+  );
+}
+function recordRejectedRequest(state, method) {
+  const event = rejectedRequestEvent(method);
+  if (event) state.events.push(event);
+}
+function rejectedRequestEvent(method) {
+  if (method === "client/registerCapability")
+    return "backend_capability_rejected";
+  if (method === "workspace/applyEdit") return "backend_write_rejected";
+  return void 0;
+}
+function isPythonConfiguration(state, method) {
+  return method === "workspace/configuration" && state.options.language === "python";
+}
+function handlePythonConfiguration(input, message) {
+  const params = message.params;
+  const items = params?.items ?? [];
+  send(
+    input.state,
+    {
+      jsonrpc: "2.0",
+      id: message.id,
+      result: items.map((item) => pythonConfiguration(item.section))
+    },
+    input.expectedEpoch
+  );
+}
+
+// src/semantic/direct-lsp-runtime-notifications.ts
+function handleNotification(input, message) {
+  const method = message.method;
+  if (!PERMITTED_NOTIFICATIONS.has(method)) {
+    fail({
+      state: input.state,
+      code: "backend_failed",
+      restart: false,
+      expectedEpoch: input.expectedEpoch
+    });
+    return;
+  }
+  input.state.events.push("backend_notification");
+}
+
+// src/semantic/direct-lsp-runtime-response.ts
+function handleResponse(input, message) {
+  if (!isPositiveSafeInteger(message.id)) return protocolFailure(input);
+  if ("result" in message === "error" in message) return protocolFailure(input);
+  const entry = input.state.pending.get(message.id);
+  if (!entry) return;
+  input.state.pending.delete(message.id);
+  input.state.scheduler.clearTimeout(entry.timer);
+  if ("error" in message) return rejectResponse(entry.reject, message.error);
+  entry.resolve(message.result);
+}
+function rejectResponse(reject, error2) {
+  const code = error2?.code;
+  reject(
+    new DirectLspError(
+      code === -32801 ? "backend_content_modified" : "backend_failed"
+    )
+  );
+}
+
+// src/semantic/direct-lsp-runtime-message.ts
+function handleMessage(input) {
+  const { state, message, expectedEpoch } = input;
+  if (!messageActive(state, expectedEpoch)) return;
+  if (!isRpcMessage(message)) return protocolFailure(input);
+  if (isServerRequest(message)) return handleServerRequest(input, message);
+  if (isNotification(message)) return handleNotification(input, message);
+  handleResponse(input, message);
+}
+function messageActive(state, epoch) {
+  return current(state, epoch) && !state.stopped && state.state !== "failed" && state.state !== "unavailable";
+}
+function isServerRequest(message) {
+  return "id" in message && "method" in message && typeof message.method === "string";
+}
+function isNotification(message) {
+  return "method" in message && typeof message.method === "string";
+}
+
+// src/semantic/direct-lsp-runtime-frame.ts
+function handleStdout(input) {
+  if (!frameStreamActive(input.state, input.expectedEpoch)) return;
+  input.state.bytes = concatBytes(input.state.bytes, input.chunk);
+  while (input.state.bytes.length && consumeFrame(input)) {
+  }
+}
+function frameStreamActive(state, epoch) {
+  return current(state, epoch) && !state.stopped && state.state !== "failed" && state.state !== "unavailable";
+}
+function consumeFrame(input) {
+  const frame = parseFrame(input);
+  if (frame.status === "incomplete") return false;
+  if (frame.status === "invalid") {
+    protocolFailure(input);
+    return false;
+  }
+  input.state.bytes = input.state.bytes.slice(frame.end);
+  handleMessage({ ...input, message: frame.value });
+  return input.state.bytes.length > 0;
+}
+function parseFrame(input) {
+  const boundary = indexOf(input.state.bytes, CRLFCRLF);
+  if (boundary < 0) return incompleteHeader(input);
+  const headerBytes = input.state.bytes.slice(0, boundary);
+  const header = decodeHeader(headerBytes);
+  if (!header) return { status: "invalid" };
+  const length = bodyLength(header);
+  if (length === void 0 || length > MAX_BODY_BYTES)
+    return { status: "invalid" };
+  const end = boundary + 4 + length;
+  if (input.state.bytes.length < end) return { status: "incomplete" };
+  const value = decodeBody(input.state.bytes.slice(boundary + 4, end));
+  return value === void 0 ? { status: "invalid" } : { status: "complete", end, value };
+}
+function incompleteHeader(input) {
+  if (input.state.bytes.length > 8192 || contains(input.state.bytes, LF_LF)) {
+    return { status: "invalid" };
+  }
+  return { status: "incomplete" };
+}
+
+// src/semantic/direct-lsp-runtime-initialize.ts
+async function initializeRuntime(input) {
+  const result = await sendRequest({
+    state: input.state,
+    method: "initialize",
+    params: initializeParams(input.state),
+    timeout: input.state.timeoutMs,
+    expectedEpoch: input.expectedEpoch,
+    onRestart: input.onRestart
+  });
+  if (!(current(input.state, input.expectedEpoch) && isInitializeResult(result)))
+    throw new DirectLspError("backend_failed");
+  input.state.serverCapabilities = result.capabilities;
+  checkAfterInitialize(input.state);
+  send(
+    input.state,
+    { jsonrpc: "2.0", method: "initialized", params: {} },
+    input.expectedEpoch
+  );
+  sendPythonConfiguration(input.state, input.expectedEpoch);
+  input.state.state = "ready";
+}
+function initializeParams(state) {
+  return {
+    processId: null,
+    rootUri: state.options.root_uri,
+    capabilities: state.capabilities,
+    initializationOptions: state.initializationOptions
+  };
+}
+function checkAfterInitialize(state) {
+  const confirmation = state.options.afterInitialize?.();
+  if (confirmation?.status !== "unavailable") return;
+  state.state = "unavailable";
+  state.process?.kill();
+  throw new Error(confirmation.code);
+}
+function sendPythonConfiguration(state, expectedEpoch) {
+  if (state.options.language !== "python") return;
+  send(
+    state,
+    {
+      jsonrpc: "2.0",
+      method: "workspace/didChangeConfiguration",
+      params: pythonConfigurationSettings()
+    },
+    expectedEpoch
+  );
+}
+function pythonConfigurationSettings() {
+  return {
+    settings: { python: pythonSettings() }
+  };
+}
+function pythonSettings() {
+  return {
+    analysis: {
+      diagnosticMode: "workspace",
+      indexing: true,
+      useLibraryCodeForTypes: false
+    }
+  };
+}
+
+// src/semantic/direct-lsp-runtime-start.ts
+async function startRuntime(input) {
+  prepareStart(input.state, input.process);
+  const expectedEpoch = input.state.epoch;
+  attachProcess({ ...input, expectedEpoch });
+  try {
+    await initializeRuntime({ ...input, expectedEpoch });
+  } catch (error2) {
+    fail({
+      state: input.state,
+      code: error2 instanceof DirectLspError ? error2.code : "backend_failed",
+      restart: true,
+      expectedEpoch,
+      onRestart: input.onRestart
+    });
+    throw error2;
+  }
+}
+function prepareStart(state, process3) {
+  state.process = process3;
+  state.epoch += 1;
+  state.bytes = new Uint8Array(0);
+  state.openedDocumentUris = /* @__PURE__ */ new Set();
+  state.stopping = false;
+  state.stopped = false;
+  state.state = "initializing";
+}
+function attachProcess(input) {
+  input.process.onStdout((chunk) => handleStdout({ ...input, chunk }));
+  input.process.onExit(() => handleExit(input));
+  input.process.onError?.(() => failWithRestart(input));
+}
+function handleExit(input) {
+  const { state, expectedEpoch } = input;
+  if (!current(state, expectedEpoch)) return;
+  state.stopped = true;
+  state.exitResolver?.();
+  if (state.bytes.length) {
+    fail({
+      ...input,
+      code: "backend_failed",
+      restart: false
+    });
+    return;
+  }
+  if (state.stopping) {
+    state.state = "failed";
+    return;
+  }
+  failWithRestart(input);
+}
+
+// src/semantic/direct-lsp-runtime.ts
+function createDirectLspRuntime(options) {
+  const state = createRuntimeState(options);
+  const start = (process3) => startRuntime({ state, process: process3, onRestart: start });
+  return {
+    start,
+    request: (method, params) => requestBackend2({
+      state,
+      method,
+      params,
+      onRestart: start
+    }),
+    openProtectedDocument: (uri, content) => openProtectedDocument(state, uri, content),
+    shutdown: () => shutdownRuntime({ state, onRestart: start }),
+    refresh: () => refreshRuntime(state),
+    status: () => statusRuntime(state)
+  };
+}
+
+// src/semantic/direct-lsp.ts
+function createDirectLspClient(options) {
+  return createDirectLspRuntime(options);
+}
+
+// src/semantic/native-lsp-process.ts
+import { spawn } from "node:child_process";
+function spawnNativeLspProcess(executable, arguments_, environment) {
+  const child = spawn(executable, arguments_, {
+    shell: false,
+    stdio: ["pipe", "pipe", "ignore"],
+    // Do not inherit project-controlled PATH, Python, or package settings.
+    // The policy has already selected an absolute executable and arguments.
+    env: { ...environment }
+  });
+  return createProcessHandlers(child);
+}
+function createProcessHandlers(child) {
+  const write = (chunk) => {
+    child.stdin.write(chunk);
+  };
+  const onStdout = (listener) => {
+    child.stdout.on("data", (chunk) => listener(new Uint8Array(chunk)));
+  };
+  const onExit = (listener) => {
+    child.once("exit", listener);
+  };
+  const onError = (listener) => {
+    child.once("error", listener);
+  };
+  const kill = () => {
+    child.stdin.destroy();
+    child.kill();
+  };
+  return {
+    write,
+    onStdout,
+    onExit,
+    onError,
+    kill
+  };
+}
+
+// src/semantic/runtime-lsp-start-process.ts
+async function startRuntimeProcess(lifecycle) {
+  const preparation = requirePreparation(lifecycle);
+  lifecycle.client = createClient(lifecycle);
+  await lifecycle.client.start(spawnProcess(lifecycle, preparation));
+  openInitialDocuments(lifecycle);
+  lifecycle.inner = createDirectLspSemanticBackend2({
+    ...lifecycle.options,
+    client: lifecycle.client,
+    discovery_document_paths: lifecycle.options.initial_document_paths
+  });
+}
+function requirePreparation(lifecycle) {
+  const preparation = lifecycle.options.prepare();
+  if (preparation.status === "ready") return preparation;
+  lifecycle.state = {
+    state: "unavailable",
+    failure_code: preparation.code
+  };
+  throw new Error(preparation.code);
+}
+function createClient(lifecycle) {
+  return createDirectLspClient({
+    language: lifecycle.options.language,
+    root_uri: lifecycle.options.root_uri,
+    capabilities: {},
+    safe_initialization_options: lifecycle.options.safe_initialization_options,
+    scheduler: lifecycle.options.scheduler,
+    afterInitialize: () => lifecycle.options.confirmInitialized(),
+    restart: () => replacementProcess(lifecycle)
+  });
+}
+function replacementProcess(lifecycle) {
+  const preparation = lifecycle.options.prepare();
+  return preparation.status === "ready" ? spawnProcess(lifecycle, preparation) : void 0;
+}
+function spawnProcess(lifecycle, preparation) {
+  return (lifecycle.options.spawn ?? spawnNativeLspProcess)(
+    preparation.executable,
+    preparation.arguments,
+    preparation.environment
+  );
+}
+function openInitialDocuments(lifecycle) {
+  for (const path5 of lifecycle.options.initial_document_paths ?? []) {
+    const document = lifecycle.options.root.protectedRead(path5);
+    lifecycle.client?.openProtectedDocument?.(
+      lifecycle.options.toBackendUri(initialDocumentLocation(path5)),
+      {
+        language_id: lifecycle.options.language,
+        bytes: document.bytes
+      }
+    );
+  }
+}
+function initialDocumentLocation(path5) {
+  return {
+    path: path5,
+    range: {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 0 }
+    }
+  };
+}
+
+// src/semantic/runtime-lsp-start.ts
+function createRuntimeStart(lifecycle) {
+  return () => startRuntime2(lifecycle);
+}
+async function startRuntime2(lifecycle) {
+  if (lifecycle.refreshRequired) throw new Error("backend_identity_changed");
+  if (lifecycle.started) return lifecycle.started;
+  lifecycle.started = startFreshRuntime(lifecycle);
+  return lifecycle.started;
+}
+function startFreshRuntime(lifecycle) {
+  return startRuntimeProcess(lifecycle).then(() => {
+    lifecycle.state = readiness2(lifecycle.client?.status().state ?? "failed");
+  }).catch((error2) => recordStartFailure(lifecycle, error2));
+}
+function recordStartFailure(lifecycle, error2) {
+  const code = error2 instanceof Error ? error2.message : "backend_failed";
+  lifecycle.state = failedState(code);
+  lifecycle.refreshRequired ||= code === "backend_identity_changed";
+  throw error2;
+}
+function failedState(code) {
+  return code === "backend_identity_changed" ? { state: "unavailable", failure_code: code } : { state: "failed", failure_code: code };
+}
+function readiness2(value) {
+  if (value === "failed")
+    return {
+      state: "failed",
+      failure_code: "backend_failed"
+    };
+  if (value === "initializing") return { state: "initializing" };
+  if (value === "ready") return { state: "ready" };
+  return { state: "unavailable" };
+}
+
+// src/semantic/runtime-lsp-backend.ts
+function createRuntimeLspBackend(options) {
+  const lifecycle = {
+    options,
+    state: { state: "initializing" },
+    inner: void 0,
+    client: void 0,
+    started: void 0,
+    disposed: false,
+    refreshRequired: false
+  };
+  const start = createRuntimeStart(lifecycle);
+  return {
+    readiness: () => runtimeReadiness(lifecycle),
+    start,
+    refresh: () => refreshRuntime2(lifecycle, start),
+    capabilities: () => runtimeCapabilities3(lifecycle, options),
+    shutdown: () => shutdownRuntime2(lifecycle),
+    query: (request) => queryRuntime(lifecycle, start, request)
+  };
+}
+function runtimeReadiness(lifecycle) {
+  return lifecycle.inner?.readiness() ?? lifecycle.state;
+}
+function runtimeCapabilities3(lifecycle, options) {
+  if (lifecycle.inner?.capabilities) return lifecycle.inner.capabilities();
+  if (lifecycle.client)
+    return relationCapabilitiesFromInitialize2(lifecycle.client.status());
+  return options.capabilities;
+}
+async function refreshRuntime2(lifecycle, start) {
+  if (!lifecycle.refreshRequired) return;
+  lifecycle.refreshRequired = false;
+  lifecycle.started = void 0;
+  lifecycle.inner = void 0;
+  lifecycle.client = void 0;
+  lifecycle.state = { state: "refreshing" };
+  await start();
+}
+async function shutdownRuntime2(lifecycle) {
+  try {
+    if (lifecycle.client?.status().state === "ready")
+      await lifecycle.client.shutdown();
+  } finally {
+    if (!lifecycle.disposed) {
+      lifecycle.disposed = true;
+      lifecycle.options.dispose?.();
+    }
+  }
+}
+async function queryRuntime(lifecycle, start, request) {
+  await start();
+  if (!lifecycle.inner) throw new Error("backend_unavailable");
+  return lifecycle.inner.query(request);
+}
+
+// src/semantic/runtime-native-backend.ts
+function createNativeRuntimeBackend(input) {
+  const { backend, policy, capabilities, root, filtered } = input;
+  return createRuntimeLspBackend({
+    language: backend.language,
+    root,
+    root_uri: pathToFileURL2(root.canonicalPath).href,
+    revision: { generation: 0, manifest_sha256: "runtime" },
+    symbols: /* @__PURE__ */ new Map(),
+    capabilities,
+    initial_document_paths: initialDocuments(backend.language, filtered),
+    safe_initialization_options: backend.safe_initialization_options,
+    toBackendUri: (location) => pathToFileURL2(root.resolveClientPath(location.path)).href,
+    fromBackendUri: (uri) => backendPath(root, uri),
+    prepare: () => policy.prepare(backend.language),
+    confirmInitialized: () => policy.confirmInitialized(backend.language)
+  });
+}
+function initialDocuments(language, filtered) {
+  return language === "csharp" ? filtered?.sourcePaths().filter((path5) => /\.cs$/iu.test(path5)) : void 0;
+}
+function backendPath(root, uri) {
+  if (!uri.startsWith("file:")) return void 0;
+  const classified = root.classifyBackendPath(fileURLToPath3(uri));
+  return "relative_path" in classified ? classified.relative_path : void 0;
+}
+
+// src/semantic/runtime-native-adapter.ts
+function createNativeRuntimeAdapter(input) {
+  const prepared = input.policy.prepare(input.backend.language);
+  const filtered = createFilteredBackend(input, prepared);
+  const backend = createNativeBackend(input, prepared, filtered);
+  return wrapNativeAdapter({
+    input,
+    prepared,
+    filtered,
+    backend
+  });
+}
+function createFilteredBackend(input, prepared) {
+  return prepared.status === "ready" ? createFilteredWorkspace(input.projectRoot) : void 0;
+}
+function createNativeBackend(input, prepared, filtered) {
+  if (prepared.status !== "ready") return unavailableBackend;
+  return createNativeRuntimeBackend({
+    backend: input.backend,
+    policy: input.policy,
+    capabilities: input.capabilities,
+    root: filtered?.root ?? input.projectRoot,
+    filtered
+  });
+}
+function wrapNativeAdapter(context) {
+  const { input, prepared, filtered, backend } = context;
+  const adapter = createSelectedAdapter(input.backend.language, {
+    backend,
+    compatible: true,
+    ...runtimeAdapterMetadata({
+      backendName: input.backend.platform_executables[input.platform],
+      prepared,
+      capabilities: input.capabilities
+    })
+  });
+  return filtered ? withFilteredShutdown(adapter, filtered) : adapter;
+}
+
+// src/semantic/runtime-python-options.ts
+import { pathToFileURL as pathToFileURL3 } from "node:url";
+function createPythonRuntimeOptions(input, mirror) {
+  return {
+    language: "python",
+    root: input.projectRoot,
+    root_uri: pathToFileURL3(mirror.root).href,
+    revision: {
+      generation: mirror.generation,
+      manifest_sha256: "python-mirror"
+    },
+    symbols: input.options.symbols,
+    capabilities: input.capabilities,
+    safe_initialization_options: input.safeInitializationOptions,
+    initial_document_paths: mirror.sourcePaths(),
+    toBackendUri: (location) => mirror.uriFor(location.path),
+    fromBackendUri: (uri) => mirror.pathForUri(uri),
+    prepare: () => input.policy.prepare("python"),
+    confirmInitialized: () => input.policy.confirmInitialized("python"),
+    ...input.options.spawn ? { spawn: input.options.spawn } : {}
+  };
+}
+
+// src/semantic/runtime-python-backend-lifecycle.ts
+function createPythonBuild(input) {
+  return () => refreshPython(input);
+}
+async function refreshPython(input) {
+  const refreshed = await input.manager.refresh();
+  if (refreshed.status !== "ready")
+    return handleUnavailable(input, refreshed.code);
+  ensurePythonInner(input, refreshed.mirror, refreshed.changed);
+  await input.getInner()?.start?.();
+  input.setState(input.getInner()?.readiness() ?? input.getState());
+}
+function handleUnavailable(input, code) {
+  input.setState({ state: "unavailable" });
+  throw new Error(code);
+}
+function ensurePythonInner(input, mirror, changed) {
+  if (!input.getInner() || changed)
+    input.setInner(createPythonInner(input, mirror));
+}
+function createPythonInner(input, mirror) {
+  return createRuntimeLspBackend(
+    createPythonRuntimeOptions(input, mirror)
+  );
+}
+function createPythonShutdown(manager, getInner, setInner, setState) {
+  return async () => {
+    await manager.disposeAfterShutdown(async () => {
+      await getInner()?.shutdown?.();
+      setInner(void 0);
+    });
+    setState({ state: "unavailable" });
+  };
+}
+
+// src/semantic/runtime-python-backend.ts
+function createManagedPythonBackend(...input) {
+  const [
+    projectRoot,
+    policy,
+    safeInitializationOptions,
+    capabilities,
+    options = {
+      symbols: /* @__PURE__ */ new Map()
+    }
+  ] = input;
+  const context = createPythonContext({
+    projectRoot,
+    policy,
+    safeInitializationOptions,
+    capabilities,
+    options
+  });
+  return createManagedBackend(context);
+}
+function createPythonContext(input) {
+  let inner;
+  let state = {
+    state: "initializing"
+  };
+  const manager = createPythonMirrorManager(input.projectRoot, async () => {
+    await inner?.shutdown?.();
+    inner = void 0;
+  });
+  return {
+    ...input,
+    manager,
+    getInner: () => inner,
+    setInner: (value) => {
+      inner = value;
+    },
+    getState: () => state,
+    setState: (value) => {
+      state = value;
+    }
+  };
+}
+function createManagedBackend(context) {
+  const build = createPythonBuild(context);
+  return {
+    readiness: () => context.getInner()?.readiness() ?? context.getState(),
+    capabilities: () => context.getInner()?.capabilities?.() ?? context.capabilities,
+    start: build,
+    refresh: build,
+    shutdown: createPythonShutdown(
+      context.manager,
+      context.getInner,
+      context.setInner,
+      context.setState
+    ),
+    query: (request) => queryPython(context, build, request)
+  };
+}
+async function queryPython(context, build, request) {
+  await build();
+  const inner = context.getInner();
+  if (!inner) throw new Error("backend_unavailable");
+  return inner.query(request);
+}
+
+// src/semantic/runtime-python-adapter.ts
+function createPythonRuntimeAdapter(input) {
+  const prepared = input.policy.prepare("python");
+  return createPythonAdapter(createPythonAdapterOptions(input, prepared));
+}
+function createPythonAdapterOptions(input, prepared) {
+  return {
+    backend: prepared.status === "ready" ? createManagedPythonBackend(
+      input.projectRoot,
+      input.policy,
+      input.backend.safe_initialization_options,
+      input.capabilities
+    ) : unavailableBackend,
+    compatible: true,
+    ...runtimeAdapterMetadata({
+      backendName: input.backend.platform_executables[input.platform],
+      prepared,
+      capabilities: input.capabilities
+    })
+  };
+}
+
+// src/semantic/runtime-adapters.ts
+function createRuntimeAdapters(projectRoot) {
+  const record2 = loadAdapterSelectionRecord();
+  const platform = process.platform === "win32" ? "win32" : "posix";
+  const policy = createRuntimeLaunchPolicy({
+    project_root: projectRoot.canonicalPath,
+    platform,
+    inspect: createNativeBackendInspector(
+      trustedRoots(record2, platform),
+      projectRoot.canonicalPath
+    )
+  });
+  return record2.runtime_backends.map(
+    (backend) => createAdapter({
+      backend,
+      projectRoot,
+      platform,
+      policy
+    })
+  );
+}
+function trustedRoots(record2, platform) {
+  return platform === "win32" ? resolveTrustedCommandRoots(record2.trusted_command_roots.win32) : ["/opt/code-explorer/backends"];
+}
+function createAdapter(input) {
+  const capabilities = backendCapabilities(input.backend.capabilities);
+  return input.backend.language === "python" ? createPythonRuntimeAdapter({ ...input, capabilities }) : createNativeRuntimeAdapter({
+    ...input,
+    capabilities
+  });
+}
+function backendCapabilities(capabilities) {
+  return Object.fromEntries(
+    Object.entries(capabilities).map(([name, state]) => [name, { state }])
+  );
+}
+
+// src/semantic/runtime-start.ts
+async function createStartedRuntimeAdapters(projectRoot, signal) {
+  const adapters = createRuntimeAdapters(projectRoot);
+  await Promise.allSettled(
+    adapters.map((adapter) => startAdapter(adapter, signal))
+  );
+  if (signal?.aborted) {
+    await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+    throw new Error("aborted");
+  }
+  return adapters;
+}
+async function startAdapter(adapter, signal) {
+  if (!adapter.start) return;
+  if (!signal) return adapter.start();
+  await startWithAbort(adapter, signal);
+}
+function startWithAbort(adapter, signal) {
+  let abortHandler;
+  return Promise.race([
+    adapter.start?.(signal) ?? Promise.resolve(),
+    new Promise((_, reject) => {
+      if (signal.aborted) {
+        reject(new Error("aborted"));
+        return;
+      }
+      abortHandler = () => reject(new Error("aborted"));
+      signal.addEventListener("abort", abortHandler, {
+        once: true
+      });
+    })
+  ]).finally(() => {
+    if (abortHandler) signal.removeEventListener("abort", abortHandler);
+  });
 }
 
 // src/browser-server/http-router.ts
-import { statSync as statSync2 } from "node:fs";
+import { statSync as statSync3 } from "node:fs";
 import { readFile, realpath } from "node:fs/promises";
 import path2 from "node:path";
 
@@ -21685,7 +25925,7 @@ function json(status, payload) {
     body
   };
 }
-function isRecord(value) {
+function isRecord3(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 function exactKeys(body, required2, optional2 = []) {
@@ -21747,7 +25987,7 @@ var BrowserHttpRouter = class {
       } catch {
         return json(400, browserError("invalid_request"));
       }
-      if (!(isRecord(body) && validBody(request.path, body))) return json(400, browserError("invalid_request"));
+      if (!(isRecord3(body) && validBody(request.path, body))) return json(400, browserError("invalid_request"));
       const response = request.path === "/api/session" ? await this.session(body, request.headers) : await this.navigation(request.path, body, request.headers);
       const encoded = Buffer.byteLength(response.body);
       return encoded > maxResponseBytes ? json(413, browserError("resource_limit")) : response;
@@ -21831,7 +26071,7 @@ var BrowserHttpRouter = class {
       const root = await realpath(this.options.assetRoot);
       const candidate = path2.join(root, relative6);
       const actual = await realpath(candidate);
-      if (!actual.startsWith(`${root}${path2.sep}`) && actual !== root || !statSync2(actual).isFile())
+      if (!actual.startsWith(`${root}${path2.sep}`) && actual !== root || !statSync3(actual).isFile())
         throw new Error("missing");
       const content = request.method === "HEAD" ? "" : await readFile(actual, "utf8");
       const type = actual.endsWith(".html") ? "text/html; charset=utf-8" : actual.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/css; charset=utf-8";
@@ -21862,10 +26102,10 @@ var BrowserHttpRouter = class {
 };
 
 // src/browser-server/lifecycle.ts
-import { spawn } from "node:child_process";
+import { spawn as spawn2 } from "node:child_process";
 import { createServer } from "node:http";
 import path3 from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
 var BrowserServerError = class extends Error {
   constructor(code) {
     super(code);
@@ -21956,7 +26196,7 @@ var nativePortBinder = {
     let admitting = true;
     const router = new BrowserHttpRouter({
       origin: `http://${host}:${port}`,
-      assetRoot: path3.join(path3.dirname(fileURLToPath(import.meta.url)), "browser"),
+      assetRoot: path3.join(path3.dirname(fileURLToPath4(import.meta.url)), "browser"),
       call: core?.call ?? (async () => ({
         schema_version: 1,
         code: "workspace_unavailable",
@@ -22033,7 +26273,7 @@ var nativeBrowserOpener = {
     if (!command) throw new Error("unsupported platform");
     const arguments_ = process.platform === "win32" ? ["/d", "/s", "/c", "start", "", href] : [href];
     await new Promise((resolve5, reject) => {
-      const child = spawn(command, arguments_, { detached: true, stdio: "ignore", windowsHide: true });
+      const child = spawn2(command, arguments_, { detached: true, stdio: "ignore", windowsHide: true });
       const onAbort = () => reject(new Error("aborted"));
       signal.addEventListener("abort", onAbort, { once: true });
       child.once("error", (error2) => {
@@ -22135,7 +26375,7 @@ function normalizeDiscoveryQuery(value) {
 function matchCandidate(query, candidate) {
   const normalized = normalizeCandidate(candidate);
   if (normalized === void 0) return void 0;
-  const evidence = normalized.values.map((value) => classify(query, value)).filter((match) => match !== void 0).sort(compareEvidence)[0];
+  const evidence = normalized.values.map((value) => classify2(query, value)).filter((match) => match !== void 0).sort(compareEvidence)[0];
   return evidence === void 0 ? void 0 : { ...normalized.candidate, ...evidence };
 }
 function normalizeCandidate(candidate) {
@@ -22147,7 +26387,7 @@ function normalizeCandidate(candidate) {
   const stem = filename2.replace(/\.[^.]+$/, "");
   return { candidate: { ...candidate, path: path5 }, values: [.../* @__PURE__ */ new Set([normalizeValue(filename2), normalizeValue(stem)])] };
 }
-function classify(query, candidate) {
+function classify2(query, candidate) {
   if (candidate === query) return { match_class: "exact", match_score: 100 };
   const matchScore = similarity(query, candidate);
   if (candidate.startsWith(query)) return { match_class: "prefix", match_score: Math.round(matchScore) };
@@ -22264,45 +26504,25 @@ function classOrder(matchClass) {
 }
 
 // src/discovery/pipeline.ts
-import { lstatSync as lstatSync2, readdirSync as readdirSync3 } from "node:fs";
-import { join as join3 } from "node:path";
+import { lstatSync as lstatSync8, readdirSync as readdirSync7 } from "node:fs";
+import { join as join19 } from "node:path";
 
 // src/discovery/classification.ts
-import { readFileSync as readFileSync2 } from "node:fs";
-
-// src/discovery/config-path.ts
-import { readdirSync as readdirSync2 } from "node:fs";
-import { join as join2 } from "node:path";
-var configName = ".code-explorer.json";
-function isClassificationConfigPath(path5, platform = process.platform) {
-  if (path5.includes("/") || path5.includes("\\")) return false;
-  return platform === "win32" ? path5.toLocaleLowerCase("en-US") === configName : path5 === configName;
-}
-function findClassificationConfigPath(projectRoot, platform = process.platform) {
-  return readdirSync2(projectRoot, { withFileTypes: true }).find(
-    (entry) => entry.isFile() && isClassificationConfigPath(entry.name, platform)
-  )?.name;
-}
-function classificationConfigPath(projectRoot, platform = process.platform) {
-  const name = findClassificationConfigPath(projectRoot, platform);
-  return name ? join2(projectRoot, name) : void 0;
-}
-
-// src/discovery/classification.ts
+import { readFileSync as readFileSync8 } from "node:fs";
 var emptyConfig = { generated: [], test: [], production: [], overrides: [] };
 var keys = ["generated", "test", "production", "overrides"];
 function loadClassificationConfig(projectRoot, platform = process.platform) {
   try {
     const configPath = classificationConfigPath(projectRoot, platform);
     if (!configPath) return { config: emptyConfig, status: { classification_config_invalid: false } };
-    const parsed = JSON.parse(readFileSync2(configPath, "utf8"));
+    const parsed = JSON.parse(readFileSync8(configPath, "utf8"));
     return { config: parseClassificationConfig(parsed), status: { classification_config_invalid: false } };
   } catch {
     return { config: emptyConfig, status: { classification_config_invalid: true } };
   }
 }
 function parseClassificationConfig(value) {
-  if (!isRecord2(value) || Object.keys(value).some((key) => !keys.includes(key)))
+  if (!isRecord4(value) || Object.keys(value).some((key) => !keys.includes(key)))
     throw new Error("classification_config_invalid");
   return {
     generated: parseGlobArray(value.generated),
@@ -22363,7 +26583,7 @@ function parseOverrides(value) {
   if (value === void 0) return [];
   if (!Array.isArray(value)) throw new Error("classification_config_invalid");
   return value.map((entry) => {
-    if (!isRecord2(entry) || Object.keys(entry).length !== 2 || !("glob" in entry) || !("class" in entry))
+    if (!isRecord4(entry) || Object.keys(entry).length !== 2 || !("glob" in entry) || !("class" in entry))
       throw new Error("classification_config_invalid");
     if (typeof entry.glob !== "string" || !isSafeProjectGlob(entry.glob) || entry.class !== "generated" && entry.class !== "test" && entry.class !== "production")
       throw new Error("classification_config_invalid");
@@ -22395,7 +26615,7 @@ function matchesTestMarker(path5) {
 function matchesProductionMarker(path5) {
   return /^(src|lib|app)\//iu.test(path5);
 }
-function isRecord2(value) {
+function isRecord4(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -22479,18 +26699,18 @@ function hasGeneratedHeader(root, path5) {
 }
 function collectSourceFiles(root) {
   const found = [];
-  const visit = (directory, prefix) => {
-    for (const entry of readdirSync3(directory, { withFileTypes: true })) {
+  const visit2 = (directory, prefix) => {
+    for (const entry of readdirSync7(directory, { withFileTypes: true })) {
       const relative6 = prefix ? `${prefix}/${entry.name}` : entry.name;
-      const absolute = join3(directory, entry.name);
-      if (isSensitiveProjectPath(relative6) || isClassificationConfigPath(relative6) || lstatSync2(absolute).isSymbolicLink())
+      const absolute = join19(directory, entry.name);
+      if (isSensitiveProjectPath(relative6) || isClassificationConfigPath(relative6) || lstatSync8(absolute).isSymbolicLink())
         continue;
       if (entry.isDirectory()) {
-        if (!isIgnoredDirectory(relative6)) visit(absolute, relative6);
+        if (!isIgnoredDirectory(relative6)) visit2(absolute, relative6);
       } else if (entry.isFile() && languageForPath(relative6)) found.push(relative6);
     }
   };
-  visit(root.canonicalPath, "");
+  visit2(root.canonicalPath, "");
   return found;
 }
 function isIgnoredDirectory(path5) {
@@ -22783,7 +27003,7 @@ function readdirp(root, options = {}) {
 
 // ../../node_modules/chokidar/esm/handler.js
 import { watchFile, unwatchFile, watch as fs_watch } from "fs";
-import { open, stat as stat2, lstat as lstat2, realpath as fsrealpath } from "fs/promises";
+import { open as open2, stat as stat2, lstat as lstat2, realpath as fsrealpath } from "fs/promises";
 import * as sysPath from "path";
 import { type as osType } from "os";
 var STR_DATA = "data";
@@ -23167,7 +27387,7 @@ var setFsWatchListener = (path5, fullPath, options, handlers) => {
         cont.watcherUnusable = true;
       if (isWindows && error2.code === "EPERM") {
         try {
-          const fd = await open(path5, "r");
+          const fd = await open2(path5, "r");
           await fd.close();
           broadcastErr(error2);
         } catch (err) {
@@ -23285,9 +27505,9 @@ var NodeFsHandler = class {
     if (this.fsw.closed) {
       return;
     }
-    const dirname8 = sysPath.dirname(file);
+    const dirname10 = sysPath.dirname(file);
     const basename4 = sysPath.basename(file);
-    const parent = this.fsw._getWatchedDir(dirname8);
+    const parent = this.fsw._getWatchedDir(dirname10);
     let prevStats = stats;
     if (parent.has(basename4))
       return;
@@ -23314,7 +27534,7 @@ var NodeFsHandler = class {
             prevStats = newStats2;
           }
         } catch (error2) {
-          this.fsw._remove(dirname8, basename4);
+          this.fsw._remove(dirname10, basename4);
         }
       } else if (parent.has(basename4)) {
         const at = newStats.atimeMs;
@@ -23382,7 +27602,7 @@ var NodeFsHandler = class {
     if (!throttler)
       return;
     const previous = this.fsw._getWatchedDir(wh.path);
-    const current = /* @__PURE__ */ new Set();
+    const current2 = /* @__PURE__ */ new Set();
     let stream = this.fsw._readdirp(directory, {
       fileFilter: (entry) => wh.filterPath(entry),
       directoryFilter: (entry) => wh.filterDir(entry)
@@ -23396,7 +27616,7 @@ var NodeFsHandler = class {
       }
       const item = entry.path;
       let path5 = sysPath.join(directory, item);
-      current.add(item);
+      current2.add(item);
       if (entry.stats.isSymbolicLink() && await this._handleSymlink(entry, directory, path5, item)) {
         return;
       }
@@ -23421,7 +27641,7 @@ var NodeFsHandler = class {
         const wasThrottled = throttler ? throttler.clear() : false;
         resolve5(void 0);
         previous.getChildren().filter((item) => {
-          return item !== directory && !current.has(item);
+          return item !== directory && !current2.has(item);
         }).forEach((item) => {
           this.fsw._remove(directory, item);
         });
@@ -24248,9 +28468,9 @@ function watch(paths, options = {}) {
 var esm_default = { watch, FSWatcher };
 
 // src/freshness/native-manifest.ts
-import { createHash } from "node:crypto";
-import { open as open2, readdir as readdir3 } from "node:fs/promises";
-import { join as join6, relative as relative3 } from "node:path";
+import { createHash as createHash4 } from "node:crypto";
+import { open as open3, readdir as readdir3 } from "node:fs/promises";
+import { join as join22, relative as relative5 } from "node:path";
 async function reconcileNativeManifest(options) {
   const started = (options.now ?? Date.now)();
   try {
@@ -24272,39 +28492,39 @@ async function reconcileNativeManifest(options) {
 async function stableBatch(options, files) {
   return await Promise.all(
     files.map(
-      async (file) => [file, await stableHash(join6(options.root, file), options.now ?? Date.now, options.sleep ?? delay)]
+      async (file) => [file, await stableHash(join22(options.root, file), options.now ?? Date.now, options.sleep ?? delay)]
     )
   );
 }
 async function supportedFiles(root, supported, started, now) {
   const output = [];
-  const visit = async (directory) => {
+  const visit2 = async (directory) => {
     if (now() - started > 6e4 || output.length > 5e4) throw new Error("scan_limit");
     for (const entry of await readdir3(directory, { withFileTypes: true })) {
-      const absolute = join6(directory, entry.name);
+      const absolute = join22(directory, entry.name);
       if (entry.isDirectory()) {
-        if (!/^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(entry.name)) await visit(absolute);
+        if (!/^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(entry.name)) await visit2(absolute);
       } else {
-        const path5 = relative3(root, absolute).replaceAll("\\", "/");
+        const path5 = relative5(root, absolute).replaceAll("\\", "/");
         if (supported(path5)) output.push(path5);
       }
     }
   };
-  await visit(root);
+  await visit2(root);
   if (output.length > 5e4) throw new Error("scan_limit");
   return output.sort();
 }
 async function stableHash(path5, now, sleep) {
   const started = now();
   for (; ; ) {
-    const file = await open2(path5, "r");
+    const file = await open3(path5, "r");
     try {
       const before = await file.stat();
       if (before.size > 4 * 1024 * 1024) return "scan_limit";
       await sleep(100);
       const after = await file.stat();
       if (before.size === after.size && before.mtimeMs === after.mtimeMs)
-        return createHash("sha256").update(await file.readFile()).digest("hex");
+        return createHash4("sha256").update(await file.readFile()).digest("hex");
     } finally {
       await file.close();
     }
@@ -24610,8 +28830,8 @@ function isNormalizedProjectRelativePath(value) {
 }
 
 // src/navigation/focus-view.ts
-import { Buffer as Buffer2 } from "node:buffer";
-import { createHash as createHash2, randomBytes } from "node:crypto";
+import { Buffer as Buffer3 } from "node:buffer";
+import { createHash as createHash5, randomBytes } from "node:crypto";
 var DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
 var MIN_BODY_LIMIT_BYTES = 1024;
 var MAX_BODY_LIMIT_BYTES = 128 * 1024;
@@ -24679,15 +28899,15 @@ function stableSymbolId(symbol) {
     symbol.kind,
     qualifiedName
   ].join("\0");
-  return createHash2("sha256").update(identity, "utf8").digest("base64url");
+  return createHash5("sha256").update(identity, "utf8").digest("base64url");
 }
 function boundUtf8(value, limit) {
-  const totalBytes = Buffer2.byteLength(value, "utf8");
+  const totalBytes = Buffer3.byteLength(value, "utf8");
   if (totalBytes <= limit) return { value, truncated: false, returnedBytes: totalBytes, totalBytes };
   let prefix = "";
   let returnedBytes = 0;
   for (const codePoint of value) {
-    const bytes = Buffer2.byteLength(codePoint, "utf8");
+    const bytes = Buffer3.byteLength(codePoint, "utf8");
     if (returnedBytes + bytes > limit) break;
     prefix += codePoint;
     returnedBytes += bytes;
@@ -24696,13 +28916,13 @@ function boundUtf8(value, limit) {
 }
 
 // src/navigation/resource-limits.ts
-import { Buffer as Buffer3 } from "node:buffer";
+import { Buffer as Buffer4 } from "node:buffer";
 var MAX_QUERY_CODE_POINTS = 1024;
 var MAX_FILTER_VALUES = 32;
 var MAX_FILTER_VALUE_BYTES = 256;
 var MAX_REQUEST_BYTES = 64 * 1024;
 var MAX_CANDIDATES = 200;
-var MAX_BODY_BYTES = 128 * 1024;
+var MAX_BODY_BYTES2 = 128 * 1024;
 var DEFAULT_BACKEND_TIMEOUT_MS = 1e4;
 var MAX_BACKEND_TIMEOUT_MS = 6e4;
 var MAX_SESSION_BACKEND_REQUESTS = 4;
@@ -24718,7 +28938,7 @@ var BackendCapacityError = class extends Error {
   }
 };
 function validateResourceLimits(name, arguments_) {
-  const requestBytes = Buffer3.byteLength(JSON.stringify(arguments_), "utf8");
+  const requestBytes = Buffer4.byteLength(JSON.stringify(arguments_), "utf8");
   if (requestBytes > MAX_REQUEST_BYTES) return { field: "request", limit: MAX_REQUEST_BYTES, actual: requestBytes };
   if (name === "code_search" && typeof arguments_.query === "string") {
     const codePoints2 = Array.from(arguments_.query).length;
@@ -24730,13 +28950,13 @@ function validateResourceLimits(name, arguments_) {
   if (filters.length > MAX_FILTER_VALUES) return { field: "filters", limit: MAX_FILTER_VALUES, actual: filters.length };
   for (const value of filters) {
     if (typeof value !== "string") continue;
-    const bytes = Buffer3.byteLength(value, "utf8");
+    const bytes = Buffer4.byteLength(value, "utf8");
     if (bytes > MAX_FILTER_VALUE_BYTES) return { field: "filter_value", limit: MAX_FILTER_VALUE_BYTES, actual: bytes };
   }
   if ((name === "code_search" || name === "code_follow") && typeof arguments_.limit === "number" && arguments_.limit > MAX_CANDIDATES)
     return { field: "limit", limit: MAX_CANDIDATES, actual: arguments_.limit };
-  if (name === "code_focus" && typeof arguments_.body_limit_bytes === "number" && arguments_.body_limit_bytes > MAX_BODY_BYTES)
-    return { field: "body_limit_bytes", limit: MAX_BODY_BYTES, actual: arguments_.body_limit_bytes };
+  if (name === "code_focus" && typeof arguments_.body_limit_bytes === "number" && arguments_.body_limit_bytes > MAX_BODY_BYTES2)
+    return { field: "body_limit_bytes", limit: MAX_BODY_BYTES2, actual: arguments_.body_limit_bytes };
   return void 0;
 }
 var BackendRequestLimiter = class {
@@ -24967,2259 +29187,10 @@ function canonicalize2(value) {
   return value;
 }
 
-// src/semantic/adapter-selection.ts
-import { readFileSync as readFileSync3 } from "node:fs";
-import { homedir } from "node:os";
-import { dirname as dirname3, join as join7, resolve as resolve3 } from "node:path";
-import { fileURLToPath as fileURLToPath2 } from "node:url";
-
-// src/semantic/backend-launch-policy.ts
-import { createHash as createHash3 } from "node:crypto";
-import { posix as posix2, win32 as win322 } from "node:path";
-function createBackendLaunchPolicy(options) {
-  const platform = options.platform ?? platformForHost();
-  const allowlist = deepFreeze(options.allowlist.map(snapshotAllowlistEntry));
-  const policyOptions = { ...options, allowlist, platform };
-  const accepted = /* @__PURE__ */ new Map();
-  return {
-    prepare(language, projectConfiguration) {
-      const entry = allowlist.find((candidate) => candidate.language === language);
-      if (!entry) return { status: "unavailable", code: "backend_unavailable" };
-      const inspected = inspect(entry, policyOptions);
-      const prior = accepted.get(language);
-      if (inspected.status !== "accepted") {
-        return {
-          status: "unavailable",
-          code: inspected.code === "version_incompatible" ? "unsupported_backend_version" : inspected.code
-        };
-      }
-      if (!(entry.sentinel_passed && safeModeIsProven(entry)))
-        return { status: "unavailable", code: "unsafe_backend_mode" };
-      if (prior && !sameIdentity2(prior.identity, inspected.identity, platform)) {
-        accepted.delete(language);
-        return { status: "unavailable", code: "backend_identity_changed" };
-      }
-      accepted.set(language, { entry, identity: inspected.identity });
-      return {
-        status: "ready",
-        executable: inspected.identity.canonical_path,
-        version: inspected.identity.version,
-        arguments: resolveArguments(entry.arguments, inspected.identity.entrypoints),
-        shell: false,
-        environment: entry.environment,
-        endpoint: entry.endpoint,
-        safe_initialization_options: entry.safe_initialization_options,
-        ...projectConfiguration === void 0 ? {} : { event: "project_backend_config_ignored" }
-      };
-    },
-    confirmInitialized(language) {
-      const prior = accepted.get(language);
-      if (!prior) return { status: "unavailable", code: "backend_unavailable", terminate: true };
-      const inspected = inspect(prior.entry, policyOptions);
-      if (inspected.status === "accepted" && sameIdentity2(prior.identity, inspected.identity, platform))
-        return { status: "ready" };
-      accepted.delete(language);
-      return {
-        status: "unavailable",
-        code: inspected.status === "accepted" || inspected.code === "version_incompatible" ? "backend_identity_changed" : inspected.code,
-        terminate: true
-      };
-    },
-    setEndpoint(language, endpoint) {
-      const entry = allowlist.find((candidate) => candidate.language === language);
-      return entry?.endpoint === endpoint && isPermittedEndpoint(endpoint) ? { status: "ready" } : { status: "unavailable", code: "backend_endpoint_rejected" };
-    },
-    handleBackendRequest(method, _params) {
-      return {
-        accepted: false,
-        code: method === "workspace/applyEdit" || method.startsWith("workspace/") ? "backend_write_rejected" : "backend_request_rejected"
-      };
-    },
-    safeOptions(language) {
-      return allowlist.find((entry) => entry.language === language)?.safe_initialization_options;
-    }
-  };
-}
-function inspect(entry, options) {
-  const identity = options.inspect(entry.language, entry.executable_basename, entry.entrypoint_basenames ?? []);
-  if (!identity?.canonical_path) return { status: "rejected", code: "backend_unavailable" };
-  if (!(identity.device && identity.file_id && identity.sha256 && identity.version)) {
-    return { status: "rejected", code: "backend_identity_unverifiable" };
-  }
-  if (!identity.regular_file || identity.link_or_reparse_point || isWithin(options.project_root, identity.canonical_path, options.platform ?? platformForHost()) || !samePath(
-    basename3(identity.canonical_path, options.platform ?? platformForHost()),
-    entry.executable_basename,
-    options.platform ?? platformForHost()
-  )) {
-    return { status: "rejected", code: "backend_identity_unverifiable" };
-  }
-  if (!/^[a-f0-9]{64}$/i.test(identity.sha256)) return { status: "rejected", code: "backend_identity_unverifiable" };
-  if (identity.sha256 !== entry.executable_sha256) return { status: "rejected", code: "backend_identity_changed" };
-  if (!versionMatches(identity.version, entry.compatible_version))
-    return { status: "rejected", code: "version_incompatible" };
-  const entrypoints = identity.entrypoints ?? [];
-  if (entrypoints.length !== (entry.entrypoint_basenames ?? []).length) {
-    return { status: "rejected", code: "backend_identity_unverifiable" };
-  }
-  for (const [index, file] of entrypoints.entries()) {
-    const expected = entry.entrypoint_basenames?.[index];
-    if (!(file.canonical_path && file.device && file.file_id && file.sha256 && file.regular_file) || file.link_or_reparse_point || isWithin(options.project_root, file.canonical_path, options.platform ?? platformForHost()) || !samePath(
-      basename3(file.canonical_path, options.platform ?? platformForHost()),
-      expected ?? "",
-      options.platform ?? platformForHost()
-    ) || !/^[a-f0-9]{64}$/i.test(file.sha256)) {
-      return { status: "rejected", code: "backend_identity_unverifiable" };
-    }
-    if (file.sha256 !== entry.entrypoint_sha256s?.[index]) {
-      return { status: "rejected", code: "backend_identity_changed" };
-    }
-  }
-  if (entry.package_metadata_sha256 !== null && entry.package_metadata_sha256 !== void 0) {
-    const metadata = identity.package_metadata;
-    if (!(metadata?.canonical_path && metadata.device && metadata.file_id && metadata.sha256 && metadata.regular_file) || metadata.link_or_reparse_point || isWithin(options.project_root, metadata.canonical_path, options.platform ?? platformForHost()) || basename3(metadata.canonical_path, options.platform ?? platformForHost()) !== "package.json" || !/^[a-f0-9]{64}$/i.test(metadata.sha256) || metadata.sha256 !== entry.package_metadata_sha256) {
-      return { status: "rejected", code: "backend_identity_changed" };
-    }
-  } else if (identity.package_metadata) {
-    return { status: "rejected", code: "backend_identity_changed" };
-  }
-  return { status: "accepted", identity };
-}
-function sameIdentity2(left, right, platform) {
-  return samePath(left.canonical_path, right.canonical_path, platform) && left.device === right.device && left.file_id === right.file_id && left.sha256 === right.sha256 && left.version === right.version && sameEntrypoints(left.entrypoints, right.entrypoints, platform) && sameFileIdentity(left.package_metadata, right.package_metadata, platform);
-}
-function sameFileIdentity(left, right, platform) {
-  if (!(left && right)) return left === right;
-  return !!(left.canonical_path && right.canonical_path && samePath(left.canonical_path, right.canonical_path, platform) && left.device === right.device && left.file_id === right.file_id && left.sha256 === right.sha256);
-}
-function sameEntrypoints(left, right, platform) {
-  if ((left?.length ?? 0) !== (right?.length ?? 0)) return false;
-  return (left ?? []).every((file, index) => {
-    const other = right?.[index];
-    return !!(other && file.canonical_path && other.canonical_path && samePath(file.canonical_path, other.canonical_path, platform) && file.device === other.device && file.file_id === other.file_id && file.sha256 === other.sha256);
-  });
-}
-function resolveArguments(template, entrypoints) {
-  return deepFreeze(
-    template.map((argument) => {
-      const match = /^\{entrypoint:(\d+)\}$/.exec(argument);
-      if (!match) return argument;
-      const path5 = entrypoints?.[Number(match[1])]?.canonical_path;
-      if (!path5) throw new Error("backend_identity_unverifiable");
-      return path5;
-    })
-  );
-}
-function samePath(left, right, platform) {
-  if (platform === "posix") return left === right;
-  return win322.normalize(left).toLowerCase() === win322.normalize(right).toLowerCase();
-}
-function versionMatches(version2, compatibleRange) {
-  if (!compatibleRange.startsWith("^")) return version2 === compatibleRange;
-  const [major] = compatibleRange.slice(1).split(".");
-  return version2.split(".")[0] === major;
-}
-function isWithin(root, candidate, platform) {
-  const path5 = platform === "win32" ? win322 : posix2;
-  const relativePath = path5.relative(path5.resolve(root), path5.resolve(candidate));
-  return relativePath === "" || !relativePath.startsWith(`..${path5.sep}`) && relativePath !== ".." && !path5.isAbsolute(relativePath);
-}
-function basename3(value, platform) {
-  return (platform === "win32" ? win322 : posix2).basename(value);
-}
-function platformForHost() {
-  return process.platform === "win32" ? "win32" : "posix";
-}
-function isPermittedEndpoint(endpoint) {
-  if (endpoint === "stdio") return true;
-  try {
-    const url = new URL(endpoint);
-    return /^127(?:\.\d{1,3}){3}$/.test(url.hostname) || url.hostname === "[::1]" || url.hostname === "::1";
-  } catch {
-    return false;
-  }
-}
-function safeModeIsProven(entry) {
-  const options = entry.safe_initialization_options;
-  if (entry.language === "rust") {
-    const cargo = options.cargo;
-    return cargo?.buildScripts?.enable === false && cargo?.procMacro?.enable === false && cargo?.checkOnSave?.enable === false && options.projectConfiguration?.enable === false;
-  }
-  if (entry.language === "csharp") {
-    return options.analyzers === false && options.source_generators === false;
-  }
-  return options.use_project_environment === false && options.mirror_only === true;
-}
-function createPythonMirrorPlan(configuration, files, options = {
-  generation: 0,
-  mirror_uri_root: "file:///code-explorer-mirror",
-  bundled_typeshed: []
-}) {
-  if (containsUnsafePythonConfiguration(configuration) || files.some((file) => !isSafePythonMirrorFile(file)) || options.bundled_typeshed.some((path5) => unsafePath(path5))) {
-    return { status: "unavailable", code: "unsafe_backend_mode" };
-  }
-  const manifest = Object.freeze(Object.fromEntries(files.map((file) => [file.path, file.sha256])));
-  const mirrored = Object.freeze(files.map(({ path: path5, sha256: sha2563, text }) => Object.freeze({ path: path5, sha256: sha2563, text })));
-  if (options.filesystem) {
-    options.filesystem.writeFile("pyrightconfig.json", "{}");
-    for (const file of mirrored) options.filesystem.writeFile(file.path, file.text);
-    options.filesystem.makeReadOnly();
-  }
-  return {
-    status: "ready",
-    manifest,
-    files: mirrored,
-    generation: options.generation,
-    minimal_pyrightconfig: Object.freeze({}),
-    bundled_typeshed: Object.freeze([...options.bundled_typeshed]),
-    resolveUri: (uri, generation, sha2563) => {
-      const path5 = uriToMirrorPath(uri, options.mirror_uri_root);
-      return path5 && generation === options.generation && manifest[path5] === sha2563 ? { status: "accepted", original_path: path5 } : { status: "rejected", code: "unsafe_backend_mode" };
-    },
-    onProjectConfigurationChanged: () => ({ status: "rebuild_required", terminate_old_backend: true })
-  };
-}
-function containsUnsafePythonConfiguration(value, key) {
-  const prohibited = /* @__PURE__ */ new Set([
-    "extends",
-    "venvPath",
-    "venv",
-    "extraPaths",
-    "typeshedPath",
-    "stubPath",
-    "executionEnvironments",
-    "pythonPath",
-    "python.pythonPath",
-    "python.venvPath",
-    "python.analysis.extraPaths"
-  ]);
-  if (key && prohibited.has(key)) return true;
-  if (typeof value === "string") return unsafePath(value);
-  if (Array.isArray(value)) return value.some((item) => containsUnsafePythonConfiguration(item));
-  if (!value || typeof value !== "object") return false;
-  return Object.entries(value).some(
-    ([childKey, child]) => containsUnsafePythonConfiguration(child, childKey)
-  );
-}
-function isSafePythonMirrorFile(file) {
-  return (file.path.endsWith(".py") || file.path.endsWith(".pyi")) && !file.symlink && !file.sensitive && !unsafePath(file.path) && !file.path.split(/[\\/]/).includes("..") && /^[a-f0-9]{64}$/i.test(file.sha256) && createHash3("sha256").update(file.text).digest("hex") === file.sha256;
-}
-function unsafePath(value) {
-  return posix2.isAbsolute(value) || win322.isAbsolute(value) || value.split(/[\\/]/).includes("..");
-}
-function uriToMirrorPath(uri, root) {
-  if (!uri.startsWith(`${root}/`)) return void 0;
-  try {
-    const path5 = decodeURIComponent(uri.slice(root.length + 1));
-    return unsafePath(path5) ? void 0 : path5;
-  } catch {
-    return void 0;
-  }
-}
-function snapshotAllowlistEntry(entry) {
-  return {
-    language: entry.language,
-    executable_basename: entry.executable_basename,
-    entrypoint_basenames: entry.entrypoint_basenames ? [...entry.entrypoint_basenames] : [],
-    executable_sha256: entry.executable_sha256,
-    entrypoint_sha256s: entry.entrypoint_sha256s ? [...entry.entrypoint_sha256s] : [],
-    package_metadata_sha256: entry.package_metadata_sha256 ?? null,
-    compatible_version: entry.compatible_version,
-    arguments: [...entry.arguments],
-    endpoint: entry.endpoint,
-    environment: { ...entry.environment },
-    safe_initialization_options: cloneValue(entry.safe_initialization_options),
-    sentinel_passed: entry.sentinel_passed
-  };
-}
-function cloneValue(value) {
-  if (Array.isArray(value)) return value.map(cloneValue);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, child]) => [key, cloneValue(child)])
-    );
-  }
-  return value;
-}
-function deepFreeze(value) {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Object.values(value)) deepFreeze(child);
-    Object.freeze(value);
-  }
-  return value;
-}
-
-// src/semantic/contract.ts
-var languages = ["rust", "python", "csharp"];
-var relationNames = [
-  "definition",
-  "references",
-  "type_definition",
-  "implementation",
-  "callers",
-  "callees"
-];
-var positionSchema = external_exports.object({ line: external_exports.number().int().nonnegative(), character: external_exports.number().int().nonnegative() }).strict();
-var rangeSchema = external_exports.object({ start: positionSchema, end: positionSchema }).strict();
-var relativePathSchema = external_exports.string().min(1).refine((path5) => !(path5.startsWith("/") || /^[A-Za-z]:[\\/]/.test(path5) || path5.split(/[\\/]/).includes("..")));
-var projectLocationSchema = external_exports.object({ path: relativePathSchema, range: rangeSchema }).strict();
-var externalLocationSchema = external_exports.object({ external: external_exports.literal(true) }).strict();
-var sourceLocationSchema = external_exports.union([projectLocationSchema, externalLocationSchema]);
-var symbolSchema = external_exports.object({
-  id: external_exports.string().min(1),
-  name: external_exports.string().min(1),
-  qualified_name: external_exports.string().min(1).optional(),
-  language: external_exports.enum(languages),
-  kind: external_exports.string().min(1),
-  location: projectLocationSchema
-}).strict();
-var revisionSchema = external_exports.object({ generation: external_exports.number().int().nonnegative(), manifest_sha256: external_exports.string().min(1) }).strict();
-var semanticRequestSchema = external_exports.discriminatedUnion("operation", [
-  external_exports.object({ operation: external_exports.literal("search"), query: external_exports.string() }).strict(),
-  external_exports.object({ operation: external_exports.literal("focus"), symbol_id: external_exports.string().min(1) }).strict(),
-  ...relationNames.map(
-    (operation) => external_exports.object({ operation: external_exports.literal(operation), symbol_id: external_exports.string().min(1) }).strict()
-  )
-]);
-var semanticResultSchema = external_exports.discriminatedUnion("operation", [
-  external_exports.object({ operation: external_exports.literal("search"), revision: revisionSchema, symbols: external_exports.array(symbolSchema) }).strict(),
-  external_exports.object({
-    operation: external_exports.literal("focus"),
-    revision: revisionSchema,
-    symbol: symbolSchema,
-    content: external_exports.object({
-      body: external_exports.string().optional(),
-      declaration: external_exports.string().optional(),
-      visible_symbols: external_exports.array(external_exports.object({ name: external_exports.string().min(1), symbol_id: external_exports.string().min(1) }).strict()).optional()
-    }).strict().optional()
-  }).strict(),
-  ...relationNames.map(
-    (operation) => external_exports.object({
-      operation: external_exports.literal(operation),
-      revision: revisionSchema,
-      relations: external_exports.array(
-        external_exports.union([
-          external_exports.object({
-            relation: external_exports.literal(operation),
-            symbol: symbolSchema,
-            location: sourceLocationSchema,
-            call_site: projectLocationSchema.optional()
-          }).strict(),
-          external_exports.object({
-            relation: external_exports.literal(operation),
-            external: externalLocationSchema.extend({ display_name: external_exports.string().min(1).optional() })
-          }).strict()
-        ])
-      )
-    }).strict()
-  )
-]);
-function parseSemanticRequest(input) {
-  const parsed = semanticRequestSchema.safeParse(input);
-  if (!parsed.success) throw new Error("invalid semantic request");
-  return parsed.data;
-}
-function parseSemanticResult(input) {
-  const parsed = semanticResultSchema.safeParse(input);
-  if (!parsed.success) throw new Error("invalid semantic result");
-  return parsed.data;
-}
-
-// src/semantic/adapter-selection.ts
-var sha256 = external_exports.string().regex(/^[a-f0-9]{64}$/i);
-var win32CommandRoot = external_exports.enum([
-  "cargo_home_bin",
-  "dotnet_tools",
-  "node_install",
-  "npm_global",
-  "code_explorer_backends"
-]);
-var posixCommandRoot = external_exports.literal("posix_code_explorer_backends");
-var commandRoot = external_exports.union([win32CommandRoot, posixCommandRoot]);
-var versionProbe = external_exports.object({
-  method: external_exports.enum(["command", "package_json", "windows_file_version"]),
-  command_root: commandRoot,
-  executable: external_exports.string().min(1),
-  entrypoints: external_exports.array(external_exports.string().min(1)),
-  arguments: external_exports.array(external_exports.string()),
-  command_template: external_exports.string().min(1)
-}).strict();
-var recordSchema = external_exports.object({
-  schema_version: external_exports.literal(1),
-  source_dependency_versions: external_exports.object({ serena: external_exports.string().min(1), "@p1va/symbols": external_exports.string().min(1) }).strict(),
-  evidence_artifact: external_exports.literal("adapter-selection-evidence.json"),
-  trusted_command_roots: external_exports.object({
-    posix: external_exports.array(external_exports.literal("posix_code_explorer_backends")).min(1),
-    win32: external_exports.array(external_exports.enum(["cargo_home_bin", "dotnet_tools", "node_install", "npm_global", "code_explorer_backends"])).min(1)
-  }).strict(),
-  selected_paths: external_exports.object({
-    rust: external_exports.literal("direct_standard_public_lsp"),
-    python: external_exports.literal("direct_standard_public_lsp"),
-    csharp: external_exports.literal("direct_standard_public_lsp")
-  }).strict(),
-  runtime_backends: external_exports.array(
-    external_exports.object({
-      language: external_exports.enum(languages),
-      platform_executables: external_exports.object({ posix: external_exports.string().min(1), win32: external_exports.string().min(1) }).strict(),
-      platform_entrypoints: external_exports.object({ posix: external_exports.array(external_exports.string().min(1)), win32: external_exports.array(external_exports.string().min(1)) }).strict(),
-      compatible_version: external_exports.string().min(1),
-      arguments: external_exports.array(external_exports.string()),
-      endpoint: external_exports.literal("stdio"),
-      environment: external_exports.record(external_exports.string()),
-      safe_initialization_options: external_exports.record(external_exports.unknown()),
-      capabilities: external_exports.object(Object.fromEntries(relationNames.map((name) => [name, external_exports.enum(["ready", "unavailable", "failed"])]))).strict(),
-      sentinel_evidence: external_exports.object({
-        fixture: external_exports.string().min(1),
-        platform: external_exports.enum(["win32", "posix"]),
-        fixture_sha256: external_exports.string().min(1),
-        side_effect_absent: external_exports.boolean(),
-        result: external_exports.enum(["passed", "unproven", "failed"]),
-        passed: external_exports.boolean()
-      }).strict().superRefine((evidence, context) => {
-        if (evidence.passed && !(evidence.result === "passed" && evidence.side_effect_absent)) {
-          context.addIssue({ code: external_exports.ZodIssueCode.custom, message: "passing sentinel evidence is inconsistent" });
-        }
-      }),
-      authorization: external_exports.object({
-        executable_sha256: sha256,
-        entrypoint_sha256s: external_exports.array(sha256),
-        package_metadata_sha256: sha256.nullable(),
-        version_probe: versionProbe
-      }).strict()
-    }).strict()
-  )
-}).strict().superRefine((record2, context) => {
-  for (const language of languages) {
-    if (record2.runtime_backends.filter((backend) => backend.language === language).length !== 1) {
-      context.addIssue({ code: external_exports.ZodIssueCode.custom, message: `exactly one ${language} backend is required` });
-    }
-  }
-});
-var sentinelRunSchema = external_exports.object({
-  executable: external_exports.string().min(1),
-  executable_sha256: sha256,
-  entrypoints: external_exports.array(external_exports.string().min(1)),
-  entrypoint_sha256s: external_exports.array(sha256),
-  package_metadata_sha256: sha256.nullable(),
-  backend_version: external_exports.string().min(1),
-  fixture_sha256: sha256,
-  version_probe: versionProbe,
-  startup: external_exports.literal(true),
-  definition_navigation: external_exports.literal(true),
-  side_effect_absent: external_exports.literal(true),
-  stderr: external_exports.string().max(1024),
-  positive_control: external_exports.object({
-    initialized: external_exports.literal(true),
-    definition_responded: external_exports.literal(true),
-    side_effect_absent: external_exports.literal(false)
-  }).strict()
-}).strict();
-var evidenceSchema = external_exports.object({
-  schema_version: external_exports.literal(1),
-  recorded_at: external_exports.string().datetime(),
-  purpose: external_exports.string().min(1),
-  platforms: external_exports.object({
-    win32: external_exports.object({
-      status: external_exports.enum(["passed", "unproven"]),
-      command_roots: external_exports.array(win32CommandRoot),
-      commands: external_exports.array(external_exports.string()),
-      bounded_output: external_exports.string(),
-      backend_versions: external_exports.record(external_exports.string(), external_exports.string().nullable()),
-      positive_controls: external_exports.record(external_exports.string(), external_exports.string())
-    }).strict(),
-    posix: external_exports.object({
-      status: external_exports.enum(["passed", "unproven"]),
-      command_roots: external_exports.array(posixCommandRoot),
-      commands: external_exports.array(external_exports.string()),
-      bounded_output: external_exports.string(),
-      backend_versions: external_exports.record(external_exports.string(), external_exports.string().nullable()),
-      positive_controls: external_exports.record(external_exports.string(), external_exports.string())
-    }).strict()
-  }).strict(),
-  fixture_tree_hashes: external_exports.object({
-    rust: sha256,
-    python: sha256,
-    csharp: sha256
-  }).strict(),
-  sentinel_runs: external_exports.object({
-    rust: sentinelRunSchema,
-    python: sentinelRunSchema.extend({
-      package_metadata_sha256: sha256,
-      environment: external_exports.object({
-        PATH: external_exports.literal(""),
-        PYTHONPATH: external_exports.literal(""),
-        VIRTUAL_ENV: external_exports.literal(""),
-        CONDA_PREFIX: external_exports.literal("")
-      }).strict()
-    }),
-    csharp: sentinelRunSchema
-  }).strict()
-}).strict();
-function loadAdapterSelectionRecord() {
-  const packageRoot = findPackageRoot(dirname3(fileURLToPath2(import.meta.url)));
-  let input;
-  try {
-    input = JSON.parse(readFileSync3(join7(packageRoot, "adapter-selection.json"), "utf8"));
-  } catch {
-    throw new Error("invalid adapter selection record");
-  }
-  const record2 = parseAdapterSelectionRecord(input);
-  try {
-    const evidence = parseAdapterSelectionEvidence(
-      JSON.parse(readFileSync3(join7(packageRoot, record2.evidence_artifact), "utf8"))
-    );
-    if (!evidenceAligns(record2, evidence)) throw new Error("invalid adapter selection evidence");
-  } catch {
-    throw new Error("invalid adapter selection evidence");
-  }
-  return record2;
-}
-function parseAdapterSelectionEvidence(input) {
-  const parsed = evidenceSchema.safeParse(input);
-  if (!parsed.success) throw new Error("invalid adapter selection evidence");
-  return deepFreeze2(parsed.data);
-}
-function evidenceAligns(record2, evidence) {
-  return record2.runtime_backends.every((backend) => {
-    const run = evidence.sentinel_runs[backend.language];
-    const platform = evidence.platforms[backend.sentinel_evidence.platform];
-    return backend.sentinel_evidence.fixture_sha256 === evidence.fixture_tree_hashes[backend.language] && backend.sentinel_evidence.fixture_sha256 === run.fixture_sha256 && backend.compatible_version === run.backend_version && backend.platform_executables[backend.sentinel_evidence.platform] === run.executable && arraysEqual(backend.platform_entrypoints[backend.sentinel_evidence.platform], run.entrypoints) && backend.platform_entrypoints[backend.sentinel_evidence.platform].length === backend.authorization.entrypoint_sha256s.length && run.entrypoints.length === run.entrypoint_sha256s.length && backend.authorization.executable_sha256 === run.executable_sha256 && arraysEqual(backend.authorization.entrypoint_sha256s, run.entrypoint_sha256s) && backend.authorization.package_metadata_sha256 === run.package_metadata_sha256 && (backend.language === "python" ? backend.authorization.package_metadata_sha256 !== null : backend.authorization.package_metadata_sha256 === null) && versionProbesEqual(backend.authorization.version_probe, run.version_probe) && backend.authorization.version_probe.executable === run.executable && arraysEqual(backend.authorization.version_probe.entrypoints, run.entrypoints) && platform.command_roots.includes(backend.authorization.version_probe.command_root) && backend.sentinel_evidence.passed === (platform.status === "passed" && run.side_effect_absent) && arraysEqual(record2.trusted_command_roots.win32, evidence.platforms.win32.command_roots) && arraysEqual(record2.trusted_command_roots.posix, evidence.platforms.posix.command_roots);
-  });
-}
-function arraysEqual(left, right) {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
-}
-function versionProbesEqual(left, right) {
-  return left.method === right.method && left.command_root === right.command_root && left.executable === right.executable && arraysEqual(left.entrypoints, right.entrypoints) && arraysEqual(left.arguments, right.arguments) && left.command_template === right.command_template;
-}
-function parseAdapterSelectionRecord(input) {
-  const parsed = recordSchema.safeParse(input);
-  if (!parsed.success) throw new Error("invalid adapter selection record");
-  return deepFreeze2(parsed.data);
-}
-function createRuntimeLaunchPolicy(options) {
-  const platform = options.platform ?? (process.platform === "win32" ? "win32" : "posix");
-  return createBackendLaunchPolicy({
-    ...options,
-    platform,
-    allowlist: runtimeAllowlist(loadAdapterSelectionRecord(), platform)
-  });
-}
-function runtimeAllowlist(record2, platform) {
-  return record2.runtime_backends.map((backend) => ({
-    language: backend.language,
-    executable_basename: backend.platform_executables[platform],
-    entrypoint_basenames: backend.platform_entrypoints[platform],
-    executable_sha256: backend.authorization.executable_sha256,
-    entrypoint_sha256s: backend.authorization.entrypoint_sha256s,
-    package_metadata_sha256: backend.authorization.package_metadata_sha256,
-    compatible_version: backend.compatible_version,
-    arguments: backend.arguments,
-    endpoint: backend.endpoint,
-    environment: backend.environment,
-    safe_initialization_options: backend.safe_initialization_options,
-    sentinel_passed: backend.sentinel_evidence.platform === platform && backend.sentinel_evidence.passed
-  }));
-}
-function resolveTrustedCommandRoots(identifiers) {
-  const home = homedir();
-  const programFiles = process.env.ProgramFiles ?? "C:\\Program Files";
-  const appData = process.env.APPDATA ?? join7(home, "AppData", "Roaming");
-  const resolved = {
-    cargo_home_bin: join7(process.env.CARGO_HOME ?? join7(home, ".cargo"), "bin"),
-    dotnet_tools: join7(home, ".dotnet", "tools"),
-    node_install: join7(programFiles, "nodejs"),
-    npm_global: join7(appData, "npm"),
-    code_explorer_backends: process.env.CODE_EXPLORER_BACKENDS_ROOT ?? join7(programFiles, "Code Explorer", "backends")
-  };
-  return identifiers.map((identifier) => resolved[identifier]);
-}
-function findPackageRoot(start) {
-  let directory = resolve3(start);
-  while (true) {
-    try {
-      const packageInfo2 = JSON.parse(readFileSync3(join7(directory, "package.json"), "utf8"));
-      if (packageInfo2.name === "code-explorer") return directory;
-    } catch {
-    }
-    const parent = dirname3(directory);
-    if (parent === directory) throw new Error("invalid adapter selection record");
-    directory = parent;
-  }
-}
-function deepFreeze2(value) {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Object.values(value)) deepFreeze2(child);
-    Object.freeze(value);
-  }
-  return value;
-}
-
-// src/semantic/backend-status.ts
-function createBackendStatusReport(adapters) {
-  const backends = adapters.map((adapter) => adapter.status());
-  const anyReady = backends.some(({ state }) => state === "ready" || state === "degraded" || state === "refreshing");
-  return {
-    backends,
-    navigation: anyReady ? { discovery: "semantic", focus: "ready", relations: "ready" } : { discovery: "discovery_only", focus: "backend_unavailable", relations: "backend_unavailable" }
-  };
-}
-
-// src/semantic/root-access.ts
-var RootAccessGate = class {
-  constructor(root, adapters, now = Date.now) {
-    this.root = root;
-    this.adapters = adapters;
-    this.now = now;
-  }
-  root;
-  adapters;
-  now;
-  #state = "ready";
-  #inaccessibleSince;
-  #retryTimer;
-  async check() {
-    if (!this.root) return this.status();
-    if (this.#state === "project_root_unavailable") return this.status();
-    const result = this.root.revalidate();
-    if (result === "ready") {
-      if (this.#state === "project_root_inaccessible") await this.#restart();
-      this.#state = "ready";
-      this.#inaccessibleSince = void 0;
-      this.#clearRetry();
-      return this.status();
-    }
-    if (result === "inaccessible") {
-      this.#inaccessibleSince ??= this.now();
-      if (this.now() - this.#inaccessibleSince < 3e4) {
-        this.#state = "project_root_inaccessible";
-        await this.#stop();
-        this.#scheduleRetry();
-        return this.status();
-      }
-    }
-    this.#state = "project_root_unavailable";
-    this.#clearRetry();
-    await this.#stop();
-    return this.status();
-  }
-  status() {
-    return { state: this.#state, restart_required: this.#state === "project_root_unavailable" };
-  }
-  async #stop() {
-    await Promise.all(this.adapters.flatMap((adapter) => adapter.shutdown ? [adapter.shutdown()] : []));
-  }
-  async #restart() {
-    await Promise.all(this.adapters.flatMap((adapter) => adapter.start ? [adapter.start()] : []));
-  }
-  #scheduleRetry() {
-    if (this.#retryTimer !== void 0) return;
-    this.#retryTimer = setTimeout(() => {
-      this.#retryTimer = void 0;
-      void this.check();
-    }, 5e3);
-    this.#retryTimer.unref?.();
-  }
-  #clearRetry() {
-    if (this.#retryTimer === void 0) return;
-    clearTimeout(this.#retryTimer);
-    this.#retryTimer = void 0;
-  }
-};
-
-// src/semantic/runtime-bootstrap.ts
-import { fileURLToPath as fileURLToPath4, pathToFileURL as pathToFileURL2 } from "node:url";
-
-// src/semantic/filtered-workspace.ts
-import { existsSync, lstatSync as lstatSync3, mkdirSync, mkdtempSync, readdirSync as readdirSync4, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname as dirname4, join as join8 } from "node:path";
-function createFilteredWorkspace(sourceRoot) {
-  const serviceRoot = mkdtempSync(join8(tmpdir(), "code-explorer-native-"));
-  let excluded = 0;
-  const sourcePaths = [];
-  try {
-    const copyDirectory = (absoluteDirectory, relativeDirectory) => {
-      for (const entry of readdirSync4(absoluteDirectory, { withFileTypes: true })) {
-        const relativePath = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
-        const absolutePath = join8(absoluteDirectory, entry.name);
-        if (isSensitiveProjectPath(relativePath) || isClassificationConfigPath(relativePath)) {
-          if (isSensitiveProjectPath(relativePath)) excluded += 1;
-          continue;
-        }
-        if (isBackendIrrelevant(relativePath)) continue;
-        if (lstatSync3(absolutePath).isSymbolicLink()) continue;
-        const target = join8(serviceRoot, relativePath);
-        if (entry.isDirectory()) {
-          mkdirSync(target, { recursive: true });
-          copyDirectory(absolutePath, relativePath);
-        } else if (entry.isFile() && isBackendSourceFile(relativePath)) {
-          mkdirSync(dirname4(target), { recursive: true });
-          writeFileSync(target, sourceRoot.protectedRead(relativePath).bytes, "utf8");
-          sourcePaths.push(relativePath);
-        }
-      }
-    };
-    copyDirectory(sourceRoot.canonicalPath, "");
-    const root = createNativeProjectRoot(serviceRoot);
-    return {
-      root,
-      sensitive_paths_excluded: excluded,
-      sourcePaths: () => [...sourcePaths],
-      dispose: () => {
-        if (existsSync(serviceRoot)) rmSync(serviceRoot, { recursive: true, force: true });
-      }
-    };
-  } catch (error2) {
-    rmSync(serviceRoot, { recursive: true, force: true });
-    throw error2;
-  }
-}
-function isBackendIrrelevant(path5) {
-  return path5.split("/").some(
-    (part) => /^(node_modules|dist|target|bin|obj|\.venv|coverage|docs|reports|\.serena|\.idea|\.claude|\.codex|\.github|\.data|\.evo|\.skill-migrate|\.tighten)$/iu.test(
-      part
-    )
-  );
-}
-function isBackendSourceFile(path5) {
-  return /\.(rs|cs|csx|fs|vb|toml|json|sln|csproj|props|targets)$/iu.test(path5) || /(^|\/)(Cargo\.lock|Cargo\.toml|Directory\.Build\.props)$/iu.test(path5);
-}
-
-// src/semantic/language-adapter.ts
-function createRustAdapter(options) {
-  return createLanguageAdapter("rust", options);
-}
-function createPythonAdapter(options) {
-  return createLanguageAdapter("python", options);
-}
-function createCSharpAdapter(options) {
-  return createLanguageAdapter("csharp", options);
-}
-function createLanguageAdapter(language, options) {
-  const start = options.backend.start;
-  const shutdown = options.backend.shutdown;
-  const refresh = options.backend.refresh;
-  const configuredCapabilities = createCapabilities(options.capabilities);
-  const now = options.now ?? Date.now;
-  let initializingSince;
-  let lastSignature;
-  let lastTransitionTime = now();
-  return {
-    status: () => {
-      const status = createStatus(
-        language,
-        options,
-        options.backend.capabilities?.() ?? configuredCapabilities,
-        now,
-        () => initializingSince,
-        (value) => {
-          initializingSince = value;
-        }
-      );
-      const signature = `${status.state}:${status.failure_code ?? ""}`;
-      if (lastSignature === void 0 || signature !== lastSignature) {
-        lastSignature = signature;
-        lastTransitionTime = now();
-      }
-      return { ...status, last_transition_time: lastTransitionTime };
-    },
-    request: async (request) => parseSemanticResult(await options.backend.query(parseSemanticRequest(request))),
-    ...start ? { start } : {},
-    ...shutdown ? { shutdown } : {},
-    ...refresh ? { refresh } : {}
-  };
-}
-function createStatus(language, options, capabilities, now, getInitializingSince, setInitializingSince) {
-  const backendState = options.backend.readiness();
-  const initializingSince = getInitializingSince();
-  if (backendState.state === "initializing" && initializingSince === void 0) setInitializingSince(now());
-  if (backendState.state !== "initializing") setInitializingSince(void 0);
-  const timedOut = backendState.state === "initializing" && now() - (initializingSince ?? now()) >= 3e4;
-  const failed = backendState.state === "failed" || timedOut;
-  const state = !options.compatible ? "unavailable" : timedOut ? "failed" : backendState.state === "ready" && hasUnavailableCapability(capabilities) ? "degraded" : backendState.state;
-  const effectiveCapabilities = state === "unavailable" || state === "failed" ? unavailableCapabilities(capabilities) : capabilities;
-  return {
-    language,
-    backend_name: options.backend_name ?? defaultBackendName(language),
-    backend_version: options.backend_version,
-    discovery_source: options.discovery_source ?? "injected",
-    state,
-    capabilities: effectiveCapabilities,
-    last_transition_time: 0,
-    ...!options.compatible ? { failure_code: "unsupported_backend_version" } : backendState.state === "unavailable" ? { failure_code: backendState.failure_code ?? options.unavailable_failure_code ?? "backend_unavailable" } : timedOut ? { failure_code: "initialization_timeout" } : failed && backendState.state === "failed" ? { failure_code: backendState.failure_code } : {}
-  };
-}
-function createCapabilities(overrides) {
-  const defaults = Object.fromEntries(
-    relationNames.map((relation) => [relation, { state: "ready" }])
-  );
-  return { ...defaults, ...overrides };
-}
-function hasUnavailableCapability(capabilities) {
-  return Object.values(capabilities).some(({ state }) => state !== "ready");
-}
-function unavailableCapabilities(capabilities) {
-  return Object.fromEntries(
-    Object.keys(capabilities).map((relation) => [relation, { state: "unavailable" }])
-  );
-}
-function defaultBackendName(language) {
-  if (language === "rust") return "rust-analyzer";
-  if (language === "python") return "pyright-langserver";
-  return "roslyn-language-server";
-}
-
-// src/semantic/native-backend-inspector.ts
-import { spawnSync } from "node:child_process";
-import { createHash as createHash4 } from "node:crypto";
-import { lstatSync as lstatSync4, readFileSync as readFileSync4, realpathSync as realpathSync2, statSync as statSync3 } from "node:fs";
-import { dirname as dirname5, isAbsolute as isAbsolute2, join as join9, relative as relative4, resolve as resolve4, sep } from "node:path";
-function createNativeBackendInspector(commandRoots, projectRoot) {
-  const roots = commandRoots.filter((root) => isAbsolute2(root) && !(projectRoot && isWithin2(projectRoot, root)));
-  return (language, executableBasename, entrypointBasenames = []) => {
-    for (const root of roots) {
-      const executable = inspectFile(
-        language === "csharp" ? pinnedRoslynExecutable(root, executableBasename) : join9(root, executableBasename),
-        root,
-        projectRoot
-      );
-      if (!executable?.canonical_path) continue;
-      const entrypoints = entrypointBasenames.map(
-        (name) => roots.map(
-          (entrypointRoot2) => inspectFile(join9(entrypointRoot2, "node_modules", "pyright", name), entrypointRoot2, projectRoot)
-        ).find(Boolean)
-      );
-      if (entrypoints.some((entrypoint) => !entrypoint)) continue;
-      const version2 = probeVersion(language, executable.canonical_path, entrypoints);
-      if (!version2) continue;
-      const entrypointRoot = entrypoints[0]?.canonical_path ? roots.find((candidateRoot) => isWithin2(candidateRoot, entrypoints[0]?.canonical_path ?? "")) : void 0;
-      const packageMetadata = language === "python" && entrypoints[0]?.canonical_path && entrypointRoot ? inspectFile(join9(dirname5(entrypoints[0].canonical_path), "package.json"), entrypointRoot, projectRoot) : void 0;
-      if (language === "python" && !packageMetadata) continue;
-      return {
-        ...executable,
-        version: version2,
-        entrypoints,
-        ...packageMetadata ? { package_metadata: packageMetadata } : {}
-      };
-    }
-    return void 0;
-  };
-}
-function pinnedRoslynExecutable(root, executableBasename) {
-  return join9(
-    root,
-    ".store",
-    "roslyn-language-server",
-    "5.11.0-1.26380.4",
-    "roslyn-language-server.win-x64",
-    "5.11.0-1.26380.4",
-    "tools",
-    "net10.0",
-    "win-x64",
-    executableBasename
-  );
-}
-function inspectFile(candidate, root, projectRoot) {
-  try {
-    const link = lstatSync4(candidate);
-    if (!link.isFile() || link.isSymbolicLink()) return void 0;
-    const canonicalPath = realpathSync2.native(candidate);
-    if (!isWithin2(root, canonicalPath) || projectRoot && isWithin2(projectRoot, canonicalPath)) return void 0;
-    const stat4 = statSync3(canonicalPath, { bigint: true });
-    return {
-      canonical_path: canonicalPath,
-      device: String(stat4.dev),
-      file_id: String(stat4.ino),
-      sha256: createHash4("sha256").update(readFileSync4(canonicalPath)).digest("hex"),
-      regular_file: true,
-      link_or_reparse_point: false
-    };
-  } catch {
-    return void 0;
-  }
-}
-function probeVersion(language, executable, entrypoints) {
-  if (language === "csharp") return peFileVersion(executable) ?? commandVersion(executable);
-  if (language === "python") return pyrightPackageVersion(entrypoints[0]?.canonical_path);
-  return commandVersion(executable);
-}
-function commandVersion(executable) {
-  const arguments_ = ["--version"];
-  if (arguments_.some((argument) => !argument)) return void 0;
-  const probe = spawnSync(executable, arguments_, {
-    encoding: "utf8",
-    shell: false,
-    timeout: 5e3,
-    windowsHide: true
-  });
-  return probe.status === 0 ? firstVersion(`${probe.stdout}
-${probe.stderr}`) : void 0;
-}
-function peFileVersion(path5) {
-  const source = readFileSync4(path5).toString("utf16le");
-  const productVersion = /ProductVersion\0(v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/.exec(source)?.[1];
-  return productVersion?.replace(/^v/, "") ?? firstVersion(source.match(/FileVersion[\s\S]{0,160}/)?.[0] ?? "");
-}
-function pyrightPackageVersion(entrypoint) {
-  if (!entrypoint) return void 0;
-  try {
-    const packageJson = JSON.parse(readFileSync4(join9(dirname5(entrypoint), "package.json"), "utf8"));
-    return typeof packageJson.version === "string" && /^\d+\.\d+\.\d+$/.test(packageJson.version) ? packageJson.version : void 0;
-  } catch {
-    return void 0;
-  }
-}
-function firstVersion(output) {
-  return output.match(/(?:^|[^0-9])v?(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/)?.[1];
-}
-function isWithin2(root, candidate) {
-  const path5 = relative4(resolve4(root), resolve4(candidate));
-  return path5 === "" || !path5.startsWith(`..${sep}`) && path5 !== ".." && !isAbsolute2(path5);
-}
-
-// src/semantic/python-mirror-runtime.ts
-import { createHash as createHash5 } from "node:crypto";
-import {
-  chmodSync,
-  existsSync as existsSync2,
-  lstatSync as lstatSync5,
-  mkdirSync as mkdirSync2,
-  mkdtempSync as mkdtempSync2,
-  readdirSync as readdirSync5,
-  readFileSync as readFileSync5,
-  rmSync as rmSync2,
-  writeFileSync as writeFileSync2
-} from "node:fs";
-import { tmpdir as tmpdir2 } from "node:os";
-import { dirname as dirname6, join as join10, relative as relative5 } from "node:path";
-import { fileURLToPath as fileURLToPath3, pathToFileURL } from "node:url";
-var bundledTypeshed = Object.freeze({
-  "typeshed/stdlib/builtins.pyi": "class object: ...\nclass str(object): ...\nclass int(object): ...\n"
-});
-function createPythonMirrorManager(root, terminateOldBackend = () => {
-}) {
-  let active;
-  let nextGeneration = 0;
-  const retireActive = async () => {
-    if (!active) return;
-    const old = active.mirror;
-    active = void 0;
-    try {
-      await old.disposeAfterShutdown(terminateOldBackend);
-    } catch {
-    }
-  };
-  return {
-    current: () => active?.mirror,
-    async refresh() {
-      let snapshot;
-      try {
-        snapshot = snapshotPythonProject(root);
-      } catch {
-        await retireActive();
-        return { status: "unavailable", code: "unsafe_backend_mode" };
-      }
-      if (active?.fingerprint === snapshot.fingerprint)
-        return { status: "ready", mirror: active.mirror, changed: false };
-      await retireActive();
-      try {
-        const mirror = createMirror(root, nextGeneration++, snapshot);
-        active = { mirror, fingerprint: snapshot.fingerprint };
-        return { status: "ready", mirror, changed: true };
-      } catch {
-        return { status: "unavailable", code: "unsafe_backend_mode" };
-      }
-    },
-    async disposeAfterShutdown(shutdown) {
-      await shutdown();
-      active?.mirror.dispose();
-      active = void 0;
-    }
-  };
-}
-function createMirror(root, generation, snapshot) {
-  const plan = createPythonMirrorPlan(snapshot.configuration, snapshot.inputs, {
-    generation,
-    mirror_uri_root: "file:///pending-python-mirror",
-    bundled_typeshed: Object.keys(bundledTypeshed)
-  });
-  if (plan.status !== "ready") throw new Error("unsafe_backend_mode");
-  const serviceRoot = mkdtempSync2(join10(tmpdir2(), "code-explorer-pyright-"));
-  const mirrorRoot = join10(serviceRoot, `generation-${generation}`);
-  const manifest = /* @__PURE__ */ new Map();
-  try {
-    mkdirSync2(mirrorRoot, { recursive: true, mode: 493 });
-    writeMirrorFile(mirrorRoot, "pyrightconfig.json", "{}\n");
-    for (const input of snapshot.inputs) {
-      writeMirrorFile(mirrorRoot, input.path, input.text);
-      manifest.set(input.path, { original_sha256: input.sha256, mirror_sha256: input.sha256 });
-    }
-    for (const [path5, text] of Object.entries(bundledTypeshed)) writeMirrorFile(mirrorRoot, path5, text);
-    makeTreeReadOnly(mirrorRoot);
-  } catch (error2) {
-    makeTreeWritable(serviceRoot);
-    rmSync2(serviceRoot, { recursive: true, force: true });
-    throw error2;
-  }
-  let disposed = false;
-  const dispose = () => {
-    if (disposed) return;
-    disposed = true;
-    process.removeListener("exit", dispose);
-    makeTreeWritable(serviceRoot);
-    rmSync2(serviceRoot, { recursive: true, force: true });
-  };
-  process.once("exit", dispose);
-  const expectedTree = new Map([
-    ["pyrightconfig.json", sha2562("{}\n")],
-    ...snapshot.inputs.map((input) => [input.path, input.sha256]),
-    ...Object.entries(bundledTypeshed).map(([path5, text]) => [path5, sha2562(text)])
-  ]);
-  const verify = (path5) => {
-    const expected = manifest.get(path5);
-    if (!expected || disposed) return false;
-    try {
-      const original = root.protectedRead(path5).bytes;
-      const mirrorPath = join10(mirrorRoot, path5);
-      if (lstatSync5(mirrorPath).isSymbolicLink()) return false;
-      return mirrorTreeMatches(mirrorRoot, expectedTree) && sha2562(original) === expected.original_sha256 && sha2562(readFileSync5(mirrorPath, "utf8")) === expected.mirror_sha256;
-    } catch {
-      return false;
-    }
-  };
-  return {
-    root: mirrorRoot,
-    generation,
-    sourcePaths: () => snapshot.inputs.map(({ path: path5 }) => path5),
-    uriFor: (path5) => verify(path5) ? pathToFileURL(join10(mirrorRoot, path5)).href : "",
-    pathForUri: (uri) => {
-      const path5 = relativeMirrorPath(uri, mirrorRoot);
-      return path5 && verify(path5) ? path5 : void 0;
-    },
-    dispose,
-    async disposeAfterShutdown(shutdown) {
-      await shutdown();
-      dispose();
-    }
-  };
-}
-function snapshotPythonProject(root) {
-  const configuration = readProjectPythonConfiguration(root);
-  const inputs = collectPythonFiles(root).map((path5) => {
-    const text = root.protectedRead(path5).bytes;
-    return { path: path5, text, sha256: sha2562(text) };
-  });
-  return {
-    configuration,
-    inputs,
-    fingerprint: sha2562(
-      `${JSON.stringify(configuration)}
-${inputs.map((input) => `${input.path}:${input.sha256}`).join("\n")}`
-    )
-  };
-}
-function readProjectPythonConfiguration(root) {
-  const config2 = {};
-  const pyright = protectedOptionalRead(root, "pyrightconfig.json");
-  if (pyright !== void 0) {
-    try {
-      const parsed = JSON.parse(pyright);
-      if (!isRecord3(parsed)) throw new Error("invalid");
-      config2.pyrightconfig = parsed;
-    } catch {
-      throw new Error("unsafe_backend_mode");
-    }
-  }
-  const pyproject = protectedOptionalRead(root, "pyproject.toml");
-  if (pyproject !== void 0) {
-    const parsed = parseToolPyright(pyproject);
-    if (parsed === void 0) throw new Error("unsafe_backend_mode");
-    if (Object.keys(parsed).length) config2.tool_pyright = parsed;
-  }
-  return config2;
-}
-function protectedOptionalRead(root, path5) {
-  const absolute = join10(root.canonicalPath, path5);
-  if (!existsSync2(absolute)) return void 0;
-  if (lstatSync5(absolute).isSymbolicLink()) throw new Error("unsafe_backend_mode");
-  return root.protectedRead(path5).bytes;
-}
-function parseToolPyright(toml) {
-  const lines = toml.replace(/^\uFEFF/, "").split(/\r?\n/);
-  let active = false;
-  const result = {};
-  for (const raw of lines) {
-    const line = raw.replace(/\s+#.*$/, "").trim();
-    if (!line) continue;
-    if (/^\[.*\]$/.test(line)) {
-      active = line === "[tool.pyright]";
-      continue;
-    }
-    if (!active) continue;
-    const match = /^([A-Za-z0-9_.-]+)\s*=\s*(.+)$/.exec(line);
-    if (!match) return void 0;
-    result[match[1]] = parseTomlValue(match[2]);
-  }
-  return result;
-}
-function parseTomlValue(value) {
-  const trimmed = value.trim();
-  if (/^(true|false)$/.test(trimmed)) return trimmed === "true";
-  if (/^["'].*["']$/.test(trimmed)) return trimmed.slice(1, -1);
-  if (/^\[.*\]$/.test(trimmed)) {
-    const inner = trimmed.slice(1, -1).trim();
-    return inner ? inner.split(",").map((item) => parseTomlValue(item)) : [];
-  }
-  return trimmed;
-}
-function collectPythonFiles(root) {
-  const visit = (directory, relativeDirectory) => readdirSync5(directory, { withFileTypes: true }).flatMap((entry) => {
-    const absolute = join10(directory, entry.name);
-    const relativePath = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
-    if (lstatSync5(absolute).isSymbolicLink()) throw new Error("unsafe_backend_mode");
-    if (entry.isDirectory()) return isExcludedPythonDirectory(relativePath) ? [] : visit(absolute, relativePath);
-    if (!(entry.isFile() && (relativePath.endsWith(".py") || relativePath.endsWith(".pyi"))) || isSensitiveProjectPath(relativePath) || isClassificationConfigPath(relativePath))
-      return [];
-    const resolved = root.resolveClientPath(relativePath);
-    if (!samePath2(resolved, absolute)) throw new Error("unsafe_backend_mode");
-    return [relativePath];
-  });
-  return visit(root.canonicalPath, "");
-}
-function writeMirrorFile(root, relativePath, text) {
-  const target = join10(root, relativePath);
-  mkdirSync2(dirname6(target), { recursive: true, mode: 493 });
-  writeFileSync2(target, text, { encoding: "utf8", mode: 292 });
-}
-function isExcludedPythonDirectory(path5) {
-  return isSensitiveProjectPath(path5) || path5.split("/").some((part) => /^(\.venv|venv|node_modules|__pycache__)$/iu.test(part));
-}
-function makeTreeReadOnly(directory) {
-  for (const entry of readdirSync5(directory, { withFileTypes: true })) {
-    const target = join10(directory, entry.name);
-    if (entry.isDirectory()) makeTreeReadOnly(target);
-    else chmodSync(target, 292);
-  }
-  chmodSync(directory, 365);
-}
-function makeTreeWritable(directory) {
-  if (!existsSync2(directory)) return;
-  for (const entry of readdirSync5(directory, { withFileTypes: true })) {
-    const target = join10(directory, entry.name);
-    if (entry.isDirectory()) makeTreeWritable(target);
-    else chmodSync(target, 420);
-  }
-  chmodSync(directory, 493);
-}
-function mirrorTreeMatches(root, expected) {
-  try {
-    const actual = /* @__PURE__ */ new Map();
-    const visit = (directory, relativeDirectory) => {
-      for (const entry of readdirSync5(directory, { withFileTypes: true })) {
-        const path5 = join10(directory, entry.name);
-        const relativePath = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
-        if (lstatSync5(path5).isSymbolicLink()) throw new Error("link");
-        if (entry.isDirectory()) visit(path5, relativePath);
-        else if (entry.isFile()) actual.set(relativePath, sha2562(readFileSync5(path5, "utf8")));
-        else throw new Error("unsupported");
-      }
-    };
-    visit(root, "");
-    return actual.size === expected.size && [...expected].every(([path5, digest]) => actual.get(path5) === digest);
-  } catch {
-    return false;
-  }
-}
-function relativeMirrorPath(uri, mirrorRoot) {
-  try {
-    if (!uri.startsWith("file:")) return void 0;
-    const path5 = fileURLToPath3(uri);
-    const relativePath = relative5(mirrorRoot, path5).replaceAll("\\", "/");
-    return relativePath && !relativePath.startsWith("../") && relativePath !== ".." ? relativePath : void 0;
-  } catch {
-    return void 0;
-  }
-}
-function sha2562(value) {
-  return createHash5("sha256").update(value).digest("hex");
-}
-function isRecord3(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-function samePath2(left, right) {
-  return process.platform === "win32" ? left.toLowerCase() === right.toLowerCase() : left === right;
-}
-
-// src/semantic/direct-lsp.ts
-var MAX_BODY_BYTES2 = 1024 * 1024;
-var SHUTDOWN_TIMEOUT_MS = 5e3;
-var RESTART_WINDOW_MS = 6e4;
-var RESTART_DELAYS_MS = [250, 1e3];
-var PERMITTED_NOTIFICATIONS = /* @__PURE__ */ new Set([
-  "window/logMessage",
-  "window/showMessage",
-  "telemetry/event",
-  "$/progress",
-  "textDocument/publishDiagnostics"
-]);
-var READ_ONLY_METHODS = /* @__PURE__ */ new Set([
-  "textDocument/definition",
-  "textDocument/references",
-  "textDocument/typeDefinition",
-  "textDocument/implementation",
-  "textDocument/prepareCallHierarchy",
-  "callHierarchy/incomingCalls",
-  "callHierarchy/outgoingCalls",
-  "textDocument/documentSymbol",
-  "workspace/symbol"
-]);
-var DirectLspError = class extends Error {
-  constructor(code) {
-    super(code);
-    this.code = code;
-  }
-  code;
-};
-var defaultScheduler = {
-  now: Date.now,
-  setTimeout: (callback, delayMs) => setTimeout(callback, delayMs),
-  clearTimeout: (handle) => clearTimeout(handle)
-};
-function createDirectLspClient(options) {
-  const scheduler = options.scheduler ?? defaultScheduler;
-  const capabilities = deepFreeze3(clone2(options.capabilities));
-  const initializationOptions = deepFreeze3(clone2(options.safe_initialization_options));
-  const timeoutMs = boundedTimeout(options.request_timeout_ms ?? 1e4);
-  let process3;
-  let epoch = 0;
-  let state = "initializing";
-  let nextId = 1;
-  let bytes = new Uint8Array(0);
-  let stopping = false;
-  let stopped = false;
-  let crashTimes = [];
-  let timeoutTimes = [];
-  let exitResolver;
-  const pending = /* @__PURE__ */ new Map();
-  const events = [];
-  const restartDelays = [];
-  let openedDocumentUris = /* @__PURE__ */ new Set();
-  let serverCapabilities;
-  const current = (candidate) => candidate === epoch;
-  const send = (message, expectedEpoch = epoch) => {
-    if (process3 && current(expectedEpoch)) process3.write(encodeMessage(message));
-  };
-  const rejectInflight = (code) => {
-    for (const entry of pending.values()) {
-      scheduler.clearTimeout(entry.timer);
-      entry.reject(new DirectLspError(code));
-    }
-    pending.clear();
-  };
-  const recordRestart = () => {
-    crashTimes = crashTimes.filter((time3) => time3 >= scheduler.now() - RESTART_WINDOW_MS);
-    crashTimes.push(scheduler.now());
-    if (crashTimes.length > RESTART_DELAYS_MS.length) {
-      state = "unavailable";
-      return;
-    }
-    const delay2 = RESTART_DELAYS_MS[crashTimes.length - 1];
-    restartDelays.push(delay2);
-    scheduler.setTimeout(() => {
-      const replacement = options.restart?.();
-      if (replacement) void start(replacement).catch(() => void 0);
-    }, delay2);
-  };
-  const fail = (code, restart, expectedEpoch = epoch) => {
-    if (!current(expectedEpoch) || state === "failed" || state === "unavailable") return;
-    state = "failed";
-    rejectInflight(code);
-    process3?.kill();
-    if (restart) recordRestart();
-  };
-  const sendRequest = (method, params, timeout, expectedEpoch = epoch) => {
-    const id = nextId++;
-    return new Promise((resolve5, reject) => {
-      const timer = scheduler.setTimeout(() => {
-        if (!(current(expectedEpoch) && pending.delete(id))) return;
-        send({ jsonrpc: "2.0", method: "$/cancelRequest", params: { id } }, expectedEpoch);
-        reject(new DirectLspError("backend_timeout"));
-        timeoutTimes = timeoutTimes.filter((time3) => time3 >= scheduler.now() - RESTART_WINDOW_MS);
-        timeoutTimes.push(scheduler.now());
-        if (timeoutTimes.length >= 2) fail("backend_crashed", true, expectedEpoch);
-      }, boundedTimeout(timeout));
-      pending.set(id, { resolve: resolve5, reject, timer });
-      send({ jsonrpc: "2.0", id, method, params }, expectedEpoch);
-    });
-  };
-  const handleMessage = (message, expectedEpoch) => {
-    if (!current(expectedEpoch) || stopped || state === "failed" || state === "unavailable") return;
-    if (!isRpcMessage(message)) return fail("backend_failed", false, expectedEpoch);
-    if ("id" in message && "method" in message && typeof message.method === "string") {
-      if (!isRequestId(message.id)) return fail("backend_failed", false, expectedEpoch);
-      if (message.method === "client/registerCapability") events.push("backend_capability_rejected");
-      if (message.method === "workspace/applyEdit") events.push("backend_write_rejected");
-      if (message.method === "workspace/configuration" && options.language === "python") {
-        const items = message.params?.items ?? [];
-        send(
-          { jsonrpc: "2.0", id: message.id, result: items.map((item) => pythonConfiguration(item.section)) },
-          expectedEpoch
-        );
-        return;
-      }
-      send({ jsonrpc: "2.0", id: message.id, error: { code: -32601, message: "Method not found" } }, expectedEpoch);
-      return;
-    }
-    if ("method" in message && typeof message.method === "string") {
-      if (!PERMITTED_NOTIFICATIONS.has(message.method)) return fail("backend_failed", false, expectedEpoch);
-      events.push("backend_notification");
-      return;
-    }
-    if (!("id" in message && isPositiveSafeInteger(message.id)) || "result" in message === "error" in message)
-      return fail("backend_failed", false, expectedEpoch);
-    const entry = pending.get(message.id);
-    if (!entry) return;
-    pending.delete(message.id);
-    scheduler.clearTimeout(entry.timer);
-    if ("error" in message) {
-      const errorCode = message.error?.code;
-      entry.reject(new DirectLspError(errorCode === -32801 ? "backend_content_modified" : "backend_failed"));
-    } else entry.resolve(message.result);
-  };
-  const handleStdout = (chunk, expectedEpoch) => {
-    if (!current(expectedEpoch) || stopped || state === "failed" || state === "unavailable") return;
-    bytes = concat(bytes, chunk);
-    while (bytes.length) {
-      const boundary = indexOf(bytes, CRLFCRLF);
-      if (boundary < 0) {
-        if (bytes.length > 8192 || contains(bytes, LF_LF)) fail("backend_failed", false, expectedEpoch);
-        return;
-      }
-      const headerBytes = bytes.slice(0, boundary);
-      if (headerBytes.some((value2) => value2 > 127)) return fail("backend_failed", false, expectedEpoch);
-      const header = new TextDecoder("ascii", { fatal: true }).decode(headerBytes);
-      if (!/^Content-Length: [0-9]+$/.test(header)) return fail("backend_failed", false, expectedEpoch);
-      const length = Number(header.slice("Content-Length: ".length));
-      if (!Number.isSafeInteger(length) || length > MAX_BODY_BYTES2) return fail("backend_failed", false, expectedEpoch);
-      const end = boundary + 4 + length;
-      if (bytes.length < end) return;
-      let value;
-      try {
-        value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes.slice(boundary + 4, end)));
-      } catch {
-        return fail("backend_failed", false, expectedEpoch);
-      }
-      bytes = bytes.slice(end);
-      handleMessage(value, expectedEpoch);
-    }
-  };
-  const start = async (nextProcess) => {
-    process3 = nextProcess;
-    const expectedEpoch = ++epoch;
-    bytes = new Uint8Array(0);
-    openedDocumentUris = /* @__PURE__ */ new Set();
-    stopping = false;
-    stopped = false;
-    state = "initializing";
-    nextProcess.onStdout((chunk) => handleStdout(chunk, expectedEpoch));
-    nextProcess.onExit(() => {
-      if (!current(expectedEpoch)) return;
-      stopped = true;
-      exitResolver?.();
-      if (bytes.length) {
-        fail("backend_failed", false, expectedEpoch);
-        return;
-      }
-      if (stopping) {
-        state = "failed";
-        return;
-      }
-      if (!stopping) fail("backend_crashed", true, expectedEpoch);
-    });
-    nextProcess.onError?.(() => fail("backend_crashed", true, expectedEpoch));
-    try {
-      const result = await sendRequest(
-        "initialize",
-        { processId: null, rootUri: options.root_uri, capabilities, initializationOptions },
-        timeoutMs,
-        expectedEpoch
-      );
-      if (!(current(expectedEpoch) && isInitializeResult(result))) throw new DirectLspError("backend_failed");
-      serverCapabilities = result.capabilities;
-      const confirmation = options.afterInitialize?.();
-      if (confirmation?.status === "unavailable") {
-        state = "unavailable";
-        process3?.kill();
-        throw new Error(confirmation.code);
-      }
-      send({ jsonrpc: "2.0", method: "initialized", params: {} }, expectedEpoch);
-      if (options.language === "python") {
-        send(
-          {
-            jsonrpc: "2.0",
-            method: "workspace/didChangeConfiguration",
-            params: {
-              settings: {
-                python: {
-                  analysis: { diagnosticMode: "workspace", indexing: true, useLibraryCodeForTypes: false }
-                }
-              }
-            }
-          },
-          expectedEpoch
-        );
-      }
-      state = "ready";
-    } catch (error2) {
-      fail(error2 instanceof DirectLspError ? error2.code : "backend_failed", true, expectedEpoch);
-      throw error2;
-    }
-  };
-  const request = async (method, params) => {
-    if (!READ_ONLY_METHODS.has(method)) return Promise.reject(new DirectLspError("backend_write_rejected"));
-    if (state !== "ready")
-      return Promise.reject(new DirectLspError(state === "unavailable" ? "backend_crashed" : "backend_failed"));
-    try {
-      return await sendRequest(method, params, timeoutMs);
-    } catch (error2) {
-      if (!(error2 instanceof DirectLspError && error2.code === "backend_content_modified")) throw error2;
-      try {
-        return await sendRequest(method, params, timeoutMs);
-      } catch (retryError) {
-        if (retryError instanceof DirectLspError && retryError.code === "backend_content_modified")
-          throw new DirectLspError("backend_failed");
-        throw retryError;
-      }
-    }
-  };
-  const openProtectedDocument = (uri, content) => {
-    if (state !== "ready") throw new DirectLspError(state === "unavailable" ? "backend_crashed" : "backend_failed");
-    if (!isProtectedFileUri(uri, options.root_uri) || typeof content.bytes !== "string")
-      throw new DirectLspError("backend_write_rejected");
-    if (openedDocumentUris.has(uri)) return;
-    send({
-      jsonrpc: "2.0",
-      method: "textDocument/didOpen",
-      params: { textDocument: { uri, languageId: content.language_id, version: 0, text: content.bytes } }
-    });
-    openedDocumentUris.add(uri);
-  };
-  const shutdown = async () => {
-    if (!process3 || state === "unavailable") return;
-    const expectedEpoch = epoch;
-    stopping = true;
-    try {
-      await sendRequest("shutdown", null, SHUTDOWN_TIMEOUT_MS, expectedEpoch);
-    } catch {
-    }
-    if (!current(expectedEpoch)) return;
-    const exited = new Promise((resolve5) => {
-      exitResolver = resolve5;
-    });
-    send({ jsonrpc: "2.0", method: "exit", params: {} }, expectedEpoch);
-    const timeout = scheduler.setTimeout(() => {
-      if (!stopped && current(expectedEpoch)) {
-        stopping = false;
-        fail("backend_crashed", true, expectedEpoch);
-      }
-      exitResolver?.();
-    }, SHUTDOWN_TIMEOUT_MS);
-    await exited;
-    scheduler.clearTimeout(timeout);
-    exitResolver = void 0;
-  };
-  return {
-    start,
-    request,
-    openProtectedDocument,
-    shutdown,
-    refresh: () => {
-      crashTimes = [];
-      timeoutTimes = [];
-      if (state === "unavailable") state = "initializing";
-    },
-    status: () => ({
-      state,
-      events: [...events],
-      restart_delays_ms: [...restartDelays],
-      ...serverCapabilities ? { server_capabilities: deepFreeze3(clone2(serverCapabilities)) } : {}
-    })
-  };
-}
-function isProtectedFileUri(uri, rootUri) {
-  try {
-    const document = new URL(uri);
-    const root = new URL(rootUri);
-    const rootPath = root.pathname.endsWith("/") ? root.pathname : `${root.pathname}/`;
-    return document.protocol === "file:" && !document.search && !document.hash && document.pathname.startsWith(rootPath);
-  } catch {
-    return false;
-  }
-}
-function pythonConfiguration(section) {
-  return ["python.pythonPath", "python.venvPath", "python.analysis.extraPaths"].includes(section ?? "") ? [] : null;
-}
-var CRLFCRLF = new Uint8Array([13, 10, 13, 10]);
-var LF_LF = new Uint8Array([10, 10]);
-function encodeMessage(message) {
-  const body = new TextEncoder().encode(JSON.stringify(message));
-  return concat(new TextEncoder().encode(`Content-Length: ${body.byteLength}\r
-\r
-`), body);
-}
-function isRpcMessage(value) {
-  return !!value && typeof value === "object" && value.jsonrpc === "2.0";
-}
-function isInitializeResult(value) {
-  return !!value && typeof value === "object" && !!value.capabilities && typeof value.capabilities === "object" && !Array.isArray(value.capabilities);
-}
-function isRequestId(value) {
-  return typeof value === "string" || typeof value === "number" && Number.isFinite(value);
-}
-function isPositiveSafeInteger(value) {
-  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
-}
-function concat(left, right) {
-  const result = new Uint8Array(left.length + right.length);
-  result.set(left);
-  result.set(right, left.length);
-  return result;
-}
-function indexOf(haystack, needle) {
-  for (let index = 0; index <= haystack.length - needle.length; index++)
-    if (needle.every((value, offset) => haystack[index + offset] === value)) return index;
-  return -1;
-}
-function contains(haystack, needle) {
-  return indexOf(haystack, needle) >= 0;
-}
-function boundedTimeout(value) {
-  return Number.isFinite(value) && value > 0 ? Math.min(Math.floor(value), SHUTDOWN_TIMEOUT_MS) : SHUTDOWN_TIMEOUT_MS;
-}
-function clone2(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-function deepFreeze3(value) {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Object.values(value)) deepFreeze3(child);
-    Object.freeze(value);
-  }
-  return value;
-}
-
-// src/semantic/backend-result-validator.ts
-import { Buffer as Buffer4 } from "node:buffer";
-var MAX_BACKEND_PAYLOAD_BYTES = 1024 * 1024;
-function validateBackendResult(input, options) {
-  if (payloadSize(input) > MAX_BACKEND_PAYLOAD_BYTES) return { status: "rejected", code: "backend_response_limit" };
-  if (containsVirtualDocument(input) || containsStaleRevision(input, options.currentGeneration)) {
-    return { status: "unavailable", code: "invalid_backend_result", adapter_state: "degraded" };
-  }
-  if (containsUnexpectedLanguage(input, options.allowedLanguages)) {
-    return { status: "rejected", code: "invalid_backend_result", adapter_gap: "unexpected_language" };
-  }
-  let result;
-  try {
-    result = parseSemanticResult(input);
-  } catch {
-    return { status: "rejected", code: "invalid_backend_result" };
-  }
-  try {
-    for (const symbol of symbolsIn(result)) validateSymbol(symbol, options);
-    for (const location of projectLocationsIn(result)) validateLocation(location, options);
-  } catch {
-    return { status: "rejected", code: "invalid_backend_result" };
-  }
-  return { status: "accepted", result };
-}
-function payloadSize(input) {
-  try {
-    return Buffer4.byteLength(JSON.stringify(input), "utf8");
-  } catch {
-    return MAX_BACKEND_PAYLOAD_BYTES + 1;
-  }
-}
-function containsVirtualDocument(input) {
-  if (!input || typeof input !== "object") return false;
-  if (Array.isArray(input)) return input.some(containsVirtualDocument);
-  const record2 = input;
-  if (typeof record2.uri === "string" && !record2.uri.startsWith("file:")) return true;
-  return Object.values(record2).some(containsVirtualDocument);
-}
-function containsUnexpectedLanguage(input, allowedLanguages) {
-  if (!input || typeof input !== "object") return false;
-  if (Array.isArray(input)) return input.some((item) => containsUnexpectedLanguage(item, allowedLanguages));
-  const record2 = input;
-  if ("language" in record2 && typeof record2.language === "string" && !allowedLanguages.includes(record2.language)) {
-    return true;
-  }
-  return Object.values(record2).some((item) => containsUnexpectedLanguage(item, allowedLanguages));
-}
-function symbolsIn(result) {
-  if (result.operation === "search") return result.symbols;
-  if (result.operation === "focus") return [result.symbol];
-  return result.relations.flatMap((relation) => "symbol" in relation ? [relation.symbol] : []);
-}
-function projectLocationsIn(result) {
-  if (result.operation === "search") return result.symbols.map(({ location }) => location);
-  if (result.operation === "focus") return [result.symbol.location];
-  return result.relations.flatMap((relation) => {
-    if (!("symbol" in relation)) return [];
-    return "external" in relation.location ? [relation.symbol.location] : [relation.symbol.location, relation.location];
-  });
-}
-function validateSymbol(symbol, options) {
-  if (!options.allowedLanguages.includes(symbol.language)) throw new Error("unexpected language");
-  validateLocation(symbol.location, options);
-}
-function validateLocation(location, options) {
-  options.root.resolveClientPath(location.path);
-  if (!rangeFits(options.root.protectedRead(location.path).bytes, location.range)) throw new Error("invalid range");
-}
-function rangeFits(source, range) {
-  const lines = source.split("\n").map((line) => line.replace(/\r$/, ""));
-  return positionFits(lines, range.start) && positionFits(lines, range.end) && comparePositions(range.start, range.end) <= 0;
-}
-function containsStaleRevision(input, currentGeneration) {
-  if (!input || typeof input !== "object" || Array.isArray(input)) return false;
-  const revision = input.revision;
-  return !!revision && typeof revision === "object" && revision.generation !== currentGeneration;
-}
-function positionFits(lines, position) {
-  return position.line >= 0 && position.line < lines.length && position.character >= 0 && position.character <= lines[position.line].length;
-}
-function comparePositions(left, right) {
-  return left.line === right.line ? left.character - right.character : left.line - right.line;
-}
-
-// src/semantic/direct-lsp-semantic.ts
-function createDirectLspSemanticBackend(options) {
-  const unavailableRelations = /* @__PURE__ */ new Set();
-  const symbols = new Map(options.symbols);
-  return {
-    readiness: () => unavailableRelations.size > 0 && options.client.status().state === "ready" ? { state: "degraded" } : readiness(options.client.status()),
-    capabilities: () => {
-      const capabilities = relationCapabilitiesFromInitialize(options.client.status());
-      for (const relation of unavailableRelations) capabilities[relation] = { state: "unavailable" };
-      return capabilities;
-    },
-    query: async (request) => {
-      if (request.operation !== "search" && request.operation !== "focus" && unavailableRelations.has(request.operation))
-        throw new Error("backend_unavailable");
-      const source = request.operation === "search" ? void 0 : symbols.get(request.symbol_id);
-      if (!source && request.operation !== "search") throw new Error("backend_unavailable");
-      if (isRelation(request) && relationCapabilitiesFromInitialize(options.client.status())[request.operation].state !== "ready")
-        throw new Error("backend_unavailable");
-      if (source && request.operation !== "focus") openSourceDocument(source, options);
-      const raw = await requestLsp(request, source, options);
-      let result;
-      try {
-        result = normalizeResult(request, raw, source, options);
-      } catch (error2) {
-        if (isRelation(request)) unavailableRelations.add(request.operation);
-        throw error2;
-      }
-      const checked = validateBackendResult(result, {
-        allowedLanguages: [options.language],
-        root: options.root,
-        currentGeneration: options.revision.generation
-      });
-      if (checked.status !== "accepted") {
-        if (isRelation(request)) unavailableRelations.add(request.operation);
-        throw new Error(checked.code);
-      }
-      retainReturnedSymbols(checked.result, symbols);
-      return checked.result;
-    }
-  };
-}
-function retainReturnedSymbols(result, symbols) {
-  if (result.operation === "search") {
-    for (const symbol of result.symbols) symbols.set(symbol.id, symbol);
-    return;
-  }
-  if (result.operation === "focus") {
-    symbols.set(result.symbol.id, result.symbol);
-    return;
-  }
-  for (const relation of result.relations) {
-    if ("symbol" in relation) symbols.set(relation.symbol.id, relation.symbol);
-  }
-}
-function openSourceDocument(source, options) {
-  if (!options.client.openProtectedDocument) return;
-  const uri = options.toBackendUri(source.location);
-  const document = options.root.protectedRead(source.location.path);
-  options.client.openProtectedDocument(uri, { language_id: options.language, bytes: document.bytes });
-}
-function isRelation(request) {
-  return request.operation !== "search" && request.operation !== "focus";
-}
-function relationCapabilitiesFromInitialize(status) {
-  const capabilities = status.server_capabilities ?? {};
-  const supported = (name) => capabilities[name] !== void 0 && capabilities[name] !== false;
-  return {
-    definition: supported("definitionProvider") ? { state: "ready" } : { state: "unavailable" },
-    references: supported("referencesProvider") ? { state: "ready" } : { state: "unavailable" },
-    type_definition: supported("typeDefinitionProvider") ? { state: "ready" } : { state: "unavailable" },
-    implementation: supported("implementationProvider") ? { state: "ready" } : { state: "unavailable" },
-    callers: supported("callHierarchyProvider") ? { state: "ready" } : { state: "unavailable" },
-    callees: supported("callHierarchyProvider") ? { state: "ready" } : { state: "unavailable" }
-  };
-}
-async function requestLsp(request, source, options) {
-  if (request.operation === "focus") return void 0;
-  if (request.operation === "search" && options.discovery_document_paths?.length) {
-    const symbols = [];
-    for (const path5 of options.discovery_document_paths) {
-      const uri = options.toBackendUri({
-        path: path5,
-        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }
-      });
-      const reply = await options.client.request("textDocument/documentSymbol", { textDocument: { uri } });
-      const semantic = documentSymbols(reply, uri);
-      symbols.push(
-        ...semantic.length > 0 ? semantic : sourcePathSymbols(options.language, options.root.protectedRead(path5).bytes, uri).slice(
-          0,
-          4096 - symbols.length
-        )
-      );
-      if (symbols.length >= 4096) break;
-    }
-    return symbols;
-  }
-  if (request.operation !== "callers" && request.operation !== "callees")
-    return options.client.request(methodFor(request.operation), paramsFor(request, source, options));
-  if (!source) throw new Error("backend_unavailable");
-  const prepared = await options.client.request(
-    "textDocument/prepareCallHierarchy",
-    paramsFor(request, source, options)
-  );
-  const item = Array.isArray(prepared) ? prepared[0] : prepared;
-  if (!item || typeof item !== "object") return [];
-  return options.client.request(
-    request.operation === "callers" ? "callHierarchy/incomingCalls" : "callHierarchy/outgoingCalls",
-    { item }
-  );
-}
-function sourcePathSymbols(language, source, uri) {
-  if (language === "python") return pythonSourceSymbols(source, uri);
-  if (language === "csharp") return csharpSourceSymbols(source, uri);
-  return [];
-}
-function pythonSourceSymbols(source, uri) {
-  return source.split(/\r?\n/).flatMap((line, lineNumber) => {
-    const match = /^(\s*)(?:(async)\s+)?(def|class)\s+([A-Za-z_]\w*)/.exec(line);
-    if (!match) return [];
-    const name = match[4];
-    const character = line.indexOf(name, match[1].length);
-    return [
-      {
-        name,
-        kind: match[3] === "class" ? 5 : 12,
-        location: {
-          uri,
-          range: {
-            start: { line: lineNumber, character },
-            end: { line: lineNumber, character: character + name.length }
-          }
-        }
-      }
-    ];
-  });
-}
-function csharpSourceSymbols(source, uri) {
-  return source.split(/\r?\n/).flatMap((line, lineNumber) => {
-    const found = [];
-    const type = /\b(class|interface|struct|enum)\s+([A-Za-z_]\w*)/.exec(line);
-    if (type) found.push(sourceSymbol(type[2], type[1] === "interface" ? 11 : 5, line, lineNumber, uri));
-    const method = /^\s*(?:(?:public|private|protected|internal|static|virtual|override|abstract|async|sealed|new|partial|extern)\s+)*(?:[A-Za-z_][\w<>[\],.?]*\s+)([A-Za-z_]\w*)\s*\(/.exec(
-      line
-    );
-    if (method) found.push(sourceSymbol(method[1], 6, line, lineNumber, uri));
-    return found;
-  });
-}
-function sourceSymbol(name, kind, line, lineNumber, uri, from = 0) {
-  const character = line.indexOf(name, from);
-  return {
-    name,
-    kind,
-    location: {
-      uri,
-      range: {
-        start: { line: lineNumber, character },
-        end: { line: lineNumber, character: character + name.length }
-      }
-    }
-  };
-}
-function documentSymbols(raw, uri) {
-  const values = Array.isArray(raw) ? raw : [];
-  return values.flatMap((value) => {
-    if (!(value && typeof value === "object")) return [];
-    const symbol = value;
-    const range = validRange(symbol.selectionRange) ? symbol.selectionRange : symbol.range;
-    const current = validRange(range) ? [{ name: symbol.name, kind: symbol.kind, location: { uri, range } }] : [];
-    return [...current, ...documentSymbols(symbol.children, uri)];
-  });
-}
-function readiness(status) {
-  return status.state === "failed" ? { state: "failed", failure_code: "backend_failed" } : { state: status.state };
-}
-function methodFor(operation) {
-  if (operation === "definition") return "textDocument/definition";
-  if (operation === "references") return "textDocument/references";
-  if (operation === "type_definition") return "textDocument/typeDefinition";
-  if (operation === "implementation") return "textDocument/implementation";
-  if (operation === "callers" || operation === "callees") return "textDocument/prepareCallHierarchy";
-  return "workspace/symbol";
-}
-function paramsFor(request, source, options) {
-  if (request.operation === "search") return { query: request.query };
-  if (!source) throw new Error("backend_unavailable");
-  const textDocument = { uri: options.toBackendUri(source.location) };
-  const position = source.location.range.start;
-  if (request.operation === "references") return { textDocument, position, context: { includeDeclaration: true } };
-  return { textDocument, position };
-}
-function normalizeResult(request, raw, source, options) {
-  if (request.operation === "search") {
-    return {
-      operation: "search",
-      revision: options.revision,
-      symbols: workspaceSymbols(raw, options)
-    };
-  }
-  if (request.operation === "focus") {
-    if (!source) throw new Error("backend_unavailable");
-    const document = options.root.protectedRead(source.location.path);
-    return {
-      operation: "focus",
-      revision: options.revision,
-      symbol: source,
-      content: {
-        body: document.bytes,
-        visible_symbols: [{ name: source.name, symbol_id: source.id }]
-      }
-    };
-  }
-  const capability = relationCapabilitiesFromInitialize(options.client.status())[request.operation];
-  if (capability.state !== "ready") throw new Error("backend_unavailable");
-  const relation = request.operation;
-  if (relation === "callers" || relation === "callees") {
-    return {
-      operation: relation,
-      revision: options.revision,
-      relations: hierarchyRelations(raw, relation, source, options)
-    };
-  }
-  return {
-    operation: relation,
-    revision: options.revision,
-    relations: locations(raw, options).map((location, index) => {
-      if ("external" in location) {
-        return { relation, external: { external: true } };
-      }
-      const symbol = symbolFor(location, index, options);
-      return { relation, symbol, location: symbol.location };
-    })
-  };
-}
-function workspaceSymbols(raw, options) {
-  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
-  return values.flatMap((value, index) => {
-    const item = value && typeof value === "object" ? value : void 0;
-    const location = lspLocation(
-      item?.location && typeof item.location === "object" ? item.location : item,
-      options
-    );
-    if (!(location && !("external" in location))) return [];
-    return [
-      {
-        id: `${options.language}:${location.path}:${index}`,
-        name: typeof item?.name === "string" ? item.name : location.path,
-        language: options.language,
-        kind: workspaceSymbolKind(item?.kind),
-        location
-      }
-    ];
-  });
-}
-function workspaceSymbolKind(value) {
-  if (typeof value === "string" && value.length > 0) return value.toLocaleLowerCase("en-US");
-  const kinds = { 5: "class", 6: "method", 12: "function" };
-  return typeof value === "number" && kinds[value] ? kinds[value] : "symbol";
-}
-function hierarchyRelations(raw, relation, source, options) {
-  const values = Array.isArray(raw) ? raw : [];
-  return values.flatMap((value, index) => {
-    const entry = value && typeof value === "object" ? value : void 0;
-    const target = entry?.[relation === "callers" ? "from" : "to"];
-    const targetRecord = target && typeof target === "object" ? target : void 0;
-    const location = lspLocation(targetRecord, options);
-    const callSiteUri = relation === "callees" && source ? options.toBackendUri(source.location) : targetRecord?.uri;
-    const callSite = Array.isArray(entry?.fromRanges) ? lspLocation({ uri: callSiteUri, range: entry?.fromRanges[0] }, options) : location;
-    if (!(location && callSite)) return [];
-    if ("external" in location) {
-      return [{ relation, external: { external: true } }];
-    }
-    return [
-      {
-        relation,
-        symbol: {
-          id: `${options.language}:${location.path}:${index}`,
-          name: typeof targetRecord?.name === "string" ? targetRecord.name : location.path,
-          language: options.language,
-          kind: String(targetRecord?.kind ?? "symbol"),
-          location
-        },
-        location,
-        ...callSite && !("external" in callSite) ? { call_site: callSite } : {}
-      }
-    ];
-  });
-}
-function lspLocation(target, options) {
-  const uri = target?.uri ?? target?.targetUri;
-  const range = target?.range ?? target?.targetRange;
-  if (!(typeof uri === "string" && validRange(range))) return void 0;
-  const path5 = options.fromBackendUri(uri);
-  if (path5) return { path: path5, range };
-  if (uri.startsWith("file:")) return { external: true };
-  throw new Error("invalid_backend_result");
-}
-function locations(raw, options) {
-  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
-  const result = [];
-  for (const value of values) {
-    const item = value && typeof value === "object" ? value : void 0;
-    const hierarchy = item?.from ?? item?.to;
-    const target = hierarchy && typeof hierarchy === "object" ? hierarchy : item?.targetUri ? item : item?.location && typeof item.location === "object" ? item.location : item;
-    const uri = target?.uri ?? target?.targetUri;
-    const range = target?.range ?? target?.targetRange;
-    const path5 = typeof uri === "string" ? options.fromBackendUri(uri) : void 0;
-    if (!validRange(range)) continue;
-    const externalFile = typeof uri === "string" && uri.startsWith("file:");
-    if (!(path5 || externalFile)) throw new Error("invalid_backend_result");
-    if (!path5) result.push({ external: true });
-    else result.push({ path: path5, range });
-  }
-  return result;
-}
-function validRange(value) {
-  const range = value;
-  return !!(Number.isInteger(range?.start?.line) && Number.isInteger(range.start?.character) && Number.isInteger(range?.end?.line) && Number.isInteger(range.end?.character));
-}
-function symbolFor(location, index, options) {
-  return {
-    id: `${options.language}:${location.path}:${index}`,
-    name: location.path,
-    language: options.language,
-    kind: "symbol",
-    location
-  };
-}
-
-// src/semantic/native-lsp-process.ts
-import { spawn as spawn2 } from "node:child_process";
-function spawnNativeLspProcess(executable, arguments_, environment) {
-  const child = spawn2(executable, arguments_, {
-    shell: false,
-    stdio: ["pipe", "pipe", "ignore"],
-    // Do not inherit project-controlled PATH, Python, or package settings.
-    // The policy has already selected an absolute executable and arguments.
-    env: { ...environment }
-  });
-  return {
-    write(chunk) {
-      child.stdin.write(chunk);
-    },
-    onStdout(listener) {
-      child.stdout.on("data", (chunk) => listener(new Uint8Array(chunk)));
-    },
-    onExit(listener) {
-      child.once("exit", listener);
-    },
-    onError(listener) {
-      child.once("error", listener);
-    },
-    kill() {
-      child.stdin.destroy();
-      child.kill();
-    }
-  };
-}
-
-// src/semantic/runtime-lsp-backend.ts
-function createRuntimeLspBackend(options) {
-  let state = { state: "initializing" };
-  let inner;
-  let client;
-  let started;
-  let disposed = false;
-  let refreshRequired = false;
-  const start = async () => {
-    if (refreshRequired) throw new Error("backend_identity_changed");
-    if (started) return started;
-    started = (async () => {
-      const preparation = options.prepare();
-      if (preparation.status !== "ready") {
-        state = { state: "unavailable", failure_code: preparation.code };
-        throw new Error(preparation.code);
-      }
-      client = createDirectLspClient({
-        language: options.language,
-        root_uri: options.root_uri,
-        capabilities: {},
-        safe_initialization_options: options.safe_initialization_options,
-        scheduler: options.scheduler,
-        afterInitialize: () => options.confirmInitialized(),
-        restart: () => {
-          const next = options.prepare();
-          if (next.status !== "ready") return void 0;
-          return (options.spawn ?? spawnNativeLspProcess)(next.executable, next.arguments, next.environment);
-        }
-      });
-      const process3 = (options.spawn ?? spawnNativeLspProcess)(
-        preparation.executable,
-        preparation.arguments,
-        preparation.environment
-      );
-      await client.start(process3);
-      for (const path5 of options.initial_document_paths ?? []) {
-        const document = options.root.protectedRead(path5);
-        client.openProtectedDocument?.(options.toBackendUri(initialDocumentLocation(path5)), {
-          language_id: options.language,
-          bytes: document.bytes
-        });
-      }
-      inner = createDirectLspSemanticBackend({
-        ...options,
-        client,
-        discovery_document_paths: options.initial_document_paths
-      });
-      state = readiness2(client.status().state);
-    })().catch((error2) => {
-      const code = error2 instanceof Error ? error2.message : "backend_failed";
-      state = code === "backend_identity_changed" ? { state: "unavailable", failure_code: code } : { state: "failed", failure_code: code };
-      refreshRequired ||= code === "backend_identity_changed";
-      throw error2;
-    });
-    return started;
-  };
-  return {
-    readiness: () => inner?.readiness() ?? state,
-    start,
-    refresh: async () => {
-      if (!refreshRequired) return;
-      refreshRequired = false;
-      started = void 0;
-      inner = void 0;
-      client = void 0;
-      state = { state: "refreshing" };
-      await start();
-    },
-    capabilities: () => inner?.capabilities?.() ?? (client ? relationCapabilitiesFromInitialize(client.status()) : options.capabilities),
-    shutdown: async () => {
-      try {
-        if (client?.status().state === "ready") await client.shutdown();
-      } finally {
-        if (!disposed) {
-          disposed = true;
-          options.dispose?.();
-        }
-      }
-    },
-    query: async (request) => {
-      await start();
-      if (!inner) throw new Error("backend_unavailable");
-      return inner.query(request);
-    }
-  };
-}
-function initialDocumentLocation(path5) {
-  return {
-    path: path5,
-    range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }
-  };
-}
-function readiness2(value) {
-  if (value === "failed") return { state: "failed", failure_code: "backend_failed" };
-  if (value === "initializing") return { state: "initializing" };
-  if (value === "ready") return { state: "ready" };
-  return { state: "unavailable" };
-}
-
-// src/semantic/runtime-bootstrap.ts
-var unavailableBackend = {
-  readiness: () => ({ state: "unavailable" }),
-  query: async (_request) => {
-    throw new Error("backend_unavailable");
-  }
-};
-function createRuntimeAdapters(projectRoot) {
-  const record2 = loadAdapterSelectionRecord();
-  const platform = process.platform === "win32" ? "win32" : "posix";
-  const commandRoots = platform === "win32" ? resolveTrustedCommandRoots(record2.trusted_command_roots.win32) : ["/opt/code-explorer/backends"];
-  const policy = createRuntimeLaunchPolicy({
-    project_root: projectRoot.canonicalPath,
-    platform,
-    inspect: createNativeBackendInspector(commandRoots, projectRoot.canonicalPath)
-  });
-  const adapters = record2.runtime_backends.map((backend) => {
-    const capabilities = Object.fromEntries(
-      Object.entries(backend.capabilities).map(([name, state]) => [name, { state }])
-    );
-    if (backend.language === "python") {
-      const prepared2 = policy.prepare("python");
-      const options2 = {
-        backend: prepared2.status === "ready" ? createManagedPythonBackend(projectRoot, policy, backend.safe_initialization_options, capabilities) : unavailableBackend,
-        compatible: true,
-        backend_name: backend.platform_executables[platform],
-        backend_version: prepared2.status === "ready" ? prepared2.version : "unobserved",
-        discovery_source: "server_path",
-        unavailable_failure_code: prepared2.status === "unavailable" ? prepared2.code : "backend_unavailable",
-        capabilities
-      };
-      return makeAdapter("python", options2);
-    }
-    const prepared = policy.prepare(backend.language);
-    const filtered = prepared.status === "ready" ? createFilteredWorkspace(projectRoot) : void 0;
-    const options = {
-      backend: prepared.status === "ready" ? createRuntimeLspBackend({
-        language: backend.language,
-        root: filtered?.root ?? projectRoot,
-        root_uri: pathToFileURL2((filtered?.root ?? projectRoot).canonicalPath).href,
-        revision: { generation: 0, manifest_sha256: "runtime" },
-        symbols: /* @__PURE__ */ new Map(),
-        capabilities,
-        initial_document_paths: backend.language === "csharp" ? filtered?.sourcePaths().filter((path5) => /\.cs$/iu.test(path5)) : void 0,
-        safe_initialization_options: backend.safe_initialization_options,
-        toBackendUri: (location) => pathToFileURL2((filtered?.root ?? projectRoot).resolveClientPath(location.path)).href,
-        fromBackendUri: (uri) => {
-          if (!uri.startsWith("file:")) return void 0;
-          const classified = (filtered?.root ?? projectRoot).classifyBackendPath(fileURLToPath4(uri));
-          return "relative_path" in classified ? classified.relative_path : void 0;
-        },
-        prepare: () => policy.prepare(backend.language),
-        confirmInitialized: () => policy.confirmInitialized(backend.language)
-      }) : unavailableBackend,
-      compatible: true,
-      backend_name: backend.platform_executables[platform],
-      backend_version: prepared.status === "ready" ? prepared.version : "unobserved",
-      discovery_source: "server_path",
-      unavailable_failure_code: prepared.status === "unavailable" ? prepared.code : "backend_unavailable",
-      capabilities
-    };
-    const adapter = makeAdapter(backend.language, options);
-    if (!filtered) return adapter;
-    return {
-      ...adapter,
-      shutdown: async () => {
-        try {
-          await adapter.shutdown?.();
-        } finally {
-          filtered.dispose();
-        }
-      }
-    };
-  });
-  return adapters;
-}
-function createManagedPythonBackend(projectRoot, policy, safeInitializationOptions, capabilities, options = { symbols: /* @__PURE__ */ new Map() }) {
-  let inner;
-  let state = { state: "initializing" };
-  const manager = createPythonMirrorManager(projectRoot, async () => {
-    await inner?.shutdown?.();
-    inner = void 0;
-  });
-  const build = async () => {
-    const refreshed = await manager.refresh();
-    if (refreshed.status !== "ready") {
-      state = { state: "unavailable" };
-      throw new Error(refreshed.code);
-    }
-    if (!inner || refreshed.changed) {
-      const mirror = refreshed.mirror;
-      inner = createRuntimeLspBackend({
-        language: "python",
-        root: projectRoot,
-        root_uri: pathToFileURL2(mirror.root).href,
-        revision: { generation: mirror.generation, manifest_sha256: "python-mirror" },
-        symbols: options.symbols,
-        capabilities,
-        safe_initialization_options: safeInitializationOptions,
-        initial_document_paths: mirror.sourcePaths(),
-        toBackendUri: (location) => mirror.uriFor(location.path),
-        fromBackendUri: (uri) => mirror.pathForUri(uri),
-        prepare: () => policy.prepare("python"),
-        confirmInitialized: () => policy.confirmInitialized("python"),
-        ...options.spawn ? { spawn: options.spawn } : {}
-      });
-    }
-    await inner.start?.();
-    state = inner.readiness();
-  };
-  return {
-    readiness: () => inner?.readiness() ?? state,
-    capabilities: () => inner?.capabilities?.() ?? capabilities,
-    start: build,
-    refresh: build,
-    shutdown: async () => {
-      await manager.disposeAfterShutdown(async () => {
-        await inner?.shutdown?.();
-        inner = void 0;
-      });
-      state = { state: "unavailable" };
-    },
-    query: async (request) => {
-      await build();
-      if (!inner) throw new Error("backend_unavailable");
-      return inner.query(request);
-    }
-  };
-}
-async function createStartedRuntimeAdapters(projectRoot, signal) {
-  const adapters = createRuntimeAdapters(projectRoot);
-  await Promise.allSettled(adapters.map((adapter) => startAdapter(adapter, signal)));
-  if (signal?.aborted) {
-    await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-    throw new Error("aborted");
-  }
-  return adapters;
-}
-async function startAdapter(adapter, signal) {
-  if (!adapter.start) return;
-  if (!signal) {
-    await adapter.start();
-    return;
-  }
-  let abortHandler;
-  await Promise.race([
-    adapter.start(signal),
-    new Promise((_, reject) => {
-      if (signal.aborted) {
-        reject(new Error("aborted"));
-        return;
-      }
-      abortHandler = () => reject(new Error("aborted"));
-      signal.addEventListener("abort", abortHandler, { once: true });
-    })
-  ]).finally(() => {
-    if (abortHandler) signal.removeEventListener("abort", abortHandler);
-  });
-}
-function makeAdapter(language, options) {
-  if (language === "rust") return createRustAdapter(options);
-  if (language === "python") return createPythonAdapter(options);
-  return createCSharpAdapter(options);
-}
-
 // src/index.ts
 var filename = fileURLToPath5(import.meta.url);
 var packagePath = path4.join(path4.dirname(filename), "..", "package.json");
-var packageInfo = JSON.parse(readFileSync6(packagePath, "utf-8"));
+var packageInfo = JSON.parse(readFileSync9(packagePath, "utf-8"));
 var toolNames = ["code_search", "code_focus", "code_follow", "code_history", "code_status"];
 function isToolName(name) {
   return toolNames.includes(name);
