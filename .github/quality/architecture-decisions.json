@@ -484,268 +484,268 @@
   },
   {
     "findingId": "00309cf69e662b36ab6e6cb05d438783891d560d73ef180990e8ec2c2d26d7bd",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "02760752050b7e565242af49733174a1efd92fa7e8a7e810e1055d959af69a0c",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "0db50a37691a0c4e30cbbc47ca0af520a87685557442d1d5cfc0c05bc4a54d85",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "0ed06ec45b29775def197a778790dcef16f64c5ea2baef2be7653226e2ffac8e",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "110fc36f34478dbb4de1ea59f5307a2f1463136c1a0b8f5de4e1037dda3420df",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "12933a6782447c169ccc1f53c73764017b738be9f018ac7490e90c3b17ab925d",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "14d7764a482b52e4801049b43b2191f09b6223a1be79c8cc7b9bfaf1dbbeaf46",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "152ce6c11f3ee988a5bf5e83529928a7f02da3a0da3f0fc6af0a94b92e35fc59",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "1e61c4ea6b4726d92903fee4d7dda30f9d1f9ba23715d1fa58010b5ec562872b",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "20054bb046b9001598f9e0fb3c7ba7f75a96564bbe7dc073c6f3da6ff1517426",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "23010608f847c60eefafd1162bc40239d6965124aad1ff36f06603a1cbc06a96",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "26bf8a1cf92071a1c87342765f9c1bb4b78dcb3c93ebb09daf0f2ee1eb803581",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "37dd9346757249d990020df234ce4424a2eb166a1cbf72a0fb81b046444a7287",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "399664e498c90e9f56a71426dae0ca7867101d70aa6857e4922d3b7fb2ca5720",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "40f10e52a1e06094b6968d12d160d0de533383909478ef927957fd3fd6456d7a",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "4493c51e1f58c158e3d7054b74386b3aa8a053db5f86086388db5a8707428845",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "463d6d0d4a4ffc014257b7675def4176d0bbedd5cd6a617398d8bd62e1087ad8",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "5a88d8c701947a220dc87b4f164203ace30a50612b881cb37487c0e1afc7e07a",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "5d8877fdffa246bea38759e2d31475207e010399ecb9810eb903f71164627408",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "64d28f27d026af889c095c6f9d5decebf126223ffcf179b0a8dc562761bb9f8d",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "6fe381c4b50e3e89946cdd796d63b94bb5488374158f0d459cd213a1dd574f03",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "71c34e8f45f7f1416e1ec7779568cae906f0a948e9ac55a89ced3591bcc50539",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "723b7c078df1820cf0bd5d770cdfdce93f8c02fe65ab28f05112431229ebc7ab",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "77c0d7bc8d15fd3b229e52edc8242f631d79a88db639794da5ee47d3d9322228",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "7f2cad9edae3cc6ef4951339e13de079eef1598572c105fc19a23827d38dd8fd",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "80ad3320a8e8be7b1f21582748a633a649bee2b7e7c7e1aa259813176b9a3c9c",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "83240018d450e628f42e80227e4c96bc398e7d961f0b843a4b1a58195784655b",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "8decddfc5cf03868c083d199766af68f12cadfbbaad105f31f338c3bfaaa638a",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "8f3b18472fc3a1e39163ac61d898c3b68931028ee5596e3caddfdfff85641273",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "9934476fc865cfc0a3b91732fb5a9742faa49b3e7b0bf7c2c6060274d2ed9641",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "9f209521202d0349eaec2d1bb0a5ae23377922061e6b922dc60a26d537283706",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "a845201bf2dc4cb0dbd70cb600742399f8d3618283a77d9472f24aeea309cdfe",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "be6f7ef325ab2ddc02f2506bdc14e13efe3e631a3775e50e682f52f0fb0b4bcb",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "cee57ddbf31698867ae26a0f523d688b2aa496b6c647011f8e77c63a97f95dcb",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "e0486be74536aa9bfd711b43bbaeb0089069b4c5257d4304c49c3a870b8c641f",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "ef0448994b3df62b3b8be15e2b74c0696fb39ca7f43778d623fb03c0f0fe3584",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "effdd3af093db790a34b6fdc29fc5e6d7fc57832bf8361c4585c05be8e02102b",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   },
   {
     "findingId": "fdd9f51a843b11689fc3ab4675a9495fe966b939fbc5d46dc00d65350866ba6d",
-    "fingerprint": "f4ea72e57221f402c723f6e9504269a4bb7e46ba40fd480af31b6a535c9669ef",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
-    "time": "2026-09-06T09:37:23.986Z"
+    "time": "2026-09-06T09:44:00.949Z"
   }
 ]
