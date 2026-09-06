@@ -747,5 +747,19 @@
     "reason": "Reviewed: BrowserRelationView and ApplicationFocusController are internal browser-shell ownership seams introduced to remove duplicated production relation and focus logic. These parser-level public-surface findings describe internal class members and do not expand the package protocol or external API.",
     "author": "Codex",
     "time": "2026-09-06T09:44:00.949Z"
+  },
+  {
+    "findingId": "2fcfe5737448ab2b5d66331f0bc6aa66a7783fb62e359b1d5ec190ca0001d098",
+    "reason": "Reviewed: BrowserFocusNavigation.error is internal stale-response state consumed by the browser shell to render a stable failure, not an external protocol surface.",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
+    "author": "Codex",
+    "time": "2026-09-06T09:48:39.169Z"
+  },
+  {
+    "findingId": "4f42ba9d3a6aa50fe9915d2ae9e8774f5587d8f07c1dc4ade59d33681d8b93e0",
+    "reason": "Reviewed: BrowserFocusNavigation.requestSequence is an internal stale-response guard that prevents late focus replies from replacing newer navigation state.",
+    "fingerprint": "89e341a42febf47baff52f9aa0a2402c429aeec144fe544674ae41060a21e216",
+    "author": "Codex",
+    "time": "2026-09-06T09:48:39.169Z"
   }
 ]
