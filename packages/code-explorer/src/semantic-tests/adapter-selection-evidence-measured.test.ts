@@ -9,7 +9,7 @@ import {
 import type { AdapterSelectionEvidence } from "../semantic/adapter-selection/adapter-selection-evidence.js";
 import type { AdapterSelectionRecord } from "../semantic/adapter-selection/adapter-selection-record.js";
 
-it("rejects measured evidence when any runtime authorization field c", () => {
+it("rejects measured evidence when any runtime authorization field changes", () => {
   const recordInput = support.loadAdapterSelectionJson(
     "../../adapter-selection.json",
   ) as AdapterSelectionRecord;
