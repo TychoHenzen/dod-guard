@@ -12,6 +12,7 @@ import {
   validateFindingLines,
   writeAzureReport,
 } from "./lib/review-support.mjs";
+import { validateReviewContext, validateReviewerResult } from "./lib/review-validation.mjs";
 
 function argumentsByName(argumentValues) {
   const result = {};
@@ -44,6 +45,11 @@ if (command === "normalize-target") {
   emit(normalizeAzureHierarchy(readJson(args.parent), readJson(args.children)));
 } else if (command === "redact-context") {
   emit(redactSecrets(readJson(args.input)));
+} else if (command === "validate-context") {
+  emit(validateReviewContext(readJson(args.input)));
+} else if (command === "validate-review-result") {
+  const context = validateReviewContext(readJson(args.context));
+  emit(validateReviewerResult(readJson(args.input), args.reviewer, context.reviewRequirements));
 } else if (command === "validate-findings") {
   emit(validateFindingLines(readJson(args.findings), readFileSync(args.diff, "utf8"), args["allow-pr-level"] === "true"));
 } else if (command === "dedupe-findings") {

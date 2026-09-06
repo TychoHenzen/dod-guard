@@ -22,7 +22,7 @@ if (root) {
       await navigator.locks.request(name, { ifAvailable: true }, (lock) => action(lock !== null)),
     randomId: () => crypto.randomUUID(),
     request: async (body, headers) => {
-      const response = await fetch("/api/session", {
+      const response = await fetch("api/session", {
         method: "POST",
         headers: { "content-type": "application/json", ...headers },
         body: JSON.stringify(body),
@@ -35,10 +35,15 @@ if (root) {
     .start()
     .then((started) => {
       if (!ownership(storage)) throw new Error(started.state);
-      root.textContent = `Code Explorer: ${started.state}`;
-      root.setAttribute("data-state", "ready");
-      void browserRequest(storage, "/api/status", { action: "status" }).catch(() => undefined);
-      startApplication(storage, started.state, root);
+      const rootAccess = started.data?.root_access;
+      const unavailableRoot = ["root_access_denied", "project_root_inaccessible", "project_root_unavailable"].includes(
+        rootAccess ?? "",
+      );
+      const visibleState = unavailableRoot ? (rootAccess ?? "workspace_unavailable") : started.state;
+      root.textContent = `Code Explorer: ${visibleState}`;
+      root.setAttribute("data-state", unavailableRoot ? "unavailable" : "ready");
+      void browserRequest(storage, "api/status", { action: "status" }).catch(() => undefined);
+      startApplication(storage, visibleState, root);
     })
     .catch(() => {
       root.textContent = "Code Explorer: workspace_unavailable";

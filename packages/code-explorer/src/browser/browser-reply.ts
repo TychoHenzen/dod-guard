@@ -1,5 +1,6 @@
 import type { BrowserLandmark, BrowserLandmarkGroup } from "./discovery.js";
 import type { FocusedSource } from "./source.js";
+import { sourceHandles } from "./source-handles.js";
 
 export type BrowserReply = {
   state?: string;
@@ -73,7 +74,7 @@ export function focusedSource(reply: BrowserReply): FocusedSource | undefined {
     symbol: { name: data.name, kind: data.kind, path: data.path, symbol_id: data.symbol_id },
     generation: sourceGeneration(reply),
     body,
-    handles: [],
+    handles: sourceHandles(data, body),
     returned_bytes: numberField(content, "returned_bytes"),
     total_bytes: numberField(content, "total_bytes"),
     limit_bytes: numberField(content, "limit_bytes"),

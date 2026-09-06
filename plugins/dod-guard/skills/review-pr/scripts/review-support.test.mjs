@@ -11,6 +11,11 @@ import {
   renderAzureReport,
   validateFindingLines,
 } from "./lib/review-support.mjs";
+import { validateReviewContext, validateReviewerResult } from "./lib/review-validation.mjs";
+
+const NORMALIZED_ACCEPTANCE_ERROR = /normalized acceptance criteria/;
+const OMITTED_REQUIREMENTS_ERROR = /omitted requirements/;
+const INVALID_SEVERITY_ERROR = /invalid severity P1/;
 
 test("normalizes current, named, GitHub, and Azure targets", () => {
   assert.deepEqual(normalizeReviewTarget("", "codex/33-review-pr"), {
@@ -98,6 +103,82 @@ test("redacts provider credentials throughout a review context", () => {
 
   assert.equal(JSON.stringify(redacted).includes("secret"), false);
   assert.ok(redacted.github.includes("[REDACTED]"));
+});
+
+function completeContext() {
+  return {
+    provider: "github",
+    repository: "acme/widget",
+    baseRef: "main",
+    targetRef: "feature",
+    headSha: "abc123",
+    changedFiles: ["src/a.js"],
+    diffFile: "/tmp/review.diff",
+    repositoryInstructions: [],
+    workItem: { acceptanceCriteria: "- [ ] User can open it" },
+    reviewRequirements: ["User can open it"],
+    finalFileAccess: "git show abc123:<path>",
+  };
+}
+
+test("rejects a review context without normalized requirements", () => {
+  const context = completeContext();
+  context.workItem.acceptanceCriteria = undefined;
+  assert.throws(() => validateReviewContext(context), NORMALIZED_ACCEPTANCE_ERROR);
+});
+
+test("requires feature coverage for every review requirement", () => {
+  assert.throws(
+    () =>
+      validateReviewerResult(
+        { reviewer: "review-pr-feature", coverage: [{ requirement: "Something else", status: "VERIFIED", evidence: "src/a.js:1" }], findings: [] },
+        "review-pr-feature",
+        completeContext().reviewRequirements,
+      ),
+    OMITTED_REQUIREMENTS_ERROR,
+  );
+});
+
+test("rejects malformed severities before finding publication", () => {
+  assert.throws(
+    () =>
+      validateReviewerResult(
+        {
+          reviewer: "review-pr-reliability",
+          coverage: [{ requirement: "Async state", status: "FINDING", evidence: "src/a.js:1" }],
+          findings: [{ severity: "P1", file: "src/a.js", line: 1, problem: "Race", impact: "Fails", requirement: "Async state", correction: "Serialize", rootCause: "Shared state", evidence: "src/a.js:1" }],
+        },
+        "review-pr-reliability",
+        completeContext().reviewRequirements,
+      ),
+    INVALID_SEVERITY_ERROR,
+  );
+});
+
+test("accepts the documented pull-request location for missing behavior", () => {
+  const result = validateReviewerResult(
+    {
+      reviewer: "review-pr-design",
+      coverage: [{ requirement: "Registration", status: "FINDING", evidence: "No registration exists" }],
+      findings: [
+        {
+          severity: "MAJOR",
+          location: "pull-request",
+          file: null,
+          line: null,
+          problem: "Registration is missing",
+          impact: "The feature is unreachable",
+          requirement: "Registration",
+          correction: "Register the entrypoint",
+          rootCause: "Missing registration",
+          evidence: "No registration exists at the final head",
+        },
+      ],
+    },
+    "review-pr-design",
+    completeContext().reviewRequirements,
+  );
+  assert.equal(result.findings[0].location, "pull-request");
 });
 
 test("accepts only changed final-state lines and explicit PR-level findings", () => {

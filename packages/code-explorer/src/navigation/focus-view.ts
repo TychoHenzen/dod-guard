@@ -6,7 +6,17 @@ export const DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
 export const MIN_BODY_LIMIT_BYTES = 1024;
 export const MAX_BODY_LIMIT_BYTES = 128 * 1024;
 
-export type FocusHandle = { handle: string; name: string; symbol_id: string };
+const browserRelationNames = ["definition", "references", "callers", "callees", "type", "implementation"] as const;
+
+export type FocusHandle = {
+  handle: string;
+  name: string;
+  symbol_id: string;
+  start: number;
+  end: number;
+  out_of_range: boolean;
+  relations: readonly string[];
+};
 export type FocusView = {
   view_id: string;
   project_generation: number;
@@ -64,9 +74,21 @@ export function createFocusView(
     total_bytes: bounded.totalBytes,
   };
   const symbolId = stableSymbolId(symbol);
-  const handles = (detail?.visible_symbols ?? [])
-    .filter(({ name }) => source?.includes(name) ?? false)
-    .map(({ name, symbol_id }) => ({ handle: mintOpaqueId(), name, symbol_id }));
+  let searchFrom = 0;
+  const handles = (detail?.visible_symbols ?? []).map(({ name, symbol_id }) => {
+    const start = source?.indexOf(name, searchFrom) ?? -1;
+    const end = start >= 0 ? start + name.length : -1;
+    if (start >= 0) searchFrom = end;
+    return {
+      handle: mintOpaqueId(),
+      name,
+      symbol_id,
+      start: Math.max(start, 0),
+      end: Math.max(end, 0),
+      out_of_range: start < 0 || end > bounded.value.length,
+      relations: browserRelationNames,
+    };
+  });
   return {
     view_id: mintOpaqueId(),
     project_generation: projectGeneration,

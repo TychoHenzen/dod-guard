@@ -7,18 +7,31 @@ import {
   projectOneHopGraph,
   renderOneHopGraph,
 } from "./graph.js";
-import type { RelationGroup } from "./relations.js";
 
 export type GraphRenderOptions = { stale?: boolean; collapsed?: boolean };
 
-function graphName(candidate: RelationGroup["candidates"][number]): string {
+type GraphRelationInput = {
+  relation: GraphRelationGroup["relation"] | "implementation";
+  state: GraphRelationGroup["state"];
+  candidates: readonly {
+    symbol_id?: string;
+    name?: string;
+    display_name?: string;
+    local_handle?: string;
+    external: boolean;
+    discovery_only?: boolean;
+  }[];
+  omitted_count: number;
+};
+
+function graphName(candidate: GraphRelationInput["candidates"][number]): string {
   return candidate.name ?? candidate.display_name ?? candidate.symbol_id ?? "";
 }
 
 /** Converts the loaded browser relation representation into the graph's verified local semantic input. */
-export function toGraphRelationGroups(groups: readonly RelationGroup[]): GraphRelationGroup[] {
+export function toGraphRelationGroups(groups: readonly GraphRelationInput[]): GraphRelationGroup[] {
   return groups.map((group) => ({
-    relation: group.relation,
+    relation: group.relation === "implementation" ? "implementations" : group.relation,
     state: group.state,
     omitted_count: group.omitted_count,
     candidates: group.candidates.flatMap((candidate) =>
@@ -51,16 +64,18 @@ export class BrowserGraphController {
   constructor(
     private readonly navigation: BrowserFocusNavigation,
     private readonly isStale: () => boolean,
+    private readonly selectTarget: (target: FocusTarget) => Promise<boolean> = (target) =>
+      navigation.selectRelation(target),
   ) {}
 
-  graphFor(focus: GraphFocus, groups: readonly RelationGroup[]): OneHopGraph {
+  graphFor(focus: GraphFocus, groups: readonly GraphRelationInput[]): OneHopGraph {
     return projectOneHopGraph(focus, toGraphRelationGroups(groups));
   }
 
   async select(node: GraphNode | undefined): Promise<boolean> {
     if (!node?.selectable || this.isStale()) return false;
     const target: FocusTarget = { symbol_id: node.symbol_id };
-    return this.navigation.selectRelation(target);
+    return this.selectTarget(target);
   }
 }
 

@@ -174,6 +174,20 @@ describe("browser HTTP boundary", () => {
       data: { workspace: "ready" },
     });
   });
+  it("preserves degraded root access when creating a browser session", async () => {
+    const router = new BrowserHttpRouter({
+      origin,
+      call: async () => ({
+        schema_version: 1,
+        state: "degraded",
+        data: { session_id: "core", root_access: "root_access_denied" },
+      }),
+    });
+    const created = JSON.parse((await request(router, {})).body);
+    assert.equal(created.state, "degraded");
+    assert.equal(created.data.root_access, "root_access_denied");
+    assert.equal(typeof created.data.browser_session_id, "string");
+  });
   it("returns stable capacity errors", async () => {
     const router = new BrowserHttpRouter({ origin, maxSessions: 0, call: async () => ({ schema_version: 1 }) });
     const response = await request(router, {});
@@ -226,6 +240,32 @@ describe("browser HTTP boundary", () => {
     });
     assert.equal(expired.status, 410);
     assert.equal(JSON.parse(expired.body).code, "browser_session_expired");
+  });
+  it("reclaims expired sessions before admitting a replacement tab", async () => {
+    let now = 0;
+    const router = new BrowserHttpRouter({
+      origin,
+      clock: { nowMilliseconds: () => now },
+      call: async (_name: string, arguments_: Record<string, unknown>) => ({
+        schema_version: 1,
+        state: "ready",
+        data: { session_id: `core-${String(arguments_.action)}` },
+      }),
+    });
+    for (let index = 0; index < 8; index += 1) {
+      const tab = `tab-${index}`;
+      const created = await request(router, {
+        body: JSON.stringify({ action: "create", tab_instance_id: tab, document_start: "new" }),
+        headers: { "x-code-explorer-tab": tab },
+      });
+      assert.equal(created.status, 200);
+    }
+    now = 30 * 60 * 1000;
+    const replacement = await request(router, {
+      body: JSON.stringify({ action: "create", tab_instance_id: "replacement", document_start: "new" }),
+      headers: { "x-code-explorer-tab": "replacement" },
+    });
+    assert.equal(replacement.status, 200);
   });
   it("rejects static traversal without exposing a local path", async () => {
     const router = new BrowserHttpRouter({ origin, call: async () => ({ schema_version: 1 }) });

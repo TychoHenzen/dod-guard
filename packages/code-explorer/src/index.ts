@@ -7,8 +7,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { startEmbeddedBrowserRuntime } from "./browser-server/embedded-runtime.js";
 import {
   BrowserServerError,
+  type ExplorerCore,
   type ExplorerCoreFactory,
   nativeBrowserOpener,
   nativePortBinder,
@@ -82,6 +84,8 @@ export type CodeExplorerServer = {
   closeConnection(): void;
   close(): Promise<void>;
 };
+
+export type { EmbeddedBrowserRuntime } from "./browser-server/embedded-runtime.js";
 
 function isToolName(name: string): name is ToolName {
   return toolNames.includes(name as ToolName);
@@ -735,6 +739,7 @@ type FollowCandidate = {
   call_site?: SymbolIdentity["location"];
   view_id?: string;
   handle?: string;
+  handles?: FocusView["handles"];
   content?: FocusView["content"];
 };
 
@@ -794,7 +799,8 @@ function relationCandidate(
     relation_source: "semantic",
     backend_name: status.backend_name,
     backend_version: status.backend_version,
-    symbol_id: view.symbol_id,
+    symbol_id: symbol.id,
+    display_name: symbol.name,
     path: symbol.location.path.replaceAll("\\", "/"),
     kind: symbol.kind,
     range: sourceRange,
@@ -804,6 +810,7 @@ function relationCandidate(
     external: false,
     view_id: view.view_id,
     ...(handle ? { handle } : {}),
+    handles: view.handles,
     content: view.content,
   };
 }
@@ -815,29 +822,77 @@ function compareRelationCandidates(left: FollowCandidate, right: FollowCandidate
   );
 }
 
-export function createRuntimeCoreFactory(): ExplorerCoreFactory {
+type RuntimeStart = Parameters<ExplorerCoreFactory["start"]>[0];
+
+async function stopAdapters(adapters: readonly LanguageAdapter[]): Promise<void> {
+  await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+}
+
+function createRuntimeServer(projectRoot: ProjectRoot, adapters: readonly LanguageAdapter[]): CodeExplorerServer {
+  return createServer({
+    projectRoot,
+    adapters,
+    sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
+    freshness: createNativeWorkspaceFreshness({
+      root: projectRoot.canonicalPath,
+      supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate),
+    }),
+  });
+}
+
+function abortPromise(signal: AbortSignal): Promise<never> {
+  return new Promise<never>((_, reject) =>
+    signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true }),
+  );
+}
+
+function createRuntimeCore(server: CodeExplorerServer, adapters: readonly LanguageAdapter[]): ExplorerCore {
+  let closing: Promise<void> | undefined;
+  const cleanup = async () => {
+    await server.close();
+    await stopAdapters(adapters);
+  };
   return {
-    async start({ projectRoot }) {
-      loadAdapterSelectionRecord();
-      const adapters = await createStartedRuntimeAdapters(projectRoot);
-      const server = createServer({
-        projectRoot,
-        adapters,
-        sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
-        freshness: createNativeWorkspaceFreshness({
-          root: projectRoot.canonicalPath,
-          supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate),
-        }),
-      });
-      return {
-        call: (name, arguments_) => server.call(name, arguments_),
-        close: async () => {
-          await server.close();
-          await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-        },
-      };
+    call: (name, arguments_) => server.call(name, arguments_),
+    close: async (signal) => {
+      if (signal.aborted) throw new Error("aborted");
+      closing ??= cleanup();
+      await Promise.race([closing, abortPromise(signal)]);
     },
   };
+}
+
+async function startRuntimeCore({ projectRoot, signal }: RuntimeStart): Promise<ExplorerCore> {
+  loadAdapterSelectionRecord();
+  let adapters: readonly LanguageAdapter[] = [];
+  try {
+    adapters = await createStartedRuntimeAdapters(projectRoot, signal);
+    if (signal.aborted) throw new Error("aborted");
+    return createRuntimeCore(createRuntimeServer(projectRoot, adapters), adapters);
+  } catch (error) {
+    await stopAdapters(adapters);
+    throw error;
+  }
+}
+
+export function createRuntimeCoreFactory(): ExplorerCoreFactory {
+  return { start: startRuntimeCore };
+}
+
+/** Mount the package-owned browser boundary inside an existing loopback HTTP listener. */
+export async function createEmbeddedBrowserRuntime(options: {
+  project_root: string;
+  origin: string;
+  signal?: AbortSignal;
+  core_factory?: ExplorerCoreFactory;
+}) {
+  return startEmbeddedBrowserRuntime({
+    projectRoot: options.project_root,
+    origin: options.origin,
+    signal: options.signal,
+    assetRoot: path.join(path.dirname(filename), "browser"),
+    coreFactory: options.core_factory ?? createRuntimeCoreFactory(),
+  });
 }
 
 async function main(): Promise<void> {

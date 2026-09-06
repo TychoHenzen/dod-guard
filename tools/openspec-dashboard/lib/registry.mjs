@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
-const REGISTRY_DIR = join(homedir(), ".openspec-dashboard");
+const REGISTRY_DIR = process.env.OPENSPEC_DASHBOARD_HOME ?? join(homedir(), ".openspec-dashboard");
 const REGISTRY_FILE = join(REGISTRY_DIR, "projects.json");
 
 /** Directories worth searching, kept to the ones that exist on this machine. */

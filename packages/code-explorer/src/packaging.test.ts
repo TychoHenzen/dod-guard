@@ -16,8 +16,8 @@ describe("browser packaging", () => {
       );
     }
     const shell = readFileSync(path.join(packageRoot, "dist", "browser", "index.html"), "utf8");
-    assert.match(shell, /src="\/client\.js"/);
-    assert.match(shell, /href="\/style\.css"/);
+    assert.match(shell, /src="client\.js"/);
+    assert.match(shell, /href="style\.css"/);
   });
   it("ships a Codex manifest that exposes the packaged MCP server", () => {
     const manifest = JSON.parse(readFileSync(path.join(packageRoot, ".codex-plugin", "plugin.json"), "utf8"));

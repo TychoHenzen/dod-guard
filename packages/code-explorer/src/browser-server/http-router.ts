@@ -1,6 +1,7 @@
 import { statSync } from "node:fs";
 import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
+import { withBrowserSession } from "./browser-session-reply.js";
 
 export type BrowserCoreReply = Record<string, unknown>;
 export type BrowserCoreCall = (name: string, arguments_: Record<string, unknown>) => Promise<BrowserCoreReply>;
@@ -170,6 +171,7 @@ export class BrowserHttpRouter {
     const tabId = body.tab_instance_id as string;
     if (headers["x-code-explorer-tab"] !== tabId) return json(403, browserError("invalid_browser_session"));
     if (body.action === "create") {
+      this.sweepExpiredSessions();
       if (headers["x-code-explorer-session"] || this.sessions.size >= this.maxSessions)
         return json(429, browserError("project_capacity", true));
       const reply = await this.options.call("code_status", { action: "start_session" });
@@ -178,7 +180,7 @@ export class BrowserHttpRouter {
       if (typeof coreSessionId !== "string") return json(500, browserError("internal_error"));
       const browserSessionId = crypto.randomUUID();
       this.sessions.set(browserSessionId, { coreSessionId, tabId, lastAcceptedAt: this.now() });
-      return json(200, { ...reply, state: "created", data: { browser_session_id: browserSessionId } });
+      return json(200, withBrowserSession(reply, browserSessionId));
     }
     const browserSessionId = headers["x-code-explorer-session"];
     const session = browserSessionId ? this.sessions.get(browserSessionId) : undefined;
@@ -194,6 +196,13 @@ export class BrowserHttpRouter {
       state: "restored",
       data: {},
     });
+  }
+
+  private sweepExpiredSessions(): void {
+    const now = this.now();
+    for (const [browserSessionId, session] of this.sessions) {
+      if (now - session.lastAcceptedAt >= idleMilliseconds) this.sessions.delete(browserSessionId);
+    }
   }
 
   private async navigation(

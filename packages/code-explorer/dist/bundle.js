@@ -21439,12 +21439,6 @@ var StdioServerTransport = class {
   }
 };
 
-// src/browser-server/lifecycle.ts
-import { spawn } from "node:child_process";
-import { createServer } from "node:http";
-import path3 from "node:path";
-import { fileURLToPath } from "node:url";
-
 // src/semantic/project-root.ts
 import { closeSync, constants, fstatSync, openSync, readFileSync, realpathSync, statSync } from "node:fs";
 import * as path from "node:path";
@@ -21645,6 +21639,14 @@ function isRelativeProjectPath(value, pathApi) {
 import { statSync as statSync2 } from "node:fs";
 import { readFile, realpath } from "node:fs/promises";
 import path2 from "node:path";
+
+// src/browser-server/browser-session-reply.ts
+function withBrowserSession(reply, browserSessionId) {
+  const replyData = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : {};
+  return { ...reply, data: { ...replyData, browser_session_id: browserSessionId } };
+}
+
+// src/browser-server/http-router.ts
 var maxBodyBytes = 64 * 1024;
 var maxResponseBytes = 1024 * 1024;
 var idleMilliseconds = 30 * 60 * 1e3;
@@ -21757,6 +21759,7 @@ var BrowserHttpRouter = class {
     const tabId = body.tab_instance_id;
     if (headers["x-code-explorer-tab"] !== tabId) return json(403, browserError("invalid_browser_session"));
     if (body.action === "create") {
+      this.sweepExpiredSessions();
       if (headers["x-code-explorer-session"] || this.sessions.size >= this.maxSessions)
         return json(429, browserError("project_capacity", true));
       const reply = await this.options.call("code_status", { action: "start_session" });
@@ -21765,7 +21768,7 @@ var BrowserHttpRouter = class {
       if (typeof coreSessionId !== "string") return json(500, browserError("internal_error"));
       const browserSessionId2 = crypto.randomUUID();
       this.sessions.set(browserSessionId2, { coreSessionId, tabId, lastAcceptedAt: this.now() });
-      return json(200, { ...reply, state: "created", data: { browser_session_id: browserSessionId2 } });
+      return json(200, withBrowserSession(reply, browserSessionId2));
     }
     const browserSessionId = headers["x-code-explorer-session"];
     const session = browserSessionId ? this.sessions.get(browserSessionId) : void 0;
@@ -21781,6 +21784,12 @@ var BrowserHttpRouter = class {
       state: "restored",
       data: {}
     });
+  }
+  sweepExpiredSessions() {
+    const now = this.now();
+    for (const [browserSessionId, session] of this.sessions) {
+      if (now - session.lastAcceptedAt >= idleMilliseconds) this.sessions.delete(browserSessionId);
+    }
   }
   async navigation(route, body, headers) {
     const browserSessionId = headers["x-code-explorer-session"];
@@ -21853,6 +21862,10 @@ var BrowserHttpRouter = class {
 };
 
 // src/browser-server/lifecycle.ts
+import { spawn } from "node:child_process";
+import { createServer } from "node:http";
+import path3 from "node:path";
+import { fileURLToPath } from "node:url";
 var BrowserServerError = class extends Error {
   constructor(code) {
     super(code);
@@ -22035,6 +22048,75 @@ var nativeBrowserOpener = {
     });
   }
 };
+
+// src/browser-server/embedded-runtime.ts
+function loopbackOrigin(origin) {
+  const parsed = new URL(origin);
+  if (parsed.protocol !== "http:" || parsed.hostname !== "127.0.0.1" || !parsed.port) {
+    throw new BrowserServerError("invalid_request");
+  }
+  return parsed;
+}
+function linkAbortSignal(parent, child) {
+  if (!parent) return () => void 0;
+  const abort = () => child.abort(parent.reason);
+  if (parent.aborted) {
+    abort();
+    return () => void 0;
+  }
+  parent.addEventListener("abort", abort, { once: true });
+  return () => parent.removeEventListener("abort", abort);
+}
+async function startCore(options, unlinkAbortSignal) {
+  try {
+    const core = await options.coreFactory.start({ projectRoot: options.projectRoot, signal: options.signal });
+    if (options.signal.aborted) {
+      await core.close(AbortSignal.timeout(1e4));
+      throw new Error("aborted");
+    }
+    return core;
+  } catch (error2) {
+    unlinkAbortSignal();
+    throw error2;
+  }
+}
+function closeCore(controller, core, unlinkAbortSignal) {
+  let closing;
+  return () => {
+    if (closing) return closing;
+    closing = (async () => {
+      controller.abort();
+      await core.close(AbortSignal.timeout(1e4));
+      unlinkAbortSignal();
+    })();
+    return closing;
+  };
+}
+async function startEmbeddedBrowserRuntime(options) {
+  const parsedOrigin = loopbackOrigin(options.origin);
+  const projectRoot = createNativeProjectRoot(options.projectRoot);
+  const controller = new AbortController();
+  const unlinkAbortSignal = linkAbortSignal(options.signal, controller);
+  const core = await startCore(
+    { coreFactory: options.coreFactory, projectRoot, signal: controller.signal },
+    unlinkAbortSignal
+  );
+  const router = new BrowserHttpRouter({
+    origin: parsedOrigin.origin,
+    assetRoot: options.assetRoot,
+    call: core.call ?? (async () => ({
+      schema_version: 1,
+      code: "workspace_unavailable",
+      message: "workspace_unavailable",
+      retryable: true
+    }))
+  });
+  return {
+    projectRoot,
+    handle: (request) => router.handle(request),
+    close: closeCore(controller, core, unlinkAbortSignal)
+  };
+}
 
 // src/discovery/landmarks.ts
 function landmarksNotReady() {
@@ -24533,6 +24615,7 @@ import { createHash as createHash2, randomBytes } from "node:crypto";
 var DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
 var MIN_BODY_LIMIT_BYTES = 1024;
 var MAX_BODY_LIMIT_BYTES = 128 * 1024;
+var browserRelationNames = ["definition", "references", "callers", "callees", "type", "implementation"];
 var FocusBodyLimitError = class extends Error {
   constructor(limit) {
     super("resource_limit");
@@ -24557,7 +24640,21 @@ function createFocusView(symbol, detail, requestedLimit, projectGeneration = 0) 
     total_bytes: bounded.totalBytes
   };
   const symbolId = stableSymbolId(symbol);
-  const handles = (detail?.visible_symbols ?? []).filter(({ name }) => source?.includes(name) ?? false).map(({ name, symbol_id }) => ({ handle: mintOpaqueId(), name, symbol_id }));
+  let searchFrom = 0;
+  const handles = (detail?.visible_symbols ?? []).map(({ name, symbol_id }) => {
+    const start = source?.indexOf(name, searchFrom) ?? -1;
+    const end = start >= 0 ? start + name.length : -1;
+    if (start >= 0) searchFrom = end;
+    return {
+      handle: mintOpaqueId(),
+      name,
+      symbol_id,
+      start: Math.max(start, 0),
+      end: Math.max(end, 0),
+      out_of_range: start < 0 || end > bounded.value.length,
+      relations: browserRelationNames
+    };
+  });
   return {
     view_id: mintOpaqueId(),
     project_generation: projectGeneration,
@@ -27083,10 +27180,35 @@ function createManagedPythonBackend(projectRoot, policy, safeInitializationOptio
     }
   };
 }
-async function createStartedRuntimeAdapters(projectRoot) {
+async function createStartedRuntimeAdapters(projectRoot, signal) {
   const adapters = createRuntimeAdapters(projectRoot);
-  await Promise.allSettled(adapters.map((adapter) => adapter.start?.()));
+  await Promise.allSettled(adapters.map((adapter) => startAdapter(adapter, signal)));
+  if (signal?.aborted) {
+    await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+    throw new Error("aborted");
+  }
   return adapters;
+}
+async function startAdapter(adapter, signal) {
+  if (!adapter.start) return;
+  if (!signal) {
+    await adapter.start();
+    return;
+  }
+  let abortHandler;
+  await Promise.race([
+    adapter.start(signal),
+    new Promise((_, reject) => {
+      if (signal.aborted) {
+        reject(new Error("aborted"));
+        return;
+      }
+      abortHandler = () => reject(new Error("aborted"));
+      signal.addEventListener("abort", abortHandler, { once: true });
+    })
+  ]).finally(() => {
+    if (abortHandler) signal.removeEventListener("abort", abortHandler);
+  });
 }
 function makeAdapter(language, options) {
   if (language === "rust") return createRustAdapter(options);
@@ -27696,7 +27818,8 @@ function relationCandidate(candidate, relation, adapter, sessions, connectionId,
     relation_source: "semantic",
     backend_name: status.backend_name,
     backend_version: status.backend_version,
-    symbol_id: view.symbol_id,
+    symbol_id: symbol.id,
+    display_name: symbol.name,
     path: symbol.location.path.replaceAll("\\", "/"),
     kind: symbol.kind,
     range: sourceRange,
@@ -27704,6 +27827,7 @@ function relationCandidate(candidate, relation, adapter, sessions, connectionId,
     external: false,
     view_id: view.view_id,
     ...handle ? { handle } : {},
+    handles: view.handles,
     content: view.content
   };
 }
@@ -27713,29 +27837,63 @@ function compareRelationCandidates(left, right) {
     `${right.path ?? ""}\0${right.range?.start.line ?? 0}\0${right.range?.start.character ?? 0}\0${right.kind ?? ""}\0${right.symbol_id ?? right.display_name ?? ""}`
   );
 }
-function createRuntimeCoreFactory() {
+async function stopAdapters(adapters) {
+  await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+}
+function createRuntimeServer(projectRoot, adapters) {
+  return createServer2({
+    projectRoot,
+    adapters,
+    sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
+    freshness: createNativeWorkspaceFreshness({
+      root: projectRoot.canonicalPath,
+      supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)
+    })
+  });
+}
+function abortPromise(signal) {
+  return new Promise(
+    (_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true })
+  );
+}
+function createRuntimeCore(server, adapters) {
+  let closing;
+  const cleanup = async () => {
+    await server.close();
+    await stopAdapters(adapters);
+  };
   return {
-    async start({ projectRoot }) {
-      loadAdapterSelectionRecord();
-      const adapters = await createStartedRuntimeAdapters(projectRoot);
-      const server = createServer2({
-        projectRoot,
-        adapters,
-        sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
-        freshness: createNativeWorkspaceFreshness({
-          root: projectRoot.canonicalPath,
-          supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)
-        })
-      });
-      return {
-        call: (name, arguments_) => server.call(name, arguments_),
-        close: async () => {
-          await server.close();
-          await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-        }
-      };
+    call: (name, arguments_) => server.call(name, arguments_),
+    close: async (signal) => {
+      if (signal.aborted) throw new Error("aborted");
+      closing ??= cleanup();
+      await Promise.race([closing, abortPromise(signal)]);
     }
   };
+}
+async function startRuntimeCore({ projectRoot, signal }) {
+  loadAdapterSelectionRecord();
+  let adapters = [];
+  try {
+    adapters = await createStartedRuntimeAdapters(projectRoot, signal);
+    if (signal.aborted) throw new Error("aborted");
+    return createRuntimeCore(createRuntimeServer(projectRoot, adapters), adapters);
+  } catch (error2) {
+    await stopAdapters(adapters);
+    throw error2;
+  }
+}
+function createRuntimeCoreFactory() {
+  return { start: startRuntimeCore };
+}
+async function createEmbeddedBrowserRuntime(options) {
+  return startEmbeddedBrowserRuntime({
+    projectRoot: options.project_root,
+    origin: options.origin,
+    signal: options.signal,
+    assetRoot: path4.join(path4.dirname(filename), "browser"),
+    coreFactory: options.core_factory ?? createRuntimeCoreFactory()
+  });
 }
 async function main() {
   const arguments_ = process.argv.slice(2);
@@ -27803,6 +27961,7 @@ if (isMainModule()) {
   });
 }
 export {
+  createEmbeddedBrowserRuntime,
   createRuntimeCoreFactory,
   createServer2 as createServer,
   toMcpToolResult

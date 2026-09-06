@@ -17,7 +17,7 @@ describe("browser focus navigation", () => {
     const result = await navigation.selectSearch({ symbol_id: "new" });
     assert.equal(result, true);
     assert.deepEqual(calls, [{ symbol_id: "new" }]);
-    assert.equal(navigation.state().focus.view_id, "view-new");
+    assert.equal(navigation.state().focus?.view_id, "view-new");
     assert.deepEqual(
       navigation.state().history.map((view) => view.view_id),
       ["view-old", "view-new"],
@@ -35,7 +35,7 @@ describe("browser focus navigation", () => {
     await navigation.selectHandle({ symbol_id: "target" });
     assert.deepEqual(calls, [{ symbol_id: "target" }]);
     assert.equal(navigation.state().history[0]?.view_id, "view-old");
-    assert.equal(navigation.state().focus.view_id, "view-handle");
+    assert.equal(navigation.state().focus?.view_id, "view-handle");
   });
   it("preserves the current view and history when focus fails", async () => {
     const initial: Focus = { view_id: "view-old", symbol_id: "old", name: "Old" };

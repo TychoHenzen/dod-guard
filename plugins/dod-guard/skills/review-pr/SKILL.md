@@ -1,7 +1,7 @@
 ---
 name: review-pr
 description: Review a Git branch or GitHub pull request with four independent reviewers and inline findings, or review an Azure DevOps pull request into one Markdown report. Loads the linked PBI and subtasks before judging the implementation.
-argument-hint: [current branch, Git ref, GitHub PR URL or #number, or Azure DevOps PR URL or ID] [Azure report path]
+argument-hint: "[current branch, Git ref, GitHub PR URL or #number, or Azure DevOps PR URL or ID] [Azure report path]"
 ---
 
 # Review pull request
@@ -52,6 +52,7 @@ Build one JSON context with these fields:
   "diffFile": "absolute path to a unified-zero diff",
   "repositoryInstructions": [],
   "workItem": {},
+  "reviewRequirements": [],
   "finalFileAccess": "exact read-only command or snapshot path"
 }
 ```
@@ -95,7 +96,10 @@ every child title, description, state, and acceptance text belong in
 `workItem`.
 
 Run `redact-context` on the complete context. Inspect the redacted output and
-use only that version in reviewer prompts.
+use only that version in reviewer prompts. Populate `workItem` through the
+provider normalization command. Populate `reviewRequirements` with every
+acceptance criterion and linked subtask requirement as separate verbatim
+strings. Run `validate-context` on the redacted file. Stop if validation fails.
 
 ## Dispatch four independent reviewers
 
@@ -108,9 +112,32 @@ when a slot frees:
 3. `review-pr-reliability`
 4. `review-pr-hygiene`
 
+Reviewers are expected to finish at different times. This is intentional:
+safety and reliability checks often need more evidence than a UI wiring check.
+Wait for every reviewer to finish and do not send progress, reminder, or rush
+messages to a reviewer that is still working.
+
+When Codex does not expose those names as callable agent types, read the shipped
+agent definition and start one fresh default subagent with that exact definition
+and reviewer name in its prompt. Record the returned agent ID, reviewer name,
+and redacted context path before continuing. Do not substitute an improvised
+summary of the agent definition.
+
 Give every reviewer the same redacted context and no other reviewer's output.
-Each reviewer returns a JSON array. Every finding must have exactly these
-fields:
+Each reviewer returns one JSON object with `reviewer`, `coverage`, and
+`findings`. Coverage records use this schema:
+
+```json
+{
+  "requirement": "exact PBI criterion, subtask, or assigned review concern",
+  "status": "VERIFIED|FINDING",
+  "evidence": "final-state path and behavior traced"
+}
+```
+
+The feature reviewer must cover every string in `reviewRequirements`. The
+other reviewers must record the assigned concerns they checked. Every finding
+must have exactly these fields:
 
 ```json
 {
@@ -131,9 +158,24 @@ or inaccessible core behavior. `MAJOR` means incorrect or incomplete behavior,
 missing effective proof, a race, or a design defect needing rework. `MINOR`
 means a concrete non-blocking maintainability defect.
 
+Run `validate-review-result` for each reviewer before using its findings. If a
+reviewer finishes with malformed output or incomplete feature coverage, keep
+the other reviewers running until they finish. Then send one bounded correction
+request to the completed reviewer asking for the same review in the exact JSON
+schema and, for the feature reviewer, every `reviewRequirements` string
+verbatim. Revalidate the corrected result. Do not interrupt or rush a reviewer
+that is still working.
+
+If the corrected result still fails validation, exclude only that reviewer's
+unvalidated findings, record the validation failure, and continue with the
+remaining validated reviewers. Do not cancel the whole review, invent missing
+coverage, translate severities, repair output manually, or silently discard a
+validation failure. Report the failed reviewer and its validation error.
+
 ## Validate and deduplicate
 
-Reject malformed or unsupported findings. Re-open the cited file at `headSha`
+After all four result envelopes pass validation, combine their `findings`.
+Reject unsupported findings. Re-open the cited file at `headSha`
 and verify the evidence. A finding must cite a changed final-state line. Only a
 GitHub missing-functionality finding with no honest code owner may use
 `"location":"pull-request"` with null file and line.

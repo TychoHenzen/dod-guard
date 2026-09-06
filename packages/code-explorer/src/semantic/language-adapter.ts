@@ -18,7 +18,7 @@ export type InjectedSemanticBackend = {
     | { state: "unavailable"; failure_code?: string }
     | { state: "failed"; failure_code: string };
   query(request: SemanticRequest): Promise<SemanticResult>;
-  start?(): Promise<void>;
+  start?(signal?: AbortSignal): Promise<void>;
   shutdown?(): Promise<void>;
   refresh?(): Promise<void>;
   capabilities?(): RelationCapabilities;
@@ -38,7 +38,7 @@ export type LanguageAdapterOptions = {
 export type LanguageAdapter = {
   status(): BackendStatus;
   request(request: SemanticRequest): Promise<SemanticResult>;
-  start?(): Promise<void>;
+  start?(signal?: AbortSignal): Promise<void>;
   shutdown?(): Promise<void>;
   refresh?(): Promise<void>;
 };

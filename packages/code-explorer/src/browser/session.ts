@@ -1,5 +1,8 @@
 export type BrowserStorage = { get(key: string): string | null; set(key: string, value: string): void; clear(): void };
-export type BrowserSessionReply = { state: string; data?: { browser_session_id?: string } };
+export type BrowserSessionReply = {
+  state: string;
+  data?: { browser_session_id?: string; root_access?: string };
+};
 
 /** Keeps a server session tied to this document's exclusive tab lock. */
 export class BrowserSessionClient {

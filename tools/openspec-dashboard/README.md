@@ -24,7 +24,8 @@ Each registered project is a tab. The selected report shows:
 
 Refresh regenerates the report with the repository's quality-guard scanner,
 writes it to the project's ignored `.quality/` directory, and displays it.
-`Code Explorer` remains available for the selected readable project.
+`Code Explorer` runs inside the dashboard process for the selected readable
+project. Its browser and API use the dashboard's existing loopback listener.
 
 Projects qualify when they contain `.quality/quality-report.json`. The `+`
 button scans configured roots for more projects. Registry state remains in
