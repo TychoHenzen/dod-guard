@@ -1,7 +1,7 @@
 import { browserRequest } from "./browser-request.js";
 import type { BrowserStorage } from "./session.js";
 
-export function showActionError(error: unknown): void {
+function showActionError(error: unknown): void {
   showActionStatus(error instanceof Error ? error.message : "backend_unavailable");
 }
 
@@ -18,10 +18,14 @@ export function bindHistory(navigate: (action: "back" | "forward") => Promise<vo
   }
 }
 
-export function bindRefresh(storage: BrowserStorage, onSuccess?: () => void): void {
+export function bindRefresh(
+  storage: BrowserStorage,
+  onSuccess?: () => void,
+  request: typeof browserRequest = browserRequest,
+): void {
   document.querySelector<HTMLElement>('[data-operation="refresh"]')?.addEventListener("click", async () => {
     try {
-      const reply = await browserRequest(storage, "api/status", { action: "refresh", request_id: crypto.randomUUID() });
+      const reply = await request(storage, "api/status", { action: "refresh", request_id: crypto.randomUUID() });
       showActionStatus(reply.state ?? "ready");
       onSuccess?.();
     } catch (error) {

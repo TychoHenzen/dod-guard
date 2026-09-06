@@ -26,11 +26,7 @@ describe("source handles", () => {
     assert.deepEqual(
       sourceHandles(
         {
-          handles: [
-            null,
-            { handle: "missing-offset" },
-            { handle: "out-of-range", start: 0, end: 10, relations: [] },
-          ],
+          handles: [null, { handle: "missing-offset" }, { handle: "out-of-range", start: 0, end: 10, relations: [] }],
         },
         "body",
       ),

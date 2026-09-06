@@ -1,16 +1,10 @@
+import type { BrowserFocus, FocusNavigationState } from "./history.js";
 import type { FocusedSource } from "./source.js";
 
 export type FocusTarget = { symbol_id: string };
-export type BrowserFocus = { view_id: string; symbol_id: string; name: string; source?: FocusedSource };
 export type FocusReply = { state: string; data?: BrowserFocus };
-export type FocusNavigationState = {
-  focus?: BrowserFocus;
-  history: readonly BrowserFocus[];
-  historyPosition: number;
-  error?: string;
-};
+export type { BrowserFocus, FocusNavigationState } from "./history.js";
 
-/** Commits a new browser view only after the shared core accepts a local focus request. */
 export class BrowserFocusNavigation {
   private current: FocusNavigationState;
   private requestSequence = 0;
@@ -75,12 +69,7 @@ export class BrowserFocusNavigation {
     try {
       const reply = await this.focusCore(target);
       if (requestSequence !== this.requestSequence) return false;
-      if (reply.state !== "ok" || !reply.data) {
-        this.current = { ...this.current, error: reply.state };
-        return false;
-      }
-      this.commit(reply.data);
-      return true;
+      return this.commitReply(reply);
     } catch (error) {
       if (requestSequence !== this.requestSequence) return false;
       this.current = {
@@ -89,6 +78,15 @@ export class BrowserFocusNavigation {
       };
       return false;
     }
+  }
+
+  private commitReply(reply: FocusReply): boolean {
+    if (reply.state !== "ok" || !reply.data) {
+      this.current = { ...this.current, error: reply.state };
+      return false;
+    }
+    this.commit(reply.data);
+    return true;
   }
 
   private commit(focus: BrowserFocus): void {

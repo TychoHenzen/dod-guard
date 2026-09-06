@@ -1,3 +1,5 @@
+import type { FocusHandle } from "../navigation/focus-view.js";
+
 export type CoreCall = { name: string; arguments_: Record<string, unknown> };
 
 function focused(
@@ -6,15 +8,7 @@ function focused(
   kind: string,
   path: string,
   body: string,
-  handles: Array<{
-    handle: string;
-    name: string;
-    symbol_id: string;
-    start: number;
-    end: number;
-    out_of_range: boolean;
-    relations: string[];
-  }> = [],
+  handles: FocusHandle[] = [],
 ) {
   return {
     schema_version: 1,
@@ -39,97 +33,91 @@ function focused(
   };
 }
 
+const invalidReply = { schema_version: 1, code: "invalid_request", message: "invalid_request", retryable: false };
+const statusReplies = {
+  start_session: { schema_version: 1, state: "ready", data: { session_id: "core-session" } },
+  status: { schema_version: 1, state: "ready", data: {} },
+};
+const searchReplies = {
+  "": {
+    schema_version: 1,
+    state: "ready",
+    data: {
+      landmarks: [
+        {
+          group: "entry_points",
+          symbols: [{ symbol_id: "symbol-main", name: "main", path: "src/main.ts", kind: "function" }],
+        },
+      ],
+    },
+  },
+  main: {
+    schema_version: 1,
+    state: "ready",
+    data: {
+      candidates: [
+        {
+          type: "symbol",
+          identity: "symbol-main",
+          name: "main",
+          match_class: "exact",
+          match_score: 100,
+          path: "src/main.ts",
+          kind: "function",
+        },
+      ],
+    },
+  },
+  client: {
+    schema_version: 1,
+    state: "ready",
+    data: {
+      candidates: [
+        {
+          type: "file",
+          identity: "file:src/browser/client.ts",
+          match_class: "exact",
+          match_score: 100,
+          path: "src/browser/client.ts",
+        },
+      ],
+    },
+  },
+};
+const mainFocus = focused("symbol-main", "main", "function", "src/main.ts", "export function main() { return 1; }", [
+  {
+    handle: "handle-main",
+    name: "main",
+    symbol_id: "symbol-main",
+    start: 16,
+    end: 20,
+    out_of_range: false,
+    relations: ["definition", "references", "callers", "callees", "type", "implementation"],
+  },
+]);
+const clientFocus = focused(
+  "file:src/browser/client.ts",
+  "client.ts",
+  "file",
+  "src/browser/client.ts",
+  "export const client = true;",
+);
+
+function packagedReply(name: string, arguments_: Record<string, unknown>) {
+  if (name === "code_status" && typeof arguments_.action === "string")
+    return statusReplies[arguments_.action as keyof typeof statusReplies] ?? invalidReply;
+  if (name === "code_search" && typeof arguments_.query === "string")
+    return searchReplies[arguments_.query as keyof typeof searchReplies] ?? invalidReply;
+  if (name === "code_focus" && arguments_.symbol_id === "symbol-main") return mainFocus;
+  if (name === "code_focus" && arguments_.symbol_id === "file:src/browser/client.ts") return clientFocus;
+  if (name === "code_follow" && arguments_.handle === "handle-main")
+    return { schema_version: 1, state: "ready", data: { relation: arguments_.relation, candidates: [] } };
+  return invalidReply;
+}
+
 export function createPackagedCore(calls: CoreCall[]) {
   return async (name: string, arguments_: Record<string, unknown>) => {
     calls.push({ name, arguments_ });
-    if (name === "code_status" && arguments_.action === "start_session") {
-      return { schema_version: 1, state: "ready", data: { session_id: "core-session" } };
-    }
-    if (name === "code_status" && arguments_.action === "status") {
-      return { schema_version: 1, state: "ready", data: {} };
-    }
-    if (name === "code_search" && arguments_.query === "") {
-      return {
-        schema_version: 1,
-        state: "ready",
-        data: {
-          landmarks: [
-            {
-              group: "entry_points",
-              symbols: [{ symbol_id: "symbol-main", name: "main", path: "src/main.ts", kind: "function" }],
-            },
-          ],
-        },
-      };
-    }
-    if (name === "code_search" && arguments_.query === "main") {
-      return {
-        schema_version: 1,
-        state: "ready",
-        data: {
-          candidates: [
-            {
-              type: "symbol",
-              identity: "symbol-main",
-              name: "main",
-              match_class: "exact",
-              match_score: 100,
-              path: "src/main.ts",
-              kind: "function",
-            },
-          ],
-        },
-      };
-    }
-    if (name === "code_search" && arguments_.query === "client") {
-      return {
-        schema_version: 1,
-        state: "ready",
-        data: {
-          candidates: [
-            {
-              type: "file",
-              identity: "file:src/browser/client.ts",
-              match_class: "exact",
-              match_score: 100,
-              path: "src/browser/client.ts",
-            },
-          ],
-        },
-      };
-    }
-    if (name === "code_focus" && arguments_.symbol_id === "symbol-main") {
-      return focused(
-        "symbol-main",
-        "main",
-        "function",
-        "src/main.ts",
-        "export function main() { return 1; }",
-        [
-          {
-            handle: "handle-main",
-            name: "main",
-            symbol_id: "symbol-main",
-            start: 16,
-            end: 20,
-            out_of_range: false,
-            relations: ["definition", "references", "callers", "callees", "type", "implementation"],
-          },
-        ],
-      );
-    }
-    if (name === "code_focus" && arguments_.symbol_id === "file:src/browser/client.ts") {
-      return focused(
-        "file:src/browser/client.ts",
-        "client.ts",
-        "file",
-        "src/browser/client.ts",
-        "export const client = true;",
-      );
-    }
-    if (name === "code_follow" && arguments_.handle === "handle-main") {
-      return { schema_version: 1, state: "ready", data: { relation: arguments_.relation, candidates: [] } };
-    }
-    return { schema_version: 1, code: "invalid_request", message: "invalid_request", retryable: false };
+    return packagedReply(name, arguments_);
   };
 }

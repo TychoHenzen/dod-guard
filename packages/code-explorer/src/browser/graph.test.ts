@@ -4,7 +4,8 @@ import { BrowserFocusNavigation } from "./focus-navigation.js";
 import { type GraphRelationGroup, projectOneHopGraph, renderOneHopGraph } from "./graph.js";
 import { BrowserGraphController, graphSnapshot, renderGraphArea, toGraphRelationGroups } from "./graph-navigation.js";
 import { BrowserViewHistory } from "./history.js";
-import type { RelationGroup } from "./relations.js";
+
+type BrowserGraphRelationInput = Parameters<typeof toGraphRelationGroups>[0][number];
 
 const focus = { symbol_id: "project::Focus", name: "Focus" };
 
@@ -161,10 +162,10 @@ describe("bounded graph growth", () => {
 });
 
 function browserGroup(
-  relation: RelationGroup["relation"],
-  candidates: RelationGroup["candidates"],
+  relation: BrowserGraphRelationInput["relation"],
+  candidates: BrowserGraphRelationInput["candidates"],
   omitted_count = 0,
-): RelationGroup {
+): BrowserGraphRelationInput {
   return { relation, state: "loaded", candidates, omitted_count };
 }
 

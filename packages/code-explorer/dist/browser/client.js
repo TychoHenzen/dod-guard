@@ -53,52 +53,6 @@ function renderBrowserBody(state, viewportWidth) {
   return `<header class="status-strip"><span data-area="status">${escapeText(state.status)}</span><nav aria-label="Navigation"><button type="button" data-operation="back"${disabled}>Back</button><button type="button" data-operation="forward"${disabled}>Forward</button><button type="button" data-operation="refocus"${disabled}>Refocus</button><button type="button" data-operation="refresh">Refresh</button></nav></header><main class="explorer-shell ${narrow ? "narrow" : "desktop"}">${discoveryDrawer}<aside id="discovery-pane" data-pane="discovery"><h2>Landmarks</h2><label>Search <input type="search" data-operation="search"${disabled}></label><div data-area="discovery">${renderLandmarks(state.landmarks)}</div></aside><section data-pane="focus"><h1>Focused source</h1><div data-area="source">${focus}</div><div data-area="graph" data-state="empty">No graph loaded</div></section><aside id="relations-pane" data-pane="relations"><h2>Relations</h2><p data-state="empty-relations">No relations loaded</p></aside>${relationDrawer}</main>`;
 }
 
-// src/browser/browser-request.ts
-function ownership(storage) {
-  const session = storage.get("browser_session_id");
-  const tab = storage.get("tab_instance_id");
-  return session && tab ? { "x-code-explorer-session": session, "x-code-explorer-tab": tab } : void 0;
-}
-async function browserRequest(storage, path, body) {
-  const headers = ownership(storage);
-  if (!headers) throw new Error("invalid_browser_session");
-  const response = await fetch(path, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body)
-  });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.code ?? "workspace_unavailable");
-  return payload;
-}
-
-// src/browser/application-events.ts
-function showActionError(error) {
-  showActionStatus(error instanceof Error ? error.message : "backend_unavailable");
-}
-function showActionStatus(value) {
-  const status = document.querySelector('[data-area="status"]');
-  if (status) status.textContent = value;
-}
-function bindHistory(navigate) {
-  for (const operation of ["back", "forward"]) {
-    document.querySelector(`[data-operation="${operation}"]`)?.addEventListener("click", () => {
-      void navigate(operation);
-    });
-  }
-}
-function bindRefresh(storage, onSuccess) {
-  document.querySelector('[data-operation="refresh"]')?.addEventListener("click", async () => {
-    try {
-      const reply = await browserRequest(storage, "api/status", { action: "refresh", request_id: crypto.randomUUID() });
-      showActionStatus(reply.state ?? "ready");
-      onSuccess?.();
-    } catch (error) {
-      showActionError(error);
-    }
-  });
-}
-
 // src/browser/source-handles.ts
 function sourceHandles(data, body) {
   const candidates = Array.isArray(data.handles) ? data.handles : [];
@@ -177,6 +131,25 @@ function focusedSource(reply) {
     limit_bytes: numberField(content, "limit_bytes"),
     truncated: content.truncated === true
   };
+}
+
+// src/browser/browser-request.ts
+function ownership(storage) {
+  const session = storage.get("browser_session_id");
+  const tab = storage.get("tab_instance_id");
+  return session && tab ? { "x-code-explorer-session": session, "x-code-explorer-tab": tab } : void 0;
+}
+async function browserRequest(storage, path, body) {
+  const headers = ownership(storage);
+  if (!headers) throw new Error("invalid_browser_session");
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...headers },
+    body: JSON.stringify(body)
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.code ?? "workspace_unavailable");
+  return payload;
 }
 
 // src/browser/discovery.ts
@@ -269,6 +242,93 @@ function renderDiscovery(state) {
   return `<section data-discovery="results" data-state="${state.areaState}"><ul>${candidates}</ul>${omitted}${guidance}</section>`;
 }
 
+// src/browser/application-discovery.ts
+function bindSymbols(focus) {
+  for (const button of document.querySelectorAll("[data-symbol-id]")) {
+    button.addEventListener("click", () => {
+      const symbolId = button.dataset.symbolId;
+      if (symbolId) focus(symbolId);
+    });
+  }
+}
+function bindSearch(discovery, render) {
+  let pending;
+  document.querySelector('[data-operation="search"]')?.addEventListener("input", (event) => {
+    const query = event.target.value;
+    clearTimeout(pending);
+    pending = setTimeout(() => {
+      if (discovery().state().query === query.trim()) return;
+      void discovery().search(query).then(render);
+    }, 150);
+  });
+}
+function renderDiscoveryArea(discovery, focus) {
+  const host = document.querySelector('[data-area="discovery"]');
+  if (host) host.innerHTML = renderDiscovery(discovery.state());
+  bindSymbols(focus);
+}
+function createDiscovery(storage, landmarks) {
+  return new BrowserDiscoveryController(
+    (request) => browserRequest(storage, "api/search", {
+      request_id: crypto.randomUUID(),
+      ...request
+    }),
+    landmarks
+  );
+}
+function loadLandmarks(storage, apply) {
+  void browserRequest(storage, "api/search", { request_id: crypto.randomUUID(), query: "" }).then((reply) => apply(landmarkGroups(reply))).catch(() => void 0);
+}
+
+// src/browser/application-events.ts
+function showActionError(error) {
+  showActionStatus(error instanceof Error ? error.message : "backend_unavailable");
+}
+function showActionStatus(value) {
+  const status = document.querySelector('[data-area="status"]');
+  if (status) status.textContent = value;
+}
+function bindHistory(navigate) {
+  for (const operation of ["back", "forward"]) {
+    document.querySelector(`[data-operation="${operation}"]`)?.addEventListener("click", () => {
+      void navigate(operation);
+    });
+  }
+}
+function bindRefresh(storage, onSuccess, request = browserRequest) {
+  document.querySelector('[data-operation="refresh"]')?.addEventListener("click", async () => {
+    try {
+      const reply = await request(storage, "api/status", { action: "refresh", request_id: crypto.randomUUID() });
+      showActionStatus(reply.state ?? "ready");
+      onSuccess?.();
+    } catch (error) {
+      showActionError(error);
+    }
+  });
+}
+
+// src/browser/application-focus.ts
+var ApplicationFocusController = class {
+  constructor(navigation, relationView) {
+    this.navigation = navigation;
+    this.relationView = relationView;
+  }
+  navigation;
+  relationView;
+  latestFocusRequest = 0;
+  async focusSymbol(symbolId) {
+    const request = ++this.latestFocusRequest;
+    const selected = await this.navigation.selectSearch({ symbol_id: symbolId });
+    if (request !== this.latestFocusRequest) return;
+    if (selected) {
+      this.relationView.renderFocusedView();
+      showActionStatus("ready");
+      return;
+    }
+    showActionStatus(this.navigation.state().error ?? "backend_unavailable");
+  }
+};
+
 // src/browser/focus-navigation.ts
 var BrowserFocusNavigation = class {
   constructor(initial, focusCore) {
@@ -321,12 +381,7 @@ var BrowserFocusNavigation = class {
     try {
       const reply = await this.focusCore(target);
       if (requestSequence !== this.requestSequence) return false;
-      if (reply.state !== "ok" || !reply.data) {
-        this.current = { ...this.current, error: reply.state };
-        return false;
-      }
-      this.commit(reply.data);
-      return true;
+      return this.commitReply(reply);
     } catch (error) {
       if (requestSequence !== this.requestSequence) return false;
       this.current = {
@@ -335,6 +390,14 @@ var BrowserFocusNavigation = class {
       };
       return false;
     }
+  }
+  commitReply(reply) {
+    if (reply.state !== "ok" || !reply.data) {
+      this.current = { ...this.current, error: reply.state };
+      return false;
+    }
+    this.commit(reply.data);
+    return true;
   }
   commit(focus) {
     const history = [...this.current.history.slice(0, this.current.historyPosition + 1), focus];
@@ -487,65 +550,6 @@ function renderGraphArea(graph, options = {}) {
   }
 }
 
-// src/browser/relations.ts
-var BrowserRelationsController = class {
-  constructor(context, follow) {
-    this.context = context;
-    this.follow = follow;
-    for (const relation of context.supported)
-      this.groups.set(relation, { relation, state: "not_loaded", candidates: [], omitted_count: 0 });
-    for (const relation of context.unavailable)
-      this.groups.set(relation, { relation, state: "unavailable", candidates: [], omitted_count: 0 });
-  }
-  context;
-  follow;
-  groups = /* @__PURE__ */ new Map();
-  pending = /* @__PURE__ */ new Map();
-  state(relation) {
-    return this.groups.get(relation) ?? { relation, state: "unavailable", candidates: [], omitted_count: 0 };
-  }
-  async open(relation) {
-    const current = this.state(relation);
-    if (current.state === "unavailable" || current.state === "loaded") return current;
-    const active = this.pending.get(relation);
-    if (active) return active;
-    this.groups.set(relation, { ...current, state: "loading" });
-    const request = this.load(relation);
-    this.pending.set(relation, request);
-    try {
-      return await request;
-    } finally {
-      this.pending.delete(relation);
-    }
-  }
-  async load(relation) {
-    try {
-      const reply = await this.follow({
-        view_id: this.context.view_id,
-        handle: this.context.handle,
-        relation,
-        limit: 200
-      });
-      if (reply.state !== "ok") return this.save({ relation, state: "failed", candidates: [], omitted_count: 0 });
-      return this.save({
-        relation,
-        state: "loaded",
-        candidates: (reply.data?.candidates ?? []).map((candidate) => ({
-          ...candidate,
-          ...candidate.project_generation === void 0 && reply.project_generation !== void 0 ? { project_generation: reply.project_generation } : {}
-        })),
-        omitted_count: reply.data?.omitted_count ?? 0
-      });
-    } catch {
-      return this.save({ relation, state: "failed", candidates: [], omitted_count: 0 });
-    }
-  }
-  save(group) {
-    this.groups.set(group.relation, group);
-    return group;
-  }
-};
-
 // src/browser/source.ts
 function escapeText4(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
@@ -609,90 +613,329 @@ function renderFocusedSource(source) {
   return `<article class="focused-source" data-view-id="${escapeText4(source.view_id)}" data-truncated="${source.truncated}"><header><p>${metadata}</p><p>${counts}</p></header><pre>${renderTextWithLineNumbers(segments, source.view_id)}</pre></article>`;
 }
 
-// src/browser/application.ts
-var relationNames = ["definition", "references", "callers", "callees", "type", "implementation"];
-function isRelationName(value) {
-  return relationNames.includes(value);
+// src/browser/relations.ts
+function preserveGeneration(candidate, generation) {
+  if (candidate.project_generation !== void 0 || generation === void 0) return candidate;
+  return { ...candidate, project_generation: generation };
 }
-function focusReply(reply) {
-  const source = focusedSource(reply);
-  if (!source) return { state: "invalid_browser_view" };
-  return {
-    state: "ok",
-    data: { view_id: source.view_id, symbol_id: source.symbol.symbol_id, name: source.symbol.name, source }
-  };
+var BrowserRelationsController = class {
+  constructor(context, follow) {
+    this.context = context;
+    this.follow = follow;
+    for (const relation of context.supported)
+      this.groups.set(relation, { relation, state: "not_loaded", candidates: [], omitted_count: 0 });
+    for (const relation of context.unavailable)
+      this.groups.set(relation, { relation, state: "unavailable", candidates: [], omitted_count: 0 });
+  }
+  context;
+  follow;
+  groups = /* @__PURE__ */ new Map();
+  pending = /* @__PURE__ */ new Map();
+  state(relation) {
+    return this.groups.get(relation) ?? { relation, state: "unavailable", candidates: [], omitted_count: 0 };
+  }
+  async open(relation) {
+    const current = this.state(relation);
+    if (current.state === "unavailable" || current.state === "loaded") return current;
+    const active = this.pending.get(relation);
+    if (active) return active;
+    this.groups.set(relation, { ...current, state: "loading" });
+    const request = this.load(relation);
+    this.pending.set(relation, request);
+    try {
+      return await request;
+    } finally {
+      this.pending.delete(relation);
+    }
+  }
+  async load(relation) {
+    try {
+      const reply = await this.follow({
+        view_id: this.context.view_id,
+        handle: this.context.handle,
+        relation,
+        limit: 200
+      });
+      if (reply.state !== "ok") return this.save({ relation, state: "failed", candidates: [], omitted_count: 0 });
+      return this.save({
+        relation,
+        state: "loaded",
+        candidates: (reply.data?.candidates ?? []).map(
+          (candidate) => preserveGeneration(candidate, reply.project_generation)
+        ),
+        omitted_count: reply.data?.omitted_count ?? 0
+      });
+    } catch {
+      return this.save({ relation, state: "failed", candidates: [], omitted_count: 0 });
+    }
+  }
+  save(group) {
+    this.groups.set(group.relation, group);
+    return group;
+  }
+};
+var browserRelations = ["definition", "references", "callers", "callees", "type", "implementation"];
+function isBrowserRelation(value) {
+  return browserRelations.includes(value);
 }
 function relationFocus(candidate) {
-  if (!(candidate.view_id && candidate.symbol_id && candidate.path && candidate.kind && candidate.content))
-    return void 0;
-  const body = candidate.content.body ?? candidate.content.declaration;
-  if (typeof body !== "string") return void 0;
-  const returnedBytes = candidate.content.returned_bytes ?? new TextEncoder().encode(body).byteLength;
-  const totalBytes = candidate.content.total_bytes ?? returnedBytes;
-  const handles = (candidate.handles ?? []).map((handle) => ({
-    handle: handle.handle,
-    start: handle.start,
-    end: handle.end,
-    relations: [...handle.relations]
-  }));
+  if (!hasFocusPayload(candidate)) return;
+  const body = relationBody(candidate.content);
+  if (typeof body !== "string") return;
+  const returnedBytes = relationReturnedBytes(candidate.content, body);
+  const totalBytes = relationTotalBytes(candidate.content, returnedBytes);
+  const handles = relationHandles(candidate);
   const source = {
     view_id: candidate.view_id,
     symbol: {
-      name: candidate.display_name ?? candidate.name ?? candidate.symbol_id,
+      name: relationName(candidate),
       kind: candidate.kind,
       path: candidate.path,
       symbol_id: candidate.symbol_id
     },
-    generation: candidate.project_generation ?? 0,
+    generation: relationGeneration(candidate),
     body,
     handles,
     returned_bytes: returnedBytes,
     total_bytes: totalBytes,
-    limit_bytes: candidate.content.limit_bytes ?? totalBytes,
+    limit_bytes: relationLimit(candidate.content, totalBytes),
     truncated: candidate.content.truncated === true
   };
   return { view_id: source.view_id, symbol_id: source.symbol.symbol_id, name: source.symbol.name, source };
 }
-function bindSymbols(focus) {
-  for (const button of document.querySelectorAll("[data-symbol-id]")) {
-    button.addEventListener("click", () => {
-      const symbolId = button.dataset.symbolId;
-      if (symbolId) focus(symbolId);
-    });
+function relationBody(content) {
+  if (typeof content.body === "string") return content.body;
+  return typeof content.declaration === "string" ? content.declaration : void 0;
+}
+function relationReturnedBytes(content, body) {
+  if (typeof content.returned_bytes === "number") return content.returned_bytes;
+  return new TextEncoder().encode(body).byteLength;
+}
+function relationTotalBytes(content, returnedBytes) {
+  return typeof content.total_bytes === "number" ? content.total_bytes : returnedBytes;
+}
+function relationLimit(content, totalBytes) {
+  return typeof content.limit_bytes === "number" ? content.limit_bytes : totalBytes;
+}
+function relationGeneration(candidate) {
+  return typeof candidate.project_generation === "number" ? candidate.project_generation : 0;
+}
+function hasFocusPayload(candidate) {
+  return Boolean(candidate.view_id && candidate.symbol_id && candidate.path && candidate.kind && candidate.content);
+}
+function relationName(candidate) {
+  if (candidate.display_name) return candidate.display_name;
+  if (candidate.name) return candidate.name;
+  if (candidate.symbol_id) return candidate.symbol_id;
+  return "relation";
+}
+function relationHandles(candidate) {
+  return (candidate.handles ?? []).map(({ handle, start, end, relations }) => ({
+    handle,
+    start,
+    end,
+    relations: [...relations]
+  }));
+}
+function relationCandidates(data) {
+  if (Array.isArray(data.candidates)) return data.candidates;
+  if (data.focus && typeof data.focus === "object") return [data.focus];
+  return [];
+}
+function graphCandidateMap(groups) {
+  const candidates = /* @__PURE__ */ new Map();
+  for (const group of groups) {
+    for (const candidate of group.candidates) {
+      if (candidate.symbol_id) candidates.set(candidate.symbol_id, candidate);
+    }
   }
+  return candidates;
 }
-function bindSearch(discovery, render) {
-  let pending;
-  document.querySelector('[data-operation="search"]')?.addEventListener("input", (event) => {
-    const query = event.target.value;
-    clearTimeout(pending);
-    pending = setTimeout(() => {
-      if (discovery().state().query === query.trim()) return;
-      void discovery().search(query).then(render);
-    }, 150);
-  });
+function textElement(tag, text) {
+  return Object.assign(document.createElement(tag), { textContent: text });
 }
-function renderDiscoveryArea(discovery, focus) {
-  const host = document.querySelector('[data-area="discovery"]');
-  if (host) host.innerHTML = renderDiscovery(discovery.state());
-  bindSymbols(focus);
-}
-function createDiscovery(storage, landmarks) {
-  return new BrowserDiscoveryController(
-    (request) => browserRequest(storage, "api/search", {
+var BrowserRelationView = class {
+  constructor(storage, navigation) {
+    this.storage = storage;
+    this.navigation = navigation;
+    this.graphController = new BrowserGraphController(
+      navigation,
+      () => false,
+      (target) => this.navigateTarget(target)
+    );
+  }
+  storage;
+  navigation;
+  relationControllers = /* @__PURE__ */ new Map();
+  graphController;
+  activeRelationKey;
+  latestRelationRequest = {};
+  graphCandidates = /* @__PURE__ */ new Map();
+  renderFocusedView() {
+    const source = this.navigation.state().focus?.source;
+    if (!source) return;
+    const host = document.querySelector('[data-area="source"]');
+    if (host) host.innerHTML = renderFocusedSource(source);
+    this.bindSourceRelations(source);
+    this.resetRelations();
+    this.renderGraph(source);
+  }
+  bindSourceRelations(source) {
+    for (const mark of document.querySelectorAll("mark[data-handle]")) {
+      mark.addEventListener("click", () => {
+        const handle = source.handles.find((candidate) => candidate.handle === mark.dataset.handle);
+        if (handle) this.showRelationChoices(source, handle);
+      });
+    }
+  }
+  resetRelations() {
+    this.activeRelationKey = void 0;
+    this.latestRelationRequest = {};
+    const pane = document.querySelector('[data-pane="relations"]');
+    if (!pane) return;
+    pane.dataset.state = "empty";
+    pane.replaceChildren(textElement("h2", "Relations"), textElement("p", "No relations loaded"));
+  }
+  renderGraph(source, controller) {
+    const host = document.querySelector('[data-area="graph"]');
+    if (!host) return;
+    const groups = controller ? browserRelations.map((relation) => controller.state(relation)) : [];
+    this.graphCandidates = graphCandidateMap(groups);
+    const graph = this.graphController.graphFor(
+      { symbol_id: source.symbol.symbol_id, name: source.symbol.name },
+      groups
+    );
+    host.outerHTML = renderGraphArea(graph);
+    this.bindGraphNodes(graph);
+  }
+  bindGraphNodes(graph) {
+    const rendered = document.querySelector('[data-area="graph"]');
+    for (const node of rendered?.querySelectorAll("[data-focus]") ?? []) {
+      const graphNode = graph.nodes.find((candidate) => candidate.symbol_id === node.dataset.focus);
+      node.addEventListener(
+        "click",
+        () => void this.graphController.select(graphNode).then((selected) => this.finishSelection(selected))
+      );
+    }
+  }
+  finishSelection(selected) {
+    if (selected) {
+      this.renderFocusedView();
+      showActionStatus("ready");
+      return;
+    }
+    showActionStatus(this.navigation.state().error ?? "backend_unavailable");
+  }
+  navigateTarget(target) {
+    const candidate = this.graphCandidates.get(target.symbol_id);
+    return candidate ? this.navigateCandidate(candidate) : this.navigation.selectRelation(target);
+  }
+  navigateCandidate(candidate) {
+    const focus = relationFocus(candidate);
+    if (focus) return Promise.resolve(this.navigation.selectView(focus));
+    if (candidate.symbol_id) return this.navigation.selectRelation({ symbol_id: candidate.symbol_id });
+    return Promise.resolve(false);
+  }
+  relationController(source, handle) {
+    const key = `${source.view_id}:${handle.handle}`;
+    const existing = this.relationControllers.get(key);
+    if (existing) return existing;
+    const supported = handle.relations.filter(isBrowserRelation);
+    const controller = new BrowserRelationsController(
+      {
+        view_id: source.view_id,
+        handle: handle.handle,
+        supported,
+        unavailable: browserRelations.filter((relation) => !supported.includes(relation))
+      },
+      (request) => this.follow(request)
+    );
+    this.relationControllers.set(key, controller);
+    return controller;
+  }
+  async follow(request) {
+    const reply = await browserRequest(this.storage, "api/follow", {
       request_id: crypto.randomUUID(),
       ...request
-    }),
-    landmarks
-  );
+    });
+    const data = Object(reply.data);
+    return {
+      state: reply.state === "unavailable_relation" ? reply.state : "ok",
+      project_generation: reply.project_generation,
+      data: {
+        candidates: relationCandidates(data),
+        omitted_count: typeof data.omitted_count === "number" ? data.omitted_count : 0
+      }
+    };
+  }
+  showRelationChoices(source, handle) {
+    const controller = this.relationController(source, handle);
+    this.activeRelationKey = `${source.view_id}:${handle.handle}`;
+    this.latestRelationRequest = {};
+    const pane = document.querySelector('[data-pane="relations"]');
+    if (!pane) return;
+    pane.dataset.state = "empty";
+    pane.replaceChildren(textElement("h2", "Relations"));
+    for (const relation of handle.relations.filter(isBrowserRelation)) {
+      const button = Object.assign(document.createElement("button"), { type: "button", textContent: relation });
+      button.dataset.relation = relation;
+      button.addEventListener("click", () => void this.openRelation(source, handle, relation));
+      pane.append(button);
+    }
+    this.renderGraph(source, controller);
+  }
+  async openRelation(source, handle, relation) {
+    const controller = this.relationController(source, handle);
+    const request = {};
+    this.latestRelationRequest = request;
+    const group = await controller.open(relation);
+    if (this.latestRelationRequest !== request || this.navigation.state().focus?.view_id !== source.view_id) return;
+    this.renderRelationGroup(source, relation, group);
+    this.renderGraph(source, controller);
+  }
+  renderRelationGroup(source, relation, group) {
+    const pane = this.activeRelationsPane(source);
+    if (!pane) return;
+    pane.dataset.state = relationPaneState(group);
+    pane.replaceChildren(textElement("h2", `Relations: ${relation}`));
+    if (group.state !== "loaded") return void pane.append(textElement("p", group.state));
+    if (group.candidates.length === 0) return void pane.append(textElement("p", "empty"));
+    for (const candidate of group.candidates) pane.append(this.relationElement(candidate));
+  }
+  activeRelationsPane(source) {
+    const pane = document.querySelector('[data-pane="relations"]');
+    if (!pane) return;
+    if (!this.activeRelationKey?.startsWith(`${source.view_id}:`)) return;
+    return pane;
+  }
+  relationElement(candidate) {
+    const label = relationName(candidate);
+    if (candidate.external) return textElement("p", label);
+    const button = Object.assign(document.createElement("button"), { type: "button", textContent: label });
+    button.addEventListener("click", () => this.selectCandidate(candidate));
+    return button;
+  }
+  selectCandidate(candidate) {
+    void this.navigateCandidate(candidate).then((selected) => this.finishSelection(selected));
+  }
+};
+function relationPaneState(group) {
+  return group.state === "loaded" ? "ready" : group.state;
 }
-function loadLandmarks(storage, apply) {
-  void browserRequest(storage, "api/search", { request_id: crypto.randomUUID(), query: "" }).then((reply) => apply(landmarkGroups(reply))).catch(() => void 0);
+
+// src/browser/application.ts
+function focusReply(reply) {
+  const source = focusedSource(reply);
+  const data = source && {
+    view_id: source.view_id,
+    symbol_id: source.symbol.symbol_id,
+    name: source.symbol.name,
+    source
+  };
+  return data ? { state: "ok", data } : { state: "invalid_browser_view" };
 }
-function startApplication(storage, startedState, root2) {
-  const store = createBrowserStore({ status: startedState, landmarks: [] });
-  root2.innerHTML = renderBrowserBody(store.state(), window.innerWidth);
-  const navigation = new BrowserFocusNavigation(
+function createNavigation(storage) {
+  return new BrowserFocusNavigation(
     void 0,
     async ({ symbol_id }) => focusReply(
       await browserRequest(storage, "api/focus", {
@@ -701,184 +944,14 @@ function startApplication(storage, startedState, root2) {
       })
     )
   );
-  const relationControllers = /* @__PURE__ */ new Map();
-  let activeRelationKey;
-  let latestRelationRequest;
-  let graphCandidates = /* @__PURE__ */ new Map();
-  function relationController(source, handle) {
-    const key = `${source.view_id}:${handle.handle}`;
-    const existing = relationControllers.get(key);
-    if (existing) return existing;
-    const supported = handle.relations.filter(isRelationName);
-    const controller = new BrowserRelationsController(
-      {
-        view_id: source.view_id,
-        handle: handle.handle,
-        supported,
-        unavailable: relationNames.filter((relation) => !supported.includes(relation))
-      },
-      async (request) => {
-        const reply = await browserRequest(storage, "api/follow", {
-          request_id: crypto.randomUUID(),
-          view_id: request.view_id,
-          handle: request.handle,
-          relation: request.relation,
-          limit: request.limit
-        });
-        const data = Object(reply.data);
-        const candidates = Array.isArray(data.candidates) ? data.candidates : data.focus && typeof data.focus === "object" ? [data.focus] : [];
-        return {
-          state: reply.state === "unavailable_relation" ? reply.state : "ok",
-          project_generation: reply.project_generation,
-          data: {
-            candidates,
-            omitted_count: typeof data.omitted_count === "number" ? data.omitted_count : 0
-          }
-        };
-      }
-    );
-    relationControllers.set(key, controller);
-    return controller;
-  }
-  function resetRelations() {
-    activeRelationKey = void 0;
-    latestRelationRequest = {};
-    const pane = document.querySelector('[data-pane="relations"]');
-    if (!pane) return;
-    pane.dataset.state = "empty";
-    pane.replaceChildren(
-      Object.assign(document.createElement("h2"), { textContent: "Relations" }),
-      Object.assign(document.createElement("p"), { textContent: "No relations loaded" })
-    );
-  }
-  function renderGraph(source, controller) {
-    const host = document.querySelector('[data-area="graph"]');
-    if (!host) return;
-    const groups = controller ? relationNames.map((relation) => controller.state(relation)) : [];
-    graphCandidates = new Map(
-      groups.flatMap(
-        (group) => group.candidates.flatMap(
-          (candidate) => candidate.symbol_id ? [[candidate.symbol_id, candidate]] : []
-        )
-      )
-    );
-    const graph = graphController.graphFor({ symbol_id: source.symbol.symbol_id, name: source.symbol.name }, groups);
-    host.outerHTML = renderGraphArea(graph);
-    const rendered = document.querySelector('[data-area="graph"]');
-    for (const node of rendered?.querySelectorAll("[data-focus]") ?? []) {
-      const symbolId = node.dataset.focus;
-      const graphNode = graph.nodes.find((candidate) => candidate.symbol_id === symbolId);
-      node.addEventListener("click", () => {
-        void graphController.select(graphNode).then((selected) => {
-          if (selected) {
-            renderFocusedView();
-            showActionStatus("ready");
-          } else showActionStatus(navigation.state().error ?? "backend_unavailable");
-        });
-      });
-    }
-  }
-  async function navigateCandidate(candidate) {
-    const focus = relationFocus(candidate);
-    if (focus) return navigation.selectView(focus);
-    if (candidate.symbol_id) return navigation.selectRelation({ symbol_id: candidate.symbol_id });
-    return false;
-  }
-  function renderRelationGroup(source, controller, relation, group) {
-    const pane = document.querySelector('[data-pane="relations"]');
-    if (!(pane && activeRelationKey?.startsWith(`${source.view_id}:`))) return;
-    pane.dataset.state = group.state === "loaded" ? "ready" : group.state;
-    pane.replaceChildren(Object.assign(document.createElement("h2"), { textContent: `Relations: ${relation}` }));
-    if (group.state !== "loaded") {
-      pane.append(Object.assign(document.createElement("p"), { textContent: group.state }));
-      return;
-    }
-    if (group.candidates.length === 0) {
-      pane.append(Object.assign(document.createElement("p"), { textContent: "empty" }));
-      return;
-    }
-    for (const candidate of group.candidates) {
-      const label = candidate.display_name ?? candidate.name ?? candidate.symbol_id ?? "relation";
-      if (candidate.external) {
-        pane.append(Object.assign(document.createElement("p"), { textContent: label }));
-        continue;
-      }
-      const button = Object.assign(document.createElement("button"), { type: "button", textContent: label });
-      button.addEventListener("click", () => {
-        void navigateCandidate(candidate).then((selected) => {
-          if (selected) {
-            renderFocusedView();
-            showActionStatus("ready");
-          } else showActionStatus(navigation.state().error ?? "backend_unavailable");
-        });
-      });
-      pane.append(button);
-    }
-  }
-  async function openRelation(source, handle, relation) {
-    const controller = relationController(source, handle);
-    const request = {};
-    latestRelationRequest = request;
-    const group = await controller.open(relation);
-    if (latestRelationRequest !== request || navigation.state().focus?.view_id !== source.view_id) return;
-    renderRelationGroup(source, controller, relation, group);
-    renderGraph(source, controller);
-  }
-  function showRelationChoices(source, handle) {
-    const controller = relationController(source, handle);
-    activeRelationKey = `${source.view_id}:${handle.handle}`;
-    latestRelationRequest = {};
-    const pane = document.querySelector('[data-pane="relations"]');
-    if (!pane) return;
-    pane.dataset.state = "empty";
-    pane.replaceChildren(Object.assign(document.createElement("h2"), { textContent: "Relations" }));
-    for (const relation of handle.relations.filter(isRelationName)) {
-      const button = Object.assign(document.createElement("button"), { type: "button", textContent: relation });
-      button.dataset.relation = relation;
-      button.addEventListener("click", () => void openRelation(source, handle, relation));
-      pane.append(button);
-    }
-    renderGraph(source, controller);
-  }
-  function bindSourceRelations(source) {
-    for (const mark of document.querySelectorAll("mark[data-handle]")) {
-      mark.addEventListener("click", () => {
-        const handle = source.handles.find((candidate) => candidate.handle === mark.dataset.handle);
-        if (handle) showRelationChoices(source, handle);
-      });
-    }
-  }
-  function renderFocusedView() {
-    const source = navigation.state().focus?.source;
-    if (!source) return;
-    const sourceHost = document.querySelector('[data-area="source"]');
-    if (sourceHost) sourceHost.innerHTML = renderFocusedSource(source);
-    bindSourceRelations(source);
-    resetRelations();
-    renderGraph(source, void 0);
-  }
-  const graphController = new BrowserGraphController(
-    navigation,
-    () => false,
-    (target) => {
-      const candidate = graphCandidates.get(target.symbol_id);
-      return candidate ? navigateCandidate(candidate) : navigation.selectRelation(target);
-    }
-  );
-  let latestFocusRequest = 0;
-  async function focusSymbol(symbolId) {
-    const request = ++latestFocusRequest;
-    const selected = await navigation.selectSearch({ symbol_id: symbolId });
-    if (request !== latestFocusRequest) return;
-    if (selected) {
-      renderFocusedView();
-      showActionStatus("ready");
-    } else showActionStatus(navigation.state().error ?? "backend_unavailable");
-  }
+}
+function bindRefocus(navigation, focusSymbol) {
   document.querySelector('[data-operation="refocus"]')?.addEventListener("click", () => {
     const symbolId = navigation.state().focus?.symbol_id;
     if (symbolId) void focusSymbol(symbolId);
   });
+}
+function bindDiscovery(storage, focusSymbol) {
   let discovery = createDiscovery(storage, []);
   bindSymbols(focusSymbol);
   bindSearch(
@@ -890,13 +963,28 @@ function startApplication(storage, startedState, root2) {
     discovery = createDiscovery(storage, landmarks);
     renderDiscoveryArea(discovery, focusSymbol);
   });
+}
+function bindHistoryNavigation(navigation, relationView) {
   bindHistory(async (action) => {
     const moved = action === "back" ? navigation.back() : navigation.forward();
     if (moved) {
-      renderFocusedView();
+      relationView.renderFocusedView();
       showActionStatus("ready");
-    } else showActionStatus("history_empty");
+      return;
+    }
+    showActionStatus("history_empty");
   });
+}
+function startApplication(storage, startedState, root2) {
+  const store = createBrowserStore({ status: startedState, landmarks: [] });
+  root2.innerHTML = renderBrowserBody(store.state(), window.innerWidth);
+  const navigation = createNavigation(storage);
+  const relationView = new BrowserRelationView(storage, navigation);
+  const focusController = new ApplicationFocusController(navigation, relationView);
+  const focusSymbol = focusController.focusSymbol.bind(focusController);
+  bindRefocus(navigation, focusSymbol);
+  bindDiscovery(storage, focusSymbol);
+  bindHistoryNavigation(navigation, relationView);
   bindRefresh(storage);
 }
 

@@ -1,3 +1,5 @@
+import type { FocusedSource } from "./source.js";
+
 export type BrowserViewSnapshot = {
   view_id: string;
   symbol_id: string;
@@ -10,6 +12,20 @@ export type BrowserViewSnapshot = {
 export type BrowserHistoryState = {
   entries: readonly BrowserViewSnapshot[];
   position: number;
+};
+
+export type BrowserFocus = {
+  view_id: string;
+  symbol_id: string;
+  name: string;
+  source?: FocusedSource;
+};
+
+export type FocusNavigationState = {
+  focus?: BrowserFocus;
+  history: readonly BrowserFocus[];
+  historyPosition: number;
+  error?: string;
 };
 
 function copy(snapshot: BrowserViewSnapshot): BrowserViewSnapshot {

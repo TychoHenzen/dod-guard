@@ -10,6 +10,7 @@ import { z } from "zod";
 import { startEmbeddedBrowserRuntime } from "./browser-server/embedded-runtime.js";
 import {
   BrowserServerError,
+  type ExplorerCore,
   type ExplorerCoreFactory,
   nativeBrowserOpener,
   nativePortBinder,
@@ -821,47 +822,61 @@ function compareRelationCandidates(left: FollowCandidate, right: FollowCandidate
   );
 }
 
-export function createRuntimeCoreFactory(): ExplorerCoreFactory {
+type RuntimeStart = Parameters<ExplorerCoreFactory["start"]>[0];
+
+async function stopAdapters(adapters: readonly LanguageAdapter[]): Promise<void> {
+  await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+}
+
+function createRuntimeServer(projectRoot: ProjectRoot, adapters: readonly LanguageAdapter[]): CodeExplorerServer {
+  return createServer({
+    projectRoot,
+    adapters,
+    sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
+    freshness: createNativeWorkspaceFreshness({
+      root: projectRoot.canonicalPath,
+      supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate),
+    }),
+  });
+}
+
+function abortPromise(signal: AbortSignal): Promise<never> {
+  return new Promise<never>((_, reject) =>
+    signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true }),
+  );
+}
+
+function createRuntimeCore(server: CodeExplorerServer, adapters: readonly LanguageAdapter[]): ExplorerCore {
+  let closing: Promise<void> | undefined;
+  const cleanup = async () => {
+    await server.close();
+    await stopAdapters(adapters);
+  };
   return {
-    async start({ projectRoot, signal }) {
-      loadAdapterSelectionRecord();
-      let adapters: readonly LanguageAdapter[] = [];
-      try {
-        adapters = await createStartedRuntimeAdapters(projectRoot, signal);
-        if (signal.aborted) throw new Error("aborted");
-        const server = createServer({
-          projectRoot,
-          adapters,
-          sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
-          freshness: createNativeWorkspaceFreshness({
-            root: projectRoot.canonicalPath,
-            supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate),
-          }),
-        });
-        let closing: Promise<void> | undefined;
-        const cleanup = async () => {
-          await server.close();
-          await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-        };
-        return {
-          call: (name, arguments_) => server.call(name, arguments_),
-          close: async (closeSignal) => {
-            if (closeSignal.aborted) throw new Error("aborted");
-            closing ??= cleanup();
-            await Promise.race([
-              closing,
-              new Promise<never>((_, reject) =>
-                closeSignal.addEventListener("abort", () => reject(new Error("aborted")), { once: true }),
-              ),
-            ]);
-          },
-        };
-      } catch (error) {
-        await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-        throw error;
-      }
+    call: (name, arguments_) => server.call(name, arguments_),
+    close: async (signal) => {
+      if (signal.aborted) throw new Error("aborted");
+      closing ??= cleanup();
+      await Promise.race([closing, abortPromise(signal)]);
     },
   };
+}
+
+async function startRuntimeCore({ projectRoot, signal }: RuntimeStart): Promise<ExplorerCore> {
+  loadAdapterSelectionRecord();
+  let adapters: readonly LanguageAdapter[] = [];
+  try {
+    adapters = await createStartedRuntimeAdapters(projectRoot, signal);
+    if (signal.aborted) throw new Error("aborted");
+    return createRuntimeCore(createRuntimeServer(projectRoot, adapters), adapters);
+  } catch (error) {
+    await stopAdapters(adapters);
+    throw error;
+  }
+}
+
+export function createRuntimeCoreFactory(): ExplorerCoreFactory {
+  return { start: startRuntimeCore };
 }
 
 /** Mount the package-owned browser boundary inside an existing loopback HTTP listener. */

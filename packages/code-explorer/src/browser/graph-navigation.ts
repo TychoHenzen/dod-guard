@@ -7,16 +7,29 @@ import {
   projectOneHopGraph,
   renderOneHopGraph,
 } from "./graph.js";
-import type { RelationGroup } from "./relations.js";
 
 export type GraphRenderOptions = { stale?: boolean; collapsed?: boolean };
 
-function graphName(candidate: RelationGroup["candidates"][number]): string {
+type GraphRelationInput = {
+  relation: GraphRelationGroup["relation"] | "implementation";
+  state: GraphRelationGroup["state"];
+  candidates: readonly {
+    symbol_id?: string;
+    name?: string;
+    display_name?: string;
+    local_handle?: string;
+    external: boolean;
+    discovery_only?: boolean;
+  }[];
+  omitted_count: number;
+};
+
+function graphName(candidate: GraphRelationInput["candidates"][number]): string {
   return candidate.name ?? candidate.display_name ?? candidate.symbol_id ?? "";
 }
 
 /** Converts the loaded browser relation representation into the graph's verified local semantic input. */
-export function toGraphRelationGroups(groups: readonly RelationGroup[]): GraphRelationGroup[] {
+export function toGraphRelationGroups(groups: readonly GraphRelationInput[]): GraphRelationGroup[] {
   return groups.map((group) => ({
     relation: group.relation === "implementation" ? "implementations" : group.relation,
     state: group.state,
@@ -55,7 +68,7 @@ export class BrowserGraphController {
       navigation.selectRelation(target),
   ) {}
 
-  graphFor(focus: GraphFocus, groups: readonly RelationGroup[]): OneHopGraph {
+  graphFor(focus: GraphFocus, groups: readonly GraphRelationInput[]): OneHopGraph {
     return projectOneHopGraph(focus, toGraphRelationGroups(groups));
   }
 

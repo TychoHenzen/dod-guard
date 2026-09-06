@@ -22057,24 +22057,50 @@ function loopbackOrigin(origin) {
   }
   return parsed;
 }
+function linkAbortSignal(parent, child) {
+  if (!parent) return () => void 0;
+  const abort = () => child.abort(parent.reason);
+  if (parent.aborted) {
+    abort();
+    return () => void 0;
+  }
+  parent.addEventListener("abort", abort, { once: true });
+  return () => parent.removeEventListener("abort", abort);
+}
+async function startCore(options, unlinkAbortSignal) {
+  try {
+    const core = await options.coreFactory.start({ projectRoot: options.projectRoot, signal: options.signal });
+    if (options.signal.aborted) {
+      await core.close(AbortSignal.timeout(1e4));
+      throw new Error("aborted");
+    }
+    return core;
+  } catch (error2) {
+    unlinkAbortSignal();
+    throw error2;
+  }
+}
+function closeCore(controller, core, unlinkAbortSignal) {
+  let closing;
+  return () => {
+    if (closing) return closing;
+    closing = (async () => {
+      controller.abort();
+      await core.close(AbortSignal.timeout(1e4));
+      unlinkAbortSignal();
+    })();
+    return closing;
+  };
+}
 async function startEmbeddedBrowserRuntime(options) {
   const parsedOrigin = loopbackOrigin(options.origin);
   const projectRoot = createNativeProjectRoot(options.projectRoot);
   const controller = new AbortController();
-  const abort = () => controller.abort();
-  if (options.signal?.aborted) controller.abort();
-  else options.signal?.addEventListener("abort", abort, { once: true });
-  let core;
-  try {
-    core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
-    if (controller.signal.aborted) {
-      await core.close(AbortSignal.timeout(1e4));
-      throw new Error("aborted");
-    }
-  } catch (error2) {
-    options.signal?.removeEventListener("abort", abort);
-    throw error2;
-  }
+  const unlinkAbortSignal = linkAbortSignal(options.signal, controller);
+  const core = await startCore(
+    { coreFactory: options.coreFactory, projectRoot, signal: controller.signal },
+    unlinkAbortSignal
+  );
   const router = new BrowserHttpRouter({
     origin: parsedOrigin.origin,
     assetRoot: options.assetRoot,
@@ -22085,15 +22111,10 @@ async function startEmbeddedBrowserRuntime(options) {
       retryable: true
     }))
   });
-  let closing;
   return {
     projectRoot,
     handle: (request) => router.handle(request),
-    close: () => closing ??= (async () => {
-      controller.abort();
-      await core.close(AbortSignal.timeout(1e4));
-      options.signal?.removeEventListener("abort", abort);
-    })()
+    close: closeCore(controller, core, unlinkAbortSignal)
   };
 }
 
@@ -27816,47 +27837,54 @@ function compareRelationCandidates(left, right) {
     `${right.path ?? ""}\0${right.range?.start.line ?? 0}\0${right.range?.start.character ?? 0}\0${right.kind ?? ""}\0${right.symbol_id ?? right.display_name ?? ""}`
   );
 }
-function createRuntimeCoreFactory() {
+async function stopAdapters(adapters) {
+  await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+}
+function createRuntimeServer(projectRoot, adapters) {
+  return createServer2({
+    projectRoot,
+    adapters,
+    sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
+    freshness: createNativeWorkspaceFreshness({
+      root: projectRoot.canonicalPath,
+      supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)
+    })
+  });
+}
+function abortPromise(signal) {
+  return new Promise(
+    (_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true })
+  );
+}
+function createRuntimeCore(server, adapters) {
+  let closing;
+  const cleanup = async () => {
+    await server.close();
+    await stopAdapters(adapters);
+  };
   return {
-    async start({ projectRoot, signal }) {
-      loadAdapterSelectionRecord();
-      let adapters = [];
-      try {
-        adapters = await createStartedRuntimeAdapters(projectRoot, signal);
-        if (signal.aborted) throw new Error("aborted");
-        const server = createServer2({
-          projectRoot,
-          adapters,
-          sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
-          freshness: createNativeWorkspaceFreshness({
-            root: projectRoot.canonicalPath,
-            supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)
-          })
-        });
-        let closing;
-        const cleanup = async () => {
-          await server.close();
-          await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-        };
-        return {
-          call: (name, arguments_) => server.call(name, arguments_),
-          close: async (closeSignal) => {
-            if (closeSignal.aborted) throw new Error("aborted");
-            closing ??= cleanup();
-            await Promise.race([
-              closing,
-              new Promise(
-                (_, reject) => closeSignal.addEventListener("abort", () => reject(new Error("aborted")), { once: true })
-              )
-            ]);
-          }
-        };
-      } catch (error2) {
-        await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-        throw error2;
-      }
+    call: (name, arguments_) => server.call(name, arguments_),
+    close: async (signal) => {
+      if (signal.aborted) throw new Error("aborted");
+      closing ??= cleanup();
+      await Promise.race([closing, abortPromise(signal)]);
     }
   };
+}
+async function startRuntimeCore({ projectRoot, signal }) {
+  loadAdapterSelectionRecord();
+  let adapters = [];
+  try {
+    adapters = await createStartedRuntimeAdapters(projectRoot, signal);
+    if (signal.aborted) throw new Error("aborted");
+    return createRuntimeCore(createRuntimeServer(projectRoot, adapters), adapters);
+  } catch (error2) {
+    await stopAdapters(adapters);
+    throw error2;
+  }
+}
+function createRuntimeCoreFactory() {
+  return { start: startRuntimeCore };
 }
 async function createEmbeddedBrowserRuntime(options) {
   return startEmbeddedBrowserRuntime({
