@@ -1,9 +1,5 @@
-import type {
-  LanguageAdapterOptions,
-} from "../adapters/language-adapter-options.js";
-import type {
-  BackendLaunchPreparation,
-} from "../backend-launch/backend-launch-preparation.js";
+import type { LanguageAdapterOptions } from "../adapters/language-adapter-options.js";
+import type { BackendLaunchPreparation } from "../backend-launch/backend-launch-preparation.js";
 import type { RelationCapabilities } from "../contracts/contract.js";
 
 type AdapterMetadata = Pick<

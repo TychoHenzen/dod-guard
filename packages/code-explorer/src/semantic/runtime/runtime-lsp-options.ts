@@ -6,9 +6,7 @@ import type {
   DirectLspScheduler,
   LspProcess,
 } from "../direct-lsp/direct-lsp.js";
-import type {
-  DirectLspSemanticOptions,
-} from "../direct-lsp/direct-lsp-semantic.js";
+import type { DirectLspSemanticOptions } from "../direct-lsp/direct-lsp-semantic.js";
 
 export type RuntimeLspBackendOptions = Omit<
   DirectLspSemanticOptions,

@@ -1,10 +1,5 @@
-import {
-  RESTART_DELAYS_MS,
-  RESTART_WINDOW_MS,
-} from "./direct-lsp-protocol.js";
-import type {
-  DirectLspRuntimeTelemetry,
-} from "./direct-lsp-runtime-telemetry.js";
+import { RESTART_DELAYS_MS, RESTART_WINDOW_MS } from "./direct-lsp-protocol.js";
+import type { DirectLspRuntimeTelemetry } from "./direct-lsp-runtime-telemetry.js";
 import type { DirectLspScheduler } from "./direct-lsp-scheduler.js";
 
 export class DirectLspRuntimeRestarts {
@@ -42,8 +37,7 @@ export class DirectLspRuntimeRestarts {
   }
 
   cancel(): void {
-    for (const timer of this.#restartTimers)
-      this.scheduler.clearTimeout(timer);
+    for (const timer of this.#restartTimers) this.scheduler.clearTimeout(timer);
     this.#restartTimers.clear();
   }
 

@@ -1,9 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type {
-  BackendFileIdentity,
-} from "../backend-launch/backend-file-identity.js";
+import type { BackendFileIdentity } from "../backend-launch/backend-file-identity.js";
 import type { Language } from "../contracts/contract.js";
 
 export function probeVersion(

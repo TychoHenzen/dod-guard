@@ -15,13 +15,14 @@ export function expectedTreeFor(
       sha256(`${JSON.stringify(plan.minimal_pyrightconfig)}\n`),
     ],
     ...plan.files.map((file) => [file.path, file.sha256] as const),
-    ...plan.bundled_typeshed.map((path) =>
-      [
-        path,
-        sha256(
-          (BUNDLED_TYPESHED as Readonly<Record<string, string>>)[path] ?? "",
-        ),
-      ] as const,
+    ...plan.bundled_typeshed.map(
+      (path) =>
+        [
+          path,
+          sha256(
+            (BUNDLED_TYPESHED as Readonly<Record<string, string>>)[path] ?? "",
+          ),
+        ] as const,
     ),
   ]);
 }

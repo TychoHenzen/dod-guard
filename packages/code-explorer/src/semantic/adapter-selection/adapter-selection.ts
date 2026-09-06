@@ -1,8 +1,6 @@
-import type * as runtimeOptions from
-  "../runtime/runtime-launch-policy-options.js";
+import type * as runtimeOptions from "../runtime/runtime-launch-policy-options.js";
 
-export type { RuntimeBackendInspector } from
-  "../runtime/runtime-backend-inspector.js";
+export type { RuntimeBackendInspector } from "../runtime/runtime-backend-inspector.js";
 export type { AdapterSelectionEvidence } from "./adapter-selection-evidence.js";
 export { evidenceAligns } from "./adapter-selection-evidence-check.js";
 export { loadAdapterSelectionRecord } from "./adapter-selection-loader.js";

@@ -25,9 +25,7 @@ export function createMirrorTree(
     for (const file of plan.files)
       writeMirrorFile(mirrorRoot, file.path, file.text);
     for (const path of plan.bundled_typeshed) {
-      const text = (BUNDLED_TYPESHED as Readonly<Record<string, string>>)[
-        path
-      ];
+      const text = (BUNDLED_TYPESHED as Readonly<Record<string, string>>)[path];
       if (text === undefined) throw new Error("unsafe_backend_mode");
       writeMirrorFile(mirrorRoot, path, text);
     }

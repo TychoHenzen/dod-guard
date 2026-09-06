@@ -1,5 +1,4 @@
-export { loadAdapterSelectionRecord } from
-  "../adapter-selection/adapter-selection.js";
+export { loadAdapterSelectionRecord } from "../adapter-selection/adapter-selection.js";
 export type { LanguageAdapter } from "../adapters/language-adapter.js";
 export type { BackendStatusReport } from "../backend-status/backend-status.js";
 export { createBackendStatusReport } from "../backend-status/backend-status.js";
@@ -15,8 +14,7 @@ export {
   ProjectPathError,
 } from "../project-root/project-root.js";
 export { RootAccessGate } from "../project-root/root-access.js";
-export { createNativePythonMirror } from
-  "../python-mirror/python-mirror-runtime.js";
+export { createNativePythonMirror } from "../python-mirror/python-mirror-runtime.js";
 export {
   createManagedPythonBackend,
   createRuntimeAdapters,

@@ -13,10 +13,7 @@ it("fails a protected read when opened-file identity changes", () => {
     platform: "win32",
   });
   fs.fstat = () => ({ dev: 1, ino: 3 });
-  assert.throws(
-    () => guard.openProtected("src/lib.rs"),
-    /path_identity_changed/,
-  );
+  assert.throws(() => guard.openProtected("src/lib.rs"), /path_identity_changed/);
 });
 
 it("accepts an opened Windows file when stat has no device identity", () => {
@@ -48,9 +45,6 @@ it("closes the protected handle and returns no bytes when a path cha", () => {
     filesystem: fs,
     platform: "win32",
   });
-  assert.throws(
-    () => guard.protectedRead("src/lib.rs"),
-    /path_identity_changed/,
-  );
+  assert.throws(() => guard.protectedRead("src/lib.rs"), /path_identity_changed/);
   assert.equal(closed, true);
 });

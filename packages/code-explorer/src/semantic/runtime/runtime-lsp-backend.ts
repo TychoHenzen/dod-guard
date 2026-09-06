@@ -1,6 +1,5 @@
 import type { InjectedSemanticBackend } from "../adapters/language-adapter.js";
-import { relationCapabilitiesFromInitialize } from
-  "../direct-lsp/direct-lsp-semantic.js";
+import { relationCapabilitiesFromInitialize } from "../direct-lsp/direct-lsp-semantic.js";
 import type { RuntimeLspBackendOptions } from "./runtime-lsp-options.js";
 import { createRuntimeStart } from "./runtime-lsp-start.js";
 import type { RuntimeLspState } from "./runtime-lsp-state.js";

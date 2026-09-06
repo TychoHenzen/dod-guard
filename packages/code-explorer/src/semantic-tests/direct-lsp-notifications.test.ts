@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import {
-  FakeProcess,
-  ready,
-  tick,
-} from "../testing/direct-lsp-test-support.js";
+import { FakeProcess, ready, tick } from "../testing/direct-lsp-test-support.js";
 
 it("rejects every dynamic registration without accepting its r", async () => {
   const process = new FakeProcess();

@@ -1,7 +1,5 @@
 import { dirname, join } from "node:path";
-import type {
-  BackendFileIdentity,
-} from "../backend-launch/backend-file-identity.js";
+import type { BackendFileIdentity } from "../backend-launch/backend-file-identity.js";
 import type { BackendIdentity } from "../backend-launch/backend-identity.js";
 import { inspectNativeFile, isWithin } from "./native-backend-file.js";
 

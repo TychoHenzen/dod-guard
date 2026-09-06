@@ -4,8 +4,7 @@ import {
   resolveTrustedCommandRoots,
 } from "../adapter-selection/adapter-selection.js";
 import type { LanguageAdapter } from "../adapters/language-adapter.js";
-import { createNativeBackendInspector } from
-  "../adapters/native-backend-inspector.js";
+import { createNativeBackendInspector } from "../adapters/native-backend-inspector.js";
 import type { RelationCapabilities } from "../contracts/contract.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
 import type * as adapterInput from "./runtime-adapter-record-input.js";
@@ -17,14 +16,17 @@ export function createRuntimeAdapters(
 ): readonly LanguageAdapter[] {
   const record = loadAdapterSelectionRecord();
   const platform = process.platform === "win32" ? "win32" : "posix";
-  const policy = createRuntimeLaunchPolicy({
-    project_root: projectRoot.canonicalPath,
-    platform,
-    inspect: createNativeBackendInspector(
-      trustedRoots(record, platform),
-      projectRoot.canonicalPath,
-    ),
-  }, record);
+  const policy = createRuntimeLaunchPolicy(
+    {
+      project_root: projectRoot.canonicalPath,
+      platform,
+      inspect: createNativeBackendInspector(
+        trustedRoots(record, platform),
+        projectRoot.canonicalPath,
+      ),
+    },
+    record,
+  );
   return record.runtime_backends.map((backend) =>
     createAdapter({
       backend,

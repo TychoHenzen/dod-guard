@@ -3,10 +3,7 @@ import { chmodSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createNativePythonMirror } from "../semantic/python-mirror/python-mirror-runtime.js";
-import {
-  disposeFixture,
-  project,
-} from "../testing/python-mirror-runtime-test-support.js";
+import { disposeFixture, project } from "../testing/python-mirror-runtime-test-support.js";
 
 it("rejects mapping after the original source changes", () => {
   const fixture = project({ "src/a.py": "x = 1\n" });
@@ -52,14 +49,8 @@ it("denies or detects writes to nested immutable mirror paths", () => {
     } catch {
       directoryWriteRejected = true;
     }
-    assert.equal(
-      fileWriteRejected || mirror.pathForUri(uri) === undefined,
-      true,
-    );
-    assert.equal(
-      directoryWriteRejected || mirror.pathForUri(uri) === undefined,
-      true,
-    );
+    assert.equal(fileWriteRejected || mirror.pathForUri(uri) === undefined, true);
+    assert.equal(directoryWriteRejected || mirror.pathForUri(uri) === undefined, true);
   } finally {
     disposeFixture(fixture, mirror);
   }

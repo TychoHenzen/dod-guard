@@ -32,10 +32,7 @@ it("rebuilds with monotonic generations after config addition,", async () => {
     writeFileSync(join(fixture.root, "pyrightconfig.json"), "{}\n");
     await expectGeneration(manager, 1);
     assert.deepEqual(events, ["old-backend-terminated"]);
-    writeFileSync(
-      join(fixture.root, "pyrightconfig.json"),
-      '{"pythonVersion":"3.11"}\n',
-    );
+    writeFileSync(join(fixture.root, "pyrightconfig.json"), '{"pythonVersion":"3.11"}\n');
     await expectGeneration(manager, 2);
     rmSync(join(fixture.root, "pyrightconfig.json"));
     await expectGeneration(manager, 3);
@@ -70,17 +67,13 @@ it("serializes concurrent refreshes into ordered mirror generations", async () =
     writeFileSync(join(fixture.root, "pyrightconfig.json"), "{}\n");
     const first = manager.refresh();
     await started;
-    writeFileSync(
-      join(fixture.root, "pyrightconfig.json"),
-      '{"pythonVersion":"3.11"}\n',
-    );
+    writeFileSync(join(fixture.root, "pyrightconfig.json"), '{"pythonVersion":"3.11"}\n');
     const second = manager.refresh();
     release();
     const results = await Promise.all([first, second]);
     assert.equal(results[0].status, "ready");
     assert.equal(results[1].status, "ready");
-    if (results[0].status !== "ready" || results[1].status !== "ready")
-      throw new Error("expected ready mirrors");
+    if (results[0].status !== "ready" || results[1].status !== "ready") throw new Error("expected ready mirrors");
     assert.equal(results[0].mirror.generation, 1);
     assert.equal(results[1].mirror.generation, 2);
     assert.equal(manager.current()?.generation, 2);

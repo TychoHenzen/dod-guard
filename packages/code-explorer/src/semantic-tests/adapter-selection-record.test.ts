@@ -45,9 +45,7 @@ it("does not substitute an unrecorded C# server when the approved ex", () => {
 });
 
 it("rejects incomplete, duplicate, and unknown selection record fields", () => {
-  const record = JSON.parse(
-    JSON.stringify(loadAdapterSelectionRecord()),
-  ) as Record<string, unknown>;
+  const record = JSON.parse(JSON.stringify(loadAdapterSelectionRecord())) as Record<string, unknown>;
   assert.throws(
     () =>
       parseAdapterSelectionRecord({
@@ -80,9 +78,7 @@ it("rejects incomplete, duplicate, and unknown selection record fields", () => {
 it("never lets Win32 sentinel evidence authorize a POSIX allowlist", () => {
   const record = loadAdapterSelectionRecord();
   assert.equal(
-    record.runtime_backends.every(
-      (backend) => backend.sentinel_evidence.platform === "win32",
-    ),
+    record.runtime_backends.every((backend) => backend.sentinel_evidence.platform === "win32"),
     true,
   );
   assert.equal(

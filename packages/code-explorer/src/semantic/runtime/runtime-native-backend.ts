@@ -1,7 +1,5 @@
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type {
-  BackendLaunchPolicy,
-} from "../backend-launch/backend-launch-policy.js";
+import type { BackendLaunchPolicy } from "../backend-launch/backend-launch-policy.js";
 import type { Language, RelationCapabilities } from "../contracts/contract.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
 import { createFilteredWorkspace } from "../workspace/filtered-workspace.js";

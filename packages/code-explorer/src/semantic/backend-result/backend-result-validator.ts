@@ -17,11 +17,10 @@ import {
 import type { BackendResultValidation } from "./backend-result-validation.js";
 import type * as validation from "./backend-result-validation-options.js";
 
-const MAX_BACKEND_PAYLOAD_BYTES = 1024 * 1024;
 export type { BackendResultValidation } from "./backend-result-validation.js";
 export type BackendResultValidationOptions =
   validation.BackendResultValidationOptions;
-
+const MAX_BACKEND_PAYLOAD_BYTES = 1024 * 1024;
 /** Validates an entire backend response before it can enter cached state. */
 export function validateBackendResult(
   input: unknown,

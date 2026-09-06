@@ -1,14 +1,11 @@
 import type { InjectedSemanticBackend } from "../adapters/language-adapter.js";
-import type {
-  BackendLaunchPolicy,
-} from "../backend-launch/backend-launch-policy.js";
+import type { BackendLaunchPolicy } from "../backend-launch/backend-launch-policy.js";
 import type {
   RelationCapabilities,
   SemanticRequest,
 } from "../contracts/contract.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
-import { createPythonMirrorManager } from
-  "../python-mirror/python-mirror-runtime.js";
+import { createPythonMirrorManager } from "../python-mirror/python-mirror-runtime.js";
 import { createRuntimeLspBackend } from "./runtime-lsp-backend.js";
 import {
   createPythonBuild,

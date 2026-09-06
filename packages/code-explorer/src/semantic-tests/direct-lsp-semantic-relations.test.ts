@@ -26,10 +26,7 @@ it("maps definition and references through protected semantic", async () => {
   });
   assert.equal(definition.operation, "definition");
   assert.equal(references.operation, "references");
-  assert.deepEqual(methods, [
-    "textDocument/definition",
-    "textDocument/references",
-  ]);
+  assert.deepEqual(methods, ["textDocument/definition", "textDocument/references"]);
 });
 
 it("delegates protected source opening to the epoch-aware clie", async () => {

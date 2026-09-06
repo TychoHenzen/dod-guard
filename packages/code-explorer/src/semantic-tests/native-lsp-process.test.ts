@@ -11,9 +11,7 @@ it("uses a shell-free child process with caller-owned environm", async () => {
     },
   );
   const chunks: string[] = [];
-  const exited = new Promise<void>((resolve) =>
-    lspProcess.onExit(() => resolve()),
-  );
+  const exited = new Promise<void>((resolve) => lspProcess.onExit(() => resolve()));
   lspProcess.onStdout((chunk) => chunks.push(new TextDecoder().decode(chunk)));
   await exited;
   assert.equal(chunks.join(""), "bounded");

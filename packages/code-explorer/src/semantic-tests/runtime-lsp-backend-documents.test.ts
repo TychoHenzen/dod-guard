@@ -16,9 +16,7 @@ it("opens approved initial Python mirror documents before work", async () => {
     query: "helper",
   });
   assert.deepEqual(
-    process.sent
-      .filter((message) => message.method === "textDocument/didOpen")
-      .map((message) => message.params),
+    process.sent.filter((message) => message.method === "textDocument/didOpen").map((message) => message.params),
     [
       {
         textDocument: {

@@ -22,11 +22,7 @@ it("opens each protected file URI once and exposes no generic", async () => {
   });
 
   assert.equal(process.sent.at(-1)?.method, "textDocument/didOpen");
-  assert.equal(
-    process.sent.filter((message) => message.method === "textDocument/didOpen")
-      .length,
-    1,
-  );
+  assert.equal(process.sent.filter((message) => message.method === "textDocument/didOpen").length, 1);
   assertNoGenericNotificationRoute(client);
   assert.throws(
     () =>

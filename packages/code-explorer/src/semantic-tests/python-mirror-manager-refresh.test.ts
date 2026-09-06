@@ -13,10 +13,7 @@ it("terminates the old backend before an unsafe replacement an", async () => {
   });
   try {
     assert.equal((await manager.refresh()).status, "ready");
-    writeFileSync(
-      join(fixture.root, "pyrightconfig.json"),
-      '{"venvPath":".venv"}\n',
-    );
+    writeFileSync(join(fixture.root, "pyrightconfig.json"), '{"venvPath":".venv"}\n');
     assert.deepEqual(await manager.refresh(), {
       status: "unavailable",
       code: "unsafe_backend_mode",

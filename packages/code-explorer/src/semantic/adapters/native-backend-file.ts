@@ -8,9 +8,7 @@ import {
   realpathSync,
 } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import type {
-  BackendFileIdentity,
-} from "../backend-launch/backend-file-identity.js";
+import type { BackendFileIdentity } from "../backend-launch/backend-file-identity.js";
 
 export function inspectNativeFile(
   candidate: string,

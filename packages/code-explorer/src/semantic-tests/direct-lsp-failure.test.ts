@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import {
-  encode,
-  FakeProcess,
-  ready,
-  tick,
-} from "../testing/direct-lsp-test-support.js";
+import { encode, FakeProcess, ready, tick } from "../testing/direct-lsp-test-support.js";
 
 async function assertInvalidFrame(invalid: Uint8Array): Promise<void> {
   const process = new FakeProcess();
@@ -21,8 +16,7 @@ it("terminates on malformed, non-ASCII, incomplete, invalid, a", async () => {
   for (const invalid of [
     new TextEncoder().encode("Content-Length: 2\n\n{}"),
     new Uint8Array([
-      67, 111, 110, 116, 101, 110, 116, 45, 76, 101, 110, 103, 116, 104, 58, 32,
-      49, 128, 13, 10, 13, 10, 123,
+      67, 111, 110, 116, 101, 110, 116, 45, 76, 101, 110, 103, 116, 104, 58, 32, 49, 128, 13, 10, 13, 10, 123,
     ]),
     encode({ jsonrpc: "2.0", id: 0, result: [] }),
     encode({
@@ -35,10 +29,7 @@ it("terminates on malformed, non-ASCII, incomplete, invalid, a", async () => {
   }
   const incomplete = new FakeProcess();
   const { client: incompleteClient } = await ready(incomplete);
-  const incompletePending = incompleteClient.request(
-    "textDocument/definition",
-    {},
-  );
+  const incompletePending = incompleteClient.request("textDocument/definition", {});
   incomplete.emit(new TextEncoder().encode("Content-Length: 4\r\n\r\n{"));
   incomplete.crash();
   await assert.rejects(incompletePending, {

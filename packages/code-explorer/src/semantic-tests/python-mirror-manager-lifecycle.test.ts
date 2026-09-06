@@ -9,11 +9,7 @@ import {
 import { project } from "../testing/python-mirror-runtime-test-support.js";
 
 function linkConfiguration(root: string): void {
-  symlinkSync(
-    join(root, "replacement.json"),
-    join(root, "pyrightconfig.json"),
-    "file",
-  );
+  symlinkSync(join(root, "replacement.json"), join(root, "pyrightconfig.json"), "file");
 }
 
 it("retires an active backend before a linked configura", async (context) => {

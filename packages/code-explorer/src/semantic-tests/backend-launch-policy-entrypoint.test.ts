@@ -19,10 +19,7 @@ it("binds a trusted entrypoint into fixed arguments and rejects an e", () => {
     status: "ready",
     executable: "/host/bin/node",
     version: "1.0.0",
-    arguments: [
-      "/host/npm/node_modules/pyright/langserver.index.js",
-      "--stdio",
-    ],
+    arguments: ["/host/npm/node_modules/pyright/langserver.index.js", "--stdio"],
     shell: false,
     environment: { RUST_BACKTRACE: "0" },
     endpoint: "http://127.0.0.1:8181",

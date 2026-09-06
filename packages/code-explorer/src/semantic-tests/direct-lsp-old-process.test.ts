@@ -11,8 +11,5 @@ it("rejects unsolicited requests, discards allowed notificatio", async () => {
     result: ["new"],
   });
   assert.deepEqual(await pending, ["new"]);
-  assert.deepEqual(client.status().events, [
-    "backend_write_rejected",
-    "backend_notification",
-  ]);
+  assert.deepEqual(client.status().events, ["backend_write_rejected", "backend_notification"]);
 });

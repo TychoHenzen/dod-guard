@@ -29,8 +29,7 @@ it("reports a compatible Rust backend ready and forwards every", async () => {
   });
   const resultFor = createAdapterResult("rust", "src/lib.rs", "function");
   const requests = adapterRequests("rust:helper");
-  for (const request of requests)
-    backend.setResult(request, resultFor(request));
+  for (const request of requests) backend.setResult(request, resultFor(request));
 
   assert.equal(adapter.status().language, "rust");
   assert.equal(adapter.status().state, "degraded");
@@ -41,8 +40,7 @@ it("reports a compatible Rust backend ready and forwards every", async () => {
     state: "unavailable",
   });
 
-  for (const request of requests)
-    assert.deepEqual(await adapter.request(request), resultFor(request));
+  for (const request of requests) assert.deepEqual(await adapter.request(request), resultFor(request));
   assert.deepEqual(backend.requests(), requests);
 });
 

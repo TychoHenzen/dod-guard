@@ -1,6 +1,5 @@
 import type { InjectedSemanticBackend } from "../adapters/language-adapter.js";
-import type { createPythonMirrorManager } from
-  "../python-mirror/python-mirror-runtime.js";
+import type { createPythonMirrorManager } from "../python-mirror/python-mirror-runtime.js";
 import type { PythonMirror } from "../python-mirror/python-mirror-type.js";
 import { createRuntimeLspBackend } from "./runtime-lsp-backend.js";
 import type { PythonBuildInput } from "./runtime-python-backend-types.js";
@@ -39,16 +38,11 @@ function ensurePythonInner(
 function createPythonInner(
   input: Pick<
     PythonBuildInput,
-    | "projectRoot"
-    | "policy"
-    | "capabilities"
-    | "options"
+    "projectRoot" | "policy" | "capabilities" | "options"
   >,
   mirror: PythonMirror,
 ): ReturnType<typeof createRuntimeLspBackend> {
-  return createRuntimeLspBackend(
-    createPythonRuntimeOptions(input, mirror),
-  );
+  return createRuntimeLspBackend(createPythonRuntimeOptions(input, mirror));
 }
 
 export function createPythonShutdown(

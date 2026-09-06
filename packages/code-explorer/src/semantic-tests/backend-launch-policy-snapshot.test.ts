@@ -9,8 +9,7 @@ it("snapshots server-owned launch data and freezes returned preparat", () => {
     inspect: () => support.identity,
   });
   const preparation = launch.prepare("rust");
-  if (preparation.status !== "ready")
-    throw new Error("expected launch preparation");
+  if (preparation.status !== "ready") throw new Error("expected launch preparation");
   entry.arguments.push("--mutated");
   entry.environment.RUST_BACKTRACE = "1";
   (
@@ -30,10 +29,7 @@ it("snapshots server-owned launch data and freezes returned preparat", () => {
     ).buildScripts.enable,
     false,
   );
-  support.assert.throws(
-    () => (preparation.arguments as string[]).push("--also-mutated"),
-    TypeError,
-  );
+  support.assert.throws(() => (preparation.arguments as string[]).push("--also-mutated"), TypeError);
   support.assert.throws(
     () =>
       ((

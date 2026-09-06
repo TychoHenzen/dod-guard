@@ -13,10 +13,7 @@ it("rejects a client parent path before it can reach a backend", () => {
     }),
     platform: "win32",
   });
-  assert.throws(
-    () => guard.resolveClientPath("../outside.rs"),
-    ProjectPathError,
-  );
+  assert.throws(() => guard.resolveClientPath("../outside.rs"), ProjectPathError);
 });
 
 it("rejects a sensitive path before a protected read can reach a bac", () => {
@@ -50,10 +47,7 @@ it("rejects an apparent project path when its canonical target escap", () => {
     }),
     platform: "win32",
   });
-  assert.throws(
-    () => guard.resolveClientPath("linked.rs"),
-    /path_outside_project/,
-  );
+  assert.throws(() => guard.resolveClientPath("linked.rs"), /path_outside_project/);
 });
 
 it("reports an invalid startup root without exposing the rejected ab", () => {

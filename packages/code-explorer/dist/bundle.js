@@ -25600,8 +25600,7 @@ var DirectLspRuntimeRestarts = class {
     this.#restartTimers.add(timer);
   }
   cancel() {
-    for (const timer of this.#restartTimers)
-      this.scheduler.clearTimeout(timer);
+    for (const timer of this.#restartTimers) this.scheduler.clearTimeout(timer);
     this.#restartTimers.clear();
   }
   recordTimeout() {
@@ -26096,9 +26095,7 @@ function ensurePythonInner(input, mirror, changed) {
     input.setInner(createPythonInner(input, mirror));
 }
 function createPythonInner(input, mirror) {
-  return createRuntimeLspBackend(
-    createPythonRuntimeOptions(input, mirror)
-  );
+  return createRuntimeLspBackend(createPythonRuntimeOptions(input, mirror));
 }
 function createPythonShutdown(manager, getInner, setInner, setState) {
   return async () => {
@@ -26198,14 +26195,17 @@ function createPythonAdapterOptions(input, prepared) {
 function createRuntimeAdapters(projectRoot) {
   const record2 = loadAdapterSelectionRecord();
   const platform = process.platform === "win32" ? "win32" : "posix";
-  const policy = createRuntimeLaunchPolicy({
-    project_root: projectRoot.canonicalPath,
-    platform,
-    inspect: createNativeBackendInspector(
-      trustedRoots(record2, platform),
-      projectRoot.canonicalPath
-    )
-  }, record2);
+  const policy = createRuntimeLaunchPolicy(
+    {
+      project_root: projectRoot.canonicalPath,
+      platform,
+      inspect: createNativeBackendInspector(
+        trustedRoots(record2, platform),
+        projectRoot.canonicalPath
+      )
+    },
+    record2
+  );
   return record2.runtime_backends.map(
     (backend) => createAdapter({
       backend,

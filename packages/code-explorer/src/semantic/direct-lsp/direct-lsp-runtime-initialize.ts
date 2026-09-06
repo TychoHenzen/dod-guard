@@ -21,9 +21,7 @@ export async function initializeRuntime(input: {
     expectedEpoch: input.expectedEpoch,
     onRestart: input.onRestart,
   });
-  if (
-    !(input.state.current(input.expectedEpoch) && isInitializeResult(result))
-  )
+  if (!(input.state.current(input.expectedEpoch) && isInitializeResult(result)))
     throw new DirectLspError("backend_failed");
   input.state.setServerCapabilities(result.capabilities);
   checkAfterInitialize(input.state);

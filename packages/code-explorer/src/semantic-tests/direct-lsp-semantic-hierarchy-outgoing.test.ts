@@ -14,16 +14,12 @@ it("uses outgoing hierarchy targets and rejects virtual or mal", async () => {
     symbols: new Map([["entry", source]]),
     client: outgoingHierarchyClient(methods),
     toBackendUri: (location) => `file:///project/${location.path}`,
-    fromBackendUri: (uri) =>
-      uri === "file:///project/src/main.rs" ? "src/main.rs" : undefined,
+    fromBackendUri: (uri) => (uri === "file:///project/src/main.rs" ? "src/main.rs" : undefined),
   });
   const result = await backend.query({
     operation: "callees",
     symbol_id: "entry",
   });
-  assert.deepEqual(methods, [
-    "textDocument/prepareCallHierarchy",
-    "callHierarchy/outgoingCalls",
-  ]);
+  assert.deepEqual(methods, ["textDocument/prepareCallHierarchy", "callHierarchy/outgoingCalls"]);
   assertHierarchyRelation(result, "callees", "callee", 3);
 });

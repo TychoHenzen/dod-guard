@@ -28,17 +28,11 @@ it("uses configured platform path comparison and rejects project des", () => {
         canonical_path,
       }),
     });
-  assert.equal(
-    create(windowsIdentity.canonical_path).prepare("rust").status,
-    "ready",
-  );
-  assert.deepEqual(
-    create("C:\\project\\bin\\rust-analyzer.exe").prepare("rust"),
-    {
-      status: "unavailable",
-      code: "backend_identity_unverifiable",
-    },
-  );
+  assert.equal(create(windowsIdentity.canonical_path).prepare("rust").status, "ready");
+  assert.deepEqual(create("C:\\project\\bin\\rust-analyzer.exe").prepare("rust"), {
+    status: "unavailable",
+    code: "backend_identity_unverifiable",
+  });
   assert.deepEqual(create("C:\\host\\other.exe").prepare("rust"), {
     status: "unavailable",
     code: "backend_identity_unverifiable",
