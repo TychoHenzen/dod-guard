@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import type { LspProcess } from "../semantic/direct-lsp.js";
-import type { RuntimeLspBackendOptions } from "../semantic/runtime-lsp-backend.js";
-import { createRuntimeLspBackend } from "../semantic/runtime-lsp-backend.js";
+import type { LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
+import type { RuntimeLspBackendOptions } from "../semantic/runtime/runtime-lsp-backend.js";
+import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
 
 export class Process implements LspProcess {
   readonly events: string[];
@@ -158,14 +158,17 @@ export function runtimeOptions(
     revision: { generation: 0, manifest_sha256: "x" },
     symbols: new Map(),
     capabilities: unavailableCapabilities,
-    safe_initialization_options: {},
     toBackendUri: () => "file:///project/a.rs",
     fromBackendUri: () => "a.rs",
     prepare: () => ({
       status: "ready",
       executable: "server",
+      version: "test",
       arguments: [],
+      shell: false as const,
       environment: {},
+      endpoint: "stdio" as const,
+      safe_initialization_options: {},
     }),
     confirmInitialized: () => ({ status: "ready" }),
     spawn: () => process,
@@ -327,8 +330,12 @@ export function policyFailureOptions(onPrepare: () => void) {
       return {
         status: "ready" as const,
         executable: "server",
+        version: "test",
         arguments: [],
+        shell: false as const,
         environment: {},
+        endpoint: "stdio" as const,
+        safe_initialization_options: {},
       };
     },
     confirmInitialized: () => ({

@@ -1,5 +1,5 @@
-import type { LanguageAdapter } from "../semantic/language-adapter.js";
-import type { ProjectRoot } from "../semantic/project-root.js";
+import type { LanguageAdapter } from "../semantic/adapters/language-adapter.js";
+import type { ProjectRoot } from "../semantic/project-root/project-root.js";
 
 export function root(
   revalidate: () => "ready" | "inaccessible" | "unavailable",

@@ -1,6 +1,6 @@
 import { lstatSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { ProjectPathError, type ProjectRoot, type SymbolIdentity } from "../semantic/public-api.js";
+import { ProjectPathError, type ProjectRoot, type SymbolIdentity } from "../semantic/api/public-api.js";
 import {
   type ClassificationConfigStatus,
   classifyProjectPath,

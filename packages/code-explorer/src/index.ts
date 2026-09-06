@@ -49,7 +49,7 @@ import {
   type RelationResult,
   RootAccessGate,
   type SymbolIdentity,
-} from "./semantic/public-api.js";
+} from "./semantic/api/public-api.js";
 
 const filename = fileURLToPath(import.meta.url);
 const packagePath = path.join(path.dirname(filename), "..", "package.json");

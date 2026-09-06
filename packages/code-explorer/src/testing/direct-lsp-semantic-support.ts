@@ -3,14 +3,14 @@ import type {
   ProjectRevision,
   RelationCapabilities,
   SymbolIdentity,
-} from "../semantic/contract.js";
+} from "../semantic/contracts/contract.js";
 import type {
   DirectLspStatus,
   ProtectedDocumentContent,
-} from "../semantic/direct-lsp.js";
-import { createDirectLspSemanticBackend } from "../semantic/direct-lsp-semantic.js";
-import type { DirectLspSemanticOptions } from "../semantic/direct-lsp-semantic-options.js";
-import type { ProjectRoot } from "../semantic/project-root.js";
+} from "../semantic/direct-lsp/direct-lsp.js";
+import { createDirectLspSemanticBackend } from "../semantic/direct-lsp/direct-lsp-semantic.js";
+import type { DirectLspSemanticOptions } from "../semantic/direct-lsp/direct-lsp-semantic-options.js";
+import type { ProjectRoot } from "../semantic/project-root/project-root.js";
 
 export const semanticRoot: ProjectRoot = {
   canonicalPath: "/project",

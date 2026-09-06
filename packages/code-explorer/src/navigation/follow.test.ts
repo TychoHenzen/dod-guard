@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createServer } from "../index.js";
-import type { LanguageAdapter } from "../semantic/language-adapter.js";
+import type { LanguageAdapter } from "../semantic/adapters/language-adapter.js";
 
 const source = symbol("source", "Source", "function", "src/source.rs", 0);
 const type = symbol("type", "Type", "struct", "src/types.rs", 4);

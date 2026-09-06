@@ -2,7 +2,7 @@ import type {
   Language,
   SemanticRequest,
   SemanticResult,
-} from "../semantic/contract.js";
+} from "../semantic/contracts/contract.js";
 
 export function createAdapterResult(
   language: Language,

@@ -1,9 +1,9 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { LspProcess } from "../semantic/direct-lsp.js";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
-import { createManagedPythonBackend } from "../semantic/runtime-bootstrap.js";
+import type { LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
+import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
+import { createManagedPythonBackend } from "../semantic/runtime/runtime-bootstrap.js";
 
 class InitializingProcess implements LspProcess {
   sent: Record<string, unknown>[] = [];
@@ -66,8 +66,12 @@ export async function managedPythonRoots(): Promise<{
     prepare: () => ({
       status: "ready" as const,
       executable: "fake",
+      version: "test",
       arguments: [],
+      shell: false as const,
       environment: {},
+      endpoint: "stdio" as const,
+      safe_initialization_options: {},
     }),
     confirmInitialized: () => ({
       status: "ready" as const,
@@ -76,8 +80,7 @@ export async function managedPythonRoots(): Promise<{
   try {
     const backend = createManagedPythonBackend(
       createNativeProjectRoot(source),
-      policy as never,
-      {},
+      policy,
       {} as never,
       {
         symbols: new Map(),

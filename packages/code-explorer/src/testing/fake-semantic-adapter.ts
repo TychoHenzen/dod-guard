@@ -1,4 +1,4 @@
-import type { SemanticRequest, SemanticResult } from "../semantic/contract.js";
+import type { SemanticRequest, SemanticResult } from "../semantic/contracts/contract.js";
 
 export type FakeAdapterReadiness =
   | { state: "ready" }

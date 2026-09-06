@@ -3,9 +3,9 @@ import { createHash } from "node:crypto";
 import {
   type BackendIdentity,
   createBackendLaunchPolicy,
-  createPythonMirrorPlan,
-} from "../semantic/backend-launch-policy.js";
-import type { BackendLaunchPreparation } from "../semantic/backend-launch-preparation.js";
+} from "../semantic/backend-launch/backend-launch-policy.js";
+import { createPythonMirrorPlan } from "../semantic/python-mirror/python-mirror.js";
+import type { BackendLaunchPreparation } from "../semantic/backend-launch/backend-launch-preparation.js";
 
 export type { BackendIdentity };
 export { assert, createBackendLaunchPolicy, createPythonMirrorPlan };

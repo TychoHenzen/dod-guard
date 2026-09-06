@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createServer } from "../index.js";
-import type { LanguageAdapter } from "../semantic/language-adapter.js";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
+import type { LanguageAdapter } from "../semantic/adapters/language-adapter.js";
+import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
 import { landmarksNotReady, readyLandmarks } from "./landmarks.js";
 
 it("returns bounded grouped landmarks with selectable symbol identities for an empty query", async () => {

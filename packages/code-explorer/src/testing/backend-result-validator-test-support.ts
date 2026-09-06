@@ -1,5 +1,5 @@
-import type { BackendResultValidationOptions } from "../semantic/backend-result-validator.js";
-import { createProjectRoot } from "../semantic/project-root.js";
+import type { BackendResultValidationOptions } from "../semantic/backend-result/backend-result-validator.js";
+import { createProjectRoot } from "../semantic/project-root/project-root.js";
 
 const rootPath = "/repo";
 const source = "fn helper() {}\n";

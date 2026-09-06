@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import type { DirectLspScheduler, LspProcess } from "../semantic/direct-lsp.js";
-import { createDirectLspClient } from "../semantic/direct-lsp.js";
+import type { DirectLspScheduler, LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
+import { createDirectLspClient } from "../semantic/direct-lsp/direct-lsp.js";
 
 export class Scheduler implements DirectLspScheduler {
   time = 0;

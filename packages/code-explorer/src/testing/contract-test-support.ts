@@ -1,4 +1,4 @@
-import type { SemanticResult } from "../semantic/contract.js";
+import type { SemanticResult } from "../semantic/contracts/contract.js";
 
 export const location = {
   path: "src/helper.rs",
