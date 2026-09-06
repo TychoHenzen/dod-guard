@@ -1519,4 +1519,481 @@
     "author": "Codex",
     "time": "2026-09-06T20:55:00.000Z"
   }
+,
+  {
+    "findingId": "01874146325aec79b5bcc531e0c52373254708abc62d906b298fd1bf0bb41b26",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "06be33ae80fe2b4ae1639418ded18a35f3e0d5a6528863fca4a789189423e12b",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "0868284f5b7fa0e1f2a9f49c29f669b2349d3c67782b428574a00b9aec02264f",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "09c75ed7dbda8cf10e4750add64ccc5dad571f39ba1235a6170d1311cb529b71",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "0b6c1c277f26e1ad06d4cb3eaa245cff74af4e0771ab6225e93daf3e86aed4e0",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "132d1e888b8592f37d1909a9104c67319b6894fbd4e8ced10b83a34a3b677725",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "24c64d770d7f3450ac0e9a408d60adea5cfac9ce0a703ce3b40f15989bf02d9f",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "298a98f88e8a60ac0c95d4d762e16ec824f0ba799d8d0bc39b835309a476c47f",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "2a3f888a0f471c1dde6772605e8ceb5193463105fd674915c196f6e04a6f2a15",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "2bbf2c02f5a541deff33ed2cda02a89e01e3563caf342d8aed0ef1ef91cf98b2",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "2e615e0f1f3e05c5b01980f6a7a532e4c6d2208fd0d6c1dfa706cdd5e2f23fe3",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "2e6514c5bfb6ed45834a49481fd35f399e1c1e623fd2e98b13654c5a1477ec54",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "3212d94e222625f57b630c112c9d3ba8aecf76811948efe13bb170b43ef9cd21",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "3987b871a1a21477824effe170159d214621e26d840673eccedda6334b38f843",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "3dfb39eef94bf71574d3eec08e4bb321cd5d5512c41f971dc27d6f90875e91e9",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "429fb9f5e0450219746b8cb039720b3b34090115c5df175cff33f5d8bdb9c792",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "44788ec76def5ada6d40582bf0cf640a2f15769f77c1a8765718dd101cfc0095",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "450aad239bde425bd168265dff2e1695418286c9ee5056c40e66c34e515655ab",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "46a038e8650496d3de6909ec06dc5cf4a7d5d715b377a7a341d3a678b9d6efdd",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "4ad8af4278cb1052cf7ddf8f6599eaf59954612e495f70d3982ee63bc7fbf230",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "50649cb6f81f3a193a8f8a84afe50ec3f33f16d1b0debfe691bc0993c5cc8224",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "50c911465396e87bf0d026d41fb175feb2ed7696d1cc1bcbd3b5a5d44e0e60e0",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "5631d03e027e7d4a527a2f732c06ffd01ddc397559c37d5afe788344775c2e70",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "5c9044d5da38925199b3f84fe9ecaaf5292f02f5c9dcd24410ce4d14a062147e",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "64b93445b6f357835c85b23f6595844bdf8b6f7744b03a663e24a89b714485c5",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "69404aa5c7f433fad1296629658117170cb226ae1d211407ea569203f12c8366",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "69b7baaf75f68db1bc9aed02577d4a9f44295b4f14dbc01e32dfbf7777ce7b68",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "728c9e690c8c62584a9f22c1ae500d108aba1fa6fee3d347cb9161d370c27cb3",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "7c1768acb22638defc481e19f2395a0b9324d1bbf8001eb479facb6e61b60f07",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "87d5a4fda33d9a8c2548e002903915791df4652090ea6602b3dbb4ea7a69228e",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "899fadc71b5602687c04ca6fd2f4f77fd006e15869f89465cfec41ba0092b7a5",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "8cd43cf2485b5371c72ba30fef5815e1518936340b6d19b95d5dfb5a7b40010d",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "8cdccce035f26b3e5d7c9e7e112f77fb094765f3f1109243ca483cdf2e781d0c",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "908d120451b33728ccaa7c11b938285ce8abd4229d3a9e26d1e9ba1e6edbfa9c",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "939f26f2833716e95420422d337e01ad3c92955246627907ec9d912ff0889fc6",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "9ccd260e1b3571ec4ce543d1138718af0e38a8a05db731191553c4e74e2f6785",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "a12fe5403f4ef668247dba2c36ba990c9e01bc425d8813d5527568b03201e37d",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "a377bc748cb6c4aaf10e4dd3a15a01d434bc3af4de1748ad94393a8244aae1fa",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "a392d6cc8e4f00329ae2edde97064989119ee5d27222a4c2defa59fcbb474190",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "a413b9eff20fff8a4ff2b2fb4c398f5edfd5ba43271431e35b06ffd644594404",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "a60a5d27ba5e584706ace7680cfbcf3d2c00e15c6c0b1d20e55662a2c62ed5ca",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "a7bc57f10d98274df7b89517b7dd26cd97eb6b5c6df71bbc93d6a48244ea4f68",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "a9f7ffd83dfb5ed4d7773c40116c2bebb45167dba4da857a5aa48b5526620150",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "ae347b23acf57889796b404899db6acb1d85fa8690f750cfd21ee5d2caf4b8e7",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "b0b19f89517b9151425a100521bd8541c15fa79e9aa70548b72afc214f02b247",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "b1c4e353f41c01a2261c273c93de7356aa0860901ad0100566825ec475444291",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "b44440da33a309937fabe6aba91097205efb04db6b58a01caebfdf766a6cdb0f",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "b4dfea2f801369c837c6d95146b972e783f6677abe70381e94815977d183de55",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "b8e86b0dc1546f70beb3539df09340a911c496ce3401981d8589fd6751a04e4e",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "beec0cae138d63a4fbba05deea5a84ccd8f5d959bd3ee714035e021dd32a6b0f",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "cdbecd5eeee12f95261bc2635a0ce7cc52c53ef32fe91cafdafb65c2be7b32d0",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "cf0393de20b0eaf134fcd24f0a7586ac5d759248ca92e6c3ce6c63e80a6a0f7e",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "d242154599c4980a69e1e934ced9075484805755dad0cc6d2c523277a83f5021",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "d52d9b93c7af2978da4737cd2f2edb57c4c4e68718246d4892c7cda762ec4753",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "e007899f85f9a656d18c5daeb4b9aacaeab68803d466e01c3f8c6f5d4e216be9",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "e38fc9e5268366a9348bbf4a33fdc80fcccfae567e79f91a043122f87d70b8e7",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "e72f04d408853d96efa0a1fe24cfa26df82badb1a5a14cfbf632708af80dcdfc",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "e7f929ee6cb72b49d51787106af8301f21ee56211ac4bc09b75e6e5cbf5838d1",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "eac85382521c6227222e0e75ec780e4a5c4b3453fcfad4427b690e968764b5fa",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "ee230cc69adf9c1a082f08352a65178f31a3e5f7b9c16f63d220bea30910e9aa",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "f0fd436232fefe52e70a77147987dc8e052aded732286eec98cd34c863bb632b",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "f6f8864d22d9e7d67f066b41c15535f1a984369d8464d7c740a640f20a8ef91d",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "f93d5cbeab48d8b76d4f487adaac120bd588427ea54596b231dfd5649954d3db",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "f9e6d024457b5586dc98b6d9b4ad5454470a60741d92eef3d5bcb06bffff08bf",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "faacae916013541811379decfd3c873ae100c46853acd21c0906c32c99ebb89f",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "fc7c03fbdc474ce8064592dba8ff0214fe7580577b13c8e86bddb78ac6635ef8",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "fca053207fd517ee50113772b246215c7c9c4e4b526a1476a7560de3bde6d374",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  },
+  {
+    "findingId": "ff77e87719e05b2f0768ce912b04794c697baf3335ae95986cbb83edf7654df1",
+    "fingerprint": "bb8a33556686f66a14d9b279ffb0569789e2209550c316a47922f795230b0c49",
+    "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-06T21:25:00.000Z"
+  }
 ]
