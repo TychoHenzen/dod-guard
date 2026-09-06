@@ -8,6 +8,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import test from "node:test";
 import { chromium } from "@playwright/test";
+import { requestAuthenticatedShutdown } from "../lib/dashboard-ownership.mjs";
 import { launchCodeExplorer, setDashboardCapability } from "../public/api.mjs";
 import { takeDashboardCapability } from "../public/capability.mjs";
 import { createCodeExplorerAction, selectedCodeExplorerAction } from "../public/code-explorer-action.mjs";
@@ -440,11 +441,7 @@ export function createEmbeddedBrowserRuntime(options) {
     await explorer.locator('[data-area="status"]').getByText("refreshed", { exact: true }).waitFor();
     assert.equal((stdout.match(/Quality dashboard on /g) ?? []).length, 1);
     const owner = JSON.parse(await readFile(join(dashboardHome, ".openspec-dashboard", "dashboard-owner.json"), "utf8"));
-    const shutdown = await fetch(`${dashboardOrigin}api/admin/shutdown`, {
-      method: "POST",
-      headers: { "x-openspec-dashboard-replacement-capability": owner.replacement_capability },
-    });
-    assert.equal(shutdown.status, 200);
+    await requestAuthenticatedShutdown(owner);
     const exited = await waitForExit(child);
     assert.equal(exited.code, 0, stderr);
   } finally {
