@@ -7,8 +7,8 @@ describe("source handles", () => {
     const handles = sourceHandles(
       {
         handles: [
-          { handle: "first", name: "value" },
-          { handle: "second", name: "value" },
+          { handle: "first", start: 0, end: 5, relations: ["references"] },
+          { handle: "second", start: 8, end: 13, relations: ["references"] },
         ],
       },
       "value + value",
@@ -22,9 +22,18 @@ describe("source handles", () => {
     );
   });
 
-  it("ignores malformed and absent candidates", () => {
+  it("uses package-owned offsets and ignores malformed or out-of-range candidates", () => {
     assert.deepEqual(
-      sourceHandles({ handles: [null, { handle: "missing-name" }, { handle: "x", name: "absent" }] }, "body"),
+      sourceHandles(
+        {
+          handles: [
+            null,
+            { handle: "missing-offset" },
+            { handle: "out-of-range", start: 0, end: 10, relations: [] },
+          ],
+        },
+        "body",
+      ),
       [],
     );
     assert.deepEqual(sourceHandles({ handles: "invalid" }, "body"), []);

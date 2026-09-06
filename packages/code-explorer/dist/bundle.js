@@ -21759,6 +21759,7 @@ var BrowserHttpRouter = class {
     const tabId = body.tab_instance_id;
     if (headers["x-code-explorer-tab"] !== tabId) return json(403, browserError("invalid_browser_session"));
     if (body.action === "create") {
+      this.sweepExpiredSessions();
       if (headers["x-code-explorer-session"] || this.sessions.size >= this.maxSessions)
         return json(429, browserError("project_capacity", true));
       const reply = await this.options.call("code_status", { action: "start_session" });
@@ -21783,6 +21784,12 @@ var BrowserHttpRouter = class {
       state: "restored",
       data: {}
     });
+  }
+  sweepExpiredSessions() {
+    const now = this.now();
+    for (const [browserSessionId, session] of this.sessions) {
+      if (now - session.lastAcceptedAt >= idleMilliseconds) this.sessions.delete(browserSessionId);
+    }
   }
   async navigation(route, body, headers) {
     const browserSessionId = headers["x-code-explorer-session"];
@@ -22055,8 +22062,19 @@ async function startEmbeddedBrowserRuntime(options) {
   const projectRoot = createNativeProjectRoot(options.projectRoot);
   const controller = new AbortController();
   const abort = () => controller.abort();
-  options.signal?.addEventListener("abort", abort, { once: true });
-  const core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
+  if (options.signal?.aborted) controller.abort();
+  else options.signal?.addEventListener("abort", abort, { once: true });
+  let core;
+  try {
+    core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
+    if (controller.signal.aborted) {
+      await core.close(AbortSignal.timeout(1e4));
+      throw new Error("aborted");
+    }
+  } catch (error2) {
+    options.signal?.removeEventListener("abort", abort);
+    throw error2;
+  }
   const router = new BrowserHttpRouter({
     origin: parsedOrigin.origin,
     assetRoot: options.assetRoot,
@@ -24576,6 +24594,7 @@ import { createHash as createHash2, randomBytes } from "node:crypto";
 var DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
 var MIN_BODY_LIMIT_BYTES = 1024;
 var MAX_BODY_LIMIT_BYTES = 128 * 1024;
+var browserRelationNames = ["definition", "references", "callers", "callees", "type", "implementation"];
 var FocusBodyLimitError = class extends Error {
   constructor(limit) {
     super("resource_limit");
@@ -24600,7 +24619,21 @@ function createFocusView(symbol, detail, requestedLimit, projectGeneration = 0) 
     total_bytes: bounded.totalBytes
   };
   const symbolId = stableSymbolId(symbol);
-  const handles = (detail?.visible_symbols ?? []).filter(({ name }) => source?.includes(name) ?? false).map(({ name, symbol_id }) => ({ handle: mintOpaqueId(), name, symbol_id }));
+  let searchFrom = 0;
+  const handles = (detail?.visible_symbols ?? []).map(({ name, symbol_id }) => {
+    const start = source?.indexOf(name, searchFrom) ?? -1;
+    const end = start >= 0 ? start + name.length : -1;
+    if (start >= 0) searchFrom = end;
+    return {
+      handle: mintOpaqueId(),
+      name,
+      symbol_id,
+      start: Math.max(start, 0),
+      end: Math.max(end, 0),
+      out_of_range: start < 0 || end > bounded.value.length,
+      relations: browserRelationNames
+    };
+  });
   return {
     view_id: mintOpaqueId(),
     project_generation: projectGeneration,
@@ -27126,10 +27159,35 @@ function createManagedPythonBackend(projectRoot, policy, safeInitializationOptio
     }
   };
 }
-async function createStartedRuntimeAdapters(projectRoot) {
+async function createStartedRuntimeAdapters(projectRoot, signal) {
   const adapters = createRuntimeAdapters(projectRoot);
-  await Promise.allSettled(adapters.map((adapter) => adapter.start?.()));
+  await Promise.allSettled(adapters.map((adapter) => startAdapter(adapter, signal)));
+  if (signal?.aborted) {
+    await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+    throw new Error("aborted");
+  }
   return adapters;
+}
+async function startAdapter(adapter, signal) {
+  if (!adapter.start) return;
+  if (!signal) {
+    await adapter.start();
+    return;
+  }
+  let abortHandler;
+  await Promise.race([
+    adapter.start(signal),
+    new Promise((_, reject) => {
+      if (signal.aborted) {
+        reject(new Error("aborted"));
+        return;
+      }
+      abortHandler = () => reject(new Error("aborted"));
+      signal.addEventListener("abort", abortHandler, { once: true });
+    })
+  ]).finally(() => {
+    if (abortHandler) signal.removeEventListener("abort", abortHandler);
+  });
 }
 function makeAdapter(language, options) {
   if (language === "rust") return createRustAdapter(options);
@@ -27739,7 +27797,7 @@ function relationCandidate(candidate, relation, adapter, sessions, connectionId,
     relation_source: "semantic",
     backend_name: status.backend_name,
     backend_version: status.backend_version,
-    symbol_id: view.symbol_id,
+    symbol_id: symbol.id,
     display_name: symbol.name,
     path: symbol.location.path.replaceAll("\\", "/"),
     kind: symbol.kind,
@@ -27748,6 +27806,7 @@ function relationCandidate(candidate, relation, adapter, sessions, connectionId,
     external: false,
     view_id: view.view_id,
     ...handle ? { handle } : {},
+    handles: view.handles,
     content: view.content
   };
 }
@@ -27759,25 +27818,43 @@ function compareRelationCandidates(left, right) {
 }
 function createRuntimeCoreFactory() {
   return {
-    async start({ projectRoot }) {
+    async start({ projectRoot, signal }) {
       loadAdapterSelectionRecord();
-      const adapters = await createStartedRuntimeAdapters(projectRoot);
-      const server = createServer2({
-        projectRoot,
-        adapters,
-        sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
-        freshness: createNativeWorkspaceFreshness({
-          root: projectRoot.canonicalPath,
-          supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)
-        })
-      });
-      return {
-        call: (name, arguments_) => server.call(name, arguments_),
-        close: async () => {
+      let adapters = [];
+      try {
+        adapters = await createStartedRuntimeAdapters(projectRoot, signal);
+        if (signal.aborted) throw new Error("aborted");
+        const server = createServer2({
+          projectRoot,
+          adapters,
+          sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
+          freshness: createNativeWorkspaceFreshness({
+            root: projectRoot.canonicalPath,
+            supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)
+          })
+        });
+        let closing;
+        const cleanup = async () => {
           await server.close();
           await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-        }
-      };
+        };
+        return {
+          call: (name, arguments_) => server.call(name, arguments_),
+          close: async (closeSignal) => {
+            if (closeSignal.aborted) throw new Error("aborted");
+            closing ??= cleanup();
+            await Promise.race([
+              closing,
+              new Promise(
+                (_, reject) => closeSignal.addEventListener("abort", () => reject(new Error("aborted")), { once: true })
+              )
+            ]);
+          }
+        };
+      } catch (error2) {
+        await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+        throw error2;
+      }
     }
   };
 }

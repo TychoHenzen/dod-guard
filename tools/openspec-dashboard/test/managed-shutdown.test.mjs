@@ -83,7 +83,7 @@ test("shutdown aborts a non-settling start and returns at its deadline", async (
   });
   void manager.launch("one");
   await started.promise;
-  await manager.shutdown();
+  await assert.rejects(manager.shutdown(), (error) => error.message === "dashboard_shutdown_timeout");
   assert.equal(aborted, true);
 });
 test("shutdown deadline includes a capacity reservation blocked in runtime close", async () => {
@@ -106,7 +106,7 @@ test("shutdown deadline includes a capacity reservation blocked in runtime close
   now = 1_800_001;
   void manager.launch("project-8");
   await closeStarted.promise;
-  await manager.shutdown();
+  await assert.rejects(manager.shutdown(), (error) => error.message === "dashboard_shutdown_timeout");
 });
 test("authenticated replacement sends its capability only to a connected loopback owner", async () => {
   let received;

@@ -18,7 +18,7 @@ function graphName(candidate: RelationGroup["candidates"][number]): string {
 /** Converts the loaded browser relation representation into the graph's verified local semantic input. */
 export function toGraphRelationGroups(groups: readonly RelationGroup[]): GraphRelationGroup[] {
   return groups.map((group) => ({
-    relation: group.relation,
+    relation: group.relation === "implementation" ? "implementations" : group.relation,
     state: group.state,
     omitted_count: group.omitted_count,
     candidates: group.candidates.flatMap((candidate) =>
@@ -51,6 +51,8 @@ export class BrowserGraphController {
   constructor(
     private readonly navigation: BrowserFocusNavigation,
     private readonly isStale: () => boolean,
+    private readonly selectTarget: (target: FocusTarget) => Promise<boolean> = (target) =>
+      navigation.selectRelation(target),
   ) {}
 
   graphFor(focus: GraphFocus, groups: readonly RelationGroup[]): OneHopGraph {
@@ -60,7 +62,7 @@ export class BrowserGraphController {
   async select(node: GraphNode | undefined): Promise<boolean> {
     if (!node?.selectable || this.isStale()) return false;
     const target: FocusTarget = { symbol_id: node.symbol_id };
-    return this.navigation.selectRelation(target);
+    return this.selectTarget(target);
   }
 }
 

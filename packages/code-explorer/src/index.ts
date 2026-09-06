@@ -738,6 +738,7 @@ type FollowCandidate = {
   call_site?: SymbolIdentity["location"];
   view_id?: string;
   handle?: string;
+  handles?: FocusView["handles"];
   content?: FocusView["content"];
 };
 
@@ -797,7 +798,7 @@ function relationCandidate(
     relation_source: "semantic",
     backend_name: status.backend_name,
     backend_version: status.backend_version,
-    symbol_id: view.symbol_id,
+    symbol_id: symbol.id,
     display_name: symbol.name,
     path: symbol.location.path.replaceAll("\\", "/"),
     kind: symbol.kind,
@@ -808,6 +809,7 @@ function relationCandidate(
     external: false,
     view_id: view.view_id,
     ...(handle ? { handle } : {}),
+    handles: view.handles,
     content: view.content,
   };
 }
@@ -821,25 +823,43 @@ function compareRelationCandidates(left: FollowCandidate, right: FollowCandidate
 
 export function createRuntimeCoreFactory(): ExplorerCoreFactory {
   return {
-    async start({ projectRoot }) {
+    async start({ projectRoot, signal }) {
       loadAdapterSelectionRecord();
-      const adapters = await createStartedRuntimeAdapters(projectRoot);
-      const server = createServer({
-        projectRoot,
-        adapters,
-        sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
-        freshness: createNativeWorkspaceFreshness({
-          root: projectRoot.canonicalPath,
-          supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate),
-        }),
-      });
-      return {
-        call: (name, arguments_) => server.call(name, arguments_),
-        close: async () => {
+      let adapters: readonly LanguageAdapter[] = [];
+      try {
+        adapters = await createStartedRuntimeAdapters(projectRoot, signal);
+        if (signal.aborted) throw new Error("aborted");
+        const server = createServer({
+          projectRoot,
+          adapters,
+          sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
+          freshness: createNativeWorkspaceFreshness({
+            root: projectRoot.canonicalPath,
+            supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate),
+          }),
+        });
+        let closing: Promise<void> | undefined;
+        const cleanup = async () => {
           await server.close();
           await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-        },
-      };
+        };
+        return {
+          call: (name, arguments_) => server.call(name, arguments_),
+          close: async (closeSignal) => {
+            if (closeSignal.aborted) throw new Error("aborted");
+            closing ??= cleanup();
+            await Promise.race([
+              closing,
+              new Promise<never>((_, reject) =>
+                closeSignal.addEventListener("abort", () => reject(new Error("aborted")), { once: true }),
+              ),
+            ]);
+          },
+        };
+      } catch (error) {
+        await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+        throw error;
+      }
     },
   };
 }

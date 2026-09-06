@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import test from "node:test";
+import { chromium } from "@playwright/test";
 import { launchCodeExplorer, setDashboardCapability } from "../public/api.mjs";
 import { takeDashboardCapability } from "../public/capability.mjs";
 import { createCodeExplorerAction, selectedCodeExplorerAction } from "../public/code-explorer-action.mjs";
@@ -286,3 +290,211 @@ test("launch action leaves registered-project fixture content unchanged", async 
   const after = createHash("sha256").update(await readFile(projectFile)).digest("hex");
   assert.equal(after, before);
 });
+
+test("starts the dashboard and uses the same listener for the real Code Explorer browser path", async () => {
+  const root = await mkdtemp(join(tmpdir(), "openspec-dashboard-live-"));
+  const dashboardHome = join(root, "dashboard-home");
+  const project = join(root, "project");
+  const fakePackage = join(root, "code-explorer");
+  const fakeBundle = join(fakePackage, "dist", "bundle.js");
+  const realBundle = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "code-explorer", "dist", "bundle.js");
+  const serve = resolve(dirname(fileURLToPath(import.meta.url)), "..", "serve.mjs");
+  await mkdir(dashboardHome, { recursive: true });
+  await mkdir(join(project, ".quality"), { recursive: true });
+  await mkdir(join(fakePackage, "dist"), { recursive: true });
+  await mkdir(join(fakePackage, ".claude-plugin"), { recursive: true });
+  await writeFile(
+    join(project, ".quality", "quality-report.json"),
+    JSON.stringify({
+      schemaVersion: 1,
+      summaries: { overall: { score: 1 } },
+      files: [{ path: "src/main.ts", score: 1, findings: [] }],
+    }),
+  );
+  await writeFile(join(dashboardHome, "projects.json"), JSON.stringify({
+    roots: [],
+    projects: [{ name: "live-fixture", path: project.replaceAll("\\", "/") }],
+  }));
+  const realBundleUrl = pathToFileURL(realBundle).href;
+  await writeFile(join(fakePackage, "package.json"), JSON.stringify({ name: "code-explorer", main: "dist/bundle.js" }));
+  await writeFile(join(fakePackage, ".claude-plugin", "plugin.json"), JSON.stringify({ name: "code-explorer" }));
+  await writeFile(
+    fakeBundle,
+    `import { createEmbeddedBrowserRuntime as realCreateEmbeddedBrowserRuntime } from ${JSON.stringify(realBundleUrl)};
+function sourceView(symbolId, name, path, kind, body, handle, start, end, relations) {
+  return {
+    schema_version: 1,
+    project_generation: 1,
+    state: "ready",
+    data: {
+      view_id: "view-" + name,
+      project_generation: 1,
+      symbol_id: symbolId,
+      name,
+      path,
+      kind,
+      content: {
+        body,
+        truncated: false,
+        limit_bytes: 32768,
+        returned_bytes: Buffer.byteLength(body),
+        total_bytes: Buffer.byteLength(body),
+      },
+      handles: handle ? [{ handle, name, symbol_id: symbolId, start, end, out_of_range: false, relations }] : [],
+    },
+  };
+}
+function targetCandidate(relation) {
+  const body = "export const target = true;";
+  return {
+    relation,
+    relation_source: "semantic",
+    backend_name: "fixture",
+    backend_version: "1",
+    external: false,
+    symbol_id: "symbol-target",
+    display_name: "target",
+    path: "src/target.ts",
+    kind: "constant",
+    view_id: "view-target",
+    handle: "handle-target",
+    project_generation: 1,
+    handles: [{ handle: "handle-target", name: "target", symbol_id: "symbol-target", start: 13, end: 19, out_of_range: false, relations: [] }],
+    content: {
+      body,
+      truncated: false,
+      limit_bytes: 32768,
+      returned_bytes: Buffer.byteLength(body),
+      total_bytes: Buffer.byteLength(body),
+    },
+  };
+}
+const coreFactory = {
+  async start() {
+    return {
+      async call(name, args) {
+        if (name === "code_status" && args.action === "start_session") return { schema_version: 1, state: "ready", data: { session_id: "fixture-session" } };
+        if (name === "code_status" && args.action === "status") return { schema_version: 1, state: "ready", data: {} };
+        if (name === "code_status" && args.action === "refresh") return { schema_version: 1, state: "refreshed", data: {} };
+        if (name === "code_search" && args.query === "") return { schema_version: 1, state: "ready", data: { landmarks: [{ group: "entry_points", symbols: [{ symbol_id: "symbol-main", name: "main", path: "src/main.ts", kind: "function" }] }] } };
+        if (name === "code_focus" && args.symbol_id === "symbol-main") return sourceView("symbol-main", "main", "src/main.ts", "function", "export function main() { return 1; }", "handle-main", 16, 20, ["definition"]);
+        if (name === "code_follow" && args.relation === "definition") return { schema_version: 1, state: "ready", data: { relation: args.relation, candidates: [targetCandidate(args.relation)] } };
+        return { schema_version: 1, code: "invalid_request", message: "invalid_request", retryable: false };
+      },
+      async close() {},
+    };
+  },
+};
+export function createEmbeddedBrowserRuntime(options) {
+  return realCreateEmbeddedBrowserRuntime({ ...options, core_factory: coreFactory });
+}
+`,
+  );
+  const port = await freePort();
+  const child = spawn(process.execPath, [serve], {
+    cwd: resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", ".."),
+    env: {
+      ...process.env,
+      CODE_EXPLORER_JS: fakeBundle,
+      HOME: dashboardHome,
+      OPENSPEC_DASHBOARD_HOME: dashboardHome,
+      OPENSPEC_DASHBOARD_PORT: String(port),
+      USERPROFILE: dashboardHome,
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  let stdout = "";
+  let stderr = "";
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => { stdout += chunk; });
+  child.stderr.on("data", (chunk) => { stderr += chunk; });
+  let browser;
+  try {
+    const dashboardUrl = await waitForDashboard(child, () => stdout, () => stderr);
+    const dashboardOrigin = dashboardUrl.split("#", 1)[0];
+    browser = await chromium.launch({ headless: true });
+    const dashboard = await browser.newPage();
+    await dashboard.goto(dashboardOrigin);
+    await dashboard.locator("#code-explorer:enabled").waitFor();
+    await dashboard.locator("#detail").getByText("main.ts", { exact: true }).waitFor();
+    const popup = dashboard.waitForEvent("popup");
+    await dashboard.locator("#code-explorer").click();
+    const explorer = await popup;
+    await explorer.waitForURL((url) => url.pathname.startsWith("/code-explorer/"));
+    assert.equal(new URL(explorer.url()).port, new URL(dashboardOrigin).port);
+    await explorer.locator('#code-explorer[data-state="ready"]').waitFor();
+    await explorer.getByRole("button", { name: "main", exact: true }).click();
+    await explorer.locator('.focused-source[data-view-id="view-main"]').waitFor();
+    await explorer.locator('mark[data-handle="handle-main"]').click();
+    await explorer.getByRole("button", { name: "definition", exact: true }).click();
+    await explorer.locator('[data-pane="relations"][data-state="ready"]').waitFor();
+    await explorer.getByRole("button", { name: "target", exact: true }).click();
+    await explorer.locator('.focused-source[data-view-id="view-target"]').waitFor();
+    await explorer.getByRole("button", { name: "Back", exact: true }).click();
+    await explorer.locator('.focused-source[data-view-id="view-main"]').waitFor();
+    await explorer.getByRole("button", { name: "Forward", exact: true }).click();
+    await explorer.locator('.focused-source[data-view-id="view-target"]').waitFor();
+    await explorer.getByRole("button", { name: "Refresh", exact: true }).click();
+    await explorer.locator('[data-area="status"]').getByText("refreshed", { exact: true }).waitFor();
+    assert.equal((stdout.match(/Quality dashboard on /g) ?? []).length, 1);
+    const owner = JSON.parse(await readFile(join(dashboardHome, ".openspec-dashboard", "dashboard-owner.json"), "utf8"));
+    const shutdown = await fetch(`${dashboardOrigin}api/admin/shutdown`, {
+      method: "POST",
+      headers: { "x-openspec-dashboard-replacement-capability": owner.replacement_capability },
+    });
+    assert.equal(shutdown.status, 200);
+    const exited = await waitForExit(child);
+    assert.equal(exited.code, 0, stderr);
+  } finally {
+    await browser?.close().catch(() => undefined);
+    if (child.exitCode === null) {
+      child.kill("SIGTERM");
+      await waitForExit(child).catch(() => undefined);
+    }
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+async function freePort() {
+  const probe = createServer();
+  await new Promise((resolve, reject) => {
+    probe.once("error", reject);
+    probe.listen(0, "127.0.0.1", resolve);
+  });
+  const address = probe.address();
+  const port = typeof address === "object" && address ? address.port : 0;
+  await new Promise((resolve) => probe.close(resolve));
+  return port;
+}
+
+function waitForExit(child) {
+  if (child.exitCode !== null) return Promise.resolve({ code: child.exitCode, signal: child.signalCode });
+  return new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", (code, signal) => resolve({ code, signal }));
+  });
+}
+
+function waitForDashboard(child, getStdout, getStderr) {
+  const pattern = /Quality dashboard on (http:\/\/127\.0\.0\.1:\d+\/#(?:[0-9a-f]{64}))/u;
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      clearInterval(timer);
+      callback(value);
+    };
+    const check = () => {
+      const match = pattern.exec(getStdout());
+      if (match) finish(resolve, match[1]);
+    };
+    const timer = setInterval(check, 25);
+    const fail = (error) => finish(reject, error);
+    child.once("error", fail);
+    child.once("exit", (code, signal) => fail(new Error(`dashboard exited before startup: ${code ?? signal}\n${getStderr()}`)));
+    check();
+  });
+}

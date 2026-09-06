@@ -21,6 +21,10 @@ function shuttingDownError() {
   return new HttpError(503, "dashboard_shutting_down");
 }
 
+function shutdownTimeoutError() {
+  return new Error("dashboard_shutdown_timeout");
+}
+
 export function createCodeExplorerManager({
   projectIdentity,
   origin,
@@ -140,8 +144,8 @@ export function createCodeExplorerManager({
     shuttingDown = true;
     for (const record of records.values()) record.controller?.abort();
     let timer;
-    const deadline = new Promise((resolve) => {
-      timer = setTimeout(resolve, shutdownTimeoutMs);
+    const deadline = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(shutdownTimeoutError()), shutdownTimeoutMs);
     });
     const cleanup = admission.then(() => Promise.allSettled([...records.values()].map(remove)));
     shutdownPromise = Promise.race([cleanup, deadline])

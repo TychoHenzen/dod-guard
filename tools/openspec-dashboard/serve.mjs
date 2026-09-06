@@ -13,6 +13,7 @@ import { createApi } from "./lib/api.mjs";
 import { createCodeExplorerManager } from "./lib/code-explorer-manager.mjs";
 import { discoverCodeExplorer, loadCodeExplorer } from "./lib/code-explorer-launch.mjs";
 import { createDashboardOwnership } from "./lib/dashboard-ownership.mjs";
+import { HttpError } from "./lib/http-error.mjs";
 import { createProjectIdentity } from "./lib/project-identity.mjs";
 import { createQualityReportRefresher } from "./lib/quality-report.mjs";
 import { assertLaunchRequest, createCapabilities, LAUNCH_PATH, readLaunchBody } from "./lib/launch-http.mjs";
@@ -37,7 +38,7 @@ try {
   const codeExplorerEntry = discoverCodeExplorer({
     monorepoRoot: MONOREPO_ROOT,
   });
-  codeExplorerRuntimeFactory = loadCodeExplorer(codeExplorerEntry);
+  codeExplorerRuntimeFactory = await loadCodeExplorer(codeExplorerEntry);
 } catch {
   reportCodeExplorer("bundle_discovery_failed");
   // The dashboard can still read projects when Code Explorer is not installed.
@@ -76,37 +77,100 @@ function readBody(req) {
   });
 }
 
-function readBrowserBody(req) {
+const browserBodyLimit = 64 * 1024;
+const activeBrowserRequests = new Set();
+
+function readBrowserBody(req, signal) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let bytes = 0;
-    req.on("data", (chunk) => {
-      bytes += chunk.length;
-      if (bytes <= 65_537) chunks.push(chunk);
-    });
-    req.on("end", () => resolve(bytes > 65_537 ? Buffer.alloc(65_537) : Buffer.concat(chunks)));
-    req.on("error", reject);
+    let settled = false;
+    const cleanup = () => {
+      req.off("data", onData);
+      req.off("end", onEnd);
+      req.off("error", onError);
+      req.off("aborted", onAborted);
+      req.off("close", onClose);
+      signal.removeEventListener("abort", onAbort);
+    };
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      callback(value);
+    };
+    const onData = (chunk) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      bytes += buffer.length;
+      if (bytes > browserBodyLimit) {
+        req.resume();
+        finish(reject, new HttpError(413, "resource_limit"));
+        return;
+      }
+      chunks.push(buffer);
+    };
+    const onEnd = () => finish(resolve, Buffer.concat(chunks));
+    const onError = (error) => finish(reject, error);
+    const onAborted = () => finish(reject, new Error("request_aborted"));
+    const onClose = () => {
+      if (!req.complete) onAborted();
+    };
+    const onAbort = () => {
+      req.resume();
+      finish(reject, new Error("dashboard_shutting_down"));
+    };
+    req.on("data", onData);
+    req.once("end", onEnd);
+    req.once("error", onError);
+    req.once("aborted", onAborted);
+    req.once("close", onClose);
+    if (signal.aborted) onAbort();
+    else signal.addEventListener("abort", onAbort, { once: true });
   });
 }
 
-async function handleCodeExplorer(req, res, url) {
+function abortable(promise, signal) {
+  if (signal.aborted) return Promise.reject(new Error("dashboard_shutting_down"));
+  let onAbort = () => {};
+  const aborted = new Promise((_, reject) => {
+    onAbort = () => reject(new Error("dashboard_shutting_down"));
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+  const result = Promise.race([promise, aborted]);
+  return result.finally(() => signal.removeEventListener("abort", onAbort));
+}
+
+async function handleCodeExplorer(req, res, url, signal) {
   const routed = runtimes.resolve(url.pathname);
   if (!routed) {
     sendJson(res, 404, { error: "unknown route" });
     return;
   }
   try {
-    const result = await routed.runtime.handle({
-      method: req.method ?? "GET",
-      path: `${routed.path}${url.search}`,
-      headers: Object.fromEntries(
-        Object.entries(req.headers).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
-      ),
-      body: await readBrowserBody(req),
-    });
+    const body = await readBrowserBody(req, signal);
+    const result = await abortable(
+      routed.runtime.handle({
+        method: req.method ?? "GET",
+        path: `${routed.path}${url.search}`,
+        headers: Object.fromEntries(
+          Object.entries(req.headers).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
+        ),
+        body,
+      }),
+      signal,
+    );
     res.writeHead(result.status, result.headers);
     res.end(result.body);
-  } catch {
+  } catch (error) {
+    if (error?.message === "request_aborted" || error?.message === "dashboard_shutting_down") {
+      req.destroy();
+      res.destroy();
+      return;
+    }
+    if (error instanceof HttpError) {
+      sendJson(res, error.status, { code: error.message, message: error.message, retryable: error.status >= 500 });
+      return;
+    }
     sendJson(res, 503, { code: "workspace_unavailable", message: "workspace_unavailable", retryable: true });
   }
 }
@@ -135,7 +199,7 @@ async function handleApi(req, res, url) {
       }
       // Finish this authenticated response before close waits for active sockets.
       acceptingLaunches = false;
-      res.once("finish", () => void managedShutdown());
+      res.once("finish", () => void managedShutdown().catch((error) => process.stderr.write(`Dashboard shutdown failed: ${error.message}\n`)));
       sendJson(res, 200, { state: "closed" });
       return;
     }
@@ -154,7 +218,11 @@ async function handleApi(req, res, url) {
 const server = createServer((req, res) => {
   const url = new URL(req.url, `http://${HOST}`);
   if (url.pathname.startsWith("/code-explorer/")) {
-    void handleCodeExplorer(req, res, url);
+    const requestController = new AbortController();
+    activeBrowserRequests.add(requestController);
+    void handleCodeExplorer(req, res, url, requestController.signal).finally(() =>
+      activeBrowserRequests.delete(requestController),
+    );
     return;
   }
   if (url.pathname.startsWith("/api/")) {
@@ -170,6 +238,7 @@ let shutdownPromise;
 function managedShutdown() {
   if (shutdownPromise) return shutdownPromise;
   acceptingLaunches = false;
+  for (const request of activeBrowserRequests) request.abort();
   shutdownPromise = runtimes.shutdown().then(
     () =>
       new Promise((resolve) => {
@@ -205,5 +274,5 @@ server.on("listening", () => {
   })();
 });
 server.listen(port, HOST);
-process.once("SIGINT", () => void managedShutdown());
-process.once("SIGTERM", () => void managedShutdown());
+process.once("SIGINT", () => void managedShutdown().catch((error) => process.stderr.write(`Dashboard shutdown failed: ${error.message}\n`)));
+process.once("SIGTERM", () => void managedShutdown().catch((error) => process.stderr.write(`Dashboard shutdown failed: ${error.message}\n`)));

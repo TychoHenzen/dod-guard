@@ -26,17 +26,9 @@ describe("application events", () => {
       '[data-operation="forward"]': forward,
     });
     const actions: string[] = [];
-    bindHistory({ get: () => "stored", set: () => undefined, clear: () => undefined }, async (request) => {
-      const original = globalThis.fetch;
-      globalThis.fetch = async (_path, options) => {
-        actions.push(JSON.parse(String(options?.body)).action);
-        return new Response(JSON.stringify({ state: "ready" }));
-      };
-      try {
-        await request();
-      } finally {
-        globalThis.fetch = original;
-      }
+    bindHistory((action) => {
+      actions.push(action);
+      return Promise.resolve();
     });
     back.click();
     forward.click();

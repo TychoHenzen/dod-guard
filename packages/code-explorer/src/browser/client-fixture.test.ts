@@ -5,7 +5,7 @@ function restoreGlobal(name: GlobalName, descriptor: PropertyDescriptor | undefi
   else Reflect.deleteProperty(globalThis, name);
 }
 
-export function installClientFixture() {
+export function installClientFixture(fixtureOptions: { rootAccess?: string } = {}) {
   const globals: readonly GlobalName[] = [
     "document",
     "fetch",
@@ -37,7 +37,16 @@ export function installClientFixture() {
     value: async (path: string, options: RequestInit) => {
       requests.push({ path, options });
       if (path === "/api/status" || path === "/api/search") return await new Promise<Response>(() => {});
-      return { ok: true, json: async () => ({ state: "created", data: { browser_session_id: "browser-session" } }) };
+      return {
+        ok: true,
+        json: async () => ({
+          state: fixtureOptions.rootAccess ? "degraded" : "created",
+          data: {
+            browser_session_id: "browser-session",
+            ...(fixtureOptions.rootAccess ? { root_access: fixtureOptions.rootAccess } : {}),
+          },
+        }),
+      };
     },
   });
   Object.defineProperty(globalThis, "sessionStorage", {

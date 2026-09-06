@@ -35,9 +35,13 @@ if (root) {
     .start()
     .then((started) => {
       if (!ownership(storage)) throw new Error(started.state);
-      const visibleState = started.data?.root_access === "root_access_denied" ? "root_access_denied" : started.state;
+      const rootAccess = started.data?.root_access;
+      const unavailableRoot = ["root_access_denied", "project_root_inaccessible", "project_root_unavailable"].includes(
+        rootAccess ?? "",
+      );
+      const visibleState = unavailableRoot ? (rootAccess ?? "workspace_unavailable") : started.state;
       root.textContent = `Code Explorer: ${visibleState}`;
-      root.setAttribute("data-state", visibleState === "root_access_denied" ? "unavailable" : "ready");
+      root.setAttribute("data-state", unavailableRoot ? "unavailable" : "ready");
       void browserRequest(storage, "api/status", { action: "status" }).catch(() => undefined);
       startApplication(storage, visibleState, root);
     })

@@ -1,4 +1,3 @@
-import type { BrowserReply } from "./browser-reply.js";
 import { browserRequest } from "./browser-request.js";
 import type { BrowserStorage } from "./session.js";
 
@@ -11,25 +10,20 @@ export function showActionStatus(value: string): void {
   if (status) status.textContent = value;
 }
 
-export function bindHistory(
-  storage: BrowserStorage,
-  navigate: (request: () => Promise<BrowserReply>) => Promise<void>,
-): void {
+export function bindHistory(navigate: (action: "back" | "forward") => Promise<void>): void {
   for (const operation of ["back", "forward"] as const) {
     document.querySelector<HTMLElement>(`[data-operation="${operation}"]`)?.addEventListener("click", () => {
-      void navigate(() =>
-        browserRequest(storage, "api/history", { request_id: crypto.randomUUID(), action: operation }),
-      );
+      void navigate(operation);
     });
   }
 }
 
-export function bindRefresh(storage: BrowserStorage): void {
+export function bindRefresh(storage: BrowserStorage, onSuccess?: () => void): void {
   document.querySelector<HTMLElement>('[data-operation="refresh"]')?.addEventListener("click", async () => {
     try {
       const reply = await browserRequest(storage, "api/status", { action: "refresh", request_id: crypto.randomUUID() });
-      const status = document.querySelector<HTMLElement>('[data-area="status"]');
-      if (status) status.textContent = reply.state ?? "ready";
+      showActionStatus(reply.state ?? "ready");
+      onSuccess?.();
     } catch (error) {
       showActionError(error);
     }

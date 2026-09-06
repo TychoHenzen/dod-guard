@@ -28,8 +28,19 @@ export async function startEmbeddedBrowserRuntime(options: {
   const projectRoot = createNativeProjectRoot(options.projectRoot);
   const controller = new AbortController();
   const abort = () => controller.abort();
-  options.signal?.addEventListener("abort", abort, { once: true });
-  const core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
+  if (options.signal?.aborted) controller.abort();
+  else options.signal?.addEventListener("abort", abort, { once: true });
+  let core: Awaited<ReturnType<ExplorerCoreFactory["start"]>>;
+  try {
+    core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
+    if (controller.signal.aborted) {
+      await core.close(AbortSignal.timeout(10_000));
+      throw new Error("aborted");
+    }
+  } catch (error) {
+    options.signal?.removeEventListener("abort", abort);
+    throw error;
+  }
   const router = new BrowserHttpRouter({
     origin: parsedOrigin.origin,
     assetRoot: options.assetRoot,

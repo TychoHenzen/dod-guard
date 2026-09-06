@@ -6,7 +6,15 @@ function focused(
   kind: string,
   path: string,
   body: string,
-  handles: Array<{ handle: string; name: string; symbol_id: string }> = [],
+  handles: Array<{
+    handle: string;
+    name: string;
+    symbol_id: string;
+    start: number;
+    end: number;
+    out_of_range: boolean;
+    relations: string[];
+  }> = [],
 ) {
   return {
     schema_version: 1,
@@ -91,9 +99,24 @@ export function createPackagedCore(calls: CoreCall[]) {
       };
     }
     if (name === "code_focus" && arguments_.symbol_id === "symbol-main") {
-      return focused("symbol-main", "main", "function", "src/main.ts", "export function main() { return 1; }", [
-        { handle: "handle-main", name: "main", symbol_id: "symbol-main" },
-      ]);
+      return focused(
+        "symbol-main",
+        "main",
+        "function",
+        "src/main.ts",
+        "export function main() { return 1; }",
+        [
+          {
+            handle: "handle-main",
+            name: "main",
+            symbol_id: "symbol-main",
+            start: 16,
+            end: 20,
+            out_of_range: false,
+            relations: ["definition", "references", "callers", "callees", "type", "implementation"],
+          },
+        ],
+      );
     }
     if (name === "code_focus" && arguments_.symbol_id === "file:src/browser/client.ts") {
       return focused(

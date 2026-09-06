@@ -1,4 +1,11 @@
-export type RelationName = "definition" | "references" | "callers" | "callees" | "type" | "implementations";
+export type RelationName =
+  | "definition"
+  | "references"
+  | "callers"
+  | "callees"
+  | "type"
+  | "implementation"
+  | "implementations";
 export type RelationCandidate = {
   /** Browser adapter preserves the core's normalized local identity for graph projection. */
   symbol_id?: string;
@@ -8,9 +15,32 @@ export type RelationCandidate = {
   external: boolean;
   discovery_only?: boolean;
   local_handle?: string;
+  view_id?: string;
+  handle?: string;
+  handles?: readonly {
+    handle: string;
+    name: string;
+    symbol_id: string;
+    start: number;
+    end: number;
+    out_of_range: boolean;
+    relations: readonly string[];
+  }[];
+  content?: {
+    body?: string;
+    declaration?: string;
+    truncated?: boolean;
+    limit_bytes?: number;
+    returned_bytes?: number;
+    total_bytes?: number;
+  };
+  path?: string;
+  kind?: string;
+  project_generation?: number;
 };
 export type RelationReply = {
   state: string;
+  project_generation?: number;
   data?: { candidates?: readonly RelationCandidate[]; omitted_count?: number };
 };
 export type RelationGroup = {
@@ -91,7 +121,12 @@ export class BrowserRelationsController {
       return this.save({
         relation,
         state: "loaded",
-        candidates: reply.data?.candidates ?? [],
+        candidates: (reply.data?.candidates ?? []).map((candidate) => ({
+          ...candidate,
+          ...(candidate.project_generation === undefined && reply.project_generation !== undefined
+            ? { project_generation: reply.project_generation }
+            : {}),
+        })),
         omitted_count: reply.data?.omitted_count ?? 0,
       });
     } catch {

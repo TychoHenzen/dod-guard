@@ -47,8 +47,11 @@ it("focuses one semantic function into a new immutable view with visible handles
   assert.equal(view.content.body, "fn helper(value: TypeName) { TypeName::new(value) }");
   assert.equal(view.content.truncated, false);
   assert.deepEqual(
-    view.handles.map(({ name, symbol_id }) => [name, symbol_id]),
-    [["TypeName", "type-id"]],
+    view.handles.map(({ name, symbol_id, out_of_range }) => [name, symbol_id, out_of_range]),
+    [
+      ["TypeName", "type-id", false],
+      ["not_visible", "hidden-id", true],
+    ],
   );
   assert.notEqual(view.view_id, (second.data as ReturnType<typeof createFocusView>).view_id);
 });

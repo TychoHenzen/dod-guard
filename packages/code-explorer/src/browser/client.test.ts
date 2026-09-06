@@ -22,3 +22,14 @@ test("reports the browser server state in the application root", async (context)
     "x-code-explorer-tab": "tab-id",
   });
 });
+
+test("keeps an inaccessible project root in an unavailable local state", async (context) => {
+  const fixture = installClientFixture({ rootAccess: "project_root_inaccessible" });
+  context.after(fixture.restore);
+
+  await import(`./client.js?root-access=${Date.now()}`);
+  await new Promise<void>((resolve) => setImmediate(resolve));
+
+  assert.match(fixture.root.innerHTML, /project_root_inaccessible/);
+  assert.equal(fixture.attributes.get("data-state"), "unavailable");
+});
