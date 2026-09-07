@@ -3,7 +3,7 @@ import { it } from "node:test";
 import { validateBackendResult } from "../semantic/backend-result/backend-result-validator.js";
 import { definition, options } from "../testing/backend-result-validator-test-support.js";
 
-it("rejects a negative or out-of-file range before a result receives", () => {
+it("rejects a negative or out-of-file range before a result is returned", () => {
   const invalid = definition({
     relations: [
       {
@@ -24,7 +24,7 @@ it("rejects a negative or out-of-file range before a result receives", () => {
     code: "invalid_backend_result",
   });
 });
-it("rejects a response larger than one MiB without returning its pay", () => {
+it("rejects a response larger than one MiB without returning its payload", () => {
   const oversized = {
     ...definition(),
     padding: "x".repeat(1024 * 1024),
@@ -35,7 +35,7 @@ it("rejects a response larger than one MiB without returning its pay", () => {
     code: "backend_response_limit",
   });
 });
-it("rejects a result for an undeclared adapter language and records", () => {
+it("rejects a result for an undeclared adapter language and records it", () => {
   const unexpected = definition({
     relations: [
       {

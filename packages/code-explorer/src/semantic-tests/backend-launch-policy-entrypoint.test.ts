@@ -8,7 +8,7 @@ import {
   pythonIdentity,
 } from "../testing/backend-launch-policy-test-support.js";
 
-it("binds a trusted entrypoint into fixed arguments and rejects an e", () => {
+it("binds a trusted entrypoint into fixed arguments and rejects an identity change", () => {
   let current = pythonIdentity();
   const launch = createBackendLaunchPolicy({
     project_root: "/project",

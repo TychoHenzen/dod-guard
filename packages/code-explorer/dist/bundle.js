@@ -25430,47 +25430,6 @@ var defaultDirectLspScheduler = {
   clearTimeout: (handle) => clearTimeout(handle)
 };
 
-// src/semantic/direct-lsp/direct-lsp-runtime-buffers.ts
-var DirectLspRuntimeBuffers = class {
-  #bytes = new Uint8Array(0);
-  reset() {
-    this.#bytes = new Uint8Array(0);
-  }
-  append(chunk) {
-    this.#bytes = concatBytes(this.#bytes, chunk);
-  }
-  length() {
-    return this.#bytes.length;
-  }
-  slice(start, end) {
-    return this.#bytes.slice(start, end);
-  }
-  consume(end) {
-    this.#bytes = this.#bytes.slice(end);
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-runtime-documents.ts
-var DirectLspRuntimeDocuments = class {
-  #openedUris = /* @__PURE__ */ new Set();
-  #serverCapabilities;
-  reset() {
-    this.#openedUris = /* @__PURE__ */ new Set();
-  }
-  get serverCapabilities() {
-    return this.#serverCapabilities;
-  }
-  setServerCapabilities(capabilities) {
-    this.#serverCapabilities = capabilities;
-  }
-  hasOpened(uri) {
-    return this.#openedUris.has(uri);
-  }
-  markOpened(uri) {
-    this.#openedUris.add(uri);
-  }
-};
-
 // src/semantic/direct-lsp/direct-lsp-runtime-lifecycle.ts
 var DirectLspRuntimeLifecycle = class {
   #process;
@@ -25534,37 +25493,6 @@ var DirectLspRuntimeLifecycle = class {
   }
 };
 
-// src/semantic/direct-lsp/direct-lsp-runtime-requests.ts
-var DirectLspRuntimeRequests = class {
-  constructor(scheduler) {
-    this.scheduler = scheduler;
-  }
-  scheduler;
-  #nextId = 1;
-  #pending = /* @__PURE__ */ new Map();
-  nextId() {
-    const id = this.#nextId;
-    this.#nextId += 1;
-    return id;
-  }
-  setPending(id, pending) {
-    this.#pending.set(id, pending);
-  }
-  pending(id) {
-    return this.#pending.get(id);
-  }
-  deletePending(id) {
-    return this.#pending.delete(id);
-  }
-  rejectInflight(code) {
-    for (const entry of this.#pending.values()) {
-      this.scheduler.clearTimeout(entry.timer);
-      entry.reject(new DirectLspError(code));
-    }
-    this.#pending.clear();
-  }
-};
-
 // src/semantic/direct-lsp/direct-lsp-runtime-restarts.ts
 var DirectLspRuntimeRestarts = class {
   constructor(scheduler, telemetry, markUnavailable2) {
@@ -25616,95 +25544,94 @@ var DirectLspRuntimeRestarts = class {
   }
 };
 
-// src/semantic/direct-lsp/direct-lsp-runtime-telemetry.ts
-var MAX_RUNTIME_EVENTS = 256;
-var DirectLspRuntimeTelemetry = class {
-  #events = [];
-  #restartDelays = [];
-  recordEvent(event) {
-    if (this.#events.length === MAX_RUNTIME_EVENTS) this.#events.shift();
-    this.#events.push(event);
+// src/semantic/direct-lsp/direct-lsp-runtime-buffers.ts
+var DirectLspRuntimeBuffers = class {
+  #bytes = new Uint8Array(0);
+  reset() {
+    this.#bytes = new Uint8Array(0);
   }
-  eventsSnapshot() {
-    return [...this.#events];
+  append(chunk) {
+    this.#bytes = concatBytes(this.#bytes, chunk);
   }
-  recordRestartDelay(delay2) {
-    this.#restartDelays.push(delay2);
+  length() {
+    return this.#bytes.length;
   }
-  restartDelaysSnapshot() {
-    return [...this.#restartDelays];
+  slice(start, end) {
+    return this.#bytes.slice(start, end);
+  }
+  consume(end) {
+    this.#bytes = this.#bytes.slice(end);
   }
 };
 
-// src/semantic/direct-lsp/direct-lsp-runtime-state-core.ts
-var DirectLspRuntimeStateCore = class {
-  scheduler;
-  #life;
-  #buffers;
-  #req;
-  #telemetry;
-  #restarts;
-  #docs;
+// src/semantic/direct-lsp/direct-lsp-runtime-documents.ts
+var DirectLspRuntimeDocuments = class {
+  #openedUris = /* @__PURE__ */ new Set();
+  #serverCapabilities;
+  reset() {
+    this.#openedUris = /* @__PURE__ */ new Set();
+  }
+  get serverCapabilities() {
+    return this.#serverCapabilities;
+  }
+  setServerCapabilities(capabilities) {
+    this.#serverCapabilities = capabilities;
+  }
+  hasOpened(uri) {
+    return this.#openedUris.has(uri);
+  }
+  markOpened(uri) {
+    this.#openedUris.add(uri);
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-requests.ts
+var DirectLspRuntimeRequests = class {
   constructor(scheduler) {
     this.scheduler = scheduler;
-    this.#life = new DirectLspRuntimeLifecycle();
+  }
+  scheduler;
+  #nextId = 1;
+  #pending = /* @__PURE__ */ new Map();
+  nextId() {
+    const id = this.#nextId;
+    this.#nextId += 1;
+    return id;
+  }
+  setPending(id, pending) {
+    this.#pending.set(id, pending);
+  }
+  pending(id) {
+    return this.#pending.get(id);
+  }
+  deletePending(id) {
+    return this.#pending.delete(id);
+  }
+  rejectInflight(code) {
+    for (const entry of this.#pending.values()) {
+      this.scheduler.clearTimeout(entry.timer);
+      entry.reject(new DirectLspError(code));
+    }
+    this.#pending.clear();
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-state-storage.ts
+var DirectLspStateStorage = class {
+  #buffers;
+  #req;
+  #docs;
+  constructor(scheduler) {
     this.#buffers = new DirectLspRuntimeBuffers();
     this.#req = new DirectLspRuntimeRequests(scheduler);
-    this.#telemetry = new DirectLspRuntimeTelemetry();
-    this.#restarts = new DirectLspRuntimeRestarts(
-      scheduler,
-      this.#telemetry,
-      () => this.#life.setState("unavailable")
-    );
     this.#docs = new DirectLspRuntimeDocuments();
   }
-  get process() {
-    return this.#life.process;
-  }
-  get epoch() {
-    return this.#life.epoch;
-  }
-  get state() {
-    return this.#life.state;
-  }
-  get stopping() {
-    return this.#life.stopping;
-  }
-  get stopped() {
-    return this.#life.stopped;
+  reset() {
+    this.#buffers.reset();
+    this.#docs.reset();
   }
   get serverCapabilities() {
     return this.#docs.serverCapabilities;
-  }
-  beginStart(process3) {
-    const epoch = this.#life.beginStart(process3);
-    this.#buffers.reset();
-    this.#docs.reset();
-    return epoch;
-  }
-  invalidate() {
-    this.#life.invalidate(() => this.#req.rejectInflight("backend_crashed"));
-  }
-  setState(state) {
-    this.#life.setState(state);
-  }
-  markStopped() {
-    this.#life.markStopped();
-  }
-  setStopping(stopping) {
-    this.#life.setStopping(stopping);
-  }
-  setExitResolver(resolve5) {
-    this.#life.setExitResolver(resolve5);
-  }
-  resolveExit() {
-    this.#life.resolveExit();
-  }
-  clearExitResolver() {
-    this.#life.clearExitResolver();
-  }
-  killProcess() {
-    this.#life.killProcess();
   }
   appendBytes(chunk) {
     this.#buffers.append(chunk);
@@ -25733,6 +25660,52 @@ var DirectLspRuntimeStateCore = class {
   rejectInflight(code) {
     this.#req.rejectInflight(code);
   }
+  setServerCapabilities(capabilities) {
+    this.#docs.setServerCapabilities(capabilities);
+  }
+  hasOpenedDocument(uri) {
+    return this.#docs.hasOpened(uri);
+  }
+  markDocumentOpened(uri) {
+    this.#docs.markOpened(uri);
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-telemetry.ts
+var MAX_RUNTIME_EVENTS = 256;
+var DirectLspRuntimeTelemetry = class {
+  #events = [];
+  #restartDelays = [];
+  recordEvent(event) {
+    if (this.#events.length === MAX_RUNTIME_EVENTS) this.#events.shift();
+    this.#events.push(event);
+  }
+  eventsSnapshot() {
+    return [...this.#events];
+  }
+  recordRestartDelay(delay2) {
+    if (this.#restartDelays.length === MAX_RUNTIME_EVENTS)
+      this.#restartDelays.shift();
+    this.#restartDelays.push(delay2);
+  }
+  restartDelaysSnapshot() {
+    return [...this.#restartDelays];
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-state-resources.ts
+var DirectLspStateResources = class extends DirectLspStateStorage {
+  #telemetry;
+  #restarts;
+  constructor(scheduler) {
+    super(scheduler);
+    this.#telemetry = new DirectLspRuntimeTelemetry();
+    this.#restarts = new DirectLspRuntimeRestarts(
+      scheduler,
+      this.#telemetry,
+      () => this.onUnavailable()
+    );
+  }
   recordEvent(event) {
     this.#telemetry.recordEvent(event);
   }
@@ -25754,18 +25727,70 @@ var DirectLspRuntimeStateCore = class {
   recordTimeout() {
     return this.#restarts.recordTimeout();
   }
+  resetFailureHistoryState(wasUnavailable) {
+    return this.#restarts.resetFailureHistory(wasUnavailable);
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-state-core.ts
+var DirectLspRuntimeStateCore = class extends DirectLspStateResources {
+  scheduler;
+  #life;
+  constructor(scheduler) {
+    super(scheduler);
+    this.scheduler = scheduler;
+    this.#life = new DirectLspRuntimeLifecycle();
+  }
+  onUnavailable() {
+    this.#life.setState("unavailable");
+  }
+  get process() {
+    return this.#life.process;
+  }
+  get epoch() {
+    return this.#life.epoch;
+  }
+  get state() {
+    return this.#life.state;
+  }
+  get stopping() {
+    return this.#life.stopping;
+  }
+  get stopped() {
+    return this.#life.stopped;
+  }
+  beginStart(process3) {
+    const epoch = this.#life.beginStart(process3);
+    this.reset();
+    return epoch;
+  }
+  invalidate() {
+    this.#life.invalidate(() => this.rejectInflight("backend_crashed"));
+  }
+  setState(state) {
+    this.#life.setState(state);
+  }
+  markStopped() {
+    this.#life.markStopped();
+  }
+  setStopping(stopping) {
+    this.#life.setStopping(stopping);
+  }
+  setExitResolver(resolve5) {
+    this.#life.setExitResolver(resolve5);
+  }
+  resolveExit() {
+    this.#life.resolveExit();
+  }
+  clearExitResolver() {
+    this.#life.clearExitResolver();
+  }
+  killProcess() {
+    this.#life.killProcess();
+  }
   resetFailureHistory() {
-    if (this.#restarts.resetFailureHistory(this.state === "unavailable"))
+    if (super.resetFailureHistoryState(this.state === "unavailable"))
       this.setState("initializing");
-  }
-  setServerCapabilities(capabilities) {
-    this.#docs.setServerCapabilities(capabilities);
-  }
-  hasOpenedDocument(uri) {
-    return this.#docs.hasOpened(uri);
-  }
-  markDocumentOpened(uri) {
-    this.#docs.markOpened(uri);
   }
   current(epoch) {
     return this.#life.current(epoch);

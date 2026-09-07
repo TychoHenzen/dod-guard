@@ -1,6 +1,9 @@
 import type { AdapterSelectionEvidence } from "./adapter-selection-evidence.js";
 import type { AdapterSelectionRecord } from "./adapter-selection-record.js";
 
+type Authorization =
+  AdapterSelectionRecord["runtime_backends"][number]["authorization"];
+
 export function arraysEqual<T>(
   left: readonly T[],
   right: readonly T[],
@@ -29,7 +32,7 @@ export function versionProbeMatches(
 }
 
 function versionProbesEqual(
-  left: AdapterSelectionRecord["runtime_backends"][number]["authorization"]["version_probe"],
+  left: Authorization["version_probe"],
   right: AdapterSelectionEvidence["sentinel_runs"]["rust"]["version_probe"],
 ): boolean {
   return [

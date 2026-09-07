@@ -12,7 +12,7 @@ function linkConfiguration(root: string): void {
   symlinkSync(join(root, "replacement.json"), join(root, "pyrightconfig.json"), "file");
 }
 
-it("retires an active backend before a linked configura", async (context) => {
+it("retires an active backend before a linked configuration change", async (context) => {
   const fixture = project({
     "src/a.py": "x = 1\n",
     "replacement.json": "{}\n",

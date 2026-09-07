@@ -18,7 +18,7 @@ async function assertServerStatus(adapter: ReturnType<typeof createRustAdapter>)
   assert.equal(Array.isArray(backendStatus?.backends), true);
 }
 
-it("times out initialization at thirty seconds and changes its", async () => {
+it("times out initialization at thirty seconds and changes its state", async () => {
   let time = 0;
   let state: { state: "initializing" } | { state: "refreshing" } = {
     state: "initializing",

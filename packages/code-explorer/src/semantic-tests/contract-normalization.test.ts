@@ -8,7 +8,7 @@ import {
 } from "../semantic/contracts/contract.js";
 import { location } from "../testing/contract-test-support.js";
 
-it("uses normalized symbols, source locations, revisions, and relati", () => {
+it("uses normalized symbols, source locations, revisions, and relations", () => {
   const revision = {
     generation: 4,
     manifest_sha256: "manifest-sha256",
@@ -55,7 +55,7 @@ it("uses normalized symbols, source locations, revisions, and relati", () => {
   });
 });
 
-it("validates normalized external results before the contract retain", () => {
+it("validates normalized external results before the contract retains them", () => {
   const valid: SemanticResult = {
     operation: "definition",
     revision: {

@@ -1,10 +1,11 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
 import type { RelationCapabilities } from "../semantic/contracts/contract.js";
+import type { LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
 import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
 import { createManagedPythonBackend } from "../semantic/runtime/runtime-bootstrap.js";
+import { runtimeOptions } from "./runtime-lsp-test-support.js";
 
 class InitializingProcess implements LspProcess {
   sent: Record<string, unknown>[] = [];
@@ -63,20 +64,10 @@ export async function managedPythonRoots(): Promise<{
     };
     return child;
   };
+  const runtime = runtimeOptions(new InitializingProcess());
   const policy = {
-    prepare: () => ({
-      status: "ready" as const,
-      executable: "fake",
-      version: "test",
-      arguments: [],
-      shell: false as const,
-      environment: {},
-      endpoint: "stdio" as const,
-      safe_initialization_options: {},
-    }),
-    confirmInitialized: () => ({
-      status: "ready" as const,
-    }),
+    prepare: () => ({ ...runtime.prepare(), executable: "fake" }),
+    confirmInitialized: runtime.confirmInitialized,
   };
   const capabilities: RelationCapabilities = {
     definition: { state: "unavailable" },

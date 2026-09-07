@@ -5,7 +5,7 @@ import { it } from "node:test";
 import { createNativePythonMirror } from "../semantic/python-mirror/python-mirror-runtime.js";
 import { disposeFixture, project } from "../testing/python-mirror-runtime-test-support.js";
 
-it("maps only unchanged protected source through an immutable genera", () => {
+it("maps unchanged source through an immutable generation", () => {
   const fixture = project({
     "src/a.py": "def target() -> str:\n    return 'safe'\n",
   });
@@ -26,7 +26,7 @@ it("maps only unchanged protected source through an immutable genera", () => {
   }
 });
 
-it("omits denied credentials from the Python mirror before a backend", () => {
+it("omits denied credentials before backend startup", () => {
   const fixture = project({
     "src/a.py": "x = 1\n",
     ".env": "SECRET=not-for-pyright\n",
@@ -43,7 +43,7 @@ it("omits denied credentials from the Python mirror before a backend", () => {
   }
 });
 
-it("omits a Windows case-insensitive classification file from the Py", () => {
+it("omits classification files from the Python mirror", () => {
   const fixture = project({
     "src/a.py": "x = 1\n",
     ".CoDe-ExPlOrEr.JsOn": JSON.stringify({

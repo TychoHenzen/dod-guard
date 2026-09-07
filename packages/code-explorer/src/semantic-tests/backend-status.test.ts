@@ -19,7 +19,7 @@ it("reports a missing backend without attempting semantic work", () => {
     state: "unavailable",
   });
 });
-it("keeps supported navigation ready when call hierarchy is unavaila", () => {
+it("keeps supported navigation ready when call hierarchy is unavailable", () => {
   const adapter = createRustAdapter({
     backend: statusBackend("ready"),
     compatible: true,
@@ -64,7 +64,7 @@ it("isolates a stable initialization failure from ready adapters", () => {
   assert.equal(report.backends[1].state, "ready");
   assert.equal(JSON.stringify(report).includes("protocol"), false);
 });
-it("keeps discovery-only data separate when every backend is unavail", () => {
+it("keeps discovery-only data separate when every backend is unavailable", () => {
   const adapter = createRustAdapter({
     backend: statusBackend("unavailable"),
     compatible: true,

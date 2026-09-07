@@ -19,7 +19,7 @@ function assertFourTerminations(events: string[]): void {
   assert.deepEqual(events, Array(4).fill("old-backend-terminated"));
 }
 
-it("rebuilds with monotonic generations after config addition,", async () => {
+it("rebuilds with monotonic generations after config addition", async () => {
   const fixture = project({ "src/a.py": "x = 1\n" });
   const events: string[] = [];
   const manager = createPythonMirrorManager(fixture.project, () => {

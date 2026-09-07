@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import * as boot from "../testing/runtime-bootstrap-test-support.js";
 
-it("managed Python construction gives the process only a monot", async () => {
+it("gives managed Python only monotonic mirror roots", async () => {
   const result = await boot.managedPythonRoots();
   const roots = result.roots;
   const source = result.source.replaceAll("\\", "/");

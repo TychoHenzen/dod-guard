@@ -8,7 +8,7 @@ import {
   runtimeOptions,
 } from "../testing/runtime-lsp-test-support.js";
 
-it("publishes a relation-level degraded status from the runtim", async () => {
+it("publishes a degraded relation status from the runtime backend", async () => {
   const process = degradedProcess();
   const backend = createRuntimeLspBackend(
     runtimeOptions(process, {

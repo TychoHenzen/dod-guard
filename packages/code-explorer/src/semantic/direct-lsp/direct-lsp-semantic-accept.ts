@@ -1,4 +1,4 @@
-import { validateBackendResult } from "../backend-result/backend-result-validator.js";
+import { validateBackendResult } from "../backend-result/validator.js";
 import type { SemanticResult, SymbolIdentity } from "../contracts/contract.js";
 import type * as semanticOptions from "./direct-lsp-semantic-options.js";
 

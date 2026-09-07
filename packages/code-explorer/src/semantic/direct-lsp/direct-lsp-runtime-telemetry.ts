@@ -16,6 +16,8 @@ export class DirectLspRuntimeTelemetry {
   }
 
   recordRestartDelay(delay: number): void {
+    if (this.#restartDelays.length === MAX_RUNTIME_EVENTS)
+      this.#restartDelays.shift();
     this.#restartDelays.push(delay);
   }
 

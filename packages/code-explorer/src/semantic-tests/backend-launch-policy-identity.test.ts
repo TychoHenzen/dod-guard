@@ -22,7 +22,7 @@ it("refuses a restart when its accepted identity tuple changes", () => {
   });
 });
 
-it("rejects and terminates a process when verification changes after", () => {
+it("rejects and terminates a process when verification changes after start", () => {
   let current = identity;
   const launch = createBackendLaunchPolicy({
     project_root: "/project",
@@ -38,7 +38,7 @@ it("rejects and terminates a process when verification changes after", () => {
   });
 });
 
-it("refuses launch before spawn when device or file identity cannot", () => {
+it("refuses launch before spawn when device or file identity cannot be proven", () => {
   assert.deepEqual(policy({ device: undefined }).prepare("rust"), {
     status: "unavailable",
     code: "backend_identity_unverifiable",

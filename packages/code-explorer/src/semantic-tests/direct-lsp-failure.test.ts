@@ -12,7 +12,7 @@ async function assertInvalidFrame(invalid: Uint8Array): Promise<void> {
   assert.equal(client.status().state, "failed");
 }
 
-it("terminates on malformed, non-ASCII, incomplete, invalid, a", async () => {
+it("terminates on malformed, non-ASCII, incomplete, invalid, and oversized frames", async () => {
   for (const invalid of [
     new TextEncoder().encode("Content-Length: 2\n\n{}"),
     new Uint8Array([
@@ -38,7 +38,7 @@ it("terminates on malformed, non-ASCII, incomplete, invalid, a", async () => {
   assert.equal(incomplete.killed, true);
 });
 
-it("cancels timeouts, rejects writes locally, and ignores late", async () => {
+it("cancels timeouts, rejects writes locally, and ignores late responses", async () => {
   const process = new FakeProcess();
   const { client, scheduler } = await ready(process);
   const pending = client.request("textDocument/references", {});
@@ -59,7 +59,7 @@ it("cancels timeouts, rejects writes locally, and ignores late", async () => {
   });
 });
 
-it("force terminates after two semantic timeouts and rejects o", async () => {
+it("force terminates after two semantic timeouts and rejects operations", async () => {
   const process = new FakeProcess();
   const { client, scheduler } = await ready(process);
   const first = client.request("textDocument/definition", {});

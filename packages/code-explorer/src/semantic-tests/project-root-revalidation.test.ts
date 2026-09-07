@@ -5,7 +5,7 @@ import { filesystem, windowsProjectFilesystem } from "../testing/project-root-te
 
 const root = "C:/repo";
 
-it("reports unavailable identity when fstat cannot prove the opened", () => {
+it("reports unavailable identity when fstat cannot prove the opened file", () => {
   const fs = windowsProjectFilesystem(root);
   fs.fstat = () => ({ dev: 1, ino: Number.NaN });
   const guard = createProjectRoot({

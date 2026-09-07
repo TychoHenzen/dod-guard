@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { it } from "node:test";
 import { unsafe, unsafePythonConfigurationKeys } from "../testing/python-mirror-runtime-test-support.js";
 
-it("rejects pyrightconfig and pyproject execution hooks before mirro", () => {
+it("rejects execution hooks before mirroring", () => {
   for (const key of unsafePythonConfigurationKeys) {
     unsafe({
       "pyrightconfig.json": JSON.stringify({

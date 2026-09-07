@@ -16,7 +16,7 @@ it("keeps the Rust helper definition and call hierarchy ranges", async () => {
   assertHelperOracle(fixture);
 });
 
-it("keeps the Python helper definition and call hierarchy rang", async () => {
+it("keeps the Python helper definition and call hierarchy ranges", async () => {
   const fixture = await loadFixture("python");
   assert.equal(fixture.manifest.source_file, "src/sample.py");
   assert.deepEqual(fixture.manifest.relations.definition.from_call, {
@@ -30,7 +30,7 @@ it("keeps the Python helper definition and call hierarchy rang", async () => {
   assertHelperOracle(fixture);
 });
 
-it("keeps the C# Helper definition and call hierarchy ranges e", async () => {
+it("keeps the C# Helper definition and call hierarchy ranges exactly", async () => {
   const fixture = await loadFixture("csharp");
   assert.equal(fixture.manifest.source_file, "src/Demo.cs");
   assert.deepEqual(fixture.manifest.relations.definition.from_call, {

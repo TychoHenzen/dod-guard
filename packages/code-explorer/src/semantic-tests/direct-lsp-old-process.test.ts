@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { oldProcessFixture } from "../testing/direct-lsp-test-support.js";
 
-it("rejects unsolicited requests, discards allowed notificatio", async () => {
+it("rejects unsolicited requests and discards allowed notifications", async () => {
   const { client, old, replacement, pending, id } = await oldProcessFixture();
   old.respond({ jsonrpc: "2.0", id, result: ["old"] });
   replacement.respond({

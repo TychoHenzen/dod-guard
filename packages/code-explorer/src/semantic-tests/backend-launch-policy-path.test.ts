@@ -7,7 +7,7 @@ import {
   policyAllowlist,
 } from "../testing/backend-launch-policy-test-support.js";
 
-it("uses configured platform path comparison and rejects project des", () => {
+it("uses configured platform path comparison and rejects project descendants", () => {
   const windowsIdentity = {
     ...identity,
     canonical_path: "C:\\host\\rust-analyzer.exe",
@@ -39,7 +39,7 @@ it("uses configured platform path comparison and rejects project des", () => {
   });
 });
 
-it("treats Windows executable path and basename case changes as the", () => {
+it("treats Windows executable path and basename case changes as the same identity", () => {
   let current = {
     ...identity,
     canonical_path: "C:\\HOST\\RUST-ANALYZER.EXE",

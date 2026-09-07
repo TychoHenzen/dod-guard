@@ -7,7 +7,7 @@ import {
   rustEntrySymbol,
 } from "../testing/direct-lsp-semantic-support.js";
 
-it("uses server-issued hierarchy items and preserves target me", async () => {
+it("uses server-issued hierarchy items and preserves target metadata", async () => {
   const methods: string[] = [];
   const backend = createSemanticBackend({
     symbols: new Map([["entry", rustEntrySymbol()]]),

@@ -1,4 +1,4 @@
-import type * as launchOptions from "../backend-launch/backend-launch-policy-options.js";
+import type * as launchOptions from "../backend-launch/types.js";
 
 export type RuntimeLaunchPolicyOptions = Pick<
   launchOptions.BackendLaunchPolicyOptions,

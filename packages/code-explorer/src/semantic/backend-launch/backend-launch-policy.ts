@@ -8,7 +8,7 @@ export { createBackendLaunchPolicy } from "./backend-launch-policy-factory.js";
 export type {
   BackendLaunchConfirmation,
   BackendLaunchPolicy,
-} from "./backend-launch-policy-port.js";
+} from "./types.js";
 export type BackendLaunchPolicyOptions =
   launchOptions.BackendLaunchPolicyOptions;
 export type { BackendLaunchPreparation } from "./backend-launch-preparation.js";

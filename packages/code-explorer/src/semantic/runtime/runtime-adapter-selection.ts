@@ -5,7 +5,7 @@ import {
   type LanguageAdapter,
   type LanguageAdapterOptions,
 } from "../adapters/language-adapter.js";
-import type { createFilteredWorkspace } from "../workspace/filtered-workspace.js";
+import type { createFilteredWorkspace } from "../workspace/index.js";
 
 export function createSelectedAdapter(
   language: string,

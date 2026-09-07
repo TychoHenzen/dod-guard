@@ -30,7 +30,7 @@ it("accepts an opened Windows file when stat has no device identity", () => {
   });
 });
 
-it("closes the protected handle and returns no bytes when a path cha", () => {
+it("closes the protected handle and returns no bytes when a path changes", () => {
   const fs = rootSupport.windowsProjectFilesystem(root);
   let closed = false;
   fs.read = () => {

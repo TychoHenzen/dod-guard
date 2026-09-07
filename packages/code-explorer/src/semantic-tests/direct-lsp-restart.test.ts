@@ -3,7 +3,7 @@ import { it } from "node:test";
 import { createDirectLspClient } from "../semantic/direct-lsp/direct-lsp.js";
 import { FakeProcess, ready, restartFixture, Scheduler, tick } from "../testing/direct-lsp-test-support.js";
 
-it("restarts actual replacement processes at 250ms and 1s then", async () => {
+it("restarts actual replacement processes at 250ms and 1s then stops", async () => {
   const client = await restartFixture();
   assert.deepEqual(client.status().restart_delays_ms, [250, 1_000]);
   assert.equal(client.status().state, "unavailable");
@@ -11,7 +11,7 @@ it("restarts actual replacement processes at 250ms and 1s then", async () => {
   assert.equal(client.status().state, "initializing");
 });
 
-it("force terminates ignored shutdown and counts initializatio", async () => {
+it("force terminates ignored shutdown and counts initialization failures", async () => {
   const process = new FakeProcess();
   const { client, scheduler } = await ready(process);
   const stop = client.shutdown();

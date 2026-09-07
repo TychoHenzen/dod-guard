@@ -1,8 +1,8 @@
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type { BackendLaunchPolicy } from "../backend-launch/backend-launch-policy.js";
+import type { BackendLaunchPolicy } from "../backend-launch/types.js";
 import type { Language, RelationCapabilities } from "../contracts/contract.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
-import { createFilteredWorkspace } from "../workspace/filtered-workspace.js";
+import { createFilteredWorkspace } from "../workspace/index.js";
 import { createRuntimeLspBackend } from "./runtime-lsp-backend.js";
 
 export function createNativeRuntimeBackend(input: {

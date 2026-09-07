@@ -8,7 +8,7 @@ import {
   runtimeSourceOptions,
 } from "../testing/runtime-lsp-test-support.js";
 
-it("opens approved initial Python mirror documents before work", async () => {
+it("opens approved Python mirror documents before work begins", async () => {
   const process = new Process([], {}, () => []);
   const backend = createRuntimeLspBackend(pythonMirrorOptions(process));
   await backend.query({
@@ -30,7 +30,7 @@ it("opens approved initial Python mirror documents before work", async () => {
   );
 });
 
-it("opens the protected source document before asking a real L", async () => {
+it("opens the protected source before a real LSP request", async () => {
   const process = new Process([], { definitionProvider: true }, (method) =>
     method === "textDocument/definition"
       ? [

@@ -1,8 +1,8 @@
 import { spawnNativeLspProcess } from "../adapters/native-lsp-process.js";
-import type { BackendLaunchPreparation } from "../backend-launch/backend-launch-policy.js";
+import type { BackendLaunchPreparation } from "../backend-launch/types.js";
 import type { SymbolIdentity } from "../contracts/contract.js";
 import { createDirectLspClient } from "../direct-lsp/direct-lsp.js";
-import { createDirectLspSemanticBackend } from "../direct-lsp/direct-lsp-semantic.js";
+import { createDirectLspSemanticBackend } from "../direct-lsp/semantic.js";
 import type { RuntimeLspState } from "./runtime-lsp-state.js";
 
 export async function startRuntimeProcess(

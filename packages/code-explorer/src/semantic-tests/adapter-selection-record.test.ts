@@ -17,7 +17,7 @@ function unavailablePolicy(inspected: Array<readonly [string, string]>) {
   });
 }
 
-it("loads only the checked-in runtime record when spike resources ar", () => {
+it("loads only the checked-in runtime record when spike resources are available", () => {
   const record = loadAdapterSelectionRecord();
   const inspected: Array<readonly [string, string]> = [];
   const policy = unavailablePolicy(inspected);
@@ -34,7 +34,7 @@ it("loads only the checked-in runtime record when spike resources ar", () => {
   assert.deepEqual(inspected, [["rust", "rust-analyzer"]]);
 });
 
-it("does not substitute an unrecorded C# server when the approved ex", () => {
+it("does not substitute an unrecorded C# server when the approved executable is unavailable", () => {
   const inspected: Array<readonly [string, string]> = [];
   const policy = unavailablePolicy(inspected);
   assert.deepEqual(policy.prepare("csharp"), {

@@ -11,21 +11,23 @@ import {
 it("does not degrade a relation after a transient LSP request failure", async () => {
   let requests = 0;
   const source = mainRustSymbol();
+  const location = {
+    uri: "file:///project/src/main.rs",
+    range: {
+      start: { line: 0, character: 3 },
+      end: { line: 0, character: 7 },
+    },
+  };
+  const request = async () => {
+    requests += 1;
+    if (requests === 1) throw new Error("transient");
+    return location;
+  };
   const backend = createSemanticBackend({
     symbols: new Map([[source.id, source]]),
     client: {
       ...locationClient([]),
-      request: async () => {
-        requests += 1;
-        if (requests === 1) throw new Error("transient");
-        return {
-          uri: "file:///project/src/main.rs",
-          range: {
-            start: { line: 0, character: 3 },
-            end: { line: 0, character: 7 },
-          },
-        };
-      },
+      request,
     },
   });
 
@@ -37,7 +39,7 @@ it("does not degrade a relation after a transient LSP request failure", async ()
   assert.equal(result.operation, "definition");
 });
 
-it("maps definition and references through protected semantic", async () => {
+it("maps definitions and references through protected sources", async () => {
   const methods: string[] = [];
   const backend = createSemanticBackend({
     language: "rust",
@@ -58,7 +60,7 @@ it("maps definition and references through protected semantic", async () => {
   assert.deepEqual(methods, ["textDocument/definition", "textDocument/references"]);
 });
 
-it("delegates protected source opening to the epoch-aware clie", async () => {
+it("delegates protected source opening to the epoch-aware client", async () => {
   const opened: Array<{ uri: string; content: unknown }> = [];
   const source = mainRustSymbol();
   const backend = createSemanticBackend({

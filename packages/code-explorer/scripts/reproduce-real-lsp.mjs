@@ -4,14 +4,14 @@ import { join } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import {
   createRuntimeLaunchPolicy,
-  loadAdapterSelectionRecord,
   resolveTrustedCommandRoots,
-} from "../dist/semantic/adapter-selection.js";
-import { createNativeBackendInspector } from "../dist/semantic/native-backend-inspector.js";
-import { spawnNativeLspProcess } from "../dist/semantic/native-lsp-process.js";
-import { createNativeProjectRoot } from "../dist/semantic/project-root.js";
-import { createRuntimeLspBackend } from "../dist/semantic/runtime-lsp-backend.js";
-import { createManagedPythonBackend } from "../dist/semantic/runtime-bootstrap.js";
+} from "../dist/semantic/adapter-selection/adapter-selection-policy.js";
+import { loadAdapterSelectionRecord } from "../dist/semantic/adapter-selection/adapter-selection.js";
+import { createNativeBackendInspector } from "../dist/semantic/adapters/native-backend-inspector.js";
+import { spawnNativeLspProcess } from "../dist/semantic/adapters/native-lsp-process.js";
+import { createNativeProjectRoot } from "../dist/semantic/project-root/project-root.js";
+import { createRuntimeLspBackend } from "../dist/semantic/runtime/runtime-lsp-backend.js";
+import { createManagedPythonBackend } from "../dist/semantic/runtime/runtime-bootstrap.js";
 
 const language = process.argv[2] ?? "rust";
 if (!["rust", "python", "csharp"].includes(language)) throw new Error("expected rust, python, or csharp");

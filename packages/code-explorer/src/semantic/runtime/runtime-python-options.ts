@@ -1,5 +1,5 @@
 import { pathToFileURL } from "node:url";
-import type { BackendLaunchPolicy } from "../backend-launch/backend-launch-policy.js";
+import type { BackendLaunchPolicy } from "../backend-launch/types.js";
 import type { RelationCapabilities } from "../contracts/contract.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
 import type { PythonMirror } from "../python-mirror/python-mirror-type.js";

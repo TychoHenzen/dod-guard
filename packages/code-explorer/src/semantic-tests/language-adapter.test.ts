@@ -16,7 +16,7 @@ function backend(state: () => "initializing" | "ready") {
   };
 }
 
-it("reports compatible backend readiness and preserves its val", async () => {
+it("reports compatible backend readiness and preserves its value", async () => {
   let state: "initializing" | "ready" = "initializing";
   let now = 0;
   const adapter = createRustAdapter({

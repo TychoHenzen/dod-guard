@@ -1,5 +1,5 @@
-import type { loadAdapterSelectionRecord } from "../adapter-selection/adapter-selection.js";
-import type { BackendLaunchPolicy } from "../backend-launch/backend-launch-policy.js";
+import type { loadAdapterSelectionRecord } from "../adapter-selection/index.js";
+import type { BackendLaunchPolicy } from "../backend-launch/types.js";
 import type { RelationCapabilities } from "../contracts/contract.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
 

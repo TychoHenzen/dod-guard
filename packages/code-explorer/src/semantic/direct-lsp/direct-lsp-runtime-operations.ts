@@ -1,4 +1,4 @@
-import type { ProtectedDocumentContent } from "../project-root/protected-document-content.js";
+import type { ProtectedDocumentContent } from "../project-root/types.js";
 import { DirectLspError } from "./direct-lsp-error.js";
 import type { DirectLspRuntimeState } from "./direct-lsp-runtime-state.js";
 import type { DirectLspStatus } from "./direct-lsp-status.js";

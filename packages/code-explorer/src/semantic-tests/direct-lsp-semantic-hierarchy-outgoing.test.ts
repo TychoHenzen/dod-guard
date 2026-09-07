@@ -7,7 +7,7 @@ import {
   rustEntrySymbol,
 } from "../testing/direct-lsp-semantic-support.js";
 
-it("uses outgoing hierarchy targets and rejects virtual or mal", async () => {
+it("uses outgoing hierarchy targets and rejects virtual or malformed locations", async () => {
   const methods: string[] = [];
   const source = rustEntrySymbol();
   const backend = createSemanticBackend({

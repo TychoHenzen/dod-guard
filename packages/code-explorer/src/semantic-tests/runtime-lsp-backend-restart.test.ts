@@ -8,7 +8,7 @@ import {
   runtimeSourceOptions,
 } from "../testing/runtime-lsp-test-support.js";
 
-it("reopens one protected source document for a replacement pr", async () => {
+it("reopens one protected source document for a replacement process", async () => {
   const { backend, first, replacement, scheduler } = restartingSourceFixture();
   await backend.query({
     operation: "definition",
@@ -28,7 +28,7 @@ it("reopens one protected source document for a replacement pr", async () => {
   assertReplacementDocuments(first, replacement);
 });
 
-it("confirms identity before publishing and disposes only afte", async () => {
+it("confirms identity before publishing and disposes only after shutdown", async () => {
   const events: string[] = [];
   const process = new Process(events);
   const backend = createRuntimeLspBackend(

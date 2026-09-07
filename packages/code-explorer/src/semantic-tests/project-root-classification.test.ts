@@ -5,7 +5,7 @@ import { filesystem } from "../testing/project-root-test-support.js";
 
 const root = "C:/repo";
 
-it("classifies an escaped backend path as external without retaining", () => {
+it("classifies an escaped backend path as external without retaining it", () => {
   const guard = createProjectRoot({
     cwd: root,
     filesystem: filesystem({
@@ -23,7 +23,7 @@ it("classifies an escaped backend path as external without retaining", () => {
   });
 });
 
-it("normalizes a Windows-form backend path to a portable project-rel", () => {
+it("normalizes a Windows-form backend path to a project-relative path", () => {
   const guard = createProjectRoot({
     cwd: root,
     filesystem: filesystem({

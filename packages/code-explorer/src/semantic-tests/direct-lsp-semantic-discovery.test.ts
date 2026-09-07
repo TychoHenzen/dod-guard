@@ -9,7 +9,7 @@ import {
   workspaceSearchClient,
 } from "../testing/direct-lsp-semantic-support.js";
 
-it("focuses the exact symbol identity returned by live workspa", async () => {
+it("focuses the exact symbol identity returned by the live workspace", async () => {
   const methods: string[] = [];
   const backend = createSemanticBackend({
     client: workspaceSearchClient(methods),
@@ -38,7 +38,7 @@ it("focuses the exact symbol identity returned by live workspa", async () => {
   assert.deepEqual(methods, ["workspace/symbol"]);
 });
 
-it("discovers Python symbols from approved opened mirror docum", async () => {
+it("discovers Python symbols from approved opened mirror documents", async () => {
   const methods: string[] = [];
   const backend = pythonOpenedDiscoveryBackend(methods);
   const search = await backend.query({

@@ -6,7 +6,7 @@ import { it } from "node:test";
 import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
 import { createFilteredWorkspace } from "../semantic/workspace/filtered-workspace.js";
 
-it("creates a native backend root before initialization without sens", () => {
+it("creates a native backend root without sensitive paths", () => {
   const project = mkdtempSync(join(tmpdir(), "code-explorer-sensitive-native-"));
   try {
     mkdirSync(join(project, "src"));
@@ -28,7 +28,7 @@ it("creates a native backend root before initialization without sens", () => {
   }
 });
 
-it("never copies the host-recognized classification configuration in", () => {
+it("never copies classification configuration into the workspace", () => {
   const project = mkdtempSync(join(tmpdir(), "code-explorer-config-case-native-"));
   const configName = process.platform === "win32" ? ".CODE-EXPLORER.JSON" : ".code-explorer.json";
   try {

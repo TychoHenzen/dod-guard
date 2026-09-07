@@ -1,7 +1,7 @@
 import { it } from "node:test";
 import { assert, createPythonMirrorPlan, digest } from "../testing/backend-launch-policy-test-support.js";
 
-it("invalidates the old Python mirror when project configuration cha", () => {
+it("invalidates the old Python mirror when project configuration changes", () => {
   const text = "x = 1";
   const mirror = createPythonMirrorPlan({}, [{ path: "src/a.py", sha256: digest(text), text }], {
     generation: 4,

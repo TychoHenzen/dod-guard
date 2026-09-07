@@ -21,7 +21,7 @@ function rustAdapter(
   });
 }
 
-it("reports a compatible Rust backend ready and forwards every", async () => {
+it("reports a compatible Rust backend and forwards requests", async () => {
   const backend = new FakeSemanticAdapter();
   backend.setReady();
   const adapter = rustAdapter(backend, {
@@ -44,7 +44,7 @@ it("reports a compatible Rust backend ready and forwards every", async () => {
   assert.deepEqual(backend.requests(), requests);
 });
 
-it("observes injected backend readiness changes after adapter constr", () => {
+it("observes readiness changes after adapter construction", () => {
   const backend = new FakeSemanticAdapter();
   const adapter = rustAdapter(backend);
 
@@ -61,7 +61,7 @@ it("observes injected backend readiness changes after adapter constr", () => {
   });
 });
 
-it("validates runtime requests and injected backend results at", async () => {
+it("validates runtime requests and injected results at the boundary", async () => {
   const backend = new FakeSemanticAdapter();
   backend.setReady();
   const adapter = rustAdapter(backend);

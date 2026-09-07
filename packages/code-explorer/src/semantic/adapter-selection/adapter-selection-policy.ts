@@ -1,12 +1,10 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { BackendAllowlistEntry } from "../backend-launch/backend-allowlist-entry.js";
 import {
   type BackendLaunchPolicyOptions,
   createBackendLaunchPolicy,
 } from "../backend-launch/backend-launch-policy.js";
 import type { Language } from "../contracts/contract.js";
-import type * as runtimeOptions from "../runtime/runtime-launch-policy-options.js";
 import { loadAdapterSelectionRecord } from "./adapter-selection-loader.js";
 import type { AdapterSelectionRecord } from "./adapter-selection-record.js";
 
@@ -14,7 +12,10 @@ type TrustedCommandRoot =
   AdapterSelectionRecord["trusted_command_roots"]["win32"][number];
 
 export function createRuntimeLaunchPolicy(
-  options: runtimeOptions.RuntimeLaunchPolicyOptions,
+  options: Pick<
+    BackendLaunchPolicyOptions,
+    "project_root" | "platform" | "inspect"
+  >,
   record: AdapterSelectionRecord = loadRecord(),
 ) {
   const platform =
@@ -33,7 +34,7 @@ function loadRecord(): AdapterSelectionRecord {
 export function runtimeAllowlist(
   record: AdapterSelectionRecord,
   platform: "posix" | "win32",
-): readonly BackendAllowlistEntry[] {
+): BackendLaunchPolicyOptions["allowlist"] {
   return record.runtime_backends.map((backend) => ({
     language: backend.language as Language,
     executable_basename: backend.platform_executables[platform],

@@ -1,5 +1,5 @@
-import type { LanguageAdapterOptions } from "../adapters/language-adapter-options.js";
-import type { BackendLaunchPreparation } from "../backend-launch/backend-launch-preparation.js";
+import type { LanguageAdapterOptions } from "../adapters/types.js";
+import type * as launchTypes from "../backend-launch/types.js";
 import type { RelationCapabilities } from "../contracts/contract.js";
 
 type AdapterMetadata = Pick<
@@ -13,7 +13,7 @@ type AdapterMetadata = Pick<
 
 export function runtimeAdapterMetadata(input: {
   backendName: string;
-  prepared: BackendLaunchPreparation;
+  prepared: launchTypes.BackendLaunchPreparation;
   capabilities: RelationCapabilities;
 }): AdapterMetadata {
   return {

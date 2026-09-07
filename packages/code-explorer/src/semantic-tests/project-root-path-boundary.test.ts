@@ -16,7 +16,7 @@ it("rejects a client parent path before it can reach a backend", () => {
   assert.throws(() => guard.resolveClientPath("../outside.rs"), ProjectPathError);
 });
 
-it("rejects a sensitive path before a protected read can reach a bac", () => {
+it("rejects a sensitive path before a protected read can reach a backend", () => {
   const guard = createProjectRoot({
     cwd: "/project",
     filesystem: filesystem({
@@ -34,7 +34,7 @@ it("rejects a sensitive path before a protected read can reach a bac", () => {
   });
 });
 
-it("rejects an apparent project path when its canonical target escap", () => {
+it("rejects an apparent project path when its canonical target escapes the root", () => {
   const guard = createProjectRoot({
     cwd: root,
     filesystem: filesystem({
@@ -50,7 +50,7 @@ it("rejects an apparent project path when its canonical target escap", () => {
   assert.throws(() => guard.resolveClientPath("linked.rs"), /path_outside_project/);
 });
 
-it("reports an invalid startup root without exposing the rejected ab", () => {
+it("reports an invalid startup root without exposing the rejected absolute path", () => {
   assert.throws(
     () =>
       createProjectRoot({

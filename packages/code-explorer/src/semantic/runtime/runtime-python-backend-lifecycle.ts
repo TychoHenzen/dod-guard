@@ -1,6 +1,6 @@
 import type { InjectedSemanticBackend } from "../adapters/language-adapter.js";
-import type { createPythonMirrorManager } from "../python-mirror/python-mirror-runtime.js";
 import type { PythonMirror } from "../python-mirror/python-mirror-type.js";
+import type { createPythonMirrorManager } from "../python-mirror/runtime.js";
 import { createRuntimeLspBackend } from "./runtime-lsp-backend.js";
 import type { PythonBuildInput } from "./runtime-python-backend-types.js";
 import { createPythonRuntimeOptions } from "./runtime-python-options.js";

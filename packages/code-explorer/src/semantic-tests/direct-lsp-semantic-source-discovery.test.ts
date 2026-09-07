@@ -8,7 +8,7 @@ import {
   pythonServerPathDiscoveryBackend,
 } from "../testing/direct-lsp-semantic-support.js";
 
-it("uses bounded server-path discovery when Pyright returns no", async () => {
+it("uses bounded server-path discovery when Pyright returns no nodes", async () => {
   const backend = pythonServerPathDiscoveryBackend();
   const search = await backend.query({
     operation: "search",
@@ -21,7 +21,7 @@ it("uses bounded server-path discovery when Pyright returns no", async () => {
   );
 });
 
-it("uses bounded server-path discovery when Roslyn returns no", async () => {
+it("uses bounded server-path discovery when Roslyn returns no nodes", async () => {
   const backend = csharpServerPathDiscoveryBackend();
   const search = await backend.query({
     operation: "search",

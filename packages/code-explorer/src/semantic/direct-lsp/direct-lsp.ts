@@ -1,7 +1,7 @@
 import type { DirectLspOptions } from "./direct-lsp-options.js";
 import { createDirectLspRuntime } from "./direct-lsp-runtime.js";
 
-export type { ProtectedDocumentContent } from "../project-root/protected-document-content.js";
+export type { ProtectedDocumentContent } from "../project-root/types.js";
 export { DirectLspError } from "./direct-lsp-error.js";
 export type { DirectLspOptions } from "./direct-lsp-options.js";
 export type { LspProcess } from "./direct-lsp-process.js";

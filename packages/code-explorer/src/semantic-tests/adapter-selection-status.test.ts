@@ -4,7 +4,7 @@ import { createBackendStatusReport } from "../semantic/backend-status/backend-st
 import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
 import { createRuntimeAdapters } from "../semantic/runtime/runtime-bootstrap.js";
 
-it("exposes one fail-closed status for every selected production lan", () => {
+it("exposes one fail-closed status for every selected production language", () => {
   const statuses = createBackendStatusReport(createRuntimeAdapters(createNativeProjectRoot(process.cwd()))).backends;
   assert.deepEqual(
     statuses.map((status) => status.language),

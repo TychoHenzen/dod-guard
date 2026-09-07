@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { FakeProcess, ready, tick } from "../testing/direct-lsp-test-support.js";
 
-it("rejects every dynamic registration without accepting its r", async () => {
+it("rejects every dynamic registration without accepting its request", async () => {
   const process = new FakeProcess();
   const { client } = await ready(process);
   process.respond({
@@ -32,7 +32,7 @@ it("rejects every dynamic registration without accepting its r", async () => {
   });
 });
 
-it("ignores diagnostics but terminates on an unknown server no", async () => {
+it("ignores diagnostics but terminates on an unknown server notification", async () => {
   const process = new FakeProcess();
   const { client } = await ready(process);
 
@@ -69,7 +69,7 @@ it("bounds retained notification events", async () => {
   assert.ok(client.status().events.every((event) => event === "backend_notification"));
 });
 
-it("retries one read-only request after the server reports con", async () => {
+it("retries one read-only request after the server reports content modified", async () => {
   const process = new FakeProcess();
   const { client } = await ready(process);
   const pending = client.request("textDocument/references", {

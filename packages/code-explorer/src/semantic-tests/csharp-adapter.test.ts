@@ -4,7 +4,7 @@ import { createCSharpAdapter } from "../semantic/adapters/language-adapter.js";
 import { FakeSemanticAdapter } from "../testing/fake-semantic-adapter.js";
 import { adapterRequests, createAdapterResult } from "../testing/language-adapter-test-support.js";
 
-it("reports a compatible C# backend ready and forwards every s", async () => {
+it("reports a compatible C# backend and forwards every semantic request", async () => {
   const backend = new FakeSemanticAdapter();
   backend.setReady();
   const adapter = createCSharpAdapter({

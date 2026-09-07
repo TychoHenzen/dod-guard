@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import type { BackendFileIdentity } from "../backend-launch/backend-file-identity.js";
 import type { BackendIdentity } from "../backend-launch/backend-identity.js";
+import type { BackendFileIdentity } from "../backend-launch/types.js";
 import type { Language } from "../contracts/contract.js";
 import {
   candidateIdentity,

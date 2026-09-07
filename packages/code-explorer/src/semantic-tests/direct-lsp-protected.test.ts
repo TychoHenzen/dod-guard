@@ -8,7 +8,7 @@ import {
   ready,
 } from "../testing/direct-lsp-test-support.js";
 
-it("opens each protected file URI once and exposes no generic", async () => {
+it("opens each protected file URI once without generic file access", async () => {
   const process = new FakeProcess();
   const { client } = await ready(process);
 

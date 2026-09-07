@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createNativeBackendInspector } from "../semantic/adapters/native-backend-inspector.js";
 
-it("does not authorize a backend from a project or ambient-path-like", () => {
+it("does not authorize a backend from a project or ambient-PATH-like executable", () => {
   const inspector = createNativeBackendInspector([process.cwd()], process.cwd());
   assert.equal(inspector("rust", process.platform === "win32" ? "node.exe" : "node"), undefined);
 });
 
-it("resolves Roslyn from the pinned dotnet tool-store payload, never", () => {
+it("resolves Roslyn from the pinned dotnet tool-store payload only", () => {
   if (process.platform !== "win32") return;
   const root = `${process.env.USERPROFILE}\\.dotnet\\tools`;
   const identity = createNativeBackendInspector([root])("csharp", "roslyn-language-server.exe");

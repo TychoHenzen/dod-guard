@@ -5,7 +5,7 @@ import { it } from "node:test";
 import { createPythonMirrorManager } from "../semantic/python-mirror/python-mirror-runtime.js";
 import { project } from "../testing/python-mirror-runtime-test-support.js";
 
-it("terminates the old backend before an unsafe replacement an", async () => {
+it("terminates the old backend before an unsafe replacement and clears it", async () => {
   const fixture = project({ "src/a.py": "x = 1\n" });
   const events: string[] = [];
   const manager = createPythonMirrorManager(fixture.project, () => {
@@ -26,7 +26,7 @@ it("terminates the old backend before an unsafe replacement an", async () => {
   }
 });
 
-it("retires an active backend before malformed configuration c", async () => {
+it("retires an active backend before malformed configuration changes", async () => {
   const fixture = project({ "src/a.py": "x = 1\n" });
   const events: string[] = [];
   const manager = createPythonMirrorManager(fixture.project, () => {
