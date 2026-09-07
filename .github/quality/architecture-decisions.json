@@ -3017,5 +3017,474 @@
     "reason": "Reviewed: these parser-level findings describe bounded internal semantic runtime seams introduced by the PBI decomposition, not package protocol expansion. The semantic suite and strict scan cover the resulting behavior.",
     "author": "Codex",
     "time": "2026-09-07T06:00:00.000Z"
+  },
+  {
+    "findingId": "06be33ae80fe2b4ae1639418ded18a35f3e0d5a6528863fca4a789189423e12b",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "0868284f5b7fa0e1f2a9f49c29f669b2349d3c67782b428574a00b9aec02264f",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "09c75ed7dbda8cf10e4750add64ccc5dad571f39ba1235a6170d1311cb529b71",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "1d603ae4f8f5266592b3982d278aefd32011638a2d0b72f81ee5b31e80888385",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "24d34976ec25ab90fabdbf32607c180af5d25109461527a10977da16f75b9e30",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "2697f4711b38ad4fea680dc2bf085839cb0b4a35105c29bcc9b071ed6d1c7bc4",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "2bbf2c02f5a541deff33ed2cda02a89e01e3563caf342d8aed0ef1ef91cf98b2",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "2e615e0f1f3e05c5b01980f6a7a532e4c6d2208fd0d6c1dfa706cdd5e2f23fe3",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "2e6514c5bfb6ed45834a49481fd35f399e1c1e623fd2e98b13654c5a1477ec54",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "3212d94e222625f57b630c112c9d3ba8aecf76811948efe13bb170b43ef9cd21",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "3987b871a1a21477824effe170159d214621e26d840673eccedda6334b38f843",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "3dfb39eef94bf71574d3eec08e4bb321cd5d5512c41f971dc27d6f90875e91e9",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "429fb9f5e0450219746b8cb039720b3b34090115c5df175cff33f5d8bdb9c792",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "44788ec76def5ada6d40582bf0cf640a2f15769f77c1a8765718dd101cfc0095",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "50649cb6f81f3a193a8f8a84afe50ec3f33f16d1b0debfe691bc0993c5cc8224",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "50c911465396e87bf0d026d41fb175feb2ed7696d1cc1bcbd3b5a5d44e0e60e0",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "55c34fc28b5f1112747766e2363901935fd807d116b7a8473b96b29f1ff930a3",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "5c9044d5da38925199b3f84fe9ecaaf5292f02f5c9dcd24410ce4d14a062147e",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "64ff8ad18ac625e187d12a7f60359efc4de2bbf23f121f52505cb0e29e44feee",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "69404aa5c7f433fad1296629658117170cb226ae1d211407ea569203f12c8366",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "69b7baaf75f68db1bc9aed02577d4a9f44295b4f14dbc01e32dfbf7777ce7b68",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "6a6dc4522ef41ee1eacbcf65eb4418ae537314f3a156f62fce7ce21fa0ecc661",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "728c9e690c8c62584a9f22c1ae500d108aba1fa6fee3d347cb9161d370c27cb3",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "79dc9c35bfb0f2b5957ec6e03bc91d1172c25cba3225207485884cff3354f38c",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "7c1768acb22638defc481e19f2395a0b9324d1bbf8001eb479facb6e61b60f07",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "87d5a4fda33d9a8c2548e002903915791df4652090ea6602b3dbb4ea7a69228e",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "8cd43cf2485b5371c72ba30fef5815e1518936340b6d19b95d5dfb5a7b40010d",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "8cdccce035f26b3e5d7c9e7e112f77fb094765f3f1109243ca483cdf2e781d0c",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "908d120451b33728ccaa7c11b938285ce8abd4229d3a9e26d1e9ba1e6edbfa9c",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "939f26f2833716e95420422d337e01ad3c92955246627907ec9d912ff0889fc6",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "9a0edea429866006654f8cba98ea297c1b47cd9dd8f4df2783a94d1febc12e09",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "9ccd260e1b3571ec4ce543d1138718af0e38a8a05db731191553c4e74e2f6785",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "9ce55c15b33e7d2f242ae7310472d54abf4974e969fb8f601e7f046b93dfb74b",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "a377bc748cb6c4aaf10e4dd3a15a01d434bc3af4de1748ad94393a8244aae1fa",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "a392d6cc8e4f00329ae2edde97064989119ee5d27222a4c2defa59fcbb474190",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "a413b9eff20fff8a4ff2b2fb4c398f5edfd5ba43271431e35b06ffd644594404",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "a6a04c4a33bcb1985f038b620f699b2ec9b506074fcb5c1d2cf6edf57ca3e6de",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "a7bc57f10d98274df7b89517b7dd26cd97eb6b5c6df71bbc93d6a48244ea4f68",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "a9f7ffd83dfb5ed4d7773c40116c2bebb45167dba4da857a5aa48b5526620150",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "aa4eb6045a5151a708491e447a4674e18503ef600ab06f0a9779e7678f9a1832",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "ae347b23acf57889796b404899db6acb1d85fa8690f750cfd21ee5d2caf4b8e7",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "b0b19f89517b9151425a100521bd8541c15fa79e9aa70548b72afc214f02b247",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "b4dfea2f801369c837c6d95146b972e783f6677abe70381e94815977d183de55",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "b4f89759f4b7cc2a61ba4efc29632cb0bbbb0c67b33a0a06c5d934faf76baa60",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "b8e86b0dc1546f70beb3539df09340a911c496ce3401981d8589fd6751a04e4e",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "beec0cae138d63a4fbba05deea5a84ccd8f5d959bd3ee714035e021dd32a6b0f",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "c6b184c171924bec1d3889c780c5389c7be1ee58b04b6bace4f73a3d8085cf0e",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "cf0393de20b0eaf134fcd24f0a7586ac5d759248ca92e6c3ce6c63e80a6a0f7e",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "d14e7442749adb38c8d98079685bb685e64f7da2cd001c5608186badab5af937",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "d242154599c4980a69e1e934ced9075484805755dad0cc6d2c523277a83f5021",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "d5123ad0a9cdc530b60cdcdc80dc439d313ab7f21a9c9fce33baea94bd2b1c56",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "e007899f85f9a656d18c5daeb4b9aacaeab68803d466e01c3f8c6f5d4e216be9",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "e38fc9e5268366a9348bbf4a33fdc80fcccfae567e79f91a043122f87d70b8e7",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "e633d9d7dea2e9a3019ccc9cf1ab61708ca5da585fcd59c00f11d57029216fa5",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "e72f04d408853d96efa0a1fe24cfa26df82badb1a5a14cfbf632708af80dcdfc",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "e7f929ee6cb72b49d51787106af8301f21ee56211ac4bc09b75e6e5cbf5838d1",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "e88d734069b29c4d3d494aff34283c58dbde7fb928f8a92127b97164f253727d",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "eac85382521c6227222e0e75ec780e4a5c4b3453fcfad4427b690e968764b5fa",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "ee230cc69adf9c1a082f08352a65178f31a3e5f7b9c16f63d220bea30910e9aa",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "efb708c3654cc2ecb8e1d8de5718b023dafb36a94f72de0cdaf30d13fea85ba5",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "f0fd436232fefe52e70a77147987dc8e052aded732286eec98cd34c863bb632b",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "f6f8864d22d9e7d67f066b41c15535f1a984369d8464d7c740a640f20a8ef91d",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "f9e6d024457b5586dc98b6d9b4ad5454470a60741d92eef3d5bcb06bffff08bf",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "faacae916013541811379decfd3c873ae100c46853acd21c0906c32c99ebb89f",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "fc7c03fbdc474ce8064592dba8ff0214fe7580577b13c8e86bddb78ac6635ef8",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "fca053207fd517ee50113772b246215c7c9c4e4b526a1476a7560de3bde6d374",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
+  },
+  {
+    "findingId": "ff77e87719e05b2f0768ce912b04794c697baf3335ae95986cbb83edf7654df1",
+    "fingerprint": "1ac45e288bb3e74c546d10fcd7e79a60fdd04637c3d2209fbb662c2692756321",
+    "reason": "Reviewed: these findings are intentional internal semantic runtime seams introduced by PR 56 decomposition, not package protocol expansion. The semantic suite, strict scan, build, and bundle smoke cover the resulting behavior.",
+    "author": "Codex",
+    "time": "2026-09-07T10:00:00.000Z"
   }
 ]
