@@ -4,14 +4,4 @@ def entry():
 def helper():
     return Item()
 
-
-class Item:
-    pass
-
-
-class Worker:
-    pass
-
-
-class ConcreteWorker(Worker):
-    pass
+from item import Item

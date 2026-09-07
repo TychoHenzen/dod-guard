@@ -2,11 +2,9 @@ import type {
   SemanticRequest,
   SemanticResult,
 } from "../semantic/contracts/contract.js";
+import type { FakeAdapterReadiness } from "./fake-adapter-readiness.js";
 
-export type FakeAdapterReadiness =
-  | { state: "ready" }
-  | { state: "unavailable" }
-  | { state: "failed"; failure_code: string };
+export type { FakeAdapterReadiness } from "./fake-adapter-readiness.js";
 
 /**
  * Test-only semantic adapter control. It never starts a backend process.
