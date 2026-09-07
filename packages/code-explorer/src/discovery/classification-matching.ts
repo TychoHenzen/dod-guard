@@ -32,6 +32,7 @@ export function safeGlobMatches(path: string, glob: string): boolean {
     .split("**")
     .map((part) =>
       part
+        .replace(/[\\]/g, "\\\\")
         .replace(/[.]/g, "\\.")
         .replaceAll("*", "[^/]*")
         .replaceAll("?", "[^/]"),
