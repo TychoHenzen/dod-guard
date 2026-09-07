@@ -139,13 +139,21 @@ function requestIdConflict(): CodeExplorerError {
 }
 
 function readyViewEnvelope(view: FocusView, freshness: FreshnessStatus, historyPosition: number): CodeExplorerEnvelope {
+  return createEnvelope(freshness, "ready", { ...view, history_position: historyPosition });
+}
+
+function createEnvelope(
+  freshness: FreshnessStatus,
+  state: EnvelopeState,
+  data: Record<string, unknown>,
+): CodeExplorerEnvelope {
   return {
     schema_version: 1,
     project_id: "project",
     project_generation: freshness.current_generation,
     pending_generation: freshness.pending_generation,
-    state: "ready",
-    data: { ...view, history_position: historyPosition },
+    state,
+    data,
   };
 }
 
@@ -473,14 +481,7 @@ export function createServer(
           backendRequests.run(follow.session_id, operation),
         );
         if (replies.length === 0) {
-          return {
-            schema_version: 1,
-            project_id: "project",
-            project_generation: capturedFreshness.current_generation,
-            pending_generation: capturedFreshness.pending_generation,
-            state: "unavailable_relation",
-            data: { relation },
-          };
+          return createEnvelope(capturedFreshness, "unavailable_relation", { relation });
         }
         const { adapter, result } = replies[0];
         const limit = Math.min(follow.limit ?? 50, 200);
@@ -493,66 +494,35 @@ export function createServer(
         if (relation === "definition") {
           const local = candidates.find((candidate) => candidate.external === false);
           if (local) {
-            return {
-              schema_version: 1,
-              project_id: "project",
-              project_generation: capturedFreshness.current_generation,
-              pending_generation: capturedFreshness.pending_generation,
-              state: "ready",
-              data: { focus: local, source_location: local.range },
-            };
+            return createEnvelope(capturedFreshness, "ready", { focus: local, source_location: local.range });
           }
         }
-        return {
-          schema_version: 1,
-          project_id: "project",
-          project_generation: capturedFreshness.current_generation,
-          pending_generation: capturedFreshness.pending_generation,
-          state: "ready",
-          data: { relation, candidates },
-        };
+        return createEnvelope(capturedFreshness, "ready", { relation, candidates });
       }
       if (name === "code_history") {
         const history = schemas.code_history.parse(arguments_);
         if (history.action === "recent") {
           const recent = sessions.recent(connectionId, history.session_id, history.limit ?? 64);
           if (!recent) return invalidSession();
-          return {
-            schema_version: 1,
-            project_id: "project",
-            project_generation: capturedFreshness.current_generation,
-            pending_generation: capturedFreshness.pending_generation,
-            state: "ready",
-            data: { views: recent },
-          };
+          return createEnvelope(capturedFreshness, "ready", { views: recent });
         }
         const restored = sessions.restore(connectionId, history.session_id, history.action);
         if (!restored) return invalidViewHandle();
-        return {
-          schema_version: 1,
-          project_id: "project",
-          project_generation: capturedFreshness.current_generation,
-          pending_generation: capturedFreshness.pending_generation,
-          state: "ready",
-          data: {
-            ...restored,
-            history_position: sessions.historyPosition(connectionId, history.session_id) ?? 0,
-            stale: restored.project_generation !== capturedFreshness.current_generation,
-          },
-        };
+        return createEnvelope(capturedFreshness, "ready", {
+          ...restored,
+          history_position: sessions.historyPosition(connectionId, history.session_id) ?? 0,
+          stale: restored.project_generation !== capturedFreshness.current_generation,
+        });
       }
       if (name === "code_search" && discovery) {
         const search = schemas.code_search.parse(arguments_);
         if (normalizeDiscoveryQuery(search.query).length === 0) {
           const currentLandmarks = landmarks ?? landmarksNotReady();
-          return {
-            schema_version: 1,
-            project_id: "project",
-            project_generation: capturedFreshness.current_generation,
-            pending_generation: capturedFreshness.pending_generation,
-            state: currentLandmarks.state === "ready" ? "ready" : "landmarks_not_ready",
-            data: { landmarks: currentLandmarks.landmarks, landmark_state: currentLandmarks.state },
-          };
+          return createEnvelope(
+            capturedFreshness,
+            currentLandmarks.state === "ready" ? "ready" : "landmarks_not_ready",
+            { landmarks: currentLandmarks.landmarks, landmark_state: currentLandmarks.state },
+          );
         }
         const semantic = await collectSemanticSymbols(options.adapters ?? [], search.query, (operation) =>
           backendRequests.run(undefined, operation),
@@ -590,23 +560,17 @@ export function createServer(
               ...discovery?.status(),
             }
           : {};
-      return {
-        schema_version: 1,
-        project_id: "project",
-        project_generation: capturedFreshness.current_generation,
-        pending_generation: capturedFreshness.pending_generation,
-        state:
-          name === "code_status" && rootStatus.state !== "ready"
-            ? "degraded"
-            : name === "code_status" && arguments_.action === "refresh" && capturedFreshness.state === "ready"
-              ? "refreshed"
-              : capturedFreshness.state === "refreshing" ||
-                  capturedFreshness.state === "degraded" ||
-                  capturedFreshness.state === "refresh_failed"
-                ? capturedFreshness.state
-                : "ready",
-        data: backendStatus,
-      };
+      const state =
+        name === "code_status" && rootStatus.state !== "ready"
+          ? "degraded"
+          : name === "code_status" && arguments_.action === "refresh" && capturedFreshness.state === "ready"
+            ? "refreshed"
+            : capturedFreshness.state === "refreshing" ||
+                capturedFreshness.state === "degraded" ||
+                capturedFreshness.state === "refresh_failed"
+              ? capturedFreshness.state
+              : "ready";
+      return createEnvelope(capturedFreshness, state, backendStatus);
     };
 
     if (stateChanging && sessionId && requestId) {
@@ -918,15 +882,7 @@ async function main(): Promise<void> {
   loadAdapterSelectionRecord();
   const projectRoot = createNativeProjectRoot(parseProjectRootArgument(arguments_));
   const adapters = await createStartedRuntimeAdapters(projectRoot);
-  const server = createServer({
-    projectRoot,
-    adapters,
-    sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
-    freshness: createNativeWorkspaceFreshness({
-      root: projectRoot.canonicalPath,
-      supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate),
-    }),
-  });
+  const server = createRuntimeServer(projectRoot, adapters);
   const transport = new StdioServerTransport();
   let shuttingDown: Promise<void> | undefined;
   const shutdownBackends = () => {

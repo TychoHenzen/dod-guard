@@ -13,6 +13,7 @@ import type { LanguageAdapter } from "./semantic/adapters/language-adapter.js";
 import { createNativeProjectRoot } from "./semantic/project-root/project-root.js";
 import { readyCapabilities } from "./testing/direct-lsp-semantic-support.js";
 import { FakeSemanticAdapter } from "./testing/fake-semantic-adapter.js";
+import { unavailableCapabilities } from "./testing/runtime-lsp-test-support.js";
 
 const entryPoint = fileURLToPath(new URL("./index.js", import.meta.url));
 
@@ -111,6 +112,20 @@ process.stdin.on("data", (chunk) => {
   );
 }
 
+function roslynStorePath(root: string): string {
+  return join(
+    root,
+    ".store",
+    "roslyn-language-server",
+    "5.11.0-1.26380.4",
+    "roslyn-language-server.win-x64",
+    "5.11.0-1.26380.4",
+    "tools",
+    "net10.0",
+    "win-x64",
+  );
+}
+
 function createStandaloneBackendRecord(
   root: string,
   counters: Record<string, string>,
@@ -134,19 +149,7 @@ function createStandaloneBackendRecord(
   const packageMetadataPath = join(root, "node_modules", "pyright", "package.json");
   const packageMetadataHash = sha256(readFileSync(packageMetadataPath));
   const executablePath = (language: string) =>
-    language === "csharp"
-      ? join(
-          root,
-          ".store",
-          "roslyn-language-server",
-          "5.11.0-1.26380.4",
-          "roslyn-language-server.win-x64",
-          "5.11.0-1.26380.4",
-          "tools",
-          "net10.0",
-          "win-x64",
-          executable(language),
-        )
+    language === "csharp" ? join(roslynStorePath(root), executable(language))
       : join(root, executable(language));
   const authorization = (language: string) => {
     const executableName = executable(language);
@@ -292,17 +295,7 @@ describe("code-explorer package boundary", () => {
         );
       for (const executable of ["rust-analyzer.exe", "node.exe"])
         copyFileSync(process.execPath, join(backendRoot, executable));
-      const roslynStore = join(
-        backendRoot,
-        ".store",
-        "roslyn-language-server",
-        "5.11.0-1.26380.4",
-        "roslyn-language-server.win-x64",
-        "5.11.0-1.26380.4",
-        "tools",
-        "net10.0",
-        "win-x64",
-      );
+      const roslynStore = roslynStorePath(backendRoot);
       mkdirSync(roslynStore, { recursive: true });
       copyFileSync(process.execPath, join(roslynStore, "roslyn-language-server.exe"));
       for (const language of ["rust", "python", "csharp"])
@@ -687,12 +680,11 @@ describe("code-explorer package boundary", () => {
     });
     if ("code" in focused) throw new Error("expected focus");
     const data = focused.data as { view_id: string; handles: Array<{ handle: string }> };
-    const followed = await server.call("code_follow", {
-      session_id: sessionId,
-      request_id: "follow-request-0001",
-      view_id: data.view_id,
+    const followed = await followDefinition({
+      server,
+      sessionId,
+      viewId: data.view_id,
       handle: data.handles[0]?.handle ?? "missing",
-      relation: "definition",
     });
     assert.equal("code" in followed, false);
   });
@@ -773,12 +765,11 @@ describe("code-explorer package boundary", () => {
     if ("code" in focus) throw new Error("expected focus");
     const data = focus.data as { view_id: string; handles: Array<{ handle: string }> };
 
-    const followed = await server.call("code_follow", {
-      session_id: sessionId,
-      request_id: "follow-request-0001",
-      view_id: data.view_id,
+    const followed = await followDefinition({
+      server,
+      sessionId,
+      viewId: data.view_id,
       handle: data.handles[0]?.handle ?? "missing",
-      relation: "definition",
     });
 
     assert.equal("code" in followed, false);
@@ -852,18 +843,7 @@ describe("code-explorer package boundary", () => {
         symbol("function", "tests/helper_test.rs"),
         symbol("function", "generated/helper.rs"),
       ];
-      const adapter: LanguageAdapter = {
-        status: () => ({
-          language: "rust",
-          backend_name: "test",
-          backend_version: "test",
-          discovery_source: "injected",
-          state: "ready",
-          capabilities: readyCapabilities(),
-          last_transition_time: 0,
-        }),
-        request: async () => ({ operation: "search", revision: { generation: 1, manifest_sha256: "test" }, symbols }),
-      };
+      const adapter = adapterWithSymbols(symbols);
       const server = createServer({ projectRoot: createNativeProjectRoot(root), adapters: [adapter] });
       const result = await server.call("code_search", {
         query: "helper",
@@ -930,18 +910,7 @@ describe("code-explorer package boundary", () => {
         symbol("function", "keys\\nested\\key.pem"),
         symbol("function", "src/Helper.rs"),
       ];
-      const adapter: LanguageAdapter = {
-        status: () => ({
-          language: "rust",
-          backend_name: "test",
-          backend_version: "test",
-          discovery_source: "injected",
-          state: "ready",
-          capabilities: readyCapabilities(),
-          last_transition_time: 0,
-        }),
-        request: async () => ({ operation: "search", revision: { generation: 1, manifest_sha256: "test" }, symbols }),
-      };
+      const adapter = adapterWithSymbols(symbols);
       const server = createServer({ projectRoot: createNativeProjectRoot(root), adapters: [adapter] });
       const searches = await Promise.all([
         server.call("code_search", { query: "helper", limit: 50 }),
@@ -984,25 +953,30 @@ async function startSession(server: ReturnType<typeof createServer>): Promise<st
   return response.data.session_id;
 }
 
+async function followDefinition({
+  server,
+  sessionId,
+  viewId,
+  handle,
+}: {
+  server: ReturnType<typeof createServer>;
+  sessionId: string;
+  viewId: string;
+  handle: string;
+}) {
+  return server.call("code_follow", {
+    session_id: sessionId,
+    request_id: "follow-request-0001",
+    view_id: viewId,
+    handle,
+    relation: "definition",
+  });
+}
+
 function focusableNavigationAdapter(): LanguageAdapter {
   const focused = symbol("function", "src/helper.rs");
   return {
-    status: () => ({
-      language: "rust",
-      backend_name: "test",
-      backend_version: "test",
-      discovery_source: "injected",
-      state: "ready",
-      capabilities: {
-        definition: { state: "unavailable" },
-        references: { state: "unavailable" },
-        type_definition: { state: "unavailable" },
-        implementation: { state: "unavailable" },
-        callers: { state: "unavailable" },
-        callees: { state: "unavailable" },
-      },
-      last_transition_time: 0,
-    }),
+    status: () => testAdapterStatus("rust", unavailableCapabilities),
     request: async () => ({
       operation: "focus",
       revision: { generation: 1, manifest_sha256: "test" },
@@ -1014,16 +988,25 @@ function focusableNavigationAdapter(): LanguageAdapter {
 
 function adapterWithSymbols(symbols: ReturnType<typeof symbol>[]): LanguageAdapter {
   return {
-    status: () => ({
-      language: "rust",
-      backend_name: "test",
-      backend_version: "test",
-      discovery_source: "injected",
-      state: "ready",
-      capabilities: readyCapabilities(),
-      last_transition_time: 0,
-    }),
+    status: () => testAdapterStatus("rust", readyCapabilities()),
     request: async () => ({ operation: "search", revision: { generation: 1, manifest_sha256: "test" }, symbols }),
+  };
+}
+
+type TestAdapterStatus = ReturnType<LanguageAdapter["status"]>;
+
+function testAdapterStatus(
+  language: TestAdapterStatus["language"],
+  capabilities: TestAdapterStatus["capabilities"],
+): TestAdapterStatus {
+  return {
+    language,
+    backend_name: "test",
+    backend_version: "test",
+    discovery_source: "injected",
+    state: "ready",
+    capabilities,
+    last_transition_time: 0,
   };
 }
 

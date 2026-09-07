@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { writeFile } from "node:fs/promises";
+import { captureJsonLines } from "./mcp-line-protocol.mjs";
 
 const separator = process.argv.indexOf("--");
 const [method, paramsJson] = process.argv.slice(2, separator);
@@ -11,23 +12,7 @@ if (!method || !paramsJson || separator < 0 || !command || !outputPath) {
 }
 
 const child = spawn(command, args, { cwd: process.env.CODE_EXPLORER_SPIKE_CWD, shell: false, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
-const messages = [];
-const stderr = [];
-let buffer = "";
-
-child.stdout.setEncoding("utf8");
-child.stderr.setEncoding("utf8");
-child.stderr.on("data", (chunk) => stderr.push(chunk));
-child.stdout.on("data", (chunk) => {
-  buffer += chunk;
-  for (;;) {
-    const end = buffer.indexOf("\n");
-    if (end < 0) break;
-    const line = buffer.slice(0, end).trim();
-    buffer = buffer.slice(end + 1);
-    if (line) messages.push(JSON.parse(line));
-  }
-});
+const { messages, stderr } = captureJsonLines(child);
 
 function request(id, requestMethod, params) {
   child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", id, method: requestMethod, params })}\n`);

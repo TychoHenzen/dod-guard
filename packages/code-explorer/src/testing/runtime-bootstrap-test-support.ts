@@ -1,11 +1,10 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { RelationCapabilities } from "../semantic/contracts/contract.js";
 import type { LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
 import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
 import { createManagedPythonBackend } from "../semantic/runtime/runtime-bootstrap.js";
-import { runtimeOptions } from "./runtime-lsp-test-support.js";
+import { runtimeOptions, unavailableCapabilities } from "./runtime-lsp-test-support.js";
 
 class InitializingProcess implements LspProcess {
   sent: Record<string, unknown>[] = [];
@@ -69,19 +68,11 @@ export async function managedPythonRoots(): Promise<{
     prepare: () => ({ ...runtime.prepare(), executable: "fake" }),
     confirmInitialized: runtime.confirmInitialized,
   };
-  const capabilities: RelationCapabilities = {
-    definition: { state: "unavailable" },
-    references: { state: "unavailable" },
-    type_definition: { state: "unavailable" },
-    implementation: { state: "unavailable" },
-    callers: { state: "unavailable" },
-    callees: { state: "unavailable" },
-  };
   try {
     const backend = createManagedPythonBackend({
       projectRoot: createNativeProjectRoot(source),
       policy,
-      capabilities,
+      capabilities: unavailableCapabilities,
       options: {
         symbols: new Map(),
         spawn,

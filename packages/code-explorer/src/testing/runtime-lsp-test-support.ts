@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import type { LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
 import type { RuntimeLspBackendOptions } from "../semantic/runtime/runtime-lsp-backend.js";
 import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
+export { degradedCapabilities } from "./direct-lsp-semantic-support.js";
 
 export class Process implements LspProcess {
   readonly events: string[];
@@ -138,14 +139,18 @@ export const unavailableCapabilities = {
   callees: { state: "unavailable" },
 } as never;
 
-export const degradedCapabilities = {
-  definition: { state: "unavailable" },
-  references: { state: "ready" },
-  type_definition: { state: "unavailable" },
-  implementation: { state: "unavailable" },
-  callers: { state: "unavailable" },
-  callees: { state: "unavailable" },
-} as never;
+function readyPreparation() {
+  return {
+    status: "ready" as const,
+    executable: "server",
+    version: "test",
+    arguments: [],
+    shell: false as const,
+    environment: {},
+    endpoint: "stdio" as const,
+    safe_initialization_options: {},
+  };
+}
 
 export function runtimeOptions(
   process: LspProcess,
@@ -160,16 +165,7 @@ export function runtimeOptions(
     capabilities: unavailableCapabilities,
     toBackendUri: () => "file:///project/a.rs",
     fromBackendUri: () => "a.rs",
-    prepare: () => ({
-      status: "ready",
-      executable: "server",
-      version: "test",
-      arguments: [],
-      shell: false as const,
-      environment: {},
-      endpoint: "stdio" as const,
-      safe_initialization_options: {},
-    }),
+    prepare: readyPreparation,
     confirmInitialized: () => ({ status: "ready" }),
     spawn: () => process,
     ...overrides,
@@ -327,16 +323,7 @@ export function policyFailureOptions(onPrepare: () => void) {
   return {
     prepare: () => {
       onPrepare();
-      return {
-        status: "ready" as const,
-        executable: "server",
-        version: "test",
-        arguments: [],
-        shell: false as const,
-        environment: {},
-        endpoint: "stdio" as const,
-        safe_initialization_options: {},
-      };
+      return readyPreparation();
     },
     confirmInitialized: () => ({
       status: "unavailable" as const,
