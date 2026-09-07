@@ -26506,20 +26506,20 @@ function notFound() {
     body: ""
   };
 }
-function unsafePath2(request, assetRoot) {
-  return !assetRoot || request.path.includes("%") || request.path.includes("..") || request.path.includes("\\");
-}
 function contentType(actual) {
   if (actual.endsWith(".html")) return "text/html; charset=utf-8";
   if (actual.endsWith(".js")) return "text/javascript; charset=utf-8";
   return "text/css; charset=utf-8";
 }
+var assetNames = {
+  "/": "index.html",
+  "/index.html": "index.html",
+  "/client.js": "client.js",
+  "/style.css": "style.css"
+};
 function relativeAssetPath(request) {
-  const relative6 = request.path === "/" ? "index.html" : request.path.slice(1);
-  if (!relative6) return;
-  if (path2.isAbsolute(relative6)) return;
-  if (relative6.split("/").includes("..")) return;
-  return relative6;
+  const rawPath = request.path.split("?")[0]?.split("#")[0] ?? "/";
+  return assetNames[rawPath];
 }
 function isInsideRoot(root, actual) {
   return actual.startsWith(`${root}${path2.sep}`) || actual === root;
@@ -26527,7 +26527,8 @@ function isInsideRoot(root, actual) {
 async function loadAsset(context, request, relative6) {
   try {
     const root = await realpath(context.options.assetRoot);
-    const actual = await realpath(path2.join(root, relative6));
+    const candidate = path2.resolve(root, relative6);
+    const actual = await realpath(candidate);
     if (!isInsideRoot(root, actual)) return notFound();
     const body = await readAssetFile(actual, request.method === "HEAD");
     if (body === void 0) return notFound();
@@ -26549,7 +26550,6 @@ async function loadAsset(context, request, relative6) {
 async function asset(context, request) {
   if (request.method !== "GET" && request.method !== "HEAD")
     return json(405, browserError("method_not_allowed"));
-  if (unsafePath2(request, context.options.assetRoot)) return notFound();
   const relative6 = relativeAssetPath(request);
   if (!relative6) return notFound();
   return loadAsset(context, request, relative6);
@@ -27399,7 +27399,7 @@ function invalidProjectPathPart(part) {
 function safeGlobMatches(path5, glob) {
   if (!isSafeProjectGlob(glob)) return false;
   const expression = glob.split("**").map(
-    (part) => part.replace(/[.]/g, "\\.").replaceAll("*", "[^/]*").replaceAll("?", "[^/]")
+    (part) => part.replace(/[\\]/g, "\\\\").replace(/[.]/g, "\\.").replaceAll("*", "[^/]*").replaceAll("?", "[^/]")
   ).join(".*");
   return new RegExp(`^${expression}$`, "u").test(path5);
 }

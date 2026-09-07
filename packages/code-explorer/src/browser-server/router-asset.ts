@@ -19,33 +19,23 @@ function notFound(): BrowserHttpResponse {
   };
 }
 
-function unsafePath(
-  request: BrowserHttpRequest,
-  assetRoot: string | undefined,
-): boolean {
-  return (
-    !assetRoot ||
-    request.path.includes("%") ||
-    request.path.includes("..") ||
-    request.path.includes("\\")
-  );
-}
-
 function contentType(actual: string): string {
   if (actual.endsWith(".html")) return "text/html; charset=utf-8";
   if (actual.endsWith(".js")) return "text/javascript; charset=utf-8";
   return "text/css; charset=utf-8";
 }
 
-function relativeAssetPath(request: BrowserHttpRequest): string | undefined {
+type AssetName = "index.html" | "client.js" | "style.css";
+const assetNames: Record<string, AssetName | undefined> = {
+  "/": "index.html",
+  "/index.html": "index.html",
+  "/client.js": "client.js",
+  "/style.css": "style.css",
+};
+
+function relativeAssetPath(request: BrowserHttpRequest): AssetName | undefined {
   const rawPath = request.path.split("?")[0]?.split("#")[0] ?? "/";
-  const relative = rawPath === "/" ? "index.html" : rawPath.slice(1);
-  if (!relative) return;
-  const normalized = path.posix.normalize(relative);
-  if (!normalized || normalized.startsWith("/") || normalized === "..") return;
-  if (normalized.split("/").includes("..")) return;
-  if (path.isAbsolute(normalized)) return;
-  return normalized;
+  return assetNames[rawPath];
 }
 
 function isInsideRoot(root: string, actual: string): boolean {
@@ -55,7 +45,7 @@ function isInsideRoot(root: string, actual: string): boolean {
 async function loadAsset(
   context: BrowserRouterContext,
   request: BrowserHttpRequest,
-  relative: string,
+  relative: AssetName,
 ): Promise<BrowserHttpResponse> {
   try {
     const root = await realpath(context.options.assetRoot as string);
@@ -86,7 +76,6 @@ export async function asset(
 ): Promise<BrowserHttpResponse> {
   if (request.method !== "GET" && request.method !== "HEAD")
     return json(405, browserError("method_not_allowed"));
-  if (unsafePath(request, context.options.assetRoot)) return notFound();
   const relative = relativeAssetPath(request);
   if (!relative) return notFound();
   return loadAsset(context, request, relative);
