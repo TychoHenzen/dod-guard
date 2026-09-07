@@ -3,7 +3,7 @@ import { createServer, type Server } from "node:http";
 import type { Socket } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "../semantic/project-root.js";
+import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "../semantic/api/public-api.js";
 import { type BrowserCoreReply, BrowserHttpRouter } from "./http-router.js";
 
 export type BrowserServerErrorCode = "invalid_request" | "invalid_project_root" | "browser_port_unavailable";

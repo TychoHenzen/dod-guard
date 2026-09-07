@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createServer } from "../index.js";
-import type { LanguageAdapter } from "../semantic/language-adapter.js";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
+import type { LanguageAdapter } from "../semantic/adapters/language-adapter.js";
+import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
 
 it("returns a ready but empty landmark set without running ordinary search", async () => {
   const root = fixtureRoot();

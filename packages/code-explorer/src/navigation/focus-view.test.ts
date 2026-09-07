@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { WorkspaceFreshness } from "../freshness/workspace-freshness.js";
 import { createServer } from "../index.js";
-import type { LanguageAdapter } from "../semantic/language-adapter.js";
+import type { LanguageAdapter } from "../semantic/adapters/language-adapter.js";
 import { createFocusView, stableSymbolId } from "./focus-view.js";
 
 const symbol = {

@@ -4,7 +4,10 @@ import { FakeSemanticAdapter } from "./fake-semantic-adapter.js";
 
 it("records requests and supports default, request-specific, and failing results without a backend process", async () => {
   const adapter = new FakeSemanticAdapter<string>();
-  const request = { operation: "definition" as const, symbol_id: "symbol" };
+  const request = {
+    operation: "definition" as const,
+    symbol_id: "symbol",
+  };
   adapter.setReady();
   adapter.setResult("default");
   adapter.setResult(request, "specific");

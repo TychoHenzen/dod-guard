@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createServer } from "../index.js";
-import type { LanguageAdapter } from "../semantic/language-adapter.js";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
+import type { LanguageAdapter } from "../semantic/adapters/language-adapter.js";
+import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
 
 it("redacts backend payloads, absolute paths, and environment values from tool errors", async () => {
   const root = mkdtempSync(join(tmpdir(), "code-explorer-error-schema-"));

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
+import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
 import { createDiscoveryPipeline } from "./pipeline.js";
 
 it("returns bounded candidates with exact omissions and available narrowing filters", () => {

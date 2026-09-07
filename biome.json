@@ -90,6 +90,12 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/code-explorer/src/semantic/**/*.ts", "packages/code-explorer/src/testing/**/*.ts"],
+      "formatter": {
+        "lineWidth": 80
+      }
     }
   ]
 }

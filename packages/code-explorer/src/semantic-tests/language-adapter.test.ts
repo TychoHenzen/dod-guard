@@ -1,0 +1,47 @@
+import assert from "node:assert/strict";
+import { it } from "node:test";
+import { createRustAdapter } from "../semantic/adapters/language-adapter.js";
+
+function backend(state: () => "initializing" | "ready") {
+  return {
+    readiness: () => ({ state: state() }),
+    query: async () => ({
+      operation: "definition" as const,
+      revision: {
+        generation: 1,
+        manifest_sha256: "fixture",
+      },
+      relations: [],
+    }),
+  };
+}
+
+it("reports compatible backend readiness and preserves its value", async () => {
+  let state: "initializing" | "ready" = "initializing";
+  let now = 0;
+  const adapter = createRustAdapter({
+    backend: backend(() => state),
+    compatible: true,
+    backend_version: "1",
+    now: () => now,
+  });
+  assert.equal(adapter.status().state, "initializing");
+  now = 30_000;
+  assert.deepEqual(adapter.status().failure_code, "initialization_timeout");
+  state = "ready";
+  assert.equal(adapter.status().state, "ready");
+  assert.deepEqual(
+    await adapter.request({
+      operation: "definition",
+      symbol_id: "x",
+    }),
+    {
+      operation: "definition",
+      revision: {
+        generation: 1,
+        manifest_sha256: "fixture",
+      },
+      relations: [],
+    },
+  );
+});

@@ -9,8 +9,8 @@ import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { createServer, toMcpToolResult } from "./index.js";
-import type { LanguageAdapter } from "./semantic/language-adapter.js";
-import { createNativeProjectRoot } from "./semantic/project-root.js";
+import type { LanguageAdapter } from "./semantic/adapters/language-adapter.js";
+import { createNativeProjectRoot } from "./semantic/project-root/project-root.js";
 import { FakeSemanticAdapter } from "./testing/fake-semantic-adapter.js";
 
 const entryPoint = fileURLToPath(new URL("./index.js", import.meta.url));

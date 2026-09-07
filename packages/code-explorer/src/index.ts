@@ -37,13 +37,19 @@ import {
   validateResourceLimits,
 } from "./navigation/resource-limits.js";
 import { SessionCapacityError, SessionManager } from "./navigation/session.js";
-import { loadAdapterSelectionRecord } from "./semantic/adapter-selection.js";
-import { createBackendStatusReport } from "./semantic/backend-status.js";
-import type { RelationName, RelationResult, SymbolIdentity } from "./semantic/contract.js";
-import type { LanguageAdapter } from "./semantic/language-adapter.js";
-import { createNativeProjectRoot, ProjectPathError, type ProjectRoot } from "./semantic/project-root.js";
-import { RootAccessGate } from "./semantic/root-access.js";
-import { createStartedRuntimeAdapters } from "./semantic/runtime-bootstrap.js";
+import {
+  createBackendStatusReport,
+  createNativeProjectRoot,
+  createStartedRuntimeAdapters,
+  type LanguageAdapter,
+  loadAdapterSelectionRecord,
+  ProjectPathError,
+  type ProjectRoot,
+  type RelationName,
+  type RelationResult,
+  RootAccessGate,
+  type SymbolIdentity,
+} from "./semantic/api/public-api.js";
 
 const filename = fileURLToPath(import.meta.url);
 const packagePath = path.join(path.dirname(filename), "..", "package.json");

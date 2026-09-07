@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
-import { createNativeProjectRoot } from "../semantic/project-root.js";
+import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
 import { createDiscoveryPipeline } from "./pipeline.js";
 import { countSensitiveProjectPaths, isSensitiveProjectPath } from "./sensitive-paths.js";
 

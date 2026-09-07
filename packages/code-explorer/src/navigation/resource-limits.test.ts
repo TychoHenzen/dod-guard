@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createServer } from "../index.js";
-import type { LanguageAdapter } from "../semantic/language-adapter.js";
+import type { LanguageAdapter } from "../semantic/adapters/language-adapter.js";
 
 it("rejects oversized query, filter, candidate, and body limits before backend dispatch", async () => {
   let calls = 0;

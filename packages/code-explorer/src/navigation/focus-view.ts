@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import { createHash, randomBytes } from "node:crypto";
-import type { FocusContent, SymbolIdentity } from "../semantic/contract.js";
+import type { FocusContent, SymbolIdentity } from "../semantic/api/public-api.js";
 
 export const DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
 export const MIN_BODY_LIMIT_BYTES = 1024;

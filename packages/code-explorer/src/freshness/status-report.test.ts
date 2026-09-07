@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createServer } from "../index.js";
-import type { ProjectRoot } from "../semantic/project-root.js";
+import type { ProjectRoot } from "../semantic/project-root/project-root.js";
 
 it("reports modified tracked and untracked supported paths without exposing an absolute root", async () => {
   const server = createServer({
