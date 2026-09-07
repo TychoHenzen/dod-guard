@@ -24,11 +24,11 @@ function createPythonAdapterOptions(
   return {
     backend:
       prepared.status === "ready"
-        ? createManagedPythonBackend(
-            input.projectRoot,
-            input.policy,
-            input.capabilities,
-          )
+        ? createManagedPythonBackend({
+            projectRoot: input.projectRoot,
+            policy: input.policy,
+            capabilities: input.capabilities,
+          })
         : unavailableBackend,
     compatible: true,
     ...runtimeAdapterMetadata({

@@ -8,6 +8,35 @@ import {
   projectBackendPath,
 } from "../testing/direct-lsp-semantic-support.js";
 
+it("does not degrade a relation after a transient LSP request failure", async () => {
+  let requests = 0;
+  const source = mainRustSymbol();
+  const backend = createSemanticBackend({
+    symbols: new Map([[source.id, source]]),
+    client: {
+      ...locationClient([]),
+      request: async () => {
+        requests += 1;
+        if (requests === 1) throw new Error("transient");
+        return {
+          uri: "file:///project/src/main.rs",
+          range: {
+            start: { line: 0, character: 3 },
+            end: { line: 0, character: 7 },
+          },
+        };
+      },
+    },
+  });
+
+  await assert.rejects(backend.query({ operation: "definition", symbol_id: source.id }), /transient/);
+  const result = await backend.query({
+    operation: "definition",
+    symbol_id: source.id,
+  });
+  assert.equal(result.operation, "definition");
+});
+
 it("maps definition and references through protected semantic", async () => {
   const methods: string[] = [];
   const backend = createSemanticBackend({

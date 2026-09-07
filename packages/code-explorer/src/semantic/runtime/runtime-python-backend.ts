@@ -12,22 +12,20 @@ import {
   createPythonShutdown,
 } from "./runtime-python-backend-lifecycle.js";
 import type { PythonBuildInput } from "./runtime-python-backend-types.js";
-export function createManagedPythonBackend(
-  ...input: [
-    ProjectRoot,
-    BackendLaunchPolicy,
-    RelationCapabilities,
-    PythonBuildInput["options"]?,
-  ]
-) {
-  const [
+export function createManagedPythonBackend(input: {
+  projectRoot: ProjectRoot;
+  policy: BackendLaunchPolicy;
+  capabilities: RelationCapabilities;
+  options?: PythonBuildInput["options"];
+}) {
+  const {
     projectRoot,
     policy,
     capabilities,
     options = {
       symbols: new Map(),
     },
-  ] = input;
+  } = input;
   const context = createPythonContext({
     projectRoot,
     policy,

@@ -26108,15 +26108,15 @@ function createPythonShutdown(manager, getInner, setInner, setState) {
 }
 
 // src/semantic/runtime/runtime-python-backend.ts
-function createManagedPythonBackend(...input) {
-  const [
+function createManagedPythonBackend(input) {
+  const {
     projectRoot,
     policy,
     capabilities,
     options = {
       symbols: /* @__PURE__ */ new Map()
     }
-  ] = input;
+  } = input;
   const context = createPythonContext({
     projectRoot,
     policy,
@@ -26177,11 +26177,11 @@ function createPythonRuntimeAdapter(input) {
 }
 function createPythonAdapterOptions(input, prepared) {
   return {
-    backend: prepared.status === "ready" ? createManagedPythonBackend(
-      input.projectRoot,
-      input.policy,
-      input.capabilities
-    ) : unavailableBackend,
+    backend: prepared.status === "ready" ? createManagedPythonBackend({
+      projectRoot: input.projectRoot,
+      policy: input.policy,
+      capabilities: input.capabilities
+    }) : unavailableBackend,
     compatible: true,
     ...runtimeAdapterMetadata({
       backendName: input.backend.platform_executables[input.platform],

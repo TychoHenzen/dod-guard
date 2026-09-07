@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
+import type { RelationCapabilities } from "../semantic/contracts/contract.js";
 import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
 import { createManagedPythonBackend } from "../semantic/runtime/runtime-bootstrap.js";
 
@@ -77,16 +78,24 @@ export async function managedPythonRoots(): Promise<{
       status: "ready" as const,
     }),
   };
+  const capabilities: RelationCapabilities = {
+    definition: { state: "unavailable" },
+    references: { state: "unavailable" },
+    type_definition: { state: "unavailable" },
+    implementation: { state: "unavailable" },
+    callers: { state: "unavailable" },
+    callees: { state: "unavailable" },
+  };
   try {
-    const backend = createManagedPythonBackend(
-      createNativeProjectRoot(source),
+    const backend = createManagedPythonBackend({
+      projectRoot: createNativeProjectRoot(source),
       policy,
-      {} as never,
-      {
+      capabilities,
+      options: {
         symbols: new Map(),
         spawn,
       },
-    );
+    });
     await backend.start?.();
     await new Promise((resolve) => setImmediate(resolve));
     writeFileSync(
