@@ -933,10 +933,9 @@ async function main(): Promise<void> {
     shuttingDown ??= Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.())).then(() => undefined);
     return shuttingDown;
   };
-  transport.onclose = () => {
-    void server.close().then(shutdownBackends);
-  };
-  process.stdin.once("end", () => void server.close().then(shutdownBackends));
+  const closeServer = () => void server.close().then(shutdownBackends);
+  transport.onclose = closeServer;
+  process.stdin.once("end", closeServer);
   await server.mcp.connect(transport);
 }
 
