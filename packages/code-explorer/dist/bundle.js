@@ -31331,10 +31331,9 @@ async function main() {
     shuttingDown ??= Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.())).then(() => void 0);
     return shuttingDown;
   };
-  transport.onclose = () => {
-    void server.close().then(shutdownBackends);
-  };
-  process.stdin.once("end", () => void server.close().then(shutdownBackends));
+  const closeServer2 = () => void server.close().then(shutdownBackends);
+  transport.onclose = closeServer2;
+  process.stdin.once("end", closeServer2);
   await server.mcp.connect(transport);
 }
 function parseProjectRootArgument(arguments_) {
