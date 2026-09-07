@@ -1,0 +1,102 @@
+import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { it } from "node:test";
+import { classifyProjectPath, loadClassificationConfig, matchesDiscoveryFilters } from "../../discovery/classification.js";
+
+it("applies path, language, kind, content, and generated filters before ranking", () => {
+  const production = classifyProjectPath("src/helper.ts");
+  assert.equal(
+    matchesDiscoveryFilters(
+      "src/helper.ts",
+      production,
+      { path_globs: ["src/**"], languages: ["typescript"], kinds: ["function"] },
+      { language: "typescript", kind: "function" },
+    ),
+    true,
+  );
+  assert.equal(matchesDiscoveryFilters("src/helper.ts", production, { kinds: ["class"] }, { kind: "function" }), false);
+  assert.equal(matchesDiscoveryFilters("target/helper.ts", classifyProjectPath("target/helper.ts"), {}, {}), false);
+});
+it("keeps unknown only in the default search and excludes it from test and production-only filters", () => {
+  const unknown = classifyProjectPath("tools/helper.ts");
+  assert.deepEqual(unknown, { content: "unknown", source: "unknown" });
+  assert.equal(matchesDiscoveryFilters("tools/helper.ts", unknown, {}, {}), true);
+  assert.equal(matchesDiscoveryFilters("tools/helper.ts", unknown, { content: "production" }, {}), false);
+  assert.equal(matchesDiscoveryFilters("tools/helper.ts", unknown, { content: "tests" }, {}), false);
+});
+it("lets the last matching explicit override classify a generated path as production", () => {
+  const config = {
+    generated: [],
+    test: [],
+    production: [],
+    overrides: [{ glob: "generated/**", class: "production" as const }],
+  };
+  assert.deepEqual(classifyProjectPath("generated/helper.ts", config), {
+    content: "production",
+    source: "configuration_override",
+  });
+});
+
+it("applies ordered class arrays and ordered overrides after those arrays", () => {
+  const config = {
+    generated: ["shared/**"],
+    test: ["shared/**"],
+    production: ["shared/**"],
+    overrides: [
+      { glob: "shared/**", class: "test" as const },
+      { glob: "shared/**", class: "generated" as const },
+    ],
+  };
+  assert.deepEqual(classifyProjectPath("shared/helper.ts", config), {
+    content: "generated",
+    source: "configuration_override",
+  });
+});
+it("excludes generated content before ranking unless explicitly requested", () => {
+  const generated = classifyProjectPath("target/helper.ts");
+  assert.equal(matchesDiscoveryFilters("target/helper.ts", generated, {}, {}), false);
+});
+it("includes generated content when the client requests it", () => {
+  const generated = classifyProjectPath("target/helper.ts");
+  assert.equal(matchesDiscoveryFilters("target/helper.ts", generated, { include_generated: true }, {}), true);
+});
+it("excludes test content before ranking when production content is requested", () => {
+  const test = classifyProjectPath("tests/helper.test.ts");
+  assert.equal(matchesDiscoveryFilters("tests/helper.test.ts", test, { content: "production" }, {}), false);
+});
+it("falls back to defaults and reports a malformed classification configuration", () => {
+  const root = mkdtempSync(join(tmpdir(), "code-explorer-classification-"));
+  try {
+    writeFileSync(join(root, ".code-explorer.json"), JSON.stringify({ production: ["../escape.ts"], extra: [] }));
+    const loaded = loadClassificationConfig(root);
+    assert.deepEqual(loaded.status, { classification_config_invalid: true });
+    assert.deepEqual(classifyProjectPath("src/helper.ts", loaded.config), {
+      content: "production",
+      source: "production_marker",
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+it("reads a Windows case-insensitive configuration spelling", () => {
+  const root = mkdtempSync(join(tmpdir(), "code-explorer-classification-case-"));
+  try {
+    writeFileSync(join(root, ".CODE-EXPLORER.JSON"), JSON.stringify({ production: ["private/**"] }));
+    const loaded = loadClassificationConfig(root, "win32");
+    assert.deepEqual(classifyProjectPath("private/helper.ts", loaded.config), {
+      content: "production",
+      source: "configuration",
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+it("recognizes standard language test names before ranking", () => {
+  assert.deepEqual(classifyProjectPath("src/FooTests.cs"), { content: "test", source: "test_marker" });
+  assert.deepEqual(classifyProjectPath("pkg/test_helper.py"), { content: "test", source: "test_marker" });
+  assert.deepEqual(classifyProjectPath("crate/helper_test.rs"), { content: "test", source: "test_marker" });
+});

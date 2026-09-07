@@ -1,169 +1,32 @@
-import { lstatSync, readdirSync } from "node:fs";
-import { join } from "node:path";
-import { ProjectPathError, type ProjectRoot, type SymbolIdentity } from "../semantic/api/public-api.js";
+import type { ProjectRoot } from "../semantic/api/public-api.js";
 import {
   type ClassificationConfigStatus,
   classifyProjectPath,
   loadClassificationConfig,
-  matchesDiscoveryFilters,
-  type PathClassification,
 } from "./classification.js";
-import { isClassificationConfigPath } from "./config-path.js";
-import { type DiscoveryMatch, matchDiscoveryCandidates } from "./matcher.js";
-import { isSensitiveProjectPath } from "./sensitive-paths.js";
+import type { DiscoveryPipeline } from "./discovery-pipeline.js";
+import { collectPipelineFiles } from "./pipeline-files.js";
+import { createPipelineSearch } from "./pipeline-search.js";
 
-export type DiscoveryResult = DiscoveryMatch & PathClassification;
-export type DiscoverySearchResponse = {
-  candidates: readonly DiscoveryResult[];
-  omitted_candidate_count: number;
-  applied_filters: DiscoveryFilters;
-  available_narrowing_filters: readonly (keyof DiscoveryFilters)[];
-};
-export type DiscoveryPipeline = {
-  search(query: string, filters: DiscoveryFilters, symbols?: readonly SymbolIdentity[]): DiscoveryResult[];
-  searchResult(query: string, filters: DiscoveryFilters, symbols?: readonly SymbolIdentity[]): DiscoverySearchResponse;
-  status(): ClassificationConfigStatus;
-};
-export type DiscoveryFilters = {
-  path_globs?: readonly string[];
-  languages?: readonly string[];
-  kinds?: readonly string[];
-  content?: "all" | "production" | "tests";
-  include_generated?: boolean;
-  limit?: number;
-};
+export type { DiscoveryFilters } from "./discovery-filters.js";
+export type { DiscoveryPipeline } from "./discovery-pipeline.js";
+export type { DiscoveryResult } from "./discovery-result.js";
+export type { DiscoverySearchResponse } from "./discovery-search-response.js";
 
-/** Loads classification once for this project generation and filters before matching or limiting. */
+/** Loads classification once for this project generation and filters before
+ * matching or limiting.
+ */
 export function createDiscoveryPipeline(root: ProjectRoot): DiscoveryPipeline {
   const loaded = loadClassificationConfig(root.canonicalPath);
-  const candidates = collectSourceFiles(root).map((path) => ({
-    type: "file" as const,
-    path,
-    identity: `file:${path}`,
-    classification: classifyProjectPath(path, loaded.config, hasGeneratedHeader(root, path)),
-  }));
+  const candidates = collectPipelineFiles(root, loaded.config);
+  const search = createPipelineSearch({
+    root,
+    config: loaded.config,
+    candidates,
+  });
   return {
-    status: () => loaded.status,
-    search(query, filters, symbols = []) {
-      return searchCandidates(query, filters, symbols).slice(0, resultLimit(filters));
-    },
-    searchResult(query, filters, symbols = []) {
-      const matches = searchCandidates(query, filters, symbols);
-      const limit = resultLimit(filters);
-      return {
-        candidates: matches.slice(0, limit),
-        omitted_candidate_count: Math.max(0, matches.length - limit),
-        applied_filters: { ...filters },
-        available_narrowing_filters: ["path_globs", "languages", "kinds", "content", "include_generated"],
-      };
-    },
+    status: (): ClassificationConfigStatus => loaded.status,
+    search: search.search,
+    searchResult: search.searchResult,
   };
-
-  function searchCandidates(
-    query: string,
-    filters: DiscoveryFilters,
-    symbols: readonly SymbolIdentity[],
-  ): DiscoveryResult[] {
-    // Adapter locations are untrusted. Classify absolute paths before filtering denied project-relative paths.
-    const allowedSymbols = symbols
-      .map((symbol) => normalizeBackendSymbol(root, symbol))
-      .filter((symbol) => !isSensitiveProjectPath(symbol.location.path));
-    const semanticCandidates = allowedSymbols.map((symbol) => ({
-      type: "symbol" as const,
-      name: symbol.name,
-      path: symbol.location.path,
-      kind: symbol.kind,
-      identity: symbol.id,
-      classification: classifyProjectPath(
-        symbol.location.path,
-        loaded.config,
-        hasGeneratedHeader(root, symbol.location.path),
-      ),
-    }));
-    const allCandidates = [...candidates, ...semanticCandidates];
-    const classifications = new Map(allCandidates.map((candidate) => [candidate.identity, candidate.classification]));
-    const allowed = allCandidates.filter((candidate) => {
-      return matchesDiscoveryFilters(candidate.path, candidate.classification, filters, {
-        language:
-          candidate.type === "symbol"
-            ? allowedSymbols.find((symbol) => symbol.id === candidate.identity)?.language
-            : languageForPath(candidate.path),
-        ...(candidate.type === "symbol" ? { kind: candidate.kind } : {}),
-      });
-    });
-    return matchDiscoveryCandidates(query, allowed).map((candidate) => {
-      const classification = classifications.get(candidate.identity);
-      if (!classification) throw new Error("missing discovery classification");
-      return { ...candidate, ...classification };
-    });
-  }
-}
-
-function normalizeBackendSymbol(root: ProjectRoot, symbol: SymbolIdentity): SymbolIdentity {
-  const portablePath = symbol.location.path.replaceAll("\\", "/").replace(/^\.\//, "");
-  if (!isAbsoluteBackendPath(portablePath)) {
-    if (!portablePath || portablePath.split("/").includes("..")) throw new ProjectPathError("path_outside_project");
-    return { ...symbol, location: { ...symbol.location, path: portablePath } };
-  }
-  const classified = root.classifyBackendPath(portablePath);
-  if ("external" in classified) throw new ProjectPathError("path_outside_project");
-  return { ...symbol, location: { ...symbol.location, path: classified.relative_path } };
-}
-
-function isAbsoluteBackendPath(path: string): boolean {
-  return path.startsWith("/") || /^[A-Za-z]:\//.test(path);
-}
-
-function resultLimit(filters: DiscoveryFilters): number {
-  return Math.max(0, filters.limit ?? 50);
-}
-
-function hasGeneratedHeader(root: ProjectRoot, path: string): boolean {
-  try {
-    const header = root.protectedRead(path).bytes.slice(0, 2048);
-    return /(?:^|\n)\s*(?:\/\/|#|\/\*)\s*(?:<auto-generated>|auto-generated\b|generated by\b)/iu.test(header);
-  } catch {
-    return false;
-  }
-}
-
-function collectSourceFiles(root: ProjectRoot): string[] {
-  const found: string[] = [];
-  const visit = (directory: string, prefix: string) => {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
-      const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-      const absolute = join(directory, entry.name);
-      if (
-        isSensitiveProjectPath(relative) ||
-        isClassificationConfigPath(relative) ||
-        lstatSync(absolute).isSymbolicLink()
-      )
-        continue;
-      if (entry.isDirectory()) {
-        if (!isIgnoredDirectory(relative)) visit(absolute, relative);
-      } else if (entry.isFile() && languageForPath(relative)) found.push(relative);
-    }
-  };
-  visit(root.canonicalPath, "");
-  return found;
-}
-
-function isIgnoredDirectory(path: string): boolean {
-  return path.split("/").some((part) => /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(part));
-}
-
-function languageForPath(path: string): string | undefined {
-  const extension = path.split(".").at(-1)?.toLowerCase();
-  return (
-    {
-      rs: "rust",
-      py: "python",
-      pyi: "python",
-      cs: "csharp",
-      ts: "typescript",
-      tsx: "typescript",
-      js: "javascript",
-      jsx: "javascript",
-    } as Record<string, string>
-  )[extension ?? ""];
 }

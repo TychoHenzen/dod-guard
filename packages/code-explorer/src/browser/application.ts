@@ -6,44 +6,33 @@ import {
   loadLandmarks,
   renderDiscoveryArea,
 } from "./application-discovery.js";
-import { bindHistory, bindRefresh, showActionStatus } from "./application-events.js";
+import {
+  bindHistory,
+  bindRefresh,
+  showActionStatus,
+} from "./application-events.js";
 import { ApplicationFocusController } from "./application-focus.js";
-import { type BrowserReply, focusedSource } from "./browser-reply.js";
-import { browserRequest } from "./browser-request.js";
-import { BrowserFocusNavigation, type FocusReply } from "./focus-navigation.js";
-import { BrowserRelationView } from "./relations.js";
+import { createNavigation } from "./application-navigation.js";
+import { BrowserFocusNavigation } from "./focus-navigation.js";
+import { BrowserRelationView } from "./relation-view.js";
 import type { BrowserStorage } from "./session.js";
 
-function focusReply(reply: BrowserReply): FocusReply {
-  const source = focusedSource(reply);
-  const data = source && {
-    view_id: source.view_id,
-    symbol_id: source.symbol.symbol_id,
-    name: source.symbol.name,
-    source,
-  };
-  return data ? { state: "ok", data } : { state: "invalid_browser_view" };
+function bindRefocus(
+  navigation: BrowserFocusNavigation,
+  focusSymbol: (symbolId: string) => Promise<void>,
+): void {
+  document
+    .querySelector<HTMLElement>('[data-operation="refocus"]')
+    ?.addEventListener("click", () => {
+      const symbolId = navigation.state().focus?.symbol_id;
+      if (symbolId) void focusSymbol(symbolId);
+    });
 }
 
-function createNavigation(storage: BrowserStorage): BrowserFocusNavigation {
-  return new BrowserFocusNavigation(undefined, async ({ symbol_id }) =>
-    focusReply(
-      await browserRequest(storage, "api/focus", {
-        request_id: crypto.randomUUID(),
-        symbol_id,
-      }),
-    ),
-  );
-}
-
-function bindRefocus(navigation: BrowserFocusNavigation, focusSymbol: (symbolId: string) => Promise<void>): void {
-  document.querySelector<HTMLElement>('[data-operation="refocus"]')?.addEventListener("click", () => {
-    const symbolId = navigation.state().focus?.symbol_id;
-    if (symbolId) void focusSymbol(symbolId);
-  });
-}
-
-function bindDiscovery(storage: BrowserStorage, focusSymbol: (symbolId: string) => Promise<void>): void {
+function bindDiscovery(
+  storage: BrowserStorage,
+  focusSymbol: (symbolId: string) => Promise<void>,
+): void {
   let discovery = createDiscovery(storage, []);
   bindSymbols(focusSymbol);
   bindSearch(
@@ -57,24 +46,40 @@ function bindDiscovery(storage: BrowserStorage, focusSymbol: (symbolId: string) 
   });
 }
 
-function bindHistoryNavigation(navigation: BrowserFocusNavigation, relationView: BrowserRelationView): void {
-  bindHistory(async (action) => {
-    const moved = action === "back" ? navigation.back() : navigation.forward();
-    if (moved) {
-      relationView.renderFocusedView();
-      showActionStatus("ready");
-      return;
-    }
-    showActionStatus("history_empty");
-  });
+function bindHistoryNavigation(
+  navigation: BrowserFocusNavigation,
+  relationView: BrowserRelationView,
+): void {
+  bindHistory((action) => handleHistory(action, navigation, relationView));
 }
 
-export function startApplication(storage: BrowserStorage, startedState: string, root: HTMLDivElement): void {
+async function handleHistory(
+  action: "back" | "forward",
+  navigation: BrowserFocusNavigation,
+  relationView: BrowserRelationView,
+): Promise<void> {
+  const moved = action === "back" ? navigation.back() : navigation.forward();
+  if (moved) {
+    relationView.renderFocusedView();
+    showActionStatus("ready");
+    return;
+  }
+  showActionStatus("history_empty");
+}
+
+export function startApplication(
+  storage: BrowserStorage,
+  startedState: string,
+  root: HTMLDivElement,
+): void {
   const store = createBrowserStore({ status: startedState, landmarks: [] });
   root.innerHTML = renderBrowserBody(store.state(), window.innerWidth);
   const navigation = createNavigation(storage);
   const relationView = new BrowserRelationView(storage, navigation);
-  const focusController = new ApplicationFocusController(navigation, relationView);
+  const focusController = new ApplicationFocusController(
+    navigation,
+    relationView,
+  );
   const focusSymbol = focusController.focusSymbol.bind(focusController);
   bindRefocus(navigation, focusSymbol);
   bindDiscovery(storage, focusSymbol);

@@ -1,37 +1,39 @@
-import type { BrowserFocusNavigation, FocusTarget } from "./focus-navigation.js";
+import type {
+  BrowserFocusNavigation,
+  FocusTarget,
+} from "./focus-navigation.js";
 import {
   type GraphFocus,
   type GraphNode,
   type GraphRelationGroup,
   type OneHopGraph,
   projectOneHopGraph,
-  renderOneHopGraph,
 } from "./graph.js";
 
-export type GraphRenderOptions = { stale?: boolean; collapsed?: boolean };
+import type { GraphRelationInput } from "./graph-relation-input.js";
+import type { GraphRenderOptions } from "./graph-render-options.js";
 
-type GraphRelationInput = {
-  relation: GraphRelationGroup["relation"] | "implementation";
-  state: GraphRelationGroup["state"];
-  candidates: readonly {
-    symbol_id?: string;
-    name?: string;
-    display_name?: string;
-    local_handle?: string;
-    external: boolean;
-    discovery_only?: boolean;
-  }[];
-  omitted_count: number;
-};
+export type { GraphRelationInput } from "./graph-relation-input.js";
+export type { GraphRenderOptions } from "./graph-render-options.js";
+export { renderGraphArea } from "./graph-render-area.js";
 
-function graphName(candidate: GraphRelationInput["candidates"][number]): string {
-  return candidate.name ?? candidate.display_name ?? candidate.symbol_id ?? "";
+function graphName(
+  candidate: GraphRelationInput["candidates"][number],
+): string {
+  if (candidate.name) return candidate.name;
+  if (candidate.display_name) return candidate.display_name;
+  return candidate.symbol_id ?? "";
 }
 
-/** Converts the loaded browser relation representation into the graph's verified local semantic input. */
-export function toGraphRelationGroups(groups: readonly GraphRelationInput[]): GraphRelationGroup[] {
+/** Converts the loaded browser relation representation into the graph's
+ * verified local semantic input.
+ */
+export function toGraphRelationGroups(
+  groups: readonly GraphRelationInput[],
+): GraphRelationGroup[] {
   return groups.map((group) => ({
-    relation: group.relation === "implementation" ? "implementations" : group.relation,
+    relation:
+      group.relation === "implementation" ? "implementations" : group.relation,
     state: group.state,
     omitted_count: group.omitted_count,
     candidates: group.candidates.flatMap((candidate) =>
@@ -49,8 +51,13 @@ export function toGraphRelationGroups(groups: readonly GraphRelationInput[]): Gr
   }));
 }
 
-/** Stores graph data as plain immutable browser-view state, including its stale presentation status. */
-export function graphSnapshot(graph: OneHopGraph, stale: boolean): Record<string, unknown> {
+/** Stores graph data as plain immutable browser-view state, including its
+ * stale presentation status.
+ */
+export function graphSnapshot(
+  graph: OneHopGraph,
+  stale: boolean,
+): Record<string, unknown> {
   return {
     nodes: graph.nodes.map((node) => ({ ...node })),
     edges: graph.edges.map((edge) => ({ ...edge })),
@@ -59,34 +66,28 @@ export function graphSnapshot(graph: OneHopGraph, stale: boolean): Record<string
   };
 }
 
-/** Keeps graph selection on the normal local focus path and denies stale or center-node actions. */
+export function graphFor(
+  focus: GraphFocus,
+  groups: readonly GraphRelationInput[],
+): OneHopGraph {
+  return projectOneHopGraph(focus, toGraphRelationGroups(groups));
+}
+
+/** Keeps graph selection on the normal local focus path and denies stale or
+ * center-node actions.
+ */
 export class BrowserGraphController {
   constructor(
     private readonly navigation: BrowserFocusNavigation,
     private readonly isStale: () => boolean,
-    private readonly selectTarget: (target: FocusTarget) => Promise<boolean> = (target) =>
-      navigation.selectRelation(target),
+    private readonly selectTarget: (target: FocusTarget) => Promise<boolean> = (
+      target,
+    ) => navigation.selectRelation(target),
   ) {}
-
-  graphFor(focus: GraphFocus, groups: readonly GraphRelationInput[]): OneHopGraph {
-    return projectOneHopGraph(focus, toGraphRelationGroups(groups));
-  }
 
   async select(node: GraphNode | undefined): Promise<boolean> {
     if (!node?.selectable || this.isStale()) return false;
     const target: FocusTarget = { symbol_id: node.symbol_id };
     return this.selectTarget(target);
-  }
-}
-
-/** Contains invalid graph data or layout failures to the SVG area. */
-export function renderGraphArea(graph: OneHopGraph, options: GraphRenderOptions = {}): string {
-  if (options.collapsed) return '<section data-area="graph" data-state="collapsed">collapsed</section>';
-  try {
-    const svg = renderOneHopGraph(graph);
-    if (options.stale) return `<section data-area="graph" data-state="stale">stale${svg}</section>`;
-    return `<section data-area="graph" data-state="ready">${svg}</section>`;
-  } catch {
-    return '<section data-area="graph" data-state="failed">graph_render_failed</section>';
   }
 }

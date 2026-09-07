@@ -1,9 +1,17 @@
-import type { BrowserFocus, FocusNavigationState } from "./history.js";
-import type { FocusedSource } from "./source.js";
+import type { BrowserFocus } from "./browser-focus.js";
+import type { FocusReply } from "./focus-reply.js";
+import {
+  createFocusNavigationState,
+  type FocusNavigationState,
+} from "./focus-navigation-state.js";
+import type { FocusTarget } from "./focus-target.js";
+import { moveHistory } from "./focus-history.js";
+import { commitFocus, commitFocusReply } from "./focus-state-transitions.js";
 
-export type FocusTarget = { symbol_id: string };
-export type FocusReply = { state: string; data?: BrowserFocus };
-export type { BrowserFocus, FocusNavigationState } from "./history.js";
+export type { BrowserFocus } from "./browser-focus.js";
+export type { FocusNavigationState } from "./focus-navigation-state.js";
+export type { FocusReply } from "./focus-reply.js";
+export type { FocusTarget } from "./focus-target.js";
 
 export class BrowserFocusNavigation {
   private current: FocusNavigationState;
@@ -13,9 +21,7 @@ export class BrowserFocusNavigation {
     initial: BrowserFocus | undefined,
     private readonly focusCore: (request: FocusTarget) => Promise<FocusReply>,
   ) {
-    this.current = initial
-      ? { focus: initial, history: [initial], historyPosition: 0 }
-      : { history: [], historyPosition: -1 };
+    this.current = createFocusNavigationState(initial);
   }
 
   state(): FocusNavigationState {
@@ -45,22 +51,20 @@ export class BrowserFocusNavigation {
   }
 
   back(): boolean {
-    if (this.current.historyPosition <= 0) return false;
-    this.requestSequence += 1;
-    const historyPosition = this.current.historyPosition - 1;
-    const focus = this.current.history[historyPosition];
-    if (!focus) return false;
-    this.current = { ...this.current, focus, historyPosition, error: undefined };
+    const next = moveHistory(this.current, "back", () => {
+      this.requestSequence += 1;
+    });
+    if (!next) return false;
+    this.current = next;
     return true;
   }
 
   forward(): boolean {
-    if (this.current.historyPosition >= this.current.history.length - 1) return false;
-    const historyPosition = this.current.historyPosition + 1;
-    const focus = this.current.history[historyPosition];
-    if (!focus) return false;
-    this.requestSequence += 1;
-    this.current = { ...this.current, focus, historyPosition, error: undefined };
+    const next = moveHistory(this.current, "forward", () => {
+      this.requestSequence += 1;
+    });
+    if (!next) return false;
+    this.current = next;
     return true;
   }
 
@@ -81,16 +85,12 @@ export class BrowserFocusNavigation {
   }
 
   private commitReply(reply: FocusReply): boolean {
-    if (reply.state !== "ok" || !reply.data) {
-      this.current = { ...this.current, error: reply.state };
-      return false;
-    }
-    this.commit(reply.data);
-    return true;
+    const committed = commitFocusReply(this.current, reply);
+    this.current = committed.state;
+    return committed.accepted;
   }
 
   private commit(focus: BrowserFocus): void {
-    const history = [...this.current.history.slice(0, this.current.historyPosition + 1), focus];
-    this.current = { focus, history, historyPosition: history.length - 1, error: undefined };
+    this.current = commitFocus(this.current, focus);
   }
 }

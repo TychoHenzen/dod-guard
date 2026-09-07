@@ -2,10 +2,10 @@
 import { writeFileSync } from "node:fs";
 
 const GITHUB_PULL_URL = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)\/?$/i;
-const GITHUB_PULL_NUMBER = /^#(\d+)$/;
 const AZURE_PULL_URL =
   /^https:\/\/(?:dev\.azure\.com\/([^/]+)|([^.]+)\.visualstudio\.com)\/([^/]+)\/_git\/([^/]+)\/pullrequest\/(\d+)\/?$/i;
-const AZURE_PULL_NUMBER = /^(?:ado:)?(\d+)$/i;
+const PULL_REQUEST_NUMBER = /^#?(\d+)$/;
+const AZURE_PULL_NUMBER = /^ado:(\d+)$/i;
 const HTML_BREAK = /<br\s*\/?>/gi;
 const HTML_PARAGRAPH_END = /<\/p>/gi;
 const HTML_TEXT_ENTITY = /&(nbsp|amp|lt|gt|quot|#39);/gi;
@@ -48,11 +48,6 @@ function normalizeReviewTarget(input, currentBranch) {
   if (github) {
     return { owner: github[1], provider: "github", pullNumber: Number(github[3]), repository: github[2] };
   }
-  const githubNumber = value.match(GITHUB_PULL_NUMBER);
-  if (githubNumber) {
-    return { provider: "github", pullNumber: Number(githubNumber[1]) };
-  }
-
   const azure = value.match(AZURE_PULL_URL);
   if (azure) {
     return {
@@ -63,9 +58,20 @@ function normalizeReviewTarget(input, currentBranch) {
       repository: decodeURIComponent(azure[4]),
     };
   }
+  const pullRequestNumber = value.match(PULL_REQUEST_NUMBER);
+  if (pullRequestNumber) {
+    return {
+      pullNumber: Number(pullRequestNumber[1]),
+      source: "pull-request-id",
+    };
+  }
   const azureNumber = value.match(AZURE_PULL_NUMBER);
   if (azureNumber) {
-    return { provider: "azure", pullNumber: Number(azureNumber[1]) };
+    return {
+      provider: "azure",
+      pullNumber: Number(azureNumber[1]),
+      source: "explicit-azure-id",
+    };
   }
 
   return { provider: "git", ref: value, source: "named-ref" };

@@ -43,6 +43,17 @@ test("normalizes current, named, GitHub, and Azure targets", () => {
   });
 });
 
+test("normalizes numeric pull request IDs without using # to choose a provider", () => {
+  const expected = { pullNumber: 19, source: "pull-request-id" };
+  assert.deepEqual(normalizeReviewTarget("19", "ignored"), expected);
+  assert.deepEqual(normalizeReviewTarget("#19", "ignored"), expected);
+  assert.deepEqual(normalizeReviewTarget("ado:19", "ignored"), {
+    provider: "azure",
+    pullNumber: 19,
+    source: "explicit-azure-id",
+  });
+});
+
 test("normalizes GitHub PBI acceptance criteria and sub-issues", () => {
   const result = normalizeGitHubHierarchy({
     body: "## Outcome\nWorks.\n\n## Acceptance criteria\n- [ ] Visible result\n\n## Verification\nRun it.",

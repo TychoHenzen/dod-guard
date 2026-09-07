@@ -22,8 +22,8 @@ import { normalizeDiscoveryQuery } from "./discovery/matcher.js";
 import { createDiscoveryPipeline, type DiscoveryPipeline } from "./discovery/pipeline.js";
 import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
 import { ProjectGenerationScheduler } from "./freshness/project-generation-scheduler.js";
+import { createNativeWorkspaceFreshness } from "./freshness/workspace-native.js";
 import {
-  createNativeWorkspaceFreshness,
   type FreshnessStatus,
   WorkspaceFreshness,
 } from "./freshness/workspace-freshness.js";
