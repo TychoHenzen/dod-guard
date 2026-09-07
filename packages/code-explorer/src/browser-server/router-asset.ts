@@ -38,11 +38,14 @@ function contentType(actual: string): string {
 }
 
 function relativeAssetPath(request: BrowserHttpRequest): string | undefined {
-  const relative = request.path === "/" ? "index.html" : request.path.slice(1);
+  const rawPath = request.path.split("?")[0]?.split("#")[0] ?? "/";
+  const relative = rawPath === "/" ? "index.html" : rawPath.slice(1);
   if (!relative) return;
-  if (path.isAbsolute(relative)) return;
-  if (relative.split("/").includes("..")) return;
-  return relative;
+  const normalized = path.posix.normalize(relative);
+  if (!normalized || normalized.startsWith("/") || normalized === "..") return;
+  if (normalized.split("/").includes("..")) return;
+  if (path.isAbsolute(normalized)) return;
+  return normalized;
 }
 
 function isInsideRoot(root: string, actual: string): boolean {
@@ -56,7 +59,8 @@ async function loadAsset(
 ): Promise<BrowserHttpResponse> {
   try {
     const root = await realpath(context.options.assetRoot as string);
-    const actual = await realpath(path.join(root, relative));
+    const candidate = path.resolve(root, relative);
+    const actual = await realpath(candidate);
     if (!isInsideRoot(root, actual)) return notFound();
     const body = await readAssetFile(actual, request.method === "HEAD");
     if (body === undefined) return notFound();
