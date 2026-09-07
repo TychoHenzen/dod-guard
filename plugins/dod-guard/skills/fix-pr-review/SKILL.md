@@ -57,8 +57,16 @@ node "<skill-dir>/scripts/fix-support.mjs" parse-azure-report --input "<report.m
 ```
 
 Stop when a selected ID is absent or belongs to another provider. Mark resolved
-or outdated selections as stale and skip them with evidence. Never silently
-replace the user's selection with all findings.
+selections as stale and skip them with evidence. Treat outdated selections as
+still eligible for revalidation. Never silently replace the user's selection
+with all findings.
+
+For GitHub, `isOutdated` only means that at least one commit was made after the
+inline comment was placed, so its original file position or diff anchor may no
+longer match the current head. It does not mean that the comment is invalid,
+that the issue was fixed, or that the finding no longer needs work. Re-check an
+outdated finding against the current code and fix it when the claim remains
+valid.
 
 ## Load the behavior contract
 
@@ -88,10 +96,12 @@ longer matches the checked-out commit. For each selected finding:
 3. Compare the finding with the PBI and repository instructions.
 4. Classify it as `actionable`, `stale`, `already-fixed`, or `unsupported`.
 
-A resolved or provider-outdated comment is stale. A missing current location is
-stale. A claim disproved by current code is already fixed. A claim that
-conflicts with the PBI or lacks evidence is unsupported. Record exact evidence
-for every non-actionable selection. Do not edit for it.
+A resolved comment is stale for this workflow. A provider-outdated comment is
+not stale by itself. A missing current location is stale only after searching
+the current tree for the moved or renamed code. A claim disproved by current
+code is already fixed. A claim that conflicts with the PBI or lacks evidence is
+unsupported. Record exact evidence for every non-actionable selection. Do not
+edit for it.
 
 ## Implement and verify
 
