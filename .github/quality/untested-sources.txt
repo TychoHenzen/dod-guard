@@ -222,3 +222,14 @@ packages/code-explorer/src/testing/python-mirror-runtime-test-support.ts
 packages/code-explorer/src/testing/root-access-test-support.ts
 packages/code-explorer/src/testing/runtime-bootstrap-test-support.ts
 packages/code-explorer/src/testing/runtime-lsp-test-support.ts
+packages/code-explorer/src/semantic/adapter-selection/index.ts
+packages/code-explorer/src/semantic/adapters/index.ts
+packages/code-explorer/src/semantic/backend-result/validator.ts
+packages/code-explorer/src/semantic/direct-lsp/direct-lsp-state-resources.ts
+packages/code-explorer/src/semantic/direct-lsp/direct-lsp-state-storage.ts
+packages/code-explorer/src/semantic/direct-lsp/semantic.ts
+packages/code-explorer/src/semantic/direct-lsp/telemetry.ts
+packages/code-explorer/src/semantic/python-mirror/index.ts
+packages/code-explorer/src/semantic/python-mirror/runtime.ts
+packages/code-explorer/src/semantic/runtime/index.ts
+packages/code-explorer/src/semantic/workspace/index.ts
