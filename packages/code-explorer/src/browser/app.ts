@@ -1,4 +1,4 @@
-import type { BrowserOperation, BrowserShellState, LandmarkGroup } from "./types.js";
+import type { BrowserOperation, BrowserShellState } from "./types.js";
 
 export type BrowserAction = {
   operation: BrowserOperation | string;
@@ -6,7 +6,15 @@ export type BrowserAction = {
   drawer?: "discovery" | "relations" | undefined;
 };
 
-export type { BrowserOperation, BrowserShellState, LandmarkGroup } from "./types.js";
+export {
+  renderBrowserBody,
+  renderBrowserShell,
+} from "./browser-shell-render.js";
+export type {
+  BrowserOperation,
+  BrowserShellState,
+  LandmarkGroup,
+} from "./types.js";
 
 const visibleOperations: readonly BrowserOperation[] = [
   "search",
@@ -20,71 +28,44 @@ const visibleOperations: readonly BrowserOperation[] = [
   "set_drawer",
 ];
 
-function escapeText(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+function defaultValue<T>(value: T | undefined, fallback: T): T {
+  if (value !== undefined) return value;
+  return fallback;
 }
 
-/** Holds local shell state. Navigation effects remain restricted to the shared read-only core. */
-export function createBrowserStore(initial: Partial<BrowserShellState> = {}) {
-  let state: BrowserShellState = {
-    landmarks: initial.landmarks ?? [],
+function initialState(initial: Partial<BrowserShellState>): BrowserShellState {
+  return {
+    landmarks: defaultValue(initial.landmarks, []),
     focus: initial.focus,
     activeDrawer: initial.activeDrawer,
-    status: initial.status ?? "Project ready",
-    navigationEnabled: initial.navigationEnabled ?? true,
+    status: defaultValue(initial.status, "Project ready"),
+    navigationEnabled: defaultValue(initial.navigationEnabled, true),
   };
+}
 
+function applyAction(
+  state: BrowserShellState,
+  action: BrowserAction,
+): BrowserShellState {
+  if (!visibleOperations.includes(action.operation as BrowserOperation))
+    throw new Error("unsupported_browser_operation");
+  if (action.operation === "focus" && action.symbol)
+    return { ...state, focus: action.symbol };
+  if (action.operation === "set_drawer")
+    return { ...state, activeDrawer: action.drawer };
+  return state;
+}
+
+/** Holds local shell state. Navigation effects remain restricted to the shared
+ * core.
+ */
+export function createBrowserStore(initial: Partial<BrowserShellState> = {}) {
+  let state = initialState(initial);
   return {
     state: (): BrowserShellState => state,
     visibleOperations: (): readonly BrowserOperation[] => visibleOperations,
     dispatch: (action: BrowserAction): void => {
-      if (!visibleOperations.includes(action.operation as BrowserOperation))
-        throw new Error("unsupported_browser_operation");
-      if (action.operation === "focus" && action.symbol) state = { ...state, focus: action.symbol };
-      if (action.operation === "set_drawer") state = { ...state, activeDrawer: action.drawer };
+      state = applyAction(state, action);
     },
   };
-}
-
-function renderLandmarks(landmarks: readonly LandmarkGroup[]): string {
-  if (landmarks.length === 0) return '<p data-state="empty">No landmarks available</p>';
-  return landmarks
-    .map(
-      ({ group, items }) =>
-        `<section class="landmark-group"><h3>${escapeText(group)}</h3><ul>${items
-          .map((item) =>
-            typeof item === "string"
-              ? `<li>${escapeText(item)}</li>`
-              : `<li><button type="button" data-symbol-id="${escapeText(item.symbol_id)}">${escapeText(item.name)}</button> <span>${escapeText(item.kind)} · ${escapeText(item.path)}</span></li>`,
-          )
-          .join("")}</ul></section>`,
-    )
-    .join("");
-}
-
-function drawerButton(name: "discovery" | "relations", open: boolean): string {
-  const label = name === "discovery" ? "Discovery" : "Relations";
-  return `<button type="button" data-drawer="${name}" aria-controls="${name}-pane" aria-expanded="${open}">${label}</button>`;
-}
-
-/** Produces the application shell from text-only state, with no untrusted markup interpolation. */
-export function renderBrowserShell(state: BrowserShellState, viewportWidth: number): string {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Code Explorer</title></head><body>${renderBrowserBody(state, viewportWidth)}</body></html>`;
-}
-
-/** Renders the application body for the packaged page that already owns the document head. */
-export function renderBrowserBody(state: BrowserShellState, viewportWidth: number): string {
-  const narrow = viewportWidth < 900;
-  const discoveryDrawer = narrow ? drawerButton("discovery", state.activeDrawer === "discovery") : "";
-  const relationDrawer = narrow ? drawerButton("relations", state.activeDrawer === "relations") : "";
-  const focus = state.focus
-    ? `<article class="focused-symbol"><h2>${escapeText(state.focus.name)}</h2><p>${escapeText(state.focus.kind)} · ${escapeText(state.focus.path)}</p></article>`
-    : '<p data-state="empty-focus">Select a symbol</p>';
-  const disabled = state.navigationEnabled ? "" : " disabled";
-  return `<header class="status-strip"><span data-area="status">${escapeText(state.status)}</span><nav aria-label="Navigation"><button type="button" data-operation="back"${disabled}>Back</button><button type="button" data-operation="forward"${disabled}>Forward</button><button type="button" data-operation="refocus"${disabled}>Refocus</button><button type="button" data-operation="refresh">Refresh</button></nav></header><main class="explorer-shell ${narrow ? "narrow" : "desktop"}">${discoveryDrawer}<aside id="discovery-pane" data-pane="discovery"><h2>Landmarks</h2><label>Search <input type="search" data-operation="search"${disabled}></label><div data-area="discovery">${renderLandmarks(state.landmarks)}</div></aside><section data-pane="focus"><h1>Focused source</h1><div data-area="source">${focus}</div><div data-area="graph" data-state="empty">No graph loaded</div></section><aside id="relations-pane" data-pane="relations"><h2>Relations</h2><p data-state="empty-relations">No relations loaded</p></aside>${relationDrawer}</main>`;
 }

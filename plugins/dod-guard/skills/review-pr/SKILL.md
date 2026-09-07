@@ -1,7 +1,7 @@
 ---
 name: review-pr
 description: Review a Git branch or GitHub pull request with four independent reviewers and inline findings, or review an Azure DevOps pull request into one Markdown report. Loads the linked PBI and subtasks before judging the implementation.
-argument-hint: "[current branch, Git ref, GitHub PR URL or #number, or Azure DevOps PR URL or ID] [Azure report path]"
+argument-hint: "[current branch, Git ref, PR URL or ID, or ado:<id>] [Azure report path]"
 ---
 
 # Review pull request
@@ -29,10 +29,12 @@ run:
 node "<skill-dir>/scripts/review-support.mjs" normalize-target --input "<target argument or empty>" --current-branch "<current branch>"
 ```
 
-An empty argument means the current branch. Any non-provider value is a named
-local or remote Git ref. A GitHub PR URL or `#number` selects GitHub mode. An
-Azure DevOps PR URL, numeric ID, or `ado:<id>` selects Azure mode. A bare
-numeric ID is Azure-only so GitHub numbers remain explicit.
+An empty argument means the current branch. A GitHub or Azure DevOps PR URL
+selects its provider from the URL. A numeric PR ID, with or without a leading
+`#`, is provider-neutral. Resolve its provider from the repository remote and
+provider metadata before selecting GitHub or Azure. Never use the `#` marker to
+choose a provider. `ado:<id>` remains an explicit Azure shortcut. Any other
+non-provider value is a named local or remote Git ref.
 
 ## Build one review context
 
@@ -76,6 +78,10 @@ repository, changed files, closing issues, and linked issue hierarchy. Read
 same-repository files with `git show <headSha>:<path>`. Read fork files through
 the GitHub Contents API at the exact SHA.
 
+For a provider-neutral numeric PR ID, first resolve the repository's actual
+provider from its remote and metadata. Then use that provider's PR API. Do not
+infer GitHub or Azure from whether the ID has a `#` prefix.
+
 For a local or named Git ref, look for its associated GitHub pull request. If
 none exists, extract an issue number only from an unambiguous branch segment
 such as `codex/33-name`, then load that issue. Stop and name the missing PBI when
@@ -84,9 +90,9 @@ parent and children with `normalize-github-hierarchy`.
 
 ### Azure DevOps
 
-Azure mode activates only for an explicit Azure PR URL or ID. Resolve URL
-components from the URL. For an ID, derive organization, project, and
-repository from the current Azure remote or stop. Use the authenticated Azure
+Azure mode activates only for an explicit Azure PR URL or `ado:<id>` shortcut.
+Resolve URL components from the URL. For `ado:<id>`, derive organization,
+project, and repository from the current Azure remote or stop. Use the authenticated Azure
 CLI or REST API. Never place a PAT in a command, URL, context, or report.
 
 Load PR source and target refs, immutable last-merge-source SHA, changed files,

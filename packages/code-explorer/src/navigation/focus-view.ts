@@ -1,94 +1,78 @@
-import { Buffer } from "node:buffer";
-import { createHash, randomBytes } from "node:crypto";
-import type { FocusContent, SymbolIdentity } from "../semantic/api/public-api.js";
+import { stableSymbolId } from "./stable-symbol-id.js";
 
-export const DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
-export const MIN_BODY_LIMIT_BYTES = 1024;
-export const MAX_BODY_LIMIT_BYTES = 128 * 1024;
+export { stableSymbolId } from "./stable-symbol-id.js";
 
-const browserRelationNames = ["definition", "references", "callers", "callees", "type", "implementation"] as const;
+import type {
+  FocusContent,
+  SymbolIdentity,
+} from "../semantic/api/public-api.js";
+import { FocusBodyLimitError } from "./focus-body-limit-error.js";
+import { focusContent, focusSource } from "./focus-content.js";
+import type { FocusHandle } from "./focus-handle.js";
+import { focusHandles } from "./focus-handles.js";
+import type { FocusView } from "./focus-view-type.js";
+import { mintOpaqueId } from "./opaque-id.js";
 
-export type FocusHandle = {
-  handle: string;
-  name: string;
-  symbol_id: string;
-  start: number;
-  end: number;
-  out_of_range: boolean;
-  relations: readonly string[];
-};
-export type FocusView = {
-  view_id: string;
-  project_generation: number;
-  symbol_id: string;
-  name: string;
-  qualified_name: string;
-  language: string;
-  kind: string;
-  path: string;
-  range: SymbolIdentity["location"]["range"];
-  content: {
-    body?: string;
-    declaration?: string;
-    truncated: boolean;
-    limit_bytes: number;
-    returned_bytes: number;
-    total_bytes: number;
-  };
-  handles: readonly FocusHandle[];
-};
+const DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
+const MIN_BODY_LIMIT_BYTES = 1024;
+const MAX_BODY_LIMIT_BYTES = 128 * 1024;
 
-export class FocusBodyLimitError extends Error {
-  constructor(readonly limit: number) {
-    super("resource_limit");
-  }
-}
+export { FocusBodyLimitError } from "./focus-body-limit-error.js";
+export type { FocusHandle } from "./focus-handle.js";
+export type { FocusView } from "./focus-view-type.js";
 
-/** Opaque identifiers carry 128 bits of cryptographically random data. */
-export function mintOpaqueId(): string {
-  return randomBytes(16).toString("base64url");
-}
-
-/** Creates an immutable response from semantic content without reading a source file itself. */
+export { mintOpaqueId } from "./opaque-id.js";
+/** Creates an immutable response from semantic content without reading a
+ * source file itself.
+ */
 export function createFocusView(
-  symbol: SymbolIdentity,
-  detail: FocusContent | undefined,
-  requestedLimit?: number,
-  projectGeneration = 0,
+  ...args: [
+    symbol: SymbolIdentity,
+    detail: FocusContent | undefined,
+    requestedLimit?: number,
+    projectGeneration?: number,
+  ]
 ): FocusView {
-  const limit = requestedLimit ?? DEFAULT_BODY_LIMIT_BYTES;
-  if (!Number.isInteger(limit) || limit < MIN_BODY_LIMIT_BYTES || limit > MAX_BODY_LIMIT_BYTES)
-    throw new FocusBodyLimitError(limit);
+  const [symbol, detail, requestedLimit, projectGeneration = 0] = args;
+  const limit = bodyLimit(requestedLimit);
+  assertBodyLimit(limit);
 
-  const source = detail?.body ?? detail?.declaration;
-  const bounded = boundUtf8(source ?? "", limit);
-  const content = {
-    ...(detail?.body !== undefined
-      ? { body: bounded.value }
-      : detail?.declaration !== undefined
-        ? { declaration: bounded.value }
-        : {}),
-    truncated: bounded.truncated,
-    limit_bytes: limit,
-    returned_bytes: bounded.returnedBytes,
-    total_bytes: bounded.totalBytes,
-  };
+  const content = focusContent(detail, limit);
   const symbolId = stableSymbolId(symbol);
-  let searchFrom = 0;
-  const handles = (detail?.visible_symbols ?? []).map(({ name, symbol_id }) => {
-    const start = source?.indexOf(name, searchFrom) ?? -1;
-    const end = start >= 0 ? start + name.length : -1;
-    if (start >= 0) searchFrom = end;
-    return {
-      handle: mintOpaqueId(),
-      name,
-      symbol_id,
-      start: Math.max(start, 0),
-      end: Math.max(end, 0),
-      out_of_range: start < 0 || end > bounded.value.length,
-      relations: browserRelationNames,
-    };
+  const handles = focusHandles(
+    detail,
+    focusSource(detail),
+    (content.body ?? content.declaration ?? "").length,
+  );
+  return makeFocusView({
+    symbol,
+    projectGeneration,
+    content,
+    symbolId,
+    handles,
   });
+}
+function bodyLimit(requestedLimit: number | undefined): number {
+  return requestedLimit ?? DEFAULT_BODY_LIMIT_BYTES;
+}
+
+function assertBodyLimit(limit: number): void {
+  if (!validBodyLimit(limit)) throw new FocusBodyLimitError(limit);
+}
+
+function validBodyLimit(limit: number): boolean {
+  if (!Number.isInteger(limit)) return false;
+  return limit >= MIN_BODY_LIMIT_BYTES && limit <= MAX_BODY_LIMIT_BYTES;
+}
+
+function makeFocusView(options: {
+  symbol: SymbolIdentity;
+  projectGeneration: number;
+  content: ReturnType<typeof focusContent>;
+  symbolId: string;
+  handles: ReturnType<typeof focusHandles>;
+}): FocusView {
+  const { symbol, projectGeneration, content, symbolId, handles } = options;
   return {
     view_id: mintOpaqueId(),
     project_generation: projectGeneration,
@@ -102,39 +86,4 @@ export function createFocusView(
     content,
     handles,
   };
-}
-
-export function stableSymbolId(symbol: SymbolIdentity): string {
-  const range = symbol.location.range;
-  const qualifiedName = symbol.qualified_name ?? symbol.name;
-  const identity = [
-    symbol.language,
-    symbol.location.path.replaceAll("\\", "/"),
-    `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`,
-    symbol.kind,
-    qualifiedName,
-  ].join("\u0000");
-  return createHash("sha256").update(identity, "utf8").digest("base64url");
-}
-
-function boundUtf8(
-  value: string,
-  limit: number,
-): {
-  value: string;
-  truncated: boolean;
-  returnedBytes: number;
-  totalBytes: number;
-} {
-  const totalBytes = Buffer.byteLength(value, "utf8");
-  if (totalBytes <= limit) return { value, truncated: false, returnedBytes: totalBytes, totalBytes };
-  let prefix = "";
-  let returnedBytes = 0;
-  for (const codePoint of value) {
-    const bytes = Buffer.byteLength(codePoint, "utf8");
-    if (returnedBytes + bytes > limit) break;
-    prefix += codePoint;
-    returnedBytes += bytes;
-  }
-  return { value: prefix, truncated: true, returnedBytes, totalBytes };
 }

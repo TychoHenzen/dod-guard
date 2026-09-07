@@ -7199,7 +7199,7 @@ var require_dist = __commonJS({
 });
 
 // src/index.ts
-import { Buffer as Buffer5 } from "node:buffer";
+import { Buffer as Buffer6 } from "node:buffer";
 import { execFileSync } from "node:child_process";
 import { readFileSync as readFileSync8, realpathSync as realpathSync3 } from "node:fs";
 import * as path4 from "node:path";
@@ -14468,7 +14468,7 @@ var JSONSchemaGenerator = class {
               });
             }
             const allKeys = new Set(Object.keys(shape));
-            const requiredKeys = new Set([...allKeys].filter((key) => {
+            const requiredKeys2 = new Set([...allKeys].filter((key) => {
               const v = def.shape[key]._zod;
               if (this.io === "input") {
                 return v.optin === void 0;
@@ -14476,8 +14476,8 @@ var JSONSchemaGenerator = class {
                 return v.optout === void 0;
               }
             }));
-            if (requiredKeys.size > 0) {
-              json2.required = Array.from(requiredKeys);
+            if (requiredKeys2.size > 0) {
+              json2.required = Array.from(requiredKeys2);
             }
             if (def.catchall?._zod.def.type === "never") {
               json2.additionalProperties = false;
@@ -21797,8 +21797,8 @@ function findPackageRoot(start) {
 }
 function isCodeExplorerPackage(directory) {
   try {
-    const parseJson2 = JSON.parse;
-    const packageInfo2 = parseJson2(
+    const parseJson3 = JSON.parse;
+    const packageInfo2 = parseJson3(
       readFileSync(join(directory, "package.json"), "utf8")
     );
     return packageInfo2.name === "code-explorer";
@@ -22422,32 +22422,45 @@ import * as path from "node:path";
 // src/discovery/sensitive-paths.ts
 import { lstatSync, readdirSync } from "node:fs";
 import { join as join4 } from "node:path";
+var keyFile = /^id_(rsa|dsa|ecdsa|ed25519)$/iu;
+var credentialFile = /^\.(npmrc|pypirc)$|^nuget\.config$/iu;
 function isSensitiveProjectPath(path5) {
   const normalized = path5.replaceAll("\\", "/").replace(/^\.\//, "");
-  if (!normalized || normalized.startsWith("/") || normalized.split("/").some((part) => part === "..")) return true;
+  if (unsafeSensitivePath(normalized)) return true;
   const parts = normalized.split("/");
   const file = parts.at(-1) ?? "";
-  return parts.some((part) => /^(\.git|\.hg|\.svn)$/iu.test(part)) || /^\.env(?:\..+)?$/iu.test(file) || /\.(pem|key|pfx|p12)$/iu.test(file) || /^(id_rsa|id_dsa|id_ecdsa|id_ed25519|\.npmrc|\.pypirc|nuget\.config)$/iu.test(file);
+  return sensitiveDirectory(parts) || sensitiveFile(file);
+}
+function unsafeSensitivePath(path5) {
+  return !path5 || path5.startsWith("/") || path5.split("/").some((part) => part === "..");
+}
+function sensitiveDirectory(parts) {
+  return parts.some((part) => /^(\.git|\.hg|\.svn)$/iu.test(part));
+}
+function sensitiveFile(file) {
+  return /^\.env(?:\..+)?$/iu.test(file) || /\.(pem|key|pfx|p12)$/iu.test(file) || keyFile.test(file) || credentialFile.test(file);
 }
 function countSensitivePathsUnderRoot(root) {
-  const visit2 = (directory, relativeDirectory) => {
+  const visit4 = (directory, relativeDirectory) => {
     let count = 0;
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const relativePath = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
-      if (isSensitiveProjectPath(relativePath)) {
-        count += 1;
-        continue;
-      }
-      const absolute = join4(directory, entry.name);
-      if (entry.isDirectory() && !lstatSync(absolute).isSymbolicLink()) count += visit2(absolute, relativePath);
+      count += visitEntry({ directory, relativePath, entry, visit: visit4 });
     }
     return count;
   };
   try {
-    return visit2(root, "");
+    return visit4(root, "");
   } catch {
     return 0;
   }
+}
+function visitEntry(options) {
+  const { directory, relativePath, entry, visit: visit4 } = options;
+  if (isSensitiveProjectPath(relativePath)) return 1;
+  const absolute = join4(directory, entry.name);
+  if (!entry.isDirectory() || lstatSync(absolute).isSymbolicLink()) return 0;
+  return visit4(absolute, relativePath);
 }
 
 // src/semantic/project-root/project-root-error.ts
@@ -23311,17 +23324,18 @@ import { join as join13 } from "node:path";
 // src/discovery/config-path.ts
 import { readdirSync as readdirSync4 } from "node:fs";
 import { join as join12 } from "node:path";
+import process3 from "node:process";
 var configName = ".code-explorer.json";
-function isClassificationConfigPath(path5, platform = process.platform) {
+function isClassificationConfigPath(path5, platform = process3.platform) {
   if (path5.includes("/") || path5.includes("\\")) return false;
   return platform === "win32" ? path5.toLocaleLowerCase("en-US") === configName : path5 === configName;
 }
-function findClassificationConfigPath(projectRoot, platform = process.platform) {
+function findClassificationConfigPath(projectRoot, platform = process3.platform) {
   return readdirSync4(projectRoot, { withFileTypes: true }).find(
     (entry) => entry.isFile() && isClassificationConfigPath(entry.name, platform)
   )?.name;
 }
-function classificationConfigPath(projectRoot, platform = process.platform) {
+function classificationConfigPath(projectRoot, platform = process3.platform) {
   const name = findClassificationConfigPath(projectRoot, platform);
   return name ? join12(projectRoot, name) : void 0;
 }
@@ -23334,7 +23348,7 @@ function visit(root, directory, relativeDirectory) {
   return readdirSync5(directory, {
     withFileTypes: true
   }).flatMap(
-    (entry) => visitEntry({
+    (entry) => visitEntry2({
       root,
       directory,
       relativeDirectory,
@@ -23342,7 +23356,7 @@ function visit(root, directory, relativeDirectory) {
     })
   );
 }
-function visitEntry(input) {
+function visitEntry2(input) {
   const absolute = join13(input.directory, input.entry.name);
   const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
   if (lstatSync5(absolute).isSymbolicLink())
@@ -23615,8 +23629,8 @@ function peFileVersion(path5) {
 function pyrightPackageVersion(entrypoint) {
   if (!entrypoint) return void 0;
   try {
-    const parseJson2 = JSON.parse;
-    const packageJson = parseJson2(
+    const parseJson3 = JSON.parse;
+    const packageJson = parseJson3(
       readFileSync6(join15(dirname5(entrypoint), "package.json"), "utf8")
     );
     return typeof packageJson.version === "string" && /^\d+\.\d+\.\d+$/.test(packageJson.version) ? packageJson.version : void 0;
@@ -25453,8 +25467,8 @@ var DirectLspRuntimeLifecycle = class {
   get stopped() {
     return this.#stopped;
   }
-  beginStart(process3) {
-    this.#process = process3;
+  beginStart(process5) {
+    this.#process = process5;
     this.#epoch += 1;
     this.#stopping = false;
     this.#stopped = false;
@@ -25759,8 +25773,8 @@ var DirectLspRuntimeStateCore = class extends DirectLspStateResources {
   get stopped() {
     return this.#life.stopped;
   }
-  beginStart(process3) {
-    const epoch = this.#life.beginStart(process3);
+  beginStart(process5) {
+    const epoch = this.#life.beginStart(process5);
     this.reset();
     return epoch;
   }
@@ -25821,7 +25835,7 @@ var DirectLspRuntimeState = class extends DirectLspRuntimeStateCore {
 // src/semantic/direct-lsp/direct-lsp-runtime.ts
 function createDirectLspRuntime(options) {
   const state = new DirectLspRuntimeState(options);
-  const start = (process3) => startRuntime({ state, process: process3, onRestart: start });
+  const start = (process5) => startRuntime({ state, process: process5, onRestart: start });
   return {
     start,
     request: (method, params) => requestBackend2({
@@ -26292,22 +26306,96 @@ function startWithAbort(adapter, signal) {
   });
 }
 
-// src/browser-server/http-router.ts
-import { statSync as statSync2 } from "node:fs";
-import { readFile, realpath } from "node:fs/promises";
-import path2 from "node:path";
-
-// src/browser-server/browser-session-reply.ts
-function withBrowserSession(reply, browserSessionId) {
-  const replyData = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : {};
-  return { ...reply, data: { ...replyData, browser_session_id: browserSessionId } };
+// src/browser-server/browser-unavailable-call.ts
+function unavailableBrowserCall() {
+  return Promise.resolve({
+    schema_version: 1,
+    code: "workspace_unavailable",
+    message: "workspace_unavailable",
+    retryable: true
+  });
 }
 
-// src/browser-server/http-router.ts
-var maxBodyBytes = 64 * 1024;
-var maxResponseBytes = 1024 * 1024;
-var idleMilliseconds = 30 * 60 * 1e3;
-var csp = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'";
+// src/browser-server/router-context.ts
+function limitOrDefault(value, fallback) {
+  return value ?? fallback;
+}
+function clockFor(options) {
+  return () => {
+    if (options.clock) return options.clock.nowMilliseconds();
+    return performance.now();
+  };
+}
+function createBrowserRouterContext(options) {
+  return {
+    options,
+    sessions: /* @__PURE__ */ new Map(),
+    maxSessions: limitOrDefault(options.maxSessions, 8),
+    maxInFlight: limitOrDefault(options.maxInFlight, 8),
+    now: clockFor(options),
+    active: { value: 0 }
+  };
+}
+
+// src/browser-server/router-validation.ts
+var requiredKeys = {
+  "/api/search": ["request_id", "query"],
+  "/api/focus": ["request_id", "symbol_id"],
+  "/api/follow": ["request_id", "view_id", "handle", "relation"],
+  "/api/history": ["request_id", "action"]
+};
+var optionalKeys2 = {
+  "/api/search": [
+    "path_globs",
+    "languages",
+    "kinds",
+    "content",
+    "include_generated",
+    "limit"
+  ],
+  "/api/focus": ["body_limit_bytes"],
+  "/api/follow": ["limit"],
+  "/api/history": ["limit"]
+};
+function exactKeys(body, required2, optional2 = []) {
+  return required2.every((key) => key in body) && Object.keys(body).every(
+    (key) => required2.includes(key) || optional2.includes(key)
+  );
+}
+function validSessionAction(body) {
+  const action = body.action;
+  return action === "create" && body.document_start === "new" || action === "restore" && body.document_start === "reload";
+}
+function validSessionBody(body) {
+  return typeof body.tab_instance_id === "string" && validSessionAction(body) && exactKeys(body, ["action", "tab_instance_id", "document_start"]);
+}
+function validStatusBody(body) {
+  const status = body.action === "status" && exactKeys(body, ["action"]);
+  const refresh = body.action === "refresh" && typeof body.request_id === "string" && exactKeys(body, ["action", "request_id"]);
+  return status || refresh;
+}
+function validBody(route, body) {
+  if (route === "/api/session") return validSessionBody(body);
+  if (route === "/api/status") return validStatusBody(body);
+  const required2 = requiredKeys[route];
+  return required2 !== void 0 && exactKeys(body, required2, optionalKeys2[route]);
+}
+function isRecord3(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// src/browser-server/router-policy.ts
+var csp = [
+  "default-src 'none'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+  "object-src 'none'"
+].join("; ");
 var routes = {
   "/api/search": "code_search",
   "/api/focus": "code_focus",
@@ -26315,21 +26403,25 @@ var routes = {
   "/api/history": "code_history",
   "/api/status": "code_status"
 };
+var statusByCode = {
+  invalid_browser_origin: 403,
+  invalid_browser_session: 403,
+  route_not_found: 404,
+  method_not_allowed: 405,
+  browser_session_expired: 410,
+  resource_limit: 413,
+  project_capacity: 429,
+  http_capacity: 429
+};
 function browserError(code, retryable = false) {
   return { schema_version: 1, code, message: code, retryable };
 }
 function errorStatus(code) {
-  if (code === "invalid_browser_origin" || code === "invalid_browser_session") return 403;
-  if (code === "route_not_found") return 404;
-  if (code === "method_not_allowed") return 405;
-  if (code === "browser_session_expired") return 410;
-  if (code === "resource_limit") return 413;
-  if (code === "project_capacity" || code === "http_capacity") return 429;
-  if (code === "workspace_unavailable" || code.startsWith("backend_")) return 503;
-  return 400;
+  if (code.startsWith("backend_") || code === "workspace_unavailable")
+    return 503;
+  return statusByCode[code] ?? 400;
 }
 function json(status, payload) {
-  const body = JSON.stringify(payload);
   return {
     status,
     headers: {
@@ -26339,190 +26431,326 @@ function json(status, payload) {
       "referrer-policy": "no-referrer",
       "content-security-policy": csp
     },
-    body
+    body: JSON.stringify(payload)
   };
 }
-function isRecord3(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function exactKeys(body, required2, optional2 = []) {
-  return required2.every((key) => key in body) && Object.keys(body).every((key) => required2.includes(key) || optional2.includes(key));
-}
-function validBody(route, body) {
-  if (route === "/api/session") {
-    return typeof body.tab_instance_id === "string" && (body.action === "create" && body.document_start === "new" && exactKeys(body, ["action", "tab_instance_id", "document_start"]) || body.action === "restore" && body.document_start === "reload" && exactKeys(body, ["action", "tab_instance_id", "document_start"]));
+
+// src/browser-server/router-session-acceptance.ts
+var idleMilliseconds = 30 * 60 * 1e3;
+function acceptBrowserSession(context, browserSessionId, session2) {
+  if (context.now() - session2.lastAcceptedAt >= idleMilliseconds) {
+    context.sessions.delete(browserSessionId);
+    return json(410, browserError("browser_session_expired", true));
   }
-  if (route === "/api/status") {
-    return body.action === "status" && exactKeys(body, ["action"]) || body.action === "refresh" && typeof body.request_id === "string" && exactKeys(body, ["action", "request_id"]);
+  session2.lastAcceptedAt = context.now();
+  return void 0;
+}
+
+// src/browser-server/router-navigation.ts
+function sessionForNavigation(context, headers) {
+  const id = headers["x-code-explorer-session"];
+  const tabId = headers["x-code-explorer-tab"];
+  const session2 = id ? context.sessions.get(id) : void 0;
+  if (!(id && session2) || session2.tabId !== tabId) return void 0;
+  return { id, session: session2 };
+}
+async function navigation(options) {
+  const { context, route, body, headers } = options;
+  const current = sessionForNavigation(context, headers);
+  if (!current) return json(403, browserError("invalid_browser_session"));
+  const expired = acceptBrowserSession(context, current.id, current.session);
+  if (expired) return expired;
+  const coreArguments = navigationArguments(
+    route,
+    body,
+    current.session.coreSessionId
+  );
+  const reply = await context.options.call(routes[route], coreArguments);
+  return json("code" in reply ? errorStatus(String(reply.code)) : 200, reply);
+}
+function navigationArguments(route, body, sessionId) {
+  if (route === "/api/search")
+    return Object.fromEntries(
+      Object.entries(body).filter(([key]) => key !== "request_id")
+    );
+  if (route === "/api/status" && body.action === "status") return body;
+  return { ...body, session_id: sessionId };
+}
+
+// src/browser-server/router-asset.ts
+import { realpath } from "node:fs/promises";
+import path2 from "node:path";
+
+// src/browser-server/router-asset-file.ts
+import { open as open2 } from "node:fs/promises";
+async function readAssetFile(path5, headOnly) {
+  const file = await open2(path5, "r");
+  try {
+    if (!(await file.stat()).isFile()) return;
+    return headOnly ? "" : await file.readFile("utf8");
+  } finally {
+    await file.close();
   }
-  const required2 = {
-    "/api/search": ["request_id", "query"],
-    "/api/focus": ["request_id", "symbol_id"],
-    "/api/follow": ["request_id", "view_id", "handle", "relation"],
-    "/api/history": ["request_id", "action"]
+}
+
+// src/browser-server/router-asset.ts
+function notFound() {
+  return {
+    status: 404,
+    headers: {
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+      "content-security-policy": csp
+    },
+    body: ""
   };
-  const optional2 = {
-    "/api/search": ["path_globs", "languages", "kinds", "content", "include_generated", "limit"],
-    "/api/focus": ["body_limit_bytes"],
-    "/api/follow": ["limit"],
-    "/api/history": ["limit"]
-  };
-  return required2[route] !== void 0 && exactKeys(body, required2[route], optional2[route]);
 }
-var BrowserHttpRouter = class {
-  constructor(options) {
-    this.options = options;
-    this.maxSessions = options.maxSessions ?? 8;
-    this.maxInFlight = options.maxInFlight ?? 8;
-    this.now = () => options.clock?.nowMilliseconds() ?? performance.now();
+function contentType(actual) {
+  if (actual.endsWith(".html")) return "text/html; charset=utf-8";
+  if (actual.endsWith(".js")) return "text/javascript; charset=utf-8";
+  return "text/css; charset=utf-8";
+}
+var assetNames = {
+  "/": "index.html",
+  "/index.html": "index.html",
+  "/client.js": "client.js",
+  "/style.css": "style.css"
+};
+function relativeAssetPath(request) {
+  const rawPath = request.path.split("?")[0]?.split("#")[0] ?? "/";
+  return assetNames[rawPath];
+}
+function isInsideRoot(root, actual) {
+  return actual.startsWith(`${root}${path2.sep}`) || actual === root;
+}
+async function loadAsset(context, request, relative6) {
+  try {
+    const root = await realpath(context.options.assetRoot);
+    const candidate = path2.resolve(root, relative6);
+    const actual = await realpath(candidate);
+    if (!isInsideRoot(root, actual)) return notFound();
+    const body = await readAssetFile(actual, request.method === "HEAD");
+    if (body === void 0) return notFound();
+    return {
+      status: 200,
+      headers: {
+        "content-type": contentType(actual),
+        "cache-control": "no-store",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "no-referrer",
+        "content-security-policy": csp
+      },
+      body
+    };
+  } catch {
+    return notFound();
   }
-  options;
-  sessions = /* @__PURE__ */ new Map();
-  maxSessions;
-  maxInFlight;
-  now;
-  active = 0;
-  async handle(request) {
-    const authority = new URL(this.options.origin).host;
-    if (request.headers.host !== authority) return json(403, browserError("invalid_browser_origin"));
-    if (request.path.startsWith("/api/") && request.headers.origin !== this.options.origin)
-      return json(403, browserError("invalid_browser_origin"));
-    if (request.method === "OPTIONS") return json(405, browserError("method_not_allowed"));
-    if (request.method === "GET" || request.method === "HEAD") return this.asset(request);
-    if (request.method !== "POST") return json(405, browserError("method_not_allowed"));
-    if (request.path === "/") return json(400, browserError("invalid_request"));
-    if (!(request.path in routes) && request.path !== "/api/session") return json(404, browserError("route_not_found"));
-    if (this.active >= this.maxInFlight) return json(429, browserError("http_capacity", true));
-    this.active += 1;
-    try {
-      if (request.headers["content-encoding"] || request.headers["content-type"] !== "application/json")
-        return json(400, browserError("invalid_request"));
-      if (request.body.byteLength > maxBodyBytes) return json(413, browserError("resource_limit"));
-      let body;
-      try {
-        body = JSON.parse(request.body.toString("utf8"));
-      } catch {
-        return json(400, browserError("invalid_request"));
-      }
-      if (!(isRecord3(body) && validBody(request.path, body))) return json(400, browserError("invalid_request"));
-      const response = request.path === "/api/session" ? await this.session(body, request.headers) : await this.navigation(request.path, body, request.headers);
-      const encoded = Buffer.byteLength(response.body);
-      return encoded > maxResponseBytes ? json(413, browserError("resource_limit")) : response;
-    } finally {
-      this.active -= 1;
-    }
+}
+async function asset(context, request) {
+  if (request.method !== "GET" && request.method !== "HEAD")
+    return json(405, browserError("method_not_allowed"));
+  const relative6 = relativeAssetPath(request);
+  if (!relative6) return notFound();
+  return loadAsset(context, request, relative6);
+}
+
+// src/browser-server/router-rejection.ts
+function authorityError(context, request) {
+  if (request.headers.host === new URL(context.options.origin).host)
+    return void 0;
+  return json(403, browserError("invalid_browser_origin"));
+}
+function apiOriginError(context, request) {
+  if (!request.path.startsWith("/api/") || request.headers.origin === context.options.origin)
+    return void 0;
+  return json(403, browserError("invalid_browser_origin"));
+}
+function postPathError(request) {
+  if (request.path === "/") return json(400, browserError("invalid_request"));
+  if (request.path in routes || request.path === "/api/session")
+    return void 0;
+  return json(404, browserError("route_not_found"));
+}
+function methodResult(context, request) {
+  if (request.method === "OPTIONS")
+    return json(405, browserError("method_not_allowed"));
+  if (request.method === "GET" || request.method === "HEAD")
+    return asset(context, request);
+  if (request.method !== "POST")
+    return json(405, browserError("method_not_allowed"));
+  return void 0;
+}
+function capacityResponse(context) {
+  if (context.active.value < context.maxInFlight) return void 0;
+  return json(429, browserError("http_capacity", true));
+}
+function requestRejection(context, request) {
+  return originRejection(context, request) ?? routeRejection(context, request);
+}
+function originRejection(context, request) {
+  return authorityError(context, request) ?? apiOriginError(context, request);
+}
+function routeRejection(context, request) {
+  return methodResult(context, request) ?? postPathError(request) ?? capacityResponse(context);
+}
+
+// src/browser-server/browser-session-reply.ts
+function withBrowserSession(reply, browserSessionId) {
+  const replyData = typeof reply.data === "object" && reply.data !== null && !(reply.data instanceof Array) ? reply.data : {};
+  return {
+    ...reply,
+    data: { ...replyData, browser_session_id: browserSessionId }
+  };
+}
+
+// src/browser-server/router-session.ts
+function sweepExpiredSessions(context) {
+  const now = context.now();
+  for (const [browserSessionId, session2] of context.sessions) {
+    if (now - session2.lastAcceptedAt >= idleMilliseconds)
+      context.sessions.delete(browserSessionId);
   }
-  async session(body, headers) {
-    const tabId = body.tab_instance_id;
-    if (headers["x-code-explorer-tab"] !== tabId) return json(403, browserError("invalid_browser_session"));
-    if (body.action === "create") {
-      this.sweepExpiredSessions();
-      if (headers["x-code-explorer-session"] || this.sessions.size >= this.maxSessions)
-        return json(429, browserError("project_capacity", true));
-      const reply = await this.options.call("code_status", { action: "start_session" });
-      if ("code" in reply) return json(errorStatus(String(reply.code)), reply);
-      const coreSessionId = reply.data?.session_id;
-      if (typeof coreSessionId !== "string") return json(500, browserError("internal_error"));
-      const browserSessionId2 = crypto.randomUUID();
-      this.sessions.set(browserSessionId2, { coreSessionId, tabId, lastAcceptedAt: this.now() });
-      return json(200, withBrowserSession(reply, browserSessionId2));
-    }
-    const browserSessionId = headers["x-code-explorer-session"];
-    const session = browserSessionId ? this.sessions.get(browserSessionId) : void 0;
-    if (!(browserSessionId && session) || session.tabId !== tabId)
-      return json(403, browserError("invalid_browser_session"));
-    const expired = this.accept(browserSessionId, session);
-    if (expired) return expired;
-    return json(200, {
-      schema_version: 1,
-      project_id: "project",
-      project_generation: 0,
-      pending_generation: null,
-      state: "restored",
-      data: {}
-    });
-  }
-  sweepExpiredSessions() {
-    const now = this.now();
-    for (const [browserSessionId, session] of this.sessions) {
-      if (now - session.lastAcceptedAt >= idleMilliseconds) this.sessions.delete(browserSessionId);
-    }
-  }
-  async navigation(route, body, headers) {
-    const browserSessionId = headers["x-code-explorer-session"];
-    const tabId = headers["x-code-explorer-tab"];
-    const session = browserSessionId ? this.sessions.get(browserSessionId) : void 0;
-    if (!(browserSessionId && session) || session.tabId !== tabId)
-      return json(403, browserError("invalid_browser_session"));
-    const expired = this.accept(browserSessionId, session);
-    if (expired) return expired;
-    const coreArguments = route === "/api/search" ? Object.fromEntries(Object.entries(body).filter(([key]) => key !== "request_id")) : route === "/api/status" && body.action === "status" ? body : { ...body, session_id: session.coreSessionId };
-    const reply = await this.options.call(routes[route], coreArguments);
-    return json("code" in reply ? errorStatus(String(reply.code)) : 200, reply);
-  }
-  accept(browserSessionId, session) {
-    if (this.now() - session.lastAcceptedAt >= idleMilliseconds) {
-      this.sessions.delete(browserSessionId);
-      return json(410, browserError("browser_session_expired", true));
-    }
-    session.lastAcceptedAt = this.now();
+}
+async function session(context, body, headers) {
+  const tabId = body.tab_instance_id;
+  if (headers["x-code-explorer-tab"] !== tabId)
+    return json(403, browserError("invalid_browser_session"));
+  if (body.action === "create") return createSession(context, tabId, headers);
+  return restoreSession(context, tabId, headers);
+}
+async function createSession(context, tabId, headers) {
+  sweepExpiredSessions(context);
+  if (headers["x-code-explorer-session"] || context.sessions.size >= context.maxSessions)
+    return json(429, browserError("project_capacity", true));
+  const reply = await context.options.call("code_status", {
+    action: "start_session"
+  });
+  if ("code" in reply) return json(errorStatus(String(reply.code)), reply);
+  const coreSessionId = reply.data?.session_id;
+  if (typeof coreSessionId !== "string")
+    return json(500, browserError("internal_error"));
+  const browserSessionId = crypto.randomUUID();
+  context.sessions.set(browserSessionId, {
+    coreSessionId,
+    tabId,
+    lastAcceptedAt: context.now()
+  });
+  return json(200, withBrowserSession(reply, browserSessionId));
+}
+function restoreSession(context, tabId, headers) {
+  const current = restoreCandidate(context, tabId, headers);
+  if (!current) return json(403, browserError("invalid_browser_session"));
+  const expired = acceptBrowserSession(context, current.id, current.session);
+  if (expired) return expired;
+  return json(200, {
+    schema_version: 1,
+    project_id: "project",
+    project_generation: 0,
+    pending_generation: null,
+    state: "restored",
+    data: {}
+  });
+}
+function restoreCandidate(context, tabId, headers) {
+  const id = headers["x-code-explorer-session"];
+  const session2 = id ? context.sessions.get(id) : void 0;
+  if (!(id && session2) || session2.tabId !== tabId) return void 0;
+  return { id, session: session2 };
+}
+
+// src/browser-server/router-request.ts
+var maxBodyBytes = 64 * 1024;
+var maxResponseBytes = 1024 * 1024;
+function parseJson2(request) {
+  try {
+    const value = JSON.parse(request.body.toString("utf8"));
+    return isRecord3(value) ? value : void 0;
+  } catch {
     return void 0;
   }
-  async asset(request) {
-    if (request.method !== "GET" && request.method !== "HEAD") return json(405, browserError("method_not_allowed"));
-    if (!this.options.assetRoot || request.path.includes("%") || request.path.includes("..") || request.path.includes("\\"))
-      return {
-        status: 404,
-        headers: {
-          "cache-control": "no-store",
-          "x-content-type-options": "nosniff",
-          "referrer-policy": "no-referrer",
-          "content-security-policy": csp
-        },
-        body: ""
-      };
-    const relative6 = request.path === "/" ? "index.html" : request.path.slice(1);
-    if (!relative6 || path2.isAbsolute(relative6) || relative6.split("/").includes(".."))
-      return { status: 404, headers: {}, body: "" };
-    try {
-      const root = await realpath(this.options.assetRoot);
-      const candidate = path2.join(root, relative6);
-      const actual = await realpath(candidate);
-      if (!actual.startsWith(`${root}${path2.sep}`) && actual !== root || !statSync2(actual).isFile())
-        throw new Error("missing");
-      const content = request.method === "HEAD" ? "" : await readFile(actual, "utf8");
-      const type = actual.endsWith(".html") ? "text/html; charset=utf-8" : actual.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/css; charset=utf-8";
-      return {
-        status: 200,
-        headers: {
-          "content-type": type,
-          "cache-control": "no-store",
-          "x-content-type-options": "nosniff",
-          "referrer-policy": "no-referrer",
-          "content-security-policy": csp
-        },
-        body: content
-      };
-    } catch {
-      return {
-        status: 404,
-        headers: {
-          "cache-control": "no-store",
-          "x-content-type-options": "nosniff",
-          "referrer-policy": "no-referrer",
-          "content-security-policy": csp
-        },
-        body: ""
-      };
-    }
+}
+function postBodyError(request) {
+  if (request.headers["content-encoding"] || request.headers["content-type"] !== "application/json")
+    return json(400, browserError("invalid_request"));
+  if (request.body.byteLength > maxBodyBytes)
+    return json(413, browserError("resource_limit"));
+  return void 0;
+}
+async function postRequest(context, request) {
+  const bodyError = postBodyError(request);
+  if (bodyError) return bodyError;
+  const body = parseJson2(request);
+  if (!(body && validBody(request.path, body)))
+    return json(400, browserError("invalid_request"));
+  const response = await postRoute(context, request, body);
+  return responseWithinLimit(response);
+}
+function postRoute(context, request, body) {
+  if (request.path === "/api/session")
+    return session(context, body, request.headers);
+  return navigation({
+    context,
+    route: request.path,
+    body,
+    headers: request.headers
+  });
+}
+function responseWithinLimit(response) {
+  if (Buffer.byteLength(response.body) > maxResponseBytes)
+    return json(413, browserError("resource_limit"));
+  return response;
+}
+async function handleRequest(context, request) {
+  const rejection = requestRejection(context, request);
+  if (rejection) return rejection;
+  context.active.value += 1;
+  try {
+    return await postRequest(context, request);
+  } finally {
+    context.active.value -= 1;
+  }
+}
+
+// src/browser-server/http-router.ts
+var BrowserHttpRouter = class {
+  context;
+  constructor(options) {
+    this.context = createBrowserRouterContext(options);
+  }
+  handle(request) {
+    return handleRequest(this.context, request);
   }
 };
 
-// src/browser-server/lifecycle.ts
-import { spawn as spawn2 } from "node:child_process";
-import { createServer } from "node:http";
-import path3 from "node:path";
-import { fileURLToPath as fileURLToPath4 } from "node:url";
+// src/browser-server/embedded-runtime-result.ts
+function createEmbeddedRuntime(options) {
+  const router = new BrowserHttpRouter({
+    origin: options.origin,
+    assetRoot: options.assetRoot,
+    call: options.core.call ?? unavailableBrowserCall
+  });
+  return {
+    projectRoot: options.projectRoot,
+    handle: (request) => router.handle(request),
+    close: closeCore(options)
+  };
+}
+function closeCore(options) {
+  let closing;
+  return () => {
+    if (closing) return closing;
+    closing = closeRuntime(options);
+    return closing;
+  };
+}
+async function closeRuntime(options) {
+  options.controller.abort();
+  await options.core.close(AbortSignal.timeout(1e4));
+  options.unlinkAbortSignal();
+}
+
+// src/browser-server/browser-server-error.ts
 var BrowserServerError = class extends Error {
   constructor(code) {
     super(code);
@@ -26530,181 +26758,323 @@ var BrowserServerError = class extends Error {
   }
   code;
 };
+
+// src/browser-server/browser-server-lifecycle-support.ts
+function closeResources(options) {
+  const { listener, core, controller, parentSignal, abort } = options;
+  listener?.stopAdmission();
+  controller.abort();
+  const timeout = AbortSignal.timeout(1e4);
+  return Promise.allSettled([
+    listener?.close(timeout),
+    core?.close(timeout)
+  ]).then(() => {
+    parentSignal?.removeEventListener("abort", abort);
+  });
+}
+function serverResult(options) {
+  const { listener, projectRoot, close } = options;
+  return { url: listener.address, projectRoot, close };
+}
+
+// src/browser-server/browser-server-start-support.ts
 var firstPort = 4410;
 var lastPort = 4429;
-function parseServeArguments(arguments_) {
-  if (arguments_[0] !== "serve") throw new BrowserServerError("invalid_request");
-  let projectRoot = ".";
-  let noOpen = false;
-  for (let index = 1; index < arguments_.length; index += 1) {
-    const argument = arguments_[index];
-    if (argument === "--no-open" && !noOpen) {
-      noOpen = true;
-      continue;
-    }
-    if (argument === "--project-root" && projectRoot === ".") {
-      const value = arguments_[index + 1];
-      if (!value) throw new BrowserServerError("invalid_request");
-      projectRoot = value;
-      index += 1;
-      continue;
-    }
-    throw new BrowserServerError("invalid_request");
+function projectRootFor(path5) {
+  try {
+    return createNativeProjectRoot(path5);
+  } catch (error2) {
+    if (error2 instanceof ProjectPathError)
+      throw new BrowserServerError("invalid_project_root");
+    throw error2;
   }
-  return { project_root: projectRoot, no_open: noOpen };
 }
+async function listenForPort(options, signal, core) {
+  for (let port = firstPort; port <= lastPort; port += 1) {
+    try {
+      return await options.binder.listen("127.0.0.1", port, signal, core);
+    } catch (error2) {
+      if (!isAddressInUse(error2)) throw error2;
+    }
+  }
+  throw new BrowserServerError("browser_port_unavailable");
+}
+function isAddressInUse(error2) {
+  return error2 instanceof Error && "code" in error2 && error2.code === "EADDRINUSE";
+}
+async function openBrowser(options, listener, signal) {
+  if (options.no_open) return;
+  try {
+    await options.opener.open(listener.address, signal);
+  } catch {
+    options.writeError?.("browser_open_failed");
+  }
+}
+
+// src/browser-server/browser-server-run.ts
+async function runBrowserServer(options) {
+  const resources = { core: void 0, listener: void 0 };
+  try {
+    return await startBrowserServerRun(options, resources);
+  } catch (error2) {
+    await closeResources({
+      ...resources,
+      controller: options.controller,
+      parentSignal: options.parentSignal,
+      abort: options.abort
+    });
+    throw error2;
+  }
+}
+async function startBrowserServerRun(options, resources) {
+  const startedCore = await options.start.coreFactory.start({
+    projectRoot: options.projectRoot,
+    signal: options.controller.signal
+  });
+  resources.core = startedCore;
+  const listener = await listenForPort(
+    options.start,
+    options.controller.signal,
+    startedCore
+  );
+  resources.listener = listener;
+  options.start.write?.(`Code Explorer: ${listener.address.href}`);
+  await openBrowser(options.start, listener, options.controller.signal);
+  return serverResult({
+    listener,
+    core: startedCore,
+    projectRoot: options.projectRoot,
+    close: createServerClose(options, resources)
+  });
+}
+function createServerClose(options, resources) {
+  let closing;
+  return () => closing ??= closeResources({
+    ...resources,
+    controller: options.controller,
+    parentSignal: options.parentSignal,
+    abort: options.abort
+  });
+}
+
+// src/browser-server/browser-server-start.ts
 async function startBrowserServer(options) {
   const controller = new AbortController();
   const parentSignal = options.signal;
   const abort = () => controller.abort();
   parentSignal?.addEventListener("abort", abort, { once: true });
-  let projectRoot;
-  try {
-    projectRoot = createNativeProjectRoot(options.project_root);
-  } catch (error2) {
-    if (error2 instanceof ProjectPathError) throw new BrowserServerError("invalid_project_root");
-    throw error2;
-  }
-  let core;
-  let listener;
-  try {
-    core = await options.coreFactory.start({ projectRoot, signal: controller.signal });
-    for (let port = firstPort; port <= lastPort; port += 1) {
-      try {
-        listener = await options.binder.listen("127.0.0.1", port, controller.signal, core);
-        break;
-      } catch (error2) {
-        if (!(error2 instanceof Error && "code" in error2 && error2.code === "EADDRINUSE")) throw error2;
-      }
-    }
-    if (!listener) throw new BrowserServerError("browser_port_unavailable");
-    options.write?.(`Code Explorer: ${listener.address.href}`);
-    if (!options.no_open) {
-      try {
-        await options.opener.open(listener.address, controller.signal);
-      } catch {
-        options.writeError?.("browser_open_failed");
-      }
-    }
-    let closing;
-    return {
-      url: listener.address,
-      projectRoot,
-      close: () => closing ??= (async () => {
-        controller.abort();
-        listener?.stopAdmission();
-        const timeout = AbortSignal.timeout(1e4);
-        await Promise.allSettled([listener?.close(timeout), core?.close(timeout)]);
-        parentSignal?.removeEventListener("abort", abort);
-      })()
-    };
-  } catch (error2) {
-    controller.abort();
-    const timeout = AbortSignal.timeout(1e4);
-    await Promise.allSettled([listener?.close(timeout), core?.close(timeout)]);
-    parentSignal?.removeEventListener("abort", abort);
-    throw error2;
-  }
+  const projectRoot = projectRootFor(options.project_root);
+  return runBrowserServer({
+    start: options,
+    projectRoot,
+    controller,
+    parentSignal,
+    abort
+  });
 }
-var nativePortBinder = {
-  async listen(host, port, signal, core) {
-    if (signal.aborted) throw new Error("aborted");
-    const sockets = /* @__PURE__ */ new Set();
-    let admitting = true;
-    const router = new BrowserHttpRouter({
-      origin: `http://${host}:${port}`,
-      assetRoot: path3.join(path3.dirname(fileURLToPath4(import.meta.url)), "browser"),
-      call: core?.call ?? (async () => ({
-        schema_version: 1,
-        code: "workspace_unavailable",
-        message: "workspace_unavailable",
-        retryable: true
-      }))
+
+// src/browser-server/native-browser-opener.ts
+import { spawn as spawn2 } from "node:child_process";
+function commandForPlatform(platform) {
+  if (platform === "win32") return "cmd.exe";
+  if (platform === "darwin") return "/usr/bin/open";
+  if (platform === "linux") return "xdg-open";
+  throw new Error("unsupported platform");
+}
+function commandArguments(platform, href) {
+  return platform === "win32" ? ["/d", "/s", "/c", "start", "", href] : [href];
+}
+async function openBrowser2(url, signal) {
+  const platform = process.platform;
+  const child = spawn2(
+    commandForPlatform(platform),
+    commandArguments(platform, url.href),
+    {
+      detached: true,
+      stdio: "ignore",
+      windowsHide: true
+    }
+  );
+  await new Promise((resolve5, reject) => {
+    const onAbort = () => reject(new Error("aborted"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    child.once("error", (error2) => {
+      signal.removeEventListener("abort", onAbort);
+      reject(error2);
     });
-    const server = createServer({ maxHeaderSize: 16 * 1024 }, (request, response) => {
-      if (!admitting) {
-        response.destroy();
-        return;
-      }
-      const chunks = [];
-      request.on("data", (chunk) => chunks.push(chunk));
-      request.on("end", () => {
-        void router.handle({
-          method: request.method ?? "GET",
-          path: request.url ?? "/",
-          headers: Object.fromEntries(
-            Object.entries(request.headers).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])
-          ),
-          body: Buffer.concat(chunks)
-        }).then((result) => {
-          response.statusCode = result.status;
-          for (const [key, value] of Object.entries(result.headers)) response.setHeader(key, value);
-          response.end(result.body);
-        });
-      });
+    child.once("spawn", () => {
+      signal.removeEventListener("abort", onAbort);
+      child.unref();
+      resolve5();
     });
-    server.headersTimeout = 5e3;
-    server.keepAliveTimeout = 5e3;
-    server.maxRequestsPerSocket = 100;
-    server.on("connection", (socket) => {
-      sockets.add(socket);
-      socket.once("close", () => sockets.delete(socket));
-    });
-    await new Promise((resolve5, reject) => {
-      const onAbort = () => reject(new Error("aborted"));
-      signal.addEventListener("abort", onAbort, { once: true });
-      server.once("error", (error2) => {
-        signal.removeEventListener("abort", onAbort);
-        reject(error2);
-      });
-      server.listen(port, host, () => {
-        signal.removeEventListener("abort", onAbort);
-        resolve5();
-      });
-    });
-    return {
-      address: new URL(`http://${host}:${port}/`),
-      stopAdmission: () => {
-        admitting = false;
-      },
-      close: async (closeSignal) => {
-        if (!server.listening) return;
-        await new Promise((resolve5) => {
-          const force = () => {
-            for (const socket of sockets) socket.destroy();
-          };
-          closeSignal.addEventListener("abort", force, { once: true });
-          server.close(() => {
-            closeSignal.removeEventListener("abort", force);
-            resolve5();
-          });
-        });
-      }
-    };
-  }
-};
+  });
+}
 var nativeBrowserOpener = {
-  async open(url, signal) {
-    const href = url.href;
-    const command = process.platform === "win32" ? "cmd.exe" : process.platform === "darwin" ? "/usr/bin/open" : process.platform === "linux" ? "xdg-open" : void 0;
-    if (!command) throw new Error("unsupported platform");
-    const arguments_ = process.platform === "win32" ? ["/d", "/s", "/c", "start", "", href] : [href];
-    await new Promise((resolve5, reject) => {
-      const child = spawn2(command, arguments_, { detached: true, stdio: "ignore", windowsHide: true });
-      const onAbort = () => reject(new Error("aborted"));
-      signal.addEventListener("abort", onAbort, { once: true });
-      child.once("error", (error2) => {
-        signal.removeEventListener("abort", onAbort);
-        reject(error2);
-      });
-      child.once("spawn", () => {
-        signal.removeEventListener("abort", onAbort);
-        child.unref();
-        resolve5();
-      });
-    });
-  }
+  open: openBrowser2
 };
+
+// src/browser-server/native-port-lifecycle.ts
+function waitForListening(options) {
+  const { server, port, host, signal } = options;
+  return new Promise((resolve5, reject) => {
+    const onAbort = () => reject(new Error("aborted"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    server.once("error", (error2) => {
+      signal.removeEventListener("abort", onAbort);
+      reject(error2);
+    });
+    server.listen(port, host, () => {
+      signal.removeEventListener("abort", onAbort);
+      resolve5();
+    });
+  });
+}
+function closeServer(server, sockets, signal) {
+  return new Promise((resolve5) => {
+    const force = () => {
+      for (const socket of sockets) socket.destroy();
+    };
+    signal.addEventListener("abort", force, { once: true });
+    server.close(() => {
+      signal.removeEventListener("abort", force);
+      resolve5();
+    });
+  });
+}
+
+// src/browser-server/native-port-server.ts
+import { createServer } from "node:http";
+import path3 from "node:path";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
+
+// src/browser-server/native-port-http.ts
+function responseHeaders(response, headers) {
+  for (const [key, value] of Object.entries(headers))
+    response.setHeader(key, value);
+}
+function requestHeaders(request) {
+  return Object.fromEntries(
+    Object.entries(request.headers).map(([key, value]) => [
+      key,
+      Array.isArray(value) ? value[0] : value
+    ])
+  );
+}
+function writeResponse(response, result) {
+  response.statusCode = result.status;
+  responseHeaders(response, result.headers);
+  response.end(result.body);
+}
+function handleRequest2(router, request, response) {
+  const chunks = [];
+  request.on("data", (chunk) => chunks.push(chunk));
+  request.on("end", () => {
+    void router.handle({
+      method: request.method ?? "GET",
+      path: request.url ?? "/",
+      headers: requestHeaders(request),
+      body: Buffer.concat(chunks)
+    }).then((result) => writeResponse(response, result));
+  });
+}
+function serverRequestHandler(router, admission) {
+  return (request, response) => {
+    if (!admission.open) {
+      response.destroy();
+      return;
+    }
+    handleRequest2(router, request, response);
+  };
+}
+
+// src/browser-server/native-port-server.ts
+function createNativeServer(host, port, core) {
+  const sockets = /* @__PURE__ */ new Set();
+  const admission = { open: true };
+  const router = new BrowserHttpRouter({
+    origin: `http://${host}:${port}`,
+    assetRoot: path3.join(
+      path3.dirname(fileURLToPath4(import.meta.url)),
+      "browser"
+    ),
+    call: core?.call ?? unavailableBrowserCall
+  });
+  const server = createServer(
+    { maxHeaderSize: 16 * 1024 },
+    serverRequestHandler(router, admission)
+  );
+  configureServer(server, sockets);
+  return { server, sockets, admission };
+}
+function configureServer(server, sockets) {
+  server.headersTimeout = 5e3;
+  server.keepAliveTimeout = 5e3;
+  server.maxRequestsPerSocket = 100;
+  server.on("connection", (socket) => {
+    sockets.add(socket);
+    socket.once("close", () => sockets.delete(socket));
+  });
+}
+
+// src/browser-server/native-port-binder.ts
+function listenerFor(host, port, server) {
+  return {
+    address: new URL(`http://${host}:${port}/`),
+    stopAdmission: () => {
+      server.admission.open = false;
+    },
+    close: async (signal) => {
+      if (server.server.listening)
+        await closeServer(server.server, server.sockets, signal);
+    }
+  };
+}
+async function listen(...args) {
+  const [host, port, signal, core] = args;
+  if (signal.aborted) throw new Error("aborted");
+  const nativeServer = createNativeServer(host, port, core);
+  await waitForListening({ server: nativeServer.server, port, host, signal });
+  return listenerFor(host, port, nativeServer);
+}
+var nativePortBinder = { listen };
+
+// src/browser-server/serve-arguments-parser.ts
+function parseNoOpen(state) {
+  if (state.noOpen) return void 0;
+  return { ...state, noOpen: true };
+}
+function parseProjectRoot(value, state) {
+  if (!value || state.projectRoot !== ".") return void 0;
+  return { ...state, projectRoot: value };
+}
+function parseArgument(argument, value, state) {
+  if (argument === "--no-open") {
+    const next = parseNoOpen(state);
+    if (!next) throw new BrowserServerError("invalid_request");
+    return { state: next, consumed: 0 };
+  }
+  if (argument === "--project-root") {
+    const next = parseProjectRoot(value, state);
+    if (!next) throw new BrowserServerError("invalid_request");
+    return { state: next, consumed: 1 };
+  }
+  throw new BrowserServerError("invalid_request");
+}
+function parseServeArguments(arguments_) {
+  if (arguments_[0] !== "serve")
+    throw new BrowserServerError("invalid_request");
+  let state = { projectRoot: ".", noOpen: false };
+  for (let index = 1; index < arguments_.length; index += 1) {
+    const parsed = parseArgument(
+      arguments_[index],
+      arguments_[index + 1],
+      state
+    );
+    state = parsed.state;
+    index += parsed.consumed;
+  }
+  return { project_root: state.projectRoot, no_open: state.noOpen };
+}
 
 // src/browser-server/embedded-runtime.ts
 function loopbackOrigin(origin) {
@@ -26726,7 +27096,10 @@ function linkAbortSignal(parent, child) {
 }
 async function startCore(options, unlinkAbortSignal) {
   try {
-    const core = await options.coreFactory.start({ projectRoot: options.projectRoot, signal: options.signal });
+    const core = await options.coreFactory.start({
+      projectRoot: options.projectRoot,
+      signal: options.signal
+    });
     if (options.signal.aborted) {
       await core.close(AbortSignal.timeout(1e4));
       throw new Error("aborted");
@@ -26737,47 +27110,231 @@ async function startCore(options, unlinkAbortSignal) {
     throw error2;
   }
 }
-function closeCore(controller, core, unlinkAbortSignal) {
-  let closing;
-  return () => {
-    if (closing) return closing;
-    closing = (async () => {
-      controller.abort();
-      await core.close(AbortSignal.timeout(1e4));
-      unlinkAbortSignal();
-    })();
-    return closing;
-  };
-}
 async function startEmbeddedBrowserRuntime(options) {
   const parsedOrigin = loopbackOrigin(options.origin);
   const projectRoot = createNativeProjectRoot(options.projectRoot);
   const controller = new AbortController();
   const unlinkAbortSignal = linkAbortSignal(options.signal, controller);
   const core = await startCore(
-    { coreFactory: options.coreFactory, projectRoot, signal: controller.signal },
+    {
+      coreFactory: options.coreFactory,
+      projectRoot,
+      signal: controller.signal
+    },
     unlinkAbortSignal
   );
-  const router = new BrowserHttpRouter({
+  return createEmbeddedRuntime({
+    projectRoot,
     origin: parsedOrigin.origin,
     assetRoot: options.assetRoot,
-    call: core.call ?? (async () => ({
-      schema_version: 1,
-      code: "workspace_unavailable",
-      message: "workspace_unavailable",
-      retryable: true
-    }))
+    core,
+    controller,
+    unlinkAbortSignal
   });
-  return {
-    projectRoot,
-    handle: (request) => router.handle(request),
-    close: closeCore(controller, core, unlinkAbortSignal)
-  };
 }
 
 // src/discovery/landmarks.ts
 function landmarksNotReady() {
   return { state: "landmarks_not_ready", landmarks: [] };
+}
+
+// src/discovery/matcher-normalize.ts
+function normalizeValue(value) {
+  return value.normalize("NFKC").toLowerCase();
+}
+function normalizeProjectPath(path5) {
+  const portable = path5.replace(/\\/g, "/");
+  if (unsafePathPrefix(portable)) return void 0;
+  const parts = portable.split("/").filter((part) => part.length > 0 && part !== ".");
+  if (parts.includes("..")) return void 0;
+  return parts.length === 0 ? void 0 : parts.join("/");
+}
+function unsafePathPrefix(path5) {
+  const firstSegment = path5.split("/", 1)[0];
+  return path5.length === 0 || path5.startsWith("/") || path5.startsWith("//") || /^[A-Za-z]:($|\/)/.test(path5) || firstSegment?.includes(":") === true;
+}
+function normalizeCandidate(candidate) {
+  const path5 = normalizeProjectPath(candidate.path);
+  if (path5 === void 0) return void 0;
+  if (candidate.type === "symbol")
+    return {
+      candidate: { ...candidate, path: path5 },
+      values: [normalizeValue(candidate.name)]
+    };
+  const filename2 = path5.split("/").at(-1) ?? path5;
+  const stem = filename2.replace(/\.[^.]+$/, "");
+  return {
+    candidate: { ...candidate, path: path5 },
+    values: [.../* @__PURE__ */ new Set([normalizeValue(filename2), normalizeValue(stem)])]
+  };
+}
+
+// src/discovery/damerau-matrix.ts
+var DamerauMatrix = class {
+  values;
+  constructor(sourceLength, targetLength) {
+    const infinity = sourceLength + targetLength;
+    this.values = Array.from(
+      { length: sourceLength + 2 },
+      () => Array(targetLength + 2).fill(0)
+    );
+    this.set(0, 0, infinity);
+    for (let row = 0; row <= sourceLength; row += 1) {
+      this.set(row + 1, 0, infinity);
+      this.set(row + 1, 1, row);
+    }
+    for (let column = 0; column <= targetLength; column += 1) {
+      this.set(0, column + 1, infinity);
+      this.set(1, column + 1, column);
+    }
+  }
+  get(row, column) {
+    const value = this.values[row]?.[column];
+    if (value === void 0)
+      throw new Error("invalid Damerau-Levenshtein matrix index");
+    return value;
+  }
+  set(row, column, value) {
+    const target = this.values[row];
+    if (target === void 0)
+      throw new Error("invalid Damerau-Levenshtein matrix index");
+    target[column] = value;
+  }
+};
+
+// src/discovery/damerau-row.ts
+function distanceCell(matrix, options) {
+  const { sourceRow, targetColumn, sourceMatchRow, targetMatchColumn, cost } = options;
+  return Math.min(
+    matrix.get(sourceRow, targetColumn) + cost,
+    matrix.get(sourceRow + 1, targetColumn) + 1,
+    matrix.get(sourceRow, targetColumn + 1) + 1,
+    matrix.get(sourceMatchRow, targetMatchColumn) + (sourceRow - sourceMatchRow - 1) + 1 + (targetColumn - targetMatchColumn - 1)
+  );
+}
+function characterAt(characters, index) {
+  const character = characters[index];
+  if (character === void 0)
+    throw new Error("invalid Damerau-Levenshtein index");
+  return character;
+}
+function seenRow(lastSeen, character) {
+  return lastSeen.get(character) ?? 0;
+}
+function matchingColumn(cost, column, previous) {
+  return cost === 0 ? column : previous;
+}
+function updateColumn(options) {
+  const sourceMatchRow = seenRow(options.lastSeen, options.targetCharacter);
+  const targetMatchColumn = options.lastMatchingColumn;
+  const cost = options.sourceCharacter === options.targetCharacter ? 0 : 1;
+  options.matrix.set(
+    options.row + 1,
+    options.column + 1,
+    distanceCell(options.matrix, {
+      sourceRow: options.row,
+      targetColumn: options.column,
+      sourceMatchRow,
+      targetMatchColumn,
+      cost
+    })
+  );
+  return matchingColumn(cost, options.column, options.lastMatchingColumn);
+}
+function updateRow(options) {
+  const { matrix, source, target, row, lastSeen } = options;
+  const sourceCharacter = source[row - 1];
+  if (sourceCharacter === void 0)
+    throw new Error("invalid Damerau-Levenshtein index");
+  let lastMatchingColumn = 0;
+  for (let column = 1; column <= target.length; column += 1) {
+    const targetCharacter = characterAt(target, column - 1);
+    lastMatchingColumn = updateColumn({
+      matrix,
+      sourceCharacter,
+      targetCharacter,
+      row,
+      column,
+      lastMatchingColumn,
+      lastSeen
+    });
+  }
+  lastSeen.set(sourceCharacter, row);
+}
+
+// src/discovery/damerau-levenshtein.ts
+function damerauLevenshtein(left, right) {
+  const source = Array.from(left);
+  const target = Array.from(right);
+  const matrix = new DamerauMatrix(source.length, target.length);
+  const lastSeen = /* @__PURE__ */ new Map();
+  for (let row = 1; row <= source.length; row += 1)
+    updateRow({ matrix, source, target, row, lastSeen });
+  return matrix.get(source.length + 1, target.length + 1);
+}
+
+// src/discovery/matcher-ranking.ts
+function classify2(query, candidate) {
+  if (candidate === query) return { match_class: "exact", match_score: 100 };
+  const matchScore = similarity(query, candidate);
+  if (candidate.startsWith(query))
+    return { match_class: "prefix", match_score: Math.round(matchScore) };
+  return matchScore >= 60 ? { match_class: "fuzzy", match_score: Math.round(matchScore) } : void 0;
+}
+function similarity(left, right) {
+  const maximum = Math.max(Array.from(left).length, Array.from(right).length);
+  if (maximum === 0) return 100;
+  return (maximum - damerauLevenshtein(left, right)) / maximum * 100;
+}
+function compareMatches(left, right) {
+  const comparisons = [
+    classOrder(left.match_class) - classOrder(right.match_class),
+    right.match_score - left.match_score,
+    compareText(left.path, right.path),
+    compareText(matchKind(left), matchKind(right)),
+    compareText(left.identity, right.identity),
+    compareCodePoints(left.path, right.path),
+    compareCodePoints(matchKind(left), matchKind(right)),
+    compareCodePoints(left.identity, right.identity)
+  ];
+  return comparisons.find((comparison) => comparison !== 0) ?? 0;
+}
+function matchKind(match) {
+  if (match.type === "symbol") return match.kind;
+  return "";
+}
+function compareEvidence(left, right) {
+  return classOrder(left.match_class) - classOrder(right.match_class) || right.match_score - left.match_score;
+}
+function compareText(left, right) {
+  return normalizeValue(left) < normalizeValue(right) ? -1 : normalizeValue(left) > normalizeValue(right) ? 1 : 0;
+}
+function compareCodePoints(left, right) {
+  const leftPoints = Array.from(left);
+  const rightPoints = Array.from(right);
+  const commonLength = Math.min(leftPoints.length, rightPoints.length);
+  for (let index = 0; index < commonLength; index += 1) {
+    const difference = codePointDifference(
+      leftPoints[index],
+      rightPoints[index]
+    );
+    if (difference !== 0) return difference;
+  }
+  return leftPoints.length - rightPoints.length;
+}
+function codePointDifference(left, right) {
+  if (left === void 0 || right === void 0)
+    throw new Error("invalid code point comparison index");
+  const leftValue = left.codePointAt(0);
+  const rightValue = right.codePointAt(0);
+  if (leftValue === void 0 || rightValue === void 0)
+    throw new Error("invalid code point comparison value");
+  return leftValue - rightValue;
+}
+function classOrder(matchClass) {
+  if (matchClass === "exact") return 0;
+  if (matchClass === "prefix") return 1;
+  return 2;
 }
 
 // src/discovery/matcher.ts
@@ -26792,187 +27349,64 @@ function normalizeDiscoveryQuery(value) {
 function matchCandidate(query, candidate) {
   const normalized = normalizeCandidate(candidate);
   if (normalized === void 0) return void 0;
-  const evidence = normalized.values.map((value) => classify2(query, value)).filter((match) => match !== void 0).sort(compareEvidence)[0];
+  const evidence = bestEvidence(query, normalized);
   return evidence === void 0 ? void 0 : { ...normalized.candidate, ...evidence };
 }
-function normalizeCandidate(candidate) {
-  const path5 = normalizeProjectPath(candidate.path);
-  if (path5 === void 0) return void 0;
-  if (candidate.type === "symbol")
-    return { candidate: { ...candidate, path: path5 }, values: [normalizeValue(candidate.name)] };
-  const filename2 = path5.split("/").at(-1) ?? path5;
-  const stem = filename2.replace(/\.[^.]+$/, "");
-  return { candidate: { ...candidate, path: path5 }, values: [.../* @__PURE__ */ new Set([normalizeValue(filename2), normalizeValue(stem)])] };
+function bestEvidence(query, normalized) {
+  return normalized.values.map((value) => classify2(query, value)).filter(
+    (match) => match !== void 0
+  ).sort(compareEvidence)[0];
 }
-function classify2(query, candidate) {
-  if (candidate === query) return { match_class: "exact", match_score: 100 };
-  const matchScore = similarity(query, candidate);
-  if (candidate.startsWith(query)) return { match_class: "prefix", match_score: Math.round(matchScore) };
-  return matchScore >= 60 ? { match_class: "fuzzy", match_score: Math.round(matchScore) } : void 0;
-}
-function normalizeValue(value) {
-  return value.normalize("NFKC").toLowerCase();
-}
-function normalizeProjectPath(path5) {
-  const portable = path5.replace(/\\/g, "/");
-  const firstSegment = portable.split("/", 1)[0];
-  if (portable.length === 0 || portable.startsWith("/") || portable.startsWith("//") || /^[A-Za-z]:($|\/)/.test(portable) || firstSegment?.includes(":")) {
-    return void 0;
-  }
-  const parts = [];
-  for (const part of portable.split("/")) {
-    if (part.length === 0 || part === ".") continue;
-    if (part === "..") return void 0;
-    parts.push(part);
-  }
-  return parts.length === 0 ? void 0 : parts.join("/");
-}
-function similarity(left, right) {
-  const maximum = Math.max(codePoints(left).length, codePoints(right).length);
-  if (maximum === 0) return 100;
-  return (maximum - damerauLevenshtein(left, right)) / maximum * 100;
-}
-function damerauLevenshtein(left, right) {
-  const source = codePoints(left);
-  const target = codePoints(right);
-  const infinity = source.length + target.length;
-  const matrix = Array.from({ length: source.length + 2 }, () => Array(target.length + 2).fill(0));
-  setMatrixCell(matrix, 0, 0, infinity);
-  for (let row = 0; row <= source.length; row++) {
-    setMatrixCell(matrix, row + 1, 0, infinity);
-    setMatrixCell(matrix, row + 1, 1, row);
-  }
-  for (let column = 0; column <= target.length; column++) {
-    setMatrixCell(matrix, 0, column + 1, infinity);
-    setMatrixCell(matrix, 1, column + 1, column);
-  }
-  const lastSeen = /* @__PURE__ */ new Map();
-  for (let row = 1; row <= source.length; row++) {
-    let lastMatchingColumn = 0;
-    for (let column = 1; column <= target.length; column++) {
-      const targetCharacter = target[column - 1];
-      const sourceCharacter2 = source[row - 1];
-      if (targetCharacter === void 0 || sourceCharacter2 === void 0)
-        throw new Error("invalid Damerau-Levenshtein index");
-      const sourceMatchRow = lastSeen.get(targetCharacter) ?? 0;
-      const targetMatchColumn = lastMatchingColumn;
-      const cost = sourceCharacter2 === targetCharacter ? 0 : 1;
-      if (cost === 0) lastMatchingColumn = column;
-      setMatrixCell(
-        matrix,
-        row + 1,
-        column + 1,
-        Math.min(
-          matrixCell(matrix, row, column) + cost,
-          matrixCell(matrix, row + 1, column) + 1,
-          matrixCell(matrix, row, column + 1) + 1,
-          matrixCell(matrix, sourceMatchRow, targetMatchColumn) + (row - sourceMatchRow - 1) + 1 + (column - targetMatchColumn - 1)
-        )
-      );
-    }
-    const sourceCharacter = source[row - 1];
-    if (sourceCharacter === void 0) throw new Error("invalid Damerau-Levenshtein index");
-    lastSeen.set(sourceCharacter, row);
-  }
-  return matrixCell(matrix, source.length + 1, target.length + 1);
-}
-function matrixCell(matrix, row, column) {
-  const value = matrix[row]?.[column];
-  if (value === void 0) throw new Error("invalid Damerau-Levenshtein matrix index");
-  return value;
-}
-function setMatrixCell(matrix, row, column, value) {
-  const target = matrix[row];
-  if (target === void 0) throw new Error("invalid Damerau-Levenshtein matrix index");
-  target[column] = value;
-}
-function codePoints(value) {
-  return Array.from(value);
-}
-function compareMatches(left, right) {
-  return classOrder(left.match_class) - classOrder(right.match_class) || right.match_score - left.match_score || compareText(left.path, right.path) || compareText(left.type === "symbol" ? left.kind : "", right.type === "symbol" ? right.kind : "") || compareText(left.identity, right.identity) || compareCodePoints(left.path, right.path) || compareCodePoints(left.type === "symbol" ? left.kind : "", right.type === "symbol" ? right.kind : "") || compareCodePoints(left.identity, right.identity);
-}
-function compareEvidence(left, right) {
-  return classOrder(left.match_class) - classOrder(right.match_class) || right.match_score - left.match_score;
-}
-function compareText(left, right) {
-  return normalizeValue(left) < normalizeValue(right) ? -1 : normalizeValue(left) > normalizeValue(right) ? 1 : 0;
-}
-function compareCodePoints(left, right) {
-  const leftPoints = codePoints(left);
-  const rightPoints = codePoints(right);
-  const commonLength = Math.min(leftPoints.length, rightPoints.length);
-  for (let index = 0; index < commonLength; index++) {
-    const leftPoint = leftPoints[index];
-    const rightPoint = rightPoints[index];
-    if (leftPoint === void 0 || rightPoint === void 0) throw new Error("invalid code point comparison index");
-    const leftValue = leftPoint.codePointAt(0);
-    const rightValue = rightPoint.codePointAt(0);
-    if (leftValue === void 0 || rightValue === void 0) throw new Error("invalid code point comparison value");
-    const difference = leftValue - rightValue;
-    if (difference !== 0) return difference;
-  }
-  return leftPoints.length - rightPoints.length;
-}
-function classOrder(matchClass) {
-  if (matchClass === "exact") return 0;
-  if (matchClass === "prefix") return 1;
-  return 2;
-}
-
-// src/discovery/pipeline.ts
-import { lstatSync as lstatSync8, readdirSync as readdirSync7 } from "node:fs";
-import { join as join19 } from "node:path";
 
 // src/discovery/classification.ts
 import { readFileSync as readFileSync7 } from "node:fs";
-var emptyConfig = { generated: [], test: [], production: [], overrides: [] };
-var keys = ["generated", "test", "production", "overrides"];
-function loadClassificationConfig(projectRoot, platform = process.platform) {
-  try {
-    const configPath = classificationConfigPath(projectRoot, platform);
-    if (!configPath) return { config: emptyConfig, status: { classification_config_invalid: false } };
-    const parsed = JSON.parse(readFileSync7(configPath, "utf8"));
-    return { config: parseClassificationConfig(parsed), status: { classification_config_invalid: false } };
-  } catch {
-    return { config: emptyConfig, status: { classification_config_invalid: true } };
-  }
+import process4 from "node:process";
+
+// src/discovery/classification-markers.ts
+function markerClass(path5, generatedHeader) {
+  if (generatedHeader || matchesGeneratedMarker(path5)) return "generated";
+  if (matchesTestMarker(path5)) return "test";
+  if (matchesProductionMarker(path5)) return "production";
+  return void 0;
 }
-function parseClassificationConfig(value) {
-  if (!isRecord4(value) || Object.keys(value).some((key) => !keys.includes(key)))
-    throw new Error("classification_config_invalid");
-  return {
-    generated: parseGlobArray(value.generated),
-    test: parseGlobArray(value.test),
-    production: parseGlobArray(value.production),
-    overrides: parseOverrides(value.overrides)
-  };
+function matchesGeneratedMarker(path5) {
+  return path5.split("/").some(
+    (part) => /^(dist|target|bin|obj|\.venv|generated|auto-generated)$/iu.test(part)
+  ) || /\.g\.(cs|ts)$/iu.test(path5) || /(^|\/)(?:generated|auto-generated)\.[^.]+$/iu.test(path5) || /(?:^|\/).+\.(?:generated|designer)\.(?:cs|ts|js)$/iu.test(path5);
 }
-function classifyProjectPath(path5, config2 = emptyConfig, generatedHeader = false) {
-  const normalized = normalizeProjectPath2(path5);
-  if (!normalized) return { content: "unknown", source: "unknown" };
-  const override = lastConfiguredOverride(normalized, config2);
-  if (override) return { content: override, source: "configuration_override" };
-  const explicit = lastConfiguredClass(normalized, config2);
-  if (explicit) return { content: explicit, source: "configuration" };
-  if (generatedHeader || matchesGeneratedMarker(normalized))
-    return { content: "generated", source: "generated_marker" };
-  if (matchesTestMarker(normalized)) return { content: "test", source: "test_marker" };
-  if (matchesProductionMarker(normalized)) return { content: "production", source: "production_marker" };
-  return { content: "unknown", source: "unknown" };
+function matchesTestMarker(path5) {
+  return path5.split("/").some((part) => /^(test|tests|__tests__)$/iu.test(part)) || /(?:^|[._-])(test|spec)\.[^.]+$/iu.test(path5) || /(?:^|\/)[^/]*(?:Tests|Test)\.(?:cs|vb)$/iu.test(path5) || /(?:^|\/)(?:test_[^/]+|[^/]+_test)\.pyi?$/iu.test(path5) || /(?:^|\/)[^/]+_test\.rs$/iu.test(path5);
 }
-function matchesDiscoveryFilters(path5, classification, filters, candidate) {
-  const normalized = normalizeProjectPath2(path5);
-  if (!normalized) return false;
-  if (filters.path_globs?.length && !filters.path_globs.some((glob) => safeGlobMatches(normalized, glob))) return false;
-  const languages2 = filters.languages ?? (filters.language ? [filters.language] : void 0);
-  if (languages2?.length && !(candidate.language && languages2.includes(candidate.language))) return false;
-  const kinds = filters.kinds ?? (filters.kind ? [filters.kind] : void 0);
-  if (kinds?.length && !(candidate.kind && kinds.includes(candidate.kind))) return false;
-  if (classification.content === "generated" && !filters.include_generated) return false;
-  if (filters.content === "production") return classification.content === "production";
-  if (filters.content === "tests") return classification.content === "test";
-  return true;
+function matchesProductionMarker(path5) {
+  return /^(src|lib|app)\//iu.test(path5);
+}
+
+// src/discovery/classification-matching.ts
+function normalizeProjectPath2(path5) {
+  const normalized = path5.replaceAll("\\", "/").replace(/^\.\//, "");
+  if (unsafeProjectPath(normalized)) return void 0;
+  return normalized;
+}
+function unsafeProjectPath(path5) {
+  return !path5 || absoluteProjectPath(path5) || path5.split("/").some(invalidProjectPathPart);
+}
+function absoluteProjectPath(path5) {
+  return path5.startsWith("/") || /^[A-Za-z]:/.test(path5);
+}
+function invalidProjectPathPart(part) {
+  return !part || part === "." || part === "..";
+}
+function safeGlobMatches(path5, glob) {
+  if (!isSafeProjectGlob(glob)) return false;
+  const expression = glob.split("**").map(
+    (part) => part.replace(/[\\]/g, "\\\\").replace(/[.]/g, "\\.").replaceAll("*", "[^/]*").replaceAll("?", "[^/]")
+  ).join(".*");
+  return new RegExp(`^${expression}$`, "u").test(path5);
+}
+function isSafeProjectGlob(glob) {
+  const normalized = normalizeProjectPath2(glob);
+  if (!normalized || normalized !== glob.replaceAll("\\", "/")) return false;
+  return !(/[[\]{}()|+^$\\]/.test(glob) || glob.includes(":"));
 }
 function lastConfiguredClass(path5, config2) {
   const ordered = [
@@ -26982,156 +27416,177 @@ function lastConfiguredClass(path5, config2) {
   ];
   let matched;
   for (const [classification, globs] of ordered)
-    for (const glob of globs) if (safeGlobMatches(path5, glob)) matched = classification;
+    for (const glob of globs)
+      if (safeGlobMatches(path5, glob)) matched = classification;
   return matched;
 }
 function lastConfiguredOverride(path5, config2) {
   let matched;
-  for (const override of config2.overrides) if (safeGlobMatches(path5, override.glob)) matched = override.class;
+  for (const override of config2.overrides)
+    if (safeGlobMatches(path5, override.glob)) matched = override.class;
   return matched;
 }
-function parseGlobArray(value) {
-  if (value === void 0) return [];
-  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string" || !isSafeProjectGlob(entry)))
-    throw new Error("classification_config_invalid");
-  return [...value];
+
+// src/discovery/classification-config-parser.ts
+var keys = ["generated", "test", "production", "overrides"];
+function isRecord4(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
-function parseOverrides(value) {
-  if (value === void 0) return [];
-  if (!Array.isArray(value)) throw new Error("classification_config_invalid");
-  return value.map((entry) => {
-    if (!isRecord4(entry) || Object.keys(entry).length !== 2 || !("glob" in entry) || !("class" in entry))
-      throw new Error("classification_config_invalid");
-    if (typeof entry.glob !== "string" || !isSafeProjectGlob(entry.glob) || entry.class !== "generated" && entry.class !== "test" && entry.class !== "production")
-      throw new Error("classification_config_invalid");
-    return { glob: entry.glob, class: entry.class };
-  });
-}
-function isSafeProjectGlob(glob) {
+function isSafeProjectGlob2(glob) {
   const normalized = normalizeProjectPath2(glob);
   if (!normalized || normalized !== glob.replaceAll("\\", "/")) return false;
   return !(/[[\]{}()|+^$\\]/.test(glob) || glob.includes(":"));
 }
-function safeGlobMatches(path5, glob) {
-  if (!isSafeProjectGlob(glob)) return false;
-  const expression = glob.split("**").map((part) => part.replace(/[.]/g, "\\.").replaceAll("*", "[^/]*").replaceAll("?", "[^/]")).join(".*");
-  return new RegExp(`^${expression}$`, "u").test(path5);
+function parseGlobArray(value) {
+  if (value === void 0) return [];
+  if (!Array.isArray(value) || value.some(
+    (entry) => typeof entry !== "string" || !isSafeProjectGlob2(entry)
+  ))
+    throw new Error("classification_config_invalid");
+  return [...value];
 }
-function normalizeProjectPath2(path5) {
-  const normalized = path5.replaceAll("\\", "/").replace(/^\.\//, "");
-  if (!normalized || normalized.startsWith("/") || /^[A-Za-z]:/.test(normalized)) return void 0;
-  const parts = normalized.split("/");
-  return parts.some((part) => !part || part === "." || part === "..") ? void 0 : normalized;
+function validOverride(entry) {
+  if (!isRecord4(entry) || Object.keys(entry).length !== 2 || !("glob" in entry) || !("class" in entry))
+    return false;
+  return typeof entry.glob === "string" && isSafeProjectGlob2(entry.glob) && (entry.class === "generated" || entry.class === "test" || entry.class === "production");
 }
-function matchesGeneratedMarker(path5) {
-  return path5.split("/").some((part) => /^(dist|target|bin|obj|\.venv|generated|auto-generated)$/iu.test(part)) || /\.g\.(cs|ts)$/iu.test(path5) || /(^|\/)(?:generated|auto-generated)\.[^.]+$/iu.test(path5) || /(?:^|\/).+\.(?:generated|designer)\.(?:cs|ts|js)$/iu.test(path5);
+function parseOverride(entry) {
+  if (!validOverride(entry)) throw new Error("classification_config_invalid");
+  return { glob: entry.glob, class: entry.class };
 }
-function matchesTestMarker(path5) {
-  return path5.split("/").some((part) => /^(test|tests|__tests__)$/iu.test(part)) || /(?:^|[._-])(test|spec)\.[^.]+$/iu.test(path5) || /(?:^|\/)[^/]*(?:Tests|Test)\.(?:cs|vb)$/iu.test(path5) || /(?:^|\/)(?:test_[^/]+|[^/]+_test)\.pyi?$/iu.test(path5) || /(?:^|\/)[^/]+_test\.rs$/iu.test(path5);
+function parseOverrides(value) {
+  if (value === void 0) return [];
+  if (!Array.isArray(value)) throw new Error("classification_config_invalid");
+  return value.map(parseOverride);
 }
-function matchesProductionMarker(path5) {
-  return /^(src|lib|app)\//iu.test(path5);
-}
-function isRecord4(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
+function parseClassificationConfig(value) {
+  if (!isRecord4(value) || Object.keys(value).some(
+    (key) => !keys.includes(key)
+  ))
+    throw new Error("classification_config_invalid");
+  return {
+    generated: parseGlobArray(value.generated),
+    test: parseGlobArray(value.test),
+    production: parseGlobArray(value.production),
+    overrides: parseOverrides(value.overrides)
+  };
 }
 
-// src/discovery/pipeline.ts
-function createDiscoveryPipeline(root) {
-  const loaded = loadClassificationConfig(root.canonicalPath);
-  const candidates = collectSourceFiles(root).map((path5) => ({
-    type: "file",
-    path: path5,
-    identity: `file:${path5}`,
-    classification: classifyProjectPath(path5, loaded.config, hasGeneratedHeader(root, path5))
-  }));
-  return {
-    status: () => loaded.status,
-    search(query, filters, symbols = []) {
-      return searchCandidates(query, filters, symbols).slice(0, resultLimit(filters));
-    },
-    searchResult(query, filters, symbols = []) {
-      const matches = searchCandidates(query, filters, symbols);
-      const limit = resultLimit(filters);
-      return {
-        candidates: matches.slice(0, limit),
-        omitted_candidate_count: Math.max(0, matches.length - limit),
-        applied_filters: { ...filters },
-        available_narrowing_filters: ["path_globs", "languages", "kinds", "content", "include_generated"]
-      };
-    }
-  };
-  function searchCandidates(query, filters, symbols) {
-    const allowedSymbols = symbols.map((symbol) => normalizeBackendSymbol(root, symbol)).filter((symbol) => !isSensitiveProjectPath(symbol.location.path));
-    const semanticCandidates = allowedSymbols.map((symbol) => ({
-      type: "symbol",
-      name: symbol.name,
-      path: symbol.location.path,
-      kind: symbol.kind,
-      identity: symbol.id,
-      classification: classifyProjectPath(
-        symbol.location.path,
-        loaded.config,
-        hasGeneratedHeader(root, symbol.location.path)
-      )
-    }));
-    const allCandidates = [...candidates, ...semanticCandidates];
-    const classifications = new Map(allCandidates.map((candidate) => [candidate.identity, candidate.classification]));
-    const allowed = allCandidates.filter((candidate) => {
-      return matchesDiscoveryFilters(candidate.path, candidate.classification, filters, {
-        language: candidate.type === "symbol" ? allowedSymbols.find((symbol) => symbol.id === candidate.identity)?.language : languageForPath(candidate.path),
-        ...candidate.type === "symbol" ? { kind: candidate.kind } : {}
-      });
-    });
-    return matchDiscoveryCandidates(query, allowed).map((candidate) => {
-      const classification = classifications.get(candidate.identity);
-      if (!classification) throw new Error("missing discovery classification");
-      return { ...candidate, ...classification };
-    });
-  }
+// src/discovery/classification-filters.ts
+function matchesPath(path5, filters) {
+  return !filters.path_globs?.length || filters.path_globs.some((glob) => safeGlobMatches(path5, glob));
 }
-function normalizeBackendSymbol(root, symbol) {
-  const portablePath = symbol.location.path.replaceAll("\\", "/").replace(/^\.\//, "");
-  if (!isAbsoluteBackendPath(portablePath)) {
-    if (!portablePath || portablePath.split("/").includes("..")) throw new ProjectPathError("path_outside_project");
-    return { ...symbol, location: { ...symbol.location, path: portablePath } };
-  }
-  const classified = root.classifyBackendPath(portablePath);
-  if ("external" in classified) throw new ProjectPathError("path_outside_project");
-  return { ...symbol, location: { ...symbol.location, path: classified.relative_path } };
+function filterValues(values, value) {
+  return values ?? (value === void 0 ? void 0 : [value]);
 }
-function isAbsoluteBackendPath(path5) {
-  return path5.startsWith("/") || /^[A-Za-z]:\//.test(path5);
+function matchesValue(value, values) {
+  if (!values?.length) return true;
+  return value !== void 0 && values.includes(value);
 }
-function resultLimit(filters) {
-  return Math.max(0, filters.limit ?? 50);
+function matchesLanguage(filters, candidate) {
+  return matchesValue(
+    candidate.language,
+    filterValues(filters.languages, filters.language)
+  );
 }
-function hasGeneratedHeader(root, path5) {
-  try {
-    const header = root.protectedRead(path5).bytes.slice(0, 2048);
-    return /(?:^|\n)\s*(?:\/\/|#|\/\*)\s*(?:<auto-generated>|auto-generated\b|generated by\b)/iu.test(header);
-  } catch {
+function matchesKind(filters, candidate) {
+  return matchesValue(
+    candidate.kind,
+    filterValues(filters.kinds, filters.kind)
+  );
+}
+function matchesContent(classification, filters) {
+  if (classification.content === "generated" && !filters.include_generated)
     return false;
+  if (filters.content === "production")
+    return classification.content === "production";
+  if (filters.content === "tests") return classification.content === "test";
+  return true;
+}
+function matchesDiscoveryFilters(...args) {
+  const [path5, classification, filters, candidate] = args;
+  return matchesPath(path5, filters) && matchesLanguage(filters, candidate) && matchesKind(filters, candidate) && matchesContent(classification, filters);
+}
+
+// src/discovery/classification.ts
+var emptyConfig = {
+  generated: [],
+  test: [],
+  production: [],
+  overrides: []
+};
+function loadClassificationConfig(projectRoot, platform = process4.platform) {
+  try {
+    const configPath = classificationConfigPath(projectRoot, platform);
+    if (!configPath)
+      return {
+        config: emptyConfig,
+        status: { classification_config_invalid: false }
+      };
+    const parsed = JSON.parse(readFileSync7(configPath, "utf8"));
+    return {
+      config: parseClassificationConfig(parsed),
+      status: { classification_config_invalid: false }
+    };
+  } catch {
+    return {
+      config: emptyConfig,
+      status: { classification_config_invalid: true }
+    };
   }
 }
+function classifyProjectPath(path5, config2 = emptyConfig, generatedHeader = false) {
+  const normalized = normalizeProjectPath2(path5);
+  if (!normalized) return { content: "unknown", source: "unknown" };
+  const override = lastConfiguredOverride(normalized, config2);
+  if (override) return { content: override, source: "configuration_override" };
+  const explicit = lastConfiguredClass(normalized, config2);
+  if (explicit) return { content: explicit, source: "configuration" };
+  const marker = markerClass(normalized, generatedHeader);
+  return marker ? { content: marker, source: markerSource(marker) } : { content: "unknown", source: "unknown" };
+}
+function markerSource(marker) {
+  if (marker === "generated") return "generated_marker";
+  if (marker === "test") return "test_marker";
+  return "production_marker";
+}
+function matchesDiscoveryFilters2(...args) {
+  const [path5, classification, filters, candidate] = args;
+  const normalized = normalizeProjectPath2(path5);
+  return normalized !== void 0 && matchesDiscoveryFilters(normalized, classification, filters, candidate);
+}
+
+// src/discovery/source-file-collector.ts
+import { lstatSync as lstatSync8, readdirSync as readdirSync7 } from "node:fs";
+import { join as join19 } from "node:path";
 function collectSourceFiles(root) {
   const found = [];
-  const visit2 = (directory, prefix) => {
-    for (const entry of readdirSync7(directory, { withFileTypes: true })) {
-      const relative6 = prefix ? `${prefix}/${entry.name}` : entry.name;
-      const absolute = join19(directory, entry.name);
-      if (isSensitiveProjectPath(relative6) || isClassificationConfigPath(relative6) || lstatSync8(absolute).isSymbolicLink())
-        continue;
-      if (entry.isDirectory()) {
-        if (!isIgnoredDirectory(relative6)) visit2(absolute, relative6);
-      } else if (entry.isFile() && languageForPath(relative6)) found.push(relative6);
-    }
-  };
-  visit2(root.canonicalPath, "");
+  visit2(root.canonicalPath, "", found);
   return found;
 }
+function visit2(directory, prefix, found) {
+  for (const entry of readdirSync7(directory, { withFileTypes: true })) {
+    const relative6 = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const absolute = join19(directory, entry.name);
+    visitEntry3({ entry, relative: relative6, absolute, found });
+  }
+}
+function visitEntry3(options) {
+  const { entry, relative: relative6, absolute, found } = options;
+  if (isExcludedEntry(relative6, absolute)) return;
+  if (entry.isDirectory()) return visitDirectory2(relative6, absolute, found);
+  if (entry.isFile() && languageForPath(relative6)) found.push(relative6);
+}
+function visitDirectory2(relative6, absolute, found) {
+  if (!isIgnoredDirectory(relative6)) visit2(absolute, relative6, found);
+}
+function isExcludedEntry(relative6, absolute) {
+  return isSensitiveProjectPath(relative6) || isClassificationConfigPath(relative6) || lstatSync8(absolute).isSymbolicLink();
+}
 function isIgnoredDirectory(path5) {
-  return path5.split("/").some((part) => /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(part));
+  return path5.split("/").some(
+    (part) => /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(part)
+  );
 }
 function languageForPath(path5) {
   const extension = path5.split(".").at(-1)?.toLowerCase();
@@ -27146,6 +27601,147 @@ function languageForPath(path5) {
     jsx: "javascript"
   }[extension ?? ""];
 }
+function hasGeneratedHeader(root, path5) {
+  try {
+    const header = root.protectedRead(path5).bytes.slice(0, 2048);
+    const generatedHeaderPattern = new RegExp(
+      "(?:^|\\n)\\s*(?:\\/\\/|#|\\/\\*)\\s*(?:<auto-generated>|auto-generated\\b|generated by\\b)",
+      "iu"
+    );
+    return generatedHeaderPattern.test(header);
+  } catch {
+    return false;
+  }
+}
+
+// src/discovery/pipeline-files.ts
+function collectPipelineFiles(root, config2) {
+  return collectSourceFiles(root).map((path5) => ({
+    type: "file",
+    path: path5,
+    identity: `file:${path5}`,
+    classification: classifyProjectPath(
+      path5,
+      config2,
+      hasGeneratedHeader(root, path5)
+    )
+  }));
+}
+
+// src/discovery/discovery-search-candidates.ts
+function normalizeBackendSymbol(root, symbol) {
+  const portablePath = symbol.location.path.replaceAll("\\", "/").replace(/^\.\//, "");
+  if (!isAbsoluteBackendPath(portablePath)) {
+    if (!portablePath || portablePath.split("/").includes(".."))
+      throw new ProjectPathError("path_outside_project");
+    return { ...symbol, location: { ...symbol.location, path: portablePath } };
+  }
+  const classified = root.classifyBackendPath(portablePath);
+  if ("external" in classified)
+    throw new ProjectPathError("path_outside_project");
+  return {
+    ...symbol,
+    location: { ...symbol.location, path: classified.relative_path }
+  };
+}
+function isAbsoluteBackendPath(path5) {
+  return path5.startsWith("/") || /^[A-Za-z]:\//.test(path5);
+}
+function symbolCandidates(root, config2, symbols) {
+  return symbols.map((symbol) => normalizeBackendSymbol(root, symbol)).filter((symbol) => !isSensitiveProjectPath(symbol.location.path)).map((symbol) => ({
+    type: "symbol",
+    name: symbol.name,
+    path: symbol.location.path,
+    kind: symbol.kind,
+    identity: symbol.id,
+    classification: classifyProjectPath(
+      symbol.location.path,
+      config2,
+      hasGeneratedHeader(root, symbol.location.path)
+    ),
+    language: symbol.language
+  }));
+}
+function allowedCandidates(options) {
+  const { root, filters, files, symbols } = options;
+  const allCandidates = [...files, ...symbols];
+  return allCandidates.filter(
+    (candidate) => matchesDiscoveryFilters2(candidate.path, candidate.classification, filters, {
+      language: candidate.type === "symbol" ? candidate.language : languageForPath(candidate.path),
+      ...candidate.type === "symbol" ? { kind: candidate.kind } : {}
+    })
+  );
+}
+
+// src/discovery/discovery-search-pipeline.ts
+function resultLimit(filters) {
+  return Math.max(0, filters.limit ?? 50);
+}
+function searchCandidates(...args) {
+  const [root, config2, files, query, filters, symbols] = args;
+  const semanticCandidates = symbolCandidates(root, config2, symbols);
+  const allowed = allowedCandidates({
+    root,
+    filters,
+    files,
+    symbols: semanticCandidates
+  });
+  const classifications = new Map(
+    allowed.map((candidate) => [candidate.identity, candidate.classification])
+  );
+  return matchDiscoveryCandidates(query, allowed).map((candidate) => {
+    const classification = classifications.get(candidate.identity);
+    if (!classification) throw new Error("missing discovery classification");
+    return { ...candidate, ...classification };
+  });
+}
+
+// src/discovery/pipeline-search.ts
+function createPipelineSearch(options) {
+  const matches = (query, filters, symbols = []) => searchCandidates(
+    options.root,
+    options.config,
+    options.candidates,
+    query,
+    filters,
+    symbols
+  );
+  const search = (query, filters, symbols = []) => matches(query, filters, symbols).slice(0, resultLimit(filters));
+  const searchResult = (query, filters, symbols = []) => searchPipelineResult(matches, query, filters, symbols);
+  return { search, searchResult };
+}
+function searchPipelineResult(matches, query, filters, symbols = []) {
+  const found = matches(query, filters, symbols);
+  const limit = resultLimit(filters);
+  return {
+    candidates: found.slice(0, limit),
+    omitted_candidate_count: Math.max(0, found.length - limit),
+    applied_filters: { ...filters },
+    available_narrowing_filters: [
+      "path_globs",
+      "languages",
+      "kinds",
+      "content",
+      "include_generated"
+    ]
+  };
+}
+
+// src/discovery/pipeline.ts
+function createDiscoveryPipeline(root) {
+  const loaded = loadClassificationConfig(root.canonicalPath);
+  const candidates = collectPipelineFiles(root, loaded.config);
+  const search = createPipelineSearch({
+    root,
+    config: loaded.config,
+    candidates
+  });
+  return {
+    status: () => loaded.status,
+    search: search.search,
+    searchResult: search.searchResult
+  };
+}
 
 // src/freshness/project-generation-scheduler.ts
 var ProjectGenerationScheduler = class {
@@ -27157,7 +27753,10 @@ var ProjectGenerationScheduler = class {
   #acceptedRequests = 0;
   #refresh;
   accept() {
-    return this.#enqueue(() => ({ accepted_request: ++this.#acceptedRequests, status: this.freshness.status() }));
+    return this.#enqueue(() => ({
+      accepted_request: ++this.#acceptedRequests,
+      status: this.freshness.status()
+    }));
   }
   refresh(work) {
     if (this.#refresh) return this.#refresh;
@@ -27190,6 +27789,68 @@ var ProjectGenerationScheduler = class {
       () => void 0
     );
     return response;
+  }
+};
+
+// src/freshness/freshness-runtime.ts
+var FreshnessRuntime = class {
+  status = {
+    current_generation: 0,
+    pending_generation: null,
+    state: "initializing",
+    mode: "watching"
+  };
+  manifest = /* @__PURE__ */ new Map();
+  watcher;
+  activeSessions = 0;
+  coalesceTimer;
+  pollTimer;
+  manifestTimer;
+  running;
+  forceRefresh = false;
+  nextGeneration = 1;
+  reserveGeneration() {
+    const generation = this.nextGeneration++;
+    this.status = {
+      current_generation: this.status.current_generation,
+      pending_generation: generation,
+      state: "refreshing",
+      mode: this.status.mode
+    };
+    return generation;
+  }
+  failRefresh() {
+    this.forceRefresh = false;
+    this.status = {
+      current_generation: this.status.current_generation,
+      pending_generation: null,
+      state: "refresh_failed",
+      mode: this.status.mode
+    };
+  }
+  reserveRefresh() {
+    if (this.status.pending_generation === null) this.reserveGeneration();
+    this.forceRefresh = true;
+  }
+  degrade(cause) {
+    this.forceRefresh = false;
+    this.status = {
+      current_generation: this.status.current_generation,
+      pending_generation: null,
+      state: "degraded",
+      mode: this.status.mode,
+      degraded_cause: cause
+    };
+  }
+  ready(generation, manifest) {
+    this.manifest = new Map(manifest);
+    this.status = {
+      current_generation: generation,
+      pending_generation: null,
+      state: "ready",
+      mode: this.status.mode
+    };
+    this.forceRefresh = false;
   }
 };
 
@@ -27420,7 +28081,7 @@ function readdirp(root, options = {}) {
 
 // ../../node_modules/chokidar/esm/handler.js
 import { watchFile, unwatchFile, watch as fs_watch } from "fs";
-import { open as open2, stat as stat2, lstat as lstat2, realpath as fsrealpath } from "fs/promises";
+import { open as open3, stat as stat2, lstat as lstat2, realpath as fsrealpath } from "fs/promises";
 import * as sysPath from "path";
 import { type as osType } from "os";
 var STR_DATA = "data";
@@ -27804,7 +28465,7 @@ var setFsWatchListener = (path5, fullPath, options, handlers) => {
         cont.watcherUnusable = true;
       if (isWindows && error2.code === "EPERM") {
         try {
-          const fd = await open2(path5, "r");
+          const fd = await open3(path5, "r");
           await fd.close();
           broadcastErr(error2);
         } catch (err) {
@@ -28884,79 +29545,8 @@ function watch(paths, options = {}) {
 }
 var esm_default = { watch, FSWatcher };
 
-// src/freshness/native-manifest.ts
-import { createHash as createHash4 } from "node:crypto";
-import { open as open3, readdir as readdir3 } from "node:fs/promises";
-import { join as join22, relative as relative5 } from "node:path";
-async function reconcileNativeManifest(options) {
-  const started = (options.now ?? Date.now)();
-  try {
-    const files = await supportedFiles(options.root, options.supported, started, options.now ?? Date.now);
-    const manifest = /* @__PURE__ */ new Map();
-    for (let offset = 0; offset < files.length; offset += 64) {
-      const stable = await stableBatch(options, files.slice(offset, offset + 64));
-      for (const [file, hash] of stable) {
-        if (hash === "incomplete_write") return { cause: hash };
-        if (hash === "scan_limit") return { cause: hash };
-        manifest.set(file, hash);
-      }
-    }
-    return { manifest };
-  } catch (error2) {
-    return { cause: error2 instanceof Error && error2.message === "scan_limit" ? "scan_limit" : "freshness_unavailable" };
-  }
-}
-async function stableBatch(options, files) {
-  return await Promise.all(
-    files.map(
-      async (file) => [file, await stableHash(join22(options.root, file), options.now ?? Date.now, options.sleep ?? delay)]
-    )
-  );
-}
-async function supportedFiles(root, supported, started, now) {
-  const output = [];
-  const visit2 = async (directory) => {
-    if (now() - started > 6e4 || output.length > 5e4) throw new Error("scan_limit");
-    for (const entry of await readdir3(directory, { withFileTypes: true })) {
-      const absolute = join22(directory, entry.name);
-      if (entry.isDirectory()) {
-        if (!/^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(entry.name)) await visit2(absolute);
-      } else {
-        const path5 = relative5(root, absolute).replaceAll("\\", "/");
-        if (supported(path5)) output.push(path5);
-      }
-    }
-  };
-  await visit2(root);
-  if (output.length > 5e4) throw new Error("scan_limit");
-  return output.sort();
-}
-async function stableHash(path5, now, sleep) {
-  const started = now();
-  for (; ; ) {
-    const file = await open3(path5, "r");
-    try {
-      const before = await file.stat();
-      if (before.size > 4 * 1024 * 1024) return "scan_limit";
-      await sleep(100);
-      const after = await file.stat();
-      if (before.size === after.size && before.mtimeMs === after.mtimeMs)
-        return createHash4("sha256").update(await file.readFile()).digest("hex");
-    } finally {
-      await file.close();
-    }
-    if (now() - started >= 1e4) return "incomplete_write";
-  }
-}
-function delay(milliseconds) {
-  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
-}
-
-// src/freshness/workspace-freshness.ts
+// src/freshness/workspace-freshness-support.ts
 var coalesceMilliseconds = 100;
-function canPublishGeneration(currentGeneration, analyzedGeneration, captured, prepublication) {
-  return analyzedGeneration > currentGeneration && sameManifest(captured, prepublication);
-}
 var chokidarWatchOptions = {
   atomic: 100,
   awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 100 },
@@ -28964,198 +29554,350 @@ var chokidarWatchOptions = {
   followSymlinks: false,
   ignorePermissionErrors: false
 };
+function sameManifest(left, right) {
+  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
+}
+function canPublishGeneration(...args) {
+  const [currentGeneration, analyzedGeneration, captured, prepublication] = args;
+  return analyzedGeneration > currentGeneration && sameManifest(captured, prepublication);
+}
+function createChokidarWatcher(paths) {
+  return esm_default.watch(
+    [...paths],
+    chokidarWatchOptions
+  );
+}
+function createWatcher(options, schedule) {
+  try {
+    return attachWatcher(createWatcherFor(options), schedule);
+  } catch {
+    return void 0;
+  }
+}
+function createWatcherFor(options) {
+  return options.createWatcher ? options.createWatcher() : createChokidarWatcher(options.watch_paths ?? []);
+}
+function attachWatcher(watcher, schedule) {
+  watcher.on("all", schedule);
+  watcher.on("error", schedule);
+  return watcher;
+}
+function clearTimer(options, timer) {
+  const clear = options.clearTimeout ?? globalThis.clearTimeout;
+  clear(timer);
+}
+function clearTimers(options, runtime) {
+  for (const timer of [
+    runtime.coalesceTimer,
+    runtime.pollTimer,
+    runtime.manifestTimer
+  ]) {
+    if (timer !== void 0) clearTimer(options, timer);
+  }
+}
+
+// src/freshness/workspace-reconciliation.ts
+function sameManifest2(left, right) {
+  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
+}
+function canReuseCurrent(runtime, captured) {
+  return !runtime.forceRefresh && runtime.status.current_generation > 0 && sameManifest2(runtime.manifest, captured);
+}
+function readyCurrent(runtime) {
+  runtime.status = {
+    current_generation: runtime.status.current_generation,
+    pending_generation: null,
+    state: "ready",
+    mode: runtime.status.mode
+  };
+  runtime.forceRefresh = false;
+}
+async function reconcileAttempt(options, runtime) {
+  const captured = await options.reconcile();
+  if ("cause" in captured) {
+    runtime.degrade(captured.cause);
+    return true;
+  }
+  if (canReuseCurrent(runtime, captured.manifest)) {
+    readyCurrent(runtime);
+    return true;
+  }
+  return analyzeAndPublish(options, runtime, captured.manifest);
+}
+async function analyzeAndPublish(options, runtime, captured) {
+  const generation = generationFor(runtime);
+  await options.analyze?.(generation, captured);
+  const published = await publishedResult(options, captured);
+  if ("cause" in published) {
+    runtime.degrade(published.cause);
+    return true;
+  }
+  if (canPublishGeneration(
+    runtime.status.current_generation,
+    generation,
+    captured,
+    published.manifest
+  )) {
+    runtime.ready(generation, published.manifest);
+    return true;
+  }
+  runtime.reserveGeneration();
+  return false;
+}
+function generationFor(runtime) {
+  if (runtime.status.pending_generation !== null)
+    return runtime.status.pending_generation;
+  return runtime.reserveGeneration();
+}
+function publishedResult(options, captured) {
+  if (options.verify) return options.verify();
+  return Promise.resolve({ manifest: captured });
+}
+async function reconcileWorkspace(options, runtime) {
+  for (let mismatchCount = 0; mismatchCount < 3; mismatchCount += 1) {
+    if (await reconcileAttempt(options, runtime)) return;
+  }
+  runtime.degrade("workspace_churn");
+}
+
+// src/freshness/workspace-scheduling.ts
+function schedulePolling(options) {
+  const { runtime, timeout, reconcile, schedulePolling: schedulePolling2 } = options;
+  if (runtime.status.mode !== "polling" || runtime.activeSessions === 0 || runtime.pollTimer !== void 0)
+    return;
+  runtime.pollTimer = timeout(() => {
+    runtime.pollTimer = void 0;
+    void reconcile().finally(schedulePolling2);
+  }, 5e3);
+}
+function scheduleManifestCheck(options) {
+  const { runtime, timeout, reconcile, scheduleManifestCheck: scheduleManifestCheck2 } = options;
+  if (runtime.activeSessions === 0 || runtime.manifestTimer !== void 0)
+    return;
+  runtime.manifestTimer = timeout(() => {
+    runtime.manifestTimer = void 0;
+    void reconcile().finally(scheduleManifestCheck2);
+  }, 3e4);
+}
+function scheduleWorkspaceTimers(options) {
+  schedulePolling({ ...options, schedulePolling: options.schedule });
+  scheduleManifestCheck({
+    ...options,
+    scheduleManifestCheck: options.schedule
+  });
+}
+
+// src/freshness/workspace-freshness.ts
 var WorkspaceFreshness = class {
   constructor(options) {
     this.options = options;
   }
   options;
-  #status = {
-    current_generation: 0,
-    pending_generation: null,
-    state: "initializing",
-    mode: "watching"
-  };
-  #manifest = /* @__PURE__ */ new Map();
-  #watcher;
-  #activeSessions = 0;
-  #coalesceTimer;
-  #pollTimer;
-  #manifestTimer;
-  #running;
-  #nextGeneration = 1;
-  #forceRefresh = false;
+  #runtime = new FreshnessRuntime();
   status() {
-    return { ...this.#status };
+    return { ...this.#runtime.status };
   }
-  /** Keeps the last complete generation readable when an explicit refresh cannot finish. */
   failRefresh() {
-    this.#forceRefresh = false;
-    this.#status = {
-      current_generation: this.#status.current_generation,
-      pending_generation: null,
-      state: "refresh_failed",
-      mode: this.#status.mode
-    };
+    this.#runtime.failRefresh();
   }
-  /** Reserves an explicit-refresh generation before backend and derived-data work begins. */
   reserveRefresh() {
-    if (this.#status.pending_generation === null) this.#reserveGeneration();
-    this.#forceRefresh = true;
+    this.#runtime.reserveRefresh();
     return this.status();
   }
   async start(activeSessions = 0) {
-    this.#activeSessions = activeSessions;
-    try {
-      this.#watcher = (this.options.createWatcher ?? (() => createChokidarWatcher(this.options.watch_paths ?? [])))();
-      this.#watcher.on("all", () => this.schedule());
-      this.#watcher.on("error", () => this.schedule());
-    } catch {
-      this.#status = { ...this.#status, mode: "polling" };
-      this.#schedulePolling();
+    this.#runtime.activeSessions = activeSessions;
+    const watcher = createWatcher(this.options, () => this.schedule());
+    if (watcher) this.#runtime.watcher = watcher;
+    if (!watcher) {
+      this.#runtime.status = { ...this.#runtime.status, mode: "polling" };
+      this.#scheduleTimers();
     }
-    this.#scheduleManifestCheck();
+    this.#scheduleTimers();
     await this.reconcile();
   }
   setActiveSessions(count) {
-    this.#activeSessions = count;
-    this.#schedulePolling();
-    this.#scheduleManifestCheck();
+    this.#runtime.activeSessions = count;
+    this.#scheduleTimers();
   }
   schedule() {
-    if (this.#coalesceTimer !== void 0) return;
-    this.#coalesceTimer = this.timeout(() => {
-      this.#coalesceTimer = void 0;
+    if (this.#runtime.coalesceTimer !== void 0) return;
+    this.#runtime.coalesceTimer = this.timeout(() => {
+      this.#runtime.coalesceTimer = void 0;
       void this.reconcile();
     }, coalesceMilliseconds);
   }
   async reconcile() {
-    if (this.#running) return this.#running;
-    if (this.#status.pending_generation === null) this.#reserveGeneration();
-    const run = this.#reconcile().catch(() => {
-      this.#status = {
-        current_generation: this.#status.current_generation,
-        pending_generation: null,
-        state: "degraded",
-        mode: this.#status.mode,
-        degraded_cause: "freshness_unavailable"
-      };
-    }).finally(() => {
-      this.#running = void 0;
+    if (this.#runtime.running) return this.#runtime.running;
+    if (this.#runtime.status.pending_generation === null)
+      this.#runtime.reserveGeneration();
+    const run = reconcileWorkspace(this.options, this.#runtime).catch(() => this.#runtime.degrade("freshness_unavailable")).finally(() => {
+      this.#runtime.running = void 0;
     });
-    this.#running = run;
-    return run;
-  }
-  async #reconcile() {
-    for (let mismatchCount = 0; mismatchCount < 3; mismatchCount += 1) {
-      const captured = await this.options.reconcile();
-      if ("cause" in captured) return this.#degrade(captured.cause);
-      if (!this.#forceRefresh && this.#status.current_generation > 0 && sameManifest(this.#manifest, captured.manifest)) {
-        this.#status = {
-          current_generation: this.#status.current_generation,
-          pending_generation: null,
-          state: "ready",
-          mode: this.#status.mode
-        };
-        this.#forceRefresh = false;
-        return;
-      }
-      const generation = this.#status.pending_generation ?? this.#reserveGeneration();
-      await this.options.analyze?.(generation, captured.manifest);
-      const published = this.options.verify ? await this.options.verify() : captured;
-      if ("cause" in published) return this.#degrade(published.cause);
-      if (canPublishGeneration(this.#status.current_generation, generation, captured.manifest, published.manifest)) {
-        this.#manifest = new Map(published.manifest);
-        this.#status = {
-          current_generation: generation,
-          pending_generation: null,
-          state: "ready",
-          mode: this.#status.mode
-        };
-        this.#forceRefresh = false;
-        return;
-      }
-      this.#reserveGeneration();
-    }
-    this.#degrade("workspace_churn");
-  }
-  #degrade(cause) {
-    this.#forceRefresh = false;
-    this.#status = {
-      current_generation: this.#status.current_generation,
-      pending_generation: null,
-      state: "degraded",
-      mode: this.#status.mode,
-      degraded_cause: cause
-    };
-  }
-  #reserveGeneration() {
-    const generation = this.#nextGeneration++;
-    this.#status = {
-      current_generation: this.#status.current_generation,
-      pending_generation: generation,
-      state: "refreshing",
-      mode: this.#status.mode
-    };
-    return generation;
+    return this.#runtime.running = run;
   }
   async close() {
-    if (this.#coalesceTimer !== void 0) this.clear(this.#coalesceTimer);
-    if (this.#pollTimer !== void 0) this.clear(this.#pollTimer);
-    if (this.#manifestTimer !== void 0) this.clear(this.#manifestTimer);
-    await this.#watcher?.close();
+    clearTimers(this.options, this.#runtime);
+    await this.#runtime.watcher?.close();
   }
-  #schedulePeriodic(delay2, assign, callback) {
-    assign(
-      this.timeout(() => {
-        callback();
-      }, delay2)
-    );
-  }
-  #schedulePolling() {
-    if (this.#status.mode !== "polling" || this.#activeSessions === 0 || this.#pollTimer !== void 0) return;
-    this.#schedulePeriodic(
-      5e3,
-      (timer) => {
-        this.#pollTimer = timer;
-      },
-      () => {
-        this.#pollTimer = void 0;
-        void this.reconcile().finally(() => this.#schedulePolling());
-      }
-    );
-  }
-  #scheduleManifestCheck() {
-    if (this.#activeSessions === 0 || this.#manifestTimer !== void 0) return;
-    this.#schedulePeriodic(
-      3e4,
-      (timer) => {
-        this.#manifestTimer = timer;
-      },
-      () => {
-        this.#manifestTimer = void 0;
-        void this.reconcile().finally(() => this.#scheduleManifestCheck());
-      }
-    );
+  #scheduleTimers() {
+    scheduleWorkspaceTimers({
+      runtime: this.#runtime,
+      timeout: (callback, delay2) => this.timeout(callback, delay2),
+      reconcile: () => this.reconcile(),
+      schedule: () => this.#scheduleTimers()
+    });
   }
   timeout(callback, delay2) {
     return (this.options.setTimeout ?? globalThis.setTimeout)(callback, delay2);
   }
-  clear(timer) {
-    (this.options.clearTimeout ?? globalThis.clearTimeout)(timer);
-  }
 };
-function createChokidarWatcher(paths) {
-  return esm_default.watch([...paths], chokidarWatchOptions);
+
+// src/freshness/native-manifest-files.ts
+import { readdir as readdir3 } from "node:fs/promises";
+import { join as join22, relative as relative5 } from "node:path";
+function withinScanLimits(started, now, output) {
+  if (now() - started > 6e4 || output.length > 5e4)
+    throw new Error("scan_limit");
 }
-function sameManifest(left, right) {
-  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
+function ignoredDirectory(name) {
+  return /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(name);
 }
+async function visit3(root, directory, supported, started, now, output) {
+  withinScanLimits(started, now, output);
+  for (const entry of await readdir3(directory, { withFileTypes: true })) {
+    const absolute = join22(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (!ignoredDirectory(entry.name))
+        await visit3(root, absolute, supported, started, now, output);
+      continue;
+    }
+    const path5 = relative5(root, absolute).replaceAll("\\", "/");
+    if (supported(path5)) output.push(path5);
+  }
+}
+async function walkSupportedFiles(root, supported, started, now) {
+  const output = [];
+  await visit3(root, root, supported, started, now, output);
+  if (output.length > 5e4) throw new Error("scan_limit");
+  return output.sort();
+}
+
+// src/freshness/native-manifest-hashing.ts
+import { createHash as createHash4 } from "node:crypto";
+import { open as open4 } from "node:fs/promises";
+import { join as join23 } from "node:path";
+async function stableHash(path5, now, sleep) {
+  const started = now();
+  for (; ; ) {
+    const stable = await stableAttempt(path5, sleep);
+    if (stable) return stable;
+    if (now() - started >= 1e4) return "incomplete_write";
+  }
+}
+async function stableAttempt(path5, sleep) {
+  const file = await open4(path5, "r");
+  try {
+    const before = await file.stat();
+    if (before.size > 4 * 1024 * 1024) return "scan_limit";
+    await sleep(100);
+    const after = await file.stat();
+    if (before.size !== after.size || before.mtimeMs !== after.mtimeMs)
+      return void 0;
+    return createHash4("sha256").update(await file.readFile()).digest("hex");
+  } finally {
+    await file.close();
+  }
+}
+async function stableBatch(options, files) {
+  return await Promise.all(
+    files.map(
+      async (file) => [
+        file,
+        await stableHash(
+          join23(options.root, file),
+          options.now ?? Date.now,
+          options.sleep ?? delay
+        )
+      ]
+    )
+  );
+}
+function delay(milliseconds) {
+  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
+}
+
+// src/freshness/native-manifest.ts
+async function buildManifest(options, files) {
+  const manifest = /* @__PURE__ */ new Map();
+  for (let offset = 0; offset < files.length; offset += 64) {
+    const cause = mergeStableBatch(
+      manifest,
+      await stableBatch(options, files.slice(offset, offset + 64))
+    );
+    if (cause) return { cause };
+  }
+  return { manifest };
+}
+function mergeStableBatch(manifest, stable) {
+  for (const [file, hash] of stable) {
+    if (hash === "incomplete_write" || hash === "scan_limit") return hash;
+    manifest.set(file, hash);
+  }
+  return void 0;
+}
+function failureCause(error2) {
+  if (error2 instanceof Error && error2.message === "scan_limit")
+    return "scan_limit";
+  return "freshness_unavailable";
+}
+async function reconcileNativeManifest(options) {
+  const now = options.now ?? Date.now;
+  const started = now();
+  try {
+    const files = await walkSupportedFiles(
+      options.root,
+      options.supported,
+      started,
+      now
+    );
+    return buildManifest(options, files);
+  } catch (error2) {
+    return { cause: failureCause(error2) };
+  }
+}
+
+// src/freshness/workspace-native.ts
 function createNativeWorkspaceFreshness(options) {
   return new WorkspaceFreshness({
     reconcile: () => reconcileNativeManifest(options),
     verify: () => reconcileNativeManifest(options),
     watch_paths: [options.root]
   });
+}
+
+// src/navigation/error-details-sanitizer.ts
+var detailKeys = /* @__PURE__ */ new Set([
+  "field",
+  "limit",
+  "actual",
+  "view_generation",
+  "current_generation",
+  "state",
+  "path"
+]);
+function isNormalizedProjectRelativePath(value) {
+  return value.length > 0 && !value.startsWith("/") && !/^[A-Za-z]:[\\/]/.test(value) && !value.includes("\\") && !value.split("/").includes("..");
+}
+function validDetail(key, value) {
+  if (!detailKeys.has(key)) return false;
+  if (key === "path")
+    return typeof value === "string" && isNormalizedProjectRelativePath(value);
+  return typeof value === "string" || typeof value === "number";
+}
+function sanitizeDetails(details) {
+  return Object.fromEntries(
+    Object.entries(details).filter(([key, value]) => validDetail(key, value))
+  );
 }
 
 // src/navigation/error.ts
@@ -29211,15 +29953,6 @@ var retryableCodes = /* @__PURE__ */ new Set([
   "refresh_failed"
 ]);
 var codeSet = new Set(errorCodes);
-var detailKeys = /* @__PURE__ */ new Set([
-  "field",
-  "limit",
-  "actual",
-  "view_generation",
-  "current_generation",
-  "state",
-  "path"
-]);
 function codeExplorerError(code, details) {
   return {
     schema_version: 1,
@@ -29231,28 +29964,27 @@ function codeExplorerError(code, details) {
 }
 function normalizeError(error2) {
   const message = error2 instanceof Error ? error2.message : void 0;
-  return codeExplorerError(message && codeSet.has(message) ? message : "internal_error");
-}
-function sanitizeDetails(details) {
-  return Object.fromEntries(
-    Object.entries(details).filter(([key, value]) => {
-      if (!detailKeys.has(key)) return false;
-      if (key === "path") return typeof value === "string" && isNormalizedProjectRelativePath(value);
-      return typeof value === "string" || typeof value === "number";
-    })
+  return codeExplorerError(
+    message && codeSet.has(message) ? message : "internal_error"
   );
 }
-function isNormalizedProjectRelativePath(value) {
-  return value.length > 0 && !value.startsWith("/") && !/^[A-Za-z]:[\\/]/.test(value) && !value.includes("\\") && !value.split("/").includes("..");
+
+// src/navigation/stable-symbol-id.ts
+import { createHash as createHash5 } from "node:crypto";
+function stableSymbolId(symbol) {
+  const range = symbol.location.range;
+  const qualifiedName = symbol.qualified_name ?? symbol.name;
+  const identity = [
+    symbol.language,
+    symbol.location.path.replaceAll("\\", "/"),
+    `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`,
+    symbol.kind,
+    qualifiedName
+  ].join("\0");
+  return createHash5("sha256").update(identity, "utf8").digest("base64url");
 }
 
-// src/navigation/focus-view.ts
-import { Buffer as Buffer3 } from "node:buffer";
-import { createHash as createHash5, randomBytes } from "node:crypto";
-var DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
-var MIN_BODY_LIMIT_BYTES = 1024;
-var MAX_BODY_LIMIT_BYTES = 128 * 1024;
-var browserRelationNames = ["definition", "references", "callers", "callees", "type", "implementation"];
+// src/navigation/focus-body-limit-error.ts
 var FocusBodyLimitError = class extends Error {
   constructor(limit) {
     super("resource_limit");
@@ -29260,38 +29992,128 @@ var FocusBodyLimitError = class extends Error {
   }
   limit;
 };
-function mintOpaqueId() {
-  return randomBytes(16).toString("base64url");
+
+// src/navigation/focus-content.ts
+import { Buffer as Buffer3 } from "node:buffer";
+function boundUtf8(value, limit) {
+  const totalBytes = Buffer3.byteLength(value, "utf8");
+  if (totalBytes <= limit)
+    return { value, truncated: false, returnedBytes: totalBytes, totalBytes };
+  let prefix = "";
+  let returnedBytes = 0;
+  for (const codePoint of value) {
+    const bytes = Buffer3.byteLength(codePoint, "utf8");
+    if (returnedBytes + bytes > limit) break;
+    prefix += codePoint;
+    returnedBytes += bytes;
+  }
+  return { value: prefix, truncated: true, returnedBytes, totalBytes };
 }
-function createFocusView(symbol, detail, requestedLimit, projectGeneration = 0) {
-  const limit = requestedLimit ?? DEFAULT_BODY_LIMIT_BYTES;
-  if (!Number.isInteger(limit) || limit < MIN_BODY_LIMIT_BYTES || limit > MAX_BODY_LIMIT_BYTES)
-    throw new FocusBodyLimitError(limit);
-  const source = detail?.body ?? detail?.declaration;
-  const bounded = boundUtf8(source ?? "", limit);
-  const content = {
-    ...detail?.body !== void 0 ? { body: bounded.value } : detail?.declaration !== void 0 ? { declaration: bounded.value } : {},
+function focusSource(detail) {
+  if (detail?.body !== void 0) return detail.body;
+  if (detail?.declaration !== void 0) return detail.declaration;
+  return "";
+}
+function contentFields(detail, value) {
+  if (detail?.body !== void 0) return { body: value };
+  if (detail?.declaration !== void 0) return { declaration: value };
+  return {};
+}
+function focusContent(detail, limit) {
+  const bounded = boundUtf8(focusSource(detail), limit);
+  return {
+    ...contentFields(detail, bounded.value),
     truncated: bounded.truncated,
     limit_bytes: limit,
     returned_bytes: bounded.returnedBytes,
     total_bytes: bounded.totalBytes
   };
-  const symbolId = stableSymbolId(symbol);
+}
+
+// src/navigation/focus-relation-names.ts
+var browserRelationNames = [
+  "definition",
+  "references",
+  "callers",
+  "callees",
+  "type",
+  "implementation"
+];
+
+// src/navigation/opaque-id.ts
+import { randomBytes } from "node:crypto";
+function mintOpaqueId() {
+  return randomBytes(16).toString("base64url");
+}
+
+// src/navigation/focus-handles.ts
+function focusHandles(detail, source, bodyLength2) {
   let searchFrom = 0;
-  const handles = (detail?.visible_symbols ?? []).map(({ name, symbol_id }) => {
-    const start = source?.indexOf(name, searchFrom) ?? -1;
-    const end = start >= 0 ? start + name.length : -1;
-    if (start >= 0) searchFrom = end;
-    return {
+  return (detail?.visible_symbols ?? []).map((symbol) => {
+    const result = makeFocusHandle({
+      name: symbol.name,
+      symbolId: symbol.symbol_id,
+      source,
+      searchFrom,
+      bodyLength: bodyLength2
+    });
+    searchFrom = result.nextSearchFrom;
+    return result.handle;
+  });
+}
+function makeFocusHandle(options) {
+  const { name, symbolId, source, searchFrom, bodyLength: bodyLength2 } = options;
+  const start = source?.indexOf(name, searchFrom) ?? -1;
+  const end = start >= 0 ? start + name.length : -1;
+  return {
+    handle: {
       handle: mintOpaqueId(),
       name,
-      symbol_id,
+      symbol_id: symbolId,
       start: Math.max(start, 0),
       end: Math.max(end, 0),
-      out_of_range: start < 0 || end > bounded.value.length,
+      out_of_range: start < 0 || end > bodyLength2,
       relations: browserRelationNames
-    };
+    },
+    nextSearchFrom: start >= 0 ? end : searchFrom
+  };
+}
+
+// src/navigation/focus-view.ts
+var DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
+var MIN_BODY_LIMIT_BYTES = 1024;
+var MAX_BODY_LIMIT_BYTES = 128 * 1024;
+function createFocusView(...args) {
+  const [symbol, detail, requestedLimit, projectGeneration = 0] = args;
+  const limit = bodyLimit(requestedLimit);
+  assertBodyLimit(limit);
+  const content = focusContent(detail, limit);
+  const symbolId = stableSymbolId(symbol);
+  const handles = focusHandles(
+    detail,
+    focusSource(detail),
+    (content.body ?? content.declaration ?? "").length
+  );
+  return makeFocusView({
+    symbol,
+    projectGeneration,
+    content,
+    symbolId,
+    handles
   });
+}
+function bodyLimit(requestedLimit) {
+  return requestedLimit ?? DEFAULT_BODY_LIMIT_BYTES;
+}
+function assertBodyLimit(limit) {
+  if (!validBodyLimit(limit)) throw new FocusBodyLimitError(limit);
+}
+function validBodyLimit(limit) {
+  if (!Number.isInteger(limit)) return false;
+  return limit >= MIN_BODY_LIMIT_BYTES && limit <= MAX_BODY_LIMIT_BYTES;
+}
+function makeFocusView(options) {
+  const { symbol, projectGeneration, content, symbolId, handles } = options;
   return {
     view_id: mintOpaqueId(),
     project_generation: projectGeneration,
@@ -29306,76 +30128,65 @@ function createFocusView(symbol, detail, requestedLimit, projectGeneration = 0) 
     handles
   };
 }
-function stableSymbolId(symbol) {
-  const range = symbol.location.range;
-  const qualifiedName = symbol.qualified_name ?? symbol.name;
-  const identity = [
-    symbol.language,
-    symbol.location.path.replaceAll("\\", "/"),
-    `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`,
-    symbol.kind,
-    qualifiedName
-  ].join("\0");
-  return createHash5("sha256").update(identity, "utf8").digest("base64url");
-}
-function boundUtf8(value, limit) {
-  const totalBytes = Buffer3.byteLength(value, "utf8");
-  if (totalBytes <= limit) return { value, truncated: false, returnedBytes: totalBytes, totalBytes };
-  let prefix = "";
-  let returnedBytes = 0;
-  for (const codePoint of value) {
-    const bytes = Buffer3.byteLength(codePoint, "utf8");
-    if (returnedBytes + bytes > limit) break;
-    prefix += codePoint;
-    returnedBytes += bytes;
-  }
-  return { value: prefix, truncated: true, returnedBytes, totalBytes };
-}
 
 // src/navigation/resource-limits.ts
+import { Buffer as Buffer5 } from "node:buffer";
+
+// src/navigation/resource-filter-limits.ts
 import { Buffer as Buffer4 } from "node:buffer";
-var MAX_QUERY_CODE_POINTS = 1024;
+
+// src/navigation/resource-limit-constants.ts
 var MAX_FILTER_VALUES = 32;
 var MAX_FILTER_VALUE_BYTES = 256;
-var MAX_REQUEST_BYTES = 64 * 1024;
-var MAX_CANDIDATES = 200;
-var MAX_BODY_BYTES2 = 128 * 1024;
-var DEFAULT_BACKEND_TIMEOUT_MS = 1e4;
-var MAX_BACKEND_TIMEOUT_MS = 6e4;
-var MAX_SESSION_BACKEND_REQUESTS = 4;
-var MAX_PROJECT_BACKEND_REQUESTS = 8;
-var BackendTimeoutError = class extends Error {
-  constructor() {
-    super("backend_timeout");
+
+// src/navigation/resource-filter-limits.ts
+function filterLimit(arguments_) {
+  const filters = [
+    arguments_.path_globs,
+    arguments_.languages,
+    arguments_.kinds
+  ].flatMap((value) => Array.isArray(value) ? value : []);
+  if (filters.length > MAX_FILTER_VALUES)
+    return {
+      field: "filters",
+      limit: MAX_FILTER_VALUES,
+      actual: filters.length
+    };
+  for (const value of filters) {
+    const result = filterValueLimit(value);
+    if (result) return result;
   }
-};
+  return void 0;
+}
+function filterValueLimit(value) {
+  if (typeof value !== "string") return void 0;
+  const actual = Buffer4.byteLength(value, "utf8");
+  if (actual > MAX_FILTER_VALUE_BYTES)
+    return { field: "filter_value", limit: MAX_FILTER_VALUE_BYTES, actual };
+  return void 0;
+}
+
+// src/navigation/backend-capacity-error.ts
 var BackendCapacityError = class extends Error {
   constructor() {
     super("resource_limit");
   }
 };
-function validateResourceLimits(name, arguments_) {
-  const requestBytes = Buffer4.byteLength(JSON.stringify(arguments_), "utf8");
-  if (requestBytes > MAX_REQUEST_BYTES) return { field: "request", limit: MAX_REQUEST_BYTES, actual: requestBytes };
-  if (name === "code_search" && typeof arguments_.query === "string") {
-    const codePoints2 = Array.from(arguments_.query).length;
-    if (codePoints2 > MAX_QUERY_CODE_POINTS) return { field: "query", limit: MAX_QUERY_CODE_POINTS, actual: codePoints2 };
+
+// src/navigation/backend-timeout-error.ts
+var BackendTimeoutError = class extends Error {
+  constructor() {
+    super("backend_timeout");
   }
-  const filters = [arguments_.path_globs, arguments_.languages, arguments_.kinds].flatMap(
-    (value) => Array.isArray(value) ? value : []
-  );
-  if (filters.length > MAX_FILTER_VALUES) return { field: "filters", limit: MAX_FILTER_VALUES, actual: filters.length };
-  for (const value of filters) {
-    if (typeof value !== "string") continue;
-    const bytes = Buffer4.byteLength(value, "utf8");
-    if (bytes > MAX_FILTER_VALUE_BYTES) return { field: "filter_value", limit: MAX_FILTER_VALUE_BYTES, actual: bytes };
-  }
-  if ((name === "code_search" || name === "code_follow") && typeof arguments_.limit === "number" && arguments_.limit > MAX_CANDIDATES)
-    return { field: "limit", limit: MAX_CANDIDATES, actual: arguments_.limit };
-  if (name === "code_focus" && typeof arguments_.body_limit_bytes === "number" && arguments_.body_limit_bytes > MAX_BODY_BYTES2)
-    return { field: "body_limit_bytes", limit: MAX_BODY_BYTES2, actual: arguments_.body_limit_bytes };
-  return void 0;
-}
+};
+
+// src/navigation/backend-timeout-limits.ts
+var DEFAULT_BACKEND_TIMEOUT_MS = 1e4;
+var MAX_BACKEND_TIMEOUT_MS = 6e4;
+var MAX_SESSION_BACKEND_REQUESTS = 4;
+var MAX_PROJECT_BACKEND_REQUESTS = 8;
+
+// src/navigation/backend-request-limiter.ts
 var BackendRequestLimiter = class {
   projectActive = 0;
   sessionActive = /* @__PURE__ */ new Map();
@@ -29384,212 +30195,101 @@ var BackendRequestLimiter = class {
     this.timeoutMs = Math.min(Math.max(timeoutMs, 1), MAX_BACKEND_TIMEOUT_MS);
   }
   async run(sessionId, operation) {
-    const sessionActive = sessionId ? this.sessionActive.get(sessionId) ?? 0 : 0;
+    const sessionActive = this.sessionCount(sessionId);
+    this.assertCapacity(sessionActive);
+    this.projectActive += 1;
+    this.reserveSession(sessionId, sessionActive);
+    return this.execute(operation).finally(() => this.release(sessionId));
+  }
+  sessionCount(sessionId) {
+    return sessionId ? this.sessionActive.get(sessionId) ?? 0 : 0;
+  }
+  assertCapacity(sessionActive) {
     if (this.projectActive >= MAX_PROJECT_BACKEND_REQUESTS || sessionActive >= MAX_SESSION_BACKEND_REQUESTS)
       throw new BackendCapacityError();
-    this.projectActive += 1;
+  }
+  reserveSession(sessionId, sessionActive) {
     if (sessionId) this.sessionActive.set(sessionId, sessionActive + 1);
+  }
+  async execute(operation) {
     let timer;
     try {
       return await Promise.race([
         operation(),
         new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new BackendTimeoutError()), this.timeoutMs);
+          timer = setTimeout(
+            () => reject(new BackendTimeoutError()),
+            this.timeoutMs
+          );
         })
       ]);
     } finally {
       if (timer) clearTimeout(timer);
-      this.projectActive -= 1;
-      if (sessionId) {
-        const remaining = (this.sessionActive.get(sessionId) ?? 1) - 1;
-        if (remaining === 0) this.sessionActive.delete(sessionId);
-        else this.sessionActive.set(sessionId, remaining);
-      }
     }
+  }
+  release(sessionId) {
+    this.projectActive -= 1;
+    if (!sessionId) return;
+    const remaining = (this.sessionActive.get(sessionId) ?? 1) - 1;
+    if (remaining === 0) {
+      this.sessionActive.delete(sessionId);
+      return;
+    }
+    this.sessionActive.set(sessionId, remaining);
   }
 };
 
-// src/navigation/session.ts
-var REQUEST_RETENTION_MS = 5 * 60 * 1e3;
-var MAX_RETAINED_REQUESTS = 64;
-var MAX_RETAINED_VIEWS = 64;
-var MAX_SESSIONS = 8;
-var MAX_RETAINED_VIEW_BODY_BYTES = 16 * 1024 * 1024;
-var SESSION_IDLE_MS = 30 * 60 * 1e3;
-var MAX_QUEUED_REQUESTS = 64;
+// src/navigation/resource-limits.ts
+var MAX_QUERY_CODE_POINTS = 1024;
+var MAX_REQUEST_BYTES = 64 * 1024;
+var MAX_CANDIDATES = 200;
+var MAX_BODY_BYTES2 = 128 * 1024;
+function validateResourceLimits(name, arguments_) {
+  const limits = [
+    requestLimit(arguments_),
+    queryLimit(name, arguments_),
+    filterLimit(arguments_),
+    candidateLimit(name, arguments_),
+    bodyLimit2(name, arguments_)
+  ];
+  return limits.find((limit) => limit !== void 0);
+}
+function requestLimit(arguments_) {
+  const actual = Buffer5.byteLength(JSON.stringify(arguments_), "utf8");
+  if (actual > MAX_REQUEST_BYTES)
+    return { field: "request", limit: MAX_REQUEST_BYTES, actual };
+}
+function queryLimit(name, arguments_) {
+  if (name !== "code_search" || typeof arguments_.query !== "string") return;
+  const actual = Array.from(arguments_.query).length;
+  if (actual > MAX_QUERY_CODE_POINTS)
+    return { field: "query", limit: MAX_QUERY_CODE_POINTS, actual };
+}
+function candidateLimit(name, arguments_) {
+  if (name !== "code_search" && name !== "code_follow") return;
+  if (typeof arguments_.limit !== "number" || arguments_.limit <= MAX_CANDIDATES)
+    return;
+  return { field: "limit", limit: MAX_CANDIDATES, actual: arguments_.limit };
+}
+function bodyLimit2(name, arguments_) {
+  if (name !== "code_focus") return;
+  if (typeof arguments_.body_limit_bytes !== "number" || arguments_.body_limit_bytes <= MAX_BODY_BYTES2)
+    return;
+  return {
+    field: "body_limit_bytes",
+    limit: MAX_BODY_BYTES2,
+    actual: arguments_.body_limit_bytes
+  };
+}
+
+// src/navigation/session-capacity-error.ts
 var SessionCapacityError = class extends Error {
   constructor() {
     super("project_capacity");
   }
 };
-var SessionManager = class {
-  sessions = /* @__PURE__ */ new Map();
-  maxRetainedBodyBytes;
-  retainedBodyBytes = 0;
-  queuedRequests = 0;
-  constructor(options = {}) {
-    this.maxRetainedBodyBytes = options.maxRetainedBodyBytes ?? MAX_RETAINED_VIEW_BODY_BYTES;
-  }
-  start(connectionId) {
-    const sessionId = this.tryStart(connectionId);
-    if (!sessionId) throw new SessionCapacityError();
-    return sessionId;
-  }
-  tryStart(connectionId, now = Date.now()) {
-    this.expireIdle(now);
-    if (this.sessions.size >= MAX_SESSIONS) return void 0;
-    const sessionId = mintOpaqueId();
-    this.sessions.set(sessionId, {
-      connectionId,
-      queue: Promise.resolve(),
-      requests: /* @__PURE__ */ new Map(),
-      views: /* @__PURE__ */ new Map(),
-      viewHistory: [],
-      historyPosition: -1,
-      staleViews: /* @__PURE__ */ new Set(),
-      lastAcceptedAt: now,
-      queuedRequests: 0
-    });
-    return sessionId;
-  }
-  closeConnection(connectionId) {
-    for (const [sessionId, session] of this.sessions) {
-      if (session.connectionId === connectionId) this.deleteSession(sessionId, session);
-    }
-  }
-  execute(connectionId, sessionId, requestId, toolName, arguments_, operation, now = Date.now()) {
-    this.expireIdle(now);
-    const session = this.sessions.get(sessionId);
-    if (!session || session.connectionId !== connectionId) return { state: "invalid_session" };
-    this.expireRequests(session, now);
-    const fingerprint = canonicalFingerprint(toolName, arguments_);
-    const retained = session.requests.get(requestId);
-    if (retained) {
-      if (retained.fingerprint !== fingerprint) return { state: "request_id_conflict" };
-      return { state: "ok", response: retained.response };
-    }
-    if (this.queuedRequests >= MAX_QUEUED_REQUESTS) return { state: "project_capacity" };
-    session.lastAcceptedAt = now;
-    session.queuedRequests += 1;
-    this.queuedRequests += 1;
-    const response = session.queue.then(operation);
-    session.queue = response.then(
-      () => void 0,
-      () => void 0
-    );
-    session.requests.set(requestId, { fingerprint, expiresAt: now + REQUEST_RETENTION_MS, response });
-    void response.then(
-      () => this.releaseQueuedRequest(session),
-      () => this.releaseQueuedRequest(session)
-    );
-    while (session.requests.size > MAX_RETAINED_REQUESTS)
-      session.requests.delete(session.requests.keys().next().value);
-    return { state: "ok", response };
-  }
-  addView(connectionId, sessionId, view) {
-    const session = this.ownedSession(connectionId, sessionId);
-    if (!session) return "invalid_session";
-    if (!this.makeViewCapacity(view.content.returned_bytes)) return "project_capacity";
-    const abandoned = session.viewHistory.splice(session.historyPosition + 1);
-    for (const viewId of abandoned) this.discardView(session, viewId);
-    session.views.set(view.view_id, view);
-    this.retainedBodyBytes += view.content.returned_bytes;
-    session.viewHistory.push(view.view_id);
-    session.historyPosition = session.viewHistory.length - 1;
-    this.evictViews(session);
-    return "ok";
-  }
-  resolveHandle(connectionId, sessionId, viewId, handle, currentGeneration = 0) {
-    const session = this.ownedSession(connectionId, sessionId);
-    if (!session) return { state: "invalid_view_handle" };
-    if (session.staleViews.has(viewId)) return { state: "stale_view" };
-    const view = session.views.get(viewId);
-    if (view && view.project_generation !== currentGeneration)
-      return { state: "stale_view", viewGeneration: view.project_generation, currentGeneration };
-    const symbolId = view?.handles.find((candidate) => candidate.handle === handle)?.symbol_id;
-    return symbolId ? { state: "ok", symbolId } : { state: "invalid_view_handle" };
-  }
-  history(connectionId, sessionId) {
-    return this.ownedSession(connectionId, sessionId)?.viewHistory;
-  }
-  restore(connectionId, sessionId, direction) {
-    const session = this.ownedSession(connectionId, sessionId);
-    if (!session) return void 0;
-    const next = session.historyPosition + (direction === "back" ? -1 : 1);
-    const viewId = session.viewHistory[next];
-    if (!viewId) return void 0;
-    session.historyPosition = next;
-    return session.views.get(viewId);
-  }
-  recent(connectionId, sessionId, limit = MAX_RETAINED_VIEWS) {
-    const session = this.ownedSession(connectionId, sessionId);
-    if (!session) return void 0;
-    return session.viewHistory.slice(Math.max(0, session.viewHistory.length - limit)).reverse().flatMap((viewId) => {
-      const view = session.views.get(viewId);
-      return view ? [view] : [];
-    });
-  }
-  historyPosition(connectionId, sessionId) {
-    const session = this.ownedSession(connectionId, sessionId);
-    return session ? session.historyPosition + 1 : void 0;
-  }
-  ownedSession(connectionId, sessionId) {
-    const session = this.sessions.get(sessionId);
-    return session?.connectionId === connectionId ? session : void 0;
-  }
-  expireRequests(session, now) {
-    for (const [requestId, entry] of session.requests) if (entry.expiresAt <= now) session.requests.delete(requestId);
-  }
-  evictViews(session) {
-    while (session.views.size > MAX_RETAINED_VIEWS) {
-      const viewIndex = session.viewHistory.findIndex((_, index) => index !== session.historyPosition);
-      if (viewIndex < 0) return;
-      const [viewId] = session.viewHistory.splice(viewIndex, 1);
-      this.discardView(session, viewId);
-      if (viewIndex < session.historyPosition) session.historyPosition -= 1;
-    }
-  }
-  discardView(session, viewId) {
-    const view = session.views.get(viewId);
-    if (view && session.views.delete(viewId)) {
-      this.retainedBodyBytes -= view.content.returned_bytes;
-      session.staleViews.add(viewId);
-    }
-  }
-  makeViewCapacity(bytes) {
-    while (this.retainedBodyBytes + bytes > this.maxRetainedBodyBytes) {
-      const candidate = this.oldestEvictableView();
-      if (!candidate) return false;
-      const [session, viewId, index] = candidate;
-      session.viewHistory.splice(index, 1);
-      this.discardView(session, viewId);
-      if (index < session.historyPosition) session.historyPosition -= 1;
-    }
-    return true;
-  }
-  oldestEvictableView() {
-    for (const session of this.sessions.values()) {
-      const index = session.viewHistory.findIndex((_, position) => position !== session.historyPosition);
-      const viewId = session.viewHistory[index];
-      if (index >= 0 && viewId) return [session, viewId, index];
-    }
-    return void 0;
-  }
-  expireIdle(now) {
-    for (const [sessionId, session] of this.sessions)
-      if (now - session.lastAcceptedAt >= SESSION_IDLE_MS) this.deleteSession(sessionId, session);
-  }
-  deleteSession(sessionId, session) {
-    for (const viewId of session.views.keys()) this.discardView(session, viewId);
-    this.queuedRequests -= session.queuedRequests;
-    this.sessions.delete(sessionId);
-  }
-  releaseQueuedRequest(session) {
-    if (session.queuedRequests === 0) return;
-    session.queuedRequests -= 1;
-    this.queuedRequests -= 1;
-  }
-};
+
+// src/navigation/session-fingerprint.ts
 function canonicalFingerprint(toolName, arguments_) {
   const { request_id: _requestId, ...remaining } = arguments_;
   return JSON.stringify({ tool: toolName, arguments: canonicalize2(remaining) });
@@ -29603,6 +30303,317 @@ function canonicalize2(value) {
   }
   return value;
 }
+
+// src/navigation/session-limits.ts
+var REQUEST_RETENTION_MS = 5 * 60 * 1e3;
+var MAX_RETAINED_REQUESTS = 64;
+var MAX_RETAINED_VIEWS = 64;
+var MAX_SESSIONS = 8;
+var MAX_RETAINED_VIEW_BODY_BYTES = 16 * 1024 * 1024;
+var SESSION_IDLE_MS = 30 * 60 * 1e3;
+var MAX_QUEUED_REQUESTS = 64;
+
+// src/navigation/session-owner.ts
+function ownedSession(runtime, connectionId, sessionId) {
+  const session2 = runtime.sessions.get(sessionId);
+  return session2?.connectionId === connectionId ? session2 : void 0;
+}
+
+// src/navigation/session-view-eviction.ts
+function expireIdle(runtime, now) {
+  for (const [sessionId, session2] of runtime.sessions)
+    if (now - session2.lastAcceptedAt >= SESSION_IDLE_MS)
+      deleteSession(runtime, sessionId, session2);
+}
+function deleteSession(runtime, sessionId, session2) {
+  for (const viewId of session2.views.keys())
+    discardView(runtime, session2, viewId);
+  runtime.queuedRequests -= session2.queuedRequests;
+  runtime.sessions.delete(sessionId);
+}
+function evictViews(runtime, session2) {
+  while (session2.views.size > MAX_RETAINED_VIEWS) {
+    const viewIndex = session2.viewHistory.findIndex(
+      (_, index) => index !== session2.historyPosition
+    );
+    if (viewIndex < 0) return;
+    const [viewId] = session2.viewHistory.splice(viewIndex, 1);
+    discardView(runtime, session2, viewId);
+    if (viewIndex < session2.historyPosition) session2.historyPosition -= 1;
+  }
+}
+function discardView(runtime, session2, viewId) {
+  const view = session2.views.get(viewId);
+  if (!(view && session2.views.delete(viewId))) return;
+  runtime.retainedBodyBytes -= view.content.returned_bytes;
+  session2.staleViews.add(viewId);
+}
+function makeViewCapacity(runtime, bytes) {
+  while (runtime.retainedBodyBytes + bytes > runtime.maxRetainedBodyBytes) {
+    const candidate = oldestEvictableView(runtime);
+    if (!candidate) return false;
+    candidate.session.viewHistory.splice(candidate.index, 1);
+    discardView(runtime, candidate.session, candidate.viewId);
+    if (candidate.index < candidate.session.historyPosition)
+      candidate.session.historyPosition -= 1;
+  }
+  return true;
+}
+function oldestEvictableView(runtime) {
+  for (const session2 of runtime.sessions.values()) {
+    const index = session2.viewHistory.findIndex(
+      (_, position) => position !== session2.historyPosition
+    );
+    const viewId = session2.viewHistory[index];
+    if (index >= 0 && viewId) return { session: session2, viewId, index };
+  }
+  return void 0;
+}
+
+// src/navigation/session-views.ts
+function history(runtime, connectionId, sessionId) {
+  return ownedSession(runtime, connectionId, sessionId)?.viewHistory;
+}
+function restore(options) {
+  const session2 = ownedSession(
+    options.runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return void 0;
+  const next = session2.historyPosition + (options.direction === "back" ? -1 : 1);
+  const viewId = session2.viewHistory[next];
+  if (!viewId) return void 0;
+  session2.historyPosition = next;
+  return session2.views.get(viewId);
+}
+function recent(options) {
+  const session2 = ownedSession(
+    options.runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return void 0;
+  return session2.viewHistory.slice(Math.max(0, session2.viewHistory.length - options.limit)).reverse().flatMap((viewId) => {
+    const view = session2.views.get(viewId);
+    return view ? [view] : [];
+  });
+}
+function historyPosition(runtime, connectionId, sessionId) {
+  const session2 = ownedSession(runtime, connectionId, sessionId);
+  return session2 ? session2.historyPosition + 1 : void 0;
+}
+
+// src/navigation/session-request-queue.ts
+function queueRequest(runtime, session2, options, fingerprint) {
+  session2.lastAcceptedAt = options.now;
+  session2.queuedRequests += 1;
+  runtime.queuedRequests += 1;
+  const response = session2.queue.then(options.operation);
+  session2.queue = response.then(
+    () => void 0,
+    () => void 0
+  );
+  session2.requests.set(options.requestId, {
+    fingerprint,
+    expiresAt: options.now + REQUEST_RETENTION_MS,
+    response
+  });
+  void response.then(
+    () => releaseQueuedRequest(runtime, session2),
+    () => releaseQueuedRequest(runtime, session2)
+  );
+  trimRequests(session2);
+  return { state: "ok", response };
+}
+function canQueueRequest(runtime) {
+  return runtime.queuedRequests < MAX_QUEUED_REQUESTS;
+}
+function trimRequests(session2) {
+  while (session2.requests.size > MAX_RETAINED_REQUESTS)
+    session2.requests.delete(session2.requests.keys().next().value);
+}
+function releaseQueuedRequest(runtime, session2) {
+  if (session2.queuedRequests === 0) return;
+  session2.queuedRequests -= 1;
+  runtime.queuedRequests -= 1;
+}
+function replayRequest(retained, fingerprint) {
+  if (retained.fingerprint !== fingerprint)
+    return { state: "request_id_conflict" };
+  return { state: "ok", response: retained.response };
+}
+
+// src/navigation/session-requests.ts
+function executeSession(runtime, options) {
+  expireIdle(runtime, options.now);
+  const session2 = ownedSession(
+    runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return { state: "invalid_session" };
+  return processSessionRequest(runtime, session2, options);
+}
+function processSessionRequest(runtime, session2, options) {
+  expireRequests(session2, options.now);
+  const fingerprint = canonicalFingerprint(
+    options.toolName,
+    options.arguments_
+  );
+  const retained = session2.requests.get(options.requestId);
+  if (retained) return replayRequest(retained, fingerprint);
+  if (!canQueueRequest(runtime)) return { state: "project_capacity" };
+  return queueRequest(runtime, session2, options, fingerprint);
+}
+function expireRequests(session2, now) {
+  for (const [requestId, entry] of session2.requests)
+    if (entry.expiresAt <= now) session2.requests.delete(requestId);
+}
+
+// src/navigation/session-view-actions.ts
+function addView(options) {
+  const session2 = ownedSession(
+    options.runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return "invalid_session";
+  if (!makeViewCapacity(options.runtime, options.view.content.returned_bytes))
+    return "project_capacity";
+  const abandoned = session2.viewHistory.splice(session2.historyPosition + 1);
+  for (const viewId of abandoned) discardView(options.runtime, session2, viewId);
+  session2.views.set(options.view.view_id, options.view);
+  options.runtime.retainedBodyBytes += options.view.content.returned_bytes;
+  session2.viewHistory.push(options.view.view_id);
+  session2.historyPosition = session2.viewHistory.length - 1;
+  evictViews(options.runtime, session2);
+  return "ok";
+}
+function resolveHandle(runtime, options) {
+  const session2 = ownedSession(
+    runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return { state: "invalid_view_handle" };
+  if (session2.staleViews.has(options.viewId)) return { state: "stale_view" };
+  const view = session2.views.get(options.viewId);
+  if (view && view.project_generation !== options.currentGeneration)
+    return {
+      state: "stale_view",
+      viewGeneration: view.project_generation,
+      currentGeneration: options.currentGeneration
+    };
+  const symbolId = view?.handles.find(
+    (candidate) => candidate.handle === options.handle
+  )?.symbol_id;
+  return symbolId ? { state: "ok", symbolId } : { state: "invalid_view_handle" };
+}
+
+// src/navigation/session-operations.ts
+function newSessionRuntime(maxRetainedBodyBytes = MAX_RETAINED_VIEW_BODY_BYTES) {
+  return {
+    sessions: /* @__PURE__ */ new Map(),
+    maxRetainedBodyBytes,
+    retainedBodyBytes: 0,
+    queuedRequests: 0
+  };
+}
+function tryStart(runtime, connectionId, now) {
+  expireIdle(runtime, now);
+  if (runtime.sessions.size >= MAX_SESSIONS) return void 0;
+  const sessionId = mintOpaqueId();
+  runtime.sessions.set(sessionId, {
+    connectionId,
+    queue: Promise.resolve(),
+    requests: /* @__PURE__ */ new Map(),
+    views: /* @__PURE__ */ new Map(),
+    viewHistory: [],
+    historyPosition: -1,
+    staleViews: /* @__PURE__ */ new Set(),
+    lastAcceptedAt: now,
+    queuedRequests: 0
+  });
+  return sessionId;
+}
+function closeConnection(runtime, connectionId) {
+  for (const [sessionId, session2] of runtime.sessions) {
+    if (session2.connectionId === connectionId)
+      deleteSession(runtime, sessionId, session2);
+  }
+}
+
+// src/navigation/session-manager-arguments.ts
+function executeManagerRequest(runtime, args) {
+  const now = args[6] ?? Date.now();
+  return executeSession(runtime, {
+    connectionId: args[0],
+    sessionId: args[1],
+    requestId: args[2],
+    toolName: args[3],
+    arguments_: args[4],
+    operation: args[5],
+    now
+  });
+}
+function resolveManagerHandle(runtime, args) {
+  const [connectionId, sessionId, viewId, handle, currentGeneration = 0] = args;
+  return resolveHandle(runtime, {
+    connectionId,
+    sessionId,
+    viewId,
+    handle,
+    currentGeneration
+  });
+}
+
+// src/navigation/session-manager.ts
+var SessionManager = class {
+  runtime;
+  constructor(options = {}) {
+    this.runtime = newSessionRuntime(
+      options.maxRetainedBodyBytes ?? MAX_RETAINED_VIEW_BODY_BYTES
+    );
+  }
+  start(connectionId) {
+    const sessionId = this.tryStart(connectionId);
+    if (!sessionId) throw new SessionCapacityError();
+    return sessionId;
+  }
+  tryStart(connectionId, now = Date.now()) {
+    return tryStart(this.runtime, connectionId, now);
+  }
+  closeConnection(connectionId) {
+    closeConnection(this.runtime, connectionId);
+  }
+  execute(...args) {
+    return executeManagerRequest(this.runtime, args);
+  }
+  addView(connectionId, sessionId, view) {
+    return addView({ runtime: this.runtime, connectionId, sessionId, view });
+  }
+  resolveHandle(...args) {
+    return resolveManagerHandle(this.runtime, args);
+  }
+  history(connectionId, sessionId) {
+    return history(this.runtime, connectionId, sessionId);
+  }
+  restore(connectionId, sessionId, direction) {
+    return restore({
+      runtime: this.runtime,
+      connectionId,
+      sessionId,
+      direction
+    });
+  }
+  recent(connectionId, sessionId, limit = MAX_RETAINED_VIEWS) {
+    return recent({ runtime: this.runtime, connectionId, sessionId, limit });
+  }
+  historyPosition(connectionId, sessionId) {
+    return historyPosition(this.runtime, connectionId, sessionId);
+  }
+};
 
 // src/index.ts
 var filename = fileURLToPath5(import.meta.url);
@@ -29645,18 +30656,18 @@ function staleView() {
 function requestIdConflict() {
   return codeExplorerError("request_id_conflict");
 }
-function readyViewEnvelope(view, freshness, historyPosition) {
+function readyViewEnvelope(view, freshness, historyPosition2) {
   return {
     schema_version: 1,
     project_id: "project",
     project_generation: freshness.current_generation,
     pending_generation: freshness.pending_generation,
     state: "ready",
-    data: { ...view, history_position: historyPosition }
+    data: { ...view, history_position: historyPosition2 }
   };
 }
 function hasValidRequestId(value) {
-  const bytes = Buffer5.byteLength(value, "utf8");
+  const bytes = Buffer6.byteLength(value, "utf8");
   return bytes >= 16 && bytes <= 128;
 }
 var schemas = {
@@ -29981,20 +30992,20 @@ function createServer2(options = {}) {
         };
       }
       if (name === "code_history") {
-        const history = schemas.code_history.parse(arguments_);
-        if (history.action === "recent") {
-          const recent = sessions.recent(connectionId, history.session_id, history.limit ?? 64);
-          if (!recent) return invalidSession();
+        const history2 = schemas.code_history.parse(arguments_);
+        if (history2.action === "recent") {
+          const recent2 = sessions.recent(connectionId, history2.session_id, history2.limit ?? 64);
+          if (!recent2) return invalidSession();
           return {
             schema_version: 1,
             project_id: "project",
             project_generation: capturedFreshness.current_generation,
             pending_generation: capturedFreshness.pending_generation,
             state: "ready",
-            data: { views: recent }
+            data: { views: recent2 }
           };
         }
-        const restored = sessions.restore(connectionId, history.session_id, history.action);
+        const restored = sessions.restore(connectionId, history2.session_id, history2.action);
         if (!restored) return invalidViewHandle();
         return {
           schema_version: 1,
@@ -30004,7 +31015,7 @@ function createServer2(options = {}) {
           state: "ready",
           data: {
             ...restored,
-            history_position: sessions.historyPosition(connectionId, history.session_id) ?? 0,
+            history_position: sessions.historyPosition(connectionId, history2.session_id) ?? 0,
             stale: restored.project_generation !== capturedFreshness.current_generation
           }
         };

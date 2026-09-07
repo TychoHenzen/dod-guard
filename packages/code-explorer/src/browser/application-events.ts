@@ -2,7 +2,9 @@ import { browserRequest } from "./browser-request.js";
 import type { BrowserStorage } from "./session.js";
 
 function showActionError(error: unknown): void {
-  showActionStatus(error instanceof Error ? error.message : "backend_unavailable");
+  showActionStatus(
+    error instanceof Error ? error.message : "backend_unavailable",
+  );
 }
 
 export function showActionStatus(value: string): void {
@@ -10,11 +12,15 @@ export function showActionStatus(value: string): void {
   if (status) status.textContent = value;
 }
 
-export function bindHistory(navigate: (action: "back" | "forward") => Promise<void>): void {
+export function bindHistory(
+  navigate: (action: "back" | "forward") => Promise<void>,
+): void {
   for (const operation of ["back", "forward"] as const) {
-    document.querySelector<HTMLElement>(`[data-operation="${operation}"]`)?.addEventListener("click", () => {
-      void navigate(operation);
-    });
+    document
+      .querySelector<HTMLElement>(`[data-operation="${operation}"]`)
+      ?.addEventListener("click", () => {
+        void navigate(operation);
+      });
   }
 }
 
@@ -23,13 +29,26 @@ export function bindRefresh(
   onSuccess?: () => void,
   request: typeof browserRequest = browserRequest,
 ): void {
-  document.querySelector<HTMLElement>('[data-operation="refresh"]')?.addEventListener("click", async () => {
-    try {
-      const reply = await request(storage, "api/status", { action: "refresh", request_id: crypto.randomUUID() });
-      showActionStatus(reply.state ?? "ready");
-      onSuccess?.();
-    } catch (error) {
-      showActionError(error);
-    }
-  });
+  document
+    .querySelector<HTMLElement>('[data-operation="refresh"]')
+    ?.addEventListener("click", () => {
+      void refreshAction(storage, onSuccess, request);
+    });
+}
+
+async function refreshAction(
+  storage: BrowserStorage,
+  onSuccess: (() => void) | undefined,
+  request: typeof browserRequest,
+): Promise<void> {
+  try {
+    const reply = await request(storage, "api/status", {
+      action: "refresh",
+      request_id: crypto.randomUUID(),
+    });
+    showActionStatus(reply.state ?? "ready");
+    onSuccess?.();
+  } catch (error) {
+    showActionError(error);
+  }
 }

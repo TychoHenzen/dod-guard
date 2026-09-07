@@ -92,7 +92,15 @@
       }
     },
     {
-      "includes": ["packages/code-explorer/src/semantic/**/*.ts", "packages/code-explorer/src/testing/**/*.ts"],
+      "includes": [
+        "packages/code-explorer/src/semantic/**/*.ts",
+        "packages/code-explorer/src/testing/**/*.ts",
+        "packages/code-explorer/src/browser-server/**/*.ts",
+        "packages/code-explorer/src/browser/**/*.ts",
+        "packages/code-explorer/src/navigation/**/*.ts",
+        "packages/code-explorer/src/discovery/**/*.ts",
+        "packages/code-explorer/src/freshness/**/*.ts"
+      ],
       "formatter": {
         "lineWidth": 80
       }

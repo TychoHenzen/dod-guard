@@ -1,22 +1,29 @@
-import { createNativeProjectRoot, type ProjectRoot } from "../semantic/api/public-api.js";
-import { type BrowserHttpRequest, type BrowserHttpResponse, BrowserHttpRouter } from "./http-router.js";
+import {
+  createNativeProjectRoot,
+  type ProjectRoot,
+} from "../semantic/api/public-api.js";
+import type { EmbeddedBrowserRuntime } from "./embedded-browser-runtime.js";
+import { createEmbeddedRuntime } from "./embedded-runtime-result.js";
 import { BrowserServerError, type ExplorerCoreFactory } from "./lifecycle.js";
 
-export type EmbeddedBrowserRuntime = {
-  projectRoot: ProjectRoot;
-  handle(request: BrowserHttpRequest): Promise<BrowserHttpResponse>;
-  close(): Promise<void>;
-};
+export type { EmbeddedBrowserRuntime } from "./embedded-browser-runtime.js";
 
 function loopbackOrigin(origin: string): URL {
   const parsed = new URL(origin);
-  if (parsed.protocol !== "http:" || parsed.hostname !== "127.0.0.1" || !parsed.port) {
+  if (
+    parsed.protocol !== "http:" ||
+    parsed.hostname !== "127.0.0.1" ||
+    !parsed.port
+  ) {
     throw new BrowserServerError("invalid_request");
   }
   return parsed;
 }
 
-function linkAbortSignal(parent: AbortSignal | undefined, child: AbortController) {
+function linkAbortSignal(
+  parent: AbortSignal | undefined,
+  child: AbortController,
+) {
   if (!parent) return () => undefined;
   const abort = () => child.abort(parent.reason);
   if (parent.aborted) {
@@ -28,11 +35,18 @@ function linkAbortSignal(parent: AbortSignal | undefined, child: AbortController
 }
 
 async function startCore(
-  options: { coreFactory: ExplorerCoreFactory; projectRoot: ProjectRoot; signal: AbortSignal },
+  options: {
+    coreFactory: ExplorerCoreFactory;
+    projectRoot: ProjectRoot;
+    signal: AbortSignal;
+  },
   unlinkAbortSignal: () => void,
 ): Promise<Awaited<ReturnType<ExplorerCoreFactory["start"]>>> {
   try {
-    const core = await options.coreFactory.start({ projectRoot: options.projectRoot, signal: options.signal });
+    const core = await options.coreFactory.start({
+      projectRoot: options.projectRoot,
+      signal: options.signal,
+    });
     if (options.signal.aborted) {
       await core.close(AbortSignal.timeout(10_000));
       throw new Error("aborted");
@@ -42,23 +56,6 @@ async function startCore(
     unlinkAbortSignal();
     throw error;
   }
-}
-
-function closeCore(
-  controller: AbortController,
-  core: Awaited<ReturnType<ExplorerCoreFactory["start"]>>,
-  unlinkAbortSignal: () => void,
-) {
-  let closing: Promise<void> | undefined;
-  return () => {
-    if (closing) return closing;
-    closing = (async () => {
-      controller.abort();
-      await core.close(AbortSignal.timeout(10_000));
-      unlinkAbortSignal();
-    })();
-    return closing;
-  };
 }
 
 export async function startEmbeddedBrowserRuntime(options: {
@@ -73,24 +70,19 @@ export async function startEmbeddedBrowserRuntime(options: {
   const controller = new AbortController();
   const unlinkAbortSignal = linkAbortSignal(options.signal, controller);
   const core = await startCore(
-    { coreFactory: options.coreFactory, projectRoot, signal: controller.signal },
+    {
+      coreFactory: options.coreFactory,
+      projectRoot,
+      signal: controller.signal,
+    },
     unlinkAbortSignal,
   );
-  const router = new BrowserHttpRouter({
+  return createEmbeddedRuntime({
+    projectRoot,
     origin: parsedOrigin.origin,
     assetRoot: options.assetRoot,
-    call:
-      core.call ??
-      (async () => ({
-        schema_version: 1,
-        code: "workspace_unavailable",
-        message: "workspace_unavailable",
-        retryable: true,
-      })),
+    core,
+    controller,
+    unlinkAbortSignal,
   });
-  return {
-    projectRoot,
-    handle: (request) => router.handle(request),
-    close: closeCore(controller, core, unlinkAbortSignal),
-  };
 }

@@ -1,10 +1,5 @@
-# Source files with no matching .test.ts. Ratcheted by scripts/ci/check-tests-present.mjs.
+# Source files with no matching or statically reachable .test.ts. Ratcheted by scripts/ci/check-tests-present.mjs.
 # This list may shrink, never grow.
-# The semantic implementation was extracted into focused modules while its
-# boundary suites remained in src/semantic-tests. Those suites exercise the
-# extracted modules through their supported boundaries, but this ratchet only
-# recognizes same-directory test filenames. Keep these extraction gaps explicit
-# until the ratchet can model that test layout.
 packages/code-explorer/src/semantic/adapter-selection/adapter-selection-comparison.ts
 packages/code-explorer/src/semantic/adapter-selection/adapter-selection-evidence-check.ts
 packages/code-explorer/src/semantic/adapter-selection/adapter-selection-evidence-schema.ts
@@ -62,6 +57,7 @@ packages/code-explorer/src/semantic/backend-result/backend-result-safety.ts
 packages/code-explorer/src/semantic/backend-result/backend-result-validation-options.ts
 packages/code-explorer/src/semantic/backend-result/backend-result-validation.ts
 packages/code-explorer/src/semantic/backend-result/backend-result-validator.ts
+packages/code-explorer/src/semantic/backend-result/validator.ts
 packages/code-explorer/src/semantic/backend-status/backend-status.ts
 packages/code-explorer/src/semantic/contracts/contract-capabilities.ts
 packages/code-explorer/src/semantic/contracts/contract-focus.ts
@@ -134,11 +130,15 @@ packages/code-explorer/src/semantic/direct-lsp/direct-lsp-semantic-source-symbol
 packages/code-explorer/src/semantic/direct-lsp/direct-lsp-semantic-source-symbols.ts
 packages/code-explorer/src/semantic/direct-lsp/direct-lsp-semantic-workspace.ts
 packages/code-explorer/src/semantic/direct-lsp/direct-lsp-semantic.ts
+packages/code-explorer/src/semantic/direct-lsp/direct-lsp-state-resources.ts
+packages/code-explorer/src/semantic/direct-lsp/direct-lsp-state-storage.ts
 packages/code-explorer/src/semantic/direct-lsp/direct-lsp-status-snapshot.ts
 packages/code-explorer/src/semantic/direct-lsp/direct-lsp-status.ts
 packages/code-explorer/src/semantic/direct-lsp/direct-lsp-values.ts
 packages/code-explorer/src/semantic/direct-lsp/direct-lsp-wire.ts
 packages/code-explorer/src/semantic/direct-lsp/direct-lsp.ts
+packages/code-explorer/src/semantic/direct-lsp/semantic.ts
+packages/code-explorer/src/semantic/direct-lsp/telemetry.ts
 packages/code-explorer/src/semantic/project-root/project-root-actions.ts
 packages/code-explorer/src/semantic/project-root/project-root-classify.ts
 packages/code-explorer/src/semantic/project-root/project-root-error-code.ts
@@ -182,6 +182,7 @@ packages/code-explorer/src/semantic/python-mirror/python-mirror-validation.ts
 packages/code-explorer/src/semantic/python-mirror/python-mirror-verification.ts
 packages/code-explorer/src/semantic/python-mirror/python-mirror-writer.ts
 packages/code-explorer/src/semantic/python-mirror/python-mirror.ts
+packages/code-explorer/src/semantic/python-mirror/runtime.ts
 packages/code-explorer/src/semantic/runtime/runtime-adapter-input.ts
 packages/code-explorer/src/semantic/runtime/runtime-adapter-metadata.ts
 packages/code-explorer/src/semantic/runtime/runtime-adapter-record-input.ts
@@ -222,14 +223,3 @@ packages/code-explorer/src/testing/python-mirror-runtime-test-support.ts
 packages/code-explorer/src/testing/root-access-test-support.ts
 packages/code-explorer/src/testing/runtime-bootstrap-test-support.ts
 packages/code-explorer/src/testing/runtime-lsp-test-support.ts
-packages/code-explorer/src/semantic/adapter-selection/index.ts
-packages/code-explorer/src/semantic/adapters/index.ts
-packages/code-explorer/src/semantic/backend-result/validator.ts
-packages/code-explorer/src/semantic/direct-lsp/direct-lsp-state-resources.ts
-packages/code-explorer/src/semantic/direct-lsp/direct-lsp-state-storage.ts
-packages/code-explorer/src/semantic/direct-lsp/semantic.ts
-packages/code-explorer/src/semantic/direct-lsp/telemetry.ts
-packages/code-explorer/src/semantic/python-mirror/index.ts
-packages/code-explorer/src/semantic/python-mirror/runtime.ts
-packages/code-explorer/src/semantic/runtime/index.ts
-packages/code-explorer/src/semantic/workspace/index.ts

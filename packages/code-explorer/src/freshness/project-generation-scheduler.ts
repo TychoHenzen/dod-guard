@@ -1,8 +1,12 @@
-import type { FreshnessStatus, WorkspaceFreshness } from "./workspace-freshness.js";
+import type { AcceptedGeneration } from "./accepted-generation.js";
+import type { FreshnessStatus } from "./freshness-status.js";
+import type { WorkspaceFreshness } from "./workspace-freshness.js";
 
-export type AcceptedGeneration = { accepted_request: number; status: FreshnessStatus };
+export type { AcceptedGeneration } from "./accepted-generation.js";
 
-/** Serializes project-wide generation decisions without holding the queue during ordinary semantic work. */
+/** Serializes project-wide generation decisions without holding the queue
+ * during ordinary semantic work.
+ */
 export class ProjectGenerationScheduler {
   #tail: Promise<void> = Promise.resolve();
   #acceptedRequests = 0;
@@ -11,7 +15,10 @@ export class ProjectGenerationScheduler {
   constructor(private readonly freshness: WorkspaceFreshness) {}
 
   accept(): Promise<AcceptedGeneration> {
-    return this.#enqueue(() => ({ accepted_request: ++this.#acceptedRequests, status: this.freshness.status() }));
+    return this.#enqueue(() => ({
+      accepted_request: ++this.#acceptedRequests,
+      status: this.freshness.status(),
+    }));
   }
 
   refresh(work: () => Promise<void>): Promise<FreshnessStatus> {

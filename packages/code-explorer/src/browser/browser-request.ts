@@ -1,13 +1,21 @@
 import type { BrowserReply } from "./browser-reply.js";
 import type { BrowserStorage } from "./session.js";
 
-export function ownership(storage: BrowserStorage): Record<string, string> | undefined {
+export function ownership(
+  storage: BrowserStorage,
+): Record<string, string> | undefined {
   const session = storage.get("browser_session_id");
   const tab = storage.get("tab_instance_id");
-  return session && tab ? { "x-code-explorer-session": session, "x-code-explorer-tab": tab } : undefined;
+  return session && tab
+    ? { "x-code-explorer-session": session, "x-code-explorer-tab": tab }
+    : undefined;
 }
 
-export async function browserRequest(storage: BrowserStorage, path: string, body: Record<string, unknown>) {
+export async function browserRequest(
+  storage: BrowserStorage,
+  path: string,
+  body: Record<string, unknown>,
+) {
   const headers = ownership(storage);
   if (!headers) throw new Error("invalid_browser_session");
   const response = await fetch(path, {

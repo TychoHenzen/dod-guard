@@ -11,6 +11,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { createServer, toMcpToolResult } from "./index.js";
 import type { LanguageAdapter } from "./semantic/adapters/language-adapter.js";
 import { createNativeProjectRoot } from "./semantic/project-root/project-root.js";
+import { readyCapabilities } from "./testing/direct-lsp-semantic-support.js";
 import { FakeSemanticAdapter } from "./testing/fake-semantic-adapter.js";
 
 const entryPoint = fileURLToPath(new URL("./index.js", import.meta.url));
@@ -705,14 +706,8 @@ describe("code-explorer package boundary", () => {
     });
     if ("code" in focused) throw new Error("expected focus");
     const data = focused.data as { view_id: string; handles: Array<{ handle: string }> };
-    for (const [index, relation] of [
-      "definition",
-      "references",
-      "callers",
-      "callees",
-      "type",
-      "implementation",
-    ].entries()) {
+    const relations = "definition,references,callers,callees,type,implementation".split(",");
+    for (const [index, relation] of relations.entries()) {
       const result = await server.call("code_follow", {
         session_id: sessionId,
         request_id: `follow-request-${index.toString().padStart(4, "0")}`,
@@ -864,14 +859,7 @@ describe("code-explorer package boundary", () => {
           backend_version: "test",
           discovery_source: "injected",
           state: "ready",
-          capabilities: {
-            definition: { state: "ready" },
-            references: { state: "ready" },
-            type_definition: { state: "ready" },
-            implementation: { state: "ready" },
-            callers: { state: "ready" },
-            callees: { state: "ready" },
-          },
+          capabilities: readyCapabilities(),
           last_transition_time: 0,
         }),
         request: async () => ({ operation: "search", revision: { generation: 1, manifest_sha256: "test" }, symbols }),
@@ -949,14 +937,7 @@ describe("code-explorer package boundary", () => {
           backend_version: "test",
           discovery_source: "injected",
           state: "ready",
-          capabilities: {
-            definition: { state: "ready" },
-            references: { state: "ready" },
-            type_definition: { state: "ready" },
-            implementation: { state: "ready" },
-            callers: { state: "ready" },
-            callees: { state: "ready" },
-          },
+          capabilities: readyCapabilities(),
           last_transition_time: 0,
         }),
         request: async () => ({ operation: "search", revision: { generation: 1, manifest_sha256: "test" }, symbols }),
@@ -1039,14 +1020,7 @@ function adapterWithSymbols(symbols: ReturnType<typeof symbol>[]): LanguageAdapt
       backend_version: "test",
       discovery_source: "injected",
       state: "ready",
-      capabilities: {
-        definition: { state: "ready" },
-        references: { state: "ready" },
-        type_definition: { state: "ready" },
-        implementation: { state: "ready" },
-        callers: { state: "ready" },
-        callees: { state: "ready" },
-      },
+      capabilities: readyCapabilities(),
       last_transition_time: 0,
     }),
     request: async () => ({ operation: "search", revision: { generation: 1, manifest_sha256: "test" }, symbols }),

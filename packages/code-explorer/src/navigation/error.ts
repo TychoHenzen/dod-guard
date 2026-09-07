@@ -1,4 +1,9 @@
-export const errorCodes = [
+import type { CodeExplorerError } from "./code-explorer-error.js";
+import type { CodeExplorerErrorCode } from "./error-code.js";
+import type { ErrorDetails } from "./error-details.js";
+import { sanitizeDetails } from "./error-details-sanitizer.js";
+
+const errorCodes = [
   "unknown_tool",
   "invalid_request",
   "invalid_session",
@@ -36,23 +41,9 @@ export const errorCodes = [
   "internal_error",
 ] as const;
 
-export type CodeExplorerErrorCode = (typeof errorCodes)[number];
-export type ErrorDetails = {
-  field?: string;
-  limit?: number;
-  actual?: number;
-  view_generation?: number;
-  current_generation?: number;
-  state?: string;
-  path?: string;
-};
-export type CodeExplorerError = {
-  schema_version: 1;
-  code: CodeExplorerErrorCode;
-  message: CodeExplorerErrorCode;
-  retryable: boolean;
-  details?: ErrorDetails;
-};
+export type { CodeExplorerError } from "./code-explorer-error.js";
+export type { CodeExplorerErrorCode } from "./error-code.js";
+export type { ErrorDetails } from "./error-details.js";
 
 const retryableCodes = new Set<CodeExplorerErrorCode>([
   "invalid_session",
@@ -70,47 +61,26 @@ const retryableCodes = new Set<CodeExplorerErrorCode>([
 ]);
 
 const codeSet = new Set<string>(errorCodes);
-const detailKeys = new Set<keyof ErrorDetails>([
-  "field",
-  "limit",
-  "actual",
-  "view_generation",
-  "current_generation",
-  "state",
-  "path",
-]);
-
-export function codeExplorerError(code: CodeExplorerErrorCode, details?: ErrorDetails): CodeExplorerError {
+export function codeExplorerError(
+  code: CodeExplorerErrorCode,
+  details?: ErrorDetails,
+): CodeExplorerError {
   return {
     schema_version: 1,
     code,
     message: code,
     retryable: retryableCodes.has(code),
-    ...(details && Object.keys(details).length > 0 ? { details: sanitizeDetails(details) } : {}),
+    ...(details && Object.keys(details).length > 0
+      ? { details: sanitizeDetails(details) }
+      : {}),
   };
 }
 
 export function normalizeError(error: unknown): CodeExplorerError {
   const message = error instanceof Error ? error.message : undefined;
-  return codeExplorerError(message && codeSet.has(message) ? (message as CodeExplorerErrorCode) : "internal_error");
-}
-
-function sanitizeDetails(details: ErrorDetails): ErrorDetails {
-  return Object.fromEntries(
-    Object.entries(details).filter(([key, value]) => {
-      if (!detailKeys.has(key as keyof ErrorDetails)) return false;
-      if (key === "path") return typeof value === "string" && isNormalizedProjectRelativePath(value);
-      return typeof value === "string" || typeof value === "number";
-    }),
-  ) as ErrorDetails;
-}
-
-function isNormalizedProjectRelativePath(value: string): boolean {
-  return (
-    value.length > 0 &&
-    !value.startsWith("/") &&
-    !/^[A-Za-z]:[\\/]/.test(value) &&
-    !value.includes("\\") &&
-    !value.split("/").includes("..")
+  return codeExplorerError(
+    message && codeSet.has(message)
+      ? (message as CodeExplorerErrorCode)
+      : "internal_error",
   );
 }

@@ -1,5 +1,6 @@
 import type { LanguageAdapter } from "../semantic/adapters/language-adapter.js";
 import type { ProjectRoot } from "../semantic/project-root/project-root.js";
+import { readyAdapterStatus } from "./navigation/support/adapter-status.js";
 
 export function root(
   revalidate: () => "ready" | "inaccessible" | "unavailable",
@@ -20,22 +21,7 @@ export function root(
 
 export function adapter(calls: string[]): LanguageAdapter {
   return {
-    status: () => ({
-      language: "rust",
-      backend_name: "fixture",
-      backend_version: "1",
-      discovery_source: "injected",
-      state: "ready",
-      capabilities: {
-        definition: { state: "ready" },
-        references: { state: "ready" },
-        type_definition: { state: "ready" },
-        implementation: { state: "ready" },
-        callers: { state: "ready" },
-        callees: { state: "ready" },
-      },
-      last_transition_time: 0,
-    }),
+    status: () => readyAdapterStatus({ name: "fixture", version: "1" }),
     request: async () => {
       throw new Error("unused");
     },

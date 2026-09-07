@@ -1,91 +1,59 @@
-import { createHash } from "node:crypto";
-import { open, readdir } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { walkSupportedFiles } from "./native-manifest-files.js";
+import { stableBatch } from "./native-manifest-hashing.js";
+import type { NativeManifestOptions } from "./native-manifest-options.js";
 import type { ReconcileResult } from "./types.js";
 
-export type NativeManifestOptions = {
-  root: string;
-  supported: (path: string) => boolean;
-  now?: () => number;
-  sleep?: (milliseconds: number) => Promise<void>;
-};
+export type { NativeManifestOptions } from "./native-manifest-options.js";
 
-export async function reconcileNativeManifest(options: NativeManifestOptions): Promise<ReconcileResult> {
-  const started = (options.now ?? Date.now)();
-  try {
-    const files = await supportedFiles(options.root, options.supported, started, options.now ?? Date.now);
-    const manifest = new Map<string, string>();
-    for (let offset = 0; offset < files.length; offset += 64) {
-      const stable = await stableBatch(options, files.slice(offset, offset + 64));
-      for (const [file, hash] of stable) {
-        if (hash === "incomplete_write") return { cause: hash };
-        if (hash === "scan_limit") return { cause: hash };
-        manifest.set(file, hash);
-      }
-    }
-    return { manifest };
-  } catch (error) {
-    return { cause: error instanceof Error && error.message === "scan_limit" ? "scan_limit" : "freshness_unavailable" };
+async function buildManifest(
+  options: NativeManifestOptions,
+  files: readonly string[],
+): Promise<ReconcileResult> {
+  const manifest = new Map<string, string>();
+  for (let offset = 0; offset < files.length; offset += 64) {
+    const cause = mergeStableBatch(
+      manifest,
+      await stableBatch(options, files.slice(offset, offset + 64)),
+    );
+    if (cause) return { cause };
   }
+  return { manifest };
 }
 
-async function stableBatch(options: NativeManifestOptions, files: readonly string[]) {
-  return await Promise.all(
-    files.map(
-      async (file) =>
-        [file, await stableHash(join(options.root, file), options.now ?? Date.now, options.sleep ?? delay)] as const,
-    ),
-  );
+function mergeStableBatch(
+  manifest: Map<string, string>,
+  stable: readonly (readonly [
+    string,
+    string | "incomplete_write" | "scan_limit",
+  ])[],
+): "incomplete_write" | "scan_limit" | undefined {
+  for (const [file, hash] of stable) {
+    if (hash === "incomplete_write" || hash === "scan_limit") return hash;
+    manifest.set(file, hash);
+  }
+  return undefined;
 }
 
-async function supportedFiles(
-  root: string,
-  supported: (path: string) => boolean,
-  started: number,
-  now: () => number,
-): Promise<string[]> {
-  const output: string[] = [];
-  const visit = async (directory: string): Promise<void> => {
-    if (now() - started > 60_000 || output.length > 50_000) throw new Error("scan_limit");
-    for (const entry of await readdir(directory, { withFileTypes: true })) {
-      const absolute = join(directory, entry.name);
-      if (entry.isDirectory()) {
-        if (!/^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(entry.name)) await visit(absolute);
-      } else {
-        const path = relative(root, absolute).replaceAll("\\", "/");
-        if (supported(path)) output.push(path);
-      }
-    }
-  };
-  await visit(root);
-  if (output.length > 50_000) throw new Error("scan_limit");
-  return output.sort();
+function failureCause(error: unknown): "scan_limit" | "freshness_unavailable" {
+  if (error instanceof Error && error.message === "scan_limit")
+    return "scan_limit";
+  return "freshness_unavailable";
 }
 
-async function stableHash(
-  path: string,
-  now: () => number,
-  sleep: (milliseconds: number) => Promise<void>,
-): Promise<string | "incomplete_write" | "scan_limit"> {
+export async function reconcileNativeManifest(
+  options: NativeManifestOptions,
+): Promise<ReconcileResult> {
+  const now = options.now ?? Date.now;
   const started = now();
-  for (;;) {
-    const file = await open(path, "r");
-    try {
-      const before = await file.stat();
-      if (before.size > 4 * 1024 * 1024) return "scan_limit";
-      await sleep(100);
-      const after = await file.stat();
-      if (before.size === after.size && before.mtimeMs === after.mtimeMs)
-        return createHash("sha256")
-          .update(await file.readFile())
-          .digest("hex");
-    } finally {
-      await file.close();
-    }
-    if (now() - started >= 10_000) return "incomplete_write";
+  try {
+    const files = await walkSupportedFiles(
+      options.root,
+      options.supported,
+      started,
+      now,
+    );
+    return buildManifest(options, files);
+  } catch (error) {
+    return { cause: failureCause(error) };
   }
-}
-
-function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
 }
