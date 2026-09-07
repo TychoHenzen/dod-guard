@@ -1,6 +1,6 @@
+import type { BrowserLandmarkGroup } from "./browser-landmark-group.js";
 import type { DiscoveryCandidate } from "./discovery-candidate.js";
 import type { DiscoveryFilters } from "./discovery-filters.js";
-import type { BrowserLandmarkGroup } from "./browser-landmark-group.js";
 
 export type DiscoveryState = {
   query: string;

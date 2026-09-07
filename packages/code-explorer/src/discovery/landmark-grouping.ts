@@ -1,8 +1,8 @@
-import type { LandmarkCandidate } from "./landmark-candidate.js";
 import type { LandmarkAnalysisGroup } from "./landmark-analysis-group.js";
+import type { LandmarkCandidate } from "./landmark-candidate.js";
+import { landmarkGroupFor } from "./landmark-classification.js";
 import type { LandmarkDiscovery } from "./landmark-discovery.js";
 import { landmarkGroupNames } from "./landmark-group-name.js";
-import { landmarkGroupFor } from "./landmark-classification.js";
 import { compareRankedLandmarks } from "./landmark-ranking.js";
 import { scoreLandmark } from "./landmark-scoring.js";
 

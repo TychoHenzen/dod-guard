@@ -1,7 +1,7 @@
+import { escapeText } from "./escape-text.js";
 import type { FocusedSource } from "./focused-source.js";
 import type { SourceSegment } from "./source-segment.js";
 import { sourceSegments } from "./source-segments.js";
-import { escapeText } from "./escape-text.js";
 
 function renderFragment(options: {
   fragment: string;
@@ -60,7 +60,7 @@ export function renderFocusedSource(source: FocusedSource): string {
   if (!segments)
     return (
       '<section data-state="invalid_browser_view">' +
-      'invalid_browser_view</section>'
+      "invalid_browser_view</section>"
     );
   const metadata =
     `${escapeText(source.symbol.name)} Ã‚Â· ` +

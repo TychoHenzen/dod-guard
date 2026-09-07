@@ -1,26 +1,20 @@
 import type { BrowserLandmarkGroup } from "./browser-landmark-group.js";
 import type { DiscoveryFilters } from "./discovery-filters.js";
-import type { DiscoveryReply } from "./discovery-reply.js";
-import type { DiscoveryState } from "./discovery-state.js";
-import {
-  emptySearchState,
-  searchRequest,
-} from "./discovery-search.js";
-import { loadDiscoverySearch } from "./discovery-search-load.js";
 import { renderDiscovery } from "./discovery-render.js";
+import type { DiscoveryReply } from "./discovery-reply.js";
+import { emptySearchState, searchRequest } from "./discovery-search.js";
+import { loadDiscoverySearch } from "./discovery-search-load.js";
+import type { DiscoveryState } from "./discovery-state.js";
 
 export type { BrowserLandmark } from "./browser-landmark.js";
 export type { BrowserLandmarkGroup } from "./browser-landmark-group.js";
 export type { DiscoveryCandidate } from "./discovery-candidate.js";
 export type { DiscoveryFilters } from "./discovery-filters.js";
+export { renderDiscovery } from "./discovery-render.js";
 export type { DiscoveryReply } from "./discovery-reply.js";
 export type { DiscoveryState } from "./discovery-state.js";
-export { renderDiscovery } from "./discovery-render.js";
 
-const latestSearches = new WeakMap<
-  object,
-  Record<string, unknown>
->();
+const latestSearches = new WeakMap<object, Record<string, unknown>>();
 
 /** Preserves service result order and fields without browser-side fuzzy
  * scoring or reranking.
@@ -72,7 +66,8 @@ export class BrowserDiscoveryController {
     latestSearches.delete(this);
     const normalized = query.trim();
     if (normalized.length === 0) {
-      const current = this.current; const landmarks = current.landmarks;
+      const current = this.current;
+      const landmarks = current.landmarks;
       return (this.current = emptySearchState(current, filters, landmarks));
     }
     const request = this.beginSearch(normalized, filters);

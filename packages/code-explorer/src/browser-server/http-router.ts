@@ -1,11 +1,11 @@
 import type { BrowserHttpRequest } from "./browser-http-request.js";
 import type { BrowserHttpResponse } from "./browser-http-response.js";
-import { handleRequest } from "./router-request.js";
 import {
-  createBrowserRouterContext,
   type BrowserRouterContext,
+  createBrowserRouterContext,
 } from "./router-context.js";
 import type { BrowserRouterOptions } from "./router-options.js";
+import { handleRequest } from "./router-request.js";
 
 export type { BrowserCoreCall } from "./browser-core-call.js";
 export type { BrowserCoreReply } from "./browser-core-reply.js";

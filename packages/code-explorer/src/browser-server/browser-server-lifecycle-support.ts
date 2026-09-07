@@ -1,7 +1,7 @@
+import type { ProjectRoot } from "../semantic/api/public-api.js";
 import type { BrowserServer } from "./browser-server.js";
 import type { ExplorerCore } from "./explorer-core.js";
 import type { HttpListener } from "./http-listener.js";
-import type { ProjectRoot } from "../semantic/api/public-api.js";
 
 export function closeResources(options: {
   listener: HttpListener | undefined;

@@ -1,9 +1,9 @@
-import type { SessionResult } from "./session-result.js";
 import {
   executeSession,
   resolveHandle,
   type SessionRuntime,
 } from "./session-operations.js";
+import type { SessionResult } from "./session-result.js";
 
 export type SessionManagerArguments<T> = {
   execute: [

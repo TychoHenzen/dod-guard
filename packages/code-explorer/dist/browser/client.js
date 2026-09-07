@@ -3,6 +3,12 @@ function escapeText(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 }
 
+// src/browser/browser-shell-header.ts
+function renderShellHeader(state) {
+  const disabled = state.navigationEnabled ? "" : " disabled";
+  return `<header class="status-strip"><span data-area="status">${escapeText(state.status)}</span><nav aria-label="Navigation"><button type="button" data-operation="back"${disabled}>Back</button><button type="button" data-operation="forward"${disabled}>Forward</button><button type="button" data-operation="refocus"${disabled}>Refocus</button><button type="button" data-operation="refresh">Refresh</button></nav></header>`;
+}
+
 // src/browser/browser-shell-render.ts
 function renderLandmark(item) {
   if (typeof item === "string") return `<li>${escapeText(item)}</li>`;
@@ -32,9 +38,8 @@ function renderRelationButton(state, narrow) {
 function renderBrowserBody(state, viewportWidth) {
   const narrow = viewportWidth < 900;
   const disabled = state.navigationEnabled ? "" : " disabled";
-  const header = `<header class="status-strip"><span data-area="status">${escapeText(state.status)}</span><nav aria-label="Navigation"><button type="button" data-operation="back"${disabled}>Back</button><button type="button" data-operation="forward"${disabled}>Forward</button><button type="button" data-operation="refocus"${disabled}>Refocus</button><button type="button" data-operation="refresh">Refresh</button></nav></header>`;
   const main = `<main class="explorer-shell ${narrow ? "narrow" : "desktop"}">` + renderDiscoveryButton(state, narrow) + `<aside id="discovery-pane" data-pane="discovery"><h2>Landmarks</h2><label>Search <input type="search" data-operation="search"${disabled}></label><div data-area="discovery">${renderLandmarks(state.landmarks)}</div></aside><section data-pane="focus"><h1>Focused source</h1><div data-area="source">${renderFocus(state.focus)}</div><div data-area="graph" data-state="empty">No graph loaded</div></section><aside id="relations-pane" data-pane="relations"><h2>Relations</h2><p data-state="empty-relations">No relations loaded</p></aside>${renderRelationButton(state, narrow)}</main>`;
-  return header + main;
+  return renderShellHeader(state) + main;
 }
 
 // src/browser/app.ts
@@ -147,7 +152,7 @@ function sourceHandles(data, body) {
   return handles;
 }
 function sourceHandle(value, body) {
-  if (!isRecord(value) || !hasHandleShape(value) || !hasValidRange(value, body))
+  if (!(isRecord(value) && hasHandleShape(value) && hasValidRange(value, body)))
     return void 0;
   return {
     handle: value.handle,
@@ -299,7 +304,7 @@ async function loadDiscoverySearch(options) {
 // src/browser/discovery-render.ts
 function renderLandmarks2(landmarks) {
   return landmarks.map(
-    (group) => `<section class="landmark-group"><h3>${escapeText(group.group)}</h3><ul>${group.items.map((item) => renderLandmark2(item)).join("")}</ul></section>`
+    (group) => `<section class="landmark-group"><h3>${escapeText(group.group)}</h3><ul>${group.items.map(renderLandmark2).join("")}</ul></section>`
   ).join("");
 }
 function renderLandmark2(item) {
@@ -321,9 +326,8 @@ function candidateLabel(candidate, name) {
   return `<strong>${escapeText(name)}</strong>`;
 }
 function renderCandidate(candidate) {
-  const name = candidateName(candidate);
   const kind = candidateKind(candidate);
-  const label = candidateLabel(candidate, name);
+  const label = candidateLabel(candidate, candidateName(candidate));
   return `<li data-match-class="${escapeText(candidate.match_class)}">${label} <span>${escapeText(candidate.match_class)} ${candidate.match_score}</span> <span>${escapeText(candidate.path)} \xC3\u201A\xC2\xB7 ${escapeText(kind)}</span></li>`;
 }
 function renderDiscovery(state) {
@@ -504,13 +508,6 @@ var ApplicationFocusController = class {
   }
 };
 
-// src/browser/focus-navigation-state.ts
-function createFocusNavigationState(initial) {
-  if (initial)
-    return { focus: initial, history: [initial], historyPosition: 0 };
-  return { history: [], historyPosition: -1 };
-}
-
 // src/browser/focus-history.ts
 function moveHistory(current, direction, onStart) {
   if (!historyAvailable(current, direction)) return void 0;
@@ -523,6 +520,13 @@ function moveHistory(current, direction, onStart) {
 function historyAvailable(current, direction) {
   if (direction === "back") return current.historyPosition > 0;
   return current.historyPosition < current.history.length - 1;
+}
+
+// src/browser/focus-navigation-state.ts
+function createFocusNavigationState(initial) {
+  if (initial)
+    return { focus: initial, history: [initial], historyPosition: 0 };
+  return { history: [], historyPosition: -1 };
 }
 
 // src/browser/focus-state-transitions.ts
@@ -774,21 +778,7 @@ function renderOneHopGraph(graph) {
   return `<svg data-graph="one-hop" viewBox="0 0 100 100" role="img"><defs><marker id="graph-arrow" markerWidth="4" markerHeight="4" refX="4" refY="2" orient="auto"><path d="M 0 0 L 4 2 L 0 4 z"/></marker></defs>${edgeMarkup}${nodeMarkup}${omittedMarkup}</svg>`;
 }
 
-// src/browser/graph-render-area.ts
-function renderGraphArea(graph, options = {}) {
-  if (options.collapsed)
-    return '<section data-area="graph" data-state="collapsed">collapsed</section>';
-  try {
-    const svg = renderOneHopGraph(graph);
-    if (options.stale)
-      return `<section data-area="graph" data-state="stale">stale${svg}</section>`;
-    return `<section data-area="graph" data-state="ready">${svg}</section>`;
-  } catch {
-    return '<section data-area="graph" data-state="failed">graph_render_failed</section>';
-  }
-}
-
-// src/browser/graph-navigation.ts
+// src/browser/graph-relation-groups.ts
 function graphName(candidate) {
   if (candidate.name) return candidate.name;
   if (candidate.display_name) return candidate.display_name;
@@ -811,6 +801,24 @@ function toGraphRelationGroups(groups) {
     )
   }));
 }
+
+// src/browser/graph-render-area.ts
+function renderGraphArea(graph, options = {}) {
+  if (options.collapsed) return graphSection("collapsed", "collapsed");
+  try {
+    const svg = renderOneHopGraph(graph);
+    if (options.stale) return graphSection("stale", `stale${svg}`);
+    return graphSection("ready", svg);
+  } catch {
+    return graphSection("failed", "graph_render_failed");
+  }
+}
+function graphSection(state, content) {
+  const attributes = `data-area="graph" data-state="${state}"`;
+  return `<section ${attributes}>${content}</section>`;
+}
+
+// src/browser/graph-navigation.ts
 function graphFor(focus, groups) {
   return projectOneHopGraph(focus, toGraphRelationGroups(groups));
 }
@@ -1106,7 +1114,7 @@ async function followRelation(storage, request) {
   };
 }
 
-// src/browser/relation-pane-controller-support.ts
+// src/browser/relation-pane-factory.ts
 function createRelationController(storage, source, handle) {
   const supported = handle.relations.filter(isBrowserRelation);
   return new BrowserRelationsController(
@@ -1150,7 +1158,7 @@ function renderRelationChoices(pane, handle, open) {
 }
 function renderRelationGroup(options) {
   const pane = document.querySelector('[data-pane="relations"]');
-  if (!pane || !options.activeRelationKey?.startsWith(`${options.source.view_id}:`))
+  if (!(pane && options.activeRelationKey?.startsWith(`${options.source.view_id}:`)))
     return;
   pane.replaceChildren(textElement("h2", `Relations: ${options.relation}`));
   if (options.group.state !== "loaded") {

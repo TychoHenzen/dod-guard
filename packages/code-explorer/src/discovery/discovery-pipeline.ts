@@ -1,10 +1,8 @@
-import type {
-  ClassificationConfigStatus,
-} from "./classification-config-status.js";
+import type { SymbolIdentity } from "../semantic/api/public-api.js";
+import type { ClassificationConfigStatus } from "./classification.js";
 import type { DiscoveryFilters } from "./discovery-filters.js";
 import type { DiscoveryResult } from "./discovery-result.js";
 import type { DiscoverySearchResponse } from "./discovery-search-response.js";
-import type { SymbolIdentity } from "../semantic/api/public-api.js";
 
 export type DiscoveryPipeline = {
   search(

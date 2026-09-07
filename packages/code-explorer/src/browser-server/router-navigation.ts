@@ -11,7 +11,7 @@ function sessionForNavigation(
   const id = headers["x-code-explorer-session"];
   const tabId = headers["x-code-explorer-tab"];
   const session = id ? context.sessions.get(id) : undefined;
-  if (!id || !session || session.tabId !== tabId) return undefined;
+  if (!(id && session) || session.tabId !== tabId) return undefined;
   return { id, session };
 }
 

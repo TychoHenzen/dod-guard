@@ -1,15 +1,13 @@
 import type { BrowserFocusNavigation } from "./focus-navigation.js";
-import { BrowserRelationsController } from "./relation-controller.js";
-import { browserRelations } from "./relation-data.js";
-import { navigateRelationCandidate } from "./relation-target-navigation.js";
-import {
-  createRelationController,
-} from "./relation-pane-controller-support.js";
+import type { BrowserRelationsController } from "./relation-controller.js";
+import type { browserRelations } from "./relation-data.js";
+import { createRelationController } from "./relation-pane-factory.js";
 import {
   renderRelationChoices,
   renderRelationGroup,
   resetRelationPane,
 } from "./relation-pane-render.js";
+import { navigateRelationCandidate } from "./relation-target-navigation.js";
 import type { BrowserStorage } from "./session.js";
 import type { FocusedSource } from "./source.js";
 export class RelationPaneController {

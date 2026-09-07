@@ -1,5 +1,5 @@
-import type { NativeManifestOptions } from "./native-manifest-options.js";
 import { reconcileNativeManifest } from "./native-manifest.js";
+import type { NativeManifestOptions } from "./native-manifest-options.js";
 import { WorkspaceFreshness } from "./workspace-freshness.js";
 
 export function createNativeWorkspaceFreshness(

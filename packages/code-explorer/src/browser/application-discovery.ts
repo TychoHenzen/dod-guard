@@ -7,7 +7,7 @@ import {
 } from "./discovery.js";
 import type { BrowserStorage } from "./session.js";
 
-export type LandmarkGroups = ReturnType<typeof landmarkGroups>;
+type LandmarkGroups = ReturnType<typeof landmarkGroups>;
 
 export function bindSymbols(focus: (symbolId: string) => void): void {
   for (const button of document.querySelectorAll<HTMLElement>(

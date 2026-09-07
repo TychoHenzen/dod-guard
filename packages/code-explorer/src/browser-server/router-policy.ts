@@ -1,18 +1,17 @@
 import type { BrowserCoreReply } from "./browser-core-reply.js";
 import type { BrowserHttpResponse } from "./browser-http-response.js";
 
-export const csp =
-  [
-    "default-src 'none'",
-    "script-src 'self'",
-    "style-src 'self'",
-    "img-src 'self' data:",
-    "connect-src 'self'",
-    "base-uri 'none'",
-    "form-action 'none'",
-    "frame-ancestors 'none'",
-    "object-src 'none'",
-  ].join("; ");
+export const csp = [
+  "default-src 'none'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+].join("; ");
 export const routes: Record<string, string> = {
   "/api/search": "code_search",
   "/api/focus": "code_focus",

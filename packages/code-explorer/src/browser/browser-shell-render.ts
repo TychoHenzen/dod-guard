@@ -1,5 +1,7 @@
-import type { BrowserShellState, LandmarkGroup } from "./types.js";
+import { renderShellHeader } from "./browser-shell-header.js";
 import { escapeText } from "./escape-text.js";
+import type { BrowserShellState, LandmarkGroup } from "./types.js";
+
 function renderLandmark(item: LandmarkGroup["items"][number]): string {
   if (typeof item === "string") return `<li>${escapeText(item)}</li>`;
   return (
@@ -58,7 +60,7 @@ export function renderBrowserShell(
   viewportWidth: number,
 ): string {
   return (
-    "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">" +
+    '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
     "<title>Code Explorer</title></head><body>" +
     renderBrowserBody(state, viewportWidth) +
     "</body></html>"
@@ -73,14 +75,6 @@ export function renderBrowserBody(
 ): string {
   const narrow = viewportWidth < 900;
   const disabled = state.navigationEnabled ? "" : " disabled";
-  const header = `<header class="status-strip"><span data-area="status">` +
-    `${escapeText(state.status)}</span><nav aria-label="Navigation">` +
-    `<button type="button" data-operation="back"${disabled}>Back</button>` +
-    `<button type="button" data-operation="forward"${disabled}>` +
-    `Forward</button><button type="button" ` +
-    `data-operation="refocus"${disabled}>Refocus</button>` +
-    `<button type="button" data-operation="refresh">Refresh</button>` +
-    `</nav></header>`;
   const main =
     `<main class="explorer-shell ${narrow ? "narrow" : "desktop"}">` +
     renderDiscoveryButton(state, narrow) +
@@ -88,12 +82,13 @@ export function renderBrowserBody(
     `<label>Search <input type="search" ` +
     `data-operation="search"${disabled}></label>` +
     `<div data-area="discovery">${renderLandmarks(state.landmarks)}</div>` +
-    `</aside>` +
+    "</aside>" +
     `<section data-pane="focus"><h1>Focused source</h1>` +
     `<div data-area="source">${renderFocus(state.focus)}</div>` +
     `<div data-area="graph" data-state="empty">No graph loaded</div>` +
-    `</section>` +
+    "</section>" +
     `<aside id="relations-pane" data-pane="relations"><h2>Relations</h2>` +
     `<p data-state="empty-relations">No relations loaded</p></aside>` +
     `${renderRelationButton(state, narrow)}</main>`;
-  return header + main; }
+  return renderShellHeader(state) + main;
+}

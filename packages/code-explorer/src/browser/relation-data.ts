@@ -1,6 +1,6 @@
+import { browserRelationNames } from "../navigation/focus-relation-names.js";
 import type { RelationCandidate } from "./relation-candidate.js";
 import type { RelationGroup } from "./relation-group.js";
-import { browserRelationNames } from "../navigation/focus-relation-names.js";
 import type { FocusedSource } from "./source.js";
 
 export const browserRelations = browserRelationNames;

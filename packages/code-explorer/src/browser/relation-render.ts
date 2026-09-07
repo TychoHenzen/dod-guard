@@ -1,14 +1,14 @@
 import { escapeText } from "./escape-text.js";
 import type { RelationCandidate } from "./relation-candidate.js";
-import type { RelationGroup } from "./relation-group.js";
 import { displayName } from "./relation-display-name.js";
+import type { RelationGroup } from "./relation-group.js";
 
 function renderCandidate(candidate: RelationCandidate): string {
   const name = escapeText(displayName(candidate));
   return candidate.external
     ? `<li data-external="true">${name}</li>`
     : `<li data-focus="${escapeText(candidate.local_handle ?? "")}">` +
-      `${name}</li>`;
+        `${name}</li>`;
 }
 
 function renderLoadedGroup(group: RelationGroup): string {

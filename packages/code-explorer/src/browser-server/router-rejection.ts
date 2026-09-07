@@ -1,7 +1,7 @@
 import type { BrowserHttpRequest } from "./browser-http-request.js";
 import type { BrowserHttpResponse } from "./browser-http-response.js";
-import type { BrowserRouterContext } from "./router-context.js";
 import { asset } from "./router-asset.js";
+import type { BrowserRouterContext } from "./router-context.js";
 import { browserError, json, routes } from "./router-policy.js";
 
 function authorityError(

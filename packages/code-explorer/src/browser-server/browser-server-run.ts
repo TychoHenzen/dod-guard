@@ -50,7 +50,8 @@ async function startBrowserServerRun(
 ): Promise<BrowserServer> {
   const startedCore = await options.start.coreFactory.start({
     projectRoot: options.projectRoot,
-    signal: options.controller.signal });
+    signal: options.controller.signal,
+  });
   resources.core = startedCore;
   const listener = await listenForPort(
     options.start,
@@ -60,12 +61,11 @@ async function startBrowserServerRun(
   resources.listener = listener;
   options.start.write?.(`Code Explorer: ${listener.address.href}`);
   await openBrowser(options.start, listener, options.controller.signal);
-  const close = createServerClose(options, resources);
   return serverResult({
     listener,
     core: startedCore,
     projectRoot: options.projectRoot,
-    close,
+    close: createServerClose(options, resources),
   });
 }
 

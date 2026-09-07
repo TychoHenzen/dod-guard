@@ -3,12 +3,12 @@ import {
   type ProjectRoot,
   type SymbolIdentity,
 } from "../semantic/api/public-api.js";
-import type { ClassificationConfig } from "./classification-config.js";
 import {
   classifyProjectPath,
   matchesDiscoveryFilters,
   type PathClassification,
 } from "./classification.js";
+import type { ClassificationConfig } from "./classification-config.js";
 import type { DiscoveryFilters } from "./discovery-filters.js";
 import { isSensitiveProjectPath } from "./sensitive-paths.js";
 import {

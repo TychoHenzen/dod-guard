@@ -2,10 +2,10 @@ import type { ProjectRoot } from "../semantic/api/public-api.js";
 import type { ClassificationConfig } from "./classification-config.js";
 import type { DiscoveryFilters } from "./discovery-filters.js";
 import type { DiscoveryPipeline } from "./discovery-pipeline.js";
-import type { DiscoverySearchResponse } from "./discovery-search-response.js";
 import type { DiscoveryResult } from "./discovery-result.js";
-import { resultLimit, searchCandidates } from "./discovery-search-pipeline.js";
 import type { FileCandidate } from "./discovery-search-candidates.js";
+import { resultLimit, searchCandidates } from "./discovery-search-pipeline.js";
+import type { DiscoverySearchResponse } from "./discovery-search-response.js";
 
 export function createPipelineSearch(options: {
   root: ProjectRoot;

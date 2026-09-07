@@ -1,5 +1,5 @@
-import { withBrowserSession } from "./browser-session-reply.js";
 import type { BrowserHttpResponse } from "./browser-http-response.js";
+import { withBrowserSession } from "./browser-session-reply.js";
 import type { BrowserRouterContext } from "./router-context.js";
 import { browserError, errorStatus, json } from "./router-policy.js";
 import {
@@ -83,6 +83,6 @@ function restoreCandidate(
   | undefined {
   const id = headers["x-code-explorer-session"];
   const session = id ? context.sessions.get(id) : undefined;
-  if (!id || !session || session.tabId !== tabId) return undefined;
+  if (!(id && session) || session.tabId !== tabId) return undefined;
   return { id, session };
 }

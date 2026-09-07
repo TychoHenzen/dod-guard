@@ -1,12 +1,12 @@
 import type { AddViewResult } from "./add-view-result.js";
 import type { FocusView } from "./focus-view-type.js";
+import { ownedSession } from "./session-owner.js";
+import type { SessionRuntime } from "./session-runtime.js";
 import {
   discardView,
   evictViews,
   makeViewCapacity,
 } from "./session-view-eviction.js";
-import { ownedSession } from "./session-owner.js";
-import type { SessionRuntime } from "./session-runtime.js";
 
 export function addView(options: {
   runtime: SessionRuntime;

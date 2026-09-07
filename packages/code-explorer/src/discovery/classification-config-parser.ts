@@ -1,7 +1,7 @@
 import type { ClassificationConfig } from "./classification-config.js";
+import { normalizeProjectPath } from "./classification-matching.js";
 import type { ClassificationOverride } from "./classification-override.js";
 import type { ContentClass } from "./content-class.js";
-import { normalizeProjectPath } from "./classification-matching.js";
 
 const keys = ["generated", "test", "production", "overrides"] as const;
 

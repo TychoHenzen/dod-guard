@@ -1,7 +1,7 @@
-import { landmarkGroupIndex } from "./landmark-classification.js";
 import type { LandmarkCandidate } from "./landmark-candidate.js";
-import type { ScoredLandmark } from "./scored-landmark.js";
+import { landmarkGroupIndex } from "./landmark-classification.js";
 import { scoreLandmark } from "./landmark-scoring.js";
+import type { ScoredLandmark } from "./scored-landmark.js";
 
 export function compareRankedLandmarks(
   left: { candidate: LandmarkCandidate; landmark: ScoredLandmark },

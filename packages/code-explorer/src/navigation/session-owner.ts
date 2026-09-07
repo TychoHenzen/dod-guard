@@ -1,5 +1,5 @@
-import type { Session } from "./session-state.js";
 import type { SessionRuntime } from "./session-runtime.js";
+import type { Session } from "./session-state.js";
 
 export function ownedSession(
   runtime: SessionRuntime,

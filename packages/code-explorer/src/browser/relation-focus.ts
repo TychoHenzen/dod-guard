@@ -1,6 +1,5 @@
 import type { BrowserFocus } from "./focus-navigation.js";
 import type { RelationCandidate } from "./relation-candidate.js";
-import type { FocusedSource } from "./source.js";
 import { relationHandles, relationName } from "./relation-data.js";
 import {
   hasFocusPayload,
@@ -10,6 +9,7 @@ import {
   relationReturnedBytes,
   relationTotalBytes,
 } from "./relation-focus-support.js";
+import type { FocusedSource } from "./source.js";
 
 export function relationFocus(
   candidate: RelationCandidate,

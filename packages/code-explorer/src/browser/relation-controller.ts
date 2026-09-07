@@ -1,8 +1,8 @@
 import type { RelationContext } from "./relation-context.js";
+import { loadedRelationGroup } from "./relation-controller-reply.js";
 import type { RelationGroup } from "./relation-group.js";
 import type { RelationName } from "./relation-name.js";
 import type { RelationReply } from "./relation-reply.js";
-import { loadedRelationGroup } from "./relation-controller-reply.js";
 
 /** Stores relation data by immutable focus view and dispatches no follow
  * request until a group opens.

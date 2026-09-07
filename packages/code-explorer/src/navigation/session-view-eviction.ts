@@ -1,7 +1,7 @@
 import type { OldestEviction } from "./oldest-eviction.js";
-import type { Session } from "./session-state.js";
 import { MAX_RETAINED_VIEWS, SESSION_IDLE_MS } from "./session-limits.js";
 import type { SessionRuntime } from "./session-runtime.js";
+import type { Session } from "./session-state.js";
 
 export function expireIdle(runtime: SessionRuntime, now: number): void {
   for (const [sessionId, session] of runtime.sessions)
@@ -38,7 +38,7 @@ export function discardView(
   viewId: string,
 ): void {
   const view = session.views.get(viewId);
-  if (!view || !session.views.delete(viewId)) return;
+  if (!(view && session.views.delete(viewId))) return;
   runtime.retainedBodyBytes -= view.content.returned_bytes;
   session.staleViews.add(viewId);
 }

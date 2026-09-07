@@ -22422,6 +22422,8 @@ import * as path from "node:path";
 // src/discovery/sensitive-paths.ts
 import { lstatSync, readdirSync } from "node:fs";
 import { join as join4 } from "node:path";
+var keyFile = /^id_(rsa|dsa|ecdsa|ed25519)$/iu;
+var credentialFile = /^\.(npmrc|pypirc)$|^nuget\.config$/iu;
 function isSensitiveProjectPath(path5) {
   const normalized = path5.replaceAll("\\", "/").replace(/^\.\//, "");
   if (unsafeSensitivePath(normalized)) return true;
@@ -22436,7 +22438,7 @@ function sensitiveDirectory(parts) {
   return parts.some((part) => /^(\.git|\.hg|\.svn)$/iu.test(part));
 }
 function sensitiveFile(file) {
-  return /^\.env(?:\..+)?$/iu.test(file) || /\.(pem|key|pfx|p12)$/iu.test(file) || /^(id_rsa|id_dsa|id_ecdsa|id_ed25519|\.npmrc|\.pypirc|nuget\.config)$/iu.test(file);
+  return /^\.env(?:\..+)?$/iu.test(file) || /\.(pem|key|pfx|p12)$/iu.test(file) || keyFile.test(file) || credentialFile.test(file);
 }
 function countSensitivePathsUnderRoot(root) {
   const visit4 = (directory, relativeDirectory) => {
@@ -23322,17 +23324,18 @@ import { join as join13 } from "node:path";
 // src/discovery/config-path.ts
 import { readdirSync as readdirSync4 } from "node:fs";
 import { join as join12 } from "node:path";
+import process3 from "node:process";
 var configName = ".code-explorer.json";
-function isClassificationConfigPath(path5, platform = process.platform) {
+function isClassificationConfigPath(path5, platform = process3.platform) {
   if (path5.includes("/") || path5.includes("\\")) return false;
   return platform === "win32" ? path5.toLocaleLowerCase("en-US") === configName : path5 === configName;
 }
-function findClassificationConfigPath(projectRoot, platform = process.platform) {
+function findClassificationConfigPath(projectRoot, platform = process3.platform) {
   return readdirSync4(projectRoot, { withFileTypes: true }).find(
     (entry) => entry.isFile() && isClassificationConfigPath(entry.name, platform)
   )?.name;
 }
-function classificationConfigPath(projectRoot, platform = process.platform) {
+function classificationConfigPath(projectRoot, platform = process3.platform) {
   const name = findClassificationConfigPath(projectRoot, platform);
   return name ? join12(projectRoot, name) : void 0;
 }
@@ -25464,8 +25467,8 @@ var DirectLspRuntimeLifecycle = class {
   get stopped() {
     return this.#stopped;
   }
-  beginStart(process3) {
-    this.#process = process3;
+  beginStart(process5) {
+    this.#process = process5;
     this.#epoch += 1;
     this.#stopping = false;
     this.#stopped = false;
@@ -25770,8 +25773,8 @@ var DirectLspRuntimeStateCore = class extends DirectLspStateResources {
   get stopped() {
     return this.#life.stopped;
   }
-  beginStart(process3) {
-    const epoch = this.#life.beginStart(process3);
+  beginStart(process5) {
+    const epoch = this.#life.beginStart(process5);
     this.reset();
     return epoch;
   }
@@ -25832,7 +25835,7 @@ var DirectLspRuntimeState = class extends DirectLspRuntimeStateCore {
 // src/semantic/direct-lsp/direct-lsp-runtime.ts
 function createDirectLspRuntime(options) {
   const state = new DirectLspRuntimeState(options);
-  const start = (process3) => startRuntime({ state, process: process3, onRestart: start });
+  const start = (process5) => startRuntime({ state, process: process5, onRestart: start });
   return {
     start,
     request: (method, params) => requestBackend2({
@@ -26313,6 +26316,27 @@ function unavailableBrowserCall() {
   });
 }
 
+// src/browser-server/router-context.ts
+function limitOrDefault(value, fallback) {
+  return value ?? fallback;
+}
+function clockFor(options) {
+  return () => {
+    if (options.clock) return options.clock.nowMilliseconds();
+    return performance.now();
+  };
+}
+function createBrowserRouterContext(options) {
+  return {
+    options,
+    sessions: /* @__PURE__ */ new Map(),
+    maxSessions: limitOrDefault(options.maxSessions, 8),
+    maxInFlight: limitOrDefault(options.maxInFlight, 8),
+    now: clockFor(options),
+    active: { value: 0 }
+  };
+}
+
 // src/browser-server/router-validation.ts
 var requiredKeys = {
   "/api/search": ["request_id", "query"],
@@ -26427,7 +26451,7 @@ function sessionForNavigation(context, headers) {
   const id = headers["x-code-explorer-session"];
   const tabId = headers["x-code-explorer-tab"];
   const session2 = id ? context.sessions.get(id) : void 0;
-  if (!id || !session2 || session2.tabId !== tabId) return void 0;
+  if (!(id && session2) || session2.tabId !== tabId) return void 0;
   return { id, session: session2 };
 }
 async function navigation(options) {
@@ -26453,74 +26477,23 @@ function navigationArguments(route, body, sessionId) {
   return { ...body, session_id: sessionId };
 }
 
-// src/browser-server/browser-session-reply.ts
-function withBrowserSession(reply, browserSessionId) {
-  const replyData = typeof reply.data === "object" && reply.data !== null && !(reply.data instanceof Array) ? reply.data : {};
-  return {
-    ...reply,
-    data: { ...replyData, browser_session_id: browserSessionId }
-  };
-}
+// src/browser-server/router-asset.ts
+import { realpath } from "node:fs/promises";
+import path2 from "node:path";
 
-// src/browser-server/router-session.ts
-function sweepExpiredSessions(context) {
-  const now = context.now();
-  for (const [browserSessionId, session2] of context.sessions) {
-    if (now - session2.lastAcceptedAt >= idleMilliseconds)
-      context.sessions.delete(browserSessionId);
+// src/browser-server/router-asset-file.ts
+import { open as open2 } from "node:fs/promises";
+async function readAssetFile(path5, headOnly) {
+  const file = await open2(path5, "r");
+  try {
+    if (!(await file.stat()).isFile()) return;
+    return headOnly ? "" : await file.readFile("utf8");
+  } finally {
+    await file.close();
   }
-}
-async function session(context, body, headers) {
-  const tabId = body.tab_instance_id;
-  if (headers["x-code-explorer-tab"] !== tabId)
-    return json(403, browserError("invalid_browser_session"));
-  if (body.action === "create") return createSession(context, tabId, headers);
-  return restoreSession(context, tabId, headers);
-}
-async function createSession(context, tabId, headers) {
-  sweepExpiredSessions(context);
-  if (headers["x-code-explorer-session"] || context.sessions.size >= context.maxSessions)
-    return json(429, browserError("project_capacity", true));
-  const reply = await context.options.call("code_status", {
-    action: "start_session"
-  });
-  if ("code" in reply) return json(errorStatus(String(reply.code)), reply);
-  const coreSessionId = reply.data?.session_id;
-  if (typeof coreSessionId !== "string")
-    return json(500, browserError("internal_error"));
-  const browserSessionId = crypto.randomUUID();
-  context.sessions.set(browserSessionId, {
-    coreSessionId,
-    tabId,
-    lastAcceptedAt: context.now()
-  });
-  return json(200, withBrowserSession(reply, browserSessionId));
-}
-function restoreSession(context, tabId, headers) {
-  const current = restoreCandidate(context, tabId, headers);
-  if (!current) return json(403, browserError("invalid_browser_session"));
-  const expired = acceptBrowserSession(context, current.id, current.session);
-  if (expired) return expired;
-  return json(200, {
-    schema_version: 1,
-    project_id: "project",
-    project_generation: 0,
-    pending_generation: null,
-    state: "restored",
-    data: {}
-  });
-}
-function restoreCandidate(context, tabId, headers) {
-  const id = headers["x-code-explorer-session"];
-  const session2 = id ? context.sessions.get(id) : void 0;
-  if (!id || !session2 || session2.tabId !== tabId) return void 0;
-  return { id, session: session2 };
 }
 
 // src/browser-server/router-asset.ts
-import { statSync as statSync2 } from "node:fs";
-import { readFile, realpath } from "node:fs/promises";
-import path2 from "node:path";
 function notFound() {
   return {
     status: 404,
@@ -26543,9 +26516,9 @@ function contentType(actual) {
 }
 function relativeAssetPath(request) {
   const relative6 = request.path === "/" ? "index.html" : request.path.slice(1);
-  if (!relative6) return void 0;
-  if (path2.isAbsolute(relative6)) return void 0;
-  if (relative6.split("/").includes("..")) return void 0;
+  if (!relative6) return;
+  if (path2.isAbsolute(relative6)) return;
+  if (relative6.split("/").includes("..")) return;
   return relative6;
 }
 function isInsideRoot(root, actual) {
@@ -26556,8 +26529,8 @@ async function loadAsset(context, request, relative6) {
     const root = await realpath(context.options.assetRoot);
     const actual = await realpath(path2.join(root, relative6));
     if (!isInsideRoot(root, actual)) return notFound();
-    if (!statSync2(actual).isFile()) return notFound();
-    const body = request.method === "HEAD" ? "" : await readFile(actual, "utf8");
+    const body = await readAssetFile(actual, request.method === "HEAD");
+    if (body === void 0) return notFound();
     return {
       status: 200,
       headers: {
@@ -26622,6 +26595,70 @@ function routeRejection(context, request) {
   return methodResult(context, request) ?? postPathError(request) ?? capacityResponse(context);
 }
 
+// src/browser-server/browser-session-reply.ts
+function withBrowserSession(reply, browserSessionId) {
+  const replyData = typeof reply.data === "object" && reply.data !== null && !(reply.data instanceof Array) ? reply.data : {};
+  return {
+    ...reply,
+    data: { ...replyData, browser_session_id: browserSessionId }
+  };
+}
+
+// src/browser-server/router-session.ts
+function sweepExpiredSessions(context) {
+  const now = context.now();
+  for (const [browserSessionId, session2] of context.sessions) {
+    if (now - session2.lastAcceptedAt >= idleMilliseconds)
+      context.sessions.delete(browserSessionId);
+  }
+}
+async function session(context, body, headers) {
+  const tabId = body.tab_instance_id;
+  if (headers["x-code-explorer-tab"] !== tabId)
+    return json(403, browserError("invalid_browser_session"));
+  if (body.action === "create") return createSession(context, tabId, headers);
+  return restoreSession(context, tabId, headers);
+}
+async function createSession(context, tabId, headers) {
+  sweepExpiredSessions(context);
+  if (headers["x-code-explorer-session"] || context.sessions.size >= context.maxSessions)
+    return json(429, browserError("project_capacity", true));
+  const reply = await context.options.call("code_status", {
+    action: "start_session"
+  });
+  if ("code" in reply) return json(errorStatus(String(reply.code)), reply);
+  const coreSessionId = reply.data?.session_id;
+  if (typeof coreSessionId !== "string")
+    return json(500, browserError("internal_error"));
+  const browserSessionId = crypto.randomUUID();
+  context.sessions.set(browserSessionId, {
+    coreSessionId,
+    tabId,
+    lastAcceptedAt: context.now()
+  });
+  return json(200, withBrowserSession(reply, browserSessionId));
+}
+function restoreSession(context, tabId, headers) {
+  const current = restoreCandidate(context, tabId, headers);
+  if (!current) return json(403, browserError("invalid_browser_session"));
+  const expired = acceptBrowserSession(context, current.id, current.session);
+  if (expired) return expired;
+  return json(200, {
+    schema_version: 1,
+    project_id: "project",
+    project_generation: 0,
+    pending_generation: null,
+    state: "restored",
+    data: {}
+  });
+}
+function restoreCandidate(context, tabId, headers) {
+  const id = headers["x-code-explorer-session"];
+  const session2 = id ? context.sessions.get(id) : void 0;
+  if (!(id && session2) || session2.tabId !== tabId) return void 0;
+  return { id, session: session2 };
+}
+
 // src/browser-server/router-request.ts
 var maxBodyBytes = 64 * 1024;
 var maxResponseBytes = 1024 * 1024;
@@ -26644,7 +26681,7 @@ async function postRequest(context, request) {
   const bodyError = postBodyError(request);
   if (bodyError) return bodyError;
   const body = parseJson2(request);
-  if (!body || !validBody(request.path, body))
+  if (!(body && validBody(request.path, body)))
     return json(400, browserError("invalid_request"));
   const response = await postRoute(context, request, body);
   return responseWithinLimit(response);
@@ -26673,27 +26710,6 @@ async function handleRequest(context, request) {
   } finally {
     context.active.value -= 1;
   }
-}
-
-// src/browser-server/router-context.ts
-function limitOrDefault(value, fallback) {
-  return value ?? fallback;
-}
-function clockFor(options) {
-  return () => {
-    if (options.clock) return options.clock.nowMilliseconds();
-    return performance.now();
-  };
-}
-function createBrowserRouterContext(options) {
-  return {
-    options,
-    sessions: /* @__PURE__ */ new Map(),
-    maxSessions: limitOrDefault(options.maxSessions, 8),
-    maxInFlight: limitOrDefault(options.maxInFlight, 8),
-    now: clockFor(options),
-    active: { value: 0 }
-  };
 }
 
 // src/browser-server/http-router.ts
@@ -26824,12 +26840,11 @@ async function startBrowserServerRun(options, resources) {
   resources.listener = listener;
   options.start.write?.(`Code Explorer: ${listener.address.href}`);
   await openBrowser(options.start, listener, options.controller.signal);
-  const close = createServerClose(options, resources);
   return serverResult({
     listener,
     core: startedCore,
     projectRoot: options.projectRoot,
-    close
+    close: createServerClose(options, resources)
   });
 }
 function createServerClose(options, resources) {
@@ -27123,6 +27138,37 @@ function landmarksNotReady() {
   return { state: "landmarks_not_ready", landmarks: [] };
 }
 
+// src/discovery/matcher-normalize.ts
+function normalizeValue(value) {
+  return value.normalize("NFKC").toLowerCase();
+}
+function normalizeProjectPath(path5) {
+  const portable = path5.replace(/\\/g, "/");
+  if (unsafePathPrefix(portable)) return void 0;
+  const parts = portable.split("/").filter((part) => part.length > 0 && part !== ".");
+  if (parts.includes("..")) return void 0;
+  return parts.length === 0 ? void 0 : parts.join("/");
+}
+function unsafePathPrefix(path5) {
+  const firstSegment = path5.split("/", 1)[0];
+  return path5.length === 0 || path5.startsWith("/") || path5.startsWith("//") || /^[A-Za-z]:($|\/)/.test(path5) || firstSegment?.includes(":") === true;
+}
+function normalizeCandidate(candidate) {
+  const path5 = normalizeProjectPath(candidate.path);
+  if (path5 === void 0) return void 0;
+  if (candidate.type === "symbol")
+    return {
+      candidate: { ...candidate, path: path5 },
+      values: [normalizeValue(candidate.name)]
+    };
+  const filename2 = path5.split("/").at(-1) ?? path5;
+  const stem = filename2.replace(/\.[^.]+$/, "");
+  return {
+    candidate: { ...candidate, path: path5 },
+    values: [.../* @__PURE__ */ new Set([normalizeValue(filename2), normalizeValue(stem)])]
+  };
+}
+
 // src/discovery/damerau-matrix.ts
 var DamerauMatrix = class {
   values;
@@ -27227,37 +27273,6 @@ function damerauLevenshtein(left, right) {
   return matrix.get(source.length + 1, target.length + 1);
 }
 
-// src/discovery/matcher-normalize.ts
-function normalizeValue(value) {
-  return value.normalize("NFKC").toLowerCase();
-}
-function normalizeProjectPath(path5) {
-  const portable = path5.replace(/\\/g, "/");
-  if (unsafePathPrefix(portable)) return void 0;
-  const parts = portable.split("/").filter((part) => part.length > 0 && part !== ".");
-  if (parts.includes("..")) return void 0;
-  return parts.length === 0 ? void 0 : parts.join("/");
-}
-function unsafePathPrefix(path5) {
-  const firstSegment = path5.split("/", 1)[0];
-  return path5.length === 0 || path5.startsWith("/") || path5.startsWith("//") || /^[A-Za-z]:($|\/)/.test(path5) || firstSegment?.includes(":") === true;
-}
-function normalizeCandidate(candidate) {
-  const path5 = normalizeProjectPath(candidate.path);
-  if (path5 === void 0) return void 0;
-  if (candidate.type === "symbol")
-    return {
-      candidate: { ...candidate, path: path5 },
-      values: [normalizeValue(candidate.name)]
-    };
-  const filename2 = path5.split("/").at(-1) ?? path5;
-  const stem = filename2.replace(/\.[^.]+$/, "");
-  return {
-    candidate: { ...candidate, path: path5 },
-    values: [.../* @__PURE__ */ new Set([normalizeValue(filename2), normalizeValue(stem)])]
-  };
-}
-
 // src/discovery/matcher-ranking.ts
 function classify2(query, candidate) {
   if (candidate === query) return { match_class: "exact", match_score: 100 };
@@ -27345,6 +27360,7 @@ function bestEvidence(query, normalized) {
 
 // src/discovery/classification.ts
 import { readFileSync as readFileSync7 } from "node:fs";
+import process4 from "node:process";
 
 // src/discovery/classification-markers.ts
 function markerClass(path5, generatedHeader) {
@@ -27499,7 +27515,7 @@ var emptyConfig = {
   production: [],
   overrides: []
 };
-function loadClassificationConfig(projectRoot, platform = process.platform) {
+function loadClassificationConfig(projectRoot, platform = process4.platform) {
   try {
     const configPath = classificationConfigPath(projectRoot, platform);
     if (!configPath)
@@ -27776,120 +27792,6 @@ var ProjectGenerationScheduler = class {
   }
 };
 
-// src/freshness/native-manifest-hashing.ts
-import { createHash as createHash4 } from "node:crypto";
-import { open as open2 } from "node:fs/promises";
-import { join as join20 } from "node:path";
-async function stableHash(path5, now, sleep) {
-  const started = now();
-  for (; ; ) {
-    const stable = await stableAttempt(path5, sleep);
-    if (stable) return stable;
-    if (now() - started >= 1e4) return "incomplete_write";
-  }
-}
-async function stableAttempt(path5, sleep) {
-  const file = await open2(path5, "r");
-  try {
-    const before = await file.stat();
-    if (before.size > 4 * 1024 * 1024) return "scan_limit";
-    await sleep(100);
-    const after = await file.stat();
-    if (before.size !== after.size || before.mtimeMs !== after.mtimeMs)
-      return void 0;
-    return createHash4("sha256").update(await file.readFile()).digest("hex");
-  } finally {
-    await file.close();
-  }
-}
-async function stableBatch(options, files) {
-  return await Promise.all(
-    files.map(
-      async (file) => [
-        file,
-        await stableHash(
-          join20(options.root, file),
-          options.now ?? Date.now,
-          options.sleep ?? delay
-        )
-      ]
-    )
-  );
-}
-function delay(milliseconds) {
-  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
-}
-
-// src/freshness/native-manifest-files.ts
-import { readdir } from "node:fs/promises";
-import { join as join21, relative as relative3 } from "node:path";
-function withinScanLimits(started, now, output) {
-  if (now() - started > 6e4 || output.length > 5e4)
-    throw new Error("scan_limit");
-}
-function ignoredDirectory(name) {
-  return /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(name);
-}
-async function visit3(root, directory, supported, started, now, output) {
-  withinScanLimits(started, now, output);
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
-    const absolute = join21(directory, entry.name);
-    if (entry.isDirectory()) {
-      if (!ignoredDirectory(entry.name))
-        await visit3(root, absolute, supported, started, now, output);
-      continue;
-    }
-    const path5 = relative3(root, absolute).replaceAll("\\", "/");
-    if (supported(path5)) output.push(path5);
-  }
-}
-async function walkSupportedFiles(root, supported, started, now) {
-  const output = [];
-  await visit3(root, root, supported, started, now, output);
-  if (output.length > 5e4) throw new Error("scan_limit");
-  return output.sort();
-}
-
-// src/freshness/native-manifest.ts
-async function buildManifest(options, files) {
-  const manifest = /* @__PURE__ */ new Map();
-  for (let offset = 0; offset < files.length; offset += 64) {
-    const cause = mergeStableBatch(
-      manifest,
-      await stableBatch(options, files.slice(offset, offset + 64))
-    );
-    if (cause) return { cause };
-  }
-  return { manifest };
-}
-function mergeStableBatch(manifest, stable) {
-  for (const [file, hash] of stable) {
-    if (hash === "incomplete_write" || hash === "scan_limit") return hash;
-    manifest.set(file, hash);
-  }
-  return void 0;
-}
-function failureCause(error2) {
-  if (error2 instanceof Error && error2.message === "scan_limit")
-    return "scan_limit";
-  return "freshness_unavailable";
-}
-async function reconcileNativeManifest(options) {
-  const now = options.now ?? Date.now;
-  const started = now();
-  try {
-    const files = await walkSupportedFiles(
-      options.root,
-      options.supported,
-      started,
-      now
-    );
-    return buildManifest(options, files);
-  } catch (error2) {
-    return { cause: failureCause(error2) };
-  }
-}
-
 // src/freshness/freshness-runtime.ts
 var FreshnessRuntime = class {
   status = {
@@ -27954,12 +27856,12 @@ var FreshnessRuntime = class {
 
 // ../../node_modules/chokidar/esm/index.js
 import { stat as statcb } from "fs";
-import { stat as stat3, readdir as readdir3 } from "fs/promises";
+import { stat as stat3, readdir as readdir2 } from "fs/promises";
 import { EventEmitter } from "events";
 import * as sysPath2 from "path";
 
 // ../../node_modules/readdirp/esm/index.js
-import { stat, lstat, readdir as readdir2, realpath as realpath2 } from "node:fs/promises";
+import { stat, lstat, readdir, realpath as realpath2 } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { resolve as presolve, relative as prelative, join as pjoin, sep as psep } from "node:path";
 var EntryTypes = {
@@ -28097,7 +27999,7 @@ var ReaddirpStream = class extends Readable {
   async _exploreDir(path5, depth) {
     let files;
     try {
-      files = await readdir2(path5, this._rdOptions);
+      files = await readdir(path5, this._rdOptions);
     } catch (error2) {
       this._onError(error2);
     }
@@ -29066,7 +28968,7 @@ var DirEntry = class {
       return;
     const dir = this.path;
     try {
-      await readdir3(dir);
+      await readdir2(dir);
     } catch (err) {
       if (this._removeWatcher) {
         this._removeWatcher(sysPath2.dirname(dir), sysPath2.basename(dir));
@@ -29831,8 +29733,7 @@ var WorkspaceFreshness = class {
     const run = reconcileWorkspace(this.options, this.#runtime).catch(() => this.#runtime.degrade("freshness_unavailable")).finally(() => {
       this.#runtime.running = void 0;
     });
-    this.#runtime.running = run;
-    return run;
+    return this.#runtime.running = run;
   }
   async close() {
     clearTimers(this.options, this.#runtime);
@@ -29850,6 +29751,120 @@ var WorkspaceFreshness = class {
     return (this.options.setTimeout ?? globalThis.setTimeout)(callback, delay2);
   }
 };
+
+// src/freshness/native-manifest-files.ts
+import { readdir as readdir3 } from "node:fs/promises";
+import { join as join22, relative as relative5 } from "node:path";
+function withinScanLimits(started, now, output) {
+  if (now() - started > 6e4 || output.length > 5e4)
+    throw new Error("scan_limit");
+}
+function ignoredDirectory(name) {
+  return /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(name);
+}
+async function visit3(root, directory, supported, started, now, output) {
+  withinScanLimits(started, now, output);
+  for (const entry of await readdir3(directory, { withFileTypes: true })) {
+    const absolute = join22(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (!ignoredDirectory(entry.name))
+        await visit3(root, absolute, supported, started, now, output);
+      continue;
+    }
+    const path5 = relative5(root, absolute).replaceAll("\\", "/");
+    if (supported(path5)) output.push(path5);
+  }
+}
+async function walkSupportedFiles(root, supported, started, now) {
+  const output = [];
+  await visit3(root, root, supported, started, now, output);
+  if (output.length > 5e4) throw new Error("scan_limit");
+  return output.sort();
+}
+
+// src/freshness/native-manifest-hashing.ts
+import { createHash as createHash4 } from "node:crypto";
+import { open as open4 } from "node:fs/promises";
+import { join as join23 } from "node:path";
+async function stableHash(path5, now, sleep) {
+  const started = now();
+  for (; ; ) {
+    const stable = await stableAttempt(path5, sleep);
+    if (stable) return stable;
+    if (now() - started >= 1e4) return "incomplete_write";
+  }
+}
+async function stableAttempt(path5, sleep) {
+  const file = await open4(path5, "r");
+  try {
+    const before = await file.stat();
+    if (before.size > 4 * 1024 * 1024) return "scan_limit";
+    await sleep(100);
+    const after = await file.stat();
+    if (before.size !== after.size || before.mtimeMs !== after.mtimeMs)
+      return void 0;
+    return createHash4("sha256").update(await file.readFile()).digest("hex");
+  } finally {
+    await file.close();
+  }
+}
+async function stableBatch(options, files) {
+  return await Promise.all(
+    files.map(
+      async (file) => [
+        file,
+        await stableHash(
+          join23(options.root, file),
+          options.now ?? Date.now,
+          options.sleep ?? delay
+        )
+      ]
+    )
+  );
+}
+function delay(milliseconds) {
+  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
+}
+
+// src/freshness/native-manifest.ts
+async function buildManifest(options, files) {
+  const manifest = /* @__PURE__ */ new Map();
+  for (let offset = 0; offset < files.length; offset += 64) {
+    const cause = mergeStableBatch(
+      manifest,
+      await stableBatch(options, files.slice(offset, offset + 64))
+    );
+    if (cause) return { cause };
+  }
+  return { manifest };
+}
+function mergeStableBatch(manifest, stable) {
+  for (const [file, hash] of stable) {
+    if (hash === "incomplete_write" || hash === "scan_limit") return hash;
+    manifest.set(file, hash);
+  }
+  return void 0;
+}
+function failureCause(error2) {
+  if (error2 instanceof Error && error2.message === "scan_limit")
+    return "scan_limit";
+  return "freshness_unavailable";
+}
+async function reconcileNativeManifest(options) {
+  const now = options.now ?? Date.now;
+  const started = now();
+  try {
+    const files = await walkSupportedFiles(
+      options.root,
+      options.supported,
+      started,
+      now
+    );
+    return buildManifest(options, files);
+  } catch (error2) {
+    return { cause: failureCause(error2) };
+  }
+}
 
 // src/freshness/workspace-native.ts
 function createNativeWorkspaceFreshness(options) {
@@ -29954,8 +29969,20 @@ function normalizeError(error2) {
   );
 }
 
-// src/navigation/focus-view.ts
+// src/navigation/stable-symbol-id.ts
 import { createHash as createHash5 } from "node:crypto";
+function stableSymbolId(symbol) {
+  const range = symbol.location.range;
+  const qualifiedName = symbol.qualified_name ?? symbol.name;
+  const identity = [
+    symbol.language,
+    symbol.location.path.replaceAll("\\", "/"),
+    `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`,
+    symbol.kind,
+    qualifiedName
+  ].join("\0");
+  return createHash5("sha256").update(identity, "utf8").digest("base64url");
+}
 
 // src/navigation/focus-body-limit-error.ts
 var FocusBodyLimitError = class extends Error {
@@ -30065,7 +30092,7 @@ function createFocusView(...args) {
   const handles = focusHandles(
     detail,
     focusSource(detail),
-    content.returned_bytes
+    (content.body ?? content.declaration ?? "").length
   );
   return makeFocusView({
     symbol,
@@ -30100,18 +30127,6 @@ function makeFocusView(options) {
     content,
     handles
   };
-}
-function stableSymbolId(symbol) {
-  const range = symbol.location.range;
-  const qualifiedName = symbol.qualified_name ?? symbol.name;
-  const identity = [
-    symbol.language,
-    symbol.location.path.replaceAll("\\", "/"),
-    `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`,
-    symbol.kind,
-    qualifiedName
-  ].join("\0");
-  return createHash5("sha256").update(identity, "utf8").digest("base64url");
 }
 
 // src/navigation/resource-limits.ts
@@ -30151,12 +30166,6 @@ function filterValueLimit(value) {
   return void 0;
 }
 
-// src/navigation/backend-timeout-limits.ts
-var DEFAULT_BACKEND_TIMEOUT_MS = 1e4;
-var MAX_BACKEND_TIMEOUT_MS = 6e4;
-var MAX_SESSION_BACKEND_REQUESTS = 4;
-var MAX_PROJECT_BACKEND_REQUESTS = 8;
-
 // src/navigation/backend-capacity-error.ts
 var BackendCapacityError = class extends Error {
   constructor() {
@@ -30170,6 +30179,12 @@ var BackendTimeoutError = class extends Error {
     super("backend_timeout");
   }
 };
+
+// src/navigation/backend-timeout-limits.ts
+var DEFAULT_BACKEND_TIMEOUT_MS = 1e4;
+var MAX_BACKEND_TIMEOUT_MS = 6e4;
+var MAX_SESSION_BACKEND_REQUESTS = 4;
+var MAX_PROJECT_BACKEND_REQUESTS = 8;
 
 // src/navigation/backend-request-limiter.ts
 var BackendRequestLimiter = class {
@@ -30243,41 +30258,29 @@ function requestLimit(arguments_) {
   const actual = Buffer5.byteLength(JSON.stringify(arguments_), "utf8");
   if (actual > MAX_REQUEST_BYTES)
     return { field: "request", limit: MAX_REQUEST_BYTES, actual };
-  return void 0;
 }
 function queryLimit(name, arguments_) {
-  if (name !== "code_search" || typeof arguments_.query !== "string")
-    return void 0;
+  if (name !== "code_search" || typeof arguments_.query !== "string") return;
   const actual = Array.from(arguments_.query).length;
   if (actual > MAX_QUERY_CODE_POINTS)
     return { field: "query", limit: MAX_QUERY_CODE_POINTS, actual };
-  return void 0;
 }
 function candidateLimit(name, arguments_) {
-  if (name !== "code_search" && name !== "code_follow") return void 0;
+  if (name !== "code_search" && name !== "code_follow") return;
   if (typeof arguments_.limit !== "number" || arguments_.limit <= MAX_CANDIDATES)
-    return void 0;
+    return;
   return { field: "limit", limit: MAX_CANDIDATES, actual: arguments_.limit };
 }
 function bodyLimit2(name, arguments_) {
-  if (name !== "code_focus") return void 0;
+  if (name !== "code_focus") return;
   if (typeof arguments_.body_limit_bytes !== "number" || arguments_.body_limit_bytes <= MAX_BODY_BYTES2)
-    return void 0;
+    return;
   return {
     field: "body_limit_bytes",
     limit: MAX_BODY_BYTES2,
     actual: arguments_.body_limit_bytes
   };
 }
-
-// src/navigation/session-limits.ts
-var REQUEST_RETENTION_MS = 5 * 60 * 1e3;
-var MAX_RETAINED_REQUESTS = 64;
-var MAX_RETAINED_VIEWS = 64;
-var MAX_SESSIONS = 8;
-var MAX_RETAINED_VIEW_BODY_BYTES = 16 * 1024 * 1024;
-var SESSION_IDLE_MS = 30 * 60 * 1e3;
-var MAX_QUEUED_REQUESTS = 64;
 
 // src/navigation/session-capacity-error.ts
 var SessionCapacityError = class extends Error {
@@ -30300,6 +30303,15 @@ function canonicalize2(value) {
   }
   return value;
 }
+
+// src/navigation/session-limits.ts
+var REQUEST_RETENTION_MS = 5 * 60 * 1e3;
+var MAX_RETAINED_REQUESTS = 64;
+var MAX_RETAINED_VIEWS = 64;
+var MAX_SESSIONS = 8;
+var MAX_RETAINED_VIEW_BODY_BYTES = 16 * 1024 * 1024;
+var SESSION_IDLE_MS = 30 * 60 * 1e3;
+var MAX_QUEUED_REQUESTS = 64;
 
 // src/navigation/session-owner.ts
 function ownedSession(runtime, connectionId, sessionId) {
@@ -30332,7 +30344,7 @@ function evictViews(runtime, session2) {
 }
 function discardView(runtime, session2, viewId) {
   const view = session2.views.get(viewId);
-  if (!view || !session2.views.delete(viewId)) return;
+  if (!(view && session2.views.delete(viewId))) return;
   runtime.retainedBodyBytes -= view.content.returned_bytes;
   session2.staleViews.add(viewId);
 }
@@ -30390,46 +30402,6 @@ function recent(options) {
 function historyPosition(runtime, connectionId, sessionId) {
   const session2 = ownedSession(runtime, connectionId, sessionId);
   return session2 ? session2.historyPosition + 1 : void 0;
-}
-
-// src/navigation/session-view-actions.ts
-function addView(options) {
-  const session2 = ownedSession(
-    options.runtime,
-    options.connectionId,
-    options.sessionId
-  );
-  if (!session2) return "invalid_session";
-  if (!makeViewCapacity(options.runtime, options.view.content.returned_bytes))
-    return "project_capacity";
-  const abandoned = session2.viewHistory.splice(session2.historyPosition + 1);
-  for (const viewId of abandoned) discardView(options.runtime, session2, viewId);
-  session2.views.set(options.view.view_id, options.view);
-  options.runtime.retainedBodyBytes += options.view.content.returned_bytes;
-  session2.viewHistory.push(options.view.view_id);
-  session2.historyPosition = session2.viewHistory.length - 1;
-  evictViews(options.runtime, session2);
-  return "ok";
-}
-function resolveHandle(runtime, options) {
-  const session2 = ownedSession(
-    runtime,
-    options.connectionId,
-    options.sessionId
-  );
-  if (!session2) return { state: "invalid_view_handle" };
-  if (session2.staleViews.has(options.viewId)) return { state: "stale_view" };
-  const view = session2.views.get(options.viewId);
-  if (view && view.project_generation !== options.currentGeneration)
-    return {
-      state: "stale_view",
-      viewGeneration: view.project_generation,
-      currentGeneration: options.currentGeneration
-    };
-  const symbolId = view?.handles.find(
-    (candidate) => candidate.handle === options.handle
-  )?.symbol_id;
-  return symbolId ? { state: "ok", symbolId } : { state: "invalid_view_handle" };
 }
 
 // src/navigation/session-request-queue.ts
@@ -30491,13 +30463,52 @@ function processSessionRequest(runtime, session2, options) {
   );
   const retained = session2.requests.get(options.requestId);
   if (retained) return replayRequest(retained, fingerprint);
-  if (!canQueueRequest(runtime))
-    return { state: "project_capacity" };
+  if (!canQueueRequest(runtime)) return { state: "project_capacity" };
   return queueRequest(runtime, session2, options, fingerprint);
 }
 function expireRequests(session2, now) {
   for (const [requestId, entry] of session2.requests)
     if (entry.expiresAt <= now) session2.requests.delete(requestId);
+}
+
+// src/navigation/session-view-actions.ts
+function addView(options) {
+  const session2 = ownedSession(
+    options.runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return "invalid_session";
+  if (!makeViewCapacity(options.runtime, options.view.content.returned_bytes))
+    return "project_capacity";
+  const abandoned = session2.viewHistory.splice(session2.historyPosition + 1);
+  for (const viewId of abandoned) discardView(options.runtime, session2, viewId);
+  session2.views.set(options.view.view_id, options.view);
+  options.runtime.retainedBodyBytes += options.view.content.returned_bytes;
+  session2.viewHistory.push(options.view.view_id);
+  session2.historyPosition = session2.viewHistory.length - 1;
+  evictViews(options.runtime, session2);
+  return "ok";
+}
+function resolveHandle(runtime, options) {
+  const session2 = ownedSession(
+    runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return { state: "invalid_view_handle" };
+  if (session2.staleViews.has(options.viewId)) return { state: "stale_view" };
+  const view = session2.views.get(options.viewId);
+  if (view && view.project_generation !== options.currentGeneration)
+    return {
+      state: "stale_view",
+      viewGeneration: view.project_generation,
+      currentGeneration: options.currentGeneration
+    };
+  const symbolId = view?.handles.find(
+    (candidate) => candidate.handle === options.handle
+  )?.symbol_id;
+  return symbolId ? { state: "ok", symbolId } : { state: "invalid_view_handle" };
 }
 
 // src/navigation/session-operations.ts

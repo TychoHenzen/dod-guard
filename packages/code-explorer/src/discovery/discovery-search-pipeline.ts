@@ -5,12 +5,12 @@ import type {
 import type { ClassificationConfig } from "./classification-config.js";
 import type { DiscoveryFilters } from "./discovery-filters.js";
 import type { DiscoveryResult } from "./discovery-result.js";
-import { matchDiscoveryCandidates } from "./matcher.js";
 import {
   allowedCandidates,
-  symbolCandidates,
   type FileCandidate,
+  symbolCandidates,
 } from "./discovery-search-candidates.js";
+import { matchDiscoveryCandidates } from "./matcher.js";
 
 function resultLimit(filters: DiscoveryFilters): number {
   return Math.max(0, filters.limit ?? 50);

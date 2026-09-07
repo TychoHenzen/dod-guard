@@ -1,21 +1,25 @@
-import { createHash } from "node:crypto";
+import { stableSymbolId } from "./stable-symbol-id.js";
+
+export { stableSymbolId } from "./stable-symbol-id.js";
+
 import type {
   FocusContent,
   SymbolIdentity,
 } from "../semantic/api/public-api.js";
 import { FocusBodyLimitError } from "./focus-body-limit-error.js";
 import { focusContent, focusSource } from "./focus-content.js";
-import { focusHandles } from "./focus-handles.js";
-import { mintOpaqueId } from "./opaque-id.js";
 import type { FocusHandle } from "./focus-handle.js";
+import { focusHandles } from "./focus-handles.js";
 import type { FocusView } from "./focus-view-type.js";
-export const DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
-export const MIN_BODY_LIMIT_BYTES = 1024;
-export const MAX_BODY_LIMIT_BYTES = 128 * 1024;
+import { mintOpaqueId } from "./opaque-id.js";
 
+const DEFAULT_BODY_LIMIT_BYTES = 32 * 1024;
+const MIN_BODY_LIMIT_BYTES = 1024;
+const MAX_BODY_LIMIT_BYTES = 128 * 1024;
+
+export { FocusBodyLimitError } from "./focus-body-limit-error.js";
 export type { FocusHandle } from "./focus-handle.js";
 export type { FocusView } from "./focus-view-type.js";
-export { FocusBodyLimitError } from "./focus-body-limit-error.js";
 
 export { mintOpaqueId } from "./opaque-id.js";
 /** Creates an immutable response from semantic content without reading a
@@ -38,7 +42,7 @@ export function createFocusView(
   const handles = focusHandles(
     detail,
     focusSource(detail),
-    content.returned_bytes,
+    (content.body ?? content.declaration ?? "").length,
   );
   return makeFocusView({
     symbol,
@@ -82,18 +86,4 @@ function makeFocusView(options: {
     content,
     handles,
   };
-}
-
-export function stableSymbolId(symbol: SymbolIdentity): string {
-  const range = symbol.location.range;
-  const qualifiedName = symbol.qualified_name ?? symbol.name;
-  const identity = [
-    symbol.language,
-    symbol.location.path.replaceAll("\\", "/"),
-    `${range.start.line}:${range.start.character}-` +
-      `${range.end.line}:${range.end.character}`,
-    symbol.kind,
-    qualifiedName,
-  ].join("\u0000");
-  return createHash("sha256").update(identity, "utf8").digest("base64url");
 }

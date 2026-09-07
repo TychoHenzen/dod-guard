@@ -9,8 +9,8 @@ import {
   routes,
   validBody,
 } from "./router-policy.js";
-import { session } from "./router-session.js";
 import { requestRejection } from "./router-rejection.js";
+import { session } from "./router-session.js";
 
 const maxBodyBytes = 64 * 1024;
 const maxResponseBytes = 1024 * 1024;
@@ -46,7 +46,7 @@ async function postRequest(
   const bodyError = postBodyError(request);
   if (bodyError) return bodyError;
   const body = parseJson(request);
-  if (!body || !validBody(request.path, body))
+  if (!(body && validBody(request.path, body)))
     return json(400, browserError("invalid_request"));
   const response = await postRoute(context, request, body);
   return responseWithinLimit(response);

@@ -1,7 +1,7 @@
+import { damerauLevenshtein } from "./damerau-levenshtein.js";
 import type { DiscoveryMatch } from "./discovery-match.js";
 import type { MatchClass } from "./match-class.js";
 import type { MatchEvidence } from "./match-evidence.js";
-import { damerauLevenshtein } from "./damerau-levenshtein.js";
 import { normalizeValue } from "./matcher-normalize.js";
 
 export function classify(

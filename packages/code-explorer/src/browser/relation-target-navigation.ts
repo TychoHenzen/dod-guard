@@ -1,5 +1,5 @@
-import type { RelationCandidate } from "./relation-candidate.js";
 import type { BrowserFocusNavigation } from "./focus-navigation.js";
+import type { RelationCandidate } from "./relation-candidate.js";
 import { relationFocus } from "./relation-focus.js";
 
 export function navigateRelationCandidate(

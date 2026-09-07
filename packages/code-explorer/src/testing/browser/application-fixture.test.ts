@@ -1,11 +1,10 @@
-import assert from "node:assert/strict";
-import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Browser, chromium } from "@playwright/test";
 import { BrowserHttpRouter } from "../../browser-server/http-router.js";
 import type { CoreCall } from "./application-core.test.js";
 import { createFixtureBehavior } from "./application-fixture-behavior.test.js";
+import { startFixtureServer } from "./packaged/http-server.test.js";
 
 export type PackagedBrowserFixture = {
   browser: Browser;
@@ -19,31 +18,10 @@ export type PackagedBrowserFixture = {
   close: () => Promise<void>;
 };
 
-export async function startPackagedBrowserFixture(): Promise<PackagedBrowserFixture> {
+export async function startPackagedBrowserFixture() {
   let router: BrowserHttpRouter;
-  const server = createServer((request, response) => {
-    const chunks: Buffer[] = [];
-    request.on("data", (chunk: Buffer) => chunks.push(chunk));
-    request.on("end", () => {
-      void router
-        .handle({
-          method: request.method ?? "GET",
-          path: request.url ?? "/",
-          headers: Object.fromEntries(
-            Object.entries(request.headers).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]),
-          ),
-          body: Buffer.concat(chunks),
-        })
-        .then((result) => {
-          response.writeHead(result.status, result.headers);
-          response.end(result.body);
-        });
-    });
-  });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const address = server.address();
-  assert.equal(typeof address, "object");
-  const endpoint = `http://127.0.0.1:${(address as { port: number }).port}`;
+  const server = await startFixtureServer(() => router);
+  const endpoint = server.endpoint;
   const coreCalls: CoreCall[] = [];
   const behavior = createFixtureBehavior(coreCalls);
   router = new BrowserHttpRouter({
@@ -61,14 +39,10 @@ export async function startPackagedBrowserFixture(): Promise<PackagedBrowserFixt
     browser,
     endpoint,
     coreCalls,
-    failNextFocus: behavior.failNextFocus,
-    failNextRefresh: behavior.failNextRefresh,
-    holdNextLandmarks: behavior.holdNextLandmarks,
-    holdNextFocus: behavior.holdNextFocus,
-    holdNextRelation: behavior.holdNextRelation,
+    ...behavior,
     close: async () => {
       await browser.close();
-      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await server.close();
     },
   };
 }

@@ -6,15 +6,15 @@ export type BrowserAction = {
   drawer?: "discovery" | "relations" | undefined;
 };
 
+export {
+  renderBrowserBody,
+  renderBrowserShell,
+} from "./browser-shell-render.js";
 export type {
   BrowserOperation,
   BrowserShellState,
   LandmarkGroup,
 } from "./types.js";
-export {
-  renderBrowserBody,
-  renderBrowserShell,
-} from "./browser-shell-render.js";
 
 const visibleOperations: readonly BrowserOperation[] = [
   "search",

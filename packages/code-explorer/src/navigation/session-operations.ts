@@ -3,12 +3,10 @@ import {
   MAX_RETAINED_VIEW_BODY_BYTES,
   MAX_SESSIONS,
 } from "./session-limits.js";
-import {
-  deleteSession,
-  expireIdle,
-} from "./session-views.js";
 import type { SessionRuntime } from "./session-runtime.js";
+import { deleteSession, expireIdle } from "./session-views.js";
 
+export { executeSession } from "./session-requests.js";
 export type { SessionRuntime } from "./session-runtime.js";
 export { addView, resolveHandle } from "./session-view-actions.js";
 export {
@@ -17,7 +15,6 @@ export {
   recent,
   restore,
 } from "./session-views.js";
-export { executeSession } from "./session-requests.js";
 
 export function newSessionRuntime(
   maxRetainedBodyBytes = MAX_RETAINED_VIEW_BODY_BYTES,

@@ -25,7 +25,7 @@ export function focusSource(detail: FocusContent | undefined): string {
 function contentFields(
   detail: FocusContent | undefined,
   value: string,
-): Record<string, string> {
+): { body?: string; declaration?: string } {
   if (detail?.body !== undefined) return { body: value };
   if (detail?.declaration !== undefined) return { declaration: value };
   return {};

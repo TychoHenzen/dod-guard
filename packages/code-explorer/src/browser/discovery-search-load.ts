@@ -1,7 +1,7 @@
 import type { DiscoveryFilters } from "./discovery-filters.js";
 import type { DiscoveryReply } from "./discovery-reply.js";
-import type { DiscoveryState } from "./discovery-state.js";
 import { loadedSearchState } from "./discovery-search.js";
+import type { DiscoveryState } from "./discovery-state.js";
 
 export async function loadDiscoverySearch(options: {
   owner: object;

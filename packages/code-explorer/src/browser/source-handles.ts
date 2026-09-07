@@ -49,7 +49,7 @@ function sourceHandle(
   value: unknown,
   body: string,
 ): FocusedSource["handles"][number] | undefined {
-  if (!isRecord(value) || !hasHandleShape(value) || !hasValidRange(value, body))
+  if (!(isRecord(value) && hasHandleShape(value) && hasValidRange(value, body)))
     return undefined;
   return {
     handle: value.handle as string,

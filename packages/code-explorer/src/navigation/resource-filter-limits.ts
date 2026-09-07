@@ -1,9 +1,9 @@
 import { Buffer } from "node:buffer";
+import type { ResourceLimit } from "./resource-limit.js";
 import {
   MAX_FILTER_VALUE_BYTES,
   MAX_FILTER_VALUES,
 } from "./resource-limit-constants.js";
-import type { ResourceLimit } from "./resource-limit.js";
 
 export function filterLimit(
   arguments_: Record<string, unknown>,

@@ -1,32 +1,31 @@
 import { readFileSync } from "node:fs";
-import { classificationConfigPath } from "./config-path.js";
+import process from "node:process";
 import type { ClassificationConfig } from "./classification-config.js";
-import type {
-  ClassificationConfigStatus,
-} from "./classification-config-status.js";
 import { parseClassificationConfig } from "./classification-config-parser.js";
-import type { ClassificationSource } from "./classification-source.js";
 import {
-  markerClass,
+  type DiscoveryFilterOptions,
+  matchesDiscoveryFilters as matchesFilters,
+} from "./classification-filters.js";
+import {
   lastConfiguredClass,
   lastConfiguredOverride,
+  markerClass,
   normalizeProjectPath,
 } from "./classification-matching.js";
-import {
-  matchesDiscoveryFilters as matchesFilters,
-  type DiscoveryFilterOptions,
-} from "./classification-filters.js";
+import type { ClassificationSource } from "./classification-source.js";
+import { classificationConfigPath } from "./config-path.js";
+import type { ClassificationConfigStatus } from "./config-status.js";
 import type { ContentClass } from "./content-class.js";
 import type { PathClassification } from "./path-classification.js";
+
 export type { ClassificationConfig } from "./classification-config.js";
-export type {
-  ClassificationConfigStatus,
-} from "./classification-config-status.js";
+export { parseClassificationConfig } from "./classification-config-parser.js";
 export type { ClassificationOverride } from "./classification-override.js";
 export type { ClassificationSource } from "./classification-source.js";
+export type { ClassificationConfigStatus } from "./config-status.js";
 export type { ContentClass } from "./content-class.js";
 export type { PathClassification } from "./path-classification.js";
-export { parseClassificationConfig } from "./classification-config-parser.js";
+
 const emptyConfig: ClassificationConfig = {
   generated: [],
   test: [],

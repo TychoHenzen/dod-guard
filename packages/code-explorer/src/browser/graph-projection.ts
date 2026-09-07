@@ -1,10 +1,10 @@
 import type { GraphEdge } from "./graph-edge.js";
 import type { GraphFocus } from "./graph-focus.js";
 import type { GraphNode } from "./graph-node.js";
+import { addGroup, normalizedIdentity } from "./graph-projection-edges.js";
 import type { GraphRelationGroup } from "./graph-relation-group.js";
 import type { GraphRelationName } from "./graph-relation-name.js";
 import type { OneHopGraph } from "./one-hop-graph.js";
-import { addGroup, normalizedIdentity } from "./graph-projection-edges.js";
 
 const relationOrder: readonly GraphRelationName[] = [
   "definition",

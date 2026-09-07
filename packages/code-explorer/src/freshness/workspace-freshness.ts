@@ -1,26 +1,27 @@
 import type { FreshnessCause } from "./freshness-cause.js";
 import type { FreshnessOptions } from "./freshness-options.js";
+import { FreshnessRuntime } from "./freshness-runtime.js";
 import type { FreshnessStatus } from "./freshness-status.js";
 import type { Manifest } from "./manifest.js";
 import type { ReconcileResult } from "./reconcile-result.js";
-import { FreshnessRuntime } from "./freshness-runtime.js";
-import { reconcileWorkspace } from "./workspace-reconciliation.js";
 import {
   clearTimers,
   coalesceMilliseconds,
   createWatcher,
 } from "./workspace-freshness-support.js";
+import { reconcileWorkspace } from "./workspace-reconciliation.js";
 import { scheduleWorkspaceTimers } from "./workspace-scheduling.js";
+
 export type { FreshnessCause } from "./freshness-cause.js";
 export type { FreshnessOptions } from "./freshness-options.js";
 export type { FreshnessStatus } from "./freshness-status.js";
 export type { Manifest } from "./manifest.js";
 export type { ReconcileResult } from "./reconcile-result.js";
-export type { WorkspaceWatcher } from "./workspace-watcher.js";
 export {
   canPublishGeneration,
   chokidarWatchOptions,
 } from "./workspace-freshness-support.js";
+export type { WorkspaceWatcher } from "./workspace-watcher.js";
 
 /** Reconciles final manifests so watcher order never becomes project state. */
 export class WorkspaceFreshness {
@@ -75,8 +76,7 @@ export class WorkspaceFreshness {
       .finally(() => {
         this.#runtime.running = undefined;
       });
-    this.#runtime.running = run;
-    return run;
+    return (this.#runtime.running = run);
   }
 
   async close(): Promise<void> {

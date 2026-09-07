@@ -1,6 +1,4 @@
 import type { RetainedRequest } from "./retained-request.js";
-import type { Session } from "./session-state.js";
-import type { SessionResult } from "./session-result.js";
 import { canonicalFingerprint } from "./session-fingerprint.js";
 import { ownedSession } from "./session-owner.js";
 import {
@@ -8,8 +6,10 @@ import {
   queueRequest,
   replayRequest,
 } from "./session-request-queue.js";
-import { expireIdle } from "./session-views.js";
+import type { SessionResult } from "./session-result.js";
 import type { SessionRuntime } from "./session-runtime.js";
+import type { Session } from "./session-state.js";
+import { expireIdle } from "./session-views.js";
 
 export function executeSession<T>(
   runtime: SessionRuntime,
@@ -53,8 +53,7 @@ function processSessionRequest<T>(
     | RetainedRequest<T>
     | undefined;
   if (retained) return replayRequest(retained, fingerprint);
-  if (!canQueueRequest(runtime))
-    return { state: "project_capacity" };
+  if (!canQueueRequest(runtime)) return { state: "project_capacity" };
   return queueRequest(runtime, session, options, fingerprint);
 }
 

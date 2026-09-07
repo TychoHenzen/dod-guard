@@ -1,18 +1,6 @@
+import type { AddViewResult } from "./add-view-result.js";
 import type { FocusView } from "./focus-view-type.js";
 import { SessionCapacityError } from "./session-capacity-error.js";
-import type { AddViewResult } from "./add-view-result.js";
-import type { SessionResult } from "./session-result.js";
-import {
-  addView,
-  closeConnection,
-  history,
-  historyPosition,
-  newSessionRuntime,
-  recent,
-  restore,
-  tryStart,
-  type SessionRuntime,
-} from "./session-operations.js";
 import {
   MAX_RETAINED_VIEW_BODY_BYTES,
   MAX_RETAINED_VIEWS,
@@ -22,6 +10,18 @@ import {
   resolveManagerHandle,
   type SessionManagerArguments,
 } from "./session-manager-arguments.js";
+import {
+  addView,
+  closeConnection,
+  history,
+  historyPosition,
+  newSessionRuntime,
+  recent,
+  restore,
+  type SessionRuntime,
+  tryStart,
+} from "./session-operations.js";
+import type { SessionResult } from "./session-result.js";
 
 export class SessionManager {
   private readonly runtime: SessionRuntime;
@@ -55,9 +55,7 @@ export class SessionManager {
   ): AddViewResult {
     return addView({ runtime: this.runtime, connectionId, sessionId, view });
   }
-  resolveHandle(
-    ...args: SessionManagerArguments<unknown>["resolve"]
-  ) {
+  resolveHandle(...args: SessionManagerArguments<unknown>["resolve"]) {
     return resolveManagerHandle(this.runtime, args);
   }
 
@@ -89,10 +87,7 @@ export class SessionManager {
     return recent({ runtime: this.runtime, connectionId, sessionId, limit });
   }
 
-  historyPosition(
-    connectionId: string,
-    sessionId: string,
-  ): number | undefined {
+  historyPosition(connectionId: string, sessionId: string): number | undefined {
     return historyPosition(this.runtime, connectionId, sessionId);
   }
 }

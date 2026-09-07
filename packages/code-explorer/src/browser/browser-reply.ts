@@ -1,7 +1,8 @@
-export type { BrowserReply } from "./browser-reply-type.js";
 export { landmarkGroups } from "./browser-landmarks-reply.js";
-import type { BrowserReply } from "./browser-reply-type.js";
+export type { BrowserReply } from "./browser-reply-type.js";
+
 import { hasStrings } from "./browser-landmarks-reply.js";
+import type { BrowserReply } from "./browser-reply-type.js";
 import type { FocusedSource } from "./source.js";
 import { sourceHandles } from "./source-handles.js";
 

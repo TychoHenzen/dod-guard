@@ -1,10 +1,10 @@
 import type { RelationCandidate } from "./relation-candidate.js";
-import type { RelationGroup } from "./relation-group.js";
 import {
   browserRelations,
   isBrowserRelation,
   relationName,
 } from "./relation-data.js";
+import type { RelationGroup } from "./relation-group.js";
 import type { FocusedSource } from "./source.js";
 
 type RelationHandle = FocusedSource["handles"][number];
@@ -50,8 +50,10 @@ export function renderRelationGroup(options: {
 }): void {
   const pane = document.querySelector<HTMLElement>('[data-pane="relations"]');
   if (
-    !pane ||
-    !options.activeRelationKey?.startsWith(`${options.source.view_id}:`)
+    !(
+      pane &&
+      options.activeRelationKey?.startsWith(`${options.source.view_id}:`)
+    )
   )
     return;
   pane.replaceChildren(textElement("h2", `Relations: ${options.relation}`));

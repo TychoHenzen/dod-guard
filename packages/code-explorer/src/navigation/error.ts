@@ -3,7 +3,7 @@ import type { CodeExplorerErrorCode } from "./error-code.js";
 import type { ErrorDetails } from "./error-details.js";
 import { sanitizeDetails } from "./error-details-sanitizer.js";
 
-export const errorCodes = [
+const errorCodes = [
   "unknown_tool",
   "invalid_request",
   "invalid_session",

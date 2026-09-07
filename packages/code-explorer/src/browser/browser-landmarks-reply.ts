@@ -1,5 +1,5 @@
-import type { BrowserLandmark, BrowserLandmarkGroup } from "./discovery.js";
 import type { BrowserReply } from "./browser-reply-type.js";
+import type { BrowserLandmark, BrowserLandmarkGroup } from "./discovery.js";
 
 export function hasStrings<Key extends string>(
   value: Record<string, unknown>,

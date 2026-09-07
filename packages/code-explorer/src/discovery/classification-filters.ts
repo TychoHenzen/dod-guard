@@ -1,6 +1,6 @@
-import type { PathClassification } from "./path-classification.js";
 import type { ClassificationCandidate } from "./classification-candidate.js";
 import { safeGlobMatches } from "./classification-matching.js";
+import type { PathClassification } from "./path-classification.js";
 
 export type DiscoveryFilterOptions = {
   path_globs?: readonly string[];

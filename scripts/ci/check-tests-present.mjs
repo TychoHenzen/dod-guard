@@ -86,10 +86,7 @@ function canCentralTestReach(file, area) {
 function importSpecifiers(file) {
   const source = readFileSync(file, "utf8");
   const specifiers = [];
-  const patterns = [
-    /(?:from|import)\s*["']([^"']+)["']/g,
-    /import\s*\(\s*["']([^"']+)["']\s*\)/g,
-  ];
+  const patterns = [/(?:from|import)\s*["']([^"']+)["']/g, /import\s*\(\s*["']([^"']+)["']\s*\)/g];
   for (const pattern of patterns) {
     for (const match of source.matchAll(pattern)) specifiers.push(match[1]);
   }
@@ -100,15 +97,13 @@ function sourceImportPath(file, specifier) {
   if (!specifier.startsWith(".")) return undefined;
   const target = resolve(dirname(file), specifier);
   const candidates = target.endsWith(".js")
-    ? [target.slice(0, -".js".length) + ".ts"]
+    ? [`${target.slice(0, -".js".length)}.ts`]
     : [target, `${target}.ts`, join(target, "index.ts")];
   return candidates.find((candidate) => existsSync(candidate) && candidate.endsWith(".ts"));
 }
 
 function testedSources(files) {
-  const directlyTested = files.filter(
-    (file) => !file.endsWith(TEST_SUFFIX) && hasCentralTestFile(file),
-  );
+  const directlyTested = files.filter((file) => !file.endsWith(TEST_SUFFIX) && hasCentralTestFile(file));
   const queue = [];
   for (const file of files) {
     const area = centralTestAreaFor(file);

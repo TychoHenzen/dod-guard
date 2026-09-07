@@ -7,10 +7,10 @@ import {
   graphFor,
   renderGraphArea,
 } from "./graph-navigation.js";
+import type { RelationCandidate } from "./relation-candidate.js";
 import type { BrowserRelationsController } from "./relation-controller.js";
 import { browserRelations, graphCandidateMap } from "./relation-data.js";
 import { navigateRelationCandidate } from "./relation-target-navigation.js";
-import type { RelationCandidate } from "./relation-candidate.js";
 import type { FocusedSource } from "./source.js";
 
 export class RelationGraphView {

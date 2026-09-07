@@ -1,3 +1,6 @@
+const keyFile = /^id_(rsa|dsa|ecdsa|ed25519)$/iu;
+const credentialFile = /^\.(npmrc|pypirc)$|^nuget\.config$/iu;
+
 /** Non-overridable portable sensitive-path denylist. It deliberately has no
  * path-returning API.
  */
@@ -25,18 +28,9 @@ function sensitiveFile(file: string): boolean {
   return (
     /^\.env(?:\..+)?$/iu.test(file) ||
     /\.(pem|key|pfx|p12)$/iu.test(file) ||
-    /^(id_rsa|id_dsa|id_ecdsa|id_ed25519|\.npmrc|\.pypirc|nuget\.config)$/iu
-      .test(file)
+    keyFile.test(file) ||
+    credentialFile.test(file)
   );
-}
-
-/** Counts denied paths without retaining names, so status can expose only the
- * aggregate.
- */
-export function countSensitiveProjectPaths(paths: Iterable<string>): number {
-  let count = 0;
-  for (const path of paths) if (isSensitiveProjectPath(path)) count += 1;
-  return count;
 }
 
 /** Walks names only and never returns a denied path. */

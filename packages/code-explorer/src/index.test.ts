@@ -706,14 +706,8 @@ describe("code-explorer package boundary", () => {
     });
     if ("code" in focused) throw new Error("expected focus");
     const data = focused.data as { view_id: string; handles: Array<{ handle: string }> };
-    for (const [index, relation] of [
-      "definition",
-      "references",
-      "callers",
-      "callees",
-      "type",
-      "implementation",
-    ].entries()) {
+    const relations = "definition,references,callers,callees,type,implementation".split(",");
+    for (const [index, relation] of relations.entries()) {
       const result = await server.call("code_follow", {
         session_id: sessionId,
         request_id: `follow-request-${index.toString().padStart(4, "0")}`,

@@ -1,8 +1,8 @@
 import type { ProjectRoot } from "../semantic/api/public-api.js";
-import type { EmbeddedBrowserRuntime } from "./embedded-browser-runtime.js";
-import type { ExplorerCoreFactory } from "./lifecycle.js";
 import { unavailableBrowserCall } from "./browser-unavailable-call.js";
+import type { EmbeddedBrowserRuntime } from "./embedded-browser-runtime.js";
 import { BrowserHttpRouter } from "./http-router.js";
+import type { ExplorerCoreFactory } from "./lifecycle.js";
 
 export function createEmbeddedRuntime(options: {
   projectRoot: ProjectRoot;

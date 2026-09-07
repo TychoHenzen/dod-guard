@@ -1,8 +1,9 @@
+import { escapeText } from "./escape-text.js";
 import type { GraphEdge } from "./graph-edge.js";
 import type { GraphLane } from "./graph-lane.js";
 import type { GraphPosition } from "./graph-position.js";
 import type { OneHopGraph } from "./one-hop-graph.js";
-import { escapeText } from "./escape-text.js";
+
 function edgeLane(edge: GraphEdge): GraphLane {
   return edge.label === "caller" || edge.label === "reference"
     ? "incoming"
@@ -29,8 +30,7 @@ function nodePositions(graph: OneHopGraph): ReadonlyMap<string, GraphPosition> {
   for (const node of graph.nodes) {
     const lane = laneFor(node, graph);
     rows[lane] += 1;
-    const x =
-      lane === "incoming" ? "16%" : lane === "center" ? "50%" : "84%";
+    const x = lane === "incoming" ? "16%" : lane === "center" ? "50%" : "84%";
     positions.set(node.symbol_id, { lane, x, y: rows[lane] * 48 });
   }
   return positions;

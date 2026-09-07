@@ -1,4 +1,4 @@
-type Listener = () => void;
+import { replaceGlobal } from "./fixtures/globals.test.js";
 
 export class FakeElement {
   dataset: Record<string, string> = {};
@@ -6,9 +6,9 @@ export class FakeElement {
   innerHTML = "";
   outerHTML = "";
   readonly children: FakeElement[] = [];
-  private readonly listeners = new Map<string, Listener[]>();
+  private readonly listeners = new Map<string, Array<() => void>>();
 
-  addEventListener(name: string, listener: Listener): void {
+  addEventListener(name: string, listener: () => void): void {
     this.listeners.set(name, [...(this.listeners.get(name) ?? []), listener]);
   }
 
@@ -29,17 +29,9 @@ export function installDocumentFixture(
   elements: Record<string, FakeElement | undefined>,
   lists: Record<string, FakeElement[]> = {},
 ) {
-  const original = Object.getOwnPropertyDescriptor(globalThis, "document");
-  Object.defineProperty(globalThis, "document", {
-    configurable: true,
-    value: {
-      createElement: () => new FakeElement(),
-      querySelector: (selector: string) => elements[selector] ?? null,
-      querySelectorAll: (selector: string) => lists[selector] ?? [],
-    },
+  return replaceGlobal("document", {
+    createElement: () => new FakeElement(),
+    querySelector: (selector: string) => elements[selector] ?? null,
+    querySelectorAll: (selector: string) => lists[selector] ?? [],
   });
-  return () => {
-    if (original) Object.defineProperty(globalThis, "document", original);
-    else Reflect.deleteProperty(globalThis, "document");
-  };
 }

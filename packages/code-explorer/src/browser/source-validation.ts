@@ -1,5 +1,5 @@
-import type { SourceHandle } from "./source-handle.js";
 import { validBoundary } from "./source-boundary.js";
+import type { SourceHandle } from "./source-handle.js";
 
 function validRange(body: string, handle: SourceHandle, end: number): boolean {
   return (

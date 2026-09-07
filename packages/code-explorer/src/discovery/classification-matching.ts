@@ -34,7 +34,7 @@ export function safeGlobMatches(path: string, glob: string): boolean {
       part
         .replace(/[.]/g, "\\.")
         .replaceAll("*", "[^/]*")
-        .replaceAll("?", "[^/]")
+        .replaceAll("?", "[^/]"),
     )
     .join(".*");
   return new RegExp(`^${expression}$`, "u").test(path);

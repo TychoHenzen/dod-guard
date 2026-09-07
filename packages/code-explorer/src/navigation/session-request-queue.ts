@@ -1,12 +1,12 @@
-import type { Session } from "./session-state.js";
-import type { SessionResult } from "./session-result.js";
+import type { RetainedRequest } from "./retained-request.js";
 import {
   MAX_QUEUED_REQUESTS,
   MAX_RETAINED_REQUESTS,
   REQUEST_RETENTION_MS,
 } from "./session-limits.js";
+import type { SessionResult } from "./session-result.js";
 import type { SessionRuntime } from "./session-runtime.js";
-import type { RetainedRequest } from "./retained-request.js";
+import type { Session } from "./session-state.js";
 
 export function queueRequest<T>(
   runtime: SessionRuntime,

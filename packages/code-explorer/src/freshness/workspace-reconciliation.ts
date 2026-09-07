@@ -1,7 +1,7 @@
 import type { FreshnessOptions } from "./freshness-options.js";
-import { canPublishGeneration } from "./workspace-freshness-support.js";
 import type { FreshnessRuntime } from "./freshness-runtime.js";
 import type { Manifest } from "./manifest.js";
+import { canPublishGeneration } from "./workspace-freshness-support.js";
 
 function sameManifest(left: Manifest, right: Manifest): boolean {
   return (

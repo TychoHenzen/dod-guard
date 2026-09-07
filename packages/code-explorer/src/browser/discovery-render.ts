@@ -1,13 +1,14 @@
 import type { BrowserLandmarkGroup } from "./browser-landmark-group.js";
 import type { DiscoveryState } from "./discovery-state.js";
 import { escapeText } from "./escape-text.js";
+
 function renderLandmarks(landmarks: readonly BrowserLandmarkGroup[]): string {
   return landmarks
     .map(
       (group) =>
         `<section class="landmark-group"><h3>${escapeText(group.group)}</h3>` +
-        `<ul>${group.items.map((item) => renderLandmark(item)).join("")}</ul>` +
-        `</section>`,
+        `<ul>${group.items.map(renderLandmark).join("")}</ul>` +
+        "</section>",
     )
     .join("");
 }
@@ -49,9 +50,8 @@ function candidateLabel(
 function renderCandidate(
   candidate: DiscoveryState["candidates"][number],
 ): string {
-  const name = candidateName(candidate);
   const kind = candidateKind(candidate);
-  const label = candidateLabel(candidate, name);
+  const label = candidateLabel(candidate, candidateName(candidate));
   return (
     `<li data-match-class="${escapeText(candidate.match_class)}">${label} ` +
     `<span>${escapeText(candidate.match_class)} ` +

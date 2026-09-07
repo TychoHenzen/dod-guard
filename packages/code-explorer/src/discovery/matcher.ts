@@ -1,12 +1,12 @@
 import type { CandidateName } from "./candidate-name.js";
 import type { DiscoveryCandidate } from "./discovery-candidate.js";
 import type { DiscoveryMatch } from "./discovery-match.js";
+import { normalizeCandidate, normalizeValue } from "./matcher-normalize.js";
 import {
   classify,
   compareEvidence,
   compareMatches,
 } from "./matcher-ranking.js";
-import { normalizeCandidate, normalizeValue } from "./matcher-normalize.js";
 
 export type { DiscoveryCandidate } from "./discovery-candidate.js";
 export type { DiscoveryMatch } from "./discovery-match.js";

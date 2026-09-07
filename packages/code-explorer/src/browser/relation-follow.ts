@@ -1,7 +1,7 @@
 import { browserRequest } from "./browser-request.js";
+import { relationCandidates } from "./relation-data.js";
 import type { RelationName } from "./relation-name.js";
 import type { RelationReply } from "./relation-reply.js";
-import { relationCandidates } from "./relation-data.js";
 import type { BrowserStorage } from "./session.js";
 
 export async function followRelation(

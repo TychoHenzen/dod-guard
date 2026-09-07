@@ -1,5 +1,5 @@
-import type { FocusHandle } from "./focus-handle.js";
 import type { SymbolIdentity } from "../semantic/api/public-api.js";
+import type { FocusHandle } from "./focus-handle.js";
 
 export type FocusView = {
   view_id: string;

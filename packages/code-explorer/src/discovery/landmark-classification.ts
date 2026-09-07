@@ -1,7 +1,7 @@
 import type { LandmarkCandidate } from "./landmark-candidate.js";
 import {
-  landmarkGroupNames,
   type LandmarkGroupName,
+  landmarkGroupNames,
 } from "./landmark-group-name.js";
 
 const messageOrEventSuffixes = [

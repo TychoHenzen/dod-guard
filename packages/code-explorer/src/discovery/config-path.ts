@@ -1,5 +1,6 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
+import process from "node:process";
 
 const configName = ".code-explorer.json";
 
@@ -19,7 +20,7 @@ export function isClassificationConfigPath(
 /** Returns the on-disk spelling so Windows case-insensitive configuration is
  * read consistently.
  */
-export function findClassificationConfigPath(
+function findClassificationConfigPath(
   projectRoot: string,
   platform = process.platform,
 ): string | undefined {

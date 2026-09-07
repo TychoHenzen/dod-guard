@@ -1,6 +1,6 @@
+import { canRestore, isUsableRestore } from "./browser-session-policy.js";
 import type { BrowserSessionReply } from "./browser-session-reply.js";
 import type { BrowserStorage } from "./browser-storage.js";
-import { canRestore, isUsableRestore } from "./browser-session-policy.js";
 
 /** Keeps a server session tied to this document's exclusive tab lock. */
 export class BrowserSessionClient {

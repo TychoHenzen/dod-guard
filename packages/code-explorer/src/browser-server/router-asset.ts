@@ -1,8 +1,8 @@
-import { statSync } from "node:fs";
-import { readFile, realpath } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import path from "node:path";
 import type { BrowserHttpRequest } from "./browser-http-request.js";
 import type { BrowserHttpResponse } from "./browser-http-response.js";
+import { readAssetFile } from "./router-asset-file.js";
 import type { BrowserRouterContext } from "./router-context.js";
 import { browserError, csp, json } from "./router-policy.js";
 
@@ -39,9 +39,9 @@ function contentType(actual: string): string {
 
 function relativeAssetPath(request: BrowserHttpRequest): string | undefined {
   const relative = request.path === "/" ? "index.html" : request.path.slice(1);
-  if (!relative) return undefined;
-  if (path.isAbsolute(relative)) return undefined;
-  if (relative.split("/").includes("..")) return undefined;
+  if (!relative) return;
+  if (path.isAbsolute(relative)) return;
+  if (relative.split("/").includes("..")) return;
   return relative;
 }
 
@@ -58,9 +58,8 @@ async function loadAsset(
     const root = await realpath(context.options.assetRoot as string);
     const actual = await realpath(path.join(root, relative));
     if (!isInsideRoot(root, actual)) return notFound();
-    if (!statSync(actual).isFile()) return notFound();
-    const body =
-      request.method === "HEAD" ? "" : await readFile(actual, "utf8");
+    const body = await readAssetFile(actual, request.method === "HEAD");
+    if (body === undefined) return notFound();
     return {
       status: 200,
       headers: {

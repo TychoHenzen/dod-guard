@@ -9,14 +9,24 @@ describe("application discovery bindings", () => {
     const host = new FakeElement();
     const symbol = new FakeElement();
     symbol.dataset.symbolId = "symbol-main";
-    const restore = installDocumentFixture({ '[data-area="discovery"]': host }, { "[data-symbol-id]": [symbol] });
+    const restore = installDocumentFixture(
+      { '[data-area="discovery"]': host },
+      { "[data-symbol-id]": [symbol] },
+    );
     try {
       const discovery = new BrowserDiscoveryController(
         async () => ({ data: {} }),
         [
           {
             group: "entry_points",
-            items: [{ symbol_id: "symbol-main", name: "main", path: "src/main.ts", kind: "function" }],
+            items: [
+              {
+                symbol_id: "symbol-main",
+                name: "main",
+                path: "src/main.ts",
+                kind: "function",
+              },
+            ],
           },
         ],
       );

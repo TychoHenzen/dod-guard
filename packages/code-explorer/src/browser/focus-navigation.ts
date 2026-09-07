@@ -1,12 +1,12 @@
 import type { BrowserFocus } from "./browser-focus.js";
-import type { FocusReply } from "./focus-reply.js";
+import { moveHistory } from "./focus-history.js";
 import {
   createFocusNavigationState,
   type FocusNavigationState,
 } from "./focus-navigation-state.js";
-import type { FocusTarget } from "./focus-target.js";
-import { moveHistory } from "./focus-history.js";
+import type { FocusReply } from "./focus-reply.js";
 import { commitFocus, commitFocusReply } from "./focus-state-transitions.js";
+import type { FocusTarget } from "./focus-target.js";
 
 export type { BrowserFocus } from "./browser-focus.js";
 export type { FocusNavigationState } from "./focus-navigation-state.js";

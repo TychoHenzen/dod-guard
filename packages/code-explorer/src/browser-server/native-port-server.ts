@@ -2,8 +2,8 @@ import { createServer, type Server } from "node:http";
 import type { Socket } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ExplorerCore } from "./explorer-core.js";
 import { unavailableBrowserCall } from "./browser-unavailable-call.js";
+import type { ExplorerCore } from "./explorer-core.js";
 import { BrowserHttpRouter } from "./http-router.js";
 import { serverRequestHandler } from "./native-port-http.js";
 
