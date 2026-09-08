@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createDirectLspClient } from "../semantic/direct-lsp/direct-lsp.js";
-import { assertPythonConfiguration, FakeProcess, ready, Scheduler } from "../testing/direct-lsp/direct-lsp-test-support.js";
+import {
+  assertPythonConfiguration,
+  FakeProcess,
+  ready,
+  Scheduler,
+} from "../testing/direct-lsp/direct-lsp-test-support.js";
 
 it("retains initialize capabilities and answers only safe Python configuration", async () => {
   const process = new FakeProcess();

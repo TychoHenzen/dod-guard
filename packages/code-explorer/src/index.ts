@@ -1,20 +1,19 @@
 import { realpathSync } from "node:fs";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { BrowserServerError } from "./browser-server/lifecycle.js";
-import { createEmbeddedBrowserRuntime } from "./runtime-main.js";
-import { runMain } from "./runtime-main.js";
 import { createRuntimeCoreFactory } from "./runtime-core.js";
+import { createEmbeddedBrowserRuntime, runMain } from "./runtime-main.js";
 import { ProjectPathError } from "./semantic/api/public-api.js";
 
+export type EmbeddedBrowserRuntime =
+  import("./browser-server/embedded-runtime.js").EmbeddedBrowserRuntime;
+export type { CodeExplorerError } from "./navigation/error.js";
 export { createServer } from "./server/create-server.js";
-export { toMcpToolResult } from "./server/tool-result.js";
 export type { CodeExplorerEnvelope } from "./server/envelope.js";
 export type { CodeExplorerServer } from "./server/server-contract.js";
 export type { CodeExplorerState } from "./server/state.js";
-export type { CodeExplorerError } from "./navigation/error.js";
-export type {
-  EmbeddedBrowserRuntime,
-} from "./browser-server/embedded-runtime.js";
+export { toMcpToolResult } from "./server/tool-result.js";
 export { createEmbeddedBrowserRuntime, createRuntimeCoreFactory };
 
 const filename = fileURLToPath(import.meta.url);

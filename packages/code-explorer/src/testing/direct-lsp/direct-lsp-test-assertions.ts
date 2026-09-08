@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
-import type {
-  createDirectLspClient,
-} from "../../semantic/direct-lsp/direct-lsp.js";
+import type { createDirectLspClient } from "../../semantic/direct-lsp/direct-lsp.js";
 import { FakeProcess } from "./direct-lsp-test-process.js";
 
 export async function assertFailedAfterShutdown(

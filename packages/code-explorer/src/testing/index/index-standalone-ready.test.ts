@@ -8,13 +8,14 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import process from "node:process";
 import { it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import * as stdio from "@modelcontextprotocol/sdk/client/stdio.js";
 import {
-  type FakeBackendLog,
   createStandaloneBackendRecord,
+  type FakeBackendLog,
   removeTemporaryTree,
   roslynStorePath,
   waitForFakeConfiguration,

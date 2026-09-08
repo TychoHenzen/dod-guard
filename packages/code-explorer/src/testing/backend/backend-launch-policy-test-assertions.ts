@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
-import type {
-  BackendLaunchPreparation,
-} from "../../semantic/backend-launch/backend-launch-preparation.js";
+import type { BackendLaunchPreparation } from "../../semantic/backend-launch/backend-launch-preparation.js";
 
 const rustSafeInitializationOptions = {
   cargo: {

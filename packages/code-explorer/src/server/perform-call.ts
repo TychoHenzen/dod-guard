@@ -1,17 +1,17 @@
-import type { FreshnessStatus } from "../freshness/workspace-freshness.js";
 import { createDiscoveryPipeline } from "../discovery/pipeline.js";
+import type { FreshnessStatus } from "../freshness/workspace-freshness.js";
 import {
-  codeExplorerError,
   type CodeExplorerError,
+  codeExplorerError,
 } from "../navigation/error.js";
 import type { LanguageAdapter } from "../semantic/api/public-api.js";
+import type { CodeExplorerEnvelope } from "./envelope.js";
 import { handleFocus } from "./focus-action.js";
 import { handleFollow } from "./follow-action.js";
 import { handleHistory } from "./history-action.js";
 import { handleSearch } from "./search-action.js";
-import { handleStatus } from "./status-action.js";
-import type { CodeExplorerEnvelope } from "./envelope.js";
 import type { ServerRuntime } from "./server-runtime.js";
+import { handleStatus } from "./status-action.js";
 import type { ToolName } from "./tool-name.js";
 
 export async function performCall(

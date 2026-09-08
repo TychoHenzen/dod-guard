@@ -4,10 +4,10 @@ import {
   type ProjectRoot,
   type RootAccessGate,
 } from "../semantic/api/public-api.js";
-import { createEnvelope, type CodeExplorerEnvelope } from "./envelope.js";
+import { type CodeExplorerEnvelope, createEnvelope } from "./envelope.js";
+import type { ServerRuntime } from "./server-runtime.js";
 import type { ToolName } from "./tool-name.js";
 import { nativeWorkspaceStatus } from "./workspace-status.js";
-import type { ServerRuntime } from "./server-runtime.js";
 
 export function handleStatus(
   runtime: ServerRuntime,

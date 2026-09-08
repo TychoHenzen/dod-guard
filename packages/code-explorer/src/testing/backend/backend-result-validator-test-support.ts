@@ -1,6 +1,4 @@
-import type {
-  BackendResultValidationOptions,
-} from "../../semantic/backend-result/backend-result-validator.js";
+import type { BackendResultValidationOptions } from "../../semantic/backend-result/backend-result-validator.js";
 import { createProjectRoot } from "../../semantic/project-root/project-root.js";
 
 const rootPath = "/repo";

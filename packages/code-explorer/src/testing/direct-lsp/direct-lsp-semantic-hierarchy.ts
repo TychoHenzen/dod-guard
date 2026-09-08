@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { semanticClient } from "./direct-lsp-semantic-client.js";
 import { testRange } from "../semantic/semantic-test-shapes.js";
+import { semanticClient } from "./direct-lsp-semantic-client.js";
 
 type HierarchyOutput = { operation: string; relations: unknown[] };
 type HierarchyRelation = {

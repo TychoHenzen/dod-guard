@@ -1,8 +1,8 @@
 import * as path from "node:path";
 import type { FreshnessStatus } from "../freshness/workspace-freshness.js";
 import {
-  codeExplorerError,
   type CodeExplorerError,
+  codeExplorerError,
 } from "../navigation/error.js";
 import {
   createFocusView,
@@ -10,11 +10,11 @@ import {
   type FocusView,
 } from "../navigation/focus-view.js";
 import type { SymbolIdentity } from "../semantic/api/public-api.js";
-import { collectFocusedSymbol } from "./semantic-operations.js";
 import { createEnvelope } from "./envelope.js";
 import { projectCapacity, resourceLimit } from "./errors.js";
-import type { ServerRuntime } from "./server-runtime.js";
 import { schemas } from "./schemas.js";
+import { collectFocusedSymbol } from "./semantic-operations.js";
+import type { ServerRuntime } from "./server-runtime.js";
 
 export async function handleFocus(
   runtime: ServerRuntime,
@@ -68,7 +68,7 @@ export async function handleFocus(
     focus.symbol_id,
     (operation) => runtime.backendRequests.run(focus.session_id, operation),
   );
-  if (!selected) return undefined;
+  if (!selected) return;
   try {
     return saveView(
       createFocusView(

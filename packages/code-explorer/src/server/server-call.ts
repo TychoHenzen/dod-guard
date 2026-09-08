@@ -1,21 +1,21 @@
 import { Buffer } from "node:buffer";
+import type { CodeExplorerError } from "../navigation/error.js";
+import { validateResourceLimits } from "../navigation/resource-limits.js";
+import type { CodeExplorerEnvelope } from "./envelope.js";
 import { createEnvelope } from "./envelope.js";
 import {
   invalidRequest,
   invalidSession,
   limitedResource,
+  normalizeBackendFailure,
   projectCapacity,
   requestIdConflict,
   unknownTool,
-  normalizeBackendFailure,
 } from "./errors.js";
-import type { CodeExplorerEnvelope } from "./envelope.js";
 import { performCall } from "./perform-call.js";
-import type { ServerRuntime } from "./server-runtime.js";
 import { schemas } from "./schemas.js";
+import type { ServerRuntime } from "./server-runtime.js";
 import { isToolName } from "./tool-name.js";
-import { validateResourceLimits } from "../navigation/resource-limits.js";
-import type { CodeExplorerError } from "../navigation/error.js";
 
 function hasValidRequestId(value: string): boolean {
   const bytes = Buffer.byteLength(value, "utf8");

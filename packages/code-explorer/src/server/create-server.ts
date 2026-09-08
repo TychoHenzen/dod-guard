@@ -4,14 +4,14 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { packageInfo } from "../package-info.js";
-import { createServerCall } from "./server-call.js";
-import type { CodeExplorerServer } from "./server-contract.js";
 import { createServerRuntime } from "./create-runtime.js";
 import { inputSchemas } from "./input-schemas.js";
+import { createServerCall } from "./server-call.js";
+import type { CodeExplorerServer } from "./server-contract.js";
+import type { ServerOptions } from "./server-options.js";
 import { toolDescriptions } from "./tool-descriptions.js";
 import { toolNames } from "./tool-name.js";
 import { toMcpToolResult } from "./tool-result.js";
-import type { ServerOptions } from "./server-options.js";
 
 export function createServer(options: ServerOptions = {}): CodeExplorerServer {
   const runtime = createServerRuntime(options);

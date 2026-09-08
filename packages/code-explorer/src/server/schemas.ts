@@ -1,5 +1,5 @@
-import { browserRelationNames } from "../navigation/focus-relation-names.js";
 import { z } from "zod";
+import { browserRelationNames } from "../navigation/focus-relation-names.js";
 
 export const schemas = {
   code_search: z

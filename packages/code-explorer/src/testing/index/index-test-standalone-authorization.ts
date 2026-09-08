@@ -56,6 +56,8 @@ export function createAuthorization(
 ) {
   const executableName = executable(language);
   const entrypointNames = entrypoints(language);
+  const commandRoot = "<code_explorer_backends>";
+  const commandTemplate = `${commandRoot}/${executableName} --version`;
   const versionProbe =
     language === "python"
       ? {
@@ -73,8 +75,7 @@ export function createAuthorization(
           executable: executableName,
           entrypoints: entrypointNames,
           arguments: ["--version"],
-          command_template:
-            `<code_explorer_backends>/${executableName} ` + "--version",
+          command_template: commandTemplate,
         };
   const executablePath =
     language === "csharp"

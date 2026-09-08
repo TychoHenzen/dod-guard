@@ -1,11 +1,9 @@
 import type { LspProcess } from "../../semantic/direct-lsp/direct-lsp.js";
-import type {
-  RuntimeLspBackendOptions,
-} from "../../semantic/runtime/runtime-lsp-backend.js";
-import { Process } from "./runtime-test-process.js";
-import { runtimeOptions } from "./runtime-lsp-test-options.js";
+import type { RuntimeLspBackendOptions } from "../../semantic/runtime/runtime-lsp-backend.js";
 import { unavailableCapabilities } from "./runtime-lsp-test-fixtures.js";
+import { runtimeOptions } from "./runtime-lsp-test-options.js";
 import { runtimeEntrySymbol } from "./runtime-lsp-test-symbol.js";
+import { Process } from "./runtime-test-process.js";
 
 export function pythonMirrorOptions(
   process: LspProcess,

@@ -1,7 +1,7 @@
 import { createDirectLspClient } from "../../semantic/direct-lsp/direct-lsp.js";
+import { tick } from "./direct-lsp-test-lifecycle.js";
 import { FakeProcess } from "./direct-lsp-test-process.js";
 import { Scheduler } from "./direct-lsp-test-scheduler.js";
-import { tick } from "./direct-lsp-test-lifecycle.js";
 
 export async function oldProcessFixture() {
   const scheduler = new Scheduler();
@@ -61,7 +61,7 @@ export async function restartFixture() {
   second.respond({ jsonrpc: "2.0", id: 2, result: { capabilities: {} } });
   await tick();
   second.crash();
-  scheduler.advance(1_000);
+  scheduler.advance(1000);
   third.respond({ jsonrpc: "2.0", id: 3, result: { capabilities: {} } });
   await tick();
   third.crash();

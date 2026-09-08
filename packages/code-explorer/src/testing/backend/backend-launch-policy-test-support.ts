@@ -4,24 +4,19 @@ import {
   type BackendIdentity,
   createBackendLaunchPolicy,
 } from "../../semantic/backend-launch/backend-launch-policy.js";
-import {
-  createPythonMirrorPlan,
-} from "../../semantic/python-mirror/python-mirror.js";
+import { createPythonMirrorPlan } from "../../semantic/python-mirror/python-mirror.js";
 import {
   identity,
   pythonIdentity,
 } from "./backend-launch-policy-test-identity.js";
-export {
-  assertRustPreparation,
-} from "./backend-launch-policy-test-assertions.js";
 
+export { assertRustPreparation } from "./backend-launch-policy-test-assertions.js";
+export {
+  identity,
+  pythonIdentity,
+} from "./backend-launch-policy-test-identity.js";
 export type { BackendIdentity };
 export { assert, createBackendLaunchPolicy, createPythonMirrorPlan };
-
-export {
-  identity,
-  pythonIdentity,
-} from "./backend-launch-policy-test-identity.js";
 
 const rustAllowlistEntry = {
   language: "rust" as const,

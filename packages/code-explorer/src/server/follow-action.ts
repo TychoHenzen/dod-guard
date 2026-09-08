@@ -1,15 +1,15 @@
 import type { FreshnessStatus } from "../freshness/workspace-freshness.js";
 import {
-  codeExplorerError,
   type CodeExplorerError,
+  codeExplorerError,
 } from "../navigation/error.js";
-import { schemas } from "./schemas.js";
 import { createEnvelope } from "./envelope.js";
 import { invalidViewHandle, staleView } from "./errors.js";
 import {
-  mapRelationCandidates,
   collectRelations,
+  mapRelationCandidates,
 } from "./relation-operations.js";
+import { schemas } from "./schemas.js";
 import type { ServerRuntime } from "./server-runtime.js";
 
 export async function handleFollow(
@@ -18,7 +18,7 @@ export async function handleFollow(
   freshness: FreshnessStatus,
 ): Promise<ReturnType<typeof createEnvelope> | CodeExplorerError | undefined> {
   const relation = arguments_.relation;
-  if (typeof relation !== "string") return undefined;
+  if (typeof relation !== "string") return;
   const follow = schemas.code_follow.parse(arguments_);
   const resolved = runtime.sessions.resolveHandle(
     runtime.connectionId,

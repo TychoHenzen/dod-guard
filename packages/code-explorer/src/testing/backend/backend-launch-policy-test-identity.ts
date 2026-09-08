@@ -1,6 +1,4 @@
-import type {
-  BackendIdentity,
-} from "../../semantic/backend-launch/backend-launch-policy.js";
+import type { BackendIdentity } from "../../semantic/backend-launch/backend-launch-policy.js";
 
 export const identity: BackendIdentity = {
   canonical_path: "/host/bin/rust-analyzer",

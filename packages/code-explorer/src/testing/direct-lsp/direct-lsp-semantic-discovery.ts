@@ -1,5 +1,5 @@
-import { semanticClient } from "./direct-lsp-semantic-client.js";
 import { testLocation, testRange } from "../semantic/semantic-test-shapes.js";
+import { semanticClient } from "./direct-lsp-semantic-client.js";
 
 function workspaceSymbols() {
   return [

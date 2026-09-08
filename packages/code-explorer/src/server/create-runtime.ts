@@ -5,9 +5,9 @@ import {
 import { createDiscoveryPipeline } from "../discovery/pipeline.js";
 import * as generation from "../freshness/project-generation-scheduler.js";
 import { WorkspaceFreshness } from "../freshness/workspace-freshness.js";
+import { mintOpaqueId } from "../navigation/focus-view.js";
 import { BackendRequestLimiter } from "../navigation/resource-limits.js";
 import { SessionManager } from "../navigation/session.js";
-import { mintOpaqueId } from "../navigation/focus-view.js";
 import { RootAccessGate } from "../semantic/api/public-api.js";
 import type { ServerOptions } from "./server-options.js";
 import type { ServerRuntime } from "./server-runtime.js";

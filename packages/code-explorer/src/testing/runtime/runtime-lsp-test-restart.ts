@@ -1,10 +1,8 @@
-import {
-  createRuntimeLspBackend,
-} from "../../semantic/runtime/runtime-lsp-backend.js";
+import { createRuntimeLspBackend } from "../../semantic/runtime/runtime-lsp-backend.js";
+import { runtimeSourceOptions } from "./runtime-lsp-test-source.js";
 import type { Process } from "./runtime-test-process.js";
 import { Process as RuntimeProcess } from "./runtime-test-process.js";
 import { Scheduler } from "./runtime-test-scheduler.js";
-import { runtimeSourceOptions } from "./runtime-lsp-test-source.js";
 
 export function restartingSourceFixture() {
   const responseFor = (method: string) =>

@@ -1,8 +1,8 @@
+import type { ProjectRoot } from "../../semantic/api/public-api.js";
 import type {
   ProjectRevision,
   SymbolIdentity,
 } from "../../semantic/contracts/contract.js";
-import type { ProjectRoot } from "../../semantic/api/public-api.js";
 import { testLocation } from "../semantic/semantic-test-shapes.js";
 
 export const semanticRoot: ProjectRoot = {

@@ -1,10 +1,11 @@
-import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import process from "node:process";
 import {
+  createAuthorization,
   entrypoints,
   executable,
-  createAuthorization,
   safeOptions,
 } from "./index-test-standalone-authorization.js";
 

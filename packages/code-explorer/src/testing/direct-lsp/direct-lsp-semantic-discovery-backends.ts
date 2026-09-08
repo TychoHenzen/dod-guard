@@ -1,10 +1,10 @@
 import { createSemanticBackend } from "./direct-lsp-semantic-backend.js";
+import { semanticClient } from "./direct-lsp-semantic-client.js";
 import { pythonDocumentSymbolClient } from "./direct-lsp-semantic-discovery.js";
 import {
   projectBackendPath,
   semanticRootWithRead,
 } from "./direct-lsp-semantic-root.js";
-import { semanticClient } from "./direct-lsp-semantic-client.js";
 
 export function pythonOpenedDiscoveryBackend(methods: string[]) {
   return createSemanticBackend({

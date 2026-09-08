@@ -1,9 +1,9 @@
 import type { FreshnessStatus } from "../freshness/workspace-freshness.js";
 import type { CodeExplorerError } from "../navigation/error.js";
-import { createEnvelope, type CodeExplorerEnvelope } from "./envelope.js";
+import { type CodeExplorerEnvelope, createEnvelope } from "./envelope.js";
 import { invalidSession, invalidViewHandle } from "./errors.js";
-import type { ServerRuntime } from "./server-runtime.js";
 import { schemas } from "./schemas.js";
+import type { ServerRuntime } from "./server-runtime.js";
 
 export function handleHistory(
   runtime: ServerRuntime,

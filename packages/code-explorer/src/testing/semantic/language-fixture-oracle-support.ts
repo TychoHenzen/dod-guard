@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { FixtureManifest } from "./language-fixture-support.js";
 import { assertIdentityOracle } from "./language-fixture-oracle-identity.js";
+import type { FixtureManifest } from "./language-fixture-support.js";
 
 const packageRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),

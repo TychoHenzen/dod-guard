@@ -6,8 +6,8 @@ import { it } from "node:test";
 import { createServer } from "../../index.js";
 import * as projectRoot from "../../semantic/project-root/project-root.js";
 import {
-  assertFileFallback,
   adapterWithSymbols,
+  assertFileFallback,
   symbol,
   unavailableAdapter,
 } from "./index-test-server-support.js";
@@ -53,28 +53,25 @@ it(
   },
 );
 
-it(
-  "keeps file discovery available when a semantic " + "backend is unavailable",
-  async () => {
-    const root = mkdtempSync(
-      join(tmpdir(), "code-explorer-server-file-fallback-"),
+it("keeps file discovery available when backend is unavailable", async () => {
+  const root = mkdtempSync(
+    join(tmpdir(), "code-explorer-server-file-fallback-"),
+  );
+  try {
+    mkdirSync(join(root, "src"));
+    writeFileSync(
+      join(root, "src", "client.ts"),
+      "export const client = true;\n",
     );
-    try {
-      mkdirSync(join(root, "src"));
-      writeFileSync(
-        join(root, "src", "client.ts"),
-        "export const client = true;\n",
-      );
-      const server = createServer({
-        projectRoot: createNativeProjectRoot(root),
-        adapters: [unavailableAdapter()],
-      });
-      await assertFileFallback(server);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  },
-);
+    const server = createServer({
+      projectRoot: createNativeProjectRoot(root),
+      adapters: [unavailableAdapter()],
+    });
+    await assertFileFallback(server);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 it(
   "returns native workspace symbols through code_search after " +

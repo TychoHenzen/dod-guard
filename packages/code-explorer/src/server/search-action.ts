@@ -1,18 +1,18 @@
+import {
+  type LandmarkDiscovery,
+  landmarksNotReady,
+} from "../discovery/landmarks.js";
+import { normalizeDiscoveryQuery } from "../discovery/matcher.js";
 import type { FreshnessStatus } from "../freshness/workspace-freshness.js";
 import {
   type CodeExplorerError,
   codeExplorerError,
 } from "../navigation/error.js";
 import { ProjectPathError } from "../semantic/api/public-api.js";
-import {
-  type LandmarkDiscovery,
-  landmarksNotReady,
-} from "../discovery/landmarks.js";
-import { normalizeDiscoveryQuery } from "../discovery/matcher.js";
-import { collectSemanticSymbols } from "./semantic-operations.js";
-import { createEnvelope, type CodeExplorerEnvelope } from "./envelope.js";
-import type { ServerRuntime } from "./server-runtime.js";
+import { type CodeExplorerEnvelope, createEnvelope } from "./envelope.js";
 import { schemas } from "./schemas.js";
+import { collectSemanticSymbols } from "./semantic-operations.js";
+import type { ServerRuntime } from "./server-runtime.js";
 
 export async function handleSearch(
   runtime: ServerRuntime,

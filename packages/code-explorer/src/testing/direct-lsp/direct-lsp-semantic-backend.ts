@@ -1,13 +1,9 @@
-import type {
-  DirectLspSemanticOptions,
-} from "../../semantic/direct-lsp/direct-lsp-semantic-options.js";
-import {
-  createDirectLspSemanticBackend,
-} from "../../semantic/direct-lsp/direct-lsp-semantic.js";
-import { defaultClient, semanticClient } from "./direct-lsp-semantic-client.js";
-import { readyCapabilities } from "./direct-lsp-semantic-capabilities.js";
-import { fixtureRevision, semanticRoot } from "./direct-lsp-semantic-root.js";
+import { createDirectLspSemanticBackend } from "../../semantic/direct-lsp/direct-lsp-semantic.js";
+import type { DirectLspSemanticOptions } from "../../semantic/direct-lsp/direct-lsp-semantic-options.js";
 import { testLocation } from "../semantic/semantic-test-shapes.js";
+import { readyCapabilities } from "./direct-lsp-semantic-capabilities.js";
+import { defaultClient, semanticClient } from "./direct-lsp-semantic-client.js";
+import { fixtureRevision, semanticRoot } from "./direct-lsp-semantic-root.js";
 
 export function createSemanticBackend(
   overrides: Partial<DirectLspSemanticOptions> = {},

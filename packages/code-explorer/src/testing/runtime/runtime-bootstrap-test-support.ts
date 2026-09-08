@@ -2,12 +2,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { LspProcess } from "../../semantic/direct-lsp/direct-lsp.js";
-import {
-  createNativeProjectRoot,
-} from "../../semantic/project-root/project-root.js";
-import {
-  createManagedPythonBackend,
-} from "../../semantic/runtime/runtime-bootstrap.js";
+import { createNativeProjectRoot } from "../../semantic/project-root/project-root.js";
+import { createManagedPythonBackend } from "../../semantic/runtime/runtime-bootstrap.js";
 import {
   runtimeOptions,
   unavailableCapabilities,

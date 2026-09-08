@@ -1,17 +1,17 @@
+import type { SessionManager } from "../navigation/session.js";
 import type {
   LanguageAdapter,
   RelationName,
   RelationResult,
 } from "../semantic/api/public-api.js";
-import type { BackendOperation } from "./semantic-operations.js";
-import { throwBackendLimitFailure } from "./semantic-operations.js";
 import {
   compareRelationCandidates,
+  type FollowCandidate,
   mapRelationCandidate,
   retainRelationCandidateView,
-  type FollowCandidate,
 } from "./relation-candidate.js";
-import { SessionManager } from "../navigation/session.js";
+import type { BackendOperation } from "./semantic-operations.js";
+import { throwBackendLimitFailure } from "./semantic-operations.js";
 
 export async function collectRelations(
   adapters: readonly LanguageAdapter[],

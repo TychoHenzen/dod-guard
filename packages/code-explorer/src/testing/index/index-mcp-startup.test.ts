@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import process from "node:process";
 import { it } from "node:test";
+import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import * as stdio from "@modelcontextprotocol/sdk/client/stdio.js";
 import { createServer, toMcpToolResult } from "../../index.js";
@@ -9,59 +10,53 @@ import { createServer, toMcpToolResult } from "../../index.js";
 const { StdioClientTransport } = stdio;
 const entryPoint = fileURLToPath(new URL("../../index.js", import.meta.url));
 
-it(
-  "completes initialize and tools/list through the compiled MCP " + "process",
-  async () => {
-    const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
-    const transport = new StdioClientTransport({
-      command: process.execPath,
-      args: [entryPoint],
-      cwd: process.cwd(),
-    });
-    try {
-      await client.connect(transport);
-      const tools = await client.listTools();
-      assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), [
-        "code_focus",
-        "code_follow",
-        "code_history",
-        "code_search",
-        "code_status",
-      ]);
-    } finally {
-      await client.close();
-    }
-  },
-);
+it("completes initialize and tools/list through compiled process", async () => {
+  const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [entryPoint],
+    cwd: process.cwd(),
+  });
+  try {
+    await client.connect(transport);
+    const tools = await client.listTools();
+    assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), [
+      "code_focus",
+      "code_follow",
+      "code_history",
+      "code_search",
+      "code_status",
+    ]);
+  } finally {
+    await client.close();
+  }
+});
 
-it(
-  "gives every advertised tool its own operation-specific " + "description",
-  async () => {
-    const client = new Client({
-      name: "code-explorer-metadata-test",
-      version: "1.0.0",
-    });
-    const transport = new StdioClientTransport({
-      command: process.execPath,
-      args: [entryPoint],
-      cwd: process.cwd(),
-    });
-    try {
-      await client.connect(transport);
-      const descriptions = (await client.listTools()).tools.map(
-        ({ description }) => description,
-      );
-      assert.equal(new Set(descriptions).size, 5);
-      assert.ok(
-        descriptions.every(
-          (description) => description && description.length > 30,
-        ),
-      );
-    } finally {
-      await client.close();
-    }
-  },
-);
+it("gives each advertised tool its own description", async () => {
+  const client = new Client({
+    name: "code-explorer-metadata-test",
+    version: "1.0.0",
+  });
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [entryPoint],
+    cwd: process.cwd(),
+  });
+  try {
+    await client.connect(transport);
+    const descriptions = (await client.listTools()).tools.map(
+      ({ description }) => description,
+    );
+    assert.equal(new Set(descriptions).size, 5);
+    assert.ok(
+      descriptions.every(
+        (description) => description && description.length > 30,
+      ),
+    );
+  } finally {
+    await client.close();
+  }
+});
 
 it(
   "returns success envelopes through structuredContent and matching JSON " +

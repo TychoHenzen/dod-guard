@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
-import type {
-  ProtectedDocumentContent,
-} from "../../semantic/direct-lsp/direct-lsp.js";
-import { semanticClient } from "./direct-lsp-semantic-client.js";
+import type { ProtectedDocumentContent } from "../../semantic/direct-lsp/direct-lsp.js";
 import { testRange } from "../semantic/semantic-test-shapes.js";
+import { semanticClient } from "./direct-lsp-semantic-client.js";
 
 function definitionLocation() {
   return {

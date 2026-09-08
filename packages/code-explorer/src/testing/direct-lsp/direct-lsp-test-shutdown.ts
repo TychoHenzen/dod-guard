@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
-import type {
-  createDirectLspClient,
-} from "../../semantic/direct-lsp/direct-lsp.js";
-import { FakeProcess } from "./direct-lsp-test-process.js";
+import type { createDirectLspClient } from "../../semantic/direct-lsp/direct-lsp.js";
 import { tick } from "./direct-lsp-test-lifecycle.js";
+import type { FakeProcess } from "./direct-lsp-test-process.js";
 
 const shutdownInitialization = {
   jsonrpc: "2.0",

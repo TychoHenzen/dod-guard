@@ -7200,6 +7200,7 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { realpathSync as realpathSync3 } from "node:fs";
+import process6 from "node:process";
 import { fileURLToPath as fileURLToPath6 } from "node:url";
 
 // src/browser-server/browser-server-error.ts
@@ -15298,8 +15299,8 @@ var DirectLspRuntimeLifecycle = class {
   get stopped() {
     return this.#stopped;
   }
-  beginStart(process5) {
-    this.#process = process5;
+  beginStart(process7) {
+    this.#process = process7;
     this.#epoch += 1;
     this.#stopping = false;
     this.#stopped = false;
@@ -15604,8 +15605,8 @@ var DirectLspRuntimeStateCore = class extends DirectLspStateResources {
   get stopped() {
     return this.#life.stopped;
   }
-  beginStart(process5) {
-    const epoch = this.#life.beginStart(process5);
+  beginStart(process7) {
+    const epoch = this.#life.beginStart(process7);
     this.reset();
     return epoch;
   }
@@ -15666,7 +15667,7 @@ var DirectLspRuntimeState = class extends DirectLspRuntimeStateCore {
 // src/semantic/direct-lsp/direct-lsp-runtime.ts
 function createDirectLspRuntime(options) {
   const state = new DirectLspRuntimeState(options);
-  const start = (process5) => startRuntime({ state, process: process5, onRestart: start });
+  const start = (process7) => startRuntime({ state, process: process7, onRestart: start });
   return {
     start,
     request: (method, params) => requestBackend2({
@@ -16853,102 +16854,2100 @@ function parseServeArguments(arguments_) {
   return { project_root: state.projectRoot, no_open: state.noOpen };
 }
 
-// src/browser-server/embedded-runtime.ts
-var embedded_runtime_exports = {};
-__export(embedded_runtime_exports, {
-  startEmbeddedBrowserRuntime: () => startEmbeddedBrowserRuntime
+// src/freshness/workspace-native.ts
+var workspace_native_exports = {};
+__export(workspace_native_exports, {
+  createNativeWorkspaceFreshness: () => createNativeWorkspaceFreshness
 });
 
-// src/browser-server/embedded-runtime-result.ts
-function createEmbeddedRuntime(options) {
-  const router = new BrowserHttpRouter({
-    origin: options.origin,
-    assetRoot: options.assetRoot,
-    call: options.core.call ?? unavailableBrowserCall
-  });
-  return {
-    projectRoot: options.projectRoot,
-    handle: (request) => router.handle(request),
-    close: closeCore(options)
-  };
+// src/freshness/native-manifest-files.ts
+import { readdir } from "node:fs/promises";
+import { join as join19, relative as relative3 } from "node:path";
+function withinScanLimits(started, now, output) {
+  if (now() - started > 6e4 || output.length > 5e4)
+    throw new Error("scan_limit");
 }
-function closeCore(options) {
-  let closing;
-  return () => {
-    if (closing) return closing;
-    closing = closeRuntime(options);
-    return closing;
-  };
+function ignoredDirectory(name) {
+  return /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(name);
 }
-async function closeRuntime(options) {
-  options.controller.abort();
-  await options.core.close(AbortSignal.timeout(1e4));
-  options.unlinkAbortSignal();
-}
-
-// src/browser-server/embedded-runtime.ts
-function loopbackOrigin(origin) {
-  const parsed = new URL(origin);
-  if (parsed.protocol !== "http:" || parsed.hostname !== "127.0.0.1" || !parsed.port) {
-    throw new BrowserServerError("invalid_request");
-  }
-  return parsed;
-}
-function linkAbortSignal(parent, child) {
-  if (!parent) return () => void 0;
-  const abort = () => child.abort(parent.reason);
-  if (parent.aborted) {
-    abort();
-    return () => void 0;
-  }
-  parent.addEventListener("abort", abort, { once: true });
-  return () => parent.removeEventListener("abort", abort);
-}
-async function startCore(options, unlinkAbortSignal) {
-  try {
-    const core = await options.coreFactory.start({
-      projectRoot: options.projectRoot,
-      signal: options.signal
-    });
-    if (options.signal.aborted) {
-      await core.close(AbortSignal.timeout(1e4));
-      throw new Error("aborted");
+async function visit2(root, directory2, supported, started, now, output) {
+  withinScanLimits(started, now, output);
+  for (const entry of await readdir(directory2, { withFileTypes: true })) {
+    const absolute = join19(directory2, entry.name);
+    if (entry.isDirectory()) {
+      if (!ignoredDirectory(entry.name))
+        await visit2(root, absolute, supported, started, now, output);
+      continue;
     }
-    return core;
-  } catch (error2) {
-    unlinkAbortSignal();
-    throw error2;
+    const path5 = relative3(root, absolute).replaceAll("\\", "/");
+    if (supported(path5)) output.push(path5);
   }
 }
-async function startEmbeddedBrowserRuntime(options) {
-  const parsedOrigin = loopbackOrigin(options.origin);
-  const projectRoot = createNativeProjectRoot(options.projectRoot);
-  const controller = new AbortController();
-  const unlinkAbortSignal = linkAbortSignal(options.signal, controller);
-  const core = await startCore(
-    {
-      coreFactory: options.coreFactory,
-      projectRoot,
-      signal: controller.signal
-    },
-    unlinkAbortSignal
+async function walkSupportedFiles(root, supported, started, now) {
+  const output = [];
+  await visit2(root, root, supported, started, now, output);
+  if (output.length > 5e4) throw new Error("scan_limit");
+  return output.sort();
+}
+
+// src/freshness/native-manifest-hashing.ts
+import { createHash as createHash4 } from "node:crypto";
+import { open as open3 } from "node:fs/promises";
+import { join as join20 } from "node:path";
+async function stableHash(path5, now, sleep) {
+  const started = now();
+  for (; ; ) {
+    const stable = await stableAttempt(path5, sleep);
+    if (stable) return stable;
+    if (now() - started >= 1e4) return "incomplete_write";
+  }
+}
+async function stableAttempt(path5, sleep) {
+  const file = await open3(path5, "r");
+  try {
+    const before = await file.stat();
+    if (before.size > 4 * 1024 * 1024) return "scan_limit";
+    await sleep(100);
+    const after = await file.stat();
+    if (before.size !== after.size || before.mtimeMs !== after.mtimeMs)
+      return void 0;
+    return createHash4("sha256").update(await file.readFile()).digest("hex");
+  } finally {
+    await file.close();
+  }
+}
+async function stableBatch(options, files) {
+  return await Promise.all(
+    files.map(
+      async (file) => [
+        file,
+        await stableHash(
+          join20(options.root, file),
+          options.now ?? Date.now,
+          options.sleep ?? delay
+        )
+      ]
+    )
   );
-  return createEmbeddedRuntime({
-    projectRoot,
-    origin: parsedOrigin.origin,
-    assetRoot: options.assetRoot,
-    core,
-    controller,
-    unlinkAbortSignal
+}
+function delay(milliseconds) {
+  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
+}
+
+// src/freshness/native-manifest.ts
+async function buildManifest(options, files) {
+  const manifest = /* @__PURE__ */ new Map();
+  for (let offset = 0; offset < files.length; offset += 64) {
+    const cause = mergeStableBatch(
+      manifest,
+      await stableBatch(options, files.slice(offset, offset + 64))
+    );
+    if (cause) return { cause };
+  }
+  return { manifest };
+}
+function mergeStableBatch(manifest, stable) {
+  for (const [file, hash] of stable) {
+    if (hash === "incomplete_write" || hash === "scan_limit") return hash;
+    manifest.set(file, hash);
+  }
+  return void 0;
+}
+function failureCause(error2) {
+  if (error2 instanceof Error && error2.message === "scan_limit")
+    return "scan_limit";
+  return "freshness_unavailable";
+}
+async function reconcileNativeManifest(options) {
+  const now = options.now ?? Date.now;
+  const started = now();
+  try {
+    const files = await walkSupportedFiles(
+      options.root,
+      options.supported,
+      started,
+      now
+    );
+    return buildManifest(options, files);
+  } catch (error2) {
+    return { cause: failureCause(error2) };
+  }
+}
+
+// src/freshness/freshness-runtime.ts
+var FreshnessRuntime = class {
+  status = {
+    current_generation: 0,
+    pending_generation: null,
+    state: "initializing",
+    mode: "watching"
+  };
+  manifest = /* @__PURE__ */ new Map();
+  watcher;
+  activeSessions = 0;
+  coalesceTimer;
+  pollTimer;
+  manifestTimer;
+  running;
+  forceRefresh = false;
+  nextGeneration = 1;
+  reserveGeneration() {
+    const generation = this.nextGeneration++;
+    this.status = {
+      current_generation: this.status.current_generation,
+      pending_generation: generation,
+      state: "refreshing",
+      mode: this.status.mode
+    };
+    return generation;
+  }
+  failRefresh() {
+    this.forceRefresh = false;
+    this.status = {
+      current_generation: this.status.current_generation,
+      pending_generation: null,
+      state: "refresh_failed",
+      mode: this.status.mode
+    };
+  }
+  reserveRefresh() {
+    if (this.status.pending_generation === null) this.reserveGeneration();
+    this.forceRefresh = true;
+  }
+  degrade(cause) {
+    this.forceRefresh = false;
+    this.status = {
+      current_generation: this.status.current_generation,
+      pending_generation: null,
+      state: "degraded",
+      mode: this.status.mode,
+      degraded_cause: cause
+    };
+  }
+  ready(generation, manifest) {
+    this.manifest = new Map(manifest);
+    this.status = {
+      current_generation: generation,
+      pending_generation: null,
+      state: "ready",
+      mode: this.status.mode
+    };
+    this.forceRefresh = false;
+  }
+};
+
+// ../../node_modules/chokidar/esm/index.js
+import { stat as statcb } from "fs";
+import { stat as stat3, readdir as readdir3 } from "fs/promises";
+import { EventEmitter } from "events";
+import * as sysPath2 from "path";
+
+// ../../node_modules/readdirp/esm/index.js
+import { stat, lstat, readdir as readdir2, realpath as realpath2 } from "node:fs/promises";
+import { Readable } from "node:stream";
+import { resolve as presolve, relative as prelative, join as pjoin, sep as psep } from "node:path";
+var EntryTypes = {
+  FILE_TYPE: "files",
+  DIR_TYPE: "directories",
+  FILE_DIR_TYPE: "files_directories",
+  EVERYTHING_TYPE: "all"
+};
+var defaultOptions = {
+  root: ".",
+  fileFilter: (_entryInfo) => true,
+  directoryFilter: (_entryInfo) => true,
+  type: EntryTypes.FILE_TYPE,
+  lstat: false,
+  depth: 2147483648,
+  alwaysStat: false,
+  highWaterMark: 4096
+};
+Object.freeze(defaultOptions);
+var RECURSIVE_ERROR_CODE = "READDIRP_RECURSIVE_ERROR";
+var NORMAL_FLOW_ERRORS = /* @__PURE__ */ new Set(["ENOENT", "EPERM", "EACCES", "ELOOP", RECURSIVE_ERROR_CODE]);
+var ALL_TYPES = [
+  EntryTypes.DIR_TYPE,
+  EntryTypes.EVERYTHING_TYPE,
+  EntryTypes.FILE_DIR_TYPE,
+  EntryTypes.FILE_TYPE
+];
+var DIR_TYPES = /* @__PURE__ */ new Set([
+  EntryTypes.DIR_TYPE,
+  EntryTypes.EVERYTHING_TYPE,
+  EntryTypes.FILE_DIR_TYPE
+]);
+var FILE_TYPES = /* @__PURE__ */ new Set([
+  EntryTypes.EVERYTHING_TYPE,
+  EntryTypes.FILE_DIR_TYPE,
+  EntryTypes.FILE_TYPE
+]);
+var isNormalFlowError = (error2) => NORMAL_FLOW_ERRORS.has(error2.code);
+var wantBigintFsStats = process.platform === "win32";
+var emptyFn = (_entryInfo) => true;
+var normalizeFilter = (filter) => {
+  if (filter === void 0)
+    return emptyFn;
+  if (typeof filter === "function")
+    return filter;
+  if (typeof filter === "string") {
+    const fl = filter.trim();
+    return (entry) => entry.basename === fl;
+  }
+  if (Array.isArray(filter)) {
+    const trItems = filter.map((item) => item.trim());
+    return (entry) => trItems.some((f) => entry.basename === f);
+  }
+  return emptyFn;
+};
+var ReaddirpStream = class extends Readable {
+  constructor(options = {}) {
+    super({
+      objectMode: true,
+      autoDestroy: true,
+      highWaterMark: options.highWaterMark
+    });
+    const opts = { ...defaultOptions, ...options };
+    const { root, type } = opts;
+    this._fileFilter = normalizeFilter(opts.fileFilter);
+    this._directoryFilter = normalizeFilter(opts.directoryFilter);
+    const statMethod = opts.lstat ? lstat : stat;
+    if (wantBigintFsStats) {
+      this._stat = (path5) => statMethod(path5, { bigint: true });
+    } else {
+      this._stat = statMethod;
+    }
+    this._maxDepth = opts.depth ?? defaultOptions.depth;
+    this._wantsDir = type ? DIR_TYPES.has(type) : false;
+    this._wantsFile = type ? FILE_TYPES.has(type) : false;
+    this._wantsEverything = type === EntryTypes.EVERYTHING_TYPE;
+    this._root = presolve(root);
+    this._isDirent = !opts.alwaysStat;
+    this._statsProp = this._isDirent ? "dirent" : "stats";
+    this._rdOptions = { encoding: "utf8", withFileTypes: this._isDirent };
+    this.parents = [this._exploreDir(root, 1)];
+    this.reading = false;
+    this.parent = void 0;
+  }
+  async _read(batch) {
+    if (this.reading)
+      return;
+    this.reading = true;
+    try {
+      while (!this.destroyed && batch > 0) {
+        const par = this.parent;
+        const fil = par && par.files;
+        if (fil && fil.length > 0) {
+          const { path: path5, depth } = par;
+          const slice = fil.splice(0, batch).map((dirent) => this._formatEntry(dirent, path5));
+          const awaited = await Promise.all(slice);
+          for (const entry of awaited) {
+            if (!entry)
+              continue;
+            if (this.destroyed)
+              return;
+            const entryType = await this._getEntryType(entry);
+            if (entryType === "directory" && this._directoryFilter(entry)) {
+              if (depth <= this._maxDepth) {
+                this.parents.push(this._exploreDir(entry.fullPath, depth + 1));
+              }
+              if (this._wantsDir) {
+                this.push(entry);
+                batch--;
+              }
+            } else if ((entryType === "file" || this._includeAsFile(entry)) && this._fileFilter(entry)) {
+              if (this._wantsFile) {
+                this.push(entry);
+                batch--;
+              }
+            }
+          }
+        } else {
+          const parent = this.parents.pop();
+          if (!parent) {
+            this.push(null);
+            break;
+          }
+          this.parent = await parent;
+          if (this.destroyed)
+            return;
+        }
+      }
+    } catch (error2) {
+      this.destroy(error2);
+    } finally {
+      this.reading = false;
+    }
+  }
+  async _exploreDir(path5, depth) {
+    let files;
+    try {
+      files = await readdir2(path5, this._rdOptions);
+    } catch (error2) {
+      this._onError(error2);
+    }
+    return { files, depth, path: path5 };
+  }
+  async _formatEntry(dirent, path5) {
+    let entry;
+    const basename4 = this._isDirent ? dirent.name : dirent;
+    try {
+      const fullPath = presolve(pjoin(path5, basename4));
+      entry = { path: prelative(this._root, fullPath), fullPath, basename: basename4 };
+      entry[this._statsProp] = this._isDirent ? dirent : await this._stat(fullPath);
+    } catch (err) {
+      this._onError(err);
+      return;
+    }
+    return entry;
+  }
+  _onError(err) {
+    if (isNormalFlowError(err) && !this.destroyed) {
+      this.emit("warn", err);
+    } else {
+      this.destroy(err);
+    }
+  }
+  async _getEntryType(entry) {
+    if (!entry && this._statsProp in entry) {
+      return "";
+    }
+    const stats = entry[this._statsProp];
+    if (stats.isFile())
+      return "file";
+    if (stats.isDirectory())
+      return "directory";
+    if (stats && stats.isSymbolicLink()) {
+      const full = entry.fullPath;
+      try {
+        const entryRealPath = await realpath2(full);
+        const entryRealPathStats = await lstat(entryRealPath);
+        if (entryRealPathStats.isFile()) {
+          return "file";
+        }
+        if (entryRealPathStats.isDirectory()) {
+          const len = entryRealPath.length;
+          if (full.startsWith(entryRealPath) && full.substr(len, 1) === psep) {
+            const recursiveError = new Error(`Circular symlink detected: "${full}" points to "${entryRealPath}"`);
+            recursiveError.code = RECURSIVE_ERROR_CODE;
+            return this._onError(recursiveError);
+          }
+          return "directory";
+        }
+      } catch (error2) {
+        this._onError(error2);
+        return "";
+      }
+    }
+  }
+  _includeAsFile(entry) {
+    const stats = entry && entry[this._statsProp];
+    return stats && this._wantsEverything && !stats.isDirectory();
+  }
+};
+function readdirp(root, options = {}) {
+  let type = options.entryType || options.type;
+  if (type === "both")
+    type = EntryTypes.FILE_DIR_TYPE;
+  if (type)
+    options.type = type;
+  if (!root) {
+    throw new Error("readdirp: root argument is required. Usage: readdirp(root, options)");
+  } else if (typeof root !== "string") {
+    throw new TypeError("readdirp: root argument must be a string. Usage: readdirp(root, options)");
+  } else if (type && !ALL_TYPES.includes(type)) {
+    throw new Error(`readdirp: Invalid type passed. Use one of ${ALL_TYPES.join(", ")}`);
+  }
+  options.root = root;
+  return new ReaddirpStream(options);
+}
+
+// ../../node_modules/chokidar/esm/handler.js
+import { watchFile, unwatchFile, watch as fs_watch } from "fs";
+import { open as open4, stat as stat2, lstat as lstat2, realpath as fsrealpath } from "fs/promises";
+import * as sysPath from "path";
+import { type as osType } from "os";
+var STR_DATA = "data";
+var STR_END = "end";
+var STR_CLOSE = "close";
+var EMPTY_FN = () => {
+};
+var pl = process.platform;
+var isWindows = pl === "win32";
+var isMacos = pl === "darwin";
+var isLinux = pl === "linux";
+var isFreeBSD = pl === "freebsd";
+var isIBMi = osType() === "OS400";
+var EVENTS = {
+  ALL: "all",
+  READY: "ready",
+  ADD: "add",
+  CHANGE: "change",
+  ADD_DIR: "addDir",
+  UNLINK: "unlink",
+  UNLINK_DIR: "unlinkDir",
+  RAW: "raw",
+  ERROR: "error"
+};
+var EV = EVENTS;
+var THROTTLE_MODE_WATCH = "watch";
+var statMethods = { lstat: lstat2, stat: stat2 };
+var KEY_LISTENERS = "listeners";
+var KEY_ERR = "errHandlers";
+var KEY_RAW = "rawEmitters";
+var HANDLER_KEYS = [KEY_LISTENERS, KEY_ERR, KEY_RAW];
+var binaryExtensions = /* @__PURE__ */ new Set([
+  "3dm",
+  "3ds",
+  "3g2",
+  "3gp",
+  "7z",
+  "a",
+  "aac",
+  "adp",
+  "afdesign",
+  "afphoto",
+  "afpub",
+  "ai",
+  "aif",
+  "aiff",
+  "alz",
+  "ape",
+  "apk",
+  "appimage",
+  "ar",
+  "arj",
+  "asf",
+  "au",
+  "avi",
+  "bak",
+  "baml",
+  "bh",
+  "bin",
+  "bk",
+  "bmp",
+  "btif",
+  "bz2",
+  "bzip2",
+  "cab",
+  "caf",
+  "cgm",
+  "class",
+  "cmx",
+  "cpio",
+  "cr2",
+  "cur",
+  "dat",
+  "dcm",
+  "deb",
+  "dex",
+  "djvu",
+  "dll",
+  "dmg",
+  "dng",
+  "doc",
+  "docm",
+  "docx",
+  "dot",
+  "dotm",
+  "dra",
+  "DS_Store",
+  "dsk",
+  "dts",
+  "dtshd",
+  "dvb",
+  "dwg",
+  "dxf",
+  "ecelp4800",
+  "ecelp7470",
+  "ecelp9600",
+  "egg",
+  "eol",
+  "eot",
+  "epub",
+  "exe",
+  "f4v",
+  "fbs",
+  "fh",
+  "fla",
+  "flac",
+  "flatpak",
+  "fli",
+  "flv",
+  "fpx",
+  "fst",
+  "fvt",
+  "g3",
+  "gh",
+  "gif",
+  "graffle",
+  "gz",
+  "gzip",
+  "h261",
+  "h263",
+  "h264",
+  "icns",
+  "ico",
+  "ief",
+  "img",
+  "ipa",
+  "iso",
+  "jar",
+  "jpeg",
+  "jpg",
+  "jpgv",
+  "jpm",
+  "jxr",
+  "key",
+  "ktx",
+  "lha",
+  "lib",
+  "lvp",
+  "lz",
+  "lzh",
+  "lzma",
+  "lzo",
+  "m3u",
+  "m4a",
+  "m4v",
+  "mar",
+  "mdi",
+  "mht",
+  "mid",
+  "midi",
+  "mj2",
+  "mka",
+  "mkv",
+  "mmr",
+  "mng",
+  "mobi",
+  "mov",
+  "movie",
+  "mp3",
+  "mp4",
+  "mp4a",
+  "mpeg",
+  "mpg",
+  "mpga",
+  "mxu",
+  "nef",
+  "npx",
+  "numbers",
+  "nupkg",
+  "o",
+  "odp",
+  "ods",
+  "odt",
+  "oga",
+  "ogg",
+  "ogv",
+  "otf",
+  "ott",
+  "pages",
+  "pbm",
+  "pcx",
+  "pdb",
+  "pdf",
+  "pea",
+  "pgm",
+  "pic",
+  "png",
+  "pnm",
+  "pot",
+  "potm",
+  "potx",
+  "ppa",
+  "ppam",
+  "ppm",
+  "pps",
+  "ppsm",
+  "ppsx",
+  "ppt",
+  "pptm",
+  "pptx",
+  "psd",
+  "pya",
+  "pyc",
+  "pyo",
+  "pyv",
+  "qt",
+  "rar",
+  "ras",
+  "raw",
+  "resources",
+  "rgb",
+  "rip",
+  "rlc",
+  "rmf",
+  "rmvb",
+  "rpm",
+  "rtf",
+  "rz",
+  "s3m",
+  "s7z",
+  "scpt",
+  "sgi",
+  "shar",
+  "snap",
+  "sil",
+  "sketch",
+  "slk",
+  "smv",
+  "snk",
+  "so",
+  "stl",
+  "suo",
+  "sub",
+  "swf",
+  "tar",
+  "tbz",
+  "tbz2",
+  "tga",
+  "tgz",
+  "thmx",
+  "tif",
+  "tiff",
+  "tlz",
+  "ttc",
+  "ttf",
+  "txz",
+  "udf",
+  "uvh",
+  "uvi",
+  "uvm",
+  "uvp",
+  "uvs",
+  "uvu",
+  "viv",
+  "vob",
+  "war",
+  "wav",
+  "wax",
+  "wbmp",
+  "wdp",
+  "weba",
+  "webm",
+  "webp",
+  "whl",
+  "wim",
+  "wm",
+  "wma",
+  "wmv",
+  "wmx",
+  "woff",
+  "woff2",
+  "wrm",
+  "wvx",
+  "xbm",
+  "xif",
+  "xla",
+  "xlam",
+  "xls",
+  "xlsb",
+  "xlsm",
+  "xlsx",
+  "xlt",
+  "xltm",
+  "xltx",
+  "xm",
+  "xmind",
+  "xpi",
+  "xpm",
+  "xwd",
+  "xz",
+  "z",
+  "zip",
+  "zipx"
+]);
+var isBinaryPath = (filePath) => binaryExtensions.has(sysPath.extname(filePath).slice(1).toLowerCase());
+var foreach = (val, fn) => {
+  if (val instanceof Set) {
+    val.forEach(fn);
+  } else {
+    fn(val);
+  }
+};
+var addAndConvert = (main, prop, item) => {
+  let container = main[prop];
+  if (!(container instanceof Set)) {
+    main[prop] = container = /* @__PURE__ */ new Set([container]);
+  }
+  container.add(item);
+};
+var clearItem = (cont) => (key) => {
+  const set = cont[key];
+  if (set instanceof Set) {
+    set.clear();
+  } else {
+    delete cont[key];
+  }
+};
+var delFromSet = (main, prop, item) => {
+  const container = main[prop];
+  if (container instanceof Set) {
+    container.delete(item);
+  } else if (container === item) {
+    delete main[prop];
+  }
+};
+var isEmptySet = (val) => val instanceof Set ? val.size === 0 : !val;
+var FsWatchInstances = /* @__PURE__ */ new Map();
+function createFsWatchInstance(path5, options, listener, errHandler, emitRaw) {
+  const handleEvent = (rawEvent, evPath) => {
+    listener(path5);
+    emitRaw(rawEvent, evPath, { watchedPath: path5 });
+    if (evPath && path5 !== evPath) {
+      fsWatchBroadcast(sysPath.resolve(path5, evPath), KEY_LISTENERS, sysPath.join(path5, evPath));
+    }
+  };
+  try {
+    return fs_watch(path5, {
+      persistent: options.persistent
+    }, handleEvent);
+  } catch (error2) {
+    errHandler(error2);
+    return void 0;
+  }
+}
+var fsWatchBroadcast = (fullPath, listenerType, val1, val2, val3) => {
+  const cont = FsWatchInstances.get(fullPath);
+  if (!cont)
+    return;
+  foreach(cont[listenerType], (listener) => {
+    listener(val1, val2, val3);
+  });
+};
+var setFsWatchListener = (path5, fullPath, options, handlers) => {
+  const { listener, errHandler, rawEmitter } = handlers;
+  let cont = FsWatchInstances.get(fullPath);
+  let watcher;
+  if (!options.persistent) {
+    watcher = createFsWatchInstance(path5, options, listener, errHandler, rawEmitter);
+    if (!watcher)
+      return;
+    return watcher.close.bind(watcher);
+  }
+  if (cont) {
+    addAndConvert(cont, KEY_LISTENERS, listener);
+    addAndConvert(cont, KEY_ERR, errHandler);
+    addAndConvert(cont, KEY_RAW, rawEmitter);
+  } else {
+    watcher = createFsWatchInstance(
+      path5,
+      options,
+      fsWatchBroadcast.bind(null, fullPath, KEY_LISTENERS),
+      errHandler,
+      // no need to use broadcast here
+      fsWatchBroadcast.bind(null, fullPath, KEY_RAW)
+    );
+    if (!watcher)
+      return;
+    watcher.on(EV.ERROR, async (error2) => {
+      const broadcastErr = fsWatchBroadcast.bind(null, fullPath, KEY_ERR);
+      if (cont)
+        cont.watcherUnusable = true;
+      if (isWindows && error2.code === "EPERM") {
+        try {
+          const fd = await open4(path5, "r");
+          await fd.close();
+          broadcastErr(error2);
+        } catch (err) {
+        }
+      } else {
+        broadcastErr(error2);
+      }
+    });
+    cont = {
+      listeners: listener,
+      errHandlers: errHandler,
+      rawEmitters: rawEmitter,
+      watcher
+    };
+    FsWatchInstances.set(fullPath, cont);
+  }
+  return () => {
+    delFromSet(cont, KEY_LISTENERS, listener);
+    delFromSet(cont, KEY_ERR, errHandler);
+    delFromSet(cont, KEY_RAW, rawEmitter);
+    if (isEmptySet(cont.listeners)) {
+      cont.watcher.close();
+      FsWatchInstances.delete(fullPath);
+      HANDLER_KEYS.forEach(clearItem(cont));
+      cont.watcher = void 0;
+      Object.freeze(cont);
+    }
+  };
+};
+var FsWatchFileInstances = /* @__PURE__ */ new Map();
+var setFsWatchFileListener = (path5, fullPath, options, handlers) => {
+  const { listener, rawEmitter } = handlers;
+  let cont = FsWatchFileInstances.get(fullPath);
+  const copts = cont && cont.options;
+  if (copts && (copts.persistent < options.persistent || copts.interval > options.interval)) {
+    unwatchFile(fullPath);
+    cont = void 0;
+  }
+  if (cont) {
+    addAndConvert(cont, KEY_LISTENERS, listener);
+    addAndConvert(cont, KEY_RAW, rawEmitter);
+  } else {
+    cont = {
+      listeners: listener,
+      rawEmitters: rawEmitter,
+      options,
+      watcher: watchFile(fullPath, options, (curr, prev) => {
+        foreach(cont.rawEmitters, (rawEmitter2) => {
+          rawEmitter2(EV.CHANGE, fullPath, { curr, prev });
+        });
+        const currmtime = curr.mtimeMs;
+        if (curr.size !== prev.size || currmtime > prev.mtimeMs || currmtime === 0) {
+          foreach(cont.listeners, (listener2) => listener2(path5, curr));
+        }
+      })
+    };
+    FsWatchFileInstances.set(fullPath, cont);
+  }
+  return () => {
+    delFromSet(cont, KEY_LISTENERS, listener);
+    delFromSet(cont, KEY_RAW, rawEmitter);
+    if (isEmptySet(cont.listeners)) {
+      FsWatchFileInstances.delete(fullPath);
+      unwatchFile(fullPath);
+      cont.options = cont.watcher = void 0;
+      Object.freeze(cont);
+    }
+  };
+};
+var NodeFsHandler = class {
+  constructor(fsW) {
+    this.fsw = fsW;
+    this._boundHandleError = (error2) => fsW._handleError(error2);
+  }
+  /**
+   * Watch file for changes with fs_watchFile or fs_watch.
+   * @param path to file or dir
+   * @param listener on fs change
+   * @returns closer for the watcher instance
+   */
+  _watchWithNodeFs(path5, listener) {
+    const opts = this.fsw.options;
+    const directory2 = sysPath.dirname(path5);
+    const basename4 = sysPath.basename(path5);
+    const parent = this.fsw._getWatchedDir(directory2);
+    parent.add(basename4);
+    const absolutePath = sysPath.resolve(path5);
+    const options = {
+      persistent: opts.persistent
+    };
+    if (!listener)
+      listener = EMPTY_FN;
+    let closer;
+    if (opts.usePolling) {
+      const enableBin = opts.interval !== opts.binaryInterval;
+      options.interval = enableBin && isBinaryPath(basename4) ? opts.binaryInterval : opts.interval;
+      closer = setFsWatchFileListener(path5, absolutePath, options, {
+        listener,
+        rawEmitter: this.fsw._emitRaw
+      });
+    } else {
+      closer = setFsWatchListener(path5, absolutePath, options, {
+        listener,
+        errHandler: this._boundHandleError,
+        rawEmitter: this.fsw._emitRaw
+      });
+    }
+    return closer;
+  }
+  /**
+   * Watch a file and emit add event if warranted.
+   * @returns closer for the watcher instance
+   */
+  _handleFile(file, stats, initialAdd) {
+    if (this.fsw.closed) {
+      return;
+    }
+    const dirname10 = sysPath.dirname(file);
+    const basename4 = sysPath.basename(file);
+    const parent = this.fsw._getWatchedDir(dirname10);
+    let prevStats = stats;
+    if (parent.has(basename4))
+      return;
+    const listener = async (path5, newStats) => {
+      if (!this.fsw._throttle(THROTTLE_MODE_WATCH, file, 5))
+        return;
+      if (!newStats || newStats.mtimeMs === 0) {
+        try {
+          const newStats2 = await stat2(file);
+          if (this.fsw.closed)
+            return;
+          const at = newStats2.atimeMs;
+          const mt = newStats2.mtimeMs;
+          if (!at || at <= mt || mt !== prevStats.mtimeMs) {
+            this.fsw._emit(EV.CHANGE, file, newStats2);
+          }
+          if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== newStats2.ino) {
+            this.fsw._closeFile(path5);
+            prevStats = newStats2;
+            const closer2 = this._watchWithNodeFs(file, listener);
+            if (closer2)
+              this.fsw._addPathCloser(path5, closer2);
+          } else {
+            prevStats = newStats2;
+          }
+        } catch (error2) {
+          this.fsw._remove(dirname10, basename4);
+        }
+      } else if (parent.has(basename4)) {
+        const at = newStats.atimeMs;
+        const mt = newStats.mtimeMs;
+        if (!at || at <= mt || mt !== prevStats.mtimeMs) {
+          this.fsw._emit(EV.CHANGE, file, newStats);
+        }
+        prevStats = newStats;
+      }
+    };
+    const closer = this._watchWithNodeFs(file, listener);
+    if (!(initialAdd && this.fsw.options.ignoreInitial) && this.fsw._isntIgnored(file)) {
+      if (!this.fsw._throttle(EV.ADD, file, 0))
+        return;
+      this.fsw._emit(EV.ADD, file, stats);
+    }
+    return closer;
+  }
+  /**
+   * Handle symlinks encountered while reading a dir.
+   * @param entry returned by readdirp
+   * @param directory path of dir being read
+   * @param path of this item
+   * @param item basename of this item
+   * @returns true if no more processing is needed for this entry.
+   */
+  async _handleSymlink(entry, directory2, path5, item) {
+    if (this.fsw.closed) {
+      return;
+    }
+    const full = entry.fullPath;
+    const dir = this.fsw._getWatchedDir(directory2);
+    if (!this.fsw.options.followSymlinks) {
+      this.fsw._incrReadyCount();
+      let linkPath;
+      try {
+        linkPath = await fsrealpath(path5);
+      } catch (e) {
+        this.fsw._emitReady();
+        return true;
+      }
+      if (this.fsw.closed)
+        return;
+      if (dir.has(item)) {
+        if (this.fsw._symlinkPaths.get(full) !== linkPath) {
+          this.fsw._symlinkPaths.set(full, linkPath);
+          this.fsw._emit(EV.CHANGE, path5, entry.stats);
+        }
+      } else {
+        dir.add(item);
+        this.fsw._symlinkPaths.set(full, linkPath);
+        this.fsw._emit(EV.ADD, path5, entry.stats);
+      }
+      this.fsw._emitReady();
+      return true;
+    }
+    if (this.fsw._symlinkPaths.has(full)) {
+      return true;
+    }
+    this.fsw._symlinkPaths.set(full, true);
+  }
+  _handleRead(directory2, initialAdd, wh, target, dir, depth, throttler) {
+    directory2 = sysPath.join(directory2, "");
+    throttler = this.fsw._throttle("readdir", directory2, 1e3);
+    if (!throttler)
+      return;
+    const previous = this.fsw._getWatchedDir(wh.path);
+    const current = /* @__PURE__ */ new Set();
+    let stream = this.fsw._readdirp(directory2, {
+      fileFilter: (entry) => wh.filterPath(entry),
+      directoryFilter: (entry) => wh.filterDir(entry)
+    });
+    if (!stream)
+      return;
+    stream.on(STR_DATA, async (entry) => {
+      if (this.fsw.closed) {
+        stream = void 0;
+        return;
+      }
+      const item = entry.path;
+      let path5 = sysPath.join(directory2, item);
+      current.add(item);
+      if (entry.stats.isSymbolicLink() && await this._handleSymlink(entry, directory2, path5, item)) {
+        return;
+      }
+      if (this.fsw.closed) {
+        stream = void 0;
+        return;
+      }
+      if (item === target || !target && !previous.has(item)) {
+        this.fsw._incrReadyCount();
+        path5 = sysPath.join(dir, sysPath.relative(dir, path5));
+        this._addToNodeFs(path5, initialAdd, wh, depth + 1);
+      }
+    }).on(EV.ERROR, this._boundHandleError);
+    return new Promise((resolve5, reject) => {
+      if (!stream)
+        return reject();
+      stream.once(STR_END, () => {
+        if (this.fsw.closed) {
+          stream = void 0;
+          return;
+        }
+        const wasThrottled = throttler ? throttler.clear() : false;
+        resolve5(void 0);
+        previous.getChildren().filter((item) => {
+          return item !== directory2 && !current.has(item);
+        }).forEach((item) => {
+          this.fsw._remove(directory2, item);
+        });
+        stream = void 0;
+        if (wasThrottled)
+          this._handleRead(directory2, false, wh, target, dir, depth, throttler);
+      });
+    });
+  }
+  /**
+   * Read directory to add / remove files from `@watched` list and re-read it on change.
+   * @param dir fs path
+   * @param stats
+   * @param initialAdd
+   * @param depth relative to user-supplied path
+   * @param target child path targeted for watch
+   * @param wh Common watch helpers for this path
+   * @param realpath
+   * @returns closer for the watcher instance.
+   */
+  async _handleDir(dir, stats, initialAdd, depth, target, wh, realpath3) {
+    const parentDir = this.fsw._getWatchedDir(sysPath.dirname(dir));
+    const tracked = parentDir.has(sysPath.basename(dir));
+    if (!(initialAdd && this.fsw.options.ignoreInitial) && !target && !tracked) {
+      this.fsw._emit(EV.ADD_DIR, dir, stats);
+    }
+    parentDir.add(sysPath.basename(dir));
+    this.fsw._getWatchedDir(dir);
+    let throttler;
+    let closer;
+    const oDepth = this.fsw.options.depth;
+    if ((oDepth == null || depth <= oDepth) && !this.fsw._symlinkPaths.has(realpath3)) {
+      if (!target) {
+        await this._handleRead(dir, initialAdd, wh, target, dir, depth, throttler);
+        if (this.fsw.closed)
+          return;
+      }
+      closer = this._watchWithNodeFs(dir, (dirPath, stats2) => {
+        if (stats2 && stats2.mtimeMs === 0)
+          return;
+        this._handleRead(dirPath, false, wh, target, dir, depth, throttler);
+      });
+    }
+    return closer;
+  }
+  /**
+   * Handle added file, directory, or glob pattern.
+   * Delegates call to _handleFile / _handleDir after checks.
+   * @param path to file or ir
+   * @param initialAdd was the file added at watch instantiation?
+   * @param priorWh depth relative to user-supplied path
+   * @param depth Child path actually targeted for watch
+   * @param target Child path actually targeted for watch
+   */
+  async _addToNodeFs(path5, initialAdd, priorWh, depth, target) {
+    const ready = this.fsw._emitReady;
+    if (this.fsw._isIgnored(path5) || this.fsw.closed) {
+      ready();
+      return false;
+    }
+    const wh = this.fsw._getWatchHelpers(path5);
+    if (priorWh) {
+      wh.filterPath = (entry) => priorWh.filterPath(entry);
+      wh.filterDir = (entry) => priorWh.filterDir(entry);
+    }
+    try {
+      const stats = await statMethods[wh.statMethod](wh.watchPath);
+      if (this.fsw.closed)
+        return;
+      if (this.fsw._isIgnored(wh.watchPath, stats)) {
+        ready();
+        return false;
+      }
+      const follow = this.fsw.options.followSymlinks;
+      let closer;
+      if (stats.isDirectory()) {
+        const absPath = sysPath.resolve(path5);
+        const targetPath = follow ? await fsrealpath(path5) : path5;
+        if (this.fsw.closed)
+          return;
+        closer = await this._handleDir(wh.watchPath, stats, initialAdd, depth, target, wh, targetPath);
+        if (this.fsw.closed)
+          return;
+        if (absPath !== targetPath && targetPath !== void 0) {
+          this.fsw._symlinkPaths.set(absPath, targetPath);
+        }
+      } else if (stats.isSymbolicLink()) {
+        const targetPath = follow ? await fsrealpath(path5) : path5;
+        if (this.fsw.closed)
+          return;
+        const parent = sysPath.dirname(wh.watchPath);
+        this.fsw._getWatchedDir(parent).add(wh.watchPath);
+        this.fsw._emit(EV.ADD, wh.watchPath, stats);
+        closer = await this._handleDir(parent, stats, initialAdd, depth, path5, wh, targetPath);
+        if (this.fsw.closed)
+          return;
+        if (targetPath !== void 0) {
+          this.fsw._symlinkPaths.set(sysPath.resolve(path5), targetPath);
+        }
+      } else {
+        closer = this._handleFile(wh.watchPath, stats, initialAdd);
+      }
+      ready();
+      if (closer)
+        this.fsw._addPathCloser(path5, closer);
+      return false;
+    } catch (error2) {
+      if (this.fsw._handleError(error2)) {
+        ready();
+        return path5;
+      }
+    }
+  }
+};
+
+// ../../node_modules/chokidar/esm/index.js
+var SLASH = "/";
+var SLASH_SLASH = "//";
+var ONE_DOT = ".";
+var TWO_DOTS = "..";
+var STRING_TYPE = "string";
+var BACK_SLASH_RE = /\\/g;
+var DOUBLE_SLASH_RE = /\/\//;
+var DOT_RE = /\..*\.(sw[px])$|~$|\.subl.*\.tmp/;
+var REPLACER_RE = /^\.[/\\]/;
+function arrify(item) {
+  return Array.isArray(item) ? item : [item];
+}
+var isMatcherObject = (matcher) => typeof matcher === "object" && matcher !== null && !(matcher instanceof RegExp);
+function createPattern(matcher) {
+  if (typeof matcher === "function")
+    return matcher;
+  if (typeof matcher === "string")
+    return (string3) => matcher === string3;
+  if (matcher instanceof RegExp)
+    return (string3) => matcher.test(string3);
+  if (typeof matcher === "object" && matcher !== null) {
+    return (string3) => {
+      if (matcher.path === string3)
+        return true;
+      if (matcher.recursive) {
+        const relative6 = sysPath2.relative(matcher.path, string3);
+        if (!relative6) {
+          return false;
+        }
+        return !relative6.startsWith("..") && !sysPath2.isAbsolute(relative6);
+      }
+      return false;
+    };
+  }
+  return () => false;
+}
+function normalizePath(path5) {
+  if (typeof path5 !== "string")
+    throw new Error("string expected");
+  path5 = sysPath2.normalize(path5);
+  path5 = path5.replace(/\\/g, "/");
+  let prepend = false;
+  if (path5.startsWith("//"))
+    prepend = true;
+  const DOUBLE_SLASH_RE2 = /\/\//;
+  while (path5.match(DOUBLE_SLASH_RE2))
+    path5 = path5.replace(DOUBLE_SLASH_RE2, "/");
+  if (prepend)
+    path5 = "/" + path5;
+  return path5;
+}
+function matchPatterns(patterns, testString, stats) {
+  const path5 = normalizePath(testString);
+  for (let index = 0; index < patterns.length; index++) {
+    const pattern = patterns[index];
+    if (pattern(path5, stats)) {
+      return true;
+    }
+  }
+  return false;
+}
+function anymatch(matchers, testString) {
+  if (matchers == null) {
+    throw new TypeError("anymatch: specify first argument");
+  }
+  const matchersArray = arrify(matchers);
+  const patterns = matchersArray.map((matcher) => createPattern(matcher));
+  if (testString == null) {
+    return (testString2, stats) => {
+      return matchPatterns(patterns, testString2, stats);
+    };
+  }
+  return matchPatterns(patterns, testString);
+}
+var unifyPaths = (paths_) => {
+  const paths = arrify(paths_).flat();
+  if (!paths.every((p) => typeof p === STRING_TYPE)) {
+    throw new TypeError(`Non-string provided as watch path: ${paths}`);
+  }
+  return paths.map(normalizePathToUnix);
+};
+var toUnix = (string3) => {
+  let str = string3.replace(BACK_SLASH_RE, SLASH);
+  let prepend = false;
+  if (str.startsWith(SLASH_SLASH)) {
+    prepend = true;
+  }
+  while (str.match(DOUBLE_SLASH_RE)) {
+    str = str.replace(DOUBLE_SLASH_RE, SLASH);
+  }
+  if (prepend) {
+    str = SLASH + str;
+  }
+  return str;
+};
+var normalizePathToUnix = (path5) => toUnix(sysPath2.normalize(toUnix(path5)));
+var normalizeIgnored = (cwd = "") => (path5) => {
+  if (typeof path5 === "string") {
+    return normalizePathToUnix(sysPath2.isAbsolute(path5) ? path5 : sysPath2.join(cwd, path5));
+  } else {
+    return path5;
+  }
+};
+var getAbsolutePath = (path5, cwd) => {
+  if (sysPath2.isAbsolute(path5)) {
+    return path5;
+  }
+  return sysPath2.join(cwd, path5);
+};
+var EMPTY_SET = Object.freeze(/* @__PURE__ */ new Set());
+var DirEntry = class {
+  constructor(dir, removeWatcher) {
+    this.path = dir;
+    this._removeWatcher = removeWatcher;
+    this.items = /* @__PURE__ */ new Set();
+  }
+  add(item) {
+    const { items } = this;
+    if (!items)
+      return;
+    if (item !== ONE_DOT && item !== TWO_DOTS)
+      items.add(item);
+  }
+  async remove(item) {
+    const { items } = this;
+    if (!items)
+      return;
+    items.delete(item);
+    if (items.size > 0)
+      return;
+    const dir = this.path;
+    try {
+      await readdir3(dir);
+    } catch (err) {
+      if (this._removeWatcher) {
+        this._removeWatcher(sysPath2.dirname(dir), sysPath2.basename(dir));
+      }
+    }
+  }
+  has(item) {
+    const { items } = this;
+    if (!items)
+      return;
+    return items.has(item);
+  }
+  getChildren() {
+    const { items } = this;
+    if (!items)
+      return [];
+    return [...items.values()];
+  }
+  dispose() {
+    this.items.clear();
+    this.path = "";
+    this._removeWatcher = EMPTY_FN;
+    this.items = EMPTY_SET;
+    Object.freeze(this);
+  }
+};
+var STAT_METHOD_F = "stat";
+var STAT_METHOD_L = "lstat";
+var WatchHelper = class {
+  constructor(path5, follow, fsw) {
+    this.fsw = fsw;
+    const watchPath = path5;
+    this.path = path5 = path5.replace(REPLACER_RE, "");
+    this.watchPath = watchPath;
+    this.fullWatchPath = sysPath2.resolve(watchPath);
+    this.dirParts = [];
+    this.dirParts.forEach((parts) => {
+      if (parts.length > 1)
+        parts.pop();
+    });
+    this.followSymlinks = follow;
+    this.statMethod = follow ? STAT_METHOD_F : STAT_METHOD_L;
+  }
+  entryPath(entry) {
+    return sysPath2.join(this.watchPath, sysPath2.relative(this.watchPath, entry.fullPath));
+  }
+  filterPath(entry) {
+    const { stats } = entry;
+    if (stats && stats.isSymbolicLink())
+      return this.filterDir(entry);
+    const resolvedPath = this.entryPath(entry);
+    return this.fsw._isntIgnored(resolvedPath, stats) && this.fsw._hasReadPermissions(stats);
+  }
+  filterDir(entry) {
+    return this.fsw._isntIgnored(this.entryPath(entry), entry.stats);
+  }
+};
+var FSWatcher = class extends EventEmitter {
+  // Not indenting methods for history sake; for now.
+  constructor(_opts = {}) {
+    super();
+    this.closed = false;
+    this._closers = /* @__PURE__ */ new Map();
+    this._ignoredPaths = /* @__PURE__ */ new Set();
+    this._throttled = /* @__PURE__ */ new Map();
+    this._streams = /* @__PURE__ */ new Set();
+    this._symlinkPaths = /* @__PURE__ */ new Map();
+    this._watched = /* @__PURE__ */ new Map();
+    this._pendingWrites = /* @__PURE__ */ new Map();
+    this._pendingUnlinks = /* @__PURE__ */ new Map();
+    this._readyCount = 0;
+    this._readyEmitted = false;
+    const awf = _opts.awaitWriteFinish;
+    const DEF_AWF = { stabilityThreshold: 2e3, pollInterval: 100 };
+    const opts = {
+      // Defaults
+      persistent: true,
+      ignoreInitial: false,
+      ignorePermissionErrors: false,
+      interval: 100,
+      binaryInterval: 300,
+      followSymlinks: true,
+      usePolling: false,
+      // useAsync: false,
+      atomic: true,
+      // NOTE: overwritten later (depends on usePolling)
+      ..._opts,
+      // Change format
+      ignored: _opts.ignored ? arrify(_opts.ignored) : arrify([]),
+      awaitWriteFinish: awf === true ? DEF_AWF : typeof awf === "object" ? { ...DEF_AWF, ...awf } : false
+    };
+    if (isIBMi)
+      opts.usePolling = true;
+    if (opts.atomic === void 0)
+      opts.atomic = !opts.usePolling;
+    const envPoll = process.env.CHOKIDAR_USEPOLLING;
+    if (envPoll !== void 0) {
+      const envLower = envPoll.toLowerCase();
+      if (envLower === "false" || envLower === "0")
+        opts.usePolling = false;
+      else if (envLower === "true" || envLower === "1")
+        opts.usePolling = true;
+      else
+        opts.usePolling = !!envLower;
+    }
+    const envInterval = process.env.CHOKIDAR_INTERVAL;
+    if (envInterval)
+      opts.interval = Number.parseInt(envInterval, 10);
+    let readyCalls = 0;
+    this._emitReady = () => {
+      readyCalls++;
+      if (readyCalls >= this._readyCount) {
+        this._emitReady = EMPTY_FN;
+        this._readyEmitted = true;
+        process.nextTick(() => this.emit(EVENTS.READY));
+      }
+    };
+    this._emitRaw = (...args) => this.emit(EVENTS.RAW, ...args);
+    this._boundRemove = this._remove.bind(this);
+    this.options = opts;
+    this._nodeFsHandler = new NodeFsHandler(this);
+    Object.freeze(opts);
+  }
+  _addIgnoredPath(matcher) {
+    if (isMatcherObject(matcher)) {
+      for (const ignored of this._ignoredPaths) {
+        if (isMatcherObject(ignored) && ignored.path === matcher.path && ignored.recursive === matcher.recursive) {
+          return;
+        }
+      }
+    }
+    this._ignoredPaths.add(matcher);
+  }
+  _removeIgnoredPath(matcher) {
+    this._ignoredPaths.delete(matcher);
+    if (typeof matcher === "string") {
+      for (const ignored of this._ignoredPaths) {
+        if (isMatcherObject(ignored) && ignored.path === matcher) {
+          this._ignoredPaths.delete(ignored);
+        }
+      }
+    }
+  }
+  // Public methods
+  /**
+   * Adds paths to be watched on an existing FSWatcher instance.
+   * @param paths_ file or file list. Other arguments are unused
+   */
+  add(paths_, _origAdd, _internal) {
+    const { cwd } = this.options;
+    this.closed = false;
+    this._closePromise = void 0;
+    let paths = unifyPaths(paths_);
+    if (cwd) {
+      paths = paths.map((path5) => {
+        const absPath = getAbsolutePath(path5, cwd);
+        return absPath;
+      });
+    }
+    paths.forEach((path5) => {
+      this._removeIgnoredPath(path5);
+    });
+    this._userIgnored = void 0;
+    if (!this._readyCount)
+      this._readyCount = 0;
+    this._readyCount += paths.length;
+    Promise.all(paths.map(async (path5) => {
+      const res = await this._nodeFsHandler._addToNodeFs(path5, !_internal, void 0, 0, _origAdd);
+      if (res)
+        this._emitReady();
+      return res;
+    })).then((results) => {
+      if (this.closed)
+        return;
+      results.forEach((item) => {
+        if (item)
+          this.add(sysPath2.dirname(item), sysPath2.basename(_origAdd || item));
+      });
+    });
+    return this;
+  }
+  /**
+   * Close watchers or start ignoring events from specified paths.
+   */
+  unwatch(paths_) {
+    if (this.closed)
+      return this;
+    const paths = unifyPaths(paths_);
+    const { cwd } = this.options;
+    paths.forEach((path5) => {
+      if (!sysPath2.isAbsolute(path5) && !this._closers.has(path5)) {
+        if (cwd)
+          path5 = sysPath2.join(cwd, path5);
+        path5 = sysPath2.resolve(path5);
+      }
+      this._closePath(path5);
+      this._addIgnoredPath(path5);
+      if (this._watched.has(path5)) {
+        this._addIgnoredPath({
+          path: path5,
+          recursive: true
+        });
+      }
+      this._userIgnored = void 0;
+    });
+    return this;
+  }
+  /**
+   * Close watchers and remove all listeners from watched paths.
+   */
+  close() {
+    if (this._closePromise) {
+      return this._closePromise;
+    }
+    this.closed = true;
+    this.removeAllListeners();
+    const closers = [];
+    this._closers.forEach((closerList) => closerList.forEach((closer) => {
+      const promise = closer();
+      if (promise instanceof Promise)
+        closers.push(promise);
+    }));
+    this._streams.forEach((stream) => stream.destroy());
+    this._userIgnored = void 0;
+    this._readyCount = 0;
+    this._readyEmitted = false;
+    this._watched.forEach((dirent) => dirent.dispose());
+    this._closers.clear();
+    this._watched.clear();
+    this._streams.clear();
+    this._symlinkPaths.clear();
+    this._throttled.clear();
+    this._closePromise = closers.length ? Promise.all(closers).then(() => void 0) : Promise.resolve();
+    return this._closePromise;
+  }
+  /**
+   * Expose list of watched paths
+   * @returns for chaining
+   */
+  getWatched() {
+    const watchList = {};
+    this._watched.forEach((entry, dir) => {
+      const key = this.options.cwd ? sysPath2.relative(this.options.cwd, dir) : dir;
+      const index = key || ONE_DOT;
+      watchList[index] = entry.getChildren().sort();
+    });
+    return watchList;
+  }
+  emitWithAll(event, args) {
+    this.emit(event, ...args);
+    if (event !== EVENTS.ERROR)
+      this.emit(EVENTS.ALL, event, ...args);
+  }
+  // Common helpers
+  // --------------
+  /**
+   * Normalize and emit events.
+   * Calling _emit DOES NOT MEAN emit() would be called!
+   * @param event Type of event
+   * @param path File or directory path
+   * @param stats arguments to be passed with event
+   * @returns the error if defined, otherwise the value of the FSWatcher instance's `closed` flag
+   */
+  async _emit(event, path5, stats) {
+    if (this.closed)
+      return;
+    const opts = this.options;
+    if (isWindows)
+      path5 = sysPath2.normalize(path5);
+    if (opts.cwd)
+      path5 = sysPath2.relative(opts.cwd, path5);
+    const args = [path5];
+    if (stats != null)
+      args.push(stats);
+    const awf = opts.awaitWriteFinish;
+    let pw;
+    if (awf && (pw = this._pendingWrites.get(path5))) {
+      pw.lastChange = /* @__PURE__ */ new Date();
+      return this;
+    }
+    if (opts.atomic) {
+      if (event === EVENTS.UNLINK) {
+        this._pendingUnlinks.set(path5, [event, ...args]);
+        setTimeout(() => {
+          this._pendingUnlinks.forEach((entry, path6) => {
+            this.emit(...entry);
+            this.emit(EVENTS.ALL, ...entry);
+            this._pendingUnlinks.delete(path6);
+          });
+        }, typeof opts.atomic === "number" ? opts.atomic : 100);
+        return this;
+      }
+      if (event === EVENTS.ADD && this._pendingUnlinks.has(path5)) {
+        event = EVENTS.CHANGE;
+        this._pendingUnlinks.delete(path5);
+      }
+    }
+    if (awf && (event === EVENTS.ADD || event === EVENTS.CHANGE) && this._readyEmitted) {
+      const awfEmit = (err, stats2) => {
+        if (err) {
+          event = EVENTS.ERROR;
+          args[0] = err;
+          this.emitWithAll(event, args);
+        } else if (stats2) {
+          if (args.length > 1) {
+            args[1] = stats2;
+          } else {
+            args.push(stats2);
+          }
+          this.emitWithAll(event, args);
+        }
+      };
+      this._awaitWriteFinish(path5, awf.stabilityThreshold, event, awfEmit);
+      return this;
+    }
+    if (event === EVENTS.CHANGE) {
+      const isThrottled = !this._throttle(EVENTS.CHANGE, path5, 50);
+      if (isThrottled)
+        return this;
+    }
+    if (opts.alwaysStat && stats === void 0 && (event === EVENTS.ADD || event === EVENTS.ADD_DIR || event === EVENTS.CHANGE)) {
+      const fullPath = opts.cwd ? sysPath2.join(opts.cwd, path5) : path5;
+      let stats2;
+      try {
+        stats2 = await stat3(fullPath);
+      } catch (err) {
+      }
+      if (!stats2 || this.closed)
+        return;
+      args.push(stats2);
+    }
+    this.emitWithAll(event, args);
+    return this;
+  }
+  /**
+   * Common handler for errors
+   * @returns The error if defined, otherwise the value of the FSWatcher instance's `closed` flag
+   */
+  _handleError(error2) {
+    const code = error2 && error2.code;
+    if (error2 && code !== "ENOENT" && code !== "ENOTDIR" && (!this.options.ignorePermissionErrors || code !== "EPERM" && code !== "EACCES")) {
+      this.emit(EVENTS.ERROR, error2);
+    }
+    return error2 || this.closed;
+  }
+  /**
+   * Helper utility for throttling
+   * @param actionType type being throttled
+   * @param path being acted upon
+   * @param timeout duration of time to suppress duplicate actions
+   * @returns tracking object or false if action should be suppressed
+   */
+  _throttle(actionType, path5, timeout) {
+    if (!this._throttled.has(actionType)) {
+      this._throttled.set(actionType, /* @__PURE__ */ new Map());
+    }
+    const action = this._throttled.get(actionType);
+    if (!action)
+      throw new Error("invalid throttle");
+    const actionPath = action.get(path5);
+    if (actionPath) {
+      actionPath.count++;
+      return false;
+    }
+    let timeoutObject;
+    const clear = () => {
+      const item = action.get(path5);
+      const count = item ? item.count : 0;
+      action.delete(path5);
+      clearTimeout(timeoutObject);
+      if (item)
+        clearTimeout(item.timeoutObject);
+      return count;
+    };
+    timeoutObject = setTimeout(clear, timeout);
+    const thr = { timeoutObject, clear, count: 0 };
+    action.set(path5, thr);
+    return thr;
+  }
+  _incrReadyCount() {
+    return this._readyCount++;
+  }
+  /**
+   * Awaits write operation to finish.
+   * Polls a newly created file for size variations. When files size does not change for 'threshold' milliseconds calls callback.
+   * @param path being acted upon
+   * @param threshold Time in milliseconds a file size must be fixed before acknowledging write OP is finished
+   * @param event
+   * @param awfEmit Callback to be called when ready for event to be emitted.
+   */
+  _awaitWriteFinish(path5, threshold, event, awfEmit) {
+    const awf = this.options.awaitWriteFinish;
+    if (typeof awf !== "object")
+      return;
+    const pollInterval = awf.pollInterval;
+    let timeoutHandler;
+    let fullPath = path5;
+    if (this.options.cwd && !sysPath2.isAbsolute(path5)) {
+      fullPath = sysPath2.join(this.options.cwd, path5);
+    }
+    const now = /* @__PURE__ */ new Date();
+    const writes = this._pendingWrites;
+    function awaitWriteFinishFn(prevStat) {
+      statcb(fullPath, (err, curStat) => {
+        if (err || !writes.has(path5)) {
+          if (err && err.code !== "ENOENT")
+            awfEmit(err);
+          return;
+        }
+        const now2 = Number(/* @__PURE__ */ new Date());
+        if (prevStat && curStat.size !== prevStat.size) {
+          writes.get(path5).lastChange = now2;
+        }
+        const pw = writes.get(path5);
+        const df = now2 - pw.lastChange;
+        if (df >= threshold) {
+          writes.delete(path5);
+          awfEmit(void 0, curStat);
+        } else {
+          timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval, curStat);
+        }
+      });
+    }
+    if (!writes.has(path5)) {
+      writes.set(path5, {
+        lastChange: now,
+        cancelWait: () => {
+          writes.delete(path5);
+          clearTimeout(timeoutHandler);
+          return event;
+        }
+      });
+      timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval);
+    }
+  }
+  /**
+   * Determines whether user has asked to ignore this path.
+   */
+  _isIgnored(path5, stats) {
+    if (this.options.atomic && DOT_RE.test(path5))
+      return true;
+    if (!this._userIgnored) {
+      const { cwd } = this.options;
+      const ign = this.options.ignored;
+      const ignored = (ign || []).map(normalizeIgnored(cwd));
+      const ignoredPaths = [...this._ignoredPaths];
+      const list = [...ignoredPaths.map(normalizeIgnored(cwd)), ...ignored];
+      this._userIgnored = anymatch(list, void 0);
+    }
+    return this._userIgnored(path5, stats);
+  }
+  _isntIgnored(path5, stat4) {
+    return !this._isIgnored(path5, stat4);
+  }
+  /**
+   * Provides a set of common helpers and properties relating to symlink handling.
+   * @param path file or directory pattern being watched
+   */
+  _getWatchHelpers(path5) {
+    return new WatchHelper(path5, this.options.followSymlinks, this);
+  }
+  // Directory helpers
+  // -----------------
+  /**
+   * Provides directory tracking objects
+   * @param directory path of the directory
+   */
+  _getWatchedDir(directory2) {
+    const dir = sysPath2.resolve(directory2);
+    if (!this._watched.has(dir))
+      this._watched.set(dir, new DirEntry(dir, this._boundRemove));
+    return this._watched.get(dir);
+  }
+  // File helpers
+  // ------------
+  /**
+   * Check for read permissions: https://stackoverflow.com/a/11781404/1358405
+   */
+  _hasReadPermissions(stats) {
+    if (this.options.ignorePermissionErrors)
+      return true;
+    return Boolean(Number(stats.mode) & 256);
+  }
+  /**
+   * Handles emitting unlink events for
+   * files and directories, and via recursion, for
+   * files and directories within directories that are unlinked
+   * @param directory within which the following item is located
+   * @param item      base path of item/directory
+   */
+  _remove(directory2, item, isDirectory) {
+    const path5 = sysPath2.join(directory2, item);
+    const fullPath = sysPath2.resolve(path5);
+    isDirectory = isDirectory != null ? isDirectory : this._watched.has(path5) || this._watched.has(fullPath);
+    if (!this._throttle("remove", path5, 100))
+      return;
+    if (!isDirectory && this._watched.size === 1) {
+      this.add(directory2, item, true);
+    }
+    const wp = this._getWatchedDir(path5);
+    const nestedDirectoryChildren = wp.getChildren();
+    nestedDirectoryChildren.forEach((nested) => this._remove(path5, nested));
+    const parent = this._getWatchedDir(directory2);
+    const wasTracked = parent.has(item);
+    parent.remove(item);
+    if (this._symlinkPaths.has(fullPath)) {
+      this._symlinkPaths.delete(fullPath);
+    }
+    let relPath = path5;
+    if (this.options.cwd)
+      relPath = sysPath2.relative(this.options.cwd, path5);
+    if (this.options.awaitWriteFinish && this._pendingWrites.has(relPath)) {
+      const event = this._pendingWrites.get(relPath).cancelWait();
+      if (event === EVENTS.ADD)
+        return;
+    }
+    this._watched.delete(path5);
+    this._watched.delete(fullPath);
+    const eventName = isDirectory ? EVENTS.UNLINK_DIR : EVENTS.UNLINK;
+    if (wasTracked && !this._isIgnored(path5))
+      this._emit(eventName, path5);
+    this._closePath(path5);
+  }
+  /**
+   * Closes all watchers for a path
+   */
+  _closePath(path5) {
+    this._closeFile(path5);
+    const dir = sysPath2.dirname(path5);
+    this._getWatchedDir(dir).remove(sysPath2.basename(path5));
+  }
+  /**
+   * Closes only file-specific watchers
+   */
+  _closeFile(path5) {
+    const closers = this._closers.get(path5);
+    if (!closers)
+      return;
+    closers.forEach((closer) => closer());
+    this._closers.delete(path5);
+  }
+  _addPathCloser(path5, closer) {
+    if (!closer)
+      return;
+    let list = this._closers.get(path5);
+    if (!list) {
+      list = [];
+      this._closers.set(path5, list);
+    }
+    list.push(closer);
+  }
+  _readdirp(root, opts) {
+    if (this.closed)
+      return;
+    const options = { type: EVENTS.ALL, alwaysStat: true, lstat: true, ...opts, depth: 0 };
+    let stream = readdirp(root, options);
+    this._streams.add(stream);
+    stream.once(STR_CLOSE, () => {
+      stream = void 0;
+    });
+    stream.once(STR_END, () => {
+      if (stream) {
+        this._streams.delete(stream);
+        stream = void 0;
+      }
+    });
+    return stream;
+  }
+};
+function watch(paths, options = {}) {
+  const watcher = new FSWatcher(options);
+  watcher.add(paths);
+  return watcher;
+}
+var esm_default = { watch, FSWatcher };
+
+// src/freshness/workspace-freshness-support.ts
+var coalesceMilliseconds = 100;
+var chokidarWatchOptions = {
+  atomic: 100,
+  awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 100 },
+  alwaysStat: true,
+  followSymlinks: false,
+  ignorePermissionErrors: false
+};
+function sameManifest(left, right) {
+  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
+}
+function canPublishGeneration(...args) {
+  const [currentGeneration, analyzedGeneration, captured, prepublication] = args;
+  return analyzedGeneration > currentGeneration && sameManifest(captured, prepublication);
+}
+function createChokidarWatcher(paths) {
+  return esm_default.watch(
+    [...paths],
+    chokidarWatchOptions
+  );
+}
+function createWatcher(options, schedule) {
+  try {
+    return attachWatcher(createWatcherFor(options), schedule);
+  } catch {
+    return void 0;
+  }
+}
+function createWatcherFor(options) {
+  return options.createWatcher ? options.createWatcher() : createChokidarWatcher(options.watch_paths ?? []);
+}
+function attachWatcher(watcher, schedule) {
+  watcher.on("all", schedule);
+  watcher.on("error", schedule);
+  return watcher;
+}
+function clearTimer(options, timer) {
+  const clear = options.clearTimeout ?? globalThis.clearTimeout;
+  clear(timer);
+}
+function clearTimers(options, runtime) {
+  for (const timer of [
+    runtime.coalesceTimer,
+    runtime.pollTimer,
+    runtime.manifestTimer
+  ]) {
+    if (timer !== void 0) clearTimer(options, timer);
+  }
+}
+
+// src/freshness/workspace-reconciliation.ts
+function sameManifest2(left, right) {
+  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
+}
+function canReuseCurrent(runtime, captured) {
+  return !runtime.forceRefresh && runtime.status.current_generation > 0 && sameManifest2(runtime.manifest, captured);
+}
+function readyCurrent(runtime) {
+  runtime.status = {
+    current_generation: runtime.status.current_generation,
+    pending_generation: null,
+    state: "ready",
+    mode: runtime.status.mode
+  };
+  runtime.forceRefresh = false;
+}
+async function reconcileAttempt(options, runtime) {
+  const captured = await options.reconcile();
+  if ("cause" in captured) {
+    runtime.degrade(captured.cause);
+    return true;
+  }
+  if (canReuseCurrent(runtime, captured.manifest)) {
+    readyCurrent(runtime);
+    return true;
+  }
+  return analyzeAndPublish(options, runtime, captured.manifest);
+}
+async function analyzeAndPublish(options, runtime, captured) {
+  const generation = generationFor(runtime);
+  await options.analyze?.(generation, captured);
+  const published = await publishedResult(options, captured);
+  if ("cause" in published) {
+    runtime.degrade(published.cause);
+    return true;
+  }
+  if (canPublishGeneration(
+    runtime.status.current_generation,
+    generation,
+    captured,
+    published.manifest
+  )) {
+    runtime.ready(generation, published.manifest);
+    return true;
+  }
+  runtime.reserveGeneration();
+  return false;
+}
+function generationFor(runtime) {
+  if (runtime.status.pending_generation !== null)
+    return runtime.status.pending_generation;
+  return runtime.reserveGeneration();
+}
+function publishedResult(options, captured) {
+  if (options.verify) return options.verify();
+  return Promise.resolve({ manifest: captured });
+}
+async function reconcileWorkspace(options, runtime) {
+  for (let mismatchCount = 0; mismatchCount < 3; mismatchCount += 1) {
+    if (await reconcileAttempt(options, runtime)) return;
+  }
+  runtime.degrade("workspace_churn");
+}
+
+// src/freshness/workspace-scheduling.ts
+function schedulePolling(options) {
+  const { runtime, timeout, reconcile, schedulePolling: schedulePolling2 } = options;
+  if (runtime.status.mode !== "polling" || runtime.activeSessions === 0 || runtime.pollTimer !== void 0)
+    return;
+  runtime.pollTimer = timeout(() => {
+    runtime.pollTimer = void 0;
+    void reconcile().finally(schedulePolling2);
+  }, 5e3);
+}
+function scheduleManifestCheck(options) {
+  const { runtime, timeout, reconcile, scheduleManifestCheck: scheduleManifestCheck2 } = options;
+  if (runtime.activeSessions === 0 || runtime.manifestTimer !== void 0)
+    return;
+  runtime.manifestTimer = timeout(() => {
+    runtime.manifestTimer = void 0;
+    void reconcile().finally(scheduleManifestCheck2);
+  }, 3e4);
+}
+function scheduleWorkspaceTimers(options) {
+  schedulePolling({ ...options, schedulePolling: options.schedule });
+  scheduleManifestCheck({
+    ...options,
+    scheduleManifestCheck: options.schedule
   });
 }
 
-// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
-var stdio_exports = {};
-__export(stdio_exports, {
-  StdioServerTransport: () => StdioServerTransport
+// src/freshness/workspace-freshness.ts
+var WorkspaceFreshness = class {
+  constructor(options) {
+    this.options = options;
+  }
+  options;
+  #runtime = new FreshnessRuntime();
+  status() {
+    return { ...this.#runtime.status };
+  }
+  failRefresh() {
+    this.#runtime.failRefresh();
+  }
+  reserveRefresh() {
+    this.#runtime.reserveRefresh();
+    return this.status();
+  }
+  async start(activeSessions = 0) {
+    this.#runtime.activeSessions = activeSessions;
+    const watcher = createWatcher(this.options, () => this.schedule());
+    if (watcher) this.#runtime.watcher = watcher;
+    if (!watcher) {
+      this.#runtime.status = { ...this.#runtime.status, mode: "polling" };
+      this.#scheduleTimers();
+    }
+    this.#scheduleTimers();
+    await this.reconcile();
+  }
+  setActiveSessions(count) {
+    this.#runtime.activeSessions = count;
+    this.#scheduleTimers();
+  }
+  schedule() {
+    if (this.#runtime.coalesceTimer !== void 0) return;
+    this.#runtime.coalesceTimer = this.timeout(() => {
+      this.#runtime.coalesceTimer = void 0;
+      void this.reconcile();
+    }, coalesceMilliseconds);
+  }
+  async reconcile() {
+    if (this.#runtime.running) return this.#runtime.running;
+    if (this.#runtime.status.pending_generation === null)
+      this.#runtime.reserveGeneration();
+    const run = reconcileWorkspace(this.options, this.#runtime).catch(() => this.#runtime.degrade("freshness_unavailable")).finally(() => {
+      this.#runtime.running = void 0;
+    });
+    return this.#runtime.running = run;
+  }
+  async close() {
+    clearTimers(this.options, this.#runtime);
+    await this.#runtime.watcher?.close();
+  }
+  #scheduleTimers() {
+    scheduleWorkspaceTimers({
+      runtime: this.#runtime,
+      timeout: (callback, delay2) => this.timeout(callback, delay2),
+      reconcile: () => this.reconcile(),
+      schedule: () => this.#scheduleTimers()
+    });
+  }
+  timeout(callback, delay2) {
+    return (this.options.setTimeout ?? globalThis.setTimeout)(callback, delay2);
+  }
+};
+
+// src/freshness/workspace-native.ts
+function createNativeWorkspaceFreshness(options) {
+  return new WorkspaceFreshness({
+    reconcile: () => reconcileNativeManifest(options),
+    verify: () => reconcileNativeManifest(options),
+    watch_paths: [options.root]
+  });
+}
+
+// src/server/create-server.ts
+var create_server_exports = {};
+__export(create_server_exports, {
+  createServer: () => createServer2
 });
-import process3 from "node:process";
 
 // ../../node_modules/zod/v4/core/core.js
 var NEVER2 = Object.freeze({
@@ -20753,9 +22752,215 @@ function isTransforming(_schema, _ctx) {
   throw new Error(`Unknown schema type: ${def.type}`);
 }
 
+// ../../node_modules/zod/v4/mini/schemas.js
+var ZodMiniType = /* @__PURE__ */ $constructor("ZodMiniType", (inst, def) => {
+  if (!inst._zod)
+    throw new Error("Uninitialized schema in ZodMiniType.");
+  $ZodType.init(inst, def);
+  inst.def = def;
+  inst.parse = (data, params) => parse(inst, data, params, { callee: inst.parse });
+  inst.safeParse = (data, params) => safeParse(inst, data, params);
+  inst.parseAsync = async (data, params) => parseAsync(inst, data, params, { callee: inst.parseAsync });
+  inst.safeParseAsync = async (data, params) => safeParseAsync(inst, data, params);
+  inst.check = (...checks) => {
+    return inst.clone(
+      {
+        ...def,
+        checks: [
+          ...def.checks ?? [],
+          ...checks.map((ch) => typeof ch === "function" ? { _zod: { check: ch, def: { check: "custom" }, onattach: [] } } : ch)
+        ]
+      }
+      // { parent: true }
+    );
+  };
+  inst.clone = (_def, params) => clone2(inst, _def, params);
+  inst.brand = () => inst;
+  inst.register = ((reg, meta) => {
+    reg.add(inst, meta);
+    return inst;
+  });
+});
+var ZodMiniObject = /* @__PURE__ */ $constructor("ZodMiniObject", (inst, def) => {
+  $ZodObject.init(inst, def);
+  ZodMiniType.init(inst, def);
+  util_exports.defineLazy(inst, "shape", () => def.shape);
+});
+function object(shape, params) {
+  const def = {
+    type: "object",
+    get shape() {
+      util_exports.assignProp(this, "shape", { ...shape });
+      return this.shape;
+    },
+    ...util_exports.normalizeParams(params)
+  };
+  return new ZodMiniObject(def);
+}
+
+// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
+function isZ4Schema(s) {
+  const schema = s;
+  return !!schema._zod;
+}
+function objectFromShape(shape) {
+  const values = Object.values(shape);
+  if (values.length === 0)
+    return object({});
+  const allV4 = values.every(isZ4Schema);
+  const allV3 = values.every((s) => !isZ4Schema(s));
+  if (allV4)
+    return object(shape);
+  if (allV3)
+    return objectType(shape);
+  throw new Error("Mixed Zod versions detected in object shape.");
+}
+function safeParse2(schema, data) {
+  if (isZ4Schema(schema)) {
+    const result2 = safeParse(schema, data);
+    return result2;
+  }
+  const v3Schema = schema;
+  const result = v3Schema.safeParse(data);
+  return result;
+}
+async function safeParseAsync2(schema, data) {
+  if (isZ4Schema(schema)) {
+    const result2 = await safeParseAsync(schema, data);
+    return result2;
+  }
+  const v3Schema = schema;
+  const result = await v3Schema.safeParseAsync(data);
+  return result;
+}
+function getObjectShape(schema) {
+  if (!schema)
+    return void 0;
+  let rawShape;
+  if (isZ4Schema(schema)) {
+    const v4Schema = schema;
+    rawShape = v4Schema._zod?.def?.shape;
+  } else {
+    const v3Schema = schema;
+    rawShape = v3Schema.shape;
+  }
+  if (!rawShape)
+    return void 0;
+  if (typeof rawShape === "function") {
+    try {
+      return rawShape();
+    } catch {
+      return void 0;
+    }
+  }
+  return rawShape;
+}
+function normalizeObjectSchema(schema) {
+  if (!schema)
+    return void 0;
+  if (typeof schema === "object") {
+    const asV3 = schema;
+    const asV4 = schema;
+    if (!asV3._def && !asV4._zod) {
+      const values = Object.values(schema);
+      if (values.length > 0 && values.every((v) => typeof v === "object" && v !== null && (v._def !== void 0 || v._zod !== void 0 || typeof v.parse === "function"))) {
+        return objectFromShape(schema);
+      }
+    }
+  }
+  if (isZ4Schema(schema)) {
+    const v4Schema = schema;
+    const def = v4Schema._zod?.def;
+    if (def && (def.type === "object" || def.shape !== void 0)) {
+      return schema;
+    }
+  } else {
+    const v3Schema = schema;
+    if (v3Schema.shape !== void 0) {
+      return schema;
+    }
+  }
+  return void 0;
+}
+function getDotPath(path5) {
+  if (path5.length === 0) {
+    return "object root";
+  }
+  return path5.reduce((acc, seg, index) => {
+    if (index === 0) {
+      return String(seg);
+    }
+    if (typeof seg === "number") {
+      return `${acc}[${seg}]`;
+    }
+    return `${acc}.${seg}`;
+  }, "");
+}
+function getParseErrorMessage(error2) {
+  if (error2 && typeof error2 === "object") {
+    if ("issues" in error2 && Array.isArray(error2.issues) && error2.issues.length > 0) {
+      return error2.issues.map((i) => {
+        if (!i.path?.length) {
+          return i.message;
+        }
+        return `${i.message} at ${getDotPath(i.path)}`;
+      }).join("\n");
+    }
+    if ("message" in error2 && typeof error2.message === "string") {
+      return error2.message;
+    }
+    try {
+      return JSON.stringify(error2);
+    } catch {
+      return String(error2);
+    }
+  }
+  return String(error2);
+}
+function getSchemaDescription(schema) {
+  return schema.description;
+}
+function isSchemaOptional(schema) {
+  if (isZ4Schema(schema)) {
+    const v4Schema = schema;
+    return v4Schema._zod?.def?.type === "optional";
+  }
+  const v3Schema = schema;
+  if (typeof schema.isOptional === "function") {
+    return schema.isOptional();
+  }
+  return v3Schema._def?.typeName === "ZodOptional";
+}
+function getLiteralValue(schema) {
+  if (isZ4Schema(schema)) {
+    const v4Schema = schema;
+    const def2 = v4Schema._zod?.def;
+    if (def2) {
+      if (def2.value !== void 0)
+        return def2.value;
+      if (Array.isArray(def2.values) && def2.values.length > 0) {
+        return def2.values[0];
+      }
+    }
+  }
+  const v3Schema = schema;
+  const def = v3Schema._def;
+  if (def) {
+    if (def.value !== void 0)
+      return def.value;
+    if (Array.isArray(def.values) && def.values.length > 0) {
+      return def.values[0];
+    }
+  }
+  const directValue = schema.value;
+  if (directValue !== void 0)
+    return directValue;
+  return void 0;
+}
+
 // ../../node_modules/zod/v4/classic/iso.js
-var iso_exports = {};
-__export(iso_exports, {
+var iso_exports2 = {};
+__export(iso_exports2, {
   ZodISODate: () => ZodISODate,
   ZodISODateTime: () => ZodISODateTime,
   ZodISODuration: () => ZodISODuration,
@@ -20831,8 +23036,8 @@ var ZodRealError = $constructor("ZodError", initializer2, {
 // ../../node_modules/zod/v4/classic/parse.js
 var parse2 = /* @__PURE__ */ _parse(ZodRealError);
 var parseAsync2 = /* @__PURE__ */ _parseAsync(ZodRealError);
-var safeParse2 = /* @__PURE__ */ _safeParse(ZodRealError);
-var safeParseAsync2 = /* @__PURE__ */ _safeParseAsync(ZodRealError);
+var safeParse3 = /* @__PURE__ */ _safeParse(ZodRealError);
+var safeParseAsync3 = /* @__PURE__ */ _safeParseAsync(ZodRealError);
 
 // ../../node_modules/zod/v4/classic/schemas.js
 var ZodType2 = /* @__PURE__ */ $constructor("ZodType", (inst, def) => {
@@ -20858,9 +23063,9 @@ var ZodType2 = /* @__PURE__ */ $constructor("ZodType", (inst, def) => {
     return inst;
   });
   inst.parse = (data, params) => parse2(inst, data, params, { callee: inst.parse });
-  inst.safeParse = (data, params) => safeParse2(inst, data, params);
+  inst.safeParse = (data, params) => safeParse3(inst, data, params);
   inst.parseAsync = async (data, params) => parseAsync2(inst, data, params, { callee: inst.parseAsync });
-  inst.safeParseAsync = async (data, params) => safeParseAsync2(inst, data, params);
+  inst.safeParseAsync = async (data, params) => safeParseAsync3(inst, data, params);
   inst.spa = inst.safeParseAsync;
   inst.refine = (check2, params) => inst.check(refine(check2, params));
   inst.superRefine = (refinement) => inst.check(superRefine(refinement));
@@ -21132,7 +23337,7 @@ var ZodObject2 = /* @__PURE__ */ $constructor("ZodObject", (inst, def) => {
   inst.partial = (...args) => util_exports.partial(ZodOptional2, inst, args[0]);
   inst.required = (...args) => util_exports.required(ZodNonOptional, inst, args[0]);
 });
-function object(shape, params) {
+function object2(shape, params) {
   const def = {
     type: "object",
     get shape() {
@@ -21466,10 +23671,10 @@ var TaskCreationParamsSchema = looseObject({
    */
   pollInterval: number2().optional()
 });
-var TaskMetadataSchema = object({
+var TaskMetadataSchema = object2({
   ttl: number2().optional()
 });
-var RelatedTaskMetadataSchema = object({
+var RelatedTaskMetadataSchema = object2({
   taskId: string2()
 });
 var RequestMetaSchema = looseObject({
@@ -21482,7 +23687,7 @@ var RequestMetaSchema = looseObject({
    */
   [RELATED_TASK_META_KEY]: RelatedTaskMetadataSchema.optional()
 });
-var BaseRequestParamsSchema = object({
+var BaseRequestParamsSchema = object2({
   /**
    * See [General fields: `_meta`](/specification/draft/basic/index#meta) for notes on `_meta` usage.
    */
@@ -21500,18 +23705,18 @@ var TaskAugmentedRequestParamsSchema = BaseRequestParamsSchema.extend({
   task: TaskMetadataSchema.optional()
 });
 var isTaskAugmentedRequestParams = (value) => TaskAugmentedRequestParamsSchema.safeParse(value).success;
-var RequestSchema = object({
+var RequestSchema = object2({
   method: string2(),
   params: BaseRequestParamsSchema.loose().optional()
 });
-var NotificationsParamsSchema = object({
+var NotificationsParamsSchema = object2({
   /**
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
    * for notes on _meta usage.
    */
   _meta: RequestMetaSchema.optional()
 });
-var NotificationSchema = object({
+var NotificationSchema = object2({
   method: string2(),
   params: NotificationsParamsSchema.loose().optional()
 });
@@ -21523,18 +23728,18 @@ var ResultSchema = looseObject({
   _meta: RequestMetaSchema.optional()
 });
 var RequestIdSchema = union([string2(), number2().int()]);
-var JSONRPCRequestSchema = object({
+var JSONRPCRequestSchema = object2({
   jsonrpc: literal(JSONRPC_VERSION),
   id: RequestIdSchema,
   ...RequestSchema.shape
 }).strict();
 var isJSONRPCRequest = (value) => JSONRPCRequestSchema.safeParse(value).success;
-var JSONRPCNotificationSchema = object({
+var JSONRPCNotificationSchema = object2({
   jsonrpc: literal(JSONRPC_VERSION),
   ...NotificationSchema.shape
 }).strict();
 var isJSONRPCNotification = (value) => JSONRPCNotificationSchema.safeParse(value).success;
-var JSONRPCResultResponseSchema = object({
+var JSONRPCResultResponseSchema = object2({
   jsonrpc: literal(JSONRPC_VERSION),
   id: RequestIdSchema,
   result: ResultSchema
@@ -21551,10 +23756,10 @@ var ErrorCode;
   ErrorCode2[ErrorCode2["InternalError"] = -32603] = "InternalError";
   ErrorCode2[ErrorCode2["UrlElicitationRequired"] = -32042] = "UrlElicitationRequired";
 })(ErrorCode || (ErrorCode = {}));
-var JSONRPCErrorResponseSchema = object({
+var JSONRPCErrorResponseSchema = object2({
   jsonrpc: literal(JSONRPC_VERSION),
   id: RequestIdSchema.optional(),
-  error: object({
+  error: object2({
     /**
      * The error type that occurred.
      */
@@ -21594,7 +23799,7 @@ var CancelledNotificationSchema = NotificationSchema.extend({
   method: literal("notifications/cancelled"),
   params: CancelledNotificationParamsSchema
 });
-var IconSchema = object({
+var IconSchema = object2({
   /**
    * URL or data URI for the icon.
    */
@@ -21619,7 +23824,7 @@ var IconSchema = object({
    */
   theme: _enum(["light", "dark"]).optional()
 });
-var IconsSchema = object({
+var IconsSchema = object2({
   /**
    * Optional set of sized icons that the client can display in a user interface.
    *
@@ -21633,7 +23838,7 @@ var IconsSchema = object({
    */
   icons: array(IconSchema).optional()
 });
-var BaseMetadataSchema = object({
+var BaseMetadataSchema = object2({
   /** Intended for programmatic or logical use, but used as a display name in past specs or fallback */
   name: string2(),
   /**
@@ -21663,7 +23868,7 @@ var ImplementationSchema = BaseMetadataSchema.extend({
    */
   description: string2().optional()
 });
-var FormElicitationCapabilitySchema = intersection(object({
+var FormElicitationCapabilitySchema = intersection(object2({
   applyDefaults: boolean2().optional()
 }), record(string2(), unknown()));
 var ElicitationCapabilitySchema = preprocess((value) => {
@@ -21673,7 +23878,7 @@ var ElicitationCapabilitySchema = preprocess((value) => {
     }
   }
   return value;
-}, intersection(object({
+}, intersection(object2({
   form: FormElicitationCapabilitySchema.optional(),
   url: AssertObjectSchema.optional()
 }), record(string2(), unknown()).optional()));
@@ -21725,7 +23930,7 @@ var ServerTasksCapabilitySchema = looseObject({
     }).optional()
   }).optional()
 });
-var ClientCapabilitiesSchema = object({
+var ClientCapabilitiesSchema = object2({
   /**
    * Experimental, non-standard capabilities that the client supports.
    */
@@ -21733,7 +23938,7 @@ var ClientCapabilitiesSchema = object({
   /**
    * Present if the client supports sampling from an LLM.
    */
-  sampling: object({
+  sampling: object2({
     /**
      * Present if the client supports context inclusion via includeContext parameter.
      * If not declared, servers SHOULD only use `includeContext: "none"` (or omit it).
@@ -21751,7 +23956,7 @@ var ClientCapabilitiesSchema = object({
   /**
    * Present if the client supports listing roots.
    */
-  roots: object({
+  roots: object2({
     /**
      * Whether the client supports issuing notifications for changes to the roots list.
      */
@@ -21778,7 +23983,7 @@ var InitializeRequestSchema = RequestSchema.extend({
   method: literal("initialize"),
   params: InitializeRequestParamsSchema
 });
-var ServerCapabilitiesSchema = object({
+var ServerCapabilitiesSchema = object2({
   /**
    * Experimental, non-standard capabilities that the server supports.
    */
@@ -21794,7 +23999,7 @@ var ServerCapabilitiesSchema = object({
   /**
    * Present if the server offers any prompt templates.
    */
-  prompts: object({
+  prompts: object2({
     /**
      * Whether this server supports issuing notifications for changes to the prompt list.
      */
@@ -21803,7 +24008,7 @@ var ServerCapabilitiesSchema = object({
   /**
    * Present if the server offers any resources to read.
    */
-  resources: object({
+  resources: object2({
     /**
      * Whether this server supports clients subscribing to resource updates.
      */
@@ -21816,7 +24021,7 @@ var ServerCapabilitiesSchema = object({
   /**
    * Present if the server offers any tools to call.
    */
-  tools: object({
+  tools: object2({
     /**
      * Whether this server supports issuing notifications for changes to the tool list.
      */
@@ -21853,7 +24058,7 @@ var PingRequestSchema = RequestSchema.extend({
   method: literal("ping"),
   params: BaseRequestParamsSchema.optional()
 });
-var ProgressSchema = object({
+var ProgressSchema = object2({
   /**
    * The progress thus far. This should increase every time progress is made, even if the total is unknown.
    */
@@ -21867,7 +24072,7 @@ var ProgressSchema = object({
    */
   message: optional(string2())
 });
-var ProgressNotificationParamsSchema = object({
+var ProgressNotificationParamsSchema = object2({
   ...NotificationsParamsSchema.shape,
   ...ProgressSchema.shape,
   /**
@@ -21897,7 +24102,7 @@ var PaginatedResultSchema = ResultSchema.extend({
   nextCursor: CursorSchema.optional()
 });
 var TaskStatusSchema = _enum(["working", "input_required", "completed", "failed", "cancelled"]);
-var TaskSchema = object({
+var TaskSchema = object2({
   taskId: string2(),
   status: TaskStatusSchema,
   /**
@@ -21954,7 +24159,7 @@ var CancelTaskRequestSchema = RequestSchema.extend({
   })
 });
 var CancelTaskResultSchema = ResultSchema.merge(TaskSchema);
-var ResourceContentsSchema = object({
+var ResourceContentsSchema = object2({
   /**
    * The URI of this resource.
    */
@@ -21990,7 +24195,7 @@ var BlobResourceContentsSchema = ResourceContentsSchema.extend({
   blob: Base64Schema
 });
 var RoleSchema = _enum(["user", "assistant"]);
-var AnnotationsSchema = object({
+var AnnotationsSchema = object2({
   /**
    * Intended audience(s) for the resource.
    */
@@ -22002,9 +24207,9 @@ var AnnotationsSchema = object({
   /**
    * ISO 8601 timestamp for the most recent modification.
    */
-  lastModified: iso_exports.datetime({ offset: true }).optional()
+  lastModified: iso_exports2.datetime({ offset: true }).optional()
 });
-var ResourceSchema = object({
+var ResourceSchema = object2({
   ...BaseMetadataSchema.shape,
   ...IconsSchema.shape,
   /**
@@ -22037,7 +24242,7 @@ var ResourceSchema = object({
    */
   _meta: optional(looseObject({}))
 });
-var ResourceTemplateSchema = object({
+var ResourceTemplateSchema = object2({
   ...BaseMetadataSchema.shape,
   ...IconsSchema.shape,
   /**
@@ -22116,7 +24321,7 @@ var ResourceUpdatedNotificationSchema = NotificationSchema.extend({
   method: literal("notifications/resources/updated"),
   params: ResourceUpdatedNotificationParamsSchema
 });
-var PromptArgumentSchema = object({
+var PromptArgumentSchema = object2({
   /**
    * The name of the argument.
    */
@@ -22130,7 +24335,7 @@ var PromptArgumentSchema = object({
    */
   required: optional(boolean2())
 });
-var PromptSchema = object({
+var PromptSchema = object2({
   ...BaseMetadataSchema.shape,
   ...IconsSchema.shape,
   /**
@@ -22167,7 +24372,7 @@ var GetPromptRequestSchema = RequestSchema.extend({
   method: literal("prompts/get"),
   params: GetPromptRequestParamsSchema
 });
-var TextContentSchema = object({
+var TextContentSchema = object2({
   type: literal("text"),
   /**
    * The text content of the message.
@@ -22183,7 +24388,7 @@ var TextContentSchema = object({
    */
   _meta: record(string2(), unknown()).optional()
 });
-var ImageContentSchema = object({
+var ImageContentSchema = object2({
   type: literal("image"),
   /**
    * The base64-encoded image data.
@@ -22203,7 +24408,7 @@ var ImageContentSchema = object({
    */
   _meta: record(string2(), unknown()).optional()
 });
-var AudioContentSchema = object({
+var AudioContentSchema = object2({
   type: literal("audio"),
   /**
    * The base64-encoded audio data.
@@ -22223,7 +24428,7 @@ var AudioContentSchema = object({
    */
   _meta: record(string2(), unknown()).optional()
 });
-var ToolUseContentSchema = object({
+var ToolUseContentSchema = object2({
   type: literal("tool_use"),
   /**
    * The name of the tool to invoke.
@@ -22246,7 +24451,7 @@ var ToolUseContentSchema = object({
    */
   _meta: record(string2(), unknown()).optional()
 });
-var EmbeddedResourceSchema = object({
+var EmbeddedResourceSchema = object2({
   type: literal("resource"),
   resource: union([TextResourceContentsSchema, BlobResourceContentsSchema]),
   /**
@@ -22269,7 +24474,7 @@ var ContentBlockSchema = union([
   ResourceLinkSchema,
   EmbeddedResourceSchema
 ]);
-var PromptMessageSchema = object({
+var PromptMessageSchema = object2({
   role: RoleSchema,
   content: ContentBlockSchema
 });
@@ -22284,7 +24489,7 @@ var PromptListChangedNotificationSchema = NotificationSchema.extend({
   method: literal("notifications/prompts/list_changed"),
   params: NotificationsParamsSchema.optional()
 });
-var ToolAnnotationsSchema = object({
+var ToolAnnotationsSchema = object2({
   /**
    * A human-readable title for the tool.
    */
@@ -22323,7 +24528,7 @@ var ToolAnnotationsSchema = object({
    */
   openWorldHint: boolean2().optional()
 });
-var ToolExecutionSchema = object({
+var ToolExecutionSchema = object2({
   /**
    * Indicates the tool's preference for task-augmented execution.
    * - "required": Clients MUST invoke the tool as a task
@@ -22334,7 +24539,7 @@ var ToolExecutionSchema = object({
    */
   taskSupport: _enum(["required", "optional", "forbidden"]).optional()
 });
-var ToolSchema = object({
+var ToolSchema = object2({
   ...BaseMetadataSchema.shape,
   ...IconsSchema.shape,
   /**
@@ -22345,7 +24550,7 @@ var ToolSchema = object({
    * A JSON Schema 2020-12 object defining the expected parameters for the tool.
    * Must have type: 'object' at the root level per MCP spec.
    */
-  inputSchema: object({
+  inputSchema: object2({
     type: literal("object"),
     properties: record(string2(), AssertObjectSchema).optional(),
     required: array(string2()).optional()
@@ -22355,7 +24560,7 @@ var ToolSchema = object({
    * returned in the structuredContent field of a CallToolResult.
    * Must have type: 'object' at the root level per MCP spec.
    */
-  outputSchema: object({
+  outputSchema: object2({
     type: literal("object"),
     properties: record(string2(), AssertObjectSchema).optional(),
     required: array(string2()).optional()
@@ -22431,7 +24636,7 @@ var ToolListChangedNotificationSchema = NotificationSchema.extend({
   method: literal("notifications/tools/list_changed"),
   params: NotificationsParamsSchema.optional()
 });
-var ListChangedOptionsBaseSchema = object({
+var ListChangedOptionsBaseSchema = object2({
   /**
    * If true, the list will be refreshed automatically when a list changed notification is received.
    * The callback will be called with the updated list.
@@ -22480,13 +24685,13 @@ var LoggingMessageNotificationSchema = NotificationSchema.extend({
   method: literal("notifications/message"),
   params: LoggingMessageNotificationParamsSchema
 });
-var ModelHintSchema = object({
+var ModelHintSchema = object2({
   /**
    * A hint for a model name.
    */
   name: string2().optional()
 });
-var ModelPreferencesSchema = object({
+var ModelPreferencesSchema = object2({
   /**
    * Optional hints to use for model selection.
    */
@@ -22504,7 +24709,7 @@ var ModelPreferencesSchema = object({
    */
   intelligencePriority: number2().min(0).max(1).optional()
 });
-var ToolChoiceSchema = object({
+var ToolChoiceSchema = object2({
   /**
    * Controls when tools are used:
    * - "auto": Model decides whether to use tools (default)
@@ -22513,11 +24718,11 @@ var ToolChoiceSchema = object({
    */
   mode: _enum(["auto", "required", "none"]).optional()
 });
-var ToolResultContentSchema = object({
+var ToolResultContentSchema = object2({
   type: literal("tool_result"),
   toolUseId: string2().describe("The unique identifier for the corresponding tool call."),
   content: array(ContentBlockSchema).default([]),
-  structuredContent: object({}).loose().optional(),
+  structuredContent: object2({}).loose().optional(),
   isError: boolean2().optional(),
   /**
    * See [MCP specification](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/47339c03c143bb4ec01a26e721a1b8fe66634ebe/docs/specification/draft/basic/index.mdx#general-fields)
@@ -22533,7 +24738,7 @@ var SamplingMessageContentBlockSchema = discriminatedUnion("type", [
   ToolUseContentSchema,
   ToolResultContentSchema
 ]);
-var SamplingMessageSchema = object({
+var SamplingMessageSchema = object2({
   role: RoleSchema,
   content: union([SamplingMessageContentBlockSchema, array(SamplingMessageContentBlockSchema)]),
   /**
@@ -22633,13 +24838,13 @@ var CreateMessageResultWithToolsSchema = ResultSchema.extend({
    */
   content: union([SamplingMessageContentBlockSchema, array(SamplingMessageContentBlockSchema)])
 });
-var BooleanSchemaSchema = object({
+var BooleanSchemaSchema = object2({
   type: literal("boolean"),
   title: string2().optional(),
   description: string2().optional(),
   default: boolean2().optional()
 });
-var StringSchemaSchema = object({
+var StringSchemaSchema = object2({
   type: literal("string"),
   title: string2().optional(),
   description: string2().optional(),
@@ -22648,7 +24853,7 @@ var StringSchemaSchema = object({
   format: _enum(["email", "uri", "date", "date-time"]).optional(),
   default: string2().optional()
 });
-var NumberSchemaSchema = object({
+var NumberSchemaSchema = object2({
   type: _enum(["number", "integer"]),
   title: string2().optional(),
   description: string2().optional(),
@@ -22656,24 +24861,24 @@ var NumberSchemaSchema = object({
   maximum: number2().optional(),
   default: number2().optional()
 });
-var UntitledSingleSelectEnumSchemaSchema = object({
+var UntitledSingleSelectEnumSchemaSchema = object2({
   type: literal("string"),
   title: string2().optional(),
   description: string2().optional(),
   enum: array(string2()),
   default: string2().optional()
 });
-var TitledSingleSelectEnumSchemaSchema = object({
+var TitledSingleSelectEnumSchemaSchema = object2({
   type: literal("string"),
   title: string2().optional(),
   description: string2().optional(),
-  oneOf: array(object({
+  oneOf: array(object2({
     const: string2(),
     title: string2()
   })),
   default: string2().optional()
 });
-var LegacyTitledEnumSchemaSchema = object({
+var LegacyTitledEnumSchemaSchema = object2({
   type: literal("string"),
   title: string2().optional(),
   description: string2().optional(),
@@ -22682,26 +24887,26 @@ var LegacyTitledEnumSchemaSchema = object({
   default: string2().optional()
 });
 var SingleSelectEnumSchemaSchema = union([UntitledSingleSelectEnumSchemaSchema, TitledSingleSelectEnumSchemaSchema]);
-var UntitledMultiSelectEnumSchemaSchema = object({
+var UntitledMultiSelectEnumSchemaSchema = object2({
   type: literal("array"),
   title: string2().optional(),
   description: string2().optional(),
   minItems: number2().optional(),
   maxItems: number2().optional(),
-  items: object({
+  items: object2({
     type: literal("string"),
     enum: array(string2())
   }),
   default: array(string2()).optional()
 });
-var TitledMultiSelectEnumSchemaSchema = object({
+var TitledMultiSelectEnumSchemaSchema = object2({
   type: literal("array"),
   title: string2().optional(),
   description: string2().optional(),
   minItems: number2().optional(),
   maxItems: number2().optional(),
-  items: object({
-    anyOf: array(object({
+  items: object2({
+    anyOf: array(object2({
       const: string2(),
       title: string2()
     }))
@@ -22726,7 +24931,7 @@ var ElicitRequestFormParamsSchema = TaskAugmentedRequestParamsSchema.extend({
    * A restricted subset of JSON Schema.
    * Only top-level properties are allowed, without nesting.
    */
-  requestedSchema: object({
+  requestedSchema: object2({
     type: literal("object"),
     properties: record(string2(), PrimitiveSchemaDefinitionSchema),
     required: array(string2()).optional()
@@ -22782,14 +24987,14 @@ var ElicitResultSchema = ResultSchema.extend({
    */
   content: preprocess((val) => val === null ? void 0 : val, record(string2(), union([string2(), number2(), boolean2(), array(string2())])).optional())
 });
-var ResourceTemplateReferenceSchema = object({
+var ResourceTemplateReferenceSchema = object2({
   type: literal("ref/resource"),
   /**
    * The URI or URI template of the resource.
    */
   uri: string2()
 });
-var PromptReferenceSchema = object({
+var PromptReferenceSchema = object2({
   type: literal("ref/prompt"),
   /**
    * The name of the prompt or prompt template
@@ -22801,7 +25006,7 @@ var CompleteRequestParamsSchema = BaseRequestParamsSchema.extend({
   /**
    * The argument's information
    */
-  argument: object({
+  argument: object2({
     /**
      * The name of the argument
      */
@@ -22811,7 +25016,7 @@ var CompleteRequestParamsSchema = BaseRequestParamsSchema.extend({
      */
     value: string2()
   }),
-  context: object({
+  context: object2({
     /**
      * Previously-resolved variables in a URI template or prompt.
      */
@@ -22850,7 +25055,7 @@ var CompleteResultSchema = ResultSchema.extend({
     hasMore: optional(boolean2())
   })
 });
-var RootSchema = object({
+var RootSchema = object2({
   /**
    * The URI identifying the root. This *must* start with file:// for now.
    */
@@ -22978,2421 +25183,6 @@ var UrlElicitationRequiredError = class extends McpError {
     return this.data?.elicitations ?? [];
   }
 };
-
-// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
-var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
-var ReadBuffer = class {
-  constructor(options) {
-    this._maxBufferSize = options?.maxBufferSize ?? STDIO_DEFAULT_MAX_BUFFER_SIZE;
-  }
-  append(chunk) {
-    const newSize = (this._buffer?.length ?? 0) + chunk.length;
-    if (newSize > this._maxBufferSize) {
-      this.clear();
-      throw new Error(`ReadBuffer exceeded maximum size of ${this._maxBufferSize} bytes`);
-    }
-    this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
-  }
-  readMessage() {
-    if (!this._buffer) {
-      return null;
-    }
-    const index = this._buffer.indexOf("\n");
-    if (index === -1) {
-      return null;
-    }
-    const line = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
-    this._buffer = this._buffer.subarray(index + 1);
-    return deserializeMessage(line);
-  }
-  clear() {
-    this._buffer = void 0;
-  }
-};
-function deserializeMessage(line) {
-  return JSONRPCMessageSchema.parse(JSON.parse(line));
-}
-function serializeMessage(message) {
-  return JSON.stringify(message) + "\n";
-}
-
-// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
-var StdioServerTransport = class {
-  constructor(_stdin = process3.stdin, _stdout = process3.stdout, options) {
-    this._stdin = _stdin;
-    this._stdout = _stdout;
-    this._started = false;
-    this._ondata = (chunk) => {
-      try {
-        this._readBuffer.append(chunk);
-        this.processReadBuffer();
-      } catch (error2) {
-        this.onerror?.(error2);
-        this.close().catch(() => {
-        });
-      }
-    };
-    this._onerror = (error2) => {
-      this.onerror?.(error2);
-    };
-    this._readBuffer = new ReadBuffer({ maxBufferSize: options?.maxBufferSize });
-  }
-  /**
-   * Starts listening for messages on stdin.
-   */
-  async start() {
-    if (this._started) {
-      throw new Error("StdioServerTransport already started! If using Server class, note that connect() calls start() automatically.");
-    }
-    this._started = true;
-    this._stdin.on("data", this._ondata);
-    this._stdin.on("error", this._onerror);
-  }
-  processReadBuffer() {
-    while (true) {
-      try {
-        const message = this._readBuffer.readMessage();
-        if (message === null) {
-          break;
-        }
-        this.onmessage?.(message);
-      } catch (error2) {
-        this.onerror?.(error2);
-      }
-    }
-  }
-  async close() {
-    this._stdin.off("data", this._ondata);
-    this._stdin.off("error", this._onerror);
-    const remainingDataListeners = this._stdin.listenerCount("data");
-    if (remainingDataListeners === 0) {
-      this._stdin.pause();
-    }
-    this._readBuffer.clear();
-    this.onclose?.();
-  }
-  send(message) {
-    return new Promise((resolve5) => {
-      const json2 = serializeMessage(message);
-      if (this._stdout.write(json2)) {
-        resolve5();
-      } else {
-        this._stdout.once("drain", resolve5);
-      }
-    });
-  }
-};
-
-// src/package-info.ts
-import { readFileSync as readFileSync7 } from "node:fs";
-import { dirname as dirname7, join as join19 } from "node:path";
-import { fileURLToPath as fileURLToPath5 } from "node:url";
-var directory = dirname7(fileURLToPath5(import.meta.url));
-var packageInfo = JSON.parse(
-  readFileSync7(join19(directory, "..", "package.json"), "utf8")
-);
-var browserAssetRoot = join19(directory, "browser");
-
-// src/freshness/workspace-native.ts
-var workspace_native_exports = {};
-__export(workspace_native_exports, {
-  createNativeWorkspaceFreshness: () => createNativeWorkspaceFreshness
-});
-
-// src/freshness/native-manifest-files.ts
-import { readdir } from "node:fs/promises";
-import { join as join20, relative as relative3 } from "node:path";
-function withinScanLimits(started, now, output) {
-  if (now() - started > 6e4 || output.length > 5e4)
-    throw new Error("scan_limit");
-}
-function ignoredDirectory(name) {
-  return /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(name);
-}
-async function visit2(root, directory2, supported, started, now, output) {
-  withinScanLimits(started, now, output);
-  for (const entry of await readdir(directory2, { withFileTypes: true })) {
-    const absolute = join20(directory2, entry.name);
-    if (entry.isDirectory()) {
-      if (!ignoredDirectory(entry.name))
-        await visit2(root, absolute, supported, started, now, output);
-      continue;
-    }
-    const path5 = relative3(root, absolute).replaceAll("\\", "/");
-    if (supported(path5)) output.push(path5);
-  }
-}
-async function walkSupportedFiles(root, supported, started, now) {
-  const output = [];
-  await visit2(root, root, supported, started, now, output);
-  if (output.length > 5e4) throw new Error("scan_limit");
-  return output.sort();
-}
-
-// src/freshness/native-manifest-hashing.ts
-import { createHash as createHash4 } from "node:crypto";
-import { open as open3 } from "node:fs/promises";
-import { join as join21 } from "node:path";
-async function stableHash(path5, now, sleep) {
-  const started = now();
-  for (; ; ) {
-    const stable = await stableAttempt(path5, sleep);
-    if (stable) return stable;
-    if (now() - started >= 1e4) return "incomplete_write";
-  }
-}
-async function stableAttempt(path5, sleep) {
-  const file = await open3(path5, "r");
-  try {
-    const before = await file.stat();
-    if (before.size > 4 * 1024 * 1024) return "scan_limit";
-    await sleep(100);
-    const after = await file.stat();
-    if (before.size !== after.size || before.mtimeMs !== after.mtimeMs)
-      return void 0;
-    return createHash4("sha256").update(await file.readFile()).digest("hex");
-  } finally {
-    await file.close();
-  }
-}
-async function stableBatch(options, files) {
-  return await Promise.all(
-    files.map(
-      async (file) => [
-        file,
-        await stableHash(
-          join21(options.root, file),
-          options.now ?? Date.now,
-          options.sleep ?? delay
-        )
-      ]
-    )
-  );
-}
-function delay(milliseconds) {
-  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
-}
-
-// src/freshness/native-manifest.ts
-async function buildManifest(options, files) {
-  const manifest = /* @__PURE__ */ new Map();
-  for (let offset = 0; offset < files.length; offset += 64) {
-    const cause = mergeStableBatch(
-      manifest,
-      await stableBatch(options, files.slice(offset, offset + 64))
-    );
-    if (cause) return { cause };
-  }
-  return { manifest };
-}
-function mergeStableBatch(manifest, stable) {
-  for (const [file, hash] of stable) {
-    if (hash === "incomplete_write" || hash === "scan_limit") return hash;
-    manifest.set(file, hash);
-  }
-  return void 0;
-}
-function failureCause(error2) {
-  if (error2 instanceof Error && error2.message === "scan_limit")
-    return "scan_limit";
-  return "freshness_unavailable";
-}
-async function reconcileNativeManifest(options) {
-  const now = options.now ?? Date.now;
-  const started = now();
-  try {
-    const files = await walkSupportedFiles(
-      options.root,
-      options.supported,
-      started,
-      now
-    );
-    return buildManifest(options, files);
-  } catch (error2) {
-    return { cause: failureCause(error2) };
-  }
-}
-
-// src/freshness/freshness-runtime.ts
-var FreshnessRuntime = class {
-  status = {
-    current_generation: 0,
-    pending_generation: null,
-    state: "initializing",
-    mode: "watching"
-  };
-  manifest = /* @__PURE__ */ new Map();
-  watcher;
-  activeSessions = 0;
-  coalesceTimer;
-  pollTimer;
-  manifestTimer;
-  running;
-  forceRefresh = false;
-  nextGeneration = 1;
-  reserveGeneration() {
-    const generation = this.nextGeneration++;
-    this.status = {
-      current_generation: this.status.current_generation,
-      pending_generation: generation,
-      state: "refreshing",
-      mode: this.status.mode
-    };
-    return generation;
-  }
-  failRefresh() {
-    this.forceRefresh = false;
-    this.status = {
-      current_generation: this.status.current_generation,
-      pending_generation: null,
-      state: "refresh_failed",
-      mode: this.status.mode
-    };
-  }
-  reserveRefresh() {
-    if (this.status.pending_generation === null) this.reserveGeneration();
-    this.forceRefresh = true;
-  }
-  degrade(cause) {
-    this.forceRefresh = false;
-    this.status = {
-      current_generation: this.status.current_generation,
-      pending_generation: null,
-      state: "degraded",
-      mode: this.status.mode,
-      degraded_cause: cause
-    };
-  }
-  ready(generation, manifest) {
-    this.manifest = new Map(manifest);
-    this.status = {
-      current_generation: generation,
-      pending_generation: null,
-      state: "ready",
-      mode: this.status.mode
-    };
-    this.forceRefresh = false;
-  }
-};
-
-// ../../node_modules/chokidar/esm/index.js
-import { stat as statcb } from "fs";
-import { stat as stat3, readdir as readdir3 } from "fs/promises";
-import { EventEmitter } from "events";
-import * as sysPath2 from "path";
-
-// ../../node_modules/readdirp/esm/index.js
-import { stat, lstat, readdir as readdir2, realpath as realpath2 } from "node:fs/promises";
-import { Readable } from "node:stream";
-import { resolve as presolve, relative as prelative, join as pjoin, sep as psep } from "node:path";
-var EntryTypes = {
-  FILE_TYPE: "files",
-  DIR_TYPE: "directories",
-  FILE_DIR_TYPE: "files_directories",
-  EVERYTHING_TYPE: "all"
-};
-var defaultOptions = {
-  root: ".",
-  fileFilter: (_entryInfo) => true,
-  directoryFilter: (_entryInfo) => true,
-  type: EntryTypes.FILE_TYPE,
-  lstat: false,
-  depth: 2147483648,
-  alwaysStat: false,
-  highWaterMark: 4096
-};
-Object.freeze(defaultOptions);
-var RECURSIVE_ERROR_CODE = "READDIRP_RECURSIVE_ERROR";
-var NORMAL_FLOW_ERRORS = /* @__PURE__ */ new Set(["ENOENT", "EPERM", "EACCES", "ELOOP", RECURSIVE_ERROR_CODE]);
-var ALL_TYPES = [
-  EntryTypes.DIR_TYPE,
-  EntryTypes.EVERYTHING_TYPE,
-  EntryTypes.FILE_DIR_TYPE,
-  EntryTypes.FILE_TYPE
-];
-var DIR_TYPES = /* @__PURE__ */ new Set([
-  EntryTypes.DIR_TYPE,
-  EntryTypes.EVERYTHING_TYPE,
-  EntryTypes.FILE_DIR_TYPE
-]);
-var FILE_TYPES = /* @__PURE__ */ new Set([
-  EntryTypes.EVERYTHING_TYPE,
-  EntryTypes.FILE_DIR_TYPE,
-  EntryTypes.FILE_TYPE
-]);
-var isNormalFlowError = (error2) => NORMAL_FLOW_ERRORS.has(error2.code);
-var wantBigintFsStats = process.platform === "win32";
-var emptyFn = (_entryInfo) => true;
-var normalizeFilter = (filter) => {
-  if (filter === void 0)
-    return emptyFn;
-  if (typeof filter === "function")
-    return filter;
-  if (typeof filter === "string") {
-    const fl = filter.trim();
-    return (entry) => entry.basename === fl;
-  }
-  if (Array.isArray(filter)) {
-    const trItems = filter.map((item) => item.trim());
-    return (entry) => trItems.some((f) => entry.basename === f);
-  }
-  return emptyFn;
-};
-var ReaddirpStream = class extends Readable {
-  constructor(options = {}) {
-    super({
-      objectMode: true,
-      autoDestroy: true,
-      highWaterMark: options.highWaterMark
-    });
-    const opts = { ...defaultOptions, ...options };
-    const { root, type } = opts;
-    this._fileFilter = normalizeFilter(opts.fileFilter);
-    this._directoryFilter = normalizeFilter(opts.directoryFilter);
-    const statMethod = opts.lstat ? lstat : stat;
-    if (wantBigintFsStats) {
-      this._stat = (path5) => statMethod(path5, { bigint: true });
-    } else {
-      this._stat = statMethod;
-    }
-    this._maxDepth = opts.depth ?? defaultOptions.depth;
-    this._wantsDir = type ? DIR_TYPES.has(type) : false;
-    this._wantsFile = type ? FILE_TYPES.has(type) : false;
-    this._wantsEverything = type === EntryTypes.EVERYTHING_TYPE;
-    this._root = presolve(root);
-    this._isDirent = !opts.alwaysStat;
-    this._statsProp = this._isDirent ? "dirent" : "stats";
-    this._rdOptions = { encoding: "utf8", withFileTypes: this._isDirent };
-    this.parents = [this._exploreDir(root, 1)];
-    this.reading = false;
-    this.parent = void 0;
-  }
-  async _read(batch) {
-    if (this.reading)
-      return;
-    this.reading = true;
-    try {
-      while (!this.destroyed && batch > 0) {
-        const par = this.parent;
-        const fil = par && par.files;
-        if (fil && fil.length > 0) {
-          const { path: path5, depth } = par;
-          const slice = fil.splice(0, batch).map((dirent) => this._formatEntry(dirent, path5));
-          const awaited = await Promise.all(slice);
-          for (const entry of awaited) {
-            if (!entry)
-              continue;
-            if (this.destroyed)
-              return;
-            const entryType = await this._getEntryType(entry);
-            if (entryType === "directory" && this._directoryFilter(entry)) {
-              if (depth <= this._maxDepth) {
-                this.parents.push(this._exploreDir(entry.fullPath, depth + 1));
-              }
-              if (this._wantsDir) {
-                this.push(entry);
-                batch--;
-              }
-            } else if ((entryType === "file" || this._includeAsFile(entry)) && this._fileFilter(entry)) {
-              if (this._wantsFile) {
-                this.push(entry);
-                batch--;
-              }
-            }
-          }
-        } else {
-          const parent = this.parents.pop();
-          if (!parent) {
-            this.push(null);
-            break;
-          }
-          this.parent = await parent;
-          if (this.destroyed)
-            return;
-        }
-      }
-    } catch (error2) {
-      this.destroy(error2);
-    } finally {
-      this.reading = false;
-    }
-  }
-  async _exploreDir(path5, depth) {
-    let files;
-    try {
-      files = await readdir2(path5, this._rdOptions);
-    } catch (error2) {
-      this._onError(error2);
-    }
-    return { files, depth, path: path5 };
-  }
-  async _formatEntry(dirent, path5) {
-    let entry;
-    const basename4 = this._isDirent ? dirent.name : dirent;
-    try {
-      const fullPath = presolve(pjoin(path5, basename4));
-      entry = { path: prelative(this._root, fullPath), fullPath, basename: basename4 };
-      entry[this._statsProp] = this._isDirent ? dirent : await this._stat(fullPath);
-    } catch (err) {
-      this._onError(err);
-      return;
-    }
-    return entry;
-  }
-  _onError(err) {
-    if (isNormalFlowError(err) && !this.destroyed) {
-      this.emit("warn", err);
-    } else {
-      this.destroy(err);
-    }
-  }
-  async _getEntryType(entry) {
-    if (!entry && this._statsProp in entry) {
-      return "";
-    }
-    const stats = entry[this._statsProp];
-    if (stats.isFile())
-      return "file";
-    if (stats.isDirectory())
-      return "directory";
-    if (stats && stats.isSymbolicLink()) {
-      const full = entry.fullPath;
-      try {
-        const entryRealPath = await realpath2(full);
-        const entryRealPathStats = await lstat(entryRealPath);
-        if (entryRealPathStats.isFile()) {
-          return "file";
-        }
-        if (entryRealPathStats.isDirectory()) {
-          const len = entryRealPath.length;
-          if (full.startsWith(entryRealPath) && full.substr(len, 1) === psep) {
-            const recursiveError = new Error(`Circular symlink detected: "${full}" points to "${entryRealPath}"`);
-            recursiveError.code = RECURSIVE_ERROR_CODE;
-            return this._onError(recursiveError);
-          }
-          return "directory";
-        }
-      } catch (error2) {
-        this._onError(error2);
-        return "";
-      }
-    }
-  }
-  _includeAsFile(entry) {
-    const stats = entry && entry[this._statsProp];
-    return stats && this._wantsEverything && !stats.isDirectory();
-  }
-};
-function readdirp(root, options = {}) {
-  let type = options.entryType || options.type;
-  if (type === "both")
-    type = EntryTypes.FILE_DIR_TYPE;
-  if (type)
-    options.type = type;
-  if (!root) {
-    throw new Error("readdirp: root argument is required. Usage: readdirp(root, options)");
-  } else if (typeof root !== "string") {
-    throw new TypeError("readdirp: root argument must be a string. Usage: readdirp(root, options)");
-  } else if (type && !ALL_TYPES.includes(type)) {
-    throw new Error(`readdirp: Invalid type passed. Use one of ${ALL_TYPES.join(", ")}`);
-  }
-  options.root = root;
-  return new ReaddirpStream(options);
-}
-
-// ../../node_modules/chokidar/esm/handler.js
-import { watchFile, unwatchFile, watch as fs_watch } from "fs";
-import { open as open4, stat as stat2, lstat as lstat2, realpath as fsrealpath } from "fs/promises";
-import * as sysPath from "path";
-import { type as osType } from "os";
-var STR_DATA = "data";
-var STR_END = "end";
-var STR_CLOSE = "close";
-var EMPTY_FN = () => {
-};
-var pl = process.platform;
-var isWindows = pl === "win32";
-var isMacos = pl === "darwin";
-var isLinux = pl === "linux";
-var isFreeBSD = pl === "freebsd";
-var isIBMi = osType() === "OS400";
-var EVENTS = {
-  ALL: "all",
-  READY: "ready",
-  ADD: "add",
-  CHANGE: "change",
-  ADD_DIR: "addDir",
-  UNLINK: "unlink",
-  UNLINK_DIR: "unlinkDir",
-  RAW: "raw",
-  ERROR: "error"
-};
-var EV = EVENTS;
-var THROTTLE_MODE_WATCH = "watch";
-var statMethods = { lstat: lstat2, stat: stat2 };
-var KEY_LISTENERS = "listeners";
-var KEY_ERR = "errHandlers";
-var KEY_RAW = "rawEmitters";
-var HANDLER_KEYS = [KEY_LISTENERS, KEY_ERR, KEY_RAW];
-var binaryExtensions = /* @__PURE__ */ new Set([
-  "3dm",
-  "3ds",
-  "3g2",
-  "3gp",
-  "7z",
-  "a",
-  "aac",
-  "adp",
-  "afdesign",
-  "afphoto",
-  "afpub",
-  "ai",
-  "aif",
-  "aiff",
-  "alz",
-  "ape",
-  "apk",
-  "appimage",
-  "ar",
-  "arj",
-  "asf",
-  "au",
-  "avi",
-  "bak",
-  "baml",
-  "bh",
-  "bin",
-  "bk",
-  "bmp",
-  "btif",
-  "bz2",
-  "bzip2",
-  "cab",
-  "caf",
-  "cgm",
-  "class",
-  "cmx",
-  "cpio",
-  "cr2",
-  "cur",
-  "dat",
-  "dcm",
-  "deb",
-  "dex",
-  "djvu",
-  "dll",
-  "dmg",
-  "dng",
-  "doc",
-  "docm",
-  "docx",
-  "dot",
-  "dotm",
-  "dra",
-  "DS_Store",
-  "dsk",
-  "dts",
-  "dtshd",
-  "dvb",
-  "dwg",
-  "dxf",
-  "ecelp4800",
-  "ecelp7470",
-  "ecelp9600",
-  "egg",
-  "eol",
-  "eot",
-  "epub",
-  "exe",
-  "f4v",
-  "fbs",
-  "fh",
-  "fla",
-  "flac",
-  "flatpak",
-  "fli",
-  "flv",
-  "fpx",
-  "fst",
-  "fvt",
-  "g3",
-  "gh",
-  "gif",
-  "graffle",
-  "gz",
-  "gzip",
-  "h261",
-  "h263",
-  "h264",
-  "icns",
-  "ico",
-  "ief",
-  "img",
-  "ipa",
-  "iso",
-  "jar",
-  "jpeg",
-  "jpg",
-  "jpgv",
-  "jpm",
-  "jxr",
-  "key",
-  "ktx",
-  "lha",
-  "lib",
-  "lvp",
-  "lz",
-  "lzh",
-  "lzma",
-  "lzo",
-  "m3u",
-  "m4a",
-  "m4v",
-  "mar",
-  "mdi",
-  "mht",
-  "mid",
-  "midi",
-  "mj2",
-  "mka",
-  "mkv",
-  "mmr",
-  "mng",
-  "mobi",
-  "mov",
-  "movie",
-  "mp3",
-  "mp4",
-  "mp4a",
-  "mpeg",
-  "mpg",
-  "mpga",
-  "mxu",
-  "nef",
-  "npx",
-  "numbers",
-  "nupkg",
-  "o",
-  "odp",
-  "ods",
-  "odt",
-  "oga",
-  "ogg",
-  "ogv",
-  "otf",
-  "ott",
-  "pages",
-  "pbm",
-  "pcx",
-  "pdb",
-  "pdf",
-  "pea",
-  "pgm",
-  "pic",
-  "png",
-  "pnm",
-  "pot",
-  "potm",
-  "potx",
-  "ppa",
-  "ppam",
-  "ppm",
-  "pps",
-  "ppsm",
-  "ppsx",
-  "ppt",
-  "pptm",
-  "pptx",
-  "psd",
-  "pya",
-  "pyc",
-  "pyo",
-  "pyv",
-  "qt",
-  "rar",
-  "ras",
-  "raw",
-  "resources",
-  "rgb",
-  "rip",
-  "rlc",
-  "rmf",
-  "rmvb",
-  "rpm",
-  "rtf",
-  "rz",
-  "s3m",
-  "s7z",
-  "scpt",
-  "sgi",
-  "shar",
-  "snap",
-  "sil",
-  "sketch",
-  "slk",
-  "smv",
-  "snk",
-  "so",
-  "stl",
-  "suo",
-  "sub",
-  "swf",
-  "tar",
-  "tbz",
-  "tbz2",
-  "tga",
-  "tgz",
-  "thmx",
-  "tif",
-  "tiff",
-  "tlz",
-  "ttc",
-  "ttf",
-  "txz",
-  "udf",
-  "uvh",
-  "uvi",
-  "uvm",
-  "uvp",
-  "uvs",
-  "uvu",
-  "viv",
-  "vob",
-  "war",
-  "wav",
-  "wax",
-  "wbmp",
-  "wdp",
-  "weba",
-  "webm",
-  "webp",
-  "whl",
-  "wim",
-  "wm",
-  "wma",
-  "wmv",
-  "wmx",
-  "woff",
-  "woff2",
-  "wrm",
-  "wvx",
-  "xbm",
-  "xif",
-  "xla",
-  "xlam",
-  "xls",
-  "xlsb",
-  "xlsm",
-  "xlsx",
-  "xlt",
-  "xltm",
-  "xltx",
-  "xm",
-  "xmind",
-  "xpi",
-  "xpm",
-  "xwd",
-  "xz",
-  "z",
-  "zip",
-  "zipx"
-]);
-var isBinaryPath = (filePath) => binaryExtensions.has(sysPath.extname(filePath).slice(1).toLowerCase());
-var foreach = (val, fn) => {
-  if (val instanceof Set) {
-    val.forEach(fn);
-  } else {
-    fn(val);
-  }
-};
-var addAndConvert = (main, prop, item) => {
-  let container = main[prop];
-  if (!(container instanceof Set)) {
-    main[prop] = container = /* @__PURE__ */ new Set([container]);
-  }
-  container.add(item);
-};
-var clearItem = (cont) => (key) => {
-  const set = cont[key];
-  if (set instanceof Set) {
-    set.clear();
-  } else {
-    delete cont[key];
-  }
-};
-var delFromSet = (main, prop, item) => {
-  const container = main[prop];
-  if (container instanceof Set) {
-    container.delete(item);
-  } else if (container === item) {
-    delete main[prop];
-  }
-};
-var isEmptySet = (val) => val instanceof Set ? val.size === 0 : !val;
-var FsWatchInstances = /* @__PURE__ */ new Map();
-function createFsWatchInstance(path5, options, listener, errHandler, emitRaw) {
-  const handleEvent = (rawEvent, evPath) => {
-    listener(path5);
-    emitRaw(rawEvent, evPath, { watchedPath: path5 });
-    if (evPath && path5 !== evPath) {
-      fsWatchBroadcast(sysPath.resolve(path5, evPath), KEY_LISTENERS, sysPath.join(path5, evPath));
-    }
-  };
-  try {
-    return fs_watch(path5, {
-      persistent: options.persistent
-    }, handleEvent);
-  } catch (error2) {
-    errHandler(error2);
-    return void 0;
-  }
-}
-var fsWatchBroadcast = (fullPath, listenerType, val1, val2, val3) => {
-  const cont = FsWatchInstances.get(fullPath);
-  if (!cont)
-    return;
-  foreach(cont[listenerType], (listener) => {
-    listener(val1, val2, val3);
-  });
-};
-var setFsWatchListener = (path5, fullPath, options, handlers) => {
-  const { listener, errHandler, rawEmitter } = handlers;
-  let cont = FsWatchInstances.get(fullPath);
-  let watcher;
-  if (!options.persistent) {
-    watcher = createFsWatchInstance(path5, options, listener, errHandler, rawEmitter);
-    if (!watcher)
-      return;
-    return watcher.close.bind(watcher);
-  }
-  if (cont) {
-    addAndConvert(cont, KEY_LISTENERS, listener);
-    addAndConvert(cont, KEY_ERR, errHandler);
-    addAndConvert(cont, KEY_RAW, rawEmitter);
-  } else {
-    watcher = createFsWatchInstance(
-      path5,
-      options,
-      fsWatchBroadcast.bind(null, fullPath, KEY_LISTENERS),
-      errHandler,
-      // no need to use broadcast here
-      fsWatchBroadcast.bind(null, fullPath, KEY_RAW)
-    );
-    if (!watcher)
-      return;
-    watcher.on(EV.ERROR, async (error2) => {
-      const broadcastErr = fsWatchBroadcast.bind(null, fullPath, KEY_ERR);
-      if (cont)
-        cont.watcherUnusable = true;
-      if (isWindows && error2.code === "EPERM") {
-        try {
-          const fd = await open4(path5, "r");
-          await fd.close();
-          broadcastErr(error2);
-        } catch (err) {
-        }
-      } else {
-        broadcastErr(error2);
-      }
-    });
-    cont = {
-      listeners: listener,
-      errHandlers: errHandler,
-      rawEmitters: rawEmitter,
-      watcher
-    };
-    FsWatchInstances.set(fullPath, cont);
-  }
-  return () => {
-    delFromSet(cont, KEY_LISTENERS, listener);
-    delFromSet(cont, KEY_ERR, errHandler);
-    delFromSet(cont, KEY_RAW, rawEmitter);
-    if (isEmptySet(cont.listeners)) {
-      cont.watcher.close();
-      FsWatchInstances.delete(fullPath);
-      HANDLER_KEYS.forEach(clearItem(cont));
-      cont.watcher = void 0;
-      Object.freeze(cont);
-    }
-  };
-};
-var FsWatchFileInstances = /* @__PURE__ */ new Map();
-var setFsWatchFileListener = (path5, fullPath, options, handlers) => {
-  const { listener, rawEmitter } = handlers;
-  let cont = FsWatchFileInstances.get(fullPath);
-  const copts = cont && cont.options;
-  if (copts && (copts.persistent < options.persistent || copts.interval > options.interval)) {
-    unwatchFile(fullPath);
-    cont = void 0;
-  }
-  if (cont) {
-    addAndConvert(cont, KEY_LISTENERS, listener);
-    addAndConvert(cont, KEY_RAW, rawEmitter);
-  } else {
-    cont = {
-      listeners: listener,
-      rawEmitters: rawEmitter,
-      options,
-      watcher: watchFile(fullPath, options, (curr, prev) => {
-        foreach(cont.rawEmitters, (rawEmitter2) => {
-          rawEmitter2(EV.CHANGE, fullPath, { curr, prev });
-        });
-        const currmtime = curr.mtimeMs;
-        if (curr.size !== prev.size || currmtime > prev.mtimeMs || currmtime === 0) {
-          foreach(cont.listeners, (listener2) => listener2(path5, curr));
-        }
-      })
-    };
-    FsWatchFileInstances.set(fullPath, cont);
-  }
-  return () => {
-    delFromSet(cont, KEY_LISTENERS, listener);
-    delFromSet(cont, KEY_RAW, rawEmitter);
-    if (isEmptySet(cont.listeners)) {
-      FsWatchFileInstances.delete(fullPath);
-      unwatchFile(fullPath);
-      cont.options = cont.watcher = void 0;
-      Object.freeze(cont);
-    }
-  };
-};
-var NodeFsHandler = class {
-  constructor(fsW) {
-    this.fsw = fsW;
-    this._boundHandleError = (error2) => fsW._handleError(error2);
-  }
-  /**
-   * Watch file for changes with fs_watchFile or fs_watch.
-   * @param path to file or dir
-   * @param listener on fs change
-   * @returns closer for the watcher instance
-   */
-  _watchWithNodeFs(path5, listener) {
-    const opts = this.fsw.options;
-    const directory2 = sysPath.dirname(path5);
-    const basename4 = sysPath.basename(path5);
-    const parent = this.fsw._getWatchedDir(directory2);
-    parent.add(basename4);
-    const absolutePath = sysPath.resolve(path5);
-    const options = {
-      persistent: opts.persistent
-    };
-    if (!listener)
-      listener = EMPTY_FN;
-    let closer;
-    if (opts.usePolling) {
-      const enableBin = opts.interval !== opts.binaryInterval;
-      options.interval = enableBin && isBinaryPath(basename4) ? opts.binaryInterval : opts.interval;
-      closer = setFsWatchFileListener(path5, absolutePath, options, {
-        listener,
-        rawEmitter: this.fsw._emitRaw
-      });
-    } else {
-      closer = setFsWatchListener(path5, absolutePath, options, {
-        listener,
-        errHandler: this._boundHandleError,
-        rawEmitter: this.fsw._emitRaw
-      });
-    }
-    return closer;
-  }
-  /**
-   * Watch a file and emit add event if warranted.
-   * @returns closer for the watcher instance
-   */
-  _handleFile(file, stats, initialAdd) {
-    if (this.fsw.closed) {
-      return;
-    }
-    const dirname10 = sysPath.dirname(file);
-    const basename4 = sysPath.basename(file);
-    const parent = this.fsw._getWatchedDir(dirname10);
-    let prevStats = stats;
-    if (parent.has(basename4))
-      return;
-    const listener = async (path5, newStats) => {
-      if (!this.fsw._throttle(THROTTLE_MODE_WATCH, file, 5))
-        return;
-      if (!newStats || newStats.mtimeMs === 0) {
-        try {
-          const newStats2 = await stat2(file);
-          if (this.fsw.closed)
-            return;
-          const at = newStats2.atimeMs;
-          const mt = newStats2.mtimeMs;
-          if (!at || at <= mt || mt !== prevStats.mtimeMs) {
-            this.fsw._emit(EV.CHANGE, file, newStats2);
-          }
-          if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== newStats2.ino) {
-            this.fsw._closeFile(path5);
-            prevStats = newStats2;
-            const closer2 = this._watchWithNodeFs(file, listener);
-            if (closer2)
-              this.fsw._addPathCloser(path5, closer2);
-          } else {
-            prevStats = newStats2;
-          }
-        } catch (error2) {
-          this.fsw._remove(dirname10, basename4);
-        }
-      } else if (parent.has(basename4)) {
-        const at = newStats.atimeMs;
-        const mt = newStats.mtimeMs;
-        if (!at || at <= mt || mt !== prevStats.mtimeMs) {
-          this.fsw._emit(EV.CHANGE, file, newStats);
-        }
-        prevStats = newStats;
-      }
-    };
-    const closer = this._watchWithNodeFs(file, listener);
-    if (!(initialAdd && this.fsw.options.ignoreInitial) && this.fsw._isntIgnored(file)) {
-      if (!this.fsw._throttle(EV.ADD, file, 0))
-        return;
-      this.fsw._emit(EV.ADD, file, stats);
-    }
-    return closer;
-  }
-  /**
-   * Handle symlinks encountered while reading a dir.
-   * @param entry returned by readdirp
-   * @param directory path of dir being read
-   * @param path of this item
-   * @param item basename of this item
-   * @returns true if no more processing is needed for this entry.
-   */
-  async _handleSymlink(entry, directory2, path5, item) {
-    if (this.fsw.closed) {
-      return;
-    }
-    const full = entry.fullPath;
-    const dir = this.fsw._getWatchedDir(directory2);
-    if (!this.fsw.options.followSymlinks) {
-      this.fsw._incrReadyCount();
-      let linkPath;
-      try {
-        linkPath = await fsrealpath(path5);
-      } catch (e) {
-        this.fsw._emitReady();
-        return true;
-      }
-      if (this.fsw.closed)
-        return;
-      if (dir.has(item)) {
-        if (this.fsw._symlinkPaths.get(full) !== linkPath) {
-          this.fsw._symlinkPaths.set(full, linkPath);
-          this.fsw._emit(EV.CHANGE, path5, entry.stats);
-        }
-      } else {
-        dir.add(item);
-        this.fsw._symlinkPaths.set(full, linkPath);
-        this.fsw._emit(EV.ADD, path5, entry.stats);
-      }
-      this.fsw._emitReady();
-      return true;
-    }
-    if (this.fsw._symlinkPaths.has(full)) {
-      return true;
-    }
-    this.fsw._symlinkPaths.set(full, true);
-  }
-  _handleRead(directory2, initialAdd, wh, target, dir, depth, throttler) {
-    directory2 = sysPath.join(directory2, "");
-    throttler = this.fsw._throttle("readdir", directory2, 1e3);
-    if (!throttler)
-      return;
-    const previous = this.fsw._getWatchedDir(wh.path);
-    const current = /* @__PURE__ */ new Set();
-    let stream = this.fsw._readdirp(directory2, {
-      fileFilter: (entry) => wh.filterPath(entry),
-      directoryFilter: (entry) => wh.filterDir(entry)
-    });
-    if (!stream)
-      return;
-    stream.on(STR_DATA, async (entry) => {
-      if (this.fsw.closed) {
-        stream = void 0;
-        return;
-      }
-      const item = entry.path;
-      let path5 = sysPath.join(directory2, item);
-      current.add(item);
-      if (entry.stats.isSymbolicLink() && await this._handleSymlink(entry, directory2, path5, item)) {
-        return;
-      }
-      if (this.fsw.closed) {
-        stream = void 0;
-        return;
-      }
-      if (item === target || !target && !previous.has(item)) {
-        this.fsw._incrReadyCount();
-        path5 = sysPath.join(dir, sysPath.relative(dir, path5));
-        this._addToNodeFs(path5, initialAdd, wh, depth + 1);
-      }
-    }).on(EV.ERROR, this._boundHandleError);
-    return new Promise((resolve5, reject) => {
-      if (!stream)
-        return reject();
-      stream.once(STR_END, () => {
-        if (this.fsw.closed) {
-          stream = void 0;
-          return;
-        }
-        const wasThrottled = throttler ? throttler.clear() : false;
-        resolve5(void 0);
-        previous.getChildren().filter((item) => {
-          return item !== directory2 && !current.has(item);
-        }).forEach((item) => {
-          this.fsw._remove(directory2, item);
-        });
-        stream = void 0;
-        if (wasThrottled)
-          this._handleRead(directory2, false, wh, target, dir, depth, throttler);
-      });
-    });
-  }
-  /**
-   * Read directory to add / remove files from `@watched` list and re-read it on change.
-   * @param dir fs path
-   * @param stats
-   * @param initialAdd
-   * @param depth relative to user-supplied path
-   * @param target child path targeted for watch
-   * @param wh Common watch helpers for this path
-   * @param realpath
-   * @returns closer for the watcher instance.
-   */
-  async _handleDir(dir, stats, initialAdd, depth, target, wh, realpath3) {
-    const parentDir = this.fsw._getWatchedDir(sysPath.dirname(dir));
-    const tracked = parentDir.has(sysPath.basename(dir));
-    if (!(initialAdd && this.fsw.options.ignoreInitial) && !target && !tracked) {
-      this.fsw._emit(EV.ADD_DIR, dir, stats);
-    }
-    parentDir.add(sysPath.basename(dir));
-    this.fsw._getWatchedDir(dir);
-    let throttler;
-    let closer;
-    const oDepth = this.fsw.options.depth;
-    if ((oDepth == null || depth <= oDepth) && !this.fsw._symlinkPaths.has(realpath3)) {
-      if (!target) {
-        await this._handleRead(dir, initialAdd, wh, target, dir, depth, throttler);
-        if (this.fsw.closed)
-          return;
-      }
-      closer = this._watchWithNodeFs(dir, (dirPath, stats2) => {
-        if (stats2 && stats2.mtimeMs === 0)
-          return;
-        this._handleRead(dirPath, false, wh, target, dir, depth, throttler);
-      });
-    }
-    return closer;
-  }
-  /**
-   * Handle added file, directory, or glob pattern.
-   * Delegates call to _handleFile / _handleDir after checks.
-   * @param path to file or ir
-   * @param initialAdd was the file added at watch instantiation?
-   * @param priorWh depth relative to user-supplied path
-   * @param depth Child path actually targeted for watch
-   * @param target Child path actually targeted for watch
-   */
-  async _addToNodeFs(path5, initialAdd, priorWh, depth, target) {
-    const ready = this.fsw._emitReady;
-    if (this.fsw._isIgnored(path5) || this.fsw.closed) {
-      ready();
-      return false;
-    }
-    const wh = this.fsw._getWatchHelpers(path5);
-    if (priorWh) {
-      wh.filterPath = (entry) => priorWh.filterPath(entry);
-      wh.filterDir = (entry) => priorWh.filterDir(entry);
-    }
-    try {
-      const stats = await statMethods[wh.statMethod](wh.watchPath);
-      if (this.fsw.closed)
-        return;
-      if (this.fsw._isIgnored(wh.watchPath, stats)) {
-        ready();
-        return false;
-      }
-      const follow = this.fsw.options.followSymlinks;
-      let closer;
-      if (stats.isDirectory()) {
-        const absPath = sysPath.resolve(path5);
-        const targetPath = follow ? await fsrealpath(path5) : path5;
-        if (this.fsw.closed)
-          return;
-        closer = await this._handleDir(wh.watchPath, stats, initialAdd, depth, target, wh, targetPath);
-        if (this.fsw.closed)
-          return;
-        if (absPath !== targetPath && targetPath !== void 0) {
-          this.fsw._symlinkPaths.set(absPath, targetPath);
-        }
-      } else if (stats.isSymbolicLink()) {
-        const targetPath = follow ? await fsrealpath(path5) : path5;
-        if (this.fsw.closed)
-          return;
-        const parent = sysPath.dirname(wh.watchPath);
-        this.fsw._getWatchedDir(parent).add(wh.watchPath);
-        this.fsw._emit(EV.ADD, wh.watchPath, stats);
-        closer = await this._handleDir(parent, stats, initialAdd, depth, path5, wh, targetPath);
-        if (this.fsw.closed)
-          return;
-        if (targetPath !== void 0) {
-          this.fsw._symlinkPaths.set(sysPath.resolve(path5), targetPath);
-        }
-      } else {
-        closer = this._handleFile(wh.watchPath, stats, initialAdd);
-      }
-      ready();
-      if (closer)
-        this.fsw._addPathCloser(path5, closer);
-      return false;
-    } catch (error2) {
-      if (this.fsw._handleError(error2)) {
-        ready();
-        return path5;
-      }
-    }
-  }
-};
-
-// ../../node_modules/chokidar/esm/index.js
-var SLASH = "/";
-var SLASH_SLASH = "//";
-var ONE_DOT = ".";
-var TWO_DOTS = "..";
-var STRING_TYPE = "string";
-var BACK_SLASH_RE = /\\/g;
-var DOUBLE_SLASH_RE = /\/\//;
-var DOT_RE = /\..*\.(sw[px])$|~$|\.subl.*\.tmp/;
-var REPLACER_RE = /^\.[/\\]/;
-function arrify(item) {
-  return Array.isArray(item) ? item : [item];
-}
-var isMatcherObject = (matcher) => typeof matcher === "object" && matcher !== null && !(matcher instanceof RegExp);
-function createPattern(matcher) {
-  if (typeof matcher === "function")
-    return matcher;
-  if (typeof matcher === "string")
-    return (string3) => matcher === string3;
-  if (matcher instanceof RegExp)
-    return (string3) => matcher.test(string3);
-  if (typeof matcher === "object" && matcher !== null) {
-    return (string3) => {
-      if (matcher.path === string3)
-        return true;
-      if (matcher.recursive) {
-        const relative6 = sysPath2.relative(matcher.path, string3);
-        if (!relative6) {
-          return false;
-        }
-        return !relative6.startsWith("..") && !sysPath2.isAbsolute(relative6);
-      }
-      return false;
-    };
-  }
-  return () => false;
-}
-function normalizePath(path5) {
-  if (typeof path5 !== "string")
-    throw new Error("string expected");
-  path5 = sysPath2.normalize(path5);
-  path5 = path5.replace(/\\/g, "/");
-  let prepend = false;
-  if (path5.startsWith("//"))
-    prepend = true;
-  const DOUBLE_SLASH_RE2 = /\/\//;
-  while (path5.match(DOUBLE_SLASH_RE2))
-    path5 = path5.replace(DOUBLE_SLASH_RE2, "/");
-  if (prepend)
-    path5 = "/" + path5;
-  return path5;
-}
-function matchPatterns(patterns, testString, stats) {
-  const path5 = normalizePath(testString);
-  for (let index = 0; index < patterns.length; index++) {
-    const pattern = patterns[index];
-    if (pattern(path5, stats)) {
-      return true;
-    }
-  }
-  return false;
-}
-function anymatch(matchers, testString) {
-  if (matchers == null) {
-    throw new TypeError("anymatch: specify first argument");
-  }
-  const matchersArray = arrify(matchers);
-  const patterns = matchersArray.map((matcher) => createPattern(matcher));
-  if (testString == null) {
-    return (testString2, stats) => {
-      return matchPatterns(patterns, testString2, stats);
-    };
-  }
-  return matchPatterns(patterns, testString);
-}
-var unifyPaths = (paths_) => {
-  const paths = arrify(paths_).flat();
-  if (!paths.every((p) => typeof p === STRING_TYPE)) {
-    throw new TypeError(`Non-string provided as watch path: ${paths}`);
-  }
-  return paths.map(normalizePathToUnix);
-};
-var toUnix = (string3) => {
-  let str = string3.replace(BACK_SLASH_RE, SLASH);
-  let prepend = false;
-  if (str.startsWith(SLASH_SLASH)) {
-    prepend = true;
-  }
-  while (str.match(DOUBLE_SLASH_RE)) {
-    str = str.replace(DOUBLE_SLASH_RE, SLASH);
-  }
-  if (prepend) {
-    str = SLASH + str;
-  }
-  return str;
-};
-var normalizePathToUnix = (path5) => toUnix(sysPath2.normalize(toUnix(path5)));
-var normalizeIgnored = (cwd = "") => (path5) => {
-  if (typeof path5 === "string") {
-    return normalizePathToUnix(sysPath2.isAbsolute(path5) ? path5 : sysPath2.join(cwd, path5));
-  } else {
-    return path5;
-  }
-};
-var getAbsolutePath = (path5, cwd) => {
-  if (sysPath2.isAbsolute(path5)) {
-    return path5;
-  }
-  return sysPath2.join(cwd, path5);
-};
-var EMPTY_SET = Object.freeze(/* @__PURE__ */ new Set());
-var DirEntry = class {
-  constructor(dir, removeWatcher) {
-    this.path = dir;
-    this._removeWatcher = removeWatcher;
-    this.items = /* @__PURE__ */ new Set();
-  }
-  add(item) {
-    const { items } = this;
-    if (!items)
-      return;
-    if (item !== ONE_DOT && item !== TWO_DOTS)
-      items.add(item);
-  }
-  async remove(item) {
-    const { items } = this;
-    if (!items)
-      return;
-    items.delete(item);
-    if (items.size > 0)
-      return;
-    const dir = this.path;
-    try {
-      await readdir3(dir);
-    } catch (err) {
-      if (this._removeWatcher) {
-        this._removeWatcher(sysPath2.dirname(dir), sysPath2.basename(dir));
-      }
-    }
-  }
-  has(item) {
-    const { items } = this;
-    if (!items)
-      return;
-    return items.has(item);
-  }
-  getChildren() {
-    const { items } = this;
-    if (!items)
-      return [];
-    return [...items.values()];
-  }
-  dispose() {
-    this.items.clear();
-    this.path = "";
-    this._removeWatcher = EMPTY_FN;
-    this.items = EMPTY_SET;
-    Object.freeze(this);
-  }
-};
-var STAT_METHOD_F = "stat";
-var STAT_METHOD_L = "lstat";
-var WatchHelper = class {
-  constructor(path5, follow, fsw) {
-    this.fsw = fsw;
-    const watchPath = path5;
-    this.path = path5 = path5.replace(REPLACER_RE, "");
-    this.watchPath = watchPath;
-    this.fullWatchPath = sysPath2.resolve(watchPath);
-    this.dirParts = [];
-    this.dirParts.forEach((parts) => {
-      if (parts.length > 1)
-        parts.pop();
-    });
-    this.followSymlinks = follow;
-    this.statMethod = follow ? STAT_METHOD_F : STAT_METHOD_L;
-  }
-  entryPath(entry) {
-    return sysPath2.join(this.watchPath, sysPath2.relative(this.watchPath, entry.fullPath));
-  }
-  filterPath(entry) {
-    const { stats } = entry;
-    if (stats && stats.isSymbolicLink())
-      return this.filterDir(entry);
-    const resolvedPath = this.entryPath(entry);
-    return this.fsw._isntIgnored(resolvedPath, stats) && this.fsw._hasReadPermissions(stats);
-  }
-  filterDir(entry) {
-    return this.fsw._isntIgnored(this.entryPath(entry), entry.stats);
-  }
-};
-var FSWatcher = class extends EventEmitter {
-  // Not indenting methods for history sake; for now.
-  constructor(_opts = {}) {
-    super();
-    this.closed = false;
-    this._closers = /* @__PURE__ */ new Map();
-    this._ignoredPaths = /* @__PURE__ */ new Set();
-    this._throttled = /* @__PURE__ */ new Map();
-    this._streams = /* @__PURE__ */ new Set();
-    this._symlinkPaths = /* @__PURE__ */ new Map();
-    this._watched = /* @__PURE__ */ new Map();
-    this._pendingWrites = /* @__PURE__ */ new Map();
-    this._pendingUnlinks = /* @__PURE__ */ new Map();
-    this._readyCount = 0;
-    this._readyEmitted = false;
-    const awf = _opts.awaitWriteFinish;
-    const DEF_AWF = { stabilityThreshold: 2e3, pollInterval: 100 };
-    const opts = {
-      // Defaults
-      persistent: true,
-      ignoreInitial: false,
-      ignorePermissionErrors: false,
-      interval: 100,
-      binaryInterval: 300,
-      followSymlinks: true,
-      usePolling: false,
-      // useAsync: false,
-      atomic: true,
-      // NOTE: overwritten later (depends on usePolling)
-      ..._opts,
-      // Change format
-      ignored: _opts.ignored ? arrify(_opts.ignored) : arrify([]),
-      awaitWriteFinish: awf === true ? DEF_AWF : typeof awf === "object" ? { ...DEF_AWF, ...awf } : false
-    };
-    if (isIBMi)
-      opts.usePolling = true;
-    if (opts.atomic === void 0)
-      opts.atomic = !opts.usePolling;
-    const envPoll = process.env.CHOKIDAR_USEPOLLING;
-    if (envPoll !== void 0) {
-      const envLower = envPoll.toLowerCase();
-      if (envLower === "false" || envLower === "0")
-        opts.usePolling = false;
-      else if (envLower === "true" || envLower === "1")
-        opts.usePolling = true;
-      else
-        opts.usePolling = !!envLower;
-    }
-    const envInterval = process.env.CHOKIDAR_INTERVAL;
-    if (envInterval)
-      opts.interval = Number.parseInt(envInterval, 10);
-    let readyCalls = 0;
-    this._emitReady = () => {
-      readyCalls++;
-      if (readyCalls >= this._readyCount) {
-        this._emitReady = EMPTY_FN;
-        this._readyEmitted = true;
-        process.nextTick(() => this.emit(EVENTS.READY));
-      }
-    };
-    this._emitRaw = (...args) => this.emit(EVENTS.RAW, ...args);
-    this._boundRemove = this._remove.bind(this);
-    this.options = opts;
-    this._nodeFsHandler = new NodeFsHandler(this);
-    Object.freeze(opts);
-  }
-  _addIgnoredPath(matcher) {
-    if (isMatcherObject(matcher)) {
-      for (const ignored of this._ignoredPaths) {
-        if (isMatcherObject(ignored) && ignored.path === matcher.path && ignored.recursive === matcher.recursive) {
-          return;
-        }
-      }
-    }
-    this._ignoredPaths.add(matcher);
-  }
-  _removeIgnoredPath(matcher) {
-    this._ignoredPaths.delete(matcher);
-    if (typeof matcher === "string") {
-      for (const ignored of this._ignoredPaths) {
-        if (isMatcherObject(ignored) && ignored.path === matcher) {
-          this._ignoredPaths.delete(ignored);
-        }
-      }
-    }
-  }
-  // Public methods
-  /**
-   * Adds paths to be watched on an existing FSWatcher instance.
-   * @param paths_ file or file list. Other arguments are unused
-   */
-  add(paths_, _origAdd, _internal) {
-    const { cwd } = this.options;
-    this.closed = false;
-    this._closePromise = void 0;
-    let paths = unifyPaths(paths_);
-    if (cwd) {
-      paths = paths.map((path5) => {
-        const absPath = getAbsolutePath(path5, cwd);
-        return absPath;
-      });
-    }
-    paths.forEach((path5) => {
-      this._removeIgnoredPath(path5);
-    });
-    this._userIgnored = void 0;
-    if (!this._readyCount)
-      this._readyCount = 0;
-    this._readyCount += paths.length;
-    Promise.all(paths.map(async (path5) => {
-      const res = await this._nodeFsHandler._addToNodeFs(path5, !_internal, void 0, 0, _origAdd);
-      if (res)
-        this._emitReady();
-      return res;
-    })).then((results) => {
-      if (this.closed)
-        return;
-      results.forEach((item) => {
-        if (item)
-          this.add(sysPath2.dirname(item), sysPath2.basename(_origAdd || item));
-      });
-    });
-    return this;
-  }
-  /**
-   * Close watchers or start ignoring events from specified paths.
-   */
-  unwatch(paths_) {
-    if (this.closed)
-      return this;
-    const paths = unifyPaths(paths_);
-    const { cwd } = this.options;
-    paths.forEach((path5) => {
-      if (!sysPath2.isAbsolute(path5) && !this._closers.has(path5)) {
-        if (cwd)
-          path5 = sysPath2.join(cwd, path5);
-        path5 = sysPath2.resolve(path5);
-      }
-      this._closePath(path5);
-      this._addIgnoredPath(path5);
-      if (this._watched.has(path5)) {
-        this._addIgnoredPath({
-          path: path5,
-          recursive: true
-        });
-      }
-      this._userIgnored = void 0;
-    });
-    return this;
-  }
-  /**
-   * Close watchers and remove all listeners from watched paths.
-   */
-  close() {
-    if (this._closePromise) {
-      return this._closePromise;
-    }
-    this.closed = true;
-    this.removeAllListeners();
-    const closers = [];
-    this._closers.forEach((closerList) => closerList.forEach((closer) => {
-      const promise = closer();
-      if (promise instanceof Promise)
-        closers.push(promise);
-    }));
-    this._streams.forEach((stream) => stream.destroy());
-    this._userIgnored = void 0;
-    this._readyCount = 0;
-    this._readyEmitted = false;
-    this._watched.forEach((dirent) => dirent.dispose());
-    this._closers.clear();
-    this._watched.clear();
-    this._streams.clear();
-    this._symlinkPaths.clear();
-    this._throttled.clear();
-    this._closePromise = closers.length ? Promise.all(closers).then(() => void 0) : Promise.resolve();
-    return this._closePromise;
-  }
-  /**
-   * Expose list of watched paths
-   * @returns for chaining
-   */
-  getWatched() {
-    const watchList = {};
-    this._watched.forEach((entry, dir) => {
-      const key = this.options.cwd ? sysPath2.relative(this.options.cwd, dir) : dir;
-      const index = key || ONE_DOT;
-      watchList[index] = entry.getChildren().sort();
-    });
-    return watchList;
-  }
-  emitWithAll(event, args) {
-    this.emit(event, ...args);
-    if (event !== EVENTS.ERROR)
-      this.emit(EVENTS.ALL, event, ...args);
-  }
-  // Common helpers
-  // --------------
-  /**
-   * Normalize and emit events.
-   * Calling _emit DOES NOT MEAN emit() would be called!
-   * @param event Type of event
-   * @param path File or directory path
-   * @param stats arguments to be passed with event
-   * @returns the error if defined, otherwise the value of the FSWatcher instance's `closed` flag
-   */
-  async _emit(event, path5, stats) {
-    if (this.closed)
-      return;
-    const opts = this.options;
-    if (isWindows)
-      path5 = sysPath2.normalize(path5);
-    if (opts.cwd)
-      path5 = sysPath2.relative(opts.cwd, path5);
-    const args = [path5];
-    if (stats != null)
-      args.push(stats);
-    const awf = opts.awaitWriteFinish;
-    let pw;
-    if (awf && (pw = this._pendingWrites.get(path5))) {
-      pw.lastChange = /* @__PURE__ */ new Date();
-      return this;
-    }
-    if (opts.atomic) {
-      if (event === EVENTS.UNLINK) {
-        this._pendingUnlinks.set(path5, [event, ...args]);
-        setTimeout(() => {
-          this._pendingUnlinks.forEach((entry, path6) => {
-            this.emit(...entry);
-            this.emit(EVENTS.ALL, ...entry);
-            this._pendingUnlinks.delete(path6);
-          });
-        }, typeof opts.atomic === "number" ? opts.atomic : 100);
-        return this;
-      }
-      if (event === EVENTS.ADD && this._pendingUnlinks.has(path5)) {
-        event = EVENTS.CHANGE;
-        this._pendingUnlinks.delete(path5);
-      }
-    }
-    if (awf && (event === EVENTS.ADD || event === EVENTS.CHANGE) && this._readyEmitted) {
-      const awfEmit = (err, stats2) => {
-        if (err) {
-          event = EVENTS.ERROR;
-          args[0] = err;
-          this.emitWithAll(event, args);
-        } else if (stats2) {
-          if (args.length > 1) {
-            args[1] = stats2;
-          } else {
-            args.push(stats2);
-          }
-          this.emitWithAll(event, args);
-        }
-      };
-      this._awaitWriteFinish(path5, awf.stabilityThreshold, event, awfEmit);
-      return this;
-    }
-    if (event === EVENTS.CHANGE) {
-      const isThrottled = !this._throttle(EVENTS.CHANGE, path5, 50);
-      if (isThrottled)
-        return this;
-    }
-    if (opts.alwaysStat && stats === void 0 && (event === EVENTS.ADD || event === EVENTS.ADD_DIR || event === EVENTS.CHANGE)) {
-      const fullPath = opts.cwd ? sysPath2.join(opts.cwd, path5) : path5;
-      let stats2;
-      try {
-        stats2 = await stat3(fullPath);
-      } catch (err) {
-      }
-      if (!stats2 || this.closed)
-        return;
-      args.push(stats2);
-    }
-    this.emitWithAll(event, args);
-    return this;
-  }
-  /**
-   * Common handler for errors
-   * @returns The error if defined, otherwise the value of the FSWatcher instance's `closed` flag
-   */
-  _handleError(error2) {
-    const code = error2 && error2.code;
-    if (error2 && code !== "ENOENT" && code !== "ENOTDIR" && (!this.options.ignorePermissionErrors || code !== "EPERM" && code !== "EACCES")) {
-      this.emit(EVENTS.ERROR, error2);
-    }
-    return error2 || this.closed;
-  }
-  /**
-   * Helper utility for throttling
-   * @param actionType type being throttled
-   * @param path being acted upon
-   * @param timeout duration of time to suppress duplicate actions
-   * @returns tracking object or false if action should be suppressed
-   */
-  _throttle(actionType, path5, timeout) {
-    if (!this._throttled.has(actionType)) {
-      this._throttled.set(actionType, /* @__PURE__ */ new Map());
-    }
-    const action = this._throttled.get(actionType);
-    if (!action)
-      throw new Error("invalid throttle");
-    const actionPath = action.get(path5);
-    if (actionPath) {
-      actionPath.count++;
-      return false;
-    }
-    let timeoutObject;
-    const clear = () => {
-      const item = action.get(path5);
-      const count = item ? item.count : 0;
-      action.delete(path5);
-      clearTimeout(timeoutObject);
-      if (item)
-        clearTimeout(item.timeoutObject);
-      return count;
-    };
-    timeoutObject = setTimeout(clear, timeout);
-    const thr = { timeoutObject, clear, count: 0 };
-    action.set(path5, thr);
-    return thr;
-  }
-  _incrReadyCount() {
-    return this._readyCount++;
-  }
-  /**
-   * Awaits write operation to finish.
-   * Polls a newly created file for size variations. When files size does not change for 'threshold' milliseconds calls callback.
-   * @param path being acted upon
-   * @param threshold Time in milliseconds a file size must be fixed before acknowledging write OP is finished
-   * @param event
-   * @param awfEmit Callback to be called when ready for event to be emitted.
-   */
-  _awaitWriteFinish(path5, threshold, event, awfEmit) {
-    const awf = this.options.awaitWriteFinish;
-    if (typeof awf !== "object")
-      return;
-    const pollInterval = awf.pollInterval;
-    let timeoutHandler;
-    let fullPath = path5;
-    if (this.options.cwd && !sysPath2.isAbsolute(path5)) {
-      fullPath = sysPath2.join(this.options.cwd, path5);
-    }
-    const now = /* @__PURE__ */ new Date();
-    const writes = this._pendingWrites;
-    function awaitWriteFinishFn(prevStat) {
-      statcb(fullPath, (err, curStat) => {
-        if (err || !writes.has(path5)) {
-          if (err && err.code !== "ENOENT")
-            awfEmit(err);
-          return;
-        }
-        const now2 = Number(/* @__PURE__ */ new Date());
-        if (prevStat && curStat.size !== prevStat.size) {
-          writes.get(path5).lastChange = now2;
-        }
-        const pw = writes.get(path5);
-        const df = now2 - pw.lastChange;
-        if (df >= threshold) {
-          writes.delete(path5);
-          awfEmit(void 0, curStat);
-        } else {
-          timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval, curStat);
-        }
-      });
-    }
-    if (!writes.has(path5)) {
-      writes.set(path5, {
-        lastChange: now,
-        cancelWait: () => {
-          writes.delete(path5);
-          clearTimeout(timeoutHandler);
-          return event;
-        }
-      });
-      timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval);
-    }
-  }
-  /**
-   * Determines whether user has asked to ignore this path.
-   */
-  _isIgnored(path5, stats) {
-    if (this.options.atomic && DOT_RE.test(path5))
-      return true;
-    if (!this._userIgnored) {
-      const { cwd } = this.options;
-      const ign = this.options.ignored;
-      const ignored = (ign || []).map(normalizeIgnored(cwd));
-      const ignoredPaths = [...this._ignoredPaths];
-      const list = [...ignoredPaths.map(normalizeIgnored(cwd)), ...ignored];
-      this._userIgnored = anymatch(list, void 0);
-    }
-    return this._userIgnored(path5, stats);
-  }
-  _isntIgnored(path5, stat4) {
-    return !this._isIgnored(path5, stat4);
-  }
-  /**
-   * Provides a set of common helpers and properties relating to symlink handling.
-   * @param path file or directory pattern being watched
-   */
-  _getWatchHelpers(path5) {
-    return new WatchHelper(path5, this.options.followSymlinks, this);
-  }
-  // Directory helpers
-  // -----------------
-  /**
-   * Provides directory tracking objects
-   * @param directory path of the directory
-   */
-  _getWatchedDir(directory2) {
-    const dir = sysPath2.resolve(directory2);
-    if (!this._watched.has(dir))
-      this._watched.set(dir, new DirEntry(dir, this._boundRemove));
-    return this._watched.get(dir);
-  }
-  // File helpers
-  // ------------
-  /**
-   * Check for read permissions: https://stackoverflow.com/a/11781404/1358405
-   */
-  _hasReadPermissions(stats) {
-    if (this.options.ignorePermissionErrors)
-      return true;
-    return Boolean(Number(stats.mode) & 256);
-  }
-  /**
-   * Handles emitting unlink events for
-   * files and directories, and via recursion, for
-   * files and directories within directories that are unlinked
-   * @param directory within which the following item is located
-   * @param item      base path of item/directory
-   */
-  _remove(directory2, item, isDirectory) {
-    const path5 = sysPath2.join(directory2, item);
-    const fullPath = sysPath2.resolve(path5);
-    isDirectory = isDirectory != null ? isDirectory : this._watched.has(path5) || this._watched.has(fullPath);
-    if (!this._throttle("remove", path5, 100))
-      return;
-    if (!isDirectory && this._watched.size === 1) {
-      this.add(directory2, item, true);
-    }
-    const wp = this._getWatchedDir(path5);
-    const nestedDirectoryChildren = wp.getChildren();
-    nestedDirectoryChildren.forEach((nested) => this._remove(path5, nested));
-    const parent = this._getWatchedDir(directory2);
-    const wasTracked = parent.has(item);
-    parent.remove(item);
-    if (this._symlinkPaths.has(fullPath)) {
-      this._symlinkPaths.delete(fullPath);
-    }
-    let relPath = path5;
-    if (this.options.cwd)
-      relPath = sysPath2.relative(this.options.cwd, path5);
-    if (this.options.awaitWriteFinish && this._pendingWrites.has(relPath)) {
-      const event = this._pendingWrites.get(relPath).cancelWait();
-      if (event === EVENTS.ADD)
-        return;
-    }
-    this._watched.delete(path5);
-    this._watched.delete(fullPath);
-    const eventName = isDirectory ? EVENTS.UNLINK_DIR : EVENTS.UNLINK;
-    if (wasTracked && !this._isIgnored(path5))
-      this._emit(eventName, path5);
-    this._closePath(path5);
-  }
-  /**
-   * Closes all watchers for a path
-   */
-  _closePath(path5) {
-    this._closeFile(path5);
-    const dir = sysPath2.dirname(path5);
-    this._getWatchedDir(dir).remove(sysPath2.basename(path5));
-  }
-  /**
-   * Closes only file-specific watchers
-   */
-  _closeFile(path5) {
-    const closers = this._closers.get(path5);
-    if (!closers)
-      return;
-    closers.forEach((closer) => closer());
-    this._closers.delete(path5);
-  }
-  _addPathCloser(path5, closer) {
-    if (!closer)
-      return;
-    let list = this._closers.get(path5);
-    if (!list) {
-      list = [];
-      this._closers.set(path5, list);
-    }
-    list.push(closer);
-  }
-  _readdirp(root, opts) {
-    if (this.closed)
-      return;
-    const options = { type: EVENTS.ALL, alwaysStat: true, lstat: true, ...opts, depth: 0 };
-    let stream = readdirp(root, options);
-    this._streams.add(stream);
-    stream.once(STR_CLOSE, () => {
-      stream = void 0;
-    });
-    stream.once(STR_END, () => {
-      if (stream) {
-        this._streams.delete(stream);
-        stream = void 0;
-      }
-    });
-    return stream;
-  }
-};
-function watch(paths, options = {}) {
-  const watcher = new FSWatcher(options);
-  watcher.add(paths);
-  return watcher;
-}
-var esm_default = { watch, FSWatcher };
-
-// src/freshness/workspace-freshness-support.ts
-var coalesceMilliseconds = 100;
-var chokidarWatchOptions = {
-  atomic: 100,
-  awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 100 },
-  alwaysStat: true,
-  followSymlinks: false,
-  ignorePermissionErrors: false
-};
-function sameManifest(left, right) {
-  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
-}
-function canPublishGeneration(...args) {
-  const [currentGeneration, analyzedGeneration, captured, prepublication] = args;
-  return analyzedGeneration > currentGeneration && sameManifest(captured, prepublication);
-}
-function createChokidarWatcher(paths) {
-  return esm_default.watch(
-    [...paths],
-    chokidarWatchOptions
-  );
-}
-function createWatcher(options, schedule) {
-  try {
-    return attachWatcher(createWatcherFor(options), schedule);
-  } catch {
-    return void 0;
-  }
-}
-function createWatcherFor(options) {
-  return options.createWatcher ? options.createWatcher() : createChokidarWatcher(options.watch_paths ?? []);
-}
-function attachWatcher(watcher, schedule) {
-  watcher.on("all", schedule);
-  watcher.on("error", schedule);
-  return watcher;
-}
-function clearTimer(options, timer) {
-  const clear = options.clearTimeout ?? globalThis.clearTimeout;
-  clear(timer);
-}
-function clearTimers(options, runtime) {
-  for (const timer of [
-    runtime.coalesceTimer,
-    runtime.pollTimer,
-    runtime.manifestTimer
-  ]) {
-    if (timer !== void 0) clearTimer(options, timer);
-  }
-}
-
-// src/freshness/workspace-reconciliation.ts
-function sameManifest2(left, right) {
-  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
-}
-function canReuseCurrent(runtime, captured) {
-  return !runtime.forceRefresh && runtime.status.current_generation > 0 && sameManifest2(runtime.manifest, captured);
-}
-function readyCurrent(runtime) {
-  runtime.status = {
-    current_generation: runtime.status.current_generation,
-    pending_generation: null,
-    state: "ready",
-    mode: runtime.status.mode
-  };
-  runtime.forceRefresh = false;
-}
-async function reconcileAttempt(options, runtime) {
-  const captured = await options.reconcile();
-  if ("cause" in captured) {
-    runtime.degrade(captured.cause);
-    return true;
-  }
-  if (canReuseCurrent(runtime, captured.manifest)) {
-    readyCurrent(runtime);
-    return true;
-  }
-  return analyzeAndPublish(options, runtime, captured.manifest);
-}
-async function analyzeAndPublish(options, runtime, captured) {
-  const generation = generationFor(runtime);
-  await options.analyze?.(generation, captured);
-  const published = await publishedResult(options, captured);
-  if ("cause" in published) {
-    runtime.degrade(published.cause);
-    return true;
-  }
-  if (canPublishGeneration(
-    runtime.status.current_generation,
-    generation,
-    captured,
-    published.manifest
-  )) {
-    runtime.ready(generation, published.manifest);
-    return true;
-  }
-  runtime.reserveGeneration();
-  return false;
-}
-function generationFor(runtime) {
-  if (runtime.status.pending_generation !== null)
-    return runtime.status.pending_generation;
-  return runtime.reserveGeneration();
-}
-function publishedResult(options, captured) {
-  if (options.verify) return options.verify();
-  return Promise.resolve({ manifest: captured });
-}
-async function reconcileWorkspace(options, runtime) {
-  for (let mismatchCount = 0; mismatchCount < 3; mismatchCount += 1) {
-    if (await reconcileAttempt(options, runtime)) return;
-  }
-  runtime.degrade("workspace_churn");
-}
-
-// src/freshness/workspace-scheduling.ts
-function schedulePolling(options) {
-  const { runtime, timeout, reconcile, schedulePolling: schedulePolling2 } = options;
-  if (runtime.status.mode !== "polling" || runtime.activeSessions === 0 || runtime.pollTimer !== void 0)
-    return;
-  runtime.pollTimer = timeout(() => {
-    runtime.pollTimer = void 0;
-    void reconcile().finally(schedulePolling2);
-  }, 5e3);
-}
-function scheduleManifestCheck(options) {
-  const { runtime, timeout, reconcile, scheduleManifestCheck: scheduleManifestCheck2 } = options;
-  if (runtime.activeSessions === 0 || runtime.manifestTimer !== void 0)
-    return;
-  runtime.manifestTimer = timeout(() => {
-    runtime.manifestTimer = void 0;
-    void reconcile().finally(scheduleManifestCheck2);
-  }, 3e4);
-}
-function scheduleWorkspaceTimers(options) {
-  schedulePolling({ ...options, schedulePolling: options.schedule });
-  scheduleManifestCheck({
-    ...options,
-    scheduleManifestCheck: options.schedule
-  });
-}
-
-// src/freshness/workspace-freshness.ts
-var WorkspaceFreshness = class {
-  constructor(options) {
-    this.options = options;
-  }
-  options;
-  #runtime = new FreshnessRuntime();
-  status() {
-    return { ...this.#runtime.status };
-  }
-  failRefresh() {
-    this.#runtime.failRefresh();
-  }
-  reserveRefresh() {
-    this.#runtime.reserveRefresh();
-    return this.status();
-  }
-  async start(activeSessions = 0) {
-    this.#runtime.activeSessions = activeSessions;
-    const watcher = createWatcher(this.options, () => this.schedule());
-    if (watcher) this.#runtime.watcher = watcher;
-    if (!watcher) {
-      this.#runtime.status = { ...this.#runtime.status, mode: "polling" };
-      this.#scheduleTimers();
-    }
-    this.#scheduleTimers();
-    await this.reconcile();
-  }
-  setActiveSessions(count) {
-    this.#runtime.activeSessions = count;
-    this.#scheduleTimers();
-  }
-  schedule() {
-    if (this.#runtime.coalesceTimer !== void 0) return;
-    this.#runtime.coalesceTimer = this.timeout(() => {
-      this.#runtime.coalesceTimer = void 0;
-      void this.reconcile();
-    }, coalesceMilliseconds);
-  }
-  async reconcile() {
-    if (this.#runtime.running) return this.#runtime.running;
-    if (this.#runtime.status.pending_generation === null)
-      this.#runtime.reserveGeneration();
-    const run = reconcileWorkspace(this.options, this.#runtime).catch(() => this.#runtime.degrade("freshness_unavailable")).finally(() => {
-      this.#runtime.running = void 0;
-    });
-    return this.#runtime.running = run;
-  }
-  async close() {
-    clearTimers(this.options, this.#runtime);
-    await this.#runtime.watcher?.close();
-  }
-  #scheduleTimers() {
-    scheduleWorkspaceTimers({
-      runtime: this.#runtime,
-      timeout: (callback, delay2) => this.timeout(callback, delay2),
-      reconcile: () => this.reconcile(),
-      schedule: () => this.#scheduleTimers()
-    });
-  }
-  timeout(callback, delay2) {
-    return (this.options.setTimeout ?? globalThis.setTimeout)(callback, delay2);
-  }
-};
-
-// src/freshness/workspace-native.ts
-function createNativeWorkspaceFreshness(options) {
-  return new WorkspaceFreshness({
-    reconcile: () => reconcileNativeManifest(options),
-    verify: () => reconcileNativeManifest(options),
-    watch_paths: [options.root]
-  });
-}
-
-// src/server/create-server.ts
-var create_server_exports = {};
-__export(create_server_exports, {
-  createServer: () => createServer2
-});
-
-// ../../node_modules/zod/v4/mini/schemas.js
-var ZodMiniType = /* @__PURE__ */ $constructor("ZodMiniType", (inst, def) => {
-  if (!inst._zod)
-    throw new Error("Uninitialized schema in ZodMiniType.");
-  $ZodType.init(inst, def);
-  inst.def = def;
-  inst.parse = (data, params) => parse(inst, data, params, { callee: inst.parse });
-  inst.safeParse = (data, params) => safeParse(inst, data, params);
-  inst.parseAsync = async (data, params) => parseAsync(inst, data, params, { callee: inst.parseAsync });
-  inst.safeParseAsync = async (data, params) => safeParseAsync(inst, data, params);
-  inst.check = (...checks) => {
-    return inst.clone(
-      {
-        ...def,
-        checks: [
-          ...def.checks ?? [],
-          ...checks.map((ch) => typeof ch === "function" ? { _zod: { check: ch, def: { check: "custom" }, onattach: [] } } : ch)
-        ]
-      }
-      // { parent: true }
-    );
-  };
-  inst.clone = (_def, params) => clone2(inst, _def, params);
-  inst.brand = () => inst;
-  inst.register = ((reg, meta) => {
-    reg.add(inst, meta);
-    return inst;
-  });
-});
-var ZodMiniObject = /* @__PURE__ */ $constructor("ZodMiniObject", (inst, def) => {
-  $ZodObject.init(inst, def);
-  ZodMiniType.init(inst, def);
-  util_exports.defineLazy(inst, "shape", () => def.shape);
-});
-function object2(shape, params) {
-  const def = {
-    type: "object",
-    get shape() {
-      util_exports.assignProp(this, "shape", { ...shape });
-      return this.shape;
-    },
-    ...util_exports.normalizeParams(params)
-  };
-  return new ZodMiniObject(def);
-}
-
-// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
-function isZ4Schema(s) {
-  const schema = s;
-  return !!schema._zod;
-}
-function objectFromShape(shape) {
-  const values = Object.values(shape);
-  if (values.length === 0)
-    return object2({});
-  const allV4 = values.every(isZ4Schema);
-  const allV3 = values.every((s) => !isZ4Schema(s));
-  if (allV4)
-    return object2(shape);
-  if (allV3)
-    return objectType(shape);
-  throw new Error("Mixed Zod versions detected in object shape.");
-}
-function safeParse3(schema, data) {
-  if (isZ4Schema(schema)) {
-    const result2 = safeParse(schema, data);
-    return result2;
-  }
-  const v3Schema = schema;
-  const result = v3Schema.safeParse(data);
-  return result;
-}
-async function safeParseAsync3(schema, data) {
-  if (isZ4Schema(schema)) {
-    const result2 = await safeParseAsync(schema, data);
-    return result2;
-  }
-  const v3Schema = schema;
-  const result = await v3Schema.safeParseAsync(data);
-  return result;
-}
-function getObjectShape(schema) {
-  if (!schema)
-    return void 0;
-  let rawShape;
-  if (isZ4Schema(schema)) {
-    const v4Schema = schema;
-    rawShape = v4Schema._zod?.def?.shape;
-  } else {
-    const v3Schema = schema;
-    rawShape = v3Schema.shape;
-  }
-  if (!rawShape)
-    return void 0;
-  if (typeof rawShape === "function") {
-    try {
-      return rawShape();
-    } catch {
-      return void 0;
-    }
-  }
-  return rawShape;
-}
-function normalizeObjectSchema(schema) {
-  if (!schema)
-    return void 0;
-  if (typeof schema === "object") {
-    const asV3 = schema;
-    const asV4 = schema;
-    if (!asV3._def && !asV4._zod) {
-      const values = Object.values(schema);
-      if (values.length > 0 && values.every((v) => typeof v === "object" && v !== null && (v._def !== void 0 || v._zod !== void 0 || typeof v.parse === "function"))) {
-        return objectFromShape(schema);
-      }
-    }
-  }
-  if (isZ4Schema(schema)) {
-    const v4Schema = schema;
-    const def = v4Schema._zod?.def;
-    if (def && (def.type === "object" || def.shape !== void 0)) {
-      return schema;
-    }
-  } else {
-    const v3Schema = schema;
-    if (v3Schema.shape !== void 0) {
-      return schema;
-    }
-  }
-  return void 0;
-}
-function getDotPath(path5) {
-  if (path5.length === 0) {
-    return "object root";
-  }
-  return path5.reduce((acc, seg, index) => {
-    if (index === 0) {
-      return String(seg);
-    }
-    if (typeof seg === "number") {
-      return `${acc}[${seg}]`;
-    }
-    return `${acc}.${seg}`;
-  }, "");
-}
-function getParseErrorMessage(error2) {
-  if (error2 && typeof error2 === "object") {
-    if ("issues" in error2 && Array.isArray(error2.issues) && error2.issues.length > 0) {
-      return error2.issues.map((i) => {
-        if (!i.path?.length) {
-          return i.message;
-        }
-        return `${i.message} at ${getDotPath(i.path)}`;
-      }).join("\n");
-    }
-    if ("message" in error2 && typeof error2.message === "string") {
-      return error2.message;
-    }
-    try {
-      return JSON.stringify(error2);
-    } catch {
-      return String(error2);
-    }
-  }
-  return String(error2);
-}
-function getSchemaDescription(schema) {
-  return schema.description;
-}
-function isSchemaOptional(schema) {
-  if (isZ4Schema(schema)) {
-    const v4Schema = schema;
-    return v4Schema._zod?.def?.type === "optional";
-  }
-  const v3Schema = schema;
-  if (typeof schema.isOptional === "function") {
-    return schema.isOptional();
-  }
-  return v3Schema._def?.typeName === "ZodOptional";
-}
-function getLiteralValue(schema) {
-  if (isZ4Schema(schema)) {
-    const v4Schema = schema;
-    const def2 = v4Schema._zod?.def;
-    if (def2) {
-      if (def2.value !== void 0)
-        return def2.value;
-      if (Array.isArray(def2.values) && def2.values.length > 0) {
-        return def2.values[0];
-      }
-    }
-  }
-  const v3Schema = schema;
-  const def = v3Schema._def;
-  if (def) {
-    if (def.value !== void 0)
-      return def.value;
-    if (Array.isArray(def.values) && def.values.length > 0) {
-      return def.values[0];
-    }
-  }
-  const directValue = schema.value;
-  if (directValue !== void 0)
-    return directValue;
-  return void 0;
-}
 
 // ../../node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
 function isTerminal(status) {
@@ -26718,7 +26508,7 @@ function getMethodLiteral(schema) {
   return value;
 }
 function parseWithCompat(schema, data) {
-  const result = safeParse3(schema, data);
+  const result = safeParse2(schema, data);
   if (!result.success) {
     throw result.error;
   }
@@ -27316,7 +27106,7 @@ var Protocol = class {
           return reject(response);
         }
         try {
-          const parseResult2 = safeParse3(resultSchema, response.result);
+          const parseResult2 = safeParse2(resultSchema, response.result);
           if (!parseResult2.success) {
             reject(parseResult2.error);
           } else {
@@ -28068,7 +27858,7 @@ var Server = class extends Protocol {
     const method = methodValue;
     if (method === "tools/call") {
       const wrappedHandler = async (request, extra) => {
-        const validatedRequest = safeParse3(CallToolRequestSchema, request);
+        const validatedRequest = safeParse2(CallToolRequestSchema, request);
         if (!validatedRequest.success) {
           const errorMessage = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
           throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage}`);
@@ -28076,14 +27866,14 @@ var Server = class extends Protocol {
         const { params } = validatedRequest.data;
         const result = await Promise.resolve(handler(request, extra));
         if (params.task) {
-          const taskValidationResult = safeParse3(CreateTaskResultSchema, result);
+          const taskValidationResult = safeParse2(CreateTaskResultSchema, result);
           if (!taskValidationResult.success) {
             const errorMessage = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
             throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage}`);
           }
           return taskValidationResult.data;
         }
-        const validationResult = safeParse3(CallToolResultSchema, result);
+        const validationResult = safeParse2(CallToolResultSchema, result);
         if (!validationResult.success) {
           const errorMessage = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
           throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call result: ${errorMessage}`);
@@ -28600,7 +28390,7 @@ var McpServer = class {
     }
     const inputObj = normalizeObjectSchema(tool.inputSchema);
     const schemaToParse = inputObj ?? tool.inputSchema;
-    const parseResult2 = await safeParseAsync3(schemaToParse, args);
+    const parseResult2 = await safeParseAsync2(schemaToParse, args);
     if (!parseResult2.success) {
       const error2 = "error" in parseResult2 ? parseResult2.error : "Unknown error";
       const errorMessage = getParseErrorMessage(error2);
@@ -28625,7 +28415,7 @@ var McpServer = class {
       throw new McpError(ErrorCode.InvalidParams, `Output validation error: Tool ${toolName} has an output schema but no structured content was provided`);
     }
     const outputObj = normalizeObjectSchema(tool.outputSchema);
-    const parseResult2 = await safeParseAsync3(outputObj, result.structuredContent);
+    const parseResult2 = await safeParseAsync2(outputObj, result.structuredContent);
     if (!parseResult2.success) {
       const error2 = "error" in parseResult2 ? parseResult2.error : "Unknown error";
       const errorMessage = getParseErrorMessage(error2);
@@ -28838,7 +28628,7 @@ var McpServer = class {
       }
       if (prompt.argsSchema) {
         const argsObj = normalizeObjectSchema(prompt.argsSchema);
-        const parseResult2 = await safeParseAsync3(argsObj, request.params.arguments);
+        const parseResult2 = await safeParseAsync2(argsObj, request.params.arguments);
         if (!parseResult2.success) {
           const error2 = "error" in parseResult2 ? parseResult2.error : "Unknown error";
           const errorMessage = getParseErrorMessage(error2);
@@ -29245,649 +29035,24 @@ var EMPTY_COMPLETION_RESULT = {
   }
 };
 
-// src/server/server-call.ts
-import { Buffer as Buffer6 } from "node:buffer";
+// src/package-info.ts
+import { readFileSync as readFileSync7 } from "node:fs";
+import { dirname as dirname9, join as join23 } from "node:path";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
+var directory = dirname9(fileURLToPath5(import.meta.url));
+var packageInfo = JSON.parse(
+  readFileSync7(join23(directory, "..", "package.json"), "utf8")
+);
+var browserAssetRoot = join23(directory, "browser");
 
-// src/server/envelope.ts
-function createEnvelope(freshness, state, data) {
-  return {
-    schema_version: 1,
-    project_id: "project",
-    project_generation: freshness.current_generation,
-    pending_generation: freshness.pending_generation,
-    state,
-    data
-  };
-}
-
-// src/navigation/resource-limits.ts
-import { Buffer as Buffer4 } from "node:buffer";
-
-// src/navigation/resource-filter-limits.ts
-import { Buffer as Buffer3 } from "node:buffer";
-
-// src/navigation/resource-limit-constants.ts
-var MAX_FILTER_VALUES = 32;
-var MAX_FILTER_VALUE_BYTES = 256;
-
-// src/navigation/resource-filter-limits.ts
-function filterLimit(arguments_) {
-  const filters = [
-    arguments_.path_globs,
-    arguments_.languages,
-    arguments_.kinds
-  ].flatMap((value) => Array.isArray(value) ? value : []);
-  if (filters.length > MAX_FILTER_VALUES)
-    return {
-      field: "filters",
-      limit: MAX_FILTER_VALUES,
-      actual: filters.length
-    };
-  for (const value of filters) {
-    const result = filterValueLimit(value);
-    if (result) return result;
-  }
-  return void 0;
-}
-function filterValueLimit(value) {
-  if (typeof value !== "string") return void 0;
-  const actual = Buffer3.byteLength(value, "utf8");
-  if (actual > MAX_FILTER_VALUE_BYTES)
-    return { field: "filter_value", limit: MAX_FILTER_VALUE_BYTES, actual };
-  return void 0;
-}
-
-// src/navigation/backend-capacity-error.ts
-var BackendCapacityError = class extends Error {
-  constructor() {
-    super("resource_limit");
-  }
-};
-
-// src/navigation/backend-timeout-error.ts
-var BackendTimeoutError = class extends Error {
-  constructor() {
-    super("backend_timeout");
-  }
-};
-
-// src/navigation/backend-timeout-limits.ts
-var DEFAULT_BACKEND_TIMEOUT_MS = 1e4;
-var MAX_BACKEND_TIMEOUT_MS = 6e4;
-var MAX_SESSION_BACKEND_REQUESTS = 4;
-var MAX_PROJECT_BACKEND_REQUESTS = 8;
-
-// src/navigation/backend-request-limiter.ts
-var BackendRequestLimiter = class {
-  projectActive = 0;
-  sessionActive = /* @__PURE__ */ new Map();
-  timeoutMs;
-  constructor(timeoutMs = DEFAULT_BACKEND_TIMEOUT_MS) {
-    this.timeoutMs = Math.min(Math.max(timeoutMs, 1), MAX_BACKEND_TIMEOUT_MS);
-  }
-  async run(sessionId, operation) {
-    const sessionActive = this.sessionCount(sessionId);
-    this.assertCapacity(sessionActive);
-    this.projectActive += 1;
-    this.reserveSession(sessionId, sessionActive);
-    return this.execute(operation).finally(() => this.release(sessionId));
-  }
-  sessionCount(sessionId) {
-    return sessionId ? this.sessionActive.get(sessionId) ?? 0 : 0;
-  }
-  assertCapacity(sessionActive) {
-    if (this.projectActive >= MAX_PROJECT_BACKEND_REQUESTS || sessionActive >= MAX_SESSION_BACKEND_REQUESTS)
-      throw new BackendCapacityError();
-  }
-  reserveSession(sessionId, sessionActive) {
-    if (sessionId) this.sessionActive.set(sessionId, sessionActive + 1);
-  }
-  async execute(operation) {
-    let timer;
-    try {
-      return await Promise.race([
-        operation(),
-        new Promise((_, reject) => {
-          timer = setTimeout(
-            () => reject(new BackendTimeoutError()),
-            this.timeoutMs
-          );
-        })
-      ]);
-    } finally {
-      if (timer) clearTimeout(timer);
-    }
-  }
-  release(sessionId) {
-    this.projectActive -= 1;
-    if (!sessionId) return;
-    const remaining = (this.sessionActive.get(sessionId) ?? 1) - 1;
-    if (remaining === 0) {
-      this.sessionActive.delete(sessionId);
-      return;
-    }
-    this.sessionActive.set(sessionId, remaining);
-  }
-};
-
-// src/navigation/resource-limits.ts
-var MAX_QUERY_CODE_POINTS = 1024;
-var MAX_REQUEST_BYTES = 64 * 1024;
-var MAX_CANDIDATES = 200;
-var MAX_BODY_BYTES2 = 128 * 1024;
-function validateResourceLimits(name, arguments_) {
-  const limits = [
-    requestLimit(arguments_),
-    queryLimit(name, arguments_),
-    filterLimit(arguments_),
-    candidateLimit(name, arguments_),
-    bodyLimit(name, arguments_)
-  ];
-  return limits.find((limit) => limit !== void 0);
-}
-function requestLimit(arguments_) {
-  const actual = Buffer4.byteLength(JSON.stringify(arguments_), "utf8");
-  if (actual > MAX_REQUEST_BYTES)
-    return { field: "request", limit: MAX_REQUEST_BYTES, actual };
-}
-function queryLimit(name, arguments_) {
-  if (name !== "code_search" || typeof arguments_.query !== "string") return;
-  const actual = Array.from(arguments_.query).length;
-  if (actual > MAX_QUERY_CODE_POINTS)
-    return { field: "query", limit: MAX_QUERY_CODE_POINTS, actual };
-}
-function candidateLimit(name, arguments_) {
-  if (name !== "code_search" && name !== "code_follow") return;
-  if (typeof arguments_.limit !== "number" || arguments_.limit <= MAX_CANDIDATES)
-    return;
-  return { field: "limit", limit: MAX_CANDIDATES, actual: arguments_.limit };
-}
-function bodyLimit(name, arguments_) {
-  if (name !== "code_focus") return;
-  if (typeof arguments_.body_limit_bytes !== "number" || arguments_.body_limit_bytes <= MAX_BODY_BYTES2)
-    return;
-  return {
-    field: "body_limit_bytes",
-    limit: MAX_BODY_BYTES2,
-    actual: arguments_.body_limit_bytes
-  };
-}
-
-// src/navigation/session-capacity-error.ts
-var SessionCapacityError = class extends Error {
-  constructor() {
-    super("project_capacity");
-  }
-};
-
-// src/navigation/session-fingerprint.ts
-function canonicalFingerprint(toolName, arguments_) {
-  const { request_id: _requestId, ...remaining } = arguments_;
-  return JSON.stringify({ tool: toolName, arguments: canonicalize2(remaining) });
-}
-function canonicalize2(value) {
-  if (Array.isArray(value)) return value.map(canonicalize2);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, child]) => [key, canonicalize2(child)])
-    );
-  }
-  return value;
-}
-
-// src/navigation/session-limits.ts
-var REQUEST_RETENTION_MS = 5 * 60 * 1e3;
-var MAX_RETAINED_REQUESTS = 64;
-var MAX_RETAINED_VIEWS = 64;
-var MAX_SESSIONS = 8;
-var MAX_RETAINED_VIEW_BODY_BYTES = 16 * 1024 * 1024;
-var SESSION_IDLE_MS = 30 * 60 * 1e3;
-var MAX_QUEUED_REQUESTS = 64;
-
-// src/navigation/opaque-id.ts
-import { randomBytes } from "node:crypto";
-function mintOpaqueId() {
-  return randomBytes(16).toString("base64url");
-}
-
-// src/navigation/session-owner.ts
-function ownedSession(runtime, connectionId, sessionId) {
-  const session2 = runtime.sessions.get(sessionId);
-  return session2?.connectionId === connectionId ? session2 : void 0;
-}
-
-// src/navigation/session-view-eviction.ts
-function expireIdle(runtime, now) {
-  for (const [sessionId, session2] of runtime.sessions)
-    if (now - session2.lastAcceptedAt >= SESSION_IDLE_MS)
-      deleteSession(runtime, sessionId, session2);
-}
-function deleteSession(runtime, sessionId, session2) {
-  for (const viewId of session2.views.keys())
-    discardView(runtime, session2, viewId);
-  runtime.queuedRequests -= session2.queuedRequests;
-  runtime.sessions.delete(sessionId);
-}
-function evictViews(runtime, session2) {
-  while (session2.views.size > MAX_RETAINED_VIEWS) {
-    const viewIndex = session2.viewHistory.findIndex(
-      (_, index) => index !== session2.historyPosition
-    );
-    if (viewIndex < 0) return;
-    const [viewId] = session2.viewHistory.splice(viewIndex, 1);
-    discardView(runtime, session2, viewId);
-    if (viewIndex < session2.historyPosition) session2.historyPosition -= 1;
-  }
-}
-function discardView(runtime, session2, viewId) {
-  const view = session2.views.get(viewId);
-  if (!(view && session2.views.delete(viewId))) return;
-  runtime.retainedBodyBytes -= view.content.returned_bytes;
-  session2.staleViews.add(viewId);
-}
-function makeViewCapacity(runtime, bytes) {
-  while (runtime.retainedBodyBytes + bytes > runtime.maxRetainedBodyBytes) {
-    const candidate = oldestEvictableView(runtime);
-    if (!candidate) return false;
-    candidate.session.viewHistory.splice(candidate.index, 1);
-    discardView(runtime, candidate.session, candidate.viewId);
-    if (candidate.index < candidate.session.historyPosition)
-      candidate.session.historyPosition -= 1;
-  }
-  return true;
-}
-function oldestEvictableView(runtime) {
-  for (const session2 of runtime.sessions.values()) {
-    const index = session2.viewHistory.findIndex(
-      (_, position) => position !== session2.historyPosition
-    );
-    const viewId = session2.viewHistory[index];
-    if (index >= 0 && viewId) return { session: session2, viewId, index };
-  }
-  return void 0;
-}
-
-// src/navigation/session-views.ts
-function history(runtime, connectionId, sessionId) {
-  return ownedSession(runtime, connectionId, sessionId)?.viewHistory;
-}
-function restore(options) {
-  const session2 = ownedSession(
-    options.runtime,
-    options.connectionId,
-    options.sessionId
-  );
-  if (!session2) return void 0;
-  const next = session2.historyPosition + (options.direction === "back" ? -1 : 1);
-  const viewId = session2.viewHistory[next];
-  if (!viewId) return void 0;
-  session2.historyPosition = next;
-  return session2.views.get(viewId);
-}
-function recent(options) {
-  const session2 = ownedSession(
-    options.runtime,
-    options.connectionId,
-    options.sessionId
-  );
-  if (!session2) return void 0;
-  return session2.viewHistory.slice(Math.max(0, session2.viewHistory.length - options.limit)).reverse().flatMap((viewId) => {
-    const view = session2.views.get(viewId);
-    return view ? [view] : [];
-  });
-}
-function historyPosition(runtime, connectionId, sessionId) {
-  const session2 = ownedSession(runtime, connectionId, sessionId);
-  return session2 ? session2.historyPosition + 1 : void 0;
-}
-
-// src/navigation/session-request-queue.ts
-function queueRequest(runtime, session2, options, fingerprint) {
-  session2.lastAcceptedAt = options.now;
-  session2.queuedRequests += 1;
-  runtime.queuedRequests += 1;
-  const response = session2.queue.then(options.operation);
-  session2.queue = response.then(
-    () => void 0,
-    () => void 0
-  );
-  session2.requests.set(options.requestId, {
-    fingerprint,
-    expiresAt: options.now + REQUEST_RETENTION_MS,
-    response
-  });
-  void response.then(
-    () => releaseQueuedRequest(runtime, session2),
-    () => releaseQueuedRequest(runtime, session2)
-  );
-  trimRequests(session2);
-  return { state: "ok", response };
-}
-function canQueueRequest(runtime) {
-  return runtime.queuedRequests < MAX_QUEUED_REQUESTS;
-}
-function trimRequests(session2) {
-  while (session2.requests.size > MAX_RETAINED_REQUESTS)
-    session2.requests.delete(session2.requests.keys().next().value);
-}
-function releaseQueuedRequest(runtime, session2) {
-  if (session2.queuedRequests === 0) return;
-  session2.queuedRequests -= 1;
-  runtime.queuedRequests -= 1;
-}
-function replayRequest(retained, fingerprint) {
-  if (retained.fingerprint !== fingerprint)
-    return { state: "request_id_conflict" };
-  return { state: "ok", response: retained.response };
-}
-
-// src/navigation/session-requests.ts
-function executeSession(runtime, options) {
-  expireIdle(runtime, options.now);
-  const session2 = ownedSession(
-    runtime,
-    options.connectionId,
-    options.sessionId
-  );
-  if (!session2) return { state: "invalid_session" };
-  return processSessionRequest(runtime, session2, options);
-}
-function processSessionRequest(runtime, session2, options) {
-  expireRequests(session2, options.now);
-  const fingerprint = canonicalFingerprint(
-    options.toolName,
-    options.arguments_
-  );
-  const retained = session2.requests.get(options.requestId);
-  if (retained) return replayRequest(retained, fingerprint);
-  if (!canQueueRequest(runtime)) return { state: "project_capacity" };
-  return queueRequest(runtime, session2, options, fingerprint);
-}
-function expireRequests(session2, now) {
-  for (const [requestId, entry] of session2.requests)
-    if (entry.expiresAt <= now) session2.requests.delete(requestId);
-}
-
-// src/navigation/session-view-actions.ts
-function addView(options) {
-  const session2 = ownedSession(
-    options.runtime,
-    options.connectionId,
-    options.sessionId
-  );
-  if (!session2) return "invalid_session";
-  if (!makeViewCapacity(options.runtime, options.view.content.returned_bytes))
-    return "project_capacity";
-  const abandoned = session2.viewHistory.splice(session2.historyPosition + 1);
-  for (const viewId of abandoned) discardView(options.runtime, session2, viewId);
-  session2.views.set(options.view.view_id, options.view);
-  options.runtime.retainedBodyBytes += options.view.content.returned_bytes;
-  session2.viewHistory.push(options.view.view_id);
-  session2.historyPosition = session2.viewHistory.length - 1;
-  evictViews(options.runtime, session2);
-  return "ok";
-}
-function resolveHandle(runtime, options) {
-  const session2 = ownedSession(
-    runtime,
-    options.connectionId,
-    options.sessionId
-  );
-  if (!session2) return { state: "invalid_view_handle" };
-  if (session2.staleViews.has(options.viewId)) return { state: "stale_view" };
-  const view = session2.views.get(options.viewId);
-  if (view && view.project_generation !== options.currentGeneration)
-    return {
-      state: "stale_view",
-      viewGeneration: view.project_generation,
-      currentGeneration: options.currentGeneration
-    };
-  const symbolId = view?.handles.find(
-    (candidate) => candidate.handle === options.handle
-  )?.symbol_id;
-  return symbolId ? { state: "ok", symbolId } : { state: "invalid_view_handle" };
-}
-
-// src/navigation/session-operations.ts
-function newSessionRuntime(maxRetainedBodyBytes = MAX_RETAINED_VIEW_BODY_BYTES) {
-  return {
-    sessions: /* @__PURE__ */ new Map(),
-    maxRetainedBodyBytes,
-    retainedBodyBytes: 0,
-    queuedRequests: 0
-  };
-}
-function tryStart(runtime, connectionId, now) {
-  expireIdle(runtime, now);
-  if (runtime.sessions.size >= MAX_SESSIONS) return void 0;
-  const sessionId = mintOpaqueId();
-  runtime.sessions.set(sessionId, {
-    connectionId,
-    queue: Promise.resolve(),
-    requests: /* @__PURE__ */ new Map(),
-    views: /* @__PURE__ */ new Map(),
-    viewHistory: [],
-    historyPosition: -1,
-    staleViews: /* @__PURE__ */ new Set(),
-    lastAcceptedAt: now,
-    queuedRequests: 0
-  });
-  return sessionId;
-}
-function closeConnection(runtime, connectionId) {
-  for (const [sessionId, session2] of runtime.sessions) {
-    if (session2.connectionId === connectionId)
-      deleteSession(runtime, sessionId, session2);
-  }
-}
-
-// src/navigation/session-manager-arguments.ts
-function executeManagerRequest(runtime, args) {
-  const now = args[6] ?? Date.now();
-  return executeSession(runtime, {
-    connectionId: args[0],
-    sessionId: args[1],
-    requestId: args[2],
-    toolName: args[3],
-    arguments_: args[4],
-    operation: args[5],
-    now
-  });
-}
-function resolveManagerHandle(runtime, args) {
-  const [connectionId, sessionId, viewId, handle, currentGeneration = 0] = args;
-  return resolveHandle(runtime, {
-    connectionId,
-    sessionId,
-    viewId,
-    handle,
-    currentGeneration
-  });
-}
-
-// src/navigation/session-manager.ts
-var SessionManager = class {
-  runtime;
-  constructor(options = {}) {
-    this.runtime = newSessionRuntime(
-      options.maxRetainedBodyBytes ?? MAX_RETAINED_VIEW_BODY_BYTES
-    );
-  }
-  start(connectionId) {
-    const sessionId = this.tryStart(connectionId);
-    if (!sessionId) throw new SessionCapacityError();
-    return sessionId;
-  }
-  tryStart(connectionId, now = Date.now()) {
-    return tryStart(this.runtime, connectionId, now);
-  }
-  closeConnection(connectionId) {
-    closeConnection(this.runtime, connectionId);
-  }
-  execute(...args) {
-    return executeManagerRequest(this.runtime, args);
-  }
-  addView(connectionId, sessionId, view) {
-    return addView({ runtime: this.runtime, connectionId, sessionId, view });
-  }
-  resolveHandle(...args) {
-    return resolveManagerHandle(this.runtime, args);
-  }
-  history(connectionId, sessionId) {
-    return history(this.runtime, connectionId, sessionId);
-  }
-  restore(connectionId, sessionId, direction) {
-    return restore({
-      runtime: this.runtime,
-      connectionId,
-      sessionId,
-      direction
-    });
-  }
-  recent(connectionId, sessionId, limit = MAX_RETAINED_VIEWS) {
-    return recent({ runtime: this.runtime, connectionId, sessionId, limit });
-  }
-  historyPosition(connectionId, sessionId) {
-    return historyPosition(this.runtime, connectionId, sessionId);
-  }
-};
-
-// src/navigation/error-details-sanitizer.ts
-var detailKeys = /* @__PURE__ */ new Set([
-  "field",
-  "limit",
-  "actual",
-  "view_generation",
-  "current_generation",
-  "state",
-  "path"
-]);
-function isNormalizedProjectRelativePath(value) {
-  return value.length > 0 && !value.startsWith("/") && !/^[A-Za-z]:[\\/]/.test(value) && !value.includes("\\") && !value.split("/").includes("..");
-}
-function validDetail(key, value) {
-  if (!detailKeys.has(key)) return false;
-  if (key === "path")
-    return typeof value === "string" && isNormalizedProjectRelativePath(value);
-  return typeof value === "string" || typeof value === "number";
-}
-function sanitizeDetails(details) {
-  return Object.fromEntries(
-    Object.entries(details).filter(([key, value]) => validDetail(key, value))
-  );
-}
-
-// src/navigation/error.ts
-var errorCodes = [
-  "unknown_tool",
-  "invalid_request",
-  "invalid_session",
-  "invalid_view_handle",
-  "stale_view",
-  "request_id_conflict",
-  "resource_limit",
-  "project_capacity",
-  "workspace_unavailable",
-  "backend_timeout",
-  "backend_crashed",
-  "backend_unavailable",
-  "unavailable_relation",
-  "invalid_backend_result",
-  "backend_response_limit",
-  "path_outside_project",
-  "path_identity_unavailable",
-  "path_identity_changed",
-  "invalid_project_root",
-  "project_root_inaccessible",
-  "project_root_unavailable",
-  "backend_identity_unverifiable",
-  "backend_identity_changed",
-  "backend_endpoint_rejected",
-  "backend_write_rejected",
-  "backend_capability_rejected",
-  "unsafe_backend_mode",
-  "unsupported_backend_version",
-  "classification_config_invalid",
-  "freshness_unavailable",
-  "incomplete_write",
-  "scan_limit",
-  "workspace_churn",
-  "refresh_failed",
-  "internal_error"
-];
-var retryableCodes = /* @__PURE__ */ new Set([
-  "invalid_session",
-  "project_capacity",
-  "workspace_unavailable",
-  "backend_timeout",
-  "backend_crashed",
-  "backend_unavailable",
-  "path_identity_changed",
-  "project_root_inaccessible",
-  "freshness_unavailable",
-  "incomplete_write",
-  "workspace_churn",
-  "refresh_failed"
-]);
-var codeSet = new Set(errorCodes);
-function codeExplorerError(code, details) {
-  return {
-    schema_version: 1,
-    code,
-    message: code,
-    retryable: retryableCodes.has(code),
-    ...details && Object.keys(details).length > 0 ? { details: sanitizeDetails(details) } : {}
-  };
-}
-function normalizeError(error2) {
-  const message = error2 instanceof Error ? error2.message : void 0;
-  return codeExplorerError(
-    message && codeSet.has(message) ? message : "internal_error"
-  );
-}
-
-// src/server/errors.ts
-function unknownTool() {
-  return codeExplorerError("unknown_tool");
-}
-function invalidRequest() {
-  return codeExplorerError("invalid_request");
-}
-function resourceLimit() {
-  return codeExplorerError("resource_limit");
-}
-function limitedResource(limit) {
-  return codeExplorerError("resource_limit", limit);
-}
-function backendTimeout() {
-  return codeExplorerError("backend_timeout");
-}
-function invalidSession() {
-  return codeExplorerError("invalid_session");
-}
-function projectCapacity() {
-  return codeExplorerError("project_capacity");
-}
-function invalidViewHandle() {
-  return codeExplorerError("invalid_view_handle");
-}
-function staleView() {
-  return codeExplorerError("stale_view");
-}
-function requestIdConflict() {
-  return codeExplorerError("request_id_conflict");
-}
-function normalizeBackendFailure(error2) {
-  if (error2 instanceof BackendTimeoutError) return backendTimeout();
-  if (error2 instanceof BackendCapacityError) return resourceLimit();
-  if (error2 instanceof SessionCapacityError) return projectCapacity();
-  if (error2 instanceof ProjectPathError) return codeExplorerError(error2.code);
-  return normalizeError(error2);
+// src/discovery/landmarks.ts
+function landmarksNotReady() {
+  return { state: "landmarks_not_ready", landmarks: [] };
 }
 
 // src/discovery/classification.ts
 import { readFileSync as readFileSync8 } from "node:fs";
-import process4 from "node:process";
+import process3 from "node:process";
 
 // src/discovery/classification-markers.ts
 function markerClass(path5, generatedHeader) {
@@ -30042,7 +29207,7 @@ var emptyConfig = {
   production: [],
   overrides: []
 };
-function loadClassificationConfig(projectRoot, platform = process4.platform) {
+function loadClassificationConfig(projectRoot, platform = process3.platform) {
   try {
     const configPath = classificationConfigPath(projectRoot, platform);
     if (!configPath)
@@ -30490,8 +29655,58 @@ function createDiscoveryPipeline(root) {
   };
 }
 
-// src/server/focus-action.ts
-import * as path4 from "node:path";
+// src/freshness/project-generation-scheduler.ts
+var project_generation_scheduler_exports = {};
+__export(project_generation_scheduler_exports, {
+  ProjectGenerationScheduler: () => ProjectGenerationScheduler
+});
+var ProjectGenerationScheduler = class {
+  constructor(freshness) {
+    this.freshness = freshness;
+  }
+  freshness;
+  #tail = Promise.resolve();
+  #acceptedRequests = 0;
+  #refresh;
+  accept() {
+    return this.#enqueue(() => ({
+      accepted_request: ++this.#acceptedRequests,
+      status: this.freshness.status()
+    }));
+  }
+  refresh(work) {
+    if (this.#refresh) return this.#refresh;
+    const refresh = this.#enqueue(async () => {
+      ++this.#acceptedRequests;
+      this.freshness.reserveRefresh();
+      try {
+        await work();
+        await this.freshness.reconcile();
+      } catch {
+        this.freshness.failRefresh();
+      }
+      return this.freshness.status();
+    });
+    this.#refresh = refresh;
+    void refresh.then(
+      () => {
+        if (this.#refresh === refresh) this.#refresh = void 0;
+      },
+      () => {
+        if (this.#refresh === refresh) this.#refresh = void 0;
+      }
+    );
+    return refresh;
+  }
+  #enqueue(operation) {
+    const response = this.#tail.then(operation);
+    this.#tail = response.then(
+      () => void 0,
+      () => void 0
+    );
+    return response;
+  }
+};
 
 // src/navigation/stable-symbol-id.ts
 import { createHash as createHash5 } from "node:crypto";
@@ -30518,15 +29733,15 @@ var FocusBodyLimitError = class extends Error {
 };
 
 // src/navigation/focus-content.ts
-import { Buffer as Buffer5 } from "node:buffer";
+import { Buffer as Buffer3 } from "node:buffer";
 function boundUtf8(value, limit) {
-  const totalBytes = Buffer5.byteLength(value, "utf8");
+  const totalBytes = Buffer3.byteLength(value, "utf8");
   if (totalBytes <= limit)
     return { value, truncated: false, returnedBytes: totalBytes, totalBytes };
   let prefix = "";
   let returnedBytes = 0;
   for (const codePoint of value) {
-    const bytes = Buffer5.byteLength(codePoint, "utf8");
+    const bytes = Buffer3.byteLength(codePoint, "utf8");
     if (returnedBytes + bytes > limit) break;
     prefix += codePoint;
     returnedBytes += bytes;
@@ -30563,6 +29778,12 @@ var browserRelationNames = [
   "type",
   "implementation"
 ];
+
+// src/navigation/opaque-id.ts
+import { randomBytes } from "node:crypto";
+function mintOpaqueId() {
+  return randomBytes(16).toString("base64url");
+}
 
 // src/navigation/focus-handles.ts
 function focusHandles(detail, source, bodyLength2) {
@@ -30603,7 +29824,7 @@ var MIN_BODY_LIMIT_BYTES = 1024;
 var MAX_BODY_LIMIT_BYTES = 128 * 1024;
 function createFocusView(...args) {
   const [symbol, detail, requestedLimit, projectGeneration = 0] = args;
-  const limit = bodyLimit2(requestedLimit);
+  const limit = bodyLimit(requestedLimit);
   assertBodyLimit(limit);
   const content = focusContent(detail, limit);
   const symbolId = stableSymbolId(symbol);
@@ -30620,7 +29841,7 @@ function createFocusView(...args) {
     handles
   });
 }
-function bodyLimit2(requestedLimit) {
+function bodyLimit(requestedLimit) {
   return requestedLimit ?? DEFAULT_BODY_LIMIT_BYTES;
 }
 function assertBodyLimit(limit) {
@@ -30647,40 +29868,766 @@ function makeFocusView(options) {
   };
 }
 
-// src/server/semantic-operations.ts
-async function collectSemanticSymbols(adapters, query, run) {
-  const replies = await Promise.allSettled(
-    adapters.map(
-      (adapter) => run(() => adapter.request({ operation: "search", query }))
-    )
-  );
-  const symbols = replies.flatMap(
-    (reply) => reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : []
-  );
-  const failure = replies.find(
-    (reply) => reply.status === "rejected"
-  )?.reason;
-  return { symbols, failure };
-}
-async function collectFocusedSymbol(adapters, symbolId, run) {
-  const replies = await Promise.allSettled(
-    adapters.map(
-      (adapter) => run(() => adapter.request({ operation: "focus", symbol_id: symbolId }))
-    )
-  );
-  const focused = replies.find(
-    (reply) => reply.status === "fulfilled" && reply.value.operation === "focus"
-  )?.value;
-  if (focused) return focused;
-  throwBackendLimitFailure(replies);
+// src/navigation/resource-limits.ts
+import { Buffer as Buffer5 } from "node:buffer";
+
+// src/navigation/resource-filter-limits.ts
+import { Buffer as Buffer4 } from "node:buffer";
+
+// src/navigation/resource-limit-constants.ts
+var MAX_FILTER_VALUES = 32;
+var MAX_FILTER_VALUE_BYTES = 256;
+
+// src/navigation/resource-filter-limits.ts
+function filterLimit(arguments_) {
+  const filters = [
+    arguments_.path_globs,
+    arguments_.languages,
+    arguments_.kinds
+  ].flatMap((value) => Array.isArray(value) ? value : []);
+  if (filters.length > MAX_FILTER_VALUES)
+    return {
+      field: "filters",
+      limit: MAX_FILTER_VALUES,
+      actual: filters.length
+    };
+  for (const value of filters) {
+    const result = filterValueLimit(value);
+    if (result) return result;
+  }
   return void 0;
 }
-function throwBackendLimitFailure(replies) {
-  const failed = replies.find(
-    (reply) => reply.status === "rejected"
-  );
-  if (failed) throw failed.reason;
+function filterValueLimit(value) {
+  if (typeof value !== "string") return void 0;
+  const actual = Buffer4.byteLength(value, "utf8");
+  if (actual > MAX_FILTER_VALUE_BYTES)
+    return { field: "filter_value", limit: MAX_FILTER_VALUE_BYTES, actual };
+  return void 0;
 }
+
+// src/navigation/backend-capacity-error.ts
+var BackendCapacityError = class extends Error {
+  constructor() {
+    super("resource_limit");
+  }
+};
+
+// src/navigation/backend-timeout-error.ts
+var BackendTimeoutError = class extends Error {
+  constructor() {
+    super("backend_timeout");
+  }
+};
+
+// src/navigation/backend-timeout-limits.ts
+var DEFAULT_BACKEND_TIMEOUT_MS = 1e4;
+var MAX_BACKEND_TIMEOUT_MS = 6e4;
+var MAX_SESSION_BACKEND_REQUESTS = 4;
+var MAX_PROJECT_BACKEND_REQUESTS = 8;
+
+// src/navigation/backend-request-limiter.ts
+var BackendRequestLimiter = class {
+  projectActive = 0;
+  sessionActive = /* @__PURE__ */ new Map();
+  timeoutMs;
+  constructor(timeoutMs = DEFAULT_BACKEND_TIMEOUT_MS) {
+    this.timeoutMs = Math.min(Math.max(timeoutMs, 1), MAX_BACKEND_TIMEOUT_MS);
+  }
+  async run(sessionId, operation) {
+    const sessionActive = this.sessionCount(sessionId);
+    this.assertCapacity(sessionActive);
+    this.projectActive += 1;
+    this.reserveSession(sessionId, sessionActive);
+    return this.execute(operation).finally(() => this.release(sessionId));
+  }
+  sessionCount(sessionId) {
+    return sessionId ? this.sessionActive.get(sessionId) ?? 0 : 0;
+  }
+  assertCapacity(sessionActive) {
+    if (this.projectActive >= MAX_PROJECT_BACKEND_REQUESTS || sessionActive >= MAX_SESSION_BACKEND_REQUESTS)
+      throw new BackendCapacityError();
+  }
+  reserveSession(sessionId, sessionActive) {
+    if (sessionId) this.sessionActive.set(sessionId, sessionActive + 1);
+  }
+  async execute(operation) {
+    let timer;
+    try {
+      return await Promise.race([
+        operation(),
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(new BackendTimeoutError()),
+            this.timeoutMs
+          );
+        })
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+  release(sessionId) {
+    this.projectActive -= 1;
+    if (!sessionId) return;
+    const remaining = (this.sessionActive.get(sessionId) ?? 1) - 1;
+    if (remaining === 0) {
+      this.sessionActive.delete(sessionId);
+      return;
+    }
+    this.sessionActive.set(sessionId, remaining);
+  }
+};
+
+// src/navigation/resource-limits.ts
+var MAX_QUERY_CODE_POINTS = 1024;
+var MAX_REQUEST_BYTES = 64 * 1024;
+var MAX_CANDIDATES = 200;
+var MAX_BODY_BYTES2 = 128 * 1024;
+function validateResourceLimits(name, arguments_) {
+  const limits = [
+    requestLimit(arguments_),
+    queryLimit(name, arguments_),
+    filterLimit(arguments_),
+    candidateLimit(name, arguments_),
+    bodyLimit2(name, arguments_)
+  ];
+  return limits.find((limit) => limit !== void 0);
+}
+function requestLimit(arguments_) {
+  const actual = Buffer5.byteLength(JSON.stringify(arguments_), "utf8");
+  if (actual > MAX_REQUEST_BYTES)
+    return { field: "request", limit: MAX_REQUEST_BYTES, actual };
+}
+function queryLimit(name, arguments_) {
+  if (name !== "code_search" || typeof arguments_.query !== "string") return;
+  const actual = Array.from(arguments_.query).length;
+  if (actual > MAX_QUERY_CODE_POINTS)
+    return { field: "query", limit: MAX_QUERY_CODE_POINTS, actual };
+}
+function candidateLimit(name, arguments_) {
+  if (name !== "code_search" && name !== "code_follow") return;
+  if (typeof arguments_.limit !== "number" || arguments_.limit <= MAX_CANDIDATES)
+    return;
+  return { field: "limit", limit: MAX_CANDIDATES, actual: arguments_.limit };
+}
+function bodyLimit2(name, arguments_) {
+  if (name !== "code_focus") return;
+  if (typeof arguments_.body_limit_bytes !== "number" || arguments_.body_limit_bytes <= MAX_BODY_BYTES2)
+    return;
+  return {
+    field: "body_limit_bytes",
+    limit: MAX_BODY_BYTES2,
+    actual: arguments_.body_limit_bytes
+  };
+}
+
+// src/navigation/session-capacity-error.ts
+var SessionCapacityError = class extends Error {
+  constructor() {
+    super("project_capacity");
+  }
+};
+
+// src/navigation/session-fingerprint.ts
+function canonicalFingerprint(toolName, arguments_) {
+  const { request_id: _requestId, ...remaining } = arguments_;
+  return JSON.stringify({ tool: toolName, arguments: canonicalize2(remaining) });
+}
+function canonicalize2(value) {
+  if (Array.isArray(value)) return value.map(canonicalize2);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, child]) => [key, canonicalize2(child)])
+    );
+  }
+  return value;
+}
+
+// src/navigation/session-limits.ts
+var REQUEST_RETENTION_MS = 5 * 60 * 1e3;
+var MAX_RETAINED_REQUESTS = 64;
+var MAX_RETAINED_VIEWS = 64;
+var MAX_SESSIONS = 8;
+var MAX_RETAINED_VIEW_BODY_BYTES = 16 * 1024 * 1024;
+var SESSION_IDLE_MS = 30 * 60 * 1e3;
+var MAX_QUEUED_REQUESTS = 64;
+
+// src/navigation/session-owner.ts
+function ownedSession(runtime, connectionId, sessionId) {
+  const session2 = runtime.sessions.get(sessionId);
+  return session2?.connectionId === connectionId ? session2 : void 0;
+}
+
+// src/navigation/session-view-eviction.ts
+function expireIdle(runtime, now) {
+  for (const [sessionId, session2] of runtime.sessions)
+    if (now - session2.lastAcceptedAt >= SESSION_IDLE_MS)
+      deleteSession(runtime, sessionId, session2);
+}
+function deleteSession(runtime, sessionId, session2) {
+  for (const viewId of session2.views.keys())
+    discardView(runtime, session2, viewId);
+  runtime.queuedRequests -= session2.queuedRequests;
+  runtime.sessions.delete(sessionId);
+}
+function evictViews(runtime, session2) {
+  while (session2.views.size > MAX_RETAINED_VIEWS) {
+    const viewIndex = session2.viewHistory.findIndex(
+      (_, index) => index !== session2.historyPosition
+    );
+    if (viewIndex < 0) return;
+    const [viewId] = session2.viewHistory.splice(viewIndex, 1);
+    discardView(runtime, session2, viewId);
+    if (viewIndex < session2.historyPosition) session2.historyPosition -= 1;
+  }
+}
+function discardView(runtime, session2, viewId) {
+  const view = session2.views.get(viewId);
+  if (!(view && session2.views.delete(viewId))) return;
+  runtime.retainedBodyBytes -= view.content.returned_bytes;
+  session2.staleViews.add(viewId);
+}
+function makeViewCapacity(runtime, bytes) {
+  while (runtime.retainedBodyBytes + bytes > runtime.maxRetainedBodyBytes) {
+    const candidate = oldestEvictableView(runtime);
+    if (!candidate) return false;
+    candidate.session.viewHistory.splice(candidate.index, 1);
+    discardView(runtime, candidate.session, candidate.viewId);
+    if (candidate.index < candidate.session.historyPosition)
+      candidate.session.historyPosition -= 1;
+  }
+  return true;
+}
+function oldestEvictableView(runtime) {
+  for (const session2 of runtime.sessions.values()) {
+    const index = session2.viewHistory.findIndex(
+      (_, position) => position !== session2.historyPosition
+    );
+    const viewId = session2.viewHistory[index];
+    if (index >= 0 && viewId) return { session: session2, viewId, index };
+  }
+  return void 0;
+}
+
+// src/navigation/session-views.ts
+function history(runtime, connectionId, sessionId) {
+  return ownedSession(runtime, connectionId, sessionId)?.viewHistory;
+}
+function restore(options) {
+  const session2 = ownedSession(
+    options.runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return void 0;
+  const next = session2.historyPosition + (options.direction === "back" ? -1 : 1);
+  const viewId = session2.viewHistory[next];
+  if (!viewId) return void 0;
+  session2.historyPosition = next;
+  return session2.views.get(viewId);
+}
+function recent(options) {
+  const session2 = ownedSession(
+    options.runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return void 0;
+  return session2.viewHistory.slice(Math.max(0, session2.viewHistory.length - options.limit)).reverse().flatMap((viewId) => {
+    const view = session2.views.get(viewId);
+    return view ? [view] : [];
+  });
+}
+function historyPosition(runtime, connectionId, sessionId) {
+  const session2 = ownedSession(runtime, connectionId, sessionId);
+  return session2 ? session2.historyPosition + 1 : void 0;
+}
+
+// src/navigation/session-request-queue.ts
+function queueRequest(runtime, session2, options, fingerprint) {
+  session2.lastAcceptedAt = options.now;
+  session2.queuedRequests += 1;
+  runtime.queuedRequests += 1;
+  const response = session2.queue.then(options.operation);
+  session2.queue = response.then(
+    () => void 0,
+    () => void 0
+  );
+  session2.requests.set(options.requestId, {
+    fingerprint,
+    expiresAt: options.now + REQUEST_RETENTION_MS,
+    response
+  });
+  void response.then(
+    () => releaseQueuedRequest(runtime, session2),
+    () => releaseQueuedRequest(runtime, session2)
+  );
+  trimRequests(session2);
+  return { state: "ok", response };
+}
+function canQueueRequest(runtime) {
+  return runtime.queuedRequests < MAX_QUEUED_REQUESTS;
+}
+function trimRequests(session2) {
+  while (session2.requests.size > MAX_RETAINED_REQUESTS)
+    session2.requests.delete(session2.requests.keys().next().value);
+}
+function releaseQueuedRequest(runtime, session2) {
+  if (session2.queuedRequests === 0) return;
+  session2.queuedRequests -= 1;
+  runtime.queuedRequests -= 1;
+}
+function replayRequest(retained, fingerprint) {
+  if (retained.fingerprint !== fingerprint)
+    return { state: "request_id_conflict" };
+  return { state: "ok", response: retained.response };
+}
+
+// src/navigation/session-requests.ts
+function executeSession(runtime, options) {
+  expireIdle(runtime, options.now);
+  const session2 = ownedSession(
+    runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return { state: "invalid_session" };
+  return processSessionRequest(runtime, session2, options);
+}
+function processSessionRequest(runtime, session2, options) {
+  expireRequests(session2, options.now);
+  const fingerprint = canonicalFingerprint(
+    options.toolName,
+    options.arguments_
+  );
+  const retained = session2.requests.get(options.requestId);
+  if (retained) return replayRequest(retained, fingerprint);
+  if (!canQueueRequest(runtime)) return { state: "project_capacity" };
+  return queueRequest(runtime, session2, options, fingerprint);
+}
+function expireRequests(session2, now) {
+  for (const [requestId, entry] of session2.requests)
+    if (entry.expiresAt <= now) session2.requests.delete(requestId);
+}
+
+// src/navigation/session-view-actions.ts
+function addView(options) {
+  const session2 = ownedSession(
+    options.runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return "invalid_session";
+  if (!makeViewCapacity(options.runtime, options.view.content.returned_bytes))
+    return "project_capacity";
+  const abandoned = session2.viewHistory.splice(session2.historyPosition + 1);
+  for (const viewId of abandoned) discardView(options.runtime, session2, viewId);
+  session2.views.set(options.view.view_id, options.view);
+  options.runtime.retainedBodyBytes += options.view.content.returned_bytes;
+  session2.viewHistory.push(options.view.view_id);
+  session2.historyPosition = session2.viewHistory.length - 1;
+  evictViews(options.runtime, session2);
+  return "ok";
+}
+function resolveHandle(runtime, options) {
+  const session2 = ownedSession(
+    runtime,
+    options.connectionId,
+    options.sessionId
+  );
+  if (!session2) return { state: "invalid_view_handle" };
+  if (session2.staleViews.has(options.viewId)) return { state: "stale_view" };
+  const view = session2.views.get(options.viewId);
+  if (view && view.project_generation !== options.currentGeneration)
+    return {
+      state: "stale_view",
+      viewGeneration: view.project_generation,
+      currentGeneration: options.currentGeneration
+    };
+  const symbolId = view?.handles.find(
+    (candidate) => candidate.handle === options.handle
+  )?.symbol_id;
+  return symbolId ? { state: "ok", symbolId } : { state: "invalid_view_handle" };
+}
+
+// src/navigation/session-operations.ts
+function newSessionRuntime(maxRetainedBodyBytes = MAX_RETAINED_VIEW_BODY_BYTES) {
+  return {
+    sessions: /* @__PURE__ */ new Map(),
+    maxRetainedBodyBytes,
+    retainedBodyBytes: 0,
+    queuedRequests: 0
+  };
+}
+function tryStart(runtime, connectionId, now) {
+  expireIdle(runtime, now);
+  if (runtime.sessions.size >= MAX_SESSIONS) return void 0;
+  const sessionId = mintOpaqueId();
+  runtime.sessions.set(sessionId, {
+    connectionId,
+    queue: Promise.resolve(),
+    requests: /* @__PURE__ */ new Map(),
+    views: /* @__PURE__ */ new Map(),
+    viewHistory: [],
+    historyPosition: -1,
+    staleViews: /* @__PURE__ */ new Set(),
+    lastAcceptedAt: now,
+    queuedRequests: 0
+  });
+  return sessionId;
+}
+function closeConnection(runtime, connectionId) {
+  for (const [sessionId, session2] of runtime.sessions) {
+    if (session2.connectionId === connectionId)
+      deleteSession(runtime, sessionId, session2);
+  }
+}
+
+// src/navigation/session-manager-arguments.ts
+function executeManagerRequest(runtime, args) {
+  const now = args[6] ?? Date.now();
+  return executeSession(runtime, {
+    connectionId: args[0],
+    sessionId: args[1],
+    requestId: args[2],
+    toolName: args[3],
+    arguments_: args[4],
+    operation: args[5],
+    now
+  });
+}
+function resolveManagerHandle(runtime, args) {
+  const [connectionId, sessionId, viewId, handle, currentGeneration = 0] = args;
+  return resolveHandle(runtime, {
+    connectionId,
+    sessionId,
+    viewId,
+    handle,
+    currentGeneration
+  });
+}
+
+// src/navigation/session-manager.ts
+var SessionManager = class {
+  runtime;
+  constructor(options = {}) {
+    this.runtime = newSessionRuntime(
+      options.maxRetainedBodyBytes ?? MAX_RETAINED_VIEW_BODY_BYTES
+    );
+  }
+  start(connectionId) {
+    const sessionId = this.tryStart(connectionId);
+    if (!sessionId) throw new SessionCapacityError();
+    return sessionId;
+  }
+  tryStart(connectionId, now = Date.now()) {
+    return tryStart(this.runtime, connectionId, now);
+  }
+  closeConnection(connectionId) {
+    closeConnection(this.runtime, connectionId);
+  }
+  execute(...args) {
+    return executeManagerRequest(this.runtime, args);
+  }
+  addView(connectionId, sessionId, view) {
+    return addView({ runtime: this.runtime, connectionId, sessionId, view });
+  }
+  resolveHandle(...args) {
+    return resolveManagerHandle(this.runtime, args);
+  }
+  history(connectionId, sessionId) {
+    return history(this.runtime, connectionId, sessionId);
+  }
+  restore(connectionId, sessionId, direction) {
+    return restore({
+      runtime: this.runtime,
+      connectionId,
+      sessionId,
+      direction
+    });
+  }
+  recent(connectionId, sessionId, limit = MAX_RETAINED_VIEWS) {
+    return recent({ runtime: this.runtime, connectionId, sessionId, limit });
+  }
+  historyPosition(connectionId, sessionId) {
+    return historyPosition(this.runtime, connectionId, sessionId);
+  }
+};
+
+// src/server/create-runtime.ts
+var { ProjectGenerationScheduler: ProjectGenerationScheduler2 } = project_generation_scheduler_exports;
+function createServerRuntime(options) {
+  const freshness = options.freshness ?? new WorkspaceFreshness({
+    reconcile: async () => ({ manifest: /* @__PURE__ */ new Map() })
+  });
+  return {
+    options,
+    connectionId: options.connection_id ?? mintOpaqueId(),
+    sessions: new SessionManager(),
+    backendRequests: new BackendRequestLimiter(options.backend_timeout_ms),
+    freshness,
+    generationScheduler: options.generation_scheduler ?? new ProjectGenerationScheduler2(freshness),
+    rootAccess: new RootAccessGate(
+      options.projectRoot,
+      options.adapters ?? [],
+      options.now
+    ),
+    state: {
+      refreshGeneration: 0,
+      viewHistory: [],
+      discovery: options.projectRoot ? createDiscoveryPipeline(options.projectRoot) : void 0,
+      landmarks: options.landmarks ?? landmarksNotReady()
+    }
+  };
+}
+
+// src/server/input-schemas.ts
+var inputSchemas = {
+  code_search: {
+    type: "object",
+    properties: {
+      query: { type: "string" },
+      path_globs: { type: "array", items: { type: "string" } },
+      languages: { type: "array", items: { type: "string" } },
+      kinds: { type: "array", items: { type: "string" } },
+      content: { enum: ["all", "production", "tests"] },
+      include_generated: { type: "boolean" },
+      limit: { type: "integer" }
+    },
+    required: ["query"],
+    additionalProperties: false
+  },
+  code_focus: {
+    type: "object",
+    properties: {
+      session_id: { type: "string" },
+      request_id: { type: "string" },
+      symbol_id: { type: "string" },
+      body_limit_bytes: { type: "integer" }
+    },
+    required: ["session_id", "request_id", "symbol_id"],
+    additionalProperties: false
+  },
+  code_follow: {
+    type: "object",
+    properties: {
+      session_id: { type: "string" },
+      request_id: { type: "string" },
+      view_id: { type: "string" },
+      handle: { type: "string" },
+      relation: {
+        enum: browserRelationNames
+      },
+      limit: { type: "integer" }
+    },
+    required: ["session_id", "request_id", "view_id", "handle", "relation"],
+    additionalProperties: false
+  },
+  code_history: {
+    type: "object",
+    oneOf: [
+      {
+        type: "object",
+        properties: {
+          session_id: { type: "string" },
+          request_id: { type: "string" },
+          action: { enum: ["back", "forward"] }
+        },
+        required: ["session_id", "request_id", "action"],
+        additionalProperties: false
+      },
+      {
+        type: "object",
+        properties: {
+          session_id: { type: "string" },
+          request_id: { type: "string" },
+          action: { const: "recent" },
+          limit: { type: "integer" }
+        },
+        required: ["session_id", "request_id", "action"],
+        additionalProperties: false
+      }
+    ]
+  },
+  code_status: {
+    type: "object",
+    oneOf: [
+      {
+        type: "object",
+        properties: { action: { const: "status" } },
+        required: ["action"],
+        additionalProperties: false
+      },
+      {
+        type: "object",
+        properties: { action: { const: "start_session" } },
+        required: ["action"],
+        additionalProperties: false
+      },
+      {
+        type: "object",
+        properties: {
+          action: { const: "refresh" },
+          session_id: { type: "string" },
+          request_id: { type: "string" }
+        },
+        required: ["action", "session_id", "request_id"],
+        additionalProperties: false
+      }
+    ]
+  }
+};
+
+// src/server/server-call.ts
+import { Buffer as Buffer6 } from "node:buffer";
+
+// src/server/envelope.ts
+function createEnvelope(freshness, state, data) {
+  return {
+    schema_version: 1,
+    project_id: "project",
+    project_generation: freshness.current_generation,
+    pending_generation: freshness.pending_generation,
+    state,
+    data
+  };
+}
+
+// src/navigation/error-details-sanitizer.ts
+var detailKeys = /* @__PURE__ */ new Set([
+  "field",
+  "limit",
+  "actual",
+  "view_generation",
+  "current_generation",
+  "state",
+  "path"
+]);
+function isNormalizedProjectRelativePath(value) {
+  return value.length > 0 && !value.startsWith("/") && !/^[A-Za-z]:[\\/]/.test(value) && !value.includes("\\") && !value.split("/").includes("..");
+}
+function validDetail(key, value) {
+  if (!detailKeys.has(key)) return false;
+  if (key === "path")
+    return typeof value === "string" && isNormalizedProjectRelativePath(value);
+  return typeof value === "string" || typeof value === "number";
+}
+function sanitizeDetails(details) {
+  return Object.fromEntries(
+    Object.entries(details).filter(([key, value]) => validDetail(key, value))
+  );
+}
+
+// src/navigation/error.ts
+var errorCodes = [
+  "unknown_tool",
+  "invalid_request",
+  "invalid_session",
+  "invalid_view_handle",
+  "stale_view",
+  "request_id_conflict",
+  "resource_limit",
+  "project_capacity",
+  "workspace_unavailable",
+  "backend_timeout",
+  "backend_crashed",
+  "backend_unavailable",
+  "unavailable_relation",
+  "invalid_backend_result",
+  "backend_response_limit",
+  "path_outside_project",
+  "path_identity_unavailable",
+  "path_identity_changed",
+  "invalid_project_root",
+  "project_root_inaccessible",
+  "project_root_unavailable",
+  "backend_identity_unverifiable",
+  "backend_identity_changed",
+  "backend_endpoint_rejected",
+  "backend_write_rejected",
+  "backend_capability_rejected",
+  "unsafe_backend_mode",
+  "unsupported_backend_version",
+  "classification_config_invalid",
+  "freshness_unavailable",
+  "incomplete_write",
+  "scan_limit",
+  "workspace_churn",
+  "refresh_failed",
+  "internal_error"
+];
+var retryableCodes = /* @__PURE__ */ new Set([
+  "invalid_session",
+  "project_capacity",
+  "workspace_unavailable",
+  "backend_timeout",
+  "backend_crashed",
+  "backend_unavailable",
+  "path_identity_changed",
+  "project_root_inaccessible",
+  "freshness_unavailable",
+  "incomplete_write",
+  "workspace_churn",
+  "refresh_failed"
+]);
+var codeSet = new Set(errorCodes);
+function codeExplorerError(code, details) {
+  return {
+    schema_version: 1,
+    code,
+    message: code,
+    retryable: retryableCodes.has(code),
+    ...details && Object.keys(details).length > 0 ? { details: sanitizeDetails(details) } : {}
+  };
+}
+function normalizeError(error2) {
+  const message = error2 instanceof Error ? error2.message : void 0;
+  return codeExplorerError(
+    message && codeSet.has(message) ? message : "internal_error"
+  );
+}
+
+// src/server/errors.ts
+function unknownTool() {
+  return codeExplorerError("unknown_tool");
+}
+function invalidRequest() {
+  return codeExplorerError("invalid_request");
+}
+function resourceLimit() {
+  return codeExplorerError("resource_limit");
+}
+function limitedResource(limit) {
+  return codeExplorerError("resource_limit", limit);
+}
+function backendTimeout() {
+  return codeExplorerError("backend_timeout");
+}
+function invalidSession() {
+  return codeExplorerError("invalid_session");
+}
+function projectCapacity() {
+  return codeExplorerError("project_capacity");
+}
+function invalidViewHandle() {
+  return codeExplorerError("invalid_view_handle");
+}
+function staleView() {
+  return codeExplorerError("stale_view");
+}
+function requestIdConflict() {
+  return codeExplorerError("request_id_conflict");
+}
+function normalizeBackendFailure(error2) {
+  if (error2 instanceof BackendTimeoutError) return backendTimeout();
+  if (error2 instanceof BackendCapacityError) return resourceLimit();
+  if (error2 instanceof SessionCapacityError) return projectCapacity();
+  if (error2 instanceof ProjectPathError) return codeExplorerError(error2.code);
+  return normalizeError(error2);
+}
+
+// src/server/focus-action.ts
+import * as path4 from "node:path";
 
 // src/server/schemas.ts
 var schemas = {
@@ -30730,6 +30677,41 @@ var schemas = {
   ])
 };
 
+// src/server/semantic-operations.ts
+async function collectSemanticSymbols(adapters, query, run) {
+  const replies = await Promise.allSettled(
+    adapters.map(
+      (adapter) => run(() => adapter.request({ operation: "search", query }))
+    )
+  );
+  const symbols = replies.flatMap(
+    (reply) => reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : []
+  );
+  const failure = replies.find(
+    (reply) => reply.status === "rejected"
+  )?.reason;
+  return { symbols, failure };
+}
+async function collectFocusedSymbol(adapters, symbolId, run) {
+  const replies = await Promise.allSettled(
+    adapters.map(
+      (adapter) => run(() => adapter.request({ operation: "focus", symbol_id: symbolId }))
+    )
+  );
+  const focused = replies.find(
+    (reply) => reply.status === "fulfilled" && reply.value.operation === "focus"
+  )?.value;
+  if (focused) return focused;
+  throwBackendLimitFailure(replies);
+  return void 0;
+}
+function throwBackendLimitFailure(replies) {
+  const failed = replies.find(
+    (reply) => reply.status === "rejected"
+  );
+  if (failed) throw failed.reason;
+}
+
 // src/server/focus-action.ts
 async function handleFocus(runtime, arguments_, freshness) {
   const focus = schemas.code_focus.parse(arguments_);
@@ -30774,7 +30756,7 @@ async function handleFocus(runtime, arguments_, freshness) {
     focus.symbol_id,
     (operation) => runtime.backendRequests.run(focus.session_id, operation)
   );
-  if (!selected) return void 0;
+  if (!selected) return;
   try {
     return saveView(
       createFocusView(
@@ -30890,7 +30872,7 @@ function mapRelationCandidates(result, relation, adapter, sessions, connectionId
 // src/server/follow-action.ts
 async function handleFollow(runtime, arguments_, freshness) {
   const relation = arguments_.relation;
-  if (typeof relation !== "string") return void 0;
+  if (typeof relation !== "string") return;
   const follow = schemas.code_follow.parse(arguments_);
   const resolved = runtime.sessions.resolveHandle(
     runtime.connectionId,
@@ -30963,11 +30945,6 @@ function handleHistory(runtime, arguments_, freshness) {
     ) ?? 0,
     stale: restored.project_generation !== freshness.current_generation
   });
-}
-
-// src/discovery/landmarks.ts
-function landmarksNotReady() {
-  return { state: "landmarks_not_ready", landmarks: [] };
 }
 
 // src/server/search-action.ts
@@ -31192,183 +31169,6 @@ function createServerCall(runtime) {
   };
 }
 
-// src/freshness/project-generation-scheduler.ts
-var project_generation_scheduler_exports = {};
-__export(project_generation_scheduler_exports, {
-  ProjectGenerationScheduler: () => ProjectGenerationScheduler
-});
-var ProjectGenerationScheduler = class {
-  constructor(freshness) {
-    this.freshness = freshness;
-  }
-  freshness;
-  #tail = Promise.resolve();
-  #acceptedRequests = 0;
-  #refresh;
-  accept() {
-    return this.#enqueue(() => ({
-      accepted_request: ++this.#acceptedRequests,
-      status: this.freshness.status()
-    }));
-  }
-  refresh(work) {
-    if (this.#refresh) return this.#refresh;
-    const refresh = this.#enqueue(async () => {
-      ++this.#acceptedRequests;
-      this.freshness.reserveRefresh();
-      try {
-        await work();
-        await this.freshness.reconcile();
-      } catch {
-        this.freshness.failRefresh();
-      }
-      return this.freshness.status();
-    });
-    this.#refresh = refresh;
-    void refresh.then(
-      () => {
-        if (this.#refresh === refresh) this.#refresh = void 0;
-      },
-      () => {
-        if (this.#refresh === refresh) this.#refresh = void 0;
-      }
-    );
-    return refresh;
-  }
-  #enqueue(operation) {
-    const response = this.#tail.then(operation);
-    this.#tail = response.then(
-      () => void 0,
-      () => void 0
-    );
-    return response;
-  }
-};
-
-// src/server/create-runtime.ts
-var { ProjectGenerationScheduler: ProjectGenerationScheduler2 } = project_generation_scheduler_exports;
-function createServerRuntime(options) {
-  const freshness = options.freshness ?? new WorkspaceFreshness({
-    reconcile: async () => ({ manifest: /* @__PURE__ */ new Map() })
-  });
-  return {
-    options,
-    connectionId: options.connection_id ?? mintOpaqueId(),
-    sessions: new SessionManager(),
-    backendRequests: new BackendRequestLimiter(options.backend_timeout_ms),
-    freshness,
-    generationScheduler: options.generation_scheduler ?? new ProjectGenerationScheduler2(freshness),
-    rootAccess: new RootAccessGate(
-      options.projectRoot,
-      options.adapters ?? [],
-      options.now
-    ),
-    state: {
-      refreshGeneration: 0,
-      viewHistory: [],
-      discovery: options.projectRoot ? createDiscoveryPipeline(options.projectRoot) : void 0,
-      landmarks: options.landmarks ?? landmarksNotReady()
-    }
-  };
-}
-
-// src/server/input-schemas.ts
-var inputSchemas = {
-  code_search: {
-    type: "object",
-    properties: {
-      query: { type: "string" },
-      path_globs: { type: "array", items: { type: "string" } },
-      languages: { type: "array", items: { type: "string" } },
-      kinds: { type: "array", items: { type: "string" } },
-      content: { enum: ["all", "production", "tests"] },
-      include_generated: { type: "boolean" },
-      limit: { type: "integer" }
-    },
-    required: ["query"],
-    additionalProperties: false
-  },
-  code_focus: {
-    type: "object",
-    properties: {
-      session_id: { type: "string" },
-      request_id: { type: "string" },
-      symbol_id: { type: "string" },
-      body_limit_bytes: { type: "integer" }
-    },
-    required: ["session_id", "request_id", "symbol_id"],
-    additionalProperties: false
-  },
-  code_follow: {
-    type: "object",
-    properties: {
-      session_id: { type: "string" },
-      request_id: { type: "string" },
-      view_id: { type: "string" },
-      handle: { type: "string" },
-      relation: {
-        enum: browserRelationNames
-      },
-      limit: { type: "integer" }
-    },
-    required: ["session_id", "request_id", "view_id", "handle", "relation"],
-    additionalProperties: false
-  },
-  code_history: {
-    type: "object",
-    oneOf: [
-      {
-        type: "object",
-        properties: {
-          session_id: { type: "string" },
-          request_id: { type: "string" },
-          action: { enum: ["back", "forward"] }
-        },
-        required: ["session_id", "request_id", "action"],
-        additionalProperties: false
-      },
-      {
-        type: "object",
-        properties: {
-          session_id: { type: "string" },
-          request_id: { type: "string" },
-          action: { const: "recent" },
-          limit: { type: "integer" }
-        },
-        required: ["session_id", "request_id", "action"],
-        additionalProperties: false
-      }
-    ]
-  },
-  code_status: {
-    type: "object",
-    oneOf: [
-      {
-        type: "object",
-        properties: { action: { const: "status" } },
-        required: ["action"],
-        additionalProperties: false
-      },
-      {
-        type: "object",
-        properties: { action: { const: "start_session" } },
-        required: ["action"],
-        additionalProperties: false
-      },
-      {
-        type: "object",
-        properties: {
-          action: { const: "refresh" },
-          session_id: { type: "string" },
-          request_id: { type: "string" }
-        },
-        required: ["action", "session_id", "request_id"],
-        additionalProperties: false
-      }
-    ]
-  }
-};
-
 // src/server/tool-descriptions.ts
 var toolDescriptions = {
   code_search: "Search the frozen project for symbols and files, or return project landmarks for an empty query.",
@@ -31490,6 +31290,210 @@ function createRuntimeCoreFactory() {
 }
 
 // src/runtime-main.ts
+import process5 from "node:process";
+
+// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+var stdio_exports = {};
+__export(stdio_exports, {
+  StdioServerTransport: () => StdioServerTransport
+});
+import process4 from "node:process";
+
+// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
+var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
+var ReadBuffer = class {
+  constructor(options) {
+    this._maxBufferSize = options?.maxBufferSize ?? STDIO_DEFAULT_MAX_BUFFER_SIZE;
+  }
+  append(chunk) {
+    const newSize = (this._buffer?.length ?? 0) + chunk.length;
+    if (newSize > this._maxBufferSize) {
+      this.clear();
+      throw new Error(`ReadBuffer exceeded maximum size of ${this._maxBufferSize} bytes`);
+    }
+    this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
+  }
+  readMessage() {
+    if (!this._buffer) {
+      return null;
+    }
+    const index = this._buffer.indexOf("\n");
+    if (index === -1) {
+      return null;
+    }
+    const line = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
+    this._buffer = this._buffer.subarray(index + 1);
+    return deserializeMessage(line);
+  }
+  clear() {
+    this._buffer = void 0;
+  }
+};
+function deserializeMessage(line) {
+  return JSONRPCMessageSchema.parse(JSON.parse(line));
+}
+function serializeMessage(message) {
+  return JSON.stringify(message) + "\n";
+}
+
+// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+var StdioServerTransport = class {
+  constructor(_stdin = process4.stdin, _stdout = process4.stdout, options) {
+    this._stdin = _stdin;
+    this._stdout = _stdout;
+    this._started = false;
+    this._ondata = (chunk) => {
+      try {
+        this._readBuffer.append(chunk);
+        this.processReadBuffer();
+      } catch (error2) {
+        this.onerror?.(error2);
+        this.close().catch(() => {
+        });
+      }
+    };
+    this._onerror = (error2) => {
+      this.onerror?.(error2);
+    };
+    this._readBuffer = new ReadBuffer({ maxBufferSize: options?.maxBufferSize });
+  }
+  /**
+   * Starts listening for messages on stdin.
+   */
+  async start() {
+    if (this._started) {
+      throw new Error("StdioServerTransport already started! If using Server class, note that connect() calls start() automatically.");
+    }
+    this._started = true;
+    this._stdin.on("data", this._ondata);
+    this._stdin.on("error", this._onerror);
+  }
+  processReadBuffer() {
+    while (true) {
+      try {
+        const message = this._readBuffer.readMessage();
+        if (message === null) {
+          break;
+        }
+        this.onmessage?.(message);
+      } catch (error2) {
+        this.onerror?.(error2);
+      }
+    }
+  }
+  async close() {
+    this._stdin.off("data", this._ondata);
+    this._stdin.off("error", this._onerror);
+    const remainingDataListeners = this._stdin.listenerCount("data");
+    if (remainingDataListeners === 0) {
+      this._stdin.pause();
+    }
+    this._readBuffer.clear();
+    this.onclose?.();
+  }
+  send(message) {
+    return new Promise((resolve5) => {
+      const json2 = serializeMessage(message);
+      if (this._stdout.write(json2)) {
+        resolve5();
+      } else {
+        this._stdout.once("drain", resolve5);
+      }
+    });
+  }
+};
+
+// src/browser-server/embedded-runtime.ts
+var embedded_runtime_exports = {};
+__export(embedded_runtime_exports, {
+  startEmbeddedBrowserRuntime: () => startEmbeddedBrowserRuntime
+});
+
+// src/browser-server/embedded-runtime-result.ts
+function createEmbeddedRuntime(options) {
+  const router = new BrowserHttpRouter({
+    origin: options.origin,
+    assetRoot: options.assetRoot,
+    call: options.core.call ?? unavailableBrowserCall
+  });
+  return {
+    projectRoot: options.projectRoot,
+    handle: (request) => router.handle(request),
+    close: closeCore(options)
+  };
+}
+function closeCore(options) {
+  let closing;
+  return () => {
+    if (closing) return closing;
+    closing = closeRuntime(options);
+    return closing;
+  };
+}
+async function closeRuntime(options) {
+  options.controller.abort();
+  await options.core.close(AbortSignal.timeout(1e4));
+  options.unlinkAbortSignal();
+}
+
+// src/browser-server/embedded-runtime.ts
+function loopbackOrigin(origin) {
+  const parsed = new URL(origin);
+  if (parsed.protocol !== "http:" || parsed.hostname !== "127.0.0.1" || !parsed.port) {
+    throw new BrowserServerError("invalid_request");
+  }
+  return parsed;
+}
+function linkAbortSignal(parent, child) {
+  if (!parent) return () => void 0;
+  const abort = () => child.abort(parent.reason);
+  if (parent.aborted) {
+    abort();
+    return () => void 0;
+  }
+  parent.addEventListener("abort", abort, { once: true });
+  return () => parent.removeEventListener("abort", abort);
+}
+async function startCore(options, unlinkAbortSignal) {
+  try {
+    const core = await options.coreFactory.start({
+      projectRoot: options.projectRoot,
+      signal: options.signal
+    });
+    if (options.signal.aborted) {
+      await core.close(AbortSignal.timeout(1e4));
+      throw new Error("aborted");
+    }
+    return core;
+  } catch (error2) {
+    unlinkAbortSignal();
+    throw error2;
+  }
+}
+async function startEmbeddedBrowserRuntime(options) {
+  const parsedOrigin = loopbackOrigin(options.origin);
+  const projectRoot = createNativeProjectRoot(options.projectRoot);
+  const controller = new AbortController();
+  const unlinkAbortSignal = linkAbortSignal(options.signal, controller);
+  const core = await startCore(
+    {
+      coreFactory: options.coreFactory,
+      projectRoot,
+      signal: controller.signal
+    },
+    unlinkAbortSignal
+  );
+  return createEmbeddedRuntime({
+    projectRoot,
+    origin: parsedOrigin.origin,
+    assetRoot: options.assetRoot,
+    core,
+    controller,
+    unlinkAbortSignal
+  });
+}
+
+// src/runtime-main.ts
 var { startEmbeddedBrowserRuntime: startEmbeddedBrowserRuntime2 } = embedded_runtime_exports;
 var { StdioServerTransport: StdioServerTransport2 } = stdio_exports;
 async function createEmbeddedBrowserRuntime(options) {
@@ -31502,7 +31506,7 @@ async function createEmbeddedBrowserRuntime(options) {
   });
 }
 async function runMain() {
-  const arguments_ = process.argv.slice(2);
+  const arguments_ = process5.argv.slice(2);
   if (arguments_[0] === "serve") {
     const parsed = parseServeArguments(arguments_);
     const service = await startBrowserServer({
@@ -31510,14 +31514,14 @@ async function runMain() {
       coreFactory: createRuntimeCoreFactory(),
       binder: nativePortBinder,
       opener: nativeBrowserOpener,
-      write: (line) => process.stdout.write(`${line}
+      write: (line) => process5.stdout.write(`${line}
 `),
-      writeError: (line) => process.stderr.write(`${line}
+      writeError: (line) => process5.stderr.write(`${line}
 `)
     });
-    const shutdown = () => void service.close().then(() => process.exit(0));
-    process.once("SIGINT", shutdown);
-    process.once("SIGTERM", shutdown);
+    const shutdown = () => void service.close().then(() => process5.exit(0));
+    process5.once("SIGINT", shutdown);
+    process5.once("SIGTERM", shutdown);
     return;
   }
   const projectRoot = createNativeProjectRoot(
@@ -31536,7 +31540,7 @@ async function runMain() {
     return closing;
   };
   transport.onclose = () => void close();
-  process.stdin.once("end", () => void close());
+  process5.stdin.once("end", () => void close());
   try {
     if (!core.connect) throw new Error("runtime_core_transport_unavailable");
     await core.connect(transport);
@@ -31546,7 +31550,7 @@ async function runMain() {
   }
 }
 function parseProjectRootArgument(arguments_) {
-  if (arguments_.length === 0) return void 0;
+  if (arguments_.length === 0) return;
   if (arguments_.length === 2 && arguments_[0] === "--project-root" && arguments_[1].length > 0)
     return arguments_[1];
   throw new ProjectPathError("invalid_project_root", "project_root");
@@ -31555,7 +31559,7 @@ function parseProjectRootArgument(arguments_) {
 // src/index.ts
 var filename = fileURLToPath6(import.meta.url);
 function isMainModule() {
-  const argument = process.argv[1];
+  const argument = process6.argv[1];
   if (!argument) return false;
   try {
     return realpathSync3(argument) === realpathSync3(filename);
@@ -31566,9 +31570,9 @@ function isMainModule() {
 if (isMainModule()) {
   runMain().catch((error2) => {
     const message = error2 instanceof ProjectPathError ? `${error2.code}:${error2.root_source ?? "cwd"}` : error2 instanceof BrowserServerError ? error2.code : String(error2);
-    process.stderr.write(`code-explorer MCP server failed: ${message}
+    process6.stderr.write(`code-explorer MCP server failed: ${message}
 `);
-    process.exit(1);
+    process6.exit(1);
   });
 }
 export {

@@ -5,15 +5,15 @@ import type {
 } from "./browser-server/lifecycle.js";
 import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
 import * as workspaceFreshness from "./freshness/workspace-native.js";
-import * as codeExplorerServer from "./server/create-server.js";
-import type { CodeExplorerServer } from "./server/server-contract.js";
 import {
   createNativeProjectRoot,
   createStartedRuntimeAdapters,
-  loadAdapterSelectionRecord,
   type LanguageAdapter,
+  loadAdapterSelectionRecord,
   type ProjectRoot,
 } from "./semantic/api/public-api.js";
+import * as codeExplorerServer from "./server/create-server.js";
+import type { CodeExplorerServer } from "./server/server-contract.js";
 
 const { createNativeWorkspaceFreshness } = workspaceFreshness;
 const { createServer: createCodeExplorerServer } = codeExplorerServer;

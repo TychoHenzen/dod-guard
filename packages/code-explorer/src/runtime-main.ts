@@ -1,5 +1,6 @@
-import * as embeddedRuntime from "./browser-server/embedded-runtime.js";
+import process from "node:process";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
+import * as embeddedRuntime from "./browser-server/embedded-runtime.js";
 import {
   nativeBrowserOpener,
   nativePortBinder,
@@ -77,7 +78,7 @@ export async function runMain(): Promise<void> {
 function parseProjectRootArgument(
   arguments_: readonly string[],
 ): string | undefined {
-  if (arguments_.length === 0) return undefined;
+  if (arguments_.length === 0) return;
   if (
     arguments_.length === 2 &&
     arguments_[0] === "--project-root" &&
