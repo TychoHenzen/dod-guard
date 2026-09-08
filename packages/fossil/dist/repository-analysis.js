@@ -3,10 +3,10 @@ import { join, resolve } from "node:path";
 import { FossilAnalysisError } from "./analysis-error.js";
 import { abandonmentScore, candidateReferenceSubscores, createAdvisoryFossilFinding, normalizedBurstChurn, scoreFossilSubscores, } from "./fossil-grader.js";
 import * as history from "./git-analyzer.js";
-import { assertSupportedGitVersion, runGitCommand } from "./git-process.js";
+import { assertSupportedGitVersion, runGitCommand, } from "./git-process-boundary.js";
 import { finalizeFossilReport } from "./output.js";
 import { analyzeReferences, markUnresolvedCandidateEvidence, readStableReferenceSources, regradeVestigialEdges, unsupportedCandidateReferenceGraph, } from "./ref-analyzer.js";
-import { CHECK_IGNORE_ARGUMENTS, filterWorkspaceDiscoveryPaths, IGNORED_DISCOVERY_ARGUMENTS, inspectWorkspaceFileMetadataWithWarnings, oldIgnoredWorkspaceCandidates, oldUntrackedWorkspaceCandidates, parseNulDelimitedPaths, parseVerboseCheckIgnore, UNTRACKED_DISCOVERY_ARGUMENTS, workspaceDebrisFinding, } from "./workspace-debris.js";
+import { CHECK_IGNORE_ARGUMENTS, filterWorkspaceDiscoveryPaths, IGNORED_DISCOVERY_ARGUMENTS, inspectWorkspaceFileMetadataWithWarnings, oldIgnoredWorkspaceCandidates, oldUntrackedWorkspaceCandidates, parseNulDelimitedPaths, parseVerboseCheckIgnore, UNTRACKED_DISCOVERY_ARGUMENTS, workspaceDebrisFinding, } from "./workspace-debris-boundary.js";
 const MEBIBYTE = 1_024 * 1_024;
 function languageForPath(path) {
     const extension = path.slice(path.lastIndexOf(".")).toLowerCase();
@@ -41,6 +41,7 @@ async function successfulGit(runGit, arguments_, repositoryPath, input, historyM
 function referenceSources(root, paths) {
     const candidates = paths.map((path) => ({ path, language: languageForPath(path) }));
     const supported = candidates.filter((candidate) => candidate.language !== "unsupported");
+    const readSource = (source) => readFileSync(join(root, source.path), "utf8");
     const reads = readStableReferenceSources(supported, {
         inspect(source) {
             const fullPath = join(root, source.path);
@@ -52,9 +53,7 @@ function referenceSources(root, paths) {
                 canonicalPath: realpathSync(fullPath),
             };
         },
-        read(source) {
-            return readFileSync(join(root, source.path), "utf8");
-        },
+        read: readSource,
     });
     const unsupported = unsupportedCandidateReferenceGraph(candidates);
     const graph = analyzeReferences(reads.sources);

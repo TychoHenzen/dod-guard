@@ -1,4 +1,4 @@
-import { runGitCommand } from "./git-process.js";
+import { runGitCommand } from "./git-process-boundary.js";
 import type { FossilReport, NormalizedAnalysisOptions } from "./types.js";
 type GitCommandRunner = typeof runGitCommand;
 /** Composes safe Git, source, scoring, and workspace boundaries into a truthful repository report. */

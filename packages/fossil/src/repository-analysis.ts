@@ -9,7 +9,11 @@ import {
   scoreFossilSubscores,
 } from "./fossil-grader.js";
 import * as history from "./git-analyzer.js";
-import { assertSupportedGitVersion, type CollectedGitOutput, runGitCommand } from "./git-process.js";
+import {
+  assertSupportedGitVersion,
+  type CollectedGitOutput,
+  runGitCommand,
+} from "./git-process-boundary.js";
 import { finalizeFossilReport } from "./output.js";
 import {
   analyzeReferences,
@@ -31,7 +35,7 @@ import {
   parseVerboseCheckIgnore,
   UNTRACKED_DISCOVERY_ARGUMENTS,
   workspaceDebrisFinding,
-} from "./workspace-debris.js";
+} from "./workspace-debris-boundary.js";
 
 const MEBIBYTE = 1_024 * 1_024;
 
@@ -74,6 +78,7 @@ async function successfulGit(
 function referenceSources(root: string, paths: readonly string[]) {
   const candidates: ReferenceCandidate[] = paths.map((path) => ({ path, language: languageForPath(path) }));
   const supported = candidates.filter((candidate) => candidate.language !== "unsupported");
+  const readSource = (source: ReferenceCandidate) => readFileSync(join(root, source.path), "utf8");
   const reads = readStableReferenceSources(supported, {
     inspect(source) {
       const fullPath = join(root, source.path);
@@ -85,9 +90,7 @@ function referenceSources(root: string, paths: readonly string[]) {
         canonicalPath: realpathSync(fullPath),
       };
     },
-    read(source) {
-      return readFileSync(join(root, source.path), "utf8");
-    },
+    read: readSource,
   });
   const unsupported = unsupportedCandidateReferenceGraph(candidates);
   const graph = analyzeReferences(reads.sources);

@@ -1,0 +1,24 @@
+/** Explicit compatibility boundary for workspace-debris evidence helpers. */
+export {
+  CHECK_IGNORE_ARGUMENTS,
+  filterWorkspaceDiscoveryPaths,
+  hasInboundWorkspaceUsage,
+  IGNORED_DISCOVERY_ARGUMENTS,
+  inspectWorkspaceFileMetadata,
+  inspectWorkspaceFileMetadataWithWarnings,
+  oldIgnoredWorkspaceCandidates,
+  oldUntrackedWorkspaceCandidates,
+  omitUsedWorkspaceCandidates,
+  parseNulDelimitedPaths,
+  parseVerboseCheckIgnore,
+  UNTRACKED_DISCOVERY_ARGUMENTS,
+  workspaceDebrisFinding,
+} from "./workspace-debris.js";
+export type {
+  IgnoredWorkspaceCandidate,
+  IgnoreProvenance,
+  UntrackedWorkspaceCandidate,
+  WorkspaceFileMetadata,
+  WorkspaceFileMetadataReader,
+  WorkspaceMetadataInspectionResult,
+} from "./workspace-debris.js";
