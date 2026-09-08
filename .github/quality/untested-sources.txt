@@ -430,8 +430,6 @@ packages/fossil/src/reference-analysis-types/reference-source-metadata-reader.ts
 packages/fossil/src/reference-analysis-types/reference-source-reader.ts
 packages/fossil/src/reference-analysis-types/reference-source-snapshot.ts
 packages/fossil/src/reference-analysis-types/stable-reference-source-boundary.ts
-packages/fossil/src/reference-analysis-types/stable-source-read.ts
-packages/fossil/src/reference-analysis-types/stable-source-reader.ts
 packages/fossil/src/reference-analysis-types/syntax-view.ts
 packages/fossil/src/reference-read-basic.ts
 packages/fossil/src/reference-read-bounded-limits.ts
