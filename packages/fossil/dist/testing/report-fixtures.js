@@ -1,4 +1,4 @@
-import { defaultCompleteness, defaultLimits, defaultStatistics, defaultUsage } from "./report-defaults.js";
+import { defaultCompleteness, defaultLimits, defaultStatistics, defaultUsage, } from "./report-defaults.js";
 export function optionsFor(format = "table") {
     return {
         days: 90,
@@ -11,36 +11,36 @@ export function optionsFor(format = "table") {
         verbose: false,
     };
 }
+function advisoryActivity(input) {
+    return {
+        identity: `${input.burstId}:${input.path}`,
+        path: input.path,
+        burstCommits: input.burstCommits,
+        postBurstCommits: 0,
+        createdInBurst: true,
+        existsAtHead: true,
+    };
+}
+function advisorySubscores() {
+    return {
+        churn: 1,
+        abandonment: 1,
+        referenceWeakness: 1,
+        clusterIsolation: 1,
+    };
+}
 export function advisoryFindingInput(input) {
     return {
         burstId: input.burstId,
         path: input.path,
-        activity: {
-            identity: `${input.burstId}:${input.path}`,
-            path: input.path,
-            burstCommits: input.burstCommits,
-            postBurstCommits: 0,
-            createdInBurst: true,
-            existsAtHead: true,
-        },
+        activity: advisoryActivity(input),
         score: input.score,
         scoreBasis: "full",
-        subscores: { churn: 1, abandonment: 1, referenceWeakness: 1, clusterIsolation: 1 },
+        subscores: advisorySubscores(),
         referenceAvailability: "complete",
         strongInboundReferences: 0,
         candidateNeighbors: [],
         liveNeighbors: [],
-    };
-}
-export function limitsWith(value) {
-    return {
-        maximumCommits: value,
-        maximumFileStatusRecords: value,
-        maximumInventoriedFiles: value,
-        maximumGitStdoutBytes: value,
-        maximumGitStderrBytes: value,
-        maximumReferenceFileBytes: value,
-        maximumReferenceTotalBytes: value,
     };
 }
 export function createReport(options, overrides = {}) {
@@ -49,7 +49,11 @@ export function createReport(options, overrides = {}) {
         options,
         analysisTimestampMs: 0,
         gitVersion: "2.47.0",
-        boundary: { repositoryRoot: "C:/repo", canonicalRepositoryRoot: "C:/repo", unobservedMechanisms: [] },
+        boundary: {
+            repositoryRoot: "C:/repo",
+            canonicalRepositoryRoot: "C:/repo",
+            unobservedMechanisms: [],
+        },
         limits: { ...defaultLimits },
         usage: { ...defaultUsage },
         completeness: { ...defaultCompleteness },

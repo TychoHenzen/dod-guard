@@ -2,7 +2,10 @@ export function terminalSafeText(value: string): string {
   return [...value]
     .map((character) => {
       const codePoint = character.codePointAt(0);
-      if (codePoint === undefined || (codePoint > 0x1f && (codePoint < 0x7f || codePoint > 0x9f))) {
+      if (
+        codePoint === undefined ||
+        (codePoint > 0x1f && (codePoint < 0x7f || codePoint > 0x9f))
+      ) {
         return character;
       }
       return `\\u${codePoint.toString(16).padStart(4, "0")}`;

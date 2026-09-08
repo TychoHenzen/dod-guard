@@ -1,5 +1,5 @@
 import { declarationRange } from "./reference-analysis-declarations.js";
-import { csharpGuardRanges, rustGuardRanges } from "./reference-analysis-guards.js";
+import { csharpGuardRanges, rustGuardRanges, } from "./reference-analysis-guards.js";
 import { syntaxView } from "./reference-analysis-syntax-view.js";
 function separatorForGuard(reference) {
     if (reference.kind === "csharp-using")
@@ -32,7 +32,8 @@ function guardUses(reference, source, view) {
     const declaration = declarationRange(source.content, reference.span.start);
     return [...source.content.matchAll(new RegExp(`\\b${symbol}\\b`, "g"))]
         .map((match) => match.index ?? -1)
-        .filter((index) => (index < declaration.start || index >= declaration.end) && view.code[index] === source.content[index]);
+        .filter((index) => (index < declaration.start || index >= declaration.end) &&
+        view.code[index] === source.content[index]);
 }
 function guardRanges(reference, view) {
     if (reference.kind === "csharp-using")

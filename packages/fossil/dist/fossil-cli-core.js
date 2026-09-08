@@ -15,7 +15,7 @@ export { createFossilProgram } from "./fossil-cli-program.js";
 export { runFossilCli } from "./fossil-cli-run.js";
 export { runFossilCliProcess } from "./fossil-cli-process.js";
 export { FossilUsageError } from "./fossil-cli-types/fossil-usage-error.js";
-export { NotRepositoryAnalysisError } from "./fossil-cli-types/not-repository-analysis-error.js";
+export { NotRepositoryAnalysisError, } from "./fossil-cli-types/not-repository-analysis-error.js";
 export * from "./types.js";
 const _filename = fileURLToPath(import.meta.url);
 function isMainModule() {
@@ -30,7 +30,9 @@ function isMainModule() {
     }
 }
 async function main() {
-    process.exitCode = await runFossilCliProcess(process.argv, { analyze: analyzeRepositoryCore });
+    process.exitCode = await runFossilCliProcess(process.argv, {
+        analyze: analyzeRepositoryCore,
+    });
 }
 if (isMainModule()) {
     main().catch((err) => {

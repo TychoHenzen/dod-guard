@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
 import { test } from "node:test";
-import { promisify } from "node:util";
 import {
   benchmarkPerformanceFixture,
   createPerformanceFixture,
@@ -10,17 +8,25 @@ import {
   performanceBenchmarkJson,
   TARGET_PERFORMANCE_FIXTURE,
 } from "./performance.js";
+import "./performance-real.cases.js";
 
-const execFileAsync = promisify(execFile);
 async function runTargetBenchmark() {
   const input = fastImportStream(TARGET_PERFORMANCE_FIXTURE);
   const commitRecords = input.match(/^commit refs\/heads\/main$/gm) ?? [];
-  const sourcePaths = new Set([...input.matchAll(/^M 100644 inline (src\/[^\n]+)$/gm)].map((match) => match[1]));
+  const sourcePaths = new Set(
+    [...input.matchAll(/^M 100644 inline (src\/[^\n]+)$/gm)].map(
+      (match) => match[1],
+    ),
+  );
   const timestamps = [0, 9_999, 10_000, 19_999, 20_000, 29_999];
   const calls: string[] = [];
 
   const result = await benchmarkPerformanceFixture(
-    { root: "C:/fixture", ...TARGET_PERFORMANCE_FIXTURE, cleanup: async () => undefined },
+    {
+      root: "C:/fixture",
+      ...TARGET_PERFORMANCE_FIXTURE,
+      cleanup: async () => undefined,
+    },
     {
       runFreshJsonAnalysis: async (repositoryPath) => {
         calls.push(repositoryPath);
@@ -34,7 +40,11 @@ async function runTargetBenchmark() {
 async function assertExceededBenchmark(): Promise<void> {
   await assert.rejects(
     benchmarkPerformanceFixture(
-      { root: "C:/fixture", ...TARGET_PERFORMANCE_FIXTURE, cleanup: async () => undefined },
+      {
+        root: "C:/fixture",
+        ...TARGET_PERFORMANCE_FIXTURE,
+        cleanup: async () => undefined,
+      },
       {
         runFreshJsonAnalysis: async () => undefined,
         now: (() => {
@@ -47,25 +57,27 @@ async function assertExceededBenchmark(): Promise<void> {
   );
 }
 
-test("defines the target fixture and enforces three fresh JSON analysis runs below ten seconds", async () => {
-  const target = await runTargetBenchmark();
-  assert.equal(target.commitRecords.length, 5_000);
-  assert.equal(target.sourcePaths.size, 1_000);
-  assert.deepEqual(target.calls, ["C:/fixture", "C:/fixture", "C:/fixture", "C:/fixture"]);
-  assert.deepEqual(target.result, { durationsMs: [9_999, 9_999, 9_999], maximumDurationMs: 9_999 });
-  assert.deepEqual(JSON.parse(performanceBenchmarkJson(target.result)), target.result);
-  await assertExceededBenchmark();
-});
-
-test("points HEAD at the fast-import branch for small real fixtures", async () => {
-  const fixture = await createPerformanceFixture({ commitCount: 10, fileCount: 3 });
-  try {
-    const commits = await execFileAsync("git", ["rev-list", "--count", "HEAD"], { cwd: fixture.root });
-    const files = await execFileAsync("git", ["ls-tree", "-r", "-z", "--name-only", "HEAD"], { cwd: fixture.root });
-
-    assert.equal(commits.stdout.trim(), "10");
-    assert.equal(files.stdout.split("\0").filter(Boolean).length, 3);
-  } finally {
-    await fixture.cleanup();
-  }
-});
+test(
+  "defines the target fixture and enforces three fresh JSON analysis runs " +
+    "below ten seconds",
+  async () => {
+    const target = await runTargetBenchmark();
+    assert.equal(target.commitRecords.length, 5_000);
+    assert.equal(target.sourcePaths.size, 1_000);
+    assert.deepEqual(target.calls, [
+      "C:/fixture",
+      "C:/fixture",
+      "C:/fixture",
+      "C:/fixture",
+    ]);
+    assert.deepEqual(target.result, {
+      durationsMs: [9_999, 9_999, 9_999],
+      maximumDurationMs: 9_999,
+    });
+    assert.deepEqual(
+      JSON.parse(performanceBenchmarkJson(target.result)),
+      target.result,
+    );
+    await assertExceededBenchmark();
+  },
+);

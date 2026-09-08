@@ -3,7 +3,9 @@ import { test } from "node:test";
 import { renderBurstTableRows } from "./output.js";
 import { findingExplanation } from "./output.test-support.js";
 
-test("renders ANSI styling only when the caller marks table output as a TTY", () => {
+test(
+  "renders ANSI styling only when the caller marks table output as a TTY",
+  () => {
   const rows = [
     {
       kind: "burst" as const,
@@ -14,7 +16,12 @@ test("renders ANSI styling only when the caller marks table output as a TTY", ()
       fileCount: 1,
     },
     { kind: "survivor" as const, path: "src/survivor.ts" },
-    { kind: "finding" as const, path: "src/finding.ts", score: 0.8, scoreBasis: "full" as const },
+    {
+      kind: "finding" as const,
+      path: "src/finding.ts",
+      score: 0.8,
+      scoreBasis: "full" as const,
+    },
     findingExplanation("src/candidate.ts", "src/live.ts"),
   ];
 
@@ -25,7 +32,10 @@ test("renders ANSI styling only when the caller marks table output as a TTY", ()
   assert.match(redirected, /Burst burst-1/);
   assert.match(redirected, /survivor src\/survivor.ts/);
   assert.match(redirected, /finding src\/finding.ts: score 0.8 \(full\)/);
-  assert.match(redirected, /created in burst; 2 burst commits, 0 post-burst commits/);
+  assert.match(
+    redirected,
+    /created in burst; 2 burst commits, 0 post-burst commits/,
+  );
   assert.equal(tty.startsWith("\u001b[1mBurst burst-1"), true);
 });
 test("escapes control characters from repository-derived table text", () => {
@@ -39,7 +49,12 @@ test("escapes control characters from repository-derived table text", () => {
       fileCount: 1,
     },
     { kind: "survivor" as const, path: "src/\u0007survivor.ts" },
-    { kind: "finding" as const, path: "src/\u001b[2Jfinding.ts", score: 0.8, scoreBasis: "full" as const },
+    {
+      kind: "finding" as const,
+      path: "src/\u001b[2Jfinding.ts",
+      score: 0.8,
+      scoreBasis: "full" as const,
+    },
     findingExplanation("src/candidate\u001b.ts", "src/live\u0085.ts"),
   ];
 
@@ -55,6 +70,16 @@ test("escapes control characters from repository-derived table text", () => {
   assert.equal(redirected.includes("burst\\u001b[31m\\u000a\\u0085"), true);
   assert.equal(redirected.includes("src/\\u0007survivor.ts"), true);
   assert.equal(redirected.includes("src/\\u001b[2Jfinding.ts"), true);
-  assert.equal(tty.replaceAll("\u001b[1m", "").replaceAll("\u001b[0m", "").split("\n").some(hasTerminalControl), false);
-  assert.equal(tty.startsWith("\u001b[1mBurst burst\\u001b[31m\\u000a\\u0085"), true);
+  assert.equal(
+    tty
+      .replaceAll("\u001b[1m", "")
+      .replaceAll("\u001b[0m", "")
+      .split("\n")
+      .some(hasTerminalControl),
+    false,
+  );
+  assert.equal(
+    tty.startsWith("\u001b[1mBurst burst\\u001b[31m\\u000a\\u0085"),
+    true,
+  );
 });

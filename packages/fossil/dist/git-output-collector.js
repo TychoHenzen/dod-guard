@@ -1,8 +1,8 @@
 import { DEFAULT_GIT_INGESTION_LIMITS } from "./git-process-limits.js";
-import { collectStderrChunk, collectStdoutChunk, finishCollection, rejectError } from "./git-output-collector-handlers.js";
+import { collectStderrChunk, collectStdoutChunk, finishCollection, rejectError, } from "./git-output-collector-handlers.js";
 import { createCollectorState } from "./git-output-collector-state.js";
-/** Collects piped Git output within bounded byte and history-status record limits. */
-export function collectBoundedGitOutput(child, { historyMode = false, limits: suppliedLimits = {} } = {}) {
+/** Collects piped Git output within bounded byte and status-record limits. */
+export function collectBoundedGitOutput(child, { historyMode = false, limits: suppliedLimits = {}, } = {}) {
     const limits = { ...DEFAULT_GIT_INGESTION_LIMITS, ...suppliedLimits };
     const stdout = child.stdout;
     const stderr = child.stderr;

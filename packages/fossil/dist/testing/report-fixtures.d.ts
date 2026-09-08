@@ -7,5 +7,4 @@ export declare function advisoryFindingInput(input: {
     score: number;
     burstCommits: number;
 }): AdvisoryFossilFindingInput;
-export declare function limitsWith(value: number): FossilReport["limits"];
 export declare function createReport(options: NormalizedAnalysisOptions, overrides?: Partial<FossilReport>): FossilReport;

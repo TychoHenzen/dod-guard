@@ -1,4 +1,4 @@
-/** A command-line usage failure that callers map to the standard usage exit code. */
+/** A command-line usage failure mapped to the standard exit code. */
 export class FossilUsageError extends Error {
     reported;
     exitCode = 2;

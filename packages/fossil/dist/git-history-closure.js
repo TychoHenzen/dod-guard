@@ -3,9 +3,11 @@ import { partitionQualifies } from "./git-history-change-point.js";
 /** Retains only clusters whose closed state was established by the caller. */
 export function retainQualifiedClosedClusters(clusters) {
     const identities = resolveLogicalActivities(clusters.flat()).identitiesByChange;
-    return clusters.filter((cluster) => partitionQualifies(cluster, identities)).map((cluster) => [...cluster]);
+    return clusters
+        .filter((cluster) => partitionQualifies(cluster, identities))
+        .map((cluster) => [...cluster]);
 }
-/** Retains temporal clusters that have remained inactive for the full configured gap. */
+/** Retains clusters inactive for the full configured gap. */
 export function retainClosedTemporalClusters(clusters, analysisTimestampMs, gapMilliseconds) {
     if (gapMilliseconds < 0)
         throw new RangeError("gapMilliseconds must be nonnegative");

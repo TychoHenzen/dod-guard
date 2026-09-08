@@ -1,5 +1,5 @@
-import { consumeTryCatchLexicalCharacter } from "./reference-analysis-try-catch-lexical.js";
-import { consumeTryCatchStructuralCharacter } from "./reference-analysis-try-catch-structure.js";
+import { consumeTryCatchLexicalCharacter, } from "./reference-analysis-try-catch-lexical.js";
+import { consumeTryCatchStructuralCharacter, } from "./reference-analysis-try-catch-structure.js";
 function consumeCharacter(content, index, state) {
     const lexicalIndex = consumeTryCatchLexicalCharacter(content, index, state);
     if (lexicalIndex !== undefined)

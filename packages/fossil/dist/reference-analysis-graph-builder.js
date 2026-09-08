@@ -6,14 +6,16 @@ function resolvedTarget(reference, paths) {
         return undefined;
     return reference.targetCandidates.find((candidate) => paths.has(candidate));
 }
-function unresolvedReference({ reference: { sourcePath, targetCandidates: candidates, language, kind, span, resolution }, targetPath, }) {
+function unresolvedReference({ reference: { sourcePath, targetCandidates: candidates, language, kind, span, resolution, }, targetPath, }) {
     return {
         sourcePath,
         targetCandidates: candidates,
         language,
         kind,
         span,
-        resolution: resolution === "external" ? "external" : "unresolved",
+        resolution: resolution === "external"
+            ? "external"
+            : "unresolved",
     };
 }
 export function referenceGraph(parsed, sources) {

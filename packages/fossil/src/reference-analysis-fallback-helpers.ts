@@ -4,7 +4,12 @@ export function hasFallbackToken(text: string): boolean {
   return /\b(?:fallback|legacy|old|default)\b/i.test(text);
 }
 
-export function balancedClose({ code, open, opening, closing }: {
+export function balancedClose({
+  code,
+  open,
+  opening,
+  closing,
+}: {
   code: string;
   open: number;
   opening: string;
@@ -24,9 +29,14 @@ export function nextNonWhitespace(code: string, start: number): number {
   return index;
 }
 
-export function hasLeadingFallbackComment(view: SyntaxView, position: number): boolean {
+export function hasLeadingFallbackComment(
+  view: SyntaxView,
+  position: number,
+): boolean {
   return view.comments.some(
     (comment) =>
-      comment.end <= position && /^\s*$/.test(view.code.slice(comment.end, position)) && hasFallbackToken(comment.text),
+      comment.end <= position &&
+      /^\s*$/.test(view.code.slice(comment.end, position)) &&
+      hasFallbackToken(comment.text),
   );
 }

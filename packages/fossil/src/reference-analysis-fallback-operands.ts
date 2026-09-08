@@ -1,5 +1,7 @@
 import { nextNonWhitespace } from "./reference-analysis-fallback-helpers.js";
-import type { ReferenceRange } from "./reference-analysis-types/reference-range.js";
+import type {
+  ReferenceRange,
+} from "./reference-analysis-types/reference-range.js";
 
 const CLOSING_DELIMITERS = new Set([")", "]", "}"]);
 const OPERAND_STOPS = new Set([";", ",", "\n"]);
@@ -11,7 +13,10 @@ function closingDelimiter(character: string): string | undefined {
   return undefined;
 }
 
-function isOperandStop(character: string, closings: readonly string[]): boolean {
+function isOperandStop(
+  character: string,
+  closings: readonly string[],
+): boolean {
   if (CLOSING_DELIMITERS.has(character) && closings.length === 0) return true;
   return closings.length === 0 && OPERAND_STOPS.has(character);
 }
@@ -34,7 +39,10 @@ function operandEnd(code: string, start: number): number {
   return code.length;
 }
 
-function fallbackOperandRange(code: string, match: RegExpExecArray): ReferenceRange | undefined {
+function fallbackOperandRange(
+  code: string,
+  match: RegExpExecArray,
+): ReferenceRange | undefined {
   const start = nextNonWhitespace(code, (match.index ?? 0) + match[0].length);
   const end = operandEnd(code, start);
   if (end <= start) return undefined;

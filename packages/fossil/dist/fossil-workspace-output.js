@@ -18,7 +18,7 @@ function ignoredDirectoryCounts(findings) {
     }
     return counts;
 }
-function addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts }) {
+function addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts, }) {
     const directory = findingDirectory(finding);
     if (!isSummarized(directory, summarizedDirectories)) {
         rows.push({ kind: "finding", finding });
@@ -27,21 +27,33 @@ function addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirector
     if (emittedDirectories.has(directory))
         return;
     emittedDirectories.add(directory);
-    rows.push({ kind: "ignored-directory-summary", directory, count: directoryCounts.get(directory) ?? 0 });
+    rows.push({
+        kind: "ignored-directory-summary",
+        directory,
+        count: directoryCounts.get(directory) ?? 0,
+    });
 }
 function isSummarized(directory, summarizedDirectories) {
     return directory !== undefined && summarizedDirectories.has(directory);
 }
-/** Produces normal or verbose table rows without changing the underlying debris findings. */
+/** Produces normal or verbose rows without changing debris findings. */
 export function workspaceDebrisTableRows(findings, mode) {
     if (mode === "verbose")
         return findings.map((finding) => ({ kind: "finding", finding }));
     const directoryCounts = ignoredDirectoryCounts(findings);
-    const summarizedDirectories = new Set([...directoryCounts].filter(([, count]) => count >= 20).map(([directory]) => directory));
+    const summarizedDirectories = new Set([...directoryCounts]
+        .filter(([, count]) => count >= 20)
+        .map(([directory]) => directory));
     const emittedDirectories = new Set();
     const rows = [];
     for (const finding of findings)
-        addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts });
+        addWorkspaceRow({
+            rows,
+            finding,
+            summarizedDirectories,
+            emittedDirectories,
+            directoryCounts,
+        });
     return rows;
 }
 //# sourceMappingURL=fossil-workspace-output.js.map

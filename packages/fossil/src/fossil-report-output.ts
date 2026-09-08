@@ -6,10 +6,14 @@ export function renderFossilReportJson(report: FossilReport): string {
   return JSON.stringify(finalizeFossilReport(report));
 }
 
-/** Counts burst-path finding records and their unique normalized candidate paths. */
 export function candidateFindingCounts(bursts: readonly BurstReport[]) {
-  const paths = bursts.flatMap((burst) => burst.findings.map((finding) => normalizedPath(finding.path)));
-  return { candidateFindingCount: paths.length, uniqueCandidatePathCount: new Set(paths).size };
+  const paths = bursts.flatMap((burst) =>
+    burst.findings.map((finding) => normalizedPath(finding.path)),
+  );
+  return {
+    candidateFindingCount: paths.length,
+    uniqueCandidatePathCount: new Set(paths).size,
+  };
 }
 
 function compareWarnings(
@@ -27,14 +31,20 @@ function compareWarningPaths(
   left: FossilReport["warnings"][number],
   right: FossilReport["warnings"][number],
 ): number {
-  return comparePaths(normalizedPath(left.path ?? ""), normalizedPath(right.path ?? ""));
+  return comparePaths(
+    normalizedPath(left.path ?? ""),
+    normalizedPath(right.path ?? ""),
+  );
 }
 
-/** Applies the report statistics derived from its burst-path finding records. */
+/** Applies statistics derived from burst findings. */
 export function finalizeFossilReport(report: FossilReport): FossilReport {
   return {
     ...report,
-    statistics: { ...report.statistics, ...candidateFindingCounts(report.bursts) },
+    statistics: {
+      ...report.statistics,
+      ...candidateFindingCounts(report.bursts),
+    },
     warnings: [...report.warnings].sort(compareWarnings),
   };
 }

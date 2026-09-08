@@ -5,7 +5,7 @@ function pathExtension(path) {
     const dot = filename.lastIndexOf(".");
     return dot === -1 ? "" : filename.slice(dot).toLowerCase();
 }
-/** Normalizes extension options while preserving deterministic first-occurrence order. */
+/** Normalizes extensions while preserving first-occurrence order. */
 export function normalizeExtensions(values) {
     const normalized = new Set();
     for (const value of values)
@@ -26,7 +26,9 @@ export function filterHistoryByExtensions(commits, extensions) {
         return included;
     }
     const resolution = resolveLogicalActivities(commits);
-    const selected = new Set(resolution.activities.filter((activity) => extensions.has(pathExtension(activityPath(activity)))).map((activity) => activity.identity));
+    const selected = new Set(resolution.activities
+        .filter((activity) => extensions.has(pathExtension(activityPath(activity))))
+        .map((activity) => activity.identity));
     const included = commits.flatMap((commit) => {
         const changes = selectedChanges(commit, selected, resolution.identitiesByChange);
         return changes.length === 0 ? [] : [{ ...commit, changes }];

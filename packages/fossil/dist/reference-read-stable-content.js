@@ -1,4 +1,4 @@
-import { addBinaryReferenceWarning, addReferenceWarning } from "./reference-read-support.js";
+import { addBinaryReferenceWarning, addReferenceWarning, } from "./reference-read-support.js";
 export function readStableContent(input, initial) {
     try {
         const content = input.boundary.read(input.source);

@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { analyzeJavaScriptReferences } from "./ref-analyzer.js";
 import { edgeSummary } from "./ref-analyzer.test-support.js";
-test("resolves static, require, and dynamic relative module forms against current files", () => {
+test("resolves static, require, and dynamic relative module forms against " +
+    "current files", () => {
     const graph = analyzeJavaScriptReferences([
         {
             path: "src/main.ts",
             language: "typescript",
-            content: 'import { feature } from "./feature";\nconst legacy = require("./legacy");\nconst dynamic = import("./dynamic");\nimport "./folder";\nimport "package-name";\n',
+            content: 'import { feature } from "./feature";\n' +
+                'const legacy = require("./legacy");\n' +
+                'const dynamic = import("./dynamic");\n' +
+                'import "./folder";\nimport "package-name";\n',
         },
         { path: "src/feature.ts", language: "typescript", content: "" },
         { path: "src/legacy.js", language: "javascript", content: "" },
@@ -44,7 +48,11 @@ test("resolves static, require, and dynamic relative module forms against curren
             strength: "strong",
         },
     ]);
-    assert.deepEqual(graph.edges.map((edge) => [edge.span.line, edge.span.column, edge.span.end - edge.span.start]), [
+    assert.deepEqual(graph.edges.map((edge) => [
+        edge.span.line,
+        edge.span.column,
+        edge.span.end - edge.span.start,
+    ]), [
         [1, 26, 9],
         [2, 25, 8],
         [3, 25, 9],

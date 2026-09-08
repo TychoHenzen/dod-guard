@@ -2,34 +2,35 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { referenceWeaknessScore } from "./fossil-grader.js";
 import { referenceEdge } from "./fossil-grader.test-support.js";
-test("counts duplicate strong inbound edges from one live source only once", () => {
+test("counts duplicate strong inbound edges from one live source once", () => {
     const graph = {
         edges: [
-            referenceEdge({ sourcePath: "src/live.ts", targetPath: "src/candidate.ts", start: 0, column: 1 }),
-            {
+            referenceEdge({
                 sourcePath: "src/live.ts",
                 targetPath: "src/candidate.ts",
-                language: "typescript",
+                start: 0,
+                column: 1,
+            }),
+            referenceEdge({
+                sourcePath: "src/live.ts",
+                targetPath: "src/candidate.ts",
+                start: 2,
+                column: 3,
                 kind: "require",
-                strength: "strong",
-                span: { start: 2, end: 3, line: 1, column: 3 },
-            },
-            {
+            }),
+            referenceEdge({
                 sourcePath: "src/weak.ts",
                 targetPath: "src/candidate.ts",
-                language: "typescript",
-                kind: "import",
+                start: 4,
+                column: 5,
                 strength: "weak",
-                span: { start: 4, end: 5, line: 1, column: 5 },
-            },
-            {
+            }),
+            referenceEdge({
                 sourcePath: "src/candidate.ts",
                 targetPath: "src/outbound.ts",
-                language: "typescript",
-                kind: "import",
-                strength: "strong",
-                span: { start: 6, end: 7, line: 1, column: 7 },
-            },
+                start: 6,
+                column: 7,
+            }),
         ],
         unresolved: [],
         complete: true,
@@ -37,7 +38,7 @@ test("counts duplicate strong inbound edges from one live source only once", () 
     };
     assert.equal(referenceWeaknessScore("src/candidate.ts", graph, new Set()), 0.5);
 });
-test("gives zero weakness when two unique live sources retain strong inbound references", () => {
+test("gives zero weakness for two unique live sources", () => {
     const graph = {
         edges: [
             {

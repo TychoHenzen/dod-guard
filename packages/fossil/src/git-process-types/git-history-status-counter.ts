@@ -26,7 +26,11 @@ export class GitHistoryStatusCounter {
 
   add(chunk: string): number {
     this.#buffer += chunk;
-    for (let separator = this.#buffer.indexOf("\0"); separator !== -1; separator = this.#buffer.indexOf("\0")) {
+    for (
+      let separator = this.#buffer.indexOf("\0");
+      separator !== -1;
+      separator = this.#buffer.indexOf("\0")
+    ) {
       const token = this.#buffer.slice(0, separator);
       this.#buffer = this.#buffer.slice(separator + 1);
       this.#consume(token);

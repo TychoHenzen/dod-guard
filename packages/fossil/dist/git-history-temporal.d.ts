@@ -1,3 +1,3 @@
 import type { GitCommit } from "./types.js";
-/** Splits chronological included commits where the adjacent timestamp gap exceeds the supplied milliseconds. */
+/** Splits commits where an adjacent timestamp gap exceeds the limit. */
 export declare function splitTemporalClusters(commits: readonly GitCommit[], gapMilliseconds: number): GitCommit[][];

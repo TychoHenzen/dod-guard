@@ -17,7 +17,11 @@ test("resolves sibling, module-directory, and nearest-Cargo-root Rust modules", 
             language: "rust",
             content: "use crate::models::user;\n",
         },
-        { path: "workspace/app/tools/nested/src/models/user/mod.rs", language: "rust", content: "" },
+        {
+            path: "workspace/app/tools/nested/src/models/user/mod.rs",
+            language: "rust",
+            content: "",
+        },
     ]);
     assert.deepEqual(edgeSummary(graph), [
         {
@@ -57,7 +61,10 @@ test("resolves sibling, module-directory, and nearest-Cargo-root Rust modules", 
     })), [
         {
             sourcePath: "workspace/app/src/main.rs",
-            targetCandidates: ["workspace/app/src/missing.rs", "workspace/app/src/missing/mod.rs"],
+            targetCandidates: [
+                "workspace/app/src/missing.rs",
+                "workspace/app/src/missing/mod.rs",
+            ],
             kind: "rust-mod",
             resolution: "unresolved",
         },

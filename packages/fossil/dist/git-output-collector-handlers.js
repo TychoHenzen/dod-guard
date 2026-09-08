@@ -20,7 +20,8 @@ export function collectStdoutChunk(state, rejectPromise, chunk) {
     }
     const text = state.stdoutDecoder.write(chunk);
     state.stdoutParts.push(text);
-    if (state.historyMode && state.statusCounter.add(text) > state.limits.maximumStatusRecords)
+    if (state.historyMode &&
+        state.statusCounter.add(text) > state.limits.maximumStatusRecords)
         rejectLimit(state, rejectPromise, "Git status record limit exceeded.");
 }
 export function collectStderrChunk(state, rejectPromise, chunk) {
@@ -46,7 +47,8 @@ export function finishCollection(state, resolvePromise, rejectPromise, exitCode)
     const finalStderr = state.stderrDecoder.end();
     state.stdoutParts.push(finalStdout);
     state.stderrParts.push(finalStderr);
-    if (state.historyMode && state.statusCounter.add(finalStdout) > state.limits.maximumStatusRecords) {
+    if (state.historyMode &&
+        state.statusCounter.add(finalStdout) > state.limits.maximumStatusRecords) {
         rejectLimit(state, rejectPromise, "Git status record limit exceeded.");
         return;
     }

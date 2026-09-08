@@ -1,6 +1,10 @@
 import type { WorkspaceDebrisFinding } from "./types.js";
-import type { WorkspaceDebrisTableMode } from "./fossil-output-types/workspace-debris-table-mode.js";
-import type { WorkspaceDebrisTableRow } from "./fossil-output-types/workspace-debris-table-row.js";
+import type {
+  WorkspaceDebrisTableMode,
+} from "./fossil-output-types/workspace-debris-table-mode.js";
+import type {
+  WorkspaceDebrisTableRow,
+} from "./fossil-output-types/workspace-debris-table-row.js";
 import { normalizedPath } from "./fossil-output-text.js";
 
 function topLevelDirectory(path: string): string | undefined {
@@ -14,7 +18,9 @@ function findingDirectory(finding: WorkspaceDebrisFinding): string | undefined {
   return topLevelDirectory(finding.path);
 }
 
-function ignoredDirectoryCounts(findings: readonly WorkspaceDebrisFinding[]): Map<string, number> {
+function ignoredDirectoryCounts(
+  findings: readonly WorkspaceDebrisFinding[],
+): Map<string, number> {
   const counts = new Map<string, number>();
   for (const finding of findings) {
     const directory = findingDirectory(finding);
@@ -23,7 +29,13 @@ function ignoredDirectoryCounts(findings: readonly WorkspaceDebrisFinding[]): Ma
   return counts;
 }
 
-function addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts }: {
+function addWorkspaceRow({
+  rows,
+  finding,
+  summarizedDirectories,
+  emittedDirectories,
+  directoryCounts,
+}: {
   rows: WorkspaceDebrisTableRow[];
   finding: WorkspaceDebrisFinding;
   summarizedDirectories: ReadonlySet<string>;
@@ -37,26 +49,42 @@ function addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirector
   }
   if (emittedDirectories.has(directory)) return;
   emittedDirectories.add(directory);
-  rows.push({ kind: "ignored-directory-summary", directory, count: directoryCounts.get(directory) ?? 0 });
+  rows.push({
+    kind: "ignored-directory-summary",
+    directory,
+    count: directoryCounts.get(directory) ?? 0,
+  });
 }
 
-function isSummarized(directory: string | undefined, summarizedDirectories: ReadonlySet<string>): directory is string {
+function isSummarized(
+  directory: string | undefined,
+  summarizedDirectories: ReadonlySet<string>,
+): directory is string {
   return directory !== undefined && summarizedDirectories.has(directory);
 }
 
-/** Produces normal or verbose table rows without changing the underlying debris findings. */
+/** Produces normal or verbose rows without changing debris findings. */
 export function workspaceDebrisTableRows(
   findings: readonly WorkspaceDebrisFinding[],
   mode: WorkspaceDebrisTableMode,
 ): readonly WorkspaceDebrisTableRow[] {
-  if (mode === "verbose") return findings.map((finding) => ({ kind: "finding", finding }));
+  if (mode === "verbose")
+    return findings.map((finding) => ({ kind: "finding", finding }));
   const directoryCounts = ignoredDirectoryCounts(findings);
   const summarizedDirectories = new Set(
-    [...directoryCounts].filter(([, count]) => count >= 20).map(([directory]) => directory),
+    [...directoryCounts]
+      .filter(([, count]) => count >= 20)
+      .map(([directory]) => directory),
   );
   const emittedDirectories = new Set<string>();
   const rows: WorkspaceDebrisTableRow[] = [];
   for (const finding of findings)
-    addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts });
+    addWorkspaceRow({
+      rows,
+      finding,
+      summarizedDirectories,
+      emittedDirectories,
+      directoryCounts,
+    });
   return rows;
 }

@@ -4,7 +4,6 @@ export {
   assertIncludedCommitLimit,
   DEFAULT_MAXIMUM_INCLUDED_COMMITS,
   emptyHistoryWarnings,
-
   filterHistoryByExtensions,
   futureCommitWarnings,
   normalizeExtensions,
@@ -14,17 +13,14 @@ export {
   retainQualifiedClosedClusters,
   resolveRenameActivities,
   selectAbsoluteSurvivors,
-
   selectDeletedNonSurvivorPaths,
   selectFossilCandidates,
   selectRelativeSurvivors,
   selectSurvivors,
   shallowHistoryWarnings,
-
   shallowRepositoryArguments,
   sortCommitsChronologically,
   sparseCheckoutArguments,
-
   sparseCheckoutWarnings,
   splitAtChangePoint,
   splitTemporalClusters,

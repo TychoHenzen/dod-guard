@@ -1,7 +1,5 @@
 import { finalizeFossilReport } from "./output.js";
-import type { FossilReport, NormalizedAnalysisOptions } from "./types.js";
-import type { analyzeHistoryStage } from "./repository-analysis-history.js";
-import type { analyzeWorkspaceStage } from "./repository-analysis-workspace.js";
+import type { FossilReport } from "./types.js";
 import {
   reportBoundary,
   reportCompleteness,
@@ -9,14 +7,13 @@ import {
   reportStatistics,
   reportUsage,
 } from "./repository-analysis-report-parts.js";
+import type {
+  AnalysisReportInput,
+} from "./repository-analysis-report-input.js";
 
-export function buildAnalysisReport({ historyStage, workspaceStage, options, reports, workspaceDebris }: {
-  historyStage: Awaited<ReturnType<typeof analyzeHistoryStage>>;
-  workspaceStage: Awaited<ReturnType<typeof analyzeWorkspaceStage>>;
-  options: NormalizedAnalysisOptions;
-  reports: readonly FossilReport["bursts"][number][];
-  workspaceDebris: FossilReport["workspaceDebris"];
-}): FossilReport {
+export function buildAnalysisReport(input: AnalysisReportInput): FossilReport {
+  const { historyStage, workspaceStage, options, reports, workspaceDebris } =
+    input;
   const warnings = [...historyStage.warnings, ...workspaceStage.warnings];
   return finalizeFossilReport({
     schemaVersion: 1,
@@ -26,7 +23,10 @@ export function buildAnalysisReport({ historyStage, workspaceStage, options, rep
     boundary: reportBoundary(historyStage.repositoryPath, historyStage.root),
     limits: reportLimits(),
     usage: reportUsage(historyStage, workspaceStage),
-    completeness: reportCompleteness(warnings, workspaceStage.references.graph.complete),
+    completeness: reportCompleteness(
+      warnings,
+      workspaceStage.references.graph.complete,
+    ),
     statistics: reportStatistics(historyStage, reports, workspaceDebris),
     warnings,
     bursts: reports,

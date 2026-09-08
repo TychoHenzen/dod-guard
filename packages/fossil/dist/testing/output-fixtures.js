@@ -1,4 +1,4 @@
-/** Captures output through injected writers without replacing process streams. */
+/** Captures output through injected writers. */
 export function createOutputCapture() {
     const stdout = [];
     const stderr = [];

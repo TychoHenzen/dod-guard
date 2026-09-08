@@ -23,8 +23,13 @@ function inspectReferenceSource(root, source) {
         canonicalPath: realpathSync(fullPath),
     };
 }
-export function referenceSources(root, paths) {
-    const candidates = paths.map((path) => ({ path, language: languageForPath(path) }));
+function referenceCandidates(paths) {
+    return paths.map((path) => ({
+        path,
+        language: languageForPath(path),
+    }));
+}
+function readReferenceSources(root, candidates) {
     const supported = candidates.filter((candidate) => candidate.language !== "unsupported");
     const readSource = (source) => readFileSync(join(root, source.path), "utf8");
     const reads = readStableReferenceSources({
@@ -34,17 +39,30 @@ export function referenceSources(root, paths) {
             read: readSource,
         },
     });
-    const unsupported = unsupportedCandidateReferenceGraph(candidates);
+    return reads;
+}
+function completeReferenceGraph(reads, unsupported) {
     const graph = analyzeReferences(reads.sources);
+    return {
+        ...graph,
+        complete: reads.graph.complete && unsupported.complete,
+        unavailablePaths: [
+            ...new Set([
+                ...reads.graph.unavailablePaths,
+                ...unsupported.unavailablePaths,
+            ]),
+        ].sort(),
+    };
+}
+export function referenceSources(root, paths) {
+    const candidates = referenceCandidates(paths);
+    const reads = readReferenceSources(root, candidates);
+    const unsupported = unsupportedCandidateReferenceGraph(candidates);
     return {
         sources: reads.sources,
         warnings: reads.warnings,
         acceptedBytes: reads.acceptedBytes,
-        graph: {
-            ...graph,
-            complete: reads.graph.complete && unsupported.complete,
-            unavailablePaths: [...new Set([...reads.graph.unavailablePaths, ...unsupported.unavailablePaths])].sort(),
-        },
+        graph: completeReferenceGraph(reads, unsupported),
     };
 }
 export { markUnresolvedCandidateEvidence, regradeVestigialEdges };

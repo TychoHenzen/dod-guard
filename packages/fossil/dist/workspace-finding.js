@@ -1,6 +1,7 @@
 import { hasInboundWorkspaceUsage } from "./workspace-usage.js";
-/** Creates a separate advisory workspace-debris finding when no inbound usage evidence is discovered. */
-export function workspaceDebrisFinding({ candidate, sources, inventoryPaths, analysisBoundary, unobservedMechanisms }) {
+/** Creates an advisory finding when no inbound usage is discovered. */
+export function workspaceDebrisFinding(input) {
+    const { candidate, sources, inventoryPaths, analysisBoundary, unobservedMechanisms, } = input;
     if (hasInboundWorkspaceUsage(candidate.path, sources, inventoryPaths))
         return undefined;
     return {
@@ -10,7 +11,8 @@ export function workspaceDebrisFinding({ candidate, sources, inventoryPaths, ana
         kind: candidate.kind,
         modifiedTimestampMs: candidate.modifiedTimestampMs,
         ageSource: "mtime",
-        ageUncertainty: "Modification time is filesystem metadata. Copying, restoring, extracting, or rebuilding can change it.",
+        ageUncertainty: "Modification time is filesystem metadata. " +
+            "Copying, restoring, extracting, or rebuilding can change it.",
         ignore: "ignore" in candidate ? candidate.ignore : undefined,
         detectedReferenceEvidence: [],
         analysisBoundary,

@@ -1,5 +1,7 @@
 import type { ReferenceGraph } from "./types.js";
-import type { CandidateReferenceSubscores } from "./fossil-scoring-types/candidate-reference-subscores.js";
+import type {
+  CandidateReferenceSubscores,
+} from "./fossil-scoring-types/candidate-reference-subscores.js";
 
 function isLiveStrongInbound(
   candidatePath: string,
@@ -14,7 +16,7 @@ function isLiveStrongInbound(
   );
 }
 
-/** Scores how little strong inbound evidence a candidate receives from live source paths. */
+/** Scores how little strong inbound evidence a candidate receives. */
 export function referenceWeaknessScore(
   candidatePath: string,
   graph: ReferenceGraph,
@@ -22,7 +24,9 @@ export function referenceWeaknessScore(
 ): number {
   const liveInboundSources = new Set(
     graph.edges
-      .filter((edge) => isLiveStrongInbound(candidatePath, candidatePaths, edge))
+      .filter((edge) =>
+        isLiveStrongInbound(candidatePath, candidatePaths, edge),
+      )
       .map((edge) => edge.sourcePath),
   );
   if (liveInboundSources.size === 0) return 1;
@@ -34,32 +38,47 @@ function addCandidateNeighbor(
   candidatePath: string,
   edge: ReferenceGraph["edges"][number],
 ): void {
-  if (edge.sourcePath === candidatePath && edge.targetPath !== candidatePath) neighbors.add(edge.targetPath);
-  if (edge.targetPath === candidatePath && edge.sourcePath !== candidatePath) neighbors.add(edge.sourcePath);
+  if (edge.sourcePath === candidatePath && edge.targetPath !== candidatePath)
+    neighbors.add(edge.targetPath);
+  if (edge.targetPath === candidatePath && edge.sourcePath !== candidatePath)
+    neighbors.add(edge.sourcePath);
 }
 
-/** Scores the fraction of a candidate's unique resolved neighbors that are fossil candidates. */
+/** Scores the fraction of unique resolved neighbors that are candidates. */
 export function clusterIsolationScore(
   candidatePath: string,
   graph: ReferenceGraph,
   candidatePaths: ReadonlySet<string>,
 ): number {
   const neighbors = new Set<string>();
-  for (const edge of graph.edges) addCandidateNeighbor(neighbors, candidatePath, edge);
+  for (const edge of graph.edges)
+    addCandidateNeighbor(neighbors, candidatePath, edge);
   if (neighbors.size === 0) return 1;
-  return [...neighbors].filter((neighbor) => candidatePaths.has(neighbor)).length / neighbors.size;
+  return (
+    [...neighbors].filter((neighbor) => candidatePaths.has(neighbor)).length /
+    neighbors.size
+  );
 }
 
-/** Derives both reference subscores together, omitting both when candidate evidence is incomplete. */
+/** Derives both reference subscores, omitting both for incomplete evidence. */
 export function candidateReferenceSubscores(
   candidatePath: string,
   graph: ReferenceGraph,
   candidatePaths: ReadonlySet<string>,
 ): CandidateReferenceSubscores {
-  if (graph.unavailablePaths.includes(candidatePath)) return { available: false };
+  if (graph.unavailablePaths.includes(candidatePath))
+    return { available: false };
   return {
     available: true,
-    referenceWeakness: referenceWeaknessScore(candidatePath, graph, candidatePaths),
-    clusterIsolation: clusterIsolationScore(candidatePath, graph, candidatePaths),
+    referenceWeakness: referenceWeaknessScore(
+      candidatePath,
+      graph,
+      candidatePaths,
+    ),
+    clusterIsolation: clusterIsolationScore(
+      candidatePath,
+      graph,
+      candidatePaths,
+    ),
   };
 }

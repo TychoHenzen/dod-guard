@@ -1,5 +1,5 @@
 import { FossilAnalysisError } from "./analysis-error.js";
-import { FossilHelpDisplayed } from "./fossil-cli-types/fossil-help-displayed.js";
+import { FossilHelpDisplayed, } from "./fossil-cli-types/fossil-help-displayed.js";
 import { FossilUsageError } from "./fossil-cli-types/fossil-usage-error.js";
 import { runFossilCli } from "./fossil-cli-run.js";
 const CONTROL_ESCAPES = new Map([
@@ -26,7 +26,8 @@ function boundedAnalysisDiagnostic(error) {
     let message = "";
     for (const character of error.message || `analysis failed (${error.code})`) {
         const visible = visibleDiagnosticCharacter(character);
-        if (Buffer.byteLength(message) + Buffer.byteLength(visible) > maximumMessageBytes)
+        if (Buffer.byteLength(message) + Buffer.byteLength(visible) >
+            maximumMessageBytes)
             break;
         message += visible;
     }
@@ -51,7 +52,7 @@ function processError(error, dependencies) {
         return error.exitCode;
     return processAnalysisError(error, dependencies);
 }
-/** Maps known process outcomes without changing the lower-level CLI boundary. */
+/** Maps known process outcomes without changing the CLI boundary. */
 export async function runFossilCliProcess(argv, dependencies) {
     try {
         await runFossilCli(argv, dependencies);

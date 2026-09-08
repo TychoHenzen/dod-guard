@@ -2,7 +2,9 @@ import type { AnalysisBoundary } from "./analysis-boundary.js";
 import type { AnalysisWarning } from "./analysis-warning.js";
 import type { BurstReport } from "./burst-report.js";
 import type { Completeness } from "./completeness.js";
-import type { NormalizedAnalysisOptions } from "./normalized-analysis-options.js";
+import type {
+  NormalizedAnalysisOptions,
+} from "./normalized-analysis-options.js";
 import type { ReportStatistics } from "./report-statistics.js";
 import type { ResourceLimits } from "./resource-limits.js";
 import type { ResourceUsage } from "./resource-usage.js";

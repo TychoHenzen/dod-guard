@@ -1,4 +1,4 @@
-/** Normalizes one candidate's positive burst churn against the positive burst maximum. */
+/** Normalizes positive burst churn against the positive burst maximum. */
 export function normalizedBurstChurn(candidate, burstFiles) {
     const maximumBurstCommits = Math.max(0, ...burstFiles.map((activity) => activity.burstCommits));
     if (maximumBurstCommits === 0)
@@ -15,7 +15,7 @@ export function abandonmentScore(candidate) {
 export function meetsFossilThreshold(score, threshold) {
     return score >= threshold;
 }
-/** Retains every qualifying burst-specific candidate without deduplicating matching paths. */
+/** Retains every qualifying burst candidate without deduplicating paths. */
 export function qualifyingBurstCandidates(candidates, threshold) {
     return candidates.filter((candidate) => meetsFossilThreshold(candidate.score.score, threshold));
 }

@@ -1,6 +1,6 @@
 import { afterEach } from "node:test";
 import { splitAtChangePoint } from "./git-analyzer.js";
-import { createTemporaryRepository } from "./testing/fixtures.js";
+import { createTemporaryRepository, } from "./testing/fixtures.js";
 const repositories = [];
 afterEach(async () => {
     await Promise.all(repositories.splice(0).map((repository) => repository.cleanup()));

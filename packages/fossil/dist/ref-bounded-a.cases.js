@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readBoundedReferenceSources } from "./ref-analyzer.js";
-test("skips oversized sources before reading content and retains later bounded sources", () => {
+test("skips oversized sources before reading content and retains later bounded " +
+    "sources", () => {
     const maximumBytes = 1_048_576;
     const contentReads = [];
     const sources = [
@@ -39,7 +40,8 @@ test("skips oversized sources before reading content and retains later bounded s
     ]);
     assert.equal(result.acceptedBytes, maximumBytes + 7);
 });
-test("omits binary content from bounded reference sources and continues with later text", () => {
+test("omits binary content from bounded reference sources and continues with " +
+    "later text", () => {
     const sourceContents = new Map([
         ["src/binary.ts", "text\0not-source"],
         ["src/later.ts", "export const later = true;\n"],
@@ -53,7 +55,11 @@ test("omits binary content from bounded reference sources and continues with lat
         readSource: (source) => sourceContents.get(source.path) ?? "",
     });
     assert.deepEqual(result.sources, [
-        { path: "src/later.ts", language: "typescript", content: "export const later = true;\n" },
+        {
+            path: "src/later.ts",
+            language: "typescript",
+            content: "export const later = true;\n",
+        },
     ]);
     assert.deepEqual(result.graph, {
         edges: [],
@@ -62,7 +68,11 @@ test("omits binary content from bounded reference sources and continues with lat
         unavailablePaths: ["src/binary.ts"],
     });
     assert.deepEqual(result.warnings, [
-        { code: "reference_binary", message: "Reference source is binary.", path: "src/binary.ts" },
+        {
+            code: "reference_binary",
+            message: "Reference source is binary.",
+            path: "src/binary.ts",
+        },
     ]);
     assert.equal(result.acceptedBytes, 12);
     assert.equal(JSON.stringify(result.sources).includes("text\0not-source"), false);

@@ -1,5 +1,5 @@
 import { workspaceDebrisFinding } from "./workspace-debris-boundary.js";
-export function buildWorkspaceDebrisFindings({ candidates, references, inventory, root }) {
+export function buildWorkspaceDebrisFindings({ candidates, references, inventory, root, }) {
     return candidates.flatMap((candidate) => {
         const finding = workspaceDebrisFinding({
             candidate,

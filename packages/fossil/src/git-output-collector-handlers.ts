@@ -1,8 +1,14 @@
 import { FossilAnalysisError } from "./analysis-error.js";
-import type { CollectedGitOutput } from "./git-process-types/collected-git-output.js";
+import type {
+  CollectedGitOutput,
+} from "./git-process-types/collected-git-output.js";
 import type { CollectorState } from "./git-output-collector-state.js";
 
-function rejectLimit(state: CollectorState, rejectPromise: (reason?: unknown) => void, message: string): void {
+function rejectLimit(
+  state: CollectorState,
+  rejectPromise: (reason?: unknown) => void,
+  message: string,
+): void {
   if (state.settled) return;
   state.settled = true;
   try {
@@ -12,7 +18,11 @@ function rejectLimit(state: CollectorState, rejectPromise: (reason?: unknown) =>
   }
 }
 
-export function collectStdoutChunk(state: CollectorState, rejectPromise: (reason?: unknown) => void, chunk: Buffer): void {
+export function collectStdoutChunk(
+  state: CollectorState,
+  rejectPromise: (reason?: unknown) => void,
+  chunk: Buffer,
+): void {
   if (state.settled) return;
   state.stdoutBytes += chunk.byteLength;
   if (state.stdoutBytes > state.limits.maximumStdoutBytes) {
@@ -21,11 +31,18 @@ export function collectStdoutChunk(state: CollectorState, rejectPromise: (reason
   }
   const text = state.stdoutDecoder.write(chunk);
   state.stdoutParts.push(text);
-  if (state.historyMode && state.statusCounter.add(text) > state.limits.maximumStatusRecords)
+  if (
+    state.historyMode &&
+    state.statusCounter.add(text) > state.limits.maximumStatusRecords
+  )
     rejectLimit(state, rejectPromise, "Git status record limit exceeded.");
 }
 
-export function collectStderrChunk(state: CollectorState, rejectPromise: (reason?: unknown) => void, chunk: Buffer): void {
+export function collectStderrChunk(
+  state: CollectorState,
+  rejectPromise: (reason?: unknown) => void,
+  chunk: Buffer,
+): void {
   if (state.settled) return;
   state.stderrBytes += chunk.byteLength;
   if (state.stderrBytes > state.limits.maximumStderrBytes) {
@@ -35,7 +52,11 @@ export function collectStderrChunk(state: CollectorState, rejectPromise: (reason
   state.stderrParts.push(state.stderrDecoder.write(chunk));
 }
 
-export function rejectError(state: CollectorState, rejectPromise: (reason?: unknown) => void, error: Error): void {
+export function rejectError(
+  state: CollectorState,
+  rejectPromise: (reason?: unknown) => void,
+  error: Error,
+): void {
   if (state.settled) return;
   state.settled = true;
   rejectPromise(error);
@@ -52,7 +73,10 @@ export function finishCollection(
   const finalStderr = state.stderrDecoder.end();
   state.stdoutParts.push(finalStdout);
   state.stderrParts.push(finalStderr);
-  if (state.historyMode && state.statusCounter.add(finalStdout) > state.limits.maximumStatusRecords) {
+  if (
+    state.historyMode &&
+    state.statusCounter.add(finalStdout) > state.limits.maximumStatusRecords
+  ) {
     rejectLimit(state, rejectPromise, "Git status record limit exceeded.");
     return;
   }

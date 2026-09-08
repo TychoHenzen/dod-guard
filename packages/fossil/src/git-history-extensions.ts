@@ -8,14 +8,17 @@ function pathExtension(path: string): string {
   return dot === -1 ? "" : filename.slice(dot).toLowerCase();
 }
 
-/** Normalizes extension options while preserving deterministic first-occurrence order. */
+/** Normalizes extensions while preserving first-occurrence order. */
 export function normalizeExtensions(values: readonly string[]): string[] {
   const normalized = new Set<string>();
-  for (const value of values) normalized.add(`.${value.replace(/^\./, "").toLowerCase()}`);
+  for (const value of values)
+    normalized.add(`.${value.replace(/^\./, "").toLowerCase()}`);
   return [...normalized];
 }
 
-function activityPath(activity: ReturnType<typeof resolveLogicalActivities>["activities"][number]): string {
+function activityPath(
+  activity: ReturnType<typeof resolveLogicalActivities>["activities"][number],
+): string {
   return activity.currentPath ?? activity.paths.at(-1) ?? "";
 }
 
@@ -24,11 +27,16 @@ function selectedChanges(
   selected: ReadonlySet<string>,
   identitiesByChange: ReadonlyMap<GitFileChange, string>,
 ): GitFileChange[] {
-  return commit.changes.filter((change) => selected.has(identitiesByChange.get(change) ?? ""));
+  return commit.changes.filter((change) =>
+    selected.has(identitiesByChange.get(change) ?? ""),
+  );
 }
 
 /** Keeps whole candidate identities for later burst and score calculations. */
-export function filterHistoryByExtensions(commits: readonly GitCommit[], extensions: ReadonlySet<string>): GitCommit[] {
+export function filterHistoryByExtensions(
+  commits: readonly GitCommit[],
+  extensions: ReadonlySet<string>,
+): GitCommit[] {
   if (extensions.size === 0) {
     const included = [...commits];
     assertIncludedCommitLimit(included.length);
@@ -36,10 +44,18 @@ export function filterHistoryByExtensions(commits: readonly GitCommit[], extensi
   }
   const resolution = resolveLogicalActivities(commits);
   const selected = new Set(
-    resolution.activities.filter((activity) => extensions.has(pathExtension(activityPath(activity)))).map((activity) => activity.identity),
+    resolution.activities
+      .filter((activity) =>
+        extensions.has(pathExtension(activityPath(activity))),
+      )
+      .map((activity) => activity.identity),
   );
   const included = commits.flatMap((commit) => {
-    const changes = selectedChanges(commit, selected, resolution.identitiesByChange);
+    const changes = selectedChanges(
+      commit,
+      selected,
+      resolution.identitiesByChange,
+    );
     return changes.length === 0 ? [] : [{ ...commit, changes }];
   });
   assertIncludedCommitLimit(included.length);

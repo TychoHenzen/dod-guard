@@ -1,5 +1,12 @@
 import { posix } from "node:path";
-const MODULE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+const MODULE_EXTENSIONS = [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".cjs",
+];
 export function compareText(left, right) {
     return left < right ? -1 : left > right ? 1 : 0;
 }
@@ -28,15 +35,21 @@ export function normalizedPath(path) {
 export function pathIsWithin(root, candidate) {
     const normalizedRoot = normalizedPath(root).replace(/\/$/, "");
     const normalizedCandidate = normalizedPath(candidate);
-    const compareRoot = /^[A-Za-z]:\//.test(normalizedRoot) ? normalizedRoot.toLowerCase() : normalizedRoot;
+    const compareRoot = /^[A-Za-z]:\//.test(normalizedRoot)
+        ? normalizedRoot.toLowerCase()
+        : normalizedRoot;
     const compareCandidate = /^[A-Za-z]:\//.test(normalizedCandidate)
         ? normalizedCandidate.toLowerCase()
         : normalizedCandidate;
-    return compareCandidate === compareRoot || compareCandidate.startsWith(`${compareRoot}/`);
+    return (compareCandidate === compareRoot ||
+        compareCandidate.startsWith(`${compareRoot}/`));
 }
 export function isOutsideRepositoryPath(path) {
     const normalized = normalizedPath(path);
-    return (normalized === ".." || normalized.startsWith("../") || normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized));
+    return (normalized === ".." ||
+        normalized.startsWith("../") ||
+        normalized.startsWith("/") ||
+        /^[A-Za-z]:\//.test(normalized));
 }
 export function outsideBoundaryWarning(sourcePath) {
     return {

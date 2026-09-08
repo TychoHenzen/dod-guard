@@ -16,12 +16,13 @@ export function candidateBasenameCounts(candidates) {
     return counts;
 }
 function matchesFullPath(normalizedTarget, normalizedCandidate) {
-    return normalizedCandidate === normalizedTarget || normalizedCandidate.endsWith(`/${normalizedTarget}`);
+    return (normalizedCandidate === normalizedTarget ||
+        normalizedCandidate.endsWith(`/${normalizedTarget}`));
 }
 function matchesBasename(normalizedTarget, normalizedCandidate, basenameCounts) {
     const name = normalizedTarget.split("/").at(-1) ?? "";
-    return normalizedCandidate === normalizedTarget ||
-        (basenameCounts.get(name) === 1 && normalizedCandidate.endsWith(`/${name}`));
+    return (normalizedCandidate === normalizedTarget ||
+        (basenameCounts.get(name) === 1 && normalizedCandidate.endsWith(`/${name}`)));
 }
 function matchesCandidate(normalizedTarget, candidate, basenameCounts) {
     if (!normalizedTarget)
@@ -31,7 +32,7 @@ function matchesCandidate(normalizedTarget, candidate, basenameCounts) {
         return matchesFullPath(normalizedTarget, normalizedCandidate);
     return matchesBasename(normalizedTarget, normalizedCandidate, basenameCounts);
 }
-function markUnresolvedTarget({ target, candidates, basenameCounts, unavailable }) {
+function markUnresolvedTarget({ target, candidates, basenameCounts, unavailable, }) {
     const normalizedTarget = normalizeCandidatePath(target);
     if (!normalizedTarget)
         return;
@@ -40,7 +41,7 @@ function markUnresolvedTarget({ target, candidates, basenameCounts, unavailable 
             unavailable.add(candidate);
     }
 }
-export function markUnresolvedReference({ unresolved, candidates, basenameCounts, unavailable }) {
+export function markUnresolvedReference({ unresolved, candidates, basenameCounts, unavailable, }) {
     if (unresolved.resolution !== "unresolved")
         return;
     for (const target of unresolved.targetCandidates)

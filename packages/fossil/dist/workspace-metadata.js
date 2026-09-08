@@ -1,16 +1,17 @@
 import { filterWorkspaceDiscoveryPaths } from "./workspace-exclusion-globs.js";
-import { isDependencyStorePath, isSensitiveWorkspacePath } from "./workspace-path-rules.js";
+import { isDependencyStorePath, isSensitiveWorkspacePath, } from "./workspace-path-rules.js";
 import { compareText } from "./reference-analysis-paths.js";
-/** Parses Git's NUL-delimited path output without changing valid path characters. */
+/** Parses Git's NUL-delimited path output without changing paths. */
 export function parseNulDelimitedPaths(output) {
     return output.split("\0").filter((path) => path !== "");
 }
-/** Reads metadata only for discovered paths outside known dependency-store segments. */
+/** Reads metadata outside known dependency-store segments. */
 export function inspectWorkspaceFileMetadata(paths, readMetadata) {
     return inspectWorkspaceFileMetadataWithWarnings(paths, readMetadata).metadata;
 }
 function inspectWorkspacePath(normalizedPath, readMetadata) {
-    if (isDependencyStorePath(normalizedPath) || isSensitiveWorkspacePath(normalizedPath))
+    if (isDependencyStorePath(normalizedPath) ||
+        isSensitiveWorkspacePath(normalizedPath))
         return {};
     try {
         const file = readMetadata(normalizedPath);
@@ -31,7 +32,7 @@ function inspectWorkspacePath(normalizedPath, readMetadata) {
 function compareWorkspaceWarnings(left, right) {
     return compareText(left.path ?? "", right.path ?? "");
 }
-/** Reads no-follow metadata, reporting unreadable discovered paths without exposing reader errors. */
+/** Reads no-follow metadata without exposing reader errors. */
 export function inspectWorkspaceFileMetadataWithWarnings(paths, readMetadata, excludePatterns = []) {
     const metadata = [];
     const warnings = [];

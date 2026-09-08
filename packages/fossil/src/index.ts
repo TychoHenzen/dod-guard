@@ -48,4 +48,8 @@ export type {
   WorkspaceDebrisFinding,
   WorkspaceFileKind,
 } from "./types.js";
-export type { AnalyzeCommandHandler, FossilCliDependencies, RepositoryAnalysisCore } from "./fossil-cli-core.js";
+export type {
+  AnalyzeCommandHandler,
+  FossilCliDependencies,
+  RepositoryAnalysisCore,
+} from "./fossil-cli-core.js";

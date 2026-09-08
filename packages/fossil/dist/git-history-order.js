@@ -1,9 +1,9 @@
-/** Returns a chronological copy ordered by UTC epoch and ordinal commit hash. */
+/** Returns a chronological copy ordered by UTC epoch and hash. */
 export function sortCommitsChronologically(commits) {
     return [...commits].sort((left, right) => left.committerTimestampMs - right.committerTimestampMs ||
         (left.hash < right.hash ? -1 : left.hash > right.hash ? 1 : 0));
 }
-/** Reports future-dated commits as incomplete history evidence in deterministic order. */
+/** Reports future-dated commits as incomplete history evidence. */
 export function futureCommitWarnings(commits, analysisTimestampMs) {
     return sortCommitsChronologically(commits)
         .filter((commit) => commit.committerTimestampMs > analysisTimestampMs)
@@ -18,7 +18,8 @@ export function emptyHistoryWarnings(commits) {
         ? [
             {
                 code: "empty_repository",
-                message: "Repository has no commits; burst and consolidation history is unavailable.",
+                message: "Repository has no commits; burst and consolidation history is " +
+                    "unavailable.",
             },
         ]
         : [];

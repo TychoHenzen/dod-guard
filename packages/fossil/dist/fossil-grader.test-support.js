@@ -15,7 +15,12 @@ export function referenceEdge(input) {
         language: "typescript",
         kind: input.kind ?? "import",
         strength: input.strength ?? "strong",
-        span: { start: input.start, end: input.start + 1, line: 1, column: input.column },
+        span: {
+            start: input.start,
+            end: input.start + 1,
+            line: 1,
+            column: input.column,
+        },
     };
 }
 //# sourceMappingURL=fossil-grader.test-support.js.map

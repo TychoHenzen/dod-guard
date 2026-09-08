@@ -7,28 +7,46 @@ import {
 } from "./index.js";
 import type { AnalysisErrorCode } from "./types.js";
 
-const TYPED_FAILURE_CASES: ReadonlyArray<readonly [AnalysisErrorCode, number]> = [
-  ["invalid_options", 2],
-  ["not_repository", 1],
-  ["git_capability", 1],
-  ["git_failure", 1],
-  ["containment_failure", 1],
-  ["resource_limit", 1],
+const TYPED_FAILURE_CASES: ReadonlyArray<readonly [AnalysisErrorCode, number]> =
+  [
+    ["invalid_options", 2],
+    ["not_repository", 1],
+    ["git_capability", 1],
+    ["git_failure", 1],
+    ["containment_failure", 1],
+    ["resource_limit", 1],
+  ];
+
+const TYPED_FAILURE_ARGUMENTS = [
+  "node",
+  "fossil",
+  "analyze",
+  "C:/repositories/failing",
+  "--format",
+  "json",
 ];
 
-async function assertTypedFailure(code: AnalysisErrorCode, expectedExitCode: number): Promise<void> {
+async function runTypedFailure(code: AnalysisErrorCode) {
   const stdout: string[] = [];
   const stderr: string[] = [];
-  const exitCode = await runFossilCliProcess(
-    ["node", "fossil", "analyze", "C:/repositories/failing", "--format", "json"],
-    {
-      analyze: async () => {
-        throw new FossilAnalysisError({ code, message: `${code}: \u001b[31mfailed` });
-      },
-      stdout: (message) => stdout.push(message),
-      stderr: (message) => stderr.push(message),
+  const exitCode = await runFossilCliProcess(TYPED_FAILURE_ARGUMENTS, {
+    analyze: async () => {
+      throw new FossilAnalysisError({
+        code,
+        message: `${code}: \u001b[31mfailed`,
+      });
     },
-  );
+    stdout: (message) => stdout.push(message),
+    stderr: (message) => stderr.push(message),
+  });
+  return { exitCode, stdout, stderr };
+}
+
+async function assertTypedFailure(
+  code: AnalysisErrorCode,
+  expectedExitCode: number,
+): Promise<void> {
+  const { exitCode, stdout, stderr } = await runTypedFailure(code);
   assert.equal(exitCode, expectedExitCode);
   assert.equal(stdout.join(""), "");
   assert.equal(stderr.length, 1);
@@ -39,13 +57,18 @@ async function assertTypedFailure(code: AnalysisErrorCode, expectedExitCode: num
 async function assertNotRepositoryFailure(): Promise<void> {
   const stdout: string[] = [];
   const stderr: string[] = [];
-  const exitCode = await runFossilCliProcess(["node", "fossil", "analyze", "C:/not-a-repository"], {
-    analyze: async () => {
-      throw new NotRepositoryAnalysisError(`not a Git repository:\n\x1b[31m${"x".repeat(8_192)}`);
+  const exitCode = await runFossilCliProcess(
+    ["node", "fossil", "analyze", "C:/not-a-repository"],
+    {
+      analyze: async () => {
+        throw new NotRepositoryAnalysisError(
+          `not a Git repository:\n\x1b[31m${"x".repeat(8_192)}`,
+        );
+      },
+      stdout: (message) => stdout.push(message),
+      stderr: (message) => stderr.push(message),
     },
-    stdout: (message) => stdout.push(message),
-    stderr: (message) => stderr.push(message),
-  });
+  );
   assert.equal(exitCode, 1);
   assert.equal(stdout.join(""), "");
   assert.equal(stderr.length, 1);
@@ -61,9 +84,10 @@ async function assertNotRepositoryFailure(): Promise<void> {
   assert.equal(Buffer.byteLength(stderr[0]) <= 4_096, true);
 }
 
-test("maps typed analysis failures to exit codes without success output", async () => {
-  for (const [code, expectedExitCode] of TYPED_FAILURE_CASES) await assertTypedFailure(code, expectedExitCode);
+test("maps typed failures to exit codes without success output", async () => {
+  for (const [code, expectedExitCode] of TYPED_FAILURE_CASES)
+    await assertTypedFailure(code, expectedExitCode);
 });
-test("maps a non-repository analysis failure to one bounded stderr diagnostic and exit code one", async () => {
+test("maps non-repository failure to one bounded diagnostic", async () => {
   await assertNotRepositoryFailure();
 });

@@ -41,7 +41,7 @@ function callerExclusionPatterns(patterns) {
     }
     return accepted;
 }
-/** Filters repository-relative discovery paths with bounded `*`, `?`, and `**` caller exclusion globs. */
+/** Filters repository-relative paths with bounded caller exclusion globs. */
 export function filterWorkspaceDiscoveryPaths(paths, excludePatterns) {
     const acceptedPatterns = callerExclusionPatterns(excludePatterns);
     return paths

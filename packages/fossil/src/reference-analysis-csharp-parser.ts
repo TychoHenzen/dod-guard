@@ -1,8 +1,11 @@
 import type { ParsedReference } from "./types.js";
-import type { ReferenceSourceContent } from "./reference-analysis-types/reference-source-content.js";
+import type {
+  ReferenceSourceContent,
+} from "./reference-analysis-types/reference-source-content.js";
 import { compareText, sourceSpan } from "./reference-analysis-paths.js";
 
-const CSHARP_USING = /^\s*using\s+(?!static\b)([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*;\s*$/gm;
+const CSHARP_USING =
+  /^\s*using\s+(?!static\b)([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*;\s*$/gm;
 
 function braceDepthBefore(content: string, end: number): number {
   let depth = 0;
@@ -18,12 +21,18 @@ function csharpCandidatePaths(
   suffix: string,
 ): string[] {
   return currentSources
-    .filter((candidate) => candidate.language === "csharp" && candidate.path.endsWith(suffix))
+    .filter(
+      (candidate) =>
+        candidate.language === "csharp" && candidate.path.endsWith(suffix),
+    )
     .map((candidate) => candidate.path)
     .sort(compareText);
 }
 
-function csharpTargetCandidates(matches: readonly string[], suffix: string): readonly string[] {
+function csharpTargetCandidates(
+  matches: readonly string[],
+  suffix: string,
+): readonly string[] {
   if (matches.length === 0) return [suffix];
   return matches;
 }
@@ -33,7 +42,9 @@ function csharpTargetPath(matches: readonly string[]): string | undefined {
   return matches[0];
 }
 
-function csharpResolution(matches: readonly string[]): "resolved" | "unresolved" {
+function csharpResolution(
+  matches: readonly string[],
+): "resolved" | "unresolved" {
   if (matches.length === 1) return "resolved";
   return "unresolved";
 }
@@ -69,7 +80,11 @@ export function parsedCsharpReferences(
   if (source.language !== "csharp") return [];
   const references: ParsedReference[] = [];
   CSHARP_USING.lastIndex = 0;
-  for (let match = CSHARP_USING.exec(source.content); match; match = CSHARP_USING.exec(source.content)) {
+  for (
+    let match = CSHARP_USING.exec(source.content);
+    match;
+    match = CSHARP_USING.exec(source.content)
+  ) {
     const reference = csharpReference(source, currentSources, match);
     if (reference) references.push(reference);
   }

@@ -13,7 +13,12 @@ test("renders ANSI styling only when the caller marks table output as a TTY", ()
             fileCount: 1,
         },
         { kind: "survivor", path: "src/survivor.ts" },
-        { kind: "finding", path: "src/finding.ts", score: 0.8, scoreBasis: "full" },
+        {
+            kind: "finding",
+            path: "src/finding.ts",
+            score: 0.8,
+            scoreBasis: "full",
+        },
         findingExplanation("src/candidate.ts", "src/live.ts"),
     ];
     const redirected = renderBurstTableRows(rows, { isTty: false });
@@ -36,7 +41,12 @@ test("escapes control characters from repository-derived table text", () => {
             fileCount: 1,
         },
         { kind: "survivor", path: "src/\u0007survivor.ts" },
-        { kind: "finding", path: "src/\u001b[2Jfinding.ts", score: 0.8, scoreBasis: "full" },
+        {
+            kind: "finding",
+            path: "src/\u001b[2Jfinding.ts",
+            score: 0.8,
+            scoreBasis: "full",
+        },
         findingExplanation("src/candidate\u001b.ts", "src/live\u0085.ts"),
     ];
     const redirected = renderBurstTableRows(rows, { isTty: false });
@@ -49,7 +59,11 @@ test("escapes control characters from repository-derived table text", () => {
     assert.equal(redirected.includes("burst\\u001b[31m\\u000a\\u0085"), true);
     assert.equal(redirected.includes("src/\\u0007survivor.ts"), true);
     assert.equal(redirected.includes("src/\\u001b[2Jfinding.ts"), true);
-    assert.equal(tty.replaceAll("\u001b[1m", "").replaceAll("\u001b[0m", "").split("\n").some(hasTerminalControl), false);
+    assert.equal(tty
+        .replaceAll("\u001b[1m", "")
+        .replaceAll("\u001b[0m", "")
+        .split("\n")
+        .some(hasTerminalControl), false);
     assert.equal(tty.startsWith("\u001b[1mBurst burst\\u001b[31m\\u000a\\u0085"), true);
 });
 //# sourceMappingURL=output-ansi.cases.js.map

@@ -1,5 +1,5 @@
-import { addUnreadableReferenceWarning, emptyReferenceGraph, newReferenceReadCollections, sortReferenceReadEvidence } from "./reference-read-support.js";
-/** Reads eligible sources without letting one unreadable file stop later parsing work. */
+import { addUnreadableReferenceWarning, emptyReferenceGraph, newReferenceReadCollections, sortReferenceReadEvidence, } from "./reference-read-support.js";
+/** Reads eligible sources without stopping on one unreadable file. */
 export function readReferenceSources(sources, readSource) {
     const { readableSources, unavailablePaths, warnings } = newReferenceReadCollections();
     for (const source of sources) {

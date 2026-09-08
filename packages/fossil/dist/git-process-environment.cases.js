@@ -3,7 +3,8 @@ import { EventEmitter } from "node:events";
 import { test } from "node:test";
 import { discoverGitRepository } from "./git-process.js";
 import { repositoryDiscoveryArguments } from "./git-process.test-support.js";
-test("overrides hostile pager and prompt settings while preserving unrelated environment values", () => {
+test("overrides hostile pager and prompt settings while preserving unrelated " +
+    "environment values", () => {
     const calls = [];
     const environment = {
         PATH: "C:/Git/bin",
@@ -38,7 +39,8 @@ test("overrides hostile pager and prompt settings while preserving unrelated env
         GIT_TERMINAL_PROMPT: "1",
     });
 });
-test("adds config overrides that disable repository filesystem monitors and external diff helpers", () => {
+test("adds config overrides that disable repository filesystem monitors and " +
+    "external diff helpers", () => {
     const calls = [];
     const runGit = (_command, arguments_) => {
         calls.push({ arguments_ });

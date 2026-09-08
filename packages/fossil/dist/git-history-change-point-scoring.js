@@ -6,7 +6,9 @@ function commitFiles(commit, identities) {
     return new Set(commit.changes.map((change) => identities.get(change) ?? change.path));
 }
 export function partitionQualifies(commits, identities) {
-    return commits.length >= 5 && new Set(commits.flatMap((commit) => [...commitFiles(commit, identities)])).size >= 3;
+    return (commits.length >= 5 &&
+        new Set(commits.flatMap((commit) => [...commitFiles(commit, identities)]))
+            .size >= 3);
 }
 function fileTouchCounts(touchedByCommit) {
     const touches = new Map();

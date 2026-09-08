@@ -1,8 +1,15 @@
 import type { ParsedReference } from "./types.js";
-import type { ReferenceSourceContent } from "./reference-analysis-types/reference-source-content.js";
-import { compareText, sourceSpan, targetCandidates } from "./reference-analysis-paths.js";
+import type {
+  ReferenceSourceContent,
+} from "./reference-analysis-types/reference-source-content.js";
+import {
+  compareText,
+  sourceSpan,
+  targetCandidates,
+} from "./reference-analysis-paths.js";
 
-const STATIC_IMPORT = /\bimport\s+(?:[^"'`;\r\n]*?\s+from\s+)?(["'])([^"'\r\n]+)\1/g;
+const STATIC_IMPORT =
+  /\bimport\s+(?:[^"'`;\r\n]*?\s+from\s+)?(["'])([^"'\r\n]+)\1/g;
 const REQUIRE_CALL = /\brequire\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
 const DYNAMIC_IMPORT = /\bimport\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
 
@@ -25,7 +32,8 @@ function moduleReference(
   if (!quote) return undefined;
   if (!specifier) return undefined;
   if (match.index === undefined) return undefined;
-  const start = match.index + match[0].lastIndexOf(`${quote}${specifier}${quote}`) + 1;
+  const start =
+    match.index + match[0].lastIndexOf(`${quote}${specifier}${quote}`) + 1;
   return {
     sourcePath: source.path,
     targetCandidates: targetCandidates(source.path, specifier),
@@ -37,7 +45,10 @@ function moduleReference(
   };
 }
 
-function compareModuleReferences(left: ParsedReference, right: ParsedReference): number {
+function compareModuleReferences(
+  left: ParsedReference,
+  right: ParsedReference,
+): number {
   return (
     compareText(left.sourcePath, right.sourcePath) ||
     left.span.start - right.span.start ||
@@ -45,7 +56,9 @@ function compareModuleReferences(left: ParsedReference, right: ParsedReference):
   );
 }
 
-export function parsedModuleReferences(source: ReferenceSourceContent): ParsedReference[] {
+export function parsedModuleReferences(
+  source: ReferenceSourceContent,
+): ParsedReference[] {
   if (!isModuleSource(source)) return [];
   const patterns: readonly ModulePattern[] = [
     { kind: "import", pattern: STATIC_IMPORT },
@@ -55,7 +68,11 @@ export function parsedModuleReferences(source: ReferenceSourceContent): ParsedRe
   const references: ParsedReference[] = [];
   for (const { kind, pattern } of patterns) {
     pattern.lastIndex = 0;
-    for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
+    for (
+      let match = pattern.exec(source.content);
+      match;
+      match = pattern.exec(source.content)
+    ) {
       const reference = moduleReference(source, kind, match);
       if (reference) references.push(reference);
     }

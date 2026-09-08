@@ -2,11 +2,11 @@ import { parsedCsharpReferences } from "./reference-analysis-csharp-parser.js";
 import { referenceGraph } from "./reference-analysis-graph-builder.js";
 import { parsedModuleReferences } from "./reference-analysis-module-parser.js";
 import { parsedRustReferences } from "./reference-analysis-rust-parser.js";
-/** Parses and resolves supported TypeScript and JavaScript module references from current source inventory. */
+/** Parses and resolves supported TypeScript and JavaScript modules. */
 export function analyzeJavaScriptReferences(sources) {
     return referenceGraph(sources.flatMap(parsedModuleReferences), sources);
 }
-/** Parses and resolves the currently supported TypeScript, JavaScript, C#, and Rust reference forms. */
+/** Parses and resolves supported TypeScript, JavaScript, C#, and Rust forms. */
 export function analyzeReferences(sources) {
     return referenceGraph(sources.flatMap((source) => [
         ...parsedModuleReferences(source),

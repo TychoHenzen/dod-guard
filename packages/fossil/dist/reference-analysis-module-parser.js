@@ -1,4 +1,4 @@
-import { compareText, sourceSpan, targetCandidates } from "./reference-analysis-paths.js";
+import { compareText, sourceSpan, targetCandidates, } from "./reference-analysis-paths.js";
 const STATIC_IMPORT = /\bimport\s+(?:[^"'`;\r\n]*?\s+from\s+)?(["'])([^"'\r\n]+)\1/g;
 const REQUIRE_CALL = /\brequire\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
 const DYNAMIC_IMPORT = /\bimport\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;

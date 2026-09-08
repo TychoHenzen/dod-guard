@@ -12,7 +12,13 @@ test("keeps copied and recreated paths in separate logical generations", () => {
     {
       hash: "copy-source",
       committerTimestampMs: 2_000,
-      changes: [{ status: "copied", previousPath: "src/source.ts", path: "src/copy.ts" }],
+      changes: [
+        {
+          status: "copied",
+          previousPath: "src/source.ts",
+          path: "src/copy.ts",
+        },
+      ],
     },
     {
       hash: "modify-source",
@@ -35,9 +41,15 @@ test("keeps copied and recreated paths in separate logical generations", () => {
       changes: [{ status: "added", path: "src/recreated.ts" }],
     },
   ]);
-  const source = activities.find((activity) => activity.identity === "src/source.ts");
-  const copy = activities.find((activity) => activity.identity === "src/copy.ts");
-  const recreations = activities.filter((activity) => activity.paths[0] === "src/recreated.ts");
+  const source = activities.find(
+    (activity) => activity.identity === "src/source.ts",
+  );
+  const copy = activities.find(
+    (activity) => activity.identity === "src/copy.ts",
+  );
+  const recreations = activities.filter(
+    (activity) => activity.paths[0] === "src/recreated.ts",
+  );
 
   assert.deepEqual(source, {
     identity: "src/source.ts",

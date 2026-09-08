@@ -1,5 +1,6 @@
 import { changesByIdentity, commitsWithIdentity, filePath, finalCommitIndex, partitionCommits, } from "./git-history-burst-helpers.js";
-function burstFile({ identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution }) {
+function burstFile(input) {
+    const { identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution, } = input;
     const activity = activitiesByIdentity.get(identity);
     return {
         identity,
@@ -11,11 +12,18 @@ function burstFile({ identity, changes, commits, fullChronologicalHistory, final
     };
 }
 export function assembleBurst(input) {
-    const { partition, fullChronologicalHistory, activitiesByIdentity, resolution, commitByHash, commitIndexByHash } = input;
-    const commits = partitionCommits(partition, commitByHash);
-    const identities = changesByIdentity(commits, resolution.identitiesByChange);
-    const finalIndex = finalCommitIndex(commits, commitIndexByHash);
-    const files = [...identities].map(([identity, changes]) => burstFile({ identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution }));
+    const commits = partitionCommits(input.partition, input.commitByHash);
+    const identities = changesByIdentity(commits, input.resolution.identitiesByChange);
+    const finalIndex = finalCommitIndex(commits, input.commitIndexByHash);
+    const files = [...identities].map(([identity, changes]) => burstFile({
+        identity,
+        changes,
+        commits,
+        fullChronologicalHistory: input.fullChronologicalHistory,
+        finalIndex,
+        activitiesByIdentity: input.activitiesByIdentity,
+        resolution: input.resolution,
+    }));
     const first = commits[0];
     const last = commits.at(-1);
     if (!(first && last))

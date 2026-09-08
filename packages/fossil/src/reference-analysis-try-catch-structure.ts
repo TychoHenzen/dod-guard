@@ -5,7 +5,11 @@ function isTryCatchBlock(state: TryCatchState): boolean {
   return state.pendingBody === "catch" && state.catchParameterDepth === 0;
 }
 
-function consumeBrace(content: string, index: number, state: TryCatchState): number | undefined {
+function consumeBrace(
+  content: string,
+  index: number,
+  state: TryCatchState,
+): number | undefined {
   if (content[index] === "{") {
     const kind = isTryCatchBlock(state);
     state.stack.push({ kind, start: index });
@@ -18,6 +22,10 @@ function consumeBrace(content: string, index: number, state: TryCatchState): num
   return index;
 }
 
-export function consumeTryCatchStructuralCharacter(content: string, index: number, state: TryCatchState): number {
+export function consumeTryCatchStructuralCharacter(
+  content: string,
+  index: number,
+  state: TryCatchState,
+): number {
   return consumeBrace(content, index, state) ?? index;
 }

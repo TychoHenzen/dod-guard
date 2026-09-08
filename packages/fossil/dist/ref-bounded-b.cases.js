@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readBoundedReferenceSources } from "./ref-analyzer.js";
-test("stops all later source reads when the total content budget is reached or exceeded", () => {
+test("stops all later source reads when the total content budget is reached or " +
+    "exceeded", () => {
     const exactMetadataReads = [];
     const exactContentReads = [];
     const exactLimit = readBoundedReferenceSources({
@@ -34,7 +35,13 @@ test("stops all later source reads when the total content budget is reached or e
         ],
         readMetadata: (source) => {
             metadataReads.push(source.path);
-            return { byteLength: source.path === "src/accepted.ts" ? 6 : source.path === "src/exceeds.ts" ? 5 : 1 };
+            return {
+                byteLength: source.path === "src/accepted.ts"
+                    ? 6
+                    : source.path === "src/exceeds.ts"
+                        ? 5
+                        : 1,
+            };
         },
         readSource: (source) => {
             contentReads.push(source.path);

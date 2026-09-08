@@ -28,7 +28,9 @@ export function pipedChild() {
   };
 }
 
-export function repositoryDiscoveryArguments(repositoryPath: string): readonly string[] {
+export function repositoryDiscoveryArguments(
+  repositoryPath: string,
+): readonly string[] {
   return [
     "--no-pager",
     "-c",
@@ -42,10 +44,15 @@ export function repositoryDiscoveryArguments(repositoryPath: string): readonly s
   ];
 }
 
-export async function assertResourceLimit(result: Promise<unknown>, message: string): Promise<void> {
+export async function assertResourceLimit(
+  result: Promise<unknown>,
+  message: string,
+): Promise<void> {
   await assert.rejects(
     result,
     (error: unknown) =>
-      error instanceof FossilAnalysisError && error.code === "resource_limit" && error.message === message,
+      error instanceof FossilAnalysisError &&
+      error.code === "resource_limit" &&
+      error.message === message,
   );
 }

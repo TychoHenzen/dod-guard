@@ -2,4 +2,4 @@
 export { analyzeRepository, createFossilProgram, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS, FossilAnalysisError, FossilUsageError, NotRepositoryAnalysisError, runFossilCli, runFossilCliProcess, } from "./fossil-cli-core.js";
 export { REPORT_SCHEMA_VERSION } from "./types.js";
 export type { AnalysisBoundary, AnalysisErrorCode, AnalysisErrorDetails, AnalysisOptions, AnalyzeRepositoryResult, AnalysisWarning, Burst, BurstAnalysis, BurstFileActivity, BurstReport, Completeness, FindingClassification, FossilFinding, FossilReport, FossilSubscores, GitCommit, GitFileChange, IgnoreSource, LogicalFileActivity, NormalizedAnalysisOptions, OutputFormat, ParsedReference, ReferenceAvailability, ReferenceEdge, ReferenceGraph, ReferenceKind, ReferenceResolution, ReferenceStrength, ReportStatistics, ResourceLimits, ResourceUsage, SourceLanguage, SourceSpan, UnresolvedReference, WorkspaceDebrisFinding, WorkspaceFileKind, } from "./types.js";
-export type { AnalyzeCommandHandler, FossilCliDependencies, RepositoryAnalysisCore } from "./fossil-cli-core.js";
+export type { AnalyzeCommandHandler, FossilCliDependencies, RepositoryAnalysisCore, } from "./fossil-cli-core.js";

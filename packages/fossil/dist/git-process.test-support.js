@@ -39,6 +39,8 @@ export function repositoryDiscoveryArguments(repositoryPath) {
     ];
 }
 export async function assertResourceLimit(result, message) {
-    await assert.rejects(result, (error) => error instanceof FossilAnalysisError && error.code === "resource_limit" && error.message === message);
+    await assert.rejects(result, (error) => error instanceof FossilAnalysisError &&
+        error.code === "resource_limit" &&
+        error.message === message);
 }
 //# sourceMappingURL=git-process.test-support.js.map

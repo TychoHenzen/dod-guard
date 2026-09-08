@@ -1,7 +1,34 @@
-const DEPENDENCY_STORE_SEGMENTS = new Set(["node_modules", "vendor", ".pnpm-store", ".yarn", ".cargo"]);
-const SENSITIVE_DIRECTORY_SEGMENTS = new Set([".aws", ".ssh", ".gnupg", ".kube"]);
-const SENSITIVE_BASENAMES = new Set([".env", ".npmrc", ".pypirc", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"]);
-const SENSITIVE_EXTENSIONS = [".pem", ".key", ".p12", ".pfx", ".crt", ".cer", ".kdbx"] as const;
+const DEPENDENCY_STORE_SEGMENTS = new Set([
+  "node_modules",
+  "vendor",
+  ".pnpm-store",
+  ".yarn",
+  ".cargo",
+]);
+const SENSITIVE_DIRECTORY_SEGMENTS = new Set([
+  ".aws",
+  ".ssh",
+  ".gnupg",
+  ".kube",
+]);
+const SENSITIVE_BASENAMES = new Set([
+  ".env",
+  ".npmrc",
+  ".pypirc",
+  "id_rsa",
+  "id_dsa",
+  "id_ecdsa",
+  "id_ed25519",
+]);
+const SENSITIVE_EXTENSIONS = [
+  ".pem",
+  ".key",
+  ".p12",
+  ".pfx",
+  ".crt",
+  ".cer",
+  ".kdbx",
+] as const;
 
 export function normalizeWorkspacePath(path: string): string {
   return path.replaceAll("\\", "/");

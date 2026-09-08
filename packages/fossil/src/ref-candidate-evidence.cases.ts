@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  analyzeJavaScriptReferences,
   markUnresolvedCandidateEvidence,
   regradeVestigialEdges,
 } from "./ref-analyzer.js";
+import "./ref-candidate-strength.cases.js";
 
-test("regrades only candidate-to-candidate edges without mutating the graph", () => {
+test(
+  "regrades only candidate-to-candidate edges without mutating the graph",
+  () => {
   const graph = {
     edges: [
       {
@@ -46,7 +48,9 @@ test("regrades only candidate-to-candidate edges without mutating the graph", ()
   assert.equal(graph.edges[0].strength, "strong");
 });
 
-test("marks only tail or uniquely named unresolved candidate paths unavailable", () => {
+test(
+  "marks only tail or uniquely named unresolved candidate paths unavailable",
+  () => {
   const graph = {
     edges: [],
     unresolved: [
@@ -72,25 +76,20 @@ test("marks only tail or uniquely named unresolved candidate paths unavailable",
   };
   const result = markUnresolvedCandidateEvidence(
     graph,
-    new Set(["src/lib/tail.ts", "src/unique.ts", "a/shared.ts", "b/shared.ts", "src/retail.ts", "src/package.ts"]),
+    new Set([
+      "src/lib/tail.ts",
+      "src/unique.ts",
+      "a/shared.ts",
+      "b/shared.ts",
+      "src/retail.ts",
+      "src/package.ts",
+    ]),
   );
-  assert.deepEqual(result.unavailablePaths, ["existing.ts", "src/lib/tail.ts", "src/unique.ts"]);
+  assert.deepEqual(result.unavailablePaths, [
+    "existing.ts",
+    "src/lib/tail.ts",
+    "src/unique.ts",
+  ]);
   assert.equal(result.complete, false);
   assert.deepEqual(graph.unavailablePaths, ["existing.ts"]);
-});
-
-test("keeps a mixed fallback and ordinary import use strong", () => {
-  const graph = analyzeJavaScriptReferences([
-    {
-      path: "src/live.ts",
-      language: "typescript",
-      content:
-        'import { candidate } from "./candidate";\nif (fallbackMode) {\n  if (enabled) { candidate(); }\n}\nexport const ordinary = candidate();\n',
-    },
-    { path: "src/candidate.ts", language: "typescript", content: "" },
-  ]);
-  assert.deepEqual(
-    graph.edges.map((edge) => edge.strength),
-    ["strong"],
-  );
 });

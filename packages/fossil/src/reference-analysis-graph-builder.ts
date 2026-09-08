@@ -1,5 +1,7 @@
 import type { ParsedReference, ReferenceGraph } from "./types.js";
-import type { ReferenceSourceContent } from "./reference-analysis-types/reference-source-content.js";
+import type {
+  ReferenceSourceContent,
+} from "./reference-analysis-types/reference-source-content.js";
 import { strengthForReference } from "./reference-analysis-strength.js";
 
 interface ResolvedReference {
@@ -7,14 +9,24 @@ interface ResolvedReference {
   targetPath: string | undefined;
 }
 
-function resolvedTarget(reference: ParsedReference, paths: ReadonlySet<string>): string | undefined {
+function resolvedTarget(
+  reference: ParsedReference,
+  paths: ReadonlySet<string>,
+): string | undefined {
   if (reference.targetPath !== undefined) return reference.targetPath;
   if (reference.language === "csharp") return undefined;
   return reference.targetCandidates.find((candidate) => paths.has(candidate));
 }
 
 function unresolvedReference({
-  reference: { sourcePath, targetCandidates: candidates, language, kind, span, resolution },
+  reference: {
+    sourcePath,
+    targetCandidates: candidates,
+    language,
+    kind,
+    span,
+    resolution,
+  },
   targetPath,
 }: ResolvedReference) {
   return {
@@ -23,7 +35,10 @@ function unresolvedReference({
     language,
     kind,
     span,
-    resolution: resolution === "external" ? ("external" as const) : ("unresolved" as const),
+    resolution:
+      resolution === "external"
+        ? ("external" as const)
+        : ("unresolved" as const),
   };
 }
 

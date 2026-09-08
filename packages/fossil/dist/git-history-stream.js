@@ -24,7 +24,10 @@ function parsedChange(tokens, index) {
         const path = tokens[index + 2];
         if (path === undefined)
             return undefined;
-        return { change: { status, path, previousPath: firstPath }, nextIndex: index + 3 };
+        return {
+            change: { status, path, previousPath: firstPath },
+            nextIndex: index + 3,
+        };
     }
     return { change: { status, path: firstPath }, nextIndex: index + 2 };
 }
@@ -40,7 +43,7 @@ function parseChanges(tokens) {
     }
     return changes;
 }
-/** Parses the NUL-delimited non-merge stream requested by nonMergeGitLogArguments(). */
+/** Parses the NUL-delimited stream requested by nonMergeGitLogArguments(). */
 export function parseNonMergeGitLog(rawLog) {
     const commits = [];
     for (const record of rawLog.split(RECORD_SEPARATOR)) {

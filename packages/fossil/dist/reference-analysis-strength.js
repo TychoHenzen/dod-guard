@@ -1,5 +1,5 @@
-import { guardedReferenceStrength } from "./reference-analysis-strength-guards.js";
-import { importReferenceStrength } from "./reference-analysis-strength-import.js";
+import { guardedReferenceStrength, } from "./reference-analysis-strength-guards.js";
+import { importReferenceStrength, } from "./reference-analysis-strength-import.js";
 function isGuardReference(reference) {
     if (reference.kind === "csharp-using")
         return true;

@@ -1,5 +1,5 @@
 import * as history from "./git-analyzer.js";
-import { markUnresolvedCandidateEvidence, regradeVestigialEdges } from "./ref-analyzer.js";
+import { markUnresolvedCandidateEvidence, regradeVestigialEdges, } from "./ref-analyzer.js";
 import { candidateFinding } from "./repository-analysis-candidate-finding.js";
 function buildBurstReport(burst, references, threshold) {
     const candidates = history.selectFossilCandidates(burst.files);

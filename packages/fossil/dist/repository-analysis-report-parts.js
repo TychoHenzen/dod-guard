@@ -4,7 +4,12 @@ export function reportBoundary(repositoryRoot, canonicalRepositoryRoot) {
     return {
         repositoryRoot,
         canonicalRepositoryRoot,
-        unobservedMechanisms: ["dynamic runtime loading", "reflection", "external consumers", "generated configuration"],
+        unobservedMechanisms: [
+            "dynamic runtime loading",
+            "reflection",
+            "external consumers",
+            "generated configuration",
+        ],
     };
 }
 export function reportLimits() {
@@ -33,7 +38,8 @@ export function reportUsage(historyStage, workspaceStage) {
 export function reportCompleteness(warnings, referenceComplete) {
     return {
         historyComplete: !warnings.some((warning) => ["empty_repository", "future_commit", "shallow_history"].includes(warning.code)),
-        referenceAnalysisComplete: referenceComplete && !warnings.some((warning) => warning.code === "sparse_checkout"),
+        referenceAnalysisComplete: referenceComplete &&
+            !warnings.some((warning) => warning.code === "sparse_checkout"),
         workspaceDebrisComplete: !warnings.some((warning) => warning.code === "sparse_checkout"),
     };
 }

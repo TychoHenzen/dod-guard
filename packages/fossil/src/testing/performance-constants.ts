@@ -1,4 +1,6 @@
-import type { PerformanceFixtureSpec } from "./performance-types/performance-fixture-spec.js";
+import type {
+  PerformanceFixtureSpec,
+} from "./performance-types/performance-fixture-spec.js";
 
 export const TARGET_PERFORMANCE_COMMIT_COUNT = 5_000;
 export const TARGET_PERFORMANCE_FILE_COUNT = 1_000;

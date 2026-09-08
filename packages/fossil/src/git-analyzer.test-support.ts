@@ -1,11 +1,16 @@
 import { afterEach } from "node:test";
 import { splitAtChangePoint } from "./git-analyzer.js";
-import { createTemporaryRepository, type TemporaryRepository } from "./testing/fixtures.js";
+import {
+  createTemporaryRepository,
+  type TemporaryRepository,
+} from "./testing/fixtures.js";
 
 const repositories: TemporaryRepository[] = [];
 
 afterEach(async () => {
-  await Promise.all(repositories.splice(0).map((repository) => repository.cleanup()));
+  await Promise.all(
+    repositories.splice(0).map((repository) => repository.cleanup()),
+  );
 });
 
 export async function temporaryRepository(): Promise<TemporaryRepository> {
@@ -14,7 +19,10 @@ export async function temporaryRepository(): Promise<TemporaryRepository> {
   return repository;
 }
 
-export function changePointCommits(fileSets: readonly (readonly string[])[], gapsBefore: ReadonlyMap<number, number>) {
+export function changePointCommits(
+  fileSets: readonly (readonly string[])[],
+  gapsBefore: ReadonlyMap<number, number>,
+) {
   let timestamp = 0;
   return fileSets.map((paths, index) => {
     if (index > 0) timestamp += gapsBefore.get(index) ?? 60 * 60 * 1_000;
@@ -30,7 +38,9 @@ export function changePointPartitionLengths(
   fileSets: readonly (readonly string[])[],
   gapsBefore: ReadonlyMap<number, number>,
 ) {
-  return splitAtChangePoint(changePointCommits(fileSets, gapsBefore)).map((partition) => partition.length);
+  return splitAtChangePoint(changePointCommits(fileSets, gapsBefore)).map(
+    (partition) => partition.length,
+  );
 }
 
 function fileActivity(input: {

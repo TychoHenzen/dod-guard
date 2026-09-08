@@ -1,6 +1,6 @@
 import type { SyntaxView } from "./reference-analysis-types/syntax-view.js";
 export declare function hasFallbackToken(text: string): boolean;
-export declare function balancedClose({ code, open, opening, closing }: {
+export declare function balancedClose({ code, open, opening, closing, }: {
     code: string;
     open: number;
     opening: string;

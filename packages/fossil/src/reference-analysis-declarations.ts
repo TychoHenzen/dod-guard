@@ -10,7 +10,9 @@ function namedBindings(declaration: string): string[] {
 
 export function localImportBindings(declaration: string): string[] {
   const bindings = new Set<string>();
-  const defaultBinding = /^\s*import\s+([A-Za-z_$][\w$]*)\s*(?:,|from\b)/.exec(declaration)?.[1];
+  const defaultBinding = /^\s*import\s+([A-Za-z_$][\w$]*)\s*(?:,|from\b)/.exec(
+    declaration,
+  )?.[1];
   addBinding(bindings, defaultBinding);
   addBinding(bindings, /\*\s+as\s+([A-Za-z_$][\w$]*)/.exec(declaration)?.[1]);
   for (const namedBinding of namedBindings(declaration)) {
@@ -23,9 +25,14 @@ export function localImportBindings(declaration: string): string[] {
   return [...bindings];
 }
 
-export function declarationRange(content: string, position: number): ReferenceRange {
+export function declarationRange(
+  content: string,
+  position: number,
+): ReferenceRange {
   const start = content.lastIndexOf("\n", position) + 1;
   const nextNewline = content.indexOf("\n", position);
   return { start, end: nextNewline === -1 ? content.length : nextNewline };
 }
-import type { ReferenceRange } from "./reference-analysis-types/reference-range.js";
+import type {
+  ReferenceRange,
+} from "./reference-analysis-types/reference-range.js";

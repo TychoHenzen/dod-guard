@@ -32,7 +32,9 @@ test("selects only files with at least three post-burst commits", () => {
   assert.equal(files[1].postBurstCommits, 2);
 });
 
-test("selects positive relative survivors inclusively with absolute survivors", () => {
+test(
+  "selects positive relative survivors inclusively with absolute survivors",
+  () => {
   const files = [
     {
       identity: "absolute",
@@ -65,7 +67,9 @@ test("selects positive relative survivors inclusively with absolute survivors", 
   assert.deepEqual(selectSurvivors(files), [files[0], files[1], files[3]]);
 });
 
-test("does not select relative survivors when every post-burst count is zero", () => {
+test(
+  "does not select relative survivors when every post-burst count is zero",
+  () => {
   const files = [
     {
       identity: "first",

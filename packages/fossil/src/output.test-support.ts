@@ -1,6 +1,9 @@
 import type { WorkspaceDebrisFinding } from "./types.js";
 
-export function finding(path: string, kind: "untracked" | "ignored"): WorkspaceDebrisFinding {
+export function finding(
+  path: string,
+  kind: "untracked" | "ignored",
+): WorkspaceDebrisFinding {
   return {
     classification: "advisory",
     review: "possible workspace debris",

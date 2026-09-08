@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { workspaceDebrisTableRows } from "./output.js";
 import { finding } from "./output.test-support.js";
-test("summarizes ignored trees of at least twenty findings only in normal table rows", () => {
+test("summarizes ignored trees of at least twenty findings only in normal table " +
+    "rows", () => {
     const findings = [
         ...Array.from({ length: 20 }, (_, index) => finding(`generated/file-${index}.tmp`, "ignored")),
         finding("logs/one.tmp", "ignored"),

@@ -1,11 +1,5 @@
-import { runGitCommand } from "./git-process-boundary.js";
-import type { NormalizedAnalysisOptions } from "./types.js";
-export declare function analyzeWorkspaceStage({ root, options, runGit, analysisTimestampMs }: {
-    root: string;
-    options: NormalizedAnalysisOptions;
-    runGit: typeof runGitCommand;
-    analysisTimestampMs: number;
-}): Promise<{
+import type { WorkspaceStageInput } from "./repository-analysis-workspace-input.js";
+export declare function analyzeWorkspaceStage(input: WorkspaceStageInput): Promise<{
     references: {
         sources: readonly import("./reference-analysis-core.js").ReferenceSourceContent[];
         warnings: readonly import("./types.js").AnalysisWarning[];
@@ -17,7 +11,7 @@ export declare function analyzeWorkspaceStage({ root, options, runGit, analysisT
             unresolved: readonly import("./types.js").UnresolvedReference[];
         };
     };
-    workspaceCandidates: (import("./workspace-debris.js").IgnoredWorkspaceCandidate | import("./workspace-debris.js").UntrackedWorkspaceCandidate)[];
+    workspaceCandidates: (import("./workspace-debris.js").UntrackedWorkspaceCandidate | import("./workspace-debris.js").IgnoredWorkspaceCandidate)[];
     inventory: string[];
     warnings: import("./types.js").AnalysisWarning[];
     gitOutputs: import("./git-process-boundary.js").CollectedGitOutput[];

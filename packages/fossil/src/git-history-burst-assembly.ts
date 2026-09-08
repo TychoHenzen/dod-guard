@@ -1,6 +1,16 @@
-import type { Burst, GitCommit, GitFileChange, LogicalFileActivity } from "./types.js";
-import type { AssembleBurstInput } from "./git-history-types/assemble-burst-input.js";
-import type { LogicalIdentityResolution } from "./git-history-types/logical-identity-resolution.js";
+import type {
+  Burst,
+  GitCommit,
+  GitFileChange,
+  LogicalFileActivity,
+} from "./types.js";
+import type {
+  AssembleBurstInput,
+} from "./git-history-types/assemble-burst-input.js";
+import type { BurstFileInput } from "./git-history-types/burst-file-input.js";
+import type {
+  LogicalIdentityResolution,
+} from "./git-history-types/logical-identity-resolution.js";
 import {
   changesByIdentity,
   commitsWithIdentity,
@@ -9,37 +19,54 @@ import {
   partitionCommits,
 } from "./git-history-burst-helpers.js";
 
-function burstFile({ identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution }: {
-  identity: string;
-  changes: readonly GitFileChange[];
-  commits: readonly GitCommit[];
-  fullChronologicalHistory: readonly GitCommit[];
-  finalIndex: number;
-  activitiesByIdentity: ReadonlyMap<string, LogicalFileActivity>;
-  resolution: LogicalIdentityResolution;
-}) {
+function burstFile(input: BurstFileInput) {
+  const {
+    identity,
+    changes,
+    commits,
+    fullChronologicalHistory,
+    finalIndex,
+    activitiesByIdentity,
+    resolution,
+  } = input;
   const activity = activitiesByIdentity.get(identity);
   return {
     identity,
     path: filePath(activity, changes, identity),
-    burstCommits: commitsWithIdentity(commits, identity, resolution.identitiesByChange),
+    burstCommits: commitsWithIdentity(
+      commits,
+      identity,
+      resolution.identitiesByChange,
+    ),
     postBurstCommits: commitsWithIdentity(
       fullChronologicalHistory.slice(finalIndex + 1),
       identity,
       resolution.identitiesByChange,
     ),
-    createdInBurst: changes.some((change) => change.status === "added" || change.status === "copied"),
+    createdInBurst: changes.some(
+      (change) => change.status === "added" || change.status === "copied",
+    ),
     existsAtHead: activity?.existsAtHead ?? true,
   };
 }
 
 export function assembleBurst(input: AssembleBurstInput): Burst {
-  const { partition, fullChronologicalHistory, activitiesByIdentity, resolution, commitByHash, commitIndexByHash } = input;
-  const commits = partitionCommits(partition, commitByHash);
-  const identities = changesByIdentity(commits, resolution.identitiesByChange);
-  const finalIndex = finalCommitIndex(commits, commitIndexByHash);
+  const commits = partitionCommits(input.partition, input.commitByHash);
+  const identities = changesByIdentity(
+    commits,
+    input.resolution.identitiesByChange,
+  );
+  const finalIndex = finalCommitIndex(commits, input.commitIndexByHash);
   const files = [...identities].map(([identity, changes]) =>
-    burstFile({ identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution }),
+    burstFile({
+      identity,
+      changes,
+      commits,
+      fullChronologicalHistory: input.fullChronologicalHistory,
+      finalIndex,
+      activitiesByIdentity: input.activitiesByIdentity,
+      resolution: input.resolution,
+    }),
   );
   const first = commits[0];
   const last = commits.at(-1);

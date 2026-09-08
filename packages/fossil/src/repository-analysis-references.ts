@@ -30,10 +30,22 @@ function inspectReferenceSource(root: string, source: ReferenceCandidate) {
   };
 }
 
-export function referenceSources(root: string, paths: readonly string[]) {
-  const candidates: ReferenceCandidate[] = paths.map((path) => ({ path, language: languageForPath(path) }));
-  const supported = candidates.filter((candidate) => candidate.language !== "unsupported");
-  const readSource = (source: ReferenceCandidate) => readFileSync(join(root, source.path), "utf8");
+function referenceCandidates(paths: readonly string[]): ReferenceCandidate[] {
+  return paths.map((path) => ({
+    path,
+    language: languageForPath(path),
+  }));
+}
+
+function readReferenceSources(
+  root: string,
+  candidates: readonly ReferenceCandidate[],
+) {
+  const supported = candidates.filter(
+    (candidate) => candidate.language !== "unsupported",
+  );
+  const readSource = (source: ReferenceCandidate) =>
+    readFileSync(join(root, source.path), "utf8");
   const reads = readStableReferenceSources({
     sources: supported,
     boundary: {
@@ -41,17 +53,35 @@ export function referenceSources(root: string, paths: readonly string[]) {
       read: readSource,
     },
   });
-  const unsupported = unsupportedCandidateReferenceGraph(candidates);
+  return reads;
+}
+
+function completeReferenceGraph(
+  reads: ReturnType<typeof readReferenceSources>,
+  unsupported: ReturnType<typeof unsupportedCandidateReferenceGraph>,
+) {
   const graph = analyzeReferences(reads.sources);
+  return {
+    ...graph,
+    complete: reads.graph.complete && unsupported.complete,
+    unavailablePaths: [
+      ...new Set([
+        ...reads.graph.unavailablePaths,
+        ...unsupported.unavailablePaths,
+      ]),
+    ].sort(),
+  };
+}
+
+export function referenceSources(root: string, paths: readonly string[]) {
+  const candidates = referenceCandidates(paths);
+  const reads = readReferenceSources(root, candidates);
+  const unsupported = unsupportedCandidateReferenceGraph(candidates);
   return {
     sources: reads.sources,
     warnings: reads.warnings,
     acceptedBytes: reads.acceptedBytes,
-    graph: {
-      ...graph,
-      complete: reads.graph.complete && unsupported.complete,
-      unavailablePaths: [...new Set([...reads.graph.unavailablePaths, ...unsupported.unavailablePaths])].sort(),
-    },
+    graph: completeReferenceGraph(reads, unsupported),
   };
 }
 

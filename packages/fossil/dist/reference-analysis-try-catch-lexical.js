@@ -1,22 +1,4 @@
-function isQuote(character) {
-    return character === '"' || character === "'" || character === "`";
-}
-function consumeLineComment(content, index, state) {
-    if (!state.lineComment)
-        return undefined;
-    if (content[index] === "\n")
-        state.lineComment = false;
-    return index;
-}
-function consumeBlockComment(content, index, state) {
-    if (!state.blockComment)
-        return undefined;
-    if (content[index] === "*" && content[index + 1] === "/") {
-        state.blockComment = false;
-        return index + 1;
-    }
-    return index;
-}
+import { consumeBlockComment, consumeLineComment, startComment, startQuote, } from "./reference-analysis-try-catch-handlers.js";
 function consumeQuote(content, index, state) {
     if (!state.quote)
         return undefined;
@@ -24,22 +6,6 @@ function consumeQuote(content, index, state) {
         return index + 1;
     if (content[index] === state.quote)
         state.quote = "";
-    return index;
-}
-function startComment(content, index, state) {
-    const character = content[index];
-    const next = content[index + 1];
-    if (character !== "/" || (next !== "/" && next !== "*"))
-        return undefined;
-    state.lineComment = next === "/";
-    state.blockComment = next === "*";
-    return index + 1;
-}
-function startQuote(content, index, state) {
-    const character = content[index];
-    if (!isQuote(character))
-        return undefined;
-    state.quote = character;
     return index;
 }
 function wordEnd(content, index) {

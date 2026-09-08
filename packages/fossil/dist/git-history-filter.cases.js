@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { filterHistoryByExtensions, normalizeExtensions } from "./git-analyzer.js";
-test("filters whole rename identities without discarding cross-extension source history", () => {
+import { filterHistoryByExtensions, normalizeExtensions, } from "./git-analyzer.js";
+test("filters whole rename identities without discarding cross-extension source " +
+    "history", () => {
     const fullHistory = [
         {
             hash: "one",
@@ -11,7 +12,13 @@ test("filters whole rename identities without discarding cross-extension source 
         {
             hash: "two",
             committerTimestampMs: 2_000,
-            changes: [{ status: "renamed", previousPath: "src/candidate.ts", path: "docs/candidate.md" }],
+            changes: [
+                {
+                    status: "renamed",
+                    previousPath: "src/candidate.ts",
+                    path: "docs/candidate.md",
+                },
+            ],
         },
         {
             hash: "three",
@@ -31,7 +38,13 @@ test("filters whole rename identities without discarding cross-extension source 
         {
             hash: "two",
             committerTimestampMs: 2_000,
-            changes: [{ status: "renamed", previousPath: "src/candidate.ts", path: "docs/candidate.md" }],
+            changes: [
+                {
+                    status: "renamed",
+                    previousPath: "src/candidate.ts",
+                    path: "docs/candidate.md",
+                },
+            ],
         },
     ]);
     assert.deepEqual(fullHistory.flatMap((commit) => commit.changes.map((change) => change.path)), ["src/candidate.ts", "docs/candidate.md", "src/live.js"]);
@@ -52,6 +65,8 @@ test("normalizes extension dots and case before case-insensitive path matching",
         },
     ];
     assert.deepEqual(extensions, [".ts", ".js"]);
-    assert.deepEqual(filterHistoryByExtensions(history, new Set(extensions)), [history[0]]);
+    assert.deepEqual(filterHistoryByExtensions(history, new Set(extensions)), [
+        history[0],
+    ]);
 });
 //# sourceMappingURL=git-history-filter.cases.js.map

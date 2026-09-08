@@ -6,7 +6,11 @@ test("resolves one namespace-level C# using to its unique current path suffix", 
         {
             path: "src/App/Program.cs",
             language: "csharp",
-            content: "using Company.Tools.Widget;\nusing Alias = Company.Tools.Alias;\nusing static Company.Tools.Static;\nclass Program {\n  void Run() {\n    using Company.Block.Local;\n  }\n}\n",
+            content: "using Company.Tools.Widget;\n" +
+                "using Alias = Company.Tools.Alias;\n" +
+                "using static Company.Tools.Static;\n" +
+                "class Program {\n  void Run() {\n" +
+                "    using Company.Block.Local;\n  }\n}\n",
         },
         { path: "src/Company/Tools/Widget.cs", language: "csharp", content: "" },
     ]);
@@ -50,7 +54,10 @@ test("retains all sorted C# namespace matches as unresolved evidence", () => {
     })), [
         {
             sourcePath: "src/App/Program.cs",
-            targetCandidates: ["alpha/Company/Tools/Widget.cs", "zeta/Company/Tools/Widget.cs"],
+            targetCandidates: [
+                "alpha/Company/Tools/Widget.cs",
+                "zeta/Company/Tools/Widget.cs",
+            ],
             language: "csharp",
             kind: "csharp-using",
             resolution: "unresolved",

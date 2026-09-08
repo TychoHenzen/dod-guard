@@ -1,4 +1,6 @@
-import type { ReferenceRange } from "./reference-analysis-types/reference-range.js";
+import type {
+  ReferenceRange,
+} from "./reference-analysis-types/reference-range.js";
 
 export interface TryCatchState {
   ranges: ReferenceRange[];

@@ -33,7 +33,8 @@ async function assertHistoryStatusLimit(firstChunk, secondChunk) {
     await assertResourceLimit(exceededResult, "Git status record limit exceeded.");
     assert.equal(exceeded.killCalls, 1);
 }
-test("counts uncommon NUL-delimited history statuses across chunks and terminates at the next record", async () => {
+test("counts uncommon NUL-delimited history statuses across chunks and " +
+    "terminates at the next record", async () => {
     const firstChunk = `\u001ehash\0${1_700_000_000}\0B`;
     const secondChunk = "\0first.ts\0M\0second.ts\0";
     await assertExactHistoryOutput(firstChunk, secondChunk);

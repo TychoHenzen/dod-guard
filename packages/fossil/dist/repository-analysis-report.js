@@ -1,6 +1,7 @@
 import { finalizeFossilReport } from "./output.js";
 import { reportBoundary, reportCompleteness, reportLimits, reportStatistics, reportUsage, } from "./repository-analysis-report-parts.js";
-export function buildAnalysisReport({ historyStage, workspaceStage, options, reports, workspaceDebris }) {
+export function buildAnalysisReport(input) {
+    const { historyStage, workspaceStage, options, reports, workspaceDebris } = input;
     const warnings = [...historyStage.warnings, ...workspaceStage.warnings];
     return finalizeFossilReport({
         schemaVersion: 1,

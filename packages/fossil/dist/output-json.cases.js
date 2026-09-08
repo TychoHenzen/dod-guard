@@ -2,9 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createAdvisoryFossilFinding } from "./fossil-grader.js";
 import { renderFossilReportJson } from "./output.js";
-import { advisoryFindingInput, createReport, limitsWith, optionsFor } from "./testing/report-fixtures.js";
+import { advisoryFindingInput, createReport, optionsFor, } from "./testing/report-fixtures.js";
+import { limitsWith } from "./testing/report-limits.js";
 test("serializes one complete schema-versioned JSON report without table prose", () => {
-    const report = createReport(optionsFor("json"), { analysisTimestampMs: 1_735_689_600_000, limits: limitsWith(10) });
+    const report = createReport(optionsFor("json"), {
+        analysisTimestampMs: 1_735_689_600_000,
+        limits: limitsWith(10),
+    });
     const output = renderFossilReportJson(report);
     assert.deepEqual(JSON.parse(output), report);
     assert.equal(JSON.parse(output).schemaVersion, 1);
@@ -32,7 +36,10 @@ test("derives burst-path and unique normalized candidate totals in JSON", () => 
             commitCount: 2,
             fileCount: 2,
             survivors: [],
-            findings: [candidate("src/shared.ts", "second"), candidate("src/other.ts", "second")],
+            findings: [
+                candidate("src/shared.ts", "second"),
+                candidate("src/other.ts", "second"),
+            ],
             deletedPaths: [],
         },
     ];
@@ -49,7 +56,11 @@ test("derives burst-path and unique normalized candidate totals in JSON", () => 
     });
     const before = structuredClone(report);
     const parsed = JSON.parse(renderFossilReportJson(report));
-    assert.deepEqual(parsed.statistics, { ...report.statistics, candidateFindingCount: 3, uniqueCandidatePathCount: 2 });
+    assert.deepEqual(parsed.statistics, {
+        ...report.statistics,
+        candidateFindingCount: 3,
+        uniqueCandidatePathCount: 2,
+    });
     assert.deepEqual(report, before);
 });
 //# sourceMappingURL=output-json.cases.js.map

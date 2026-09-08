@@ -1,6 +1,4 @@
-import type { ReferenceCandidate } from "./reference-analysis-types/reference-candidate.js";
-import type { ReferenceSourceMetadataReader } from "./reference-analysis-types/reference-source-metadata-reader.js";
-import type { ReferenceSourceReader } from "./reference-analysis-types/reference-source-reader.js";
+import type { ReferenceCandidate, ReferenceSourceMetadataReader, ReferenceSourceReader } from "./reference-analysis-types/index.js";
 export declare function readBoundedSource(input: {
     source: ReferenceCandidate;
     readMetadata: ReferenceSourceMetadataReader;

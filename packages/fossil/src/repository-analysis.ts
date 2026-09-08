@@ -4,31 +4,51 @@ import { analyzeHistoryStage } from "./repository-analysis-history.js";
 import { buildAnalysisReport } from "./repository-analysis-report.js";
 import { buildBurstReports } from "./repository-analysis-findings.js";
 import { analyzeWorkspaceStage } from "./repository-analysis-workspace.js";
-import { buildWorkspaceDebrisFindings } from "./repository-analysis-workspace-findings.js";
+import {
+  buildWorkspaceDebrisFindings,
+} from "./repository-analysis-workspace-findings.js";
 
-/** Composes safe Git, source, scoring, and workspace boundaries into a truthful repository report. */
+/** Composes safe Git, source, scoring, and workspace boundaries. */
 export async function analyzeRepositoryCore(
   repositoryPath: string,
   options: NormalizedAnalysisOptions,
   runGit: typeof runGitCommand = runGitCommand,
 ): Promise<FossilReport> {
-  const historyStage = await analyzeHistoryStage(repositoryPath, options, runGit);
+  const historyStage = await analyzeHistoryStage(
+    repositoryPath,
+    options,
+    runGit,
+  );
   const workspaceStage = await analyzeWorkspaceStage({
-    root: rootFor(historyStage),
+    root: historyStage.root,
     options,
     runGit,
     analysisTimestampMs: historyStage.analysisTimestampMs,
   });
-  const reports = buildBurstReports(historyStage.bursts, workspaceStage.references, options.threshold);
+  return buildRepositoryReport(historyStage, workspaceStage, options);
+}
+
+function buildRepositoryReport(
+  historyStage: Awaited<ReturnType<typeof analyzeHistoryStage>>,
+  workspaceStage: Awaited<ReturnType<typeof analyzeWorkspaceStage>>,
+  options: NormalizedAnalysisOptions,
+): FossilReport {
+  const reports = buildBurstReports(
+    historyStage.bursts,
+    workspaceStage.references,
+    options.threshold,
+  );
   const workspaceDebris = buildWorkspaceDebrisFindings({
     candidates: workspaceStage.workspaceCandidates,
     references: workspaceStage.references,
     inventory: workspaceStage.inventory,
-    root: rootFor(historyStage),
+    root: historyStage.root,
   });
-  return buildAnalysisReport({ historyStage, workspaceStage, options, reports, workspaceDebris });
-}
-
-function rootFor(stage: Awaited<ReturnType<typeof analyzeHistoryStage>>): string {
-  return stage.root;
+  return buildAnalysisReport({
+    historyStage,
+    workspaceStage,
+    options,
+    reports,
+    workspaceDebris,
+  });
 }

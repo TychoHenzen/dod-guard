@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readReferenceSources, unsupportedCandidateReferenceGraph, } from "./ref-analyzer.js";
-test("marks unsupported candidate references unavailable without producing edges", () => {
+test("marks unsupported candidate references unavailable without producing " +
+    "edges", () => {
     const candidates = [
         { path: "src/candidate.lua", language: "unsupported" },
         { path: "src/live.ts", language: "typescript" },
@@ -30,7 +31,11 @@ test("continues after an unreadable source without exposing its read error", () 
     const result = readReferenceSources(sources, readSource);
     assert.deepEqual(attemptedPaths, ["src/candidate.ts", "src/live.ts"]);
     assert.deepEqual(result.sources, [
-        { path: "src/live.ts", language: "typescript", content: "export const live = true;\n" },
+        {
+            path: "src/live.ts",
+            language: "typescript",
+            content: "export const live = true;\n",
+        },
     ]);
     assert.deepEqual(result.graph, {
         edges: [],
@@ -39,7 +44,11 @@ test("continues after an unreadable source without exposing its read error", () 
         unavailablePaths: ["src/candidate.ts"],
     });
     assert.deepEqual(result.warnings, [
-        { code: "reference_unreadable", message: "Reference source could not be read.", path: "src/candidate.ts" },
+        {
+            code: "reference_unreadable",
+            message: "Reference source could not be read.",
+            path: "src/candidate.ts",
+        },
     ]);
 });
 //# sourceMappingURL=ref-availability.cases.js.map

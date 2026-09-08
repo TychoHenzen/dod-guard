@@ -1,19 +1,33 @@
 import { Command } from "commander";
-import { FossilHelpDisplayed } from "./fossil-cli-types/fossil-help-displayed.js";
+import {
+  FossilHelpDisplayed,
+} from "./fossil-cli-types/fossil-help-displayed.js";
 import { FossilUsageError } from "./fossil-cli-types/fossil-usage-error.js";
 import { analyzeRepository } from "./fossil-cli-analysis.js";
 import { normalizeAnalyzeOptions } from "./fossil-cli-parse-options.js";
 import { renderFossilReportJson, renderFossilReportTable } from "./output.js";
-import type { AnalyzeCommandHandler } from "./fossil-cli-types/analyze-command-handler.js";
-import type { FossilCliDependencies } from "./fossil-cli-types/fossil-cli-dependencies.js";
-import type { RawAnalyzeOptions } from "./fossil-cli-types/raw-analyze-options.js";
+import type {
+  AnalyzeCommandHandler,
+} from "./fossil-cli-types/analyze-command-handler.js";
+import type {
+  FossilCliDependencies,
+} from "./fossil-cli-types/fossil-cli-dependencies.js";
+import type {
+  RawAnalyzeOptions,
+} from "./fossil-cli-types/raw-analyze-options.js";
 
-function commanderExitOverride(error: { code?: string; message: string }): never {
+function commanderExitOverride(error: {
+  code?: string;
+  message: string;
+}): never {
   if (error.code === "commander.helpDisplayed") throw new FossilHelpDisplayed();
   throw new FossilUsageError(error.message, true);
 }
 
-function commandRepositoryPath(repositoryPath: string | undefined, dependencies: FossilCliDependencies): string {
+function commandRepositoryPath(
+  repositoryPath: string | undefined,
+  dependencies: FossilCliDependencies,
+): string {
   const cwd = dependencies.cwd ?? process.cwd;
   return repositoryPath ?? cwd();
 }
@@ -26,12 +40,19 @@ function outputAnalysisReport(
     dependencies.stdout?.(renderFossilReportJson(report));
     return;
   }
-  const noFindings = report.statistics.candidateFindingCount + report.statistics.workspaceDebrisCount === 0;
+  const noFindings =
+    report.statistics.candidateFindingCount +
+      report.statistics.workspaceDebrisCount ===
+    0;
   if (noFindings) {
     dependencies.stdout?.("0 findings\n");
     return;
   }
-  dependencies.stdout?.(`${renderFossilReportTable(report, { isTty: Boolean(process.stdout.isTTY) })}\n`);
+  dependencies.stdout?.(
+    `${renderFossilReportTable(report, {
+      isTty: Boolean(process.stdout.isTTY),
+    })}\n`,
+  );
 }
 
 async function analyzeCommand(
@@ -47,7 +68,7 @@ async function analyzeCommand(
   outputAnalysisReport(report, dependencies);
 }
 
-/** Creates the command boundary so analysis can be injected and tested without Git access. */
+/** Creates the command boundary so analysis can be injected in tests. */
 export function createFossilProgram({
   analyze,
   cwd = process.cwd,

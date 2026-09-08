@@ -11,7 +11,13 @@ test("keeps copied and recreated paths in separate logical generations", () => {
         {
             hash: "copy-source",
             committerTimestampMs: 2_000,
-            changes: [{ status: "copied", previousPath: "src/source.ts", path: "src/copy.ts" }],
+            changes: [
+                {
+                    status: "copied",
+                    previousPath: "src/source.ts",
+                    path: "src/copy.ts",
+                },
+            ],
         },
         {
             hash: "modify-source",

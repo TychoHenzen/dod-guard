@@ -5,7 +5,9 @@ function changeMatchesIdentity(commit, identity, identitiesByChange) {
     return commit.changes.some((change) => identityForChange(change, identitiesByChange) === identity);
 }
 export function commitsWithIdentity(commits, identity, identitiesByChange) {
-    return new Set(commits.filter((commit) => changeMatchesIdentity(commit, identity, identitiesByChange)).map((commit) => commit.hash)).size;
+    return new Set(commits
+        .filter((commit) => changeMatchesIdentity(commit, identity, identitiesByChange))
+        .map((commit) => commit.hash)).size;
 }
 export function changesByIdentity(commits, identitiesByChange) {
     const identities = new Map();

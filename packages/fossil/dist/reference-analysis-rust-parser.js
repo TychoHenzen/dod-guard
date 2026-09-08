@@ -42,15 +42,26 @@ function compareRustReferences(left, right) {
         return byPosition;
     return compareText(left.kind, right.kind);
 }
+function rustPatterns(source) {
+    return [
+        {
+            kind: "rust-mod",
+            pattern: RUST_MODULE,
+            candidatesFor: (name) => rustModuleCandidates(source.path, name),
+        },
+        {
+            kind: "rust-use",
+            pattern: RUST_CRATE_USE,
+            candidatesFor: (name) => rustUseCandidates(source.path, name),
+        },
+    ];
+}
 export function parsedRustReferences(source) {
     if (source.language !== "rust")
         return [];
-    const patterns = [
-        ["rust-mod", RUST_MODULE, (name) => rustModuleCandidates(source.path, name)],
-        ["rust-use", RUST_CRATE_USE, (name) => rustUseCandidates(source.path, name)],
-    ];
+    const patterns = rustPatterns(source);
     const references = [];
-    for (const [kind, pattern, candidatesFor] of patterns) {
+    for (const { kind, pattern, candidatesFor } of patterns) {
         pattern.lastIndex = 0;
         for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
             const reference = rustReference(source, kind, candidatesFor, match);

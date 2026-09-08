@@ -1,34 +1,14 @@
-import { realpathSync } from "node:fs";
-import { resolve } from "node:path";
 import { FossilAnalysisError } from "./analysis-error.js";
 import * as history from "./git-analyzer.js";
-import { assertSupportedGitVersion } from "./git-process-boundary.js";
-import { emptyHistoryOutput, successfulGit } from "./repository-analysis-support.js";
-export async function resolveHistoryRepository(repositoryPath, runGit) {
-    const version = await successfulGit({ runGit, arguments_: ["--version"] });
-    assertSupportedGitVersion(version.stdout);
-    const discovery = await runGit({ arguments_: ["rev-parse", "--show-toplevel"], repositoryPath });
-    if (discovery.exitCode !== 0)
-        throw new FossilAnalysisError({ code: "not_repository", message: "Not a Git repository." });
-    const prefix = await successfulGit({ runGit, arguments_: ["rev-parse", "--show-prefix"], repositoryPath });
-    const root = resolve(realpathSync(repositoryPath), ...prefix.stdout
-        .trim()
-        .split("/")
-        .filter(Boolean)
-        .map(() => ".."));
-    const analysisTimestampMs = Date.now();
-    const head = await runGit({ arguments_: ["rev-parse", "--verify", "HEAD"], repositoryPath: root });
-    const historyOutput = await historyOutputForHead(head.exitCode, runGit, root);
-    return { version, discovery, prefix, head, historyOutput, analysisTimestampMs, root };
-}
-async function historyOutputForHead(exitCode, runGit, root) {
-    if (exitCode !== 0)
-        return emptyHistoryOutput();
-    return successfulGit({ runGit, arguments_: history.nonMergeGitLogArguments(), repositoryPath: root, historyMode: true });
-}
+import { emptyHistoryOutput, successfulGit, } from "./repository-analysis-support.js";
+export { resolveHistoryRepository, } from "./repository-analysis-history-repository.js";
 export async function sparseCheckoutOutput(runGit, root) {
     try {
-        return await successfulGit({ runGit, arguments_: history.sparseCheckoutArguments(), repositoryPath: root });
+        return await successfulGit({
+            runGit,
+            arguments_: history.sparseCheckoutArguments(),
+            repositoryPath: root,
+        });
     }
     catch (error) {
         if (error instanceof FossilAnalysisError)
@@ -36,7 +16,7 @@ export async function sparseCheckoutOutput(runGit, root) {
         throw error;
     }
 }
-export function historyWarnings({ includedHistory, analysisTimestampMs, shallow, sparse, submodules }) {
+export function historyWarnings({ includedHistory, analysisTimestampMs, shallow, sparse, submodules, }) {
     const warnings = [
         ...history.emptyHistoryWarnings(includedHistory),
         ...history.futureCommitWarnings(includedHistory, analysisTimestampMs),
@@ -44,7 +24,10 @@ export function historyWarnings({ includedHistory, analysisTimestampMs, shallow,
         ...history.sparseCheckoutWarnings(sparse.stdout),
     ];
     if (submodules.stdout.trim() !== "")
-        warnings.push({ code: "submodule_omitted", message: "Submodule contents are omitted from repository analysis." });
+        warnings.push({
+            code: "submodule_omitted",
+            message: "Submodule contents are omitted from repository analysis.",
+        });
     return warnings;
 }
 export function historyBursts(includedHistory, analysisTimestampMs, gapHours) {

@@ -16,7 +16,10 @@ function statusFor(rawStatus: string): GitFileChange["status"] {
   return STATUS_BY_CODE[rawStatus[0] ?? ""] ?? "unknown";
 }
 
-function parsedChange(tokens: readonly string[], index: number): { change?: GitFileChange; nextIndex: number } | undefined {
+function parsedChange(
+  tokens: readonly string[],
+  index: number,
+): { change?: GitFileChange; nextIndex: number } | undefined {
   const rawStatus = tokens[index]?.replace(/^\r?\n/, "");
   if (!rawStatus) return { nextIndex: index + 1 };
   const status = statusFor(rawStatus);
@@ -25,7 +28,10 @@ function parsedChange(tokens: readonly string[], index: number): { change?: GitF
   if (status === "renamed" || status === "copied") {
     const path = tokens[index + 2];
     if (path === undefined) return undefined;
-    return { change: { status, path, previousPath: firstPath }, nextIndex: index + 3 };
+    return {
+      change: { status, path, previousPath: firstPath },
+      nextIndex: index + 3,
+    };
   }
   return { change: { status, path: firstPath }, nextIndex: index + 2 };
 }
@@ -41,7 +47,7 @@ function parseChanges(tokens: readonly string[]): GitFileChange[] {
   return changes;
 }
 
-/** Parses the NUL-delimited non-merge stream requested by nonMergeGitLogArguments(). */
+/** Parses the NUL-delimited stream requested by nonMergeGitLogArguments(). */
 export function parseNonMergeGitLog(rawLog: string): GitCommit[] {
   const commits: GitCommit[] = [];
   for (const record of rawLog.split(RECORD_SEPARATOR)) {

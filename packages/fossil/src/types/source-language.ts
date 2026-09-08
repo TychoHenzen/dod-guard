@@ -1,1 +1,6 @@
-export type SourceLanguage = "typescript" | "javascript" | "csharp" | "rust" | "unsupported";
+export type SourceLanguage =
+  | "typescript"
+  | "javascript"
+  | "csharp"
+  | "rust"
+  | "unsupported";

@@ -1,55 +1,58 @@
-import {
-  abandonmentScore,
-  candidateReferenceSubscores,
-  createAdvisoryFossilFinding,
-  normalizedBurstChurn,
-  scoreFossilSubscores,
-} from "./fossil-grader.js";
+import { createAdvisoryFossilFinding } from "./fossil-grader.js";
 import type { Burst, BurstFileActivity, ReferenceGraph } from "./types.js";
+import {
+  neighborPaths,
+  referenceAvailability,
+  scoreSubscores,
+  selectedNeighbors,
+  strongInboundCount,
+} from "./repository-analysis-candidate-scoring.js";
 
-function scoreSubscores(input: {
+function candidateDetails(input: {
   candidate: BurstFileActivity;
   burst: Burst;
   graph: ReferenceGraph;
+  score: NonNullable<ReturnType<typeof scoreSubscores>["score"]>;
+  subscores: ReturnType<typeof scoreSubscores>["subscores"];
+  referenceAvailable: boolean;
+  neighbors: ReadonlySet<string>;
   candidatePaths: ReadonlySet<string>;
 }) {
-  const reference = candidateReferenceSubscores(input.candidate.path, input.graph, input.candidatePaths);
-  const base = {
-    churn: normalizedBurstChurn(input.candidate, input.burst.files),
-    abandonment: abandonmentScore(input.candidate),
+  return {
+    burstId: input.burst.id,
+    path: input.candidate.path,
+    activity: input.candidate,
+    score: input.score.score,
+    scoreBasis: input.score.basis,
+    subscores: input.subscores,
+    referenceAvailability: referenceAvailability(input.referenceAvailable),
+    ...candidateNeighborDetails(input),
   };
-  const subscores = reference.available
-    ? { ...base, referenceWeakness: reference.referenceWeakness, clusterIsolation: reference.clusterIsolation }
-    : base;
-  return { reference, subscores, score: scoreFossilSubscores(subscores) };
 }
 
-function isStrongInbound(edge: ReferenceGraph["edges"][number], path: string, candidatePaths: ReadonlySet<string>): boolean {
-  if (edge.targetPath !== path) return false;
-  if (edge.strength !== "strong") return false;
-  return !candidatePaths.has(edge.sourcePath);
-}
-
-function strongInboundCount(graph: ReferenceGraph, path: string, candidatePaths: ReadonlySet<string>): number {
-  return new Set(graph.edges.filter((edge) => isStrongInbound(edge, path, candidatePaths)).map((edge) => edge.sourcePath)).size;
-}
-
-function neighborPaths(graph: ReferenceGraph, path: string): ReadonlySet<string> {
-  const neighbors = new Set<string>();
-  for (const edge of graph.edges) {
-    if (edge.sourcePath === path) neighbors.add(edge.targetPath);
-    if (edge.targetPath === path) neighbors.add(edge.sourcePath);
-  }
-  return neighbors;
-}
-
-function selectedNeighbors(neighbors: ReadonlySet<string>, candidatePaths: ReadonlySet<string>, selected: boolean): string[] {
-  return [...neighbors].filter((path) => candidatePaths.has(path) === selected).sort();
-}
-
-function referenceAvailability(available: boolean): "complete" | "unavailable" {
-  if (available) return "complete";
-  return "unavailable";
+function candidateNeighborDetails(input: {
+  candidate: BurstFileActivity;
+  graph: ReferenceGraph;
+  neighbors: ReadonlySet<string>;
+  candidatePaths: ReadonlySet<string>;
+}) {
+  return {
+    strongInboundReferences: strongInboundCount(
+      input.graph,
+      input.candidate.path,
+      input.candidatePaths,
+    ),
+    candidateNeighbors: selectedNeighbors(
+      input.neighbors,
+      input.candidatePaths,
+      true,
+    ),
+    liveNeighbors: selectedNeighbors(
+      input.neighbors,
+      input.candidatePaths,
+      false,
+    ),
+  };
 }
 
 export function candidateFinding(input: {
@@ -60,20 +63,18 @@ export function candidateFinding(input: {
   threshold: number;
 }) {
   const scored = scoreSubscores(input);
-  if (!(scored.score && scored.score.score >= input.threshold)) return [];
+  const score = scored.score;
+  if (!(score && score.score >= input.threshold)) return [];
   const neighbors = neighborPaths(input.graph, input.candidate.path);
   return [
-    createAdvisoryFossilFinding({
-      burstId: input.burst.id,
-      path: input.candidate.path,
-      activity: input.candidate,
-      score: scored.score.score,
-      scoreBasis: scored.score.basis,
-      subscores: scored.subscores,
-      referenceAvailability: referenceAvailability(scored.reference.available),
-      strongInboundReferences: strongInboundCount(input.graph, input.candidate.path, input.candidatePaths),
-      candidateNeighbors: selectedNeighbors(neighbors, input.candidatePaths, true),
-      liveNeighbors: selectedNeighbors(neighbors, input.candidatePaths, false),
-    }),
+    createAdvisoryFossilFinding(
+      candidateDetails({
+        ...input,
+        score,
+        subscores: scored.subscores,
+        referenceAvailable: scored.reference.available,
+        neighbors,
+      }),
+    ),
   ];
 }

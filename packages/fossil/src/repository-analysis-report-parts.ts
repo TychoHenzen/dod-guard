@@ -5,11 +5,19 @@ import type { analyzeWorkspaceStage } from "./repository-analysis-workspace.js";
 
 const MEBIBYTE = 1_024 * 1_024;
 
-export function reportBoundary(repositoryRoot: string, canonicalRepositoryRoot: string): FossilReport["boundary"] {
+export function reportBoundary(
+  repositoryRoot: string,
+  canonicalRepositoryRoot: string,
+): FossilReport["boundary"] {
   return {
     repositoryRoot,
     canonicalRepositoryRoot,
-    unobservedMechanisms: ["dynamic runtime loading", "reflection", "external consumers", "generated configuration"],
+    unobservedMechanisms: [
+      "dynamic runtime loading",
+      "reflection",
+      "external consumers",
+      "generated configuration",
+    ],
   };
 }
 
@@ -34,10 +42,17 @@ export function reportUsage(
     commitRecords: historyStage.includedHistory.length,
     fileStatusRecords: historyStage.historyOutput.statusRecordCount,
     inventoriedFiles: workspaceStage.inventory.length,
-    gitStdoutBytes: gitOutputs.reduce((total, output) => total + output.stdoutBytes, 0),
-    gitStderrBytes: gitOutputs.reduce((total, output) => total + output.stderrBytes, 0),
+    gitStdoutBytes: gitOutputs.reduce(
+      (total, output) => total + output.stdoutBytes,
+      0,
+    ),
+    gitStderrBytes: gitOutputs.reduce(
+      (total, output) => total + output.stderrBytes,
+      0,
+    ),
     referenceBytes: workspaceStage.references.acceptedBytes,
-    omittedReferencePaths: workspaceStage.references.graph.unavailablePaths.length,
+    omittedReferencePaths:
+      workspaceStage.references.graph.unavailablePaths.length,
   };
 }
 
@@ -47,10 +62,16 @@ export function reportCompleteness(
 ): FossilReport["completeness"] {
   return {
     historyComplete: !warnings.some((warning) =>
-      ["empty_repository", "future_commit", "shallow_history"].includes(warning.code),
+      ["empty_repository", "future_commit", "shallow_history"].includes(
+        warning.code,
+      ),
     ),
-    referenceAnalysisComplete: referenceComplete && !warnings.some((warning) => warning.code === "sparse_checkout"),
-    workspaceDebrisComplete: !warnings.some((warning) => warning.code === "sparse_checkout"),
+    referenceAnalysisComplete:
+      referenceComplete &&
+      !warnings.some((warning) => warning.code === "sparse_checkout"),
+    workspaceDebrisComplete: !warnings.some(
+      (warning) => warning.code === "sparse_checkout",
+    ),
   };
 }
 
@@ -61,7 +82,9 @@ export function reportStatistics(
 ): FossilReport["statistics"] {
   return {
     includedCommitCount: historyStage.includedHistory.length,
-    logicalFileCount: history.resolveRenameActivities(historyStage.includedHistory).length,
+    logicalFileCount: history.resolveRenameActivities(
+      historyStage.includedHistory,
+    ).length,
     burstCount: reports.length,
     candidateFindingCount: 0,
     uniqueCandidatePathCount: 0,

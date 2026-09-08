@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { assembleClosedBursts } from "./git-analyzer.js";
-
-test("builds final burst activity from recursive close-split partitions", () => {
+test("assembles final burst activity", () => {
   const hour = 60 * 60 * 1_000;
   const group = (name: string, start: number) => [
-    { hash: `${name}-a`, committerTimestampMs: start, changes: [{ status: "added" as const, path: `${name}-a.ts` }] },
+    {
+      hash: `${name}-a`,
+      committerTimestampMs: start,
+      changes: [{ status: "added" as const, path: `${name}-a.ts` }],
+    },
     {
       hash: `${name}-b`,
       committerTimestampMs: start + hour,
@@ -27,7 +30,11 @@ test("builds final burst activity from recursive close-split partitions", () => 
       changes: [{ status: "modified" as const, path: `${name}-b.ts` }],
     },
   ];
-  const temporalCluster = [...group("first", 0), ...group("second", 8 * hour), ...group("third", 16 * hour)];
+  const temporalCluster = [
+    ...group("first", 0),
+    ...group("second", 8 * hour),
+    ...group("third", 16 * hour),
+  ];
   const fullHistory = [
     ...temporalCluster,
     {
@@ -45,7 +52,12 @@ test("builds final burst activity from recursive close-split partitions", () => 
       start: burst.startTimestampMs,
       end: burst.endTimestampMs,
       commits: burst.commits.map((commit) => commit.hash),
-      files: burst.files.map((file) => [file.path, file.burstCommits, file.postBurstCommits, file.createdInBurst]),
+      files: burst.files.map((file) => [
+        file.path,
+        file.burstCommits,
+        file.postBurstCommits,
+        file.createdInBurst,
+      ]),
     })),
     [
       {

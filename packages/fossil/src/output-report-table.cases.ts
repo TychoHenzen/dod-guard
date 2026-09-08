@@ -3,7 +3,9 @@ import { test } from "node:test";
 import { renderFossilReportTable } from "./output.js";
 import { finding } from "./output.test-support.js";
 
-test("escapes controls in whole-report warnings and workspace debris rows", () => {
+test(
+  "escapes controls in whole-report warnings and workspace debris rows",
+  () => {
   const control = "\u001b\u0085";
   const report = JSON.parse(
     JSON.stringify({
@@ -22,7 +24,9 @@ test("escapes controls in whole-report warnings and workspace debris rows", () =
           ...finding(`scratch/${control}path.ts`, "untracked"),
           review: `possible${control}workspace debris`,
         },
-        ...Array.from({ length: 20 }, (_, index) => finding(`ignored${control}/file-${index}.tmp`, "ignored")),
+        ...Array.from({ length: 20 }, (_, index) =>
+          finding(`ignored${control}/file-${index}.tmp`, "ignored"),
+        ),
       ],
     }),
   );
@@ -39,6 +43,12 @@ test("escapes controls in whole-report warnings and workspace debris rows", () =
   assert.equal(redirected.includes("src/\\u001b\\u0085warning.ts"), true);
   assert.equal(redirected.includes("warning\\u001b\\u0085message"), true);
   assert.equal(redirected.includes("scratch/\\u001b\\u0085path.ts"), true);
-  assert.equal(redirected.includes("possible\\u001b\\u0085workspace debris"), true);
-  assert.equal(redirected.includes("ignored directory ignored\\u001b\\u0085: 20 findings"), true);
+  assert.equal(
+    redirected.includes("possible\\u001b\\u0085workspace debris"),
+    true,
+  );
+  assert.equal(
+    redirected.includes("ignored directory ignored\\u001b\\u0085: 20 findings"),
+    true,
+  );
 });

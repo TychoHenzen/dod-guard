@@ -1,4 +1,4 @@
-/** Provides one mutable, copy-on-read clock for deterministic history and age tests. */
+/** Provides a mutable copy-on-read clock for deterministic tests. */
 export function createDeterministicClock(initialTime) {
     let currentTime = new Date(initialTime).getTime();
     return {

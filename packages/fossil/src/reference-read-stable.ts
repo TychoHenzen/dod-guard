@@ -1,9 +1,23 @@
-import type { BoundedReferenceReadResult } from "./reference-analysis-types/bounded-reference-read-result.js";
-import type { ReferenceCandidate } from "./reference-analysis-types/reference-candidate.js";
-import type { StableReferenceSourceBoundary } from "./reference-analysis-types/stable-reference-source-boundary.js";
-import { DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES, DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES } from "./reference-analysis-limits.js";
-import { finishBoundedReferenceRead, newReferenceReadBudget, newReferenceReadCollections } from "./reference-read-support.js";
-import { hasStableCapacity, initialWithinLimits, inspectCurrentSnapshot, inspectInitialSnapshot } from "./reference-read-stable-preflight.js";
+import type {
+  BoundedReferenceReadResult,
+  ReferenceCandidate,
+  StableReferenceSourceBoundary,
+} from "./reference-analysis-types/index.js";
+import {
+  DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
+  DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES,
+} from "./reference-analysis-limits.js";
+import {
+  finishBoundedReferenceRead,
+  newReferenceReadBudget,
+  newReferenceReadCollections,
+} from "./reference-read-support.js";
+import {
+  hasStableCapacity,
+  initialWithinLimits,
+  inspectCurrentSnapshot,
+  inspectInitialSnapshot,
+} from "./reference-read-stable-preflight.js";
 import { readStableContent } from "./reference-read-stable-content.js";
 import type { StableReadInput } from "./reference-read-stable-types.js";
 
@@ -17,7 +31,7 @@ function readStableSource(input: StableReadInput): void {
   readStableContent(input, initial);
 }
 
-/** Reads stable regular files after re-checking their identity, type, and canonical path. */
+/** Reads stable regular files after re-checking their identity and path. */
 export function readStableReferenceSources({
   sources,
   boundary,
@@ -32,7 +46,17 @@ export function readStableReferenceSources({
   const collections = newReferenceReadCollections();
   const budget = newReferenceReadBudget();
   sources.forEach((source) => {
-    readStableSource({ source, boundary, maximumFileBytes, maximumTotalBytes, budget, collections });
+    readStableSource({
+      source,
+      boundary,
+      maximumFileBytes,
+      maximumTotalBytes,
+      budget,
+      collections,
+    });
   });
-  return finishBoundedReferenceRead({ ...collections, acceptedBytes: budget.acceptedBytes });
+  return finishBoundedReferenceRead({
+    ...collections,
+    acceptedBytes: budget.acceptedBytes,
+  });
 }

@@ -9,33 +9,62 @@ import {
   sparseCheckoutOutput,
 } from "./repository-analysis-history-steps.js";
 
-async function historyEvidence({ repository, options, runGit }: {
-  repository: Awaited<ReturnType<typeof resolveHistoryRepository>>;
-  options: NormalizedAnalysisOptions;
-  runGit: typeof runGitCommand;
-}) {
-  const parsedHistory = history.parseNonMergeGitLog(repository.historyOutput.stdout);
-  const minimumTimestamp = repository.analysisTimestampMs - options.days * 24 * 60 * 60 * 1_000;
-  const includedHistory = history.filterHistoryByExtensions(
-    parsedHistory.filter((commit) => commit.committerTimestampMs >= minimumTimestamp),
+function includedHistoryFor(
+  repository: Awaited<ReturnType<typeof resolveHistoryRepository>>,
+  options: NormalizedAnalysisOptions,
+) {
+  const parsedHistory = history.parseNonMergeGitLog(
+    repository.historyOutput.stdout,
+  );
+  const minimumTimestamp =
+    repository.analysisTimestampMs - options.days * 24 * 60 * 60 * 1_000;
+  return history.filterHistoryByExtensions(
+    parsedHistory.filter(
+      (commit) => commit.committerTimestampMs >= minimumTimestamp,
+    ),
     new Set(history.normalizeExtensions(options.extensions)),
   );
-  const shallow = await successfulGit({ runGit, arguments_: history.shallowRepositoryArguments(), repositoryPath: repository.root });
+}
+
+async function completenessEvidence(
+  repository: Awaited<ReturnType<typeof resolveHistoryRepository>>,
+  runGit: typeof runGitCommand,
+) {
+  const shallow = await successfulGit({
+    runGit,
+    arguments_: history.shallowRepositoryArguments(),
+    repositoryPath: repository.root,
+  });
   const sparse = await sparseCheckoutOutput(runGit, repository.root);
   const submodules = await successfulGit({
     runGit,
     arguments_: ["submodule", "status", "--recursive"],
     repositoryPath: repository.root,
   });
+  return { shallow, sparse, submodules };
+}
+
+async function historyEvidence(input: {
+  repository: Awaited<ReturnType<typeof resolveHistoryRepository>>;
+  options: NormalizedAnalysisOptions;
+  runGit: typeof runGitCommand;
+}) {
+  const includedHistory = includedHistoryFor(input.repository, input.options);
+  const completeness = await completenessEvidence(
+    input.repository,
+    input.runGit,
+  );
   const warnings = historyWarnings({
     includedHistory,
-    analysisTimestampMs: repository.analysisTimestampMs,
-    shallow,
-    sparse,
-    submodules,
+    analysisTimestampMs: input.repository.analysisTimestampMs,
+    ...completeness,
   });
-  const bursts = historyBursts(includedHistory, repository.analysisTimestampMs, options.gapHours);
-  return { shallow, sparse, submodules, includedHistory, warnings, bursts };
+  const bursts = historyBursts(
+    includedHistory,
+    input.repository.analysisTimestampMs,
+    input.options.gapHours,
+  );
+  return { ...completeness, includedHistory, warnings, bursts };
 }
 
 export async function analyzeHistoryStage(

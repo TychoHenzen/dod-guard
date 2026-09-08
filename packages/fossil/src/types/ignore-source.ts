@@ -1,1 +1,5 @@
-export type IgnoreSource = "repository" | "local-exclude" | "global-exclude" | "unknown";
+export type IgnoreSource =
+  | "repository"
+  | "local-exclude"
+  | "global-exclude"
+  | "unknown";

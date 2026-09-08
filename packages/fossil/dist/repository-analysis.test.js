@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync, } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -28,17 +28,28 @@ function createFixture() {
     git(directory, "config", "user.name", "Fossil Test");
     git(directory, "add", "src/tracked.ts");
     git(directory, "commit", "-qm", "tracked source");
-    return { directory, referenceBytes: Buffer.byteLength(tracked) + Buffer.byteLength(oldWorkspace) };
+    return {
+        directory,
+        referenceBytes: Buffer.byteLength(tracked) + Buffer.byteLength(oldWorkspace),
+    };
 }
-test("composes tracked and eligible referenced workspace sources into inventory evidence", async () => {
+test("composes tracked and eligible referenced workspace sources into inventory " +
+    "evidence", async () => {
     const fixture = createFixture();
     try {
         const report = await analyzeRepositoryCore(fixture.directory, analysisOptions);
         assert.equal(report.usage.inventoriedFiles, 2);
         assert.equal(report.usage.referenceBytes, fixture.referenceBytes);
         assert.deepEqual(report.workspaceDebris, []);
-        const evidence = JSON.stringify({ warnings: report.warnings, findings: report.workspaceDebris });
-        for (const path of ["workspace/recent.js", ".env", "vendor/dependency.js"])
+        const evidence = JSON.stringify({
+            warnings: report.warnings,
+            findings: report.workspaceDebris,
+        });
+        for (const path of [
+            "workspace/recent.js",
+            ".env",
+            "vendor/dependency.js",
+        ])
             assert.equal(evidence.includes(path), false);
     }
     finally {

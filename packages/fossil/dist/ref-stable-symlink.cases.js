@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readStableReferenceSources } from "./ref-analyzer.js";
-test("keeps a directory symlink candidate unavailable without reading its content", () => {
+test("keeps a directory symlink candidate unavailable without reading its " +
+    "content", () => {
     const contentReads = [];
     const result = readStableReferenceSources({
         sources: [
@@ -22,7 +23,9 @@ test("keeps a directory symlink candidate unavailable without reading its conten
         },
     });
     assert.deepEqual(contentReads, ["src/ordinary.ts"]);
-    assert.deepEqual(result.sources, [{ path: "src/ordinary.ts", language: "typescript", content: "content" }]);
+    assert.deepEqual(result.sources, [
+        { path: "src/ordinary.ts", language: "typescript", content: "content" },
+    ]);
     assert.deepEqual(result.graph.unavailablePaths, ["src/directory-link.ts"]);
     assert.deepEqual(result.warnings, [
         {

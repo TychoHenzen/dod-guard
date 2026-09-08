@@ -1,6 +1,10 @@
 import type { BurstFileActivity, ReferenceGraph } from "./types.js";
 
-export function activity(path: string, burstCommits: number, postBurstCommits = 0): BurstFileActivity {
+export function activity(
+  path: string,
+  burstCommits: number,
+  postBurstCommits = 0,
+): BurstFileActivity {
   return {
     identity: path,
     path,
@@ -25,6 +29,11 @@ export function referenceEdge(input: {
     language: "typescript",
     kind: input.kind ?? "import",
     strength: input.strength ?? "strong",
-    span: { start: input.start, end: input.start + 1, line: 1, column: input.column },
+    span: {
+      start: input.start,
+      end: input.start + 1,
+      line: 1,
+      column: input.column,
+    },
   };
 }

@@ -92,6 +92,12 @@
       }
     },
     {
+      "includes": ["packages/fossil/src/**/*.ts"],
+      "formatter": {
+        "enabled": false
+      }
+    },
+    {
       "includes": [
         "packages/code-explorer/src/semantic/**/*.ts",
         "packages/code-explorer/src/testing/**/*.ts",

@@ -1,7 +1,7 @@
 import { resolveLogicalActivities } from "./git-history-identities.js";
-import { partitionQualifies, splitAtChangePoint } from "./git-history-change-point.js";
+import { partitionQualifies, splitAtChangePoint, } from "./git-history-change-point.js";
 import { assembleBurst } from "./git-history-burst-assembly.js";
-/** Assembles qualified recursive partitions into deterministic closed burst activity. */
+/** Assembles qualified recursive partitions into closed burst activity. */
 export function assembleClosedBursts(fullChronologicalHistory, closedTemporalClusters) {
     const resolution = resolveLogicalActivities(fullChronologicalHistory);
     const activitiesByIdentity = new Map(resolution.activities.map((activity) => [activity.identity, activity]));

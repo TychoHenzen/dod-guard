@@ -6,7 +6,7 @@ const SHALLOW_TRUE_RESPONSES = new Set(["true", "true\n", "true\r\n"]);
 const SHALLOW_FALSE_RESPONSES = new Set(["false", "false\n", "false\r\n"]);
 const SPARSE_TRUE_RESPONSES = SHALLOW_TRUE_RESPONSES;
 const SPARSE_FALSE_RESPONSES = new Set(["", ...SHALLOW_FALSE_RESPONSES]);
-/** Rejects included history that cannot be analyzed within the commit resource budget. */
+/** Rejects history that exceeds the commit resource budget. */
 export function assertIncludedCommitLimit(includedCommitCount, maximumIncludedCommits = DEFAULT_MAXIMUM_INCLUDED_COMMITS) {
     if (includedCommitCount > maximumIncludedCommits)
         throw new FossilAnalysisError({
@@ -31,13 +31,14 @@ export function nonMergeGitLogArguments() {
 export function shallowRepositoryArguments() {
     return ["rev-parse", "--is-shallow-repository"];
 }
-/** Turns Git's strict shallow-repository response into completeness evidence. */
+/** Turns Git's shallow-repository response into completeness evidence. */
 export function shallowHistoryWarnings(result) {
     if (SHALLOW_TRUE_RESPONSES.has(result)) {
         return [
             {
                 code: "shallow_history",
-                message: "Repository is shallow; burst and consolidation history may be incomplete.",
+                message: "Repository is shallow; burst and consolidation history may be " +
+                    "incomplete.",
             },
         ];
     }
@@ -45,17 +46,18 @@ export function shallowHistoryWarnings(result) {
         return [];
     throw new Error("Unexpected Git shallow-repository response");
 }
-/** Arguments for reading the sparse-checkout setting for the target worktree. */
+/** Arguments for reading the sparse-checkout setting. */
 export function sparseCheckoutArguments() {
     return ["config", "--bool", "--get", "core.sparseCheckout"];
 }
-/** Turns Git's strict sparse-checkout response into current-tree completeness evidence. */
+/** Turns Git's sparse-checkout response into tree completeness evidence. */
 export function sparseCheckoutWarnings(result) {
     if (SPARSE_TRUE_RESPONSES.has(result)) {
         return [
             {
                 code: "sparse_checkout",
-                message: "Sparse checkout is enabled; current-file existence and references may be incomplete.",
+                message: "Sparse checkout is enabled; current-file existence and references " +
+                    "may be incomplete.",
             },
         ];
     }

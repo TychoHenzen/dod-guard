@@ -5,10 +5,11 @@ async function reportUsageError(error, program, stderr) {
         throw error;
     const analyzeCommand = program.commands.find((command) => command.name() === "analyze");
     if (!error.reported)
-        stderr(`error: ${error.message}\n${analyzeCommand?.helpInformation() ?? program.helpInformation()}`);
+        stderr(`error: ${error.message}\n` +
+            `${analyzeCommand?.helpInformation() ?? program.helpInformation()}`);
     throw error;
 }
-/** Parses a CLI argument vector through the injected analysis command boundary. */
+/** Parses CLI arguments through the injected analysis boundary. */
 export async function runFossilCli(argv, dependencies) {
     const stderr = dependencies.stderr ?? process.stderr.write.bind(process.stderr);
     const program = createFossilProgram({ ...dependencies, stderr });

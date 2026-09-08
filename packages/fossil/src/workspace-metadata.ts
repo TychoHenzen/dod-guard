@@ -1,17 +1,26 @@
 import type { AnalysisWarning } from "./types.js";
-import type { WorkspaceFileMetadata } from "./workspace-types/workspace-file-metadata.js";
-import type { WorkspaceFileMetadataReader } from "./workspace-types/workspace-file-metadata-reader.js";
-import type { WorkspaceMetadataInspectionResult } from "./workspace-types/workspace-metadata-inspection-result.js";
+import type {
+  WorkspaceFileMetadata,
+} from "./workspace-types/workspace-file-metadata.js";
+import type {
+  WorkspaceFileMetadataReader,
+} from "./workspace-types/workspace-file-metadata-reader.js";
+import type {
+  WorkspaceMetadataInspectionResult,
+} from "./workspace-types/workspace-metadata-inspection-result.js";
 import { filterWorkspaceDiscoveryPaths } from "./workspace-exclusion-globs.js";
-import { isDependencyStorePath, isSensitiveWorkspacePath } from "./workspace-path-rules.js";
+import {
+  isDependencyStorePath,
+  isSensitiveWorkspacePath,
+} from "./workspace-path-rules.js";
 import { compareText } from "./reference-analysis-paths.js";
 
-/** Parses Git's NUL-delimited path output without changing valid path characters. */
+/** Parses Git's NUL-delimited path output without changing paths. */
 export function parseNulDelimitedPaths(output: string): readonly string[] {
   return output.split("\0").filter((path) => path !== "");
 }
 
-/** Reads metadata only for discovered paths outside known dependency-store segments. */
+/** Reads metadata outside known dependency-store segments. */
 export function inspectWorkspaceFileMetadata(
   paths: readonly string[],
   readMetadata: WorkspaceFileMetadataReader,
@@ -23,7 +32,11 @@ function inspectWorkspacePath(
   normalizedPath: string,
   readMetadata: WorkspaceFileMetadataReader,
 ): { metadata?: WorkspaceFileMetadata; warning?: AnalysisWarning } {
-  if (isDependencyStorePath(normalizedPath) || isSensitiveWorkspacePath(normalizedPath)) return {};
+  if (
+    isDependencyStorePath(normalizedPath) ||
+    isSensitiveWorkspacePath(normalizedPath)
+  )
+    return {};
   try {
     const file = readMetadata(normalizedPath);
     if (file.isSymbolicLink || file.isJunction) return {};
@@ -39,11 +52,14 @@ function inspectWorkspacePath(
   }
 }
 
-function compareWorkspaceWarnings(left: AnalysisWarning, right: AnalysisWarning): number {
+function compareWorkspaceWarnings(
+  left: AnalysisWarning,
+  right: AnalysisWarning,
+): number {
   return compareText(left.path ?? "", right.path ?? "");
 }
 
-/** Reads no-follow metadata, reporting unreadable discovered paths without exposing reader errors. */
+/** Reads no-follow metadata without exposing reader errors. */
 export function inspectWorkspaceFileMetadataWithWarnings(
   paths: readonly string[],
   readMetadata: WorkspaceFileMetadataReader,
@@ -51,7 +67,10 @@ export function inspectWorkspaceFileMetadataWithWarnings(
 ): WorkspaceMetadataInspectionResult {
   const metadata: WorkspaceFileMetadata[] = [];
   const warnings: AnalysisWarning[] = [];
-  for (const normalizedPath of filterWorkspaceDiscoveryPaths(paths, excludePatterns)) {
+  for (const normalizedPath of filterWorkspaceDiscoveryPaths(
+    paths,
+    excludePatterns,
+  )) {
     const result = inspectWorkspacePath(normalizedPath, readMetadata);
     if (result.metadata) metadata.push(result.metadata);
     if (result.warning) warnings.push(result.warning);

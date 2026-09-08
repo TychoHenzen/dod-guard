@@ -1,5 +1,5 @@
 import { StringDecoder } from "node:string_decoder";
-import { GitHistoryStatusCounter } from "./git-process-types/git-history-status-counter.js";
+import { GitHistoryStatusCounter, } from "./git-process-types/git-history-status-counter.js";
 export function createCollectorState(child, historyMode, limits) {
     return {
         child,

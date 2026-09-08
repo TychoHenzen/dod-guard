@@ -1,5 +1,8 @@
 import * as history from "./git-analyzer.js";
-import { markUnresolvedCandidateEvidence, regradeVestigialEdges } from "./ref-analyzer.js";
+import {
+  markUnresolvedCandidateEvidence,
+  regradeVestigialEdges,
+} from "./ref-analyzer.js";
 import type { Burst } from "./types.js";
 import type { referenceSources } from "./repository-analysis-references.js";
 import { candidateFinding } from "./repository-analysis-candidate-finding.js";
@@ -15,7 +18,9 @@ function buildBurstReport(
     regradeVestigialEdges(references.graph, candidatePaths),
     candidatePaths,
   );
-  const findings = candidates.flatMap((candidate) => candidateFinding({ candidate, burst, graph, candidatePaths, threshold }));
+  const findings = candidates.flatMap((candidate) =>
+    candidateFinding({ candidate, burst, graph, candidatePaths, threshold }),
+  );
   return {
     id: burst.id,
     startTimestampMs: burst.startTimestampMs,
