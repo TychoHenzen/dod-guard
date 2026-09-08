@@ -1,6 +1,6 @@
 import type { ReferenceCandidate, ReferenceSourceSnapshot } from "./reference-analysis-types/index.js";
 import type { newReferenceReadBudget, newReferenceReadCollections } from "./reference-read-support.js";
-export interface StableReadInput {
+export type StableReadInput = {
     source: ReferenceCandidate;
     boundary: {
         readonly inspect: (source: ReferenceCandidate) => ReferenceSourceSnapshot | undefined;
@@ -13,4 +13,4 @@ export interface StableReadInput {
     maximumTotalBytes: number;
     budget: ReturnType<typeof newReferenceReadBudget>;
     collections: ReturnType<typeof newReferenceReadCollections>;
-}
+};

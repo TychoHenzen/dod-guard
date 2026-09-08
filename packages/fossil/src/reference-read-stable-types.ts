@@ -7,7 +7,7 @@ import type {
   newReferenceReadCollections,
 } from "./reference-read-support.js";
 
-export interface StableReadInput {
+export type StableReadInput = {
   source: ReferenceCandidate;
   boundary: {
     readonly inspect: (
@@ -23,4 +23,4 @@ export interface StableReadInput {
   maximumTotalBytes: number;
   budget: ReturnType<typeof newReferenceReadBudget>;
   collections: ReturnType<typeof newReferenceReadCollections>;
-}
+};
