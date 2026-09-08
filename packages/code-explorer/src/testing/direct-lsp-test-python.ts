@@ -7,7 +7,11 @@ const expectedConfiguration = {
   params: {
     settings: {
       python: {
-        analysis: { diagnosticMode: "workspace", indexing: true, useLibraryCodeForTypes: false },
+        analysis: {
+          diagnosticMode: "workspace",
+          indexing: true,
+          useLibraryCodeForTypes: false,
+        },
       },
     },
   },
@@ -23,5 +27,9 @@ const configurationRequest = {
 export function assertPythonConfiguration(process: FakeProcess): void {
   assert.deepEqual(process.sent[2], expectedConfiguration);
   process.respond(configurationRequest);
-  assert.deepEqual(process.sent.at(-1), { jsonrpc: "2.0", id: 7, result: [[], null] });
+  assert.deepEqual(process.sent.at(-1), {
+    jsonrpc: "2.0",
+    id: 7,
+    result: [[], null],
+  });
 }

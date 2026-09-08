@@ -2,7 +2,9 @@ import type { RelationCapabilities } from "../semantic/contracts/contract.js";
 
 export function readyCapabilities(): RelationCapabilities {
   return Object.fromEntries(
-    ["definition", "references", "type_definition", "implementation", "callers", "callees"].map((name) => [name, { state: "ready" }]),
+    "definition,references,type_definition,implementation,callers,callees"
+      .split(",")
+      .map((name) => [name, { state: "ready" }]),
   ) as RelationCapabilities;
 }
 

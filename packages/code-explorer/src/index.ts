@@ -12,7 +12,9 @@ export type { CodeExplorerEnvelope } from "./server/envelope.js";
 export type { CodeExplorerServer } from "./server/server-contract.js";
 export type { CodeExplorerState } from "./server/state.js";
 export type { CodeExplorerError } from "./navigation/error.js";
-export type { EmbeddedBrowserRuntime } from "./browser-server/embedded-runtime.js";
+export type {
+  EmbeddedBrowserRuntime,
+} from "./browser-server/embedded-runtime.js";
 export { createEmbeddedBrowserRuntime, createRuntimeCoreFactory };
 
 const filename = fileURLToPath(import.meta.url);

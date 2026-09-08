@@ -1,4 +1,6 @@
-import type { BackendResultValidationOptions } from "../semantic/backend-result/backend-result-validator.js";
+import type {
+  BackendResultValidationOptions,
+} from "../semantic/backend-result/backend-result-validator.js";
 import { createProjectRoot } from "../semantic/project-root/project-root.js";
 
 const rootPath = "/repo";
@@ -48,7 +50,11 @@ function definitionSymbol(location: ReturnType<typeof definitionLocation>) {
 
 function definitionRelation() {
   const location = definitionLocation();
-  return { relation: "definition", symbol: definitionSymbol(location), location };
+  return {
+    relation: "definition",
+    symbol: definitionSymbol(location),
+    location,
+  };
 }
 
 export function definition(overrides: Record<string, unknown> = {}) {

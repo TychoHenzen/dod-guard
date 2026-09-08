@@ -4,11 +4,19 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { createLspFrameStream } from "./lsp-frame-stream.mjs";
 
 const [serverEntrypoint, fixture] = process.argv.slice(2);
-if (!(serverEntrypoint && fixture)) throw new Error("usage: run-python-safe-sentinel <pyright-server.js> <fixture>");
+if (!(serverEntrypoint && fixture))
+  throw new Error(
+    "usage: run-python-safe-sentinel <pyright-server.js> <fixture>",
+  );
 
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
-const { createNativeProjectRoot } = await import(pathToFileURL(`${scriptDirectory}../dist/semantic/project-root.js`).href);
-const { createNativePythonMirror } = await import(pathToFileURL(`${scriptDirectory}../dist/semantic/python-mirror-runtime.js`).href);
+const { createNativeProjectRoot } = await import(
+  pathToFileURL(`${scriptDirectory}../dist/semantic/project-root.js`).href
+);
+const { createNativePythonMirror } = await import(
+  pathToFileURL(`${scriptDirectory}../dist/semantic/python-mirror-runtime.js`)
+    .href
+);
 const root = createNativeProjectRoot(fixture);
 const mirror = createNativePythonMirror(root);
 const sentinel = `${fixture}/SENTINEL_SIDE_EFFECT`;
@@ -28,7 +36,9 @@ const child = spawn(process.execPath, [serverEntrypoint, "--stdio"], {
 });
 
 function isConfigurationRequest(message) {
-  return message.method === "workspace/configuration" && message.id !== undefined;
+  return (
+    message.method === "workspace/configuration" && message.id !== undefined
+  );
 }
 
 function isInitializeResponse(message, initialized_) {
@@ -39,8 +49,17 @@ function sendInitialization(child_, mirror_, root_) {
   const uri = mirror_.uriFor("src/fixture.py");
   const text = root_.protectedRead("src/fixture.py").bytes;
   send(child_, { jsonrpc: "2.0", method: "initialized", params: {} });
-  send(child_, { jsonrpc: "2.0", method: "textDocument/didOpen", params: { textDocument: { uri, languageId: "python", version: 1, text } } });
-  send(child_, { jsonrpc: "2.0", id: 2, method: "textDocument/definition", params: { textDocument: { uri }, position: { line: 0, character: 7 } } });
+  send(child_, {
+    jsonrpc: "2.0",
+    method: "textDocument/didOpen",
+    params: { textDocument: { uri, languageId: "python", version: 1, text } },
+  });
+  send(child_, {
+    jsonrpc: "2.0",
+    id: 2,
+    method: "textDocument/definition",
+    params: { textDocument: { uri }, position: { line: 0, character: 7 } },
+  });
 }
 
 function sendConfiguration(child_, message) {
@@ -49,7 +68,13 @@ function sendConfiguration(child_, message) {
     jsonrpc: "2.0",
     id: message.id,
     result: items.map((item) =>
-      ["python.pythonPath", "python.venvPath", "python.analysis.extraPaths"].includes(item.section) ? [] : null,
+      [
+        "python.pythonPath",
+        "python.venvPath",
+        "python.analysis.extraPaths",
+      ].includes(item.section)
+        ? []
+        : null,
     ),
   });
 }
@@ -60,7 +85,9 @@ let finished = false;
 let configurationReplies = 0;
 const send = (child_, message) => {
   const body = JSON.stringify(message);
-  child_.stdin.write(`Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`);
+  child_.stdin.write(
+    `Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`,
+  );
 };
 const finish = (result) => {
   if (finished) return;
@@ -68,8 +95,14 @@ const finish = (result) => {
   clearTimeout(timeout);
   const disposeAndReport = () => {
     mirror.dispose();
+    const report = {
+      ...result,
+      side_effect_absent: !existsSync(sentinel),
+      configuration_replies: configurationReplies,
+      stderr,
+    };
     process.stdout.write(
-      `${JSON.stringify({ ...result, side_effect_absent: !existsSync(sentinel), configuration_replies: configurationReplies, stderr })}\n`,
+      `${JSON.stringify(report)}\n`,
     );
   };
   if (child.exitCode !== null) {
@@ -79,9 +112,14 @@ const finish = (result) => {
   child.once("exit", disposeAndReport);
   child.kill();
 };
-const timeout = setTimeout(() => finish({ initialized, definition_responded: false, timeout: true }), 30_000);
+const timeout = setTimeout(
+  () => finish({ initialized, definition_responded: false, timeout: true }),
+  30_000,
+);
 child.stderr.on("data", (chunk) => (stderr += chunk));
-child.on("error", (error) => finish({ initialized, definition_responded: false, error: String(error) }));
+child.on("error", (error) =>
+  finish({ initialized, definition_responded: false, error: String(error) }),
+);
 const handleFrame = (message) => {
   if (isInitializeResponse(message, initialized)) {
     initialized = true;
@@ -93,7 +131,12 @@ const handleFrame = (message) => {
     sendConfiguration(child, message);
     return;
   }
-  if (message.id === 2) finish({ initialized, definition_responded: true, definition: message.result });
+  if (message.id === 2)
+    finish({
+      initialized,
+      definition_responded: true,
+      definition: message.result,
+    });
 };
 child.stdout.on("data", createLspFrameStream(handleFrame));
 send(child, {
@@ -104,6 +147,9 @@ send(child, {
     processId: null,
     rootUri: pathToFileURL(mirror.root).href,
     capabilities: { workspace: { configuration: true } },
-    initializationOptions: { use_project_environment: false, mirror_only: true },
+    initializationOptions: {
+      use_project_environment: false,
+      mirror_only: true,
+    },
   },
 });

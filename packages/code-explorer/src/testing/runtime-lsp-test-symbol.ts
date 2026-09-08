@@ -6,6 +6,10 @@ export function runtimeEntrySymbol() {
     name: "helper",
     language: "rust" as const,
     kind: "function" as const,
-    location: testLocation("a.rs", { line: 0, character: 7 }, { line: 0, character: 13 }),
+    location: testLocation(
+      "a.rs",
+      { line: 0, character: 7 },
+      { line: 0, character: 13 },
+    ),
   };
 }

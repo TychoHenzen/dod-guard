@@ -18,7 +18,9 @@ export class Process implements LspProcess {
   }
 
   write(chunk: Uint8Array): void {
-    const message = JSON.parse(new TextDecoder().decode(chunk).split("\r\n\r\n")[1] ?? "{}") as {
+    const message = JSON.parse(
+      new TextDecoder().decode(chunk).split("\r\n\r\n")[1] ?? "{}",
+    ) as {
       id?: number;
       method?: string;
       params?: unknown;
@@ -32,7 +34,11 @@ export class Process implements LspProcess {
 
   private respondToInitialize(message: { id?: number; method?: string }): void {
     if (message.method !== "initialize") return;
-    this.respond({ jsonrpc: "2.0", id: message.id, result: { capabilities: this.serverCapabilities } });
+    this.respond({
+      jsonrpc: "2.0",
+      id: message.id,
+      result: { capabilities: this.serverCapabilities },
+    });
   }
 
   private respondToShutdown(message: { id?: number; method?: string }): void {
@@ -46,8 +52,18 @@ export class Process implements LspProcess {
     for (const listener of this.exit) listener();
   }
 
-  private respondToRequest(message: { id?: number; method?: string; params?: unknown }): void {
-    if (message.id === undefined || message.method === undefined || this.responseFor === undefined || message.method === "initialize") return;
+  private respondToRequest(message: {
+    id?: number;
+    method?: string;
+    params?: unknown;
+  }): void {
+    if (
+      message.id === undefined ||
+      message.method === undefined ||
+      this.responseFor === undefined ||
+      message.method === "initialize"
+    )
+      return;
     this.respond({
       jsonrpc: "2.0",
       id: message.id,
@@ -78,7 +94,9 @@ export class Process implements LspProcess {
 
   private respond(value: unknown): void {
     const body = JSON.stringify(value);
-    const frame = new TextEncoder().encode(`Content-Length: ${body.length}\r\n\r\n${body}`);
+    const frame = new TextEncoder().encode(
+      `Content-Length: ${body.length}\r\n\r\n${body}`,
+    );
     for (const listener of this.stdout) listener(frame);
   }
 }

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import type { BackendLaunchPreparation } from "../semantic/backend-launch/backend-launch-preparation.js";
+import type {
+  BackendLaunchPreparation,
+} from "../semantic/backend-launch/backend-launch-preparation.js";
 
 const rustSafeInitializationOptions = {
   cargo: {
@@ -10,7 +12,10 @@ const rustSafeInitializationOptions = {
   projectConfiguration: { enable: false },
 };
 
-function expectedRustPreparation(executable: string, event?: "project_backend_config_ignored") {
+function expectedRustPreparation(
+  executable: string,
+  event?: "project_backend_config_ignored",
+) {
   return {
     status: "ready",
     executable,

@@ -2,8 +2,12 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
-import { createNativePythonMirror } from "../semantic/python-mirror/python-mirror-runtime.js";
+import {
+  createNativeProjectRoot,
+} from "../semantic/project-root/project-root.js";
+import {
+  createNativePythonMirror,
+} from "../semantic/python-mirror/python-mirror-runtime.js";
 
 export const unsafePythonConfigurationKeys = [
   "extends",

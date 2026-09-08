@@ -19,8 +19,17 @@ export async function oldProcessFixture() {
   const initial = client.start(old);
   old.respond({ jsonrpc: "2.0", id: 1, result: { capabilities: {} } });
   await initial;
-  old.respond({ jsonrpc: "2.0", id: 55, method: "workspace/applyEdit", params: { secret: "discard" } });
-  old.respond({ jsonrpc: "2.0", method: "window/logMessage", params: { secret: "discard" } });
+  old.respond({
+    jsonrpc: "2.0",
+    id: 55,
+    method: "workspace/applyEdit",
+    params: { secret: "discard" },
+  });
+  old.respond({
+    jsonrpc: "2.0",
+    method: "window/logMessage",
+    params: { secret: "discard" },
+  });
   old.crash();
   scheduler.advance(250);
   replacement.respond({ jsonrpc: "2.0", id: 2, result: { capabilities: {} } });

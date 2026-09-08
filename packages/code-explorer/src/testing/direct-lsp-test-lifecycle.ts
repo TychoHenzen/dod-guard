@@ -10,7 +10,10 @@ export async function tick(): Promise<void> {
 export async function ready(
   process: FakeProcess,
   scheduler = new Scheduler(),
-): Promise<{ client: ReturnType<typeof createDirectLspClient>; scheduler: Scheduler }> {
+): Promise<{
+  client: ReturnType<typeof createDirectLspClient>;
+  scheduler: Scheduler;
+}> {
   const client = createDirectLspClient({
     language: "python",
     root_uri: "file:///frozen",
@@ -21,7 +24,10 @@ export async function ready(
   });
   const start = client.start(process);
   const initialize = process.sent[0] as { id: number };
-  process.respond({ jsonrpc: "2.0", id: initialize.id, result: { capabilities: {} } }, true);
+  process.respond(
+    { jsonrpc: "2.0", id: initialize.id, result: { capabilities: {} } },
+    true,
+  );
   await start;
   return { client, scheduler };
 }

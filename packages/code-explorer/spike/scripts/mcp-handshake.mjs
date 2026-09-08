@@ -6,7 +6,10 @@ const [command, ...args] = process.argv.slice(2);
 const outputPath = process.env.CODE_EXPLORER_SPIKE_OUTPUT;
 
 if (!command || !outputPath) {
-  throw new Error("Usage: CODE_EXPLORER_SPIKE_OUTPUT=<path> node mcp-handshake.mjs <command> [args...]");
+  throw new Error(
+    "Usage: CODE_EXPLORER_SPIKE_OUTPUT=<path> node mcp-handshake.mjs " +
+      "<command> [args...]",
+  );
 }
 
 const child = spawn(command, args, {
@@ -30,13 +33,18 @@ const { messages, stderr } = captureJsonLines(child, parseJsonLine);
 
 function send(method, params) {
   const id = nextId++;
-  child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", id, method, params })}\n`);
+  child.stdin.write(
+    `${JSON.stringify({ jsonrpc: "2.0", id, method, params })}\n`,
+  );
   return id;
 }
 
 function waitFor(id, timeoutMs) {
   return new Promise((resolve, reject) => {
-    const deadline = setTimeout(() => reject(new Error(`Timed out waiting for request ${id}`)), timeoutMs);
+    const deadline = setTimeout(
+      () => reject(new Error(`Timed out waiting for request ${id}`)),
+      timeoutMs,
+    );
     const poll = () => {
       const message = messages.find((candidate) => candidate.id === id);
       if (message) {
@@ -58,7 +66,14 @@ const initializeId = send("initialize", {
 });
 
 const initialize = await waitFor(initializeId, 30_000);
-child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} })}\n`);
+const initializedNotification = JSON.stringify({
+  jsonrpc: "2.0",
+  method: "notifications/initialized",
+  params: {},
+});
+child.stdin.write(
+  `${initializedNotification}\n`,
+);
 const toolListId = send("tools/list", {});
 const tools = await waitFor(toolListId, 10_000);
 

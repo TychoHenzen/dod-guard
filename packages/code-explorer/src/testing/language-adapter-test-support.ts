@@ -1,7 +1,9 @@
 import type {
   Language,
+  ProjectRevision,
   SemanticRequest,
   SemanticResult,
+  SymbolIdentity,
 } from "../semantic/contracts/contract.js";
 
 type AdapterResultFactory = (request: SemanticRequest) => SemanticResult;
@@ -23,16 +25,32 @@ export function createAdapterResult(
 
 function adapterResult(
   request: SemanticRequest,
-  context: { language: Language; kind: string; location: { path: string; range: { start: { line: number; character: number }; end: { line: number; character: number } } } },
+  context: Omit<Parameters<typeof focusResult>[0], "revision">,
 ): SemanticResult {
   const revision = { generation: 1, manifest_sha256: "manifest-sha256" };
-  if (request.operation === "search") return { operation: "search", revision, symbols: [] };
-  if (request.operation === "focus") return focusResult({ ...context, revision });
+  if (request.operation === "search")
+    return { operation: "search", revision, symbols: [] };
+  if (request.operation === "focus")
+    return focusResult({ ...context, revision });
   return { operation: request.operation, revision, relations: [] };
 }
 
-function focusResult(context: { language: Language; kind: string; location: { path: string; range: { start: { line: number; character: number }; end: { line: number; character: number } } }; revision: { generation: number; manifest_sha256: string } }): SemanticResult {
-  return { operation: "focus", revision: context.revision, symbol: { id: `${context.language}:helper`, name: "helper", language: context.language, kind: context.kind, location: context.location } };
+function focusResult(
+  context: Pick<SymbolIdentity, "language" | "kind" | "location"> & {
+    revision: ProjectRevision;
+  },
+): SemanticResult {
+  return {
+    operation: "focus",
+    revision: context.revision,
+    symbol: {
+      id: `${context.language}:helper`,
+      name: "helper",
+      language: context.language,
+      kind: context.kind,
+      location: context.location,
+    },
+  };
 }
 
 export function adapterRequests(symbolId: string): SemanticRequest[] {

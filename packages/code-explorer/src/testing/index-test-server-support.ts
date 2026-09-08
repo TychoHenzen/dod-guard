@@ -10,7 +10,11 @@ export function symbol(kind: string, path: string) {
     name: "helper",
     language: "rust" as const,
     kind,
-    location: testLocation(path, { line: 0, character: 0 }, { line: 0, character: 6 }),
+    location: testLocation(
+      path,
+      { line: 0, character: 0 },
+      { line: 0, character: 6 },
+    ),
   };
 }
 
@@ -41,7 +45,10 @@ function focusedNavigationResult(focused: ReturnType<typeof symbol>) {
     operation: "focus" as const,
     revision: { generation: 1, manifest_sha256: "test" },
     symbol: focused,
-    content: { body: "Target", visible_symbols: [{ name: "Target", symbol_id: "target" }] },
+    content: {
+      body: "Target",
+      visible_symbols: [{ name: "Target", symbol_id: "target" }],
+    },
   };
 }
 
@@ -70,10 +77,16 @@ export function focusableNavigationAdapter(): LanguageAdapter {
   };
 }
 
-export function adapterWithSymbols(symbols: ReturnType<typeof symbol>[]): LanguageAdapter {
+export function adapterWithSymbols(
+  symbols: ReturnType<typeof symbol>[],
+): LanguageAdapter {
   return {
     status: () => testAdapterStatus("rust", readyCapabilities()),
-    request: async () => ({ operation: "search", revision: { generation: 1, manifest_sha256: "test" }, symbols }),
+    request: async () => ({
+      operation: "search",
+      revision: { generation: 1, manifest_sha256: "test" },
+      symbols,
+    }),
   };
 }
 

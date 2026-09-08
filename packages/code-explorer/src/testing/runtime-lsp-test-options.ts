@@ -1,6 +1,12 @@
 import type { LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
-import type { RuntimeLspBackendOptions } from "../semantic/runtime/runtime-lsp-backend.js";
-import { runtimeRoot, unavailableCapabilities, readyPreparation } from "./runtime-lsp-test-fixtures.js";
+import type {
+  RuntimeLspBackendOptions,
+} from "../semantic/runtime/runtime-lsp-backend.js";
+import {
+  runtimeRoot,
+  unavailableCapabilities,
+  readyPreparation,
+} from "./runtime-lsp-test-fixtures.js";
 
 export function runtimeOptions(
   process: LspProcess,

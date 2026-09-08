@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import type { createDirectLspClient } from "../semantic/direct-lsp/direct-lsp.js";
+import type {
+  createDirectLspClient,
+} from "../semantic/direct-lsp/direct-lsp.js";
 import { FakeProcess } from "./direct-lsp-test-process.js";
 import { tick } from "./direct-lsp-test-lifecycle.js";
 
@@ -7,7 +9,12 @@ const shutdownInitialization = {
   jsonrpc: "2.0",
   id: 1,
   method: "initialize",
-  params: { processId: null, rootUri: "file:///frozen", capabilities: { workspace: {} }, initializationOptions: { safe: true } },
+  params: {
+    processId: null,
+    rootUri: "file:///frozen",
+    capabilities: { workspace: {} },
+    initializationOptions: { safe: true },
+  },
 };
 
 const shutdownMethods = [
@@ -34,5 +41,8 @@ export async function completeReadOnlyShutdown(
   await tick();
   process.crash();
   await stop;
-  assert.deepEqual(process.sent.map((entry) => entry.method), shutdownMethods);
+  assert.deepEqual(
+    process.sent.map((entry) => entry.method),
+    shutdownMethods,
+  );
 }

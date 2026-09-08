@@ -2,9 +2,16 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
-import { createNativeProjectRoot } from "../semantic/project-root/project-root.js";
-import { createManagedPythonBackend } from "../semantic/runtime/runtime-bootstrap.js";
-import { runtimeOptions, unavailableCapabilities } from "./runtime-lsp-test-support.js";
+import {
+  createNativeProjectRoot,
+} from "../semantic/project-root/project-root.js";
+import {
+  createManagedPythonBackend,
+} from "../semantic/runtime/runtime-bootstrap.js";
+import {
+  runtimeOptions,
+  unavailableCapabilities,
+} from "./runtime-lsp-test-support.js";
 
 class InitializingProcess implements LspProcess {
   sent: Record<string, unknown>[] = [];
@@ -60,8 +67,7 @@ function pythonWriter(
   write: (chunk: Uint8Array) => void,
   child: InitializingProcess,
   roots: string[],
-)
-{
+) {
   return (chunk: Uint8Array) => {
     write(chunk);
     recordPythonRoot(child, roots);
@@ -88,7 +94,10 @@ function createPythonPolicy() {
   };
 }
 
-async function exerciseManagedPython(source: string, roots: string[]): Promise<void> {
+async function exerciseManagedPython(
+  source: string,
+  roots: string[],
+): Promise<void> {
   const backend = createManagedPythonBackend({
     projectRoot: createNativeProjectRoot(source),
     policy: createPythonPolicy(),
@@ -97,7 +106,10 @@ async function exerciseManagedPython(source: string, roots: string[]): Promise<v
   });
   await backend.start?.();
   await new Promise((resolve) => setImmediate(resolve));
-  writeFileSync(join(source, "src", "main.py"), "def helper():\n    return 1\n");
+  writeFileSync(
+    join(source, "src", "main.py"),
+    "def helper():\n    return 1\n",
+  );
   await backend.refresh?.();
   await new Promise((resolve) => setImmediate(resolve));
   await backend.shutdown?.();

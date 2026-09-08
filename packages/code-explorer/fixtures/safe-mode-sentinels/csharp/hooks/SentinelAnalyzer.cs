@@ -17,7 +17,8 @@ public sealed class SentinelAnalyzer : DiagnosticAnalyzer
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
+        [Rule];
 
     public override void Initialize(AnalysisContext context)
     {

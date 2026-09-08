@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { createServer } from "../index.js";
 import { startSession } from "./index-test-session-support.js";
 
-export async function assertFileFallback(server: ReturnType<typeof createServer>): Promise<void> {
+export async function assertFileFallback(
+  server: ReturnType<typeof createServer>,
+): Promise<void> {
   const result = await server.call("code_search", { query: "client.ts" });
   assert.equal("code" in result, false);
   if ("code" in result) throw new Error("expected file discovery response");
@@ -19,5 +21,8 @@ export async function assertFileFallback(server: ReturnType<typeof createServer>
   assert.equal("code" in focused, false);
   if ("code" in focused) throw new Error("expected file focus response");
   assert.equal(focused.data.path, "src/client.ts");
-  assert.match((focused.data.content as { body: string }).body, /export const client/);
+  assert.match(
+    (focused.data.content as { body: string }).body,
+    /export const client/,
+  );
 }

@@ -10,11 +10,30 @@ type HierarchyRelation = {
 };
 
 function incomingPrepared() {
-  return [{ name: "entry", kind: 12, uri: "file:///project/src/main.rs", range: testRange({ line: 0, character: 0 }, { line: 0, character: 5 }) }];
+  return [
+    {
+      name: "entry",
+      kind: 12,
+      uri: "file:///project/src/main.rs",
+      range: testRange({ line: 0, character: 0 }, { line: 0, character: 5 }),
+    },
+  ];
 }
 
 function incomingRelations() {
-  return [{ from: { name: "caller", kind: 12, uri: "file:///project/src/main.rs", range: testRange({ line: 0, character: 0 }, { line: 0, character: 6 }) }, fromRanges: [testRange({ line: 0, character: 2 }, { line: 0, character: 4 })] }];
+  return [
+    {
+      from: {
+        name: "caller",
+        kind: 12,
+        uri: "file:///project/src/main.rs",
+        range: testRange({ line: 0, character: 0 }, { line: 0, character: 6 }),
+      },
+      fromRanges: [
+        testRange({ line: 0, character: 2 }, { line: 0, character: 4 }),
+      ],
+    },
+  ];
 }
 
 function outgoingPrepared() {
@@ -22,14 +41,27 @@ function outgoingPrepared() {
 }
 
 function outgoingRelations() {
-  return [{ to: { name: "callee", kind: 6, uri: "file:///project/src/main.rs", range: testRange({ line: 0, character: 0 }, { line: 0, character: 6 }) }, fromRanges: [testRange({ line: 0, character: 3 }, { line: 0, character: 5 })] }];
+  return [
+    {
+      to: {
+        name: "callee",
+        kind: 6,
+        uri: "file:///project/src/main.rs",
+        range: testRange({ line: 0, character: 0 }, { line: 0, character: 6 }),
+      },
+      fromRanges: [
+        testRange({ line: 0, character: 3 }, { line: 0, character: 5 }),
+      ],
+    },
+  ];
 }
 
 export function incomingHierarchyClient(methods: string[]) {
   return semanticClient(
     async (method: string) => {
       methods.push(method);
-      if (method === "textDocument/prepareCallHierarchy") return incomingPrepared();
+      if (method === "textDocument/prepareCallHierarchy")
+        return incomingPrepared();
       return incomingRelations();
     },
     { callHierarchyProvider: true },
@@ -40,7 +72,8 @@ export function outgoingHierarchyClient(methods: string[]) {
   return semanticClient(
     async (method: string) => {
       methods.push(method);
-      if (method === "textDocument/prepareCallHierarchy") return outgoingPrepared();
+      if (method === "textDocument/prepareCallHierarchy")
+        return outgoingPrepared();
       return outgoingRelations();
     },
     { callHierarchyProvider: true },

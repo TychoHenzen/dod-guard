@@ -1,11 +1,15 @@
 import type { LspProcess } from "../semantic/direct-lsp/direct-lsp.js";
-import type { RuntimeLspBackendOptions } from "../semantic/runtime/runtime-lsp-backend.js";
+import type {
+  RuntimeLspBackendOptions,
+} from "../semantic/runtime/runtime-lsp-backend.js";
 import { Process } from "./runtime-test-process.js";
 import { runtimeOptions } from "./runtime-lsp-test-options.js";
 import { unavailableCapabilities } from "./runtime-lsp-test-fixtures.js";
 import { runtimeEntrySymbol } from "./runtime-lsp-test-symbol.js";
 
-export function pythonMirrorOptions(process: LspProcess): RuntimeLspBackendOptions {
+export function pythonMirrorOptions(
+  process: LspProcess,
+): RuntimeLspBackendOptions {
   return runtimeOptions(process, {
     language: "python",
     root: {
@@ -14,7 +18,10 @@ export function pythonMirrorOptions(process: LspProcess): RuntimeLspBackendOptio
       resolveClientPath: () => "/project/a.py",
       classifyBackendPath: () => ({ relative_path: "a.py" }),
       openProtected: () => ({ path: "/project/a.py", handle: undefined }),
-      protectedRead: () => ({ path: "/project/a.py", bytes: "def helper():\n    pass\n" }),
+      protectedRead: () => ({
+        path: "/project/a.py",
+        bytes: "def helper():\n    pass\n",
+      }),
     } as never,
     root_uri: "file:///mirror",
     capabilities: unavailableCapabilities,
@@ -34,7 +41,10 @@ export function runtimeSourceOptions(
       resolveClientPath: () => "/project/a.rs",
       classifyBackendPath: () => ({ relative_path: "a.rs" }),
       openProtected: () => ({ path: "/project/a.rs", handle: undefined }),
-      protectedRead: () => ({ path: "/project/a.rs", bytes: "pub fn helper() {}\n" }),
+      protectedRead: () => ({
+        path: "/project/a.rs",
+        bytes: "pub fn helper() {}\n",
+      }),
     } as never,
     symbols: new Map([["entry", runtimeEntrySymbol()]]),
     ...overrides,
@@ -42,9 +52,28 @@ export function runtimeSourceOptions(
 }
 
 export function degradedProcess(): Process {
-  return new Process([], { definitionProvider: true, referencesProvider: true }, (method) =>
-    method === "textDocument/definition"
-      ? [{ uri: "git:/virtual", range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } } }]
-      : [{ uri: "file:///project/a.rs", range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } }],
+  return new Process(
+    [],
+    { definitionProvider: true, referencesProvider: true },
+    (method) =>
+      method === "textDocument/definition"
+        ? [
+            {
+              uri: "git:/virtual",
+              range: {
+                start: { line: 0, character: 0 },
+                end: { line: 0, character: 1 },
+              },
+            },
+          ]
+        : [
+            {
+              uri: "file:///project/a.rs",
+              range: {
+                start: { line: 0, character: 0 },
+                end: { line: 0, character: 0 },
+              },
+            },
+          ],
   );
 }
