@@ -1,7 +1,7 @@
 import {
   analyzeReferences,
   markUnresolvedCandidateEvidence,
-  readStableReferenceSources,
+  readStableReferenceSourcesInternal,
   regradeVestigialEdges,
   unsupportedCandidateReferenceGraph,
   type ReferenceCandidate,
@@ -35,7 +35,7 @@ function readReferenceSources(
   const supported = candidates.filter(
     (candidate) => candidate.language !== "unsupported",
   );
-  const reads = readStableReferenceSources({
+  const reads = readStableReferenceSourcesInternal({
     sources: supported,
     boundary: {
       inspect: (source) => inspectReferenceSource(root, source),

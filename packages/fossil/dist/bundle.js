@@ -5503,141 +5503,9 @@ function referenceGraph(parsed, sources) {
   return { edges, unresolved, complete: true, unavailablePaths: [] };
 }
 
-// src/reference-analysis-csharp-parser.ts
-var CSHARP_USING = /^\s*using\s+(?!static\b)([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*;\s*$/gm;
-function braceDepthBefore(content, end) {
-  let depth = 0;
-  for (const character of content.slice(0, end)) {
-    if (character === "{") depth += 1;
-    if (character === "}") depth -= 1;
-  }
-  return depth;
-}
-function csharpCandidatePaths(currentSources, suffix) {
-  return currentSources.filter(
-    (candidate) => candidate.language === "csharp" && candidate.path.endsWith(suffix)
-  ).map((candidate) => candidate.path).sort(compareText);
-}
-function csharpTargetCandidates(matches, suffix) {
-  if (matches.length === 0) return [suffix];
-  return matches;
-}
-function csharpTargetPath(matches) {
-  if (matches.length !== 1) return void 0;
-  return matches[0];
-}
-function csharpResolution(matches) {
-  if (matches.length === 1) return "resolved";
-  return "unresolved";
-}
-function csharpReference(source, currentSources, match) {
-  const namespace = match[1];
-  if (!namespace) return void 0;
-  if (match.index === void 0) return void 0;
-  if (braceDepthBefore(source.content, match.index) > 1) return void 0;
-  const suffix = `${namespace.replaceAll(".", "/")}.cs`;
-  const matches = csharpCandidatePaths(currentSources, suffix);
-  const start = match.index + match[0].indexOf(namespace);
-  return {
-    sourcePath: source.path,
-    targetCandidates: csharpTargetCandidates(matches, suffix),
-    targetPath: csharpTargetPath(matches),
-    span: sourceSpan(source.content, start, start + namespace.length),
-    language: "csharp",
-    kind: "csharp-using",
-    resolution: csharpResolution(matches),
-    strength: "strong"
-  };
-}
-function parsedCsharpReferences(source, currentSources) {
-  if (source.language !== "csharp") return [];
-  const references = [];
-  CSHARP_USING.lastIndex = 0;
-  for (let match = CSHARP_USING.exec(source.content); match; match = CSHARP_USING.exec(source.content)) {
-    const reference = csharpReference(source, currentSources, match);
-    if (reference) references.push(reference);
-  }
-  return references;
-}
-
-// src/reference-analysis-rust-parser.ts
-import { posix as posix2 } from "node:path";
-var RUST_MODULE = /^\s*mod\s+([A-Za-z_]\w*)\s*;\s*$/gm;
-var RUST_CRATE_USE = /^\s*use\s+crate::([A-Za-z_]\w*(?:::[A-Za-z_]\w*)*)\s*;\s*$/gm;
-function nearestCargoSourceRoot(path) {
-  if (path.startsWith("src/")) return "src";
-  const rootStart = path.lastIndexOf("/src/");
-  return rootStart === -1 ? void 0 : path.slice(0, rootStart + 4);
-}
-function rustModuleCandidates(sourcePath, name) {
-  const sibling = posix2.join(posix2.dirname(sourcePath), name);
-  return [`${sibling}.rs`, `${sibling}/mod.rs`];
-}
-function rustUseCandidates(sourcePath, name) {
-  const root = nearestCargoSourceRoot(sourcePath);
-  if (!root) return [];
-  const module = name.replaceAll("::", "/");
-  return [`${root}/${module}.rs`, `${root}/${module}/mod.rs`];
-}
-function rustReference(source, kind, candidatesFor, match) {
-  const name = match[1];
-  if (!name) return void 0;
-  if (match.index === void 0) return void 0;
-  const start = match.index + match[0].indexOf(name);
-  return {
-    sourcePath: source.path,
-    targetCandidates: candidatesFor(name),
-    span: sourceSpan(source.content, start, start + name.length),
-    language: "rust",
-    kind,
-    resolution: "unresolved",
-    strength: "strong"
-  };
-}
-function compareRustReferences(left, right) {
-  const byPosition = left.span.start - right.span.start;
-  if (byPosition !== 0) return byPosition;
-  return compareText(left.kind, right.kind);
-}
-function rustPatterns(source) {
-  return [
-    {
-      kind: "rust-mod",
-      pattern: RUST_MODULE,
-      candidatesFor: (name) => rustModuleCandidates(source.path, name)
-    },
-    {
-      kind: "rust-use",
-      pattern: RUST_CRATE_USE,
-      candidatesFor: (name) => rustUseCandidates(source.path, name)
-    }
-  ];
-}
-function parsedRustReferences(source) {
-  if (source.language !== "rust") return [];
-  const patterns = rustPatterns(source);
-  const references = [];
-  for (const { kind, pattern, candidatesFor } of patterns) {
-    pattern.lastIndex = 0;
-    for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
-      const reference = rustReference(source, kind, candidatesFor, match);
-      if (reference) references.push(reference);
-    }
-  }
-  return references.sort(compareRustReferences);
-}
-
-// src/reference-analysis-public.ts
-function analyzeReferences(sources) {
-  return referenceGraph(
-    sources.flatMap((source) => [
-      ...parsedModuleReferences(source),
-      ...parsedCsharpReferences(source, sources),
-      ...parsedRustReferences(source)
-    ]),
-    sources
-  );
-}
+// src/reference-analysis-limits.ts
+var DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES = 1048576;
+var DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES = 268435456;
 
 // src/reference-read-evidence.ts
 function emptyReferenceGraph(unavailablePaths) {
@@ -5700,99 +5568,6 @@ function newReferenceReadCollections() {
 function newReferenceReadBudget() {
   return { acceptedBytes: 0, totalLimitReached: false };
 }
-
-// src/reference-analysis-candidate-matching.ts
-function normalizeCandidatePath(path) {
-  return path.replaceAll("\\", "/").replace(/\/(?:index)(?:\.[^/]+)?$/, "").replace(/\.[^/]+$/, "");
-}
-function basename(path) {
-  return normalizeCandidatePath(path).split("/").at(-1) ?? "";
-}
-function candidateBasenameCounts(candidates) {
-  const counts = /* @__PURE__ */ new Map();
-  for (const path of candidates) {
-    const name = basename(path);
-    counts.set(name, (counts.get(name) ?? 0) + 1);
-  }
-  return counts;
-}
-function matchesFullPath(normalizedTarget, normalizedCandidate) {
-  return normalizedCandidate === normalizedTarget || normalizedCandidate.endsWith(`/${normalizedTarget}`);
-}
-function matchesBasename(normalizedTarget, normalizedCandidate, basenameCounts) {
-  const name = normalizedTarget.split("/").at(-1) ?? "";
-  return normalizedCandidate === normalizedTarget || basenameCounts.get(name) === 1 && normalizedCandidate.endsWith(`/${name}`);
-}
-function matchesCandidate(normalizedTarget, candidate, basenameCounts) {
-  if (!normalizedTarget) return false;
-  const normalizedCandidate = normalizeCandidatePath(candidate);
-  if (normalizedTarget.includes("/"))
-    return matchesFullPath(normalizedTarget, normalizedCandidate);
-  return matchesBasename(normalizedTarget, normalizedCandidate, basenameCounts);
-}
-function markUnresolvedTarget({
-  target,
-  candidates,
-  basenameCounts,
-  unavailable
-}) {
-  const normalizedTarget = normalizeCandidatePath(target);
-  if (!normalizedTarget) return;
-  for (const candidate of candidates) {
-    if (matchesCandidate(normalizedTarget, candidate, basenameCounts))
-      unavailable.add(candidate);
-  }
-}
-function markUnresolvedReference({
-  unresolved,
-  candidates,
-  basenameCounts,
-  unavailable
-}) {
-  if (unresolved.resolution !== "unresolved") return;
-  for (const target of unresolved.targetCandidates)
-    markUnresolvedTarget({ target, candidates, basenameCounts, unavailable });
-}
-
-// src/reference-analysis-candidate-evidence.ts
-function regradeVestigialEdges(graph, candidatePaths) {
-  return {
-    ...graph,
-    edges: graph.edges.map(
-      (edge) => candidatePaths.has(edge.sourcePath) && candidatePaths.has(edge.targetPath) ? { ...edge, strength: "vestigial" } : { ...edge }
-    )
-  };
-}
-function markUnresolvedCandidateEvidence(graph, candidatePaths) {
-  const candidates = [...candidatePaths];
-  const basenameCounts = candidateBasenameCounts(candidates);
-  const unavailable = new Set(graph.unavailablePaths);
-  for (const unresolved of graph.unresolved)
-    markUnresolvedReference({
-      unresolved,
-      candidates,
-      basenameCounts,
-      unavailable
-    });
-  const unavailablePaths = [...unavailable].sort(compareText);
-  return {
-    ...graph,
-    complete: graph.complete && unavailablePaths.length === 0,
-    unavailablePaths
-  };
-}
-function unsupportedCandidateReferenceGraph(candidates) {
-  const unavailablePaths = [
-    ...new Set(
-      candidates.filter((candidate) => candidate.language === "unsupported").map((candidate) => candidate.path)
-    )
-  ].sort(compareText);
-  return emptyReferenceGraph(unavailablePaths);
-}
-
-// src/reference-analysis-limits.ts
-var DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES = 1048576;
-var DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES = 268435456;
 
 // src/reference-read-stable-warn.ts
 function warnStableRead(input, code, message) {
@@ -5959,7 +5734,7 @@ function readStableSource(input) {
   if (!current) return;
   readStableContent(input, initial);
 }
-function readStableReferenceSources({
+function readStableReferenceSourcesInternal({
   sources,
   boundary,
   maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
@@ -5981,6 +5756,231 @@ function readStableReferenceSources({
     ...collections,
     acceptedBytes: budget.acceptedBytes
   });
+}
+
+// src/reference-analysis-csharp-parser.ts
+var CSHARP_USING = /^\s*using\s+(?!static\b)([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*;\s*$/gm;
+function braceDepthBefore(content, end) {
+  let depth = 0;
+  for (const character of content.slice(0, end)) {
+    if (character === "{") depth += 1;
+    if (character === "}") depth -= 1;
+  }
+  return depth;
+}
+function csharpCandidatePaths(currentSources, suffix) {
+  return currentSources.filter(
+    (candidate) => candidate.language === "csharp" && candidate.path.endsWith(suffix)
+  ).map((candidate) => candidate.path).sort(compareText);
+}
+function csharpTargetCandidates(matches, suffix) {
+  if (matches.length === 0) return [suffix];
+  return matches;
+}
+function csharpTargetPath(matches) {
+  if (matches.length !== 1) return void 0;
+  return matches[0];
+}
+function csharpResolution(matches) {
+  if (matches.length === 1) return "resolved";
+  return "unresolved";
+}
+function csharpReference(source, currentSources, match) {
+  const namespace = match[1];
+  if (!namespace) return void 0;
+  if (match.index === void 0) return void 0;
+  if (braceDepthBefore(source.content, match.index) > 1) return void 0;
+  const suffix = `${namespace.replaceAll(".", "/")}.cs`;
+  const matches = csharpCandidatePaths(currentSources, suffix);
+  const start = match.index + match[0].indexOf(namespace);
+  return {
+    sourcePath: source.path,
+    targetCandidates: csharpTargetCandidates(matches, suffix),
+    targetPath: csharpTargetPath(matches),
+    span: sourceSpan(source.content, start, start + namespace.length),
+    language: "csharp",
+    kind: "csharp-using",
+    resolution: csharpResolution(matches),
+    strength: "strong"
+  };
+}
+function parsedCsharpReferences(source, currentSources) {
+  if (source.language !== "csharp") return [];
+  const references = [];
+  CSHARP_USING.lastIndex = 0;
+  for (let match = CSHARP_USING.exec(source.content); match; match = CSHARP_USING.exec(source.content)) {
+    const reference = csharpReference(source, currentSources, match);
+    if (reference) references.push(reference);
+  }
+  return references;
+}
+
+// src/reference-analysis-rust-parser.ts
+import { posix as posix2 } from "node:path";
+var RUST_MODULE = /^\s*mod\s+([A-Za-z_]\w*)\s*;\s*$/gm;
+var RUST_CRATE_USE = /^\s*use\s+crate::([A-Za-z_]\w*(?:::[A-Za-z_]\w*)*)\s*;\s*$/gm;
+function nearestCargoSourceRoot(path) {
+  if (path.startsWith("src/")) return "src";
+  const rootStart = path.lastIndexOf("/src/");
+  return rootStart === -1 ? void 0 : path.slice(0, rootStart + 4);
+}
+function rustModuleCandidates(sourcePath, name) {
+  const sibling = posix2.join(posix2.dirname(sourcePath), name);
+  return [`${sibling}.rs`, `${sibling}/mod.rs`];
+}
+function rustUseCandidates(sourcePath, name) {
+  const root = nearestCargoSourceRoot(sourcePath);
+  if (!root) return [];
+  const module = name.replaceAll("::", "/");
+  return [`${root}/${module}.rs`, `${root}/${module}/mod.rs`];
+}
+function rustReference(source, kind, candidatesFor, match) {
+  const name = match[1];
+  if (!name) return void 0;
+  if (match.index === void 0) return void 0;
+  const start = match.index + match[0].indexOf(name);
+  return {
+    sourcePath: source.path,
+    targetCandidates: candidatesFor(name),
+    span: sourceSpan(source.content, start, start + name.length),
+    language: "rust",
+    kind,
+    resolution: "unresolved",
+    strength: "strong"
+  };
+}
+function compareRustReferences(left, right) {
+  const byPosition = left.span.start - right.span.start;
+  if (byPosition !== 0) return byPosition;
+  return compareText(left.kind, right.kind);
+}
+function rustPatterns(source) {
+  return [
+    {
+      kind: "rust-mod",
+      pattern: RUST_MODULE,
+      candidatesFor: (name) => rustModuleCandidates(source.path, name)
+    },
+    {
+      kind: "rust-use",
+      pattern: RUST_CRATE_USE,
+      candidatesFor: (name) => rustUseCandidates(source.path, name)
+    }
+  ];
+}
+function parsedRustReferences(source) {
+  if (source.language !== "rust") return [];
+  const patterns = rustPatterns(source);
+  const references = [];
+  for (const { kind, pattern, candidatesFor } of patterns) {
+    pattern.lastIndex = 0;
+    for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
+      const reference = rustReference(source, kind, candidatesFor, match);
+      if (reference) references.push(reference);
+    }
+  }
+  return references.sort(compareRustReferences);
+}
+
+// src/reference-analysis-public.ts
+function analyzeReferences(sources) {
+  return referenceGraph(
+    sources.flatMap((source) => [
+      ...parsedModuleReferences(source),
+      ...parsedCsharpReferences(source, sources),
+      ...parsedRustReferences(source)
+    ]),
+    sources
+  );
+}
+
+// src/reference-analysis-candidate-matching.ts
+function normalizeCandidatePath(path) {
+  return path.replaceAll("\\", "/").replace(/\/(?:index)(?:\.[^/]+)?$/, "").replace(/\.[^/]+$/, "");
+}
+function basename(path) {
+  return normalizeCandidatePath(path).split("/").at(-1) ?? "";
+}
+function candidateBasenameCounts(candidates) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const path of candidates) {
+    const name = basename(path);
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return counts;
+}
+function matchesFullPath(normalizedTarget, normalizedCandidate) {
+  return normalizedCandidate === normalizedTarget || normalizedCandidate.endsWith(`/${normalizedTarget}`);
+}
+function matchesBasename(normalizedTarget, normalizedCandidate, basenameCounts) {
+  const name = normalizedTarget.split("/").at(-1) ?? "";
+  return normalizedCandidate === normalizedTarget || basenameCounts.get(name) === 1 && normalizedCandidate.endsWith(`/${name}`);
+}
+function matchesCandidate(normalizedTarget, candidate, basenameCounts) {
+  if (!normalizedTarget) return false;
+  const normalizedCandidate = normalizeCandidatePath(candidate);
+  if (normalizedTarget.includes("/"))
+    return matchesFullPath(normalizedTarget, normalizedCandidate);
+  return matchesBasename(normalizedTarget, normalizedCandidate, basenameCounts);
+}
+function markUnresolvedTarget({
+  target,
+  candidates,
+  basenameCounts,
+  unavailable
+}) {
+  const normalizedTarget = normalizeCandidatePath(target);
+  if (!normalizedTarget) return;
+  for (const candidate of candidates) {
+    if (matchesCandidate(normalizedTarget, candidate, basenameCounts))
+      unavailable.add(candidate);
+  }
+}
+function markUnresolvedReference({
+  unresolved,
+  candidates,
+  basenameCounts,
+  unavailable
+}) {
+  if (unresolved.resolution !== "unresolved") return;
+  for (const target of unresolved.targetCandidates)
+    markUnresolvedTarget({ target, candidates, basenameCounts, unavailable });
+}
+
+// src/reference-analysis-candidate-evidence.ts
+function regradeVestigialEdges(graph, candidatePaths) {
+  return {
+    ...graph,
+    edges: graph.edges.map(
+      (edge) => candidatePaths.has(edge.sourcePath) && candidatePaths.has(edge.targetPath) ? { ...edge, strength: "vestigial" } : { ...edge }
+    )
+  };
+}
+function markUnresolvedCandidateEvidence(graph, candidatePaths) {
+  const candidates = [...candidatePaths];
+  const basenameCounts = candidateBasenameCounts(candidates);
+  const unavailable = new Set(graph.unavailablePaths);
+  for (const unresolved of graph.unresolved)
+    markUnresolvedReference({
+      unresolved,
+      candidates,
+      basenameCounts,
+      unavailable
+    });
+  const unavailablePaths = [...unavailable].sort(compareText);
+  return {
+    ...graph,
+    complete: graph.complete && unavailablePaths.length === 0,
+    unavailablePaths
+  };
+}
+function unsupportedCandidateReferenceGraph(candidates) {
+  const unavailablePaths = [
+    ...new Set(
+      candidates.filter((candidate) => candidate.language === "unsupported").map((candidate) => candidate.path)
+    )
+  ].sort(compareText);
+  return emptyReferenceGraph(unavailablePaths);
 }
 
 // src/fossil-scoring-candidates.ts
@@ -6268,7 +6268,7 @@ function readReferenceSources2(root, candidates) {
   const supported = candidates.filter(
     (candidate) => candidate.language !== "unsupported"
   );
-  const reads = readStableReferenceSources({
+  const reads = readStableReferenceSourcesInternal({
     sources: supported,
     boundary: {
       inspect: (source) => inspectReferenceSource(root, source),

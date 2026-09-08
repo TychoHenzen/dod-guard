@@ -1,7 +1,6 @@
 import type {
   BoundedReferenceReadResult,
   ReferenceCandidate,
-  StableReferenceSourceBoundary,
 } from "./reference-analysis-types/index.js";
 import {
   DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
@@ -32,14 +31,14 @@ function readStableSource(input: StableReadInput): void {
 }
 
 /** Reads stable regular files after re-checking their identity and path. */
-export function readStableReferenceSources({
+export function readStableReferenceSourcesInternal({
   sources,
   boundary,
   maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
   maximumTotalBytes = DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES,
 }: {
   sources: readonly ReferenceCandidate[];
-  boundary: StableReferenceSourceBoundary;
+  boundary: StableReadInput["boundary"];
   maximumFileBytes?: number;
   maximumTotalBytes?: number;
 }): BoundedReferenceReadResult {

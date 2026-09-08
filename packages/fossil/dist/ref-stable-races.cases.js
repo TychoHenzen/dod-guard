@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { readStableReferenceSources } from "./ref-analyzer.js";
 import { runStableRaceScenario } from "./ref-stable-races-fixture.js";
+import { readStableReferenceSourcesInternal } from "./reference-read-stable.js";
 const scenario = runStableRaceScenario();
 test("keeps only stable source reads and records scan races as unavailable " +
     "evidence", () => {
@@ -41,7 +41,7 @@ test("records only stable-read diagnostics and does not expose sensitive " +
 });
 test("charges the bytes returned by a bounded stable read", () => {
     const maximumReads = [];
-    const result = readStableReferenceSources({
+    const result = readStableReferenceSourcesInternal({
         sources: [{ path: "src/short.ts", language: "typescript" }],
         maximumFileBytes: 10,
         maximumTotalBytes: 10,

@@ -1,4 +1,4 @@
-import { analyzeReferences, markUnresolvedCandidateEvidence, readStableReferenceSources, regradeVestigialEdges, unsupportedCandidateReferenceGraph, } from "./repository-analysis-reference-boundary.js";
+import { analyzeReferences, markUnresolvedCandidateEvidence, readStableReferenceSourcesInternal, regradeVestigialEdges, unsupportedCandidateReferenceGraph, } from "./repository-analysis-reference-boundary.js";
 import { inspectReferenceSource, readReferenceSource, } from "./reference-source-reader.js";
 function languageForPath(path) {
     const extension = path.slice(path.lastIndexOf(".")).toLowerCase();
@@ -20,7 +20,7 @@ function referenceCandidates(paths) {
 }
 function readReferenceSources(root, candidates) {
     const supported = candidates.filter((candidate) => candidate.language !== "unsupported");
-    const reads = readStableReferenceSources({
+    const reads = readStableReferenceSourcesInternal({
         sources: supported,
         boundary: {
             inspect: (source) => inspectReferenceSource(root, source),

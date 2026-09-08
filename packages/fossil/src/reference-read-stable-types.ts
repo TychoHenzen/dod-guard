@@ -1,6 +1,6 @@
 import type {
   ReferenceCandidate,
-  StableReferenceSourceBoundary,
+  ReferenceSourceSnapshot,
 } from "./reference-analysis-types/index.js";
 import type {
   newReferenceReadBudget,
@@ -9,7 +9,16 @@ import type {
 
 export interface StableReadInput {
   source: ReferenceCandidate;
-  boundary: StableReferenceSourceBoundary;
+  boundary: {
+    readonly inspect: (
+      source: ReferenceCandidate,
+    ) => ReferenceSourceSnapshot | undefined;
+    readonly read: (
+      source: ReferenceCandidate,
+      maximumBytes: number,
+      expected: ReferenceSourceSnapshot,
+    ) => string | { readonly content: string; readonly byteLength: number };
+  };
   maximumFileBytes: number;
   maximumTotalBytes: number;
   budget: ReturnType<typeof newReferenceReadBudget>;
