@@ -6264,4 +6264,2546 @@
     "author": "Codex",
     "time": "2026-09-08T08:09:27.808Z"
   }
+,
+  {
+    "findingId": "01610ec60c40f2eb761bbdf8bd3b1b1941b521a139fe659ddd8032211600ee88",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "018157c3921b1106c341231744c2dc93cc498dbdff7e637c01e0d3f7009a8fbf",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "0274fab2be89bdf610dca97b815c5d21c082a8f04c0ce0e1154c7c00f628a45f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "02c3fc1a2cbbd8cdf100cca08c19a719ed850deaf3c9f66dbe2da8abfa251287",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "0397ca16333d7ffc2dedd09994b7067ccb36cfe25f327c9d1cb5f6032a85f7a6",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "03d63cd05da0573d9cbdc765e2b67e2a732b5a1918c9e4ca6b9b14f77456f285",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "050d1d6558d570fef963242fab15a87c03598063dd6e4a1e8d32f06f76355ae1",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "058157fa3ef95a33eda2f077c340e75e9a8a9159d9eb730d0bac397029624a61",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "05d356353f63fefa0f2193a238bb1bbf525ad3e6989854fce7495615d10ae60d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "062fb3775d6b73d6a78d33315a4d232b4d4fdf6ffc4f53ea27b954f757e5422c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "088ba18c2249cad75585a4bb269f46c8d5d0611b5096ad963e2d69dad5975284",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "09700a5507e4e69df508542c13331a753d974d1d43a02767f980b1ad7085b0e5",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "0ab8deac51dac89c0f39b67385c0f1f557db83b4a6a7d2cbf1cd3816900ab646",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "0c07d4c30b4796628f19da8e1c500d8e8ba4a326ed757a676024e4fe2f001fcd",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "0c4e564bef249ded169524070895ebb40af2e464d0c856627d0c669c9b04445b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "0e599530c6b7994bfb90ceeb8f4a0c1f751854c9515fdfa784e2864936c85135",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "0faaa4889a8876ad1a6a92b727620799ab7a3ea30a4f8b2687f33097ff436c59",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "0fbe8fa01cdb38201f924f2cc50b7bcb0c19970ddaf77a3f64fb7b6c90cd96fc",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "101881c4caae60cd96f59a83a48e9d900b8d8f5b3e744df5f88a98cc11c71449",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1166f273e208f95d8c03b9e98f3ed8c37d9c2a15aad4a9e4dd93b9a05d20018c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "12ca1b80a89c6b3a8e3cb4a17f0c4bc95c0a88997ccac6cc5aaa7eb71ae03f40",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "174372251c875cfeb4c4c5aa2fb51176a101d8da8554c1bf830989f134461f9b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "18f4c8d649b9e2579367f366d78fe95394201bf5c295591d99973652f9f7a870",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1933dee48714b430892b4745f7fa258f131e262373592a8a08497da1030d9c47",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1a0fa8298f01c8c63771fe2716c0f1b93997bfb05d2b1d986e15138aef860bed",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1ad0227ee5c2d32c2429065d452005326afbca49678ae1d6dcf0aa2d7ef49f88",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1ad4a19e6f1c17259e97979e149362a0ea2ed43c0a0bc2c392e821528a2b573d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1ad9416c49c042ac933b57639bda2eb7b77ec7254e789ae25a032292df0c12ec",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1bd27f63a6960bf9af2334345ddde99443a757e2453ddc87683c0b48d05e8f17",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1c85967af805fe5d1ee06ea000ee2ff90e5470fab4ac68b829e9a8e17dd2c67d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1d0e0277d1b55413554d1fc9cb64abff645265473625fd438674b1225b2cd0ec",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1f08036f234d2e9c0e7591ca3d28695658b99e677dfb56a80247dd85a2d7cf4d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "1f50f9f037d1257b4db477aa17f1f22f480e56f87ba04d817673804d7ed80161",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2068500a6f99d8712bb48f3f2bc106bc1fdc5d8817dbe5758df62dcfdb393273",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "20c7af3271d187ae842de2591ad7963224fd59ef1d86aa5ca354b3c63fd7d1b1",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2220fd1e371b4aac5aaf4e6373a2bbf90a676c74d4971a38a69e30bd1f044e56",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "24330fca56b5594fc146e9f924d153fc2ae812ec272b07012578ea99ab19003f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "248f96b7182bdfe740fffe7a0daef0d68b378ed3c35801ecbe02f1eb8ab7e40f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "24fbac7b6245a42590014acb07db336b5a7b8b5eaa2740744273cf9a7161a446",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2540d76afdcd6e7aa5ca072279447e5fcea9e1e7d86f0d3c20b78a5b902d72bb",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "263d19b2532b316511652e707497bfb2657f1723b7f9c17e2452332a9b1724e2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "27440e6c7cee43e94ec65a290b08fd0041208b694277f97264ad258eef447228",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "27e779098be9035c435afe0d7cdb449079a47c13f5934b00350ca6cb2b484266",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2838bf351ce5ae8f41cedc8f705c5d9ef3871f307d5590492846c477aa5c2608",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "292397928fa42c293b73f9395ae7877a8fc4dce09ecfc9d2dff1ac19b19008a0",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2b32e8faee25ddbbf231ea5cc293d4067ffcfdbef115f23ddc7cdf3c1b1b330c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2cacbad2f69cffbed1eca48a2e0945f7fb08e82c3ed205dbeccca91f34e47e2a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2cb8103fc488fc5195db041d5998bb1792fc3fd7391d323ac7bec60dc49da33b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2ce4ce2a13ae257fa5b846c837afd6aea62a351798efd399fc1c7a215bbe3092",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2d515c9ff9346a218602f944fccd03671721e77839f2c4a2956f7349209d7d67",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2eaf298fed8ef3ee70fc9579e48ed09556f3dbb3dabd66b494b5bd7c70790197",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "2f72b5f72fbfe7e296c74115b4bc6e4c0a32ef5818d99ff5a94c3565ac16e590",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "30a2c0b86af6b3a8ed3ab2e5e2324fff59dec82b35a8443db482a8d8ca2183ab",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "30ea76487d6b46a30cc36ef49effd8da162b96f65e83d41999ea4e0e9c5cbd06",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "310904ea423957be21c97cdf7a11969de037af40343c627a056ee706c465917f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "310ee5431a31ce465d4f3f06e026d9cb59e7b606db922dd23093a3b2c85f6891",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "35ceadcdc004c7a3f596d1b7e60e4982ab7088bdb9010971e9f1e297b4f1f53d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "35e0e3fd463dca0c84811f4133c87f8dd8ba7edb524b80bd4e5c2f6e56f22a39",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "36483175d37129ca17fe01b7736832d7039fdd438a79963864a5450e29717aa4",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "36ba27553d55aef6296df83f52cfcc0dbefa7d0ea1417357ae66ca32986f5eaa",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "374d419a43933e3ed31fa5ddc40e352a5066fd7eb0ca24a8bedae044982a9e07",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "37a49cdda87d91885f9a2648bbc059e6fa7adf628ec3c3273450696ca7d73cf9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "37a706c9386ad420be2caf8f5aead49671d46a43f10dc08bef9fd9c0eabc77e4",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "38124a74b33e9a5762d76a023ce01ddd72fe13597b450f3ab04ae081414d3d5e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3822d978f5a07bd87147046b36673081f98b7905f9ebdc94f75751ce85e48491",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "38dda199c177a22b470a8687d2cec914341ccd920d3a46ea62d20ccf0165a996",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3a0e0515ac9d9059c3bba97a86d7f093e1d5cb2565a10e7b15a170d4a3f02a9b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3a1bb322ee9beb4a73dba09b02f63cf1e38436f324d725f649aa22a754116bf7",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3a1de65223cab7ede48042ddef4d00dc1a9ed66b22ca740133ea82fcc15932c1",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3ab4134cf67ddbcd72b9346c204e8f64c683dea5d796774d1f0f20bcad31a259",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3acccf6554f1d7c020c29c9c455383157643f6f63ee78ba2c634878325fc5386",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3ada60caeed15df13722cc9b8bdd7077210a5866a41f6ef23ca28c254b673607",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3ce19ababc1ddeeceb7b2c378f9676ee4a241f41162a08e494db5f431b72cd2a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3d1b6ded4fddddaeae2a91b7753a38afbdd8a508257d5cc07f0eef6ea3f32234",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3d62e8f879beb24d1743079a5ef7f7a5234e0dc25969f411d612e0de112ef694",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3e33b0c253031c726da06cb0cf112f1e0f97b3536ac364bf72426ca2d5f5c19f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3e9bf3c858cf7846aa83c761d3d8e9a87a5616c2803b4e00023a954d9bf0f70f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3ebeb2595182d25e1ab8f3812397bcfee7a98c5b79c255119542709c01aff6c9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3ee5834a96990ffc665e460d12b8c53d7436ca0263fe860395a0839fc132009c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "3f2b8ebe045e261c0f53b2ef18c30db09da308f5c093caf93db6bd2dd487ed5b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "41a1d6db0dd56c34da357d8bcbf3093602eeaaa3ae2c2fbc9b799fe5787085bf",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "41af44d6f2bbdeab6d1637c8984c9491a8782cbfbce324b50f9602d1c17d9a76",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4240303e225574fae232decd62fc6d65ecfa97608b336b965a05d3a1ab9c9775",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4291cd5ef514f59903fdd945f9989b8c6f1ec97bede7031649a3a1770dd3568d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "43218c415ed3cf81c499a759e7d7110b3bffc5e18449fc590949f6c90bda6a1e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "435eeadff212d3a4fbe706ab9a963dbad1591fb856011cea9516dae0d18b734b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4392e8deb94d71804928b67be911749f6a7b64cae150578200362b50b35a6d07",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4409184aa8af6d505f16db07e90844f27188b8cd8885718a241ac78313c41f3e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "458252cca338f411fa91d3074fb8cda371abbfabeb78d54414b373207369c132",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "45ed1771dbdc1064d91b98f50a359675f27e0a7abdea44c250fdaffa2752424c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "481ac8f5b6163cc78c20e508ac968b5c220eb065e1849ac1b1782162dfbb57e8",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4828e5f37f7d8acf3bf396c9aa24d1115645e24f39fddf1d4c0aa7752eb5f624",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4977e8737136782d2035bae5c6e01f1f757dd84c14be42b0f31dbcb2b1ba2fe9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "49d544faaef7336fdbe6de8755a5ce8afa2f18534aba3f51d9c620f842bdafc3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4a564afa36478500d1e43663a2bb40a40c638f9e1bdb1884db7b7635b8373204",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4ad36cabc47f179ff4e81f0ca44091323fe15dbf666db16c72c803aeb3a47e4e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4b222fa0a52edf417fd9c5e67e13a80086cf65d1accd0aded79372464414efc5",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4b7def4f487879116dc4d82fa93018f4528c3504aedde8938b05e402c57b9719",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4bfc0441cdf68a8aee32d2ccd2568c203849d52b7d13cd4e497578e664a75fc4",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4de4b871d3a0f1d998b9b527a6f4149104cb3d0bab566de38f6fdd2b87828120",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "4f9b7469368097bebd49eb1df15be7632eed16b4064d5b0c7454e7bb5d50150e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "503dec86b0e320ebb5208a99b32b7026f90ac3f4826bfbe74d720a88638b21f1",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "50ba235e60e3c193d62c7c38125a2eea0641fa251215432156e6b8740c13b324",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "50cebb5c9385549c12c261230d9617f8aae479d9e1bfc758ff631842ad149835",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "511e024e908a903208a5101b6ea3f3b7f533f698d15c9c6f7e716143985f6db8",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5161f3dcb7ca25f02bcece8e8577e248675ce29f3637a8ac85c535c56adfbf27",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "51b18db1fe48a9a8f3804fdeaaf46840ccf892f4a504f45bd50c36a02a62e0d9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "52432e6177d171d1dd76c17d7c29ec714c035391166417cf34d23d2fa390ea2d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "537d3927cae33cbc91e204254772b46e70262826bcd3186598ad02a3bbb8dfaa",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "542eb57063d8e3b9a3f86b4a916c1a5ef4518fb8934d29f028a27561759afdca",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5485981f4ac58ee75ffbf3403ef536a313a9b1bd29f170cccaad143e45fe0afd",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "54f688e07642a3ef8f05a14ebb971adb4dee5759128da62e14c2feccc47bb2d5",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "574ad204ff1e0b39c9930f6a8509f5aa48c11eb5a92eb2feef66aec9a7357da0",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "57cd1108365029ddbce471e5bbf09a1968b4e08ddfe4c8880d008a6943fae896",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "57e4a137062c7aa158259206ea45f486877b0dae2190b2672b95d96f39083cc7",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "58d96377c3fd3624be0a3aa9b1125ff89246d58a05fb4d54304f8b688a80d929",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "59b25d6503cd5474ad4af0e81cef0261eff280675e01473299472254ddf3c854",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "59db2cf76cadfb4c339f5f5c27cc5ddf9ae2aaee61fee68fabbae1d41ab773e6",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5a81e8659736b7e4798c5a6e8dd2e8d44c549432e4a826e78df8e3eac2abb87e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5a996fa02e3ec1c3d1fbc3045af74158e6e2976250c2e8af022898f9f01cdb76",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5ac148a0c7c76c2e470e9ff54cd03acd83d7a739f716a17c908d0364aa86e6c2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5ace0e54dc9457a507cfcfaf9e6bd83df28ba26ecf99a34d0d1e9f6fdce61fe6",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5afe3c1ac0d36821ae7ed315c697fc1ad9152158574a43a82cf8df1f07966942",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5c23c1a2873d9f0e6c1841129b483184e6001c80e10665a70b02a62d57cfe827",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5cb945f47f4a35884cf47961390a40820c614b166823667653564dcdbac04c85",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5e548a597e2b0055bd1dd271d9800a31c67e65ee695d557ff6972a871b04aab8",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5e548a597e2b0055bd1dd271d9800a31c67e65ee695d557ff6972a871b04aab8",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5eb4189351923d544d9c256ceab50e0e2ec00a28ab135064419d737ce2f8ffe1",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5eb5afde90575fe741b858d9f7c43374281eb207f956239901511af5216cb1d7",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5f7189b74cf229a6397fb47cb9e86db435e6f9cf8dfd97eda96a300c5cab9606",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "5f93e071fafe363b5d19cc24c5e30bab87529759c0d31cd15ead588056b3c174",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "614e79e600b88ddc92d93673150166ca00da66cc26ea69f63fc41878e6fdfe63",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "61f47a058e21263b99795781c119b9d8133e97e332f4d411bb320598baefab6f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "620a48640bbd22d63564e4e8865baa2c20c585e98e216d6c7cb757d423577e2b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "6222f732d0dcfa40515a0eca01e4ee1dcd12b19a44e3874a26607e6d323c4f30",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "6373dcd56aa82292cab0627bb9ef939510f09bbc479436a975e2cf48555d568d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "638e62693cbeaf8d1d3978414382c0985523ceb0379a9f7f7ee3c01881e1d891",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "64681d1e5ac180ec467d7de5a2a8729586d35637851d1ca326ae78a6ed76d4e2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "6559d8a364e14bfe619a53219207c013d00db6cf43377f59abc95b71e365818d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "65cf6086eb71bf9592e6cbb994bef3cf27aeb38b826af0e6981c578f16178b31",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "663028a58c8afea30c7100d9abf7315f27807c0d478cb38a644578394a6683d9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "66c793bc92c9314db38a87ce9c8f41db034a74301f2632b64b1f6630d25b1312",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "670ed021fe35b6646fc0afefb7e4df56a6ab39a2b9395a546eca2e6af02c3658",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "67115cff8fe04e685d9725b0dbaaf084a064ff25a78697d3e49597e193835f99",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "687f8ed6cd4d3865c60beebcb5623a9b1823d571707fe38a6e692378a5788383",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "68c1d37cceb2909c3396293d99a9562b688a22066755ca483b66659da54dbd1e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "68e747a36a2cef7d4bc2675a112f611bf0a9ef7c3ae206453bdcd3eddd2d2be7",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "69da1180a3e48c9ebf10cc80201ad555aad07e16f1dc11f9ebeef61f46aad9ad",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "6b7c325719e1d7080ce79633691936ffea9d23e007a55c46c3a5ca7e904c3f2d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "6bd90b17d49dd4d02a2d8413973c4aef62cfcda86939eca20590a883b8d96d38",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "6c09a96b1295b051d915029c10264ebcd01426384108bffdba1ea18010adb7d8",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "6c7ac4e75b2bef8c84208aac8599d8f7672fe6ba0b1f11765529673abff81031",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "6d232a51625d83d2b629c250e404fb3280ca44124610fe1921e17d6a12d7210e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "6f4e6636344f4ef05645e965d8f64b190973578356da3fb393b2d5489a3ee7a9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "6ff5cb14890bcda7350e60227cdee516e75a82e0047ca6227583c75d2b1ce7ce",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7073d79a9a3577ef376fc5b1e8eaa73775671729eea6a362cd50131ae566c043",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "72a9cd941d02e38df7eeb86a0a7d4eedf8bf82bda164e838c993b453c922010b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "730936e1da6a4e5b15236d3dbcdfccce1d320cf537ac7a55b0cfff178c97a10d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7322fc69a4246b731a0cf857c483799c0b6819036524e10211572d4c77371dff",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "73b256a59d17b01044b05cc6cdec6e812e01544d31469aeadb685f5e715d2d4b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "74eac89370b642ffff645f325bfc1fefb3c523fdb95e086a55600a0ba264fb5e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7580372f416c52a6a31f7f0b60b6851564b6ebf1f90f1fcfa37d496bc293cee9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "75d66bbc5d1c66a48ee6bc4353905e55f1a61ab61c09b0df029e8f75231e907c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "766a1c73dabe382cbf0a9ea03f3a71f77db3588c569aea39f73bdc58edf6e3bd",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "76d159328d1ad02920bdb4e8942797f899b2093f812c8c66945f30f12ff280b9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "789ef806b74666eaabfb00f34a99481747d01d6c96c21d13f6b4628fb8200e5a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7a638d6cdc404d9cde7e51da15f7543c7c89ee0a9c390921f1d864d946f05f9d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7c520679e778b2f30f92705cad85729a6e5195def7b4e212750f8a65e6cad9e1",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7cac547ecc13fb018fa93fdf37f9b8eac168781fffb2e7f4d063dc93dab0d0b6",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7cc865fcd0ddb91261512b354d6d512000da58b70c169e28997e1d523bffb7d9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7ce6c479d41f79d10db0e66cb1cb162d635c38b9edd176ad2bfa28ef2575ecef",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7d81455a87530b77e72797919d2f868b001fd7a7f7daa8e8652fc56685705c93",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7d96f4a0a00498bb2b60da1cc733f6821d92fcae01363ab7fc77c621575b5dba",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7ec94ebcb08f44cd3a285d74a3e908ff67693c0280ab997d9b3ab921b4074ed3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7f4a50b69392cf570e9e6fbb10633ca66fd1d0fe7bbe9e230f3fed15c1534885",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "7fa9ef307ce6f8d3a403dc529ce74997e4171b99ac8b50051b5c3f1221fed70b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8030b8188d22f6d9159c4b7d259b4972443d31703cd3adca98e8414c4c1c9d66",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "805d889748a5966c430d3fe513720cdfd055a084040afd9aba74d76abba85a2a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "815c94572bb2e53ff0b9c44452f1d6702a3a541b97979ab616c19f1687cb8428",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "81f03c1d46c772e6600ad53f8418e542bddd969cf44f01b76c0212a2fcad5f11",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "820cc65af6aad4df3a71ae003fc57c00db21f4f88049a5f81b8cd489457a330b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "82542006ba466ce1b088f7be4d312eadee0b415077620fc4c3236c8ddf6a1817",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8534503e806784196fcbd941059b530a3e3a17e51e245833c86a613d46db2e0f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "87d25666b2e1dc4d625c3568aa455c2d77d98b843a004e6ac0fee6c808b4f9f7",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "885491ef9f68e0e8e132b41993cfc7066513f1daed27e6c1b27c4e3c6295fd84",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8a5d271c237e0a500f9f8b058cf3148b58feb0fc1826967733545991c05dda7c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8a5df71c64e97bdb45c5f15103cc367e2295680c08ba3d5636cf19bc1bad2aa0",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8a7a42810053c58a50c7ab2caca26cfce9c52db29bbf8e71b59597459f3fc643",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8adcd37997e63a8738779e0cdc90d5df48a43a18be92c9d6a6defd2b208e151c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8b56487d39c583191af16a64ce635d022b1911e1670e61aa84e1e7a9c1e5c3a3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8bba6adb5a312bbffb733edb2c2de31aa097bceb069075c6cb8586a9e515bd89",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8bbd9e847e942e02ba5b006427669196f1673d32ebe6bc13e195457263cacfb2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8c015e4bff9f72a143fc592913f42e068dbd476d107ef518612553700c7fc819",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8cbdd92b5cb6d98095efffa62b6c077d012dcdff1cb9164001c9e33e7ee15c64",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8d9b53907f325091aedabb2c19c9eb47e1227ba72354cd7a11ba786b9278f09c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8d9de0912cb6ed50b3f4c200ad220ee3796f19485135706b9826a0a0ed9defb6",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8db856c2319d19826689b62962a168686507b2580cf5b1ce464375bd7d20ae59",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8dd46c8fc7c72617e19cadbaaef25826b73c756a70ea17555e48c601f7e5c7a6",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8dd7c3027ddfc73c8e65f41c89b27f6b5d3d5a6fa5ad5854f3519ab8c307de1c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8de3b25229f7fd4d667ff44c2140ce29a286ea21f169ba0e41cb5b52ec3717f3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8e0269c8be61e108f9951481870c15c35df1411eec9d18f90bb2b644ae6d7905",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "8ef264e1a9482292c282865edc08c1b92ca87ea53aa7493d7e7027d414c94ea9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "907cd09cb7a1faffb2720c292b22fb621872b00601980904a2dc5e1ef280e14a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "90944fd04a0c3d51370fcaeffe991f94009d727e99c648a32ef003272dbf3c1c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "91386db02df97d3f2edff3c14b55625345b6eb3bc06de4d523e8c78cd9b82521",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9230719efff277b6c9ea90bc44959c1114de9225d4095a61dadd4c3b9cfc30a5",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "93d981c0fe60458067f1a11ec26e27cf1156b08f123e4e17d1cc16340ed51420",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "97bad7a107a38bd57a483fa65ca96f2ddc1bb6e7f9d8c9f06299a78752780ac4",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "984836da606fb51dd65cdda6ff71fd00c3be8f73e57cbc2b56b882003bcf8299",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "996c3c51d5468d75ed55b44ff27646ffadefdb91dfcea42d2ccc7596670c3d62",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "99f0c04c64cb6dcc011d3cced33e14498b0ed186029ca554a676fb2f9b67e8a0",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "99fe03a0c509041d196bdf6ff2af24584c29fc12c1aa805fcbfa620c73c87bab",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9b37ac85f70400c40347f7c623d9b6d565da6fc387ab30c584b39dd0e9b0e47c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9c1c819607f121d9635f24de28faac774878dee16f361acb492f0e585ac139c1",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9c7e1539ce056326384792d587b7340b66efe5f8acf98e570738cca187d84526",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9cb091b54f642f10277df92c720ea70bd79c872e9f27da3ab3779f90f34771cf",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9e110a9243203cf84e15df9cb9481381cdb96a333142b7a694234ed4be77c9a0",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9e5fc29443239f29e4c53becf96f80869cfe6070d09329c9031a80818422eb74",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9e6f54b0c92ffd86a07659cbc5a6fa63ea8b2d9a99c830431c7d74ff72ce5b1b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9edbba1b7d18e9e16ea174972d2cdf99103526f2d57b771d506e3c8503ee0072",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9edc3bb534aded0c97c6c0e2a327822da44839307e8c959cd2a0b51c16d3c36e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "9f5937820d031192c8dba6a33e85fec4a12d0d3fe2ace907e56eb7a8c484d8c6",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a07da16e61717c6381ce457460296a5ae7192f2b36a68026d263537abf749cea",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a190c3f1ac33d4ae1d6287b48c6452b9dd7150413fd92619293fcc0d07c03bdd",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a29b6cdbae645acaf1adf195c7a7e4de279dc439ecd8ffe101450ed1d49352f5",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a2fbcf5a869d7384e734dbed5e86511559020c5695b7fe0e15e6b6d952f4a2a5",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a34aad1b3e17ce4bedb9b33b48aa4b932e281ca07b92b69254775fdb8a4ef10a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a46959887bebabf13779c0628ec172ec77fc43a57b43b9821931a852eef673e6",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a4a34f08e1ac28a521400b1f4395ed7e135cb4ee5d5fdeb46c82254b3b2ce6a9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a597f24ef72289ad03ff5b28f31f1864766a93e030d6c60599f2f282bbb7b7e3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a6dd4a3891d0392514694cb707de8f51c168ff66d8945e1ce12cdf4003332121",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a893638436ef676e12c5a675f733505f37004e93756201e5f6a41ac92ead088f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "a97e87c0c38e45c6db92c14c1f4a5a21dfc8f04530a4d630a77baa35ceebbbc2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "aa189404e01c853ed53286fa26ff1c5a16737c25822cb9acd4993fda5ac1b3d4",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ab72424c5e625b3714466fb54d3458b7f5da23f843d7f23621e1dc1f5472e30b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "aba72961d2bd68b13202fe6cdb184c3a26e4580fea9faad34f3b35ca21812f92",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "abdd0e0ee9a6c10bf70603cd44ed84edcf2e900279d1b1a166e207aa39ff93b0",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ac2ae86694afe2f9de79eb39cb684358939c3cebf286f1de228d3c64f8ce3fba",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ac71b64b893b6fba6a11bbc539fe6b6055b1a9b61f6780ee3fff78eb4c9a05b3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "aeb953ced8c86ff226e39383700c38ff689071d7ba6cb4964fd98b6e882e2f42",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "aef59bd9e62a7a5cdde7ec4623de5410864c9f9a11d8fed6b498fb6c2f92fb11",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b03c9beec17baba2a04c85c35a27c60da2009c752dfbe0219a62cffcc0b717f7",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b087f140e1066e9e43c014712fe1f7453eaceee646f12aa63f37e38859d48a69",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b114643422c29919f0b673f5f6caf0c6269833d959ef73abd9f83f7df79c6c1a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b3cadd71e0581a504413bd8b59692914b64d047361da123247bae45a243d5fdd",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b4ec59a46222a3c5d8728f6427561157f0a44d1bb5eb688ad184b4cf23a416b2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b4f3404d536002dad7c9742cdc9525b2c48a4f03dd298680bc17a16fd1b42204",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b66209e057f8be17a7843c505a08561f2cf957a8bf54a67c7a7e9a7bdb44457c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b68acfd0d09fbb6423e8334adfeb4f4be1973dd9e899baf034c07ba19eacd927",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b6ab0687198e2834cbdef2e44150c20a95ca3af1f5f00e2f53d91f17ed0716c0",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b7306484367b70d1ed9e4b42b0902bb8f862708ac900759c3542d646e9776e1a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b742f06b4951c8afe8422c4efd3073dfecdacee47dc39dcc16e5c313c4200ca8",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b752a6482e4495c99019c974e644b7de3db47b05c2cbeaf4c0801639e655f490",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b7bb3e194e97ede670c7107485c14bea9217c445d5c63c23478e49bf10d2d52a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b85f64c43b6d37c3f91976d040569b260f6d57e0bfc0b6a93f7a80ea5340d58e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b889cdffa462ccc441366a96516ea48fe06d7279bc8165b065e6bc9a47a84e24",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "b89395b4ce317e2e9fae4a0cbe067b55a58c2bf48ad6b9b3f55e90a1f40fe001",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ba7ad882e1a6cb4b09469b61fca4f1633a9b85344c28bd799ce58d591b478bc5",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "bad34408193a5a3301a8d4b74a434c5e9da581f310d4b7219ad43bb8cbf136ac",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "bb24a405f3432a543064114a1677340cd5243761f686080fce0c60ef8080d20f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "bb387a7169c5780c44db42b43fe7c2479139f82bf3f529e272503e4d4a086e74",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "bb563ca13aadc1d009f48029390a296f4d242fd32da40aec5f19cb5352d454cc",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "bb9c60063426a447a2ae5ce0fc6317ae2e90b50ce78499a3a6b73e20e60e01b9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "bccd9319a7b32d87e5d887e5e2a0b6ab02c1299b8da85f0cb30e9fb5997f1bd3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "bd1d246d427749860730299aad183a9ba8047b16ceea965e676b494ddd045fef",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "bd81871b9579433114e79e95e645b7b12e06c38be2193979bf041eb01949b20c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "bdb1614f07c5f29b6ca42b0da26b46cab5df8366a1b0b95d9755f313f17e68a9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "be443071a7fedd33de1a2c632b4dec2d82c3e0034ee8569d8772c2ba518e1085",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c036ab15228192135090fbb54b5dbaca8816f40793e247534e26cab8883468da",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c04f3dbcb77cce05f3c7b25bc9a5b81243cbe0f057aa372f593f73ff26408f72",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c05b8f9753acb23291431bfd5007e96abe82d1fdc6b9fd120f0ba9dc3096f227",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c0e2f7bad0e2835d24305f0354fa9749fde6e600f17fe9e00ffe704e0d9a057d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c23c208eaa154e6cac5420eae98ef3f74c08e2ccda3e9829f4a6d1d6cc057103",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c23c208eaa154e6cac5420eae98ef3f74c08e2ccda3e9829f4a6d1d6cc057103",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c346f2f1b37a004394fba092972faa8504cd3d543944389fdb22f4ff0d5a7dd9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c37fb65a5f04e0b3cf722c1e654265362a767f7ecbf0f1fae98be14cc7836ef2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c45a8fe7afd2aa7aa2b1fc1cbf19b0bc99342c007d652c61e9535b20bb563500",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c46f2dfb059be1944b01962dcfa69fd12e1c3106b9613289686512883f5a229f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c480b359bddf09d34811c59e0df98a340f79cf677f4315e7e0fddb8c8f830f9a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c4e34d9364db2f95dc343e5ea57fb967941e6527401663c0870a1d7c5d8d57bd",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c5ec3822c601ab0df936ffa0347662508c2451dc542855781caa6d465ed63392",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c5ec3822c601ab0df936ffa0347662508c2451dc542855781caa6d465ed63392",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c77776c32999c32b5dd5e21f6e1d107975e3ce512ffaf11a256372d7383ec09c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c8e448c95e1f8108d19f907bc8612df58c2e8558795d9602cf4b96e5ba9b78a2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c97814e1924428fee227ece623d6bdcc4b799a30f9c9f557a891cb31e38b60f9",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c9da1c0ed567019ee052b0048c8f2c1e572796eaa5a99f1a8e39b8ee09e43bd2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "c9e8394155acba42bd49add86f547c0f3de9505dbd07b22de4ea17e920a0e7ac",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ca8c67f8ab5e5a1658b8a378e02828a6e3c0948f917599e484c7eaa46c7709c0",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "cb15322b15b14d77629e0ff037827cdd19d0291ddaa07d76f35ab8b22f54a7e7",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "cbdb8ef5e42e5d2015208780ce6c7ca009682afa8aed1cf67607da40600a7df2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "cccff6b581efa62a4bc2eaa6e0a334030652f63a3f464efdde1a68e8a8ea4aba",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "cddb95ba13a426fd2b42df054d2793dba48052a214fde9cb5750ac08f7e1a487",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "cfde665256544d857b00139936de21e17b551fc58c91d8b42cf665e0bf5bff0f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "cff4e01c0272b5a16fbad86c6f1dc251adf1d895934207c96ad031ebf1c53733",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "d2d20e19b1876882798e9924ae5d0d5bd38ca77ef7c8e57b983055efbcc804a3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "d576697778663f34f7db9ba56573e3feef27dd62f2e58401026e28868a05cab5",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "d5ac4bb8dd620aa44516f4cd510b270fad56f245e87539720c6a2581f5d325fa",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "d5d4ae58cb570e7f0719c7ca89172c03be3243f736a3b9dc06de34ea44554247",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "d5e1ec85447fe8b4996300e28f43984998b90d5012f7cd2484cd101a36b62e1e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "d7022d4b3817edc7c42dc47cd16995319f60c1dbe7d63e59ce1de230ac5ae7d8",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "d9e0cadf87c543900d9c94b0c696ece63b9ea9add8d754e06008c05e229c18ef",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "db27853129631209d28544ef77479908f7b06b77ed4e1f104731617e0941d060",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "db65a30bc4bbfc1ebbfb45242ea78c7409d5e3cbc34fd8df4b63acf88dedddbd",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "dbfe297fee904ff0dd44657bcfff102906831b7b60e6aa5053573e696036f151",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "dca0ae96470e3363206b4ca9195843248a5939a2da3b8c25156c3b8026802d09",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "dca0ae96470e3363206b4ca9195843248a5939a2da3b8c25156c3b8026802d09",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "dca0ae96470e3363206b4ca9195843248a5939a2da3b8c25156c3b8026802d09",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "dccaf4b755691899121cdc6eb1c07627bc11bce1a879586e0a12b5491ee9cf11",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "dce295d275c38c41976d9e0609b24eb34474070aba9bccca551ab70b3b57ca56",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "dd4ce2cf603d87235219517864d3a9ccc309bbde054012d56bb2f6284809cb34",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ddb0777b97c27f2680bb17967cca26a3d69739ff0d95948a52554cb9733ec2b0",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this placement finding reflects the intentional Fossil decomposition into focused internal modules. It does not expand the public plugin API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "de3438011defa704a6537bccc6df6adb355977f90aa75eeb177ea1a07dcd1f50",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "de9e68cf9f818ac4de43c29369ea0dafeb186636e349e5772b288d41abcc1b59",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "defdaf7fddedec85bb6b8f35f9eb339c51cd9bfc434c338d577ae7673528896c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e01b3ef2ab87993b19e0ee3ec2a20c76c9989c3fcad592afb3c0c335ebfdf3d1",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e124e206d985407c72102a58f7533cafb07607cec3902efd550a2992ccf695ae",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e140bfc5c521787a60fec51604bb7f531c92f6ab135daa93f4cc135c57055eac",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e15daad4a9eff750961b1ce20223d411134f52533ad0b4d13258311da4364170",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e2349711611e44e933979ef244e817d8733126e1f633d413cc3a25811e2a4fe4",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e26040ac094e3abded6492e7f8cc32f17832d564a440537fd1c8394e13a7b9d2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e26b10347938cdb79bd0c731e7bf85db5ade1ee69d81d5ed0721599c46ac3046",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e2cae9064aaaa25f7f77691e578ea9ad85be32c573272190bcddb47be5e2243a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e5a2ffd8f43d7700e26fbdc11132e4e3f3ce9a50fc58e5a9906386502253e43b",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e5fa31b23f01cc02e5d031c37b2ea5faf1e22e825492138e8cf9e8f4f0bc3eae",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e62b3917e77691e8ce7e47e1ada7a3909c954b0acbb80a8ebb5ce6e3c3c088c5",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e68ad7fe3b60a7fcbac62dc6efde76fc63ea1d5ca1c7f5396486d8dad37ca7b2",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e6bc1c5c7a3f5d4e05863796c78aad977fffe406cf23bc84c8377e8e44bda8fa",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e7f7af1b88a50e84197882c90cae77d4a30518d81bfb9d2a74fe21b4b81cf89e",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e82f1d7cf39cc07e29304e582f5e0df3da4e4bea99a51d87087fa3cdf316e6e1",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e9510c747a6f56b6927c005ae2dd41fcbd0a874d90c116975bf6d32fb29f3a57",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e9efc12d8c8393118fb93e82edbce890b618d19161dda9cb4440a3b7c9c78e36",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "e9f952ba82bd94f67cbf88510c4bc8167e2a0a4e87667713c94218bfd7022853",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ea4b73e21f8a4a5872809365f51ae0783c62281091a2cf707f9fe89815bd9517",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ea653f3fd3a7c142808044593699881dc9ae05852e144974f41455f67d7682c4",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "eae3250ce3c643ee47d352cb79a7e02e33dae784ab6b49fc41212d4a8b83b833",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "eb24714e30353a00035e35f046e50593b94300baabbc75e76a8b5ba8904f13ab",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ec701f47e77881da5790ab202250e2fc7662f6b41122d1a9d4806860f05a1ca3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ecd2ce62c3ac14ed2840e426c0585cc97186d5dc8b7a79c463096ae16fc7b0df",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ed48345cb3b566f682433f879c84a1dda490746155d0e18b615d305ba2dc6bbe",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ee6245381e58f9004ed64e3546f3513ae6a0bcdfbf6d1b4777b6467055976985",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "eed3a6554a463f66107cfa69b8c992147bbddaec7be1bc6840bb9bacde29f9d7",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ef94f625dcd3b7d9bfe241edfa3c5a19937caac8c2b931880566b1ad7ae7400a",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f08a0e70ec9342d2b2bd34a51d9d2268517cd34951078b6050238680f333867f",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f0b27fe3a82c8c20d19c2553c6da16a1649f9f6d2ad14e9920d748d6c31491fb",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f0f11efdb51fd170281ae6a4d65671b231ff97a4f54b325461907d7347b1a7d1",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f10219b18e72fb0e02c4815cc73518a94779d7ad6a3f4685ec92fa9e590cfc67",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f14352e84220d459fa1c5ad0ab514cb2b8c3c89e82ce9c01cc582a20c62adb74",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f18f20879d30344296edfb907e31a0c8b4987a97fe78c0633bff72530d98ba20",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f1bc6d78bb0c4bb3f086ebe0fdd7f2855e8a87e24b4e379341a9d4ae5317033c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f3de9e91b52509aa74e8dc7555c176930546d4c5cf6ed262b5d367fcd55dd82c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f4a153d373627cc956c9ee8dd4e17718ec72ebbe9ddd36541e75e685fb910d3d",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f4d29ec477154d3e81fc62fd44907870be98060a54dc229a443119b44a458b9c",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f4dc3a41a0e6f0274a9d1fe2b643ecd5c310b9c2e628f3d98166da48f2487816",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f6bf60149042877bfd2c17be27dd5171342825028a702d4f3d8c1c061e727013",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f70eedbc0a74503bcfe0620212a9288a2022d941484a0a6a9e6c2ed0b7778ab6",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "f7cd4a399d5dae1498c794693b78cdd901b2fc4a7e2b266f24f99f94f92a64d3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "fa7100af1e2a9cbd6151b89038317153095c37fa600cc22d328862130062bee3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "faa40a6e4b68cf109056c58ed1814afe75ce2fb371eab6eb8992dd506e164085",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "fb67a4ecdab89531cbfe891e5bdacf209028933052b40266d38ddcc82c832252",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "fd76ba7701b146535a32a84d60d2352364785153941fd26286b06632b88612da",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "fdd12d080c08ed9e1ad2b1d21612f6f846ecbaf2d9149bbba9f5411da90391b3",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "ffca5b94d16025ae33fe025d48d22542f616bf28a038b3042f8084eb36538d08",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "fff37994924c815bc0bb56acd06ccc88a676f7d4139f47e31e80c495afb6f3aa",
+    "fingerprint": "da28f59a80e39b439508aee529b212d89cf861f5837a7efa89dac017f5da24ab",
+    "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
+    "author": "Codex",
+    "time": "2026-09-08T21:14:48.727Z"
+  }
 ]

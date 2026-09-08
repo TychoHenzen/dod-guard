@@ -1,3 +1,3 @@
 /** Stable data contract shared by fossil's analysis and presentation layers. */
-export const REPORT_SCHEMA_VERSION = 1;
+export { REPORT_SCHEMA_VERSION } from "./types/report-schema.js";
 //# sourceMappingURL=types.js.map

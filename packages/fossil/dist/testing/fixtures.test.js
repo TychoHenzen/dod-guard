@@ -1,18 +1,9 @@
 import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import { afterEach, test } from "node:test";
-import { createDeterministicClock, createOutputCapture, createTemporaryRepository, writeSourceTree, } from "./fixtures.js";
-const repositories = [];
-afterEach(async () => {
-    await Promise.all(repositories.splice(0).map((repository) => repository.cleanup()));
-});
-async function temporaryRepository() {
-    const repository = await createTemporaryRepository();
-    repositories.push(repository);
-    return repository;
-}
-test("creates a Git repository with deterministic commit identity and time", async () => {
+import { test } from "node:test";
+import { createDeterministicClock, createOutputCapture, temporaryRepository, writeSourceTree, } from "./fixtures.js";
+test("creates a Git repository with deterministic commit " + "identity and time", async () => {
     const repository = await temporaryRepository();
     await repository.writeSourceFile("src/first.ts", "export const first = 1;\n");
     const timestamp = new Date("2025-01-02T03:04:05.000Z");
@@ -21,7 +12,7 @@ test("creates a Git repository with deterministic commit identity and time", asy
     assert.match(await repository.git(["show", "-s", "--format=%cI", "HEAD"]), /^2025-01-02T03:04:05(?:Z|\+00:00)\n$/);
     assert.equal(await repository.git(["show", "-s", "--format=%an <%ae>", "HEAD"]), "Fossil Fixture <fossil-fixture@example.invalid>\n");
 });
-test("records file history and changes the source tree without a shell", async () => {
+test("records file history and changes the source tree " + "without a shell", async () => {
     const repository = await temporaryRepository();
     await writeSourceTree(repository, {
         "src/old.ts": "export const old = true;\n",

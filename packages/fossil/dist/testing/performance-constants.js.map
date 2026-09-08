@@ -1,0 +1,1 @@
+{"version":3,"file":"performance-constants.js","sourceRoot":"","sources":["../../src/testing/performance-constants.ts"],"names":[],"mappings":"AAEA,MAAM,CAAC,MAAM,+BAA+B,GAAG,KAAK,CAAC;AACrD,MAAM,CAAC,MAAM,6BAA6B,GAAG,KAAK,CAAC;AACnD,MAAM,CAAC,MAAM,+BAA+B,GAAG,MAAM,CAAC;AAEtD,MAAM,CAAC,MAAM,0BAA0B,GAA2B;IAChE,WAAW,EAAE,+BAA+B;IAC5C,SAAS,EAAE,6BAA6B;CACzC,CAAC"}

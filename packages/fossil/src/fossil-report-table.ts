@@ -1,4 +1,7 @@
-import type { BurstTableRenderOptions, WorkspaceDebrisTableRow } from "./fossil-output-core.js";
+import type {
+  BurstTableRenderOptions,
+  WorkspaceDebrisTableRow,
+} from "./fossil-output-core.js";
 import {
   burstTableRows,
   renderBurstTableRows,
@@ -7,39 +10,69 @@ import {
 } from "./fossil-output-core.js";
 import type { FossilReport } from "./types.js";
 
-/** Renders report statistics, bursts, warnings, and workspace debris in table order. */
-export function renderFossilReportTable(report: FossilReport, options: BurstTableRenderOptions): string {
+function tableMode(report: FossilReport): "normal" | "verbose" {
+  return report.options.verbose ? "verbose" : "normal";
+}
+
+function appendWarnings(lines: string[], report: FossilReport): void {
+  if (report.warnings.length === 0) return;
+  lines.push("Warnings:", ...report.warnings.map(warningTableLine));
+}
+
+function appendWorkspaceDebris(lines: string[], report: FossilReport): void {
+  if (report.workspaceDebris.length === 0) return;
+  lines.push(
+    "Workspace debris:",
+    ...workspaceDebrisTableRows(report.workspaceDebris, tableMode(report)).map(
+      debrisTableLine,
+    ),
+  );
+}
+
+/** Renders report statistics, bursts, warnings, and workspace debris. */
+export function renderFossilReportTable(
+  report: FossilReport,
+  options: BurstTableRenderOptions,
+): string {
   const lines = statisticsLines(report);
   const bursts = renderBurstTableRows(
-    burstTableRows(report.bursts, report.options.verbose ? "verbose" : "normal"),
+    burstTableRows(report.bursts, tableMode(report)),
     options,
   );
   if (bursts) lines.push(bursts);
-  if (report.warnings.length > 0) lines.push("Warnings:", ...report.warnings.map(warningTableLine));
-  if (report.workspaceDebris.length > 0)
-    lines.push(
-      "Workspace debris:",
-      ...workspaceDebrisTableRows(report.workspaceDebris, report.options.verbose ? "verbose" : "normal").map(
-        debrisTableLine,
-      ),
-    );
+  appendWarnings(lines, report);
+  appendWorkspaceDebris(lines, report);
   return lines.join("\n");
 }
 
 function statisticsLines(report: FossilReport): string[] {
   return [
-    `Repository statistics: ${report.statistics.includedCommitCount} commits, ${report.statistics.logicalFileCount} logical files, ${report.statistics.burstCount} bursts`,
-    `Candidate findings: ${report.statistics.candidateFindingCount} (${report.statistics.uniqueCandidatePathCount} unique paths)`,
+    `Repository statistics: ${report.statistics.includedCommitCount} ` +
+      `commits, ${report.statistics.logicalFileCount} logical files, ` +
+      `${report.statistics.burstCount} bursts`,
+    `Candidate findings: ${report.statistics.candidateFindingCount} (` +
+      `${report.statistics.uniqueCandidatePathCount} unique paths)`,
     `Workspace debris: ${report.statistics.workspaceDebrisCount}`,
   ];
 }
 
 function warningTableLine(warning: FossilReport["warnings"][number]): string {
-  return `  ${terminalSafeText(warning.code)}${warning.path ? ` ${terminalSafeText(warning.path)}` : ""}: ${terminalSafeText(warning.message)}`;
+  const path = warning.path ? ` ${terminalSafeText(warning.path)}` : "";
+  return (
+    `  ${terminalSafeText(warning.code)}${path}: ` +
+    terminalSafeText(warning.message)
+  );
 }
 
 function debrisTableLine(row: WorkspaceDebrisTableRow): string {
   if (row.kind === "ignored-directory-summary")
-    return `  ignored directory ${terminalSafeText(row.directory)}: ${row.count} findings`;
-  return `  ${terminalSafeText(row.finding.kind)} ${terminalSafeText(row.finding.path)}: ${terminalSafeText(row.finding.review)}`;
+    return (
+      `  ignored directory ${terminalSafeText(row.directory)}: ` +
+      `${row.count} findings`
+    );
+  return (
+    `  ${terminalSafeText(row.finding.kind)} ` +
+    `${terminalSafeText(row.finding.path)}: ` +
+    terminalSafeText(row.finding.review)
+  );
 }

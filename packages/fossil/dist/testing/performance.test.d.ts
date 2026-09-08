@@ -1,1 +1,1 @@
-export {};
+import "./performance-real.cases.js";

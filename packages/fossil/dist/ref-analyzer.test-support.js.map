@@ -1,0 +1,1 @@
+{"version":3,"file":"ref-analyzer.test-support.js","sourceRoot":"","sources":["../src/ref-analyzer.test-support.ts"],"names":[],"mappings":"AAEA,MAAM,UAAU,WAAW,CAAC,KAAqB;IAC/C,OAAO,KAAK,CAAC,KAAK,CAAC,GAAG,CACpB,CAAC,EAAE,UAAU,EAAE,UAAU,EAAE,QAAQ,EAAE,IAAI,EAAE,QAAQ,EAAE,EAAE,EAAE,CAAC,CAAC;QACzD,UAAU;QACV,UAAU;QACV,QAAQ;QACR,IAAI;QACJ,QAAQ;KACT,CAAC,CACH,CAAC;AACJ,CAAC"}

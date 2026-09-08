@@ -1,1 +1,16 @@
-export {};
+import "./git-history-limits.cases.js";
+import "./git-history-parse.cases.js";
+import "./git-history-parse-merge.cases.js";
+import "./git-history-warnings.cases.js";
+import "./git-history-warnings-more.cases.js";
+import "./git-history-renames.cases.js";
+import "./git-history-copy-recreate.cases.js";
+import "./git-history-filter.cases.js";
+import "./git-history-temporal.cases.js";
+import "./git-history-similarity.cases.js";
+import "./git-history-similarity-small.cases.js";
+import "./git-history-recursive.cases.js";
+import "./git-history-assembly.cases.js";
+import "./git-history-qualification.cases.js";
+import "./git-history-survivors-a.cases.js";
+import "./git-history-survivors-b.cases.js";

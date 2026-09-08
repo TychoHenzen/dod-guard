@@ -1,1 +1,1 @@
-{"version":3,"file":"fossil-grader.js","sourceRoot":"","sources":["../src/fossil-grader.ts"],"names":[],"mappings":"AAAA,wDAAwD;AACxD,cAAc,0BAA0B,CAAC"}
+{"version":3,"file":"fossil-grader.js","sourceRoot":"","sources":["../src/fossil-grader.ts"],"names":[],"mappings":"AAAA,wDAAwD;AACxD,OAAO,EACL,gBAAgB,EAChB,2BAA2B,EAC3B,qBAAqB,EACrB,2BAA2B,EAC3B,oBAAoB,EACpB,oBAAoB,EACpB,sBAAsB,EACtB,oBAAoB,GACrB,MAAM,0BAA0B,CAAC"}

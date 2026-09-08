@@ -52,12 +52,12 @@
       "**/*.tsx",
       "**/*.mjs",
       "**/*.cjs",
-      "!**/dist/**",
-      "!**/coverage/**",
-      "!**/fixtures/**",
-      "!**/node_modules/**",
-      "!**/spike/**",
-      "!packages/quality-guard/skills/quality-refactor/scripts/lib/target/**"
+      "!**/dist",
+      "!**/coverage",
+      "!**/fixtures",
+      "!**/node_modules",
+      "!**/spike",
+      "!packages/quality-guard/skills/quality-refactor/scripts/lib/target"
     ],
     "ignoreUnknown": true
   },
@@ -89,6 +89,19 @@
             "useSimplifiedLogicExpression": "error"
           }
         }
+      }
+    },
+    {
+      "includes": ["packages/fossil/src/**/*.ts"],
+      "assist": {
+        "actions": {
+          "source": {
+            "organizeImports": "off"
+          }
+        }
+      },
+      "formatter": {
+        "lineWidth": 80
       }
     },
     {

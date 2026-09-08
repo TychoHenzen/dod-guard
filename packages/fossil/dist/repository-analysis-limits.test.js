@@ -5,18 +5,38 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { FossilAnalysisError } from "./analysis-error.js";
 import { nonMergeGitLogArguments } from "./git-history-core.js";
-import { analysisOptions, createRunGit, gitOutput } from "./repository-analysis.helpers.test.js";
+import { analysisOptions, createRunGit, gitOutput, } from "./repository-analysis.helpers.test.js";
 import { analyzeRepositoryCore } from "./repository-analysis.js";
-test("rejects over-limit included history before producing a report", async () => {
+function unbornHeadCommands() {
+    return [
+        {
+            arguments: ["rev-parse", "--verify", "HEAD"],
+            output: { ...gitOutput(), exitCode: 1 },
+        },
+        {
+            arguments: ["symbolic-ref", "--quiet", "HEAD"],
+            output: gitOutput("refs/heads/main\n"),
+        },
+        {
+            arguments: ["status", "--porcelain=v1", "--untracked-files=no"],
+            output: gitOutput(),
+        },
+    ];
+}
+test("rejects over-limit included history before " + "producing a report", async () => {
     const directory = mkdtempSync(join(tmpdir(), "fossil-history-limit-"));
     const record = `\u001ehash\0${Math.floor(Date.now() / 1_000)}\0A\0file.ts\0`;
     const history = record.repeat(100_001);
     const runGit = createRunGit(directory, [
-        { arguments: ["rev-parse", "--verify", "HEAD"], output: gitOutput("hash\n") },
+        {
+            arguments: ["rev-parse", "--verify", "HEAD"],
+            output: gitOutput("hash\n"),
+        },
         { arguments: nonMergeGitLogArguments(), output: gitOutput(history) },
     ]);
     try {
-        await assert.rejects(analyzeRepositoryCore(directory, analysisOptions, runGit), (error) => error instanceof FossilAnalysisError && error.code === "resource_limit");
+        await assert.rejects(analyzeRepositoryCore(directory, analysisOptions, runGit), (error) => error instanceof FossilAnalysisError &&
+            error.code === "resource_limit");
     }
     finally {
         rmSync(directory, { recursive: true, force: true });
@@ -24,9 +44,10 @@ test("rejects over-limit included history before producing a report", async () =
 });
 test("rejects an over-limit Git inventory before source reads", async () => {
     const directory = mkdtempSync(join(tmpdir(), "fossil-inventory-limit-"));
-    const tracked = `${Array.from({ length: 100_001 }, (_, index) => `src/file-${index}.ts`).join("\0")}\0`;
+    const paths = Array.from({ length: 100_001 }, (_, index) => `src/file-${index}.ts`);
+    const tracked = `${paths.join("\0")}\0`;
     const runGit = createRunGit(directory, [
-        { arguments: ["rev-parse", "--verify", "HEAD"], output: { ...gitOutput(), exitCode: 1 } },
+        ...unbornHeadCommands(),
         { arguments: ["ls-files", "-z"], output: gitOutput(tracked) },
     ]);
     try {

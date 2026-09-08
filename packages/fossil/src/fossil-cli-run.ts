@@ -1,0 +1,35 @@
+import { FossilUsageError } from "./fossil-cli-types/index.js";
+import { createFossilProgram } from "./fossil-cli-program.js";
+import type { FossilCliDependencies } from "./fossil-cli-types/index.js";
+
+async function reportUsageError(
+  error: FossilUsageError,
+  program: ReturnType<typeof createFossilProgram>,
+  stderr: (message: string) => void,
+): Promise<never> {
+  if (!(error instanceof FossilUsageError)) throw error;
+  const analyzeCommand = program.commands.find(
+    (command) => command.name() === "analyze",
+  );
+  if (!error.reported)
+    stderr(
+      `error: ${error.message}\n` +
+        `${analyzeCommand?.helpInformation() ?? program.helpInformation()}`,
+    );
+  throw error;
+}
+
+/** Parses CLI arguments through the injected analysis boundary. */
+export async function runFossilCli(
+  argv: readonly string[],
+  dependencies: FossilCliDependencies,
+): Promise<void> {
+  const stderr =
+    dependencies.stderr ?? process.stderr.write.bind(process.stderr);
+  const program = createFossilProgram({ ...dependencies, stderr });
+  try {
+    await program.parseAsync([...argv], { from: "node" });
+  } catch (error) {
+    await reportUsageError(error as FossilUsageError, program, stderr);
+  }
+}
