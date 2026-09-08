@@ -7,6 +7,8 @@ namespace SafeModeSentinel;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class SentinelAnalyzer : DiagnosticAnalyzer
 {
+    private readonly string analyzerHook = "analyzer-initialize";
+
     private static readonly DiagnosticDescriptor Rule = new(
         "SENTINEL001",
         "Sentinel analyzer loaded",
@@ -19,7 +21,7 @@ public sealed class SentinelAnalyzer : DiagnosticAnalyzer
 
     public override void Initialize(AnalysisContext context)
     {
-        Tripwire.Trigger("analyzer-initialize");
+        Tripwire.Trigger(analyzerHook);
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
     }

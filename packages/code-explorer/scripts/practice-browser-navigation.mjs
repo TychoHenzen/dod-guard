@@ -13,7 +13,14 @@ async function findCandidate({ page, endpoint, session, tab, oracle }) {
   let candidate;
   const searchDeadline = Date.now() + readinessTimeoutMs;
   do {
-    search = await call(page, endpoint, session, tab, "/api/search", { request_id: randomUUID(), query: oracle.symbols.helper.name });
+    search = await call({
+      page,
+      endpoint,
+      session,
+      tab,
+      route: "/api/search",
+      body: { request_id: randomUUID(), query: oracle.symbols.helper.name },
+    });
     candidate = search.payload?.data?.candidates?.find((item) => item.name === oracle.symbols.helper.name);
     if (search.status === 200 && candidate?.identity) break;
     await delay();
@@ -28,7 +35,7 @@ function recordSearch(search, candidate, evidence) {
   evidence.operation_states.search = searchPayload.state;
 }
 
-function recordFocus(focusPayload, candidate, oracle, evidence) {
+function recordFocus(focusPayload, oracle, evidence) {
   const focus = focusPayload.data;
   const handle = focus?.handles?.find((item) => item.name === oracle.symbols.helper.name);
   if (!focus?.view_id || !handle?.handle) throw new PracticeFailure("practice_focus_failed");
@@ -42,7 +49,17 @@ function recordFocus(focusPayload, candidate, oracle, evidence) {
 }
 
 async function followCaller({ page, endpoint, session, tab, focus, handle, oracle, evidence }) {
-  const followPayload = expectSuccess(await call(page, endpoint, session, tab, "/api/follow", { request_id: randomUUID(), view_id: focus.view_id, handle: handle.handle, relation: "callers" }), "follow");
+  const followPayload = expectSuccess(
+    await call({
+      page,
+      endpoint,
+      session,
+      tab,
+      route: "/api/follow",
+      body: { request_id: randomUUID(), view_id: focus.view_id, handle: handle.handle, relation: "callers" },
+    }),
+    "follow",
+  );
   evidence.operation_states.follow = followPayload.state;
   const caller = followPayload.data?.candidates?.find((item) => item.external === false && item.call_site);
   if (!caller) throw new PracticeFailure("practice_follow_failed");
@@ -54,8 +71,14 @@ async function followCaller({ page, endpoint, session, tab, focus, handle, oracl
 }
 
 async function moveHistory({ page, endpoint, session, tab, focus, caller, evidence }) {
-  const backPayload = expectSuccess(await call(page, endpoint, session, tab, "/api/history", { request_id: randomUUID(), action: "back" }), "back");
-  const forwardPayload = expectSuccess(await call(page, endpoint, session, tab, "/api/history", { request_id: randomUUID(), action: "forward" }), "forward");
+  const backPayload = expectSuccess(
+    await call({ page, endpoint, session, tab, route: "/api/history", body: { request_id: randomUUID(), action: "back" } }),
+    "back",
+  );
+  const forwardPayload = expectSuccess(
+    await call({ page, endpoint, session, tab, route: "/api/history", body: { request_id: randomUUID(), action: "forward" } }),
+    "forward",
+  );
   if (backPayload.data?.view_id !== focus.view_id || forwardPayload.data?.view_id !== caller.view_id) throw new PracticeFailure("practice_history_failed");
   evidence.operation_states.back = backPayload.state;
   evidence.operation_states.forward = forwardPayload.state;
@@ -64,8 +87,11 @@ async function moveHistory({ page, endpoint, session, tab, focus, caller, eviden
 export async function navigate({ page, endpoint, session, tab, oracle, evidence }) {
   const { search, candidate } = await findCandidate({ page, endpoint, session, tab, oracle });
   recordSearch(search, candidate, evidence);
-  const focusPayload = expectSuccess(await call(page, endpoint, session, tab, "/api/focus", { request_id: randomUUID(), symbol_id: candidate.identity }), "focus");
-  const { focus, handle } = recordFocus(focusPayload, candidate, oracle, evidence);
+  const focusPayload = expectSuccess(
+    await call({ page, endpoint, session, tab, route: "/api/focus", body: { request_id: randomUUID(), symbol_id: candidate.identity } }),
+    "focus",
+  );
+  const { focus, handle } = recordFocus(focusPayload, oracle, evidence);
   const caller = await followCaller({ page, endpoint, session, tab, focus, handle, oracle, evidence });
   await moveHistory({ page, endpoint, session, tab, focus, caller, evidence });
   return { candidate, focus, handle };

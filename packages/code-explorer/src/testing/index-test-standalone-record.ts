@@ -9,7 +9,17 @@ function sha256(value: string | Uint8Array): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-function sentinel(language: string, version: string, fixtureHash: string, authorization: ReturnType<typeof createAuthorization>) {
+function sentinel({
+  language,
+  version,
+  fixtureHash,
+  authorization,
+}: {
+  language: string;
+  version: string;
+  fixtureHash: string;
+  authorization: ReturnType<typeof createAuthorization>;
+}) {
   return {
     executable: executable(language),
     executable_sha256: authorization.executable_sha256,
@@ -31,13 +41,19 @@ function fixtureHashes(): Record<string, string> {
   return Object.fromEntries(standaloneLanguages.map((language) => [language, sha256(`${language}:fixture`)]));
 }
 
-function runtimeBackend(
-  language: string,
-  version: string,
-  fixtureHash: string,
-  authorization: ReturnType<typeof createAuthorization>,
-  counters: Record<string, string>,
-) {
+function runtimeBackend({
+  language,
+  version,
+  fixtureHash,
+  authorization,
+  counters,
+}: {
+  language: string;
+  version: string;
+  fixtureHash: string;
+  authorization: ReturnType<typeof createAuthorization>;
+  counters: Record<string, string>;
+}) {
   return {
     language,
     platform_executables: { win32: executable(language), posix: executable(language).replace(/\.exe$/, "") },
@@ -53,18 +69,28 @@ function runtimeBackend(
   };
 }
 
-function runtimeBackends(
-  version: string,
-  hashes: Record<string, string>,
-  authorizations: Record<string, ReturnType<typeof createAuthorization>>,
-  counters: Record<string, string>,
-) {
-  return standaloneLanguages.map((language) => runtimeBackend(language, version, hashes[language] ?? "", authorizations[language], counters));
+function runtimeBackends({
+  version,
+  hashes,
+  authorizations,
+  counters,
+}: {
+  version: string;
+  hashes: Record<string, string>;
+  authorizations: Record<string, ReturnType<typeof createAuthorization>>;
+  counters: Record<string, string>;
+}) {
+  return standaloneLanguages.map((language) =>
+    runtimeBackend({ language, version, fixtureHash: hashes[language] ?? "", authorization: authorizations[language], counters }),
+  );
 }
 
 function sentinelRuns(version: string, hashes: Record<string, string>, authorizations: Record<string, ReturnType<typeof createAuthorization>>) {
   const runs = Object.fromEntries(
-    standaloneLanguages.map((language) => [language, sentinel(language, version, hashes[language] ?? "", authorizations[language])]),
+    standaloneLanguages.map((language) => [
+      language,
+      sentinel({ language, version, fixtureHash: hashes[language] ?? "", authorization: authorizations[language] }),
+    ]),
   ) as Record<string, ReturnType<typeof sentinel> & { environment?: Record<string, string> }>;
   if (runs.python) runs.python = { ...runs.python, environment: { PATH: "", PYTHONPATH: "", VIRTUAL_ENV: "", CONDA_PREFIX: "" } };
   return runs;
@@ -116,7 +142,7 @@ export function createStandaloneBackendRecord(root: string, counters: Record<str
   const hashes = fixtureHashes();
   const packageMetadataHash = sha256(readFileSync(join(root, "node_modules", "pyright", "package.json")));
   const authorizations = Object.fromEntries(standaloneLanguages.map((language) => [language, createAuthorization(root, language, packageMetadataHash)]));
-  const backends = runtimeBackends(version, hashes, authorizations, counters);
+  const backends = runtimeBackends({ version, hashes, authorizations, counters });
   const runs = sentinelRuns(version, hashes, authorizations);
   return {
     record: selectionRecord(backends),

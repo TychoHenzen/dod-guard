@@ -34,7 +34,7 @@ export async function waitForBackend({ page, endpoint, session, tab, language, e
   let selectedBackend;
   const readyDeadline = Date.now() + readinessTimeoutMs;
   do {
-    status = expectSuccess(await call(page, endpoint, session, tab, "/api/status", { action: "status" }), "status");
+    status = expectSuccess(await call({ page, endpoint, session, tab, route: "/api/status", body: { action: "status" } }), "status");
     selectedBackend = status.data?.backend_status?.backends?.find((candidate) => candidate.language === language);
     if (backendStateReady(selectedBackend)) break;
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 250));

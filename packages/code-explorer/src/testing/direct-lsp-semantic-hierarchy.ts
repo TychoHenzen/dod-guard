@@ -47,12 +47,17 @@ export function outgoingHierarchyClient(methods: string[]) {
   );
 }
 
-export function assertHierarchyRelation(
-  result: unknown,
-  operation: "callers" | "callees",
-  name: string,
-  callSiteCharacter: number,
-): void {
+export function assertHierarchyRelation({
+  result,
+  operation,
+  name,
+  callSiteCharacter,
+}: {
+  result: unknown;
+  operation: "callers" | "callees";
+  name: string;
+  callSiteCharacter: number;
+}): void {
   const output = result as HierarchyOutput;
   assert.equal(output.operation, operation);
   const relation = output.relations[0] as HierarchyRelation;

@@ -19,5 +19,5 @@ it("uses server-issued hierarchy items and preserves target metadata", async () 
     symbol_id: "entry",
   });
   assert.deepEqual(methods, ["textDocument/prepareCallHierarchy", "callHierarchy/incomingCalls"]);
-  assertHierarchyRelation(result, "callers", "caller", 2);
+  assertHierarchyRelation({ result, operation: "callers", name: "caller", callSiteCharacter: 2 });
 });

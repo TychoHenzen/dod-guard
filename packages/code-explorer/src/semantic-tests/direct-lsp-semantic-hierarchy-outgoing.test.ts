@@ -21,5 +21,5 @@ it("uses outgoing hierarchy targets and rejects virtual or malformed locations",
     symbol_id: "entry",
   });
   assert.deepEqual(methods, ["textDocument/prepareCallHierarchy", "callHierarchy/outgoingCalls"]);
-  assertHierarchyRelation(result, "callees", "callee", 3);
+  assertHierarchyRelation({ result, operation: "callees", name: "callee", callSiteCharacter: 3 });
 });

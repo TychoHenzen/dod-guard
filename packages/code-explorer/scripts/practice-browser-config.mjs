@@ -33,12 +33,12 @@ export async function loadPrerequisite(language) {
     throw new PracticeFailure("practice_prerequisite_failed");
   }
   const backend = selection?.runtime_backends?.find((candidate) => candidate.language === language);
-  if (!validPrerequisite(selection, oracle, backend, language))
+  if (!validPrerequisite({ selection, oracle, backend, language }))
     throw new PracticeFailure("practice_prerequisite_failed");
   return { backend, oracle };
 }
 
-function validPrerequisite(selection, oracle, backend, language) {
+function validPrerequisite({ selection, oracle, backend, language }) {
   return [
     selection?.schema_version === 1,
     oracle?.schema_version === 1,

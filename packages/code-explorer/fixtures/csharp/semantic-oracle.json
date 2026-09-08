@@ -7,8 +7,8 @@
       "identity": "csharp:Demo.Entry",
       "name": "Entry",
       "declaration": {
-        "start": { "line": 1, "character": 16 },
-        "end": { "line": 1, "character": 21 }
+        "start": { "line": 1, "character": 23 },
+        "end": { "line": 1, "character": 28 }
       }
     },
     "helper": {
