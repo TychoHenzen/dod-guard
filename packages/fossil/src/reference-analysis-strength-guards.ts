@@ -15,19 +15,6 @@ function separatorForGuard(reference: ParsedReference): string {
   return "::";
 }
 
-function targetPath(reference: ParsedReference): string {
-  if (reference.targetPath !== undefined) return reference.targetPath;
-  const candidate = reference.targetCandidates[0];
-  if (candidate !== undefined) return candidate;
-  return "";
-}
-
-function targetSymbol(reference: ParsedReference): string {
-  const symbol = targetPath(reference).split(/[/.]/).at(-2);
-  if (symbol === undefined) return "";
-  return symbol;
-}
-
 function guardSymbol(
   reference: ParsedReference,
   source: ReferenceSourceContent,
@@ -36,9 +23,7 @@ function guardSymbol(
     reference.span.start,
     reference.span.end,
   );
-  const symbol = declared.split(separatorForGuard(reference)).at(-1);
-  if (symbol !== undefined) return symbol;
-  return targetSymbol(reference);
+  return declared.split(separatorForGuard(reference)).at(-1) ?? "";
 }
 
 function guardUses(

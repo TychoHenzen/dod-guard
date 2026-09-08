@@ -26,5 +26,9 @@ test("warns for an unreadable discovered path and continues without creating " +
     ]);
     assert.equal(JSON.stringify(result.warnings).includes("sensitive filesystem failure"), false);
     assert.deepEqual(oldUntrackedWorkspaceCandidates(result.metadata, 10 * 24 * 60 * 60 * 1_000, 7), [{ path: "scratch/later.ts", kind: "untracked", modifiedTimestampMs: 0 }]);
+    const sortedWarnings = inspectWorkspaceFileMetadataWithWarnings(["scratch/zeta.ts", "scratch/alpha.ts"], () => {
+        throw new Error("sensitive filesystem failure");
+    });
+    assert.deepEqual(sortedWarnings.warnings.map(({ path }) => path), ["scratch/alpha.ts", "scratch/zeta.ts"]);
 });
 //# sourceMappingURL=workspace-metadata.cases.js.map

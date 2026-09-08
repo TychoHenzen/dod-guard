@@ -21,6 +21,7 @@ export function pipedChild() {
     child,
     emitStdout: (text: string) => stdout.emit("data", Buffer.from(text)),
     emitStderr: (text: string) => stderr.emit("data", Buffer.from(text)),
+    emitError: (error: Error) => events.emit("error", error),
     close: (code: number | null) => events.emit("close", code),
     get killCalls() {
       return killCalls;

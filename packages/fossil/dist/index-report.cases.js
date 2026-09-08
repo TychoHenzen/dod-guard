@@ -37,7 +37,7 @@ async function runWarningCli(report) {
     ], {
         analyze: async () => report,
         stdout: (message) => stdout.push(message),
-        stderr: (message) => stderr.push(message),
+        stderr: stderr.push.bind(stderr),
     });
     return { exitCode, stdout, stderr };
 }
@@ -55,7 +55,7 @@ test("retains sorted nonfatal warnings in successful API " +
     assert.equal(exitCode, 0);
     assert.equal(stderr.join(""), "");
     assert.deepEqual(apiReport.warnings, expectedWarnings);
-    assert.deepEqual(JSON.parse(stdout.join(""))["warnings"], expectedWarnings);
+    assert.deepEqual(JSON.parse(stdout.join("")).warnings, expectedWarnings);
     assert.deepEqual(report.warnings, warnings);
 });
 //# sourceMappingURL=index-report.cases.js.map

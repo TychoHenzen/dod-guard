@@ -50,3 +50,13 @@ test("terminates Git ingestion when stderr exceeds its limit", async () => {
   await assertResourceLimit(result, "Git stderr limit exceeded.");
   assert.equal(process.killCalls, 1);
 });
+
+test("rejects Git child errors without producing partial output", async () => {
+  const process = pipedChild();
+  const result = collectBoundedGitOutput(process.child);
+  const error = new Error("Git process unavailable");
+
+  process.emitError(error);
+
+  await assert.rejects(result, (actual: unknown) => actual === error);
+});

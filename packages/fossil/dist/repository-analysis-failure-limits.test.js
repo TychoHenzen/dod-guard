@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { FossilAnalysisError } from "./analysis-error.js";
 import { analysisOptions, createRunGit, gitOutput, } from "./repository-analysis.helpers.test.js";
+import { historyOutputForHead } from "./repository-analysis-history-head.js";
 import { sparseCheckoutOutput } from "./repository-analysis-history-steps.js";
 import { analyzeRepositoryCore } from "./repository-analysis.js";
 function failedHeadCommands() {
@@ -35,6 +36,11 @@ test("rejects failed HEAD verification without unborn evidence", async () => {
     finally {
         rmSync(directory, { recursive: true, force: true });
     }
+});
+test("maps an unreadable unborn-head command to a Git failure", async () => {
+    await assert.rejects(historyOutputForHead(1, async () => {
+        throw new Error("Git could not start");
+    }, "C:/repo"), (error) => error instanceof FossilAnalysisError && error.code === "git_failure");
 });
 test("suppresses only a missing sparse-checkout key", async () => {
     const missing = await sparseCheckoutOutput(async () => ({ ...gitOutput(), exitCode: 1 }), "C:/repo");

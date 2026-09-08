@@ -5049,25 +5049,12 @@ function separatorForGuard(reference) {
   if (reference.kind === "csharp-using") return ".";
   return "::";
 }
-function targetPath(reference) {
-  if (reference.targetPath !== void 0) return reference.targetPath;
-  const candidate = reference.targetCandidates[0];
-  if (candidate !== void 0) return candidate;
-  return "";
-}
-function targetSymbol(reference) {
-  const symbol = targetPath(reference).split(/[/.]/).at(-2);
-  if (symbol === void 0) return "";
-  return symbol;
-}
 function guardSymbol(reference, source) {
   const declared = source.content.slice(
     reference.span.start,
     reference.span.end
   );
-  const symbol = declared.split(separatorForGuard(reference)).at(-1);
-  if (symbol !== void 0) return symbol;
-  return targetSymbol(reference);
+  return declared.split(separatorForGuard(reference)).at(-1) ?? "";
 }
 function guardUses(reference, source, view) {
   const symbol = guardSymbol(reference, source);
@@ -5474,7 +5461,7 @@ function unresolvedReference({
     span,
     resolution
   },
-  targetPath: targetPath2
+  targetPath
 }) {
   return {
     sourcePath,
@@ -5491,9 +5478,9 @@ function referenceGraph(parsed, sources) {
     reference,
     targetPath: resolvedTarget(reference, paths)
   }));
-  const edges = resolved.filter((entry) => entry.targetPath !== void 0).map(({ reference, targetPath: targetPath2 }) => ({
+  const edges = resolved.filter((entry) => entry.targetPath !== void 0).map(({ reference, targetPath }) => ({
     sourcePath: reference.sourcePath,
-    targetPath: targetPath2 ?? "",
+    targetPath: targetPath ?? "",
     language: reference.language,
     kind: reference.kind,
     strength: strengthForReference(reference, sources),

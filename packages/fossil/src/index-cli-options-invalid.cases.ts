@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { FossilUsageError, runFossilCli } from "./index.js";
-import { optionsFor, reportFor } from "./index.test-support.js";
+import { reportFor } from "./index.test-support.js";
+
+let analyzeCalls = 0;
+
+async function analyzeForTest(
+  _repositoryPath: string,
+  options: Parameters<typeof reportFor>[0],
+) {
+  analyzeCalls += 1;
+  return reportFor(options);
+}
 
 const INVALID_ARGUMENTS = [
   ["--days", "0"],
@@ -22,19 +32,16 @@ async function assertInvalidArguments(
   argumentsForCase: string[],
 ): Promise<void> {
   const stderr: string[] = [];
-  let analyzeCalls = 0;
+  const callsBefore = analyzeCalls;
   await assert.rejects(
     runFossilCli(["node", "fossil", "analyze", ...argumentsForCase], {
-      analyze: async () => {
-        analyzeCalls += 1;
-        return reportFor(optionsFor());
-      },
+      analyze: analyzeForTest,
       stderr: (message) => stderr.push(message),
     }),
     (error: unknown) =>
       error instanceof FossilUsageError && error.exitCode === 2,
   );
-  assert.equal(analyzeCalls, 0);
+  assert.equal(analyzeCalls, callsBefore);
   assert.match(stderr.join(""), /(?:error:|Usage: fossil analyze)/);
   assert.match(stderr.join(""), /Usage: fossil analyze/);
 }
@@ -46,3 +53,16 @@ test(
       await assertInvalidArguments(argumentsForCase);
   },
 );
+
+test("runs the injected analysis for valid arguments", async () => {
+  const stdout: string[] = [];
+  const callsBefore = analyzeCalls;
+
+  await runFossilCli(["node", "fossil", "analyze", "--format", "json"], {
+    analyze: analyzeForTest,
+    stdout: stdout.push.bind(stdout),
+  });
+
+  assert.equal(analyzeCalls, callsBefore + 1);
+  assert.match(stdout.join(""), /\"schemaVersion\":1/);
+});

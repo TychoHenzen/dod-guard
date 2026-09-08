@@ -3,6 +3,7 @@ export declare function pipedChild(): {
     child: GitPipedChild;
     emitStdout: (text: string) => boolean;
     emitStderr: (text: string) => boolean;
+    emitError: (error: Error) => boolean;
     close: (code: number | null) => boolean;
     readonly killCalls: number;
 };

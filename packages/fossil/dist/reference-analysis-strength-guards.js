@@ -6,26 +6,9 @@ function separatorForGuard(reference) {
         return ".";
     return "::";
 }
-function targetPath(reference) {
-    if (reference.targetPath !== undefined)
-        return reference.targetPath;
-    const candidate = reference.targetCandidates[0];
-    if (candidate !== undefined)
-        return candidate;
-    return "";
-}
-function targetSymbol(reference) {
-    const symbol = targetPath(reference).split(/[/.]/).at(-2);
-    if (symbol === undefined)
-        return "";
-    return symbol;
-}
 function guardSymbol(reference, source) {
     const declared = source.content.slice(reference.span.start, reference.span.end);
-    const symbol = declared.split(separatorForGuard(reference)).at(-1);
-    if (symbol !== undefined)
-        return symbol;
-    return targetSymbol(reference);
+    return declared.split(separatorForGuard(reference)).at(-1) ?? "";
 }
 function guardUses(reference, source, view) {
     const symbol = guardSymbol(reference, source);

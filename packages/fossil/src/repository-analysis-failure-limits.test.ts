@@ -9,6 +9,7 @@ import {
   createRunGit,
   gitOutput,
 } from "./repository-analysis.helpers.test.js";
+import { historyOutputForHead } from "./repository-analysis-history-head.js";
 import { sparseCheckoutOutput } from "./repository-analysis-history-steps.js";
 import { analyzeRepositoryCore } from "./repository-analysis.js";
 
@@ -44,6 +45,20 @@ test("rejects failed HEAD verification without unborn evidence", async () => {
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("maps an unreadable unborn-head command to a Git failure", async () => {
+  await assert.rejects(
+    historyOutputForHead(
+      1,
+      async () => {
+        throw new Error("Git could not start");
+      },
+      "C:/repo",
+    ),
+    (error: unknown) =>
+      error instanceof FossilAnalysisError && error.code === "git_failure",
+  );
 });
 
 test("suppresses only a missing sparse-checkout key", async () => {

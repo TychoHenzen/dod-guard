@@ -18,5 +18,6 @@ test("filters caller-excluded paths before metadata reads, warnings, and ignore 
     assert.deepEqual(metadataReads, ["scratch/allowed.ts"]);
     assert.deepEqual(result.warnings, []);
     assert.equal(discoveredPaths.includes("ignored/hidden.cache"), false);
+    assert.deepEqual(filterWorkspaceDiscoveryPaths(["src/a.ts", "src/ab.ts", "src/nested/a.ts"], ["src/?.ts"]), ["src/ab.ts", "src/nested/a.ts"]);
 });
 //# sourceMappingURL=workspace-exclusion.cases.js.map

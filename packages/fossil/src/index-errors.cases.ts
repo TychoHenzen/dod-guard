@@ -36,7 +36,7 @@ async function runTypedFailure(code: AnalysisErrorCode) {
         message: `${code}: \u001b[31mfailed`,
       });
     },
-    stdout: (message) => stdout.push(message),
+    stdout: stdout.push.bind(stdout),
     stderr: (message) => stderr.push(message),
   });
   return { exitCode, stdout, stderr };
@@ -65,7 +65,7 @@ async function assertNotRepositoryFailure(): Promise<void> {
           `not a Git repository:\n\x1b[31m${"x".repeat(8_192)}`,
         );
       },
-      stdout: (message) => stdout.push(message),
+      stdout: stdout.push.bind(stdout),
       stderr: (message) => stderr.push(message),
     },
   );

@@ -46,5 +46,16 @@ test(
       ),
       [{ path: "scratch/later.ts", kind: "untracked", modifiedTimestampMs: 0 }],
     );
+
+    const sortedWarnings = inspectWorkspaceFileMetadataWithWarnings(
+      ["scratch/zeta.ts", "scratch/alpha.ts"],
+      () => {
+        throw new Error("sensitive filesystem failure");
+      },
+    );
+    assert.deepEqual(
+      sortedWarnings.warnings.map(({ path }) => path),
+      ["scratch/alpha.ts", "scratch/zeta.ts"],
+    );
   },
 );

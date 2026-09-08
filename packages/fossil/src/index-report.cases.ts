@@ -42,7 +42,7 @@ async function runWarningCli(report: FossilReport) {
     {
       analyze: async () => report,
       stdout: (message) => stdout.push(message),
-      stderr: (message) => stderr.push(message),
+      stderr: stderr.push.bind(stderr),
     },
   );
   return { exitCode, stdout, stderr };
@@ -69,7 +69,7 @@ test(
     assert.equal(exitCode, 0);
     assert.equal(stderr.join(""), "");
     assert.deepEqual(apiReport.warnings, expectedWarnings);
-    assert.deepEqual(JSON.parse(stdout.join(""))["warnings"], expectedWarnings);
+    assert.deepEqual(JSON.parse(stdout.join("")).warnings, expectedWarnings);
     assert.deepEqual(report.warnings, warnings);
   },
 );
