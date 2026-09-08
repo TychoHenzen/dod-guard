@@ -37,6 +37,20 @@ function pipedChild() {
   };
 }
 
+function repositoryDiscoveryArguments(repositoryPath: string): readonly string[] {
+  return [
+    "--no-pager",
+    "-c",
+    "core.fsmonitor=false",
+    "-c",
+    "diff.external=",
+    "-C",
+    repositoryPath,
+    "rev-parse",
+    "--show-toplevel",
+  ];
+}
+
 async function assertResourceLimit(result: Promise<unknown>, message: string): Promise<void> {
   await assert.rejects(
     result,
@@ -57,17 +71,7 @@ test("passes a metacharacter-containing repository path as one non-shell Git arg
   assert.deepEqual(calls, [
     {
       command: "git",
-      arguments_: [
-        "--no-pager",
-        "-c",
-        "core.fsmonitor=false",
-        "-c",
-        "diff.external=",
-        "-C",
-        repositoryPath,
-        "rev-parse",
-        "--show-toplevel",
-      ],
+      arguments_: repositoryDiscoveryArguments(repositoryPath),
       options: { shell: false, windowsHide: true, env: { GIT_TERMINAL_PROMPT: "0", GIT_PAGER: "cat" } },
     },
   ]);
@@ -91,17 +95,7 @@ test("overrides hostile pager and prompt settings while preserving unrelated env
 
   assert.deepEqual(calls, [
     {
-      arguments_: [
-        "--no-pager",
-        "-c",
-        "core.fsmonitor=false",
-        "-c",
-        "diff.external=",
-        "-C",
-        "C:/repositories/example",
-        "rev-parse",
-        "--show-toplevel",
-      ],
+      arguments_: repositoryDiscoveryArguments("C:/repositories/example"),
       options: {
         shell: false,
         windowsHide: true,

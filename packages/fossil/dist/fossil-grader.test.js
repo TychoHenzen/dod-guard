@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { abandonmentScore, candidateReferenceSubscores, clusterIsolationScore, createAdvisoryFossilFinding, meetsFossilThreshold, normalizedBurstChurn, qualifyingBurstCandidates, referenceWeaknessScore, scoreFossilSubscores, } from "./fossil-grader.js";
+import { advisoryFindingInput } from "./testing/report-fixtures.js";
 function activity(path, burstCommits, postBurstCommits = 0) {
     return {
         identity: path,
@@ -9,6 +10,16 @@ function activity(path, burstCommits, postBurstCommits = 0) {
         postBurstCommits,
         createdInBurst: true,
         existsAtHead: true,
+    };
+}
+function referenceEdge(input) {
+    return {
+        sourcePath: input.sourcePath,
+        targetPath: input.targetPath,
+        language: "typescript",
+        kind: input.kind ?? "import",
+        strength: input.strength ?? "strong",
+        span: { start: input.start, end: input.start + 1, line: 1, column: input.column },
     };
 }
 test("combines all available subscores with the fixed full-evidence weights", () => {
@@ -51,14 +62,7 @@ test("retains independently qualifying evidence for one path in multiple bursts"
 test("omits both reference subscores together when candidate reference evidence is incomplete", () => {
     const graph = {
         edges: [
-            {
-                sourcePath: "src/live.ts",
-                targetPath: "src/candidate.ts",
-                language: "typescript",
-                kind: "import",
-                strength: "strong",
-                span: { start: 0, end: 1, line: 1, column: 1 },
-            },
+            referenceEdge({ sourcePath: "src/live.ts", targetPath: "src/candidate.ts", start: 0, column: 1 }),
             {
                 sourcePath: "src/candidate.ts",
                 targetPath: "src/fossil.ts",
@@ -78,18 +82,7 @@ test("omits both reference subscores together when candidate reference evidence 
     assert.deepEqual(candidateReferenceSubscores("src/candidate.ts", { ...graph, complete: true, unavailablePaths: [] }, new Set(["src/fossil.ts"])), { available: true, referenceWeakness: 0.5, clusterIsolation: 0.5 });
 });
 test("keeps a maximum-score fossil finding advisory", () => {
-    const finding = createAdvisoryFossilFinding({
-        burstId: "burst-1",
-        path: "src/candidate.ts",
-        activity: activity("src/candidate.ts", 5),
-        score: 1,
-        scoreBasis: "full",
-        subscores: { churn: 1, abandonment: 1, referenceWeakness: 1, clusterIsolation: 1 },
-        referenceAvailability: "complete",
-        strongInboundReferences: 0,
-        candidateNeighbors: [],
-        liveNeighbors: [],
-    });
+    const finding = createAdvisoryFossilFinding(advisoryFindingInput({ burstId: "burst-1", path: "src/candidate.ts", score: 1, burstCommits: 5 }));
     assert.equal(finding.score, 1);
     assert.equal(finding.classification, "advisory");
 });
@@ -120,14 +113,7 @@ test("gives full isolation when every unique resolved neighbor is a fossil candi
                 strength: "strong",
                 span: { start: 2, end: 3, line: 1, column: 3 },
             },
-            {
-                sourcePath: "src/candidate.ts",
-                targetPath: "src/candidate.ts",
-                language: "typescript",
-                kind: "import",
-                strength: "strong",
-                span: { start: 3, end: 4, line: 1, column: 4 },
-            },
+            referenceEdge({ sourcePath: "src/candidate.ts", targetPath: "src/candidate.ts", start: 3, column: 4 }),
             {
                 sourcePath: "src/live-a.ts",
                 targetPath: "src/live-b.ts",
@@ -239,14 +225,7 @@ test("gives full weakness when no unique strong live inbound source remains", ()
                 strength: "strong",
                 span: { start: 2, end: 3, line: 1, column: 3 },
             },
-            {
-                sourcePath: "src/candidate.ts",
-                targetPath: "src/candidate.ts",
-                language: "typescript",
-                kind: "import",
-                strength: "strong",
-                span: { start: 3, end: 4, line: 1, column: 4 },
-            },
+            referenceEdge({ sourcePath: "src/candidate.ts", targetPath: "src/candidate.ts", start: 3, column: 4 }),
             {
                 sourcePath: "src/other-candidate.ts",
                 targetPath: "src/candidate.ts",
@@ -273,14 +252,7 @@ test("gives full weakness when no unique strong live inbound source remains", ()
 test("counts duplicate strong inbound edges from one live source only once", () => {
     const graph = {
         edges: [
-            {
-                sourcePath: "src/live.ts",
-                targetPath: "src/candidate.ts",
-                language: "typescript",
-                kind: "import",
-                strength: "strong",
-                span: { start: 0, end: 1, line: 1, column: 1 },
-            },
+            referenceEdge({ sourcePath: "src/live.ts", targetPath: "src/candidate.ts", start: 0, column: 1 }),
             {
                 sourcePath: "src/live.ts",
                 targetPath: "src/candidate.ts",

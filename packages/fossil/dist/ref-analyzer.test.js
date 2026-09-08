@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { analyzeJavaScriptReferences, analyzeJavaScriptReferencesWithinBoundary, analyzeReferences, markUnresolvedCandidateEvidence, readBoundedReferenceSources, readReferenceSources, readStableReferenceSources, regradeVestigialEdges, unsupportedCandidateReferenceGraph, } from "./ref-analyzer.js";
+function edgeSummary(graph) {
+    return graph.edges.map(({ sourcePath, targetPath, language, kind, strength }) => ({
+        sourcePath,
+        targetPath,
+        language,
+        kind,
+        strength,
+    }));
+}
 test("skips oversized sources before reading content and retains later bounded sources", () => {
     const maximumBytes = 1_048_576;
     const contentReads = [];
@@ -288,13 +297,7 @@ test("resolves static, require, and dynamic relative module forms against curren
         { path: "src/dynamic.mjs", language: "javascript", content: "" },
         { path: "src/folder/index.ts", language: "typescript", content: "" },
     ]);
-    assert.deepEqual(graph.edges.map(({ sourcePath, targetPath, language, kind, strength }) => ({
-        sourcePath,
-        targetPath,
-        language,
-        kind,
-        strength,
-    })), [
+    assert.deepEqual(edgeSummary(graph), [
         {
             sourcePath: "src/main.ts",
             targetPath: "src/feature.ts",
@@ -421,13 +424,7 @@ test("resolves sibling, module-directory, and nearest-Cargo-root Rust modules", 
         },
         { path: "workspace/app/tools/nested/src/models/user/mod.rs", language: "rust", content: "" },
     ]);
-    assert.deepEqual(graph.edges.map(({ sourcePath, targetPath, language, kind, strength }) => ({
-        sourcePath,
-        targetPath,
-        language,
-        kind,
-        strength,
-    })), [
+    assert.deepEqual(edgeSummary(graph), [
         {
             sourcePath: "workspace/app/src/main.rs",
             targetPath: "workspace/app/src/sibling.rs",

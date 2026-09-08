@@ -6,6 +6,7 @@ import {
   emptyHistoryWarnings,
   filterHistoryByExtensions,
   futureCommitWarnings,
+
   nonMergeGitLogArguments,
   normalizeExtensions,
   parseNonMergeGitLog,
@@ -13,14 +14,17 @@ import {
   retainClosedTemporalClusters,
   retainQualifiedClosedClusters,
   selectAbsoluteSurvivors,
+
   selectDeletedNonSurvivorPaths,
   selectFossilCandidates,
   selectRelativeSurvivors,
   selectSurvivors,
   shallowHistoryWarnings,
+
   shallowRepositoryArguments,
   sortCommitsChronologically,
   sparseCheckoutArguments,
+
   sparseCheckoutWarnings,
   splitAtChangePoint,
   splitTemporalClusters,
@@ -50,6 +54,33 @@ function changePointCommits(fileSets: readonly (readonly string[])[], gapsBefore
     };
   });
 }
+
+function changePointPartitionLengths(
+  fileSets: readonly (readonly string[])[],
+  gapsBefore: ReadonlyMap<number, number>,
+) {
+  return splitAtChangePoint(changePointCommits(fileSets, gapsBefore)).map((partition) => partition.length);
+}
+
+function fileActivity(input: {
+  identity: string;
+  path: string;
+  burstCommits: number;
+  postBurstCommits: number;
+  createdInBurst: boolean;
+  existsAtHead: boolean;
+}) {
+  return { ...input };
+}
+
+const maximumFileActivity = fileActivity({
+  identity: "maximum",
+  path: "maximum.ts",
+  burstCommits: 1,
+  postBurstCommits: 100,
+  createdInBurst: true,
+  existsAtHead: true,
+});
 test("accepts exactly one hundred thousand included commits and rejects the next one", () => {
   const commit = { hash: "included", committerTimestampMs: 0, changes: [] };
   assert.equal(
@@ -454,27 +485,23 @@ test("ranks close change points deterministically and recursively splits both si
   lowerSimilarityWins[6][0] = "bridge.ts";
 
   assert.deepEqual(
-    splitAtChangePoint(
-      changePointCommits(
-        lowerSimilarityWins,
-        new Map([
-          [5, 4 * hour],
-          [6, 8 * hour],
-        ]),
-      ),
-    ).map((partition) => partition.length),
+    changePointPartitionLengths(
+      lowerSimilarityWins,
+      new Map([
+        [5, 4 * hour],
+        [6, 8 * hour],
+      ]),
+    ),
     [5, 6],
   );
   assert.deepEqual(
-    splitAtChangePoint(
-      changePointCommits(
-        uniqueFileSets,
-        new Map([
-          [5, 4 * hour],
-          [6, 8 * hour],
-        ]),
-      ),
-    ).map((partition) => partition.length),
+    changePointPartitionLengths(
+      uniqueFileSets,
+      new Map([
+        [5, 4 * hour],
+        [6, 8 * hour],
+      ]),
+    ),
     [6, 5],
   );
   assert.deepEqual(
@@ -694,14 +721,7 @@ test("selects positive relative survivors inclusively with absolute survivors", 
       createdInBurst: true,
       existsAtHead: true,
     },
-    {
-      identity: "maximum",
-      path: "maximum.ts",
-      burstCommits: 1,
-      postBurstCommits: 100,
-      createdInBurst: true,
-      existsAtHead: true,
-    },
+    maximumFileActivity,
   ];
 
   assert.deepEqual(selectRelativeSurvivors(files), [files[1], files[3]]);
@@ -756,14 +776,7 @@ test("selects only current files that meet neither survivor rule", () => {
       createdInBurst: true,
       existsAtHead: true,
     },
-    {
-      identity: "maximum",
-      path: "maximum.ts",
-      burstCommits: 1,
-      postBurstCommits: 100,
-      createdInBurst: true,
-      existsAtHead: true,
-    },
+    maximumFileActivity,
     {
       identity: "deleted",
       path: "deleted.ts",

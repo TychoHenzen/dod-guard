@@ -24,6 +24,20 @@ function changePointCommits(fileSets, gapsBefore) {
         };
     });
 }
+function changePointPartitionLengths(fileSets, gapsBefore) {
+    return splitAtChangePoint(changePointCommits(fileSets, gapsBefore)).map((partition) => partition.length);
+}
+function fileActivity(input) {
+    return { ...input };
+}
+const maximumFileActivity = fileActivity({
+    identity: "maximum",
+    path: "maximum.ts",
+    burstCommits: 1,
+    postBurstCommits: 100,
+    createdInBurst: true,
+    existsAtHead: true,
+});
 test("accepts exactly one hundred thousand included commits and rejects the next one", () => {
     const commit = { hash: "included", committerTimestampMs: 0, changes: [] };
     assert.equal(filterHistoryByExtensions(Array.from({ length: 100_000 }, () => commit), new Set()).length, 100_000);
@@ -361,14 +375,14 @@ test("ranks close change points deterministically and recursively splits both si
     const lowerSimilarityWins = uniqueFileSets.map((paths) => [...paths]);
     lowerSimilarityWins[5][0] = "bridge.ts";
     lowerSimilarityWins[6][0] = "bridge.ts";
-    assert.deepEqual(splitAtChangePoint(changePointCommits(lowerSimilarityWins, new Map([
+    assert.deepEqual(changePointPartitionLengths(lowerSimilarityWins, new Map([
         [5, 4 * hour],
         [6, 8 * hour],
-    ]))).map((partition) => partition.length), [5, 6]);
-    assert.deepEqual(splitAtChangePoint(changePointCommits(uniqueFileSets, new Map([
+    ])), [5, 6]);
+    assert.deepEqual(changePointPartitionLengths(uniqueFileSets, new Map([
         [5, 4 * hour],
         [6, 8 * hour],
-    ]))).map((partition) => partition.length), [6, 5]);
+    ])), [6, 5]);
     assert.deepEqual(splitAtChangePoint(changePointCommits(uniqueFileSets, new Map([
         [5, 4 * hour],
         [6, 4 * hour],
@@ -556,14 +570,7 @@ test("selects positive relative survivors inclusively with absolute survivors", 
             createdInBurst: true,
             existsAtHead: true,
         },
-        {
-            identity: "maximum",
-            path: "maximum.ts",
-            burstCommits: 1,
-            postBurstCommits: 100,
-            createdInBurst: true,
-            existsAtHead: true,
-        },
+        maximumFileActivity,
     ];
     assert.deepEqual(selectRelativeSurvivors(files), [files[1], files[3]]);
     assert.deepEqual(selectSurvivors(files), [files[0], files[1], files[3]]);
@@ -616,14 +623,7 @@ test("selects only current files that meet neither survivor rule", () => {
             createdInBurst: true,
             existsAtHead: true,
         },
-        {
-            identity: "maximum",
-            path: "maximum.ts",
-            burstCommits: 1,
-            postBurstCommits: 100,
-            createdInBurst: true,
-            existsAtHead: true,
-        },
+        maximumFileActivity,
         {
             identity: "deleted",
             path: "deleted.ts",

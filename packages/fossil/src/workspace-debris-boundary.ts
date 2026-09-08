@@ -4,12 +4,15 @@ export {
   filterWorkspaceDiscoveryPaths,
   hasInboundWorkspaceUsage,
   IGNORED_DISCOVERY_ARGUMENTS,
+
   inspectWorkspaceFileMetadata,
   inspectWorkspaceFileMetadataWithWarnings,
   oldIgnoredWorkspaceCandidates,
   oldUntrackedWorkspaceCandidates,
+
   omitUsedWorkspaceCandidates,
   parseNulDelimitedPaths,
+
   parseVerboseCheckIgnore,
   UNTRACKED_DISCOVERY_ARGUMENTS,
   workspaceDebrisFinding,

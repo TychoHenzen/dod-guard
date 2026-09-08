@@ -4,6 +4,7 @@ export {
   candidateReferenceSubscores,
   clusterIsolationScore,
   createAdvisoryFossilFinding,
+
   meetsFossilThreshold,
   normalizedBurstChurn,
   qualifyingBurstCandidates,

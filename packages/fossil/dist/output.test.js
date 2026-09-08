@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { burstTableRows, renderBurstTableRows, renderFossilReportJson, renderFossilReportTable, workspaceDebrisTableRows, } from "./output.js";
+import { createAdvisoryFossilFinding } from "./fossil-grader.js";
+import { advisoryFindingInput, createReport, limitsWith, optionsFor } from "./testing/report-fixtures.js";
 function finding(path, kind) {
     return {
         classification: "advisory",
@@ -13,6 +15,18 @@ function finding(path, kind) {
         detectedReferenceEvidence: [],
         analysisBoundary: "C:/repo",
         unobservedReferenceMechanisms: [],
+    };
+}
+function findingExplanation(candidatePath, livePath) {
+    return {
+        kind: "finding-explanation",
+        createdInBurst: true,
+        burstCommits: 2,
+        postBurstCommits: 0,
+        referenceAvailability: "complete",
+        strongInboundReferences: 1,
+        candidateNeighbors: [candidatePath],
+        liveNeighbors: [livePath],
     };
 }
 test("summarizes ignored trees of at least twenty findings only in normal table rows", () => {
@@ -213,16 +227,7 @@ test("renders ANSI styling only when the caller marks table output as a TTY", ()
         },
         { kind: "survivor", path: "src/survivor.ts" },
         { kind: "finding", path: "src/finding.ts", score: 0.8, scoreBasis: "full" },
-        {
-            kind: "finding-explanation",
-            createdInBurst: true,
-            burstCommits: 2,
-            postBurstCommits: 0,
-            referenceAvailability: "complete",
-            strongInboundReferences: 1,
-            candidateNeighbors: ["src/candidate.ts"],
-            liveNeighbors: ["src/live.ts"],
-        },
+        findingExplanation("src/candidate.ts", "src/live.ts"),
     ];
     const redirected = renderBurstTableRows(rows, { isTty: false });
     const tty = renderBurstTableRows(rows, { isTty: true });
@@ -245,16 +250,7 @@ test("escapes control characters from repository-derived table text", () => {
         },
         { kind: "survivor", path: "src/\u0007survivor.ts" },
         { kind: "finding", path: "src/\u001b[2Jfinding.ts", score: 0.8, scoreBasis: "full" },
-        {
-            kind: "finding-explanation",
-            createdInBurst: true,
-            burstCommits: 2,
-            postBurstCommits: 0,
-            referenceAvailability: "complete",
-            strongInboundReferences: 1,
-            candidateNeighbors: ["src/candidate\u001b.ts"],
-            liveNeighbors: ["src/live\u0085.ts"],
-        },
+        findingExplanation("src/candidate\u001b.ts", "src/live\u0085.ts"),
     ];
     const redirected = renderBurstTableRows(rows, { isTty: false });
     const tty = renderBurstTableRows(rows, { isTty: true });
@@ -304,60 +300,7 @@ test("escapes controls in whole-report warnings and workspace debris rows", () =
     assert.equal(redirected.includes("ignored directory ignored\\u001b\\u0085: 20 findings"), true);
 });
 test("serializes one complete schema-versioned JSON report without table prose", () => {
-    const report = {
-        schemaVersion: 1,
-        options: {
-            days: 90,
-            gapHours: 48,
-            threshold: 0.4,
-            format: "json",
-            extensions: [],
-            untrackedAgeDays: 90,
-            exclude: [],
-            verbose: false,
-        },
-        analysisTimestampMs: 1_735_689_600_000,
-        gitVersion: "2.47.0",
-        boundary: {
-            repositoryRoot: "C:/repo",
-            canonicalRepositoryRoot: "C:/repo",
-            unobservedMechanisms: [],
-        },
-        limits: {
-            maximumCommits: 10,
-            maximumFileStatusRecords: 10,
-            maximumInventoriedFiles: 10,
-            maximumGitStdoutBytes: 10,
-            maximumGitStderrBytes: 10,
-            maximumReferenceFileBytes: 10,
-            maximumReferenceTotalBytes: 10,
-        },
-        usage: {
-            commitRecords: 0,
-            fileStatusRecords: 0,
-            inventoriedFiles: 0,
-            gitStdoutBytes: 0,
-            gitStderrBytes: 0,
-            referenceBytes: 0,
-            omittedReferencePaths: 0,
-        },
-        completeness: {
-            historyComplete: true,
-            referenceAnalysisComplete: true,
-            workspaceDebrisComplete: true,
-        },
-        statistics: {
-            includedCommitCount: 0,
-            logicalFileCount: 0,
-            burstCount: 0,
-            candidateFindingCount: 0,
-            uniqueCandidatePathCount: 0,
-            workspaceDebrisCount: 0,
-        },
-        warnings: [],
-        bursts: [],
-        workspaceDebris: [],
-    };
+    const report = createReport(optionsFor("json"), { analysisTimestampMs: 1_735_689_600_000, limits: limitsWith(10) });
     const output = renderFossilReportJson(report);
     assert.deepEqual(JSON.parse(output), report);
     assert.equal(JSON.parse(output).schemaVersion, 1);
@@ -366,26 +309,7 @@ test("serializes one complete schema-versioned JSON report without table prose",
     assert.equal(output.includes("survivor "), false);
 });
 test("derives burst-path and unique normalized candidate totals in JSON", () => {
-    const candidate = (path, burstId) => ({
-        classification: "advisory",
-        burstId,
-        path,
-        activity: {
-            identity: `${burstId}:${path}`,
-            path,
-            burstCommits: 1,
-            postBurstCommits: 0,
-            createdInBurst: true,
-            existsAtHead: true,
-        },
-        score: 0.8,
-        scoreBasis: "full",
-        subscores: { churn: 1, abandonment: 1, referenceWeakness: 1, clusterIsolation: 1 },
-        referenceAvailability: "complete",
-        strongInboundReferences: 0,
-        candidateNeighbors: [],
-        liveNeighbors: [],
-    });
+    const candidate = (path, burstId) => createAdvisoryFossilFinding(advisoryFindingInput({ burstId, path, score: 0.8, burstCommits: 1 }));
     const bursts = [
         {
             id: "first",
@@ -408,40 +332,7 @@ test("derives burst-path and unique normalized candidate totals in JSON", () => 
             deletedPaths: [],
         },
     ];
-    const report = {
-        schemaVersion: 1,
-        options: {
-            days: 90,
-            gapHours: 48,
-            threshold: 0.4,
-            format: "json",
-            extensions: [],
-            untrackedAgeDays: 90,
-            exclude: [],
-            verbose: false,
-        },
-        analysisTimestampMs: 0,
-        gitVersion: "2.47.0",
-        boundary: { repositoryRoot: "C:/repo", canonicalRepositoryRoot: "C:/repo", unobservedMechanisms: [] },
-        limits: {
-            maximumCommits: 0,
-            maximumFileStatusRecords: 0,
-            maximumInventoriedFiles: 0,
-            maximumGitStdoutBytes: 0,
-            maximumGitStderrBytes: 0,
-            maximumReferenceFileBytes: 0,
-            maximumReferenceTotalBytes: 0,
-        },
-        usage: {
-            commitRecords: 0,
-            fileStatusRecords: 0,
-            inventoriedFiles: 0,
-            gitStdoutBytes: 0,
-            gitStderrBytes: 0,
-            referenceBytes: 0,
-            omittedReferencePaths: 0,
-        },
-        completeness: { historyComplete: true, referenceAnalysisComplete: true, workspaceDebrisComplete: true },
+    const report = createReport(optionsFor("json"), {
         statistics: {
             includedCommitCount: 2,
             logicalFileCount: 2,
@@ -450,10 +341,8 @@ test("derives burst-path and unique normalized candidate totals in JSON", () => 
             uniqueCandidatePathCount: 99,
             workspaceDebrisCount: 0,
         },
-        warnings: [],
         bursts,
-        workspaceDebris: [],
-    };
+    });
     const before = structuredClone(report);
     const parsed = JSON.parse(renderFossilReportJson(report));
     assert.deepEqual(parsed.statistics, { ...report.statistics, candidateFindingCount: 3, uniqueCandidatePathCount: 2 });

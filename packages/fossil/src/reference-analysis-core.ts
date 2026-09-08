@@ -80,6 +80,79 @@ function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+function emptyReferenceGraph(unavailablePaths: readonly string[]): ReferenceGraph {
+  return {
+    edges: [],
+    unresolved: [],
+    complete: unavailablePaths.length === 0,
+    unavailablePaths,
+  };
+}
+
+function addReferenceWarning(input: {
+  unavailablePaths: string[];
+  warnings: AnalysisWarning[];
+  source: ReferenceCandidate;
+  code: AnalysisWarning["code"];
+  message: string;
+}): void {
+  input.unavailablePaths.push(input.source.path);
+  input.warnings.push({ code: input.code, message: input.message, path: input.source.path });
+}
+
+function addUnreadableReferenceWarning(input: {
+  unavailablePaths: string[];
+  warnings: AnalysisWarning[];
+  source: ReferenceCandidate;
+}): void {
+  addReferenceWarning({
+    ...input,
+    code: "reference_unreadable",
+    message: "Reference source could not be read.",
+  });
+}
+
+function sortReferenceReadEvidence(input: {
+  unavailablePaths: string[];
+  warnings: AnalysisWarning[];
+}): void {
+  input.unavailablePaths.sort(compareText);
+  input.warnings.sort((left, right) => compareText(left.path ?? "", right.path ?? ""));
+}
+
+function newReferenceReadCollections(): {
+  readableSources: ReferenceSourceContent[];
+  unavailablePaths: string[];
+  warnings: AnalysisWarning[];
+} {
+  return { readableSources: [], unavailablePaths: [], warnings: [] };
+}
+
+function newReferenceReadBudget(): { acceptedBytes: number; totalLimitReached: boolean } {
+  return { acceptedBytes: 0, totalLimitReached: false };
+}
+
+function boundedReferenceResult(input: {
+  readableSources: ReferenceSourceContent[];
+  unavailablePaths: string[];
+  warnings: AnalysisWarning[];
+  acceptedBytes: number;
+}): BoundedReferenceReadResult {
+  return {
+    graph: emptyReferenceGraph(input.unavailablePaths),
+    sources: input.readableSources,
+    warnings: input.warnings,
+    acceptedBytes: input.acceptedBytes,
+  };
+}
+
+function finishBoundedReferenceRead(
+  input: Parameters<typeof boundedReferenceResult>[0],
+): BoundedReferenceReadResult {
+  sortReferenceReadEvidence(input);
+  return boundedReferenceResult(input);
+}
+
 function sourceSpan(content: string, start: number, end: number): SourceSpan {
   const lineStart = content.lastIndexOf("\n", start - 1) + 1;
   return {
@@ -707,12 +780,7 @@ export function unsupportedCandidateReferenceGraph(candidates: readonly Referenc
       candidates.filter((candidate) => candidate.language === "unsupported").map((candidate) => candidate.path),
     ),
   ].sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
-  return {
-    edges: [],
-    unresolved: [],
-    complete: unavailablePaths.length === 0,
-    unavailablePaths,
-  };
+  return emptyReferenceGraph(unavailablePaths);
 }
 
 /** Reads eligible sources without letting one unreadable file stop later parsing work. */
@@ -720,32 +788,21 @@ export function readReferenceSources(
   sources: readonly ReferenceCandidate[],
   readSource: ReferenceSourceReader,
 ): ReferenceReadResult {
-  const readableSources: ReferenceSourceContent[] = [];
-  const unavailablePaths: string[] = [];
-  const warnings: AnalysisWarning[] = [];
+  const { readableSources, unavailablePaths, warnings } = newReferenceReadCollections();
   for (const source of sources) {
     try {
       readableSources.push({ ...source, content: readSource(source) });
     } catch {
-      unavailablePaths.push(source.path);
-      warnings.push({
-        code: "reference_unreadable",
-        message: "Reference source could not be read.",
-        path: source.path,
+      addUnreadableReferenceWarning({
+        unavailablePaths,
+        warnings,
+        source,
       });
     }
   }
-  unavailablePaths.sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
-  warnings.sort((left, right) =>
-    (left.path ?? "") < (right.path ?? "") ? -1 : (left.path ?? "") > (right.path ?? "") ? 1 : 0,
-  );
+  sortReferenceReadEvidence({ unavailablePaths, warnings });
   return {
-    graph: {
-      edges: [],
-      unresolved: [],
-      complete: unavailablePaths.length === 0,
-      unavailablePaths,
-    },
+    graph: emptyReferenceGraph(unavailablePaths),
     sources: readableSources,
     warnings,
   };
@@ -759,13 +816,10 @@ export function readBoundedReferenceSources(
   maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
   maximumTotalBytes = DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES,
 ): BoundedReferenceReadResult {
-  const readableSources: ReferenceSourceContent[] = [];
-  const unavailablePaths: string[] = [];
-  const warnings: AnalysisWarning[] = [];
-  let acceptedBytes = 0;
-  let totalLimitReached = false;
+  const { readableSources, unavailablePaths, warnings } = newReferenceReadCollections();
+  const budget = newReferenceReadBudget();
   for (const source of sources) {
-    if (totalLimitReached || acceptedBytes >= maximumTotalBytes) {
+    if (budget.totalLimitReached || budget.acceptedBytes >= maximumTotalBytes) {
       unavailablePaths.push(source.path);
       warnings.push({
         code: "reference_content_limit",
@@ -785,14 +839,14 @@ export function readBoundedReferenceSources(
         });
         continue;
       }
-      if (acceptedBytes + byteLength > maximumTotalBytes) {
+      if (budget.acceptedBytes + byteLength > maximumTotalBytes) {
         unavailablePaths.push(source.path);
         warnings.push({
           code: "reference_content_limit",
           message: "Reference source exceeds the total content limit.",
           path: source.path,
         });
-        totalLimitReached = true;
+        budget.totalLimitReached = true;
         continue;
       }
       const content = readSource(source);
@@ -806,29 +860,16 @@ export function readBoundedReferenceSources(
         continue;
       }
       readableSources.push({ ...source, content });
-      acceptedBytes += byteLength;
+      budget.acceptedBytes += byteLength;
     } catch {
-      unavailablePaths.push(source.path);
-      warnings.push({
-        code: "reference_unreadable",
-        message: "Reference source could not be read.",
-        path: source.path,
+      addUnreadableReferenceWarning({
+        unavailablePaths,
+        warnings,
+        source,
       });
     }
   }
-  unavailablePaths.sort(compareText);
-  warnings.sort((left, right) => compareText(left.path ?? "", right.path ?? ""));
-  return {
-    graph: {
-      edges: [],
-      unresolved: [],
-      complete: unavailablePaths.length === 0,
-      unavailablePaths,
-    },
-    sources: readableSources,
-    warnings,
-    acceptedBytes,
-  };
+  return finishBoundedReferenceRead({ readableSources, unavailablePaths, warnings, acceptedBytes: budget.acceptedBytes });
 }
 
 /** Reads stable regular files after re-checking their identity, type, and canonical path. */
@@ -838,17 +879,14 @@ export function readStableReferenceSources(
   maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
   maximumTotalBytes = DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES,
 ): BoundedReferenceReadResult {
-  const readableSources: ReferenceSourceContent[] = [];
-  const unavailablePaths: string[] = [];
-  const warnings: AnalysisWarning[] = [];
-  let acceptedBytes = 0;
-  let totalLimitReached = false;
+  const { readableSources, unavailablePaths, warnings } = newReferenceReadCollections();
+  const budget = newReferenceReadBudget();
   const addWarning = (source: ReferenceCandidate, code: AnalysisWarning["code"], message: string) => {
     unavailablePaths.push(source.path);
     warnings.push({ code, message, path: source.path });
   };
   for (const source of sources) {
-    if (totalLimitReached || acceptedBytes >= maximumTotalBytes) {
+    if (budget.totalLimitReached || budget.acceptedBytes >= maximumTotalBytes) {
       addWarning(source, "reference_content_limit", "Reference source exceeds the total content limit.");
       continue;
     }
@@ -867,9 +905,9 @@ export function readStableReferenceSources(
       addWarning(source, "reference_content_limit", "Reference source exceeds the per-file content limit.");
       continue;
     }
-    if (acceptedBytes + initial.byteLength > maximumTotalBytes) {
+    if (budget.acceptedBytes + initial.byteLength > maximumTotalBytes) {
       addWarning(source, "reference_content_limit", "Reference source exceeds the total content limit.");
-      totalLimitReached = true;
+      budget.totalLimitReached = true;
       continue;
     }
     let current: ReferenceSourceSnapshot | undefined;
@@ -899,22 +937,10 @@ export function readStableReferenceSources(
         continue;
       }
       readableSources.push({ ...source, content });
-      acceptedBytes += initial.byteLength;
+      budget.acceptedBytes += initial.byteLength;
     } catch {
       addWarning(source, "reference_unreadable", "Reference source could not be read.");
     }
   }
-  unavailablePaths.sort(compareText);
-  warnings.sort((left, right) => compareText(left.path ?? "", right.path ?? ""));
-  return {
-    graph: {
-      edges: [],
-      unresolved: [],
-      complete: unavailablePaths.length === 0,
-      unavailablePaths,
-    },
-    sources: readableSources,
-    warnings,
-    acceptedBytes,
-  };
+  return finishBoundedReferenceRead({ readableSources, unavailablePaths, warnings, acceptedBytes: budget.acceptedBytes });
 }

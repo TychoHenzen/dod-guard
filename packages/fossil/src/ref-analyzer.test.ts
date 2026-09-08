@@ -13,6 +13,17 @@ import {
   regradeVestigialEdges,
   unsupportedCandidateReferenceGraph,
 } from "./ref-analyzer.js";
+import type { ReferenceGraph } from "./types.js";
+
+function edgeSummary(graph: ReferenceGraph) {
+  return graph.edges.map(({ sourcePath, targetPath, language, kind, strength }) => ({
+    sourcePath,
+    targetPath,
+    language,
+    kind,
+    strength,
+  }));
+}
 
 test("skips oversized sources before reading content and retains later bounded sources", () => {
   const maximumBytes = 1_048_576;
@@ -356,13 +367,7 @@ test("resolves static, require, and dynamic relative module forms against curren
   ]);
 
   assert.deepEqual(
-    graph.edges.map(({ sourcePath, targetPath, language, kind, strength }) => ({
-      sourcePath,
-      targetPath,
-      language,
-      kind,
-      strength,
-    })),
+    edgeSummary(graph),
     [
       {
         sourcePath: "src/main.ts",
@@ -508,13 +513,7 @@ test("resolves sibling, module-directory, and nearest-Cargo-root Rust modules", 
   ]);
 
   assert.deepEqual(
-    graph.edges.map(({ sourcePath, targetPath, language, kind, strength }) => ({
-      sourcePath,
-      targetPath,
-      language,
-      kind,
-      strength,
-    })),
+    edgeSummary(graph),
     [
       {
         sourcePath: "workspace/app/src/main.rs",

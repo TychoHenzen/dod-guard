@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { analyzeRepository, FossilAnalysisError, FossilUsageError, NotRepositoryAnalysisError, runFossilCli, runFossilCliProcess, } from "./index.js";
-const validDirectOptions = JSON.parse('{"days":90,"gapHours":48,"threshold":0.4,"format":"json","extensions":[],"untrackedAgeDays":90,"exclude":[],"verbose":false}');
+import { createReport, optionsFor } from "./testing/report-fixtures.js";
+const validDirectOptions = optionsFor("json");
 const invalidDirectOptionShapes = [
     { days: 0 },
     { gapHours: 8_761 },
@@ -17,43 +18,7 @@ const invalidDirectOptionShapes = [
     { verbose: "true" },
 ];
 function reportFor(options) {
-    return {
-        schemaVersion: 1,
-        options,
-        analysisTimestampMs: 0,
-        gitVersion: "2.47.0",
-        boundary: { repositoryRoot: "C:/repo", canonicalRepositoryRoot: "C:/repo", unobservedMechanisms: [] },
-        limits: {
-            maximumCommits: 0,
-            maximumFileStatusRecords: 0,
-            maximumInventoriedFiles: 0,
-            maximumGitStdoutBytes: 0,
-            maximumGitStderrBytes: 0,
-            maximumReferenceFileBytes: 0,
-            maximumReferenceTotalBytes: 0,
-        },
-        usage: {
-            commitRecords: 0,
-            fileStatusRecords: 0,
-            inventoriedFiles: 0,
-            gitStdoutBytes: 0,
-            gitStderrBytes: 0,
-            referenceBytes: 0,
-            omittedReferencePaths: 0,
-        },
-        completeness: { historyComplete: true, referenceAnalysisComplete: true, workspaceDebrisComplete: true },
-        statistics: {
-            includedCommitCount: 0,
-            logicalFileCount: 0,
-            burstCount: 0,
-            candidateFindingCount: 0,
-            uniqueCandidatePathCount: 0,
-            workspaceDebrisCount: 0,
-        },
-        warnings: [],
-        bursts: [],
-        workspaceDebris: [],
-    };
+    return createReport(options);
 }
 test("passes normalized defaults and the current directory to analyze", async () => {
     const calls = [];
@@ -76,29 +41,11 @@ test("passes normalized defaults and the current directory to analyze", async ()
     assert.deepEqual(calls, [
         {
             repositoryPath: "C:/repositories/default",
-            options: {
-                days: 90,
-                gapHours: 48,
-                threshold: 0.4,
-                format: "table",
-                extensions: [],
-                untrackedAgeDays: 90,
-                exclude: [],
-                verbose: false,
-            },
+            options: optionsFor(),
         },
         {
             repositoryPath: "C:/repositories/explicit",
-            options: {
-                days: 90,
-                gapHours: 48,
-                threshold: 0.4,
-                format: "table",
-                extensions: [],
-                untrackedAgeDays: 90,
-                exclude: [],
-                verbose: false,
-            },
+            options: optionsFor(),
         },
     ]);
 });
@@ -165,16 +112,7 @@ test("rejects invalid argument forms with usage diagnostics before analysis", as
         await assert.rejects(runFossilCli(["node", "fossil", "analyze", ...argumentsForCase], {
             analyze: async () => {
                 analyzeCalls += 1;
-                return reportFor({
-                    days: 90,
-                    gapHours: 48,
-                    threshold: 0.4,
-                    format: "table",
-                    extensions: [],
-                    untrackedAgeDays: 90,
-                    exclude: [],
-                    verbose: false,
-                });
+                return reportFor(optionsFor());
             },
             stderr: (message) => stderr.push(message),
         }), (error) => error instanceof FossilUsageError && error.exitCode === 2);
@@ -184,16 +122,7 @@ test("rejects invalid argument forms with usage diagnostics before analysis", as
     }
 });
 test("returns and serializes the same finalized report through one analysis core", async () => {
-    const options = {
-        days: 90,
-        gapHours: 48,
-        threshold: 0.4,
-        format: "json",
-        extensions: [],
-        untrackedAgeDays: 90,
-        exclude: [],
-        verbose: false,
-    };
+    const options = optionsFor("json");
     const calls = [];
     const core = async (repositoryPath, coreOptions) => {
         calls.push({ repositoryPath, options: coreOptions });
@@ -230,16 +159,7 @@ test("reports zero findings after a completed empty analysis", async () => {
     assert.equal(stdout.join(""), "0 findings\n");
 });
 test("retains sorted nonfatal warnings in successful API and CLI JSON reports", async () => {
-    const options = {
-        days: 90,
-        gapHours: 48,
-        threshold: 0.4,
-        format: "json",
-        extensions: [],
-        untrackedAgeDays: 90,
-        exclude: [],
-        verbose: false,
-    };
+    const options = optionsFor("json");
     const warnings = [
         { code: "workspace_unreadable", message: "workspace unreadable", path: "./zeta.txt" },
         { code: "reference_unreadable", message: "second reference unreadable", path: "src\\middle.ts" },
