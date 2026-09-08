@@ -1,8 +1,6 @@
 import { spawn } from "node:child_process";
 import { collectBoundedGitOutput } from "./git-output-collector.js";
-import type {
-  CollectedGitOutput,
-} from "./git-process-types/collected-git-output.js";
+import type { CollectedGitOutput } from "./git-process-types/index.js";
 import {
   SAFE_GIT_BASE_ARGUMENTS,
   safeGitEnvironment,

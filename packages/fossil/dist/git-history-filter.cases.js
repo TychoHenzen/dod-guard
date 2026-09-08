@@ -50,7 +50,8 @@ test("filters whole rename identities without discarding cross-extension source 
     assert.deepEqual(fullHistory.flatMap((commit) => commit.changes.map((change) => change.path)), ["src/candidate.ts", "docs/candidate.md", "src/live.js"]);
     assert.deepEqual(filterHistoryByExtensions(fullHistory, new Set()), fullHistory);
 });
-test("normalizes extension dots and case before case-insensitive path matching", () => {
+test("normalizes extension dots and case before " +
+    "case-insensitive path matching", () => {
     const extensions = normalizeExtensions(["ts", ".TS", "Js", ".js"]);
     const history = [
         {

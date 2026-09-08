@@ -1,8 +1,6 @@
-import { FossilUsageError } from "./fossil-cli-types/fossil-usage-error.js";
+import { FossilUsageError } from "./fossil-cli-types/index.js";
 import { createFossilProgram } from "./fossil-cli-program.js";
-import type {
-  FossilCliDependencies,
-} from "./fossil-cli-types/fossil-cli-dependencies.js";
+import type { FossilCliDependencies } from "./fossil-cli-types/index.js";
 
 async function reportUsageError(
   error: FossilUsageError,

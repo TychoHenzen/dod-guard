@@ -1,10 +1,8 @@
 import type { GitCommit, GitFileChange } from "./types.js";
 import type {
   ChangePointCandidate,
-} from "./git-history-types/change-point-candidate.js";
-import type {
   ChangePointSearchInput,
-} from "./git-history-types/change-point-search-input.js";
+} from "./git-history-types/index.js";
 import {
   fileIdentities,
   partitionQualifies,

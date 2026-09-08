@@ -1,10 +1,8 @@
 import type { WorkspaceDebrisFinding } from "./types.js";
 import type {
   WorkspaceDebrisTableMode,
-} from "./fossil-output-types/workspace-debris-table-mode.js";
-import type {
   WorkspaceDebrisTableRow,
-} from "./fossil-output-types/workspace-debris-table-row.js";
+} from "./fossil-output-types/index.js";
 import { normalizedPath } from "./fossil-output-text.js";
 
 function topLevelDirectory(path: string): string | undefined {

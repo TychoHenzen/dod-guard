@@ -12,7 +12,7 @@ async function temporaryRepository() {
     repositories.push(repository);
     return repository;
 }
-test("creates a Git repository with deterministic commit identity and time", async () => {
+test("creates a Git repository with deterministic commit " + "identity and time", async () => {
     const repository = await temporaryRepository();
     await repository.writeSourceFile("src/first.ts", "export const first = 1;\n");
     const timestamp = new Date("2025-01-02T03:04:05.000Z");
@@ -21,7 +21,7 @@ test("creates a Git repository with deterministic commit identity and time", asy
     assert.match(await repository.git(["show", "-s", "--format=%cI", "HEAD"]), /^2025-01-02T03:04:05(?:Z|\+00:00)\n$/);
     assert.equal(await repository.git(["show", "-s", "--format=%an <%ae>", "HEAD"]), "Fossil Fixture <fossil-fixture@example.invalid>\n");
 });
-test("records file history and changes the source tree without a shell", async () => {
+test("records file history and changes the source tree " + "without a shell", async () => {
     const repository = await temporaryRepository();
     await writeSourceTree(repository, {
         "src/old.ts": "export const old = true;\n",

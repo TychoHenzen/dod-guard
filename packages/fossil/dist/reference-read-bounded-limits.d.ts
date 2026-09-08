@@ -1,4 +1,4 @@
-import type { ReferenceCandidate } from "./reference-analysis-types/reference-candidate.js";
+import type { ReferenceCandidate } from "./reference-analysis-types.js";
 import { newReferenceReadBudget, newReferenceReadCollections } from "./reference-read-support.js";
 type ReferenceReadLimitsInput = {
     budget: ReturnType<typeof newReferenceReadBudget>;

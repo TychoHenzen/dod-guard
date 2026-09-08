@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as gitAnalyzer from "./git-analyzer.js";
-test("reports shallow history without treating malformed Git output as complete", () => {
+test("reports shallow history without treating malformed " +
+    "Git output as complete", () => {
     assert.deepEqual(gitAnalyzer.shallowRepositoryArguments(), [
         "rev-parse",
         "--is-shallow-repository",
@@ -16,7 +17,8 @@ test("reports shallow history without treating malformed Git output as complete"
     assert.deepEqual(gitAnalyzer.shallowHistoryWarnings("false\r\n"), []);
     assert.throws(() => gitAnalyzer.shallowHistoryWarnings("unknown\n"), /Unexpected Git shallow-repository response/);
 });
-test("reports sparse checkout without treating malformed Git output as complete", () => {
+test("reports sparse checkout without treating malformed " +
+    "Git output as complete", () => {
     assert.deepEqual(gitAnalyzer.sparseCheckoutArguments(), [
         "config",
         "--bool",

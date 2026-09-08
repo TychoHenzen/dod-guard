@@ -1,7 +1,6 @@
 import { StringDecoder } from "node:string_decoder";
-import { GitHistoryStatusCounter } from "./git-process-types/git-history-status-counter.js";
-import type { GitIngestionLimits } from "./git-process-types/git-ingestion-limits.js";
-import type { GitPipedChild } from "./git-process-types/git-piped-child.js";
+import { GitHistoryStatusCounter } from "./git-process-types/index.js";
+import type { GitIngestionLimits, GitPipedChild } from "./git-process-types/index.js";
 export interface CollectorState {
     child: GitPipedChild;
     historyMode: boolean;

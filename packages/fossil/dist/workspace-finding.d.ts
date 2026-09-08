@@ -1,7 +1,6 @@
-import type { ReferenceSourceContent } from "./reference-analysis-types/reference-source-content.js";
+import type { ReferenceSourceContent } from "./reference-analysis-types.js";
 import type { WorkspaceDebrisFinding } from "./types.js";
-import type { IgnoredWorkspaceCandidate } from "./workspace-types/ignored-workspace-candidate.js";
-import type { UntrackedWorkspaceCandidate } from "./workspace-types/untracked-workspace-candidate.js";
+import type { IgnoredWorkspaceCandidate, UntrackedWorkspaceCandidate } from "./workspace-types/index.js";
 type WorkspaceDebrisFindingInput = {
     candidate: UntrackedWorkspaceCandidate | IgnoredWorkspaceCandidate;
     sources: readonly ReferenceSourceContent[];

@@ -9,7 +9,8 @@ export function futureCommitWarnings(commits, analysisTimestampMs) {
         .filter((commit) => commit.committerTimestampMs > analysisTimestampMs)
         .map((commit) => ({
         code: "future_commit",
-        message: `Commit ${commit.hash} has a committer timestamp after analysis time.`,
+        message: `Commit ${commit.hash} has a committer timestamp after ` +
+            "analysis time.",
     }));
 }
 /** Reports the nonfatal absence of Git history needed for burst analysis. */

@@ -1,6 +1,5 @@
 import type { AnalysisWarning } from "./types.js";
-import type { ReferenceCandidate } from "./reference-analysis-types/reference-candidate.js";
-import type { ReferenceSourceContent } from "./reference-analysis-types/reference-source-content.js";
+import type { ReferenceCandidate, ReferenceSourceContent } from "./reference-analysis-types.js";
 export { emptyReferenceGraph, finishBoundedReferenceRead, sortReferenceReadEvidence, } from "./reference-read-evidence.js";
 interface ReferenceWarningInput {
     unavailablePaths: string[];

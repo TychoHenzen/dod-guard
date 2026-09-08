@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { clusterIsolationScore, } from "./fossil-grader.js";
-test("gives zero isolation when every unique resolved neighbor is live code", () => {
+test("gives zero isolation when every unique resolved " + "neighbor is live code", () => {
     const graph = {
         edges: [
             {

@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { analyzeReferences } from "./ref-analyzer.js";
 import { edgeSummary } from "./ref-analyzer.test-support.js";
-test("resolves sibling, module-directory, and nearest-Cargo-root Rust modules", () => {
+test("resolves sibling, module-directory, and " +
+    "nearest-Cargo-root Rust modules", () => {
     const graph = analyzeReferences([
         {
             path: "workspace/app/src/main.rs",
@@ -10,8 +11,16 @@ test("resolves sibling, module-directory, and nearest-Cargo-root Rust modules", 
             content: "mod sibling;\nmod folder;\nmod missing;\nuse crate::models::user;\n",
         },
         { path: "workspace/app/src/sibling.rs", language: "rust", content: "" },
-        { path: "workspace/app/src/folder/mod.rs", language: "rust", content: "" },
-        { path: "workspace/app/src/models/user.rs", language: "rust", content: "" },
+        {
+            path: "workspace/app/src/folder/mod.rs",
+            language: "rust",
+            content: "",
+        },
+        {
+            path: "workspace/app/src/models/user.rs",
+            language: "rust",
+            content: "",
+        },
         {
             path: "workspace/app/tools/nested/src/main.rs",
             language: "rust",

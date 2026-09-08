@@ -11,9 +11,9 @@ import {
 } from "./repository-fixture-writes.js";
 
 /** Creates an isolated Git repository without host configuration. */
-export async function createTemporaryRepository(): Promise<
-  TemporaryRepository
-> {
+type TemporaryRepo = TemporaryRepository;
+
+export async function createTemporaryRepository(): Promise<TemporaryRepo> {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "fossil-fixture-"));
   const git = (args: readonly string[]) => execFileAsync(root, args);
   await git(["init", "--quiet"]);

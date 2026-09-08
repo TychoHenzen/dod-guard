@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { analyzeReferences } from "./ref-analyzer.js";
-test("resolves one namespace-level C# using to its unique current path suffix", () => {
+test("resolves one namespace-level C# using to its " +
+    "unique current path suffix", () => {
     const graph = analyzeReferences([
         {
             path: "src/App/Program.cs",

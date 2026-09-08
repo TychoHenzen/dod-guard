@@ -1,6 +1,4 @@
-import type {
-  ReferenceSourceContent,
-} from "./reference-analysis-types/reference-source-content.js";
+import type { ReferenceSourceContent } from "./reference-analysis-types.js";
 import { syntaxView } from "./reference-analysis-syntax-view.js";
 
 const BINDING_ESCAPE = /[.*+?^${}()|[\]\\]/g;

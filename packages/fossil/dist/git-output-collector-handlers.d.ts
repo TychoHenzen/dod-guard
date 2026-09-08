@@ -1,4 +1,4 @@
-import type { CollectedGitOutput } from "./git-process-types/collected-git-output.js";
+import type { CollectedGitOutput } from "./git-process-types/index.js";
 import type { CollectorState } from "./git-output-collector-state.js";
 export declare function collectStdoutChunk(state: CollectorState, rejectPromise: (reason?: unknown) => void, chunk: Buffer): void;
 export declare function collectStderrChunk(state: CollectorState, rejectPromise: (reason?: unknown) => void, chunk: Buffer): void;

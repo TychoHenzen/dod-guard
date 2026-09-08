@@ -6,9 +6,7 @@ import {
   successfulGit,
 } from "./repository-analysis-support.js";
 
-export {
-  resolveHistoryRepository,
-} from "./repository-analysis-history-repository.js";
+export * from "./repository-analysis-history-repository.js";
 
 export async function sparseCheckoutOutput(
   runGit: typeof runGitCommand,

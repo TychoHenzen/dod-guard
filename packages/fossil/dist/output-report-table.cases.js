@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { renderFossilReportTable } from "./output.js";
 import { finding } from "./output.test-support.js";
-test("escapes controls in whole-report warnings and workspace debris rows", () => {
+test("escapes controls in whole-report warnings and " + "workspace debris rows", () => {
     const control = "\u001b\u0085";
     const report = JSON.parse(JSON.stringify({
         options: { verbose: false },

@@ -4,10 +4,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type {
   PerformanceFixture,
-} from "./performance-types/performance-fixture.js";
-import type {
   PerformanceFixtureSpec,
-} from "./performance-types/performance-fixture-spec.js";
+} from "./performance-types/index.js";
 import { TARGET_PERFORMANCE_FIXTURE } from "./performance-constants.js";
 import { pointHeadAtImportedBranch, runFastImport } from "./performance-git.js";
 

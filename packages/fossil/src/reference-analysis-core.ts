@@ -1,11 +1,12 @@
 /** Public compatibility boundary for reference-analysis helpers. */
+import * as boundary from "./reference-analysis-boundary.js";
+
 export {
   analyzeJavaScriptReferences,
   analyzeReferences,
 } from "./reference-analysis-public.js";
-export {
-  analyzeJavaScriptReferencesWithinBoundary,
-} from "./reference-analysis-boundary.js";
+export const analyzeJavaScriptReferencesWithinBoundary =
+  boundary.analyzeJavaScriptReferencesWithinBoundary;
 export {
   markUnresolvedCandidateEvidence,
   regradeVestigialEdges,

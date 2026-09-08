@@ -1,4 +1,4 @@
-import type { GitVersion } from "./git-process-types/git-version.js";
+import type { GitVersion } from "./git-process-types/index.js";
 export { discoverGitRepository } from "./git-process-discovery.js";
 export { runGitCommand } from "./git-process-command.js";
 export { SAFE_GIT_BASE_ARGUMENTS, safeGitEnvironment, } from "./git-process-environment.js";

@@ -1,7 +1,5 @@
-import { FossilUsageError } from "./fossil-cli-types/fossil-usage-error.js";
-import type {
-  RawAnalyzeOptions,
-} from "./fossil-cli-types/raw-analyze-options.js";
+import { FossilUsageError } from "./fossil-cli-types/index.js";
+import type { RawAnalyzeOptions } from "./fossil-cli-types/index.js";
 import {
   DEFAULT_NORMALIZED_ANALYSIS_OPTIONS,
   validateNormalizedAnalysisOptions,

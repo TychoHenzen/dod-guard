@@ -1,6 +1,4 @@
-import type {
-  ReferenceSourceSnapshot,
-} from "./reference-analysis-types/reference-source-snapshot.js";
+import type { ReferenceSourceSnapshot } from "./reference-analysis-types.js";
 import type { StableReadInput } from "./reference-read-stable-types.js";
 import { warnStableRead } from "./reference-read-stable-warn.js";
 

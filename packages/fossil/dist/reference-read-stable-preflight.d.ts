@@ -1,4 +1,4 @@
-import type { ReferenceSourceSnapshot } from "./reference-analysis-types/reference-source-snapshot.js";
+import type { ReferenceSourceSnapshot } from "./reference-analysis-types.js";
 import type { StableReadInput } from "./reference-read-stable-types.js";
 export declare function hasStableCapacity(input: StableReadInput): boolean;
 export declare function inspectInitialSnapshot(input: StableReadInput): ReferenceSourceSnapshot | undefined;

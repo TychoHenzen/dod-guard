@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as workspace from "./workspace-debris.js";
-test("parses NUL-delimited untracked paths and selects an old regular file", () => {
+test("parses NUL-delimited untracked paths and " + "selects an old regular file", () => {
     const unusualPath = "scratch/line\nbreak.ts";
     assert.deepEqual(workspace.UNTRACKED_DISCOVERY_ARGUMENTS, [
         "ls-files",

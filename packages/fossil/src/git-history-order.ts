@@ -21,7 +21,8 @@ export function futureCommitWarnings(
     .map((commit) => ({
       code: "future_commit",
       message:
-        `Commit ${commit.hash} has a committer timestamp after analysis time.`,
+        `Commit ${commit.hash} has a committer timestamp after ` +
+        "analysis time.",
     }));
 }
 

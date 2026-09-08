@@ -1,7 +1,5 @@
 import type { ParsedReference, ReferenceGraph } from "./types.js";
-import type {
-  ReferenceSourceContent,
-} from "./reference-analysis-types/reference-source-content.js";
+import type { ReferenceSourceContent } from "./reference-analysis-types.js";
 import { strengthForReference } from "./reference-analysis-strength.js";
 
 interface ResolvedReference {

@@ -1,4 +1,4 @@
-import { FossilUsageError } from "./fossil-cli-types/fossil-usage-error.js";
+import { FossilUsageError } from "./fossil-cli-types/index.js";
 import { createFossilProgram } from "./fossil-cli-program.js";
 async function reportUsageError(error, program, stderr) {
     if (!(error instanceof FossilUsageError))

@@ -1,5 +1,5 @@
 import type { ReferenceGraph } from "./types.js";
-import type { ReferenceCandidate } from "./reference-analysis-types/reference-candidate.js";
+import type { ReferenceCandidate } from "./reference-analysis-types.js";
 /** Regrades current edges between two fossil candidates before scoring. */
 export declare function regradeVestigialEdges(graph: ReferenceGraph, candidatePaths: ReadonlySet<string>): ReferenceGraph;
 /** Marks evidence unavailable when unresolved paths could target candidates. */

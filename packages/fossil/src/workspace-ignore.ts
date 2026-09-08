@@ -2,14 +2,10 @@ import type { IgnoreSource } from "./types.js";
 import type { IgnoreProvenance } from "./workspace-types/ignore-provenance.js";
 import type {
   UntrackedWorkspaceCandidate,
-} from "./workspace-types/untracked-workspace-candidate.js";
-import type {
   WorkspaceFileMetadata,
-} from "./workspace-types/workspace-file-metadata.js";
+} from "./workspace-types/index.js";
 import { normalizeWorkspacePath } from "./workspace-path-rules.js";
-export {
-  oldIgnoredWorkspaceCandidates,
-} from "./workspace-ignore-candidates.js";
+export * from "./workspace-ignore-candidates.js";
 
 function isAbsoluteWorkspacePath(path: string): boolean {
   return path.startsWith("/") || /^[A-Za-z]:\//.test(path);

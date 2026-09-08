@@ -27,41 +27,42 @@ test(
 );
 
 test(
-  "continues after an unreadable source without exposing its read error",
+  "continues after an unreadable source without " + "exposing its read error",
   () => {
-  const attemptedPaths: string[] = [];
-  const sources = [
-    { path: "src/candidate.ts", language: "typescript" as const },
-    { path: "src/live.ts", language: "typescript" as const },
-  ];
-  const readSource = (source: ReferenceCandidate) => {
-    attemptedPaths.push(source.path);
-    if (source.path === "src/candidate.ts")
-      throw new Error("sensitive filesystem error");
-    return "export const live = true;\n";
-  };
+    const attemptedPaths: string[] = [];
+    const sources = [
+      { path: "src/candidate.ts", language: "typescript" as const },
+      { path: "src/live.ts", language: "typescript" as const },
+    ];
+    const readSource = (source: ReferenceCandidate) => {
+      attemptedPaths.push(source.path);
+      if (source.path === "src/candidate.ts")
+        throw new Error("sensitive filesystem error");
+      return "export const live = true;\n";
+    };
 
-  const result = readReferenceSources(sources, readSource);
+    const result = readReferenceSources(sources, readSource);
 
-  assert.deepEqual(attemptedPaths, ["src/candidate.ts", "src/live.ts"]);
-  assert.deepEqual(result.sources, [
-    {
-      path: "src/live.ts",
-      language: "typescript",
-      content: "export const live = true;\n",
-    },
-  ]);
-  assert.deepEqual(result.graph, {
-    edges: [],
-    unresolved: [],
-    complete: false,
-    unavailablePaths: ["src/candidate.ts"],
-  });
-  assert.deepEqual(result.warnings, [
-    {
-      code: "reference_unreadable",
-      message: "Reference source could not be read.",
-      path: "src/candidate.ts",
-    },
-  ]);
-});
+    assert.deepEqual(attemptedPaths, ["src/candidate.ts", "src/live.ts"]);
+    assert.deepEqual(result.sources, [
+      {
+        path: "src/live.ts",
+        language: "typescript",
+        content: "export const live = true;\n",
+      },
+    ]);
+    assert.deepEqual(result.graph, {
+      edges: [],
+      unresolved: [],
+      complete: false,
+      unavailablePaths: ["src/candidate.ts"],
+    });
+    assert.deepEqual(result.warnings, [
+      {
+        code: "reference_unreadable",
+        message: "Reference source could not be read.",
+        path: "src/candidate.ts",
+      },
+    ]);
+  },
+);

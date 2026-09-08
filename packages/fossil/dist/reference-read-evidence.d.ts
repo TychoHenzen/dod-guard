@@ -1,6 +1,6 @@
 import type { AnalysisWarning, ReferenceGraph } from "./types.js";
-import type { BoundedReferenceReadResult } from "./reference-analysis-types/bounded-reference-read-result.js";
-import type { ReferenceSourceContent } from "./reference-analysis-types/reference-source-content.js";
+import type { BoundedReferenceReadResult } from "./reference-analysis-types.js";
+import type { ReferenceSourceContent } from "./reference-analysis-types.js";
 export declare function emptyReferenceGraph(unavailablePaths: readonly string[]): ReferenceGraph;
 export declare function sortReferenceReadEvidence(input: {
     unavailablePaths: string[];

@@ -1,6 +1,4 @@
-import type { WorkspaceFileMetadata } from "./workspace-types/workspace-file-metadata.js";
-import type { WorkspaceFileMetadataReader } from "./workspace-types/workspace-file-metadata-reader.js";
-import type { WorkspaceMetadataInspectionResult } from "./workspace-types/workspace-metadata-inspection-result.js";
+import type { WorkspaceFileMetadata, WorkspaceFileMetadataReader, WorkspaceMetadataInspectionResult } from "./workspace-types/index.js";
 /** Parses Git's NUL-delimited path output without changing paths. */
 export declare function parseNulDelimitedPaths(output: string): readonly string[];
 /** Reads metadata outside known dependency-store segments. */

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { abandonmentScore, normalizedBurstChurn } from "./fossil-grader.js";
 import { activity } from "./fossil-grader.test-support.js";
-test("scores a positive burst with no later commits as complete abandonment", () => {
+test("scores a positive burst with no later " + "commits as complete abandonment", () => {
     const candidate = activity("src/abandoned.ts", 4);
     const invalid = activity("src/invalid.ts", 0);
     const before = structuredClone({ candidate, invalid });
@@ -11,7 +11,8 @@ test("scores a positive burst with no later commits as complete abandonment", ()
     assert.equal(Number.isFinite(abandonmentScore(invalid)), true);
     assert.deepEqual({ candidate, invalid }, before);
 });
-test("lowers abandonment linearly and floors it at zero after continued activity", () => {
+test("lowers abandonment linearly and floors it at zero " +
+    "after continued activity", () => {
     const partial = activity("src/partial.ts", 4, 2);
     const equal = activity("src/equal.ts", 4, 4);
     const greater = activity("src/greater.ts", 4, 5);
@@ -21,7 +22,8 @@ test("lowers abandonment linearly and floors it at zero after continued activity
     assert.equal(abandonmentScore(greater), 0);
     assert.deepEqual({ partial, equal, greater }, before);
 });
-test("normalizes positive churn within one burst without mutating activity input", () => {
+test("normalizes positive churn within one burst " +
+    "without mutating activity input", () => {
     const candidate = activity("src/candidate.ts", 12);
     const maximum = activity("src/maximum.ts", 15);
     const before = structuredClone({ candidate, maximum });

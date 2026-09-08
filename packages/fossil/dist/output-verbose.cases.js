@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { burstTableRows } from "./output.js";
 import { VERBOSE_BURST_FIXTURE } from "./output-verbose-fixture.js";
-test("adds exactly one verbose explanation immediately after each candidate", () => {
+test("adds exactly one verbose explanation immediately " + "after each candidate", () => {
     assert.deepEqual(burstTableRows([VERBOSE_BURST_FIXTURE], "normal").map((row) => row.kind), ["burst", "finding", "finding"]);
     assert.deepEqual(burstTableRows([VERBOSE_BURST_FIXTURE], "verbose"), [
         {

@@ -40,8 +40,9 @@ async function assertInvalidArguments(
 }
 
 test(
-  "rejects invalid argument forms with usage diagnostics before analysis",
+  "rejects invalid argument forms with usage " + "diagnostics before analysis",
   async () => {
-  for (const argumentsForCase of INVALID_ARGUMENTS)
-    await assertInvalidArguments(argumentsForCase);
-});
+    for (const argumentsForCase of INVALID_ARGUMENTS)
+      await assertInvalidArguments(argumentsForCase);
+  },
+);

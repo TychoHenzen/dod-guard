@@ -1,7 +1,5 @@
 import type { ReferenceGraph } from "./types.js";
-import type {
-  CandidateReferenceSubscores,
-} from "./fossil-scoring-types/candidate-reference-subscores.js";
+import type { CandidateReferenceSubscores } from "./fossil-scoring-types.js";
 
 function isLiveStrongInbound(
   candidatePath: string,

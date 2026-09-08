@@ -22,7 +22,7 @@ async function runDefaultAnalyses() {
     await runFossilCli(["node", "fossil", "analyze", "C:/repositories/explicit"], dependencies);
     return calls;
 }
-test("passes normalized defaults and the current directory to analyze", async () => {
+test("passes normalized defaults and the current " + "directory to analyze", async () => {
     const calls = await runDefaultAnalyses();
     assert.deepEqual(calls, [
         {

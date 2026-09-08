@@ -16,7 +16,7 @@ test("marks unsupported candidate references unavailable without producing " +
         unavailablePaths: ["src/candidate.lua"],
     });
 });
-test("continues after an unreadable source without exposing its read error", () => {
+test("continues after an unreadable source without " + "exposing its read error", () => {
     const attemptedPaths = [];
     const sources = [
         { path: "src/candidate.ts", language: "typescript" },

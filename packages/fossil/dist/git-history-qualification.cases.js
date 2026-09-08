@@ -9,7 +9,8 @@ test("drops closed clusters below either qualification minimum", () => {
         exactMinimum,
     ]), [exactMinimum]);
 });
-test("excludes recent qualifying clusters before closed-cluster qualification", () => {
+test("excludes recent qualifying clusters before " +
+    "closed-cluster qualification", () => {
     const analysisTimestampMs = 10_000;
     const gapMilliseconds = 1_000;
     const clusterEndingAt = (prefix, endTimestampMs) => Array.from({ length: 5 }, (_, index) => ({

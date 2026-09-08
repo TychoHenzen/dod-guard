@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { analyzeJavaScriptReferences } from "./ref-analyzer.js";
-test("keeps an ordinary imported candidate use as a strong inbound reference", () => {
+test("keeps an ordinary imported candidate use as a " + "strong inbound reference", () => {
     const graph = analyzeJavaScriptReferences([
         {
             path: "src/live.ts",

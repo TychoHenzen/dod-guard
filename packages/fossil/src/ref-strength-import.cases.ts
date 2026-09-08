@@ -3,38 +3,39 @@ import { test } from "node:test";
 import { analyzeJavaScriptReferences } from "./ref-analyzer.js";
 
 test(
-  "keeps an ordinary imported candidate use as a strong inbound reference",
+  "keeps an ordinary imported candidate use as a " + "strong inbound reference",
   () => {
-  const graph = analyzeJavaScriptReferences([
-    {
-      path: "src/live.ts",
-      language: "typescript",
-      content:
-        'import { candidate } from "./candidate";\n' +
-        "export const result = candidate();\n",
-    },
-    {
-      path: "src/candidate.ts",
-      language: "typescript",
-      content: "export const candidate = () => true;\n",
-    },
-  ]);
-
-  assert.deepEqual(
-    graph.edges.map(({ sourcePath, targetPath, strength }) => ({
-      sourcePath,
-      targetPath,
-      strength,
-    })),
-    [
+    const graph = analyzeJavaScriptReferences([
       {
-        sourcePath: "src/live.ts",
-        targetPath: "src/candidate.ts",
-        strength: "strong",
+        path: "src/live.ts",
+        language: "typescript",
+        content:
+          'import { candidate } from "./candidate";\n' +
+          "export const result = candidate();\n",
       },
-    ],
-  );
-});
+      {
+        path: "src/candidate.ts",
+        language: "typescript",
+        content: "export const candidate = () => true;\n",
+      },
+    ]);
+
+    assert.deepEqual(
+      graph.edges.map(({ sourcePath, targetPath, strength }) => ({
+        sourcePath,
+        targetPath,
+        strength,
+      })),
+      [
+        {
+          sourcePath: "src/live.ts",
+          targetPath: "src/candidate.ts",
+          strength: "strong",
+        },
+      ],
+    );
+  },
+);
 
 test("marks imports used only in balanced try or catch bodies as weak", () => {
   const graph = analyzeJavaScriptReferences([

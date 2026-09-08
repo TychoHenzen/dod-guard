@@ -1,5 +1,5 @@
 import type { GitCommit, GitFileChange } from "./types.js";
-import type { LogicalIdentityState } from "./git-history-types/logical-identity-state.js";
+import type { LogicalIdentityState } from "./git-history-types/index.js";
 export interface IdentityContext {
     activeByPath: Map<string, string>;
     generationsByPath: Map<string, number>;

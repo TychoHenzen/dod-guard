@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { splitAtChangePoint } from "./git-analyzer.js";
-test("keeps close low-similarity work together when a side is too small", () => {
+test("keeps close low-similarity work together " + "when a side is too small", () => {
     const hour = 60 * 60 * 1_000;
     const fourCommitPartition = [
         "left-a.ts",

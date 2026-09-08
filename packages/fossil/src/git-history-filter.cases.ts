@@ -73,26 +73,27 @@ test(
     );
   },
 );
-
 test(
-  "normalizes extension dots and case before case-insensitive path matching",
+  "normalizes extension dots and case before " +
+    "case-insensitive path matching",
   () => {
-  const extensions = normalizeExtensions(["ts", ".TS", "Js", ".js"]);
-  const history = [
-    {
-      hash: "typescript",
-      committerTimestampMs: 1_000,
-      changes: [{ status: "added" as const, path: "src/Feature.Ts" }],
-    },
-    {
-      hash: "markdown",
-      committerTimestampMs: 2_000,
-      changes: [{ status: "added" as const, path: "docs/README.MD" }],
-    },
-  ];
+    const extensions = normalizeExtensions(["ts", ".TS", "Js", ".js"]);
+    const history = [
+      {
+        hash: "typescript",
+        committerTimestampMs: 1_000,
+        changes: [{ status: "added" as const, path: "src/Feature.Ts" }],
+      },
+      {
+        hash: "markdown",
+        committerTimestampMs: 2_000,
+        changes: [{ status: "added" as const, path: "docs/README.MD" }],
+      },
+    ];
 
-  assert.deepEqual(extensions, [".ts", ".js"]);
-  assert.deepEqual(filterHistoryByExtensions(history, new Set(extensions)), [
-    history[0],
-  ]);
-});
+    assert.deepEqual(extensions, [".ts", ".js"]);
+    assert.deepEqual(filterHistoryByExtensions(history, new Set(extensions)), [
+      history[0],
+    ]);
+  },
+);

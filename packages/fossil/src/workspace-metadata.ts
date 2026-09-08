@@ -1,13 +1,9 @@
 import type { AnalysisWarning } from "./types.js";
 import type {
   WorkspaceFileMetadata,
-} from "./workspace-types/workspace-file-metadata.js";
-import type {
   WorkspaceFileMetadataReader,
-} from "./workspace-types/workspace-file-metadata-reader.js";
-import type {
   WorkspaceMetadataInspectionResult,
-} from "./workspace-types/workspace-metadata-inspection-result.js";
+} from "./workspace-types/index.js";
 import { filterWorkspaceDiscoveryPaths } from "./workspace-exclusion-globs.js";
 import {
   isDependencyStorePath,

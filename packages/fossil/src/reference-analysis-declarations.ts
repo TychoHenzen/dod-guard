@@ -33,6 +33,4 @@ export function declarationRange(
   const nextNewline = content.indexOf("\n", position);
   return { start, end: nextNewline === -1 ? content.length : nextNewline };
 }
-import type {
-  ReferenceRange,
-} from "./reference-analysis-types/reference-range.js";
+import type { ReferenceRange } from "./reference-analysis-types.js";

@@ -1,7 +1,5 @@
 import type { SyntaxView } from "./reference-analysis-types/syntax-view.js";
-import type {
-  ReferenceRange,
-} from "./reference-analysis-types/reference-range.js";
+import type { ReferenceRange } from "./reference-analysis-types.js";
 import { conditionalRange } from "./reference-analysis-conditional-helpers.js";
 
 function conditionalRanges(

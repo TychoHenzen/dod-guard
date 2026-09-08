@@ -25,46 +25,58 @@ async function temporaryRepository(): Promise<TemporaryRepository> {
 }
 
 test(
-  "creates a Git repository with deterministic commit identity and time",
+  "creates a Git repository with deterministic commit " + "identity and time",
   async () => {
-  const repository = await temporaryRepository();
-  await repository.writeSourceFile("src/first.ts", "export const first = 1;\n");
-  const timestamp = new Date("2025-01-02T03:04:05.000Z");
-  const commit = await repository.recordCommit("first", timestamp);
+    const repository = await temporaryRepository();
+    await repository.writeSourceFile(
+      "src/first.ts",
+      "export const first = 1;\n",
+    );
+    const timestamp = new Date("2025-01-02T03:04:05.000Z");
+    const commit = await repository.recordCommit("first", timestamp);
 
-  assert.match(commit.hash, /^[0-9a-f]{40}$/);
-  assert.match(
-    await repository.git(["show", "-s", "--format=%cI", "HEAD"]),
-    /^2025-01-02T03:04:05(?:Z|\+00:00)\n$/,
-  );
-  assert.equal(
-    await repository.git(["show", "-s", "--format=%an <%ae>", "HEAD"]),
-    "Fossil Fixture <fossil-fixture@example.invalid>\n",
-  );
-});
-
+    assert.match(commit.hash, /^[0-9a-f]{40}$/);
+    assert.match(
+      await repository.git(["show", "-s", "--format=%cI", "HEAD"]),
+      /^2025-01-02T03:04:05(?:Z|\+00:00)\n$/,
+    );
+    assert.equal(
+      await repository.git(["show", "-s", "--format=%an <%ae>", "HEAD"]),
+      "Fossil Fixture <fossil-fixture@example.invalid>\n",
+    );
+  },
+);
 test(
-  "records file history and changes the source tree without a shell",
+  "records file history and changes the source tree " + "without a shell",
   async () => {
-  const repository = await temporaryRepository();
-  await writeSourceTree(repository, {
-    "src/old.ts": "export const old = true;\n",
-    "src/keep.ts": "export const keep = true;\n",
-  });
-  await repository.recordCommit("create", new Date("2025-01-01T00:00:00.000Z"));
-  await repository.removeSourcePath("src/old.ts");
-  await repository.writeSourceFile(
-    "src/keep.ts",
-    "export const keep = false;\n",
-  );
-  await repository.recordCommit("change", new Date("2025-01-02T00:00:00.000Z"));
+    const repository = await temporaryRepository();
+    await writeSourceTree(repository, {
+      "src/old.ts": "export const old = true;\n",
+      "src/keep.ts": "export const keep = true;\n",
+    });
+    await repository.recordCommit(
+      "create",
+      new Date("2025-01-01T00:00:00.000Z"),
+    );
+    await repository.removeSourcePath("src/old.ts");
+    await repository.writeSourceFile(
+      "src/keep.ts",
+      "export const keep = false;\n",
+    );
+    await repository.recordCommit(
+      "change",
+      new Date("2025-01-02T00:00:00.000Z"),
+    );
 
-  await assert.rejects(fs.access(path.join(repository.root, "src", "old.ts")));
-  assert.equal(
-    await repository.git(["log", "--format=%s", "--", "src/keep.ts"]),
-    "change\ncreate\n",
-  );
-});
+    await assert.rejects(
+      fs.access(path.join(repository.root, "src", "old.ts")),
+    );
+    assert.equal(
+      await repository.git(["log", "--format=%s", "--", "src/keep.ts"]),
+      "change\ncreate\n",
+    );
+  },
+);
 
 test("captures output without changing global process streams", () => {
   const capture = createOutputCapture();

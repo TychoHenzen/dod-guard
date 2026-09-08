@@ -3,7 +3,6 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { execFileAsync } from "./repository-fixture-process.js";
 import { recordFixtureCommit, removeFixtureSource, writeFixtureSource, } from "./repository-fixture-writes.js";
-/** Creates an isolated Git repository without host configuration. */
 export async function createTemporaryRepository() {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "fossil-fixture-"));
     const git = (args) => execFileAsync(root, args);

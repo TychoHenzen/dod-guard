@@ -1,12 +1,8 @@
 import type {
-  ReferenceReadResult,
-} from "./reference-analysis-types/reference-read-result.js";
-import type {
   ReferenceCandidate,
-} from "./reference-analysis-types/reference-candidate.js";
-import type {
+  ReferenceReadResult,
   ReferenceSourceReader,
-} from "./reference-analysis-types/reference-source-reader.js";
+} from "./reference-analysis-types.js";
 import {
   addUnreadableReferenceWarning,
   emptyReferenceGraph,

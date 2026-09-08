@@ -2,16 +2,10 @@ import { posix } from "node:path";
 import type { AnalysisWarning, ParsedReference } from "./types.js";
 import type {
   ReferenceAnalysisResult,
-} from "./reference-analysis-types/reference-analysis-result.js";
-import type {
   ReferenceBoundaryInput,
-} from "./reference-analysis-types/reference-boundary-input.js";
-import type {
   ReferenceContainmentBoundary,
-} from "./reference-analysis-types/reference-containment-boundary.js";
-import type {
   ReferenceSourceContent,
-} from "./reference-analysis-types/reference-source-content.js";
+} from "./reference-analysis-types.js";
 import { parsedModuleReferences } from "./reference-analysis-module-parser.js";
 import {
   outsideBoundaryWarning,

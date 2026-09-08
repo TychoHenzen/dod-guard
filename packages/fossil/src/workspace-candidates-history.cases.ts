@@ -3,37 +3,38 @@ import { test } from "node:test";
 import * as workspace from "./workspace-debris.js";
 
 test(
-  "parses NUL-delimited untracked paths and selects an old regular file",
+  "parses NUL-delimited untracked paths and " + "selects an old regular file",
   () => {
-  const unusualPath = "scratch/line\nbreak.ts";
-  assert.deepEqual(workspace.UNTRACKED_DISCOVERY_ARGUMENTS, [
-    "ls-files",
-    "-z",
-    "--others",
-    "--exclude-standard",
-  ]);
-  assert.deepEqual(
-    workspace.parseNulDelimitedPaths(`scratch/old.ts\0${unusualPath}\0`),
-    ["scratch/old.ts", unusualPath],
-  );
+    const unusualPath = "scratch/line\nbreak.ts";
+    assert.deepEqual(workspace.UNTRACKED_DISCOVERY_ARGUMENTS, [
+      "ls-files",
+      "-z",
+      "--others",
+      "--exclude-standard",
+    ]);
+    assert.deepEqual(
+      workspace.parseNulDelimitedPaths(`scratch/old.ts\0${unusualPath}\0`),
+      ["scratch/old.ts", unusualPath],
+    );
 
-  const candidates = workspace.oldUntrackedWorkspaceCandidates(
-    [
-      { path: "scratch/old.ts", isRegularFile: true, modifiedTimestampMs: 0 },
-      {
-        path: "scratch/directory",
-        isRegularFile: false,
-        modifiedTimestampMs: 0,
-      },
-    ],
-    10 * 24 * 60 * 60 * 1_000,
-    7,
-  );
+    const candidates = workspace.oldUntrackedWorkspaceCandidates(
+      [
+        { path: "scratch/old.ts", isRegularFile: true, modifiedTimestampMs: 0 },
+        {
+          path: "scratch/directory",
+          isRegularFile: false,
+          modifiedTimestampMs: 0,
+        },
+      ],
+      10 * 24 * 60 * 60 * 1_000,
+      7,
+    );
 
-  assert.deepEqual(candidates, [
-    { path: "scratch/old.ts", kind: "untracked", modifiedTimestampMs: 0 },
-  ]);
-});
+    assert.deepEqual(candidates, [
+      { path: "scratch/old.ts", kind: "untracked", modifiedTimestampMs: 0 },
+    ]);
+  },
+);
 
 test(
   "retains NUL-delimited ignore rule provenance for an old ignored regular " +

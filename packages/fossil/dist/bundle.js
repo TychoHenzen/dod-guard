@@ -3356,6 +3356,13 @@ var FossilUsageError = class extends Error {
   exitCode = 2;
 };
 
+// src/fossil-cli-types/not-repository-analysis-error.ts
+var NotRepositoryAnalysisError = class extends FossilAnalysisError {
+  constructor(message = "not a Git repository") {
+    super({ code: "not_repository", message });
+  }
+};
+
 // node_modules/commander/esm.mjs
 var import_index = __toESM(require_commander(), 1);
 var {
@@ -4724,61 +4731,49 @@ function targetCandidates(sourcePath, specifier) {
   ];
 }
 
-// src/reference-analysis-csharp-parser.ts
-var CSHARP_USING = /^\s*using\s+(?!static\b)([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*;\s*$/gm;
-function braceDepthBefore(content, end) {
-  let depth = 0;
-  for (const character of content.slice(0, end)) {
-    if (character === "{") depth += 1;
-    if (character === "}") depth -= 1;
-  }
-  return depth;
+// src/reference-analysis-module-parser.ts
+var STATIC_IMPORT = /\bimport\s+(?:[^"'`;\r\n]*?\s+from\s+)?(["'])([^"'\r\n]+)\1/g;
+var REQUIRE_CALL = /\brequire\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
+var DYNAMIC_IMPORT = /\bimport\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
+function isModuleSource(source) {
+  return source.language === "typescript" || source.language === "javascript";
 }
-function csharpCandidatePaths(currentSources, suffix) {
-  return currentSources.filter(
-    (candidate) => candidate.language === "csharp" && candidate.path.endsWith(suffix)
-  ).map((candidate) => candidate.path).sort(compareText);
-}
-function csharpTargetCandidates(matches, suffix) {
-  if (matches.length === 0) return [suffix];
-  return matches;
-}
-function csharpTargetPath(matches) {
-  if (matches.length !== 1) return void 0;
-  return matches[0];
-}
-function csharpResolution(matches) {
-  if (matches.length === 1) return "resolved";
-  return "unresolved";
-}
-function csharpReference(source, currentSources, match) {
-  const namespace = match[1];
-  if (!namespace) return void 0;
+function moduleReference(source, kind, match) {
+  const quote = match[1];
+  const specifier = match[2];
+  if (!quote) return void 0;
+  if (!specifier) return void 0;
   if (match.index === void 0) return void 0;
-  if (braceDepthBefore(source.content, match.index) > 1) return void 0;
-  const suffix = `${namespace.replaceAll(".", "/")}.cs`;
-  const matches = csharpCandidatePaths(currentSources, suffix);
-  const start = match.index + match[0].indexOf(namespace);
+  const start = match.index + match[0].lastIndexOf(`${quote}${specifier}${quote}`) + 1;
   return {
     sourcePath: source.path,
-    targetCandidates: csharpTargetCandidates(matches, suffix),
-    targetPath: csharpTargetPath(matches),
-    span: sourceSpan(source.content, start, start + namespace.length),
-    language: "csharp",
-    kind: "csharp-using",
-    resolution: csharpResolution(matches),
+    targetCandidates: targetCandidates(source.path, specifier),
+    span: sourceSpan(source.content, start, start + specifier.length),
+    language: source.language,
+    kind,
+    resolution: specifier.startsWith(".") ? "unresolved" : "external",
     strength: "strong"
   };
 }
-function parsedCsharpReferences(source, currentSources) {
-  if (source.language !== "csharp") return [];
+function compareModuleReferences(left, right) {
+  return compareText(left.sourcePath, right.sourcePath) || left.span.start - right.span.start || compareText(left.kind, right.kind);
+}
+function parsedModuleReferences(source) {
+  if (!isModuleSource(source)) return [];
+  const patterns = [
+    { kind: "import", pattern: STATIC_IMPORT },
+    { kind: "require", pattern: REQUIRE_CALL },
+    { kind: "dynamic-import", pattern: DYNAMIC_IMPORT }
+  ];
   const references = [];
-  CSHARP_USING.lastIndex = 0;
-  for (let match = CSHARP_USING.exec(source.content); match; match = CSHARP_USING.exec(source.content)) {
-    const reference = csharpReference(source, currentSources, match);
-    if (reference) references.push(reference);
+  for (const { kind, pattern } of patterns) {
+    pattern.lastIndex = 0;
+    for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
+      const reference = moduleReference(source, kind, match);
+      if (reference) references.push(reference);
+    }
   }
-  return references;
+  return references.sort(compareModuleReferences);
 }
 
 // src/reference-analysis-declarations.ts
@@ -5269,7 +5264,11 @@ function consumeTryCatchStructuralCharacter(content, index, state) {
 
 // src/reference-analysis-try-catch-scan.ts
 function consumeCharacter(content, index, state) {
-  const lexicalIndex = consumeTryCatchLexicalCharacter(content, index, state);
+  const lexicalIndex = consumeTryCatchLexicalCharacter(
+    content,
+    index,
+    state
+  );
   if (lexicalIndex !== void 0) return lexicalIndex;
   return consumeTryCatchStructuralCharacter(content, index, state);
 }
@@ -5439,49 +5438,61 @@ function referenceGraph(parsed, sources) {
   return { edges, unresolved, complete: true, unavailablePaths: [] };
 }
 
-// src/reference-analysis-module-parser.ts
-var STATIC_IMPORT = /\bimport\s+(?:[^"'`;\r\n]*?\s+from\s+)?(["'])([^"'\r\n]+)\1/g;
-var REQUIRE_CALL = /\brequire\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
-var DYNAMIC_IMPORT = /\bimport\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
-function isModuleSource(source) {
-  return source.language === "typescript" || source.language === "javascript";
+// src/reference-analysis-csharp-parser.ts
+var CSHARP_USING = /^\s*using\s+(?!static\b)([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*;\s*$/gm;
+function braceDepthBefore(content, end) {
+  let depth = 0;
+  for (const character of content.slice(0, end)) {
+    if (character === "{") depth += 1;
+    if (character === "}") depth -= 1;
+  }
+  return depth;
 }
-function moduleReference(source, kind, match) {
-  const quote = match[1];
-  const specifier = match[2];
-  if (!quote) return void 0;
-  if (!specifier) return void 0;
+function csharpCandidatePaths(currentSources, suffix) {
+  return currentSources.filter(
+    (candidate) => candidate.language === "csharp" && candidate.path.endsWith(suffix)
+  ).map((candidate) => candidate.path).sort(compareText);
+}
+function csharpTargetCandidates(matches, suffix) {
+  if (matches.length === 0) return [suffix];
+  return matches;
+}
+function csharpTargetPath(matches) {
+  if (matches.length !== 1) return void 0;
+  return matches[0];
+}
+function csharpResolution(matches) {
+  if (matches.length === 1) return "resolved";
+  return "unresolved";
+}
+function csharpReference(source, currentSources, match) {
+  const namespace = match[1];
+  if (!namespace) return void 0;
   if (match.index === void 0) return void 0;
-  const start = match.index + match[0].lastIndexOf(`${quote}${specifier}${quote}`) + 1;
+  if (braceDepthBefore(source.content, match.index) > 1) return void 0;
+  const suffix = `${namespace.replaceAll(".", "/")}.cs`;
+  const matches = csharpCandidatePaths(currentSources, suffix);
+  const start = match.index + match[0].indexOf(namespace);
   return {
     sourcePath: source.path,
-    targetCandidates: targetCandidates(source.path, specifier),
-    span: sourceSpan(source.content, start, start + specifier.length),
-    language: source.language,
-    kind,
-    resolution: specifier.startsWith(".") ? "unresolved" : "external",
+    targetCandidates: csharpTargetCandidates(matches, suffix),
+    targetPath: csharpTargetPath(matches),
+    span: sourceSpan(source.content, start, start + namespace.length),
+    language: "csharp",
+    kind: "csharp-using",
+    resolution: csharpResolution(matches),
     strength: "strong"
   };
 }
-function compareModuleReferences(left, right) {
-  return compareText(left.sourcePath, right.sourcePath) || left.span.start - right.span.start || compareText(left.kind, right.kind);
-}
-function parsedModuleReferences(source) {
-  if (!isModuleSource(source)) return [];
-  const patterns = [
-    { kind: "import", pattern: STATIC_IMPORT },
-    { kind: "require", pattern: REQUIRE_CALL },
-    { kind: "dynamic-import", pattern: DYNAMIC_IMPORT }
-  ];
+function parsedCsharpReferences(source, currentSources) {
+  if (source.language !== "csharp") return [];
   const references = [];
-  for (const { kind, pattern } of patterns) {
-    pattern.lastIndex = 0;
-    for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
-      const reference = moduleReference(source, kind, match);
-      if (reference) references.push(reference);
-    }
+  CSHARP_USING.lastIndex = 0;
+  for (let match = CSHARP_USING.exec(source.content); match; match = CSHARP_USING.exec(source.content)) {
+    const reference = csharpReference(source, currentSources, match);
+    if (reference) references.push(reference);
   }
-  return references.sort(compareModuleReferences);
+  return references;
 }
 
 // src/reference-analysis-rust-parser.ts
@@ -7030,14 +7041,7 @@ async function runFossilCliProcess(argv, dependencies) {
   }
 }
 
-// src/fossil-cli-types/not-repository-analysis-error.ts
-var NotRepositoryAnalysisError = class extends FossilAnalysisError {
-  constructor(message = "not a Git repository") {
-    super({ code: "not_repository", message });
-  }
-};
-
-// src/types.ts
+// src/types/report-schema.ts
 var REPORT_SCHEMA_VERSION = 1;
 
 // src/fossil-cli-core.ts

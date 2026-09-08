@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { workspaceDebrisFinding } from "./workspace-debris.js";
-test("reports an unreferenced old candidate as separate workspace debris", () => {
+test("reports an unreferenced old candidate as separate " + "workspace debris", () => {
     const finding = workspaceDebrisFinding({
         candidate: {
             path: "scratch/old.ts",

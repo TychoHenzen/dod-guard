@@ -1,7 +1,5 @@
 import type { GitCommit, LogicalFileActivity } from "../types.js";
-import type {
-  LogicalIdentityResolution,
-} from "./logical-identity-resolution.js";
+import type { LogicalIdentityResolution } from "./git-history-resolution.js";
 
 export interface AssembleBurstInput {
   partition: readonly GitCommit[];

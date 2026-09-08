@@ -13,28 +13,31 @@ import {
 import { analyzeRepositoryCore } from "./repository-analysis.js";
 
 test(
-  "rejects over-limit included history before producing a report",
+  "rejects over-limit included history before " + "producing a report",
   async () => {
-  const directory = mkdtempSync(join(tmpdir(), "fossil-history-limit-"));
-  const record = `\u001ehash\0${Math.floor(Date.now() / 1_000)}\0A\0file.ts\0`;
-  const history = record.repeat(100_001);
-  const runGit = createRunGit(directory, [
-    {
-      arguments: ["rev-parse", "--verify", "HEAD"],
-      output: gitOutput("hash\n"),
-    },
-    { arguments: nonMergeGitLogArguments(), output: gitOutput(history) },
-  ]);
-  try {
-    await assert.rejects(
-      analyzeRepositoryCore(directory, analysisOptions, runGit),
-      (error: unknown) =>
-        error instanceof FossilAnalysisError && error.code === "resource_limit",
-    );
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
-});
+    const directory = mkdtempSync(join(tmpdir(), "fossil-history-limit-"));
+    const record =
+      `\u001ehash\0${Math.floor(Date.now() / 1_000)}` + "\0A\0file.ts\0";
+    const history = record.repeat(100_001);
+    const runGit = createRunGit(directory, [
+      {
+        arguments: ["rev-parse", "--verify", "HEAD"],
+        output: gitOutput("hash\n"),
+      },
+      { arguments: nonMergeGitLogArguments(), output: gitOutput(history) },
+    ]);
+    try {
+      await assert.rejects(
+        analyzeRepositoryCore(directory, analysisOptions, runGit),
+        (error: unknown) =>
+          error instanceof FossilAnalysisError &&
+          error.code === "resource_limit",
+      );
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  },
+);
 test("rejects an over-limit Git inventory before source reads", async () => {
   const directory = mkdtempSync(join(tmpdir(), "fossil-inventory-limit-"));
   const paths = Array.from(

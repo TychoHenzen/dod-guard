@@ -1,7 +1,5 @@
 import { FossilAnalysisError } from "./analysis-error.js";
-import type {
-  CollectedGitOutput,
-} from "./git-process-types/collected-git-output.js";
+import type { CollectedGitOutput } from "./git-process-types/index.js";
 import type { CollectorState } from "./git-output-collector-state.js";
 
 function rejectLimit(

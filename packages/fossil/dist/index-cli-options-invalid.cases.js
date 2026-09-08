@@ -30,7 +30,7 @@ async function assertInvalidArguments(argumentsForCase) {
     assert.match(stderr.join(""), /(?:error:|Usage: fossil analyze)/);
     assert.match(stderr.join(""), /Usage: fossil analyze/);
 }
-test("rejects invalid argument forms with usage diagnostics before analysis", async () => {
+test("rejects invalid argument forms with usage " + "diagnostics before analysis", async () => {
     for (const argumentsForCase of INVALID_ARGUMENTS)
         await assertInvalidArguments(argumentsForCase);
 });

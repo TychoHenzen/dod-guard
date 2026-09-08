@@ -1,7 +1,5 @@
 import type { LogicalFileActivity } from "./types.js";
-import type {
-  LogicalIdentityState,
-} from "./git-history-types/logical-identity-state.js";
+import type { LogicalIdentityState } from "./git-history-types/index.js";
 
 export function activityForState(
   state: LogicalIdentityState,

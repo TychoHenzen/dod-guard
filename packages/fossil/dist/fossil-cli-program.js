@@ -1,6 +1,5 @@
 import { Command } from "commander";
-import { FossilHelpDisplayed, } from "./fossil-cli-types/fossil-help-displayed.js";
-import { FossilUsageError } from "./fossil-cli-types/fossil-usage-error.js";
+import { FossilHelpDisplayed, FossilUsageError, } from "./fossil-cli-types/index.js";
 import { analyzeRepository } from "./fossil-cli-analysis.js";
 import { normalizeAnalyzeOptions } from "./fossil-cli-parse-options.js";
 import { renderFossilReportJson, renderFossilReportTable } from "./output.js";

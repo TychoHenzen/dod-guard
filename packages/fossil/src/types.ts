@@ -1,15 +1,13 @@
 /** Stable data contract shared by fossil's analysis and presentation layers. */
 
-export const REPORT_SCHEMA_VERSION = 1 as const;
+export { REPORT_SCHEMA_VERSION } from "./types/report-schema.js";
 
 export type { AnalysisBoundary } from "./types/analysis-boundary.js";
 export type { AnalysisErrorCode } from "./types/analysis-error-code.js";
 export type { AnalysisErrorDetails } from "./types/analysis-error-details.js";
 export type { AnalysisOptions } from "./types/analysis-options.js";
 export type { AnalysisWarning } from "./types/analysis-warning.js";
-export type {
-  AnalyzeRepositoryResult,
-} from "./types/analyze-repository-result.js";
+export type * from "./types/analyze-repository-result.js";
 export type { Burst } from "./types/burst.js";
 export type { BurstAnalysis } from "./types/burst-analysis.js";
 export type { BurstFileActivity } from "./types/burst-file-activity.js";
@@ -23,9 +21,7 @@ export type { GitCommit } from "./types/git-commit.js";
 export type { GitFileChange } from "./types/git-file-change.js";
 export type { IgnoreSource } from "./types/ignore-source.js";
 export type { LogicalFileActivity } from "./types/logical-file-activity.js";
-export type {
-  NormalizedAnalysisOptions,
-} from "./types/normalized-analysis-options.js";
+export type * from "./types/normalized-analysis-options.js";
 export type { OutputFormat } from "./types/output-format.js";
 export type { ParsedReference } from "./types/parsed-reference.js";
 export type { ReferenceAvailability } from "./types/reference-availability.js";
@@ -41,7 +37,5 @@ export type { ScoreBasis } from "./types/score-basis.js";
 export type { SourceLanguage } from "./types/source-language.js";
 export type { SourceSpan } from "./types/source-span.js";
 export type { UnresolvedReference } from "./types/unresolved-reference.js";
-export type {
-  WorkspaceDebrisFinding,
-} from "./types/workspace-debris-finding.js";
+export type * from "./types/workspace-debris-finding.js";
 export type { WorkspaceFileKind } from "./types/workspace-file-kind.js";

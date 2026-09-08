@@ -2,7 +2,7 @@ import { lstatSync } from "node:fs";
 import { join } from "node:path";
 import { successfulGit } from "./repository-analysis-support.js";
 import { CHECK_IGNORE_ARGUMENTS, filterWorkspaceDiscoveryPaths, inspectWorkspaceFileMetadataWithWarnings, oldIgnoredWorkspaceCandidates, oldUntrackedWorkspaceCandidates, parseVerboseCheckIgnore, } from "./workspace-debris-boundary.js";
-export { discoverWorkspace, } from "./repository-analysis-workspace-discovery.js";
+export * from "./repository-analysis-workspace-discovery.js";
 export { assertWorkspaceInventoryLimit, buildWorkspaceInventory, } from "./repository-analysis-workspace-inventory.js";
 export function inspectWorkspacePaths(root, paths, exclude) {
     const inspect = (path) => {

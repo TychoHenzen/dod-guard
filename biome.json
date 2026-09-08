@@ -94,7 +94,7 @@
     {
       "includes": ["packages/fossil/src/**/*.ts"],
       "formatter": {
-        "enabled": false
+        "lineWidth": 80
       }
     },
     {

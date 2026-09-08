@@ -1,20 +1,16 @@
 import { Command } from "commander";
 import {
   FossilHelpDisplayed,
-} from "./fossil-cli-types/fossil-help-displayed.js";
-import { FossilUsageError } from "./fossil-cli-types/fossil-usage-error.js";
+  FossilUsageError,
+} from "./fossil-cli-types/index.js";
 import { analyzeRepository } from "./fossil-cli-analysis.js";
 import { normalizeAnalyzeOptions } from "./fossil-cli-parse-options.js";
 import { renderFossilReportJson, renderFossilReportTable } from "./output.js";
 import type {
   AnalyzeCommandHandler,
-} from "./fossil-cli-types/analyze-command-handler.js";
-import type {
   FossilCliDependencies,
-} from "./fossil-cli-types/fossil-cli-dependencies.js";
-import type {
   RawAnalyzeOptions,
-} from "./fossil-cli-types/raw-analyze-options.js";
+} from "./fossil-cli-types/index.js";
 
 function commanderExitOverride(error: {
   code?: string;

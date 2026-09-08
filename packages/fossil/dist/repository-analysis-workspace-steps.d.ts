@@ -1,6 +1,6 @@
 import { runGitCommand } from "./git-process-boundary.js";
 import { inspectWorkspaceFileMetadataWithWarnings, parseVerboseCheckIgnore } from "./workspace-debris-boundary.js";
-export { discoverWorkspace, } from "./repository-analysis-workspace-discovery.js";
+export * from "./repository-analysis-workspace-discovery.js";
 export { assertWorkspaceInventoryLimit, buildWorkspaceInventory, } from "./repository-analysis-workspace-inventory.js";
 export declare function inspectWorkspacePaths(root: string, paths: readonly string[], exclude: readonly string[]): import("./workspace-debris-boundary.js").WorkspaceMetadataInspectionResult;
 export declare function readIgnoredProvenance({ root, ignored, exclude, runGit, }: {
@@ -21,4 +21,4 @@ export declare function buildWorkspaceCandidates(input: {
     ignoredProvenance: ReturnType<typeof parseVerboseCheckIgnore>;
     analysisTimestampMs: number;
     minimumAgeDays: number;
-}): (import("./workspace-debris-boundary.js").UntrackedWorkspaceCandidate | import("./workspace-debris-boundary.js").IgnoredWorkspaceCandidate)[];
+}): (import("./workspace-debris-boundary.js").IgnoredWorkspaceCandidate | import("./workspace-debris-boundary.js").UntrackedWorkspaceCandidate)[];

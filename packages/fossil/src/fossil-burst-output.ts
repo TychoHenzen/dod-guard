@@ -1,9 +1,9 @@
 import type { BurstReport } from "./types.js";
-import type { BurstTableMode } from "./fossil-output-types/burst-table-mode.js";
 import type {
+  BurstTableMode,
   BurstTableRenderOptions,
-} from "./fossil-output-types/burst-table-render-options.js";
-import type { BurstTableRow } from "./fossil-output-types/burst-table-row.js";
+  BurstTableRow,
+} from "./fossil-output-types/index.js";
 import { findingTableRows } from "./fossil-burst-finding-rows.js";
 import {
   comparePaths,

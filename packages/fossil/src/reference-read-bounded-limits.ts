@@ -1,6 +1,4 @@
-import type {
-  ReferenceCandidate,
-} from "./reference-analysis-types/reference-candidate.js";
+import type { ReferenceCandidate } from "./reference-analysis-types.js";
 import {
   addReferenceWarning,
   newReferenceReadBudget,

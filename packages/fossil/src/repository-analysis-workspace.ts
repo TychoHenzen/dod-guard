@@ -8,9 +8,7 @@ import {
   discoverWorkspace,
   readIgnoredProvenance,
 } from "./repository-analysis-workspace-steps.js";
-import type {
-  WorkspaceStageInput,
-} from "./repository-analysis-workspace-input.js";
+import type { WorkspaceStageInput } from "./repo-workspace-input.js";
 
 async function collectWorkspaceInputs(input: WorkspaceStageInput) {
   const discovery = await discoverWorkspace(input.root, input.runGit);

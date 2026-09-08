@@ -1,5 +1,5 @@
 import type { ReferenceGraph } from "./types.js";
-import type { CandidateReferenceSubscores } from "./fossil-scoring-types/candidate-reference-subscores.js";
+import type { CandidateReferenceSubscores } from "./fossil-scoring-types.js";
 /** Scores how little strong inbound evidence a candidate receives. */
 export declare function referenceWeaknessScore(candidatePath: string, graph: ReferenceGraph, candidatePaths: ReadonlySet<string>): number;
 /** Scores the fraction of unique resolved neighbors that are candidates. */

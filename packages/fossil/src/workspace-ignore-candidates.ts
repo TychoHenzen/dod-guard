@@ -1,10 +1,8 @@
 import type { IgnoreProvenance } from "./workspace-types/ignore-provenance.js";
 import type {
   IgnoredWorkspaceCandidate,
-} from "./workspace-types/ignored-workspace-candidate.js";
-import type {
   WorkspaceFileMetadata,
-} from "./workspace-types/workspace-file-metadata.js";
+} from "./workspace-types/index.js";
 
 function ignoredCandidate(
   file: WorkspaceFileMetadata,

@@ -1,7 +1,5 @@
 import type { ParsedReference } from "./types.js";
-import type {
-  ReferenceSourceContent,
-} from "./reference-analysis-types/reference-source-content.js";
+import type { ReferenceSourceContent } from "./reference-analysis-types.js";
 import { compareText, sourceSpan } from "./reference-analysis-paths.js";
 
 const CSHARP_USING =

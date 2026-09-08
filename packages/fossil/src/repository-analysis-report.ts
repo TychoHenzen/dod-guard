@@ -7,9 +7,7 @@ import {
   reportStatistics,
   reportUsage,
 } from "./repository-analysis-report-parts.js";
-import type {
-  AnalysisReportInput,
-} from "./repository-analysis-report-input.js";
+import type { AnalysisReportInput } from "./repository-analysis-inputs.js";
 
 export function buildAnalysisReport(input: AnalysisReportInput): FossilReport {
   const { historyStage, workspaceStage, options, reports, workspaceDebris } =

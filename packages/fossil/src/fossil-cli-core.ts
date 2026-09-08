@@ -15,10 +15,8 @@ export { analyzeRepository } from "./fossil-cli-analysis.js";
 export { createFossilProgram } from "./fossil-cli-program.js";
 export { runFossilCli } from "./fossil-cli-run.js";
 export { runFossilCliProcess } from "./fossil-cli-process.js";
-export { FossilUsageError } from "./fossil-cli-types/fossil-usage-error.js";
-export {
-  NotRepositoryAnalysisError,
-} from "./fossil-cli-types/not-repository-analysis-error.js";
+export { FossilUsageError } from "./fossil-cli-types/index.js";
+export { NotRepositoryAnalysisError } from "./fossil-cli-types/index.js";
 export type {
   AnalyzeCommandHandler,
   FossilCliDependencies,

@@ -4,40 +4,41 @@ import { renderBurstTableRows } from "./output.js";
 import { findingExplanation } from "./output.test-support.js";
 
 test(
-  "renders ANSI styling only when the caller marks table output as a TTY",
+  "renders ANSI styling only when the caller marks " + "table output as a TTY",
   () => {
-  const rows = [
-    {
-      kind: "burst" as const,
-      id: "burst-1",
-      startDate: "2025-01-01",
-      endDate: "2025-01-02",
-      commitCount: 2,
-      fileCount: 1,
-    },
-    { kind: "survivor" as const, path: "src/survivor.ts" },
-    {
-      kind: "finding" as const,
-      path: "src/finding.ts",
-      score: 0.8,
-      scoreBasis: "full" as const,
-    },
-    findingExplanation("src/candidate.ts", "src/live.ts"),
-  ];
+    const rows = [
+      {
+        kind: "burst" as const,
+        id: "burst-1",
+        startDate: "2025-01-01",
+        endDate: "2025-01-02",
+        commitCount: 2,
+        fileCount: 1,
+      },
+      { kind: "survivor" as const, path: "src/survivor.ts" },
+      {
+        kind: "finding" as const,
+        path: "src/finding.ts",
+        score: 0.8,
+        scoreBasis: "full" as const,
+      },
+      findingExplanation("src/candidate.ts", "src/live.ts"),
+    ];
 
-  const redirected = renderBurstTableRows(rows, { isTty: false });
-  const tty = renderBurstTableRows(rows, { isTty: true });
+    const redirected = renderBurstTableRows(rows, { isTty: false });
+    const tty = renderBurstTableRows(rows, { isTty: true });
 
-  assert.equal(redirected.includes("\u001b["), false);
-  assert.match(redirected, /Burst burst-1/);
-  assert.match(redirected, /survivor src\/survivor.ts/);
-  assert.match(redirected, /finding src\/finding.ts: score 0.8 \(full\)/);
-  assert.match(
-    redirected,
-    /created in burst; 2 burst commits, 0 post-burst commits/,
-  );
-  assert.equal(tty.startsWith("\u001b[1mBurst burst-1"), true);
-});
+    assert.equal(redirected.includes("\u001b["), false);
+    assert.match(redirected, /Burst burst-1/);
+    assert.match(redirected, /survivor src\/survivor.ts/);
+    assert.match(redirected, /finding src\/finding.ts: score 0.8 \(full\)/);
+    assert.match(
+      redirected,
+      /created in burst; 2 burst commits, 0 post-burst commits/,
+    );
+    assert.equal(tty.startsWith("\u001b[1mBurst burst-1"), true);
+  },
+);
 test("escapes control characters from repository-derived table text", () => {
   const rows = [
     {

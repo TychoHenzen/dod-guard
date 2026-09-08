@@ -6,11 +6,9 @@ import type {
 } from "./types.js";
 import type {
   AssembleBurstInput,
-} from "./git-history-types/assemble-burst-input.js";
-import type { BurstFileInput } from "./git-history-types/burst-file-input.js";
-import type {
+  BurstFileInput,
   LogicalIdentityResolution,
-} from "./git-history-types/logical-identity-resolution.js";
+} from "./git-history-types/index.js";
 import {
   changesByIdentity,
   commitsWithIdentity,

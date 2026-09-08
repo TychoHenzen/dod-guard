@@ -1,10 +1,10 @@
-import { consumeTryCatchLexicalCharacter, } from "./reference-analysis-try-catch-lexical.js";
-import { consumeTryCatchStructuralCharacter, } from "./reference-analysis-try-catch-structure.js";
+import * as lexical from "./reference-analysis-try-catch-lexical.js";
+import * as structural from "./reference-analysis-try-catch-structure.js";
 function consumeCharacter(content, index, state) {
-    const lexicalIndex = consumeTryCatchLexicalCharacter(content, index, state);
+    const lexicalIndex = lexical.consumeTryCatchLexicalCharacter(content, index, state);
     if (lexicalIndex !== undefined)
         return lexicalIndex;
-    return consumeTryCatchStructuralCharacter(content, index, state);
+    return structural.consumeTryCatchStructuralCharacter(content, index, state);
 }
 export function tryCatchRanges(content) {
     const state = {

@@ -36,17 +36,18 @@ async function runDefaultAnalyses() {
 }
 
 test(
-  "passes normalized defaults and the current directory to analyze",
+  "passes normalized defaults and the current " + "directory to analyze",
   async () => {
-  const calls = await runDefaultAnalyses();
-  assert.deepEqual(calls, [
-    {
-      repositoryPath: "C:/repositories/default",
-      options: optionsFor(),
-    },
-    {
-      repositoryPath: "C:/repositories/explicit",
-      options: optionsFor(),
-    },
-  ]);
-});
+    const calls = await runDefaultAnalyses();
+    assert.deepEqual(calls, [
+      {
+        repositoryPath: "C:/repositories/default",
+        options: optionsFor(),
+      },
+      {
+        repositoryPath: "C:/repositories/explicit",
+        options: optionsFor(),
+      },
+    ]);
+  },
+);

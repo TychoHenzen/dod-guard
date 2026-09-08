@@ -1,10 +1,8 @@
 import type { ParsedReference } from "./types.js";
 import type {
-  ReferenceSourceContent,
-} from "./reference-analysis-types/reference-source-content.js";
-import type {
   ReferenceRange,
-} from "./reference-analysis-types/reference-range.js";
+  ReferenceSourceContent,
+} from "./reference-analysis-types.js";
 import { declarationRange } from "./reference-analysis-declarations.js";
 import {
   csharpGuardRanges,

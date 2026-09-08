@@ -1,11 +1,9 @@
 import { DEFAULT_GIT_INGESTION_LIMITS } from "./git-process-limits.js";
 import type {
   CollectedGitOutput,
-} from "./git-process-types/collected-git-output.js";
-import type {
   GitOutputCollectionOptions,
-} from "./git-process-types/git-output-collection-options.js";
-import type { GitPipedChild } from "./git-process-types/git-piped-child.js";
+  GitPipedChild,
+} from "./git-process-types/index.js";
 import {
   collectStderrChunk,
   collectStdoutChunk,

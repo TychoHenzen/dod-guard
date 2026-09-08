@@ -41,9 +41,15 @@ async function runWarningCli(report) {
     });
     return { exitCode, stdout, stderr };
 }
-test("retains sorted nonfatal warnings in successful API and CLI JSON reports", async () => {
+test("retains sorted nonfatal warnings in successful API " +
+    "and CLI JSON reports", async () => {
     const { options, warnings, report } = reportWithWarnings();
-    const expectedWarnings = [warnings[2], warnings[3], warnings[1], warnings[0]];
+    const expectedWarnings = [
+        warnings[2],
+        warnings[3],
+        warnings[1],
+        warnings[0],
+    ];
     const apiReport = await analyzeRepository("C:/repositories/warnings", options, async () => report);
     const { exitCode, stdout, stderr } = await runWarningCli(report);
     assert.equal(exitCode, 0);

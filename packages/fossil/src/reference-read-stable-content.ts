@@ -2,9 +2,7 @@ import {
   addBinaryReferenceWarning,
   addReferenceWarning,
 } from "./reference-read-support.js";
-import type {
-  ReferenceSourceSnapshot,
-} from "./reference-analysis-types/reference-source-snapshot.js";
+import type { ReferenceSourceSnapshot } from "./reference-analysis-types.js";
 import type { StableReadInput } from "./reference-read-stable-types.js";
 
 export function readStableContent(

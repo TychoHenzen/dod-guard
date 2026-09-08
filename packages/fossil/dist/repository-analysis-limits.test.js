@@ -7,9 +7,9 @@ import { FossilAnalysisError } from "./analysis-error.js";
 import { nonMergeGitLogArguments } from "./git-history-core.js";
 import { analysisOptions, createRunGit, gitOutput, } from "./repository-analysis.helpers.test.js";
 import { analyzeRepositoryCore } from "./repository-analysis.js";
-test("rejects over-limit included history before producing a report", async () => {
+test("rejects over-limit included history before " + "producing a report", async () => {
     const directory = mkdtempSync(join(tmpdir(), "fossil-history-limit-"));
-    const record = `\u001ehash\0${Math.floor(Date.now() / 1_000)}\0A\0file.ts\0`;
+    const record = `\u001ehash\0${Math.floor(Date.now() / 1_000)}` + "\0A\0file.ts\0";
     const history = record.repeat(100_001);
     const runGit = createRunGit(directory, [
         {
@@ -19,7 +19,8 @@ test("rejects over-limit included history before producing a report", async () =
         { arguments: nonMergeGitLogArguments(), output: gitOutput(history) },
     ]);
     try {
-        await assert.rejects(analyzeRepositoryCore(directory, analysisOptions, runGit), (error) => error instanceof FossilAnalysisError && error.code === "resource_limit");
+        await assert.rejects(analyzeRepositoryCore(directory, analysisOptions, runGit), (error) => error instanceof FossilAnalysisError &&
+            error.code === "resource_limit");
     }
     finally {
         rmSync(directory, { recursive: true, force: true });

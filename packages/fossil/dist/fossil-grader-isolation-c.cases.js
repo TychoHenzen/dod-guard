@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { referenceWeaknessScore } from "./fossil-grader.js";
 import { referenceEdge } from "./fossil-grader.test-support.js";
-test("gives full weakness when no unique strong live inbound source remains", () => {
+test("gives full weakness when no unique strong live " + "inbound source remains", () => {
     const graph = {
         edges: [
             {

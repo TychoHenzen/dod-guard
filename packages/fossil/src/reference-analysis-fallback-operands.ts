@@ -1,7 +1,5 @@
 import { nextNonWhitespace } from "./reference-analysis-fallback-helpers.js";
-import type {
-  ReferenceRange,
-} from "./reference-analysis-types/reference-range.js";
+import type { ReferenceRange } from "./reference-analysis-types.js";
 
 const CLOSING_DELIMITERS = new Set([")", "]", "}"]);
 const OPERAND_STOPS = new Set([";", ",", "\n"]);

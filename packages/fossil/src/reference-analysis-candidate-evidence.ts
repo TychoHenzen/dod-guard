@@ -1,7 +1,5 @@
 import type { ReferenceGraph } from "./types.js";
-import type {
-  ReferenceCandidate,
-} from "./reference-analysis-types/reference-candidate.js";
+import type { ReferenceCandidate } from "./reference-analysis-types.js";
 import { compareText } from "./reference-analysis-paths.js";
 import { emptyReferenceGraph } from "./reference-read-support.js";
 import {

@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { promisify } from "node:util";
 import { createPerformanceFixture } from "./performance.js";
 const execFileAsync = promisify(execFile);
-test("points HEAD at the fast-import branch for small real fixtures", async () => {
+test("points HEAD at the fast-import branch for small " + "real fixtures", async () => {
     const fixture = await createPerformanceFixture({
         commitCount: 10,
         fileCount: 3,

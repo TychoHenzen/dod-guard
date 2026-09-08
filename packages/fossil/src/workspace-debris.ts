@@ -35,11 +35,4 @@ export {
   omitUsedWorkspaceCandidates,
 } from "./workspace-usage.js";
 export { workspaceDebrisFinding } from "./workspace-finding.js";
-export type { IgnoredWorkspaceCandidate } from "./workspace-types/index.js";
-export type { IgnoreProvenance } from "./workspace-types/index.js";
-export type { UntrackedWorkspaceCandidate } from "./workspace-types/index.js";
-export type { WorkspaceFileMetadata } from "./workspace-types/index.js";
-export type { WorkspaceFileMetadataReader } from "./workspace-types/index.js";
-export type {
-  WorkspaceMetadataInspectionResult,
-} from "./workspace-types/index.js";
+export type * from "./workspace-types/index.js";

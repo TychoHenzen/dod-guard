@@ -1,7 +1,5 @@
 import type { AnalysisWarning, ParsedReference } from "../types.js";
-import type {
-  ReferenceContainmentBoundary,
-} from "./reference-containment-boundary.js";
+import type { ReferenceContainmentBoundary } from "./reference-containment.js";
 
 export interface ReferenceBoundaryInput {
   reference: ParsedReference;

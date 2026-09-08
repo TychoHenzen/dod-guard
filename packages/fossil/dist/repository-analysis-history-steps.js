@@ -1,7 +1,7 @@
 import { FossilAnalysisError } from "./analysis-error.js";
 import * as history from "./git-analyzer.js";
 import { emptyHistoryOutput, successfulGit, } from "./repository-analysis-support.js";
-export { resolveHistoryRepository, } from "./repository-analysis-history-repository.js";
+export * from "./repository-analysis-history-repository.js";
 export async function sparseCheckoutOutput(runGit, root) {
     try {
         return await successfulGit({

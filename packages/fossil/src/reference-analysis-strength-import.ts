@@ -1,7 +1,5 @@
 import type { ParsedReference } from "./types.js";
-import type {
-  ReferenceSourceContent,
-} from "./reference-analysis-types/reference-source-content.js";
+import type { ReferenceSourceContent } from "./reference-analysis-types.js";
 import { localImportBindings } from "./reference-analysis-declarations.js";
 import { syntaxView } from "./reference-analysis-syntax-view.js";
 import {

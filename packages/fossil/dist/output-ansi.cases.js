@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { renderBurstTableRows } from "./output.js";
 import { findingExplanation } from "./output.test-support.js";
-test("renders ANSI styling only when the caller marks table output as a TTY", () => {
+test("renders ANSI styling only when the caller marks " + "table output as a TTY", () => {
     const rows = [
         {
             kind: "burst",

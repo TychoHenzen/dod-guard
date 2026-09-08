@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { markUnresolvedCandidateEvidence, regradeVestigialEdges, } from "./ref-analyzer.js";
 import "./ref-candidate-strength.cases.js";
-test("regrades only candidate-to-candidate edges without mutating the graph", () => {
+test("regrades only candidate-to-candidate edges " + "without mutating the graph", () => {
     const graph = {
         edges: [
             {
@@ -38,7 +38,8 @@ test("regrades only candidate-to-candidate edges without mutating the graph", ()
     assert.deepEqual(result.edges.map((edge) => edge.strength), ["vestigial", "weak", "strong"]);
     assert.equal(graph.edges[0].strength, "strong");
 });
-test("marks only tail or uniquely named unresolved candidate paths unavailable", () => {
+test("marks only tail or uniquely named unresolved " +
+    "candidate paths unavailable", () => {
     const graph = {
         edges: [],
         unresolved: [

@@ -1,5 +1,5 @@
 import { normalizeWorkspacePath } from "./workspace-path-rules.js";
-export { oldIgnoredWorkspaceCandidates, } from "./workspace-ignore-candidates.js";
+export * from "./workspace-ignore-candidates.js";
 function isAbsoluteWorkspacePath(path) {
     return path.startsWith("/") || /^[A-Za-z]:\//.test(path);
 }

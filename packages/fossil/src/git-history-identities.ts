@@ -1,7 +1,5 @@
 import type { GitCommit, LogicalFileActivity } from "./types.js";
-import type {
-  LogicalIdentityResolution,
-} from "./git-history-types/logical-identity-resolution.js";
+import type { LogicalIdentityResolution } from "./git-history-types/index.js";
 import { activityForState } from "./git-history-activity.js";
 import {
   type IdentityContext,

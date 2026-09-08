@@ -1,4 +1,4 @@
-import { FossilUsageError } from "./fossil-cli-types/fossil-usage-error.js";
+import { FossilUsageError } from "./fossil-cli-types/index.js";
 import { DEFAULT_NORMALIZED_ANALYSIS_OPTIONS } from "./fossil-cli-options.js";
 function validNumberText(input, number) {
     return (input.value?.trim() !== "" &&

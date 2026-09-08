@@ -4,7 +4,8 @@ import { createAdvisoryFossilFinding } from "./fossil-grader.js";
 import { renderFossilReportJson } from "./output.js";
 import { advisoryFindingInput, createReport, optionsFor, } from "./testing/report-fixtures.js";
 import { limitsWith } from "./testing/report-limits.js";
-test("serializes one complete schema-versioned JSON report without table prose", () => {
+test("serializes one complete schema-versioned JSON " +
+    "report without table prose", () => {
     const report = createReport(optionsFor("json"), {
         analysisTimestampMs: 1_735_689_600_000,
         limits: limitsWith(10),
@@ -16,7 +17,7 @@ test("serializes one complete schema-versioned JSON report without table prose",
     assert.equal(output.includes("Burst "), false);
     assert.equal(output.includes("survivor "), false);
 });
-test("derives burst-path and unique normalized candidate totals in JSON", () => {
+test("derives burst-path and unique normalized candidate " + "totals in JSON", () => {
     const candidate = (path, burstId) => createAdvisoryFossilFinding(advisoryFindingInput({ burstId, path, score: 0.8, burstCommits: 1 }));
     const bursts = [
         {

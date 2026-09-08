@@ -1,8 +1,6 @@
 import { posix } from "node:path";
 import type { ParsedReference, ReferenceKind } from "./types.js";
-import type {
-  ReferenceSourceContent,
-} from "./reference-analysis-types/reference-source-content.js";
+import type { ReferenceSourceContent } from "./reference-analysis-types.js";
 import { compareText, sourceSpan } from "./reference-analysis-paths.js";
 
 const RUST_MODULE = /^\s*mod\s+([A-Za-z_]\w*)\s*;\s*$/gm;

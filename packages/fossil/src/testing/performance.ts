@@ -1,12 +1,8 @@
 import type {
   PerformanceBenchmarkDependencies,
-} from "./performance-types/performance-benchmark-dependencies.js";
-import type {
   PerformanceBenchmarkResult,
-} from "./performance-types/performance-benchmark-result.js";
-import type {
   PerformanceFixture,
-} from "./performance-types/performance-fixture.js";
+} from "./performance-types/index.js";
 import { MAXIMUM_PERFORMANCE_DURATION_MS } from "./performance-constants.js";
 
 export type {

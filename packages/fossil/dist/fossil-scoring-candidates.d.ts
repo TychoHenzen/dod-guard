@@ -1,6 +1,5 @@
 import type { BurstFileActivity, FossilFinding } from "./types.js";
-import type { AdvisoryFossilFindingInput } from "./fossil-scoring-types/advisory-fossil-finding-input.js";
-import type { BurstCandidateEvidence } from "./fossil-scoring-types/burst-candidate-evidence.js";
+import type { AdvisoryFossilFindingInput, BurstCandidateEvidence } from "./fossil-scoring-types/index.js";
 /** Normalizes positive burst churn against the positive burst maximum. */
 export declare function normalizedBurstChurn(candidate: BurstFileActivity, burstFiles: readonly BurstFileActivity[]): number;
 /** Scores the absence of post-burst commits for one candidate. */

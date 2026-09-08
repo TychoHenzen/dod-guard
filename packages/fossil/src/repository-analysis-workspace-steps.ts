@@ -11,9 +11,7 @@ import {
   parseVerboseCheckIgnore,
 } from "./workspace-debris-boundary.js";
 
-export {
-  discoverWorkspace,
-} from "./repository-analysis-workspace-discovery.js";
+export * from "./repository-analysis-workspace-discovery.js";
 export {
   assertWorkspaceInventoryLimit,
   buildWorkspaceInventory,
