@@ -6,7 +6,7 @@ import {
   degradedProcess,
   runtimeEntrySymbol,
   runtimeOptions,
-} from "../testing/runtime-lsp-test-support.js";
+} from "../testing/runtime/runtime-lsp-test-support.js";
 
 it("publishes a degraded relation status from the runtime backend", async () => {
   const process = degradedProcess();

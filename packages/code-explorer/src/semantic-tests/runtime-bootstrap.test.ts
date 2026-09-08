@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import * as boot from "../testing/runtime-bootstrap-test-support.js";
+import * as boot from "../testing/runtime/runtime-bootstrap-test-support.js";
 
 it("gives managed Python only monotonic mirror roots", async () => {
   const result = await boot.managedPythonRoots();

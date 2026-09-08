@@ -4,7 +4,7 @@ import {
   createBackendLaunchPolicy,
   identity,
   policyAllowlist,
-} from "../testing/backend-launch-policy-test-support.js";
+} from "../testing/backend/backend-launch-policy-test-support.js";
 
 it("rejects an allowlist mode without a verified C# analyzer-safe sentinel", () => {
   const unsafe = policyAllowlist({

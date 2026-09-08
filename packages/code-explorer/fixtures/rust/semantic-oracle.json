@@ -18,7 +18,7 @@
         "start": { "line": 4, "character": 3 },
         "end": { "line": 4, "character": 9 }
       },
-      "body": "fn helper() {\n    let _item = Item;\n}"
+      "body": "fn helper() {\n    let _item = Item {};\n}"
     }
   },
   "relations": {

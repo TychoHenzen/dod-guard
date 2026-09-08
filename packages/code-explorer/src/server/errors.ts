@@ -4,7 +4,11 @@ import {
   type ResourceLimit,
 } from "../navigation/resource-limits.js";
 import { SessionCapacityError } from "../navigation/session.js";
-import { type CodeExplorerError, codeExplorerError, normalizeError } from "../navigation/error.js";
+import {
+  type CodeExplorerError,
+  codeExplorerError,
+  normalizeError,
+} from "../navigation/error.js";
 import { ProjectPathError } from "../semantic/api/public-api.js";
 
 export function unknownTool(): CodeExplorerError {

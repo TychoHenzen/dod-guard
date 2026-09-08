@@ -7,12 +7,12 @@ import {
 } from "../semantic/adapter-selection/adapter-selection.js";
 import type { AdapterSelectionEvidence } from "../semantic/adapter-selection/adapter-selection-evidence.js";
 import type { AdapterSelectionRecord } from "../semantic/adapter-selection/adapter-selection-record.js";
-import * as support from "../testing/adapter-selection-test-support.js";
+import * as support from "../testing/backend/adapter-selection-test-support.js";
 
 it("rejects measured evidence when any runtime authorization field changes", () => {
-  const recordInput = support.loadAdapterSelectionJson("../../adapter-selection.json") as AdapterSelectionRecord;
+  const recordInput = support.loadAdapterSelectionJson("../../../adapter-selection.json") as AdapterSelectionRecord;
   const evidenceInput = support.loadAdapterSelectionJson(
-    "../../adapter-selection-evidence.json",
+    "../../../adapter-selection-evidence.json",
   ) as AdapterSelectionEvidence;
   type EvidenceMutation = (evidence: AdapterSelectionEvidence) => void;
   const cases: ReadonlyArray<readonly [string, EvidenceMutation]> = [

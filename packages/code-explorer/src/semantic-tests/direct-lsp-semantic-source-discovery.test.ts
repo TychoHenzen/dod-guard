@@ -6,7 +6,7 @@ import {
   csharpServerPathDiscoveryBackend,
   pythonDiscoverySymbol,
   pythonServerPathDiscoveryBackend,
-} from "../testing/direct-lsp-semantic-support.js";
+} from "../testing/direct-lsp/direct-lsp-semantic-support.js";
 
 it("uses bounded server-path discovery when Pyright returns no nodes", async () => {
   const backend = pythonServerPathDiscoveryBackend();

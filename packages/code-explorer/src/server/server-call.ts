@@ -1,6 +1,14 @@
 import { Buffer } from "node:buffer";
 import { createEnvelope } from "./envelope.js";
-import { invalidRequest, invalidSession, limitedResource, projectCapacity, requestIdConflict, unknownTool, normalizeBackendFailure } from "./errors.js";
+import {
+  invalidRequest,
+  invalidSession,
+  limitedResource,
+  projectCapacity,
+  requestIdConflict,
+  unknownTool,
+  normalizeBackendFailure,
+} from "./errors.js";
 import type { CodeExplorerEnvelope } from "./envelope.js";
 import { performCall } from "./perform-call.js";
 import type { ServerRuntime } from "./server-runtime.js";
@@ -15,7 +23,8 @@ function hasValidRequestId(value: string): boolean {
 }
 
 export function createServerCall(runtime: ServerRuntime) {
-  const ensureFreshness = () => (runtime.state.freshnessStarted ??= runtime.freshness.start());
+  const ensureFreshness = () =>
+    (runtime.state.freshnessStarted ??= runtime.freshness.start());
   return async function call(
     name: string,
     arguments_: Record<string, unknown>,
@@ -25,9 +34,13 @@ export function createServerCall(runtime: ServerRuntime) {
     if (limit) return limitedResource(limit);
     const parsed = schemas[name].safeParse(arguments_);
     if (!parsed.success) return invalidRequest();
-    if (!(name === "code_status" && arguments_.action === "start_session")) await ensureFreshness();
+    if (!(name === "code_status" && arguments_.action === "start_session"))
+      await ensureFreshness();
     if (name === "code_status" && arguments_.action === "start_session") {
-      const sessionId = runtime.sessions.tryStart(runtime.connectionId, runtime.options.now?.());
+      const sessionId = runtime.sessions.tryStart(
+        runtime.connectionId,
+        runtime.options.now?.(),
+      );
       if (!sessionId) return projectCapacity();
       const rootStatus = await runtime.rootAccess.check();
       return createEnvelope(
@@ -42,15 +55,26 @@ export function createServerCall(runtime: ServerRuntime) {
       );
     }
     const parsedArguments = parsed.data as Record<string, unknown>;
-    const sessionId = typeof parsedArguments.session_id === "string" ? parsedArguments.session_id : undefined;
-    const requestId = typeof parsedArguments.request_id === "string" ? parsedArguments.request_id : undefined;
+    const sessionId =
+      typeof parsedArguments.session_id === "string"
+        ? parsedArguments.session_id
+        : undefined;
+    const requestId =
+      typeof parsedArguments.request_id === "string"
+        ? parsedArguments.request_id
+        : undefined;
     const stateChanging =
       name === "code_focus" ||
       name === "code_follow" ||
       name === "code_history" ||
       (name === "code_status" && arguments_.action === "refresh");
-    if (stateChanging && !(requestId && hasValidRequestId(requestId) && sessionId)) return invalidRequest();
-    const perform = () => performCall(runtime, name, parsedArguments, sessionId);
+    if (
+      stateChanging &&
+      !(requestId && hasValidRequestId(requestId) && sessionId)
+    )
+      return invalidRequest();
+    const perform = () =>
+      performCall(runtime, name, parsedArguments, sessionId);
     if (stateChanging && sessionId && requestId) {
       const execution = runtime.sessions.execute(
         runtime.connectionId,
@@ -64,7 +88,8 @@ export function createServerCall(runtime: ServerRuntime) {
       if (execution.state === "invalid_session") return invalidSession();
       if (execution.state === "request_id_conflict") return requestIdConflict();
       if (execution.state === "project_capacity") return projectCapacity();
-      if (execution.state === "ok") return execution.response.catch(normalizeBackendFailure);
+      if (execution.state === "ok")
+        return execution.response.catch(normalizeBackendFailure);
       return invalidSession();
     }
     return perform().catch(normalizeBackendFailure);

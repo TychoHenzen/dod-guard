@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { assertHelperOracle, loadFixture } from "../testing/language-fixture-oracle-support.js";
+import { assertHelperOracle, loadFixture } from "../testing/semantic/language-fixture-oracle-support.js";
 
 it("keeps the Rust helper definition and call hierarchy ranges", async () => {
   const fixture = await loadFixture("rust");

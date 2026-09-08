@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { it } from "node:test";
-import { unsafe, unsafePythonConfigurationKeys } from "../testing/python-mirror-runtime-test-support.js";
+import { unsafe, unsafePythonConfigurationKeys } from "../testing/runtime/python-mirror-runtime-test-support.js";
 
 it("rejects execution hooks before mirroring", () => {
   for (const key of unsafePythonConfigurationKeys) {

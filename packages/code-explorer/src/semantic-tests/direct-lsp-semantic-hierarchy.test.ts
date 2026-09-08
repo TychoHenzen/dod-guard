@@ -5,7 +5,7 @@ import {
   createSemanticBackend,
   incomingHierarchyClient,
   rustEntrySymbol,
-} from "../testing/direct-lsp-semantic-support.js";
+} from "../testing/direct-lsp/direct-lsp-semantic-support.js";
 
 it("uses server-issued hierarchy items and preserves target metadata", async () => {
   const methods: string[] = [];

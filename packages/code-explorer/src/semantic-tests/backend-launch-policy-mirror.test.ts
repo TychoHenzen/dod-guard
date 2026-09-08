@@ -1,5 +1,5 @@
 import { it } from "node:test";
-import { assert, createPythonMirrorPlan, digest } from "../testing/backend-launch-policy-test-support.js";
+import { assert, createPythonMirrorPlan, digest } from "../testing/backend/backend-launch-policy-test-support.js";
 
 it("invalidates the old Python mirror when project configuration changes", () => {
   const text = "x = 1";

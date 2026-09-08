@@ -6,7 +6,7 @@ import {
   createNativePythonMirror,
   createPythonMirrorManager,
 } from "../semantic/python-mirror/python-mirror-runtime.js";
-import { project } from "../testing/python-mirror-runtime-test-support.js";
+import { project } from "../testing/runtime/python-mirror-runtime-test-support.js";
 
 function linkConfiguration(root: string): void {
   symlinkSync(join(root, "replacement.json"), join(root, "pyrightconfig.json"), "file");

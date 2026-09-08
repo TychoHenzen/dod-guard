@@ -3,7 +3,7 @@ fn entry() {
 }
 
 fn helper() {
-    let _item = Item;
+    let _item = Item {};
 }
 
 mod item;

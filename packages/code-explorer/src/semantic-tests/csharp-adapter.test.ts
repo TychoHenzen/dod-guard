@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createCSharpAdapter } from "../semantic/adapters/language-adapter.js";
-import { FakeSemanticAdapter } from "../testing/fake-semantic-adapter.js";
-import { adapterRequests, createAdapterResult } from "../testing/language-adapter-test-support.js";
+import { FakeSemanticAdapter } from "../testing/semantic/fake-semantic-adapter.js";
+import { adapterRequests, createAdapterResult } from "../testing/semantic/language-adapter-test-support.js";
 
 it("reports a compatible C# backend and forwards every semantic request", async () => {
   const backend = new FakeSemanticAdapter();

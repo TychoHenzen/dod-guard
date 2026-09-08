@@ -1,5 +1,5 @@
 import { it } from "node:test";
-import { assert, assertRustPreparation, policy } from "../testing/backend-launch-policy-test-support.js";
+import { assert, assertRustPreparation, policy } from "../testing/backend/backend-launch-policy-test-support.js";
 
 it("ignores project backend commands and keeps the allowlisted command", () => {
   const preparation = policy().prepare("rust", {

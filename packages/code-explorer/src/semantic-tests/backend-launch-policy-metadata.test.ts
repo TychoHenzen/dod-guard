@@ -4,7 +4,7 @@ import {
   createBackendLaunchPolicy,
   pythonAllowlist,
   pythonIdentity,
-} from "../testing/backend-launch-policy-test-support.js";
+} from "../testing/backend/backend-launch-policy-test-support.js";
 
 it("rejects a Python package metadata byte replacement before spawn", () => {
   const current = pythonIdentity({

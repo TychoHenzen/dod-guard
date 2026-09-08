@@ -16853,6 +16853,12 @@ function parseServeArguments(arguments_) {
   return { project_root: state.projectRoot, no_open: state.noOpen };
 }
 
+// src/browser-server/embedded-runtime.ts
+var embedded_runtime_exports = {};
+__export(embedded_runtime_exports, {
+  startEmbeddedBrowserRuntime: () => startEmbeddedBrowserRuntime
+});
+
 // src/browser-server/embedded-runtime-result.ts
 function createEmbeddedRuntime(options) {
   const router = new BrowserHttpRouter({
@@ -16938,6 +16944,10 @@ async function startEmbeddedBrowserRuntime(options) {
 }
 
 // ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+var stdio_exports = {};
+__export(stdio_exports, {
+  StdioServerTransport: () => StdioServerTransport
+});
 import process3 from "node:process";
 
 // ../../node_modules/zod/v4/core/core.js
@@ -23078,8 +23088,16 @@ import { readFileSync as readFileSync7 } from "node:fs";
 import { dirname as dirname7, join as join19 } from "node:path";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 var directory = dirname7(fileURLToPath5(import.meta.url));
-var packageInfo = JSON.parse(readFileSync7(join19(directory, "..", "package.json"), "utf8"));
+var packageInfo = JSON.parse(
+  readFileSync7(join19(directory, "..", "package.json"), "utf8")
+);
 var browserAssetRoot = join19(directory, "browser");
+
+// src/freshness/workspace-native.ts
+var workspace_native_exports = {};
+__export(workspace_native_exports, {
+  createNativeWorkspaceFreshness: () => createNativeWorkspaceFreshness
+});
 
 // src/freshness/native-manifest-files.ts
 import { readdir } from "node:fs/promises";
@@ -25163,6 +25181,12 @@ function createNativeWorkspaceFreshness(options) {
     watch_paths: [options.root]
   });
 }
+
+// src/server/create-server.ts
+var create_server_exports = {};
+__export(create_server_exports, {
+  createServer: () => createServer2
+});
 
 // ../../node_modules/zod/v4/mini/schemas.js
 var ZodMiniType = /* @__PURE__ */ $constructor("ZodMiniType", (inst, def) => {
@@ -30626,17 +30650,23 @@ function makeFocusView(options) {
 // src/server/semantic-operations.ts
 async function collectSemanticSymbols(adapters, query, run) {
   const replies = await Promise.allSettled(
-    adapters.map((adapter) => run(() => adapter.request({ operation: "search", query })))
+    adapters.map(
+      (adapter) => run(() => adapter.request({ operation: "search", query }))
+    )
   );
   const symbols = replies.flatMap(
     (reply) => reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : []
   );
-  const failure = replies.find((reply) => reply.status === "rejected")?.reason;
+  const failure = replies.find(
+    (reply) => reply.status === "rejected"
+  )?.reason;
   return { symbols, failure };
 }
 async function collectFocusedSymbol(adapters, symbolId, run) {
   const replies = await Promise.allSettled(
-    adapters.map((adapter) => run(() => adapter.request({ operation: "focus", symbol_id: symbolId })))
+    adapters.map(
+      (adapter) => run(() => adapter.request({ operation: "focus", symbol_id: symbolId }))
+    )
   );
   const focused = replies.find(
     (reply) => reply.status === "fulfilled" && reply.value.operation === "focus"
@@ -30646,7 +30676,9 @@ async function collectFocusedSymbol(adapters, symbolId, run) {
   return void 0;
 }
 function throwBackendLimitFailure(replies) {
-  const failed = replies.find((reply) => reply.status === "rejected");
+  const failed = replies.find(
+    (reply) => reply.status === "rejected"
+  );
   if (failed) throw failed.reason;
 }
 
@@ -30672,11 +30704,15 @@ var schemas = {
     request_id: external_exports.string(),
     view_id: external_exports.string(),
     handle: external_exports.string(),
-    relation: external_exports.enum(["definition", "references", "callers", "callees", "type", "implementation"]),
+    relation: external_exports.enum(browserRelationNames),
     limit: external_exports.number().int().optional()
   }).strict(),
   code_history: external_exports.union([
-    external_exports.object({ session_id: external_exports.string(), request_id: external_exports.string(), action: external_exports.enum(["back", "forward"]) }).strict(),
+    external_exports.object({
+      session_id: external_exports.string(),
+      request_id: external_exports.string(),
+      action: external_exports.enum(["back", "forward"])
+    }).strict(),
     external_exports.object({
       session_id: external_exports.string(),
       request_id: external_exports.string(),
@@ -30686,7 +30722,11 @@ var schemas = {
   ]),
   code_status: external_exports.union([
     external_exports.object({ action: external_exports.enum(["status", "start_session"]) }).strict(),
-    external_exports.object({ action: external_exports.literal("refresh"), session_id: external_exports.string(), request_id: external_exports.string() }).strict()
+    external_exports.object({
+      action: external_exports.literal("refresh"),
+      session_id: external_exports.string(),
+      request_id: external_exports.string()
+    }).strict()
   ])
 };
 
@@ -30694,11 +30734,15 @@ var schemas = {
 async function handleFocus(runtime, arguments_, freshness) {
   const focus = schemas.code_focus.parse(arguments_);
   const saveView = (view) => {
-    if (runtime.sessions.addView(runtime.connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
+    if (runtime.sessions.addView(runtime.connectionId, focus.session_id, view) === "project_capacity")
+      return projectCapacity();
     runtime.state.viewHistory.push(view.view_id);
     return createEnvelope(freshness, "ready", {
       ...view,
-      history_position: runtime.sessions.historyPosition(runtime.connectionId, focus.session_id) ?? 0
+      history_position: runtime.sessions.historyPosition(
+        runtime.connectionId,
+        focus.session_id
+      ) ?? 0
     });
   };
   if (focus.symbol_id.startsWith("file:") && runtime.options.projectRoot) {
@@ -30711,7 +30755,13 @@ async function handleFocus(runtime, arguments_, freshness) {
         name: path4.posix.basename(filePath),
         language: path4.posix.extname(filePath).slice(1) || "text",
         kind: "file",
-        location: { path: filePath, range: { start: { line: 0, character: 0 }, end: { line: lineCount, character: 0 } } }
+        location: {
+          path: filePath,
+          range: {
+            start: { line: 0, character: 0 },
+            end: { line: lineCount, character: 0 }
+          }
+        }
       },
       { body, visible_symbols: [] },
       focus.body_limit_bytes,
@@ -30726,7 +30776,14 @@ async function handleFocus(runtime, arguments_, freshness) {
   );
   if (!selected) return void 0;
   try {
-    return saveView(createFocusView(selected.symbol, selected.content, focus.body_limit_bytes, freshness.current_generation));
+    return saveView(
+      createFocusView(
+        selected.symbol,
+        selected.content,
+        focus.body_limit_bytes,
+        freshness.current_generation
+      )
+    );
   } catch (error2) {
     if (error2 instanceof FocusBodyLimitError) return resourceLimit();
     throw error2;
@@ -30734,56 +30791,87 @@ async function handleFocus(runtime, arguments_, freshness) {
 }
 
 // src/server/relation-candidate.ts
-function relationCandidate(candidate, relation, adapter, sessions, connectionId, sessionId) {
+function mapRelationCandidate(candidate, relation, adapter) {
   const status = adapter.status();
   if ("external" in candidate) {
     return {
+      candidate: {
+        relation,
+        relation_source: "semantic",
+        backend_name: status.backend_name,
+        backend_version: status.backend_version,
+        display_name: candidate.external.display_name,
+        external: true
+      }
+    };
+  }
+  const symbol = candidate.symbol;
+  const sourceRange = "range" in candidate.location ? candidate.location.range : symbol.location.range;
+  return {
+    symbol,
+    candidate: {
       relation,
       relation_source: "semantic",
       backend_name: status.backend_name,
       backend_version: status.backend_version,
-      display_name: candidate.external.display_name,
-      external: true
-    };
-  }
-  const symbol = candidate.symbol;
-  const view = createFocusView(symbol, {
-    declaration: symbol.name,
-    visible_symbols: [{ name: symbol.name, symbol_id: symbol.id }]
+      symbol_id: symbol.id,
+      display_name: symbol.name,
+      path: symbol.location.path.replaceAll("\\", "/"),
+      kind: symbol.kind,
+      range: sourceRange,
+      ...candidate.call_site ? {
+        call_site: {
+          path: candidate.call_site.path.replaceAll("\\", "/"),
+          range: candidate.call_site.range
+        }
+      } : {},
+      external: false
+    }
+  };
+}
+function retainRelationCandidateView(mapped, sessions, connectionId, sessionId) {
+  if (!mapped.symbol) return mapped.candidate;
+  const view = createFocusView(mapped.symbol, {
+    declaration: mapped.symbol.name,
+    visible_symbols: [
+      { name: mapped.symbol.name, symbol_id: mapped.symbol.id }
+    ]
   });
-  if (sessions.addView(connectionId, sessionId, view) !== "ok") throw new SessionCapacityError();
-  const handle = view.handles[0]?.handle;
-  const sourceRange = "range" in candidate.location ? candidate.location.range : symbol.location.range;
+  if (sessions.addView(connectionId, sessionId, view) !== "ok")
+    throw new SessionCapacityError();
   return {
-    relation,
-    relation_source: "semantic",
-    backend_name: status.backend_name,
-    backend_version: status.backend_version,
-    symbol_id: symbol.id,
-    display_name: symbol.name,
-    path: symbol.location.path.replaceAll("\\", "/"),
-    kind: symbol.kind,
-    range: sourceRange,
-    ...candidate.call_site ? { call_site: { path: candidate.call_site.path.replaceAll("\\", "/"), range: candidate.call_site.range } } : {},
-    external: false,
+    ...mapped.candidate,
     view_id: view.view_id,
-    ...handle ? { handle } : {},
+    ...view.handles[0]?.handle ? { handle: view.handles[0].handle } : {},
     handles: view.handles,
     content: view.content
   };
 }
 function compareRelationCandidates(left, right) {
   if (left.external !== right.external) return left.external ? 1 : -1;
-  return `${left.path ?? ""}\0${left.range?.start.line ?? 0}\0${left.range?.start.character ?? 0}\0${left.kind ?? ""}\0${left.symbol_id ?? left.display_name ?? ""}`.localeCompare(
-    `${right.path ?? ""}\0${right.range?.start.line ?? 0}\0${right.range?.start.character ?? 0}\0${right.kind ?? ""}\0${right.symbol_id ?? right.display_name ?? ""}`
+  return relationCandidateSortKey(left).localeCompare(
+    relationCandidateSortKey(right)
   );
+}
+function relationCandidateSortKey(candidate) {
+  return [
+    candidate.path ?? "",
+    candidate.range?.start.line ?? 0,
+    candidate.range?.start.character ?? 0,
+    candidate.kind ?? "",
+    candidate.symbol_id ?? candidate.display_name ?? ""
+  ].join("\0");
 }
 
 // src/server/relation-operations.ts
 async function collectRelations(adapters, relation, symbolId, run) {
-  const supported = adapters.filter((adapter) => adapter.status().capabilities[relation].state === "ready");
+  const supported = adapters.filter(
+    (adapter) => adapter.status().capabilities[relation].state === "ready"
+  );
   const replies = await Promise.allSettled(
-    supported.map((adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId })))
+    supported.map(
+      (adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId }))
+    )
   );
   const results = replies.flatMap(
     (reply, index) => reply.status === "fulfilled" && reply.value.operation === relation ? [{ adapter: supported[index], result: reply.value }] : []
@@ -30792,7 +30880,11 @@ async function collectRelations(adapters, relation, symbolId, run) {
   return results;
 }
 function mapRelationCandidates(result, relation, adapter, sessions, connectionId, sessionId, limit) {
-  return result.relations.map((candidate) => relationCandidate(candidate, relation, adapter, sessions, connectionId, sessionId)).sort(compareRelationCandidates).slice(0, limit);
+  return result.relations.map((candidate) => mapRelationCandidate(candidate, relation, adapter)).sort(
+    (left, right) => compareRelationCandidates(left.candidate, right.candidate)
+  ).slice(0, limit).map(
+    (mapped) => retainRelationCandidateView(mapped, sessions, connectionId, sessionId)
+  );
 }
 
 // src/server/follow-action.ts
@@ -30822,7 +30914,8 @@ async function handleFollow(runtime, arguments_, freshness) {
     resolved.symbolId,
     (operation) => runtime.backendRequests.run(follow.session_id, operation)
   );
-  if (replies.length === 0) return createEnvelope(freshness, "unavailable_relation", { relation });
+  if (replies.length === 0)
+    return createEnvelope(freshness, "unavailable_relation", { relation });
   const { adapter, result } = replies[0];
   const candidates = mapRelationCandidates(
     result,
@@ -30835,7 +30928,11 @@ async function handleFollow(runtime, arguments_, freshness) {
   );
   if (relation === "definition") {
     const local = candidates.find((candidate) => candidate.external === false);
-    if (local) return createEnvelope(freshness, "ready", { focus: local, source_location: local.range });
+    if (local)
+      return createEnvelope(freshness, "ready", {
+        focus: local,
+        source_location: local.range
+      });
   }
   return createEnvelope(freshness, "ready", { relation, candidates });
 }
@@ -30844,15 +30941,26 @@ async function handleFollow(runtime, arguments_, freshness) {
 function handleHistory(runtime, arguments_, freshness) {
   const history2 = schemas.code_history.parse(arguments_);
   if (history2.action === "recent") {
-    const recent2 = runtime.sessions.recent(runtime.connectionId, history2.session_id, history2.limit ?? 64);
+    const recent2 = runtime.sessions.recent(
+      runtime.connectionId,
+      history2.session_id,
+      history2.limit ?? 64
+    );
     if (!recent2) return invalidSession();
     return createEnvelope(freshness, "ready", { views: recent2 });
   }
-  const restored = runtime.sessions.restore(runtime.connectionId, history2.session_id, history2.action);
+  const restored = runtime.sessions.restore(
+    runtime.connectionId,
+    history2.session_id,
+    history2.action
+  );
   if (!restored) return invalidViewHandle();
   return createEnvelope(freshness, "ready", {
     ...restored,
-    history_position: runtime.sessions.historyPosition(runtime.connectionId, history2.session_id) ?? 0,
+    history_position: runtime.sessions.historyPosition(
+      runtime.connectionId,
+      history2.session_id
+    ) ?? 0,
     stale: restored.project_generation !== freshness.current_generation
   });
 }
@@ -30870,7 +30978,10 @@ async function handleSearch(runtime, arguments_, freshness) {
     return createEnvelope(
       freshness,
       currentLandmarks.state === "ready" ? "ready" : "landmarks_not_ready",
-      { landmarks: currentLandmarks.landmarks, landmark_state: currentLandmarks.state }
+      {
+        landmarks: currentLandmarks.landmarks,
+        landmark_state: currentLandmarks.state
+      }
     );
   }
   const semantic = await collectSemanticSymbols(
@@ -30883,9 +30994,11 @@ async function handleSearch(runtime, arguments_, freshness) {
   let results;
   try {
     results = discovery.searchResult(search.query, search, semantic.symbols);
-    if (results.candidates.length === 0 && semantic.failure) throw semantic.failure;
+    if (results.candidates.length === 0 && semantic.failure)
+      throw semantic.failure;
   } catch (error2) {
-    if (error2 instanceof ProjectPathError && error2.code === "path_outside_project") return codeExplorerError("path_outside_project");
+    if (error2 instanceof ProjectPathError && error2.code === "path_outside_project")
+      return codeExplorerError("path_outside_project");
     throw error2;
   }
   return createEnvelope(freshness, "ready", results);
@@ -30894,23 +31007,50 @@ async function handleSearch(runtime, arguments_, freshness) {
 // src/server/workspace-status.ts
 import { execFileSync } from "node:child_process";
 function nativeWorkspaceStatus(root) {
-  if (!root) return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
+  if (!root)
+    return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
   try {
-    const output = execFileSync("git", ["-C", root.canonicalPath, "status", "--porcelain=v1", "--untracked-files=all"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
-    });
+    const output = execFileSync(
+      "git",
+      [
+        "-C",
+        root.canonicalPath,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all"
+      ],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }
+    );
     const changed_paths = [];
     const untracked_paths = [];
     for (const line of output.split(/\r?\n/u)) {
       const status = line.slice(0, 2);
       const candidate = line.slice(3).replaceAll("\\", "/");
-      if (!candidate || candidate.startsWith("/") || /^[A-Za-z]:\//u.test(candidate) || candidate.split("/").includes("..")) continue;
+      if (!candidate || candidate.startsWith("/") || /^[A-Za-z]:\//u.test(candidate) || candidate.split("/").includes(".."))
+        continue;
       if (!/\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)) continue;
-      if (status === "??") untracked_paths.push({ path: candidate, state: "untracked" });
-      else changed_paths.push({ path: candidate, state: status.includes("D") ? "deleted" : "modified" });
+      if (status === "??")
+        untracked_paths.push({ path: candidate, state: "untracked" });
+      else
+        changed_paths.push({
+          path: candidate,
+          state: status.includes("D") ? "deleted" : "modified"
+        });
     }
-    return { changed_paths, untracked_paths, active_exclusions: ["dist/**", "target/**", "bin/**", "obj/**", ".venv/**"] };
+    return {
+      changed_paths,
+      untracked_paths,
+      active_exclusions: [
+        "dist/**",
+        "target/**",
+        "bin/**",
+        "obj/**",
+        ".venv/**"
+      ]
+    };
   } catch {
     return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
   }
@@ -30919,7 +31059,9 @@ function nativeWorkspaceStatus(root) {
 // src/server/status-action.ts
 function handleStatus(runtime, name, arguments_, freshness, rootStatus) {
   const backendStatus = name === "code_status" ? {
-    backend_status: createBackendStatusReport(runtime.options.adapters ?? []),
+    backend_status: createBackendStatusReport(
+      runtime.options.adapters ?? []
+    ),
     sensitive_paths_excluded: runtime.options.sensitive_paths_excluded ?? 0,
     project_root: ".",
     current_generation: freshness.current_generation,
@@ -30938,7 +31080,8 @@ function handleStatus(runtime, name, arguments_, freshness, rootStatus) {
 // src/server/perform-call.ts
 async function performCall(runtime, name, arguments_, sessionId) {
   const rootStatus = await runtime.rootAccess.check();
-  if (name !== "code_status" && rootStatus.state !== "ready") return codeExplorerError(rootStatus.state);
+  if (name !== "code_status" && rootStatus.state !== "ready")
+    return codeExplorerError(rootStatus.state);
   let capturedFreshness;
   if (name === "code_status" && arguments_.action === "refresh") {
     await runtime.generationScheduler.refresh(async () => {
@@ -30950,8 +31093,12 @@ async function performCall(runtime, name, arguments_, sessionId) {
         })
       );
       const replacement = await runtime.options.rebuild_derived?.();
-      if (runtime.options.projectRoot) runtime.state.discovery = createDiscoveryPipeline(runtime.options.projectRoot);
-      if (replacement?.landmarks) runtime.state.landmarks = replacement.landmarks;
+      if (runtime.options.projectRoot)
+        runtime.state.discovery = createDiscoveryPipeline(
+          runtime.options.projectRoot
+        );
+      if (replacement?.landmarks)
+        runtime.state.landmarks = replacement.landmarks;
     });
     capturedFreshness = runtime.freshness.status();
   } else {
@@ -30965,13 +31112,21 @@ async function performCall(runtime, name, arguments_, sessionId) {
     const result = await handleFollow(runtime, arguments_, capturedFreshness);
     if (result) return result;
   }
-  if (name === "code_history") return handleHistory(runtime, arguments_, capturedFreshness);
-  if (name === "code_search" && runtime.state.discovery) return handleSearch(runtime, arguments_, capturedFreshness);
+  if (name === "code_history")
+    return handleHistory(runtime, arguments_, capturedFreshness);
+  if (name === "code_search" && runtime.state.discovery)
+    return handleSearch(runtime, arguments_, capturedFreshness);
   return handleStatus(runtime, name, arguments_, capturedFreshness, rootStatus);
 }
 
 // src/server/tool-name.ts
-var toolNames = ["code_search", "code_focus", "code_follow", "code_history", "code_status"];
+var toolNames = [
+  "code_search",
+  "code_focus",
+  "code_follow",
+  "code_history",
+  "code_status"
+];
 function isToolName(name) {
   return toolNames.includes(name);
 }
@@ -30989,9 +31144,13 @@ function createServerCall(runtime) {
     if (limit) return limitedResource(limit);
     const parsed = schemas[name].safeParse(arguments_);
     if (!parsed.success) return invalidRequest();
-    if (!(name === "code_status" && arguments_.action === "start_session")) await ensureFreshness();
+    if (!(name === "code_status" && arguments_.action === "start_session"))
+      await ensureFreshness();
     if (name === "code_status" && arguments_.action === "start_session") {
-      const sessionId2 = runtime.sessions.tryStart(runtime.connectionId, runtime.options.now?.());
+      const sessionId2 = runtime.sessions.tryStart(
+        runtime.connectionId,
+        runtime.options.now?.()
+      );
       if (!sessionId2) return projectCapacity();
       const rootStatus = await runtime.rootAccess.check();
       return createEnvelope(
@@ -31009,7 +31168,8 @@ function createServerCall(runtime) {
     const sessionId = typeof parsedArguments.session_id === "string" ? parsedArguments.session_id : void 0;
     const requestId = typeof parsedArguments.request_id === "string" ? parsedArguments.request_id : void 0;
     const stateChanging = name === "code_focus" || name === "code_follow" || name === "code_history" || name === "code_status" && arguments_.action === "refresh";
-    if (stateChanging && !(requestId && hasValidRequestId(requestId) && sessionId)) return invalidRequest();
+    if (stateChanging && !(requestId && hasValidRequestId(requestId) && sessionId))
+      return invalidRequest();
     const perform = () => performCall(runtime, name, parsedArguments, sessionId);
     if (stateChanging && sessionId && requestId) {
       const execution = runtime.sessions.execute(
@@ -31024,7 +31184,8 @@ function createServerCall(runtime) {
       if (execution.state === "invalid_session") return invalidSession();
       if (execution.state === "request_id_conflict") return requestIdConflict();
       if (execution.state === "project_capacity") return projectCapacity();
-      if (execution.state === "ok") return execution.response.catch(normalizeBackendFailure);
+      if (execution.state === "ok")
+        return execution.response.catch(normalizeBackendFailure);
       return invalidSession();
     }
     return perform().catch(normalizeBackendFailure);
@@ -31032,6 +31193,10 @@ function createServerCall(runtime) {
 }
 
 // src/freshness/project-generation-scheduler.ts
+var project_generation_scheduler_exports = {};
+__export(project_generation_scheduler_exports, {
+  ProjectGenerationScheduler: () => ProjectGenerationScheduler
+});
 var ProjectGenerationScheduler = class {
   constructor(freshness) {
     this.freshness = freshness;
@@ -31081,16 +31246,23 @@ var ProjectGenerationScheduler = class {
 };
 
 // src/server/create-runtime.ts
+var { ProjectGenerationScheduler: ProjectGenerationScheduler2 } = project_generation_scheduler_exports;
 function createServerRuntime(options) {
-  const freshness = options.freshness ?? new WorkspaceFreshness({ reconcile: async () => ({ manifest: /* @__PURE__ */ new Map() }) });
+  const freshness = options.freshness ?? new WorkspaceFreshness({
+    reconcile: async () => ({ manifest: /* @__PURE__ */ new Map() })
+  });
   return {
     options,
     connectionId: options.connection_id ?? mintOpaqueId(),
     sessions: new SessionManager(),
     backendRequests: new BackendRequestLimiter(options.backend_timeout_ms),
     freshness,
-    generationScheduler: options.generation_scheduler ?? new ProjectGenerationScheduler(freshness),
-    rootAccess: new RootAccessGate(options.projectRoot, options.adapters ?? [], options.now),
+    generationScheduler: options.generation_scheduler ?? new ProjectGenerationScheduler2(freshness),
+    rootAccess: new RootAccessGate(
+      options.projectRoot,
+      options.adapters ?? [],
+      options.now
+    ),
     state: {
       refreshGeneration: 0,
       viewHistory: [],
@@ -31134,7 +31306,9 @@ var inputSchemas = {
       request_id: { type: "string" },
       view_id: { type: "string" },
       handle: { type: "string" },
-      relation: { enum: ["definition", "references", "callers", "callees", "type", "implementation"] },
+      relation: {
+        enum: browserRelationNames
+      },
       limit: { type: "integer" }
     },
     required: ["session_id", "request_id", "view_id", "handle", "relation"],
@@ -31183,7 +31357,11 @@ var inputSchemas = {
       },
       {
         type: "object",
-        properties: { action: { const: "refresh" }, session_id: { type: "string" }, request_id: { type: "string" } },
+        properties: {
+          action: { const: "refresh" },
+          session_id: { type: "string" },
+          request_id: { type: "string" }
+        },
         required: ["action", "session_id", "request_id"],
         additionalProperties: false
       }
@@ -31212,19 +31390,32 @@ function toMcpToolResult(result, isError = false) {
 // src/server/create-server.ts
 function createServer2(options = {}) {
   const runtime = createServerRuntime(options);
-  const mcp = new McpServer({ name: "code-explorer", version: packageInfo.version }, { capabilities: { tools: {} } });
+  const mcp = new McpServer(
+    { name: "code-explorer", version: packageInfo.version },
+    { capabilities: { tools: {} } }
+  );
   const call = createServerCall(runtime);
   mcp.server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: toolNames.map((name) => ({ name, description: toolDescriptions[name], inputSchema: inputSchemas[name] }))
+    tools: toolNames.map((name) => ({
+      name,
+      description: toolDescriptions[name],
+      inputSchema: inputSchemas[name]
+    }))
   }));
   mcp.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const result = await call(request.params.name, request.params.arguments ?? {});
+    const result = await call(
+      request.params.name,
+      request.params.arguments ?? {}
+    );
     return toMcpToolResult(result, "code" in result);
   });
   return {
     mcp,
     call,
-    state: () => ({ refresh_generation: runtime.state.refreshGeneration, view_history: [...runtime.state.viewHistory] }),
+    state: () => ({
+      refresh_generation: runtime.state.refreshGeneration,
+      view_history: [...runtime.state.viewHistory]
+    }),
     projectRoot: options.projectRoot,
     closeConnection: () => runtime.sessions.closeConnection(runtime.connectionId),
     close: async () => {
@@ -31235,15 +31426,19 @@ function createServer2(options = {}) {
 }
 
 // src/runtime-core.ts
+var { createNativeWorkspaceFreshness: createNativeWorkspaceFreshness2 } = workspace_native_exports;
+var { createServer: createCodeExplorerServer } = create_server_exports;
 function stopAdapters(adapters) {
   return Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
 }
 function createRuntimeServer(projectRoot, adapters) {
-  return createServer2({
+  return createCodeExplorerServer({
     projectRoot,
     adapters,
-    sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
-    freshness: createNativeWorkspaceFreshness({
+    sensitive_paths_excluded: countSensitivePathsUnderRoot(
+      projectRoot.canonicalPath
+    ),
+    freshness: createNativeWorkspaceFreshness2({
       root: projectRoot.canonicalPath,
       supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)
     })
@@ -31251,7 +31446,9 @@ function createRuntimeServer(projectRoot, adapters) {
 }
 function abortPromise(signal) {
   return new Promise(
-    (_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true })
+    (_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted")), {
+      once: true
+    })
   );
 }
 function createRuntimeCore(server, adapters) {
@@ -31262,6 +31459,7 @@ function createRuntimeCore(server, adapters) {
   };
   return {
     call: (name, arguments_) => server.call(name, arguments_),
+    connect: (transport) => server.mcp.connect(transport),
     close: async (signal) => {
       if (signal.aborted) throw new Error("aborted");
       closing ??= cleanup();
@@ -31269,13 +31467,19 @@ function createRuntimeCore(server, adapters) {
     }
   };
 }
-async function startRuntimeCore({ projectRoot, signal }) {
+async function startRuntimeCore({
+  projectRoot,
+  signal
+}) {
   loadAdapterSelectionRecord();
   let adapters = [];
   try {
     adapters = await createStartedRuntimeAdapters(projectRoot, signal);
     if (signal.aborted) throw new Error("aborted");
-    return createRuntimeCore(createRuntimeServer(projectRoot, adapters), adapters);
+    return createRuntimeCore(
+      createRuntimeServer(projectRoot, adapters),
+      adapters
+    );
   } catch (error2) {
     await stopAdapters(adapters);
     throw error2;
@@ -31286,8 +31490,10 @@ function createRuntimeCoreFactory() {
 }
 
 // src/runtime-main.ts
+var { startEmbeddedBrowserRuntime: startEmbeddedBrowserRuntime2 } = embedded_runtime_exports;
+var { StdioServerTransport: StdioServerTransport2 } = stdio_exports;
 async function createEmbeddedBrowserRuntime(options) {
-  return startEmbeddedBrowserRuntime({
+  return startEmbeddedBrowserRuntime2({
     projectRoot: options.project_root,
     origin: options.origin,
     signal: options.signal,
@@ -31314,24 +31520,35 @@ async function runMain() {
     process.once("SIGTERM", shutdown);
     return;
   }
-  loadAdapterSelectionRecord();
-  const projectRoot = createNativeProjectRoot(parseProjectRootArgument(arguments_));
-  const adapters = await createStartedRuntimeAdapters(projectRoot);
-  const server = createRuntimeServer(projectRoot, adapters);
-  const transport = new StdioServerTransport();
-  let shuttingDown;
-  const shutdownBackends = () => {
-    shuttingDown ??= Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.())).then(() => void 0);
-    return shuttingDown;
+  const projectRoot = createNativeProjectRoot(
+    parseProjectRootArgument(arguments_)
+  );
+  const controller = new AbortController();
+  const core = await createRuntimeCoreFactory().start({
+    projectRoot,
+    signal: controller.signal
+  });
+  const transport = new StdioServerTransport2();
+  let closing;
+  const close = () => {
+    controller.abort();
+    closing ??= core.close(AbortSignal.timeout(1e4));
+    return closing;
   };
-  const closeServer2 = () => void server.close().then(shutdownBackends);
-  transport.onclose = closeServer2;
-  process.stdin.once("end", closeServer2);
-  await server.mcp.connect(transport);
+  transport.onclose = () => void close();
+  process.stdin.once("end", () => void close());
+  try {
+    if (!core.connect) throw new Error("runtime_core_transport_unavailable");
+    await core.connect(transport);
+  } catch (error2) {
+    await close();
+    throw error2;
+  }
 }
 function parseProjectRootArgument(arguments_) {
   if (arguments_.length === 0) return void 0;
-  if (arguments_.length === 2 && arguments_[0] === "--project-root" && arguments_[1].length > 0) return arguments_[1];
+  if (arguments_.length === 2 && arguments_[0] === "--project-root" && arguments_[1].length > 0)
+    return arguments_[1];
   throw new ProjectPathError("invalid_project_root", "project_root");
 }
 

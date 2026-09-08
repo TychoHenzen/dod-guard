@@ -3,7 +3,7 @@ import { existsSync, lstatSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createNativePythonMirror } from "../semantic/python-mirror/python-mirror-runtime.js";
-import { disposeFixture, project } from "../testing/python-mirror-runtime-test-support.js";
+import { disposeFixture, project } from "../testing/runtime/python-mirror-runtime-test-support.js";
 
 it("maps unchanged source through an immutable generation", () => {
   const fixture = project({

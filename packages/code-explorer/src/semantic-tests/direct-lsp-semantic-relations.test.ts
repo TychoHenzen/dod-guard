@@ -6,7 +6,7 @@ import {
   locationClient,
   mainRustSymbol,
   projectBackendPath,
-} from "../testing/direct-lsp-semantic-support.js";
+} from "../testing/direct-lsp/direct-lsp-semantic-support.js";
 
 it("does not degrade a relation after a transient LSP request failure", async () => {
   let requests = 0;

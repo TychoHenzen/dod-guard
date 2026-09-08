@@ -1,3 +1,4 @@
+import { browserRelationNames } from "../navigation/focus-relation-names.js";
 import { z } from "zod";
 
 export const schemas = {
@@ -26,12 +27,18 @@ export const schemas = {
       request_id: z.string(),
       view_id: z.string(),
       handle: z.string(),
-      relation: z.enum(["definition", "references", "callers", "callees", "type", "implementation"]),
+      relation: z.enum(browserRelationNames),
       limit: z.number().int().optional(),
     })
     .strict(),
   code_history: z.union([
-    z.object({ session_id: z.string(), request_id: z.string(), action: z.enum(["back", "forward"]) }).strict(),
+    z
+      .object({
+        session_id: z.string(),
+        request_id: z.string(),
+        action: z.enum(["back", "forward"]),
+      })
+      .strict(),
     z
       .object({
         session_id: z.string(),
@@ -43,6 +50,12 @@ export const schemas = {
   ]),
   code_status: z.union([
     z.object({ action: z.enum(["status", "start_session"]) }).strict(),
-    z.object({ action: z.literal("refresh"), session_id: z.string(), request_id: z.string() }).strict(),
+    z
+      .object({
+        action: z.literal("refresh"),
+        session_id: z.string(),
+        request_id: z.string(),
+      })
+      .strict(),
   ]),
 } as const;

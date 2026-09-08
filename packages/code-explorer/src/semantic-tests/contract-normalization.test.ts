@@ -6,7 +6,7 @@ import {
   type RelationCapabilities,
   type SemanticResult,
 } from "../semantic/contracts/contract.js";
-import { location } from "../testing/contract-test-support.js";
+import { location } from "../testing/contracts/contract-test-support.js";
 
 it("uses normalized symbols, source locations, revisions, and relations", () => {
   const revision = {

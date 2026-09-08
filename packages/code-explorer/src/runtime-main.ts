@@ -1,5 +1,5 @@
-import { startEmbeddedBrowserRuntime } from "./browser-server/embedded-runtime.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import * as embeddedRuntime from "./browser-server/embedded-runtime.js";
+import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   nativeBrowserOpener,
   nativePortBinder,
@@ -7,13 +7,14 @@ import {
   startBrowserServer,
 } from "./browser-server/lifecycle.js";
 import { browserAssetRoot } from "./package-info.js";
-import { createRuntimeCoreFactory, createRuntimeServer } from "./runtime-core.js";
+import { createRuntimeCoreFactory } from "./runtime-core.js";
 import {
   createNativeProjectRoot,
-  createStartedRuntimeAdapters,
-  loadAdapterSelectionRecord,
   ProjectPathError,
 } from "./semantic/api/public-api.js";
+
+const { startEmbeddedBrowserRuntime } = embeddedRuntime;
+const { StdioServerTransport } = stdio;
 
 export async function createEmbeddedBrowserRuntime(options: {
   project_root: string;
@@ -47,24 +48,41 @@ export async function runMain(): Promise<void> {
     process.once("SIGTERM", shutdown);
     return;
   }
-  loadAdapterSelectionRecord();
-  const projectRoot = createNativeProjectRoot(parseProjectRootArgument(arguments_));
-  const adapters = await createStartedRuntimeAdapters(projectRoot);
-  const server = createRuntimeServer(projectRoot, adapters);
+  const projectRoot = createNativeProjectRoot(
+    parseProjectRootArgument(arguments_),
+  );
+  const controller = new AbortController();
+  const core = await createRuntimeCoreFactory().start({
+    projectRoot,
+    signal: controller.signal,
+  });
   const transport = new StdioServerTransport();
-  let shuttingDown: Promise<void> | undefined;
-  const shutdownBackends = () => {
-    shuttingDown ??= Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.())).then(() => undefined);
-    return shuttingDown;
+  let closing: Promise<void> | undefined;
+  const close = () => {
+    controller.abort();
+    closing ??= core.close(AbortSignal.timeout(10_000));
+    return closing;
   };
-  const closeServer = () => void server.close().then(shutdownBackends);
-  transport.onclose = closeServer;
-  process.stdin.once("end", closeServer);
-  await server.mcp.connect(transport);
+  transport.onclose = () => void close();
+  process.stdin.once("end", () => void close());
+  try {
+    if (!core.connect) throw new Error("runtime_core_transport_unavailable");
+    await core.connect(transport);
+  } catch (error) {
+    await close();
+    throw error;
+  }
 }
 
-function parseProjectRootArgument(arguments_: readonly string[]): string | undefined {
+function parseProjectRootArgument(
+  arguments_: readonly string[],
+): string | undefined {
   if (arguments_.length === 0) return undefined;
-  if (arguments_.length === 2 && arguments_[0] === "--project-root" && arguments_[1].length > 0) return arguments_[1];
+  if (
+    arguments_.length === 2 &&
+    arguments_[0] === "--project-root" &&
+    arguments_[1].length > 0
+  )
+    return arguments_[1];
   throw new ProjectPathError("invalid_project_root", "project_root");
 }

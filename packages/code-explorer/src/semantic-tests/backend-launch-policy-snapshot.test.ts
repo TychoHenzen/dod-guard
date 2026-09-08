@@ -1,5 +1,5 @@
 import { it } from "node:test";
-import * as support from "../testing/backend-launch-policy-test-support.js";
+import * as support from "../testing/backend/backend-launch-policy-test-support.js";
 
 it("snapshots server-owned launch data and freezes returned preparation", () => {
   const entry = support.policyAllowlist()[0];

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createPythonAdapter, createRustAdapter } from "../semantic/adapters/language-adapter.js";
 import { createBackendStatusReport } from "../semantic/backend-status/backend-status.js";
-import { statusBackend } from "../testing/backend-status-test-support.js";
+import { statusBackend } from "../testing/backend/backend-status-test-support.js";
 
 it("reports a missing backend without attempting semantic work", () => {
   const adapter = createRustAdapter({

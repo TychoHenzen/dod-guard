@@ -1,3 +1,5 @@
+import { browserRelationNames } from "../navigation/focus-relation-names.js";
+
 export const inputSchemas = {
   code_search: {
     type: "object",
@@ -31,7 +33,9 @@ export const inputSchemas = {
       request_id: { type: "string" },
       view_id: { type: "string" },
       handle: { type: "string" },
-      relation: { enum: ["definition", "references", "callers", "callees", "type", "implementation"] },
+      relation: {
+        enum: browserRelationNames,
+      },
       limit: { type: "integer" },
     },
     required: ["session_id", "request_id", "view_id", "handle", "relation"],
@@ -80,7 +84,11 @@ export const inputSchemas = {
       },
       {
         type: "object",
-        properties: { action: { const: "refresh" }, session_id: { type: "string" }, request_id: { type: "string" } },
+        properties: {
+          action: { const: "refresh" },
+          session_id: { type: "string" },
+          request_id: { type: "string" },
+        },
         required: ["action", "session_id", "request_id"],
         additionalProperties: false,
       },

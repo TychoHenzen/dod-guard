@@ -6,7 +6,7 @@ import {
   policyAllowlist,
   pythonAllowlist,
   pythonIdentity,
-} from "../testing/backend-launch-policy-test-support.js";
+} from "../testing/backend/backend-launch-policy-test-support.js";
 
 it("binds a trusted entrypoint into fixed arguments and rejects an identity change", () => {
   let current = pythonIdentity();

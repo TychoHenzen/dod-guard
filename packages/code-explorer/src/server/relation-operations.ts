@@ -1,7 +1,16 @@
-import type { LanguageAdapter, RelationName, RelationResult } from "../semantic/api/public-api.js";
+import type {
+  LanguageAdapter,
+  RelationName,
+  RelationResult,
+} from "../semantic/api/public-api.js";
 import type { BackendOperation } from "./semantic-operations.js";
 import { throwBackendLimitFailure } from "./semantic-operations.js";
-import { compareRelationCandidates, relationCandidate, type FollowCandidate } from "./relation-candidate.js";
+import {
+  compareRelationCandidates,
+  mapRelationCandidate,
+  retainRelationCandidateView,
+  type FollowCandidate,
+} from "./relation-candidate.js";
 import { SessionManager } from "../navigation/session.js";
 
 export async function collectRelations(
@@ -10,9 +19,13 @@ export async function collectRelations(
   symbolId: string,
   run: BackendOperation,
 ) {
-  const supported = adapters.filter((adapter) => adapter.status().capabilities[relation].state === "ready");
+  const supported = adapters.filter(
+    (adapter) => adapter.status().capabilities[relation].state === "ready",
+  );
   const replies = await Promise.allSettled(
-    supported.map((adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId }))),
+    supported.map((adapter) =>
+      run(() => adapter.request({ operation: relation, symbol_id: symbolId })),
+    ),
   );
   const results = replies.flatMap((reply, index) =>
     reply.status === "fulfilled" && reply.value.operation === relation
@@ -33,7 +46,12 @@ export function mapRelationCandidates(
   limit: number,
 ): FollowCandidate[] {
   return result.relations
-    .map((candidate) => relationCandidate(candidate, relation, adapter, sessions, connectionId, sessionId))
-    .sort(compareRelationCandidates)
-    .slice(0, limit);
+    .map((candidate) => mapRelationCandidate(candidate, relation, adapter))
+    .sort((left, right) =>
+      compareRelationCandidates(left.candidate, right.candidate),
+    )
+    .slice(0, limit)
+    .map((mapped) =>
+      retainRelationCandidateView(mapped, sessions, connectionId, sessionId),
+    );
 }

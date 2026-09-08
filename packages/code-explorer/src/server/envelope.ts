@@ -17,8 +17,15 @@ export type CodeExplorerEnvelope = {
   data: Record<string, unknown>;
 };
 
-export function readyViewEnvelope(view: FocusView, freshness: FreshnessStatus, historyPosition: number): CodeExplorerEnvelope {
-  return createEnvelope(freshness, "ready", { ...view, history_position: historyPosition });
+export function readyViewEnvelope(
+  view: FocusView,
+  freshness: FreshnessStatus,
+  historyPosition: number,
+): CodeExplorerEnvelope {
+  return createEnvelope(freshness, "ready", {
+    ...view,
+    history_position: historyPosition,
+  });
 }
 
 export function createEnvelope(

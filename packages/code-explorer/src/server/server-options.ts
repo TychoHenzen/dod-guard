@@ -1,7 +1,12 @@
 import type { LandmarkDiscovery } from "../discovery/landmarks.js";
-import type { ProjectGenerationScheduler } from "../freshness/project-generation-scheduler.js";
+import type * as generation from "../freshness/project-generation-scheduler.js";
 import type { WorkspaceFreshness } from "../freshness/workspace-freshness.js";
-import type { LanguageAdapter, ProjectRoot } from "../semantic/api/public-api.js";
+import type {
+  LanguageAdapter,
+  ProjectRoot,
+} from "../semantic/api/public-api.js";
+
+type ProjectGenerationScheduler = generation.ProjectGenerationScheduler;
 
 export type ServerOptions = {
   adapters?: readonly LanguageAdapter[];
@@ -13,6 +18,8 @@ export type ServerOptions = {
   backend_timeout_ms?: number;
   freshness?: WorkspaceFreshness;
   generation_scheduler?: ProjectGenerationScheduler;
-  rebuild_derived?: () => Promise<{ landmarks?: LandmarkDiscovery } | undefined>;
+  rebuild_derived?: () => Promise<
+    { landmarks?: LandmarkDiscovery } | undefined
+  >;
   workspace_status?: () => Record<string, unknown>;
 };

@@ -6,7 +6,7 @@ import {
   Process,
   restartingSourceFixture,
   runtimeSourceOptions,
-} from "../testing/runtime-lsp-test-support.js";
+} from "../testing/runtime/runtime-lsp-test-support.js";
 
 it("reopens one protected source document for a replacement process", async () => {
   const { backend, first, replacement, scheduler } = restartingSourceFixture();

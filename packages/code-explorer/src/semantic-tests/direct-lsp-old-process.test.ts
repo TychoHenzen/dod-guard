@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { oldProcessFixture } from "../testing/direct-lsp-test-support.js";
+import { oldProcessFixture } from "../testing/direct-lsp/direct-lsp-test-support.js";
 
 it("rejects unsolicited requests and discards allowed notifications", async () => {
   const { client, old, replacement, pending, id } = await oldProcessFixture();

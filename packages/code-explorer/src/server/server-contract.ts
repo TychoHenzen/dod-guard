@@ -6,7 +6,10 @@ import type { CodeExplorerState } from "./state.js";
 
 export type CodeExplorerServer = {
   mcp: McpServer;
-  call(name: string, arguments_: Record<string, unknown>): Promise<CodeExplorerEnvelope | CodeExplorerError>;
+  call(
+    name: string,
+    arguments_: Record<string, unknown>,
+  ): Promise<CodeExplorerEnvelope | CodeExplorerError>;
   state(): CodeExplorerState;
   projectRoot: ProjectRoot | undefined;
   closeConnection(): void;

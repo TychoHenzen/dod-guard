@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { encode, FakeProcess, ready, tick } from "../testing/direct-lsp-test-support.js";
+import { encode, FakeProcess, ready, tick } from "../testing/direct-lsp/direct-lsp-test-support.js";
 
 async function assertInvalidFrame(invalid: Uint8Array): Promise<void> {
   const process = new FakeProcess();
