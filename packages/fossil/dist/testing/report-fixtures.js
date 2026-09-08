@@ -1,34 +1,4 @@
-const defaultLimits = {
-    maximumCommits: 0,
-    maximumFileStatusRecords: 0,
-    maximumInventoriedFiles: 0,
-    maximumGitStdoutBytes: 0,
-    maximumGitStderrBytes: 0,
-    maximumReferenceFileBytes: 0,
-    maximumReferenceTotalBytes: 0,
-};
-const defaultUsage = {
-    commitRecords: 0,
-    fileStatusRecords: 0,
-    inventoriedFiles: 0,
-    gitStdoutBytes: 0,
-    gitStderrBytes: 0,
-    referenceBytes: 0,
-    omittedReferencePaths: 0,
-};
-const defaultCompleteness = {
-    historyComplete: true,
-    referenceAnalysisComplete: true,
-    workspaceDebrisComplete: true,
-};
-const defaultStatistics = {
-    includedCommitCount: 0,
-    logicalFileCount: 0,
-    burstCount: 0,
-    candidateFindingCount: 0,
-    uniqueCandidatePathCount: 0,
-    workspaceDebrisCount: 0,
-};
+import { defaultCompleteness, defaultLimits, defaultStatistics, defaultUsage } from "./report-defaults.js";
 export function optionsFor(format = "table") {
     return {
         days: 90,

@@ -1,0 +1,1 @@
+{"version":3,"file":"fossil-usage-error.js","sourceRoot":"","sources":["../../src/fossil-cli-types/fossil-usage-error.ts"],"names":[],"mappings":"AAAA,qFAAqF;AACrF,MAAM,OAAO,gBAAiB,SAAQ,KAAK;IAK9B;IAJF,QAAQ,GAAG,CAAC,CAAC;IAEtB,YACE,OAAe,EACN,WAAW,KAAK;QAEzB,KAAK,CAAC,OAAO,CAAC,CAAC;QAFN,aAAQ,GAAR,QAAQ,CAAQ;IAG3B,CAAC;CACF"}

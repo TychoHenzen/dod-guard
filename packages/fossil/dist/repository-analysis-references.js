@@ -1,0 +1,47 @@
+import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import { join } from "node:path";
+import { analyzeReferences, markUnresolvedCandidateEvidence, readStableReferenceSources, regradeVestigialEdges, unsupportedCandidateReferenceGraph, } from "./ref-analyzer.js";
+function languageForPath(path) {
+    const extension = path.slice(path.lastIndexOf(".")).toLowerCase();
+    if ([".ts", ".tsx"].includes(extension))
+        return "typescript";
+    if ([".js", ".jsx", ".mjs", ".cjs"].includes(extension))
+        return "javascript";
+    if (extension === ".cs")
+        return "csharp";
+    if (extension === ".rs")
+        return "rust";
+    return "unsupported";
+}
+export function referenceSources(root, paths) {
+    const candidates = paths.map((path) => ({ path, language: languageForPath(path) }));
+    const supported = candidates.filter((candidate) => candidate.language !== "unsupported");
+    const readSource = (source) => readFileSync(join(root, source.path), "utf8");
+    const reads = readStableReferenceSources(supported, {
+        inspect(source) {
+            const fullPath = join(root, source.path);
+            const metadata = lstatSync(fullPath);
+            return {
+                identity: `${metadata.dev}:${metadata.ino}`,
+                isRegularFile: metadata.isFile(),
+                byteLength: metadata.size,
+                canonicalPath: realpathSync(fullPath),
+            };
+        },
+        read: readSource,
+    });
+    const unsupported = unsupportedCandidateReferenceGraph(candidates);
+    const graph = analyzeReferences(reads.sources);
+    return {
+        sources: reads.sources,
+        warnings: reads.warnings,
+        acceptedBytes: reads.acceptedBytes,
+        graph: {
+            ...graph,
+            complete: reads.graph.complete && unsupported.complete,
+            unavailablePaths: [...new Set([...reads.graph.unavailablePaths, ...unsupported.unavailablePaths])].sort(),
+        },
+    };
+}
+export { markUnresolvedCandidateEvidence, regradeVestigialEdges };
+//# sourceMappingURL=repository-analysis-references.js.map

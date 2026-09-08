@@ -1,1 +1,12 @@
-export {};
+import "./ref-bounded-a.cases.js";
+import "./ref-bounded-b.cases.js";
+import "./ref-stable-races.cases.js";
+import "./ref-stable-symlink.cases.js";
+import "./ref-boundary.cases.js";
+import "./ref-availability.cases.js";
+import "./ref-parsers-module.cases.js";
+import "./ref-parsers-csharp.cases.js";
+import "./ref-parsers-rust.cases.js";
+import "./ref-strength-import.cases.js";
+import "./ref-strength-fallback.cases.js";
+import "./ref-candidate-evidence.cases.js";
