@@ -1,33 +1,31 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { FossilAnalysisError, NotRepositoryAnalysisError, runFossilCliProcess, } from "./index.js";
-test("maps typed analysis failures to exit codes without success output", async () => {
-    const cases = [
-        ["invalid_options", 2],
-        ["not_repository", 1],
-        ["git_capability", 1],
-        ["git_failure", 1],
-        ["containment_failure", 1],
-        ["resource_limit", 1],
-    ];
-    for (const [code, expectedExitCode] of cases) {
-        const stdout = [];
-        const stderr = [];
-        const exitCode = await runFossilCliProcess(["node", "fossil", "analyze", "C:/repositories/failing", "--format", "json"], {
-            analyze: async () => {
-                throw new FossilAnalysisError({ code, message: `${code}: \u001b[31mfailed` });
-            },
-            stdout: (message) => stdout.push(message),
-            stderr: (message) => stderr.push(message),
-        });
-        assert.equal(exitCode, expectedExitCode);
-        assert.equal(stdout.join(""), "");
-        assert.equal(stderr.length, 1);
-        assert.equal(stderr[0].includes(`fossil: ${code}: \\x1b[31mfailed\n`), true);
-        assert.equal(Buffer.byteLength(stderr[0]) <= 4_096, true);
-    }
-});
-test("maps a non-repository analysis failure to one bounded stderr diagnostic and exit code one", async () => {
+const TYPED_FAILURE_CASES = [
+    ["invalid_options", 2],
+    ["not_repository", 1],
+    ["git_capability", 1],
+    ["git_failure", 1],
+    ["containment_failure", 1],
+    ["resource_limit", 1],
+];
+async function assertTypedFailure(code, expectedExitCode) {
+    const stdout = [];
+    const stderr = [];
+    const exitCode = await runFossilCliProcess(["node", "fossil", "analyze", "C:/repositories/failing", "--format", "json"], {
+        analyze: async () => {
+            throw new FossilAnalysisError({ code, message: `${code}: \u001b[31mfailed` });
+        },
+        stdout: (message) => stdout.push(message),
+        stderr: (message) => stderr.push(message),
+    });
+    assert.equal(exitCode, expectedExitCode);
+    assert.equal(stdout.join(""), "");
+    assert.equal(stderr.length, 1);
+    assert.equal(stderr[0].includes(`fossil: ${code}: \\x1b[31mfailed\n`), true);
+    assert.equal(Buffer.byteLength(stderr[0]) <= 4_096, true);
+}
+async function assertNotRepositoryFailure() {
     const stdout = [];
     const stderr = [];
     const exitCode = await runFossilCliProcess(["node", "fossil", "analyze", "C:/not-a-repository"], {
@@ -47,5 +45,12 @@ test("maps a non-repository analysis failure to one bounded stderr diagnostic an
         return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
     }), false);
     assert.equal(Buffer.byteLength(stderr[0]) <= 4_096, true);
+}
+test("maps typed analysis failures to exit codes without success output", async () => {
+    for (const [code, expectedExitCode] of TYPED_FAILURE_CASES)
+        await assertTypedFailure(code, expectedExitCode);
+});
+test("maps a non-repository analysis failure to one bounded stderr diagnostic and exit code one", async () => {
+    await assertNotRepositoryFailure();
 });
 //# sourceMappingURL=index-errors.cases.js.map

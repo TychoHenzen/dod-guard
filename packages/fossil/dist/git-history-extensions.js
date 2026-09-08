@@ -12,6 +12,12 @@ export function normalizeExtensions(values) {
         normalized.add(`.${value.replace(/^\./, "").toLowerCase()}`);
     return [...normalized];
 }
+function activityPath(activity) {
+    return activity.currentPath ?? activity.paths.at(-1) ?? "";
+}
+function selectedChanges(commit, selected, identitiesByChange) {
+    return commit.changes.filter((change) => selected.has(identitiesByChange.get(change) ?? ""));
+}
 /** Keeps whole candidate identities for later burst and score calculations. */
 export function filterHistoryByExtensions(commits, extensions) {
     if (extensions.size === 0) {
@@ -20,11 +26,9 @@ export function filterHistoryByExtensions(commits, extensions) {
         return included;
     }
     const resolution = resolveLogicalActivities(commits);
-    const selectedIdentities = new Set(resolution.activities
-        .filter((activity) => extensions.has(pathExtension(activity.currentPath ?? activity.paths.at(-1) ?? "")))
-        .map((activity) => activity.identity));
+    const selected = new Set(resolution.activities.filter((activity) => extensions.has(pathExtension(activityPath(activity)))).map((activity) => activity.identity));
     const included = commits.flatMap((commit) => {
-        const changes = commit.changes.filter((change) => selectedIdentities.has(resolution.identitiesByChange.get(change) ?? ""));
+        const changes = selectedChanges(commit, selected, resolution.identitiesByChange);
         return changes.length === 0 ? [] : [{ ...commit, changes }];
     });
     assertIncludedCommitLimit(included.length);

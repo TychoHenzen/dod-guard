@@ -1,3 +1,4 @@
+import { compareText } from "./reference-analysis-paths.js";
 export function emptyReferenceGraph(unavailablePaths) {
     return {
         edges: [],
@@ -10,20 +11,32 @@ export function addReferenceWarning(input) {
     input.unavailablePaths.push(input.source.path);
     input.warnings.push({ code: input.code, message: input.message, path: input.source.path });
 }
+function addTypedReferenceWarning(input) {
+    addReferenceWarning(input);
+}
 export function addUnreadableReferenceWarning(input) {
-    addReferenceWarning({
+    addTypedReferenceWarning({
         ...input,
         code: "reference_unreadable",
         message: "Reference source could not be read.",
     });
 }
-export function sortReferenceReadEvidence(input) {
-    input.unavailablePaths.sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
-    input.warnings.sort((left, right) => {
-        const leftPath = left.path ?? "";
-        const rightPath = right.path ?? "";
-        return leftPath < rightPath ? -1 : leftPath > rightPath ? 1 : 0;
+export function addBinaryReferenceWarning(input) {
+    addTypedReferenceWarning({
+        ...input,
+        code: "reference_binary",
+        message: "Reference source is binary.",
     });
+}
+function warningPath(warning) {
+    return warning.path ?? "";
+}
+function compareWarnings(left, right) {
+    return compareText(warningPath(left), warningPath(right));
+}
+export function sortReferenceReadEvidence(input) {
+    input.unavailablePaths.sort(compareText);
+    input.warnings.sort(compareWarnings);
 }
 export function newReferenceReadCollections() {
     return { readableSources: [], unavailablePaths: [], warnings: [] };
@@ -31,7 +44,7 @@ export function newReferenceReadCollections() {
 export function newReferenceReadBudget() {
     return { acceptedBytes: 0, totalLimitReached: false };
 }
-export function boundedReferenceResult(input) {
+function boundedReferenceResult(input) {
     return {
         graph: emptyReferenceGraph(input.unavailablePaths),
         sources: input.readableSources,

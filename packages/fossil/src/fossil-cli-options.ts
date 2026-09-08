@@ -30,22 +30,34 @@ function validStringCollection(value: unknown, maximumLength: number): value is 
   return Array.isArray(value) && value.length <= maximumLength && value.every((item) => typeof item === "string");
 }
 
+function validAnalysisNumbers(options: Record<string, unknown>): boolean {
+  return (
+    validNumber(options.days, 1, 3650) &&
+    validNumber(options.gapHours, 1, 8760) &&
+    validNumber(options.threshold, 0, 1) &&
+    validNumber(options.untrackedAgeDays, 1, 3650)
+  );
+}
+
+function validAnalysisFormat(options: Record<string, unknown>): boolean {
+  return options.format === "table" || options.format === "json";
+}
+
+function validAnalysisCollections(options: Record<string, unknown>): boolean {
+  if (!validStringCollection(options.extensions, 64)) return false;
+  if (!options.extensions.every((extension) => extension.length > 0)) return false;
+  if (!validStringCollection(options.exclude, Number.MAX_SAFE_INTEGER)) return false;
+  return typeof options.verbose === "boolean";
+}
+
+function isValidNormalizedAnalysisOptions(value: unknown): value is NormalizedAnalysisOptions {
+  if (!isOptionsRecord(value)) return false;
+  return validAnalysisNumbers(value) && validAnalysisFormat(value) && validAnalysisCollections(value);
+}
+
 /** Validates direct API options and returns fresh collections for each analysis. */
 export function validateNormalizedAnalysisOptions(options: unknown): NormalizedAnalysisOptions {
-  if (
-    !(
-      isOptionsRecord(options) &&
-      validNumber(options.days, 1, 3650) &&
-      validNumber(options.gapHours, 1, 8760) &&
-      validNumber(options.threshold, 0, 1) &&
-      validNumber(options.untrackedAgeDays, 1, 3650) &&
-      (options.format === "table" || options.format === "json") &&
-      validStringCollection(options.extensions, 64) &&
-      options.extensions.every((extension) => extension.length > 0) &&
-      validStringCollection(options.exclude, Number.MAX_SAFE_INTEGER) &&
-      typeof options.verbose === "boolean"
-    )
-  )
+  if (!isValidNormalizedAnalysisOptions(options))
     throw new FossilAnalysisError({ code: "invalid_options", message: "Analysis options are invalid." });
   return {
     days: options.days,

@@ -1,5 +1,5 @@
 import { FossilAnalysisError } from "./analysis-error.js";
-export function gitFailure(message) {
+function gitFailure(message) {
     return new FossilAnalysisError({ code: "git_failure", message });
 }
 export function emptyHistoryOutput() {

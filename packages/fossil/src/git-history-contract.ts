@@ -5,6 +5,10 @@ const RECORD_SEPARATOR = "\u001e";
 
 /** Default maximum number of included non-merge commit records. */
 export const DEFAULT_MAXIMUM_INCLUDED_COMMITS = 100_000;
+const SHALLOW_TRUE_RESPONSES = new Set(["true", "true\n", "true\r\n"]);
+const SHALLOW_FALSE_RESPONSES = new Set(["false", "false\n", "false\r\n"]);
+const SPARSE_TRUE_RESPONSES = SHALLOW_TRUE_RESPONSES;
+const SPARSE_FALSE_RESPONSES = new Set(["", ...SHALLOW_FALSE_RESPONSES]);
 
 /** Rejects included history that cannot be analyzed within the commit resource budget. */
 export function assertIncludedCommitLimit(
@@ -39,7 +43,7 @@ export function shallowRepositoryArguments(): readonly string[] {
 
 /** Turns Git's strict shallow-repository response into completeness evidence. */
 export function shallowHistoryWarnings(result: string): AnalysisWarning[] {
-  if (result === "true" || result === "true\n" || result === "true\r\n") {
+  if (SHALLOW_TRUE_RESPONSES.has(result)) {
     return [
       {
         code: "shallow_history",
@@ -48,7 +52,7 @@ export function shallowHistoryWarnings(result: string): AnalysisWarning[] {
     ];
   }
 
-  if (result === "false" || result === "false\n" || result === "false\r\n") return [];
+  if (SHALLOW_FALSE_RESPONSES.has(result)) return [];
   throw new Error("Unexpected Git shallow-repository response");
 }
 
@@ -59,7 +63,7 @@ export function sparseCheckoutArguments(): readonly string[] {
 
 /** Turns Git's strict sparse-checkout response into current-tree completeness evidence. */
 export function sparseCheckoutWarnings(result: string): AnalysisWarning[] {
-  if (result === "true" || result === "true\n" || result === "true\r\n") {
+  if (SPARSE_TRUE_RESPONSES.has(result)) {
     return [
       {
         code: "sparse_checkout",
@@ -68,7 +72,7 @@ export function sparseCheckoutWarnings(result: string): AnalysisWarning[] {
     ];
   }
 
-  if (result === "" || result === "false" || result === "false\n" || result === "false\r\n") return [];
+  if (SPARSE_FALSE_RESPONSES.has(result)) return [];
   throw new Error("Unexpected Git sparse-checkout response");
 }
 

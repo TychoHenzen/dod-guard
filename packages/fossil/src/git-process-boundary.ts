@@ -10,12 +10,10 @@ export {
   SAFE_GIT_BASE_ARGUMENTS,
   safeGitEnvironment,
 } from "./git-process.js";
-export type {
-  CollectedGitOutput,
-  GitIngestionLimits,
-  GitOutputCollectionOptions,
-  GitPipedChild,
-  GitSpawn,
-  GitSpawnOptions,
-  GitVersion,
-} from "./git-process.js";
+export type { CollectedGitOutput } from "./git-process.js";
+export type { GitIngestionLimits } from "./git-process.js";
+export type { GitOutputCollectionOptions } from "./git-process.js";
+export type { GitPipedChild } from "./git-process.js";
+export type { GitSpawn } from "./git-process.js";
+export type { GitSpawnOptions } from "./git-process.js";
+export type { GitVersion } from "./git-process.js";

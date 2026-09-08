@@ -12,7 +12,7 @@ export declare function analyzeWorkspaceStage(root: string, options: NormalizedA
             unresolved: readonly import("./types.js").UnresolvedReference[];
         };
     };
-    workspaceCandidates: (import("./workspace-debris-boundary.js").IgnoredWorkspaceCandidate | import("./workspace-debris-boundary.js").UntrackedWorkspaceCandidate)[];
+    workspaceCandidates: (import("./workspace-debris.js").IgnoredWorkspaceCandidate | import("./workspace-debris.js").UntrackedWorkspaceCandidate)[];
     inventory: string[];
     warnings: import("./types.js").AnalysisWarning[];
     gitOutputs: import("./git-process-boundary.js").CollectedGitOutput[];

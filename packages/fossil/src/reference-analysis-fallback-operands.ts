@@ -1,31 +1,51 @@
 import { nextNonWhitespace } from "./reference-analysis-fallback-helpers.js";
 
+const CLOSING_DELIMITERS = new Set([")", "]", "}"]);
+const OPERAND_STOPS = new Set([";", ",", "\n"]);
+
+function closingDelimiter(character: string): string | undefined {
+  if (character === "(") return ")";
+  if (character === "[") return "]";
+  if (character === "{") return "}";
+  return undefined;
+}
+
+function isOperandStop(character: string, closings: readonly string[]): boolean {
+  if (CLOSING_DELIMITERS.has(character) && closings.length === 0) return true;
+  return closings.length === 0 && OPERAND_STOPS.has(character);
+}
+
+function operandEnd(code: string, start: number): number {
+  const closings: string[] = [];
+  for (let end = start; end < code.length; end += 1) {
+    const character = code[end];
+    const closing = closingDelimiter(character);
+    if (closing !== undefined) {
+      closings.push(closing);
+      continue;
+    }
+    if (closings.at(-1) === character) {
+      closings.pop();
+      continue;
+    }
+    if (isOperandStop(character, closings)) return end;
+  }
+  return code.length;
+}
+
+function fallbackOperandRange(code: string, match: RegExpExecArray): [number, number] | undefined {
+  const start = nextNonWhitespace(code, (match.index ?? 0) + match[0].length);
+  const end = operandEnd(code, start);
+  if (end <= start) return undefined;
+  return [start - 1, end];
+}
+
 export function fallbackOperandRanges(code: string): readonly [number, number][] {
   const ranges: [number, number][] = [];
   const matcher = /\|\||\?\?/g;
   for (let match = matcher.exec(code); match; match = matcher.exec(code)) {
-    const start = nextNonWhitespace(code, (match.index ?? 0) + match[0].length);
-    let parentheses = 0;
-    let brackets = 0;
-    let braces = 0;
-    let end = start;
-    for (; end < code.length; end += 1) {
-      const character = code[end];
-      if (character === "(") parentheses += 1;
-      else if (character === ")" && parentheses-- === 0) break;
-      else if (character === "[") brackets += 1;
-      else if (character === "]" && brackets-- === 0) break;
-      else if (character === "{") braces += 1;
-      else if (character === "}" && braces-- === 0) break;
-      else if (
-        parentheses === 0 &&
-        brackets === 0 &&
-        braces === 0 &&
-        (character === ";" || character === "," || character === "\n")
-      )
-        break;
-    }
-    if (end > start) ranges.push([start - 1, end]);
+    const range = fallbackOperandRange(code, match);
+    if (range) ranges.push(range);
   }
   return ranges;
 }

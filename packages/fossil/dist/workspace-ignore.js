@@ -1,13 +1,35 @@
 import { normalizeWorkspacePath } from "./workspace-path-rules.js";
+function isAbsoluteWorkspacePath(path) {
+    return path.startsWith("/") || /^[A-Za-z]:\//.test(path);
+}
+function isLocalExclude(path) {
+    if (path === ".git/info/exclude")
+        return true;
+    return path.endsWith("/.git/info/exclude");
+}
 function classifyIgnoreSource(sourcePath, globalExcludePath) {
     const normalizedSource = normalizeWorkspacePath(sourcePath);
-    if (normalizedSource === ".git/info/exclude" || normalizedSource.endsWith("/.git/info/exclude"))
+    if (isLocalExclude(normalizedSource))
         return "local-exclude";
-    if (globalExcludePath && normalizeWorkspacePath(globalExcludePath) === normalizedSource)
-        return "global-exclude";
-    if (!(normalizedSource.startsWith("/") || /^[A-Za-z]:\//.test(normalizedSource)))
+    if (globalExcludePath) {
+        if (normalizeWorkspacePath(globalExcludePath) === normalizedSource)
+            return "global-exclude";
+    }
+    if (!isAbsoluteWorkspacePath(normalizedSource))
         return "repository";
     return "unknown";
+}
+function provenanceEntry(fields, index, globalExcludePath) {
+    const sourcePath = fields[index];
+    const rule = fields[index + 2];
+    const path = fields[index + 3];
+    if (!sourcePath)
+        return undefined;
+    if (rule === undefined)
+        return undefined;
+    if (path === undefined)
+        return undefined;
+    return { path, rule, source: classifyIgnoreSource(sourcePath, globalExcludePath) };
 }
 /** Parses NUL-delimited source, line, rule, and path records from verbose Git ignore output. */
 export function parseVerboseCheckIgnore(output, globalExcludePath) {
@@ -16,12 +38,9 @@ export function parseVerboseCheckIgnore(output, globalExcludePath) {
         fields.pop();
     const provenance = [];
     for (let index = 0; index + 3 < fields.length; index += 4) {
-        const sourcePath = fields[index];
-        const rule = fields[index + 2];
-        const path = fields[index + 3];
-        if (!(sourcePath && rule !== undefined && path !== undefined))
-            continue;
-        provenance.push({ path, rule, source: classifyIgnoreSource(sourcePath, globalExcludePath) });
+        const entry = provenanceEntry(fields, index, globalExcludePath);
+        if (entry)
+            provenance.push(entry);
     }
     return provenance;
 }

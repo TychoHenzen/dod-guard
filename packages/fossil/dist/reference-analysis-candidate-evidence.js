@@ -1,5 +1,6 @@
 import { compareText } from "./reference-analysis-paths.js";
 import { emptyReferenceGraph } from "./reference-read-support.js";
+import { candidateBasenameCounts, markUnresolvedReference } from "./reference-analysis-candidate-matching.js";
 /** Regrades current edges between two fossil candidates before scoring. */
 export function regradeVestigialEdges(graph, candidatePaths) {
     return {
@@ -11,36 +12,11 @@ export function regradeVestigialEdges(graph, candidatePaths) {
 }
 /** Marks candidate reference evidence unavailable when unresolved paths could target it. */
 export function markUnresolvedCandidateEvidence(graph, candidatePaths) {
-    const normalize = (path) => path
-        .replaceAll("\\", "/")
-        .replace(/\/(?:index)(?:\.[^/]+)?$/, "")
-        .replace(/\.[^/]+$/, "");
     const candidates = [...candidatePaths];
-    const basenameCounts = new Map();
-    for (const path of candidates) {
-        const basename = normalize(path).split("/").at(-1) ?? "";
-        basenameCounts.set(basename, (basenameCounts.get(basename) ?? 0) + 1);
-    }
+    const basenameCounts = candidateBasenameCounts(candidates);
     const unavailable = new Set(graph.unavailablePaths);
-    for (const unresolved of graph.unresolved) {
-        if (unresolved.resolution !== "unresolved")
-            continue;
-        for (const target of unresolved.targetCandidates) {
-            const normalizedTarget = normalize(target);
-            if (!normalizedTarget)
-                continue;
-            const basename = normalizedTarget.split("/").at(-1) ?? "";
-            for (const candidate of candidates) {
-                const normalizedCandidate = normalize(candidate);
-                const relevant = normalizedTarget.includes("/")
-                    ? normalizedCandidate === normalizedTarget || normalizedCandidate.endsWith(`/${normalizedTarget}`)
-                    : normalizedCandidate === normalizedTarget ||
-                        (basenameCounts.get(basename) === 1 && normalizedCandidate.endsWith(`/${basename}`));
-                if (relevant)
-                    unavailable.add(candidate);
-            }
-        }
-    }
+    for (const unresolved of graph.unresolved)
+        markUnresolvedReference(unresolved, candidates, basenameCounts, unavailable);
     const unavailablePaths = [...unavailable].sort(compareText);
     return { ...graph, complete: graph.complete && unavailablePaths.length === 0, unavailablePaths };
 }

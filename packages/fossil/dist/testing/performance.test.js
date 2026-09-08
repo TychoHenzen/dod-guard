@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { promisify } from "node:util";
 import { benchmarkPerformanceFixture, createPerformanceFixture, fastImportStream, MAXIMUM_PERFORMANCE_DURATION_MS, performanceBenchmarkJson, TARGET_PERFORMANCE_FIXTURE, } from "./performance.js";
 const execFileAsync = promisify(execFile);
-test("defines the target fixture and enforces three fresh JSON analysis runs below ten seconds", async () => {
+async function runTargetBenchmark() {
     const input = fastImportStream(TARGET_PERFORMANCE_FIXTURE);
     const commitRecords = input.match(/^commit refs\/heads\/main$/gm) ?? [];
     const sourcePaths = new Set([...input.matchAll(/^M 100644 inline (src\/[^\n]+)$/gm)].map((match) => match[1]));
@@ -16,11 +16,9 @@ test("defines the target fixture and enforces three fresh JSON analysis runs bel
         },
         now: () => timestamps.shift() ?? 0,
     });
-    assert.equal(commitRecords.length, 5_000);
-    assert.equal(sourcePaths.size, 1_000);
-    assert.deepEqual(calls, ["C:/fixture", "C:/fixture", "C:/fixture", "C:/fixture"]);
-    assert.deepEqual(result, { durationsMs: [9_999, 9_999, 9_999], maximumDurationMs: 9_999 });
-    assert.deepEqual(JSON.parse(performanceBenchmarkJson(result)), result);
+    return { commitRecords, sourcePaths, calls, result };
+}
+async function assertExceededBenchmark() {
     await assert.rejects(benchmarkPerformanceFixture({ root: "C:/fixture", ...TARGET_PERFORMANCE_FIXTURE, cleanup: async () => undefined }, {
         runFreshJsonAnalysis: async () => undefined,
         now: (() => {
@@ -28,6 +26,15 @@ test("defines the target fixture and enforces three fresh JSON analysis runs bel
             return () => exceedingTimestamps.shift() ?? 0;
         })(),
     }), /exceeded 10000 ms/);
+}
+test("defines the target fixture and enforces three fresh JSON analysis runs below ten seconds", async () => {
+    const target = await runTargetBenchmark();
+    assert.equal(target.commitRecords.length, 5_000);
+    assert.equal(target.sourcePaths.size, 1_000);
+    assert.deepEqual(target.calls, ["C:/fixture", "C:/fixture", "C:/fixture", "C:/fixture"]);
+    assert.deepEqual(target.result, { durationsMs: [9_999, 9_999, 9_999], maximumDurationMs: 9_999 });
+    assert.deepEqual(JSON.parse(performanceBenchmarkJson(target.result)), target.result);
+    await assertExceededBenchmark();
 });
 test("points HEAD at the fast-import branch for small real fixtures", async () => {
     const fixture = await createPerformanceFixture({ commitCount: 10, fileCount: 3 });

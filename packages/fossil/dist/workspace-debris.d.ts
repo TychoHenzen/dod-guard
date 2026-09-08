@@ -7,4 +7,9 @@ export { inspectWorkspaceFileMetadata, inspectWorkspaceFileMetadataWithWarnings,
 export { oldIgnoredWorkspaceCandidates, oldUntrackedWorkspaceCandidates, parseVerboseCheckIgnore } from "./workspace-ignore.js";
 export { hasInboundWorkspaceUsage, omitUsedWorkspaceCandidates } from "./workspace-usage.js";
 export { workspaceDebrisFinding } from "./workspace-finding.js";
-export type { IgnoredWorkspaceCandidate, IgnoreProvenance, UntrackedWorkspaceCandidate, WorkspaceFileMetadata, WorkspaceFileMetadataReader, WorkspaceMetadataInspectionResult, } from "./workspace-types/index.js";
+export type { IgnoredWorkspaceCandidate } from "./workspace-types/index.js";
+export type { IgnoreProvenance } from "./workspace-types/index.js";
+export type { UntrackedWorkspaceCandidate } from "./workspace-types/index.js";
+export type { WorkspaceFileMetadata } from "./workspace-types/index.js";
+export type { WorkspaceFileMetadataReader } from "./workspace-types/index.js";
+export type { WorkspaceMetadataInspectionResult } from "./workspace-types/index.js";

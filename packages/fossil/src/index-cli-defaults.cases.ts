@@ -4,7 +4,7 @@ import { runFossilCli } from "./index.js";
 import type { NormalizedAnalysisOptions } from "./types.js";
 import { optionsFor, reportFor } from "./index.test-support.js";
 
-test("passes normalized defaults and the current directory to analyze", async () => {
+async function runDefaultAnalyses() {
   const calls: Array<{ repositoryPath: string; options: NormalizedAnalysisOptions }> = [];
   let invocation = 0;
   const dependencies = {
@@ -23,7 +23,11 @@ test("passes normalized defaults and the current directory to analyze", async ()
 
   await runFossilCli(["node", "fossil", "analyze"], dependencies);
   await runFossilCli(["node", "fossil", "analyze", "C:/repositories/explicit"], dependencies);
+  return calls;
+}
 
+test("passes normalized defaults and the current directory to analyze", async () => {
+  const calls = await runDefaultAnalyses();
   assert.deepEqual(calls, [
     {
       repositoryPath: "C:/repositories/default",

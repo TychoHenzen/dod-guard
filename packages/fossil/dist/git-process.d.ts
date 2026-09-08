@@ -2,7 +2,13 @@ import { type ChildProcess } from "node:child_process";
 import type { CollectedGitOutput } from "./git-process-types/collected-git-output.js";
 import type { GitSpawn } from "./git-process-types/git-spawn.js";
 import type { GitVersion } from "./git-process-types/git-version.js";
-export type { CollectedGitOutput, GitIngestionLimits, GitOutputCollectionOptions, GitPipedChild, GitSpawn, GitSpawnOptions, GitVersion, } from "./git-process-types/index.js";
+export type { CollectedGitOutput } from "./git-process-types/index.js";
+export type { GitIngestionLimits } from "./git-process-types/index.js";
+export type { GitOutputCollectionOptions } from "./git-process-types/index.js";
+export type { GitPipedChild } from "./git-process-types/index.js";
+export type { GitSpawn } from "./git-process-types/index.js";
+export type { GitSpawnOptions } from "./git-process-types/index.js";
+export type { GitVersion } from "./git-process-types/index.js";
 export { collectBoundedGitOutput } from "./git-output-collector.js";
 export { DEFAULT_GIT_INGESTION_LIMITS } from "./git-process-limits.js";
 /** Git global options required for every noninteractive fossil subprocess. */

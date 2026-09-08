@@ -11,7 +11,7 @@ test("disables external diff helpers for non-merge history output", () => {
   assert.equal(nonMergeGitLogArguments().includes("--no-ext-diff"), true);
 });
 
-test("omits merge-only activity while retaining reachable non-merge commits", async () => {
+async function testMergeOnlyHistory(): Promise<void> {
   const repository = await temporaryRepository();
   await repository.writeSourceFile("src/base.ts", "export const base = true;\n");
   await repository.recordCommit("base", new Date("2025-01-01T00:00:00.000Z"));
@@ -35,7 +35,9 @@ test("omits merge-only activity while retaining reachable non-merge commits", as
   assert.equal(commits.length, 3);
   assert.deepEqual(activePaths.sort(), ["src/base.ts", "src/feature.ts", "src/main.ts"]);
   assert.ok(!activePaths.includes("src/merge-only.ts"));
-});
+}
+
+test("omits merge-only activity while retaining reachable non-merge commits", testMergeOnlyHistory);
 
 test("orders parsed commits by UTC epoch then ordinal hash without mutating sort input", () => {
   const commits = parseNonMergeGitLog(

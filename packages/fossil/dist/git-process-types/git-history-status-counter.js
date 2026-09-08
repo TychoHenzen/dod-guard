@@ -3,6 +3,24 @@ export class GitHistoryStatusCounter {
     #state = "header";
     #remainingPaths = 0;
     #count = 0;
+    #consumePath() {
+        if (this.#state !== "path")
+            return false;
+        this.#remainingPaths -= 1;
+        if (this.#remainingPaths === 0)
+            this.#state = "status";
+        return true;
+    }
+    #consumeStatus(token) {
+        if (this.#state !== "status")
+            return;
+        const status = token.replace(/^\r?\n/, "");
+        if (!/^[A-Z]\d*$/.test(status))
+            return;
+        this.#count += 1;
+        this.#remainingPaths = new Set(["R", "C"]).has(status[0]) ? 2 : 1;
+        this.#state = "path";
+    }
     get count() {
         return this.#count;
     }
@@ -25,20 +43,9 @@ export class GitHistoryStatusCounter {
             this.#state = "status";
             return;
         }
-        if (this.#state === "path") {
-            this.#remainingPaths -= 1;
-            if (this.#remainingPaths === 0)
-                this.#state = "status";
+        if (this.#consumePath())
             return;
-        }
-        if (this.#state !== "status")
-            return;
-        const status = token.replace(/^\r?\n/, "");
-        if (!/^[A-Z]\d*$/.test(status))
-            return;
-        this.#count += 1;
-        this.#remainingPaths = status[0] === "R" || status[0] === "C" ? 2 : 1;
-        this.#state = "path";
+        this.#consumeStatus(token);
     }
 }
 //# sourceMappingURL=git-history-status-counter.js.map

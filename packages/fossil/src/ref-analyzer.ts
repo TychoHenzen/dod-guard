@@ -12,15 +12,13 @@ export {
   regradeVestigialEdges,
   unsupportedCandidateReferenceGraph,
 } from "./reference-analysis-core.js";
-export type {
-  BoundedReferenceReadResult,
-  ReferenceAnalysisResult,
-  ReferenceCandidate,
-  ReferenceContainmentBoundary,
-  ReferenceReadResult,
-  ReferenceSourceContent,
-  ReferenceSourceMetadataReader,
-  ReferenceSourceReader,
-  ReferenceSourceSnapshot,
-  StableReferenceSourceBoundary,
-} from "./reference-analysis-core.js";
+export type { BoundedReferenceReadResult } from "./reference-analysis-core.js";
+export type { ReferenceAnalysisResult } from "./reference-analysis-core.js";
+export type { ReferenceCandidate } from "./reference-analysis-core.js";
+export type { ReferenceContainmentBoundary } from "./reference-analysis-core.js";
+export type { ReferenceReadResult } from "./reference-analysis-core.js";
+export type { ReferenceSourceContent } from "./reference-analysis-core.js";
+export type { ReferenceSourceMetadataReader } from "./reference-analysis-core.js";
+export type { ReferenceSourceReader } from "./reference-analysis-core.js";
+export type { ReferenceSourceSnapshot } from "./reference-analysis-core.js";
+export type { StableReferenceSourceBoundary } from "./reference-analysis-core.js";

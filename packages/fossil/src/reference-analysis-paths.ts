@@ -1,7 +1,7 @@
 import { posix } from "node:path";
 import type { AnalysisWarning, ReferenceGraph, SourceSpan } from "./types.js";
 
-export const MODULE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"] as const;
+const MODULE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"] as const;
 
 export function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;

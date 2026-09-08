@@ -1,14 +1,25 @@
 import { burstTableRows, renderBurstTableRows, terminalSafeText, workspaceDebrisTableRows, } from "./fossil-output-core.js";
+function tableMode(report) {
+    return report.options.verbose ? "verbose" : "normal";
+}
+function appendWarnings(lines, report) {
+    if (report.warnings.length === 0)
+        return;
+    lines.push("Warnings:", ...report.warnings.map(warningTableLine));
+}
+function appendWorkspaceDebris(lines, report) {
+    if (report.workspaceDebris.length === 0)
+        return;
+    lines.push("Workspace debris:", ...workspaceDebrisTableRows(report.workspaceDebris, tableMode(report)).map(debrisTableLine));
+}
 /** Renders report statistics, bursts, warnings, and workspace debris in table order. */
 export function renderFossilReportTable(report, options) {
     const lines = statisticsLines(report);
-    const bursts = renderBurstTableRows(burstTableRows(report.bursts, report.options.verbose ? "verbose" : "normal"), options);
+    const bursts = renderBurstTableRows(burstTableRows(report.bursts, tableMode(report)), options);
     if (bursts)
         lines.push(bursts);
-    if (report.warnings.length > 0)
-        lines.push("Warnings:", ...report.warnings.map(warningTableLine));
-    if (report.workspaceDebris.length > 0)
-        lines.push("Workspace debris:", ...workspaceDebrisTableRows(report.workspaceDebris, report.options.verbose ? "verbose" : "normal").map(debrisTableLine));
+    appendWarnings(lines, report);
+    appendWorkspaceDebris(lines, report);
     return lines.join("\n");
 }
 function statisticsLines(report) {

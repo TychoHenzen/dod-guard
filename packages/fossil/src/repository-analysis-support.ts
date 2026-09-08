@@ -1,7 +1,7 @@
 import { FossilAnalysisError } from "./analysis-error.js";
 import { type CollectedGitOutput, runGitCommand } from "./git-process-boundary.js";
 
-export function gitFailure(message: string): FossilAnalysisError {
+function gitFailure(message: string): FossilAnalysisError {
   return new FossilAnalysisError({ code: "git_failure", message });
 }
 

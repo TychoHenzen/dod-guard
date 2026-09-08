@@ -52,6 +52,12 @@ export function burstTableRows(bursts, mode = "normal") {
 function styleBurstHeader(value, isTty) {
     return isTty ? `\u001b[1m${value}\u001b[0m` : value;
 }
+function findingExplanationLine(row) {
+    const reference = row.referenceAvailability === "unavailable"
+        ? "reference evidence unavailable"
+        : `references: ${row.strongInboundReferences} strong inbound, ${row.candidateNeighbors.length} candidate neighbors, ${row.liveNeighbors.length} live neighbors`;
+    return `    ${row.createdInBurst ? "created in burst" : "existed before burst"}; ${row.burstCommits} burst commits, ${row.postBurstCommits} post-burst commits; ${reference}`;
+}
 function burstTableLine(row, isTty) {
     switch (row.kind) {
         case "burst":
@@ -60,12 +66,8 @@ function burstTableLine(row, isTty) {
             return `  survivor ${terminalSafeText(row.path)}`;
         case "finding":
             return `  finding ${terminalSafeText(row.path)}: score ${row.score} (${row.scoreBasis})`;
-        case "finding-explanation": {
-            const reference = row.referenceAvailability === "unavailable"
-                ? "reference evidence unavailable"
-                : `references: ${row.strongInboundReferences} strong inbound, ${row.candidateNeighbors.length} candidate neighbors, ${row.liveNeighbors.length} live neighbors`;
-            return `    ${row.createdInBurst ? "created in burst" : "existed before burst"}; ${row.burstCommits} burst commits, ${row.postBurstCommits} post-burst commits; ${reference}`;
-        }
+        case "finding-explanation":
+            return findingExplanationLine(row);
     }
 }
 /** Renders current burst table rows with explicit caller-owned TTY styling control. */

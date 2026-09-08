@@ -13,21 +13,22 @@ function languageForPath(path) {
         return "rust";
     return "unsupported";
 }
+function inspectReferenceSource(root, source) {
+    const fullPath = join(root, source.path);
+    const metadata = lstatSync(fullPath);
+    return {
+        identity: `${metadata.dev}:${metadata.ino}`,
+        isRegularFile: metadata.isFile(),
+        byteLength: metadata.size,
+        canonicalPath: realpathSync(fullPath),
+    };
+}
 export function referenceSources(root, paths) {
     const candidates = paths.map((path) => ({ path, language: languageForPath(path) }));
     const supported = candidates.filter((candidate) => candidate.language !== "unsupported");
     const readSource = (source) => readFileSync(join(root, source.path), "utf8");
     const reads = readStableReferenceSources(supported, {
-        inspect(source) {
-            const fullPath = join(root, source.path);
-            const metadata = lstatSync(fullPath);
-            return {
-                identity: `${metadata.dev}:${metadata.ino}`,
-                isRegularFile: metadata.isFile(),
-                byteLength: metadata.size,
-                canonicalPath: realpathSync(fullPath),
-            };
-        },
+        inspect: (source) => inspectReferenceSource(root, source),
         read: readSource,
     });
     const unsupported = unsupportedCandidateReferenceGraph(candidates);

@@ -1,6 +1,5 @@
 import type { BurstFileActivity } from "./types.js";
 
-/** Selects files that meet the absolute post-burst survivor threshold. */
 export function selectAbsoluteSurvivors(files: readonly BurstFileActivity[]): BurstFileActivity[] {
   return files.filter((file) => file.postBurstCommits >= 3);
 }

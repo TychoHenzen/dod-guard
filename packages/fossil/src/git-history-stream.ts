@@ -2,47 +2,41 @@ import type { GitCommit, GitFileChange } from "./types.js";
 import { RECORD_SEPARATOR } from "./git-history-contract.js";
 import { sortCommitsChronologically } from "./git-history-order.js";
 
+const STATUS_BY_CODE: Partial<Record<string, GitFileChange["status"]>> = {
+  A: "added",
+  M: "modified",
+  D: "deleted",
+  R: "renamed",
+  C: "copied",
+  T: "type-changed",
+  U: "unmerged",
+};
+
 function statusFor(rawStatus: string): GitFileChange["status"] {
-  switch (rawStatus[0]) {
-    case "A":
-      return "added";
-    case "M":
-      return "modified";
-    case "D":
-      return "deleted";
-    case "R":
-      return "renamed";
-    case "C":
-      return "copied";
-    case "T":
-      return "type-changed";
-    case "U":
-      return "unmerged";
-    default:
-      return "unknown";
+  return STATUS_BY_CODE[rawStatus[0] ?? ""] ?? "unknown";
+}
+
+function parsedChange(tokens: readonly string[], index: number): { change?: GitFileChange; nextIndex: number } | undefined {
+  const rawStatus = tokens[index]?.replace(/^\r?\n/, "");
+  if (!rawStatus) return { nextIndex: index + 1 };
+  const status = statusFor(rawStatus);
+  const firstPath = tokens[index + 1];
+  if (firstPath === undefined) return undefined;
+  if (status === "renamed" || status === "copied") {
+    const path = tokens[index + 2];
+    if (path === undefined) return undefined;
+    return { change: { status, path, previousPath: firstPath }, nextIndex: index + 3 };
   }
+  return { change: { status, path: firstPath }, nextIndex: index + 2 };
 }
 
 function parseChanges(tokens: readonly string[]): GitFileChange[] {
   const changes: GitFileChange[] = [];
   for (let index = 0; index < tokens.length; ) {
-    const rawStatus = tokens[index]?.replace(/^\r?\n/, "");
-    if (!rawStatus) {
-      index += 1;
-      continue;
-    }
-    const status = statusFor(rawStatus);
-    const firstPath = tokens[index + 1];
-    if (firstPath === undefined) break;
-    if (status === "renamed" || status === "copied") {
-      const path = tokens[index + 2];
-      if (path === undefined) break;
-      changes.push({ status, path, previousPath: firstPath });
-      index += 3;
-      continue;
-    }
-    changes.push({ status, path: firstPath });
-    index += 2;
+    const parsed = parsedChange(tokens, index);
+    if (!parsed) break;
+    if (parsed.change) changes.push(parsed.change);
+    index = parsed.nextIndex;
   }
   return changes;
 }

@@ -17,11 +17,9 @@ export {
   UNTRACKED_DISCOVERY_ARGUMENTS,
   workspaceDebrisFinding,
 } from "./workspace-debris.js";
-export type {
-  IgnoredWorkspaceCandidate,
-  IgnoreProvenance,
-  UntrackedWorkspaceCandidate,
-  WorkspaceFileMetadata,
-  WorkspaceFileMetadataReader,
-  WorkspaceMetadataInspectionResult,
-} from "./workspace-debris.js";
+export type { IgnoredWorkspaceCandidate } from "./workspace-debris.js";
+export type { IgnoreProvenance } from "./workspace-debris.js";
+export type { UntrackedWorkspaceCandidate } from "./workspace-debris.js";
+export type { WorkspaceFileMetadata } from "./workspace-debris.js";
+export type { WorkspaceFileMetadataReader } from "./workspace-debris.js";
+export type { WorkspaceMetadataInspectionResult } from "./workspace-debris.js";

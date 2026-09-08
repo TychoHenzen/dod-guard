@@ -1,5 +1,4 @@
 import type { BurstFileActivity } from "./types.js";
-/** Selects files that meet the absolute post-burst survivor threshold. */
 export declare function selectAbsoluteSurvivors(files: readonly BurstFileActivity[]): BurstFileActivity[];
 /** Selects files meeting the positive relative post-burst survivor threshold. */
 export declare function selectRelativeSurvivors(files: readonly BurstFileActivity[]): BurstFileActivity[];

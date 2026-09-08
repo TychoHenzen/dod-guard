@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { nonMergeGitLogArguments, parseNonMergeGitLog, resolveRenameActivities, } from "./git-analyzer.js";
 import { temporaryRepository } from "./git-analyzer.test-support.js";
-test("collapses successive Git renames into one logical file at its final path", async () => {
+async function testSuccessiveRenames() {
     const repository = await temporaryRepository();
     await repository.writeSourceFile("src/first.ts", "export const value = 1;\n");
     await repository.recordCommit("create", new Date("2025-01-01T00:00:00.000Z"));
@@ -23,5 +23,6 @@ test("collapses successive Git renames into one logical file at its final path",
         deleted: false,
         existsAtHead: true,
     });
-});
+}
+test("collapses successive Git renames into one logical file at its final path", testSuccessiveRenames);
 //# sourceMappingURL=git-history-renames.cases.js.map

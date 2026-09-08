@@ -37,10 +37,11 @@ function runFastImport(root, input) {
         });
         child.once("error", reject);
         child.once("close", (code) => {
-            if (code === 0)
+            if (code === 0) {
                 resolve();
-            else
-                reject(new Error(`git fast-import failed with exit code ${code ?? "unknown"}: ${stderr}`));
+                return;
+            }
+            reject(new Error(`git fast-import failed with exit code ${code ?? "unknown"}: ${stderr}`));
         });
         child.stdin.end(input);
     });

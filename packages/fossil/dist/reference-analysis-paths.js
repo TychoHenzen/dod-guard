@@ -1,5 +1,5 @@
 import { posix } from "node:path";
-export const MODULE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+const MODULE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
 export function compareText(left, right) {
     return left < right ? -1 : left > right ? 1 : 0;
 }

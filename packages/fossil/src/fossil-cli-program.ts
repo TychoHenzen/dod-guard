@@ -8,6 +8,45 @@ import type { AnalyzeCommandHandler } from "./fossil-cli-types/analyze-command-h
 import type { FossilCliDependencies } from "./fossil-cli-types/fossil-cli-dependencies.js";
 import type { RawAnalyzeOptions } from "./fossil-cli-types/raw-analyze-options.js";
 
+function commanderExitOverride(error: { code?: string; message: string }): never {
+  if (error.code === "commander.helpDisplayed") throw new FossilHelpDisplayed();
+  throw new FossilUsageError(error.message, true);
+}
+
+function commandRepositoryPath(repositoryPath: string | undefined, dependencies: FossilCliDependencies): string {
+  const cwd = dependencies.cwd ?? process.cwd;
+  return repositoryPath ?? cwd();
+}
+
+function outputAnalysisReport(
+  report: Awaited<ReturnType<typeof analyzeRepository>>,
+  dependencies: FossilCliDependencies,
+): void {
+  if (report.options.format === "json") {
+    dependencies.stdout?.(renderFossilReportJson(report));
+    return;
+  }
+  const noFindings = report.statistics.candidateFindingCount + report.statistics.workspaceDebrisCount === 0;
+  if (noFindings) {
+    dependencies.stdout?.("0 findings\n");
+    return;
+  }
+  dependencies.stdout?.(`${renderFossilReportTable(report, { isTty: Boolean(process.stdout.isTTY) })}\n`);
+}
+
+async function analyzeCommand(
+  repositoryPath: string | undefined,
+  options: RawAnalyzeOptions,
+  dependencies: FossilCliDependencies,
+): Promise<void> {
+  const report = await analyzeRepository(
+    commandRepositoryPath(repositoryPath, dependencies),
+    normalizeAnalyzeOptions(options),
+    dependencies.analyze,
+  );
+  outputAnalysisReport(report, dependencies);
+}
+
 /** Creates the command boundary so analysis can be injected and tested without Git access. */
 export function createFossilProgram({
   analyze,
@@ -19,10 +58,7 @@ export function createFossilProgram({
     .name("fossil")
     .configureOutput({ writeErr: stderr })
     .showHelpAfterError()
-    .exitOverride((error) => {
-      if (error.code === "commander.helpDisplayed") throw new FossilHelpDisplayed();
-      throw new FossilUsageError(error.message, true);
-    });
+    .exitOverride(commanderExitOverride);
   program
     .command("analyze [repo-path]")
     .option("--days <days>")
@@ -33,17 +69,8 @@ export function createFossilProgram({
     .option("--untracked-age <days>")
     .option("--exclude <patterns>")
     .option("--verbose")
-    .action(async (repositoryPath: string | undefined, options: RawAnalyzeOptions) => {
-      const report = await analyzeRepository(repositoryPath ?? cwd(), normalizeAnalyzeOptions(options), analyze);
-      if (report.options.format === "json") stdout(renderFossilReportJson(report));
-      else {
-        const noFindings = report.statistics.candidateFindingCount + report.statistics.workspaceDebrisCount === 0;
-        if (noFindings) {
-          stdout("0 findings\n");
-          return;
-        }
-        stdout(`${renderFossilReportTable(report, { isTty: Boolean(process.stdout.isTTY) })}\n`);
-      }
-    });
+    .action((repositoryPath: string | undefined, options: RawAnalyzeOptions) =>
+      analyzeCommand(repositoryPath, options, { analyze, cwd, stderr, stdout }),
+    );
   return program;
 }

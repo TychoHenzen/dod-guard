@@ -1,50 +1,17 @@
-import * as history from "./git-analyzer.js";
 import { finalizeFossilReport } from "./output.js";
-const MEBIBYTE = 1_024 * 1_024;
+import { reportBoundary, reportCompleteness, reportLimits, reportStatistics, reportUsage, } from "./repository-analysis-report-parts.js";
 export function buildAnalysisReport(historyStage, workspaceStage, options, reports, workspaceDebris) {
     const warnings = [...historyStage.warnings, ...workspaceStage.warnings];
-    const gitOutputs = [...historyStage.gitOutputs, ...workspaceStage.gitOutputs];
     return finalizeFossilReport({
         schemaVersion: 1,
         options,
         analysisTimestampMs: historyStage.analysisTimestampMs,
         gitVersion: historyStage.version.stdout.trim(),
-        boundary: {
-            repositoryRoot: historyStage.repositoryPath,
-            canonicalRepositoryRoot: historyStage.root,
-            unobservedMechanisms: ["dynamic runtime loading", "reflection", "external consumers", "generated configuration"],
-        },
-        limits: {
-            maximumCommits: 100_000,
-            maximumFileStatusRecords: 1_000_000,
-            maximumInventoriedFiles: 100_000,
-            maximumGitStdoutBytes: 256 * MEBIBYTE,
-            maximumGitStderrBytes: MEBIBYTE,
-            maximumReferenceFileBytes: MEBIBYTE,
-            maximumReferenceTotalBytes: 256 * MEBIBYTE,
-        },
-        usage: {
-            commitRecords: historyStage.includedHistory.length,
-            fileStatusRecords: historyStage.historyOutput.statusRecordCount,
-            inventoriedFiles: workspaceStage.inventory.length,
-            gitStdoutBytes: gitOutputs.reduce((total, output) => total + output.stdoutBytes, 0),
-            gitStderrBytes: gitOutputs.reduce((total, output) => total + output.stderrBytes, 0),
-            referenceBytes: workspaceStage.references.acceptedBytes,
-            omittedReferencePaths: workspaceStage.references.graph.unavailablePaths.length,
-        },
-        completeness: {
-            historyComplete: !warnings.some((warning) => ["empty_repository", "future_commit", "shallow_history"].includes(warning.code)),
-            referenceAnalysisComplete: workspaceStage.references.graph.complete && !warnings.some((warning) => warning.code === "sparse_checkout"),
-            workspaceDebrisComplete: !warnings.some((warning) => warning.code === "sparse_checkout"),
-        },
-        statistics: {
-            includedCommitCount: historyStage.includedHistory.length,
-            logicalFileCount: history.resolveRenameActivities(historyStage.includedHistory).length,
-            burstCount: reports.length,
-            candidateFindingCount: 0,
-            uniqueCandidatePathCount: 0,
-            workspaceDebrisCount: workspaceDebris.length,
-        },
+        boundary: reportBoundary(historyStage.repositoryPath, historyStage.root),
+        limits: reportLimits(),
+        usage: reportUsage(historyStage, workspaceStage),
+        completeness: reportCompleteness(warnings, workspaceStage.references.graph.complete),
+        statistics: reportStatistics(historyStage, reports, workspaceDebris),
         warnings,
         bursts: reports,
         workspaceDebris,

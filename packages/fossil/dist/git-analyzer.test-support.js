@@ -1,7 +1,7 @@
 import { afterEach } from "node:test";
 import { splitAtChangePoint } from "./git-analyzer.js";
 import { createTemporaryRepository } from "./testing/fixtures.js";
-export const repositories = [];
+const repositories = [];
 afterEach(async () => {
     await Promise.all(repositories.splice(0).map((repository) => repository.cleanup()));
 });
@@ -25,7 +25,7 @@ export function changePointCommits(fileSets, gapsBefore) {
 export function changePointPartitionLengths(fileSets, gapsBefore) {
     return splitAtChangePoint(changePointCommits(fileSets, gapsBefore)).map((partition) => partition.length);
 }
-export function fileActivity(input) {
+function fileActivity(input) {
     return { ...input };
 }
 export const maximumFileActivity = fileActivity({

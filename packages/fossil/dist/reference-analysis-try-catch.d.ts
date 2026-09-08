@@ -1,1 +1,1 @@
-export declare function tryCatchRanges(content: string): readonly [number, number][];
+export { tryCatchRanges } from "./reference-analysis-try-catch-scan.js";

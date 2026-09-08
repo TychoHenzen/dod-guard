@@ -2,6 +2,15 @@ import type { AnalysisWarning, ReferenceGraph } from "./types.js";
 import type { BoundedReferenceReadResult } from "./reference-analysis-types/bounded-reference-read-result.js";
 import type { ReferenceCandidate } from "./reference-analysis-types/reference-candidate.js";
 import type { ReferenceSourceContent } from "./reference-analysis-types/reference-source-content.js";
+import { compareText } from "./reference-analysis-paths.js";
+
+interface ReferenceWarningInput {
+  unavailablePaths: string[];
+  warnings: AnalysisWarning[];
+  source: ReferenceCandidate;
+  code: AnalysisWarning["code"];
+  message: string;
+}
 
 export function emptyReferenceGraph(unavailablePaths: readonly string[]): ReferenceGraph {
   return {
@@ -12,39 +21,49 @@ export function emptyReferenceGraph(unavailablePaths: readonly string[]): Refere
   };
 }
 
-export function addReferenceWarning(input: {
-  unavailablePaths: string[];
-  warnings: AnalysisWarning[];
-  source: ReferenceCandidate;
-  code: AnalysisWarning["code"];
-  message: string;
-}): void {
+export function addReferenceWarning(input: ReferenceWarningInput): void {
   input.unavailablePaths.push(input.source.path);
   input.warnings.push({ code: input.code, message: input.message, path: input.source.path });
 }
 
-export function addUnreadableReferenceWarning(input: {
-  unavailablePaths: string[];
-  warnings: AnalysisWarning[];
-  source: ReferenceCandidate;
-}): void {
-  addReferenceWarning({
+function addTypedReferenceWarning(input: ReferenceWarningInput): void {
+  addReferenceWarning(input);
+}
+
+export function addUnreadableReferenceWarning(
+  input: Pick<ReferenceWarningInput, "unavailablePaths" | "warnings" | "source">,
+): void {
+  addTypedReferenceWarning({
     ...input,
     code: "reference_unreadable",
     message: "Reference source could not be read.",
   });
 }
 
+export function addBinaryReferenceWarning(
+  input: Pick<ReferenceWarningInput, "unavailablePaths" | "warnings" | "source">,
+): void {
+  addTypedReferenceWarning({
+    ...input,
+    code: "reference_binary",
+    message: "Reference source is binary.",
+  });
+}
+
+function warningPath(warning: AnalysisWarning): string {
+  return warning.path ?? "";
+}
+
+function compareWarnings(left: AnalysisWarning, right: AnalysisWarning): number {
+  return compareText(warningPath(left), warningPath(right));
+}
+
 export function sortReferenceReadEvidence(input: {
   unavailablePaths: string[];
   warnings: AnalysisWarning[];
 }): void {
-  input.unavailablePaths.sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
-  input.warnings.sort((left, right) => {
-    const leftPath = left.path ?? "";
-    const rightPath = right.path ?? "";
-    return leftPath < rightPath ? -1 : leftPath > rightPath ? 1 : 0;
-  });
+  input.unavailablePaths.sort(compareText);
+  input.warnings.sort(compareWarnings);
 }
 
 export function newReferenceReadCollections() {
@@ -55,7 +74,7 @@ export function newReferenceReadBudget() {
   return { acceptedBytes: 0, totalLimitReached: false };
 }
 
-export function boundedReferenceResult(input: {
+function boundedReferenceResult(input: {
   readableSources: ReferenceSourceContent[];
   unavailablePaths: string[];
   warnings: AnalysisWarning[];

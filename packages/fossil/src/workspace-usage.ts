@@ -19,6 +19,32 @@ function sourceStringValues(content: string): readonly string[] {
   return values;
 }
 
+function edgeTargetsCandidate(edge: { targetPath: string; sourcePath: string }, candidate: string): boolean {
+  if (normalizedRepositoryPath(edge.targetPath) !== candidate) return false;
+  return normalizedRepositoryPath(edge.sourcePath) !== candidate;
+}
+
+function hasGraphUsage(graph: ReturnType<typeof analyzeReferences>, candidate: string): boolean {
+  return graph.edges.some((edge) => edgeTargetsCandidate(edge, candidate));
+}
+
+function valueUsesCandidate(value: string, candidate: string, candidateBasename: string, basenameCount: number): boolean {
+  if (value === candidate) return true;
+  return basenameCount === 1 && value === candidateBasename;
+}
+
+function sourceUsesCandidate(
+  source: ReferenceSourceContent,
+  candidate: string,
+  candidateBasename: string,
+  basenameCount: number,
+): boolean {
+  if (normalizedRepositoryPath(source.path) === candidate) return false;
+  return sourceStringValues(source.content).some((value) =>
+    valueUsesCandidate(value, candidate, candidateBasename, basenameCount),
+  );
+}
+
 /** Detects resolved imports and exact source-string evidence that an old workspace candidate is in use. */
 export function hasInboundWorkspaceUsage(
   candidatePath: string,
@@ -27,23 +53,11 @@ export function hasInboundWorkspaceUsage(
 ): boolean {
   const normalizedCandidate = normalizedRepositoryPath(candidatePath);
   const graph = analyzeReferences(sources);
-  if (
-    graph.edges.some(
-      (edge) =>
-        normalizedRepositoryPath(edge.targetPath) === normalizedCandidate &&
-        normalizedRepositoryPath(edge.sourcePath) !== normalizedCandidate,
-    )
-  )
-    return true;
+  if (hasGraphUsage(graph, normalizedCandidate)) return true;
   const candidateBasename = basename(normalizedCandidate);
   const normalizedInventory = new Set([...inventoryPaths, candidatePath].map(normalizedRepositoryPath));
   const basenameCount = [...normalizedInventory].filter((path) => basename(path) === candidateBasename).length;
-  return sources.some((source) => {
-    if (normalizedRepositoryPath(source.path) === normalizedCandidate) return false;
-    return sourceStringValues(source.content).some(
-      (value) => value === normalizedCandidate || (basenameCount === 1 && value === candidateBasename),
-    );
-  });
+  return sources.some((source) => sourceUsesCandidate(source, normalizedCandidate, candidateBasename, basenameCount));
 }
 
 /** Omits workspace candidates when any inbound repository-contained usage evidence is found. */

@@ -1,4 +1,3 @@
-/** Selects files that meet the absolute post-burst survivor threshold. */
 export function selectAbsoluteSurvivors(files) {
     return files.filter((file) => file.postBurstCommits >= 3);
 }

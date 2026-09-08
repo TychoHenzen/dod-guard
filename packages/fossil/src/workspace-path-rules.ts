@@ -13,16 +13,21 @@ export function isDependencyStorePath(path: string): boolean {
     .some((segment) => DEPENDENCY_STORE_SEGMENTS.has(segment));
 }
 
+function hasSensitiveDirectory(segments: readonly string[]): boolean {
+  return segments.some((segment) => SENSITIVE_DIRECTORY_SEGMENTS.has(segment));
+}
+
+function isSensitiveBasename(name: string): boolean {
+  if (SENSITIVE_BASENAMES.has(name)) return true;
+  if (name.startsWith(".env.")) return true;
+  if (name.startsWith("credentials")) return true;
+  return SENSITIVE_EXTENSIONS.some((extension) => name.endsWith(extension));
+}
+
 export function isSensitiveWorkspacePath(path: string): boolean {
   const segments = normalizeWorkspacePath(path)
     .split("/")
     .map((segment) => segment.toLowerCase());
   const name = segments.at(-1) ?? "";
-  return (
-    segments.some((segment) => SENSITIVE_DIRECTORY_SEGMENTS.has(segment)) ||
-    SENSITIVE_BASENAMES.has(name) ||
-    name.startsWith(".env.") ||
-    name.startsWith("credentials") ||
-    SENSITIVE_EXTENSIONS.some((extension) => name.endsWith(extension))
-  );
+  return hasSensitiveDirectory(segments) || isSensitiveBasename(name);
 }
