@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readStableReferenceSources } from "./ref-analyzer.js";
 import { runStableRaceScenario } from "./ref-stable-races-fixture.js";
 const scenario = runStableRaceScenario();
 test("keeps only stable source reads and records scan races as unavailable " +
@@ -37,5 +38,27 @@ test("records only stable-read diagnostics and does not expose sensitive " +
     ]);
     assert.equal(JSON.stringify(result.warnings).includes("C:/private/outside.ts"), false);
     assert.equal(JSON.stringify(result.warnings).includes("sensitive filesystem error"), false);
+});
+test("charges the bytes returned by a bounded stable read", () => {
+    const maximumReads = [];
+    const result = readStableReferenceSources({
+        sources: [{ path: "src/short.ts", language: "typescript" }],
+        maximumFileBytes: 10,
+        maximumTotalBytes: 10,
+        boundary: {
+            inspect: () => ({
+                identity: "short",
+                isRegularFile: true,
+                byteLength: 4,
+                canonicalPath: "C:/repo/src/short.ts",
+            }),
+            read: (_source, maximumBytes) => {
+                maximumReads.push(maximumBytes);
+                return "ok";
+            },
+        },
+    });
+    assert.deepEqual(maximumReads, [10]);
+    assert.equal(result.acceptedBytes, 2);
 });
 //# sourceMappingURL=ref-stable-races.cases.js.map

@@ -2,7 +2,7 @@ import { posix } from "node:path";
 import {
   analyzeReferences,
   type ReferenceSourceContent,
-} from "./ref-analyzer.js";
+} from "./repository-analysis-reference-boundary.js";
 
 export function normalizedRepositoryPath(path: string): string {
   return posix.normalize(path.replaceAll("\\", "/")).replace(/^\.\//, "");

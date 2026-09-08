@@ -1,6 +1,5 @@
-import { lstatSync, readFileSync, realpathSync } from "node:fs";
-import { join } from "node:path";
-import { analyzeReferences, markUnresolvedCandidateEvidence, readStableReferenceSources, regradeVestigialEdges, unsupportedCandidateReferenceGraph, } from "./ref-analyzer.js";
+import { analyzeReferences, markUnresolvedCandidateEvidence, readStableReferenceSources, regradeVestigialEdges, unsupportedCandidateReferenceGraph, } from "./repository-analysis-reference-boundary.js";
+import { inspectReferenceSource, readReferenceSource, } from "./reference-source-reader.js";
 function languageForPath(path) {
     const extension = path.slice(path.lastIndexOf(".")).toLowerCase();
     if ([".ts", ".tsx"].includes(extension))
@@ -13,16 +12,6 @@ function languageForPath(path) {
         return "rust";
     return "unsupported";
 }
-function inspectReferenceSource(root, source) {
-    const fullPath = join(root, source.path);
-    const metadata = lstatSync(fullPath);
-    return {
-        identity: `${metadata.dev}:${metadata.ino}`,
-        isRegularFile: metadata.isFile(),
-        byteLength: metadata.size,
-        canonicalPath: realpathSync(fullPath),
-    };
-}
 function referenceCandidates(paths) {
     return paths.map((path) => ({
         path,
@@ -31,12 +20,11 @@ function referenceCandidates(paths) {
 }
 function readReferenceSources(root, candidates) {
     const supported = candidates.filter((candidate) => candidate.language !== "unsupported");
-    const readSource = (source) => readFileSync(join(root, source.path), "utf8");
     const reads = readStableReferenceSources({
         sources: supported,
         boundary: {
             inspect: (source) => inspectReferenceSource(root, source),
-            read: readSource,
+            read: (source, maximumBytes, initial) => readReferenceSource({ root, source, maximumBytes, initial }),
         },
     });
     return reads;

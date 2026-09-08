@@ -1,4 +1,5 @@
 import "./fossil-grader-score.cases.js";
+import "./fossil-grader-candidate.cases.js";
 import "./fossil-grader-advisory.cases.js";
 import "./fossil-grader-isolation-a.cases.js";
 import "./fossil-grader-isolation-b.cases.js";

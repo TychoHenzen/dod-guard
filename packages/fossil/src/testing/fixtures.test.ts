@@ -1,28 +1,13 @@
 import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import { afterEach, test } from "node:test";
+import { test } from "node:test";
 import {
   createDeterministicClock,
   createOutputCapture,
-  createTemporaryRepository,
-  type TemporaryRepository,
+  temporaryRepository,
   writeSourceTree,
 } from "./fixtures.js";
-
-const repositories: TemporaryRepository[] = [];
-
-afterEach(async () => {
-  await Promise.all(
-    repositories.splice(0).map((repository) => repository.cleanup()),
-  );
-});
-
-async function temporaryRepository(): Promise<TemporaryRepository> {
-  const repository = await createTemporaryRepository();
-  repositories.push(repository);
-  return repository;
-}
 
 test(
   "creates a Git repository with deterministic commit " + "identity and time",

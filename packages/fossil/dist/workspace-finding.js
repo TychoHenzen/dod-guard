@@ -1,9 +1,6 @@
 import { hasInboundWorkspaceUsage } from "./workspace-usage.js";
-/** Creates an advisory finding when no inbound usage is discovered. */
-export function workspaceDebrisFinding(input) {
-    const { candidate, sources, inventoryPaths, analysisBoundary, unobservedMechanisms, } = input;
-    if (hasInboundWorkspaceUsage(candidate.path, sources, inventoryPaths))
-        return undefined;
+function createWorkspaceDebrisFinding(input) {
+    const { candidate, analysisBoundary, unobservedMechanisms } = input;
     return {
         classification: "advisory",
         review: "possible workspace debris",
@@ -18,5 +15,17 @@ export function workspaceDebrisFinding(input) {
         analysisBoundary,
         unobservedReferenceMechanisms: unobservedMechanisms,
     };
+}
+/** Creates an advisory finding when no inbound usage is discovered. */
+export function workspaceDebrisFinding(input) {
+    const { candidate, sources, inventoryPaths, analysisBoundary, unobservedMechanisms, } = input;
+    if (hasInboundWorkspaceUsage({
+        candidatePath: candidate.path,
+        sources,
+        inventoryPaths,
+        graph: input.referenceGraph,
+    }))
+        return undefined;
+    return createWorkspaceDebrisFinding(input);
 }
 //# sourceMappingURL=workspace-finding.js.map

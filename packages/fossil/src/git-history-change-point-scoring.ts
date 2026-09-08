@@ -59,25 +59,31 @@ function weightedFiles(
   );
 }
 
-export function weightedSimilarity(
+export function prepareWeightedSimilarity(
   commits: readonly GitCommit[],
-  cut: number,
   identities: ReadonlyMap<GitFileChange, string>,
-): number {
+) {
   const touchedByCommit = commits.map((commit) =>
     commitFiles(commit, identities),
   );
-  const touches = fileTouchCounts(touchedByCommit);
+  return {
+    touchedByCommit,
+    touches: fileTouchCounts(touchedByCommit),
+    commitCount: commits.length,
+  };
+}
+
+export function weightedSimilarity(
+  input: ReturnType<typeof prepareWeightedSimilarity>,
+  cut: number,
+): number {
+  const { touchedByCommit, touches, commitCount } = input;
   const left = windowFiles(touchedByCommit, cut - 5, cut);
   const right = windowFiles(touchedByCommit, cut, cut + 5);
   const union = new Set([...left, ...right]);
   if (union.size === 0) return 1;
   const intersection = [...left].filter((file) => right.has(file));
-  const intersectionWeight = weightedFiles(
-    intersection,
-    touches,
-    commits.length,
-  );
-  const unionWeight = weightedFiles(union, touches, commits.length);
+  const intersectionWeight = weightedFiles(intersection, touches, commitCount);
+  const unionWeight = weightedFiles(union, touches, commitCount);
   return intersectionWeight / unionWeight;
 }

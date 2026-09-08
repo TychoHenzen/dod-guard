@@ -1,6 +1,6 @@
-import { markUnresolvedCandidateEvidence, regradeVestigialEdges } from "./ref-analyzer.js";
+import { markUnresolvedCandidateEvidence, regradeVestigialEdges } from "./repository-analysis-reference-boundary.js";
 export declare function referenceSources(root: string, paths: readonly string[]): {
-    sources: readonly import("./ref-analyzer.js").ReferenceSourceContent[];
+    sources: readonly import("./repository-analysis-reference-boundary.js").ReferenceSourceContent[];
     warnings: readonly import("./types.js").AnalysisWarning[];
     acceptedBytes: number;
     graph: {

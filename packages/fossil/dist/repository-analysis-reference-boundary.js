@@ -1,0 +1,2 @@
+export { analyzeReferences, markUnresolvedCandidateEvidence, readStableReferenceSources, regradeVestigialEdges, unsupportedCandidateReferenceGraph, } from "./reference-analysis-core.js";
+//# sourceMappingURL=repository-analysis-reference-boundary.js.map

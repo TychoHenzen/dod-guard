@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { addAnalyzeCommand } from "./fossil-cli-analyze-command.js";
 import { FossilHelpDisplayed, FossilUsageError, } from "./fossil-cli-types/index.js";
 import { analyzeRepository } from "./fossil-cli-analysis.js";
 import { normalizeAnalyzeOptions } from "./fossil-cli-parse-options.js";
@@ -25,7 +26,7 @@ function outputAnalysisReport(report, dependencies) {
         return;
     }
     dependencies.stdout?.(`${renderFossilReportTable(report, {
-        isTty: Boolean(process.stdout.isTTY),
+        isTty: dependencies.isTty?.() ?? false,
     })}\n`);
 }
 async function analyzeCommand(repositoryPath, options, dependencies) {
@@ -33,23 +34,19 @@ async function analyzeCommand(repositoryPath, options, dependencies) {
     outputAnalysisReport(report, dependencies);
 }
 /** Creates the command boundary so analysis can be injected in tests. */
-export function createFossilProgram({ analyze, cwd = process.cwd, stderr = process.stderr.write.bind(process.stderr), stdout = process.stdout.write.bind(process.stdout), }) {
+export function createFossilProgram({ analyze, cwd = process.cwd, isTty, stderr = process.stderr.write.bind(process.stderr), stdout = process.stdout.write.bind(process.stdout), }) {
     const program = new Command()
         .name("fossil")
         .configureOutput({ writeErr: stderr })
         .showHelpAfterError()
         .exitOverride(commanderExitOverride);
-    program
-        .command("analyze [repo-path]")
-        .option("--days <days>")
-        .option("--gap-hours <hours>")
-        .option("--threshold <threshold>")
-        .option("--format <format>")
-        .option("--extensions <extensions>")
-        .option("--untracked-age <days>")
-        .option("--exclude <patterns>")
-        .option("--verbose")
-        .action((repositoryPath, options) => analyzeCommand(repositoryPath, options, { analyze, cwd, stderr, stdout }));
+    addAnalyzeCommand(program, (repositoryPath, options) => analyzeCommand(repositoryPath, options, {
+        analyze,
+        cwd,
+        isTty,
+        stderr,
+        stdout,
+    }));
     return program;
 }
 //# sourceMappingURL=fossil-cli-program.js.map

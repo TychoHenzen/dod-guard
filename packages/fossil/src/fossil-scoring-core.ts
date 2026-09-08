@@ -9,7 +9,6 @@ export {
   createAdvisoryFossilFinding,
   meetsFossilThreshold,
   normalizedBurstChurn,
-  qualifyingBurstCandidates,
 } from "./fossil-scoring-candidates.js";
 export {
   candidateReferenceSubscores,

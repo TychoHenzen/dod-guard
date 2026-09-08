@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { splitAtChangePoint } from "./git-analyzer.js";
-import "./git-history-similarity-small.cases.js";
 test("splits close disjoint work when inverse-frequency weighting suppresses " +
     "the shared file", () => {
     const hour = 60 * 60 * 1_000;

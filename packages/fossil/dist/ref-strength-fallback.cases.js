@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { analyzeJavaScriptReferences } from "./ref-analyzer.js";
-import "./ref-strength-fallback-csharp.cases.js";
 test("marks fallback conditional and default-expression uses as weak", () => {
     const graph = analyzeJavaScriptReferences([
         {

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readStableReferenceSources } from "./ref-analyzer.js";
 import { runStableRaceScenario } from "./ref-stable-races-fixture.js";
 
 const scenario = runStableRaceScenario();
@@ -62,3 +63,27 @@ test(
     );
   },
 );
+
+test("charges the bytes returned by a bounded stable read", () => {
+  const maximumReads: number[] = [];
+  const result = readStableReferenceSources({
+    sources: [{ path: "src/short.ts", language: "typescript" as const }],
+    maximumFileBytes: 10,
+    maximumTotalBytes: 10,
+    boundary: {
+      inspect: () => ({
+        identity: "short",
+        isRegularFile: true,
+        byteLength: 4,
+        canonicalPath: "C:/repo/src/short.ts",
+      }),
+      read: (_source, maximumBytes) => {
+        maximumReads.push(maximumBytes);
+        return "ok";
+      },
+    },
+  });
+
+  assert.deepEqual(maximumReads, [10]);
+  assert.equal(result.acceptedBytes, 2);
+});

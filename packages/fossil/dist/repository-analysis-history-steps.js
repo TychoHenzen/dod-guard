@@ -1,19 +1,30 @@
 import { FossilAnalysisError } from "./analysis-error.js";
-import * as history from "./git-analyzer.js";
-import { emptyHistoryOutput, successfulGit, } from "./repository-analysis-support.js";
+import * as history from "./repository-analysis-history-boundary.js";
+import { assertSuccessfulGitOutput, emptyHistoryOutput, } from "./repository-analysis-support.js";
 export * from "./repository-analysis-history-repository.js";
+function isMissingSparseCheckoutKey(result) {
+    return result.exitCode === 1 && result.stdout === "" && result.stderr === "";
+}
+function rethrowSparseCheckoutError(error) {
+    if (error instanceof FossilAnalysisError)
+        throw error;
+    throw new FossilAnalysisError({
+        code: "git_failure",
+        message: "Git command could not be started or read.",
+    });
+}
 export async function sparseCheckoutOutput(runGit, root) {
     try {
-        return await successfulGit({
-            runGit,
+        const result = await runGit({
             arguments_: history.sparseCheckoutArguments(),
             repositoryPath: root,
         });
+        if (isMissingSparseCheckoutKey(result))
+            return emptyHistoryOutput();
+        return assertSuccessfulGitOutput(result);
     }
     catch (error) {
-        if (error instanceof FossilAnalysisError)
-            return emptyHistoryOutput();
-        throw error;
+        rethrowSparseCheckoutError(error);
     }
 }
 export function historyWarnings({ includedHistory, analysisTimestampMs, shallow, sparse, submodules, }) {

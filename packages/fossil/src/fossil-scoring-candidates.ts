@@ -1,8 +1,5 @@
 import type { BurstFileActivity, FossilFinding } from "./types.js";
-import type {
-  AdvisoryFossilFindingInput,
-  BurstCandidateEvidence,
-} from "./fossil-scoring-types/index.js";
+import type { AdvisoryFossilFindingInput } from "./fossil-scoring-types.js";
 
 /** Normalizes positive burst churn against the positive burst maximum. */
 export function normalizedBurstChurn(
@@ -29,16 +26,6 @@ export function meetsFossilThreshold(
   threshold: number,
 ): boolean {
   return score >= threshold;
-}
-
-/** Retains every qualifying burst candidate without deduplicating paths. */
-export function qualifyingBurstCandidates(
-  candidates: readonly BurstCandidateEvidence[],
-  threshold: number,
-): readonly BurstCandidateEvidence[] {
-  return candidates.filter((candidate) =>
-    meetsFossilThreshold(candidate.score.score, threshold),
-  );
 }
 
 /** Builds a fossil finding that remains advisory regardless of its score. */

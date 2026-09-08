@@ -26,21 +26,33 @@ test("omits old candidates with resolved imports, exact paths, or a unique " +
         },
     ];
     const inventory = ["src/importer.ts", "src/path-user.ts", "scratch/old.ts"];
-    assert.equal(hasInboundWorkspaceUsage(candidate.path, sources, inventory), true);
-    assert.equal(hasInboundWorkspaceUsage(candidate.path, [
-        {
-            path: "src/path-user.ts",
-            language: "typescript",
-            content: 'const source = "scratch/old.ts";\n',
-        },
-    ], ["src/path-user.ts", "scratch/old.ts", "other/old.ts"]), true);
-    assert.equal(hasInboundWorkspaceUsage("scratch/unique.ts", [
-        {
-            path: "src/user.ts",
-            language: "typescript",
-            content: 'const source = "unique.ts";\n',
-        },
-    ], ["src/user.ts", "scratch/unique.ts"]), true);
+    assert.equal(hasInboundWorkspaceUsage({
+        candidatePath: candidate.path,
+        sources,
+        inventoryPaths: inventory,
+    }), true);
+    assert.equal(hasInboundWorkspaceUsage({
+        candidatePath: candidate.path,
+        sources: [
+            {
+                path: "src/path-user.ts",
+                language: "typescript",
+                content: 'const source = "scratch/old.ts";\n',
+            },
+        ],
+        inventoryPaths: ["src/path-user.ts", "scratch/old.ts", "other/old.ts"],
+    }), true);
+    assert.equal(hasInboundWorkspaceUsage({
+        candidatePath: "scratch/unique.ts",
+        sources: [
+            {
+                path: "src/user.ts",
+                language: "typescript",
+                content: 'const source = "unique.ts";\n',
+            },
+        ],
+        inventoryPaths: ["src/user.ts", "scratch/unique.ts"],
+    }), true);
     assert.deepEqual(omitUsedWorkspaceCandidates([candidate], sources, inventory), []);
     assert.equal(workspaceDebrisFinding({
         candidate,

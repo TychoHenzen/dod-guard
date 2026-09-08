@@ -39,6 +39,7 @@ function isMainModule(): boolean {
 async function main(): Promise<void> {
   process.exitCode = await runFossilCliProcess(process.argv, {
     analyze: analyzeRepositoryCore,
+    isTty: () => Boolean(process.stdout.isTTY),
   });
 }
 

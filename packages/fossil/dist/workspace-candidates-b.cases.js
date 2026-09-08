@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { oldUntrackedWorkspaceCandidates, } from "./workspace-debris.js";
-import "./workspace-candidates-boundary.cases.js";
 test("uses one captured time for immediately adjacent modification-age " +
     "boundaries", () => {
     const analysisTimestampMs = 10 * 24 * 60 * 60 * 1_000;

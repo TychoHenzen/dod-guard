@@ -31,7 +31,7 @@ export function clusterIsolationScore(candidatePath, graph, candidatePaths) {
 }
 /** Derives both reference subscores, omitting both for incomplete evidence. */
 export function candidateReferenceSubscores(candidatePath, graph, candidatePaths) {
-    if (graph.unavailablePaths.includes(candidatePath))
+    if (!graph.complete || graph.unavailablePaths.includes(candidatePath))
         return { available: false };
     return {
         available: true,

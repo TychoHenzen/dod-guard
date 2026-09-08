@@ -1,9 +1,10 @@
 import type { ReferenceSourceContent } from "./reference-analysis-types.js";
-import type { WorkspaceDebrisFinding } from "./types.js";
+import type { ReferenceGraph, WorkspaceDebrisFinding } from "./types.js";
 import type { IgnoredWorkspaceCandidate, UntrackedWorkspaceCandidate } from "./workspace-types/index.js";
 type WorkspaceDebrisFindingInput = {
     candidate: UntrackedWorkspaceCandidate | IgnoredWorkspaceCandidate;
     sources: readonly ReferenceSourceContent[];
+    referenceGraph?: ReferenceGraph;
     inventoryPaths: readonly string[];
     analysisBoundary: string;
     unobservedMechanisms: readonly string[];

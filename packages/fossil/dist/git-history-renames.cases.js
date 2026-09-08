@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { nonMergeGitLogArguments, parseNonMergeGitLog, resolveRenameActivities, } from "./git-analyzer.js";
-import { temporaryRepository } from "./git-analyzer.test-support.js";
+import { temporaryRepository } from "./testing/fixtures.js";
 async function successiveRenameActivity() {
     const repository = await temporaryRepository();
     await repository.writeSourceFile("src/first.ts", "export const value = 1;\n");

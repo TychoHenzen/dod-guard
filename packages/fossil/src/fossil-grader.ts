@@ -6,7 +6,6 @@ export {
   createAdvisoryFossilFinding,
   meetsFossilThreshold,
   normalizedBurstChurn,
-  qualifyingBurstCandidates,
   referenceWeaknessScore,
   scoreFossilSubscores,
 } from "./fossil-scoring-core.js";

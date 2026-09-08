@@ -14,5 +14,5 @@ export declare function analyzeWorkspaceStage(input: WorkspaceStageInput): Promi
     workspaceCandidates: (import("./workspace-debris.js").IgnoredWorkspaceCandidate | import("./workspace-debris.js").UntrackedWorkspaceCandidate)[];
     inventory: string[];
     warnings: import("./types.js").AnalysisWarning[];
-    gitOutputs: import("./git-process-boundary.js").CollectedGitOutput[];
+    gitOutputs: import("./git-process.js").CollectedGitOutput[];
 }>;

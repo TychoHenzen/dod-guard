@@ -1,7 +1,7 @@
 import {
   analyzeReferences,
   type ReferenceSourceContent,
-} from "./ref-analyzer.js";
+} from "./repository-analysis-reference-boundary.js";
 import {
   basename,
   hasGraphUsage,
@@ -10,13 +10,19 @@ import {
 } from "./workspace-usage-evidence.js";
 
 /** Detects imports and exact source-string usage evidence. */
-export function hasInboundWorkspaceUsage(
-  candidatePath: string,
-  sources: readonly ReferenceSourceContent[],
-  inventoryPaths: readonly string[],
-): boolean {
+export function hasInboundWorkspaceUsage(input: {
+  candidatePath: string;
+  sources: readonly ReferenceSourceContent[];
+  inventoryPaths: readonly string[];
+  graph?: ReturnType<typeof analyzeReferences>;
+}): boolean {
+  const {
+    candidatePath,
+    sources,
+    inventoryPaths,
+    graph = analyzeReferences(sources),
+  } = input;
   const normalizedCandidate = normalizedRepositoryPath(candidatePath);
-  const graph = analyzeReferences(sources);
   if (hasGraphUsage(graph, normalizedCandidate)) return true;
   const candidateBasename = basename(normalizedCandidate);
   const normalizedInventory = new Set(
@@ -43,8 +49,14 @@ export function omitUsedWorkspaceCandidates<
   sources: readonly ReferenceSourceContent[],
   inventoryPaths: readonly string[],
 ): readonly T[] {
+  const graph = analyzeReferences(sources);
   return candidates.filter(
     (candidate) =>
-      !hasInboundWorkspaceUsage(candidate.path, sources, inventoryPaths),
+      !hasInboundWorkspaceUsage({
+        candidatePath: candidate.path,
+        sources,
+        inventoryPaths,
+        graph,
+      }),
   );
 }

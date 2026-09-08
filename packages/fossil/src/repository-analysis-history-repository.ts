@@ -1,15 +1,12 @@
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { FossilAnalysisError } from "./analysis-error.js";
-import * as history from "./git-analyzer.js";
 import {
   assertSupportedGitVersion,
   runGitCommand,
 } from "./git-process-boundary.js";
-import {
-  emptyHistoryOutput,
-  successfulGit,
-} from "./repository-analysis-support.js";
+import { historyOutputForHead } from "./repository-analysis-history-head.js";
+import { successfulGit } from "./repository-analysis-support.js";
 
 function repositoryRoot(repositoryPath: string, prefix: string): string {
   return resolve(
@@ -20,20 +17,6 @@ function repositoryRoot(repositoryPath: string, prefix: string): string {
       .filter(Boolean)
       .map(() => ".."),
   );
-}
-
-async function historyOutputForHead(
-  exitCode: number | null,
-  runGit: typeof runGitCommand,
-  root: string,
-) {
-  if (exitCode !== 0) return emptyHistoryOutput();
-  return successfulGit({
-    runGit,
-    arguments_: history.nonMergeGitLogArguments(),
-    repositoryPath: root,
-    historyMode: true,
-  });
 }
 
 async function repositoryDiscovery(

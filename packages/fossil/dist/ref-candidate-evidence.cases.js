@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { markUnresolvedCandidateEvidence, regradeVestigialEdges, } from "./ref-analyzer.js";
-import "./ref-candidate-strength.cases.js";
 test("regrades only candidate-to-candidate edges " + "without mutating the graph", () => {
     const graph = {
         edges: [

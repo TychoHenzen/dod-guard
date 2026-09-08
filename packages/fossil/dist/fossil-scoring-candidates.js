@@ -15,10 +15,6 @@ export function abandonmentScore(candidate) {
 export function meetsFossilThreshold(score, threshold) {
     return score >= threshold;
 }
-/** Retains every qualifying burst candidate without deduplicating paths. */
-export function qualifyingBurstCandidates(candidates, threshold) {
-    return candidates.filter((candidate) => meetsFossilThreshold(candidate.score.score, threshold));
-}
 /** Builds a fossil finding that remains advisory regardless of its score. */
 export function createAdvisoryFossilFinding(input) {
     return { ...input, classification: "advisory" };

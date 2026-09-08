@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { candidateReferenceSubscores, meetsFossilThreshold, qualifyingBurstCandidates, scoreFossilSubscores, } from "./fossil-grader.js";
-import { activity, referenceEdge } from "./fossil-grader.test-support.js";
+import { candidateReferenceSubscores, meetsFossilThreshold, scoreFossilSubscores, } from "./fossil-grader.js";
+import { referenceEdge } from "./fossil-grader.test-support.js";
 test("combines all subscores with fixed full-evidence weights", () => {
     const subscores = {
         churn: 0.4,
@@ -24,23 +24,6 @@ test("renormalizes Git subscores without reference signals", () => {
 test("includes scores exactly at the configured finding threshold", () => {
     assert.equal(meetsFossilThreshold(0.7, 0.7), true);
     assert.equal(meetsFossilThreshold(0.699_999, 0.7), false);
-});
-test("retains qualifying evidence for one path in multiple bursts", () => {
-    const first = {
-        burstId: "burst-1",
-        activity: activity("src/reused.ts", 3, 0),
-        score: { score: 0.7, basis: "full" },
-    };
-    const second = {
-        burstId: "burst-2",
-        activity: activity("src/reused.ts", 8, 2),
-        score: { score: 0.8, basis: "git-only" },
-    };
-    const qualified = qualifyingBurstCandidates([first, second], 0.7);
-    assert.deepEqual(qualified, [first, second]);
-    assert.notEqual(qualified[0]?.activity, qualified[1]?.activity);
-    assert.equal(qualified[0]?.activity.burstCommits, 3);
-    assert.equal(qualified[1]?.activity.burstCommits, 8);
 });
 test("omits both reference subscores when evidence is incomplete", () => {
     const liveEdge = referenceEdge({

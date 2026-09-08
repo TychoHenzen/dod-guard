@@ -1,4 +1,4 @@
-import { analyzeReferences, type ReferenceSourceContent } from "./ref-analyzer.js";
+import { analyzeReferences, type ReferenceSourceContent } from "./repository-analysis-reference-boundary.js";
 export declare function normalizedRepositoryPath(path: string): string;
 export declare function basename(path: string): string;
 export declare function hasGraphUsage(graph: ReturnType<typeof analyzeReferences>, candidate: string): boolean;

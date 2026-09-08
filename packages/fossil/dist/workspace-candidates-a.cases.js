@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { oldIgnoredWorkspaceCandidates, oldUntrackedWorkspaceCandidates, } from "./workspace-debris.js";
-import "./workspace-candidates-history.cases.js";
 test("omits recent untracked and ignored workspace files", () => {
     const now = 10 * 24 * 60 * 60 * 1_000;
     const recentTimestampMs = now - 24 * 60 * 60 * 1_000;

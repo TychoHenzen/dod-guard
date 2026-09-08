@@ -1,4 +1,4 @@
-import * as history from "./git-analyzer.js";
+import * as history from "./repository-analysis-history-boundary.js";
 const MEBIBYTE = 1_024 * 1_024;
 export function reportBoundary(repositoryRoot, canonicalRepositoryRoot) {
     return {

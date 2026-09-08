@@ -1,23 +1,4 @@
-import { afterEach } from "node:test";
 import { splitAtChangePoint } from "./git-analyzer.js";
-import {
-  createTemporaryRepository,
-  type TemporaryRepository,
-} from "./testing/fixtures.js";
-
-const repositories: TemporaryRepository[] = [];
-
-afterEach(async () => {
-  await Promise.all(
-    repositories.splice(0).map((repository) => repository.cleanup()),
-  );
-});
-
-export async function temporaryRepository(): Promise<TemporaryRepository> {
-  const repository = await createTemporaryRepository();
-  repositories.push(repository);
-  return repository;
-}
 
 export function changePointCommits(
   fileSets: readonly (readonly string[])[],

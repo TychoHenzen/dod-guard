@@ -3380,6 +3380,11 @@ var {
   Help
 } = import_index.default;
 
+// src/fossil-cli-analyze-command.ts
+function addAnalyzeCommand(program2, action) {
+  program2.command("analyze [repo-path]").option("--days <days>").option("--gap-hours <hours>").option("--threshold <threshold>").option("--format <format>").option("--extensions <extensions>").option("--untracked-age <days>").option("--exclude <patterns>").option("--verbose").action(action);
+}
+
 // src/fossil-output-text.ts
 function terminalSafeText(value) {
   return [...value].map((character) => {
@@ -4165,26 +4170,29 @@ function weightedFiles(files, touches, commitCount) {
     0
   );
 }
-function weightedSimilarity(commits, cut, identities) {
+function prepareWeightedSimilarity(commits, identities) {
   const touchedByCommit = commits.map(
     (commit) => commitFiles(commit, identities)
   );
-  const touches = fileTouchCounts(touchedByCommit);
+  return {
+    touchedByCommit,
+    touches: fileTouchCounts(touchedByCommit),
+    commitCount: commits.length
+  };
+}
+function weightedSimilarity(input, cut) {
+  const { touchedByCommit, touches, commitCount } = input;
   const left = windowFiles(touchedByCommit, cut - 5, cut);
   const right = windowFiles(touchedByCommit, cut, cut + 5);
   const union = /* @__PURE__ */ new Set([...left, ...right]);
   if (union.size === 0) return 1;
   const intersection = [...left].filter((file) => right.has(file));
-  const intersectionWeight = weightedFiles(
-    intersection,
-    touches,
-    commits.length
-  );
-  const unionWeight = weightedFiles(union, touches, commits.length);
+  const intersectionWeight = weightedFiles(intersection, touches, commitCount);
+  const unionWeight = weightedFiles(union, touches, commitCount);
   return intersectionWeight / unionWeight;
 }
 
-// src/git-history-change-point.ts
+// src/git-history-change-point-search.ts
 var MIN_CHANGE_POINT_GAP_MS = 4 * 60 * 60 * 1e3;
 var MAX_CHANGE_POINT_SIMILARITY = 0.1;
 function validChangePoint({
@@ -4200,35 +4208,51 @@ function validChangePoint({
 function compareChangePoints(left, right) {
   return left.similarity - right.similarity || right.gapMilliseconds - left.gapMilliseconds || left.cut - right.cut;
 }
-function selectChangePoint(input) {
+function selectChangePoint(input, similarityInput) {
   const { commits, start, end, identities } = input;
   const candidates = [];
   for (let cut = start + 5; cut <= end - 5; cut += 1) {
     if (!validChangePoint({ commits, cut, start, end, identities })) continue;
     const gapMilliseconds = commits[cut].committerTimestampMs - commits[cut - 1].committerTimestampMs;
-    const similarity = weightedSimilarity(commits, cut, identities);
+    const similarity = weightedSimilarity(similarityInput, cut);
     if (similarity <= MAX_CHANGE_POINT_SIMILARITY)
       candidates.push({ cut, gapMilliseconds, similarity });
   }
   return candidates.sort(compareChangePoints)[0];
 }
-function splitChangePoints(input) {
+function splitChangePoints(input, similarityInput) {
   const { commits, start, end, identities } = input;
-  const candidate = selectChangePoint({ commits, start, end, identities });
+  const candidate = selectChangePoint(
+    { commits, start, end, identities },
+    similarityInput
+  );
   if (!candidate) return [commits.slice(start, end)];
   return [
-    ...splitChangePoints({ commits, start, end: candidate.cut, identities }),
-    ...splitChangePoints({ commits, start: candidate.cut, end, identities })
+    ...splitChangePoints(
+      { commits, start, end: candidate.cut, identities },
+      similarityInput
+    ),
+    ...splitChangePoints(
+      { commits, start: candidate.cut, end, identities },
+      similarityInput
+    )
   ];
 }
+
+// src/git-history-change-point.ts
 function splitAtChangePoint(commits) {
   if (commits.length === 0) return [];
-  return splitChangePoints({
-    commits,
-    start: 0,
-    end: commits.length,
-    identities: fileIdentities(commits)
-  });
+  const identities = fileIdentities(commits);
+  const similarityInput = prepareWeightedSimilarity(commits, identities);
+  return splitChangePoints(
+    {
+      commits,
+      start: 0,
+      end: commits.length,
+      identities
+    },
+    similarityInput
+  );
 }
 
 // src/git-history-closure.ts
@@ -4418,6 +4442,10 @@ function emptyHistoryOutput() {
     statusRecordCount: 0
   };
 }
+function assertSuccessfulGitOutput(result) {
+  if (result.exitCode === 0) return result;
+  throw gitFailure("Git command failed during repository analysis.");
+}
 async function successfulGit({
   runGit,
   arguments_,
@@ -4428,30 +4456,57 @@ async function successfulGit({
   let result;
   try {
     result = await runGit({ arguments_, repositoryPath, input, historyMode });
-  } catch {
+  } catch (error) {
+    if (error instanceof FossilAnalysisError) throw error;
     throw gitFailure("Git command could not be started or read.");
   }
-  if (result.exitCode === 0) return result;
-  throw gitFailure("Git command failed during repository analysis.");
+  return assertSuccessfulGitOutput(result);
 }
 
 // src/repository-analysis-history-repository.ts
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
-function repositoryRoot(repositoryPath, prefix) {
-  return resolve(
-    realpathSync(repositoryPath),
-    ...prefix.trim().split("/").filter(Boolean).map(() => "..")
-  );
+
+// src/repository-analysis-history-head.ts
+function gitFailure2(message) {
+  return new FossilAnalysisError({ code: "git_failure", message });
+}
+async function emptyHistoryForUnbornHead(runGit, root) {
+  let headReference;
+  try {
+    headReference = await runGit({
+      arguments_: ["symbolic-ref", "--quiet", "HEAD"],
+      repositoryPath: root
+    });
+  } catch (error) {
+    if (error instanceof FossilAnalysisError) throw error;
+    throw gitFailure2("Git command could not be started or read.");
+  }
+  if (headReference.exitCode !== 0 || !/^refs\/heads\/.+$/.test(headReference.stdout.trim()))
+    throw gitFailure2("Git HEAD could not be verified.");
+  await successfulGit({
+    runGit,
+    arguments_: ["status", "--porcelain=v1", "--untracked-files=no"],
+    repositoryPath: root
+  });
+  return emptyHistoryOutput();
 }
 async function historyOutputForHead(exitCode, runGit, root) {
-  if (exitCode !== 0) return emptyHistoryOutput();
+  if (exitCode !== 0) return emptyHistoryForUnbornHead(runGit, root);
   return successfulGit({
     runGit,
     arguments_: nonMergeGitLogArguments(),
     repositoryPath: root,
     historyMode: true
   });
+}
+
+// src/repository-analysis-history-repository.ts
+function repositoryRoot(repositoryPath, prefix) {
+  return resolve(
+    realpathSync(repositoryPath),
+    ...prefix.trim().split("/").filter(Boolean).map(() => "..")
+  );
 }
 async function repositoryDiscovery(repositoryPath, runGit) {
   const discovery = await runGit({
@@ -4493,16 +4548,26 @@ async function resolveHistoryRepository(repositoryPath, runGit) {
 }
 
 // src/repository-analysis-history-steps.ts
+function isMissingSparseCheckoutKey(result) {
+  return result.exitCode === 1 && result.stdout === "" && result.stderr === "";
+}
+function rethrowSparseCheckoutError(error) {
+  if (error instanceof FossilAnalysisError) throw error;
+  throw new FossilAnalysisError({
+    code: "git_failure",
+    message: "Git command could not be started or read."
+  });
+}
 async function sparseCheckoutOutput(runGit, root) {
   try {
-    return await successfulGit({
-      runGit,
+    const result = await runGit({
       arguments_: sparseCheckoutArguments(),
       repositoryPath: root
     });
+    if (isMissingSparseCheckoutKey(result)) return emptyHistoryOutput();
+    return assertSuccessfulGitOutput(result);
   } catch (error) {
-    if (error instanceof FossilAnalysisError) return emptyHistoryOutput();
-    throw error;
+    rethrowSparseCheckoutError(error);
   }
 }
 function historyWarnings({
@@ -5830,22 +5895,57 @@ function initialWithinLimits(input, initial) {
 }
 
 // src/reference-read-stable-content.ts
+function maximumReadableBytes(input) {
+  return Math.min(
+    input.maximumFileBytes,
+    input.maximumTotalBytes - input.budget.acceptedBytes
+  );
+}
+function normalizeStableRead(result) {
+  if (typeof result === "string")
+    return { content: result, byteLength: Buffer.byteLength(result) };
+  return result;
+}
+function isInvalidByteLength(byteLength, maximumBytes) {
+  return !Number.isSafeInteger(byteLength) || byteLength < 0 || byteLength > maximumBytes;
+}
+function addContentLimitWarning(input) {
+  addReferenceWarning({
+    ...input.collections,
+    source: input.source,
+    code: "reference_content_limit",
+    message: "Reference source exceeds the bounded read limit."
+  });
+}
+function addUnreadableWarning(input) {
+  addReferenceWarning({
+    ...input.collections,
+    source: input.source,
+    code: "reference_unreadable",
+    message: "Reference source could not be read."
+  });
+}
 function readStableContent(input, initial) {
   try {
-    const content = input.boundary.read(input.source);
-    if (content.includes("\0")) {
+    const maximumBytes = maximumReadableBytes(input);
+    const result = normalizeStableRead(
+      input.boundary.read(input.source, maximumBytes, initial)
+    );
+    if (isInvalidByteLength(result.byteLength, maximumBytes)) {
+      addContentLimitWarning(input);
+      return;
+    }
+    if (result.content.includes("\0")) {
       addBinaryReferenceWarning({ ...input.collections, source: input.source });
       return;
     }
-    input.collections.readableSources.push({ ...input.source, content });
-    input.budget.acceptedBytes += initial.byteLength;
-  } catch {
-    addReferenceWarning({
-      ...input.collections,
-      source: input.source,
-      code: "reference_unreadable",
-      message: "Reference source could not be read."
+    input.collections.readableSources.push({
+      ...input.source,
+      content: result.content
     });
+    input.budget.acceptedBytes += result.byteLength;
+  } catch {
+    addUnreadableWarning(input);
   }
 }
 
@@ -5927,7 +6027,7 @@ function clusterIsolationScore(candidatePath, graph, candidatePaths) {
   return [...neighbors].filter((neighbor) => candidatePaths.has(neighbor)).length / neighbors.size;
 }
 function candidateReferenceSubscores(candidatePath, graph, candidatePaths) {
-  if (graph.unavailablePaths.includes(candidatePath))
+  if (!graph.complete || graph.unavailablePaths.includes(candidatePath))
     return { available: false };
   return {
     available: true,
@@ -6080,9 +6180,76 @@ function buildBurstReports(bursts, references, threshold) {
   return bursts.map((burst) => buildBurstReport(burst, references, threshold));
 }
 
-// src/repository-analysis-references.ts
-import { lstatSync, readFileSync, realpathSync as realpathSync2 } from "node:fs";
+// src/reference-source-reader.ts
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  lstatSync,
+  openSync,
+  readSync,
+  realpathSync as realpathSync2
+} from "node:fs";
 import { join } from "node:path";
+function descriptorIdentity(metadata) {
+  return process.platform === "win32" ? String(metadata.ino) : `${metadata.dev}:${metadata.ino}`;
+}
+function inspectReferenceSource(root, source) {
+  const fullPath = join(root, source.path);
+  const metadata = lstatSync(fullPath);
+  return {
+    identity: descriptorIdentity(metadata),
+    isRegularFile: metadata.isFile(),
+    byteLength: metadata.size,
+    canonicalPath: realpathSync2(fullPath)
+  };
+}
+function matchesInitialSnapshot(metadata, initial) {
+  return metadata.isFile() && descriptorIdentity(metadata) === initial.identity && metadata.size === initial.byteLength;
+}
+function readDescriptor(descriptor, maximumBytes) {
+  const buffer = Buffer.allocUnsafe(maximumBytes);
+  let byteLength = 0;
+  while (byteLength < maximumBytes) {
+    const bytesRead = readSync(
+      descriptor,
+      buffer,
+      byteLength,
+      maximumBytes - byteLength,
+      null
+    );
+    if (bytesRead === 0) break;
+    byteLength += bytesRead;
+  }
+  return {
+    content: buffer.subarray(0, byteLength).toString("utf8"),
+    byteLength
+  };
+}
+function readReferenceSource({
+  root,
+  source,
+  maximumBytes,
+  initial
+}) {
+  const noFollow = constants.O_NOFOLLOW ?? 0;
+  const descriptor = openSync(
+    join(root, source.path),
+    constants.O_RDONLY | noFollow
+  );
+  try {
+    if (!matchesInitialSnapshot(fstatSync(descriptor), initial))
+      throw new Error("Reference descriptor changed before reading.");
+    const result = readDescriptor(descriptor, maximumBytes);
+    if (!matchesInitialSnapshot(fstatSync(descriptor), initial))
+      throw new Error("Reference descriptor changed during reading.");
+    return result;
+  } finally {
+    closeSync(descriptor);
+  }
+}
+
+// src/repository-analysis-references.ts
 function languageForPath(path) {
   const extension = path.slice(path.lastIndexOf(".")).toLowerCase();
   if ([".ts", ".tsx"].includes(extension)) return "typescript";
@@ -6090,16 +6257,6 @@ function languageForPath(path) {
   if (extension === ".cs") return "csharp";
   if (extension === ".rs") return "rust";
   return "unsupported";
-}
-function inspectReferenceSource(root, source) {
-  const fullPath = join(root, source.path);
-  const metadata = lstatSync(fullPath);
-  return {
-    identity: `${metadata.dev}:${metadata.ino}`,
-    isRegularFile: metadata.isFile(),
-    byteLength: metadata.size,
-    canonicalPath: realpathSync2(fullPath)
-  };
 }
 function referenceCandidates(paths) {
   return paths.map((path) => ({
@@ -6111,12 +6268,11 @@ function readReferenceSources2(root, candidates) {
   const supported = candidates.filter(
     (candidate) => candidate.language !== "unsupported"
   );
-  const readSource = (source) => readFileSync(join(root, source.path), "utf8");
   const reads = readStableReferenceSources({
     sources: supported,
     boundary: {
       inspect: (source) => inspectReferenceSource(root, source),
-      read: readSource
+      read: (source, maximumBytes, initial) => readReferenceSource({ root, source, maximumBytes, initial })
     }
   });
   return reads;
@@ -6498,9 +6654,14 @@ function sourceUsesCandidate(input) {
 }
 
 // src/workspace-usage.ts
-function hasInboundWorkspaceUsage(candidatePath, sources, inventoryPaths) {
+function hasInboundWorkspaceUsage(input) {
+  const {
+    candidatePath,
+    sources,
+    inventoryPaths,
+    graph = analyzeReferences(sources)
+  } = input;
   const normalizedCandidate = normalizedRepositoryPath(candidatePath);
-  const graph = analyzeReferences(sources);
   if (hasGraphUsage(graph, normalizedCandidate)) return true;
   const candidateBasename = basename2(normalizedCandidate);
   const normalizedInventory = new Set(
@@ -6520,16 +6681,8 @@ function hasInboundWorkspaceUsage(candidatePath, sources, inventoryPaths) {
 }
 
 // src/workspace-finding.ts
-function workspaceDebrisFinding(input) {
-  const {
-    candidate,
-    sources,
-    inventoryPaths,
-    analysisBoundary,
-    unobservedMechanisms
-  } = input;
-  if (hasInboundWorkspaceUsage(candidate.path, sources, inventoryPaths))
-    return void 0;
+function createWorkspaceDebrisFinding(input) {
+  const { candidate, analysisBoundary, unobservedMechanisms } = input;
   return {
     classification: "advisory",
     review: "possible workspace debris",
@@ -6543,6 +6696,23 @@ function workspaceDebrisFinding(input) {
     analysisBoundary,
     unobservedReferenceMechanisms: unobservedMechanisms
   };
+}
+function workspaceDebrisFinding(input) {
+  const {
+    candidate,
+    sources,
+    inventoryPaths,
+    analysisBoundary,
+    unobservedMechanisms
+  } = input;
+  if (hasInboundWorkspaceUsage({
+    candidatePath: candidate.path,
+    sources,
+    inventoryPaths,
+    graph: input.referenceGraph
+  }))
+    return void 0;
+  return createWorkspaceDebrisFinding(input);
 }
 
 // src/workspace-debris.ts
@@ -6730,6 +6900,7 @@ function buildWorkspaceDebrisFindings({
     const finding = workspaceDebrisFinding({
       candidate,
       sources: references.sources,
+      referenceGraph: references.graph,
       inventoryPaths: inventory,
       analysisBoundary: root,
       unobservedMechanisms: [
@@ -6938,7 +7109,7 @@ function outputAnalysisReport(report, dependencies) {
   }
   dependencies.stdout?.(
     `${renderFossilReportTable(report, {
-      isTty: Boolean(process.stdout.isTTY)
+      isTty: dependencies.isTty?.() ?? false
     })}
 `
   );
@@ -6954,12 +7125,20 @@ async function analyzeCommand(repositoryPath, options, dependencies) {
 function createFossilProgram({
   analyze,
   cwd = process.cwd,
+  isTty,
   stderr = process.stderr.write.bind(process.stderr),
   stdout = process.stdout.write.bind(process.stdout)
 }) {
   const program2 = new Command().name("fossil").configureOutput({ writeErr: stderr }).showHelpAfterError().exitOverride(commanderExitOverride);
-  program2.command("analyze [repo-path]").option("--days <days>").option("--gap-hours <hours>").option("--threshold <threshold>").option("--format <format>").option("--extensions <extensions>").option("--untracked-age <days>").option("--exclude <patterns>").option("--verbose").action(
-    (repositoryPath, options) => analyzeCommand(repositoryPath, options, { analyze, cwd, stderr, stdout })
+  addAnalyzeCommand(
+    program2,
+    (repositoryPath, options) => analyzeCommand(repositoryPath, options, {
+      analyze,
+      cwd,
+      isTty,
+      stderr,
+      stdout
+    })
   );
   return program2;
 }
@@ -7057,7 +7236,8 @@ function isMainModule() {
 }
 async function main() {
   process.exitCode = await runFossilCliProcess(process.argv, {
-    analyze: analyzeRepositoryCore
+    analyze: analyzeRepositoryCore,
+    isTty: () => Boolean(process.stdout.isTTY)
   });
 }
 if (isMainModule()) {

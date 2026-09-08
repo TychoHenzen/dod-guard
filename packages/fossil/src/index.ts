@@ -42,6 +42,7 @@ export type {
   ReportStatistics,
   ResourceLimits,
   ResourceUsage,
+  ScoreBasis,
   SourceLanguage,
   SourceSpan,
   UnresolvedReference,

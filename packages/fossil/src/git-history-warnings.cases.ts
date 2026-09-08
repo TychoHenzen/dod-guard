@@ -12,7 +12,6 @@ import {
   splitAtChangePoint,
   splitTemporalClusters,
 } from "./git-analyzer.js";
-import "./git-history-warnings-more.cases.js";
 
 test(
   "reports future commits and leaves their temporal " + "cluster unfinished",

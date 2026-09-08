@@ -24,17 +24,24 @@ function windowFiles(touchedByCommit, start, end) {
 function weightedFiles(files, touches, commitCount) {
     return [...files].reduce((total, file) => total + Math.log((1 + commitCount) / (1 + (touches.get(file) ?? 0))) + 1, 0);
 }
-export function weightedSimilarity(commits, cut, identities) {
+export function prepareWeightedSimilarity(commits, identities) {
     const touchedByCommit = commits.map((commit) => commitFiles(commit, identities));
-    const touches = fileTouchCounts(touchedByCommit);
+    return {
+        touchedByCommit,
+        touches: fileTouchCounts(touchedByCommit),
+        commitCount: commits.length,
+    };
+}
+export function weightedSimilarity(input, cut) {
+    const { touchedByCommit, touches, commitCount } = input;
     const left = windowFiles(touchedByCommit, cut - 5, cut);
     const right = windowFiles(touchedByCommit, cut, cut + 5);
     const union = new Set([...left, ...right]);
     if (union.size === 0)
         return 1;
     const intersection = [...left].filter((file) => right.has(file));
-    const intersectionWeight = weightedFiles(intersection, touches, commits.length);
-    const unionWeight = weightedFiles(union, touches, commits.length);
+    const intersectionWeight = weightedFiles(intersection, touches, commitCount);
+    const unionWeight = weightedFiles(union, touches, commitCount);
     return intersectionWeight / unionWeight;
 }
 //# sourceMappingURL=git-history-change-point-scoring.js.map

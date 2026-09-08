@@ -9,7 +9,6 @@ import {
   parseVerboseCheckIgnore,
   UNTRACKED_DISCOVERY_ARGUMENTS,
 } from "./workspace-debris.js";
-import "./workspace-candidates-history.cases.js";
 
 test("omits recent untracked and ignored workspace files", () => {
   const now = 10 * 24 * 60 * 60 * 1_000;

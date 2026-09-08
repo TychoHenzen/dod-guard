@@ -10,4 +10,6 @@ export type * from "./reference-source-metadata-reader.js";
 export type * from "./reference-source-reader.js";
 export type * from "./reference-source-snapshot.js";
 export type * from "./stable-reference-source-boundary.js";
+export type * from "./stable-source-read.js";
+export type * from "./stable-source-reader.js";
 export type * from "./syntax-view.js";

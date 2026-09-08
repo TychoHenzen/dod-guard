@@ -4,7 +4,6 @@ import {
   oldUntrackedWorkspaceCandidates,
   oldIgnoredWorkspaceCandidates,
 } from "./workspace-debris.js";
-import "./workspace-candidates-boundary.cases.js";
 
 test(
   "uses one captured time for immediately adjacent modification-age " +

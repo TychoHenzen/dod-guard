@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { nonMergeGitLogArguments, parseNonMergeGitLog, } from "./git-analyzer.js";
-import { temporaryRepository } from "./git-analyzer.test-support.js";
+import { temporaryRepository } from "./testing/fixtures.js";
 async function createBaseCommit(repository) {
     await repository.writeSourceFile("src/base.ts", "export const base = true;\n");
     await repository.recordCommit("base", new Date("2025-01-01T00:00:00.000Z"));

@@ -64,7 +64,7 @@ export function candidateReferenceSubscores(
   graph: ReferenceGraph,
   candidatePaths: ReadonlySet<string>,
 ): CandidateReferenceSubscores {
-  if (graph.unavailablePaths.includes(candidatePath))
+  if (!graph.complete || graph.unavailablePaths.includes(candidatePath))
     return { available: false };
   return {
     available: true,

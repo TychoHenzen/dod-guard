@@ -12,6 +12,23 @@ import {
 } from "./repository-analysis.helpers.test.js";
 import { analyzeRepositoryCore } from "./repository-analysis.js";
 
+function unbornHeadCommands() {
+  return [
+    {
+      arguments: ["rev-parse", "--verify", "HEAD"],
+      output: { ...gitOutput(), exitCode: 1 },
+    },
+    {
+      arguments: ["symbolic-ref", "--quiet", "HEAD"],
+      output: gitOutput("refs/heads/main\n"),
+    },
+    {
+      arguments: ["status", "--porcelain=v1", "--untracked-files=no"],
+      output: gitOutput(),
+    },
+  ];
+}
+
 test(
   "rejects over-limit included history before " + "producing a report",
   async () => {
@@ -46,10 +63,7 @@ test("rejects an over-limit Git inventory before source reads", async () => {
   );
   const tracked = `${paths.join("\0")}\0`;
   const runGit = createRunGit(directory, [
-    {
-      arguments: ["rev-parse", "--verify", "HEAD"],
-      output: { ...gitOutput(), exitCode: 1 },
-    },
+    ...unbornHeadCommands(),
     { arguments: ["ls-files", "-z"], output: gitOutput(tracked) },
   ]);
   try {

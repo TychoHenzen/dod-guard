@@ -4,6 +4,7 @@ export function buildWorkspaceDebrisFindings({ candidates, references, inventory
         const finding = workspaceDebrisFinding({
             candidate,
             sources: references.sources,
+            referenceGraph: references.graph,
             inventoryPaths: inventory,
             analysisBoundary: root,
             unobservedMechanisms: [

@@ -1,5 +1,3 @@
-import { lstatSync, readFileSync, realpathSync } from "node:fs";
-import { join } from "node:path";
 import {
   analyzeReferences,
   markUnresolvedCandidateEvidence,
@@ -7,7 +5,11 @@ import {
   regradeVestigialEdges,
   unsupportedCandidateReferenceGraph,
   type ReferenceCandidate,
-} from "./ref-analyzer.js";
+} from "./repository-analysis-reference-boundary.js";
+import {
+  inspectReferenceSource,
+  readReferenceSource,
+} from "./reference-source-reader.js";
 import type { SourceLanguage } from "./types.js";
 
 function languageForPath(path: string): SourceLanguage {
@@ -17,17 +19,6 @@ function languageForPath(path: string): SourceLanguage {
   if (extension === ".cs") return "csharp";
   if (extension === ".rs") return "rust";
   return "unsupported";
-}
-
-function inspectReferenceSource(root: string, source: ReferenceCandidate) {
-  const fullPath = join(root, source.path);
-  const metadata = lstatSync(fullPath);
-  return {
-    identity: `${metadata.dev}:${metadata.ino}`,
-    isRegularFile: metadata.isFile(),
-    byteLength: metadata.size,
-    canonicalPath: realpathSync(fullPath),
-  };
 }
 
 function referenceCandidates(paths: readonly string[]): ReferenceCandidate[] {
@@ -44,13 +35,12 @@ function readReferenceSources(
   const supported = candidates.filter(
     (candidate) => candidate.language !== "unsupported",
   );
-  const readSource = (source: ReferenceCandidate) =>
-    readFileSync(join(root, source.path), "utf8");
   const reads = readStableReferenceSources({
     sources: supported,
     boundary: {
       inspect: (source) => inspectReferenceSource(root, source),
-      read: readSource,
+      read: (source, maximumBytes, initial) =>
+        readReferenceSource({ root, source, maximumBytes, initial }),
     },
   });
   return reads;

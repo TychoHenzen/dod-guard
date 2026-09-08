@@ -12,16 +12,21 @@ export function emptyHistoryOutput() {
         statusRecordCount: 0,
     };
 }
+export function assertSuccessfulGitOutput(result) {
+    if (result.exitCode === 0)
+        return result;
+    throw gitFailure("Git command failed during repository analysis.");
+}
 export async function successfulGit({ runGit, arguments_, repositoryPath, input, historyMode = false, }) {
     let result;
     try {
         result = await runGit({ arguments_, repositoryPath, input, historyMode });
     }
-    catch {
+    catch (error) {
+        if (error instanceof FossilAnalysisError)
+            throw error;
         throw gitFailure("Git command could not be started or read.");
     }
-    if (result.exitCode === 0)
-        return result;
-    throw gitFailure("Git command failed during repository analysis.");
+    return assertSuccessfulGitOutput(result);
 }
 //# sourceMappingURL=repository-analysis-support.js.map

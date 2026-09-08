@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { futureCommitWarnings, retainClosedTemporalClusters, } from "./git-analyzer.js";
-import "./git-history-warnings-more.cases.js";
 test("reports future commits and leaves their temporal " + "cluster unfinished", () => {
     const analysisTimestampMs = 10_000;
     const cluster = [

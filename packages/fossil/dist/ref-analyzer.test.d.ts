@@ -9,4 +9,6 @@ import "./ref-parsers-csharp.cases.js";
 import "./ref-parsers-rust.cases.js";
 import "./ref-strength-import.cases.js";
 import "./ref-strength-fallback.cases.js";
+import "./ref-strength-fallback-csharp.cases.js";
 import "./ref-candidate-evidence.cases.js";
+import "./ref-candidate-strength.cases.js";

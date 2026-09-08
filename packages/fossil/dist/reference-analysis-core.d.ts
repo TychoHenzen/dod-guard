@@ -7,4 +7,4 @@ export { DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES, DEFAULT_MAXIMUM_REFERENCE_TOTAL_B
 export { readBoundedReferenceSources } from "./reference-read-bounded.js";
 export { readReferenceSources } from "./reference-read-basic.js";
 export { readStableReferenceSources } from "./reference-read-stable.js";
-export type { BoundedReferenceReadResult, ReferenceAnalysisResult, ReferenceCandidate, ReferenceContainmentBoundary, ReferenceReadResult, ReferenceSourceContent, ReferenceSourceMetadataReader, ReferenceSourceReader, ReferenceSourceSnapshot, StableReferenceSourceBoundary, } from "./reference-analysis-types/index.js";
+export type { BoundedReferenceReadResult, ReferenceAnalysisResult, ReferenceCandidate, ReferenceContainmentBoundary, ReferenceReadResult, ReferenceSourceContent, ReferenceSourceMetadataReader, ReferenceSourceReader, ReferenceSourceSnapshot, StableReferenceSourceRead, StableReferenceSourceReader, StableReferenceSourceBoundary, } from "./reference-analysis-types/index.js";

@@ -1,8 +1,8 @@
-import * as history from "./git-analyzer.js";
+import * as history from "./repository-analysis-history-boundary.js";
 import {
   markUnresolvedCandidateEvidence,
   regradeVestigialEdges,
-} from "./ref-analyzer.js";
+} from "./repository-analysis-reference-boundary.js";
 import type { Burst } from "./types.js";
 import type { referenceSources } from "./repository-analysis-references.js";
 import { candidateFinding } from "./repository-analysis-candidate-finding.js";

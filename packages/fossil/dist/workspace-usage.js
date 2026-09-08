@@ -1,9 +1,9 @@
-import { analyzeReferences, } from "./ref-analyzer.js";
+import { analyzeReferences, } from "./repository-analysis-reference-boundary.js";
 import { basename, hasGraphUsage, normalizedRepositoryPath, sourceUsesCandidate, } from "./workspace-usage-evidence.js";
 /** Detects imports and exact source-string usage evidence. */
-export function hasInboundWorkspaceUsage(candidatePath, sources, inventoryPaths) {
+export function hasInboundWorkspaceUsage(input) {
+    const { candidatePath, sources, inventoryPaths, graph = analyzeReferences(sources), } = input;
     const normalizedCandidate = normalizedRepositoryPath(candidatePath);
-    const graph = analyzeReferences(sources);
     if (hasGraphUsage(graph, normalizedCandidate))
         return true;
     const candidateBasename = basename(normalizedCandidate);
@@ -18,6 +18,12 @@ export function hasInboundWorkspaceUsage(candidatePath, sources, inventoryPaths)
 }
 /** Omits candidates with inbound repository-contained usage evidence. */
 export function omitUsedWorkspaceCandidates(candidates, sources, inventoryPaths) {
-    return candidates.filter((candidate) => !hasInboundWorkspaceUsage(candidate.path, sources, inventoryPaths));
+    const graph = analyzeReferences(sources);
+    return candidates.filter((candidate) => !hasInboundWorkspaceUsage({
+        candidatePath: candidate.path,
+        sources,
+        inventoryPaths,
+        graph,
+    }));
 }
 //# sourceMappingURL=workspace-usage.js.map

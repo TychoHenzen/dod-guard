@@ -1,4 +1,4 @@
-import * as history from "./git-analyzer.js";
+import * as history from "./repository-analysis-history-boundary.js";
 import type { AnalysisWarning, FossilReport } from "./types.js";
 import type { analyzeHistoryStage } from "./repository-analysis-history.js";
 import type { analyzeWorkspaceStage } from "./repository-analysis-workspace.js";

@@ -5,7 +5,6 @@ import {
   parseNonMergeGitLog,
   sortCommitsChronologically,
 } from "./git-analyzer.js";
-import "./git-history-parse-merge.cases.js";
 
 test("disables external diff helpers for non-merge history output", () => {
   assert.equal(nonMergeGitLogArguments().includes("--no-ext-diff"), true);

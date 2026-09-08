@@ -56,6 +56,8 @@ export function runStableRaceScenario() {
                     throw new Error("sensitive filesystem error");
                 if (source.path === "src/binary.ts")
                     return "text\0not-source";
+                if (source.path === "src/stable.ts")
+                    return "stable!";
                 return `// ${source.path}\n`;
             },
         },

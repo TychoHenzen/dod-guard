@@ -1,4 +1,4 @@
-import * as history from "./git-analyzer.js";
+import * as history from "./repository-analysis-history-boundary.js";
 import { runGitCommand } from "./git-process-boundary.js";
 import { successfulGit } from "./repository-analysis-support.js";
 import { historyBursts, historyWarnings, resolveHistoryRepository, sparseCheckoutOutput, } from "./repository-analysis-history-steps.js";

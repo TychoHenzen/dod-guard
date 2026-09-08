@@ -5,7 +5,7 @@ import {
   parseNonMergeGitLog,
   resolveRenameActivities,
 } from "./git-analyzer.js";
-import { temporaryRepository } from "./git-analyzer.test-support.js";
+import { temporaryRepository } from "./testing/fixtures.js";
 
 async function successiveRenameActivity() {
   const repository = await temporaryRepository();
