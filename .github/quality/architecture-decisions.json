@@ -6242,5 +6242,26 @@
   "reason": "Reviewed for issue #52: these existing exports are intentional internal module boundaries for the browser, navigation, discovery, and freshness split. The selected browser asset fix maps requests to fixed packaged filenames and adds no public module surface. Package tests, bundle generation, and bundle smoke checks passed. This refresh binds the existing decisions to the current complete PR source fingerprint used by CI.",
   "author": "Codex",
   "time": "2026-09-07T21:44:44.605Z"
-}
+},
+  {
+    "findingId": "0484508c377944012566aa79480b3f7f43f6774d08ab41d43530792e1881692c",
+    "fingerprint": "e03001371eeaa35cdef23deaad816efe897438ac038dc15a78c4dada0049648d",
+    "reason": "Reviewed for issue #53: the Program.n finding comes from the intentionally exported real-LSP reproduction fixture data used by the adjacent harness script. It is test-harness surface, not the Code Explorer package protocol or a compatibility API.",
+    "author": "Codex",
+    "time": "2026-09-08T08:09:27.808Z"
+  },
+  {
+    "findingId": "8b935961fa1fdbc0d7ccbce0117357cabc1021f5bc4922090a138f50d23a7e60",
+    "fingerprint": "e03001371eeaa35cdef23deaad816efe897438ac038dc15a78c4dada0049648d",
+    "reason": "Reviewed for issue #53: PracticeFailure.constructor is an internal error-propagation seam shared by the split practice-browser harness modules. It does not expand the Code Explorer package protocol or external compatibility surface.",
+    "author": "Codex",
+    "time": "2026-09-08T08:09:27.808Z"
+  },
+  {
+    "findingId": "ab57f44042f2d281c005a864f8c79cdc5ee8fe3f566d138e393ff9f7d85a8ca5",
+    "fingerprint": "e03001371eeaa35cdef23deaad816efe897438ac038dc15a78c4dada0049648d",
+    "reason": "Reviewed for issue #53: PracticeFailure.exitCode is an internal error-propagation field shared by the split practice-browser harness modules. It does not expand the Code Explorer package protocol or external compatibility surface.",
+    "author": "Codex",
+    "time": "2026-09-08T08:09:27.808Z"
+  }
 ]

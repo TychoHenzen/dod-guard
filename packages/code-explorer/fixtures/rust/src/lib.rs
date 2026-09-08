@@ -3,11 +3,10 @@ fn entry() {
 }
 
 fn helper() {
-    let _item = Item;
+    let _item = Item {};
 }
 
-struct Item;
-
-trait Worker {}
-struct ConcreteWorker;
-impl Worker for ConcreteWorker {}
+mod item;
+mod concrete_worker;
+mod worker;
+use item::Item;

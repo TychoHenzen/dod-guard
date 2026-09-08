@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createDirectLspClient } from "../semantic/direct-lsp/direct-lsp.js";
-import { FakeProcess, ready, restartFixture, Scheduler, tick } from "../testing/direct-lsp-test-support.js";
+import { FakeProcess, ready, restartFixture, Scheduler, tick } from "../testing/direct-lsp/direct-lsp-test-support.js";
 
 it("restarts actual replacement processes at 250ms and 1s then stops", async () => {
   const client = await restartFixture();

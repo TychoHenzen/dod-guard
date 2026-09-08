@@ -5,7 +5,7 @@ import {
   createSemanticBackend,
   outgoingHierarchyClient,
   rustEntrySymbol,
-} from "../testing/direct-lsp-semantic-support.js";
+} from "../testing/direct-lsp/direct-lsp-semantic-support.js";
 
 it("uses outgoing hierarchy targets and rejects virtual or malformed locations", async () => {
   const methods: string[] = [];
@@ -21,5 +21,5 @@ it("uses outgoing hierarchy targets and rejects virtual or malformed locations",
     symbol_id: "entry",
   });
   assert.deepEqual(methods, ["textDocument/prepareCallHierarchy", "callHierarchy/outgoingCalls"]);
-  assertHierarchyRelation(result, "callees", "callee", 3);
+  assertHierarchyRelation({ result, operation: "callees", name: "callee", callSiteCharacter: 3 });
 });

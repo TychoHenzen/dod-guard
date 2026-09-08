@@ -6,7 +6,7 @@ import {
   Process,
   pythonMirrorOptions,
   runtimeSourceOptions,
-} from "../testing/runtime-lsp-test-support.js";
+} from "../testing/runtime/runtime-lsp-test-support.js";
 
 it("opens approved Python mirror documents before work begins", async () => {
   const process = new Process([], {}, () => []);

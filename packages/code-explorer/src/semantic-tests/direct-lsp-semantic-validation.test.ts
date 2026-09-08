@@ -7,7 +7,7 @@ import {
   rustEntrySymbol,
   semanticClient,
   virtualLocationClient,
-} from "../testing/direct-lsp-semantic-support.js";
+} from "../testing/direct-lsp/direct-lsp-semantic-support.js";
 
 it("rejects virtual backend locations instead of relabeling them", async () => {
   const source = rustEntrySymbol();

@@ -21,6 +21,7 @@ export function focusReply() {
 }
 export function relationReply(
   relation: "definition" | "references" | "callers" | "callees",
+  count = 1,
 ) {
   const symbol = {
     definition: type,
@@ -32,6 +33,31 @@ export function relationReply(
     relation === "callers" || relation === "callees"
       ? { call_site: caller.location }
       : {};
-  const target = { relation, symbol, location: symbol.location, ...callSite };
-  return { operation: relation, revision: revision(), relations: [target] };
+  const relations = Array.from({ length: count }, (_, index) =>
+    relationAtIndex({ relation, symbol, callSite, index }),
+  );
+  return { operation: relation, revision: revision(), relations };
+}
+
+function relationAtIndex(input: {
+  relation: "definition" | "references" | "callers" | "callees";
+  symbol: typeof type;
+  callSite: object;
+  index: number;
+}) {
+  const { relation, symbol, callSite, index } = input;
+  if (index === 0)
+    return { relation, symbol, location: symbol.location, ...callSite };
+  const path = symbol.location.path.replace(/\.rs$/u, `-${index}.rs`);
+  const candidate = {
+    ...symbol,
+    id: `${symbol.id}-${index}`,
+    location: { ...symbol.location, path },
+  };
+  return {
+    relation,
+    symbol: candidate,
+    location: candidate.location,
+    ...callSite,
+  };
 }

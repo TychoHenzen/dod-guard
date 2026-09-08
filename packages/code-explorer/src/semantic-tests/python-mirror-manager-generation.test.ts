@@ -3,7 +3,7 @@ import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "node:test";
 import { createPythonMirrorManager } from "../semantic/python-mirror/python-mirror-runtime.js";
-import { project } from "../testing/python-mirror-runtime-test-support.js";
+import { project } from "../testing/runtime/python-mirror-runtime-test-support.js";
 
 async function expectGeneration(
   manager: ReturnType<typeof createPythonMirrorManager>,

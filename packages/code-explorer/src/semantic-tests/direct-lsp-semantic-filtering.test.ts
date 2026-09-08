@@ -6,7 +6,7 @@ import {
   semanticClient,
   unavailableRelationBackend,
   workspaceSearchClient,
-} from "../testing/direct-lsp-semantic-support.js";
+} from "../testing/direct-lsp/direct-lsp-semantic-support.js";
 
 it("preserves public workspace-symbol names and kinds for discovery", async () => {
   const backend = createSemanticBackend({

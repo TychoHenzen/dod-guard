@@ -5,7 +5,7 @@ import {
   createSemanticBackend,
   incomingHierarchyClient,
   rustEntrySymbol,
-} from "../testing/direct-lsp-semantic-support.js";
+} from "../testing/direct-lsp/direct-lsp-semantic-support.js";
 
 it("uses server-issued hierarchy items and preserves target metadata", async () => {
   const methods: string[] = [];
@@ -19,5 +19,5 @@ it("uses server-issued hierarchy items and preserves target metadata", async () 
     symbol_id: "entry",
   });
   assert.deepEqual(methods, ["textDocument/prepareCallHierarchy", "callHierarchy/incomingCalls"]);
-  assertHierarchyRelation(result, "callers", "caller", 2);
+  assertHierarchyRelation({ result, operation: "callers", name: "caller", callSiteCharacter: 2 });
 });

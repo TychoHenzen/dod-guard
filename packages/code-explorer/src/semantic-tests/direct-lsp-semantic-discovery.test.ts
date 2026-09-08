@@ -7,7 +7,7 @@ import {
   pythonOpenedDiscoveryBackend,
   semanticRootWithRead,
   workspaceSearchClient,
-} from "../testing/direct-lsp-semantic-support.js";
+} from "../testing/direct-lsp/direct-lsp-semantic-support.js";
 
 it("focuses the exact symbol identity returned by the live workspace", async () => {
   const methods: string[] = [];

@@ -7199,11 +7199,108 @@ var require_dist = __commonJS({
 });
 
 // src/index.ts
-import { Buffer as Buffer6 } from "node:buffer";
-import { execFileSync } from "node:child_process";
-import { readFileSync as readFileSync8, realpathSync as realpathSync3 } from "node:fs";
-import * as path4 from "node:path";
-import { fileURLToPath as fileURLToPath5 } from "node:url";
+import { realpathSync as realpathSync3 } from "node:fs";
+import process6 from "node:process";
+import { fileURLToPath as fileURLToPath6 } from "node:url";
+
+// src/browser-server/browser-server-error.ts
+var BrowserServerError = class extends Error {
+  constructor(code) {
+    super(code);
+    this.code = code;
+  }
+  code;
+};
+
+// src/browser-server/browser-server-lifecycle-support.ts
+function closeResources(options) {
+  const { listener, core, controller, parentSignal, abort } = options;
+  listener?.stopAdmission();
+  controller.abort();
+  const timeout = AbortSignal.timeout(1e4);
+  return Promise.allSettled([
+    listener?.close(timeout),
+    core?.close(timeout)
+  ]).then(() => {
+    parentSignal?.removeEventListener("abort", abort);
+  });
+}
+function serverResult(options) {
+  const { listener, projectRoot, close } = options;
+  return { url: listener.address, projectRoot, close };
+}
+
+// src/semantic/adapter-selection/adapter-selection-comparison.ts
+function arraysEqual(left, right) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+function versionProbeMatches(backend, run) {
+  return versionProbesEqual(
+    backend.authorization.version_probe,
+    run.version_probe
+  ) && backend.authorization.version_probe.executable === run.executable && arraysEqual(
+    backend.authorization.version_probe.entrypoints,
+    run.entrypoints
+  );
+}
+function versionProbesEqual(left, right) {
+  return [
+    left.method === right.method,
+    left.command_root === right.command_root,
+    left.executable === right.executable,
+    arraysEqual(left.entrypoints, right.entrypoints),
+    arraysEqual(left.arguments, right.arguments),
+    left.command_template === right.command_template
+  ].every(Boolean);
+}
+
+// src/semantic/adapter-selection/adapter-selection-evidence-check.ts
+function evidenceAligns(record2, evidence) {
+  return record2.runtime_backends.every(
+    (backend) => backendEvidenceAligns({ backend, record: record2, evidence })
+  ) && arraysEqual(
+    record2.trusted_command_roots.win32,
+    evidence.platforms.win32.command_roots
+  ) && arraysEqual(
+    record2.trusted_command_roots.posix,
+    evidence.platforms.posix.command_roots
+  );
+}
+function backendEvidenceAligns(input) {
+  const backend = input.backend;
+  const run = input.evidence.sentinel_runs[backend.language];
+  const platform = input.evidence.platforms[backend.sentinel_evidence.platform];
+  return [
+    fixtureMatches(backend, input.evidence, run),
+    backend.compatible_version === run.backend_version,
+    backend.platform_executables[backend.sentinel_evidence.platform] === run.executable,
+    entrypointsMatch(backend, run),
+    authorizationMatches(backend, run),
+    versionProbeMatches(backend, run),
+    platform.command_roots.includes(
+      backend.authorization.version_probe.command_root
+    ),
+    backend.sentinel_evidence.passed === (platform.status === "passed" && run.side_effect_absent)
+  ].every(Boolean);
+}
+function fixtureMatches(backend, evidence, run) {
+  return backend.sentinel_evidence.fixture_sha256 === evidence.fixture_tree_hashes[backend.language] && backend.sentinel_evidence.fixture_sha256 === run.fixture_sha256;
+}
+function entrypointsMatch(backend, run) {
+  const platform = backend.sentinel_evidence.platform;
+  return arraysEqual(backend.platform_entrypoints[platform], run.entrypoints) && backend.platform_entrypoints[platform].length === backend.authorization.entrypoint_sha256s.length && run.entrypoints.length === run.entrypoint_sha256s.length;
+}
+function authorizationMatches(backend, run) {
+  return backend.authorization.executable_sha256 === run.executable_sha256 && arraysEqual(
+    backend.authorization.entrypoint_sha256s,
+    run.entrypoint_sha256s
+  ) && backend.authorization.package_metadata_sha256 === run.package_metadata_sha256 && (backend.language === "python" ? backend.authorization.package_metadata_sha256 !== null : backend.authorization.package_metadata_sha256 === null);
+}
+
+// src/semantic/adapter-selection/adapter-selection-loader.ts
+import { readFileSync as readFileSync2 } from "node:fs";
+import { dirname as dirname2, join as join2 } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
 var external_exports = {};
@@ -11246,6 +11343,7612 @@ var coerce = {
 };
 var NEVER = INVALID;
 
+// src/semantic/adapter-selection/adapter-selection-schema-parts.ts
+var sha256 = external_exports.string().regex(/^[a-f0-9]{64}$/i);
+var win32CommandRoot = external_exports.enum([
+  "cargo_home_bin",
+  "dotnet_tools",
+  "node_install",
+  "npm_global",
+  "code_explorer_backends"
+]);
+var posixCommandRoot = external_exports.literal("posix_code_explorer_backends");
+var commandRoot = external_exports.union([win32CommandRoot, posixCommandRoot]);
+var versionProbe = external_exports.object({
+  method: external_exports.enum(["command", "package_json", "windows_file_version"]),
+  command_root: commandRoot,
+  executable: external_exports.string().min(1),
+  entrypoints: external_exports.array(external_exports.string().min(1)),
+  arguments: external_exports.array(external_exports.string()),
+  command_template: external_exports.string().min(1)
+}).strict();
+var runtimeCapabilities = external_exports.record(external_exports.enum(["ready", "unavailable", "failed"])).refine((value) => Object.keys(value).length > 0);
+var sentinelEvidence = external_exports.object({
+  fixture: external_exports.string().min(1),
+  platform: external_exports.enum(["win32", "posix"]),
+  fixture_sha256: external_exports.string().min(1),
+  side_effect_absent: external_exports.boolean(),
+  result: external_exports.enum(["passed", "unproven", "failed"]),
+  passed: external_exports.boolean()
+}).strict().superRefine((evidence, context) => {
+  if (evidence.passed && !(evidence.result === "passed" && evidence.side_effect_absent))
+    context.addIssue({
+      code: external_exports.ZodIssueCode.custom,
+      message: "passing sentinel evidence is inconsistent"
+    });
+});
+
+// src/semantic/adapter-selection/adapter-selection-evidence-schema.ts
+var sentinelRunSchema = external_exports.object({
+  executable: external_exports.string().min(1),
+  executable_sha256: sha256,
+  entrypoints: external_exports.array(external_exports.string().min(1)),
+  entrypoint_sha256s: external_exports.array(sha256),
+  package_metadata_sha256: sha256.nullable(),
+  backend_version: external_exports.string().min(1),
+  fixture_sha256: sha256,
+  version_probe: versionProbe,
+  startup: external_exports.literal(true),
+  definition_navigation: external_exports.literal(true),
+  side_effect_absent: external_exports.literal(true),
+  stderr: external_exports.string().max(1024),
+  positive_control: external_exports.object({
+    initialized: external_exports.literal(true),
+    definition_responded: external_exports.literal(true),
+    side_effect_absent: external_exports.literal(false)
+  }).strict()
+}).strict();
+function platformEvidenceSchema(root) {
+  return external_exports.object({
+    status: external_exports.enum(["passed", "unproven"]),
+    command_roots: external_exports.array(root),
+    commands: external_exports.array(external_exports.string()),
+    bounded_output: external_exports.string(),
+    backend_versions: external_exports.record(external_exports.string(), external_exports.string().nullable()),
+    positive_controls: external_exports.record(external_exports.string(), external_exports.string())
+  }).strict();
+}
+var evidenceSchema = external_exports.object({
+  schema_version: external_exports.literal(1),
+  recorded_at: external_exports.string().datetime(),
+  purpose: external_exports.string().min(1),
+  platforms: external_exports.object({
+    win32: platformEvidenceSchema(win32CommandRoot),
+    posix: platformEvidenceSchema(posixCommandRoot)
+  }).strict(),
+  fixture_tree_hashes: external_exports.object({
+    rust: sha256,
+    python: sha256,
+    csharp: sha256
+  }).strict(),
+  sentinel_runs: external_exports.object({
+    rust: sentinelRunSchema,
+    python: sentinelRunSchema.extend({
+      package_metadata_sha256: sha256,
+      environment: external_exports.object({
+        PATH: external_exports.literal(""),
+        PYTHONPATH: external_exports.literal(""),
+        VIRTUAL_ENV: external_exports.literal(""),
+        CONDA_PREFIX: external_exports.literal("")
+      }).strict()
+    }),
+    csharp: sentinelRunSchema
+  }).strict()
+}).strict();
+
+// src/semantic/contracts/contract-values.ts
+var languages = ["rust", "python", "csharp"];
+var relationNames = [
+  "definition",
+  "references",
+  "type_definition",
+  "implementation",
+  "callers",
+  "callees"
+];
+
+// src/semantic/contracts/contract-request-schema.ts
+var semanticRequestSchema = external_exports.discriminatedUnion("operation", [
+  external_exports.object({
+    operation: external_exports.literal("search"),
+    query: external_exports.string()
+  }).strict(),
+  external_exports.object({
+    operation: external_exports.literal("focus"),
+    symbol_id: external_exports.string().min(1)
+  }).strict(),
+  ...relationNames.map(
+    (operation) => external_exports.object({
+      operation: external_exports.literal(operation),
+      symbol_id: external_exports.string().min(1)
+    }).strict()
+  )
+]);
+
+// src/semantic/contracts/contract-schemas.ts
+var positionSchema = external_exports.object({
+  line: external_exports.number().int().nonnegative(),
+  character: external_exports.number().int().nonnegative()
+}).strict();
+var rangeSchema = external_exports.object({ start: positionSchema, end: positionSchema }).strict();
+var relativePathSchema = external_exports.string().min(1).refine(
+  (path5) => !(path5.startsWith("/") || /^[A-Za-z]:[\\/]/.test(path5) || path5.split(/[\\/]/).includes(".."))
+);
+var projectLocationSchema = external_exports.object({ path: relativePathSchema, range: rangeSchema }).strict();
+var externalLocationSchema = external_exports.object({ external: external_exports.literal(true) }).strict();
+var sourceLocationSchema = external_exports.union([
+  projectLocationSchema,
+  externalLocationSchema
+]);
+var symbolSchema = external_exports.object({
+  id: external_exports.string().min(1),
+  name: external_exports.string().min(1),
+  qualified_name: external_exports.string().min(1).optional(),
+  language: external_exports.enum(languages),
+  kind: external_exports.string().min(1),
+  location: projectLocationSchema
+}).strict();
+var revisionSchema = external_exports.object({
+  generation: external_exports.number().int().nonnegative(),
+  manifest_sha256: external_exports.string().min(1)
+}).strict();
+
+// src/semantic/contracts/contract-result-schema.ts
+var visibleSymbolSchema = external_exports.object({
+  name: external_exports.string().min(1),
+  symbol_id: external_exports.string().min(1)
+}).strict();
+var focusContentSchema = external_exports.object({
+  body: external_exports.string().optional(),
+  declaration: external_exports.string().optional(),
+  visible_symbols: external_exports.array(visibleSymbolSchema).optional()
+}).strict().optional();
+function relationSchema(operation) {
+  return external_exports.object({
+    operation: external_exports.literal(operation),
+    revision: revisionSchema,
+    relations: external_exports.array(
+      external_exports.union([
+        external_exports.object({
+          relation: external_exports.literal(operation),
+          symbol: symbolSchema,
+          location: sourceLocationSchema,
+          call_site: projectLocationSchema.optional()
+        }).strict(),
+        external_exports.object({
+          relation: external_exports.literal(operation),
+          external: externalLocationSchema.extend({
+            display_name: external_exports.string().min(1).optional()
+          })
+        }).strict()
+      ])
+    )
+  }).strict();
+}
+var semanticResultSchema = external_exports.discriminatedUnion("operation", [
+  external_exports.object({
+    operation: external_exports.literal("search"),
+    revision: revisionSchema,
+    symbols: external_exports.array(symbolSchema)
+  }).strict(),
+  external_exports.object({
+    operation: external_exports.literal("focus"),
+    revision: revisionSchema,
+    symbol: symbolSchema,
+    content: focusContentSchema
+  }).strict(),
+  ...relationNames.map(relationSchema)
+]);
+
+// src/semantic/contracts/contract.ts
+function parseSemanticRequest(input) {
+  const parsed = semanticRequestSchema.safeParse(input);
+  if (!parsed.success) throw new Error("invalid semantic request");
+  return parsed.data;
+}
+function parseSemanticResult(input) {
+  const parsed = semanticResultSchema.safeParse(input);
+  if (!parsed.success) throw new Error("invalid semantic result");
+  return parsed.data;
+}
+
+// src/semantic/adapter-selection/adapter-selection-record-schema.ts
+var runtimeBackendSchema = external_exports.object({
+  language: external_exports.enum(languages),
+  platform_executables: external_exports.object({
+    posix: external_exports.string().min(1),
+    win32: external_exports.string().min(1)
+  }).strict(),
+  platform_entrypoints: external_exports.object({
+    posix: external_exports.array(external_exports.string().min(1)),
+    win32: external_exports.array(external_exports.string().min(1))
+  }).strict(),
+  compatible_version: external_exports.string().min(1),
+  arguments: external_exports.array(external_exports.string()),
+  endpoint: external_exports.literal("stdio"),
+  environment: external_exports.record(external_exports.string()),
+  safe_initialization_options: external_exports.record(external_exports.unknown()),
+  capabilities: external_exports.object(
+    Object.fromEntries(
+      relationNames.map((name) => [
+        name,
+        external_exports.enum(["ready", "unavailable", "failed"])
+      ])
+    )
+  ).strict(),
+  sentinel_evidence: sentinelEvidence,
+  authorization: external_exports.object({
+    executable_sha256: sha256,
+    entrypoint_sha256s: external_exports.array(sha256),
+    package_metadata_sha256: sha256.nullable(),
+    version_probe: versionProbe
+  }).strict()
+}).strict();
+var recordSchema = external_exports.object({
+  schema_version: external_exports.literal(1),
+  source_dependency_versions: external_exports.object({
+    serena: external_exports.string().min(1),
+    "@p1va/symbols": external_exports.string().min(1)
+  }).strict(),
+  evidence_artifact: external_exports.literal("adapter-selection-evidence.json"),
+  trusted_command_roots: external_exports.object({
+    posix: external_exports.array(external_exports.literal("posix_code_explorer_backends")).min(1),
+    win32: external_exports.array(win32CommandRoot).min(1)
+  }).strict(),
+  selected_paths: external_exports.object({
+    rust: external_exports.literal("direct_standard_public_lsp"),
+    python: external_exports.literal("direct_standard_public_lsp"),
+    csharp: external_exports.literal("direct_standard_public_lsp")
+  }).strict(),
+  runtime_backends: external_exports.array(runtimeBackendSchema)
+}).strict().superRefine((record2, context) => {
+  for (const language of languages) {
+    const count = record2.runtime_backends.filter(
+      (backend) => backend.language === language
+    ).length;
+    if (count !== 1)
+      context.addIssue({
+        code: external_exports.ZodIssueCode.custom,
+        message: `exactly one ${language} backend is required`
+      });
+  }
+});
+
+// src/semantic/adapter-selection/adapter-selection-root.ts
+import { readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+function findPackageRoot(start) {
+  let directory2 = resolve(start);
+  while (true) {
+    if (isCodeExplorerPackage(directory2)) return directory2;
+    const parent = dirname(directory2);
+    if (parent === directory2)
+      throw new Error("invalid adapter selection record");
+    directory2 = parent;
+  }
+}
+function isCodeExplorerPackage(directory2) {
+  try {
+    const parseJson3 = JSON.parse;
+    const packageInfo2 = parseJson3(
+      readFileSync(join(directory2, "package.json"), "utf8")
+    );
+    return packageInfo2.name === "code-explorer";
+  } catch {
+    return false;
+  }
+}
+function deepFreeze(value) {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value))
+      deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+// src/semantic/adapter-selection/adapter-selection-parser.ts
+function parseAdapterSelectionEvidence(input) {
+  const parsed = evidenceSchema.safeParse(input);
+  if (!parsed.success) throw new Error("invalid adapter selection evidence");
+  return deepFreeze(parsed.data);
+}
+function parseAdapterSelectionRecord(input) {
+  const parsed = recordSchema.safeParse(input);
+  if (!parsed.success) throw new Error("invalid adapter selection record");
+  return deepFreeze(parsed.data);
+}
+
+// src/semantic/adapter-selection/adapter-selection-loader.ts
+function loadAdapterSelectionRecord() {
+  const packageRoot = findPackageRoot(dirname2(fileURLToPath(import.meta.url)));
+  const record2 = parseFile(
+    join2(packageRoot, "adapter-selection.json"),
+    parseAdapterSelectionRecord,
+    "invalid adapter selection record"
+  );
+  const evidence = parseFile(
+    join2(packageRoot, record2.evidence_artifact),
+    parseAdapterSelectionEvidence,
+    "invalid adapter selection evidence"
+  );
+  if (!evidenceAligns(record2, evidence))
+    throw new Error("invalid adapter selection evidence");
+  return record2;
+}
+function parseFile(path5, parse3, errorMessage) {
+  try {
+    return parse3(JSON.parse(readFileSync2(path5, "utf8")));
+  } catch {
+    throw new Error(errorMessage);
+  }
+}
+
+// src/semantic/adapter-selection/adapter-selection-policy.ts
+import { homedir } from "node:os";
+import { join as join3 } from "node:path";
+
+// src/semantic/backend-launch/backend-launch-paths.ts
+import { posix, win32 } from "node:path";
+function samePath(left, right, platform) {
+  if (platform === "posix") return left === right;
+  return win32.normalize(left).toLowerCase() === win32.normalize(right).toLowerCase();
+}
+function isWithin(root, candidate, platform) {
+  const path5 = platform === "win32" ? win32 : posix;
+  const relativePath = path5.relative(
+    path5.resolve(root),
+    path5.resolve(candidate)
+  );
+  return relativePath === "" || isChildPath(relativePath, path5.sep, path5);
+}
+function isChildPath(relativePath, separator, path5) {
+  return !relativePath.startsWith(`..${separator}`) && relativePath !== ".." && !path5.isAbsolute(relativePath);
+}
+function basename(value, platform) {
+  return (platform === "win32" ? win32 : posix).basename(value);
+}
+function platformForHost() {
+  return process.platform === "win32" ? "win32" : "posix";
+}
+function isPermittedEndpoint(endpoint) {
+  if (endpoint === "stdio") return true;
+  try {
+    const url = new URL(endpoint);
+    return localHost(url.hostname);
+  } catch {
+    return false;
+  }
+}
+function localHost(hostname2) {
+  return /^127(?:\.\d{1,3}){3}$/.test(hostname2) || hostname2 === "[::1]" || hostname2 === "::1";
+}
+
+// src/semantic/backend-launch/backend-launch-entrypoints.ts
+function sameEntrypoints(left, right, platform) {
+  return sameEntryCount(left, right) && everyEntryMatches(left, right, platform);
+}
+function sameEntryCount(left, right) {
+  return (left?.length ?? 0) === (right?.length ?? 0);
+}
+function everyEntryMatches(left, right, platform) {
+  return (left ?? []).every(
+    (file, index) => sameEntry(file, right?.[index], platform)
+  );
+}
+function sameEntry(file, other, platform) {
+  if (!(other && file.canonical_path && other.canonical_path)) return false;
+  if (!samePath(file.canonical_path, other.canonical_path, platform))
+    return false;
+  return sameFileCore(file, other);
+}
+function sameFileCore(left, right) {
+  return left.device === right.device && left.file_id === right.file_id && left.sha256 === right.sha256;
+}
+
+// src/semantic/backend-launch/backend-launch-snapshot.ts
+function snapshotAllowlistEntry(entry) {
+  return {
+    language: entry.language,
+    executable_basename: entry.executable_basename,
+    entrypoint_basenames: entry.entrypoint_basenames ? [...entry.entrypoint_basenames] : [],
+    executable_sha256: entry.executable_sha256,
+    entrypoint_sha256s: entry.entrypoint_sha256s ? [...entry.entrypoint_sha256s] : [],
+    package_metadata_sha256: entry.package_metadata_sha256 ?? null,
+    compatible_version: entry.compatible_version,
+    arguments: [...entry.arguments],
+    endpoint: entry.endpoint,
+    environment: { ...entry.environment },
+    safe_initialization_options: cloneValue(entry.safe_initialization_options),
+    sentinel_passed: entry.sentinel_passed
+  };
+}
+function cloneValue(value) {
+  if (Array.isArray(value)) return value.map(cloneValue);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [
+        key,
+        cloneValue(child)
+      ])
+    );
+  return value;
+}
+function deepFreeze2(value) {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value))
+      deepFreeze2(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+// src/semantic/backend-launch/backend-launch-identity.ts
+function sameIdentity(left, right, platform) {
+  if (!sameCoreIdentity(left, right, platform)) return false;
+  if (!sameEntrypoints(left.entrypoints, right.entrypoints, platform))
+    return false;
+  return sameFileIdentity(
+    left.package_metadata,
+    right.package_metadata,
+    platform
+  );
+}
+function sameCoreIdentity(left, right, platform) {
+  return samePath(left.canonical_path, right.canonical_path, platform) && left.device === right.device && left.file_id === right.file_id && left.sha256 === right.sha256 && left.version === right.version;
+}
+function sameFileIdentity(left, right, platform) {
+  if (!(left && right)) return left === right;
+  return sameFilePath(left, right, platform) && sameFileCore(left, right);
+}
+function sameFilePath(left, right, platform) {
+  return Boolean(
+    left.canonical_path && right.canonical_path && samePath(left.canonical_path, right.canonical_path, platform)
+  );
+}
+function resolveArguments(template, entrypoints) {
+  return deepFreeze2(
+    template.map((argument) => resolveArgument(argument, entrypoints))
+  );
+}
+function resolveArgument(argument, entrypoints) {
+  const match = /^\{entrypoint:(\d+)\}$/.exec(argument);
+  if (!match) return argument;
+  const path5 = entrypoints?.[Number(match[1])]?.canonical_path;
+  if (!path5) throw new Error("backend_identity_unverifiable");
+  return path5;
+}
+
+// src/semantic/backend-launch/backend-inspection-result.ts
+function rejected(code) {
+  return { status: "rejected", code };
+}
+
+// src/semantic/backend-launch/backend-file-identity.ts
+function isCompleteBackendFile(file) {
+  return Boolean(
+    file.device && file.file_id && file.sha256 && file.regular_file && !file.link_or_reparse_point
+  );
+}
+
+// src/semantic/backend-launch/backend-launch-inspection-executable.ts
+function validateExecutable(entry, identity, options) {
+  const version2 = identity.version;
+  if (!launchIdentityComplete(identity))
+    return rejected("backend_identity_unverifiable");
+  if (!version2) return rejected("backend_identity_unverifiable");
+  return validateExecutablePath({ entry, identity, options }) ?? validateExecutableEvidence(identity, entry, version2);
+}
+function validateExecutablePath(input) {
+  const platform = input.options.platform ?? platformForHost();
+  return safeExecutablePath({ ...input, platform }) ? void 0 : rejected("backend_identity_unverifiable");
+}
+function validateExecutableEvidence(identity, entry, version2) {
+  if (!validHash(identity.sha256))
+    return rejected("backend_identity_unverifiable");
+  if (identity.sha256 !== entry.executable_sha256)
+    return rejected("backend_identity_changed");
+  if (!versionMatches(version2, entry.compatible_version))
+    return rejected("version_incompatible");
+  return void 0;
+}
+function launchIdentityComplete(identity) {
+  return completeIdentity(identity) && !!identity.version;
+}
+function completeIdentity(identity) {
+  return isCompleteBackendFile(identity);
+}
+function safeExecutablePath(input) {
+  return !!(input.identity.canonical_path && !isWithin(
+    input.options.project_root,
+    input.identity.canonical_path,
+    input.platform
+  ) && samePath(
+    basename(input.identity.canonical_path, input.platform),
+    input.entry.executable_basename,
+    input.platform
+  ));
+}
+function validHash(value) {
+  return !!value && /^[a-f0-9]{64}$/i.test(value);
+}
+function versionMatches(version2, compatibleRange) {
+  if (!compatibleRange.startsWith("^")) return version2 === compatibleRange;
+  const [major] = compatibleRange.slice(1).split(".");
+  return version2.split(".")[0] === major;
+}
+
+// src/semantic/backend-launch/backend-launch-entrypoint-validation.ts
+function validateEntrypoint(input) {
+  const platform = input.options.platform ?? platformForHost();
+  const failure = invalidEntrypoint(input, platform);
+  if (failure) return failure;
+  return input.file.sha256 === input.checksum ? void 0 : rejected("backend_identity_changed");
+}
+function invalidEntrypoint(input, platform) {
+  if (!isCompleteBackendFile(input.file))
+    return rejected("backend_identity_unverifiable");
+  if (!safeEntryPath({ ...input, platform }))
+    return rejected("backend_identity_unverifiable");
+  if (!validHash2(input.file.sha256))
+    return rejected("backend_identity_unverifiable");
+  return void 0;
+}
+function safeEntryPath(input) {
+  if (!input.file.canonical_path) return false;
+  if (isWithin(
+    input.options.project_root,
+    input.file.canonical_path,
+    input.platform
+  ))
+    return false;
+  return samePath(
+    basename(input.file.canonical_path, input.platform),
+    input.expected,
+    input.platform
+  );
+}
+function validHash2(value) {
+  return !!value && /^[a-f0-9]{64}$/i.test(value);
+}
+
+// src/semantic/backend-launch/backend-launch-inspection-files.ts
+function validateEntrypoints(entry, identity, options) {
+  const expected = entrypointNames(entry);
+  const actual = entrypointFiles(identity);
+  if (!sameEntrypointCount(actual, expected))
+    return rejected("backend_identity_unverifiable");
+  return firstEntrypointFailure({
+    actual,
+    expected,
+    entry,
+    options
+  });
+}
+function entrypointNames(entry) {
+  return entry.entrypoint_basenames ?? [];
+}
+function entrypointFiles(identity) {
+  return identity.entrypoints ?? [];
+}
+function sameEntrypointCount(actual, expected) {
+  return actual.length === expected.length;
+}
+function firstEntrypointFailure(input) {
+  for (const [index, file] of input.actual.entries()) {
+    const failure = validateEntrypoint({
+      file,
+      expected: input.expected[index] ?? "",
+      checksum: input.entry.entrypoint_sha256s?.[index],
+      options: input.options
+    });
+    if (failure) return failure;
+  }
+  return void 0;
+}
+
+// src/semantic/backend-launch/backend-launch-inspection-metadata.ts
+function validatePackageMetadata(entry, identity, options) {
+  const expected = entry.package_metadata_sha256;
+  if (!metadataHashConfigured(expected))
+    return missingMetadataResult(identity.package_metadata);
+  const metadata = identity.package_metadata;
+  if (!metadata) return rejected("backend_identity_changed");
+  const platform = options.platform ?? platformForHost();
+  return validateMetadataEvidence({
+    metadata,
+    expected,
+    options,
+    platform
+  });
+}
+function metadataHashConfigured(value) {
+  return value !== null && value !== void 0;
+}
+function missingMetadataResult(metadata) {
+  return metadata ? rejected("backend_identity_changed") : void 0;
+}
+function validateMetadataEvidence(input) {
+  if (!isCompleteBackendFile(input.metadata))
+    return rejected("backend_identity_changed");
+  if (!safeMetadataPath(input.metadata, input.options, input.platform))
+    return rejected("backend_identity_changed");
+  return validHash3(input.metadata.sha256) && input.metadata.sha256 === input.expected ? void 0 : rejected("backend_identity_changed");
+}
+function safeMetadataPath(metadata, options, platform) {
+  if (!metadata.canonical_path) return false;
+  if (isWithin(options.project_root, metadata.canonical_path, platform))
+    return false;
+  return basename(metadata.canonical_path, platform) === "package.json";
+}
+function validHash3(value) {
+  return !!value && /^[a-f0-9]{64}$/i.test(value);
+}
+
+// src/semantic/backend-launch/backend-launch-inspection.ts
+function inspect(entry, options) {
+  const identity = options.inspect(
+    entry.language,
+    entry.executable_basename,
+    entry.entrypoint_basenames ?? []
+  );
+  if (!identity?.canonical_path) return rejected("backend_unavailable");
+  const failure = firstInspectionFailure([
+    () => validateExecutable(entry, identity, options),
+    () => validateEntrypoints(entry, identity, options),
+    () => validatePackageMetadata(entry, identity, options)
+  ]);
+  if (failure) return failure;
+  return {
+    status: "accepted",
+    identity
+  };
+}
+function firstInspectionFailure(checks) {
+  for (const check2 of checks) {
+    const failure = check2();
+    if (failure) return failure;
+  }
+  return void 0;
+}
+
+// src/semantic/backend-launch/backend-launch-policy-confirm.ts
+function confirmBackend(input) {
+  const prior = input.accepted.get(input.language);
+  if (!prior)
+    return {
+      status: "unavailable",
+      code: "backend_unavailable",
+      terminate: true
+    };
+  const inspected = inspect(prior.entry, input.options);
+  if (inspected.status === "accepted" && sameIdentity(prior.identity, inspected.identity, input.platform))
+    return { status: "ready" };
+  input.accepted.delete(input.language);
+  return {
+    status: "unavailable",
+    code: inspected.status === "accepted" || inspected.code === "version_incompatible" ? "backend_identity_changed" : inspected.code,
+    terminate: true
+  };
+}
+function endpointStatus(language, endpoint, allowlist) {
+  const entry = allowlist.find((candidate) => candidate.language === language);
+  return entry?.endpoint === endpoint && isPermittedEndpoint(endpoint) ? { status: "ready" } : {
+    status: "unavailable",
+    code: "backend_endpoint_rejected"
+  };
+}
+function rejectBackendRequest(method) {
+  return {
+    accepted: false,
+    code: method === "workspace/applyEdit" || method.startsWith("workspace/") ? "backend_write_rejected" : "backend_request_rejected"
+  };
+}
+function safeOptions(language, allowlist) {
+  return allowlist.find((entry) => entry.language === language)?.safe_initialization_options;
+}
+
+// src/semantic/backend-launch/backend-launch-preparation-result.ts
+function preparationFailure(code) {
+  return code === "version_incompatible" ? "unsupported_backend_version" : code;
+}
+function unavailable(code) {
+  return { status: "unavailable", code };
+}
+function defaultPlatform() {
+  return platformForHost();
+}
+
+// src/semantic/backend-launch/backend-launch-ready-preparation.ts
+function readyPreparation(entry, identity, projectConfiguration) {
+  return {
+    status: "ready",
+    executable: identity.canonical_path,
+    version: identity.version,
+    arguments: resolveArguments(entry.arguments, identity.entrypoints),
+    shell: false,
+    environment: entry.environment,
+    endpoint: entry.endpoint,
+    safe_initialization_options: entry.safe_initialization_options,
+    ...projectConfiguration === void 0 ? {} : { event: "project_backend_config_ignored" }
+  };
+}
+
+// src/semantic/backend-launch/backend-launch-safety.ts
+function safeModeIsProven(entry) {
+  const options = entry.safe_initialization_options;
+  if (entry.language === "rust") return safeRustMode(options);
+  if (entry.language === "csharp")
+    return options.analyzers === false && options.source_generators === false;
+  return options.use_project_environment === false && options.mirror_only === true;
+}
+function safeRustMode(options) {
+  const cargo = options.cargo;
+  return settingDisabled(cargo, "buildScripts") && settingDisabled(cargo, "procMacro") && settingDisabled(cargo, "checkOnSave") && settingDisabled(options, "projectConfiguration");
+}
+function settingDisabled(options, key) {
+  return options?.[key]?.enable === false;
+}
+
+// src/semantic/backend-launch/backend-launch-policy-prepare.ts
+function prepareBackend(input) {
+  const entry = input.allowlist.find(
+    (candidate) => candidate.language === input.language
+  );
+  if (!entry) return unavailable("backend_unavailable");
+  const inspected = inspect(entry, input.options);
+  if (inspected.status !== "accepted")
+    return unavailable(preparationFailure(inspected.code));
+  return prepareAccepted(input, entry, inspected.identity);
+}
+function prepareAccepted(input, entry, identity) {
+  if (!(entry.sentinel_passed && safeModeIsProven(entry)))
+    return unavailable("unsafe_backend_mode");
+  const identityFailure = acceptIdentity(input, identity);
+  if (identityFailure) return unavailable(identityFailure);
+  input.accepted.set(input.language, { entry, identity });
+  return readyPreparation(entry, identity, input.projectConfiguration);
+}
+function acceptIdentity(input, identity) {
+  const prior = input.accepted.get(input.language);
+  if (!prior || sameIdentity(prior.identity, identity, input.platform))
+    return void 0;
+  input.accepted.delete(input.language);
+  return "backend_identity_changed";
+}
+
+// src/semantic/backend-launch/backend-launch-policy-factory.ts
+function createBackendLaunchPolicy(options) {
+  const platform = options.platform ?? defaultPlatform();
+  const allowlist = deepFreeze2(options.allowlist.map(snapshotAllowlistEntry));
+  const policyOptions = { ...options, allowlist, platform };
+  const accepted = /* @__PURE__ */ new Map();
+  return createPolicyMethods({
+    allowlist,
+    policyOptions,
+    accepted,
+    platform
+  });
+}
+function createPolicyMethods(input) {
+  return {
+    prepare: prepareMethod(input),
+    confirmInitialized: confirmMethod(input),
+    setEndpoint: endpointMethod(input),
+    handleBackendRequest: requestMethod,
+    safeOptions: safeOptionsMethod(input)
+  };
+}
+function prepareMethod(input) {
+  return (language, projectConfiguration) => prepareBackend({
+    language,
+    projectConfiguration,
+    allowlist: input.allowlist,
+    options: input.policyOptions,
+    accepted: input.accepted,
+    platform: input.platform
+  });
+}
+function confirmMethod(input) {
+  return (language) => confirmBackend({
+    language,
+    accepted: input.accepted,
+    options: input.policyOptions,
+    platform: input.platform
+  });
+}
+function endpointMethod(input) {
+  return (language, endpoint) => endpointStatus(language, endpoint, input.allowlist);
+}
+function requestMethod(method, _params) {
+  return rejectBackendRequest(method);
+}
+function safeOptionsMethod(input) {
+  return (language) => safeOptions(language, input.allowlist);
+}
+
+// src/semantic/adapter-selection/adapter-selection-policy.ts
+function createRuntimeLaunchPolicy(options, record2 = loadRecord()) {
+  const platform = options.platform ?? (process.platform === "win32" ? "win32" : "posix");
+  return createBackendLaunchPolicy({
+    ...options,
+    platform,
+    allowlist: runtimeAllowlist(record2, platform)
+  });
+}
+function loadRecord() {
+  return loadAdapterSelectionRecord();
+}
+function runtimeAllowlist(record2, platform) {
+  return record2.runtime_backends.map((backend) => ({
+    language: backend.language,
+    executable_basename: backend.platform_executables[platform],
+    entrypoint_basenames: backend.platform_entrypoints[platform],
+    executable_sha256: backend.authorization.executable_sha256,
+    entrypoint_sha256s: backend.authorization.entrypoint_sha256s,
+    package_metadata_sha256: backend.authorization.package_metadata_sha256,
+    compatible_version: backend.compatible_version,
+    arguments: backend.arguments,
+    endpoint: backend.endpoint,
+    environment: backend.environment,
+    safe_initialization_options: backend.safe_initialization_options,
+    sentinel_passed: backend.sentinel_evidence.platform === platform && backend.sentinel_evidence.passed
+  }));
+}
+function resolveTrustedCommandRoots(identifiers) {
+  return identifiers.map((identifier) => trustedCommandRoots()[identifier]);
+}
+function trustedCommandRoots() {
+  const home = homedir();
+  const programFiles = process.env.ProgramFiles ?? "C:\\Program Files";
+  const appData = process.env.APPDATA ?? join3(home, "AppData", "Roaming");
+  return {
+    cargo_home_bin: join3(cargoHome(home), "bin"),
+    dotnet_tools: join3(home, ".dotnet", "tools"),
+    node_install: join3(programFiles, "nodejs"),
+    npm_global: join3(appData, "npm"),
+    code_explorer_backends: codeExplorerBackends(programFiles)
+  };
+}
+function cargoHome(home) {
+  return process.env.CARGO_HOME ?? join3(home, ".cargo");
+}
+function codeExplorerBackends(programFiles) {
+  return process.env.CODE_EXPLORER_BACKENDS_ROOT ?? join3(programFiles, "Code Explorer", "backends");
+}
+
+// src/semantic/backend-status/backend-status.ts
+function createBackendStatusReport(adapters) {
+  const backends = adapters.map((adapter) => adapter.status());
+  const anyReady = backends.some(
+    ({ state }) => state === "ready" || state === "degraded" || state === "refreshing"
+  );
+  return {
+    backends,
+    navigation: anyReady ? {
+      discovery: "semantic",
+      focus: "ready",
+      relations: "ready"
+    } : {
+      discovery: "discovery_only",
+      focus: "backend_unavailable",
+      relations: "backend_unavailable"
+    }
+  };
+}
+
+// src/semantic/project-root/project-root.ts
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  openSync,
+  readFileSync as readFileSync3,
+  realpathSync,
+  statSync
+} from "node:fs";
+
+// src/semantic/project-root/project-root-factory.ts
+import * as path from "node:path";
+
+// src/discovery/sensitive-paths.ts
+import { lstatSync, readdirSync } from "node:fs";
+import { join as join4 } from "node:path";
+var keyFile = /^id_(rsa|dsa|ecdsa|ed25519)$/iu;
+var credentialFile = /^\.(npmrc|pypirc)$|^nuget\.config$/iu;
+function isSensitiveProjectPath(path5) {
+  const normalized = path5.replaceAll("\\", "/").replace(/^\.\//, "");
+  if (unsafeSensitivePath(normalized)) return true;
+  const parts = normalized.split("/");
+  const file = parts.at(-1) ?? "";
+  return sensitiveDirectory(parts) || sensitiveFile(file);
+}
+function unsafeSensitivePath(path5) {
+  return !path5 || path5.startsWith("/") || path5.split("/").some((part) => part === "..");
+}
+function sensitiveDirectory(parts) {
+  return parts.some((part) => /^(\.git|\.hg|\.svn)$/iu.test(part));
+}
+function sensitiveFile(file) {
+  return /^\.env(?:\..+)?$/iu.test(file) || /\.(pem|key|pfx|p12)$/iu.test(file) || keyFile.test(file) || credentialFile.test(file);
+}
+function countSensitivePathsUnderRoot(root) {
+  const visit4 = (directory2, relativeDirectory) => {
+    let count = 0;
+    for (const entry of readdirSync(directory2, { withFileTypes: true })) {
+      const relativePath = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
+      count += visitEntry({ directory: directory2, relativePath, entry, visit: visit4 });
+    }
+    return count;
+  };
+  try {
+    return visit4(root, "");
+  } catch {
+    return 0;
+  }
+}
+function visitEntry(options) {
+  const { directory: directory2, relativePath, entry, visit: visit4 } = options;
+  if (isSensitiveProjectPath(relativePath)) return 1;
+  const absolute = join4(directory2, entry.name);
+  if (!entry.isDirectory() || lstatSync(absolute).isSymbolicLink()) return 0;
+  return visit4(absolute, relativePath);
+}
+
+// src/semantic/project-root/project-root-error.ts
+var ProjectPathError = class extends Error {
+  constructor(code, root_source) {
+    super(code);
+    this.code = code;
+    this.root_source = root_source;
+  }
+  code;
+  root_source;
+};
+
+// src/semantic/project-root/project-root-identity.ts
+function canonicalize(candidate, filesystem) {
+  try {
+    const resolved = filesystem.realpath(candidate);
+    return {
+      path: resolved,
+      identity: identityFor(resolved, filesystem)
+    };
+  } catch {
+    return void 0;
+  }
+}
+function identityFor(candidate, filesystem) {
+  try {
+    const identity = filesystem.stat(candidate);
+    if (!stableIdentity(identity)) throw new Error("unstable identity");
+    return identity;
+  } catch {
+    throw new ProjectPathError("path_identity_unavailable");
+  }
+}
+function identityForHandle(handle, filesystem) {
+  try {
+    const identity = filesystem.fstat(handle);
+    if (!stableIdentity(identity)) throw new Error("unstable identity");
+    return identity;
+  } catch {
+    throw new ProjectPathError("path_identity_unavailable");
+  }
+}
+function stableIdentity(identity) {
+  return isStableIdentityPart(identity.dev) && isStableIdentityPart(identity.ino);
+}
+function isStableIdentityPart(value) {
+  return typeof value === "bigint" || Number.isSafeInteger(value);
+}
+function sameIdentity2(left, right) {
+  return left.ino === right.ino && (left.dev === right.dev || isZero(left.dev) || isZero(right.dev));
+}
+function isZero(value) {
+  return value === 0 || value === BigInt(0);
+}
+function sameCanonicalPath(left, right, platform) {
+  return normalize(left, platform) === normalize(right, platform);
+}
+function normalize(value, platform) {
+  const noExtendedPrefix = platform === "win32" && value.startsWith("\\\\?\\") ? value.slice(4) : value;
+  const slashSeparated = noExtendedPrefix.replaceAll("\\", "/").replace(/\/+$/, "");
+  return platform === "win32" ? slashSeparated.toLocaleLowerCase("en-US") : slashSeparated;
+}
+function isRelativeProjectPath(value, pathApi) {
+  return value.length > 0 && !pathApi.isAbsolute(value) && !value.split(/[\\/]/).includes("..");
+}
+
+// src/semantic/project-root/project-root-actions.ts
+function createRootActions(input) {
+  const isDescendant = (candidate) => isWithinRoot(candidate, input.root.path, input.options.platform);
+  const assertRootStable = () => assertStable(input.options, input.configuredRoot, input.root);
+  const resolveClientPath = (relativePath) => resolvePath({ ...input, relativePath, isDescendant });
+  return {
+    isDescendant,
+    assertRootStable,
+    resolveClientPath
+  };
+}
+function isWithinRoot(candidate, root, platform) {
+  const normalizedRoot = normalize(root, platform);
+  const normalizedCandidate = normalize(candidate, platform);
+  return normalizedCandidate === normalizedRoot || normalizedCandidate.startsWith(`${normalizedRoot}/`);
+}
+function assertStable(options, configuredRoot, root) {
+  const current = canonicalize(configuredRoot, options.filesystem);
+  if (!current) throw new ProjectPathError("path_identity_unavailable");
+  if (!(sameCanonicalPath(current.path, root.path, options.platform) && sameIdentity2(current.identity, root.identity)))
+    throw new ProjectPathError("path_identity_changed");
+}
+function resolvePath(input) {
+  if (!isRelativeProjectPath(input.relativePath, input.pathApi) || isSensitiveProjectPath(input.relativePath))
+    throw new ProjectPathError("path_outside_project");
+  const candidate = input.pathApi.resolve(input.root.path, input.relativePath);
+  const resolved = canonicalize(candidate, input.options.filesystem);
+  if (!(resolved && input.isDescendant(resolved.path)))
+    throw new ProjectPathError("path_outside_project");
+  return resolved.path;
+}
+
+// src/semantic/project-root/project-root-classify.ts
+function classifyBackendPath(input) {
+  const portableCandidate = input.candidate.replaceAll("\\", "/");
+  const candidatePath = input.pathApi.isAbsolute(portableCandidate) ? portableCandidate : input.pathApi.resolve(input.root.path, portableCandidate);
+  const resolved = canonicalize(candidatePath, input.filesystem);
+  if (!(resolved && input.isDescendant(resolved.path)))
+    return { external: true };
+  return {
+    relative_path: input.pathApi.relative(input.root.path, resolved.path).replaceAll("\\", "/")
+  };
+}
+
+// src/semantic/project-root/project-root-protected.ts
+function openProtected(input) {
+  input.assertRootStable();
+  const checkedPath = input.resolveClientPath(input.relativePath);
+  const checkedIdentity = identityFor(checkedPath, input.options.filesystem);
+  let handle;
+  try {
+    handle = input.options.filesystem.open(checkedPath, {
+      noFollow: true
+    });
+    const openedIdentity = identityForHandle(handle, input.options.filesystem);
+    input.assertRootStable();
+    const finalIdentity = identityFor(checkedPath, input.options.filesystem);
+    if (!(sameIdentity2(checkedIdentity, openedIdentity) && sameIdentity2(checkedIdentity, finalIdentity)))
+      throw new ProjectPathError("path_identity_changed");
+    return { path: checkedPath, handle };
+  } catch (error2) {
+    if (handle !== void 0) input.options.filesystem.close(handle);
+    if (error2 instanceof ProjectPathError) throw error2;
+    throw new ProjectPathError("path_identity_unavailable");
+  }
+}
+function protectedRead(input) {
+  const protectedPath = openProtected(input);
+  try {
+    const bytes = input.options.filesystem.read(protectedPath.handle);
+    input.assertRootStable();
+    const finalPath = canonicalize(
+      protectedPath.path,
+      input.options.filesystem
+    );
+    if (!sameFinalPath(finalPath, protectedPath, input))
+      throw new ProjectPathError("path_identity_changed");
+    return { path: protectedPath.path, bytes };
+  } finally {
+    input.options.filesystem.close(protectedPath.handle);
+  }
+}
+function sameFinalPath(finalPath, protectedPath, input) {
+  return Boolean(
+    finalPath && sameCanonicalPath(
+      finalPath.path,
+      protectedPath.path,
+      input.options.platform
+    ) && sameIdentity2(
+      finalPath.identity,
+      identityForHandle(protectedPath.handle, input.options.filesystem)
+    )
+  );
+}
+
+// src/semantic/project-root/project-root-methods.ts
+function rootMethods(input) {
+  return {
+    resolveClientPath: input.actions.resolveClientPath,
+    classifyBackendPath: (candidate) => classify(input, candidate),
+    openProtected: (relativePath) => open(input, relativePath),
+    protectedRead: (relativePath) => read(input, relativePath)
+  };
+}
+function classify(input, candidate) {
+  return classifyBackendPath({
+    candidate,
+    filesystem: input.options.filesystem,
+    root: input.root,
+    pathApi: input.pathApi,
+    isDescendant: input.actions.isDescendant
+  });
+}
+function open(input, relativePath) {
+  return openProtected({
+    relativePath,
+    options: input.options,
+    root: input.root,
+    resolveClientPath: input.actions.resolveClientPath,
+    assertRootStable: input.actions.assertRootStable
+  });
+}
+function read(input, relativePath) {
+  return protectedRead({
+    relativePath,
+    options: input.options,
+    root: input.root,
+    resolveClientPath: input.actions.resolveClientPath,
+    assertRootStable: input.actions.assertRootStable
+  });
+}
+
+// src/semantic/project-root/project-root-revalidation.ts
+function revalidateRoot(options, configuredRoot, root) {
+  try {
+    const current = currentIdentity(options.filesystem, configuredRoot);
+    return sameRoot(current, root, options.platform) ? "ready" : "unavailable";
+  } catch (error2) {
+    return isInaccessible(error2) ? "inaccessible" : "unavailable";
+  }
+}
+function isInaccessible(error2) {
+  if (!(error2 instanceof Error && "code" in error2)) return false;
+  const code = error2.code;
+  return ["EACCES", "EPERM", "EBUSY", "EIO"].includes(code ?? "");
+}
+function currentIdentity(filesystem, configuredRoot) {
+  const path5 = filesystem.realpath(configuredRoot);
+  const identity = filesystem.stat(path5);
+  if (!((typeof identity.dev === "bigint" || Number.isSafeInteger(identity.dev)) && (typeof identity.ino === "bigint" || Number.isSafeInteger(identity.ino))))
+    throw new Error("unstable identity");
+  return { path: path5, identity };
+}
+function sameRoot(current, root, platform) {
+  return sameCanonicalPath(current.path, root.path, platform) && sameIdentity2(current.identity, root.identity);
+}
+
+// src/semantic/project-root/project-root-factory.ts
+function createProjectRoot(options) {
+  return buildProjectRoot(options, rootContext(options));
+}
+function rootContext(options) {
+  const pathApi = rootPathApi(options.platform);
+  const configuredRoot = configuredRootFor(options);
+  const root = canonicalize(configuredRoot, options.filesystem);
+  if (!root)
+    throw new ProjectPathError(
+      "invalid_project_root",
+      options.projectRoot ? "project_root" : "cwd"
+    );
+  return {
+    configuredRoot,
+    root,
+    pathApi,
+    actions: createRootActions({
+      options,
+      configuredRoot,
+      root,
+      pathApi
+    })
+  };
+}
+function rootPathApi(platform) {
+  return platform === "win32" ? path.win32 : path.posix;
+}
+function configuredRootFor(options) {
+  return options.projectRoot ?? options.cwd;
+}
+function buildProjectRoot(options, context) {
+  const { root, configuredRoot, pathApi, actions } = context;
+  return {
+    canonicalPath: root.path,
+    revalidate: () => revalidateRoot(options, configuredRoot, root),
+    ...rootMethods({ options, root, pathApi, actions })
+  };
+}
+
+// src/semantic/project-root/project-root.ts
+function createNativeProjectRoot(projectRoot) {
+  return createProjectRoot({
+    cwd: process.cwd(),
+    projectRoot,
+    platform: process.platform === "win32" ? "win32" : "posix",
+    filesystem: {
+      realpath: realpathSync.native,
+      stat: (candidate) => identityFromStat(statSync(candidate, { bigint: true })),
+      open: (candidate) => openSync(candidate, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)),
+      fstat: (handle) => identityFromStat(fstatSync(handle, { bigint: true })),
+      read: (handle) => readFileSync3(handle, "utf8"),
+      close: closeSync
+    }
+  });
+}
+function identityFromStat(stats) {
+  if (!(isStableIdentityPart2(stats.dev) && isStableIdentityPart2(stats.ino))) {
+    throw new Error("unstable identity");
+  }
+  return { dev: stats.dev, ino: stats.ino };
+}
+function isStableIdentityPart2(value) {
+  return typeof value === "bigint" || Number.isSafeInteger(value);
+}
+
+// src/semantic/project-root/root-access-status.ts
+function rootAccessStatus(state) {
+  return {
+    state,
+    restart_required: state === "project_root_unavailable"
+  };
+}
+
+// src/semantic/project-root/root-access.ts
+var RootAccessGate = class {
+  constructor(root, adapters, now = Date.now) {
+    this.root = root;
+    this.adapters = adapters;
+    this.now = now;
+  }
+  root;
+  adapters;
+  now;
+  state = "ready";
+  #inaccessibleSince;
+  #retryTimer;
+  async check() {
+    if (!this.root) return this.status();
+    if (this.state === "project_root_unavailable") return this.status();
+    const result = this.root.revalidate();
+    if (result === "ready") return this.#handleReady();
+    return this.#handleRootFailure(result);
+  }
+  status() {
+    return rootAccessStatus(this.state);
+  }
+  #handleRootFailure(result) {
+    if (result === "inaccessible" && this.#withinRecoveryWindow())
+      return this.#handleTransientInaccessibility();
+    return this.#handleUnavailable();
+  }
+  async #handleReady() {
+    if (this.state === "project_root_inaccessible") await this.#restart();
+    this.state = "ready";
+    this.#inaccessibleSince = void 0;
+    this.#clearRetry();
+    return this.status();
+  }
+  async #handleTransientInaccessibility() {
+    this.state = "project_root_inaccessible";
+    await this.#stop();
+    this.#scheduleRetry();
+    return this.status();
+  }
+  async #handleUnavailable() {
+    this.state = "project_root_unavailable";
+    this.#clearRetry();
+    await this.#stop();
+    return this.status();
+  }
+  #withinRecoveryWindow() {
+    this.#inaccessibleSince ??= this.now();
+    return this.now() - this.#inaccessibleSince < 3e4;
+  }
+  async #stop() {
+    await Promise.all(
+      this.adapters.flatMap(
+        (adapter) => adapter.shutdown ? [adapter.shutdown()] : []
+      )
+    );
+  }
+  async #restart() {
+    await Promise.all(
+      this.adapters.flatMap(
+        (adapter) => adapter.start ? [adapter.start()] : []
+      )
+    );
+  }
+  #scheduleRetry() {
+    if (this.#retryTimer !== void 0) return;
+    this.#retryTimer = setTimeout(() => {
+      this.#retryTimer = void 0;
+      void this.check();
+    }, 5e3);
+    this.#retryTimer.unref?.();
+  }
+  #clearRetry() {
+    if (this.#retryTimer === void 0) return;
+    clearTimeout(this.#retryTimer);
+    this.#retryTimer = void 0;
+  }
+};
+
+// src/semantic/python-mirror/python-mirror-generation.ts
+import { join as join10 } from "node:path";
+import { pathToFileURL } from "node:url";
+
+// src/semantic/python-mirror/python-mirror-validation.ts
+import { createHash } from "node:crypto";
+import { posix as posix3, win32 as win323 } from "node:path";
+var PROHIBITED_KEYS = /* @__PURE__ */ new Set([
+  "extends",
+  "venvPath",
+  "venv",
+  "extraPaths",
+  "typeshedPath",
+  "stubPath",
+  "executionEnvironments",
+  "pythonPath",
+  "python.pythonPath",
+  "python.venvPath",
+  "python.analysis.extraPaths"
+]);
+function containsUnsafePythonConfiguration(value, key) {
+  return unsafeConfigurationValue(value, key);
+}
+function unsafeConfigurationValue(value, key) {
+  if (isProhibitedKey(key)) return true;
+  if (typeof value === "string") return unsafePath(value);
+  if (Array.isArray(value)) return arrayHasUnsafeValue(value);
+  return recordHasUnsafeValue(value);
+}
+function isProhibitedKey(key) {
+  return key !== void 0 && PROHIBITED_KEYS.has(key);
+}
+function recordHasUnsafeValue(value) {
+  if (!isUnsafeRecord(value)) return false;
+  return Object.entries(value).some(
+    ([name, child]) => containsUnsafePythonConfiguration(child, name)
+  );
+}
+function isUnsafeRecord(value) {
+  return !!value && typeof value === "object";
+}
+function arrayHasUnsafeValue(value) {
+  return value.some((item) => containsUnsafePythonConfiguration(item));
+}
+function isSafePythonMirrorFile(file) {
+  return validMirrorPath(file) && validMirrorHash(file);
+}
+function validMirrorPath(file) {
+  return [
+    file.path.endsWith(".py") || file.path.endsWith(".pyi"),
+    !file.symlink,
+    !file.sensitive,
+    !unsafePath(file.path),
+    !file.path.split(/[\\/]/).includes("..")
+  ].every(Boolean);
+}
+function validMirrorHash(file) {
+  return /^[a-f0-9]{64}$/i.test(file.sha256) && createHash("sha256").update(file.text).digest("hex") === file.sha256;
+}
+function unsafePath(value) {
+  return posix3.isAbsolute(value) || win323.isAbsolute(value) || value.split(/[\\/]/).includes("..");
+}
+function uriToMirrorPath(uri, root) {
+  if (!uri.startsWith(`${root}/`)) return void 0;
+  try {
+    const path5 = decodeURIComponent(uri.slice(root.length + 1));
+    return unsafePath(path5) ? void 0 : path5;
+  } catch {
+    return void 0;
+  }
+}
+
+// src/semantic/python-mirror/python-mirror-plan-ready.ts
+function readyPlan(manifest, files, options) {
+  return {
+    status: "ready",
+    manifest,
+    files,
+    generation: options.generation,
+    minimal_pyrightconfig: Object.freeze({}),
+    bundled_typeshed: Object.freeze([...options.bundled_typeshed]),
+    resolveUri: (uri, generation, sha2563) => resolvePlanUri({ uri, generation, sha256: sha2563, options, manifest }),
+    onProjectConfigurationChanged: projectConfigurationChanged
+  };
+}
+function resolvePlanUri(input) {
+  const path5 = uriToMirrorPath(input.uri, input.options.mirror_uri_root);
+  return path5 && input.generation === input.options.generation && input.manifest[path5] === input.sha256 ? { status: "accepted", original_path: path5 } : {
+    status: "rejected",
+    code: "unsafe_backend_mode"
+  };
+}
+function projectConfigurationChanged() {
+  return {
+    status: "rebuild_required",
+    terminate_old_backend: true
+  };
+}
+
+// src/semantic/python-mirror/python-mirror-plan-builder.ts
+var DEFAULT_OPTIONS = {
+  generation: 0,
+  mirror_uri_root: "file:///code-explorer-mirror",
+  bundled_typeshed: []
+};
+function createPythonMirrorPlan(configuration, files, options = DEFAULT_OPTIONS) {
+  if (unsafeMirrorInput(configuration, files, options))
+    return {
+      status: "unavailable",
+      code: "unsafe_backend_mode"
+    };
+  const manifest = Object.freeze(
+    Object.fromEntries(files.map((file) => [file.path, file.sha256]))
+  );
+  const mirrored = Object.freeze(
+    files.map(
+      ({ path: path5, sha256: sha2563, text }) => Object.freeze({ path: path5, sha256: sha2563, text })
+    )
+  );
+  return readyPlan(manifest, mirrored, options);
+}
+function unsafeMirrorInput(configuration, files, options) {
+  return containsUnsafePythonConfiguration(configuration) || files.some((file) => !isSafePythonMirrorFile(file)) || options.bundled_typeshed.some(unsafePath);
+}
+
+// src/semantic/python-mirror/python-mirror-filesystem.ts
+import { mkdirSync as mkdirSync2, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join as join7 } from "node:path";
+
+// src/semantic/python-mirror/python-mirror-permissions.ts
+import { chmodSync, existsSync, readdirSync as readdirSync2 } from "node:fs";
+import { join as join5 } from "node:path";
+function makeTreeReadOnly(directory2) {
+  for (const entry of readdirSync2(directory2, { withFileTypes: true })) {
+    const target = join5(directory2, entry.name);
+    if (entry.isDirectory()) {
+      makeTreeReadOnly(target);
+      continue;
+    }
+    chmodSync(target, 292);
+  }
+  chmodSync(directory2, 365);
+}
+function makeTreeWritable(directory2) {
+  if (!existsSync(directory2)) return;
+  for (const entry of readdirSync2(directory2, { withFileTypes: true })) {
+    const target = join5(directory2, entry.name);
+    if (entry.isDirectory()) {
+      makeTreeWritable(target);
+      continue;
+    }
+    chmodSync(target, 420);
+  }
+  chmodSync(directory2, 493);
+}
+
+// src/semantic/python-mirror/python-mirror-typeshed.ts
+var PYI_CLASS = "class ";
+var BUNDLED_TYPESHED = Object.freeze({
+  "typeshed/stdlib/builtins.pyi": `${PYI_CLASS}object: ...
+${PYI_CLASS}str(object): ...
+${PYI_CLASS}int(object): ...
+`
+});
+
+// src/semantic/python-mirror/python-mirror-writer.ts
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname as dirname3, join as join6 } from "node:path";
+function writeMirrorFile(root, relativePath, text) {
+  const target = join6(root, relativePath);
+  mkdirSync(dirname3(target), {
+    recursive: true,
+    mode: 493
+  });
+  writeFileSync(target, text, {
+    encoding: "utf8",
+    mode: 292
+  });
+}
+
+// src/semantic/python-mirror/python-mirror-filesystem.ts
+function createMirrorTree(plan) {
+  const generation = plan.generation;
+  const serviceRoot = mkdtempSync(join7(tmpdir(), "code-explorer-pyright-"));
+  const mirrorRoot = join7(serviceRoot, `generation-${generation}`);
+  try {
+    mkdirSync2(mirrorRoot, { recursive: true, mode: 493 });
+    writeMirrorFile(
+      mirrorRoot,
+      "pyrightconfig.json",
+      `${JSON.stringify(plan.minimal_pyrightconfig)}
+`
+    );
+    for (const file of plan.files)
+      writeMirrorFile(mirrorRoot, file.path, file.text);
+    for (const path5 of plan.bundled_typeshed) {
+      const text = BUNDLED_TYPESHED[path5];
+      if (text === void 0) throw new Error("unsafe_backend_mode");
+      writeMirrorFile(mirrorRoot, path5, text);
+    }
+    makeTreeReadOnly(mirrorRoot);
+    return { serviceRoot, mirrorRoot };
+  } catch (error2) {
+    makeTreeWritable(serviceRoot);
+    rmSync(serviceRoot, { recursive: true, force: true });
+    throw error2;
+  }
+}
+function createDisposer(serviceRoot) {
+  let disposed = false;
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+    process.removeListener("exit", dispose);
+    makeTreeWritable(serviceRoot);
+    rmSync(serviceRoot, { recursive: true, force: true });
+  };
+  process.once("exit", dispose);
+  return { dispose, disposed: () => disposed };
+}
+
+// src/semantic/python-mirror/python-mirror-path.ts
+import { createHash as createHash2 } from "node:crypto";
+import { relative } from "node:path";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+function relativeMirrorPath(uri, mirrorRoot) {
+  try {
+    if (!uri.startsWith("file:")) return void 0;
+    const path5 = fileURLToPath2(uri);
+    const relativePath = relative(mirrorRoot, path5).replaceAll("\\", "/");
+    return validRelativePath(relativePath) ? relativePath : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function validRelativePath(value) {
+  return value.length > 0 && !value.startsWith("../") && value !== "..";
+}
+function sha2562(value) {
+  return createHash2("sha256").update(value).digest("hex");
+}
+function samePath2(left, right) {
+  return process.platform === "win32" ? left.toLowerCase() === right.toLowerCase() : left === right;
+}
+
+// src/semantic/python-mirror/python-mirror-verification.ts
+import { lstatSync as lstatSync3 } from "node:fs";
+import { join as join9 } from "node:path";
+
+// src/semantic/python-mirror/python-mirror-tree.ts
+import {
+  closeSync as closeSync2,
+  fstatSync as fstatSync2,
+  lstatSync as lstatSync2,
+  openSync as openSync2,
+  readdirSync as readdirSync3,
+  readFileSync as readFileSync4
+} from "node:fs";
+import { join as join8 } from "node:path";
+function mirrorTreeMatches(root, expected) {
+  try {
+    const actual = /* @__PURE__ */ new Map();
+    collectTree(root, "", actual);
+    return actual.size === expected.size && [...expected].every(([path5, digest]) => actual.get(path5) === digest);
+  } catch {
+    return false;
+  }
+}
+function collectTree(directory2, relativeDirectory, actual) {
+  for (const entry of readdirSync3(directory2, {
+    withFileTypes: true
+  })) {
+    collectEntry({
+      directory: directory2,
+      relativeDirectory,
+      actual,
+      entry
+    });
+  }
+}
+function collectEntry(input) {
+  const path5 = join8(input.directory, input.entry.name);
+  const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
+  if (lstatSync2(path5).isSymbolicLink()) throw new Error("link");
+  if (input.entry.isDirectory()) {
+    collectTree(path5, relativePath, input.actual);
+    return;
+  }
+  if (input.entry.isFile()) {
+    input.actual.set(relativePath, sha2562(readRegularFile(path5)));
+    return;
+  }
+  throw new Error("unsupported");
+}
+function readRegularFile(path5) {
+  const descriptor = openSync2(path5, "r");
+  try {
+    if (!fstatSync2(descriptor).isFile()) throw new Error("unsupported");
+    return readFileSync4(descriptor, "utf8");
+  } finally {
+    closeSync2(descriptor);
+  }
+}
+
+// src/semantic/python-mirror/python-mirror-verification.ts
+function expectedTreeFor(plan) {
+  return new Map([
+    [
+      "pyrightconfig.json",
+      sha2562(`${JSON.stringify(plan.minimal_pyrightconfig)}
+`)
+    ],
+    ...plan.files.map((file) => [file.path, file.sha256]),
+    ...plan.bundled_typeshed.map(
+      (path5) => [
+        path5,
+        sha2562(
+          BUNDLED_TYPESHED[path5] ?? ""
+        )
+      ]
+    )
+  ]);
+}
+function verifyMirrorPath(input) {
+  const expected = input.manifest.get(input.path);
+  if (!expected || input.disposed) return false;
+  try {
+    return mirrorFilesMatch(input, expected);
+  } catch {
+    return false;
+  }
+}
+function mirrorFilesMatch(input, expected) {
+  const original = input.root.protectedRead(input.path).bytes;
+  const mirrorPath = join9(input.mirrorRoot, input.path);
+  if (lstatSync3(mirrorPath).isSymbolicLink()) return false;
+  return [
+    mirrorTreeMatches(input.mirrorRoot, input.expectedTree),
+    sha2562(original) === expected.original_sha256,
+    sha2562(readRegularFile(mirrorPath)) === expected.mirror_sha256
+  ].every(Boolean);
+}
+
+// src/semantic/python-mirror/python-mirror-generation.ts
+function createMirror(root, generation, snapshot) {
+  const context = createMirrorContext(root, generation, snapshot);
+  return {
+    root: context.paths.mirrorRoot,
+    generation,
+    sourcePaths: () => context.plan.files.map(({ path: path5 }) => path5),
+    uriFor: (path5) => context.verify(path5) ? pathToFileURL(join10(context.paths.mirrorRoot, path5)).href : "",
+    pathForUri: (uri) => {
+      const path5 = relativeMirrorPath(uri, context.paths.mirrorRoot);
+      return path5 && context.verify(path5) ? path5 : void 0;
+    },
+    dispose: context.dispose.dispose,
+    disposeAfterShutdown
+  };
+  async function disposeAfterShutdown(shutdown) {
+    await shutdown();
+    context.dispose.dispose();
+  }
+}
+function createMirrorContext(root, generation, snapshot) {
+  const plan = createPythonMirrorPlan(snapshot.configuration, snapshot.inputs, {
+    generation,
+    mirror_uri_root: "file:///pending-python-mirror",
+    bundled_typeshed: Object.keys(BUNDLED_TYPESHED)
+  });
+  if (plan.status !== "ready") throw new Error("unsafe_backend_mode");
+  const paths = createMirrorTree(plan);
+  const dispose = createDisposer(paths.serviceRoot);
+  return {
+    plan,
+    paths,
+    dispose,
+    verify: createVerifier({
+      root,
+      mirrorRoot: paths.mirrorRoot,
+      plan,
+      dispose
+    })
+  };
+}
+function createVerifier(input) {
+  const expectedTree = expectedTreeFor(input.plan);
+  const manifest = new Map(
+    input.plan.files.map((file) => [
+      file.path,
+      {
+        original_sha256: file.sha256,
+        mirror_sha256: file.sha256
+      }
+    ])
+  );
+  return (path5) => verifyMirrorPath({
+    path: path5,
+    root: input.root,
+    mirrorRoot: input.mirrorRoot,
+    expectedTree,
+    manifest,
+    disposed: input.dispose.disposed()
+  });
+}
+
+// src/semantic/python-mirror/python-mirror-config.ts
+import { existsSync as existsSync2, lstatSync as lstatSync4 } from "node:fs";
+import { join as join11 } from "node:path";
+function readProjectPythonConfiguration(root) {
+  const config2 = {};
+  const pyright = protectedOptionalRead(root, "pyrightconfig.json");
+  if (pyright !== void 0) config2.pyrightconfig = parseJson(pyright);
+  const pyproject = protectedOptionalRead(root, "pyproject.toml");
+  if (pyproject !== void 0) {
+    const parsed = parseToolPyright(pyproject);
+    if (parsed === void 0) throw new Error("unsafe_backend_mode");
+    if (Object.keys(parsed).length) config2.tool_pyright = parsed;
+  }
+  return config2;
+}
+function parseJson(source) {
+  try {
+    const parsed = JSON.parse(source);
+    if (!isRecord(parsed)) throw new Error("invalid");
+    return parsed;
+  } catch {
+    throw new Error("unsafe_backend_mode");
+  }
+}
+function protectedOptionalRead(root, path5) {
+  const absolute = join11(root.canonicalPath, path5);
+  if (!existsSync2(absolute)) return void 0;
+  if (lstatSync4(absolute).isSymbolicLink())
+    throw new Error("unsafe_backend_mode");
+  return root.protectedRead(path5).bytes;
+}
+function parseToolPyright(toml) {
+  const lines = toml.replace(/^\uFEFF/, "").split(/\r?\n/);
+  let active = false;
+  const result = {};
+  for (const raw of lines) {
+    const parsed = parseToolLine(raw, active);
+    active = parsed.active;
+    if (parsed.invalid) return void 0;
+    if (parsed.assignment)
+      result[parsed.assignment[0]] = parseTomlValue(parsed.assignment[1]);
+  }
+  return result;
+}
+function parseToolLine(raw, active) {
+  const line = raw.replace(/\s+#.*$/, "").trim();
+  if (!line) return { active, invalid: false };
+  if (/^\[.*\]$/.test(line))
+    return {
+      active: line === "[tool.pyright]",
+      invalid: false
+    };
+  if (!active) return { active, invalid: false };
+  const match = /^([A-Za-z0-9_.-]+)\s*=\s*(.+)$/.exec(line);
+  return match ? {
+    active,
+    invalid: false,
+    assignment: [match[1], match[2]]
+  } : { active, invalid: true };
+}
+function parseTomlValue(value) {
+  const trimmed = value.trim();
+  if (/^(true|false)$/.test(trimmed)) return trimmed === "true";
+  if (/^["'].*["']$/.test(trimmed)) return trimmed.slice(1, -1);
+  if (!/^\[.*\]$/.test(trimmed)) return trimmed;
+  const inner = trimmed.slice(1, -1).trim();
+  return inner ? inner.split(",").map(parseTomlValue) : [];
+}
+function isRecord(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+// src/semantic/python-mirror/python-mirror-inputs.ts
+import { lstatSync as lstatSync5, readdirSync as readdirSync5 } from "node:fs";
+import { join as join13 } from "node:path";
+
+// src/discovery/config-path.ts
+import { readdirSync as readdirSync4 } from "node:fs";
+import { join as join12 } from "node:path";
+import process2 from "node:process";
+var configName = ".code-explorer.json";
+function isClassificationConfigPath(path5, platform = process2.platform) {
+  if (path5.includes("/") || path5.includes("\\")) return false;
+  return platform === "win32" ? path5.toLocaleLowerCase("en-US") === configName : path5 === configName;
+}
+function findClassificationConfigPath(projectRoot, platform = process2.platform) {
+  return readdirSync4(projectRoot, { withFileTypes: true }).find(
+    (entry) => entry.isFile() && isClassificationConfigPath(entry.name, platform)
+  )?.name;
+}
+function classificationConfigPath(projectRoot, platform = process2.platform) {
+  const name = findClassificationConfigPath(projectRoot, platform);
+  return name ? join12(projectRoot, name) : void 0;
+}
+
+// src/semantic/python-mirror/python-mirror-inputs.ts
+function collectPythonFiles(root) {
+  return visit(root, root.canonicalPath, "");
+}
+function visit(root, directory2, relativeDirectory) {
+  return readdirSync5(directory2, {
+    withFileTypes: true
+  }).flatMap(
+    (entry) => visitEntry2({
+      root,
+      directory: directory2,
+      relativeDirectory,
+      entry
+    })
+  );
+}
+function visitEntry2(input) {
+  const absolute = join13(input.directory, input.entry.name);
+  const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
+  if (lstatSync5(absolute).isSymbolicLink())
+    throw new Error("unsafe_backend_mode");
+  if (input.entry.isDirectory())
+    return visitDirectory(input.root, absolute, relativePath);
+  if (!input.entry.isFile()) return [];
+  return visitPythonFile(input.root, absolute, relativePath);
+}
+function visitPythonFile(root, absolute, relativePath) {
+  if (!isPythonFile(relativePath)) return [];
+  const resolved = root.resolveClientPath(relativePath);
+  if (!samePath2(resolved, absolute)) throw new Error("unsafe_backend_mode");
+  return [relativePath];
+}
+function visitDirectory(root, absolute, relativePath) {
+  return isExcludedPythonDirectory(relativePath) ? [] : visit(root, absolute, relativePath);
+}
+function isPythonFile(path5) {
+  return (path5.endsWith(".py") || path5.endsWith(".pyi")) && !isSensitiveProjectPath(path5) && !isClassificationConfigPath(path5);
+}
+function isExcludedPythonDirectory(path5) {
+  return isSensitiveProjectPath(path5) || path5.split("/").some((part) => /^(\.venv|venv|node_modules|__pycache__)$/iu.test(part));
+}
+
+// src/semantic/python-mirror/python-mirror-snapshot.ts
+function snapshotPythonProject(root) {
+  const configuration = readProjectPythonConfiguration(root);
+  const inputs = collectPythonFiles(root).map((path5) => {
+    const text = root.protectedRead(path5).bytes;
+    return { path: path5, text, sha256: sha2562(text) };
+  });
+  return {
+    configuration,
+    inputs,
+    fingerprint: sha2562(
+      [
+        JSON.stringify(configuration),
+        inputs.map((input) => `${input.path}:${input.sha256}`).join("\n")
+      ].join("\n")
+    )
+  };
+}
+
+// src/semantic/python-mirror/python-mirror-manager-actions.ts
+async function refreshManager(input) {
+  const snapshot = snapshotOrUndefined(input.root);
+  if (!snapshot) return unavailableRefresh(input);
+  const active = input.active();
+  if (active?.fingerprint === snapshot.fingerprint)
+    return unchangedMirror(active);
+  await retireActive(input);
+  return createFreshMirror(input, snapshot);
+}
+async function unavailableRefresh(input) {
+  await retireActive(input);
+  return {
+    status: "unavailable",
+    code: "unsafe_backend_mode"
+  };
+}
+function unchangedMirror(active) {
+  return {
+    status: "ready",
+    mirror: active.mirror,
+    changed: false
+  };
+}
+function snapshotOrUndefined(root) {
+  try {
+    return snapshotPythonProject(root);
+  } catch {
+    return void 0;
+  }
+}
+function createFreshMirror(input, snapshot) {
+  try {
+    const mirror = createMirror(input.root, input.nextGeneration(), snapshot);
+    input.setActive({
+      mirror,
+      fingerprint: snapshot.fingerprint
+    });
+    return {
+      status: "ready",
+      mirror,
+      changed: true
+    };
+  } catch {
+    return {
+      status: "unavailable",
+      code: "unsafe_backend_mode"
+    };
+  }
+}
+async function retireActive(input) {
+  const active = input.active();
+  if (!active) return;
+  input.setActive(void 0);
+  try {
+    await active.mirror.disposeAfterShutdown(input.terminateOldBackend);
+  } catch {
+  }
+}
+
+// src/semantic/python-mirror/python-mirror-manager.ts
+function createPythonMirrorManager(root, terminateOldBackend = () => {
+}) {
+  let active;
+  let nextGeneration = 0;
+  const enqueue = createOperationQueue();
+  return {
+    current: () => active?.mirror,
+    refresh: () => enqueue(
+      () => refreshManager({
+        root,
+        active: () => active,
+        setActive: (value) => active = value,
+        nextGeneration: () => nextGeneration++,
+        terminateOldBackend
+      })
+    ),
+    disposeAfterShutdown: (shutdown) => enqueue(
+      () => disposeManager(
+        () => active,
+        (value) => active = value,
+        shutdown
+      )
+    )
+  };
+}
+function createOperationQueue() {
+  let operations = Promise.resolve();
+  return (operation) => {
+    const result = operations.then(operation, operation);
+    operations = result.then(
+      () => void 0,
+      () => void 0
+    );
+    return result;
+  };
+}
+async function disposeManager(active, setActive, shutdown) {
+  await shutdown();
+  active()?.mirror.dispose();
+  setActive(void 0);
+}
+
+// src/semantic/adapters/native-backend-inspector.ts
+import { isAbsolute as isAbsolute2 } from "node:path";
+
+// src/semantic/adapters/native-backend-candidate.ts
+import { join as join16 } from "node:path";
+
+// src/semantic/adapters/native-backend-candidate-details.ts
+import { dirname as dirname4, join as join14 } from "node:path";
+
+// src/semantic/adapters/native-backend-file.ts
+import { createHash as createHash3 } from "node:crypto";
+import {
+  closeSync as closeSync3,
+  fstatSync as fstatSync3,
+  lstatSync as lstatSync6,
+  openSync as openSync3,
+  readFileSync as readFileSync5,
+  realpathSync as realpathSync2
+} from "node:fs";
+import { isAbsolute, relative as relative2, resolve as resolve2, sep } from "node:path";
+function inspectNativeFile(candidate, root, projectRoot) {
+  try {
+    const link = lstatSync6(candidate);
+    if (!link.isFile() || link.isSymbolicLink()) return void 0;
+    const canonicalPath = realpathSync2.native(candidate);
+    if (!safeFilePath(root, canonicalPath, projectRoot)) return void 0;
+    return inspectOpenedNativeFile(canonicalPath);
+  } catch {
+    return void 0;
+  }
+}
+function inspectOpenedNativeFile(canonicalPath) {
+  const descriptor = openSync3(canonicalPath, "r");
+  try {
+    const stat4 = fstatSync3(descriptor, { bigint: true });
+    if (!stat4.isFile()) return void 0;
+    return {
+      canonical_path: canonicalPath,
+      device: String(stat4.dev),
+      file_id: String(stat4.ino),
+      sha256: createHash3("sha256").update(readFileSync5(descriptor)).digest("hex"),
+      regular_file: true,
+      link_or_reparse_point: false
+    };
+  } finally {
+    closeSync3(descriptor);
+  }
+}
+function safeFilePath(root, candidate, projectRoot) {
+  return isWithin2(root, candidate) && !(projectRoot && isWithin2(projectRoot, candidate));
+}
+function isWithin2(root, candidate) {
+  const path5 = relative2(resolve2(root), resolve2(candidate));
+  return path5 === "" || isChild(path5);
+}
+function isChild(path5) {
+  return !path5.startsWith(`..${sep}`) && path5 !== ".." && !isAbsolute(path5);
+}
+
+// src/semantic/adapters/native-backend-candidate-details.ts
+function findPackageMetadata(input, entrypoints) {
+  if (input.language !== "python") return void 0;
+  const entrypoint = entrypoints[0]?.canonical_path;
+  const root = entrypoint ? input.roots.find((candidate) => isWithin2(candidate, entrypoint)) : void 0;
+  return entrypoint && root ? inspectNativeFile(
+    join14(dirname4(entrypoint), "package.json"),
+    root,
+    input.projectRoot
+  ) : void 0;
+}
+function candidateIdentity(input, details) {
+  if (input.language === "python" && !details.packageMetadata) return void 0;
+  return {
+    ...details.executable,
+    version: details.version,
+    entrypoints: details.files,
+    ...details.packageMetadata ? { package_metadata: details.packageMetadata } : {}
+  };
+}
+function pinnedRoslynExecutable(root, executableBasename) {
+  return join14(
+    root,
+    ".store",
+    "roslyn-language-server",
+    "5.11.0-1.26380.4",
+    "roslyn-language-server.win-x64",
+    "5.11.0-1.26380.4",
+    "tools",
+    "net10.0",
+    "win-x64",
+    executableBasename
+  );
+}
+
+// src/semantic/adapters/native-backend-version.ts
+import { spawnSync } from "node:child_process";
+import { readFileSync as readFileSync6 } from "node:fs";
+import { dirname as dirname5, join as join15 } from "node:path";
+function probeVersion(language, executable, entrypoints) {
+  if (language === "csharp")
+    return peFileVersion(executable) ?? commandVersion(executable);
+  if (language === "python")
+    return pyrightPackageVersion(entrypoints[0]?.canonical_path);
+  return commandVersion(executable);
+}
+function commandVersion(executable) {
+  const probe = spawnSync(executable, ["--version"], {
+    encoding: "utf8",
+    shell: false,
+    timeout: 5e3,
+    windowsHide: true
+  });
+  return probe.status === 0 ? firstVersion(`${probe.stdout}
+${probe.stderr}`) : void 0;
+}
+function peFileVersion(path5) {
+  const source = readFileSync6(path5).toString("utf16le");
+  const version2 = /ProductVersion\0(v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/.exec(
+    source
+  )?.[1];
+  return version2?.replace(/^v/, "") ?? firstVersion(source.match(/FileVersion[\s\S]{0,160}/)?.[0] ?? "");
+}
+function pyrightPackageVersion(entrypoint) {
+  if (!entrypoint) return void 0;
+  try {
+    const parseJson3 = JSON.parse;
+    const packageJson = parseJson3(
+      readFileSync6(join15(dirname5(entrypoint), "package.json"), "utf8")
+    );
+    return typeof packageJson.version === "string" && /^\d+\.\d+\.\d+$/.test(packageJson.version) ? packageJson.version : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function firstVersion(output) {
+  return output.match(
+    /(?:^|[^0-9])v?(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/
+  )?.[1];
+}
+
+// src/semantic/adapters/native-backend-candidate.ts
+function inspectBackendCandidate(input) {
+  const executable = inspectExecutable(input);
+  if (!hasCanonicalPath(executable)) return void 0;
+  const entrypoints = findEntrypoints(input);
+  return completeCandidate(input, executable, entrypoints);
+}
+function hasCanonicalPath(identity) {
+  return Boolean(identity?.canonical_path);
+}
+function completeCandidate(input, executable, entrypoints) {
+  if (entrypoints.some((entrypoint) => !entrypoint)) return void 0;
+  const files = entrypoints;
+  const version2 = probeVersion(
+    input.language,
+    executable.canonical_path,
+    files
+  );
+  if (!version2) return void 0;
+  const packageMetadata = findPackageMetadata(input, files);
+  return candidateIdentity(input, {
+    executable,
+    files,
+    version: version2,
+    packageMetadata
+  });
+}
+function inspectExecutable(input) {
+  const candidate = input.language === "csharp" ? pinnedRoslynExecutable(input.root, input.executableBasename) : join16(input.root, input.executableBasename);
+  return inspectNativeFile(candidate, input.root, input.projectRoot);
+}
+function findEntrypoints(input) {
+  return input.entrypointBasenames.map(
+    (name) => input.roots.map(
+      (entrypointRoot) => inspectNativeFile(
+        join16(entrypointRoot, "node_modules", "pyright", name),
+        entrypointRoot,
+        input.projectRoot
+      )
+    ).find(Boolean)
+  );
+}
+
+// src/semantic/adapters/native-backend-inspector.ts
+function createNativeBackendInspector(commandRoots, projectRoot) {
+  const roots = commandRoots.filter(
+    (root) => isAbsolute2(root) && !(projectRoot && isWithin2(projectRoot, root))
+  );
+  return (language, executableBasename, entrypointBasenames = []) => {
+    for (const root of roots) {
+      const candidate = inspectBackendCandidate({
+        language,
+        root,
+        projectRoot,
+        executableBasename,
+        entrypointBasenames,
+        roots
+      });
+      if (candidate) return candidate;
+    }
+    return void 0;
+  };
+}
+
+// src/semantic/workspace/filtered-workspace.ts
+import { existsSync as existsSync3, mkdtempSync as mkdtempSync2, rmSync as rmSync2 } from "node:fs";
+import { tmpdir as tmpdir2 } from "node:os";
+import { join as join18 } from "node:path";
+
+// src/semantic/workspace/filtered-workspace-copy.ts
+import {
+  lstatSync as lstatSync7,
+  mkdirSync as mkdirSync3,
+  readdirSync as readdirSync6,
+  writeFileSync as writeFileSync2
+} from "node:fs";
+import { dirname as dirname6, join as join17 } from "node:path";
+
+// src/semantic/workspace/filtered-workspace-rules.ts
+function relativePathFor(directory2, name) {
+  return directory2 ? `${directory2}/${name}` : name;
+}
+function isBackendIrrelevant(path5) {
+  return path5.split("/").some((part) => BACKEND_IRRELEVANT.test(part));
+}
+var BACKEND_IRRELEVANT = new RegExp(
+  [
+    "^(node_modules|dist|target|bin|obj|\\.venv|coverage|docs|reports|",
+    "\\.serena|\\.idea|\\.claude|\\.codex|\\.github|\\.data|",
+    "\\.evo|\\.skill-migrate|\\.tighten)$"
+  ].join(""),
+  "iu"
+);
+function isBackendSourceFile(path5) {
+  return /\.(rs|cs|csx|fs|vb|toml|json|sln|csproj|props|targets)$/iu.test(path5) || /(^|\/)(Cargo\.lock|Cargo\.toml|Directory\.Build\.props)$/iu.test(path5);
+}
+
+// src/semantic/workspace/filtered-workspace-copy.ts
+function copyFilteredDirectory(input) {
+  return readdirSync6(input.absoluteDirectory, {
+    withFileTypes: true
+  }).reduce(
+    (excluded, entry) => excluded + copyFilteredEntry({ ...input, entry }),
+    0
+  );
+}
+function copyFilteredEntry(input) {
+  const relativePath = relativePathFor(
+    input.relativeDirectory,
+    input.entry.name
+  );
+  const reason = skipReason(
+    relativePath,
+    input.absoluteDirectory,
+    input.entry.name
+  );
+  if (reason === "sensitive") return 1;
+  if (reason) return 0;
+  if (input.entry.isDirectory()) return copyDirectory(input, relativePath);
+  copySource(input, relativePath);
+  return 0;
+}
+function copyDirectory(input, relativePath) {
+  const target = join17(input.serviceRoot, relativePath);
+  mkdirSync3(target, { recursive: true });
+  return copyFilteredDirectory({
+    ...input,
+    absoluteDirectory: join17(input.absoluteDirectory, input.entry.name),
+    relativeDirectory: relativePath
+  });
+}
+function copySource(input, relativePath) {
+  if (!(input.entry.isFile() && isBackendSourceFile(relativePath))) return;
+  const target = join17(input.serviceRoot, relativePath);
+  mkdirSync3(dirname6(target), { recursive: true });
+  writeFileSync2(
+    target,
+    input.sourceRoot.protectedRead(relativePath).bytes,
+    "utf8"
+  );
+  input.sourcePaths.push(relativePath);
+}
+function skipReason(relativePath, absoluteDirectory, name) {
+  if (isSensitiveProjectPath(relativePath)) return "sensitive";
+  if (isClassificationConfigPath(relativePath)) return "ignored";
+  if (isBackendIrrelevant(relativePath)) return "ignored";
+  if (lstatSync7(join17(absoluteDirectory, name)).isSymbolicLink())
+    return "ignored";
+  return void 0;
+}
+
+// src/semantic/workspace/filtered-workspace.ts
+function createFilteredWorkspace(sourceRoot) {
+  const serviceRoot = mkdtempSync2(join18(tmpdir2(), "code-explorer-native-"));
+  const sourcePaths = [];
+  try {
+    const excluded = copyFilteredDirectory({
+      absoluteDirectory: sourceRoot.canonicalPath,
+      relativeDirectory: "",
+      serviceRoot,
+      sourceRoot,
+      sourcePaths
+    });
+    return {
+      root: createNativeProjectRoot(serviceRoot),
+      sensitive_paths_excluded: excluded,
+      sourcePaths: () => [...sourcePaths],
+      dispose: () => disposeWorkspace(serviceRoot)
+    };
+  } catch (error2) {
+    disposeWorkspace(serviceRoot);
+    throw error2;
+  }
+}
+function disposeWorkspace(serviceRoot) {
+  if (existsSync3(serviceRoot))
+    rmSync2(serviceRoot, { recursive: true, force: true });
+}
+
+// src/semantic/runtime/runtime-adapter-metadata.ts
+function runtimeAdapterMetadata(input) {
+  return {
+    backend_name: input.backendName,
+    backend_version: input.prepared.status === "ready" ? input.prepared.version : "unobserved",
+    discovery_source: "server_path",
+    unavailable_failure_code: input.prepared.status === "unavailable" ? input.prepared.code : "backend_unavailable",
+    capabilities: input.capabilities
+  };
+}
+
+// src/semantic/adapters/language-adapter-status-fields.ts
+function adapterState(input) {
+  if (!input.options.compatible) return "unavailable";
+  if (input.timedOut) return "failed";
+  if (input.backendState === "ready" && hasUnavailableCapability(input.capabilities))
+    return "degraded";
+  return input.backendState;
+}
+function failureFields(input) {
+  if (!input.options.compatible)
+    return { failure_code: "unsupported_backend_version" };
+  if (input.backendState.state === "unavailable")
+    return { failure_code: unavailableFailure(input) };
+  if (input.timedOut) return { failure_code: "initialization_timeout" };
+  if (input.backendState.state === "failed")
+    return {
+      failure_code: input.backendState.failure_code
+    };
+  return {};
+}
+function unavailableFailure(input) {
+  return input.backendState.failure_code ?? input.options.unavailable_failure_code ?? "backend_unavailable";
+}
+function configuredCapabilities(overrides) {
+  const defaults = Object.fromEntries(
+    relationNames.map((relation) => [relation, { state: "ready" }])
+  );
+  return { ...defaults, ...overrides };
+}
+function unavailableCapabilities(capabilities) {
+  return Object.fromEntries(
+    Object.keys(capabilities).map((relation) => [
+      relation,
+      { state: "unavailable" }
+    ])
+  );
+}
+function hasUnavailableCapability(capabilities) {
+  return Object.values(capabilities).some(({ state }) => state !== "ready");
+}
+function defaultBackendName(language) {
+  if (language === "rust") return "rust-analyzer";
+  if (language === "python") return "pyright-langserver";
+  return "roslyn-language-server";
+}
+
+// src/semantic/adapters/language-adapter-status.ts
+function createBackendStatus(input) {
+  const backendState = input.options.backend.readiness();
+  const initializingSince = nextInitializingSince(
+    backendState.state,
+    input.initializingSince,
+    input.now
+  );
+  const timedOut = backendState.state === "initializing" && input.now() - (initializingSince ?? input.now()) >= 3e4;
+  const state = adapterState({
+    options: input.options,
+    backendState: backendState.state,
+    timedOut,
+    capabilities: input.capabilities
+  });
+  const status = {
+    language: input.language,
+    backend_name: input.options.backend_name ?? defaultBackendName(input.language),
+    backend_version: input.options.backend_version,
+    discovery_source: input.options.discovery_source ?? "injected",
+    state,
+    capabilities: state === "unavailable" || state === "failed" ? unavailableCapabilities(input.capabilities) : input.capabilities,
+    last_transition_time: 0,
+    ...failureFields({
+      options: input.options,
+      backendState,
+      timedOut
+    })
+  };
+  return { status, initializingSince };
+}
+function nextInitializingSince(state, current, now) {
+  if (state === "initializing") return current ?? now();
+  return void 0;
+}
+
+// src/semantic/adapters/language-adapter-status-reader.ts
+function createStatusReader(input) {
+  let initializingSince;
+  let lastSignature;
+  let lastTransitionTime = input.now();
+  return () => {
+    const current = createBackendStatus({
+      ...input,
+      capabilities: input.capabilities(),
+      initializingSince
+    });
+    initializingSince = current.initializingSince;
+    const signature = [
+      current.status.state,
+      current.status.failure_code ?? ""
+    ].join(":");
+    if (lastSignature === void 0 || signature !== lastSignature) {
+      lastSignature = signature;
+      lastTransitionTime = input.now();
+    }
+    return {
+      ...current.status,
+      last_transition_time: lastTransitionTime
+    };
+  };
+}
+
+// src/semantic/adapters/language-adapter-factory.ts
+function createLanguageAdapter(language, options) {
+  const backend = options.backend;
+  const lifecycle = lifecycleMethods(backend);
+  const capabilities = configuredCapabilities(options.capabilities);
+  const now = options.now ?? Date.now;
+  return {
+    status: createStatusReader({
+      language,
+      options,
+      capabilities: () => backend.capabilities?.() ?? capabilities,
+      now
+    }),
+    request: (request) => Promise.resolve().then(() => requestBackend(backend, request)),
+    ...lifecycle
+  };
+}
+function requestBackend(backend, request) {
+  return backend.query(parseSemanticRequest(request)).then(parseSemanticResult);
+}
+function lifecycleMethods(backend) {
+  return {
+    ...backend.start ? { start: backend.start } : {},
+    ...backend.shutdown ? { shutdown: backend.shutdown } : {},
+    ...backend.refresh ? { refresh: backend.refresh } : {}
+  };
+}
+
+// src/semantic/adapters/language-adapter.ts
+function createRustAdapter(options) {
+  return createLanguageAdapter("rust", options);
+}
+function createPythonAdapter(options) {
+  return createLanguageAdapter("python", options);
+}
+function createCSharpAdapter(options) {
+  return createLanguageAdapter("csharp", options);
+}
+
+// src/semantic/runtime/runtime-adapter-selection.ts
+function createSelectedAdapter(language, options) {
+  if (language === "rust") return createRustAdapter(options);
+  if (language === "python") return createPythonAdapter(options);
+  return createCSharpAdapter(options);
+}
+function withFilteredShutdown(adapter, filtered) {
+  return {
+    ...adapter,
+    shutdown: () => shutdownFiltered(adapter, filtered)
+  };
+}
+async function shutdownFiltered(adapter, filtered) {
+  try {
+    await adapter.shutdown?.();
+  } finally {
+    filtered.dispose();
+  }
+}
+
+// src/semantic/runtime/runtime-backend-unavailable.ts
+async function unavailableQuery(_request) {
+  throw new Error("backend_unavailable");
+}
+var unavailableBackend = {
+  readiness: () => ({ state: "unavailable" }),
+  query: unavailableQuery
+};
+
+// src/semantic/runtime/runtime-native-backend.ts
+import { fileURLToPath as fileURLToPath3, pathToFileURL as pathToFileURL2 } from "node:url";
+
+// src/semantic/direct-lsp/direct-lsp-semantic-backend.ts
+var direct_lsp_semantic_backend_exports = {};
+__export(direct_lsp_semantic_backend_exports, {
+  createDirectLspSemanticBackend: () => createDirectLspSemanticBackend
+});
+
+// src/semantic/direct-lsp/direct-lsp-semantic-capabilities.ts
+var direct_lsp_semantic_capabilities_exports = {};
+__export(direct_lsp_semantic_capabilities_exports, {
+  relationCapabilitiesFromInitialize: () => relationCapabilitiesFromInitialize
+});
+function relationCapabilitiesFromInitialize(status) {
+  const capabilities = status.server_capabilities ?? {};
+  const supported = (name) => capabilities[name] !== void 0 && capabilities[name] !== false;
+  return {
+    definition: capabilityState(supported("definitionProvider")),
+    references: capabilityState(supported("referencesProvider")),
+    type_definition: capabilityState(supported("typeDefinitionProvider")),
+    implementation: capabilityState(supported("implementationProvider")),
+    callers: capabilityState(supported("callHierarchyProvider")),
+    callees: capabilityState(supported("callHierarchyProvider"))
+  };
+}
+function capabilityState(supported) {
+  return { state: supported ? "ready" : "unavailable" };
+}
+
+// src/semantic/backend-result/backend-result-validator.ts
+import { Buffer as Buffer2 } from "node:buffer";
+
+// src/semantic/backend-result/backend-result-locations.ts
+function symbolsIn(result) {
+  if (result.operation === "search") return result.symbols;
+  if (result.operation === "focus") return [result.symbol];
+  return result.relations.flatMap(
+    (relation) => "symbol" in relation ? [relation.symbol] : []
+  );
+}
+function projectLocationsIn(result) {
+  if (result.operation === "search")
+    return result.symbols.map(({ location }) => location);
+  if (result.operation === "focus") return [result.symbol.location];
+  return result.relations.flatMap((relation) => relationLocations(relation));
+}
+function relationLocations(relation) {
+  if (!("symbol" in relation)) return [];
+  return "external" in relation.location ? [relation.symbol.location] : [relation.symbol.location, relation.location];
+}
+function validateSymbol(symbol, options) {
+  if (!options.allowedLanguages.includes(symbol.language))
+    throw new Error("unexpected language");
+  validateLocation(symbol.location, options);
+}
+function validateLocation(location, options) {
+  options.root.resolveClientPath(location.path);
+  const source = options.root.protectedRead(location.path).bytes;
+  if (!rangeFits(source, location.range)) throw new Error("invalid range");
+}
+function rangeFits(source, range) {
+  const lines = source.split("\n").map((line) => line.replace(/\r$/, ""));
+  return positionFits(lines, range.start) && positionFits(lines, range.end) && comparePositions(range.start, range.end) <= 0;
+}
+function positionFits(lines, position) {
+  return position.line >= 0 && position.line < lines.length && position.character >= 0 && position.character <= lines[position.line].length;
+}
+function comparePositions(left, right) {
+  return left.line === right.line ? left.character - right.character : left.line - right.line;
+}
+
+// src/semantic/backend-result/backend-result-safety.ts
+function containsVirtualDocument(input) {
+  if (!isRecordOrArray(input)) return false;
+  if (Array.isArray(input)) return input.some(containsVirtualDocument);
+  return virtualRecord(input);
+}
+function virtualRecord(record2) {
+  if (typeof record2.uri === "string" && !record2.uri.startsWith("file:"))
+    return true;
+  return Object.values(record2).some(containsVirtualDocument);
+}
+function containsUnexpectedLanguage(input, allowedLanguages) {
+  if (!isRecordOrArray(input)) return false;
+  if (Array.isArray(input))
+    return input.some(
+      (item) => containsUnexpectedLanguage(item, allowedLanguages)
+    );
+  return unexpectedLanguageRecord(input, allowedLanguages);
+}
+function unexpectedLanguageRecord(record2, allowedLanguages) {
+  if ("language" in record2 && typeof record2.language === "string" && !allowedLanguages.includes(record2.language))
+    return true;
+  return Object.values(record2).some(
+    (item) => containsUnexpectedLanguage(item, allowedLanguages)
+  );
+}
+function containsStaleRevision(input, currentGeneration) {
+  if (!isRecordOrArray(input) || Array.isArray(input)) return false;
+  const revision = input.revision;
+  return isRecord2(revision) && revision.generation !== currentGeneration;
+}
+function isRecordOrArray(value) {
+  return !!value && typeof value === "object";
+}
+function isRecord2(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+// src/semantic/backend-result/backend-result-validator.ts
+var MAX_BACKEND_PAYLOAD_BYTES = 1024 * 1024;
+function validateBackendResult(input, options) {
+  const safety = validateSafety(input, options);
+  if (safety) return safety;
+  const result = parseResult(input);
+  if (!result)
+    return {
+      status: "rejected",
+      code: "invalid_backend_result"
+    };
+  return validateParsedResult(result, options);
+}
+function validateSafety(input, options) {
+  if (payloadSize(input) > MAX_BACKEND_PAYLOAD_BYTES)
+    return {
+      status: "rejected",
+      code: "backend_response_limit"
+    };
+  if (containsVirtualDocument(input) || containsStaleRevision(input, options.currentGeneration))
+    return {
+      status: "unavailable",
+      code: "invalid_backend_result",
+      adapter_state: "degraded"
+    };
+  if (containsUnexpectedLanguage(input, options.allowedLanguages))
+    return {
+      status: "rejected",
+      code: "invalid_backend_result",
+      adapter_gap: "unexpected_language"
+    };
+  return void 0;
+}
+function parseResult(input) {
+  try {
+    return parseSemanticResult(input);
+  } catch {
+    return void 0;
+  }
+}
+function validateParsedResult(result, options) {
+  try {
+    for (const symbol of symbolsIn(result)) validateSymbol(symbol, options);
+    for (const location of projectLocationsIn(result))
+      validateLocation(location, options);
+    return { status: "accepted", result };
+  } catch {
+    return {
+      status: "rejected",
+      code: "invalid_backend_result"
+    };
+  }
+}
+function payloadSize(input) {
+  try {
+    return Buffer2.byteLength(JSON.stringify(input), "utf8");
+  } catch {
+    return MAX_BACKEND_PAYLOAD_BYTES + 1;
+  }
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-accept.ts
+function acceptResult(result, input) {
+  const checked = validateBackendResult(result, {
+    allowedLanguages: [input.options.language],
+    root: input.options.root,
+    currentGeneration: input.options.revision.generation
+  });
+  if (checked.status !== "accepted") throw new Error(checked.code);
+  retainReturnedSymbols(checked.result, input.symbols);
+  return checked.result;
+}
+function retainReturnedSymbols(result, symbols) {
+  if (result.operation === "search") return retainSearch(result, symbols);
+  if (result.operation === "focus") {
+    symbols.set(result.symbol.id, result.symbol);
+    return;
+  }
+  for (const relation of result.relations)
+    if ("symbol" in relation) symbols.set(relation.symbol.id, relation.symbol);
+}
+function retainSearch(result, symbols) {
+  for (const symbol of result.symbols) symbols.set(symbol.id, symbol);
+}
+function openSourceDocument(source, options) {
+  if (!options.client.openProtectedDocument) return;
+  const uri = options.toBackendUri(source.location);
+  const document = options.root.protectedRead(source.location.path);
+  options.client.openProtectedDocument(uri, {
+    language_id: options.language,
+    bytes: document.bytes
+  });
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-availability.ts
+function assertAvailable(request, input) {
+  if (unavailableRelation(request, input.unavailableRelations))
+    throw new Error("backend_unavailable");
+  assertSymbolAvailable(request, input.symbols);
+  assertRelationAvailable(request, input.options);
+}
+function assertSymbolAvailable(request, symbols) {
+  if (request.operation !== "search" && !symbols.has(request.symbol_id))
+    throw new Error("backend_unavailable");
+}
+function assertRelationAvailable(request, options) {
+  if (isRelation(request) && relationCapabilitiesFromInitialize(
+    options.client.status()
+  )[request.operation].state !== "ready")
+    throw new Error("backend_unavailable");
+}
+function unavailableRelation(request, unavailableRelations) {
+  return isRelation(request) && unavailableRelations.has(request.operation);
+}
+function isRelation(request) {
+  return request.operation !== "search" && request.operation !== "focus";
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-location.ts
+function lspLocation(target, options) {
+  const uri = target?.uri ?? target?.targetUri;
+  const range = target?.range ?? target?.targetRange;
+  if (!(typeof uri === "string" && validRange(range))) return void 0;
+  const path5 = options.fromBackendUri(uri);
+  if (path5)
+    return {
+      path: path5,
+      range
+    };
+  if (uri.startsWith("file:")) return { external: true };
+  throw new Error("invalid_backend_result");
+}
+function asRecord(value) {
+  return value && typeof value === "object" ? value : void 0;
+}
+function validRange(value) {
+  const range = value;
+  return !!(Number.isInteger(range?.start?.line) && Number.isInteger(range.start?.character) && Number.isInteger(range?.end?.line) && Number.isInteger(range.end?.character));
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-document-symbols.ts
+function documentSymbols(raw, uri) {
+  const values = Array.isArray(raw) ? raw : [];
+  return values.flatMap((value) => documentSymbolAt(value, uri));
+}
+function documentSymbolAt(value, uri) {
+  const symbol = asRecord(value);
+  if (!symbol) return [];
+  const range = validRange(symbol.selectionRange) ? symbol.selectionRange : symbol.range;
+  const current = validRange(range) ? [
+    {
+      name: symbol.name,
+      kind: symbol.kind,
+      location: { uri, range }
+    }
+  ] : [];
+  return [...current, ...documentSymbols(symbol.children, uri)];
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-protocol.ts
+var LSP_METHODS = {
+  definition: "textDocument/definition",
+  references: "textDocument/references",
+  type_definition: "textDocument/typeDefinition",
+  implementation: "textDocument/implementation",
+  callers: "textDocument/prepareCallHierarchy",
+  callees: "textDocument/prepareCallHierarchy",
+  search: "workspace/symbol"
+};
+function methodFor(operation) {
+  return LSP_METHODS[operation] ?? "workspace/symbol";
+}
+function paramsFor(request, source, options) {
+  if (request.operation === "search") return { query: request.query };
+  if (!source) throw new Error("backend_unavailable");
+  const textDocument = {
+    uri: options.toBackendUri(source.location)
+  };
+  const position = source.location.range.start;
+  return request.operation === "references" ? {
+    textDocument,
+    position,
+    context: { includeDeclaration: true }
+  } : { textDocument, position };
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-source-symbol.ts
+function sourceSymbol(input) {
+  return {
+    name: input.name,
+    kind: input.kind,
+    location: symbolLocation(input)
+  };
+}
+function symbolLocation(input) {
+  return {
+    uri: input.uri,
+    range: {
+      start: {
+        line: input.lineNumber,
+        character: input.character
+      },
+      end: {
+        line: input.lineNumber,
+        character: input.character + input.name.length
+      }
+    }
+  };
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-csharp-symbols.ts
+function csharpSourceSymbols(source, uri) {
+  return source.split(/\r?\n/).flatMap((line, lineNumber) => csharpSymbolsAt(line, lineNumber, uri));
+}
+function csharpSymbolsAt(line, lineNumber, uri) {
+  return [
+    csharpTypeSymbol(line, lineNumber, uri),
+    csharpMethodSymbol(line, lineNumber, uri)
+  ].filter((symbol) => symbol !== void 0);
+}
+function csharpTypeSymbol(line, lineNumber, uri) {
+  const match = /\b(class|interface|struct|enum)\s+([A-Za-z_]\w*)/.exec(line);
+  if (!match) return void 0;
+  return sourceSymbol({
+    name: match[2],
+    kind: match[1] === "interface" ? 11 : 5,
+    character: line.indexOf(match[2]),
+    lineNumber,
+    uri
+  });
+}
+var CSHARP_METHOD = new RegExp(
+  String.raw`^\s*(?:(?:public|private|protected|internal|static|` + String.raw`virtual|override|abstract|async|sealed|new|partial|` + String.raw`extern)\s+)*` + String.raw`(?:[A-Za-z_][\w<>[\],.?]*\s+)([A-Za-z_]\w*)\s*\(`
+);
+function csharpMethodSymbol(line, lineNumber, uri) {
+  const match = CSHARP_METHOD.exec(line);
+  if (!match) return void 0;
+  return sourceSymbol({
+    name: match[1],
+    kind: 6,
+    character: line.indexOf(match[1]),
+    lineNumber,
+    uri
+  });
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-source-symbols.ts
+function sourcePathSymbols(language, source, uri) {
+  if (language === "python") return pythonSourceSymbols(source, uri);
+  if (language === "csharp") return csharpSourceSymbols(source, uri);
+  return [];
+}
+function pythonSourceSymbols(source, uri) {
+  return source.split(/\r?\n/).flatMap((line, lineNumber) => pythonSymbolAt(line, lineNumber, uri));
+}
+function pythonSymbolAt(line, lineNumber, uri) {
+  const match = /^(\s*)(?:(async)\s+)?(def|class)\s+([A-Za-z_]\w*)/.exec(line);
+  if (!match) return [];
+  return [
+    sourceSymbol({
+      name: match[4],
+      kind: match[3] === "class" ? 5 : 12,
+      character: line.indexOf(match[4], match[1].length),
+      lineNumber,
+      uri
+    })
+  ];
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-request.ts
+async function requestLsp(request, source, options) {
+  if (request.operation === "focus") return void 0;
+  if (request.operation === "search") return requestSearch(request, options);
+  if (request.operation === "callers" || request.operation === "callees")
+    return requestHierarchy(request, source, options);
+  return options.client.request(
+    methodFor(request.operation),
+    paramsFor(request, source, options)
+  );
+}
+async function requestSearch(request, options) {
+  const paths = options.discovery_document_paths;
+  if (!paths?.length)
+    return options.client.request("workspace/symbol", {
+      query: request.query
+    });
+  const symbols = [];
+  for (const path5 of paths) {
+    const uri = options.toBackendUri(emptyLocation(path5));
+    const reply = await options.client.request("textDocument/documentSymbol", {
+      textDocument: { uri }
+    });
+    const semantic = documentSymbols(reply, uri);
+    symbols.push(
+      ...semantic.length > 0 ? semantic : sourcePathSymbols(
+        options.language,
+        options.root.protectedRead(path5).bytes,
+        uri
+      ).slice(0, 4096 - symbols.length)
+    );
+    if (symbols.length >= 4096) break;
+  }
+  return symbols;
+}
+function requestHierarchy(request, source, options) {
+  if (!source) throw new Error("backend_unavailable");
+  return requestHierarchyItem(request, source, options);
+}
+async function requestHierarchyItem(request, source, options) {
+  const prepared = await options.client.request(
+    "textDocument/prepareCallHierarchy",
+    paramsFor(request, source, options)
+  );
+  const item = Array.isArray(prepared) ? prepared[0] : prepared;
+  if (!item || typeof item !== "object") return [];
+  const method = request.operation === "callers" ? "callHierarchy/incomingCalls" : "callHierarchy/outgoingCalls";
+  return options.client.request(method, { item });
+}
+function emptyLocation(path5) {
+  return {
+    path: path5,
+    range: {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 0 }
+    }
+  };
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-locations.ts
+function locations(raw, options) {
+  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return values.flatMap((value) => locationFromValue(value, options));
+}
+function locationFromValue(value, options) {
+  const item = asRecord(value);
+  const target = targetFromItem(item);
+  if (!target) return [];
+  const range = validTargetRange(target);
+  if (!range) return [];
+  return locationForUri(target.uri ?? target.targetUri, range, options);
+}
+function validTargetRange(target) {
+  const range = target.range ?? target.targetRange;
+  return validRange(range) ? range : void 0;
+}
+function locationForUri(uri, range, options) {
+  const path5 = typeof uri === "string" ? options.fromBackendUri(uri) : void 0;
+  if (path5)
+    return [
+      {
+        path: path5,
+        range
+      }
+    ];
+  if (typeof uri === "string" && uri.startsWith("file:"))
+    return [{ external: true }];
+  throw new Error("invalid_backend_result");
+}
+function targetFromItem(item) {
+  const hierarchy = hierarchyTarget(item);
+  if (hierarchy) return hierarchy;
+  return locationTarget(item);
+}
+function hierarchyTarget(item) {
+  return asRecord(item?.from ?? item?.to);
+}
+function locationTarget(item) {
+  if (item?.targetUri) return item;
+  const location = asRecord(item?.location);
+  return location ?? item;
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-location-results.ts
+function locationResult(input) {
+  return {
+    operation: input.request.operation,
+    revision: input.options.revision,
+    relations: locations(input.raw, input.options).map(
+      (location, index) => relationFromLocation({
+        operation: input.request.operation,
+        location,
+        index,
+        options: input.options
+      })
+    )
+  };
+}
+function relationFromLocation(input) {
+  if ("external" in input.location)
+    return {
+      relation: input.operation,
+      external: { external: true }
+    };
+  return {
+    relation: input.operation,
+    symbol: symbolFor(input.location, input.index, input.options),
+    location: input.location
+  };
+}
+function symbolFor(location, index, options) {
+  return {
+    id: `${options.language}:${location.path}:${index}`,
+    name: location.path,
+    language: options.language,
+    kind: "symbol",
+    location
+  };
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-relation-symbol.ts
+function symbolFromRelationLocation(input) {
+  return {
+    id: `${input.options.language}:${input.location.path}:${input.index}`,
+    name: typeof input.target?.name === "string" ? input.target.name : input.location.path,
+    language: input.options.language,
+    kind: String(input.target?.kind ?? "symbol"),
+    location: input.location
+  };
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-relation-result.ts
+function hierarchyRelation(input) {
+  if ("external" in input.location)
+    return [
+      {
+        relation: input.relation,
+        external: { external: true }
+      }
+    ];
+  return [
+    {
+      relation: input.relation,
+      symbol: symbolFromRelationLocation({
+        target: input.target,
+        location: input.location,
+        index: input.index,
+        options: input.options
+      }),
+      location: input.location,
+      ..."external" in input.callSite ? {} : { call_site: input.callSite }
+    }
+  ];
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-relations.ts
+function hierarchyRelations(input) {
+  const values = Array.isArray(input.raw) ? input.raw : [];
+  return values.flatMap(
+    (value, index) => hierarchyRelationAt({ ...input, value, index })
+  );
+}
+function hierarchyRelationAt(input) {
+  const entry = asRecord(input.value);
+  const target = asRecord(
+    entry?.[input.relation === "callers" ? "from" : "to"]
+  );
+  const location = lspLocation(target, input.options);
+  if (!location) return [];
+  const callSite = hierarchyCallSite({
+    relation: input.relation,
+    source: input.source,
+    options: input.options,
+    target,
+    entry,
+    fallback: location
+  });
+  if (!callSite) return [];
+  return hierarchyRelation({
+    ...input,
+    target,
+    location,
+    callSite
+  });
+}
+function hierarchyCallSite(input) {
+  if (!Array.isArray(input.entry?.fromRanges)) return input.fallback;
+  const uri = input.relation === "callees" && input.source ? input.options.toBackendUri(input.source.location) : input.target?.uri;
+  return lspLocation({ uri, range: input.entry.fromRanges[0] }, input.options);
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-workspace.ts
+function workspaceSymbols(raw, options) {
+  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return values.flatMap(
+    (value, index) => workspaceSymbolAt(value, index, options)
+  );
+}
+function workspaceSymbolAt(value, index, options) {
+  const item = asRecord(value);
+  const location = lspLocation(asRecord(item?.location) ?? item, options);
+  if (!localLocation(location)) return [];
+  return [
+    {
+      id: `${options.language}:${location.path}:${index}`,
+      name: workspaceSymbolName(item, location.path),
+      language: options.language,
+      kind: workspaceSymbolKind(item?.kind),
+      location
+    }
+  ];
+}
+function localLocation(value) {
+  return value !== void 0 && !("external" in value);
+}
+function workspaceSymbolName(item, fallback) {
+  return typeof item?.name === "string" ? item.name : fallback;
+}
+function workspaceSymbolKind(value) {
+  if (typeof value === "string" && value.length > 0)
+    return value.toLocaleLowerCase("en-US");
+  const kinds = {
+    5: "class",
+    6: "method",
+    12: "function"
+  };
+  return typeof value === "number" && kinds[value] ? kinds[value] : "symbol";
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-results.ts
+function normalizeResult(input) {
+  if (input.request.operation === "search")
+    return {
+      operation: "search",
+      revision: input.options.revision,
+      symbols: workspaceSymbols(input.raw, input.options)
+    };
+  if (input.request.operation === "focus")
+    return focusResult(input.source, input.options);
+  return relationResult({
+    request: input.request,
+    raw: input.raw,
+    source: input.source,
+    options: input.options
+  });
+}
+function focusResult(source, options) {
+  if (!source) throw new Error("backend_unavailable");
+  const document = options.root.protectedRead(source.location.path);
+  return {
+    operation: "focus",
+    revision: options.revision,
+    symbol: source,
+    content: {
+      body: document.bytes,
+      visible_symbols: [{ name: source.name, symbol_id: source.id }]
+    }
+  };
+}
+function relationResult(input) {
+  const capability = relationCapabilitiesFromInitialize(
+    input.options.client.status()
+  )[input.request.operation];
+  if (capability.state !== "ready") throw new Error("backend_unavailable");
+  const request = input.request;
+  if (isHierarchyRelation(request))
+    return hierarchyResult({ ...input, request });
+  return locationResult(input);
+}
+function isHierarchyRelation(request) {
+  return request.operation === "callers" || request.operation === "callees";
+}
+function hierarchyResult(input) {
+  return {
+    operation: input.request.operation,
+    revision: input.options.revision,
+    relations: hierarchyRelations({
+      raw: input.raw,
+      relation: input.request.operation,
+      source: input.source,
+      options: input.options
+    })
+  };
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-execute.ts
+async function executeSemanticQuery(request, input) {
+  assertAvailable(request, input);
+  const source = sourceFor(request, input.symbols);
+  openSourceIfNeeded(request, source, input.options);
+  const raw = await requestLsp(request, source, input.options);
+  try {
+    const result = normalizeResult({
+      request,
+      raw,
+      source,
+      options: input.options
+    });
+    return acceptResult(result, input);
+  } catch (error2) {
+    markUnavailable(request, input.unavailableRelations);
+    throw error2;
+  }
+}
+function openSourceIfNeeded(request, source, options) {
+  if (source && request.operation !== "focus")
+    openSourceDocument(source, options);
+}
+function sourceFor(request, symbols) {
+  return request.operation === "search" ? void 0 : symbols.get(request.symbol_id);
+}
+function markUnavailable(request, unavailableRelations) {
+  if (isRelation2(request)) unavailableRelations.add(request.operation);
+}
+function isRelation2(request) {
+  return request.operation !== "search" && request.operation !== "focus";
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-query.ts
+function createSemanticQuery(input) {
+  const queryInput = input;
+  return (request) => executeSemanticQuery(request, queryInput);
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic-backend.ts
+function createDirectLspSemanticBackend(options) {
+  const unavailableRelations = /* @__PURE__ */ new Set();
+  const symbols = new Map(options.symbols);
+  return {
+    readiness: createReadiness(options, unavailableRelations),
+    capabilities: createCapabilities(options, unavailableRelations),
+    query: createSemanticQuery({
+      options,
+      unavailableRelations,
+      symbols
+    })
+  };
+}
+function createReadiness(options, unavailableRelations) {
+  return () => unavailableRelations.size > 0 && options.client.status().state === "ready" ? { state: "degraded" } : readiness(options.client.status());
+}
+function createCapabilities(options, unavailableRelations) {
+  return () => {
+    const capabilities = relationCapabilitiesFromInitialize(
+      options.client.status()
+    );
+    for (const relation of unavailableRelations)
+      capabilities[relation] = { state: "unavailable" };
+    return capabilities;
+  };
+}
+function readiness(status) {
+  return status.state === "failed" ? { state: "failed", failure_code: "backend_failed" } : { state: status.state };
+}
+
+// src/semantic/direct-lsp/direct-lsp-semantic.ts
+var { createDirectLspSemanticBackend: createDirectLspSemanticBackend2 } = direct_lsp_semantic_backend_exports;
+var { relationCapabilitiesFromInitialize: relationCapabilitiesFromInitialize2 } = direct_lsp_semantic_capabilities_exports;
+
+// src/semantic/adapters/native-lsp-process.ts
+import { spawn } from "node:child_process";
+function spawnNativeLspProcess(executable, arguments_, environment) {
+  const child = spawn(executable, arguments_, {
+    shell: false,
+    stdio: ["pipe", "pipe", "ignore"],
+    // Do not inherit project-controlled PATH, Python, or package settings.
+    // The policy has already selected an absolute executable and arguments.
+    env: { ...environment }
+  });
+  return createProcessHandlers(child);
+}
+function createProcessHandlers(child) {
+  const write = (chunk) => {
+    child.stdin.write(chunk);
+  };
+  const onStdout = (listener) => {
+    child.stdout.on("data", (chunk) => listener(new Uint8Array(chunk)));
+  };
+  const onExit = (listener) => {
+    child.once("exit", listener);
+  };
+  const onError = (listener) => {
+    child.once("error", listener);
+  };
+  const kill = () => {
+    child.stdin.destroy();
+    child.kill();
+  };
+  return {
+    write,
+    onStdout,
+    onExit,
+    onError,
+    kill
+  };
+}
+
+// src/semantic/direct-lsp/direct-lsp-error.ts
+var DirectLspError = class extends Error {
+  constructor(code) {
+    super(code);
+    this.code = code;
+  }
+  code;
+};
+
+// src/semantic/direct-lsp/direct-lsp-values.ts
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+function deepFreeze3(value) {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value))
+      deepFreeze3(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+// src/semantic/direct-lsp/direct-lsp-status-snapshot.ts
+function isProtectedFileUri(uri, rootUri) {
+  const document = parseFileUri(uri);
+  const root = parseFileUri(rootUri);
+  if (!document) return false;
+  if (!root) return false;
+  return isProtectedDocument(document, root);
+}
+function isProtectedDocument(document, root) {
+  if (document.protocol !== "file:") return false;
+  if (document.search || document.hash) return false;
+  const rootPath = root.pathname.endsWith("/") ? root.pathname : `${root.pathname}/`;
+  return document.pathname.startsWith(rootPath);
+}
+function parseFileUri(value) {
+  try {
+    return new URL(value);
+  } catch {
+    return void 0;
+  }
+}
+function statusSnapshot(input) {
+  return {
+    state: input.state,
+    events: [...input.events],
+    restart_delays_ms: [...input.restartDelays],
+    ...input.serverCapabilities ? {
+      server_capabilities: deepFreeze3(clone(input.serverCapabilities))
+    } : {}
+  };
+}
+
+// src/semantic/direct-lsp/direct-lsp-wire.ts
+var CRLFCRLF = new Uint8Array([13, 10, 13, 10]);
+var LF_LF = new Uint8Array([10, 10]);
+function encodeMessage(message) {
+  const body = new TextEncoder().encode(JSON.stringify(message));
+  return concat(
+    new TextEncoder().encode(`Content-Length: ${body.byteLength}\r
+\r
+`),
+    body
+  );
+}
+function concat(left, right) {
+  const result = new Uint8Array(left.length + right.length);
+  result.set(left);
+  result.set(right, left.length);
+  return result;
+}
+function indexOf(haystack, needle) {
+  for (let index = 0; index <= haystack.length - needle.length; index++) {
+    if (needle.every((value, offset) => haystack[index + offset] === value))
+      return index;
+  }
+  return -1;
+}
+function contains(haystack, needle) {
+  return indexOf(haystack, needle) >= 0;
+}
+
+// src/semantic/direct-lsp/direct-lsp-protocol.ts
+var MAX_BODY_BYTES = 1024 * 1024;
+var SHUTDOWN_TIMEOUT_MS = 5e3;
+var RESTART_WINDOW_MS = 6e4;
+var RESTART_DELAYS_MS = [250, 1e3];
+var PERMITTED_NOTIFICATIONS = /* @__PURE__ */ new Set([
+  "window/logMessage",
+  "window/showMessage",
+  "telemetry/event",
+  "$/progress",
+  "textDocument/publishDiagnostics"
+]);
+var READ_ONLY_METHODS = /* @__PURE__ */ new Set([
+  "textDocument/definition",
+  "textDocument/references",
+  "textDocument/typeDefinition",
+  "textDocument/implementation",
+  "textDocument/prepareCallHierarchy",
+  "callHierarchy/incomingCalls",
+  "callHierarchy/outgoingCalls",
+  "textDocument/documentSymbol",
+  "workspace/symbol"
+]);
+function boundedTimeout(value) {
+  return Number.isFinite(value) && value > 0 ? Math.min(Math.floor(value), SHUTDOWN_TIMEOUT_MS) : SHUTDOWN_TIMEOUT_MS;
+}
+function isRpcMessage(value) {
+  return !!value && typeof value === "object" && value.jsonrpc === "2.0";
+}
+function isInitializeResult(value) {
+  if (!value || typeof value !== "object") return false;
+  const capabilities = value.capabilities;
+  return !!capabilities && typeof capabilities === "object" && !Array.isArray(capabilities);
+}
+function isRequestId(value) {
+  return typeof value === "string" || typeof value === "number" && Number.isFinite(value);
+}
+function isPositiveSafeInteger(value) {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+function pythonConfiguration(section) {
+  return [
+    "python.pythonPath",
+    "python.venvPath",
+    "python.analysis.extraPaths"
+  ].includes(section ?? "") ? [] : null;
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-failure.ts
+function fail(input) {
+  const expectedEpoch = input.expectedEpoch ?? input.state.epoch;
+  if (!canFail(input.state, expectedEpoch)) return;
+  input.state.setState("failed");
+  input.state.rejectInflight(input.code);
+  input.state.killProcess();
+  if (input.restart) recordRestart(input.state, input.onRestart);
+}
+function failWithRestart(input) {
+  fail({
+    state: input.state,
+    code: input.code ?? "backend_crashed",
+    restart: true,
+    expectedEpoch: input.expectedEpoch,
+    onRestart: input.onRestart
+  });
+}
+function canFail(state, expectedEpoch) {
+  if (!state.current(expectedEpoch)) return false;
+  return state.state !== "failed" && state.state !== "unavailable";
+}
+function recordRestart(state, onRestart) {
+  const delay2 = state.recordCrash();
+  if (delay2 === void 0) return;
+  state.scheduleRestart(() => {
+    const replacement = state.options.restart?.();
+    if (replacement && onRestart)
+      void onRestart(replacement).catch(() => void 0);
+  }, delay2);
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-request.ts
+function sendRequest(input) {
+  const expectedEpoch = input.expectedEpoch ?? input.state.epoch;
+  const id = input.state.nextRequestId();
+  return registerRequest(input, id, expectedEpoch);
+}
+function registerRequest(input, id, expectedEpoch) {
+  return new Promise((resolve5, reject) => {
+    const timer = input.state.scheduler.setTimeout(() => {
+      onRequestTimeout({
+        ...input,
+        id,
+        expectedEpoch,
+        reject
+      });
+    }, boundedTimeout(input.timeout));
+    input.state.setPending(id, { resolve: resolve5, reject, timer });
+    input.state.send(
+      {
+        jsonrpc: "2.0",
+        id,
+        method: input.method,
+        params: input.params
+      },
+      expectedEpoch
+    );
+  });
+}
+function onRequestTimeout(input) {
+  if (!(input.state.current(input.expectedEpoch) && input.state.deletePending(input.id)))
+    return;
+  input.state.send(
+    {
+      jsonrpc: "2.0",
+      method: "$/cancelRequest",
+      params: { id: input.id }
+    },
+    input.expectedEpoch
+  );
+  input.reject(new DirectLspError("backend_timeout"));
+  const timeoutCount = recordTimeout(input.state);
+  if (timeoutCount >= 2) failAfterTimeout(input);
+}
+function recordTimeout(state) {
+  return state.recordTimeout();
+}
+function failAfterTimeout(input) {
+  failWithRestart(input);
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-shutdown.ts
+async function shutdownRuntime(input) {
+  input.state.cancelRestarts();
+  if (!input.state.process || input.state.stopped) {
+    input.state.invalidate();
+    return;
+  }
+  const expectedEpoch = input.state.epoch;
+  input.state.setStopping(true);
+  if (input.state.state === "ready") {
+    try {
+      await sendRequest({
+        state: input.state,
+        method: "shutdown",
+        params: null,
+        timeout: SHUTDOWN_TIMEOUT_MS,
+        expectedEpoch,
+        onRestart: input.onRestart
+      });
+    } catch {
+    }
+  }
+  await finishShutdown({ ...input, expectedEpoch });
+}
+async function finishShutdown(input) {
+  if (!input.state.current(input.expectedEpoch)) {
+    input.state.killProcess();
+    return;
+  }
+  if (input.state.state !== "ready") {
+    terminateNow(input.state);
+    return;
+  }
+  await sendExit(input);
+}
+async function sendExit(input) {
+  const exited = new Promise((resolve5) => {
+    input.state.setExitResolver(resolve5);
+  });
+  input.state.send(
+    { jsonrpc: "2.0", method: "exit", params: {} },
+    input.expectedEpoch
+  );
+  const timeout = input.state.scheduler.setTimeout(
+    () => forceShutdown(input),
+    SHUTDOWN_TIMEOUT_MS
+  );
+  await exited;
+  input.state.scheduler.clearTimeout(timeout);
+  input.state.clearExitResolver();
+}
+function forceShutdown(input) {
+  if (!input.state.stopped && input.state.current(input.expectedEpoch)) {
+    input.state.setStopping(false);
+    failWithRestart({
+      state: input.state,
+      expectedEpoch: input.expectedEpoch,
+      onRestart: input.onRestart
+    });
+  }
+  input.state.resolveExit();
+}
+function terminateNow(state) {
+  state.cancelRestarts();
+  state.invalidate();
+  state.killProcess();
+  state.resolveExit();
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-operations.ts
+function openProtectedDocument(state, uri, content) {
+  if (state.state !== "ready") throw stateError(state);
+  if (!isProtectedFileUri(uri, state.options.root_uri) || typeof content.bytes !== "string")
+    throw new DirectLspError("backend_write_rejected");
+  if (state.hasOpenedDocument(uri)) return;
+  state.send({
+    jsonrpc: "2.0",
+    method: "textDocument/didOpen",
+    params: {
+      textDocument: {
+        uri,
+        languageId: content.language_id,
+        version: 0,
+        text: content.bytes
+      }
+    }
+  });
+  state.markDocumentOpened(uri);
+}
+function stateError(state) {
+  return new DirectLspError(
+    state.state === "unavailable" ? "backend_crashed" : "backend_failed"
+  );
+}
+function refreshRuntime(state) {
+  state.resetFailureHistory();
+}
+function statusRuntime(state) {
+  return statusSnapshot({
+    state: state.state,
+    events: state.eventsSnapshot(),
+    restartDelays: state.restartDelaysSnapshot(),
+    serverCapabilities: state.serverCapabilities
+  });
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-query.ts
+async function requestBackend2(input) {
+  if (!READ_ONLY_METHODS.has(input.method))
+    throw new DirectLspError("backend_write_rejected");
+  if (input.state.state !== "ready")
+    throw new DirectLspError(
+      input.state.state === "unavailable" ? "backend_crashed" : "backend_failed"
+    );
+  return requestWithRetry(input, false);
+}
+async function requestWithRetry(input, retried) {
+  try {
+    return await sendRequest({
+      ...input,
+      timeout: input.state.timeoutMs
+    });
+  } catch (error2) {
+    if (!(error2 instanceof DirectLspError) || error2.code !== "backend_content_modified")
+      throw error2;
+    if (retried) throw new DirectLspError("backend_failed");
+    return requestWithRetry(input, true);
+  }
+}
+
+// src/semantic/direct-lsp/direct-lsp-frame-parser.ts
+function decodeHeader(bytes) {
+  if (bytes.some((value) => value > 127)) return void 0;
+  try {
+    const header = new TextDecoder("ascii", {
+      fatal: true
+    }).decode(bytes);
+    return /^Content-Length: [0-9]+$/.test(header) ? header : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function bodyLength(header) {
+  const length = Number(header.slice("Content-Length: ".length));
+  return Number.isSafeInteger(length) ? length : void 0;
+}
+function decodeBody(bytes) {
+  try {
+    const value = JSON.parse(
+      new TextDecoder("utf-8", { fatal: true }).decode(bytes)
+    );
+    return isRpcMessage(value) ? value : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function concatBytes(left, right) {
+  const result = new Uint8Array(left.length + right.length);
+  result.set(left);
+  result.set(right, left.length);
+  return result;
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-protocol-failure.ts
+function protocolFailure(input) {
+  fail({
+    state: input.state,
+    code: "backend_failed",
+    restart: false,
+    expectedEpoch: input.expectedEpoch,
+    onRestart: input.onRestart
+  });
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-message-handlers.ts
+function handleServerRequest(input, message) {
+  if (!isRequestId(message.id)) return protocolFailure(input);
+  const method = message.method;
+  recordRejectedRequest(input.state, method);
+  if (isPythonConfiguration(input.state, method))
+    return handlePythonConfiguration(input, message);
+  input.state.send(
+    {
+      jsonrpc: "2.0",
+      id: message.id,
+      error: { code: -32601, message: "Method not found" }
+    },
+    input.expectedEpoch
+  );
+}
+function recordRejectedRequest(state, method) {
+  const event = rejectedRequestEvent(method);
+  if (event) state.recordEvent(event);
+}
+function rejectedRequestEvent(method) {
+  if (method === "client/registerCapability")
+    return "backend_capability_rejected";
+  if (method === "workspace/applyEdit") return "backend_write_rejected";
+  return void 0;
+}
+function isPythonConfiguration(state, method) {
+  return method === "workspace/configuration" && state.options.language === "python";
+}
+function handlePythonConfiguration(input, message) {
+  const params = message.params;
+  const items = params?.items ?? [];
+  input.state.send(
+    {
+      jsonrpc: "2.0",
+      id: message.id,
+      result: items.map((item) => pythonConfiguration(item.section))
+    },
+    input.expectedEpoch
+  );
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-notifications.ts
+function handleNotification(input, message) {
+  const method = message.method;
+  if (!PERMITTED_NOTIFICATIONS.has(method)) {
+    fail({
+      state: input.state,
+      code: "backend_failed",
+      restart: false,
+      expectedEpoch: input.expectedEpoch
+    });
+    return;
+  }
+  input.state.recordEvent("backend_notification");
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-response.ts
+function handleResponse(input, message) {
+  if (!isPositiveSafeInteger(message.id)) return protocolFailure(input);
+  if ("result" in message === "error" in message) return protocolFailure(input);
+  const entry = input.state.pending(message.id);
+  if (!entry) return;
+  input.state.deletePending(message.id);
+  input.state.scheduler.clearTimeout(entry.timer);
+  if ("error" in message) return rejectResponse(entry.reject, message.error);
+  entry.resolve(message.result);
+}
+function rejectResponse(reject, error2) {
+  const code = error2?.code;
+  reject(
+    new DirectLspError(
+      code === -32801 ? "backend_content_modified" : "backend_failed"
+    )
+  );
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-message.ts
+function handleMessage(input) {
+  const { state, message, expectedEpoch } = input;
+  if (!messageActive(state, expectedEpoch)) return;
+  if (!isRpcMessage(message)) return protocolFailure(input);
+  if (isServerRequest(message)) return handleServerRequest(input, message);
+  if (isNotification(message)) return handleNotification(input, message);
+  handleResponse(input, message);
+}
+function messageActive(state, epoch) {
+  return state.current(epoch) && !state.stopped && state.state !== "failed" && state.state !== "unavailable";
+}
+function isServerRequest(message) {
+  return "id" in message && "method" in message && typeof message.method === "string";
+}
+function isNotification(message) {
+  return "method" in message && typeof message.method === "string";
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-frame.ts
+function handleStdout(input) {
+  if (!frameStreamActive(input.state, input.expectedEpoch)) return;
+  input.state.appendBytes(input.chunk);
+  while (input.state.bytesLength() && consumeFrame(input)) {
+  }
+}
+function frameStreamActive(state, epoch) {
+  return state.current(epoch) && !state.stopped && state.state !== "failed" && state.state !== "unavailable";
+}
+function consumeFrame(input) {
+  const frame = parseFrame(input);
+  if (frame.status === "incomplete") return false;
+  if (frame.status === "invalid") {
+    protocolFailure(input);
+    return false;
+  }
+  input.state.consumeBytes(frame.end);
+  handleMessage({ ...input, message: frame.value });
+  return input.state.bytesLength() > 0;
+}
+function parseFrame(input) {
+  const boundary = indexOf(input.state.bytesSlice(), CRLFCRLF);
+  if (boundary < 0) return incompleteHeader(input);
+  const headerBytes = input.state.bytesSlice(0, boundary);
+  const header = decodeHeader(headerBytes);
+  if (!header) return { status: "invalid" };
+  const length = bodyLength(header);
+  if (length === void 0 || length > MAX_BODY_BYTES)
+    return { status: "invalid" };
+  const end = boundary + 4 + length;
+  if (input.state.bytesLength() < end) return { status: "incomplete" };
+  const value = decodeBody(input.state.bytesSlice(boundary + 4, end));
+  return value === void 0 ? { status: "invalid" } : { status: "complete", end, value };
+}
+function incompleteHeader(input) {
+  if (input.state.bytesLength() > 8192 || contains(input.state.bytesSlice(), LF_LF)) {
+    return { status: "invalid" };
+  }
+  return { status: "incomplete" };
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-initialize.ts
+async function initializeRuntime(input) {
+  const result = await sendRequest({
+    state: input.state,
+    method: "initialize",
+    params: initializeParams(input.state),
+    timeout: input.state.timeoutMs,
+    expectedEpoch: input.expectedEpoch,
+    onRestart: input.onRestart
+  });
+  if (!(input.state.current(input.expectedEpoch) && isInitializeResult(result)))
+    throw new DirectLspError("backend_failed");
+  input.state.setServerCapabilities(result.capabilities);
+  checkAfterInitialize(input.state);
+  input.state.send(
+    { jsonrpc: "2.0", method: "initialized", params: {} },
+    input.expectedEpoch
+  );
+  sendPythonConfiguration(input.state, input.expectedEpoch);
+  input.state.setState("ready");
+}
+function initializeParams(state) {
+  return {
+    processId: null,
+    rootUri: state.options.root_uri,
+    capabilities: state.capabilities,
+    initializationOptions: state.initializationOptions
+  };
+}
+function checkAfterInitialize(state) {
+  const confirmation = state.options.afterInitialize?.();
+  if (confirmation?.status !== "unavailable") return;
+  state.setState("unavailable");
+  state.killProcess();
+  throw new Error(confirmation.code);
+}
+function sendPythonConfiguration(state, expectedEpoch) {
+  if (state.options.language !== "python") return;
+  state.send(
+    {
+      jsonrpc: "2.0",
+      method: "workspace/didChangeConfiguration",
+      params: pythonConfigurationSettings()
+    },
+    expectedEpoch
+  );
+}
+function pythonConfigurationSettings() {
+  return {
+    settings: { python: pythonSettings() }
+  };
+}
+function pythonSettings() {
+  return {
+    analysis: {
+      diagnosticMode: "workspace",
+      indexing: true,
+      useLibraryCodeForTypes: false
+    }
+  };
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-start.ts
+async function startRuntime(input) {
+  if (input.state.stopping) return;
+  const expectedEpoch = input.state.beginStart(input.process);
+  attachProcess({ ...input, expectedEpoch });
+  try {
+    await initializeRuntime({ ...input, expectedEpoch });
+  } catch (error2) {
+    fail({
+      state: input.state,
+      code: error2 instanceof DirectLspError ? error2.code : "backend_failed",
+      restart: true,
+      expectedEpoch,
+      onRestart: input.onRestart
+    });
+    throw error2;
+  }
+}
+function attachProcess(input) {
+  input.process.onStdout((chunk) => handleStdout({ ...input, chunk }));
+  input.process.onExit(() => handleExit(input));
+  input.process.onError?.(() => failWithRestart(input));
+}
+function handleExit(input) {
+  const { state, expectedEpoch } = input;
+  if (!state.current(expectedEpoch)) return;
+  state.markStopped();
+  state.resolveExit();
+  if (state.bytesLength()) {
+    fail({
+      ...input,
+      code: "backend_failed",
+      restart: false
+    });
+    return;
+  }
+  if (state.stopping) {
+    state.setState("failed");
+    return;
+  }
+  failWithRestart(input);
+}
+
+// src/semantic/direct-lsp/direct-lsp-runtime-scheduler.ts
+var defaultDirectLspScheduler = {
+  now: Date.now,
+  setTimeout: (callback, delayMs) => setTimeout(callback, delayMs),
+  clearTimeout: (handle) => clearTimeout(handle)
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-lifecycle.ts
+var DirectLspRuntimeLifecycle = class {
+  #process;
+  #epoch = 0;
+  #state = "initializing";
+  #stopping = false;
+  #stopped = false;
+  #exitResolver;
+  get process() {
+    return this.#process;
+  }
+  get epoch() {
+    return this.#epoch;
+  }
+  get state() {
+    return this.#state;
+  }
+  get stopping() {
+    return this.#stopping;
+  }
+  get stopped() {
+    return this.#stopped;
+  }
+  beginStart(process7) {
+    this.#process = process7;
+    this.#epoch += 1;
+    this.#stopping = false;
+    this.#stopped = false;
+    this.#state = "initializing";
+    return this.#epoch;
+  }
+  invalidate(rejectInflight) {
+    this.#epoch += 1;
+    this.#stopping = true;
+    this.#stopped = true;
+    rejectInflight();
+  }
+  setState(state) {
+    this.#state = state;
+  }
+  markStopped() {
+    this.#stopped = true;
+  }
+  setStopping(stopping) {
+    this.#stopping = stopping;
+  }
+  setExitResolver(resolve5) {
+    this.#exitResolver = resolve5;
+  }
+  resolveExit() {
+    this.#exitResolver?.();
+  }
+  clearExitResolver() {
+    this.#exitResolver = void 0;
+  }
+  killProcess() {
+    this.#process?.kill();
+  }
+  current(epoch) {
+    return epoch === this.#epoch;
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-restarts.ts
+var DirectLspRuntimeRestarts = class {
+  constructor(scheduler, telemetry, markUnavailable2) {
+    this.scheduler = scheduler;
+    this.telemetry = telemetry;
+    this.markUnavailable = markUnavailable2;
+  }
+  scheduler;
+  telemetry;
+  markUnavailable;
+  #crashTimes = [];
+  #timeoutTimes = [];
+  #restartTimers = /* @__PURE__ */ new Set();
+  recordCrash() {
+    const now = this.scheduler.now();
+    this.#crashTimes = this.#crashTimes.filter(
+      (time3) => time3 >= now - RESTART_WINDOW_MS
+    );
+    this.#crashTimes.push(now);
+    if (this.#crashTimes.length > RESTART_DELAYS_MS.length) {
+      this.markUnavailable();
+      return void 0;
+    }
+    const delay2 = RESTART_DELAYS_MS[this.#crashTimes.length - 1];
+    this.telemetry.recordRestartDelay(delay2);
+    return delay2;
+  }
+  schedule(callback, delay2) {
+    const timer = this.scheduler.setTimeout(() => {
+      this.#restartTimers.delete(timer);
+      callback();
+    }, delay2);
+    this.#restartTimers.add(timer);
+  }
+  cancel() {
+    for (const timer of this.#restartTimers) this.scheduler.clearTimeout(timer);
+    this.#restartTimers.clear();
+  }
+  recordTimeout() {
+    const cutoff = this.scheduler.now() - RESTART_WINDOW_MS;
+    this.#timeoutTimes = this.#timeoutTimes.filter((time3) => time3 >= cutoff);
+    this.#timeoutTimes.push(this.scheduler.now());
+    return this.#timeoutTimes.length;
+  }
+  resetFailureHistory(wasUnavailable) {
+    this.#crashTimes = [];
+    this.#timeoutTimes = [];
+    return wasUnavailable;
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-buffers.ts
+var DirectLspRuntimeBuffers = class {
+  #bytes = new Uint8Array(0);
+  reset() {
+    this.#bytes = new Uint8Array(0);
+  }
+  append(chunk) {
+    this.#bytes = concatBytes(this.#bytes, chunk);
+  }
+  length() {
+    return this.#bytes.length;
+  }
+  slice(start, end) {
+    return this.#bytes.slice(start, end);
+  }
+  consume(end) {
+    this.#bytes = this.#bytes.slice(end);
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-documents.ts
+var DirectLspRuntimeDocuments = class {
+  #openedUris = /* @__PURE__ */ new Set();
+  #serverCapabilities;
+  reset() {
+    this.#openedUris = /* @__PURE__ */ new Set();
+  }
+  get serverCapabilities() {
+    return this.#serverCapabilities;
+  }
+  setServerCapabilities(capabilities) {
+    this.#serverCapabilities = capabilities;
+  }
+  hasOpened(uri) {
+    return this.#openedUris.has(uri);
+  }
+  markOpened(uri) {
+    this.#openedUris.add(uri);
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-requests.ts
+var DirectLspRuntimeRequests = class {
+  constructor(scheduler) {
+    this.scheduler = scheduler;
+  }
+  scheduler;
+  #nextId = 1;
+  #pending = /* @__PURE__ */ new Map();
+  nextId() {
+    const id = this.#nextId;
+    this.#nextId += 1;
+    return id;
+  }
+  setPending(id, pending) {
+    this.#pending.set(id, pending);
+  }
+  pending(id) {
+    return this.#pending.get(id);
+  }
+  deletePending(id) {
+    return this.#pending.delete(id);
+  }
+  rejectInflight(code) {
+    for (const entry of this.#pending.values()) {
+      this.scheduler.clearTimeout(entry.timer);
+      entry.reject(new DirectLspError(code));
+    }
+    this.#pending.clear();
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-state-storage.ts
+var DirectLspStateStorage = class {
+  #buffers;
+  #req;
+  #docs;
+  constructor(scheduler) {
+    this.#buffers = new DirectLspRuntimeBuffers();
+    this.#req = new DirectLspRuntimeRequests(scheduler);
+    this.#docs = new DirectLspRuntimeDocuments();
+  }
+  reset() {
+    this.#buffers.reset();
+    this.#docs.reset();
+  }
+  get serverCapabilities() {
+    return this.#docs.serverCapabilities;
+  }
+  appendBytes(chunk) {
+    this.#buffers.append(chunk);
+  }
+  bytesLength() {
+    return this.#buffers.length();
+  }
+  bytesSlice(start, end) {
+    return this.#buffers.slice(start, end);
+  }
+  consumeBytes(end) {
+    this.#buffers.consume(end);
+  }
+  nextRequestId() {
+    return this.#req.nextId();
+  }
+  setPending(id, pending) {
+    this.#req.setPending(id, pending);
+  }
+  pending(id) {
+    return this.#req.pending(id);
+  }
+  deletePending(id) {
+    return this.#req.deletePending(id);
+  }
+  rejectInflight(code) {
+    this.#req.rejectInflight(code);
+  }
+  setServerCapabilities(capabilities) {
+    this.#docs.setServerCapabilities(capabilities);
+  }
+  hasOpenedDocument(uri) {
+    return this.#docs.hasOpened(uri);
+  }
+  markDocumentOpened(uri) {
+    this.#docs.markOpened(uri);
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-telemetry.ts
+var MAX_RUNTIME_EVENTS = 256;
+var DirectLspRuntimeTelemetry = class {
+  #events = [];
+  #restartDelays = [];
+  recordEvent(event) {
+    if (this.#events.length === MAX_RUNTIME_EVENTS) this.#events.shift();
+    this.#events.push(event);
+  }
+  eventsSnapshot() {
+    return [...this.#events];
+  }
+  recordRestartDelay(delay2) {
+    if (this.#restartDelays.length === MAX_RUNTIME_EVENTS)
+      this.#restartDelays.shift();
+    this.#restartDelays.push(delay2);
+  }
+  restartDelaysSnapshot() {
+    return [...this.#restartDelays];
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-state-resources.ts
+var DirectLspStateResources = class extends DirectLspStateStorage {
+  #telemetry;
+  #restarts;
+  constructor(scheduler) {
+    super(scheduler);
+    this.#telemetry = new DirectLspRuntimeTelemetry();
+    this.#restarts = new DirectLspRuntimeRestarts(
+      scheduler,
+      this.#telemetry,
+      () => this.onUnavailable()
+    );
+  }
+  recordEvent(event) {
+    this.#telemetry.recordEvent(event);
+  }
+  eventsSnapshot() {
+    return this.#telemetry.eventsSnapshot();
+  }
+  restartDelaysSnapshot() {
+    return this.#telemetry.restartDelaysSnapshot();
+  }
+  recordCrash() {
+    return this.#restarts.recordCrash();
+  }
+  scheduleRestart(callback, delay2) {
+    this.#restarts.schedule(callback, delay2);
+  }
+  cancelRestarts() {
+    this.#restarts.cancel();
+  }
+  recordTimeout() {
+    return this.#restarts.recordTimeout();
+  }
+  resetFailureHistoryState(wasUnavailable) {
+    return this.#restarts.resetFailureHistory(wasUnavailable);
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-state-core.ts
+var DirectLspRuntimeStateCore = class extends DirectLspStateResources {
+  scheduler;
+  #life;
+  constructor(scheduler) {
+    super(scheduler);
+    this.scheduler = scheduler;
+    this.#life = new DirectLspRuntimeLifecycle();
+  }
+  onUnavailable() {
+    this.#life.setState("unavailable");
+  }
+  get process() {
+    return this.#life.process;
+  }
+  get epoch() {
+    return this.#life.epoch;
+  }
+  get state() {
+    return this.#life.state;
+  }
+  get stopping() {
+    return this.#life.stopping;
+  }
+  get stopped() {
+    return this.#life.stopped;
+  }
+  beginStart(process7) {
+    const epoch = this.#life.beginStart(process7);
+    this.reset();
+    return epoch;
+  }
+  invalidate() {
+    this.#life.invalidate(() => this.rejectInflight("backend_crashed"));
+  }
+  setState(state) {
+    this.#life.setState(state);
+  }
+  markStopped() {
+    this.#life.markStopped();
+  }
+  setStopping(stopping) {
+    this.#life.setStopping(stopping);
+  }
+  setExitResolver(resolve5) {
+    this.#life.setExitResolver(resolve5);
+  }
+  resolveExit() {
+    this.#life.resolveExit();
+  }
+  clearExitResolver() {
+    this.#life.clearExitResolver();
+  }
+  killProcess() {
+    this.#life.killProcess();
+  }
+  resetFailureHistory() {
+    if (super.resetFailureHistoryState(this.state === "unavailable"))
+      this.setState("initializing");
+  }
+  current(epoch) {
+    return this.#life.current(epoch);
+  }
+  send(message, expectedEpoch = this.epoch) {
+    if (this.current(expectedEpoch))
+      this.process?.write(encodeMessage(message));
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime-state.ts
+var DirectLspRuntimeState = class extends DirectLspRuntimeStateCore {
+  options;
+  capabilities;
+  initializationOptions;
+  timeoutMs;
+  constructor(options) {
+    super(options.scheduler ?? defaultDirectLspScheduler);
+    this.options = options;
+    this.capabilities = deepFreeze3(clone(options.capabilities));
+    this.initializationOptions = deepFreeze3(
+      clone(options.safe_initialization_options)
+    );
+    this.timeoutMs = boundedTimeout(options.request_timeout_ms ?? 1e4);
+  }
+};
+
+// src/semantic/direct-lsp/direct-lsp-runtime.ts
+function createDirectLspRuntime(options) {
+  const state = new DirectLspRuntimeState(options);
+  const start = (process7) => startRuntime({ state, process: process7, onRestart: start });
+  return {
+    start,
+    request: (method, params) => requestBackend2({
+      state,
+      method,
+      params,
+      onRestart: start
+    }),
+    openProtectedDocument: (uri, content) => openProtectedDocument(state, uri, content),
+    shutdown: () => shutdownRuntime({ state, onRestart: start }),
+    refresh: () => refreshRuntime(state),
+    status: () => statusRuntime(state)
+  };
+}
+
+// src/semantic/direct-lsp/direct-lsp.ts
+function createDirectLspClient(options) {
+  return createDirectLspRuntime(options);
+}
+
+// src/semantic/runtime/runtime-lsp-start-process.ts
+async function startRuntimeProcess(lifecycle) {
+  const preparation = requirePreparation(lifecycle);
+  lifecycle.client = createClient(lifecycle, preparation);
+  await lifecycle.client.start(spawnProcess(lifecycle, preparation));
+  if (lifecycle.disposed) throw new Error("backend_unavailable");
+  openInitialDocuments(lifecycle);
+  if (lifecycle.disposed) throw new Error("backend_unavailable");
+  lifecycle.inner = createDirectLspSemanticBackend2({
+    ...lifecycle.options,
+    client: lifecycle.client,
+    discovery_document_paths: lifecycle.options.initial_document_paths
+  });
+}
+function requirePreparation(lifecycle) {
+  const preparation = lifecycle.options.prepare();
+  if (preparation.status === "ready") return preparation;
+  lifecycle.state = {
+    state: "unavailable",
+    failure_code: preparation.code
+  };
+  throw new Error(preparation.code);
+}
+function createClient(lifecycle, preparation) {
+  return createDirectLspClient({
+    language: lifecycle.options.language,
+    root_uri: lifecycle.options.root_uri,
+    capabilities: {},
+    safe_initialization_options: preparation.safe_initialization_options,
+    scheduler: lifecycle.options.scheduler,
+    afterInitialize: () => lifecycle.options.confirmInitialized(),
+    restart: () => replacementProcess(lifecycle)
+  });
+}
+function replacementProcess(lifecycle) {
+  if (lifecycle.disposed) return void 0;
+  const preparation = lifecycle.options.prepare();
+  return preparation.status === "ready" ? spawnProcess(lifecycle, preparation) : void 0;
+}
+function spawnProcess(lifecycle, preparation) {
+  return (lifecycle.options.spawn ?? spawnNativeLspProcess)(
+    preparation.executable,
+    preparation.arguments,
+    preparation.environment
+  );
+}
+function openInitialDocuments(lifecycle) {
+  for (const path5 of lifecycle.options.initial_document_paths ?? []) {
+    const document = lifecycle.options.root.protectedRead(path5);
+    lifecycle.client?.openProtectedDocument?.(
+      lifecycle.options.toBackendUri(initialDocumentLocation(path5)),
+      {
+        language_id: lifecycle.options.language,
+        bytes: document.bytes
+      }
+    );
+  }
+}
+function initialDocumentLocation(path5) {
+  return {
+    path: path5,
+    range: {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 0 }
+    }
+  };
+}
+
+// src/semantic/runtime/runtime-lsp-start.ts
+function createRuntimeStart(lifecycle) {
+  return () => startRuntime2(lifecycle);
+}
+async function startRuntime2(lifecycle) {
+  assertCanStart(lifecycle);
+  if (lifecycle.started) return lifecycle.started;
+  const tracked = trackStart(lifecycle, startFreshRuntime(lifecycle));
+  lifecycle.started = tracked;
+  return tracked;
+}
+function assertCanStart(lifecycle) {
+  if (lifecycle.disposed) throw new Error("backend_unavailable");
+  if (lifecycle.refreshRequired) throw new Error("backend_identity_changed");
+}
+function trackStart(lifecycle, attempt) {
+  let tracked;
+  tracked = attempt.catch((error2) => {
+    if (lifecycle.started === tracked) lifecycle.started = void 0;
+    throw error2;
+  });
+  return tracked;
+}
+function startFreshRuntime(lifecycle) {
+  return startRuntimeProcess(lifecycle).then(() => {
+    lifecycle.state = readiness2(lifecycle.client?.status().state ?? "failed");
+  }).catch((error2) => recordStartFailure(lifecycle, error2));
+}
+function recordStartFailure(lifecycle, error2) {
+  const code = error2 instanceof Error ? error2.message : "backend_failed";
+  lifecycle.state = failedState(code);
+  lifecycle.refreshRequired ||= code === "backend_identity_changed";
+  throw error2;
+}
+function failedState(code) {
+  return code === "backend_identity_changed" ? { state: "unavailable", failure_code: code } : { state: "failed", failure_code: code };
+}
+function readiness2(value) {
+  if (value === "failed")
+    return {
+      state: "failed",
+      failure_code: "backend_failed"
+    };
+  if (value === "initializing") return { state: "initializing" };
+  if (value === "ready") return { state: "ready" };
+  return { state: "unavailable" };
+}
+
+// src/semantic/runtime/runtime-lsp-backend.ts
+function createRuntimeLspBackend(options) {
+  const lifecycle = {
+    options,
+    state: { state: "initializing" },
+    inner: void 0,
+    client: void 0,
+    started: void 0,
+    disposed: false,
+    refreshRequired: false
+  };
+  const start = createRuntimeStart(lifecycle);
+  return {
+    readiness: () => runtimeReadiness(lifecycle),
+    start,
+    refresh: () => refreshRuntime2(lifecycle, start),
+    capabilities: () => runtimeCapabilities3(lifecycle, options),
+    shutdown: () => shutdownRuntime2(lifecycle),
+    query: (request) => queryRuntime(lifecycle, start, request)
+  };
+}
+function runtimeReadiness(lifecycle) {
+  return lifecycle.inner?.readiness() ?? lifecycle.state;
+}
+function runtimeCapabilities3(lifecycle, options) {
+  if (lifecycle.inner?.capabilities) return lifecycle.inner.capabilities();
+  if (lifecycle.client)
+    return relationCapabilitiesFromInitialize2(lifecycle.client.status());
+  return options.capabilities;
+}
+async function refreshRuntime2(lifecycle, start) {
+  if (lifecycle.disposed || !lifecycle.refreshRequired) return;
+  lifecycle.refreshRequired = false;
+  lifecycle.started = void 0;
+  lifecycle.inner = void 0;
+  lifecycle.client = void 0;
+  lifecycle.state = { state: "refreshing" };
+  await start();
+}
+async function shutdownRuntime2(lifecycle) {
+  if (lifecycle.disposed) return;
+  lifecycle.disposed = true;
+  try {
+    await lifecycle.client?.shutdown?.();
+  } finally {
+    lifecycle.options.dispose?.();
+  }
+}
+async function queryRuntime(lifecycle, start, request) {
+  await start();
+  if (!lifecycle.inner) throw new Error("backend_unavailable");
+  return lifecycle.inner.query(request);
+}
+
+// src/semantic/runtime/runtime-native-backend.ts
+function createNativeRuntimeBackend(input) {
+  const { backend, policy, capabilities, root, filtered } = input;
+  return createRuntimeLspBackend({
+    language: backend.language,
+    root,
+    root_uri: pathToFileURL2(root.canonicalPath).href,
+    revision: { generation: 0, manifest_sha256: "runtime" },
+    symbols: /* @__PURE__ */ new Map(),
+    capabilities,
+    initial_document_paths: initialDocuments(backend.language, filtered),
+    toBackendUri: (location) => pathToFileURL2(root.resolveClientPath(location.path)).href,
+    fromBackendUri: (uri) => backendPath(root, uri),
+    prepare: () => policy.prepare(backend.language),
+    confirmInitialized: () => policy.confirmInitialized(backend.language)
+  });
+}
+function initialDocuments(language, filtered) {
+  return language === "csharp" ? filtered?.sourcePaths().filter((path5) => /\.cs$/iu.test(path5)) : void 0;
+}
+function backendPath(root, uri) {
+  if (!uri.startsWith("file:")) return void 0;
+  const classified = root.classifyBackendPath(fileURLToPath3(uri));
+  return "relative_path" in classified ? classified.relative_path : void 0;
+}
+
+// src/semantic/runtime/runtime-native-adapter.ts
+function createNativeRuntimeAdapter(input) {
+  const prepared = input.policy.prepare(input.backend.language);
+  const filtered = createFilteredBackend(input, prepared);
+  const backend = createNativeBackend(input, prepared, filtered);
+  return wrapNativeAdapter({
+    input,
+    prepared,
+    filtered,
+    backend
+  });
+}
+function createFilteredBackend(input, prepared) {
+  return prepared.status === "ready" ? createFilteredWorkspace(input.projectRoot) : void 0;
+}
+function createNativeBackend(input, prepared, filtered) {
+  if (prepared.status !== "ready") return unavailableBackend;
+  return createNativeRuntimeBackend({
+    backend: input.backend,
+    policy: input.policy,
+    capabilities: input.capabilities,
+    root: filtered?.root ?? input.projectRoot,
+    filtered
+  });
+}
+function wrapNativeAdapter(context) {
+  const { input, prepared, filtered, backend } = context;
+  const adapter = createSelectedAdapter(input.backend.language, {
+    backend,
+    compatible: true,
+    ...runtimeAdapterMetadata({
+      backendName: input.backend.platform_executables[input.platform],
+      prepared,
+      capabilities: input.capabilities
+    })
+  });
+  return filtered ? withFilteredShutdown(adapter, filtered) : adapter;
+}
+
+// src/semantic/runtime/runtime-python-options.ts
+import { pathToFileURL as pathToFileURL3 } from "node:url";
+function createPythonRuntimeOptions(input, mirror) {
+  return {
+    language: "python",
+    root: input.projectRoot,
+    root_uri: pathToFileURL3(mirror.root).href,
+    revision: {
+      generation: mirror.generation,
+      manifest_sha256: "python-mirror"
+    },
+    symbols: input.options.symbols,
+    capabilities: input.capabilities,
+    initial_document_paths: mirror.sourcePaths(),
+    toBackendUri: (location) => mirror.uriFor(location.path),
+    fromBackendUri: (uri) => mirror.pathForUri(uri),
+    prepare: () => input.policy.prepare("python"),
+    confirmInitialized: () => input.policy.confirmInitialized("python"),
+    ...input.options.spawn ? { spawn: input.options.spawn } : {}
+  };
+}
+
+// src/semantic/runtime/runtime-python-backend-lifecycle.ts
+function createPythonBuild(input) {
+  return () => refreshPython(input);
+}
+async function refreshPython(input) {
+  const refreshed = await input.manager.refresh();
+  if (refreshed.status !== "ready")
+    return handleUnavailable(input, refreshed.code);
+  ensurePythonInner(input, refreshed.mirror, refreshed.changed);
+  await input.getInner()?.start?.();
+  input.setState(input.getInner()?.readiness() ?? input.getState());
+}
+function handleUnavailable(input, code) {
+  input.setState({ state: "unavailable" });
+  throw new Error(code);
+}
+function ensurePythonInner(input, mirror, changed) {
+  if (!input.getInner() || changed)
+    input.setInner(createPythonInner(input, mirror));
+}
+function createPythonInner(input, mirror) {
+  return createRuntimeLspBackend(createPythonRuntimeOptions(input, mirror));
+}
+function createPythonShutdown(manager, getInner, setInner, setState) {
+  return async () => {
+    await manager.disposeAfterShutdown(async () => {
+      await getInner()?.shutdown?.();
+      setInner(void 0);
+    });
+    setState({ state: "unavailable" });
+  };
+}
+
+// src/semantic/runtime/runtime-python-backend.ts
+function createManagedPythonBackend(input) {
+  const {
+    projectRoot,
+    policy,
+    capabilities,
+    options = {
+      symbols: /* @__PURE__ */ new Map()
+    }
+  } = input;
+  const context = createPythonContext({
+    projectRoot,
+    policy,
+    capabilities,
+    options
+  });
+  return createManagedBackend(context);
+}
+function createPythonContext(input) {
+  let inner;
+  let state = {
+    state: "initializing"
+  };
+  const manager = createPythonMirrorManager(input.projectRoot, async () => {
+    await inner?.shutdown?.();
+    inner = void 0;
+  });
+  return {
+    ...input,
+    manager,
+    getInner: () => inner,
+    setInner: (value) => {
+      inner = value;
+    },
+    getState: () => state,
+    setState: (value) => {
+      state = value;
+    }
+  };
+}
+function createManagedBackend(context) {
+  const build = createPythonBuild(context);
+  return {
+    readiness: () => context.getInner()?.readiness() ?? context.getState(),
+    capabilities: () => context.getInner()?.capabilities?.() ?? context.capabilities,
+    start: build,
+    refresh: build,
+    shutdown: createPythonShutdown(
+      context.manager,
+      context.getInner,
+      context.setInner,
+      context.setState
+    ),
+    query: (request) => queryPython(context, build, request)
+  };
+}
+async function queryPython(context, build, request) {
+  await build();
+  const inner = context.getInner();
+  if (!inner) throw new Error("backend_unavailable");
+  return inner.query(request);
+}
+
+// src/semantic/runtime/runtime-python-adapter.ts
+function createPythonRuntimeAdapter(input) {
+  const prepared = input.policy.prepare("python");
+  return createPythonAdapter(createPythonAdapterOptions(input, prepared));
+}
+function createPythonAdapterOptions(input, prepared) {
+  return {
+    backend: prepared.status === "ready" ? createManagedPythonBackend({
+      projectRoot: input.projectRoot,
+      policy: input.policy,
+      capabilities: input.capabilities
+    }) : unavailableBackend,
+    compatible: true,
+    ...runtimeAdapterMetadata({
+      backendName: input.backend.platform_executables[input.platform],
+      prepared,
+      capabilities: input.capabilities
+    })
+  };
+}
+
+// src/semantic/runtime/runtime-adapters.ts
+function createRuntimeAdapters(projectRoot) {
+  const record2 = loadAdapterSelectionRecord();
+  const platform = process.platform === "win32" ? "win32" : "posix";
+  const policy = createRuntimeLaunchPolicy(
+    {
+      project_root: projectRoot.canonicalPath,
+      platform,
+      inspect: createNativeBackendInspector(
+        trustedRoots(record2, platform),
+        projectRoot.canonicalPath
+      )
+    },
+    record2
+  );
+  return record2.runtime_backends.map(
+    (backend) => createAdapter({
+      backend,
+      projectRoot,
+      platform,
+      policy
+    })
+  );
+}
+function trustedRoots(record2, platform) {
+  return platform === "win32" ? resolveTrustedCommandRoots(record2.trusted_command_roots.win32) : ["/opt/code-explorer/backends"];
+}
+function createAdapter(input) {
+  const capabilities = backendCapabilities(input.backend.capabilities);
+  return input.backend.language === "python" ? createPythonRuntimeAdapter({ ...input, capabilities }) : createNativeRuntimeAdapter({
+    ...input,
+    capabilities
+  });
+}
+function backendCapabilities(capabilities) {
+  return Object.fromEntries(
+    Object.entries(capabilities).map(([name, state]) => [name, { state }])
+  );
+}
+
+// src/semantic/runtime/runtime-start.ts
+async function createStartedRuntimeAdapters(projectRoot, signal) {
+  const adapters = createRuntimeAdapters(projectRoot);
+  await Promise.allSettled(
+    adapters.map((adapter) => startAdapter(adapter, signal))
+  );
+  if (signal?.aborted) {
+    await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+    throw new Error("aborted");
+  }
+  return adapters;
+}
+async function startAdapter(adapter, signal) {
+  if (!adapter.start) return;
+  if (!signal) return adapter.start();
+  await startWithAbort(adapter, signal);
+}
+function startWithAbort(adapter, signal) {
+  let abortHandler;
+  return Promise.race([
+    adapter.start?.(signal) ?? Promise.resolve(),
+    new Promise((_, reject) => {
+      if (signal.aborted) {
+        reject(new Error("aborted"));
+        return;
+      }
+      abortHandler = () => reject(new Error("aborted"));
+      signal.addEventListener("abort", abortHandler, {
+        once: true
+      });
+    })
+  ]).finally(() => {
+    if (abortHandler) signal.removeEventListener("abort", abortHandler);
+  });
+}
+
+// src/browser-server/browser-server-start-support.ts
+var firstPort = 4410;
+var lastPort = 4429;
+function projectRootFor(path5) {
+  try {
+    return createNativeProjectRoot(path5);
+  } catch (error2) {
+    if (error2 instanceof ProjectPathError)
+      throw new BrowserServerError("invalid_project_root");
+    throw error2;
+  }
+}
+async function listenForPort(options, signal, core) {
+  for (let port = firstPort; port <= lastPort; port += 1) {
+    try {
+      return await options.binder.listen("127.0.0.1", port, signal, core);
+    } catch (error2) {
+      if (!isAddressInUse(error2)) throw error2;
+    }
+  }
+  throw new BrowserServerError("browser_port_unavailable");
+}
+function isAddressInUse(error2) {
+  return error2 instanceof Error && "code" in error2 && error2.code === "EADDRINUSE";
+}
+async function openBrowser(options, listener, signal) {
+  if (options.no_open) return;
+  try {
+    await options.opener.open(listener.address, signal);
+  } catch {
+    options.writeError?.("browser_open_failed");
+  }
+}
+
+// src/browser-server/browser-server-run.ts
+async function runBrowserServer(options) {
+  const resources = { core: void 0, listener: void 0 };
+  try {
+    return await startBrowserServerRun(options, resources);
+  } catch (error2) {
+    await closeResources({
+      ...resources,
+      controller: options.controller,
+      parentSignal: options.parentSignal,
+      abort: options.abort
+    });
+    throw error2;
+  }
+}
+async function startBrowserServerRun(options, resources) {
+  const startedCore = await options.start.coreFactory.start({
+    projectRoot: options.projectRoot,
+    signal: options.controller.signal
+  });
+  resources.core = startedCore;
+  const listener = await listenForPort(
+    options.start,
+    options.controller.signal,
+    startedCore
+  );
+  resources.listener = listener;
+  options.start.write?.(`Code Explorer: ${listener.address.href}`);
+  await openBrowser(options.start, listener, options.controller.signal);
+  return serverResult({
+    listener,
+    core: startedCore,
+    projectRoot: options.projectRoot,
+    close: createServerClose(options, resources)
+  });
+}
+function createServerClose(options, resources) {
+  let closing;
+  return () => closing ??= closeResources({
+    ...resources,
+    controller: options.controller,
+    parentSignal: options.parentSignal,
+    abort: options.abort
+  });
+}
+
+// src/browser-server/browser-server-start.ts
+async function startBrowserServer(options) {
+  const controller = new AbortController();
+  const parentSignal = options.signal;
+  const abort = () => controller.abort();
+  parentSignal?.addEventListener("abort", abort, { once: true });
+  const projectRoot = projectRootFor(options.project_root);
+  return runBrowserServer({
+    start: options,
+    projectRoot,
+    controller,
+    parentSignal,
+    abort
+  });
+}
+
+// src/browser-server/native-browser-opener.ts
+import { spawn as spawn2 } from "node:child_process";
+function commandForPlatform(platform) {
+  if (platform === "win32") return "cmd.exe";
+  if (platform === "darwin") return "/usr/bin/open";
+  if (platform === "linux") return "xdg-open";
+  throw new Error("unsupported platform");
+}
+function commandArguments(platform, href) {
+  return platform === "win32" ? ["/d", "/s", "/c", "start", "", href] : [href];
+}
+async function openBrowser2(url, signal) {
+  const platform = process.platform;
+  const child = spawn2(
+    commandForPlatform(platform),
+    commandArguments(platform, url.href),
+    {
+      detached: true,
+      stdio: "ignore",
+      windowsHide: true
+    }
+  );
+  await new Promise((resolve5, reject) => {
+    const onAbort = () => reject(new Error("aborted"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    child.once("error", (error2) => {
+      signal.removeEventListener("abort", onAbort);
+      reject(error2);
+    });
+    child.once("spawn", () => {
+      signal.removeEventListener("abort", onAbort);
+      child.unref();
+      resolve5();
+    });
+  });
+}
+var nativeBrowserOpener = {
+  open: openBrowser2
+};
+
+// src/browser-server/native-port-lifecycle.ts
+function waitForListening(options) {
+  const { server, port, host, signal } = options;
+  return new Promise((resolve5, reject) => {
+    const onAbort = () => reject(new Error("aborted"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    server.once("error", (error2) => {
+      signal.removeEventListener("abort", onAbort);
+      reject(error2);
+    });
+    server.listen(port, host, () => {
+      signal.removeEventListener("abort", onAbort);
+      resolve5();
+    });
+  });
+}
+function closeServer(server, sockets, signal) {
+  return new Promise((resolve5) => {
+    const force = () => {
+      for (const socket of sockets) socket.destroy();
+    };
+    signal.addEventListener("abort", force, { once: true });
+    server.close(() => {
+      signal.removeEventListener("abort", force);
+      resolve5();
+    });
+  });
+}
+
+// src/browser-server/native-port-server.ts
+import { createServer } from "node:http";
+import path3 from "node:path";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
+
+// src/browser-server/browser-unavailable-call.ts
+function unavailableBrowserCall() {
+  return Promise.resolve({
+    schema_version: 1,
+    code: "workspace_unavailable",
+    message: "workspace_unavailable",
+    retryable: true
+  });
+}
+
+// src/browser-server/router-context.ts
+function limitOrDefault(value, fallback) {
+  return value ?? fallback;
+}
+function clockFor(options) {
+  return () => {
+    if (options.clock) return options.clock.nowMilliseconds();
+    return performance.now();
+  };
+}
+function createBrowserRouterContext(options) {
+  return {
+    options,
+    sessions: /* @__PURE__ */ new Map(),
+    maxSessions: limitOrDefault(options.maxSessions, 8),
+    maxInFlight: limitOrDefault(options.maxInFlight, 8),
+    now: clockFor(options),
+    active: { value: 0 }
+  };
+}
+
+// src/browser-server/router-validation.ts
+var requiredKeys = {
+  "/api/search": ["request_id", "query"],
+  "/api/focus": ["request_id", "symbol_id"],
+  "/api/follow": ["request_id", "view_id", "handle", "relation"],
+  "/api/history": ["request_id", "action"]
+};
+var optionalKeys = {
+  "/api/search": [
+    "path_globs",
+    "languages",
+    "kinds",
+    "content",
+    "include_generated",
+    "limit"
+  ],
+  "/api/focus": ["body_limit_bytes"],
+  "/api/follow": ["limit"],
+  "/api/history": ["limit"]
+};
+function exactKeys(body, required2, optional2 = []) {
+  return required2.every((key) => key in body) && Object.keys(body).every(
+    (key) => required2.includes(key) || optional2.includes(key)
+  );
+}
+function validSessionAction(body) {
+  const action = body.action;
+  return action === "create" && body.document_start === "new" || action === "restore" && body.document_start === "reload";
+}
+function validSessionBody(body) {
+  return typeof body.tab_instance_id === "string" && validSessionAction(body) && exactKeys(body, ["action", "tab_instance_id", "document_start"]);
+}
+function validStatusBody(body) {
+  const status = body.action === "status" && exactKeys(body, ["action"]);
+  const refresh = body.action === "refresh" && typeof body.request_id === "string" && exactKeys(body, ["action", "request_id"]);
+  return status || refresh;
+}
+function validBody(route, body) {
+  if (route === "/api/session") return validSessionBody(body);
+  if (route === "/api/status") return validStatusBody(body);
+  const required2 = requiredKeys[route];
+  return required2 !== void 0 && exactKeys(body, required2, optionalKeys[route]);
+}
+function isRecord3(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// src/browser-server/router-policy.ts
+var csp = [
+  "default-src 'none'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+  "object-src 'none'"
+].join("; ");
+var routes = {
+  "/api/search": "code_search",
+  "/api/focus": "code_focus",
+  "/api/follow": "code_follow",
+  "/api/history": "code_history",
+  "/api/status": "code_status"
+};
+var statusByCode = {
+  invalid_browser_origin: 403,
+  invalid_browser_session: 403,
+  route_not_found: 404,
+  method_not_allowed: 405,
+  browser_session_expired: 410,
+  resource_limit: 413,
+  project_capacity: 429,
+  http_capacity: 429
+};
+function browserError(code, retryable = false) {
+  return { schema_version: 1, code, message: code, retryable };
+}
+function errorStatus(code) {
+  if (code.startsWith("backend_") || code === "workspace_unavailable")
+    return 503;
+  return statusByCode[code] ?? 400;
+}
+function json(status, payload) {
+  return {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+      "content-security-policy": csp
+    },
+    body: JSON.stringify(payload)
+  };
+}
+
+// src/browser-server/router-session-acceptance.ts
+var idleMilliseconds = 30 * 60 * 1e3;
+function acceptBrowserSession(context, browserSessionId, session2) {
+  if (context.now() - session2.lastAcceptedAt >= idleMilliseconds) {
+    context.sessions.delete(browserSessionId);
+    return json(410, browserError("browser_session_expired", true));
+  }
+  session2.lastAcceptedAt = context.now();
+  return void 0;
+}
+
+// src/browser-server/router-navigation.ts
+function sessionForNavigation(context, headers) {
+  const id = headers["x-code-explorer-session"];
+  const tabId = headers["x-code-explorer-tab"];
+  const session2 = id ? context.sessions.get(id) : void 0;
+  if (!(id && session2) || session2.tabId !== tabId) return void 0;
+  return { id, session: session2 };
+}
+async function navigation(options) {
+  const { context, route, body, headers } = options;
+  const current = sessionForNavigation(context, headers);
+  if (!current) return json(403, browserError("invalid_browser_session"));
+  const expired = acceptBrowserSession(context, current.id, current.session);
+  if (expired) return expired;
+  const coreArguments = navigationArguments(
+    route,
+    body,
+    current.session.coreSessionId
+  );
+  const reply = await context.options.call(routes[route], coreArguments);
+  return json("code" in reply ? errorStatus(String(reply.code)) : 200, reply);
+}
+function navigationArguments(route, body, sessionId) {
+  if (route === "/api/search")
+    return Object.fromEntries(
+      Object.entries(body).filter(([key]) => key !== "request_id")
+    );
+  if (route === "/api/status" && body.action === "status") return body;
+  return { ...body, session_id: sessionId };
+}
+
+// src/browser-server/router-asset.ts
+import { realpath } from "node:fs/promises";
+import path2 from "node:path";
+
+// src/browser-server/router-asset-file.ts
+import { open as open2 } from "node:fs/promises";
+async function readAssetFile(path5, headOnly) {
+  const file = await open2(path5, "r");
+  try {
+    if (!(await file.stat()).isFile()) return;
+    return headOnly ? "" : await file.readFile("utf8");
+  } finally {
+    await file.close();
+  }
+}
+
+// src/browser-server/router-asset.ts
+function notFound() {
+  return {
+    status: 404,
+    headers: {
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+      "content-security-policy": csp
+    },
+    body: ""
+  };
+}
+function contentType(actual) {
+  if (actual.endsWith(".html")) return "text/html; charset=utf-8";
+  if (actual.endsWith(".js")) return "text/javascript; charset=utf-8";
+  return "text/css; charset=utf-8";
+}
+var assetNames = {
+  "/": "index.html",
+  "/index.html": "index.html",
+  "/client.js": "client.js",
+  "/style.css": "style.css"
+};
+function relativeAssetPath(request) {
+  const rawPath = request.path.split("?")[0]?.split("#")[0] ?? "/";
+  return assetNames[rawPath];
+}
+function isInsideRoot(root, actual) {
+  return actual.startsWith(`${root}${path2.sep}`) || actual === root;
+}
+async function loadAsset(context, request, relative6) {
+  try {
+    const root = await realpath(context.options.assetRoot);
+    const candidate = path2.resolve(root, relative6);
+    const actual = await realpath(candidate);
+    if (!isInsideRoot(root, actual)) return notFound();
+    const body = await readAssetFile(actual, request.method === "HEAD");
+    if (body === void 0) return notFound();
+    return {
+      status: 200,
+      headers: {
+        "content-type": contentType(actual),
+        "cache-control": "no-store",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "no-referrer",
+        "content-security-policy": csp
+      },
+      body
+    };
+  } catch {
+    return notFound();
+  }
+}
+async function asset(context, request) {
+  if (request.method !== "GET" && request.method !== "HEAD")
+    return json(405, browserError("method_not_allowed"));
+  const relative6 = relativeAssetPath(request);
+  if (!relative6) return notFound();
+  return loadAsset(context, request, relative6);
+}
+
+// src/browser-server/router-rejection.ts
+function authorityError(context, request) {
+  if (request.headers.host === new URL(context.options.origin).host)
+    return void 0;
+  return json(403, browserError("invalid_browser_origin"));
+}
+function apiOriginError(context, request) {
+  if (!request.path.startsWith("/api/") || request.headers.origin === context.options.origin)
+    return void 0;
+  return json(403, browserError("invalid_browser_origin"));
+}
+function postPathError(request) {
+  if (request.path === "/") return json(400, browserError("invalid_request"));
+  if (request.path in routes || request.path === "/api/session")
+    return void 0;
+  return json(404, browserError("route_not_found"));
+}
+function methodResult(context, request) {
+  if (request.method === "OPTIONS")
+    return json(405, browserError("method_not_allowed"));
+  if (request.method === "GET" || request.method === "HEAD")
+    return asset(context, request);
+  if (request.method !== "POST")
+    return json(405, browserError("method_not_allowed"));
+  return void 0;
+}
+function capacityResponse(context) {
+  if (context.active.value < context.maxInFlight) return void 0;
+  return json(429, browserError("http_capacity", true));
+}
+function requestRejection(context, request) {
+  return originRejection(context, request) ?? routeRejection(context, request);
+}
+function originRejection(context, request) {
+  return authorityError(context, request) ?? apiOriginError(context, request);
+}
+function routeRejection(context, request) {
+  return methodResult(context, request) ?? postPathError(request) ?? capacityResponse(context);
+}
+
+// src/browser-server/browser-session-reply.ts
+function withBrowserSession(reply, browserSessionId) {
+  const replyData = typeof reply.data === "object" && reply.data !== null && !(reply.data instanceof Array) ? reply.data : {};
+  return {
+    ...reply,
+    data: { ...replyData, browser_session_id: browserSessionId }
+  };
+}
+
+// src/browser-server/router-session.ts
+function sweepExpiredSessions(context) {
+  const now = context.now();
+  for (const [browserSessionId, session2] of context.sessions) {
+    if (now - session2.lastAcceptedAt >= idleMilliseconds)
+      context.sessions.delete(browserSessionId);
+  }
+}
+async function session(context, body, headers) {
+  const tabId = body.tab_instance_id;
+  if (headers["x-code-explorer-tab"] !== tabId)
+    return json(403, browserError("invalid_browser_session"));
+  if (body.action === "create") return createSession(context, tabId, headers);
+  return restoreSession(context, tabId, headers);
+}
+async function createSession(context, tabId, headers) {
+  sweepExpiredSessions(context);
+  if (headers["x-code-explorer-session"] || context.sessions.size >= context.maxSessions)
+    return json(429, browserError("project_capacity", true));
+  const reply = await context.options.call("code_status", {
+    action: "start_session"
+  });
+  if ("code" in reply) return json(errorStatus(String(reply.code)), reply);
+  const coreSessionId = reply.data?.session_id;
+  if (typeof coreSessionId !== "string")
+    return json(500, browserError("internal_error"));
+  const browserSessionId = crypto.randomUUID();
+  context.sessions.set(browserSessionId, {
+    coreSessionId,
+    tabId,
+    lastAcceptedAt: context.now()
+  });
+  return json(200, withBrowserSession(reply, browserSessionId));
+}
+function restoreSession(context, tabId, headers) {
+  const current = restoreCandidate(context, tabId, headers);
+  if (!current) return json(403, browserError("invalid_browser_session"));
+  const expired = acceptBrowserSession(context, current.id, current.session);
+  if (expired) return expired;
+  return json(200, {
+    schema_version: 1,
+    project_id: "project",
+    project_generation: 0,
+    pending_generation: null,
+    state: "restored",
+    data: {}
+  });
+}
+function restoreCandidate(context, tabId, headers) {
+  const id = headers["x-code-explorer-session"];
+  const session2 = id ? context.sessions.get(id) : void 0;
+  if (!(id && session2) || session2.tabId !== tabId) return void 0;
+  return { id, session: session2 };
+}
+
+// src/browser-server/router-request.ts
+var maxBodyBytes = 64 * 1024;
+var maxResponseBytes = 1024 * 1024;
+function parseJson2(request) {
+  try {
+    const value = JSON.parse(request.body.toString("utf8"));
+    return isRecord3(value) ? value : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function postBodyError(request) {
+  if (request.headers["content-encoding"] || request.headers["content-type"] !== "application/json")
+    return json(400, browserError("invalid_request"));
+  if (request.body.byteLength > maxBodyBytes)
+    return json(413, browserError("resource_limit"));
+  return void 0;
+}
+async function postRequest(context, request) {
+  const bodyError = postBodyError(request);
+  if (bodyError) return bodyError;
+  const body = parseJson2(request);
+  if (!(body && validBody(request.path, body)))
+    return json(400, browserError("invalid_request"));
+  const response = await postRoute(context, request, body);
+  return responseWithinLimit(response);
+}
+function postRoute(context, request, body) {
+  if (request.path === "/api/session")
+    return session(context, body, request.headers);
+  return navigation({
+    context,
+    route: request.path,
+    body,
+    headers: request.headers
+  });
+}
+function responseWithinLimit(response) {
+  if (Buffer.byteLength(response.body) > maxResponseBytes)
+    return json(413, browserError("resource_limit"));
+  return response;
+}
+async function handleRequest(context, request) {
+  const rejection = requestRejection(context, request);
+  if (rejection) return rejection;
+  context.active.value += 1;
+  try {
+    return await postRequest(context, request);
+  } finally {
+    context.active.value -= 1;
+  }
+}
+
+// src/browser-server/http-router.ts
+var BrowserHttpRouter = class {
+  context;
+  constructor(options) {
+    this.context = createBrowserRouterContext(options);
+  }
+  handle(request) {
+    return handleRequest(this.context, request);
+  }
+};
+
+// src/browser-server/native-port-http.ts
+function responseHeaders(response, headers) {
+  for (const [key, value] of Object.entries(headers))
+    response.setHeader(key, value);
+}
+function requestHeaders(request) {
+  return Object.fromEntries(
+    Object.entries(request.headers).map(([key, value]) => [
+      key,
+      Array.isArray(value) ? value[0] : value
+    ])
+  );
+}
+function writeResponse(response, result) {
+  response.statusCode = result.status;
+  responseHeaders(response, result.headers);
+  response.end(result.body);
+}
+function handleRequest2(router, request, response) {
+  const chunks = [];
+  request.on("data", (chunk) => chunks.push(chunk));
+  request.on("end", () => {
+    void router.handle({
+      method: request.method ?? "GET",
+      path: request.url ?? "/",
+      headers: requestHeaders(request),
+      body: Buffer.concat(chunks)
+    }).then((result) => writeResponse(response, result));
+  });
+}
+function serverRequestHandler(router, admission) {
+  return (request, response) => {
+    if (!admission.open) {
+      response.destroy();
+      return;
+    }
+    handleRequest2(router, request, response);
+  };
+}
+
+// src/browser-server/native-port-server.ts
+function createNativeServer(host, port, core) {
+  const sockets = /* @__PURE__ */ new Set();
+  const admission = { open: true };
+  const router = new BrowserHttpRouter({
+    origin: `http://${host}:${port}`,
+    assetRoot: path3.join(
+      path3.dirname(fileURLToPath4(import.meta.url)),
+      "browser"
+    ),
+    call: core?.call ?? unavailableBrowserCall
+  });
+  const server = createServer(
+    { maxHeaderSize: 16 * 1024 },
+    serverRequestHandler(router, admission)
+  );
+  configureServer(server, sockets);
+  return { server, sockets, admission };
+}
+function configureServer(server, sockets) {
+  server.headersTimeout = 5e3;
+  server.keepAliveTimeout = 5e3;
+  server.maxRequestsPerSocket = 100;
+  server.on("connection", (socket) => {
+    sockets.add(socket);
+    socket.once("close", () => sockets.delete(socket));
+  });
+}
+
+// src/browser-server/native-port-binder.ts
+function listenerFor(host, port, server) {
+  return {
+    address: new URL(`http://${host}:${port}/`),
+    stopAdmission: () => {
+      server.admission.open = false;
+    },
+    close: async (signal) => {
+      if (server.server.listening)
+        await closeServer(server.server, server.sockets, signal);
+    }
+  };
+}
+async function listen(...args) {
+  const [host, port, signal, core] = args;
+  if (signal.aborted) throw new Error("aborted");
+  const nativeServer = createNativeServer(host, port, core);
+  await waitForListening({ server: nativeServer.server, port, host, signal });
+  return listenerFor(host, port, nativeServer);
+}
+var nativePortBinder = { listen };
+
+// src/browser-server/serve-arguments-parser.ts
+function parseNoOpen(state) {
+  if (state.noOpen) return void 0;
+  return { ...state, noOpen: true };
+}
+function parseProjectRoot(value, state) {
+  if (!value || state.projectRoot !== ".") return void 0;
+  return { ...state, projectRoot: value };
+}
+function parseArgument(argument, value, state) {
+  if (argument === "--no-open") {
+    const next = parseNoOpen(state);
+    if (!next) throw new BrowserServerError("invalid_request");
+    return { state: next, consumed: 0 };
+  }
+  if (argument === "--project-root") {
+    const next = parseProjectRoot(value, state);
+    if (!next) throw new BrowserServerError("invalid_request");
+    return { state: next, consumed: 1 };
+  }
+  throw new BrowserServerError("invalid_request");
+}
+function parseServeArguments(arguments_) {
+  if (arguments_[0] !== "serve")
+    throw new BrowserServerError("invalid_request");
+  let state = { projectRoot: ".", noOpen: false };
+  for (let index = 1; index < arguments_.length; index += 1) {
+    const parsed = parseArgument(
+      arguments_[index],
+      arguments_[index + 1],
+      state
+    );
+    state = parsed.state;
+    index += parsed.consumed;
+  }
+  return { project_root: state.projectRoot, no_open: state.noOpen };
+}
+
+// src/freshness/workspace-native.ts
+var workspace_native_exports = {};
+__export(workspace_native_exports, {
+  createNativeWorkspaceFreshness: () => createNativeWorkspaceFreshness
+});
+
+// src/freshness/native-manifest-files.ts
+import { readdir } from "node:fs/promises";
+import { join as join19, relative as relative3 } from "node:path";
+function withinScanLimits(started, now, output) {
+  if (now() - started > 6e4 || output.length > 5e4)
+    throw new Error("scan_limit");
+}
+function ignoredDirectory(name) {
+  return /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(name);
+}
+async function visit2(root, directory2, supported, started, now, output) {
+  withinScanLimits(started, now, output);
+  for (const entry of await readdir(directory2, { withFileTypes: true })) {
+    const absolute = join19(directory2, entry.name);
+    if (entry.isDirectory()) {
+      if (!ignoredDirectory(entry.name))
+        await visit2(root, absolute, supported, started, now, output);
+      continue;
+    }
+    const path5 = relative3(root, absolute).replaceAll("\\", "/");
+    if (supported(path5)) output.push(path5);
+  }
+}
+async function walkSupportedFiles(root, supported, started, now) {
+  const output = [];
+  await visit2(root, root, supported, started, now, output);
+  if (output.length > 5e4) throw new Error("scan_limit");
+  return output.sort();
+}
+
+// src/freshness/native-manifest-hashing.ts
+import { createHash as createHash4 } from "node:crypto";
+import { open as open3 } from "node:fs/promises";
+import { join as join20 } from "node:path";
+async function stableHash(path5, now, sleep) {
+  const started = now();
+  for (; ; ) {
+    const stable = await stableAttempt(path5, sleep);
+    if (stable) return stable;
+    if (now() - started >= 1e4) return "incomplete_write";
+  }
+}
+async function stableAttempt(path5, sleep) {
+  const file = await open3(path5, "r");
+  try {
+    const before = await file.stat();
+    if (before.size > 4 * 1024 * 1024) return "scan_limit";
+    await sleep(100);
+    const after = await file.stat();
+    if (before.size !== after.size || before.mtimeMs !== after.mtimeMs)
+      return void 0;
+    return createHash4("sha256").update(await file.readFile()).digest("hex");
+  } finally {
+    await file.close();
+  }
+}
+async function stableBatch(options, files) {
+  return await Promise.all(
+    files.map(
+      async (file) => [
+        file,
+        await stableHash(
+          join20(options.root, file),
+          options.now ?? Date.now,
+          options.sleep ?? delay
+        )
+      ]
+    )
+  );
+}
+function delay(milliseconds) {
+  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
+}
+
+// src/freshness/native-manifest.ts
+async function buildManifest(options, files) {
+  const manifest = /* @__PURE__ */ new Map();
+  for (let offset = 0; offset < files.length; offset += 64) {
+    const cause = mergeStableBatch(
+      manifest,
+      await stableBatch(options, files.slice(offset, offset + 64))
+    );
+    if (cause) return { cause };
+  }
+  return { manifest };
+}
+function mergeStableBatch(manifest, stable) {
+  for (const [file, hash] of stable) {
+    if (hash === "incomplete_write" || hash === "scan_limit") return hash;
+    manifest.set(file, hash);
+  }
+  return void 0;
+}
+function failureCause(error2) {
+  if (error2 instanceof Error && error2.message === "scan_limit")
+    return "scan_limit";
+  return "freshness_unavailable";
+}
+async function reconcileNativeManifest(options) {
+  const now = options.now ?? Date.now;
+  const started = now();
+  try {
+    const files = await walkSupportedFiles(
+      options.root,
+      options.supported,
+      started,
+      now
+    );
+    return buildManifest(options, files);
+  } catch (error2) {
+    return { cause: failureCause(error2) };
+  }
+}
+
+// src/freshness/freshness-runtime.ts
+var FreshnessRuntime = class {
+  status = {
+    current_generation: 0,
+    pending_generation: null,
+    state: "initializing",
+    mode: "watching"
+  };
+  manifest = /* @__PURE__ */ new Map();
+  watcher;
+  activeSessions = 0;
+  coalesceTimer;
+  pollTimer;
+  manifestTimer;
+  running;
+  forceRefresh = false;
+  nextGeneration = 1;
+  reserveGeneration() {
+    const generation = this.nextGeneration++;
+    this.status = {
+      current_generation: this.status.current_generation,
+      pending_generation: generation,
+      state: "refreshing",
+      mode: this.status.mode
+    };
+    return generation;
+  }
+  failRefresh() {
+    this.forceRefresh = false;
+    this.status = {
+      current_generation: this.status.current_generation,
+      pending_generation: null,
+      state: "refresh_failed",
+      mode: this.status.mode
+    };
+  }
+  reserveRefresh() {
+    if (this.status.pending_generation === null) this.reserveGeneration();
+    this.forceRefresh = true;
+  }
+  degrade(cause) {
+    this.forceRefresh = false;
+    this.status = {
+      current_generation: this.status.current_generation,
+      pending_generation: null,
+      state: "degraded",
+      mode: this.status.mode,
+      degraded_cause: cause
+    };
+  }
+  ready(generation, manifest) {
+    this.manifest = new Map(manifest);
+    this.status = {
+      current_generation: generation,
+      pending_generation: null,
+      state: "ready",
+      mode: this.status.mode
+    };
+    this.forceRefresh = false;
+  }
+};
+
+// ../../node_modules/chokidar/esm/index.js
+import { stat as statcb } from "fs";
+import { stat as stat3, readdir as readdir3 } from "fs/promises";
+import { EventEmitter } from "events";
+import * as sysPath2 from "path";
+
+// ../../node_modules/readdirp/esm/index.js
+import { stat, lstat, readdir as readdir2, realpath as realpath2 } from "node:fs/promises";
+import { Readable } from "node:stream";
+import { resolve as presolve, relative as prelative, join as pjoin, sep as psep } from "node:path";
+var EntryTypes = {
+  FILE_TYPE: "files",
+  DIR_TYPE: "directories",
+  FILE_DIR_TYPE: "files_directories",
+  EVERYTHING_TYPE: "all"
+};
+var defaultOptions = {
+  root: ".",
+  fileFilter: (_entryInfo) => true,
+  directoryFilter: (_entryInfo) => true,
+  type: EntryTypes.FILE_TYPE,
+  lstat: false,
+  depth: 2147483648,
+  alwaysStat: false,
+  highWaterMark: 4096
+};
+Object.freeze(defaultOptions);
+var RECURSIVE_ERROR_CODE = "READDIRP_RECURSIVE_ERROR";
+var NORMAL_FLOW_ERRORS = /* @__PURE__ */ new Set(["ENOENT", "EPERM", "EACCES", "ELOOP", RECURSIVE_ERROR_CODE]);
+var ALL_TYPES = [
+  EntryTypes.DIR_TYPE,
+  EntryTypes.EVERYTHING_TYPE,
+  EntryTypes.FILE_DIR_TYPE,
+  EntryTypes.FILE_TYPE
+];
+var DIR_TYPES = /* @__PURE__ */ new Set([
+  EntryTypes.DIR_TYPE,
+  EntryTypes.EVERYTHING_TYPE,
+  EntryTypes.FILE_DIR_TYPE
+]);
+var FILE_TYPES = /* @__PURE__ */ new Set([
+  EntryTypes.EVERYTHING_TYPE,
+  EntryTypes.FILE_DIR_TYPE,
+  EntryTypes.FILE_TYPE
+]);
+var isNormalFlowError = (error2) => NORMAL_FLOW_ERRORS.has(error2.code);
+var wantBigintFsStats = process.platform === "win32";
+var emptyFn = (_entryInfo) => true;
+var normalizeFilter = (filter) => {
+  if (filter === void 0)
+    return emptyFn;
+  if (typeof filter === "function")
+    return filter;
+  if (typeof filter === "string") {
+    const fl = filter.trim();
+    return (entry) => entry.basename === fl;
+  }
+  if (Array.isArray(filter)) {
+    const trItems = filter.map((item) => item.trim());
+    return (entry) => trItems.some((f) => entry.basename === f);
+  }
+  return emptyFn;
+};
+var ReaddirpStream = class extends Readable {
+  constructor(options = {}) {
+    super({
+      objectMode: true,
+      autoDestroy: true,
+      highWaterMark: options.highWaterMark
+    });
+    const opts = { ...defaultOptions, ...options };
+    const { root, type } = opts;
+    this._fileFilter = normalizeFilter(opts.fileFilter);
+    this._directoryFilter = normalizeFilter(opts.directoryFilter);
+    const statMethod = opts.lstat ? lstat : stat;
+    if (wantBigintFsStats) {
+      this._stat = (path5) => statMethod(path5, { bigint: true });
+    } else {
+      this._stat = statMethod;
+    }
+    this._maxDepth = opts.depth ?? defaultOptions.depth;
+    this._wantsDir = type ? DIR_TYPES.has(type) : false;
+    this._wantsFile = type ? FILE_TYPES.has(type) : false;
+    this._wantsEverything = type === EntryTypes.EVERYTHING_TYPE;
+    this._root = presolve(root);
+    this._isDirent = !opts.alwaysStat;
+    this._statsProp = this._isDirent ? "dirent" : "stats";
+    this._rdOptions = { encoding: "utf8", withFileTypes: this._isDirent };
+    this.parents = [this._exploreDir(root, 1)];
+    this.reading = false;
+    this.parent = void 0;
+  }
+  async _read(batch) {
+    if (this.reading)
+      return;
+    this.reading = true;
+    try {
+      while (!this.destroyed && batch > 0) {
+        const par = this.parent;
+        const fil = par && par.files;
+        if (fil && fil.length > 0) {
+          const { path: path5, depth } = par;
+          const slice = fil.splice(0, batch).map((dirent) => this._formatEntry(dirent, path5));
+          const awaited = await Promise.all(slice);
+          for (const entry of awaited) {
+            if (!entry)
+              continue;
+            if (this.destroyed)
+              return;
+            const entryType = await this._getEntryType(entry);
+            if (entryType === "directory" && this._directoryFilter(entry)) {
+              if (depth <= this._maxDepth) {
+                this.parents.push(this._exploreDir(entry.fullPath, depth + 1));
+              }
+              if (this._wantsDir) {
+                this.push(entry);
+                batch--;
+              }
+            } else if ((entryType === "file" || this._includeAsFile(entry)) && this._fileFilter(entry)) {
+              if (this._wantsFile) {
+                this.push(entry);
+                batch--;
+              }
+            }
+          }
+        } else {
+          const parent = this.parents.pop();
+          if (!parent) {
+            this.push(null);
+            break;
+          }
+          this.parent = await parent;
+          if (this.destroyed)
+            return;
+        }
+      }
+    } catch (error2) {
+      this.destroy(error2);
+    } finally {
+      this.reading = false;
+    }
+  }
+  async _exploreDir(path5, depth) {
+    let files;
+    try {
+      files = await readdir2(path5, this._rdOptions);
+    } catch (error2) {
+      this._onError(error2);
+    }
+    return { files, depth, path: path5 };
+  }
+  async _formatEntry(dirent, path5) {
+    let entry;
+    const basename4 = this._isDirent ? dirent.name : dirent;
+    try {
+      const fullPath = presolve(pjoin(path5, basename4));
+      entry = { path: prelative(this._root, fullPath), fullPath, basename: basename4 };
+      entry[this._statsProp] = this._isDirent ? dirent : await this._stat(fullPath);
+    } catch (err) {
+      this._onError(err);
+      return;
+    }
+    return entry;
+  }
+  _onError(err) {
+    if (isNormalFlowError(err) && !this.destroyed) {
+      this.emit("warn", err);
+    } else {
+      this.destroy(err);
+    }
+  }
+  async _getEntryType(entry) {
+    if (!entry && this._statsProp in entry) {
+      return "";
+    }
+    const stats = entry[this._statsProp];
+    if (stats.isFile())
+      return "file";
+    if (stats.isDirectory())
+      return "directory";
+    if (stats && stats.isSymbolicLink()) {
+      const full = entry.fullPath;
+      try {
+        const entryRealPath = await realpath2(full);
+        const entryRealPathStats = await lstat(entryRealPath);
+        if (entryRealPathStats.isFile()) {
+          return "file";
+        }
+        if (entryRealPathStats.isDirectory()) {
+          const len = entryRealPath.length;
+          if (full.startsWith(entryRealPath) && full.substr(len, 1) === psep) {
+            const recursiveError = new Error(`Circular symlink detected: "${full}" points to "${entryRealPath}"`);
+            recursiveError.code = RECURSIVE_ERROR_CODE;
+            return this._onError(recursiveError);
+          }
+          return "directory";
+        }
+      } catch (error2) {
+        this._onError(error2);
+        return "";
+      }
+    }
+  }
+  _includeAsFile(entry) {
+    const stats = entry && entry[this._statsProp];
+    return stats && this._wantsEverything && !stats.isDirectory();
+  }
+};
+function readdirp(root, options = {}) {
+  let type = options.entryType || options.type;
+  if (type === "both")
+    type = EntryTypes.FILE_DIR_TYPE;
+  if (type)
+    options.type = type;
+  if (!root) {
+    throw new Error("readdirp: root argument is required. Usage: readdirp(root, options)");
+  } else if (typeof root !== "string") {
+    throw new TypeError("readdirp: root argument must be a string. Usage: readdirp(root, options)");
+  } else if (type && !ALL_TYPES.includes(type)) {
+    throw new Error(`readdirp: Invalid type passed. Use one of ${ALL_TYPES.join(", ")}`);
+  }
+  options.root = root;
+  return new ReaddirpStream(options);
+}
+
+// ../../node_modules/chokidar/esm/handler.js
+import { watchFile, unwatchFile, watch as fs_watch } from "fs";
+import { open as open4, stat as stat2, lstat as lstat2, realpath as fsrealpath } from "fs/promises";
+import * as sysPath from "path";
+import { type as osType } from "os";
+var STR_DATA = "data";
+var STR_END = "end";
+var STR_CLOSE = "close";
+var EMPTY_FN = () => {
+};
+var pl = process.platform;
+var isWindows = pl === "win32";
+var isMacos = pl === "darwin";
+var isLinux = pl === "linux";
+var isFreeBSD = pl === "freebsd";
+var isIBMi = osType() === "OS400";
+var EVENTS = {
+  ALL: "all",
+  READY: "ready",
+  ADD: "add",
+  CHANGE: "change",
+  ADD_DIR: "addDir",
+  UNLINK: "unlink",
+  UNLINK_DIR: "unlinkDir",
+  RAW: "raw",
+  ERROR: "error"
+};
+var EV = EVENTS;
+var THROTTLE_MODE_WATCH = "watch";
+var statMethods = { lstat: lstat2, stat: stat2 };
+var KEY_LISTENERS = "listeners";
+var KEY_ERR = "errHandlers";
+var KEY_RAW = "rawEmitters";
+var HANDLER_KEYS = [KEY_LISTENERS, KEY_ERR, KEY_RAW];
+var binaryExtensions = /* @__PURE__ */ new Set([
+  "3dm",
+  "3ds",
+  "3g2",
+  "3gp",
+  "7z",
+  "a",
+  "aac",
+  "adp",
+  "afdesign",
+  "afphoto",
+  "afpub",
+  "ai",
+  "aif",
+  "aiff",
+  "alz",
+  "ape",
+  "apk",
+  "appimage",
+  "ar",
+  "arj",
+  "asf",
+  "au",
+  "avi",
+  "bak",
+  "baml",
+  "bh",
+  "bin",
+  "bk",
+  "bmp",
+  "btif",
+  "bz2",
+  "bzip2",
+  "cab",
+  "caf",
+  "cgm",
+  "class",
+  "cmx",
+  "cpio",
+  "cr2",
+  "cur",
+  "dat",
+  "dcm",
+  "deb",
+  "dex",
+  "djvu",
+  "dll",
+  "dmg",
+  "dng",
+  "doc",
+  "docm",
+  "docx",
+  "dot",
+  "dotm",
+  "dra",
+  "DS_Store",
+  "dsk",
+  "dts",
+  "dtshd",
+  "dvb",
+  "dwg",
+  "dxf",
+  "ecelp4800",
+  "ecelp7470",
+  "ecelp9600",
+  "egg",
+  "eol",
+  "eot",
+  "epub",
+  "exe",
+  "f4v",
+  "fbs",
+  "fh",
+  "fla",
+  "flac",
+  "flatpak",
+  "fli",
+  "flv",
+  "fpx",
+  "fst",
+  "fvt",
+  "g3",
+  "gh",
+  "gif",
+  "graffle",
+  "gz",
+  "gzip",
+  "h261",
+  "h263",
+  "h264",
+  "icns",
+  "ico",
+  "ief",
+  "img",
+  "ipa",
+  "iso",
+  "jar",
+  "jpeg",
+  "jpg",
+  "jpgv",
+  "jpm",
+  "jxr",
+  "key",
+  "ktx",
+  "lha",
+  "lib",
+  "lvp",
+  "lz",
+  "lzh",
+  "lzma",
+  "lzo",
+  "m3u",
+  "m4a",
+  "m4v",
+  "mar",
+  "mdi",
+  "mht",
+  "mid",
+  "midi",
+  "mj2",
+  "mka",
+  "mkv",
+  "mmr",
+  "mng",
+  "mobi",
+  "mov",
+  "movie",
+  "mp3",
+  "mp4",
+  "mp4a",
+  "mpeg",
+  "mpg",
+  "mpga",
+  "mxu",
+  "nef",
+  "npx",
+  "numbers",
+  "nupkg",
+  "o",
+  "odp",
+  "ods",
+  "odt",
+  "oga",
+  "ogg",
+  "ogv",
+  "otf",
+  "ott",
+  "pages",
+  "pbm",
+  "pcx",
+  "pdb",
+  "pdf",
+  "pea",
+  "pgm",
+  "pic",
+  "png",
+  "pnm",
+  "pot",
+  "potm",
+  "potx",
+  "ppa",
+  "ppam",
+  "ppm",
+  "pps",
+  "ppsm",
+  "ppsx",
+  "ppt",
+  "pptm",
+  "pptx",
+  "psd",
+  "pya",
+  "pyc",
+  "pyo",
+  "pyv",
+  "qt",
+  "rar",
+  "ras",
+  "raw",
+  "resources",
+  "rgb",
+  "rip",
+  "rlc",
+  "rmf",
+  "rmvb",
+  "rpm",
+  "rtf",
+  "rz",
+  "s3m",
+  "s7z",
+  "scpt",
+  "sgi",
+  "shar",
+  "snap",
+  "sil",
+  "sketch",
+  "slk",
+  "smv",
+  "snk",
+  "so",
+  "stl",
+  "suo",
+  "sub",
+  "swf",
+  "tar",
+  "tbz",
+  "tbz2",
+  "tga",
+  "tgz",
+  "thmx",
+  "tif",
+  "tiff",
+  "tlz",
+  "ttc",
+  "ttf",
+  "txz",
+  "udf",
+  "uvh",
+  "uvi",
+  "uvm",
+  "uvp",
+  "uvs",
+  "uvu",
+  "viv",
+  "vob",
+  "war",
+  "wav",
+  "wax",
+  "wbmp",
+  "wdp",
+  "weba",
+  "webm",
+  "webp",
+  "whl",
+  "wim",
+  "wm",
+  "wma",
+  "wmv",
+  "wmx",
+  "woff",
+  "woff2",
+  "wrm",
+  "wvx",
+  "xbm",
+  "xif",
+  "xla",
+  "xlam",
+  "xls",
+  "xlsb",
+  "xlsm",
+  "xlsx",
+  "xlt",
+  "xltm",
+  "xltx",
+  "xm",
+  "xmind",
+  "xpi",
+  "xpm",
+  "xwd",
+  "xz",
+  "z",
+  "zip",
+  "zipx"
+]);
+var isBinaryPath = (filePath) => binaryExtensions.has(sysPath.extname(filePath).slice(1).toLowerCase());
+var foreach = (val, fn) => {
+  if (val instanceof Set) {
+    val.forEach(fn);
+  } else {
+    fn(val);
+  }
+};
+var addAndConvert = (main, prop, item) => {
+  let container = main[prop];
+  if (!(container instanceof Set)) {
+    main[prop] = container = /* @__PURE__ */ new Set([container]);
+  }
+  container.add(item);
+};
+var clearItem = (cont) => (key) => {
+  const set = cont[key];
+  if (set instanceof Set) {
+    set.clear();
+  } else {
+    delete cont[key];
+  }
+};
+var delFromSet = (main, prop, item) => {
+  const container = main[prop];
+  if (container instanceof Set) {
+    container.delete(item);
+  } else if (container === item) {
+    delete main[prop];
+  }
+};
+var isEmptySet = (val) => val instanceof Set ? val.size === 0 : !val;
+var FsWatchInstances = /* @__PURE__ */ new Map();
+function createFsWatchInstance(path5, options, listener, errHandler, emitRaw) {
+  const handleEvent = (rawEvent, evPath) => {
+    listener(path5);
+    emitRaw(rawEvent, evPath, { watchedPath: path5 });
+    if (evPath && path5 !== evPath) {
+      fsWatchBroadcast(sysPath.resolve(path5, evPath), KEY_LISTENERS, sysPath.join(path5, evPath));
+    }
+  };
+  try {
+    return fs_watch(path5, {
+      persistent: options.persistent
+    }, handleEvent);
+  } catch (error2) {
+    errHandler(error2);
+    return void 0;
+  }
+}
+var fsWatchBroadcast = (fullPath, listenerType, val1, val2, val3) => {
+  const cont = FsWatchInstances.get(fullPath);
+  if (!cont)
+    return;
+  foreach(cont[listenerType], (listener) => {
+    listener(val1, val2, val3);
+  });
+};
+var setFsWatchListener = (path5, fullPath, options, handlers) => {
+  const { listener, errHandler, rawEmitter } = handlers;
+  let cont = FsWatchInstances.get(fullPath);
+  let watcher;
+  if (!options.persistent) {
+    watcher = createFsWatchInstance(path5, options, listener, errHandler, rawEmitter);
+    if (!watcher)
+      return;
+    return watcher.close.bind(watcher);
+  }
+  if (cont) {
+    addAndConvert(cont, KEY_LISTENERS, listener);
+    addAndConvert(cont, KEY_ERR, errHandler);
+    addAndConvert(cont, KEY_RAW, rawEmitter);
+  } else {
+    watcher = createFsWatchInstance(
+      path5,
+      options,
+      fsWatchBroadcast.bind(null, fullPath, KEY_LISTENERS),
+      errHandler,
+      // no need to use broadcast here
+      fsWatchBroadcast.bind(null, fullPath, KEY_RAW)
+    );
+    if (!watcher)
+      return;
+    watcher.on(EV.ERROR, async (error2) => {
+      const broadcastErr = fsWatchBroadcast.bind(null, fullPath, KEY_ERR);
+      if (cont)
+        cont.watcherUnusable = true;
+      if (isWindows && error2.code === "EPERM") {
+        try {
+          const fd = await open4(path5, "r");
+          await fd.close();
+          broadcastErr(error2);
+        } catch (err) {
+        }
+      } else {
+        broadcastErr(error2);
+      }
+    });
+    cont = {
+      listeners: listener,
+      errHandlers: errHandler,
+      rawEmitters: rawEmitter,
+      watcher
+    };
+    FsWatchInstances.set(fullPath, cont);
+  }
+  return () => {
+    delFromSet(cont, KEY_LISTENERS, listener);
+    delFromSet(cont, KEY_ERR, errHandler);
+    delFromSet(cont, KEY_RAW, rawEmitter);
+    if (isEmptySet(cont.listeners)) {
+      cont.watcher.close();
+      FsWatchInstances.delete(fullPath);
+      HANDLER_KEYS.forEach(clearItem(cont));
+      cont.watcher = void 0;
+      Object.freeze(cont);
+    }
+  };
+};
+var FsWatchFileInstances = /* @__PURE__ */ new Map();
+var setFsWatchFileListener = (path5, fullPath, options, handlers) => {
+  const { listener, rawEmitter } = handlers;
+  let cont = FsWatchFileInstances.get(fullPath);
+  const copts = cont && cont.options;
+  if (copts && (copts.persistent < options.persistent || copts.interval > options.interval)) {
+    unwatchFile(fullPath);
+    cont = void 0;
+  }
+  if (cont) {
+    addAndConvert(cont, KEY_LISTENERS, listener);
+    addAndConvert(cont, KEY_RAW, rawEmitter);
+  } else {
+    cont = {
+      listeners: listener,
+      rawEmitters: rawEmitter,
+      options,
+      watcher: watchFile(fullPath, options, (curr, prev) => {
+        foreach(cont.rawEmitters, (rawEmitter2) => {
+          rawEmitter2(EV.CHANGE, fullPath, { curr, prev });
+        });
+        const currmtime = curr.mtimeMs;
+        if (curr.size !== prev.size || currmtime > prev.mtimeMs || currmtime === 0) {
+          foreach(cont.listeners, (listener2) => listener2(path5, curr));
+        }
+      })
+    };
+    FsWatchFileInstances.set(fullPath, cont);
+  }
+  return () => {
+    delFromSet(cont, KEY_LISTENERS, listener);
+    delFromSet(cont, KEY_RAW, rawEmitter);
+    if (isEmptySet(cont.listeners)) {
+      FsWatchFileInstances.delete(fullPath);
+      unwatchFile(fullPath);
+      cont.options = cont.watcher = void 0;
+      Object.freeze(cont);
+    }
+  };
+};
+var NodeFsHandler = class {
+  constructor(fsW) {
+    this.fsw = fsW;
+    this._boundHandleError = (error2) => fsW._handleError(error2);
+  }
+  /**
+   * Watch file for changes with fs_watchFile or fs_watch.
+   * @param path to file or dir
+   * @param listener on fs change
+   * @returns closer for the watcher instance
+   */
+  _watchWithNodeFs(path5, listener) {
+    const opts = this.fsw.options;
+    const directory2 = sysPath.dirname(path5);
+    const basename4 = sysPath.basename(path5);
+    const parent = this.fsw._getWatchedDir(directory2);
+    parent.add(basename4);
+    const absolutePath = sysPath.resolve(path5);
+    const options = {
+      persistent: opts.persistent
+    };
+    if (!listener)
+      listener = EMPTY_FN;
+    let closer;
+    if (opts.usePolling) {
+      const enableBin = opts.interval !== opts.binaryInterval;
+      options.interval = enableBin && isBinaryPath(basename4) ? opts.binaryInterval : opts.interval;
+      closer = setFsWatchFileListener(path5, absolutePath, options, {
+        listener,
+        rawEmitter: this.fsw._emitRaw
+      });
+    } else {
+      closer = setFsWatchListener(path5, absolutePath, options, {
+        listener,
+        errHandler: this._boundHandleError,
+        rawEmitter: this.fsw._emitRaw
+      });
+    }
+    return closer;
+  }
+  /**
+   * Watch a file and emit add event if warranted.
+   * @returns closer for the watcher instance
+   */
+  _handleFile(file, stats, initialAdd) {
+    if (this.fsw.closed) {
+      return;
+    }
+    const dirname10 = sysPath.dirname(file);
+    const basename4 = sysPath.basename(file);
+    const parent = this.fsw._getWatchedDir(dirname10);
+    let prevStats = stats;
+    if (parent.has(basename4))
+      return;
+    const listener = async (path5, newStats) => {
+      if (!this.fsw._throttle(THROTTLE_MODE_WATCH, file, 5))
+        return;
+      if (!newStats || newStats.mtimeMs === 0) {
+        try {
+          const newStats2 = await stat2(file);
+          if (this.fsw.closed)
+            return;
+          const at = newStats2.atimeMs;
+          const mt = newStats2.mtimeMs;
+          if (!at || at <= mt || mt !== prevStats.mtimeMs) {
+            this.fsw._emit(EV.CHANGE, file, newStats2);
+          }
+          if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== newStats2.ino) {
+            this.fsw._closeFile(path5);
+            prevStats = newStats2;
+            const closer2 = this._watchWithNodeFs(file, listener);
+            if (closer2)
+              this.fsw._addPathCloser(path5, closer2);
+          } else {
+            prevStats = newStats2;
+          }
+        } catch (error2) {
+          this.fsw._remove(dirname10, basename4);
+        }
+      } else if (parent.has(basename4)) {
+        const at = newStats.atimeMs;
+        const mt = newStats.mtimeMs;
+        if (!at || at <= mt || mt !== prevStats.mtimeMs) {
+          this.fsw._emit(EV.CHANGE, file, newStats);
+        }
+        prevStats = newStats;
+      }
+    };
+    const closer = this._watchWithNodeFs(file, listener);
+    if (!(initialAdd && this.fsw.options.ignoreInitial) && this.fsw._isntIgnored(file)) {
+      if (!this.fsw._throttle(EV.ADD, file, 0))
+        return;
+      this.fsw._emit(EV.ADD, file, stats);
+    }
+    return closer;
+  }
+  /**
+   * Handle symlinks encountered while reading a dir.
+   * @param entry returned by readdirp
+   * @param directory path of dir being read
+   * @param path of this item
+   * @param item basename of this item
+   * @returns true if no more processing is needed for this entry.
+   */
+  async _handleSymlink(entry, directory2, path5, item) {
+    if (this.fsw.closed) {
+      return;
+    }
+    const full = entry.fullPath;
+    const dir = this.fsw._getWatchedDir(directory2);
+    if (!this.fsw.options.followSymlinks) {
+      this.fsw._incrReadyCount();
+      let linkPath;
+      try {
+        linkPath = await fsrealpath(path5);
+      } catch (e) {
+        this.fsw._emitReady();
+        return true;
+      }
+      if (this.fsw.closed)
+        return;
+      if (dir.has(item)) {
+        if (this.fsw._symlinkPaths.get(full) !== linkPath) {
+          this.fsw._symlinkPaths.set(full, linkPath);
+          this.fsw._emit(EV.CHANGE, path5, entry.stats);
+        }
+      } else {
+        dir.add(item);
+        this.fsw._symlinkPaths.set(full, linkPath);
+        this.fsw._emit(EV.ADD, path5, entry.stats);
+      }
+      this.fsw._emitReady();
+      return true;
+    }
+    if (this.fsw._symlinkPaths.has(full)) {
+      return true;
+    }
+    this.fsw._symlinkPaths.set(full, true);
+  }
+  _handleRead(directory2, initialAdd, wh, target, dir, depth, throttler) {
+    directory2 = sysPath.join(directory2, "");
+    throttler = this.fsw._throttle("readdir", directory2, 1e3);
+    if (!throttler)
+      return;
+    const previous = this.fsw._getWatchedDir(wh.path);
+    const current = /* @__PURE__ */ new Set();
+    let stream = this.fsw._readdirp(directory2, {
+      fileFilter: (entry) => wh.filterPath(entry),
+      directoryFilter: (entry) => wh.filterDir(entry)
+    });
+    if (!stream)
+      return;
+    stream.on(STR_DATA, async (entry) => {
+      if (this.fsw.closed) {
+        stream = void 0;
+        return;
+      }
+      const item = entry.path;
+      let path5 = sysPath.join(directory2, item);
+      current.add(item);
+      if (entry.stats.isSymbolicLink() && await this._handleSymlink(entry, directory2, path5, item)) {
+        return;
+      }
+      if (this.fsw.closed) {
+        stream = void 0;
+        return;
+      }
+      if (item === target || !target && !previous.has(item)) {
+        this.fsw._incrReadyCount();
+        path5 = sysPath.join(dir, sysPath.relative(dir, path5));
+        this._addToNodeFs(path5, initialAdd, wh, depth + 1);
+      }
+    }).on(EV.ERROR, this._boundHandleError);
+    return new Promise((resolve5, reject) => {
+      if (!stream)
+        return reject();
+      stream.once(STR_END, () => {
+        if (this.fsw.closed) {
+          stream = void 0;
+          return;
+        }
+        const wasThrottled = throttler ? throttler.clear() : false;
+        resolve5(void 0);
+        previous.getChildren().filter((item) => {
+          return item !== directory2 && !current.has(item);
+        }).forEach((item) => {
+          this.fsw._remove(directory2, item);
+        });
+        stream = void 0;
+        if (wasThrottled)
+          this._handleRead(directory2, false, wh, target, dir, depth, throttler);
+      });
+    });
+  }
+  /**
+   * Read directory to add / remove files from `@watched` list and re-read it on change.
+   * @param dir fs path
+   * @param stats
+   * @param initialAdd
+   * @param depth relative to user-supplied path
+   * @param target child path targeted for watch
+   * @param wh Common watch helpers for this path
+   * @param realpath
+   * @returns closer for the watcher instance.
+   */
+  async _handleDir(dir, stats, initialAdd, depth, target, wh, realpath3) {
+    const parentDir = this.fsw._getWatchedDir(sysPath.dirname(dir));
+    const tracked = parentDir.has(sysPath.basename(dir));
+    if (!(initialAdd && this.fsw.options.ignoreInitial) && !target && !tracked) {
+      this.fsw._emit(EV.ADD_DIR, dir, stats);
+    }
+    parentDir.add(sysPath.basename(dir));
+    this.fsw._getWatchedDir(dir);
+    let throttler;
+    let closer;
+    const oDepth = this.fsw.options.depth;
+    if ((oDepth == null || depth <= oDepth) && !this.fsw._symlinkPaths.has(realpath3)) {
+      if (!target) {
+        await this._handleRead(dir, initialAdd, wh, target, dir, depth, throttler);
+        if (this.fsw.closed)
+          return;
+      }
+      closer = this._watchWithNodeFs(dir, (dirPath, stats2) => {
+        if (stats2 && stats2.mtimeMs === 0)
+          return;
+        this._handleRead(dirPath, false, wh, target, dir, depth, throttler);
+      });
+    }
+    return closer;
+  }
+  /**
+   * Handle added file, directory, or glob pattern.
+   * Delegates call to _handleFile / _handleDir after checks.
+   * @param path to file or ir
+   * @param initialAdd was the file added at watch instantiation?
+   * @param priorWh depth relative to user-supplied path
+   * @param depth Child path actually targeted for watch
+   * @param target Child path actually targeted for watch
+   */
+  async _addToNodeFs(path5, initialAdd, priorWh, depth, target) {
+    const ready = this.fsw._emitReady;
+    if (this.fsw._isIgnored(path5) || this.fsw.closed) {
+      ready();
+      return false;
+    }
+    const wh = this.fsw._getWatchHelpers(path5);
+    if (priorWh) {
+      wh.filterPath = (entry) => priorWh.filterPath(entry);
+      wh.filterDir = (entry) => priorWh.filterDir(entry);
+    }
+    try {
+      const stats = await statMethods[wh.statMethod](wh.watchPath);
+      if (this.fsw.closed)
+        return;
+      if (this.fsw._isIgnored(wh.watchPath, stats)) {
+        ready();
+        return false;
+      }
+      const follow = this.fsw.options.followSymlinks;
+      let closer;
+      if (stats.isDirectory()) {
+        const absPath = sysPath.resolve(path5);
+        const targetPath = follow ? await fsrealpath(path5) : path5;
+        if (this.fsw.closed)
+          return;
+        closer = await this._handleDir(wh.watchPath, stats, initialAdd, depth, target, wh, targetPath);
+        if (this.fsw.closed)
+          return;
+        if (absPath !== targetPath && targetPath !== void 0) {
+          this.fsw._symlinkPaths.set(absPath, targetPath);
+        }
+      } else if (stats.isSymbolicLink()) {
+        const targetPath = follow ? await fsrealpath(path5) : path5;
+        if (this.fsw.closed)
+          return;
+        const parent = sysPath.dirname(wh.watchPath);
+        this.fsw._getWatchedDir(parent).add(wh.watchPath);
+        this.fsw._emit(EV.ADD, wh.watchPath, stats);
+        closer = await this._handleDir(parent, stats, initialAdd, depth, path5, wh, targetPath);
+        if (this.fsw.closed)
+          return;
+        if (targetPath !== void 0) {
+          this.fsw._symlinkPaths.set(sysPath.resolve(path5), targetPath);
+        }
+      } else {
+        closer = this._handleFile(wh.watchPath, stats, initialAdd);
+      }
+      ready();
+      if (closer)
+        this.fsw._addPathCloser(path5, closer);
+      return false;
+    } catch (error2) {
+      if (this.fsw._handleError(error2)) {
+        ready();
+        return path5;
+      }
+    }
+  }
+};
+
+// ../../node_modules/chokidar/esm/index.js
+var SLASH = "/";
+var SLASH_SLASH = "//";
+var ONE_DOT = ".";
+var TWO_DOTS = "..";
+var STRING_TYPE = "string";
+var BACK_SLASH_RE = /\\/g;
+var DOUBLE_SLASH_RE = /\/\//;
+var DOT_RE = /\..*\.(sw[px])$|~$|\.subl.*\.tmp/;
+var REPLACER_RE = /^\.[/\\]/;
+function arrify(item) {
+  return Array.isArray(item) ? item : [item];
+}
+var isMatcherObject = (matcher) => typeof matcher === "object" && matcher !== null && !(matcher instanceof RegExp);
+function createPattern(matcher) {
+  if (typeof matcher === "function")
+    return matcher;
+  if (typeof matcher === "string")
+    return (string3) => matcher === string3;
+  if (matcher instanceof RegExp)
+    return (string3) => matcher.test(string3);
+  if (typeof matcher === "object" && matcher !== null) {
+    return (string3) => {
+      if (matcher.path === string3)
+        return true;
+      if (matcher.recursive) {
+        const relative6 = sysPath2.relative(matcher.path, string3);
+        if (!relative6) {
+          return false;
+        }
+        return !relative6.startsWith("..") && !sysPath2.isAbsolute(relative6);
+      }
+      return false;
+    };
+  }
+  return () => false;
+}
+function normalizePath(path5) {
+  if (typeof path5 !== "string")
+    throw new Error("string expected");
+  path5 = sysPath2.normalize(path5);
+  path5 = path5.replace(/\\/g, "/");
+  let prepend = false;
+  if (path5.startsWith("//"))
+    prepend = true;
+  const DOUBLE_SLASH_RE2 = /\/\//;
+  while (path5.match(DOUBLE_SLASH_RE2))
+    path5 = path5.replace(DOUBLE_SLASH_RE2, "/");
+  if (prepend)
+    path5 = "/" + path5;
+  return path5;
+}
+function matchPatterns(patterns, testString, stats) {
+  const path5 = normalizePath(testString);
+  for (let index = 0; index < patterns.length; index++) {
+    const pattern = patterns[index];
+    if (pattern(path5, stats)) {
+      return true;
+    }
+  }
+  return false;
+}
+function anymatch(matchers, testString) {
+  if (matchers == null) {
+    throw new TypeError("anymatch: specify first argument");
+  }
+  const matchersArray = arrify(matchers);
+  const patterns = matchersArray.map((matcher) => createPattern(matcher));
+  if (testString == null) {
+    return (testString2, stats) => {
+      return matchPatterns(patterns, testString2, stats);
+    };
+  }
+  return matchPatterns(patterns, testString);
+}
+var unifyPaths = (paths_) => {
+  const paths = arrify(paths_).flat();
+  if (!paths.every((p) => typeof p === STRING_TYPE)) {
+    throw new TypeError(`Non-string provided as watch path: ${paths}`);
+  }
+  return paths.map(normalizePathToUnix);
+};
+var toUnix = (string3) => {
+  let str = string3.replace(BACK_SLASH_RE, SLASH);
+  let prepend = false;
+  if (str.startsWith(SLASH_SLASH)) {
+    prepend = true;
+  }
+  while (str.match(DOUBLE_SLASH_RE)) {
+    str = str.replace(DOUBLE_SLASH_RE, SLASH);
+  }
+  if (prepend) {
+    str = SLASH + str;
+  }
+  return str;
+};
+var normalizePathToUnix = (path5) => toUnix(sysPath2.normalize(toUnix(path5)));
+var normalizeIgnored = (cwd = "") => (path5) => {
+  if (typeof path5 === "string") {
+    return normalizePathToUnix(sysPath2.isAbsolute(path5) ? path5 : sysPath2.join(cwd, path5));
+  } else {
+    return path5;
+  }
+};
+var getAbsolutePath = (path5, cwd) => {
+  if (sysPath2.isAbsolute(path5)) {
+    return path5;
+  }
+  return sysPath2.join(cwd, path5);
+};
+var EMPTY_SET = Object.freeze(/* @__PURE__ */ new Set());
+var DirEntry = class {
+  constructor(dir, removeWatcher) {
+    this.path = dir;
+    this._removeWatcher = removeWatcher;
+    this.items = /* @__PURE__ */ new Set();
+  }
+  add(item) {
+    const { items } = this;
+    if (!items)
+      return;
+    if (item !== ONE_DOT && item !== TWO_DOTS)
+      items.add(item);
+  }
+  async remove(item) {
+    const { items } = this;
+    if (!items)
+      return;
+    items.delete(item);
+    if (items.size > 0)
+      return;
+    const dir = this.path;
+    try {
+      await readdir3(dir);
+    } catch (err) {
+      if (this._removeWatcher) {
+        this._removeWatcher(sysPath2.dirname(dir), sysPath2.basename(dir));
+      }
+    }
+  }
+  has(item) {
+    const { items } = this;
+    if (!items)
+      return;
+    return items.has(item);
+  }
+  getChildren() {
+    const { items } = this;
+    if (!items)
+      return [];
+    return [...items.values()];
+  }
+  dispose() {
+    this.items.clear();
+    this.path = "";
+    this._removeWatcher = EMPTY_FN;
+    this.items = EMPTY_SET;
+    Object.freeze(this);
+  }
+};
+var STAT_METHOD_F = "stat";
+var STAT_METHOD_L = "lstat";
+var WatchHelper = class {
+  constructor(path5, follow, fsw) {
+    this.fsw = fsw;
+    const watchPath = path5;
+    this.path = path5 = path5.replace(REPLACER_RE, "");
+    this.watchPath = watchPath;
+    this.fullWatchPath = sysPath2.resolve(watchPath);
+    this.dirParts = [];
+    this.dirParts.forEach((parts) => {
+      if (parts.length > 1)
+        parts.pop();
+    });
+    this.followSymlinks = follow;
+    this.statMethod = follow ? STAT_METHOD_F : STAT_METHOD_L;
+  }
+  entryPath(entry) {
+    return sysPath2.join(this.watchPath, sysPath2.relative(this.watchPath, entry.fullPath));
+  }
+  filterPath(entry) {
+    const { stats } = entry;
+    if (stats && stats.isSymbolicLink())
+      return this.filterDir(entry);
+    const resolvedPath = this.entryPath(entry);
+    return this.fsw._isntIgnored(resolvedPath, stats) && this.fsw._hasReadPermissions(stats);
+  }
+  filterDir(entry) {
+    return this.fsw._isntIgnored(this.entryPath(entry), entry.stats);
+  }
+};
+var FSWatcher = class extends EventEmitter {
+  // Not indenting methods for history sake; for now.
+  constructor(_opts = {}) {
+    super();
+    this.closed = false;
+    this._closers = /* @__PURE__ */ new Map();
+    this._ignoredPaths = /* @__PURE__ */ new Set();
+    this._throttled = /* @__PURE__ */ new Map();
+    this._streams = /* @__PURE__ */ new Set();
+    this._symlinkPaths = /* @__PURE__ */ new Map();
+    this._watched = /* @__PURE__ */ new Map();
+    this._pendingWrites = /* @__PURE__ */ new Map();
+    this._pendingUnlinks = /* @__PURE__ */ new Map();
+    this._readyCount = 0;
+    this._readyEmitted = false;
+    const awf = _opts.awaitWriteFinish;
+    const DEF_AWF = { stabilityThreshold: 2e3, pollInterval: 100 };
+    const opts = {
+      // Defaults
+      persistent: true,
+      ignoreInitial: false,
+      ignorePermissionErrors: false,
+      interval: 100,
+      binaryInterval: 300,
+      followSymlinks: true,
+      usePolling: false,
+      // useAsync: false,
+      atomic: true,
+      // NOTE: overwritten later (depends on usePolling)
+      ..._opts,
+      // Change format
+      ignored: _opts.ignored ? arrify(_opts.ignored) : arrify([]),
+      awaitWriteFinish: awf === true ? DEF_AWF : typeof awf === "object" ? { ...DEF_AWF, ...awf } : false
+    };
+    if (isIBMi)
+      opts.usePolling = true;
+    if (opts.atomic === void 0)
+      opts.atomic = !opts.usePolling;
+    const envPoll = process.env.CHOKIDAR_USEPOLLING;
+    if (envPoll !== void 0) {
+      const envLower = envPoll.toLowerCase();
+      if (envLower === "false" || envLower === "0")
+        opts.usePolling = false;
+      else if (envLower === "true" || envLower === "1")
+        opts.usePolling = true;
+      else
+        opts.usePolling = !!envLower;
+    }
+    const envInterval = process.env.CHOKIDAR_INTERVAL;
+    if (envInterval)
+      opts.interval = Number.parseInt(envInterval, 10);
+    let readyCalls = 0;
+    this._emitReady = () => {
+      readyCalls++;
+      if (readyCalls >= this._readyCount) {
+        this._emitReady = EMPTY_FN;
+        this._readyEmitted = true;
+        process.nextTick(() => this.emit(EVENTS.READY));
+      }
+    };
+    this._emitRaw = (...args) => this.emit(EVENTS.RAW, ...args);
+    this._boundRemove = this._remove.bind(this);
+    this.options = opts;
+    this._nodeFsHandler = new NodeFsHandler(this);
+    Object.freeze(opts);
+  }
+  _addIgnoredPath(matcher) {
+    if (isMatcherObject(matcher)) {
+      for (const ignored of this._ignoredPaths) {
+        if (isMatcherObject(ignored) && ignored.path === matcher.path && ignored.recursive === matcher.recursive) {
+          return;
+        }
+      }
+    }
+    this._ignoredPaths.add(matcher);
+  }
+  _removeIgnoredPath(matcher) {
+    this._ignoredPaths.delete(matcher);
+    if (typeof matcher === "string") {
+      for (const ignored of this._ignoredPaths) {
+        if (isMatcherObject(ignored) && ignored.path === matcher) {
+          this._ignoredPaths.delete(ignored);
+        }
+      }
+    }
+  }
+  // Public methods
+  /**
+   * Adds paths to be watched on an existing FSWatcher instance.
+   * @param paths_ file or file list. Other arguments are unused
+   */
+  add(paths_, _origAdd, _internal) {
+    const { cwd } = this.options;
+    this.closed = false;
+    this._closePromise = void 0;
+    let paths = unifyPaths(paths_);
+    if (cwd) {
+      paths = paths.map((path5) => {
+        const absPath = getAbsolutePath(path5, cwd);
+        return absPath;
+      });
+    }
+    paths.forEach((path5) => {
+      this._removeIgnoredPath(path5);
+    });
+    this._userIgnored = void 0;
+    if (!this._readyCount)
+      this._readyCount = 0;
+    this._readyCount += paths.length;
+    Promise.all(paths.map(async (path5) => {
+      const res = await this._nodeFsHandler._addToNodeFs(path5, !_internal, void 0, 0, _origAdd);
+      if (res)
+        this._emitReady();
+      return res;
+    })).then((results) => {
+      if (this.closed)
+        return;
+      results.forEach((item) => {
+        if (item)
+          this.add(sysPath2.dirname(item), sysPath2.basename(_origAdd || item));
+      });
+    });
+    return this;
+  }
+  /**
+   * Close watchers or start ignoring events from specified paths.
+   */
+  unwatch(paths_) {
+    if (this.closed)
+      return this;
+    const paths = unifyPaths(paths_);
+    const { cwd } = this.options;
+    paths.forEach((path5) => {
+      if (!sysPath2.isAbsolute(path5) && !this._closers.has(path5)) {
+        if (cwd)
+          path5 = sysPath2.join(cwd, path5);
+        path5 = sysPath2.resolve(path5);
+      }
+      this._closePath(path5);
+      this._addIgnoredPath(path5);
+      if (this._watched.has(path5)) {
+        this._addIgnoredPath({
+          path: path5,
+          recursive: true
+        });
+      }
+      this._userIgnored = void 0;
+    });
+    return this;
+  }
+  /**
+   * Close watchers and remove all listeners from watched paths.
+   */
+  close() {
+    if (this._closePromise) {
+      return this._closePromise;
+    }
+    this.closed = true;
+    this.removeAllListeners();
+    const closers = [];
+    this._closers.forEach((closerList) => closerList.forEach((closer) => {
+      const promise = closer();
+      if (promise instanceof Promise)
+        closers.push(promise);
+    }));
+    this._streams.forEach((stream) => stream.destroy());
+    this._userIgnored = void 0;
+    this._readyCount = 0;
+    this._readyEmitted = false;
+    this._watched.forEach((dirent) => dirent.dispose());
+    this._closers.clear();
+    this._watched.clear();
+    this._streams.clear();
+    this._symlinkPaths.clear();
+    this._throttled.clear();
+    this._closePromise = closers.length ? Promise.all(closers).then(() => void 0) : Promise.resolve();
+    return this._closePromise;
+  }
+  /**
+   * Expose list of watched paths
+   * @returns for chaining
+   */
+  getWatched() {
+    const watchList = {};
+    this._watched.forEach((entry, dir) => {
+      const key = this.options.cwd ? sysPath2.relative(this.options.cwd, dir) : dir;
+      const index = key || ONE_DOT;
+      watchList[index] = entry.getChildren().sort();
+    });
+    return watchList;
+  }
+  emitWithAll(event, args) {
+    this.emit(event, ...args);
+    if (event !== EVENTS.ERROR)
+      this.emit(EVENTS.ALL, event, ...args);
+  }
+  // Common helpers
+  // --------------
+  /**
+   * Normalize and emit events.
+   * Calling _emit DOES NOT MEAN emit() would be called!
+   * @param event Type of event
+   * @param path File or directory path
+   * @param stats arguments to be passed with event
+   * @returns the error if defined, otherwise the value of the FSWatcher instance's `closed` flag
+   */
+  async _emit(event, path5, stats) {
+    if (this.closed)
+      return;
+    const opts = this.options;
+    if (isWindows)
+      path5 = sysPath2.normalize(path5);
+    if (opts.cwd)
+      path5 = sysPath2.relative(opts.cwd, path5);
+    const args = [path5];
+    if (stats != null)
+      args.push(stats);
+    const awf = opts.awaitWriteFinish;
+    let pw;
+    if (awf && (pw = this._pendingWrites.get(path5))) {
+      pw.lastChange = /* @__PURE__ */ new Date();
+      return this;
+    }
+    if (opts.atomic) {
+      if (event === EVENTS.UNLINK) {
+        this._pendingUnlinks.set(path5, [event, ...args]);
+        setTimeout(() => {
+          this._pendingUnlinks.forEach((entry, path6) => {
+            this.emit(...entry);
+            this.emit(EVENTS.ALL, ...entry);
+            this._pendingUnlinks.delete(path6);
+          });
+        }, typeof opts.atomic === "number" ? opts.atomic : 100);
+        return this;
+      }
+      if (event === EVENTS.ADD && this._pendingUnlinks.has(path5)) {
+        event = EVENTS.CHANGE;
+        this._pendingUnlinks.delete(path5);
+      }
+    }
+    if (awf && (event === EVENTS.ADD || event === EVENTS.CHANGE) && this._readyEmitted) {
+      const awfEmit = (err, stats2) => {
+        if (err) {
+          event = EVENTS.ERROR;
+          args[0] = err;
+          this.emitWithAll(event, args);
+        } else if (stats2) {
+          if (args.length > 1) {
+            args[1] = stats2;
+          } else {
+            args.push(stats2);
+          }
+          this.emitWithAll(event, args);
+        }
+      };
+      this._awaitWriteFinish(path5, awf.stabilityThreshold, event, awfEmit);
+      return this;
+    }
+    if (event === EVENTS.CHANGE) {
+      const isThrottled = !this._throttle(EVENTS.CHANGE, path5, 50);
+      if (isThrottled)
+        return this;
+    }
+    if (opts.alwaysStat && stats === void 0 && (event === EVENTS.ADD || event === EVENTS.ADD_DIR || event === EVENTS.CHANGE)) {
+      const fullPath = opts.cwd ? sysPath2.join(opts.cwd, path5) : path5;
+      let stats2;
+      try {
+        stats2 = await stat3(fullPath);
+      } catch (err) {
+      }
+      if (!stats2 || this.closed)
+        return;
+      args.push(stats2);
+    }
+    this.emitWithAll(event, args);
+    return this;
+  }
+  /**
+   * Common handler for errors
+   * @returns The error if defined, otherwise the value of the FSWatcher instance's `closed` flag
+   */
+  _handleError(error2) {
+    const code = error2 && error2.code;
+    if (error2 && code !== "ENOENT" && code !== "ENOTDIR" && (!this.options.ignorePermissionErrors || code !== "EPERM" && code !== "EACCES")) {
+      this.emit(EVENTS.ERROR, error2);
+    }
+    return error2 || this.closed;
+  }
+  /**
+   * Helper utility for throttling
+   * @param actionType type being throttled
+   * @param path being acted upon
+   * @param timeout duration of time to suppress duplicate actions
+   * @returns tracking object or false if action should be suppressed
+   */
+  _throttle(actionType, path5, timeout) {
+    if (!this._throttled.has(actionType)) {
+      this._throttled.set(actionType, /* @__PURE__ */ new Map());
+    }
+    const action = this._throttled.get(actionType);
+    if (!action)
+      throw new Error("invalid throttle");
+    const actionPath = action.get(path5);
+    if (actionPath) {
+      actionPath.count++;
+      return false;
+    }
+    let timeoutObject;
+    const clear = () => {
+      const item = action.get(path5);
+      const count = item ? item.count : 0;
+      action.delete(path5);
+      clearTimeout(timeoutObject);
+      if (item)
+        clearTimeout(item.timeoutObject);
+      return count;
+    };
+    timeoutObject = setTimeout(clear, timeout);
+    const thr = { timeoutObject, clear, count: 0 };
+    action.set(path5, thr);
+    return thr;
+  }
+  _incrReadyCount() {
+    return this._readyCount++;
+  }
+  /**
+   * Awaits write operation to finish.
+   * Polls a newly created file for size variations. When files size does not change for 'threshold' milliseconds calls callback.
+   * @param path being acted upon
+   * @param threshold Time in milliseconds a file size must be fixed before acknowledging write OP is finished
+   * @param event
+   * @param awfEmit Callback to be called when ready for event to be emitted.
+   */
+  _awaitWriteFinish(path5, threshold, event, awfEmit) {
+    const awf = this.options.awaitWriteFinish;
+    if (typeof awf !== "object")
+      return;
+    const pollInterval = awf.pollInterval;
+    let timeoutHandler;
+    let fullPath = path5;
+    if (this.options.cwd && !sysPath2.isAbsolute(path5)) {
+      fullPath = sysPath2.join(this.options.cwd, path5);
+    }
+    const now = /* @__PURE__ */ new Date();
+    const writes = this._pendingWrites;
+    function awaitWriteFinishFn(prevStat) {
+      statcb(fullPath, (err, curStat) => {
+        if (err || !writes.has(path5)) {
+          if (err && err.code !== "ENOENT")
+            awfEmit(err);
+          return;
+        }
+        const now2 = Number(/* @__PURE__ */ new Date());
+        if (prevStat && curStat.size !== prevStat.size) {
+          writes.get(path5).lastChange = now2;
+        }
+        const pw = writes.get(path5);
+        const df = now2 - pw.lastChange;
+        if (df >= threshold) {
+          writes.delete(path5);
+          awfEmit(void 0, curStat);
+        } else {
+          timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval, curStat);
+        }
+      });
+    }
+    if (!writes.has(path5)) {
+      writes.set(path5, {
+        lastChange: now,
+        cancelWait: () => {
+          writes.delete(path5);
+          clearTimeout(timeoutHandler);
+          return event;
+        }
+      });
+      timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval);
+    }
+  }
+  /**
+   * Determines whether user has asked to ignore this path.
+   */
+  _isIgnored(path5, stats) {
+    if (this.options.atomic && DOT_RE.test(path5))
+      return true;
+    if (!this._userIgnored) {
+      const { cwd } = this.options;
+      const ign = this.options.ignored;
+      const ignored = (ign || []).map(normalizeIgnored(cwd));
+      const ignoredPaths = [...this._ignoredPaths];
+      const list = [...ignoredPaths.map(normalizeIgnored(cwd)), ...ignored];
+      this._userIgnored = anymatch(list, void 0);
+    }
+    return this._userIgnored(path5, stats);
+  }
+  _isntIgnored(path5, stat4) {
+    return !this._isIgnored(path5, stat4);
+  }
+  /**
+   * Provides a set of common helpers and properties relating to symlink handling.
+   * @param path file or directory pattern being watched
+   */
+  _getWatchHelpers(path5) {
+    return new WatchHelper(path5, this.options.followSymlinks, this);
+  }
+  // Directory helpers
+  // -----------------
+  /**
+   * Provides directory tracking objects
+   * @param directory path of the directory
+   */
+  _getWatchedDir(directory2) {
+    const dir = sysPath2.resolve(directory2);
+    if (!this._watched.has(dir))
+      this._watched.set(dir, new DirEntry(dir, this._boundRemove));
+    return this._watched.get(dir);
+  }
+  // File helpers
+  // ------------
+  /**
+   * Check for read permissions: https://stackoverflow.com/a/11781404/1358405
+   */
+  _hasReadPermissions(stats) {
+    if (this.options.ignorePermissionErrors)
+      return true;
+    return Boolean(Number(stats.mode) & 256);
+  }
+  /**
+   * Handles emitting unlink events for
+   * files and directories, and via recursion, for
+   * files and directories within directories that are unlinked
+   * @param directory within which the following item is located
+   * @param item      base path of item/directory
+   */
+  _remove(directory2, item, isDirectory) {
+    const path5 = sysPath2.join(directory2, item);
+    const fullPath = sysPath2.resolve(path5);
+    isDirectory = isDirectory != null ? isDirectory : this._watched.has(path5) || this._watched.has(fullPath);
+    if (!this._throttle("remove", path5, 100))
+      return;
+    if (!isDirectory && this._watched.size === 1) {
+      this.add(directory2, item, true);
+    }
+    const wp = this._getWatchedDir(path5);
+    const nestedDirectoryChildren = wp.getChildren();
+    nestedDirectoryChildren.forEach((nested) => this._remove(path5, nested));
+    const parent = this._getWatchedDir(directory2);
+    const wasTracked = parent.has(item);
+    parent.remove(item);
+    if (this._symlinkPaths.has(fullPath)) {
+      this._symlinkPaths.delete(fullPath);
+    }
+    let relPath = path5;
+    if (this.options.cwd)
+      relPath = sysPath2.relative(this.options.cwd, path5);
+    if (this.options.awaitWriteFinish && this._pendingWrites.has(relPath)) {
+      const event = this._pendingWrites.get(relPath).cancelWait();
+      if (event === EVENTS.ADD)
+        return;
+    }
+    this._watched.delete(path5);
+    this._watched.delete(fullPath);
+    const eventName = isDirectory ? EVENTS.UNLINK_DIR : EVENTS.UNLINK;
+    if (wasTracked && !this._isIgnored(path5))
+      this._emit(eventName, path5);
+    this._closePath(path5);
+  }
+  /**
+   * Closes all watchers for a path
+   */
+  _closePath(path5) {
+    this._closeFile(path5);
+    const dir = sysPath2.dirname(path5);
+    this._getWatchedDir(dir).remove(sysPath2.basename(path5));
+  }
+  /**
+   * Closes only file-specific watchers
+   */
+  _closeFile(path5) {
+    const closers = this._closers.get(path5);
+    if (!closers)
+      return;
+    closers.forEach((closer) => closer());
+    this._closers.delete(path5);
+  }
+  _addPathCloser(path5, closer) {
+    if (!closer)
+      return;
+    let list = this._closers.get(path5);
+    if (!list) {
+      list = [];
+      this._closers.set(path5, list);
+    }
+    list.push(closer);
+  }
+  _readdirp(root, opts) {
+    if (this.closed)
+      return;
+    const options = { type: EVENTS.ALL, alwaysStat: true, lstat: true, ...opts, depth: 0 };
+    let stream = readdirp(root, options);
+    this._streams.add(stream);
+    stream.once(STR_CLOSE, () => {
+      stream = void 0;
+    });
+    stream.once(STR_END, () => {
+      if (stream) {
+        this._streams.delete(stream);
+        stream = void 0;
+      }
+    });
+    return stream;
+  }
+};
+function watch(paths, options = {}) {
+  const watcher = new FSWatcher(options);
+  watcher.add(paths);
+  return watcher;
+}
+var esm_default = { watch, FSWatcher };
+
+// src/freshness/workspace-freshness-support.ts
+var coalesceMilliseconds = 100;
+var chokidarWatchOptions = {
+  atomic: 100,
+  awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 100 },
+  alwaysStat: true,
+  followSymlinks: false,
+  ignorePermissionErrors: false
+};
+function sameManifest(left, right) {
+  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
+}
+function canPublishGeneration(...args) {
+  const [currentGeneration, analyzedGeneration, captured, prepublication] = args;
+  return analyzedGeneration > currentGeneration && sameManifest(captured, prepublication);
+}
+function createChokidarWatcher(paths) {
+  return esm_default.watch(
+    [...paths],
+    chokidarWatchOptions
+  );
+}
+function createWatcher(options, schedule) {
+  try {
+    return attachWatcher(createWatcherFor(options), schedule);
+  } catch {
+    return void 0;
+  }
+}
+function createWatcherFor(options) {
+  return options.createWatcher ? options.createWatcher() : createChokidarWatcher(options.watch_paths ?? []);
+}
+function attachWatcher(watcher, schedule) {
+  watcher.on("all", schedule);
+  watcher.on("error", schedule);
+  return watcher;
+}
+function clearTimer(options, timer) {
+  const clear = options.clearTimeout ?? globalThis.clearTimeout;
+  clear(timer);
+}
+function clearTimers(options, runtime) {
+  for (const timer of [
+    runtime.coalesceTimer,
+    runtime.pollTimer,
+    runtime.manifestTimer
+  ]) {
+    if (timer !== void 0) clearTimer(options, timer);
+  }
+}
+
+// src/freshness/workspace-reconciliation.ts
+function sameManifest2(left, right) {
+  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
+}
+function canReuseCurrent(runtime, captured) {
+  return !runtime.forceRefresh && runtime.status.current_generation > 0 && sameManifest2(runtime.manifest, captured);
+}
+function readyCurrent(runtime) {
+  runtime.status = {
+    current_generation: runtime.status.current_generation,
+    pending_generation: null,
+    state: "ready",
+    mode: runtime.status.mode
+  };
+  runtime.forceRefresh = false;
+}
+async function reconcileAttempt(options, runtime) {
+  const captured = await options.reconcile();
+  if ("cause" in captured) {
+    runtime.degrade(captured.cause);
+    return true;
+  }
+  if (canReuseCurrent(runtime, captured.manifest)) {
+    readyCurrent(runtime);
+    return true;
+  }
+  return analyzeAndPublish(options, runtime, captured.manifest);
+}
+async function analyzeAndPublish(options, runtime, captured) {
+  const generation = generationFor(runtime);
+  await options.analyze?.(generation, captured);
+  const published = await publishedResult(options, captured);
+  if ("cause" in published) {
+    runtime.degrade(published.cause);
+    return true;
+  }
+  if (canPublishGeneration(
+    runtime.status.current_generation,
+    generation,
+    captured,
+    published.manifest
+  )) {
+    runtime.ready(generation, published.manifest);
+    return true;
+  }
+  runtime.reserveGeneration();
+  return false;
+}
+function generationFor(runtime) {
+  if (runtime.status.pending_generation !== null)
+    return runtime.status.pending_generation;
+  return runtime.reserveGeneration();
+}
+function publishedResult(options, captured) {
+  if (options.verify) return options.verify();
+  return Promise.resolve({ manifest: captured });
+}
+async function reconcileWorkspace(options, runtime) {
+  for (let mismatchCount = 0; mismatchCount < 3; mismatchCount += 1) {
+    if (await reconcileAttempt(options, runtime)) return;
+  }
+  runtime.degrade("workspace_churn");
+}
+
+// src/freshness/workspace-scheduling.ts
+function schedulePolling(options) {
+  const { runtime, timeout, reconcile, schedulePolling: schedulePolling2 } = options;
+  if (runtime.status.mode !== "polling" || runtime.activeSessions === 0 || runtime.pollTimer !== void 0)
+    return;
+  runtime.pollTimer = timeout(() => {
+    runtime.pollTimer = void 0;
+    void reconcile().finally(schedulePolling2);
+  }, 5e3);
+}
+function scheduleManifestCheck(options) {
+  const { runtime, timeout, reconcile, scheduleManifestCheck: scheduleManifestCheck2 } = options;
+  if (runtime.activeSessions === 0 || runtime.manifestTimer !== void 0)
+    return;
+  runtime.manifestTimer = timeout(() => {
+    runtime.manifestTimer = void 0;
+    void reconcile().finally(scheduleManifestCheck2);
+  }, 3e4);
+}
+function scheduleWorkspaceTimers(options) {
+  schedulePolling({ ...options, schedulePolling: options.schedule });
+  scheduleManifestCheck({
+    ...options,
+    scheduleManifestCheck: options.schedule
+  });
+}
+
+// src/freshness/workspace-freshness.ts
+var WorkspaceFreshness = class {
+  constructor(options) {
+    this.options = options;
+  }
+  options;
+  #runtime = new FreshnessRuntime();
+  status() {
+    return { ...this.#runtime.status };
+  }
+  failRefresh() {
+    this.#runtime.failRefresh();
+  }
+  reserveRefresh() {
+    this.#runtime.reserveRefresh();
+    return this.status();
+  }
+  async start(activeSessions = 0) {
+    this.#runtime.activeSessions = activeSessions;
+    const watcher = createWatcher(this.options, () => this.schedule());
+    if (watcher) this.#runtime.watcher = watcher;
+    if (!watcher) {
+      this.#runtime.status = { ...this.#runtime.status, mode: "polling" };
+      this.#scheduleTimers();
+    }
+    this.#scheduleTimers();
+    await this.reconcile();
+  }
+  setActiveSessions(count) {
+    this.#runtime.activeSessions = count;
+    this.#scheduleTimers();
+  }
+  schedule() {
+    if (this.#runtime.coalesceTimer !== void 0) return;
+    this.#runtime.coalesceTimer = this.timeout(() => {
+      this.#runtime.coalesceTimer = void 0;
+      void this.reconcile();
+    }, coalesceMilliseconds);
+  }
+  async reconcile() {
+    if (this.#runtime.running) return this.#runtime.running;
+    if (this.#runtime.status.pending_generation === null)
+      this.#runtime.reserveGeneration();
+    const run = reconcileWorkspace(this.options, this.#runtime).catch(() => this.#runtime.degrade("freshness_unavailable")).finally(() => {
+      this.#runtime.running = void 0;
+    });
+    return this.#runtime.running = run;
+  }
+  async close() {
+    clearTimers(this.options, this.#runtime);
+    await this.#runtime.watcher?.close();
+  }
+  #scheduleTimers() {
+    scheduleWorkspaceTimers({
+      runtime: this.#runtime,
+      timeout: (callback, delay2) => this.timeout(callback, delay2),
+      reconcile: () => this.reconcile(),
+      schedule: () => this.#scheduleTimers()
+    });
+  }
+  timeout(callback, delay2) {
+    return (this.options.setTimeout ?? globalThis.setTimeout)(callback, delay2);
+  }
+};
+
+// src/freshness/workspace-native.ts
+function createNativeWorkspaceFreshness(options) {
+  return new WorkspaceFreshness({
+    reconcile: () => reconcileNativeManifest(options),
+    verify: () => reconcileNativeManifest(options),
+    watch_paths: [options.root]
+  });
+}
+
+// src/server/create-server.ts
+var create_server_exports = {};
+__export(create_server_exports, {
+  createServer: () => createServer2
+});
+
 // ../../node_modules/zod/v4/core/core.js
 var NEVER2 = Object.freeze({
   status: "aborted"
@@ -11323,7 +19026,7 @@ __export(util_exports, {
   captureStackTrace: () => captureStackTrace,
   cleanEnum: () => cleanEnum,
   cleanRegex: () => cleanRegex,
-  clone: () => clone,
+  clone: () => clone2,
   createTransparentProxy: () => createTransparentProxy,
   defineLazy: () => defineLazy,
   esc: () => esc,
@@ -11346,7 +19049,7 @@ __export(util_exports, {
   nullish: () => nullish,
   numKeys: () => numKeys,
   omit: () => omit,
-  optionalKeys: () => optionalKeys,
+  optionalKeys: () => optionalKeys2,
   partial: () => partial,
   pick: () => pick,
   prefixIssues: () => prefixIssues,
@@ -11557,7 +19260,7 @@ var primitiveTypes = /* @__PURE__ */ new Set(["string", "number", "bigint", "boo
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-function clone(inst, def, params) {
+function clone2(inst, def, params) {
   const cl = new inst._zod.constr(def ?? inst._zod.def);
   if (!def || params?.parent)
     cl._zod.parent = inst;
@@ -11619,7 +19322,7 @@ function stringifyPrimitive(value) {
     return `"${value}"`;
   return `${value}`;
 }
-function optionalKeys(shape) {
+function optionalKeys2(shape) {
   return Object.keys(shape).filter((k) => {
     return shape[k]._zod.optin === "optional" && shape[k]._zod.optout === "optional";
   });
@@ -11646,7 +19349,7 @@ function pick(schema, mask) {
       continue;
     newShape[key] = currDef.shape[key];
   }
-  return clone(schema, {
+  return clone2(schema, {
     ...schema._zod.def,
     shape: newShape,
     checks: []
@@ -11663,7 +19366,7 @@ function omit(schema, mask) {
       continue;
     delete newShape[key];
   }
-  return clone(schema, {
+  return clone2(schema, {
     ...schema._zod.def,
     shape: newShape,
     checks: []
@@ -11683,10 +19386,10 @@ function extend(schema, shape) {
     checks: []
     // delete existing checks
   };
-  return clone(schema, def);
+  return clone2(schema, def);
 }
 function merge(a, b) {
-  return clone(a, {
+  return clone2(a, {
     ...a._zod.def,
     get shape() {
       const _shape = { ...a._zod.def.shape, ...b._zod.def.shape };
@@ -11721,7 +19424,7 @@ function partial(Class2, schema, mask) {
       }) : oldShape[key];
     }
   }
-  return clone(schema, {
+  return clone2(schema, {
     ...schema._zod.def,
     shape,
     checks: []
@@ -11750,7 +19453,7 @@ function required(Class2, schema, mask) {
       });
     }
   }
-  return clone(schema, {
+  return clone2(schema, {
     ...schema._zod.def,
     shape,
     // optional: [],
@@ -12977,7 +20680,7 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
         throw new Error(`Invalid element at key "${k}": expected a Zod schema`);
       }
     }
-    const okeys = optionalKeys(def.shape);
+    const okeys = optionalKeys2(def.shape);
     return {
       shape: def.shape,
       keys: keys2,
@@ -15071,7 +22774,7 @@ var ZodMiniType = /* @__PURE__ */ $constructor("ZodMiniType", (inst, def) => {
       // { parent: true }
     );
   };
-  inst.clone = (_def, params) => clone(inst, _def, params);
+  inst.clone = (_def, params) => clone2(inst, _def, params);
   inst.brand = () => inst;
   inst.register = ((reg, meta) => {
     reg.add(inst, meta);
@@ -15353,7 +23056,7 @@ var ZodType2 = /* @__PURE__ */ $constructor("ZodType", (inst, def) => {
       // { parent: true }
     );
   };
-  inst.clone = (def2, params) => clone(inst, def2, params);
+  inst.clone = (def2, params) => clone2(inst, def2, params);
   inst.brand = () => inst;
   inst.register = ((reg, meta) => {
     reg.add(inst, meta);
@@ -17488,7 +25191,7 @@ function isTerminal(status) {
 
 // ../../node_modules/zod-to-json-schema/dist/esm/Options.js
 var ignoreOverride = /* @__PURE__ */ Symbol("Let zodToJsonSchema decide on which parser to use");
-var defaultOptions = {
+var defaultOptions2 = {
   name: void 0,
   $refStrategy: "root",
   basePath: ["#"],
@@ -17513,10 +25216,10 @@ var defaultOptions = {
   openAiAnyTypeName: "OpenAiAnyType"
 };
 var getDefaultOptions = (options) => typeof options === "string" ? {
-  ...defaultOptions,
+  ...defaultOptions2,
   name: options
 } : {
-  ...defaultOptions,
+  ...defaultOptions2,
   ...options
 };
 
@@ -18719,13 +26422,13 @@ var zodToJsonSchema = (schema, options) => {
     }, true) ?? parseAnyDef(refs)
   }), {}) : void 0;
   const name = typeof options === "string" ? options : options?.nameStrategy === "title" ? void 0 : options?.name;
-  const main2 = parseDef(schema._def, name === void 0 ? refs : {
+  const main = parseDef(schema._def, name === void 0 ? refs : {
     ...refs,
     currentPath: [...refs.basePath, refs.definitionPath, name]
   }, false) ?? parseAnyDef(refs);
   const title = typeof options === "object" && options.name !== void 0 && options.nameStrategy === "title" ? options.name : void 0;
   if (title !== void 0) {
-    main2.title = title;
+    main.title = title;
   }
   if (refs.flags.hasReferencedOpenAiAnyType) {
     if (!definitions) {
@@ -18746,9 +26449,9 @@ var zodToJsonSchema = (schema, options) => {
     }
   }
   const combined = name === void 0 ? definitions ? {
-    ...main2,
+    ...main,
     [refs.definitionPath]: definitions
-  } : main2 : {
+  } : main : {
     $ref: [
       ...refs.$refStrategy === "relative" ? [] : refs.basePath,
       refs.definitionPath,
@@ -18756,7 +26459,7 @@ var zodToJsonSchema = (schema, options) => {
     ].join("/"),
     [refs.definitionPath]: {
       ...definitions,
-      [name]: main2
+      [name]: main
     }
   };
   if (refs.target === "jsonSchema7") {
@@ -21332,5817 +29035,341 @@ var EMPTY_COMPLETION_RESULT = {
   }
 };
 
-// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
-import process2 from "node:process";
-
-// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
-var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
-var ReadBuffer = class {
-  constructor(options) {
-    this._maxBufferSize = options?.maxBufferSize ?? STDIO_DEFAULT_MAX_BUFFER_SIZE;
-  }
-  append(chunk) {
-    const newSize = (this._buffer?.length ?? 0) + chunk.length;
-    if (newSize > this._maxBufferSize) {
-      this.clear();
-      throw new Error(`ReadBuffer exceeded maximum size of ${this._maxBufferSize} bytes`);
-    }
-    this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
-  }
-  readMessage() {
-    if (!this._buffer) {
-      return null;
-    }
-    const index = this._buffer.indexOf("\n");
-    if (index === -1) {
-      return null;
-    }
-    const line = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
-    this._buffer = this._buffer.subarray(index + 1);
-    return deserializeMessage(line);
-  }
-  clear() {
-    this._buffer = void 0;
-  }
-};
-function deserializeMessage(line) {
-  return JSONRPCMessageSchema.parse(JSON.parse(line));
-}
-function serializeMessage(message) {
-  return JSON.stringify(message) + "\n";
-}
-
-// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
-var StdioServerTransport = class {
-  constructor(_stdin = process2.stdin, _stdout = process2.stdout, options) {
-    this._stdin = _stdin;
-    this._stdout = _stdout;
-    this._started = false;
-    this._ondata = (chunk) => {
-      try {
-        this._readBuffer.append(chunk);
-        this.processReadBuffer();
-      } catch (error2) {
-        this.onerror?.(error2);
-        this.close().catch(() => {
-        });
-      }
-    };
-    this._onerror = (error2) => {
-      this.onerror?.(error2);
-    };
-    this._readBuffer = new ReadBuffer({ maxBufferSize: options?.maxBufferSize });
-  }
-  /**
-   * Starts listening for messages on stdin.
-   */
-  async start() {
-    if (this._started) {
-      throw new Error("StdioServerTransport already started! If using Server class, note that connect() calls start() automatically.");
-    }
-    this._started = true;
-    this._stdin.on("data", this._ondata);
-    this._stdin.on("error", this._onerror);
-  }
-  processReadBuffer() {
-    while (true) {
-      try {
-        const message = this._readBuffer.readMessage();
-        if (message === null) {
-          break;
-        }
-        this.onmessage?.(message);
-      } catch (error2) {
-        this.onerror?.(error2);
-      }
-    }
-  }
-  async close() {
-    this._stdin.off("data", this._ondata);
-    this._stdin.off("error", this._onerror);
-    const remainingDataListeners = this._stdin.listenerCount("data");
-    if (remainingDataListeners === 0) {
-      this._stdin.pause();
-    }
-    this._readBuffer.clear();
-    this.onclose?.();
-  }
-  send(message) {
-    return new Promise((resolve5) => {
-      const json2 = serializeMessage(message);
-      if (this._stdout.write(json2)) {
-        resolve5();
-      } else {
-        this._stdout.once("drain", resolve5);
-      }
-    });
-  }
-};
-
-// src/semantic/adapter-selection/adapter-selection-comparison.ts
-function arraysEqual(left, right) {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
-}
-function versionProbeMatches(backend, run) {
-  return versionProbesEqual(
-    backend.authorization.version_probe,
-    run.version_probe
-  ) && backend.authorization.version_probe.executable === run.executable && arraysEqual(
-    backend.authorization.version_probe.entrypoints,
-    run.entrypoints
-  );
-}
-function versionProbesEqual(left, right) {
-  return [
-    left.method === right.method,
-    left.command_root === right.command_root,
-    left.executable === right.executable,
-    arraysEqual(left.entrypoints, right.entrypoints),
-    arraysEqual(left.arguments, right.arguments),
-    left.command_template === right.command_template
-  ].every(Boolean);
-}
-
-// src/semantic/adapter-selection/adapter-selection-evidence-check.ts
-function evidenceAligns(record2, evidence) {
-  return record2.runtime_backends.every(
-    (backend) => backendEvidenceAligns({ backend, record: record2, evidence })
-  ) && arraysEqual(
-    record2.trusted_command_roots.win32,
-    evidence.platforms.win32.command_roots
-  ) && arraysEqual(
-    record2.trusted_command_roots.posix,
-    evidence.platforms.posix.command_roots
-  );
-}
-function backendEvidenceAligns(input) {
-  const backend = input.backend;
-  const run = input.evidence.sentinel_runs[backend.language];
-  const platform = input.evidence.platforms[backend.sentinel_evidence.platform];
-  return [
-    fixtureMatches(backend, input.evidence, run),
-    backend.compatible_version === run.backend_version,
-    backend.platform_executables[backend.sentinel_evidence.platform] === run.executable,
-    entrypointsMatch(backend, run),
-    authorizationMatches(backend, run),
-    versionProbeMatches(backend, run),
-    platform.command_roots.includes(
-      backend.authorization.version_probe.command_root
-    ),
-    backend.sentinel_evidence.passed === (platform.status === "passed" && run.side_effect_absent)
-  ].every(Boolean);
-}
-function fixtureMatches(backend, evidence, run) {
-  return backend.sentinel_evidence.fixture_sha256 === evidence.fixture_tree_hashes[backend.language] && backend.sentinel_evidence.fixture_sha256 === run.fixture_sha256;
-}
-function entrypointsMatch(backend, run) {
-  const platform = backend.sentinel_evidence.platform;
-  return arraysEqual(backend.platform_entrypoints[platform], run.entrypoints) && backend.platform_entrypoints[platform].length === backend.authorization.entrypoint_sha256s.length && run.entrypoints.length === run.entrypoint_sha256s.length;
-}
-function authorizationMatches(backend, run) {
-  return backend.authorization.executable_sha256 === run.executable_sha256 && arraysEqual(
-    backend.authorization.entrypoint_sha256s,
-    run.entrypoint_sha256s
-  ) && backend.authorization.package_metadata_sha256 === run.package_metadata_sha256 && (backend.language === "python" ? backend.authorization.package_metadata_sha256 !== null : backend.authorization.package_metadata_sha256 === null);
-}
-
-// src/semantic/adapter-selection/adapter-selection-loader.ts
-import { readFileSync as readFileSync2 } from "node:fs";
-import { dirname as dirname2, join as join2 } from "node:path";
-import { fileURLToPath } from "node:url";
-
-// src/semantic/adapter-selection/adapter-selection-schema-parts.ts
-var sha256 = external_exports.string().regex(/^[a-f0-9]{64}$/i);
-var win32CommandRoot = external_exports.enum([
-  "cargo_home_bin",
-  "dotnet_tools",
-  "node_install",
-  "npm_global",
-  "code_explorer_backends"
-]);
-var posixCommandRoot = external_exports.literal("posix_code_explorer_backends");
-var commandRoot = external_exports.union([win32CommandRoot, posixCommandRoot]);
-var versionProbe = external_exports.object({
-  method: external_exports.enum(["command", "package_json", "windows_file_version"]),
-  command_root: commandRoot,
-  executable: external_exports.string().min(1),
-  entrypoints: external_exports.array(external_exports.string().min(1)),
-  arguments: external_exports.array(external_exports.string()),
-  command_template: external_exports.string().min(1)
-}).strict();
-var runtimeCapabilities = external_exports.record(external_exports.enum(["ready", "unavailable", "failed"])).refine((value) => Object.keys(value).length > 0);
-var sentinelEvidence = external_exports.object({
-  fixture: external_exports.string().min(1),
-  platform: external_exports.enum(["win32", "posix"]),
-  fixture_sha256: external_exports.string().min(1),
-  side_effect_absent: external_exports.boolean(),
-  result: external_exports.enum(["passed", "unproven", "failed"]),
-  passed: external_exports.boolean()
-}).strict().superRefine((evidence, context) => {
-  if (evidence.passed && !(evidence.result === "passed" && evidence.side_effect_absent))
-    context.addIssue({
-      code: external_exports.ZodIssueCode.custom,
-      message: "passing sentinel evidence is inconsistent"
-    });
-});
-
-// src/semantic/adapter-selection/adapter-selection-evidence-schema.ts
-var sentinelRunSchema = external_exports.object({
-  executable: external_exports.string().min(1),
-  executable_sha256: sha256,
-  entrypoints: external_exports.array(external_exports.string().min(1)),
-  entrypoint_sha256s: external_exports.array(sha256),
-  package_metadata_sha256: sha256.nullable(),
-  backend_version: external_exports.string().min(1),
-  fixture_sha256: sha256,
-  version_probe: versionProbe,
-  startup: external_exports.literal(true),
-  definition_navigation: external_exports.literal(true),
-  side_effect_absent: external_exports.literal(true),
-  stderr: external_exports.string().max(1024),
-  positive_control: external_exports.object({
-    initialized: external_exports.literal(true),
-    definition_responded: external_exports.literal(true),
-    side_effect_absent: external_exports.literal(false)
-  }).strict()
-}).strict();
-function platformEvidenceSchema(root) {
-  return external_exports.object({
-    status: external_exports.enum(["passed", "unproven"]),
-    command_roots: external_exports.array(root),
-    commands: external_exports.array(external_exports.string()),
-    bounded_output: external_exports.string(),
-    backend_versions: external_exports.record(external_exports.string(), external_exports.string().nullable()),
-    positive_controls: external_exports.record(external_exports.string(), external_exports.string())
-  }).strict();
-}
-var evidenceSchema = external_exports.object({
-  schema_version: external_exports.literal(1),
-  recorded_at: external_exports.string().datetime(),
-  purpose: external_exports.string().min(1),
-  platforms: external_exports.object({
-    win32: platformEvidenceSchema(win32CommandRoot),
-    posix: platformEvidenceSchema(posixCommandRoot)
-  }).strict(),
-  fixture_tree_hashes: external_exports.object({
-    rust: sha256,
-    python: sha256,
-    csharp: sha256
-  }).strict(),
-  sentinel_runs: external_exports.object({
-    rust: sentinelRunSchema,
-    python: sentinelRunSchema.extend({
-      package_metadata_sha256: sha256,
-      environment: external_exports.object({
-        PATH: external_exports.literal(""),
-        PYTHONPATH: external_exports.literal(""),
-        VIRTUAL_ENV: external_exports.literal(""),
-        CONDA_PREFIX: external_exports.literal("")
-      }).strict()
-    }),
-    csharp: sentinelRunSchema
-  }).strict()
-}).strict();
-
-// src/semantic/contracts/contract-values.ts
-var languages = ["rust", "python", "csharp"];
-var relationNames = [
-  "definition",
-  "references",
-  "type_definition",
-  "implementation",
-  "callers",
-  "callees"
-];
-
-// src/semantic/contracts/contract-request-schema.ts
-var semanticRequestSchema = external_exports.discriminatedUnion("operation", [
-  external_exports.object({
-    operation: external_exports.literal("search"),
-    query: external_exports.string()
-  }).strict(),
-  external_exports.object({
-    operation: external_exports.literal("focus"),
-    symbol_id: external_exports.string().min(1)
-  }).strict(),
-  ...relationNames.map(
-    (operation) => external_exports.object({
-      operation: external_exports.literal(operation),
-      symbol_id: external_exports.string().min(1)
-    }).strict()
-  )
-]);
-
-// src/semantic/contracts/contract-schemas.ts
-var positionSchema = external_exports.object({
-  line: external_exports.number().int().nonnegative(),
-  character: external_exports.number().int().nonnegative()
-}).strict();
-var rangeSchema = external_exports.object({ start: positionSchema, end: positionSchema }).strict();
-var relativePathSchema = external_exports.string().min(1).refine(
-  (path5) => !(path5.startsWith("/") || /^[A-Za-z]:[\\/]/.test(path5) || path5.split(/[\\/]/).includes(".."))
+// src/package-info.ts
+import { readFileSync as readFileSync7 } from "node:fs";
+import { dirname as dirname9, join as join23 } from "node:path";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
+var directory = dirname9(fileURLToPath5(import.meta.url));
+var packageInfo = JSON.parse(
+  readFileSync7(join23(directory, "..", "package.json"), "utf8")
 );
-var projectLocationSchema = external_exports.object({ path: relativePathSchema, range: rangeSchema }).strict();
-var externalLocationSchema = external_exports.object({ external: external_exports.literal(true) }).strict();
-var sourceLocationSchema = external_exports.union([
-  projectLocationSchema,
-  externalLocationSchema
-]);
-var symbolSchema = external_exports.object({
-  id: external_exports.string().min(1),
-  name: external_exports.string().min(1),
-  qualified_name: external_exports.string().min(1).optional(),
-  language: external_exports.enum(languages),
-  kind: external_exports.string().min(1),
-  location: projectLocationSchema
-}).strict();
-var revisionSchema = external_exports.object({
-  generation: external_exports.number().int().nonnegative(),
-  manifest_sha256: external_exports.string().min(1)
-}).strict();
-
-// src/semantic/contracts/contract-result-schema.ts
-var visibleSymbolSchema = external_exports.object({
-  name: external_exports.string().min(1),
-  symbol_id: external_exports.string().min(1)
-}).strict();
-var focusContentSchema = external_exports.object({
-  body: external_exports.string().optional(),
-  declaration: external_exports.string().optional(),
-  visible_symbols: external_exports.array(visibleSymbolSchema).optional()
-}).strict().optional();
-function relationSchema(operation) {
-  return external_exports.object({
-    operation: external_exports.literal(operation),
-    revision: revisionSchema,
-    relations: external_exports.array(
-      external_exports.union([
-        external_exports.object({
-          relation: external_exports.literal(operation),
-          symbol: symbolSchema,
-          location: sourceLocationSchema,
-          call_site: projectLocationSchema.optional()
-        }).strict(),
-        external_exports.object({
-          relation: external_exports.literal(operation),
-          external: externalLocationSchema.extend({
-            display_name: external_exports.string().min(1).optional()
-          })
-        }).strict()
-      ])
-    )
-  }).strict();
-}
-var semanticResultSchema = external_exports.discriminatedUnion("operation", [
-  external_exports.object({
-    operation: external_exports.literal("search"),
-    revision: revisionSchema,
-    symbols: external_exports.array(symbolSchema)
-  }).strict(),
-  external_exports.object({
-    operation: external_exports.literal("focus"),
-    revision: revisionSchema,
-    symbol: symbolSchema,
-    content: focusContentSchema
-  }).strict(),
-  ...relationNames.map(relationSchema)
-]);
-
-// src/semantic/contracts/contract.ts
-function parseSemanticRequest(input) {
-  const parsed = semanticRequestSchema.safeParse(input);
-  if (!parsed.success) throw new Error("invalid semantic request");
-  return parsed.data;
-}
-function parseSemanticResult(input) {
-  const parsed = semanticResultSchema.safeParse(input);
-  if (!parsed.success) throw new Error("invalid semantic result");
-  return parsed.data;
-}
-
-// src/semantic/adapter-selection/adapter-selection-record-schema.ts
-var runtimeBackendSchema = external_exports.object({
-  language: external_exports.enum(languages),
-  platform_executables: external_exports.object({
-    posix: external_exports.string().min(1),
-    win32: external_exports.string().min(1)
-  }).strict(),
-  platform_entrypoints: external_exports.object({
-    posix: external_exports.array(external_exports.string().min(1)),
-    win32: external_exports.array(external_exports.string().min(1))
-  }).strict(),
-  compatible_version: external_exports.string().min(1),
-  arguments: external_exports.array(external_exports.string()),
-  endpoint: external_exports.literal("stdio"),
-  environment: external_exports.record(external_exports.string()),
-  safe_initialization_options: external_exports.record(external_exports.unknown()),
-  capabilities: external_exports.object(
-    Object.fromEntries(
-      relationNames.map((name) => [
-        name,
-        external_exports.enum(["ready", "unavailable", "failed"])
-      ])
-    )
-  ).strict(),
-  sentinel_evidence: sentinelEvidence,
-  authorization: external_exports.object({
-    executable_sha256: sha256,
-    entrypoint_sha256s: external_exports.array(sha256),
-    package_metadata_sha256: sha256.nullable(),
-    version_probe: versionProbe
-  }).strict()
-}).strict();
-var recordSchema = external_exports.object({
-  schema_version: external_exports.literal(1),
-  source_dependency_versions: external_exports.object({
-    serena: external_exports.string().min(1),
-    "@p1va/symbols": external_exports.string().min(1)
-  }).strict(),
-  evidence_artifact: external_exports.literal("adapter-selection-evidence.json"),
-  trusted_command_roots: external_exports.object({
-    posix: external_exports.array(external_exports.literal("posix_code_explorer_backends")).min(1),
-    win32: external_exports.array(win32CommandRoot).min(1)
-  }).strict(),
-  selected_paths: external_exports.object({
-    rust: external_exports.literal("direct_standard_public_lsp"),
-    python: external_exports.literal("direct_standard_public_lsp"),
-    csharp: external_exports.literal("direct_standard_public_lsp")
-  }).strict(),
-  runtime_backends: external_exports.array(runtimeBackendSchema)
-}).strict().superRefine((record2, context) => {
-  for (const language of languages) {
-    const count = record2.runtime_backends.filter(
-      (backend) => backend.language === language
-    ).length;
-    if (count !== 1)
-      context.addIssue({
-        code: external_exports.ZodIssueCode.custom,
-        message: `exactly one ${language} backend is required`
-      });
-  }
-});
-
-// src/semantic/adapter-selection/adapter-selection-root.ts
-import { readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-function findPackageRoot(start) {
-  let directory = resolve(start);
-  while (true) {
-    if (isCodeExplorerPackage(directory)) return directory;
-    const parent = dirname(directory);
-    if (parent === directory)
-      throw new Error("invalid adapter selection record");
-    directory = parent;
-  }
-}
-function isCodeExplorerPackage(directory) {
-  try {
-    const parseJson3 = JSON.parse;
-    const packageInfo2 = parseJson3(
-      readFileSync(join(directory, "package.json"), "utf8")
-    );
-    return packageInfo2.name === "code-explorer";
-  } catch {
-    return false;
-  }
-}
-function deepFreeze(value) {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Object.values(value))
-      deepFreeze(child);
-    Object.freeze(value);
-  }
-  return value;
-}
-
-// src/semantic/adapter-selection/adapter-selection-parser.ts
-function parseAdapterSelectionEvidence(input) {
-  const parsed = evidenceSchema.safeParse(input);
-  if (!parsed.success) throw new Error("invalid adapter selection evidence");
-  return deepFreeze(parsed.data);
-}
-function parseAdapterSelectionRecord(input) {
-  const parsed = recordSchema.safeParse(input);
-  if (!parsed.success) throw new Error("invalid adapter selection record");
-  return deepFreeze(parsed.data);
-}
-
-// src/semantic/adapter-selection/adapter-selection-loader.ts
-function loadAdapterSelectionRecord() {
-  const packageRoot = findPackageRoot(dirname2(fileURLToPath(import.meta.url)));
-  const record2 = parseFile(
-    join2(packageRoot, "adapter-selection.json"),
-    parseAdapterSelectionRecord,
-    "invalid adapter selection record"
-  );
-  const evidence = parseFile(
-    join2(packageRoot, record2.evidence_artifact),
-    parseAdapterSelectionEvidence,
-    "invalid adapter selection evidence"
-  );
-  if (!evidenceAligns(record2, evidence))
-    throw new Error("invalid adapter selection evidence");
-  return record2;
-}
-function parseFile(path5, parse3, errorMessage) {
-  try {
-    return parse3(JSON.parse(readFileSync2(path5, "utf8")));
-  } catch {
-    throw new Error(errorMessage);
-  }
-}
-
-// src/semantic/adapter-selection/adapter-selection-policy.ts
-import { homedir } from "node:os";
-import { join as join3 } from "node:path";
-
-// src/semantic/backend-launch/backend-launch-paths.ts
-import { posix, win32 } from "node:path";
-function samePath(left, right, platform) {
-  if (platform === "posix") return left === right;
-  return win32.normalize(left).toLowerCase() === win32.normalize(right).toLowerCase();
-}
-function isWithin(root, candidate, platform) {
-  const path5 = platform === "win32" ? win32 : posix;
-  const relativePath = path5.relative(
-    path5.resolve(root),
-    path5.resolve(candidate)
-  );
-  return relativePath === "" || isChildPath(relativePath, path5.sep, path5);
-}
-function isChildPath(relativePath, separator, path5) {
-  return !relativePath.startsWith(`..${separator}`) && relativePath !== ".." && !path5.isAbsolute(relativePath);
-}
-function basename(value, platform) {
-  return (platform === "win32" ? win32 : posix).basename(value);
-}
-function platformForHost() {
-  return process.platform === "win32" ? "win32" : "posix";
-}
-function isPermittedEndpoint(endpoint) {
-  if (endpoint === "stdio") return true;
-  try {
-    const url = new URL(endpoint);
-    return localHost(url.hostname);
-  } catch {
-    return false;
-  }
-}
-function localHost(hostname2) {
-  return /^127(?:\.\d{1,3}){3}$/.test(hostname2) || hostname2 === "[::1]" || hostname2 === "::1";
-}
-
-// src/semantic/backend-launch/backend-launch-entrypoints.ts
-function sameEntrypoints(left, right, platform) {
-  return sameEntryCount(left, right) && everyEntryMatches(left, right, platform);
-}
-function sameEntryCount(left, right) {
-  return (left?.length ?? 0) === (right?.length ?? 0);
-}
-function everyEntryMatches(left, right, platform) {
-  return (left ?? []).every(
-    (file, index) => sameEntry(file, right?.[index], platform)
-  );
-}
-function sameEntry(file, other, platform) {
-  if (!(other && file.canonical_path && other.canonical_path)) return false;
-  if (!samePath(file.canonical_path, other.canonical_path, platform))
-    return false;
-  return sameFileCore(file, other);
-}
-function sameFileCore(left, right) {
-  return left.device === right.device && left.file_id === right.file_id && left.sha256 === right.sha256;
-}
-
-// src/semantic/backend-launch/backend-launch-snapshot.ts
-function snapshotAllowlistEntry(entry) {
-  return {
-    language: entry.language,
-    executable_basename: entry.executable_basename,
-    entrypoint_basenames: entry.entrypoint_basenames ? [...entry.entrypoint_basenames] : [],
-    executable_sha256: entry.executable_sha256,
-    entrypoint_sha256s: entry.entrypoint_sha256s ? [...entry.entrypoint_sha256s] : [],
-    package_metadata_sha256: entry.package_metadata_sha256 ?? null,
-    compatible_version: entry.compatible_version,
-    arguments: [...entry.arguments],
-    endpoint: entry.endpoint,
-    environment: { ...entry.environment },
-    safe_initialization_options: cloneValue(entry.safe_initialization_options),
-    sentinel_passed: entry.sentinel_passed
-  };
-}
-function cloneValue(value) {
-  if (Array.isArray(value)) return value.map(cloneValue);
-  if (value && typeof value === "object")
-    return Object.fromEntries(
-      Object.entries(value).map(([key, child]) => [
-        key,
-        cloneValue(child)
-      ])
-    );
-  return value;
-}
-function deepFreeze2(value) {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Object.values(value))
-      deepFreeze2(child);
-    Object.freeze(value);
-  }
-  return value;
-}
-
-// src/semantic/backend-launch/backend-launch-identity.ts
-function sameIdentity(left, right, platform) {
-  if (!sameCoreIdentity(left, right, platform)) return false;
-  if (!sameEntrypoints(left.entrypoints, right.entrypoints, platform))
-    return false;
-  return sameFileIdentity(
-    left.package_metadata,
-    right.package_metadata,
-    platform
-  );
-}
-function sameCoreIdentity(left, right, platform) {
-  return samePath(left.canonical_path, right.canonical_path, platform) && left.device === right.device && left.file_id === right.file_id && left.sha256 === right.sha256 && left.version === right.version;
-}
-function sameFileIdentity(left, right, platform) {
-  if (!(left && right)) return left === right;
-  return sameFilePath(left, right, platform) && sameFileCore(left, right);
-}
-function sameFilePath(left, right, platform) {
-  return Boolean(
-    left.canonical_path && right.canonical_path && samePath(left.canonical_path, right.canonical_path, platform)
-  );
-}
-function resolveArguments(template, entrypoints) {
-  return deepFreeze2(
-    template.map((argument) => resolveArgument(argument, entrypoints))
-  );
-}
-function resolveArgument(argument, entrypoints) {
-  const match = /^\{entrypoint:(\d+)\}$/.exec(argument);
-  if (!match) return argument;
-  const path5 = entrypoints?.[Number(match[1])]?.canonical_path;
-  if (!path5) throw new Error("backend_identity_unverifiable");
-  return path5;
-}
-
-// src/semantic/backend-launch/backend-inspection-result.ts
-function rejected(code) {
-  return { status: "rejected", code };
-}
-
-// src/semantic/backend-launch/backend-file-identity.ts
-function isCompleteBackendFile(file) {
-  return Boolean(
-    file.device && file.file_id && file.sha256 && file.regular_file && !file.link_or_reparse_point
-  );
-}
-
-// src/semantic/backend-launch/backend-launch-inspection-executable.ts
-function validateExecutable(entry, identity, options) {
-  const version2 = identity.version;
-  if (!launchIdentityComplete(identity))
-    return rejected("backend_identity_unverifiable");
-  if (!version2) return rejected("backend_identity_unverifiable");
-  return validateExecutablePath({ entry, identity, options }) ?? validateExecutableEvidence(identity, entry, version2);
-}
-function validateExecutablePath(input) {
-  const platform = input.options.platform ?? platformForHost();
-  return safeExecutablePath({ ...input, platform }) ? void 0 : rejected("backend_identity_unverifiable");
-}
-function validateExecutableEvidence(identity, entry, version2) {
-  if (!validHash(identity.sha256))
-    return rejected("backend_identity_unverifiable");
-  if (identity.sha256 !== entry.executable_sha256)
-    return rejected("backend_identity_changed");
-  if (!versionMatches(version2, entry.compatible_version))
-    return rejected("version_incompatible");
-  return void 0;
-}
-function launchIdentityComplete(identity) {
-  return completeIdentity(identity) && !!identity.version;
-}
-function completeIdentity(identity) {
-  return isCompleteBackendFile(identity);
-}
-function safeExecutablePath(input) {
-  return !!(input.identity.canonical_path && !isWithin(
-    input.options.project_root,
-    input.identity.canonical_path,
-    input.platform
-  ) && samePath(
-    basename(input.identity.canonical_path, input.platform),
-    input.entry.executable_basename,
-    input.platform
-  ));
-}
-function validHash(value) {
-  return !!value && /^[a-f0-9]{64}$/i.test(value);
-}
-function versionMatches(version2, compatibleRange) {
-  if (!compatibleRange.startsWith("^")) return version2 === compatibleRange;
-  const [major] = compatibleRange.slice(1).split(".");
-  return version2.split(".")[0] === major;
-}
-
-// src/semantic/backend-launch/backend-launch-entrypoint-validation.ts
-function validateEntrypoint(input) {
-  const platform = input.options.platform ?? platformForHost();
-  const failure = invalidEntrypoint(input, platform);
-  if (failure) return failure;
-  return input.file.sha256 === input.checksum ? void 0 : rejected("backend_identity_changed");
-}
-function invalidEntrypoint(input, platform) {
-  if (!isCompleteBackendFile(input.file))
-    return rejected("backend_identity_unverifiable");
-  if (!safeEntryPath({ ...input, platform }))
-    return rejected("backend_identity_unverifiable");
-  if (!validHash2(input.file.sha256))
-    return rejected("backend_identity_unverifiable");
-  return void 0;
-}
-function safeEntryPath(input) {
-  if (!input.file.canonical_path) return false;
-  if (isWithin(
-    input.options.project_root,
-    input.file.canonical_path,
-    input.platform
-  ))
-    return false;
-  return samePath(
-    basename(input.file.canonical_path, input.platform),
-    input.expected,
-    input.platform
-  );
-}
-function validHash2(value) {
-  return !!value && /^[a-f0-9]{64}$/i.test(value);
-}
-
-// src/semantic/backend-launch/backend-launch-inspection-files.ts
-function validateEntrypoints(entry, identity, options) {
-  const expected = entrypointNames(entry);
-  const actual = entrypointFiles(identity);
-  if (!sameEntrypointCount(actual, expected))
-    return rejected("backend_identity_unverifiable");
-  return firstEntrypointFailure({
-    actual,
-    expected,
-    entry,
-    options
-  });
-}
-function entrypointNames(entry) {
-  return entry.entrypoint_basenames ?? [];
-}
-function entrypointFiles(identity) {
-  return identity.entrypoints ?? [];
-}
-function sameEntrypointCount(actual, expected) {
-  return actual.length === expected.length;
-}
-function firstEntrypointFailure(input) {
-  for (const [index, file] of input.actual.entries()) {
-    const failure = validateEntrypoint({
-      file,
-      expected: input.expected[index] ?? "",
-      checksum: input.entry.entrypoint_sha256s?.[index],
-      options: input.options
-    });
-    if (failure) return failure;
-  }
-  return void 0;
-}
-
-// src/semantic/backend-launch/backend-launch-inspection-metadata.ts
-function validatePackageMetadata(entry, identity, options) {
-  const expected = entry.package_metadata_sha256;
-  if (!metadataHashConfigured(expected))
-    return missingMetadataResult(identity.package_metadata);
-  const metadata = identity.package_metadata;
-  if (!metadata) return rejected("backend_identity_changed");
-  const platform = options.platform ?? platformForHost();
-  return validateMetadataEvidence({
-    metadata,
-    expected,
-    options,
-    platform
-  });
-}
-function metadataHashConfigured(value) {
-  return value !== null && value !== void 0;
-}
-function missingMetadataResult(metadata) {
-  return metadata ? rejected("backend_identity_changed") : void 0;
-}
-function validateMetadataEvidence(input) {
-  if (!isCompleteBackendFile(input.metadata))
-    return rejected("backend_identity_changed");
-  if (!safeMetadataPath(input.metadata, input.options, input.platform))
-    return rejected("backend_identity_changed");
-  return validHash3(input.metadata.sha256) && input.metadata.sha256 === input.expected ? void 0 : rejected("backend_identity_changed");
-}
-function safeMetadataPath(metadata, options, platform) {
-  if (!metadata.canonical_path) return false;
-  if (isWithin(options.project_root, metadata.canonical_path, platform))
-    return false;
-  return basename(metadata.canonical_path, platform) === "package.json";
-}
-function validHash3(value) {
-  return !!value && /^[a-f0-9]{64}$/i.test(value);
-}
-
-// src/semantic/backend-launch/backend-launch-inspection.ts
-function inspect(entry, options) {
-  const identity = options.inspect(
-    entry.language,
-    entry.executable_basename,
-    entry.entrypoint_basenames ?? []
-  );
-  if (!identity?.canonical_path) return rejected("backend_unavailable");
-  const failure = firstInspectionFailure([
-    () => validateExecutable(entry, identity, options),
-    () => validateEntrypoints(entry, identity, options),
-    () => validatePackageMetadata(entry, identity, options)
-  ]);
-  if (failure) return failure;
-  return {
-    status: "accepted",
-    identity
-  };
-}
-function firstInspectionFailure(checks) {
-  for (const check2 of checks) {
-    const failure = check2();
-    if (failure) return failure;
-  }
-  return void 0;
-}
-
-// src/semantic/backend-launch/backend-launch-policy-confirm.ts
-function confirmBackend(input) {
-  const prior = input.accepted.get(input.language);
-  if (!prior)
-    return {
-      status: "unavailable",
-      code: "backend_unavailable",
-      terminate: true
-    };
-  const inspected = inspect(prior.entry, input.options);
-  if (inspected.status === "accepted" && sameIdentity(prior.identity, inspected.identity, input.platform))
-    return { status: "ready" };
-  input.accepted.delete(input.language);
-  return {
-    status: "unavailable",
-    code: inspected.status === "accepted" || inspected.code === "version_incompatible" ? "backend_identity_changed" : inspected.code,
-    terminate: true
-  };
-}
-function endpointStatus(language, endpoint, allowlist) {
-  const entry = allowlist.find((candidate) => candidate.language === language);
-  return entry?.endpoint === endpoint && isPermittedEndpoint(endpoint) ? { status: "ready" } : {
-    status: "unavailable",
-    code: "backend_endpoint_rejected"
-  };
-}
-function rejectBackendRequest(method) {
-  return {
-    accepted: false,
-    code: method === "workspace/applyEdit" || method.startsWith("workspace/") ? "backend_write_rejected" : "backend_request_rejected"
-  };
-}
-function safeOptions(language, allowlist) {
-  return allowlist.find((entry) => entry.language === language)?.safe_initialization_options;
-}
-
-// src/semantic/backend-launch/backend-launch-preparation-result.ts
-function preparationFailure(code) {
-  return code === "version_incompatible" ? "unsupported_backend_version" : code;
-}
-function unavailable(code) {
-  return { status: "unavailable", code };
-}
-function defaultPlatform() {
-  return platformForHost();
-}
-
-// src/semantic/backend-launch/backend-launch-ready-preparation.ts
-function readyPreparation(entry, identity, projectConfiguration) {
-  return {
-    status: "ready",
-    executable: identity.canonical_path,
-    version: identity.version,
-    arguments: resolveArguments(entry.arguments, identity.entrypoints),
-    shell: false,
-    environment: entry.environment,
-    endpoint: entry.endpoint,
-    safe_initialization_options: entry.safe_initialization_options,
-    ...projectConfiguration === void 0 ? {} : { event: "project_backend_config_ignored" }
-  };
-}
-
-// src/semantic/backend-launch/backend-launch-safety.ts
-function safeModeIsProven(entry) {
-  const options = entry.safe_initialization_options;
-  if (entry.language === "rust") return safeRustMode(options);
-  if (entry.language === "csharp")
-    return options.analyzers === false && options.source_generators === false;
-  return options.use_project_environment === false && options.mirror_only === true;
-}
-function safeRustMode(options) {
-  const cargo = options.cargo;
-  return settingDisabled(cargo, "buildScripts") && settingDisabled(cargo, "procMacro") && settingDisabled(cargo, "checkOnSave") && settingDisabled(options, "projectConfiguration");
-}
-function settingDisabled(options, key) {
-  return options?.[key]?.enable === false;
-}
-
-// src/semantic/backend-launch/backend-launch-policy-prepare.ts
-function prepareBackend(input) {
-  const entry = input.allowlist.find(
-    (candidate) => candidate.language === input.language
-  );
-  if (!entry) return unavailable("backend_unavailable");
-  const inspected = inspect(entry, input.options);
-  if (inspected.status !== "accepted")
-    return unavailable(preparationFailure(inspected.code));
-  return prepareAccepted(input, entry, inspected.identity);
-}
-function prepareAccepted(input, entry, identity) {
-  if (!(entry.sentinel_passed && safeModeIsProven(entry)))
-    return unavailable("unsafe_backend_mode");
-  const identityFailure = acceptIdentity(input, identity);
-  if (identityFailure) return unavailable(identityFailure);
-  input.accepted.set(input.language, { entry, identity });
-  return readyPreparation(entry, identity, input.projectConfiguration);
-}
-function acceptIdentity(input, identity) {
-  const prior = input.accepted.get(input.language);
-  if (!prior || sameIdentity(prior.identity, identity, input.platform))
-    return void 0;
-  input.accepted.delete(input.language);
-  return "backend_identity_changed";
-}
-
-// src/semantic/backend-launch/backend-launch-policy-factory.ts
-function createBackendLaunchPolicy(options) {
-  const platform = options.platform ?? defaultPlatform();
-  const allowlist = deepFreeze2(options.allowlist.map(snapshotAllowlistEntry));
-  const policyOptions = { ...options, allowlist, platform };
-  const accepted = /* @__PURE__ */ new Map();
-  return createPolicyMethods({
-    allowlist,
-    policyOptions,
-    accepted,
-    platform
-  });
-}
-function createPolicyMethods(input) {
-  return {
-    prepare: prepareMethod(input),
-    confirmInitialized: confirmMethod(input),
-    setEndpoint: endpointMethod(input),
-    handleBackendRequest: requestMethod,
-    safeOptions: safeOptionsMethod(input)
-  };
-}
-function prepareMethod(input) {
-  return (language, projectConfiguration) => prepareBackend({
-    language,
-    projectConfiguration,
-    allowlist: input.allowlist,
-    options: input.policyOptions,
-    accepted: input.accepted,
-    platform: input.platform
-  });
-}
-function confirmMethod(input) {
-  return (language) => confirmBackend({
-    language,
-    accepted: input.accepted,
-    options: input.policyOptions,
-    platform: input.platform
-  });
-}
-function endpointMethod(input) {
-  return (language, endpoint) => endpointStatus(language, endpoint, input.allowlist);
-}
-function requestMethod(method, _params) {
-  return rejectBackendRequest(method);
-}
-function safeOptionsMethod(input) {
-  return (language) => safeOptions(language, input.allowlist);
-}
-
-// src/semantic/adapter-selection/adapter-selection-policy.ts
-function createRuntimeLaunchPolicy(options, record2 = loadRecord()) {
-  const platform = options.platform ?? (process.platform === "win32" ? "win32" : "posix");
-  return createBackendLaunchPolicy({
-    ...options,
-    platform,
-    allowlist: runtimeAllowlist(record2, platform)
-  });
-}
-function loadRecord() {
-  return loadAdapterSelectionRecord();
-}
-function runtimeAllowlist(record2, platform) {
-  return record2.runtime_backends.map((backend) => ({
-    language: backend.language,
-    executable_basename: backend.platform_executables[platform],
-    entrypoint_basenames: backend.platform_entrypoints[platform],
-    executable_sha256: backend.authorization.executable_sha256,
-    entrypoint_sha256s: backend.authorization.entrypoint_sha256s,
-    package_metadata_sha256: backend.authorization.package_metadata_sha256,
-    compatible_version: backend.compatible_version,
-    arguments: backend.arguments,
-    endpoint: backend.endpoint,
-    environment: backend.environment,
-    safe_initialization_options: backend.safe_initialization_options,
-    sentinel_passed: backend.sentinel_evidence.platform === platform && backend.sentinel_evidence.passed
-  }));
-}
-function resolveTrustedCommandRoots(identifiers) {
-  return identifiers.map((identifier) => trustedCommandRoots()[identifier]);
-}
-function trustedCommandRoots() {
-  const home = homedir();
-  const programFiles = process.env.ProgramFiles ?? "C:\\Program Files";
-  const appData = process.env.APPDATA ?? join3(home, "AppData", "Roaming");
-  return {
-    cargo_home_bin: join3(cargoHome(home), "bin"),
-    dotnet_tools: join3(home, ".dotnet", "tools"),
-    node_install: join3(programFiles, "nodejs"),
-    npm_global: join3(appData, "npm"),
-    code_explorer_backends: codeExplorerBackends(programFiles)
-  };
-}
-function cargoHome(home) {
-  return process.env.CARGO_HOME ?? join3(home, ".cargo");
-}
-function codeExplorerBackends(programFiles) {
-  return process.env.CODE_EXPLORER_BACKENDS_ROOT ?? join3(programFiles, "Code Explorer", "backends");
-}
-
-// src/semantic/backend-status/backend-status.ts
-function createBackendStatusReport(adapters) {
-  const backends = adapters.map((adapter) => adapter.status());
-  const anyReady = backends.some(
-    ({ state }) => state === "ready" || state === "degraded" || state === "refreshing"
-  );
-  return {
-    backends,
-    navigation: anyReady ? {
-      discovery: "semantic",
-      focus: "ready",
-      relations: "ready"
-    } : {
-      discovery: "discovery_only",
-      focus: "backend_unavailable",
-      relations: "backend_unavailable"
-    }
-  };
-}
-
-// src/semantic/project-root/project-root.ts
-import {
-  closeSync,
-  constants,
-  fstatSync,
-  openSync,
-  readFileSync as readFileSync3,
-  realpathSync,
-  statSync
-} from "node:fs";
-
-// src/semantic/project-root/project-root-factory.ts
-import * as path from "node:path";
-
-// src/discovery/sensitive-paths.ts
-import { lstatSync, readdirSync } from "node:fs";
-import { join as join4 } from "node:path";
-var keyFile = /^id_(rsa|dsa|ecdsa|ed25519)$/iu;
-var credentialFile = /^\.(npmrc|pypirc)$|^nuget\.config$/iu;
-function isSensitiveProjectPath(path5) {
-  const normalized = path5.replaceAll("\\", "/").replace(/^\.\//, "");
-  if (unsafeSensitivePath(normalized)) return true;
-  const parts = normalized.split("/");
-  const file = parts.at(-1) ?? "";
-  return sensitiveDirectory(parts) || sensitiveFile(file);
-}
-function unsafeSensitivePath(path5) {
-  return !path5 || path5.startsWith("/") || path5.split("/").some((part) => part === "..");
-}
-function sensitiveDirectory(parts) {
-  return parts.some((part) => /^(\.git|\.hg|\.svn)$/iu.test(part));
-}
-function sensitiveFile(file) {
-  return /^\.env(?:\..+)?$/iu.test(file) || /\.(pem|key|pfx|p12)$/iu.test(file) || keyFile.test(file) || credentialFile.test(file);
-}
-function countSensitivePathsUnderRoot(root) {
-  const visit4 = (directory, relativeDirectory) => {
-    let count = 0;
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
-      const relativePath = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
-      count += visitEntry({ directory, relativePath, entry, visit: visit4 });
-    }
-    return count;
-  };
-  try {
-    return visit4(root, "");
-  } catch {
-    return 0;
-  }
-}
-function visitEntry(options) {
-  const { directory, relativePath, entry, visit: visit4 } = options;
-  if (isSensitiveProjectPath(relativePath)) return 1;
-  const absolute = join4(directory, entry.name);
-  if (!entry.isDirectory() || lstatSync(absolute).isSymbolicLink()) return 0;
-  return visit4(absolute, relativePath);
-}
-
-// src/semantic/project-root/project-root-error.ts
-var ProjectPathError = class extends Error {
-  constructor(code, root_source) {
-    super(code);
-    this.code = code;
-    this.root_source = root_source;
-  }
-  code;
-  root_source;
-};
-
-// src/semantic/project-root/project-root-identity.ts
-function canonicalize(candidate, filesystem) {
-  try {
-    const resolved = filesystem.realpath(candidate);
-    return {
-      path: resolved,
-      identity: identityFor(resolved, filesystem)
-    };
-  } catch {
-    return void 0;
-  }
-}
-function identityFor(candidate, filesystem) {
-  try {
-    const identity = filesystem.stat(candidate);
-    if (!stableIdentity(identity)) throw new Error("unstable identity");
-    return identity;
-  } catch {
-    throw new ProjectPathError("path_identity_unavailable");
-  }
-}
-function identityForHandle(handle, filesystem) {
-  try {
-    const identity = filesystem.fstat(handle);
-    if (!stableIdentity(identity)) throw new Error("unstable identity");
-    return identity;
-  } catch {
-    throw new ProjectPathError("path_identity_unavailable");
-  }
-}
-function stableIdentity(identity) {
-  return isStableIdentityPart(identity.dev) && isStableIdentityPart(identity.ino);
-}
-function isStableIdentityPart(value) {
-  return typeof value === "bigint" || Number.isSafeInteger(value);
-}
-function sameIdentity2(left, right) {
-  return left.ino === right.ino && (left.dev === right.dev || isZero(left.dev) || isZero(right.dev));
-}
-function isZero(value) {
-  return value === 0 || value === BigInt(0);
-}
-function sameCanonicalPath(left, right, platform) {
-  return normalize(left, platform) === normalize(right, platform);
-}
-function normalize(value, platform) {
-  const noExtendedPrefix = platform === "win32" && value.startsWith("\\\\?\\") ? value.slice(4) : value;
-  const slashSeparated = noExtendedPrefix.replaceAll("\\", "/").replace(/\/+$/, "");
-  return platform === "win32" ? slashSeparated.toLocaleLowerCase("en-US") : slashSeparated;
-}
-function isRelativeProjectPath(value, pathApi) {
-  return value.length > 0 && !pathApi.isAbsolute(value) && !value.split(/[\\/]/).includes("..");
-}
-
-// src/semantic/project-root/project-root-actions.ts
-function createRootActions(input) {
-  const isDescendant = (candidate) => isWithinRoot(candidate, input.root.path, input.options.platform);
-  const assertRootStable = () => assertStable(input.options, input.configuredRoot, input.root);
-  const resolveClientPath = (relativePath) => resolvePath({ ...input, relativePath, isDescendant });
-  return {
-    isDescendant,
-    assertRootStable,
-    resolveClientPath
-  };
-}
-function isWithinRoot(candidate, root, platform) {
-  const normalizedRoot = normalize(root, platform);
-  const normalizedCandidate = normalize(candidate, platform);
-  return normalizedCandidate === normalizedRoot || normalizedCandidate.startsWith(`${normalizedRoot}/`);
-}
-function assertStable(options, configuredRoot, root) {
-  const current = canonicalize(configuredRoot, options.filesystem);
-  if (!current) throw new ProjectPathError("path_identity_unavailable");
-  if (!(sameCanonicalPath(current.path, root.path, options.platform) && sameIdentity2(current.identity, root.identity)))
-    throw new ProjectPathError("path_identity_changed");
-}
-function resolvePath(input) {
-  if (!isRelativeProjectPath(input.relativePath, input.pathApi) || isSensitiveProjectPath(input.relativePath))
-    throw new ProjectPathError("path_outside_project");
-  const candidate = input.pathApi.resolve(input.root.path, input.relativePath);
-  const resolved = canonicalize(candidate, input.options.filesystem);
-  if (!(resolved && input.isDescendant(resolved.path)))
-    throw new ProjectPathError("path_outside_project");
-  return resolved.path;
-}
-
-// src/semantic/project-root/project-root-classify.ts
-function classifyBackendPath(input) {
-  const portableCandidate = input.candidate.replaceAll("\\", "/");
-  const candidatePath = input.pathApi.isAbsolute(portableCandidate) ? portableCandidate : input.pathApi.resolve(input.root.path, portableCandidate);
-  const resolved = canonicalize(candidatePath, input.filesystem);
-  if (!(resolved && input.isDescendant(resolved.path)))
-    return { external: true };
-  return {
-    relative_path: input.pathApi.relative(input.root.path, resolved.path).replaceAll("\\", "/")
-  };
-}
-
-// src/semantic/project-root/project-root-protected.ts
-function openProtected(input) {
-  input.assertRootStable();
-  const checkedPath = input.resolveClientPath(input.relativePath);
-  const checkedIdentity = identityFor(checkedPath, input.options.filesystem);
-  let handle;
-  try {
-    handle = input.options.filesystem.open(checkedPath, {
-      noFollow: true
-    });
-    const openedIdentity = identityForHandle(handle, input.options.filesystem);
-    input.assertRootStable();
-    const finalIdentity = identityFor(checkedPath, input.options.filesystem);
-    if (!(sameIdentity2(checkedIdentity, openedIdentity) && sameIdentity2(checkedIdentity, finalIdentity)))
-      throw new ProjectPathError("path_identity_changed");
-    return { path: checkedPath, handle };
-  } catch (error2) {
-    if (handle !== void 0) input.options.filesystem.close(handle);
-    if (error2 instanceof ProjectPathError) throw error2;
-    throw new ProjectPathError("path_identity_unavailable");
-  }
-}
-function protectedRead(input) {
-  const protectedPath = openProtected(input);
-  try {
-    const bytes = input.options.filesystem.read(protectedPath.handle);
-    input.assertRootStable();
-    const finalPath = canonicalize(
-      protectedPath.path,
-      input.options.filesystem
-    );
-    if (!sameFinalPath(finalPath, protectedPath, input))
-      throw new ProjectPathError("path_identity_changed");
-    return { path: protectedPath.path, bytes };
-  } finally {
-    input.options.filesystem.close(protectedPath.handle);
-  }
-}
-function sameFinalPath(finalPath, protectedPath, input) {
-  return Boolean(
-    finalPath && sameCanonicalPath(
-      finalPath.path,
-      protectedPath.path,
-      input.options.platform
-    ) && sameIdentity2(
-      finalPath.identity,
-      identityForHandle(protectedPath.handle, input.options.filesystem)
-    )
-  );
-}
-
-// src/semantic/project-root/project-root-methods.ts
-function rootMethods(input) {
-  return {
-    resolveClientPath: input.actions.resolveClientPath,
-    classifyBackendPath: (candidate) => classify(input, candidate),
-    openProtected: (relativePath) => open(input, relativePath),
-    protectedRead: (relativePath) => read(input, relativePath)
-  };
-}
-function classify(input, candidate) {
-  return classifyBackendPath({
-    candidate,
-    filesystem: input.options.filesystem,
-    root: input.root,
-    pathApi: input.pathApi,
-    isDescendant: input.actions.isDescendant
-  });
-}
-function open(input, relativePath) {
-  return openProtected({
-    relativePath,
-    options: input.options,
-    root: input.root,
-    resolveClientPath: input.actions.resolveClientPath,
-    assertRootStable: input.actions.assertRootStable
-  });
-}
-function read(input, relativePath) {
-  return protectedRead({
-    relativePath,
-    options: input.options,
-    root: input.root,
-    resolveClientPath: input.actions.resolveClientPath,
-    assertRootStable: input.actions.assertRootStable
-  });
-}
-
-// src/semantic/project-root/project-root-revalidation.ts
-function revalidateRoot(options, configuredRoot, root) {
-  try {
-    const current = currentIdentity(options.filesystem, configuredRoot);
-    return sameRoot(current, root, options.platform) ? "ready" : "unavailable";
-  } catch (error2) {
-    return isInaccessible(error2) ? "inaccessible" : "unavailable";
-  }
-}
-function isInaccessible(error2) {
-  if (!(error2 instanceof Error && "code" in error2)) return false;
-  const code = error2.code;
-  return ["EACCES", "EPERM", "EBUSY", "EIO"].includes(code ?? "");
-}
-function currentIdentity(filesystem, configuredRoot) {
-  const path5 = filesystem.realpath(configuredRoot);
-  const identity = filesystem.stat(path5);
-  if (!((typeof identity.dev === "bigint" || Number.isSafeInteger(identity.dev)) && (typeof identity.ino === "bigint" || Number.isSafeInteger(identity.ino))))
-    throw new Error("unstable identity");
-  return { path: path5, identity };
-}
-function sameRoot(current, root, platform) {
-  return sameCanonicalPath(current.path, root.path, platform) && sameIdentity2(current.identity, root.identity);
-}
-
-// src/semantic/project-root/project-root-factory.ts
-function createProjectRoot(options) {
-  return buildProjectRoot(options, rootContext(options));
-}
-function rootContext(options) {
-  const pathApi = rootPathApi(options.platform);
-  const configuredRoot = configuredRootFor(options);
-  const root = canonicalize(configuredRoot, options.filesystem);
-  if (!root)
-    throw new ProjectPathError(
-      "invalid_project_root",
-      options.projectRoot ? "project_root" : "cwd"
-    );
-  return {
-    configuredRoot,
-    root,
-    pathApi,
-    actions: createRootActions({
-      options,
-      configuredRoot,
-      root,
-      pathApi
-    })
-  };
-}
-function rootPathApi(platform) {
-  return platform === "win32" ? path.win32 : path.posix;
-}
-function configuredRootFor(options) {
-  return options.projectRoot ?? options.cwd;
-}
-function buildProjectRoot(options, context) {
-  const { root, configuredRoot, pathApi, actions } = context;
-  return {
-    canonicalPath: root.path,
-    revalidate: () => revalidateRoot(options, configuredRoot, root),
-    ...rootMethods({ options, root, pathApi, actions })
-  };
-}
-
-// src/semantic/project-root/project-root.ts
-function createNativeProjectRoot(projectRoot) {
-  return createProjectRoot({
-    cwd: process.cwd(),
-    projectRoot,
-    platform: process.platform === "win32" ? "win32" : "posix",
-    filesystem: {
-      realpath: realpathSync.native,
-      stat: (candidate) => identityFromStat(statSync(candidate, { bigint: true })),
-      open: (candidate) => openSync(candidate, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)),
-      fstat: (handle) => identityFromStat(fstatSync(handle, { bigint: true })),
-      read: (handle) => readFileSync3(handle, "utf8"),
-      close: closeSync
-    }
-  });
-}
-function identityFromStat(stats) {
-  if (!(isStableIdentityPart2(stats.dev) && isStableIdentityPart2(stats.ino))) {
-    throw new Error("unstable identity");
-  }
-  return { dev: stats.dev, ino: stats.ino };
-}
-function isStableIdentityPart2(value) {
-  return typeof value === "bigint" || Number.isSafeInteger(value);
-}
-
-// src/semantic/project-root/root-access-status.ts
-function rootAccessStatus(state) {
-  return {
-    state,
-    restart_required: state === "project_root_unavailable"
-  };
-}
-
-// src/semantic/project-root/root-access.ts
-var RootAccessGate = class {
-  constructor(root, adapters, now = Date.now) {
-    this.root = root;
-    this.adapters = adapters;
-    this.now = now;
-  }
-  root;
-  adapters;
-  now;
-  state = "ready";
-  #inaccessibleSince;
-  #retryTimer;
-  async check() {
-    if (!this.root) return this.status();
-    if (this.state === "project_root_unavailable") return this.status();
-    const result = this.root.revalidate();
-    if (result === "ready") return this.#handleReady();
-    return this.#handleRootFailure(result);
-  }
-  status() {
-    return rootAccessStatus(this.state);
-  }
-  #handleRootFailure(result) {
-    if (result === "inaccessible" && this.#withinRecoveryWindow())
-      return this.#handleTransientInaccessibility();
-    return this.#handleUnavailable();
-  }
-  async #handleReady() {
-    if (this.state === "project_root_inaccessible") await this.#restart();
-    this.state = "ready";
-    this.#inaccessibleSince = void 0;
-    this.#clearRetry();
-    return this.status();
-  }
-  async #handleTransientInaccessibility() {
-    this.state = "project_root_inaccessible";
-    await this.#stop();
-    this.#scheduleRetry();
-    return this.status();
-  }
-  async #handleUnavailable() {
-    this.state = "project_root_unavailable";
-    this.#clearRetry();
-    await this.#stop();
-    return this.status();
-  }
-  #withinRecoveryWindow() {
-    this.#inaccessibleSince ??= this.now();
-    return this.now() - this.#inaccessibleSince < 3e4;
-  }
-  async #stop() {
-    await Promise.all(
-      this.adapters.flatMap(
-        (adapter) => adapter.shutdown ? [adapter.shutdown()] : []
-      )
-    );
-  }
-  async #restart() {
-    await Promise.all(
-      this.adapters.flatMap(
-        (adapter) => adapter.start ? [adapter.start()] : []
-      )
-    );
-  }
-  #scheduleRetry() {
-    if (this.#retryTimer !== void 0) return;
-    this.#retryTimer = setTimeout(() => {
-      this.#retryTimer = void 0;
-      void this.check();
-    }, 5e3);
-    this.#retryTimer.unref?.();
-  }
-  #clearRetry() {
-    if (this.#retryTimer === void 0) return;
-    clearTimeout(this.#retryTimer);
-    this.#retryTimer = void 0;
-  }
-};
-
-// src/semantic/python-mirror/python-mirror-generation.ts
-import { join as join10 } from "node:path";
-import { pathToFileURL } from "node:url";
-
-// src/semantic/python-mirror/python-mirror-validation.ts
-import { createHash } from "node:crypto";
-import { posix as posix3, win32 as win323 } from "node:path";
-var PROHIBITED_KEYS = /* @__PURE__ */ new Set([
-  "extends",
-  "venvPath",
-  "venv",
-  "extraPaths",
-  "typeshedPath",
-  "stubPath",
-  "executionEnvironments",
-  "pythonPath",
-  "python.pythonPath",
-  "python.venvPath",
-  "python.analysis.extraPaths"
-]);
-function containsUnsafePythonConfiguration(value, key) {
-  return unsafeConfigurationValue(value, key);
-}
-function unsafeConfigurationValue(value, key) {
-  if (isProhibitedKey(key)) return true;
-  if (typeof value === "string") return unsafePath(value);
-  if (Array.isArray(value)) return arrayHasUnsafeValue(value);
-  return recordHasUnsafeValue(value);
-}
-function isProhibitedKey(key) {
-  return key !== void 0 && PROHIBITED_KEYS.has(key);
-}
-function recordHasUnsafeValue(value) {
-  if (!isUnsafeRecord(value)) return false;
-  return Object.entries(value).some(
-    ([name, child]) => containsUnsafePythonConfiguration(child, name)
-  );
-}
-function isUnsafeRecord(value) {
-  return !!value && typeof value === "object";
-}
-function arrayHasUnsafeValue(value) {
-  return value.some((item) => containsUnsafePythonConfiguration(item));
-}
-function isSafePythonMirrorFile(file) {
-  return validMirrorPath(file) && validMirrorHash(file);
-}
-function validMirrorPath(file) {
-  return [
-    file.path.endsWith(".py") || file.path.endsWith(".pyi"),
-    !file.symlink,
-    !file.sensitive,
-    !unsafePath(file.path),
-    !file.path.split(/[\\/]/).includes("..")
-  ].every(Boolean);
-}
-function validMirrorHash(file) {
-  return /^[a-f0-9]{64}$/i.test(file.sha256) && createHash("sha256").update(file.text).digest("hex") === file.sha256;
-}
-function unsafePath(value) {
-  return posix3.isAbsolute(value) || win323.isAbsolute(value) || value.split(/[\\/]/).includes("..");
-}
-function uriToMirrorPath(uri, root) {
-  if (!uri.startsWith(`${root}/`)) return void 0;
-  try {
-    const path5 = decodeURIComponent(uri.slice(root.length + 1));
-    return unsafePath(path5) ? void 0 : path5;
-  } catch {
-    return void 0;
-  }
-}
-
-// src/semantic/python-mirror/python-mirror-plan-ready.ts
-function readyPlan(manifest, files, options) {
-  return {
-    status: "ready",
-    manifest,
-    files,
-    generation: options.generation,
-    minimal_pyrightconfig: Object.freeze({}),
-    bundled_typeshed: Object.freeze([...options.bundled_typeshed]),
-    resolveUri: (uri, generation, sha2563) => resolvePlanUri({ uri, generation, sha256: sha2563, options, manifest }),
-    onProjectConfigurationChanged: projectConfigurationChanged
-  };
-}
-function resolvePlanUri(input) {
-  const path5 = uriToMirrorPath(input.uri, input.options.mirror_uri_root);
-  return path5 && input.generation === input.options.generation && input.manifest[path5] === input.sha256 ? { status: "accepted", original_path: path5 } : {
-    status: "rejected",
-    code: "unsafe_backend_mode"
-  };
-}
-function projectConfigurationChanged() {
-  return {
-    status: "rebuild_required",
-    terminate_old_backend: true
-  };
-}
-
-// src/semantic/python-mirror/python-mirror-plan-builder.ts
-var DEFAULT_OPTIONS = {
-  generation: 0,
-  mirror_uri_root: "file:///code-explorer-mirror",
-  bundled_typeshed: []
-};
-function createPythonMirrorPlan(configuration, files, options = DEFAULT_OPTIONS) {
-  if (unsafeMirrorInput(configuration, files, options))
-    return {
-      status: "unavailable",
-      code: "unsafe_backend_mode"
-    };
-  const manifest = Object.freeze(
-    Object.fromEntries(files.map((file) => [file.path, file.sha256]))
-  );
-  const mirrored = Object.freeze(
-    files.map(
-      ({ path: path5, sha256: sha2563, text }) => Object.freeze({ path: path5, sha256: sha2563, text })
-    )
-  );
-  return readyPlan(manifest, mirrored, options);
-}
-function unsafeMirrorInput(configuration, files, options) {
-  return containsUnsafePythonConfiguration(configuration) || files.some((file) => !isSafePythonMirrorFile(file)) || options.bundled_typeshed.some(unsafePath);
-}
-
-// src/semantic/python-mirror/python-mirror-filesystem.ts
-import { mkdirSync as mkdirSync2, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join as join7 } from "node:path";
-
-// src/semantic/python-mirror/python-mirror-permissions.ts
-import { chmodSync, existsSync, readdirSync as readdirSync2 } from "node:fs";
-import { join as join5 } from "node:path";
-function makeTreeReadOnly(directory) {
-  for (const entry of readdirSync2(directory, { withFileTypes: true })) {
-    const target = join5(directory, entry.name);
-    if (entry.isDirectory()) {
-      makeTreeReadOnly(target);
-      continue;
-    }
-    chmodSync(target, 292);
-  }
-  chmodSync(directory, 365);
-}
-function makeTreeWritable(directory) {
-  if (!existsSync(directory)) return;
-  for (const entry of readdirSync2(directory, { withFileTypes: true })) {
-    const target = join5(directory, entry.name);
-    if (entry.isDirectory()) {
-      makeTreeWritable(target);
-      continue;
-    }
-    chmodSync(target, 420);
-  }
-  chmodSync(directory, 493);
-}
-
-// src/semantic/python-mirror/python-mirror-typeshed.ts
-var PYI_CLASS = "class ";
-var BUNDLED_TYPESHED = Object.freeze({
-  "typeshed/stdlib/builtins.pyi": `${PYI_CLASS}object: ...
-${PYI_CLASS}str(object): ...
-${PYI_CLASS}int(object): ...
-`
-});
-
-// src/semantic/python-mirror/python-mirror-writer.ts
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname as dirname3, join as join6 } from "node:path";
-function writeMirrorFile(root, relativePath, text) {
-  const target = join6(root, relativePath);
-  mkdirSync(dirname3(target), {
-    recursive: true,
-    mode: 493
-  });
-  writeFileSync(target, text, {
-    encoding: "utf8",
-    mode: 292
-  });
-}
-
-// src/semantic/python-mirror/python-mirror-filesystem.ts
-function createMirrorTree(plan) {
-  const generation = plan.generation;
-  const serviceRoot = mkdtempSync(join7(tmpdir(), "code-explorer-pyright-"));
-  const mirrorRoot = join7(serviceRoot, `generation-${generation}`);
-  try {
-    mkdirSync2(mirrorRoot, { recursive: true, mode: 493 });
-    writeMirrorFile(
-      mirrorRoot,
-      "pyrightconfig.json",
-      `${JSON.stringify(plan.minimal_pyrightconfig)}
-`
-    );
-    for (const file of plan.files)
-      writeMirrorFile(mirrorRoot, file.path, file.text);
-    for (const path5 of plan.bundled_typeshed) {
-      const text = BUNDLED_TYPESHED[path5];
-      if (text === void 0) throw new Error("unsafe_backend_mode");
-      writeMirrorFile(mirrorRoot, path5, text);
-    }
-    makeTreeReadOnly(mirrorRoot);
-    return { serviceRoot, mirrorRoot };
-  } catch (error2) {
-    makeTreeWritable(serviceRoot);
-    rmSync(serviceRoot, { recursive: true, force: true });
-    throw error2;
-  }
-}
-function createDisposer(serviceRoot) {
-  let disposed = false;
-  const dispose = () => {
-    if (disposed) return;
-    disposed = true;
-    process.removeListener("exit", dispose);
-    makeTreeWritable(serviceRoot);
-    rmSync(serviceRoot, { recursive: true, force: true });
-  };
-  process.once("exit", dispose);
-  return { dispose, disposed: () => disposed };
-}
-
-// src/semantic/python-mirror/python-mirror-path.ts
-import { createHash as createHash2 } from "node:crypto";
-import { relative } from "node:path";
-import { fileURLToPath as fileURLToPath2 } from "node:url";
-function relativeMirrorPath(uri, mirrorRoot) {
-  try {
-    if (!uri.startsWith("file:")) return void 0;
-    const path5 = fileURLToPath2(uri);
-    const relativePath = relative(mirrorRoot, path5).replaceAll("\\", "/");
-    return validRelativePath(relativePath) ? relativePath : void 0;
-  } catch {
-    return void 0;
-  }
-}
-function validRelativePath(value) {
-  return value.length > 0 && !value.startsWith("../") && value !== "..";
-}
-function sha2562(value) {
-  return createHash2("sha256").update(value).digest("hex");
-}
-function samePath2(left, right) {
-  return process.platform === "win32" ? left.toLowerCase() === right.toLowerCase() : left === right;
-}
-
-// src/semantic/python-mirror/python-mirror-verification.ts
-import { lstatSync as lstatSync3 } from "node:fs";
-import { join as join9 } from "node:path";
-
-// src/semantic/python-mirror/python-mirror-tree.ts
-import {
-  closeSync as closeSync2,
-  fstatSync as fstatSync2,
-  lstatSync as lstatSync2,
-  openSync as openSync2,
-  readdirSync as readdirSync3,
-  readFileSync as readFileSync4
-} from "node:fs";
-import { join as join8 } from "node:path";
-function mirrorTreeMatches(root, expected) {
-  try {
-    const actual = /* @__PURE__ */ new Map();
-    collectTree(root, "", actual);
-    return actual.size === expected.size && [...expected].every(([path5, digest]) => actual.get(path5) === digest);
-  } catch {
-    return false;
-  }
-}
-function collectTree(directory, relativeDirectory, actual) {
-  for (const entry of readdirSync3(directory, {
-    withFileTypes: true
-  })) {
-    collectEntry({
-      directory,
-      relativeDirectory,
-      actual,
-      entry
-    });
-  }
-}
-function collectEntry(input) {
-  const path5 = join8(input.directory, input.entry.name);
-  const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
-  if (lstatSync2(path5).isSymbolicLink()) throw new Error("link");
-  if (input.entry.isDirectory()) {
-    collectTree(path5, relativePath, input.actual);
-    return;
-  }
-  if (input.entry.isFile()) {
-    input.actual.set(relativePath, sha2562(readRegularFile(path5)));
-    return;
-  }
-  throw new Error("unsupported");
-}
-function readRegularFile(path5) {
-  const descriptor = openSync2(path5, "r");
-  try {
-    if (!fstatSync2(descriptor).isFile()) throw new Error("unsupported");
-    return readFileSync4(descriptor, "utf8");
-  } finally {
-    closeSync2(descriptor);
-  }
-}
-
-// src/semantic/python-mirror/python-mirror-verification.ts
-function expectedTreeFor(plan) {
-  return new Map([
-    [
-      "pyrightconfig.json",
-      sha2562(`${JSON.stringify(plan.minimal_pyrightconfig)}
-`)
-    ],
-    ...plan.files.map((file) => [file.path, file.sha256]),
-    ...plan.bundled_typeshed.map(
-      (path5) => [
-        path5,
-        sha2562(
-          BUNDLED_TYPESHED[path5] ?? ""
-        )
-      ]
-    )
-  ]);
-}
-function verifyMirrorPath(input) {
-  const expected = input.manifest.get(input.path);
-  if (!expected || input.disposed) return false;
-  try {
-    return mirrorFilesMatch(input, expected);
-  } catch {
-    return false;
-  }
-}
-function mirrorFilesMatch(input, expected) {
-  const original = input.root.protectedRead(input.path).bytes;
-  const mirrorPath = join9(input.mirrorRoot, input.path);
-  if (lstatSync3(mirrorPath).isSymbolicLink()) return false;
-  return [
-    mirrorTreeMatches(input.mirrorRoot, input.expectedTree),
-    sha2562(original) === expected.original_sha256,
-    sha2562(readRegularFile(mirrorPath)) === expected.mirror_sha256
-  ].every(Boolean);
-}
-
-// src/semantic/python-mirror/python-mirror-generation.ts
-function createMirror(root, generation, snapshot) {
-  const context = createMirrorContext(root, generation, snapshot);
-  return {
-    root: context.paths.mirrorRoot,
-    generation,
-    sourcePaths: () => context.plan.files.map(({ path: path5 }) => path5),
-    uriFor: (path5) => context.verify(path5) ? pathToFileURL(join10(context.paths.mirrorRoot, path5)).href : "",
-    pathForUri: (uri) => {
-      const path5 = relativeMirrorPath(uri, context.paths.mirrorRoot);
-      return path5 && context.verify(path5) ? path5 : void 0;
-    },
-    dispose: context.dispose.dispose,
-    disposeAfterShutdown
-  };
-  async function disposeAfterShutdown(shutdown) {
-    await shutdown();
-    context.dispose.dispose();
-  }
-}
-function createMirrorContext(root, generation, snapshot) {
-  const plan = createPythonMirrorPlan(snapshot.configuration, snapshot.inputs, {
-    generation,
-    mirror_uri_root: "file:///pending-python-mirror",
-    bundled_typeshed: Object.keys(BUNDLED_TYPESHED)
-  });
-  if (plan.status !== "ready") throw new Error("unsafe_backend_mode");
-  const paths = createMirrorTree(plan);
-  const dispose = createDisposer(paths.serviceRoot);
-  return {
-    plan,
-    paths,
-    dispose,
-    verify: createVerifier({
-      root,
-      mirrorRoot: paths.mirrorRoot,
-      plan,
-      dispose
-    })
-  };
-}
-function createVerifier(input) {
-  const expectedTree = expectedTreeFor(input.plan);
-  const manifest = new Map(
-    input.plan.files.map((file) => [
-      file.path,
-      {
-        original_sha256: file.sha256,
-        mirror_sha256: file.sha256
-      }
-    ])
-  );
-  return (path5) => verifyMirrorPath({
-    path: path5,
-    root: input.root,
-    mirrorRoot: input.mirrorRoot,
-    expectedTree,
-    manifest,
-    disposed: input.dispose.disposed()
-  });
-}
-
-// src/semantic/python-mirror/python-mirror-config.ts
-import { existsSync as existsSync2, lstatSync as lstatSync4 } from "node:fs";
-import { join as join11 } from "node:path";
-function readProjectPythonConfiguration(root) {
-  const config2 = {};
-  const pyright = protectedOptionalRead(root, "pyrightconfig.json");
-  if (pyright !== void 0) config2.pyrightconfig = parseJson(pyright);
-  const pyproject = protectedOptionalRead(root, "pyproject.toml");
-  if (pyproject !== void 0) {
-    const parsed = parseToolPyright(pyproject);
-    if (parsed === void 0) throw new Error("unsafe_backend_mode");
-    if (Object.keys(parsed).length) config2.tool_pyright = parsed;
-  }
-  return config2;
-}
-function parseJson(source) {
-  try {
-    const parsed = JSON.parse(source);
-    if (!isRecord(parsed)) throw new Error("invalid");
-    return parsed;
-  } catch {
-    throw new Error("unsafe_backend_mode");
-  }
-}
-function protectedOptionalRead(root, path5) {
-  const absolute = join11(root.canonicalPath, path5);
-  if (!existsSync2(absolute)) return void 0;
-  if (lstatSync4(absolute).isSymbolicLink())
-    throw new Error("unsafe_backend_mode");
-  return root.protectedRead(path5).bytes;
-}
-function parseToolPyright(toml) {
-  const lines = toml.replace(/^\uFEFF/, "").split(/\r?\n/);
-  let active = false;
-  const result = {};
-  for (const raw of lines) {
-    const parsed = parseToolLine(raw, active);
-    active = parsed.active;
-    if (parsed.invalid) return void 0;
-    if (parsed.assignment)
-      result[parsed.assignment[0]] = parseTomlValue(parsed.assignment[1]);
-  }
-  return result;
-}
-function parseToolLine(raw, active) {
-  const line = raw.replace(/\s+#.*$/, "").trim();
-  if (!line) return { active, invalid: false };
-  if (/^\[.*\]$/.test(line))
-    return {
-      active: line === "[tool.pyright]",
-      invalid: false
-    };
-  if (!active) return { active, invalid: false };
-  const match = /^([A-Za-z0-9_.-]+)\s*=\s*(.+)$/.exec(line);
-  return match ? {
-    active,
-    invalid: false,
-    assignment: [match[1], match[2]]
-  } : { active, invalid: true };
-}
-function parseTomlValue(value) {
-  const trimmed = value.trim();
-  if (/^(true|false)$/.test(trimmed)) return trimmed === "true";
-  if (/^["'].*["']$/.test(trimmed)) return trimmed.slice(1, -1);
-  if (!/^\[.*\]$/.test(trimmed)) return trimmed;
-  const inner = trimmed.slice(1, -1).trim();
-  return inner ? inner.split(",").map(parseTomlValue) : [];
-}
-function isRecord(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-// src/semantic/python-mirror/python-mirror-inputs.ts
-import { lstatSync as lstatSync5, readdirSync as readdirSync5 } from "node:fs";
-import { join as join13 } from "node:path";
-
-// src/discovery/config-path.ts
-import { readdirSync as readdirSync4 } from "node:fs";
-import { join as join12 } from "node:path";
-import process3 from "node:process";
-var configName = ".code-explorer.json";
-function isClassificationConfigPath(path5, platform = process3.platform) {
-  if (path5.includes("/") || path5.includes("\\")) return false;
-  return platform === "win32" ? path5.toLocaleLowerCase("en-US") === configName : path5 === configName;
-}
-function findClassificationConfigPath(projectRoot, platform = process3.platform) {
-  return readdirSync4(projectRoot, { withFileTypes: true }).find(
-    (entry) => entry.isFile() && isClassificationConfigPath(entry.name, platform)
-  )?.name;
-}
-function classificationConfigPath(projectRoot, platform = process3.platform) {
-  const name = findClassificationConfigPath(projectRoot, platform);
-  return name ? join12(projectRoot, name) : void 0;
-}
-
-// src/semantic/python-mirror/python-mirror-inputs.ts
-function collectPythonFiles(root) {
-  return visit(root, root.canonicalPath, "");
-}
-function visit(root, directory, relativeDirectory) {
-  return readdirSync5(directory, {
-    withFileTypes: true
-  }).flatMap(
-    (entry) => visitEntry2({
-      root,
-      directory,
-      relativeDirectory,
-      entry
-    })
-  );
-}
-function visitEntry2(input) {
-  const absolute = join13(input.directory, input.entry.name);
-  const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
-  if (lstatSync5(absolute).isSymbolicLink())
-    throw new Error("unsafe_backend_mode");
-  if (input.entry.isDirectory())
-    return visitDirectory(input.root, absolute, relativePath);
-  if (!input.entry.isFile()) return [];
-  return visitPythonFile(input.root, absolute, relativePath);
-}
-function visitPythonFile(root, absolute, relativePath) {
-  if (!isPythonFile(relativePath)) return [];
-  const resolved = root.resolveClientPath(relativePath);
-  if (!samePath2(resolved, absolute)) throw new Error("unsafe_backend_mode");
-  return [relativePath];
-}
-function visitDirectory(root, absolute, relativePath) {
-  return isExcludedPythonDirectory(relativePath) ? [] : visit(root, absolute, relativePath);
-}
-function isPythonFile(path5) {
-  return (path5.endsWith(".py") || path5.endsWith(".pyi")) && !isSensitiveProjectPath(path5) && !isClassificationConfigPath(path5);
-}
-function isExcludedPythonDirectory(path5) {
-  return isSensitiveProjectPath(path5) || path5.split("/").some((part) => /^(\.venv|venv|node_modules|__pycache__)$/iu.test(part));
-}
-
-// src/semantic/python-mirror/python-mirror-snapshot.ts
-function snapshotPythonProject(root) {
-  const configuration = readProjectPythonConfiguration(root);
-  const inputs = collectPythonFiles(root).map((path5) => {
-    const text = root.protectedRead(path5).bytes;
-    return { path: path5, text, sha256: sha2562(text) };
-  });
-  return {
-    configuration,
-    inputs,
-    fingerprint: sha2562(
-      [
-        JSON.stringify(configuration),
-        inputs.map((input) => `${input.path}:${input.sha256}`).join("\n")
-      ].join("\n")
-    )
-  };
-}
-
-// src/semantic/python-mirror/python-mirror-manager-actions.ts
-async function refreshManager(input) {
-  const snapshot = snapshotOrUndefined(input.root);
-  if (!snapshot) return unavailableRefresh(input);
-  const active = input.active();
-  if (active?.fingerprint === snapshot.fingerprint)
-    return unchangedMirror(active);
-  await retireActive(input);
-  return createFreshMirror(input, snapshot);
-}
-async function unavailableRefresh(input) {
-  await retireActive(input);
-  return {
-    status: "unavailable",
-    code: "unsafe_backend_mode"
-  };
-}
-function unchangedMirror(active) {
-  return {
-    status: "ready",
-    mirror: active.mirror,
-    changed: false
-  };
-}
-function snapshotOrUndefined(root) {
-  try {
-    return snapshotPythonProject(root);
-  } catch {
-    return void 0;
-  }
-}
-function createFreshMirror(input, snapshot) {
-  try {
-    const mirror = createMirror(input.root, input.nextGeneration(), snapshot);
-    input.setActive({
-      mirror,
-      fingerprint: snapshot.fingerprint
-    });
-    return {
-      status: "ready",
-      mirror,
-      changed: true
-    };
-  } catch {
-    return {
-      status: "unavailable",
-      code: "unsafe_backend_mode"
-    };
-  }
-}
-async function retireActive(input) {
-  const active = input.active();
-  if (!active) return;
-  input.setActive(void 0);
-  try {
-    await active.mirror.disposeAfterShutdown(input.terminateOldBackend);
-  } catch {
-  }
-}
-
-// src/semantic/python-mirror/python-mirror-manager.ts
-function createPythonMirrorManager(root, terminateOldBackend = () => {
-}) {
-  let active;
-  let nextGeneration = 0;
-  const enqueue = createOperationQueue();
-  return {
-    current: () => active?.mirror,
-    refresh: () => enqueue(
-      () => refreshManager({
-        root,
-        active: () => active,
-        setActive: (value) => active = value,
-        nextGeneration: () => nextGeneration++,
-        terminateOldBackend
-      })
-    ),
-    disposeAfterShutdown: (shutdown) => enqueue(
-      () => disposeManager(
-        () => active,
-        (value) => active = value,
-        shutdown
-      )
-    )
-  };
-}
-function createOperationQueue() {
-  let operations = Promise.resolve();
-  return (operation) => {
-    const result = operations.then(operation, operation);
-    operations = result.then(
-      () => void 0,
-      () => void 0
-    );
-    return result;
-  };
-}
-async function disposeManager(active, setActive, shutdown) {
-  await shutdown();
-  active()?.mirror.dispose();
-  setActive(void 0);
-}
-
-// src/semantic/adapters/native-backend-inspector.ts
-import { isAbsolute as isAbsolute2 } from "node:path";
-
-// src/semantic/adapters/native-backend-candidate.ts
-import { join as join16 } from "node:path";
-
-// src/semantic/adapters/native-backend-candidate-details.ts
-import { dirname as dirname4, join as join14 } from "node:path";
-
-// src/semantic/adapters/native-backend-file.ts
-import { createHash as createHash3 } from "node:crypto";
-import {
-  closeSync as closeSync3,
-  fstatSync as fstatSync3,
-  lstatSync as lstatSync6,
-  openSync as openSync3,
-  readFileSync as readFileSync5,
-  realpathSync as realpathSync2
-} from "node:fs";
-import { isAbsolute, relative as relative2, resolve as resolve2, sep } from "node:path";
-function inspectNativeFile(candidate, root, projectRoot) {
-  try {
-    const link = lstatSync6(candidate);
-    if (!link.isFile() || link.isSymbolicLink()) return void 0;
-    const canonicalPath = realpathSync2.native(candidate);
-    if (!safeFilePath(root, canonicalPath, projectRoot)) return void 0;
-    return inspectOpenedNativeFile(canonicalPath);
-  } catch {
-    return void 0;
-  }
-}
-function inspectOpenedNativeFile(canonicalPath) {
-  const descriptor = openSync3(canonicalPath, "r");
-  try {
-    const stat4 = fstatSync3(descriptor, { bigint: true });
-    if (!stat4.isFile()) return void 0;
-    return {
-      canonical_path: canonicalPath,
-      device: String(stat4.dev),
-      file_id: String(stat4.ino),
-      sha256: createHash3("sha256").update(readFileSync5(descriptor)).digest("hex"),
-      regular_file: true,
-      link_or_reparse_point: false
-    };
-  } finally {
-    closeSync3(descriptor);
-  }
-}
-function safeFilePath(root, candidate, projectRoot) {
-  return isWithin2(root, candidate) && !(projectRoot && isWithin2(projectRoot, candidate));
-}
-function isWithin2(root, candidate) {
-  const path5 = relative2(resolve2(root), resolve2(candidate));
-  return path5 === "" || isChild(path5);
-}
-function isChild(path5) {
-  return !path5.startsWith(`..${sep}`) && path5 !== ".." && !isAbsolute(path5);
-}
-
-// src/semantic/adapters/native-backend-candidate-details.ts
-function findPackageMetadata(input, entrypoints) {
-  if (input.language !== "python") return void 0;
-  const entrypoint = entrypoints[0]?.canonical_path;
-  const root = entrypoint ? input.roots.find((candidate) => isWithin2(candidate, entrypoint)) : void 0;
-  return entrypoint && root ? inspectNativeFile(
-    join14(dirname4(entrypoint), "package.json"),
-    root,
-    input.projectRoot
-  ) : void 0;
-}
-function candidateIdentity(input, details) {
-  if (input.language === "python" && !details.packageMetadata) return void 0;
-  return {
-    ...details.executable,
-    version: details.version,
-    entrypoints: details.files,
-    ...details.packageMetadata ? { package_metadata: details.packageMetadata } : {}
-  };
-}
-function pinnedRoslynExecutable(root, executableBasename) {
-  return join14(
-    root,
-    ".store",
-    "roslyn-language-server",
-    "5.11.0-1.26380.4",
-    "roslyn-language-server.win-x64",
-    "5.11.0-1.26380.4",
-    "tools",
-    "net10.0",
-    "win-x64",
-    executableBasename
-  );
-}
-
-// src/semantic/adapters/native-backend-version.ts
-import { spawnSync } from "node:child_process";
-import { readFileSync as readFileSync6 } from "node:fs";
-import { dirname as dirname5, join as join15 } from "node:path";
-function probeVersion(language, executable, entrypoints) {
-  if (language === "csharp")
-    return peFileVersion(executable) ?? commandVersion(executable);
-  if (language === "python")
-    return pyrightPackageVersion(entrypoints[0]?.canonical_path);
-  return commandVersion(executable);
-}
-function commandVersion(executable) {
-  const probe = spawnSync(executable, ["--version"], {
-    encoding: "utf8",
-    shell: false,
-    timeout: 5e3,
-    windowsHide: true
-  });
-  return probe.status === 0 ? firstVersion(`${probe.stdout}
-${probe.stderr}`) : void 0;
-}
-function peFileVersion(path5) {
-  const source = readFileSync6(path5).toString("utf16le");
-  const version2 = /ProductVersion\0(v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/.exec(
-    source
-  )?.[1];
-  return version2?.replace(/^v/, "") ?? firstVersion(source.match(/FileVersion[\s\S]{0,160}/)?.[0] ?? "");
-}
-function pyrightPackageVersion(entrypoint) {
-  if (!entrypoint) return void 0;
-  try {
-    const parseJson3 = JSON.parse;
-    const packageJson = parseJson3(
-      readFileSync6(join15(dirname5(entrypoint), "package.json"), "utf8")
-    );
-    return typeof packageJson.version === "string" && /^\d+\.\d+\.\d+$/.test(packageJson.version) ? packageJson.version : void 0;
-  } catch {
-    return void 0;
-  }
-}
-function firstVersion(output) {
-  return output.match(
-    /(?:^|[^0-9])v?(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/
-  )?.[1];
-}
-
-// src/semantic/adapters/native-backend-candidate.ts
-function inspectBackendCandidate(input) {
-  const executable = inspectExecutable(input);
-  if (!hasCanonicalPath(executable)) return void 0;
-  const entrypoints = findEntrypoints(input);
-  return completeCandidate(input, executable, entrypoints);
-}
-function hasCanonicalPath(identity) {
-  return Boolean(identity?.canonical_path);
-}
-function completeCandidate(input, executable, entrypoints) {
-  if (entrypoints.some((entrypoint) => !entrypoint)) return void 0;
-  const files = entrypoints;
-  const version2 = probeVersion(
-    input.language,
-    executable.canonical_path,
-    files
-  );
-  if (!version2) return void 0;
-  const packageMetadata = findPackageMetadata(input, files);
-  return candidateIdentity(input, {
-    executable,
-    files,
-    version: version2,
-    packageMetadata
-  });
-}
-function inspectExecutable(input) {
-  const candidate = input.language === "csharp" ? pinnedRoslynExecutable(input.root, input.executableBasename) : join16(input.root, input.executableBasename);
-  return inspectNativeFile(candidate, input.root, input.projectRoot);
-}
-function findEntrypoints(input) {
-  return input.entrypointBasenames.map(
-    (name) => input.roots.map(
-      (entrypointRoot) => inspectNativeFile(
-        join16(entrypointRoot, "node_modules", "pyright", name),
-        entrypointRoot,
-        input.projectRoot
-      )
-    ).find(Boolean)
-  );
-}
-
-// src/semantic/adapters/native-backend-inspector.ts
-function createNativeBackendInspector(commandRoots, projectRoot) {
-  const roots = commandRoots.filter(
-    (root) => isAbsolute2(root) && !(projectRoot && isWithin2(projectRoot, root))
-  );
-  return (language, executableBasename, entrypointBasenames = []) => {
-    for (const root of roots) {
-      const candidate = inspectBackendCandidate({
-        language,
-        root,
-        projectRoot,
-        executableBasename,
-        entrypointBasenames,
-        roots
-      });
-      if (candidate) return candidate;
-    }
-    return void 0;
-  };
-}
-
-// src/semantic/workspace/filtered-workspace.ts
-import { existsSync as existsSync3, mkdtempSync as mkdtempSync2, rmSync as rmSync2 } from "node:fs";
-import { tmpdir as tmpdir2 } from "node:os";
-import { join as join18 } from "node:path";
-
-// src/semantic/workspace/filtered-workspace-copy.ts
-import {
-  lstatSync as lstatSync7,
-  mkdirSync as mkdirSync3,
-  readdirSync as readdirSync6,
-  writeFileSync as writeFileSync2
-} from "node:fs";
-import { dirname as dirname6, join as join17 } from "node:path";
-
-// src/semantic/workspace/filtered-workspace-rules.ts
-function relativePathFor(directory, name) {
-  return directory ? `${directory}/${name}` : name;
-}
-function isBackendIrrelevant(path5) {
-  return path5.split("/").some((part) => BACKEND_IRRELEVANT.test(part));
-}
-var BACKEND_IRRELEVANT = new RegExp(
-  [
-    "^(node_modules|dist|target|bin|obj|\\.venv|coverage|docs|reports|",
-    "\\.serena|\\.idea|\\.claude|\\.codex|\\.github|\\.data|",
-    "\\.evo|\\.skill-migrate|\\.tighten)$"
-  ].join(""),
-  "iu"
-);
-function isBackendSourceFile(path5) {
-  return /\.(rs|cs|csx|fs|vb|toml|json|sln|csproj|props|targets)$/iu.test(path5) || /(^|\/)(Cargo\.lock|Cargo\.toml|Directory\.Build\.props)$/iu.test(path5);
-}
-
-// src/semantic/workspace/filtered-workspace-copy.ts
-function copyFilteredDirectory(input) {
-  return readdirSync6(input.absoluteDirectory, {
-    withFileTypes: true
-  }).reduce(
-    (excluded, entry) => excluded + copyFilteredEntry({ ...input, entry }),
-    0
-  );
-}
-function copyFilteredEntry(input) {
-  const relativePath = relativePathFor(
-    input.relativeDirectory,
-    input.entry.name
-  );
-  const reason = skipReason(
-    relativePath,
-    input.absoluteDirectory,
-    input.entry.name
-  );
-  if (reason === "sensitive") return 1;
-  if (reason) return 0;
-  if (input.entry.isDirectory()) return copyDirectory(input, relativePath);
-  copySource(input, relativePath);
-  return 0;
-}
-function copyDirectory(input, relativePath) {
-  const target = join17(input.serviceRoot, relativePath);
-  mkdirSync3(target, { recursive: true });
-  return copyFilteredDirectory({
-    ...input,
-    absoluteDirectory: join17(input.absoluteDirectory, input.entry.name),
-    relativeDirectory: relativePath
-  });
-}
-function copySource(input, relativePath) {
-  if (!(input.entry.isFile() && isBackendSourceFile(relativePath))) return;
-  const target = join17(input.serviceRoot, relativePath);
-  mkdirSync3(dirname6(target), { recursive: true });
-  writeFileSync2(
-    target,
-    input.sourceRoot.protectedRead(relativePath).bytes,
-    "utf8"
-  );
-  input.sourcePaths.push(relativePath);
-}
-function skipReason(relativePath, absoluteDirectory, name) {
-  if (isSensitiveProjectPath(relativePath)) return "sensitive";
-  if (isClassificationConfigPath(relativePath)) return "ignored";
-  if (isBackendIrrelevant(relativePath)) return "ignored";
-  if (lstatSync7(join17(absoluteDirectory, name)).isSymbolicLink())
-    return "ignored";
-  return void 0;
-}
-
-// src/semantic/workspace/filtered-workspace.ts
-function createFilteredWorkspace(sourceRoot) {
-  const serviceRoot = mkdtempSync2(join18(tmpdir2(), "code-explorer-native-"));
-  const sourcePaths = [];
-  try {
-    const excluded = copyFilteredDirectory({
-      absoluteDirectory: sourceRoot.canonicalPath,
-      relativeDirectory: "",
-      serviceRoot,
-      sourceRoot,
-      sourcePaths
-    });
-    return {
-      root: createNativeProjectRoot(serviceRoot),
-      sensitive_paths_excluded: excluded,
-      sourcePaths: () => [...sourcePaths],
-      dispose: () => disposeWorkspace(serviceRoot)
-    };
-  } catch (error2) {
-    disposeWorkspace(serviceRoot);
-    throw error2;
-  }
-}
-function disposeWorkspace(serviceRoot) {
-  if (existsSync3(serviceRoot))
-    rmSync2(serviceRoot, { recursive: true, force: true });
-}
-
-// src/semantic/runtime/runtime-adapter-metadata.ts
-function runtimeAdapterMetadata(input) {
-  return {
-    backend_name: input.backendName,
-    backend_version: input.prepared.status === "ready" ? input.prepared.version : "unobserved",
-    discovery_source: "server_path",
-    unavailable_failure_code: input.prepared.status === "unavailable" ? input.prepared.code : "backend_unavailable",
-    capabilities: input.capabilities
-  };
-}
-
-// src/semantic/adapters/language-adapter-status-fields.ts
-function adapterState(input) {
-  if (!input.options.compatible) return "unavailable";
-  if (input.timedOut) return "failed";
-  if (input.backendState === "ready" && hasUnavailableCapability(input.capabilities))
-    return "degraded";
-  return input.backendState;
-}
-function failureFields(input) {
-  if (!input.options.compatible)
-    return { failure_code: "unsupported_backend_version" };
-  if (input.backendState.state === "unavailable")
-    return { failure_code: unavailableFailure(input) };
-  if (input.timedOut) return { failure_code: "initialization_timeout" };
-  if (input.backendState.state === "failed")
-    return {
-      failure_code: input.backendState.failure_code
-    };
-  return {};
-}
-function unavailableFailure(input) {
-  return input.backendState.failure_code ?? input.options.unavailable_failure_code ?? "backend_unavailable";
-}
-function configuredCapabilities(overrides) {
-  const defaults = Object.fromEntries(
-    relationNames.map((relation) => [relation, { state: "ready" }])
-  );
-  return { ...defaults, ...overrides };
-}
-function unavailableCapabilities(capabilities) {
-  return Object.fromEntries(
-    Object.keys(capabilities).map((relation) => [
-      relation,
-      { state: "unavailable" }
-    ])
-  );
-}
-function hasUnavailableCapability(capabilities) {
-  return Object.values(capabilities).some(({ state }) => state !== "ready");
-}
-function defaultBackendName(language) {
-  if (language === "rust") return "rust-analyzer";
-  if (language === "python") return "pyright-langserver";
-  return "roslyn-language-server";
-}
-
-// src/semantic/adapters/language-adapter-status.ts
-function createBackendStatus(input) {
-  const backendState = input.options.backend.readiness();
-  const initializingSince = nextInitializingSince(
-    backendState.state,
-    input.initializingSince,
-    input.now
-  );
-  const timedOut = backendState.state === "initializing" && input.now() - (initializingSince ?? input.now()) >= 3e4;
-  const state = adapterState({
-    options: input.options,
-    backendState: backendState.state,
-    timedOut,
-    capabilities: input.capabilities
-  });
-  const status = {
-    language: input.language,
-    backend_name: input.options.backend_name ?? defaultBackendName(input.language),
-    backend_version: input.options.backend_version,
-    discovery_source: input.options.discovery_source ?? "injected",
-    state,
-    capabilities: state === "unavailable" || state === "failed" ? unavailableCapabilities(input.capabilities) : input.capabilities,
-    last_transition_time: 0,
-    ...failureFields({
-      options: input.options,
-      backendState,
-      timedOut
-    })
-  };
-  return { status, initializingSince };
-}
-function nextInitializingSince(state, current, now) {
-  if (state === "initializing") return current ?? now();
-  return void 0;
-}
-
-// src/semantic/adapters/language-adapter-status-reader.ts
-function createStatusReader(input) {
-  let initializingSince;
-  let lastSignature;
-  let lastTransitionTime = input.now();
-  return () => {
-    const current = createBackendStatus({
-      ...input,
-      capabilities: input.capabilities(),
-      initializingSince
-    });
-    initializingSince = current.initializingSince;
-    const signature = [
-      current.status.state,
-      current.status.failure_code ?? ""
-    ].join(":");
-    if (lastSignature === void 0 || signature !== lastSignature) {
-      lastSignature = signature;
-      lastTransitionTime = input.now();
-    }
-    return {
-      ...current.status,
-      last_transition_time: lastTransitionTime
-    };
-  };
-}
-
-// src/semantic/adapters/language-adapter-factory.ts
-function createLanguageAdapter(language, options) {
-  const backend = options.backend;
-  const lifecycle = lifecycleMethods(backend);
-  const capabilities = configuredCapabilities(options.capabilities);
-  const now = options.now ?? Date.now;
-  return {
-    status: createStatusReader({
-      language,
-      options,
-      capabilities: () => backend.capabilities?.() ?? capabilities,
-      now
-    }),
-    request: (request) => Promise.resolve().then(() => requestBackend(backend, request)),
-    ...lifecycle
-  };
-}
-function requestBackend(backend, request) {
-  return backend.query(parseSemanticRequest(request)).then(parseSemanticResult);
-}
-function lifecycleMethods(backend) {
-  return {
-    ...backend.start ? { start: backend.start } : {},
-    ...backend.shutdown ? { shutdown: backend.shutdown } : {},
-    ...backend.refresh ? { refresh: backend.refresh } : {}
-  };
-}
-
-// src/semantic/adapters/language-adapter.ts
-function createRustAdapter(options) {
-  return createLanguageAdapter("rust", options);
-}
-function createPythonAdapter(options) {
-  return createLanguageAdapter("python", options);
-}
-function createCSharpAdapter(options) {
-  return createLanguageAdapter("csharp", options);
-}
-
-// src/semantic/runtime/runtime-adapter-selection.ts
-function createSelectedAdapter(language, options) {
-  if (language === "rust") return createRustAdapter(options);
-  if (language === "python") return createPythonAdapter(options);
-  return createCSharpAdapter(options);
-}
-function withFilteredShutdown(adapter, filtered) {
-  return {
-    ...adapter,
-    shutdown: () => shutdownFiltered(adapter, filtered)
-  };
-}
-async function shutdownFiltered(adapter, filtered) {
-  try {
-    await adapter.shutdown?.();
-  } finally {
-    filtered.dispose();
-  }
-}
-
-// src/semantic/runtime/runtime-backend-unavailable.ts
-async function unavailableQuery(_request) {
-  throw new Error("backend_unavailable");
-}
-var unavailableBackend = {
-  readiness: () => ({ state: "unavailable" }),
-  query: unavailableQuery
-};
-
-// src/semantic/runtime/runtime-native-backend.ts
-import { fileURLToPath as fileURLToPath3, pathToFileURL as pathToFileURL2 } from "node:url";
-
-// src/semantic/direct-lsp/direct-lsp-semantic-backend.ts
-var direct_lsp_semantic_backend_exports = {};
-__export(direct_lsp_semantic_backend_exports, {
-  createDirectLspSemanticBackend: () => createDirectLspSemanticBackend
-});
-
-// src/semantic/direct-lsp/direct-lsp-semantic-capabilities.ts
-var direct_lsp_semantic_capabilities_exports = {};
-__export(direct_lsp_semantic_capabilities_exports, {
-  relationCapabilitiesFromInitialize: () => relationCapabilitiesFromInitialize
-});
-function relationCapabilitiesFromInitialize(status) {
-  const capabilities = status.server_capabilities ?? {};
-  const supported = (name) => capabilities[name] !== void 0 && capabilities[name] !== false;
-  return {
-    definition: capabilityState(supported("definitionProvider")),
-    references: capabilityState(supported("referencesProvider")),
-    type_definition: capabilityState(supported("typeDefinitionProvider")),
-    implementation: capabilityState(supported("implementationProvider")),
-    callers: capabilityState(supported("callHierarchyProvider")),
-    callees: capabilityState(supported("callHierarchyProvider"))
-  };
-}
-function capabilityState(supported) {
-  return { state: supported ? "ready" : "unavailable" };
-}
-
-// src/semantic/backend-result/backend-result-validator.ts
-import { Buffer as Buffer2 } from "node:buffer";
-
-// src/semantic/backend-result/backend-result-locations.ts
-function symbolsIn(result) {
-  if (result.operation === "search") return result.symbols;
-  if (result.operation === "focus") return [result.symbol];
-  return result.relations.flatMap(
-    (relation) => "symbol" in relation ? [relation.symbol] : []
-  );
-}
-function projectLocationsIn(result) {
-  if (result.operation === "search")
-    return result.symbols.map(({ location }) => location);
-  if (result.operation === "focus") return [result.symbol.location];
-  return result.relations.flatMap((relation) => relationLocations(relation));
-}
-function relationLocations(relation) {
-  if (!("symbol" in relation)) return [];
-  return "external" in relation.location ? [relation.symbol.location] : [relation.symbol.location, relation.location];
-}
-function validateSymbol(symbol, options) {
-  if (!options.allowedLanguages.includes(symbol.language))
-    throw new Error("unexpected language");
-  validateLocation(symbol.location, options);
-}
-function validateLocation(location, options) {
-  options.root.resolveClientPath(location.path);
-  const source = options.root.protectedRead(location.path).bytes;
-  if (!rangeFits(source, location.range)) throw new Error("invalid range");
-}
-function rangeFits(source, range) {
-  const lines = source.split("\n").map((line) => line.replace(/\r$/, ""));
-  return positionFits(lines, range.start) && positionFits(lines, range.end) && comparePositions(range.start, range.end) <= 0;
-}
-function positionFits(lines, position) {
-  return position.line >= 0 && position.line < lines.length && position.character >= 0 && position.character <= lines[position.line].length;
-}
-function comparePositions(left, right) {
-  return left.line === right.line ? left.character - right.character : left.line - right.line;
-}
-
-// src/semantic/backend-result/backend-result-safety.ts
-function containsVirtualDocument(input) {
-  if (!isRecordOrArray(input)) return false;
-  if (Array.isArray(input)) return input.some(containsVirtualDocument);
-  return virtualRecord(input);
-}
-function virtualRecord(record2) {
-  if (typeof record2.uri === "string" && !record2.uri.startsWith("file:"))
-    return true;
-  return Object.values(record2).some(containsVirtualDocument);
-}
-function containsUnexpectedLanguage(input, allowedLanguages) {
-  if (!isRecordOrArray(input)) return false;
-  if (Array.isArray(input))
-    return input.some(
-      (item) => containsUnexpectedLanguage(item, allowedLanguages)
-    );
-  return unexpectedLanguageRecord(input, allowedLanguages);
-}
-function unexpectedLanguageRecord(record2, allowedLanguages) {
-  if ("language" in record2 && typeof record2.language === "string" && !allowedLanguages.includes(record2.language))
-    return true;
-  return Object.values(record2).some(
-    (item) => containsUnexpectedLanguage(item, allowedLanguages)
-  );
-}
-function containsStaleRevision(input, currentGeneration) {
-  if (!isRecordOrArray(input) || Array.isArray(input)) return false;
-  const revision = input.revision;
-  return isRecord2(revision) && revision.generation !== currentGeneration;
-}
-function isRecordOrArray(value) {
-  return !!value && typeof value === "object";
-}
-function isRecord2(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-// src/semantic/backend-result/backend-result-validator.ts
-var MAX_BACKEND_PAYLOAD_BYTES = 1024 * 1024;
-function validateBackendResult(input, options) {
-  const safety = validateSafety(input, options);
-  if (safety) return safety;
-  const result = parseResult(input);
-  if (!result)
-    return {
-      status: "rejected",
-      code: "invalid_backend_result"
-    };
-  return validateParsedResult(result, options);
-}
-function validateSafety(input, options) {
-  if (payloadSize(input) > MAX_BACKEND_PAYLOAD_BYTES)
-    return {
-      status: "rejected",
-      code: "backend_response_limit"
-    };
-  if (containsVirtualDocument(input) || containsStaleRevision(input, options.currentGeneration))
-    return {
-      status: "unavailable",
-      code: "invalid_backend_result",
-      adapter_state: "degraded"
-    };
-  if (containsUnexpectedLanguage(input, options.allowedLanguages))
-    return {
-      status: "rejected",
-      code: "invalid_backend_result",
-      adapter_gap: "unexpected_language"
-    };
-  return void 0;
-}
-function parseResult(input) {
-  try {
-    return parseSemanticResult(input);
-  } catch {
-    return void 0;
-  }
-}
-function validateParsedResult(result, options) {
-  try {
-    for (const symbol of symbolsIn(result)) validateSymbol(symbol, options);
-    for (const location of projectLocationsIn(result))
-      validateLocation(location, options);
-    return { status: "accepted", result };
-  } catch {
-    return {
-      status: "rejected",
-      code: "invalid_backend_result"
-    };
-  }
-}
-function payloadSize(input) {
-  try {
-    return Buffer2.byteLength(JSON.stringify(input), "utf8");
-  } catch {
-    return MAX_BACKEND_PAYLOAD_BYTES + 1;
-  }
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-accept.ts
-function acceptResult(result, input) {
-  const checked = validateBackendResult(result, {
-    allowedLanguages: [input.options.language],
-    root: input.options.root,
-    currentGeneration: input.options.revision.generation
-  });
-  if (checked.status !== "accepted") throw new Error(checked.code);
-  retainReturnedSymbols(checked.result, input.symbols);
-  return checked.result;
-}
-function retainReturnedSymbols(result, symbols) {
-  if (result.operation === "search") return retainSearch(result, symbols);
-  if (result.operation === "focus") {
-    symbols.set(result.symbol.id, result.symbol);
-    return;
-  }
-  for (const relation of result.relations)
-    if ("symbol" in relation) symbols.set(relation.symbol.id, relation.symbol);
-}
-function retainSearch(result, symbols) {
-  for (const symbol of result.symbols) symbols.set(symbol.id, symbol);
-}
-function openSourceDocument(source, options) {
-  if (!options.client.openProtectedDocument) return;
-  const uri = options.toBackendUri(source.location);
-  const document = options.root.protectedRead(source.location.path);
-  options.client.openProtectedDocument(uri, {
-    language_id: options.language,
-    bytes: document.bytes
-  });
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-availability.ts
-function assertAvailable(request, input) {
-  if (unavailableRelation(request, input.unavailableRelations))
-    throw new Error("backend_unavailable");
-  assertSymbolAvailable(request, input.symbols);
-  assertRelationAvailable(request, input.options);
-}
-function assertSymbolAvailable(request, symbols) {
-  if (request.operation !== "search" && !symbols.has(request.symbol_id))
-    throw new Error("backend_unavailable");
-}
-function assertRelationAvailable(request, options) {
-  if (isRelation(request) && relationCapabilitiesFromInitialize(
-    options.client.status()
-  )[request.operation].state !== "ready")
-    throw new Error("backend_unavailable");
-}
-function unavailableRelation(request, unavailableRelations) {
-  return isRelation(request) && unavailableRelations.has(request.operation);
-}
-function isRelation(request) {
-  return request.operation !== "search" && request.operation !== "focus";
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-location.ts
-function lspLocation(target, options) {
-  const uri = target?.uri ?? target?.targetUri;
-  const range = target?.range ?? target?.targetRange;
-  if (!(typeof uri === "string" && validRange(range))) return void 0;
-  const path5 = options.fromBackendUri(uri);
-  if (path5)
-    return {
-      path: path5,
-      range
-    };
-  if (uri.startsWith("file:")) return { external: true };
-  throw new Error("invalid_backend_result");
-}
-function asRecord(value) {
-  return value && typeof value === "object" ? value : void 0;
-}
-function validRange(value) {
-  const range = value;
-  return !!(Number.isInteger(range?.start?.line) && Number.isInteger(range.start?.character) && Number.isInteger(range?.end?.line) && Number.isInteger(range.end?.character));
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-document-symbols.ts
-function documentSymbols(raw, uri) {
-  const values = Array.isArray(raw) ? raw : [];
-  return values.flatMap((value) => documentSymbolAt(value, uri));
-}
-function documentSymbolAt(value, uri) {
-  const symbol = asRecord(value);
-  if (!symbol) return [];
-  const range = validRange(symbol.selectionRange) ? symbol.selectionRange : symbol.range;
-  const current = validRange(range) ? [
-    {
-      name: symbol.name,
-      kind: symbol.kind,
-      location: { uri, range }
-    }
-  ] : [];
-  return [...current, ...documentSymbols(symbol.children, uri)];
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-protocol.ts
-var LSP_METHODS = {
-  definition: "textDocument/definition",
-  references: "textDocument/references",
-  type_definition: "textDocument/typeDefinition",
-  implementation: "textDocument/implementation",
-  callers: "textDocument/prepareCallHierarchy",
-  callees: "textDocument/prepareCallHierarchy",
-  search: "workspace/symbol"
-};
-function methodFor(operation) {
-  return LSP_METHODS[operation] ?? "workspace/symbol";
-}
-function paramsFor(request, source, options) {
-  if (request.operation === "search") return { query: request.query };
-  if (!source) throw new Error("backend_unavailable");
-  const textDocument = {
-    uri: options.toBackendUri(source.location)
-  };
-  const position = source.location.range.start;
-  return request.operation === "references" ? {
-    textDocument,
-    position,
-    context: { includeDeclaration: true }
-  } : { textDocument, position };
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-source-symbol.ts
-function sourceSymbol(input) {
-  return {
-    name: input.name,
-    kind: input.kind,
-    location: symbolLocation(input)
-  };
-}
-function symbolLocation(input) {
-  return {
-    uri: input.uri,
-    range: {
-      start: {
-        line: input.lineNumber,
-        character: input.character
-      },
-      end: {
-        line: input.lineNumber,
-        character: input.character + input.name.length
-      }
-    }
-  };
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-csharp-symbols.ts
-function csharpSourceSymbols(source, uri) {
-  return source.split(/\r?\n/).flatMap((line, lineNumber) => csharpSymbolsAt(line, lineNumber, uri));
-}
-function csharpSymbolsAt(line, lineNumber, uri) {
-  return [
-    csharpTypeSymbol(line, lineNumber, uri),
-    csharpMethodSymbol(line, lineNumber, uri)
-  ].filter((symbol) => symbol !== void 0);
-}
-function csharpTypeSymbol(line, lineNumber, uri) {
-  const match = /\b(class|interface|struct|enum)\s+([A-Za-z_]\w*)/.exec(line);
-  if (!match) return void 0;
-  return sourceSymbol({
-    name: match[2],
-    kind: match[1] === "interface" ? 11 : 5,
-    character: line.indexOf(match[2]),
-    lineNumber,
-    uri
-  });
-}
-var CSHARP_METHOD = new RegExp(
-  String.raw`^\s*(?:(?:public|private|protected|internal|static|` + String.raw`virtual|override|abstract|async|sealed|new|partial|` + String.raw`extern)\s+)*` + String.raw`(?:[A-Za-z_][\w<>[\],.?]*\s+)([A-Za-z_]\w*)\s*\(`
-);
-function csharpMethodSymbol(line, lineNumber, uri) {
-  const match = CSHARP_METHOD.exec(line);
-  if (!match) return void 0;
-  return sourceSymbol({
-    name: match[1],
-    kind: 6,
-    character: line.indexOf(match[1]),
-    lineNumber,
-    uri
-  });
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-source-symbols.ts
-function sourcePathSymbols(language, source, uri) {
-  if (language === "python") return pythonSourceSymbols(source, uri);
-  if (language === "csharp") return csharpSourceSymbols(source, uri);
-  return [];
-}
-function pythonSourceSymbols(source, uri) {
-  return source.split(/\r?\n/).flatMap((line, lineNumber) => pythonSymbolAt(line, lineNumber, uri));
-}
-function pythonSymbolAt(line, lineNumber, uri) {
-  const match = /^(\s*)(?:(async)\s+)?(def|class)\s+([A-Za-z_]\w*)/.exec(line);
-  if (!match) return [];
-  return [
-    sourceSymbol({
-      name: match[4],
-      kind: match[3] === "class" ? 5 : 12,
-      character: line.indexOf(match[4], match[1].length),
-      lineNumber,
-      uri
-    })
-  ];
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-request.ts
-async function requestLsp(request, source, options) {
-  if (request.operation === "focus") return void 0;
-  if (request.operation === "search") return requestSearch(request, options);
-  if (request.operation === "callers" || request.operation === "callees")
-    return requestHierarchy(request, source, options);
-  return options.client.request(
-    methodFor(request.operation),
-    paramsFor(request, source, options)
-  );
-}
-async function requestSearch(request, options) {
-  const paths = options.discovery_document_paths;
-  if (!paths?.length)
-    return options.client.request("workspace/symbol", {
-      query: request.query
-    });
-  const symbols = [];
-  for (const path5 of paths) {
-    const uri = options.toBackendUri(emptyLocation(path5));
-    const reply = await options.client.request("textDocument/documentSymbol", {
-      textDocument: { uri }
-    });
-    const semantic = documentSymbols(reply, uri);
-    symbols.push(
-      ...semantic.length > 0 ? semantic : sourcePathSymbols(
-        options.language,
-        options.root.protectedRead(path5).bytes,
-        uri
-      ).slice(0, 4096 - symbols.length)
-    );
-    if (symbols.length >= 4096) break;
-  }
-  return symbols;
-}
-function requestHierarchy(request, source, options) {
-  if (!source) throw new Error("backend_unavailable");
-  return requestHierarchyItem(request, source, options);
-}
-async function requestHierarchyItem(request, source, options) {
-  const prepared = await options.client.request(
-    "textDocument/prepareCallHierarchy",
-    paramsFor(request, source, options)
-  );
-  const item = Array.isArray(prepared) ? prepared[0] : prepared;
-  if (!item || typeof item !== "object") return [];
-  const method = request.operation === "callers" ? "callHierarchy/incomingCalls" : "callHierarchy/outgoingCalls";
-  return options.client.request(method, { item });
-}
-function emptyLocation(path5) {
-  return {
-    path: path5,
-    range: {
-      start: { line: 0, character: 0 },
-      end: { line: 0, character: 0 }
-    }
-  };
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-locations.ts
-function locations(raw, options) {
-  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
-  return values.flatMap((value) => locationFromValue(value, options));
-}
-function locationFromValue(value, options) {
-  const item = asRecord(value);
-  const target = targetFromItem(item);
-  if (!target) return [];
-  const range = validTargetRange(target);
-  if (!range) return [];
-  return locationForUri(target.uri ?? target.targetUri, range, options);
-}
-function validTargetRange(target) {
-  const range = target.range ?? target.targetRange;
-  return validRange(range) ? range : void 0;
-}
-function locationForUri(uri, range, options) {
-  const path5 = typeof uri === "string" ? options.fromBackendUri(uri) : void 0;
-  if (path5)
-    return [
-      {
-        path: path5,
-        range
-      }
-    ];
-  if (typeof uri === "string" && uri.startsWith("file:"))
-    return [{ external: true }];
-  throw new Error("invalid_backend_result");
-}
-function targetFromItem(item) {
-  const hierarchy = hierarchyTarget(item);
-  if (hierarchy) return hierarchy;
-  return locationTarget(item);
-}
-function hierarchyTarget(item) {
-  return asRecord(item?.from ?? item?.to);
-}
-function locationTarget(item) {
-  if (item?.targetUri) return item;
-  const location = asRecord(item?.location);
-  return location ?? item;
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-location-results.ts
-function locationResult(input) {
-  return {
-    operation: input.request.operation,
-    revision: input.options.revision,
-    relations: locations(input.raw, input.options).map(
-      (location, index) => relationFromLocation({
-        operation: input.request.operation,
-        location,
-        index,
-        options: input.options
-      })
-    )
-  };
-}
-function relationFromLocation(input) {
-  if ("external" in input.location)
-    return {
-      relation: input.operation,
-      external: { external: true }
-    };
-  return {
-    relation: input.operation,
-    symbol: symbolFor(input.location, input.index, input.options),
-    location: input.location
-  };
-}
-function symbolFor(location, index, options) {
-  return {
-    id: `${options.language}:${location.path}:${index}`,
-    name: location.path,
-    language: options.language,
-    kind: "symbol",
-    location
-  };
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-relation-symbol.ts
-function symbolFromRelationLocation(input) {
-  return {
-    id: `${input.options.language}:${input.location.path}:${input.index}`,
-    name: typeof input.target?.name === "string" ? input.target.name : input.location.path,
-    language: input.options.language,
-    kind: String(input.target?.kind ?? "symbol"),
-    location: input.location
-  };
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-relation-result.ts
-function hierarchyRelation(input) {
-  if ("external" in input.location)
-    return [
-      {
-        relation: input.relation,
-        external: { external: true }
-      }
-    ];
-  return [
-    {
-      relation: input.relation,
-      symbol: symbolFromRelationLocation({
-        target: input.target,
-        location: input.location,
-        index: input.index,
-        options: input.options
-      }),
-      location: input.location,
-      ..."external" in input.callSite ? {} : { call_site: input.callSite }
-    }
-  ];
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-relations.ts
-function hierarchyRelations(input) {
-  const values = Array.isArray(input.raw) ? input.raw : [];
-  return values.flatMap(
-    (value, index) => hierarchyRelationAt({ ...input, value, index })
-  );
-}
-function hierarchyRelationAt(input) {
-  const entry = asRecord(input.value);
-  const target = asRecord(
-    entry?.[input.relation === "callers" ? "from" : "to"]
-  );
-  const location = lspLocation(target, input.options);
-  if (!location) return [];
-  const callSite = hierarchyCallSite({
-    relation: input.relation,
-    source: input.source,
-    options: input.options,
-    target,
-    entry,
-    fallback: location
-  });
-  if (!callSite) return [];
-  return hierarchyRelation({
-    ...input,
-    target,
-    location,
-    callSite
-  });
-}
-function hierarchyCallSite(input) {
-  if (!Array.isArray(input.entry?.fromRanges)) return input.fallback;
-  const uri = input.relation === "callees" && input.source ? input.options.toBackendUri(input.source.location) : input.target?.uri;
-  return lspLocation({ uri, range: input.entry.fromRanges[0] }, input.options);
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-workspace.ts
-function workspaceSymbols(raw, options) {
-  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
-  return values.flatMap(
-    (value, index) => workspaceSymbolAt(value, index, options)
-  );
-}
-function workspaceSymbolAt(value, index, options) {
-  const item = asRecord(value);
-  const location = lspLocation(asRecord(item?.location) ?? item, options);
-  if (!localLocation(location)) return [];
-  return [
-    {
-      id: `${options.language}:${location.path}:${index}`,
-      name: workspaceSymbolName(item, location.path),
-      language: options.language,
-      kind: workspaceSymbolKind(item?.kind),
-      location
-    }
-  ];
-}
-function localLocation(value) {
-  return value !== void 0 && !("external" in value);
-}
-function workspaceSymbolName(item, fallback) {
-  return typeof item?.name === "string" ? item.name : fallback;
-}
-function workspaceSymbolKind(value) {
-  if (typeof value === "string" && value.length > 0)
-    return value.toLocaleLowerCase("en-US");
-  const kinds = {
-    5: "class",
-    6: "method",
-    12: "function"
-  };
-  return typeof value === "number" && kinds[value] ? kinds[value] : "symbol";
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-results.ts
-function normalizeResult(input) {
-  if (input.request.operation === "search")
-    return {
-      operation: "search",
-      revision: input.options.revision,
-      symbols: workspaceSymbols(input.raw, input.options)
-    };
-  if (input.request.operation === "focus")
-    return focusResult(input.source, input.options);
-  return relationResult({
-    request: input.request,
-    raw: input.raw,
-    source: input.source,
-    options: input.options
-  });
-}
-function focusResult(source, options) {
-  if (!source) throw new Error("backend_unavailable");
-  const document = options.root.protectedRead(source.location.path);
-  return {
-    operation: "focus",
-    revision: options.revision,
-    symbol: source,
-    content: {
-      body: document.bytes,
-      visible_symbols: [{ name: source.name, symbol_id: source.id }]
-    }
-  };
-}
-function relationResult(input) {
-  const capability = relationCapabilitiesFromInitialize(
-    input.options.client.status()
-  )[input.request.operation];
-  if (capability.state !== "ready") throw new Error("backend_unavailable");
-  const request = input.request;
-  if (isHierarchyRelation(request))
-    return hierarchyResult({ ...input, request });
-  return locationResult(input);
-}
-function isHierarchyRelation(request) {
-  return request.operation === "callers" || request.operation === "callees";
-}
-function hierarchyResult(input) {
-  return {
-    operation: input.request.operation,
-    revision: input.options.revision,
-    relations: hierarchyRelations({
-      raw: input.raw,
-      relation: input.request.operation,
-      source: input.source,
-      options: input.options
-    })
-  };
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-execute.ts
-async function executeSemanticQuery(request, input) {
-  assertAvailable(request, input);
-  const source = sourceFor(request, input.symbols);
-  openSourceIfNeeded(request, source, input.options);
-  const raw = await requestLsp(request, source, input.options);
-  try {
-    const result = normalizeResult({
-      request,
-      raw,
-      source,
-      options: input.options
-    });
-    return acceptResult(result, input);
-  } catch (error2) {
-    markUnavailable(request, input.unavailableRelations);
-    throw error2;
-  }
-}
-function openSourceIfNeeded(request, source, options) {
-  if (source && request.operation !== "focus")
-    openSourceDocument(source, options);
-}
-function sourceFor(request, symbols) {
-  return request.operation === "search" ? void 0 : symbols.get(request.symbol_id);
-}
-function markUnavailable(request, unavailableRelations) {
-  if (isRelation2(request)) unavailableRelations.add(request.operation);
-}
-function isRelation2(request) {
-  return request.operation !== "search" && request.operation !== "focus";
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-query.ts
-function createSemanticQuery(input) {
-  const queryInput = input;
-  return (request) => executeSemanticQuery(request, queryInput);
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic-backend.ts
-function createDirectLspSemanticBackend(options) {
-  const unavailableRelations = /* @__PURE__ */ new Set();
-  const symbols = new Map(options.symbols);
-  return {
-    readiness: createReadiness(options, unavailableRelations),
-    capabilities: createCapabilities(options, unavailableRelations),
-    query: createSemanticQuery({
-      options,
-      unavailableRelations,
-      symbols
-    })
-  };
-}
-function createReadiness(options, unavailableRelations) {
-  return () => unavailableRelations.size > 0 && options.client.status().state === "ready" ? { state: "degraded" } : readiness(options.client.status());
-}
-function createCapabilities(options, unavailableRelations) {
-  return () => {
-    const capabilities = relationCapabilitiesFromInitialize(
-      options.client.status()
-    );
-    for (const relation of unavailableRelations)
-      capabilities[relation] = { state: "unavailable" };
-    return capabilities;
-  };
-}
-function readiness(status) {
-  return status.state === "failed" ? { state: "failed", failure_code: "backend_failed" } : { state: status.state };
-}
-
-// src/semantic/direct-lsp/direct-lsp-semantic.ts
-var { createDirectLspSemanticBackend: createDirectLspSemanticBackend2 } = direct_lsp_semantic_backend_exports;
-var { relationCapabilitiesFromInitialize: relationCapabilitiesFromInitialize2 } = direct_lsp_semantic_capabilities_exports;
-
-// src/semantic/adapters/native-lsp-process.ts
-import { spawn } from "node:child_process";
-function spawnNativeLspProcess(executable, arguments_, environment) {
-  const child = spawn(executable, arguments_, {
-    shell: false,
-    stdio: ["pipe", "pipe", "ignore"],
-    // Do not inherit project-controlled PATH, Python, or package settings.
-    // The policy has already selected an absolute executable and arguments.
-    env: { ...environment }
-  });
-  return createProcessHandlers(child);
-}
-function createProcessHandlers(child) {
-  const write = (chunk) => {
-    child.stdin.write(chunk);
-  };
-  const onStdout = (listener) => {
-    child.stdout.on("data", (chunk) => listener(new Uint8Array(chunk)));
-  };
-  const onExit = (listener) => {
-    child.once("exit", listener);
-  };
-  const onError = (listener) => {
-    child.once("error", listener);
-  };
-  const kill = () => {
-    child.stdin.destroy();
-    child.kill();
-  };
-  return {
-    write,
-    onStdout,
-    onExit,
-    onError,
-    kill
-  };
-}
-
-// src/semantic/direct-lsp/direct-lsp-error.ts
-var DirectLspError = class extends Error {
-  constructor(code) {
-    super(code);
-    this.code = code;
-  }
-  code;
-};
-
-// src/semantic/direct-lsp/direct-lsp-values.ts
-function clone2(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-function deepFreeze3(value) {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Object.values(value))
-      deepFreeze3(child);
-    Object.freeze(value);
-  }
-  return value;
-}
-
-// src/semantic/direct-lsp/direct-lsp-status-snapshot.ts
-function isProtectedFileUri(uri, rootUri) {
-  const document = parseFileUri(uri);
-  const root = parseFileUri(rootUri);
-  if (!document) return false;
-  if (!root) return false;
-  return isProtectedDocument(document, root);
-}
-function isProtectedDocument(document, root) {
-  if (document.protocol !== "file:") return false;
-  if (document.search || document.hash) return false;
-  const rootPath = root.pathname.endsWith("/") ? root.pathname : `${root.pathname}/`;
-  return document.pathname.startsWith(rootPath);
-}
-function parseFileUri(value) {
-  try {
-    return new URL(value);
-  } catch {
-    return void 0;
-  }
-}
-function statusSnapshot(input) {
-  return {
-    state: input.state,
-    events: [...input.events],
-    restart_delays_ms: [...input.restartDelays],
-    ...input.serverCapabilities ? {
-      server_capabilities: deepFreeze3(clone2(input.serverCapabilities))
-    } : {}
-  };
-}
-
-// src/semantic/direct-lsp/direct-lsp-wire.ts
-var CRLFCRLF = new Uint8Array([13, 10, 13, 10]);
-var LF_LF = new Uint8Array([10, 10]);
-function encodeMessage(message) {
-  const body = new TextEncoder().encode(JSON.stringify(message));
-  return concat(
-    new TextEncoder().encode(`Content-Length: ${body.byteLength}\r
-\r
-`),
-    body
-  );
-}
-function concat(left, right) {
-  const result = new Uint8Array(left.length + right.length);
-  result.set(left);
-  result.set(right, left.length);
-  return result;
-}
-function indexOf(haystack, needle) {
-  for (let index = 0; index <= haystack.length - needle.length; index++) {
-    if (needle.every((value, offset) => haystack[index + offset] === value))
-      return index;
-  }
-  return -1;
-}
-function contains(haystack, needle) {
-  return indexOf(haystack, needle) >= 0;
-}
-
-// src/semantic/direct-lsp/direct-lsp-protocol.ts
-var MAX_BODY_BYTES = 1024 * 1024;
-var SHUTDOWN_TIMEOUT_MS = 5e3;
-var RESTART_WINDOW_MS = 6e4;
-var RESTART_DELAYS_MS = [250, 1e3];
-var PERMITTED_NOTIFICATIONS = /* @__PURE__ */ new Set([
-  "window/logMessage",
-  "window/showMessage",
-  "telemetry/event",
-  "$/progress",
-  "textDocument/publishDiagnostics"
-]);
-var READ_ONLY_METHODS = /* @__PURE__ */ new Set([
-  "textDocument/definition",
-  "textDocument/references",
-  "textDocument/typeDefinition",
-  "textDocument/implementation",
-  "textDocument/prepareCallHierarchy",
-  "callHierarchy/incomingCalls",
-  "callHierarchy/outgoingCalls",
-  "textDocument/documentSymbol",
-  "workspace/symbol"
-]);
-function boundedTimeout(value) {
-  return Number.isFinite(value) && value > 0 ? Math.min(Math.floor(value), SHUTDOWN_TIMEOUT_MS) : SHUTDOWN_TIMEOUT_MS;
-}
-function isRpcMessage(value) {
-  return !!value && typeof value === "object" && value.jsonrpc === "2.0";
-}
-function isInitializeResult(value) {
-  if (!value || typeof value !== "object") return false;
-  const capabilities = value.capabilities;
-  return !!capabilities && typeof capabilities === "object" && !Array.isArray(capabilities);
-}
-function isRequestId(value) {
-  return typeof value === "string" || typeof value === "number" && Number.isFinite(value);
-}
-function isPositiveSafeInteger(value) {
-  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
-}
-function pythonConfiguration(section) {
-  return [
-    "python.pythonPath",
-    "python.venvPath",
-    "python.analysis.extraPaths"
-  ].includes(section ?? "") ? [] : null;
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-failure.ts
-function fail(input) {
-  const expectedEpoch = input.expectedEpoch ?? input.state.epoch;
-  if (!canFail(input.state, expectedEpoch)) return;
-  input.state.setState("failed");
-  input.state.rejectInflight(input.code);
-  input.state.killProcess();
-  if (input.restart) recordRestart(input.state, input.onRestart);
-}
-function failWithRestart(input) {
-  fail({
-    state: input.state,
-    code: input.code ?? "backend_crashed",
-    restart: true,
-    expectedEpoch: input.expectedEpoch,
-    onRestart: input.onRestart
-  });
-}
-function canFail(state, expectedEpoch) {
-  if (!state.current(expectedEpoch)) return false;
-  return state.state !== "failed" && state.state !== "unavailable";
-}
-function recordRestart(state, onRestart) {
-  const delay2 = state.recordCrash();
-  if (delay2 === void 0) return;
-  state.scheduleRestart(() => {
-    const replacement = state.options.restart?.();
-    if (replacement && onRestart)
-      void onRestart(replacement).catch(() => void 0);
-  }, delay2);
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-request.ts
-function sendRequest(input) {
-  const expectedEpoch = input.expectedEpoch ?? input.state.epoch;
-  const id = input.state.nextRequestId();
-  return registerRequest(input, id, expectedEpoch);
-}
-function registerRequest(input, id, expectedEpoch) {
-  return new Promise((resolve5, reject) => {
-    const timer = input.state.scheduler.setTimeout(() => {
-      onRequestTimeout({
-        ...input,
-        id,
-        expectedEpoch,
-        reject
-      });
-    }, boundedTimeout(input.timeout));
-    input.state.setPending(id, { resolve: resolve5, reject, timer });
-    input.state.send(
-      {
-        jsonrpc: "2.0",
-        id,
-        method: input.method,
-        params: input.params
-      },
-      expectedEpoch
-    );
-  });
-}
-function onRequestTimeout(input) {
-  if (!(input.state.current(input.expectedEpoch) && input.state.deletePending(input.id)))
-    return;
-  input.state.send(
-    {
-      jsonrpc: "2.0",
-      method: "$/cancelRequest",
-      params: { id: input.id }
-    },
-    input.expectedEpoch
-  );
-  input.reject(new DirectLspError("backend_timeout"));
-  const timeoutCount = recordTimeout(input.state);
-  if (timeoutCount >= 2) failAfterTimeout(input);
-}
-function recordTimeout(state) {
-  return state.recordTimeout();
-}
-function failAfterTimeout(input) {
-  failWithRestart(input);
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-shutdown.ts
-async function shutdownRuntime(input) {
-  input.state.cancelRestarts();
-  if (!input.state.process || input.state.stopped) {
-    input.state.invalidate();
-    return;
-  }
-  const expectedEpoch = input.state.epoch;
-  input.state.setStopping(true);
-  if (input.state.state === "ready") {
-    try {
-      await sendRequest({
-        state: input.state,
-        method: "shutdown",
-        params: null,
-        timeout: SHUTDOWN_TIMEOUT_MS,
-        expectedEpoch,
-        onRestart: input.onRestart
-      });
-    } catch {
-    }
-  }
-  await finishShutdown({ ...input, expectedEpoch });
-}
-async function finishShutdown(input) {
-  if (!input.state.current(input.expectedEpoch)) {
-    input.state.killProcess();
-    return;
-  }
-  if (input.state.state !== "ready") {
-    terminateNow(input.state);
-    return;
-  }
-  await sendExit(input);
-}
-async function sendExit(input) {
-  const exited = new Promise((resolve5) => {
-    input.state.setExitResolver(resolve5);
-  });
-  input.state.send(
-    { jsonrpc: "2.0", method: "exit", params: {} },
-    input.expectedEpoch
-  );
-  const timeout = input.state.scheduler.setTimeout(
-    () => forceShutdown(input),
-    SHUTDOWN_TIMEOUT_MS
-  );
-  await exited;
-  input.state.scheduler.clearTimeout(timeout);
-  input.state.clearExitResolver();
-}
-function forceShutdown(input) {
-  if (!input.state.stopped && input.state.current(input.expectedEpoch)) {
-    input.state.setStopping(false);
-    failWithRestart({
-      state: input.state,
-      expectedEpoch: input.expectedEpoch,
-      onRestart: input.onRestart
-    });
-  }
-  input.state.resolveExit();
-}
-function terminateNow(state) {
-  state.cancelRestarts();
-  state.invalidate();
-  state.killProcess();
-  state.resolveExit();
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-operations.ts
-function openProtectedDocument(state, uri, content) {
-  if (state.state !== "ready") throw stateError(state);
-  if (!isProtectedFileUri(uri, state.options.root_uri) || typeof content.bytes !== "string")
-    throw new DirectLspError("backend_write_rejected");
-  if (state.hasOpenedDocument(uri)) return;
-  state.send({
-    jsonrpc: "2.0",
-    method: "textDocument/didOpen",
-    params: {
-      textDocument: {
-        uri,
-        languageId: content.language_id,
-        version: 0,
-        text: content.bytes
-      }
-    }
-  });
-  state.markDocumentOpened(uri);
-}
-function stateError(state) {
-  return new DirectLspError(
-    state.state === "unavailable" ? "backend_crashed" : "backend_failed"
-  );
-}
-function refreshRuntime(state) {
-  state.resetFailureHistory();
-}
-function statusRuntime(state) {
-  return statusSnapshot({
-    state: state.state,
-    events: state.eventsSnapshot(),
-    restartDelays: state.restartDelaysSnapshot(),
-    serverCapabilities: state.serverCapabilities
-  });
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-query.ts
-async function requestBackend2(input) {
-  if (!READ_ONLY_METHODS.has(input.method))
-    throw new DirectLspError("backend_write_rejected");
-  if (input.state.state !== "ready")
-    throw new DirectLspError(
-      input.state.state === "unavailable" ? "backend_crashed" : "backend_failed"
-    );
-  return requestWithRetry(input, false);
-}
-async function requestWithRetry(input, retried) {
-  try {
-    return await sendRequest({
-      ...input,
-      timeout: input.state.timeoutMs
-    });
-  } catch (error2) {
-    if (!(error2 instanceof DirectLspError) || error2.code !== "backend_content_modified")
-      throw error2;
-    if (retried) throw new DirectLspError("backend_failed");
-    return requestWithRetry(input, true);
-  }
-}
-
-// src/semantic/direct-lsp/direct-lsp-frame-parser.ts
-function decodeHeader(bytes) {
-  if (bytes.some((value) => value > 127)) return void 0;
-  try {
-    const header = new TextDecoder("ascii", {
-      fatal: true
-    }).decode(bytes);
-    return /^Content-Length: [0-9]+$/.test(header) ? header : void 0;
-  } catch {
-    return void 0;
-  }
-}
-function bodyLength(header) {
-  const length = Number(header.slice("Content-Length: ".length));
-  return Number.isSafeInteger(length) ? length : void 0;
-}
-function decodeBody(bytes) {
-  try {
-    const value = JSON.parse(
-      new TextDecoder("utf-8", { fatal: true }).decode(bytes)
-    );
-    return isRpcMessage(value) ? value : void 0;
-  } catch {
-    return void 0;
-  }
-}
-function concatBytes(left, right) {
-  const result = new Uint8Array(left.length + right.length);
-  result.set(left);
-  result.set(right, left.length);
-  return result;
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-protocol-failure.ts
-function protocolFailure(input) {
-  fail({
-    state: input.state,
-    code: "backend_failed",
-    restart: false,
-    expectedEpoch: input.expectedEpoch,
-    onRestart: input.onRestart
-  });
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-message-handlers.ts
-function handleServerRequest(input, message) {
-  if (!isRequestId(message.id)) return protocolFailure(input);
-  const method = message.method;
-  recordRejectedRequest(input.state, method);
-  if (isPythonConfiguration(input.state, method))
-    return handlePythonConfiguration(input, message);
-  input.state.send(
-    {
-      jsonrpc: "2.0",
-      id: message.id,
-      error: { code: -32601, message: "Method not found" }
-    },
-    input.expectedEpoch
-  );
-}
-function recordRejectedRequest(state, method) {
-  const event = rejectedRequestEvent(method);
-  if (event) state.recordEvent(event);
-}
-function rejectedRequestEvent(method) {
-  if (method === "client/registerCapability")
-    return "backend_capability_rejected";
-  if (method === "workspace/applyEdit") return "backend_write_rejected";
-  return void 0;
-}
-function isPythonConfiguration(state, method) {
-  return method === "workspace/configuration" && state.options.language === "python";
-}
-function handlePythonConfiguration(input, message) {
-  const params = message.params;
-  const items = params?.items ?? [];
-  input.state.send(
-    {
-      jsonrpc: "2.0",
-      id: message.id,
-      result: items.map((item) => pythonConfiguration(item.section))
-    },
-    input.expectedEpoch
-  );
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-notifications.ts
-function handleNotification(input, message) {
-  const method = message.method;
-  if (!PERMITTED_NOTIFICATIONS.has(method)) {
-    fail({
-      state: input.state,
-      code: "backend_failed",
-      restart: false,
-      expectedEpoch: input.expectedEpoch
-    });
-    return;
-  }
-  input.state.recordEvent("backend_notification");
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-response.ts
-function handleResponse(input, message) {
-  if (!isPositiveSafeInteger(message.id)) return protocolFailure(input);
-  if ("result" in message === "error" in message) return protocolFailure(input);
-  const entry = input.state.pending(message.id);
-  if (!entry) return;
-  input.state.deletePending(message.id);
-  input.state.scheduler.clearTimeout(entry.timer);
-  if ("error" in message) return rejectResponse(entry.reject, message.error);
-  entry.resolve(message.result);
-}
-function rejectResponse(reject, error2) {
-  const code = error2?.code;
-  reject(
-    new DirectLspError(
-      code === -32801 ? "backend_content_modified" : "backend_failed"
-    )
-  );
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-message.ts
-function handleMessage(input) {
-  const { state, message, expectedEpoch } = input;
-  if (!messageActive(state, expectedEpoch)) return;
-  if (!isRpcMessage(message)) return protocolFailure(input);
-  if (isServerRequest(message)) return handleServerRequest(input, message);
-  if (isNotification(message)) return handleNotification(input, message);
-  handleResponse(input, message);
-}
-function messageActive(state, epoch) {
-  return state.current(epoch) && !state.stopped && state.state !== "failed" && state.state !== "unavailable";
-}
-function isServerRequest(message) {
-  return "id" in message && "method" in message && typeof message.method === "string";
-}
-function isNotification(message) {
-  return "method" in message && typeof message.method === "string";
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-frame.ts
-function handleStdout(input) {
-  if (!frameStreamActive(input.state, input.expectedEpoch)) return;
-  input.state.appendBytes(input.chunk);
-  while (input.state.bytesLength() && consumeFrame(input)) {
-  }
-}
-function frameStreamActive(state, epoch) {
-  return state.current(epoch) && !state.stopped && state.state !== "failed" && state.state !== "unavailable";
-}
-function consumeFrame(input) {
-  const frame = parseFrame(input);
-  if (frame.status === "incomplete") return false;
-  if (frame.status === "invalid") {
-    protocolFailure(input);
-    return false;
-  }
-  input.state.consumeBytes(frame.end);
-  handleMessage({ ...input, message: frame.value });
-  return input.state.bytesLength() > 0;
-}
-function parseFrame(input) {
-  const boundary = indexOf(input.state.bytesSlice(), CRLFCRLF);
-  if (boundary < 0) return incompleteHeader(input);
-  const headerBytes = input.state.bytesSlice(0, boundary);
-  const header = decodeHeader(headerBytes);
-  if (!header) return { status: "invalid" };
-  const length = bodyLength(header);
-  if (length === void 0 || length > MAX_BODY_BYTES)
-    return { status: "invalid" };
-  const end = boundary + 4 + length;
-  if (input.state.bytesLength() < end) return { status: "incomplete" };
-  const value = decodeBody(input.state.bytesSlice(boundary + 4, end));
-  return value === void 0 ? { status: "invalid" } : { status: "complete", end, value };
-}
-function incompleteHeader(input) {
-  if (input.state.bytesLength() > 8192 || contains(input.state.bytesSlice(), LF_LF)) {
-    return { status: "invalid" };
-  }
-  return { status: "incomplete" };
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-initialize.ts
-async function initializeRuntime(input) {
-  const result = await sendRequest({
-    state: input.state,
-    method: "initialize",
-    params: initializeParams(input.state),
-    timeout: input.state.timeoutMs,
-    expectedEpoch: input.expectedEpoch,
-    onRestart: input.onRestart
-  });
-  if (!(input.state.current(input.expectedEpoch) && isInitializeResult(result)))
-    throw new DirectLspError("backend_failed");
-  input.state.setServerCapabilities(result.capabilities);
-  checkAfterInitialize(input.state);
-  input.state.send(
-    { jsonrpc: "2.0", method: "initialized", params: {} },
-    input.expectedEpoch
-  );
-  sendPythonConfiguration(input.state, input.expectedEpoch);
-  input.state.setState("ready");
-}
-function initializeParams(state) {
-  return {
-    processId: null,
-    rootUri: state.options.root_uri,
-    capabilities: state.capabilities,
-    initializationOptions: state.initializationOptions
-  };
-}
-function checkAfterInitialize(state) {
-  const confirmation = state.options.afterInitialize?.();
-  if (confirmation?.status !== "unavailable") return;
-  state.setState("unavailable");
-  state.killProcess();
-  throw new Error(confirmation.code);
-}
-function sendPythonConfiguration(state, expectedEpoch) {
-  if (state.options.language !== "python") return;
-  state.send(
-    {
-      jsonrpc: "2.0",
-      method: "workspace/didChangeConfiguration",
-      params: pythonConfigurationSettings()
-    },
-    expectedEpoch
-  );
-}
-function pythonConfigurationSettings() {
-  return {
-    settings: { python: pythonSettings() }
-  };
-}
-function pythonSettings() {
-  return {
-    analysis: {
-      diagnosticMode: "workspace",
-      indexing: true,
-      useLibraryCodeForTypes: false
-    }
-  };
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-start.ts
-async function startRuntime(input) {
-  if (input.state.stopping) return;
-  const expectedEpoch = input.state.beginStart(input.process);
-  attachProcess({ ...input, expectedEpoch });
-  try {
-    await initializeRuntime({ ...input, expectedEpoch });
-  } catch (error2) {
-    fail({
-      state: input.state,
-      code: error2 instanceof DirectLspError ? error2.code : "backend_failed",
-      restart: true,
-      expectedEpoch,
-      onRestart: input.onRestart
-    });
-    throw error2;
-  }
-}
-function attachProcess(input) {
-  input.process.onStdout((chunk) => handleStdout({ ...input, chunk }));
-  input.process.onExit(() => handleExit(input));
-  input.process.onError?.(() => failWithRestart(input));
-}
-function handleExit(input) {
-  const { state, expectedEpoch } = input;
-  if (!state.current(expectedEpoch)) return;
-  state.markStopped();
-  state.resolveExit();
-  if (state.bytesLength()) {
-    fail({
-      ...input,
-      code: "backend_failed",
-      restart: false
-    });
-    return;
-  }
-  if (state.stopping) {
-    state.setState("failed");
-    return;
-  }
-  failWithRestart(input);
-}
-
-// src/semantic/direct-lsp/direct-lsp-runtime-scheduler.ts
-var defaultDirectLspScheduler = {
-  now: Date.now,
-  setTimeout: (callback, delayMs) => setTimeout(callback, delayMs),
-  clearTimeout: (handle) => clearTimeout(handle)
-};
-
-// src/semantic/direct-lsp/direct-lsp-runtime-lifecycle.ts
-var DirectLspRuntimeLifecycle = class {
-  #process;
-  #epoch = 0;
-  #state = "initializing";
-  #stopping = false;
-  #stopped = false;
-  #exitResolver;
-  get process() {
-    return this.#process;
-  }
-  get epoch() {
-    return this.#epoch;
-  }
-  get state() {
-    return this.#state;
-  }
-  get stopping() {
-    return this.#stopping;
-  }
-  get stopped() {
-    return this.#stopped;
-  }
-  beginStart(process5) {
-    this.#process = process5;
-    this.#epoch += 1;
-    this.#stopping = false;
-    this.#stopped = false;
-    this.#state = "initializing";
-    return this.#epoch;
-  }
-  invalidate(rejectInflight) {
-    this.#epoch += 1;
-    this.#stopping = true;
-    this.#stopped = true;
-    rejectInflight();
-  }
-  setState(state) {
-    this.#state = state;
-  }
-  markStopped() {
-    this.#stopped = true;
-  }
-  setStopping(stopping) {
-    this.#stopping = stopping;
-  }
-  setExitResolver(resolve5) {
-    this.#exitResolver = resolve5;
-  }
-  resolveExit() {
-    this.#exitResolver?.();
-  }
-  clearExitResolver() {
-    this.#exitResolver = void 0;
-  }
-  killProcess() {
-    this.#process?.kill();
-  }
-  current(epoch) {
-    return epoch === this.#epoch;
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-runtime-restarts.ts
-var DirectLspRuntimeRestarts = class {
-  constructor(scheduler, telemetry, markUnavailable2) {
-    this.scheduler = scheduler;
-    this.telemetry = telemetry;
-    this.markUnavailable = markUnavailable2;
-  }
-  scheduler;
-  telemetry;
-  markUnavailable;
-  #crashTimes = [];
-  #timeoutTimes = [];
-  #restartTimers = /* @__PURE__ */ new Set();
-  recordCrash() {
-    const now = this.scheduler.now();
-    this.#crashTimes = this.#crashTimes.filter(
-      (time3) => time3 >= now - RESTART_WINDOW_MS
-    );
-    this.#crashTimes.push(now);
-    if (this.#crashTimes.length > RESTART_DELAYS_MS.length) {
-      this.markUnavailable();
-      return void 0;
-    }
-    const delay2 = RESTART_DELAYS_MS[this.#crashTimes.length - 1];
-    this.telemetry.recordRestartDelay(delay2);
-    return delay2;
-  }
-  schedule(callback, delay2) {
-    const timer = this.scheduler.setTimeout(() => {
-      this.#restartTimers.delete(timer);
-      callback();
-    }, delay2);
-    this.#restartTimers.add(timer);
-  }
-  cancel() {
-    for (const timer of this.#restartTimers) this.scheduler.clearTimeout(timer);
-    this.#restartTimers.clear();
-  }
-  recordTimeout() {
-    const cutoff = this.scheduler.now() - RESTART_WINDOW_MS;
-    this.#timeoutTimes = this.#timeoutTimes.filter((time3) => time3 >= cutoff);
-    this.#timeoutTimes.push(this.scheduler.now());
-    return this.#timeoutTimes.length;
-  }
-  resetFailureHistory(wasUnavailable) {
-    this.#crashTimes = [];
-    this.#timeoutTimes = [];
-    return wasUnavailable;
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-runtime-buffers.ts
-var DirectLspRuntimeBuffers = class {
-  #bytes = new Uint8Array(0);
-  reset() {
-    this.#bytes = new Uint8Array(0);
-  }
-  append(chunk) {
-    this.#bytes = concatBytes(this.#bytes, chunk);
-  }
-  length() {
-    return this.#bytes.length;
-  }
-  slice(start, end) {
-    return this.#bytes.slice(start, end);
-  }
-  consume(end) {
-    this.#bytes = this.#bytes.slice(end);
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-runtime-documents.ts
-var DirectLspRuntimeDocuments = class {
-  #openedUris = /* @__PURE__ */ new Set();
-  #serverCapabilities;
-  reset() {
-    this.#openedUris = /* @__PURE__ */ new Set();
-  }
-  get serverCapabilities() {
-    return this.#serverCapabilities;
-  }
-  setServerCapabilities(capabilities) {
-    this.#serverCapabilities = capabilities;
-  }
-  hasOpened(uri) {
-    return this.#openedUris.has(uri);
-  }
-  markOpened(uri) {
-    this.#openedUris.add(uri);
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-runtime-requests.ts
-var DirectLspRuntimeRequests = class {
-  constructor(scheduler) {
-    this.scheduler = scheduler;
-  }
-  scheduler;
-  #nextId = 1;
-  #pending = /* @__PURE__ */ new Map();
-  nextId() {
-    const id = this.#nextId;
-    this.#nextId += 1;
-    return id;
-  }
-  setPending(id, pending) {
-    this.#pending.set(id, pending);
-  }
-  pending(id) {
-    return this.#pending.get(id);
-  }
-  deletePending(id) {
-    return this.#pending.delete(id);
-  }
-  rejectInflight(code) {
-    for (const entry of this.#pending.values()) {
-      this.scheduler.clearTimeout(entry.timer);
-      entry.reject(new DirectLspError(code));
-    }
-    this.#pending.clear();
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-state-storage.ts
-var DirectLspStateStorage = class {
-  #buffers;
-  #req;
-  #docs;
-  constructor(scheduler) {
-    this.#buffers = new DirectLspRuntimeBuffers();
-    this.#req = new DirectLspRuntimeRequests(scheduler);
-    this.#docs = new DirectLspRuntimeDocuments();
-  }
-  reset() {
-    this.#buffers.reset();
-    this.#docs.reset();
-  }
-  get serverCapabilities() {
-    return this.#docs.serverCapabilities;
-  }
-  appendBytes(chunk) {
-    this.#buffers.append(chunk);
-  }
-  bytesLength() {
-    return this.#buffers.length();
-  }
-  bytesSlice(start, end) {
-    return this.#buffers.slice(start, end);
-  }
-  consumeBytes(end) {
-    this.#buffers.consume(end);
-  }
-  nextRequestId() {
-    return this.#req.nextId();
-  }
-  setPending(id, pending) {
-    this.#req.setPending(id, pending);
-  }
-  pending(id) {
-    return this.#req.pending(id);
-  }
-  deletePending(id) {
-    return this.#req.deletePending(id);
-  }
-  rejectInflight(code) {
-    this.#req.rejectInflight(code);
-  }
-  setServerCapabilities(capabilities) {
-    this.#docs.setServerCapabilities(capabilities);
-  }
-  hasOpenedDocument(uri) {
-    return this.#docs.hasOpened(uri);
-  }
-  markDocumentOpened(uri) {
-    this.#docs.markOpened(uri);
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-runtime-telemetry.ts
-var MAX_RUNTIME_EVENTS = 256;
-var DirectLspRuntimeTelemetry = class {
-  #events = [];
-  #restartDelays = [];
-  recordEvent(event) {
-    if (this.#events.length === MAX_RUNTIME_EVENTS) this.#events.shift();
-    this.#events.push(event);
-  }
-  eventsSnapshot() {
-    return [...this.#events];
-  }
-  recordRestartDelay(delay2) {
-    if (this.#restartDelays.length === MAX_RUNTIME_EVENTS)
-      this.#restartDelays.shift();
-    this.#restartDelays.push(delay2);
-  }
-  restartDelaysSnapshot() {
-    return [...this.#restartDelays];
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-state-resources.ts
-var DirectLspStateResources = class extends DirectLspStateStorage {
-  #telemetry;
-  #restarts;
-  constructor(scheduler) {
-    super(scheduler);
-    this.#telemetry = new DirectLspRuntimeTelemetry();
-    this.#restarts = new DirectLspRuntimeRestarts(
-      scheduler,
-      this.#telemetry,
-      () => this.onUnavailable()
-    );
-  }
-  recordEvent(event) {
-    this.#telemetry.recordEvent(event);
-  }
-  eventsSnapshot() {
-    return this.#telemetry.eventsSnapshot();
-  }
-  restartDelaysSnapshot() {
-    return this.#telemetry.restartDelaysSnapshot();
-  }
-  recordCrash() {
-    return this.#restarts.recordCrash();
-  }
-  scheduleRestart(callback, delay2) {
-    this.#restarts.schedule(callback, delay2);
-  }
-  cancelRestarts() {
-    this.#restarts.cancel();
-  }
-  recordTimeout() {
-    return this.#restarts.recordTimeout();
-  }
-  resetFailureHistoryState(wasUnavailable) {
-    return this.#restarts.resetFailureHistory(wasUnavailable);
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-runtime-state-core.ts
-var DirectLspRuntimeStateCore = class extends DirectLspStateResources {
-  scheduler;
-  #life;
-  constructor(scheduler) {
-    super(scheduler);
-    this.scheduler = scheduler;
-    this.#life = new DirectLspRuntimeLifecycle();
-  }
-  onUnavailable() {
-    this.#life.setState("unavailable");
-  }
-  get process() {
-    return this.#life.process;
-  }
-  get epoch() {
-    return this.#life.epoch;
-  }
-  get state() {
-    return this.#life.state;
-  }
-  get stopping() {
-    return this.#life.stopping;
-  }
-  get stopped() {
-    return this.#life.stopped;
-  }
-  beginStart(process5) {
-    const epoch = this.#life.beginStart(process5);
-    this.reset();
-    return epoch;
-  }
-  invalidate() {
-    this.#life.invalidate(() => this.rejectInflight("backend_crashed"));
-  }
-  setState(state) {
-    this.#life.setState(state);
-  }
-  markStopped() {
-    this.#life.markStopped();
-  }
-  setStopping(stopping) {
-    this.#life.setStopping(stopping);
-  }
-  setExitResolver(resolve5) {
-    this.#life.setExitResolver(resolve5);
-  }
-  resolveExit() {
-    this.#life.resolveExit();
-  }
-  clearExitResolver() {
-    this.#life.clearExitResolver();
-  }
-  killProcess() {
-    this.#life.killProcess();
-  }
-  resetFailureHistory() {
-    if (super.resetFailureHistoryState(this.state === "unavailable"))
-      this.setState("initializing");
-  }
-  current(epoch) {
-    return this.#life.current(epoch);
-  }
-  send(message, expectedEpoch = this.epoch) {
-    if (this.current(expectedEpoch))
-      this.process?.write(encodeMessage(message));
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-runtime-state.ts
-var DirectLspRuntimeState = class extends DirectLspRuntimeStateCore {
-  options;
-  capabilities;
-  initializationOptions;
-  timeoutMs;
-  constructor(options) {
-    super(options.scheduler ?? defaultDirectLspScheduler);
-    this.options = options;
-    this.capabilities = deepFreeze3(clone2(options.capabilities));
-    this.initializationOptions = deepFreeze3(
-      clone2(options.safe_initialization_options)
-    );
-    this.timeoutMs = boundedTimeout(options.request_timeout_ms ?? 1e4);
-  }
-};
-
-// src/semantic/direct-lsp/direct-lsp-runtime.ts
-function createDirectLspRuntime(options) {
-  const state = new DirectLspRuntimeState(options);
-  const start = (process5) => startRuntime({ state, process: process5, onRestart: start });
-  return {
-    start,
-    request: (method, params) => requestBackend2({
-      state,
-      method,
-      params,
-      onRestart: start
-    }),
-    openProtectedDocument: (uri, content) => openProtectedDocument(state, uri, content),
-    shutdown: () => shutdownRuntime({ state, onRestart: start }),
-    refresh: () => refreshRuntime(state),
-    status: () => statusRuntime(state)
-  };
-}
-
-// src/semantic/direct-lsp/direct-lsp.ts
-function createDirectLspClient(options) {
-  return createDirectLspRuntime(options);
-}
-
-// src/semantic/runtime/runtime-lsp-start-process.ts
-async function startRuntimeProcess(lifecycle) {
-  const preparation = requirePreparation(lifecycle);
-  lifecycle.client = createClient(lifecycle, preparation);
-  await lifecycle.client.start(spawnProcess(lifecycle, preparation));
-  if (lifecycle.disposed) throw new Error("backend_unavailable");
-  openInitialDocuments(lifecycle);
-  if (lifecycle.disposed) throw new Error("backend_unavailable");
-  lifecycle.inner = createDirectLspSemanticBackend2({
-    ...lifecycle.options,
-    client: lifecycle.client,
-    discovery_document_paths: lifecycle.options.initial_document_paths
-  });
-}
-function requirePreparation(lifecycle) {
-  const preparation = lifecycle.options.prepare();
-  if (preparation.status === "ready") return preparation;
-  lifecycle.state = {
-    state: "unavailable",
-    failure_code: preparation.code
-  };
-  throw new Error(preparation.code);
-}
-function createClient(lifecycle, preparation) {
-  return createDirectLspClient({
-    language: lifecycle.options.language,
-    root_uri: lifecycle.options.root_uri,
-    capabilities: {},
-    safe_initialization_options: preparation.safe_initialization_options,
-    scheduler: lifecycle.options.scheduler,
-    afterInitialize: () => lifecycle.options.confirmInitialized(),
-    restart: () => replacementProcess(lifecycle)
-  });
-}
-function replacementProcess(lifecycle) {
-  if (lifecycle.disposed) return void 0;
-  const preparation = lifecycle.options.prepare();
-  return preparation.status === "ready" ? spawnProcess(lifecycle, preparation) : void 0;
-}
-function spawnProcess(lifecycle, preparation) {
-  return (lifecycle.options.spawn ?? spawnNativeLspProcess)(
-    preparation.executable,
-    preparation.arguments,
-    preparation.environment
-  );
-}
-function openInitialDocuments(lifecycle) {
-  for (const path5 of lifecycle.options.initial_document_paths ?? []) {
-    const document = lifecycle.options.root.protectedRead(path5);
-    lifecycle.client?.openProtectedDocument?.(
-      lifecycle.options.toBackendUri(initialDocumentLocation(path5)),
-      {
-        language_id: lifecycle.options.language,
-        bytes: document.bytes
-      }
-    );
-  }
-}
-function initialDocumentLocation(path5) {
-  return {
-    path: path5,
-    range: {
-      start: { line: 0, character: 0 },
-      end: { line: 0, character: 0 }
-    }
-  };
-}
-
-// src/semantic/runtime/runtime-lsp-start.ts
-function createRuntimeStart(lifecycle) {
-  return () => startRuntime2(lifecycle);
-}
-async function startRuntime2(lifecycle) {
-  assertCanStart(lifecycle);
-  if (lifecycle.started) return lifecycle.started;
-  const tracked = trackStart(lifecycle, startFreshRuntime(lifecycle));
-  lifecycle.started = tracked;
-  return tracked;
-}
-function assertCanStart(lifecycle) {
-  if (lifecycle.disposed) throw new Error("backend_unavailable");
-  if (lifecycle.refreshRequired) throw new Error("backend_identity_changed");
-}
-function trackStart(lifecycle, attempt) {
-  let tracked;
-  tracked = attempt.catch((error2) => {
-    if (lifecycle.started === tracked) lifecycle.started = void 0;
-    throw error2;
-  });
-  return tracked;
-}
-function startFreshRuntime(lifecycle) {
-  return startRuntimeProcess(lifecycle).then(() => {
-    lifecycle.state = readiness2(lifecycle.client?.status().state ?? "failed");
-  }).catch((error2) => recordStartFailure(lifecycle, error2));
-}
-function recordStartFailure(lifecycle, error2) {
-  const code = error2 instanceof Error ? error2.message : "backend_failed";
-  lifecycle.state = failedState(code);
-  lifecycle.refreshRequired ||= code === "backend_identity_changed";
-  throw error2;
-}
-function failedState(code) {
-  return code === "backend_identity_changed" ? { state: "unavailable", failure_code: code } : { state: "failed", failure_code: code };
-}
-function readiness2(value) {
-  if (value === "failed")
-    return {
-      state: "failed",
-      failure_code: "backend_failed"
-    };
-  if (value === "initializing") return { state: "initializing" };
-  if (value === "ready") return { state: "ready" };
-  return { state: "unavailable" };
-}
-
-// src/semantic/runtime/runtime-lsp-backend.ts
-function createRuntimeLspBackend(options) {
-  const lifecycle = {
-    options,
-    state: { state: "initializing" },
-    inner: void 0,
-    client: void 0,
-    started: void 0,
-    disposed: false,
-    refreshRequired: false
-  };
-  const start = createRuntimeStart(lifecycle);
-  return {
-    readiness: () => runtimeReadiness(lifecycle),
-    start,
-    refresh: () => refreshRuntime2(lifecycle, start),
-    capabilities: () => runtimeCapabilities3(lifecycle, options),
-    shutdown: () => shutdownRuntime2(lifecycle),
-    query: (request) => queryRuntime(lifecycle, start, request)
-  };
-}
-function runtimeReadiness(lifecycle) {
-  return lifecycle.inner?.readiness() ?? lifecycle.state;
-}
-function runtimeCapabilities3(lifecycle, options) {
-  if (lifecycle.inner?.capabilities) return lifecycle.inner.capabilities();
-  if (lifecycle.client)
-    return relationCapabilitiesFromInitialize2(lifecycle.client.status());
-  return options.capabilities;
-}
-async function refreshRuntime2(lifecycle, start) {
-  if (lifecycle.disposed || !lifecycle.refreshRequired) return;
-  lifecycle.refreshRequired = false;
-  lifecycle.started = void 0;
-  lifecycle.inner = void 0;
-  lifecycle.client = void 0;
-  lifecycle.state = { state: "refreshing" };
-  await start();
-}
-async function shutdownRuntime2(lifecycle) {
-  if (lifecycle.disposed) return;
-  lifecycle.disposed = true;
-  try {
-    await lifecycle.client?.shutdown?.();
-  } finally {
-    lifecycle.options.dispose?.();
-  }
-}
-async function queryRuntime(lifecycle, start, request) {
-  await start();
-  if (!lifecycle.inner) throw new Error("backend_unavailable");
-  return lifecycle.inner.query(request);
-}
-
-// src/semantic/runtime/runtime-native-backend.ts
-function createNativeRuntimeBackend(input) {
-  const { backend, policy, capabilities, root, filtered } = input;
-  return createRuntimeLspBackend({
-    language: backend.language,
-    root,
-    root_uri: pathToFileURL2(root.canonicalPath).href,
-    revision: { generation: 0, manifest_sha256: "runtime" },
-    symbols: /* @__PURE__ */ new Map(),
-    capabilities,
-    initial_document_paths: initialDocuments(backend.language, filtered),
-    toBackendUri: (location) => pathToFileURL2(root.resolveClientPath(location.path)).href,
-    fromBackendUri: (uri) => backendPath(root, uri),
-    prepare: () => policy.prepare(backend.language),
-    confirmInitialized: () => policy.confirmInitialized(backend.language)
-  });
-}
-function initialDocuments(language, filtered) {
-  return language === "csharp" ? filtered?.sourcePaths().filter((path5) => /\.cs$/iu.test(path5)) : void 0;
-}
-function backendPath(root, uri) {
-  if (!uri.startsWith("file:")) return void 0;
-  const classified = root.classifyBackendPath(fileURLToPath3(uri));
-  return "relative_path" in classified ? classified.relative_path : void 0;
-}
-
-// src/semantic/runtime/runtime-native-adapter.ts
-function createNativeRuntimeAdapter(input) {
-  const prepared = input.policy.prepare(input.backend.language);
-  const filtered = createFilteredBackend(input, prepared);
-  const backend = createNativeBackend(input, prepared, filtered);
-  return wrapNativeAdapter({
-    input,
-    prepared,
-    filtered,
-    backend
-  });
-}
-function createFilteredBackend(input, prepared) {
-  return prepared.status === "ready" ? createFilteredWorkspace(input.projectRoot) : void 0;
-}
-function createNativeBackend(input, prepared, filtered) {
-  if (prepared.status !== "ready") return unavailableBackend;
-  return createNativeRuntimeBackend({
-    backend: input.backend,
-    policy: input.policy,
-    capabilities: input.capabilities,
-    root: filtered?.root ?? input.projectRoot,
-    filtered
-  });
-}
-function wrapNativeAdapter(context) {
-  const { input, prepared, filtered, backend } = context;
-  const adapter = createSelectedAdapter(input.backend.language, {
-    backend,
-    compatible: true,
-    ...runtimeAdapterMetadata({
-      backendName: input.backend.platform_executables[input.platform],
-      prepared,
-      capabilities: input.capabilities
-    })
-  });
-  return filtered ? withFilteredShutdown(adapter, filtered) : adapter;
-}
-
-// src/semantic/runtime/runtime-python-options.ts
-import { pathToFileURL as pathToFileURL3 } from "node:url";
-function createPythonRuntimeOptions(input, mirror) {
-  return {
-    language: "python",
-    root: input.projectRoot,
-    root_uri: pathToFileURL3(mirror.root).href,
-    revision: {
-      generation: mirror.generation,
-      manifest_sha256: "python-mirror"
-    },
-    symbols: input.options.symbols,
-    capabilities: input.capabilities,
-    initial_document_paths: mirror.sourcePaths(),
-    toBackendUri: (location) => mirror.uriFor(location.path),
-    fromBackendUri: (uri) => mirror.pathForUri(uri),
-    prepare: () => input.policy.prepare("python"),
-    confirmInitialized: () => input.policy.confirmInitialized("python"),
-    ...input.options.spawn ? { spawn: input.options.spawn } : {}
-  };
-}
-
-// src/semantic/runtime/runtime-python-backend-lifecycle.ts
-function createPythonBuild(input) {
-  return () => refreshPython(input);
-}
-async function refreshPython(input) {
-  const refreshed = await input.manager.refresh();
-  if (refreshed.status !== "ready")
-    return handleUnavailable(input, refreshed.code);
-  ensurePythonInner(input, refreshed.mirror, refreshed.changed);
-  await input.getInner()?.start?.();
-  input.setState(input.getInner()?.readiness() ?? input.getState());
-}
-function handleUnavailable(input, code) {
-  input.setState({ state: "unavailable" });
-  throw new Error(code);
-}
-function ensurePythonInner(input, mirror, changed) {
-  if (!input.getInner() || changed)
-    input.setInner(createPythonInner(input, mirror));
-}
-function createPythonInner(input, mirror) {
-  return createRuntimeLspBackend(createPythonRuntimeOptions(input, mirror));
-}
-function createPythonShutdown(manager, getInner, setInner, setState) {
-  return async () => {
-    await manager.disposeAfterShutdown(async () => {
-      await getInner()?.shutdown?.();
-      setInner(void 0);
-    });
-    setState({ state: "unavailable" });
-  };
-}
-
-// src/semantic/runtime/runtime-python-backend.ts
-function createManagedPythonBackend(input) {
-  const {
-    projectRoot,
-    policy,
-    capabilities,
-    options = {
-      symbols: /* @__PURE__ */ new Map()
-    }
-  } = input;
-  const context = createPythonContext({
-    projectRoot,
-    policy,
-    capabilities,
-    options
-  });
-  return createManagedBackend(context);
-}
-function createPythonContext(input) {
-  let inner;
-  let state = {
-    state: "initializing"
-  };
-  const manager = createPythonMirrorManager(input.projectRoot, async () => {
-    await inner?.shutdown?.();
-    inner = void 0;
-  });
-  return {
-    ...input,
-    manager,
-    getInner: () => inner,
-    setInner: (value) => {
-      inner = value;
-    },
-    getState: () => state,
-    setState: (value) => {
-      state = value;
-    }
-  };
-}
-function createManagedBackend(context) {
-  const build = createPythonBuild(context);
-  return {
-    readiness: () => context.getInner()?.readiness() ?? context.getState(),
-    capabilities: () => context.getInner()?.capabilities?.() ?? context.capabilities,
-    start: build,
-    refresh: build,
-    shutdown: createPythonShutdown(
-      context.manager,
-      context.getInner,
-      context.setInner,
-      context.setState
-    ),
-    query: (request) => queryPython(context, build, request)
-  };
-}
-async function queryPython(context, build, request) {
-  await build();
-  const inner = context.getInner();
-  if (!inner) throw new Error("backend_unavailable");
-  return inner.query(request);
-}
-
-// src/semantic/runtime/runtime-python-adapter.ts
-function createPythonRuntimeAdapter(input) {
-  const prepared = input.policy.prepare("python");
-  return createPythonAdapter(createPythonAdapterOptions(input, prepared));
-}
-function createPythonAdapterOptions(input, prepared) {
-  return {
-    backend: prepared.status === "ready" ? createManagedPythonBackend({
-      projectRoot: input.projectRoot,
-      policy: input.policy,
-      capabilities: input.capabilities
-    }) : unavailableBackend,
-    compatible: true,
-    ...runtimeAdapterMetadata({
-      backendName: input.backend.platform_executables[input.platform],
-      prepared,
-      capabilities: input.capabilities
-    })
-  };
-}
-
-// src/semantic/runtime/runtime-adapters.ts
-function createRuntimeAdapters(projectRoot) {
-  const record2 = loadAdapterSelectionRecord();
-  const platform = process.platform === "win32" ? "win32" : "posix";
-  const policy = createRuntimeLaunchPolicy(
-    {
-      project_root: projectRoot.canonicalPath,
-      platform,
-      inspect: createNativeBackendInspector(
-        trustedRoots(record2, platform),
-        projectRoot.canonicalPath
-      )
-    },
-    record2
-  );
-  return record2.runtime_backends.map(
-    (backend) => createAdapter({
-      backend,
-      projectRoot,
-      platform,
-      policy
-    })
-  );
-}
-function trustedRoots(record2, platform) {
-  return platform === "win32" ? resolveTrustedCommandRoots(record2.trusted_command_roots.win32) : ["/opt/code-explorer/backends"];
-}
-function createAdapter(input) {
-  const capabilities = backendCapabilities(input.backend.capabilities);
-  return input.backend.language === "python" ? createPythonRuntimeAdapter({ ...input, capabilities }) : createNativeRuntimeAdapter({
-    ...input,
-    capabilities
-  });
-}
-function backendCapabilities(capabilities) {
-  return Object.fromEntries(
-    Object.entries(capabilities).map(([name, state]) => [name, { state }])
-  );
-}
-
-// src/semantic/runtime/runtime-start.ts
-async function createStartedRuntimeAdapters(projectRoot, signal) {
-  const adapters = createRuntimeAdapters(projectRoot);
-  await Promise.allSettled(
-    adapters.map((adapter) => startAdapter(adapter, signal))
-  );
-  if (signal?.aborted) {
-    await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-    throw new Error("aborted");
-  }
-  return adapters;
-}
-async function startAdapter(adapter, signal) {
-  if (!adapter.start) return;
-  if (!signal) return adapter.start();
-  await startWithAbort(adapter, signal);
-}
-function startWithAbort(adapter, signal) {
-  let abortHandler;
-  return Promise.race([
-    adapter.start?.(signal) ?? Promise.resolve(),
-    new Promise((_, reject) => {
-      if (signal.aborted) {
-        reject(new Error("aborted"));
-        return;
-      }
-      abortHandler = () => reject(new Error("aborted"));
-      signal.addEventListener("abort", abortHandler, {
-        once: true
-      });
-    })
-  ]).finally(() => {
-    if (abortHandler) signal.removeEventListener("abort", abortHandler);
-  });
-}
-
-// src/browser-server/browser-unavailable-call.ts
-function unavailableBrowserCall() {
-  return Promise.resolve({
-    schema_version: 1,
-    code: "workspace_unavailable",
-    message: "workspace_unavailable",
-    retryable: true
-  });
-}
-
-// src/browser-server/router-context.ts
-function limitOrDefault(value, fallback) {
-  return value ?? fallback;
-}
-function clockFor(options) {
-  return () => {
-    if (options.clock) return options.clock.nowMilliseconds();
-    return performance.now();
-  };
-}
-function createBrowserRouterContext(options) {
-  return {
-    options,
-    sessions: /* @__PURE__ */ new Map(),
-    maxSessions: limitOrDefault(options.maxSessions, 8),
-    maxInFlight: limitOrDefault(options.maxInFlight, 8),
-    now: clockFor(options),
-    active: { value: 0 }
-  };
-}
-
-// src/browser-server/router-validation.ts
-var requiredKeys = {
-  "/api/search": ["request_id", "query"],
-  "/api/focus": ["request_id", "symbol_id"],
-  "/api/follow": ["request_id", "view_id", "handle", "relation"],
-  "/api/history": ["request_id", "action"]
-};
-var optionalKeys2 = {
-  "/api/search": [
-    "path_globs",
-    "languages",
-    "kinds",
-    "content",
-    "include_generated",
-    "limit"
-  ],
-  "/api/focus": ["body_limit_bytes"],
-  "/api/follow": ["limit"],
-  "/api/history": ["limit"]
-};
-function exactKeys(body, required2, optional2 = []) {
-  return required2.every((key) => key in body) && Object.keys(body).every(
-    (key) => required2.includes(key) || optional2.includes(key)
-  );
-}
-function validSessionAction(body) {
-  const action = body.action;
-  return action === "create" && body.document_start === "new" || action === "restore" && body.document_start === "reload";
-}
-function validSessionBody(body) {
-  return typeof body.tab_instance_id === "string" && validSessionAction(body) && exactKeys(body, ["action", "tab_instance_id", "document_start"]);
-}
-function validStatusBody(body) {
-  const status = body.action === "status" && exactKeys(body, ["action"]);
-  const refresh = body.action === "refresh" && typeof body.request_id === "string" && exactKeys(body, ["action", "request_id"]);
-  return status || refresh;
-}
-function validBody(route, body) {
-  if (route === "/api/session") return validSessionBody(body);
-  if (route === "/api/status") return validStatusBody(body);
-  const required2 = requiredKeys[route];
-  return required2 !== void 0 && exactKeys(body, required2, optionalKeys2[route]);
-}
-function isRecord3(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-// src/browser-server/router-policy.ts
-var csp = [
-  "default-src 'none'",
-  "script-src 'self'",
-  "style-src 'self'",
-  "img-src 'self' data:",
-  "connect-src 'self'",
-  "base-uri 'none'",
-  "form-action 'none'",
-  "frame-ancestors 'none'",
-  "object-src 'none'"
-].join("; ");
-var routes = {
-  "/api/search": "code_search",
-  "/api/focus": "code_focus",
-  "/api/follow": "code_follow",
-  "/api/history": "code_history",
-  "/api/status": "code_status"
-};
-var statusByCode = {
-  invalid_browser_origin: 403,
-  invalid_browser_session: 403,
-  route_not_found: 404,
-  method_not_allowed: 405,
-  browser_session_expired: 410,
-  resource_limit: 413,
-  project_capacity: 429,
-  http_capacity: 429
-};
-function browserError(code, retryable = false) {
-  return { schema_version: 1, code, message: code, retryable };
-}
-function errorStatus(code) {
-  if (code.startsWith("backend_") || code === "workspace_unavailable")
-    return 503;
-  return statusByCode[code] ?? 400;
-}
-function json(status, payload) {
-  return {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
-      "x-content-type-options": "nosniff",
-      "referrer-policy": "no-referrer",
-      "content-security-policy": csp
-    },
-    body: JSON.stringify(payload)
-  };
-}
-
-// src/browser-server/router-session-acceptance.ts
-var idleMilliseconds = 30 * 60 * 1e3;
-function acceptBrowserSession(context, browserSessionId, session2) {
-  if (context.now() - session2.lastAcceptedAt >= idleMilliseconds) {
-    context.sessions.delete(browserSessionId);
-    return json(410, browserError("browser_session_expired", true));
-  }
-  session2.lastAcceptedAt = context.now();
-  return void 0;
-}
-
-// src/browser-server/router-navigation.ts
-function sessionForNavigation(context, headers) {
-  const id = headers["x-code-explorer-session"];
-  const tabId = headers["x-code-explorer-tab"];
-  const session2 = id ? context.sessions.get(id) : void 0;
-  if (!(id && session2) || session2.tabId !== tabId) return void 0;
-  return { id, session: session2 };
-}
-async function navigation(options) {
-  const { context, route, body, headers } = options;
-  const current = sessionForNavigation(context, headers);
-  if (!current) return json(403, browserError("invalid_browser_session"));
-  const expired = acceptBrowserSession(context, current.id, current.session);
-  if (expired) return expired;
-  const coreArguments = navigationArguments(
-    route,
-    body,
-    current.session.coreSessionId
-  );
-  const reply = await context.options.call(routes[route], coreArguments);
-  return json("code" in reply ? errorStatus(String(reply.code)) : 200, reply);
-}
-function navigationArguments(route, body, sessionId) {
-  if (route === "/api/search")
-    return Object.fromEntries(
-      Object.entries(body).filter(([key]) => key !== "request_id")
-    );
-  if (route === "/api/status" && body.action === "status") return body;
-  return { ...body, session_id: sessionId };
-}
-
-// src/browser-server/router-asset.ts
-import { realpath } from "node:fs/promises";
-import path2 from "node:path";
-
-// src/browser-server/router-asset-file.ts
-import { open as open2 } from "node:fs/promises";
-async function readAssetFile(path5, headOnly) {
-  const file = await open2(path5, "r");
-  try {
-    if (!(await file.stat()).isFile()) return;
-    return headOnly ? "" : await file.readFile("utf8");
-  } finally {
-    await file.close();
-  }
-}
-
-// src/browser-server/router-asset.ts
-function notFound() {
-  return {
-    status: 404,
-    headers: {
-      "cache-control": "no-store",
-      "x-content-type-options": "nosniff",
-      "referrer-policy": "no-referrer",
-      "content-security-policy": csp
-    },
-    body: ""
-  };
-}
-function contentType(actual) {
-  if (actual.endsWith(".html")) return "text/html; charset=utf-8";
-  if (actual.endsWith(".js")) return "text/javascript; charset=utf-8";
-  return "text/css; charset=utf-8";
-}
-var assetNames = {
-  "/": "index.html",
-  "/index.html": "index.html",
-  "/client.js": "client.js",
-  "/style.css": "style.css"
-};
-function relativeAssetPath(request) {
-  const rawPath = request.path.split("?")[0]?.split("#")[0] ?? "/";
-  return assetNames[rawPath];
-}
-function isInsideRoot(root, actual) {
-  return actual.startsWith(`${root}${path2.sep}`) || actual === root;
-}
-async function loadAsset(context, request, relative6) {
-  try {
-    const root = await realpath(context.options.assetRoot);
-    const candidate = path2.resolve(root, relative6);
-    const actual = await realpath(candidate);
-    if (!isInsideRoot(root, actual)) return notFound();
-    const body = await readAssetFile(actual, request.method === "HEAD");
-    if (body === void 0) return notFound();
-    return {
-      status: 200,
-      headers: {
-        "content-type": contentType(actual),
-        "cache-control": "no-store",
-        "x-content-type-options": "nosniff",
-        "referrer-policy": "no-referrer",
-        "content-security-policy": csp
-      },
-      body
-    };
-  } catch {
-    return notFound();
-  }
-}
-async function asset(context, request) {
-  if (request.method !== "GET" && request.method !== "HEAD")
-    return json(405, browserError("method_not_allowed"));
-  const relative6 = relativeAssetPath(request);
-  if (!relative6) return notFound();
-  return loadAsset(context, request, relative6);
-}
-
-// src/browser-server/router-rejection.ts
-function authorityError(context, request) {
-  if (request.headers.host === new URL(context.options.origin).host)
-    return void 0;
-  return json(403, browserError("invalid_browser_origin"));
-}
-function apiOriginError(context, request) {
-  if (!request.path.startsWith("/api/") || request.headers.origin === context.options.origin)
-    return void 0;
-  return json(403, browserError("invalid_browser_origin"));
-}
-function postPathError(request) {
-  if (request.path === "/") return json(400, browserError("invalid_request"));
-  if (request.path in routes || request.path === "/api/session")
-    return void 0;
-  return json(404, browserError("route_not_found"));
-}
-function methodResult(context, request) {
-  if (request.method === "OPTIONS")
-    return json(405, browserError("method_not_allowed"));
-  if (request.method === "GET" || request.method === "HEAD")
-    return asset(context, request);
-  if (request.method !== "POST")
-    return json(405, browserError("method_not_allowed"));
-  return void 0;
-}
-function capacityResponse(context) {
-  if (context.active.value < context.maxInFlight) return void 0;
-  return json(429, browserError("http_capacity", true));
-}
-function requestRejection(context, request) {
-  return originRejection(context, request) ?? routeRejection(context, request);
-}
-function originRejection(context, request) {
-  return authorityError(context, request) ?? apiOriginError(context, request);
-}
-function routeRejection(context, request) {
-  return methodResult(context, request) ?? postPathError(request) ?? capacityResponse(context);
-}
-
-// src/browser-server/browser-session-reply.ts
-function withBrowserSession(reply, browserSessionId) {
-  const replyData = typeof reply.data === "object" && reply.data !== null && !(reply.data instanceof Array) ? reply.data : {};
-  return {
-    ...reply,
-    data: { ...replyData, browser_session_id: browserSessionId }
-  };
-}
-
-// src/browser-server/router-session.ts
-function sweepExpiredSessions(context) {
-  const now = context.now();
-  for (const [browserSessionId, session2] of context.sessions) {
-    if (now - session2.lastAcceptedAt >= idleMilliseconds)
-      context.sessions.delete(browserSessionId);
-  }
-}
-async function session(context, body, headers) {
-  const tabId = body.tab_instance_id;
-  if (headers["x-code-explorer-tab"] !== tabId)
-    return json(403, browserError("invalid_browser_session"));
-  if (body.action === "create") return createSession(context, tabId, headers);
-  return restoreSession(context, tabId, headers);
-}
-async function createSession(context, tabId, headers) {
-  sweepExpiredSessions(context);
-  if (headers["x-code-explorer-session"] || context.sessions.size >= context.maxSessions)
-    return json(429, browserError("project_capacity", true));
-  const reply = await context.options.call("code_status", {
-    action: "start_session"
-  });
-  if ("code" in reply) return json(errorStatus(String(reply.code)), reply);
-  const coreSessionId = reply.data?.session_id;
-  if (typeof coreSessionId !== "string")
-    return json(500, browserError("internal_error"));
-  const browserSessionId = crypto.randomUUID();
-  context.sessions.set(browserSessionId, {
-    coreSessionId,
-    tabId,
-    lastAcceptedAt: context.now()
-  });
-  return json(200, withBrowserSession(reply, browserSessionId));
-}
-function restoreSession(context, tabId, headers) {
-  const current = restoreCandidate(context, tabId, headers);
-  if (!current) return json(403, browserError("invalid_browser_session"));
-  const expired = acceptBrowserSession(context, current.id, current.session);
-  if (expired) return expired;
-  return json(200, {
-    schema_version: 1,
-    project_id: "project",
-    project_generation: 0,
-    pending_generation: null,
-    state: "restored",
-    data: {}
-  });
-}
-function restoreCandidate(context, tabId, headers) {
-  const id = headers["x-code-explorer-session"];
-  const session2 = id ? context.sessions.get(id) : void 0;
-  if (!(id && session2) || session2.tabId !== tabId) return void 0;
-  return { id, session: session2 };
-}
-
-// src/browser-server/router-request.ts
-var maxBodyBytes = 64 * 1024;
-var maxResponseBytes = 1024 * 1024;
-function parseJson2(request) {
-  try {
-    const value = JSON.parse(request.body.toString("utf8"));
-    return isRecord3(value) ? value : void 0;
-  } catch {
-    return void 0;
-  }
-}
-function postBodyError(request) {
-  if (request.headers["content-encoding"] || request.headers["content-type"] !== "application/json")
-    return json(400, browserError("invalid_request"));
-  if (request.body.byteLength > maxBodyBytes)
-    return json(413, browserError("resource_limit"));
-  return void 0;
-}
-async function postRequest(context, request) {
-  const bodyError = postBodyError(request);
-  if (bodyError) return bodyError;
-  const body = parseJson2(request);
-  if (!(body && validBody(request.path, body)))
-    return json(400, browserError("invalid_request"));
-  const response = await postRoute(context, request, body);
-  return responseWithinLimit(response);
-}
-function postRoute(context, request, body) {
-  if (request.path === "/api/session")
-    return session(context, body, request.headers);
-  return navigation({
-    context,
-    route: request.path,
-    body,
-    headers: request.headers
-  });
-}
-function responseWithinLimit(response) {
-  if (Buffer.byteLength(response.body) > maxResponseBytes)
-    return json(413, browserError("resource_limit"));
-  return response;
-}
-async function handleRequest(context, request) {
-  const rejection = requestRejection(context, request);
-  if (rejection) return rejection;
-  context.active.value += 1;
-  try {
-    return await postRequest(context, request);
-  } finally {
-    context.active.value -= 1;
-  }
-}
-
-// src/browser-server/http-router.ts
-var BrowserHttpRouter = class {
-  context;
-  constructor(options) {
-    this.context = createBrowserRouterContext(options);
-  }
-  handle(request) {
-    return handleRequest(this.context, request);
-  }
-};
-
-// src/browser-server/embedded-runtime-result.ts
-function createEmbeddedRuntime(options) {
-  const router = new BrowserHttpRouter({
-    origin: options.origin,
-    assetRoot: options.assetRoot,
-    call: options.core.call ?? unavailableBrowserCall
-  });
-  return {
-    projectRoot: options.projectRoot,
-    handle: (request) => router.handle(request),
-    close: closeCore(options)
-  };
-}
-function closeCore(options) {
-  let closing;
-  return () => {
-    if (closing) return closing;
-    closing = closeRuntime(options);
-    return closing;
-  };
-}
-async function closeRuntime(options) {
-  options.controller.abort();
-  await options.core.close(AbortSignal.timeout(1e4));
-  options.unlinkAbortSignal();
-}
-
-// src/browser-server/browser-server-error.ts
-var BrowserServerError = class extends Error {
-  constructor(code) {
-    super(code);
-    this.code = code;
-  }
-  code;
-};
-
-// src/browser-server/browser-server-lifecycle-support.ts
-function closeResources(options) {
-  const { listener, core, controller, parentSignal, abort } = options;
-  listener?.stopAdmission();
-  controller.abort();
-  const timeout = AbortSignal.timeout(1e4);
-  return Promise.allSettled([
-    listener?.close(timeout),
-    core?.close(timeout)
-  ]).then(() => {
-    parentSignal?.removeEventListener("abort", abort);
-  });
-}
-function serverResult(options) {
-  const { listener, projectRoot, close } = options;
-  return { url: listener.address, projectRoot, close };
-}
-
-// src/browser-server/browser-server-start-support.ts
-var firstPort = 4410;
-var lastPort = 4429;
-function projectRootFor(path5) {
-  try {
-    return createNativeProjectRoot(path5);
-  } catch (error2) {
-    if (error2 instanceof ProjectPathError)
-      throw new BrowserServerError("invalid_project_root");
-    throw error2;
-  }
-}
-async function listenForPort(options, signal, core) {
-  for (let port = firstPort; port <= lastPort; port += 1) {
-    try {
-      return await options.binder.listen("127.0.0.1", port, signal, core);
-    } catch (error2) {
-      if (!isAddressInUse(error2)) throw error2;
-    }
-  }
-  throw new BrowserServerError("browser_port_unavailable");
-}
-function isAddressInUse(error2) {
-  return error2 instanceof Error && "code" in error2 && error2.code === "EADDRINUSE";
-}
-async function openBrowser(options, listener, signal) {
-  if (options.no_open) return;
-  try {
-    await options.opener.open(listener.address, signal);
-  } catch {
-    options.writeError?.("browser_open_failed");
-  }
-}
-
-// src/browser-server/browser-server-run.ts
-async function runBrowserServer(options) {
-  const resources = { core: void 0, listener: void 0 };
-  try {
-    return await startBrowserServerRun(options, resources);
-  } catch (error2) {
-    await closeResources({
-      ...resources,
-      controller: options.controller,
-      parentSignal: options.parentSignal,
-      abort: options.abort
-    });
-    throw error2;
-  }
-}
-async function startBrowserServerRun(options, resources) {
-  const startedCore = await options.start.coreFactory.start({
-    projectRoot: options.projectRoot,
-    signal: options.controller.signal
-  });
-  resources.core = startedCore;
-  const listener = await listenForPort(
-    options.start,
-    options.controller.signal,
-    startedCore
-  );
-  resources.listener = listener;
-  options.start.write?.(`Code Explorer: ${listener.address.href}`);
-  await openBrowser(options.start, listener, options.controller.signal);
-  return serverResult({
-    listener,
-    core: startedCore,
-    projectRoot: options.projectRoot,
-    close: createServerClose(options, resources)
-  });
-}
-function createServerClose(options, resources) {
-  let closing;
-  return () => closing ??= closeResources({
-    ...resources,
-    controller: options.controller,
-    parentSignal: options.parentSignal,
-    abort: options.abort
-  });
-}
-
-// src/browser-server/browser-server-start.ts
-async function startBrowserServer(options) {
-  const controller = new AbortController();
-  const parentSignal = options.signal;
-  const abort = () => controller.abort();
-  parentSignal?.addEventListener("abort", abort, { once: true });
-  const projectRoot = projectRootFor(options.project_root);
-  return runBrowserServer({
-    start: options,
-    projectRoot,
-    controller,
-    parentSignal,
-    abort
-  });
-}
-
-// src/browser-server/native-browser-opener.ts
-import { spawn as spawn2 } from "node:child_process";
-function commandForPlatform(platform) {
-  if (platform === "win32") return "cmd.exe";
-  if (platform === "darwin") return "/usr/bin/open";
-  if (platform === "linux") return "xdg-open";
-  throw new Error("unsupported platform");
-}
-function commandArguments(platform, href) {
-  return platform === "win32" ? ["/d", "/s", "/c", "start", "", href] : [href];
-}
-async function openBrowser2(url, signal) {
-  const platform = process.platform;
-  const child = spawn2(
-    commandForPlatform(platform),
-    commandArguments(platform, url.href),
-    {
-      detached: true,
-      stdio: "ignore",
-      windowsHide: true
-    }
-  );
-  await new Promise((resolve5, reject) => {
-    const onAbort = () => reject(new Error("aborted"));
-    signal.addEventListener("abort", onAbort, { once: true });
-    child.once("error", (error2) => {
-      signal.removeEventListener("abort", onAbort);
-      reject(error2);
-    });
-    child.once("spawn", () => {
-      signal.removeEventListener("abort", onAbort);
-      child.unref();
-      resolve5();
-    });
-  });
-}
-var nativeBrowserOpener = {
-  open: openBrowser2
-};
-
-// src/browser-server/native-port-lifecycle.ts
-function waitForListening(options) {
-  const { server, port, host, signal } = options;
-  return new Promise((resolve5, reject) => {
-    const onAbort = () => reject(new Error("aborted"));
-    signal.addEventListener("abort", onAbort, { once: true });
-    server.once("error", (error2) => {
-      signal.removeEventListener("abort", onAbort);
-      reject(error2);
-    });
-    server.listen(port, host, () => {
-      signal.removeEventListener("abort", onAbort);
-      resolve5();
-    });
-  });
-}
-function closeServer(server, sockets, signal) {
-  return new Promise((resolve5) => {
-    const force = () => {
-      for (const socket of sockets) socket.destroy();
-    };
-    signal.addEventListener("abort", force, { once: true });
-    server.close(() => {
-      signal.removeEventListener("abort", force);
-      resolve5();
-    });
-  });
-}
-
-// src/browser-server/native-port-server.ts
-import { createServer } from "node:http";
-import path3 from "node:path";
-import { fileURLToPath as fileURLToPath4 } from "node:url";
-
-// src/browser-server/native-port-http.ts
-function responseHeaders(response, headers) {
-  for (const [key, value] of Object.entries(headers))
-    response.setHeader(key, value);
-}
-function requestHeaders(request) {
-  return Object.fromEntries(
-    Object.entries(request.headers).map(([key, value]) => [
-      key,
-      Array.isArray(value) ? value[0] : value
-    ])
-  );
-}
-function writeResponse(response, result) {
-  response.statusCode = result.status;
-  responseHeaders(response, result.headers);
-  response.end(result.body);
-}
-function handleRequest2(router, request, response) {
-  const chunks = [];
-  request.on("data", (chunk) => chunks.push(chunk));
-  request.on("end", () => {
-    void router.handle({
-      method: request.method ?? "GET",
-      path: request.url ?? "/",
-      headers: requestHeaders(request),
-      body: Buffer.concat(chunks)
-    }).then((result) => writeResponse(response, result));
-  });
-}
-function serverRequestHandler(router, admission) {
-  return (request, response) => {
-    if (!admission.open) {
-      response.destroy();
-      return;
-    }
-    handleRequest2(router, request, response);
-  };
-}
-
-// src/browser-server/native-port-server.ts
-function createNativeServer(host, port, core) {
-  const sockets = /* @__PURE__ */ new Set();
-  const admission = { open: true };
-  const router = new BrowserHttpRouter({
-    origin: `http://${host}:${port}`,
-    assetRoot: path3.join(
-      path3.dirname(fileURLToPath4(import.meta.url)),
-      "browser"
-    ),
-    call: core?.call ?? unavailableBrowserCall
-  });
-  const server = createServer(
-    { maxHeaderSize: 16 * 1024 },
-    serverRequestHandler(router, admission)
-  );
-  configureServer(server, sockets);
-  return { server, sockets, admission };
-}
-function configureServer(server, sockets) {
-  server.headersTimeout = 5e3;
-  server.keepAliveTimeout = 5e3;
-  server.maxRequestsPerSocket = 100;
-  server.on("connection", (socket) => {
-    sockets.add(socket);
-    socket.once("close", () => sockets.delete(socket));
-  });
-}
-
-// src/browser-server/native-port-binder.ts
-function listenerFor(host, port, server) {
-  return {
-    address: new URL(`http://${host}:${port}/`),
-    stopAdmission: () => {
-      server.admission.open = false;
-    },
-    close: async (signal) => {
-      if (server.server.listening)
-        await closeServer(server.server, server.sockets, signal);
-    }
-  };
-}
-async function listen(...args) {
-  const [host, port, signal, core] = args;
-  if (signal.aborted) throw new Error("aborted");
-  const nativeServer = createNativeServer(host, port, core);
-  await waitForListening({ server: nativeServer.server, port, host, signal });
-  return listenerFor(host, port, nativeServer);
-}
-var nativePortBinder = { listen };
-
-// src/browser-server/serve-arguments-parser.ts
-function parseNoOpen(state) {
-  if (state.noOpen) return void 0;
-  return { ...state, noOpen: true };
-}
-function parseProjectRoot(value, state) {
-  if (!value || state.projectRoot !== ".") return void 0;
-  return { ...state, projectRoot: value };
-}
-function parseArgument(argument, value, state) {
-  if (argument === "--no-open") {
-    const next = parseNoOpen(state);
-    if (!next) throw new BrowserServerError("invalid_request");
-    return { state: next, consumed: 0 };
-  }
-  if (argument === "--project-root") {
-    const next = parseProjectRoot(value, state);
-    if (!next) throw new BrowserServerError("invalid_request");
-    return { state: next, consumed: 1 };
-  }
-  throw new BrowserServerError("invalid_request");
-}
-function parseServeArguments(arguments_) {
-  if (arguments_[0] !== "serve")
-    throw new BrowserServerError("invalid_request");
-  let state = { projectRoot: ".", noOpen: false };
-  for (let index = 1; index < arguments_.length; index += 1) {
-    const parsed = parseArgument(
-      arguments_[index],
-      arguments_[index + 1],
-      state
-    );
-    state = parsed.state;
-    index += parsed.consumed;
-  }
-  return { project_root: state.projectRoot, no_open: state.noOpen };
-}
-
-// src/browser-server/embedded-runtime.ts
-function loopbackOrigin(origin) {
-  const parsed = new URL(origin);
-  if (parsed.protocol !== "http:" || parsed.hostname !== "127.0.0.1" || !parsed.port) {
-    throw new BrowserServerError("invalid_request");
-  }
-  return parsed;
-}
-function linkAbortSignal(parent, child) {
-  if (!parent) return () => void 0;
-  const abort = () => child.abort(parent.reason);
-  if (parent.aborted) {
-    abort();
-    return () => void 0;
-  }
-  parent.addEventListener("abort", abort, { once: true });
-  return () => parent.removeEventListener("abort", abort);
-}
-async function startCore(options, unlinkAbortSignal) {
-  try {
-    const core = await options.coreFactory.start({
-      projectRoot: options.projectRoot,
-      signal: options.signal
-    });
-    if (options.signal.aborted) {
-      await core.close(AbortSignal.timeout(1e4));
-      throw new Error("aborted");
-    }
-    return core;
-  } catch (error2) {
-    unlinkAbortSignal();
-    throw error2;
-  }
-}
-async function startEmbeddedBrowserRuntime(options) {
-  const parsedOrigin = loopbackOrigin(options.origin);
-  const projectRoot = createNativeProjectRoot(options.projectRoot);
-  const controller = new AbortController();
-  const unlinkAbortSignal = linkAbortSignal(options.signal, controller);
-  const core = await startCore(
-    {
-      coreFactory: options.coreFactory,
-      projectRoot,
-      signal: controller.signal
-    },
-    unlinkAbortSignal
-  );
-  return createEmbeddedRuntime({
-    projectRoot,
-    origin: parsedOrigin.origin,
-    assetRoot: options.assetRoot,
-    core,
-    controller,
-    unlinkAbortSignal
-  });
-}
+var browserAssetRoot = join23(directory, "browser");
 
 // src/discovery/landmarks.ts
 function landmarksNotReady() {
   return { state: "landmarks_not_ready", landmarks: [] };
 }
 
+// src/discovery/classification.ts
+import { readFileSync as readFileSync8 } from "node:fs";
+import process3 from "node:process";
+
+// src/discovery/classification-markers.ts
+function markerClass(path5, generatedHeader) {
+  if (generatedHeader || matchesGeneratedMarker(path5)) return "generated";
+  if (matchesTestMarker(path5)) return "test";
+  if (matchesProductionMarker(path5)) return "production";
+  return void 0;
+}
+function matchesGeneratedMarker(path5) {
+  return path5.split("/").some(
+    (part) => /^(dist|target|bin|obj|\.venv|generated|auto-generated)$/iu.test(part)
+  ) || /\.g\.(cs|ts)$/iu.test(path5) || /(^|\/)(?:generated|auto-generated)\.[^.]+$/iu.test(path5) || /(?:^|\/).+\.(?:generated|designer)\.(?:cs|ts|js)$/iu.test(path5);
+}
+function matchesTestMarker(path5) {
+  return path5.split("/").some((part) => /^(test|tests|__tests__)$/iu.test(part)) || /(?:^|[._-])(test|spec)\.[^.]+$/iu.test(path5) || /(?:^|\/)[^/]*(?:Tests|Test)\.(?:cs|vb)$/iu.test(path5) || /(?:^|\/)(?:test_[^/]+|[^/]+_test)\.pyi?$/iu.test(path5) || /(?:^|\/)[^/]+_test\.rs$/iu.test(path5);
+}
+function matchesProductionMarker(path5) {
+  return /^(src|lib|app)\//iu.test(path5);
+}
+
+// src/discovery/classification-matching.ts
+function normalizeProjectPath(path5) {
+  const normalized = path5.replaceAll("\\", "/").replace(/^\.\//, "");
+  if (unsafeProjectPath(normalized)) return void 0;
+  return normalized;
+}
+function unsafeProjectPath(path5) {
+  return !path5 || absoluteProjectPath(path5) || path5.split("/").some(invalidProjectPathPart);
+}
+function absoluteProjectPath(path5) {
+  return path5.startsWith("/") || /^[A-Za-z]:/.test(path5);
+}
+function invalidProjectPathPart(part) {
+  return !part || part === "." || part === "..";
+}
+function safeGlobMatches(path5, glob) {
+  if (!isSafeProjectGlob(glob)) return false;
+  const expression = glob.split("**").map(
+    (part) => part.replace(/[\\]/g, "\\\\").replace(/[.]/g, "\\.").replaceAll("*", "[^/]*").replaceAll("?", "[^/]")
+  ).join(".*");
+  return new RegExp(`^${expression}$`, "u").test(path5);
+}
+function isSafeProjectGlob(glob) {
+  const normalized = normalizeProjectPath(glob);
+  if (!normalized || normalized !== glob.replaceAll("\\", "/")) return false;
+  return !(/[[\]{}()|+^$\\]/.test(glob) || glob.includes(":"));
+}
+function lastConfiguredClass(path5, config2) {
+  const ordered = [
+    ["generated", config2.generated],
+    ["test", config2.test],
+    ["production", config2.production]
+  ];
+  let matched;
+  for (const [classification, globs] of ordered)
+    for (const glob of globs)
+      if (safeGlobMatches(path5, glob)) matched = classification;
+  return matched;
+}
+function lastConfiguredOverride(path5, config2) {
+  let matched;
+  for (const override of config2.overrides)
+    if (safeGlobMatches(path5, override.glob)) matched = override.class;
+  return matched;
+}
+
+// src/discovery/classification-config-parser.ts
+var keys = ["generated", "test", "production", "overrides"];
+function isRecord4(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+function isSafeProjectGlob2(glob) {
+  const normalized = normalizeProjectPath(glob);
+  if (!normalized || normalized !== glob.replaceAll("\\", "/")) return false;
+  return !(/[[\]{}()|+^$\\]/.test(glob) || glob.includes(":"));
+}
+function parseGlobArray(value) {
+  if (value === void 0) return [];
+  if (!Array.isArray(value) || value.some(
+    (entry) => typeof entry !== "string" || !isSafeProjectGlob2(entry)
+  ))
+    throw new Error("classification_config_invalid");
+  return [...value];
+}
+function validOverride(entry) {
+  if (!isRecord4(entry) || Object.keys(entry).length !== 2 || !("glob" in entry) || !("class" in entry))
+    return false;
+  return typeof entry.glob === "string" && isSafeProjectGlob2(entry.glob) && (entry.class === "generated" || entry.class === "test" || entry.class === "production");
+}
+function parseOverride(entry) {
+  if (!validOverride(entry)) throw new Error("classification_config_invalid");
+  return { glob: entry.glob, class: entry.class };
+}
+function parseOverrides(value) {
+  if (value === void 0) return [];
+  if (!Array.isArray(value)) throw new Error("classification_config_invalid");
+  return value.map(parseOverride);
+}
+function parseClassificationConfig(value) {
+  if (!isRecord4(value) || Object.keys(value).some(
+    (key) => !keys.includes(key)
+  ))
+    throw new Error("classification_config_invalid");
+  return {
+    generated: parseGlobArray(value.generated),
+    test: parseGlobArray(value.test),
+    production: parseGlobArray(value.production),
+    overrides: parseOverrides(value.overrides)
+  };
+}
+
+// src/discovery/classification-filters.ts
+function matchesPath(path5, filters) {
+  return !filters.path_globs?.length || filters.path_globs.some((glob) => safeGlobMatches(path5, glob));
+}
+function filterValues(values, value) {
+  return values ?? (value === void 0 ? void 0 : [value]);
+}
+function matchesValue(value, values) {
+  if (!values?.length) return true;
+  return value !== void 0 && values.includes(value);
+}
+function matchesLanguage(filters, candidate) {
+  return matchesValue(
+    candidate.language,
+    filterValues(filters.languages, filters.language)
+  );
+}
+function matchesKind(filters, candidate) {
+  return matchesValue(
+    candidate.kind,
+    filterValues(filters.kinds, filters.kind)
+  );
+}
+function matchesContent(classification, filters) {
+  if (classification.content === "generated" && !filters.include_generated)
+    return false;
+  if (filters.content === "production")
+    return classification.content === "production";
+  if (filters.content === "tests") return classification.content === "test";
+  return true;
+}
+function matchesDiscoveryFilters(...args) {
+  const [path5, classification, filters, candidate] = args;
+  return matchesPath(path5, filters) && matchesLanguage(filters, candidate) && matchesKind(filters, candidate) && matchesContent(classification, filters);
+}
+
+// src/discovery/classification.ts
+var emptyConfig = {
+  generated: [],
+  test: [],
+  production: [],
+  overrides: []
+};
+function loadClassificationConfig(projectRoot, platform = process3.platform) {
+  try {
+    const configPath = classificationConfigPath(projectRoot, platform);
+    if (!configPath)
+      return {
+        config: emptyConfig,
+        status: { classification_config_invalid: false }
+      };
+    const parsed = JSON.parse(readFileSync8(configPath, "utf8"));
+    return {
+      config: parseClassificationConfig(parsed),
+      status: { classification_config_invalid: false }
+    };
+  } catch {
+    return {
+      config: emptyConfig,
+      status: { classification_config_invalid: true }
+    };
+  }
+}
+function classifyProjectPath(path5, config2 = emptyConfig, generatedHeader = false) {
+  const normalized = normalizeProjectPath(path5);
+  if (!normalized) return { content: "unknown", source: "unknown" };
+  const override = lastConfiguredOverride(normalized, config2);
+  if (override) return { content: override, source: "configuration_override" };
+  const explicit = lastConfiguredClass(normalized, config2);
+  if (explicit) return { content: explicit, source: "configuration" };
+  const marker = markerClass(normalized, generatedHeader);
+  return marker ? { content: marker, source: markerSource(marker) } : { content: "unknown", source: "unknown" };
+}
+function markerSource(marker) {
+  if (marker === "generated") return "generated_marker";
+  if (marker === "test") return "test_marker";
+  return "production_marker";
+}
+function matchesDiscoveryFilters2(...args) {
+  const [path5, classification, filters, candidate] = args;
+  const normalized = normalizeProjectPath(path5);
+  return normalized !== void 0 && matchesDiscoveryFilters(normalized, classification, filters, candidate);
+}
+
+// src/discovery/source-file-collector.ts
+import { lstatSync as lstatSync8, readdirSync as readdirSync7 } from "node:fs";
+import { join as join24 } from "node:path";
+function collectSourceFiles(root) {
+  const found = [];
+  visit3(root.canonicalPath, "", found);
+  return found;
+}
+function visit3(directory2, prefix, found) {
+  for (const entry of readdirSync7(directory2, { withFileTypes: true })) {
+    const relative6 = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const absolute = join24(directory2, entry.name);
+    visitEntry3({ entry, relative: relative6, absolute, found });
+  }
+}
+function visitEntry3(options) {
+  const { entry, relative: relative6, absolute, found } = options;
+  if (isExcludedEntry(relative6, absolute)) return;
+  if (entry.isDirectory()) return visitDirectory2(relative6, absolute, found);
+  if (entry.isFile() && languageForPath(relative6)) found.push(relative6);
+}
+function visitDirectory2(relative6, absolute, found) {
+  if (!isIgnoredDirectory(relative6)) visit3(absolute, relative6, found);
+}
+function isExcludedEntry(relative6, absolute) {
+  return isSensitiveProjectPath(relative6) || isClassificationConfigPath(relative6) || lstatSync8(absolute).isSymbolicLink();
+}
+function isIgnoredDirectory(path5) {
+  return path5.split("/").some(
+    (part) => /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(part)
+  );
+}
+function languageForPath(path5) {
+  const extension = path5.split(".").at(-1)?.toLowerCase();
+  return {
+    rs: "rust",
+    py: "python",
+    pyi: "python",
+    cs: "csharp",
+    ts: "typescript",
+    tsx: "typescript",
+    js: "javascript",
+    jsx: "javascript"
+  }[extension ?? ""];
+}
+function hasGeneratedHeader(root, path5) {
+  try {
+    const header = root.protectedRead(path5).bytes.slice(0, 2048);
+    const generatedHeaderPattern = new RegExp(
+      "(?:^|\\n)\\s*(?:\\/\\/|#|\\/\\*)\\s*(?:<auto-generated>|auto-generated\\b|generated by\\b)",
+      "iu"
+    );
+    return generatedHeaderPattern.test(header);
+  } catch {
+    return false;
+  }
+}
+
+// src/discovery/pipeline-files.ts
+function collectPipelineFiles(root, config2) {
+  return collectSourceFiles(root).map((path5) => ({
+    type: "file",
+    path: path5,
+    identity: `file:${path5}`,
+    classification: classifyProjectPath(
+      path5,
+      config2,
+      hasGeneratedHeader(root, path5)
+    )
+  }));
+}
+
+// src/discovery/discovery-search-candidates.ts
+function normalizeBackendSymbol(root, symbol) {
+  const portablePath = symbol.location.path.replaceAll("\\", "/").replace(/^\.\//, "");
+  if (!isAbsoluteBackendPath(portablePath)) {
+    if (!portablePath || portablePath.split("/").includes(".."))
+      throw new ProjectPathError("path_outside_project");
+    return { ...symbol, location: { ...symbol.location, path: portablePath } };
+  }
+  const classified = root.classifyBackendPath(portablePath);
+  if ("external" in classified)
+    throw new ProjectPathError("path_outside_project");
+  return {
+    ...symbol,
+    location: { ...symbol.location, path: classified.relative_path }
+  };
+}
+function isAbsoluteBackendPath(path5) {
+  return path5.startsWith("/") || /^[A-Za-z]:\//.test(path5);
+}
+function symbolCandidates(root, config2, symbols) {
+  return symbols.map((symbol) => normalizeBackendSymbol(root, symbol)).filter((symbol) => !isSensitiveProjectPath(symbol.location.path)).map((symbol) => ({
+    type: "symbol",
+    name: symbol.name,
+    path: symbol.location.path,
+    kind: symbol.kind,
+    identity: symbol.id,
+    classification: classifyProjectPath(
+      symbol.location.path,
+      config2,
+      hasGeneratedHeader(root, symbol.location.path)
+    ),
+    language: symbol.language
+  }));
+}
+function allowedCandidates(options) {
+  const { root, filters, files, symbols } = options;
+  const allCandidates = [...files, ...symbols];
+  return allCandidates.filter(
+    (candidate) => matchesDiscoveryFilters2(candidate.path, candidate.classification, filters, {
+      language: candidate.type === "symbol" ? candidate.language : languageForPath(candidate.path),
+      ...candidate.type === "symbol" ? { kind: candidate.kind } : {}
+    })
+  );
+}
+
 // src/discovery/matcher-normalize.ts
 function normalizeValue(value) {
   return value.normalize("NFKC").toLowerCase();
 }
-function normalizeProjectPath(path5) {
+function normalizeProjectPath2(path5) {
   const portable = path5.replace(/\\/g, "/");
   if (unsafePathPrefix(portable)) return void 0;
   const parts = portable.split("/").filter((part) => part.length > 0 && part !== ".");
@@ -27154,7 +29381,7 @@ function unsafePathPrefix(path5) {
   return path5.length === 0 || path5.startsWith("/") || path5.startsWith("//") || /^[A-Za-z]:($|\/)/.test(path5) || firstSegment?.includes(":") === true;
 }
 function normalizeCandidate(candidate) {
-  const path5 = normalizeProjectPath(candidate.path);
+  const path5 = normalizeProjectPath2(candidate.path);
   if (path5 === void 0) return void 0;
   if (candidate.type === "symbol")
     return {
@@ -27358,321 +29585,6 @@ function bestEvidence(query, normalized) {
   ).sort(compareEvidence)[0];
 }
 
-// src/discovery/classification.ts
-import { readFileSync as readFileSync7 } from "node:fs";
-import process4 from "node:process";
-
-// src/discovery/classification-markers.ts
-function markerClass(path5, generatedHeader) {
-  if (generatedHeader || matchesGeneratedMarker(path5)) return "generated";
-  if (matchesTestMarker(path5)) return "test";
-  if (matchesProductionMarker(path5)) return "production";
-  return void 0;
-}
-function matchesGeneratedMarker(path5) {
-  return path5.split("/").some(
-    (part) => /^(dist|target|bin|obj|\.venv|generated|auto-generated)$/iu.test(part)
-  ) || /\.g\.(cs|ts)$/iu.test(path5) || /(^|\/)(?:generated|auto-generated)\.[^.]+$/iu.test(path5) || /(?:^|\/).+\.(?:generated|designer)\.(?:cs|ts|js)$/iu.test(path5);
-}
-function matchesTestMarker(path5) {
-  return path5.split("/").some((part) => /^(test|tests|__tests__)$/iu.test(part)) || /(?:^|[._-])(test|spec)\.[^.]+$/iu.test(path5) || /(?:^|\/)[^/]*(?:Tests|Test)\.(?:cs|vb)$/iu.test(path5) || /(?:^|\/)(?:test_[^/]+|[^/]+_test)\.pyi?$/iu.test(path5) || /(?:^|\/)[^/]+_test\.rs$/iu.test(path5);
-}
-function matchesProductionMarker(path5) {
-  return /^(src|lib|app)\//iu.test(path5);
-}
-
-// src/discovery/classification-matching.ts
-function normalizeProjectPath2(path5) {
-  const normalized = path5.replaceAll("\\", "/").replace(/^\.\//, "");
-  if (unsafeProjectPath(normalized)) return void 0;
-  return normalized;
-}
-function unsafeProjectPath(path5) {
-  return !path5 || absoluteProjectPath(path5) || path5.split("/").some(invalidProjectPathPart);
-}
-function absoluteProjectPath(path5) {
-  return path5.startsWith("/") || /^[A-Za-z]:/.test(path5);
-}
-function invalidProjectPathPart(part) {
-  return !part || part === "." || part === "..";
-}
-function safeGlobMatches(path5, glob) {
-  if (!isSafeProjectGlob(glob)) return false;
-  const expression = glob.split("**").map(
-    (part) => part.replace(/[\\]/g, "\\\\").replace(/[.]/g, "\\.").replaceAll("*", "[^/]*").replaceAll("?", "[^/]")
-  ).join(".*");
-  return new RegExp(`^${expression}$`, "u").test(path5);
-}
-function isSafeProjectGlob(glob) {
-  const normalized = normalizeProjectPath2(glob);
-  if (!normalized || normalized !== glob.replaceAll("\\", "/")) return false;
-  return !(/[[\]{}()|+^$\\]/.test(glob) || glob.includes(":"));
-}
-function lastConfiguredClass(path5, config2) {
-  const ordered = [
-    ["generated", config2.generated],
-    ["test", config2.test],
-    ["production", config2.production]
-  ];
-  let matched;
-  for (const [classification, globs] of ordered)
-    for (const glob of globs)
-      if (safeGlobMatches(path5, glob)) matched = classification;
-  return matched;
-}
-function lastConfiguredOverride(path5, config2) {
-  let matched;
-  for (const override of config2.overrides)
-    if (safeGlobMatches(path5, override.glob)) matched = override.class;
-  return matched;
-}
-
-// src/discovery/classification-config-parser.ts
-var keys = ["generated", "test", "production", "overrides"];
-function isRecord4(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-function isSafeProjectGlob2(glob) {
-  const normalized = normalizeProjectPath2(glob);
-  if (!normalized || normalized !== glob.replaceAll("\\", "/")) return false;
-  return !(/[[\]{}()|+^$\\]/.test(glob) || glob.includes(":"));
-}
-function parseGlobArray(value) {
-  if (value === void 0) return [];
-  if (!Array.isArray(value) || value.some(
-    (entry) => typeof entry !== "string" || !isSafeProjectGlob2(entry)
-  ))
-    throw new Error("classification_config_invalid");
-  return [...value];
-}
-function validOverride(entry) {
-  if (!isRecord4(entry) || Object.keys(entry).length !== 2 || !("glob" in entry) || !("class" in entry))
-    return false;
-  return typeof entry.glob === "string" && isSafeProjectGlob2(entry.glob) && (entry.class === "generated" || entry.class === "test" || entry.class === "production");
-}
-function parseOverride(entry) {
-  if (!validOverride(entry)) throw new Error("classification_config_invalid");
-  return { glob: entry.glob, class: entry.class };
-}
-function parseOverrides(value) {
-  if (value === void 0) return [];
-  if (!Array.isArray(value)) throw new Error("classification_config_invalid");
-  return value.map(parseOverride);
-}
-function parseClassificationConfig(value) {
-  if (!isRecord4(value) || Object.keys(value).some(
-    (key) => !keys.includes(key)
-  ))
-    throw new Error("classification_config_invalid");
-  return {
-    generated: parseGlobArray(value.generated),
-    test: parseGlobArray(value.test),
-    production: parseGlobArray(value.production),
-    overrides: parseOverrides(value.overrides)
-  };
-}
-
-// src/discovery/classification-filters.ts
-function matchesPath(path5, filters) {
-  return !filters.path_globs?.length || filters.path_globs.some((glob) => safeGlobMatches(path5, glob));
-}
-function filterValues(values, value) {
-  return values ?? (value === void 0 ? void 0 : [value]);
-}
-function matchesValue(value, values) {
-  if (!values?.length) return true;
-  return value !== void 0 && values.includes(value);
-}
-function matchesLanguage(filters, candidate) {
-  return matchesValue(
-    candidate.language,
-    filterValues(filters.languages, filters.language)
-  );
-}
-function matchesKind(filters, candidate) {
-  return matchesValue(
-    candidate.kind,
-    filterValues(filters.kinds, filters.kind)
-  );
-}
-function matchesContent(classification, filters) {
-  if (classification.content === "generated" && !filters.include_generated)
-    return false;
-  if (filters.content === "production")
-    return classification.content === "production";
-  if (filters.content === "tests") return classification.content === "test";
-  return true;
-}
-function matchesDiscoveryFilters(...args) {
-  const [path5, classification, filters, candidate] = args;
-  return matchesPath(path5, filters) && matchesLanguage(filters, candidate) && matchesKind(filters, candidate) && matchesContent(classification, filters);
-}
-
-// src/discovery/classification.ts
-var emptyConfig = {
-  generated: [],
-  test: [],
-  production: [],
-  overrides: []
-};
-function loadClassificationConfig(projectRoot, platform = process4.platform) {
-  try {
-    const configPath = classificationConfigPath(projectRoot, platform);
-    if (!configPath)
-      return {
-        config: emptyConfig,
-        status: { classification_config_invalid: false }
-      };
-    const parsed = JSON.parse(readFileSync7(configPath, "utf8"));
-    return {
-      config: parseClassificationConfig(parsed),
-      status: { classification_config_invalid: false }
-    };
-  } catch {
-    return {
-      config: emptyConfig,
-      status: { classification_config_invalid: true }
-    };
-  }
-}
-function classifyProjectPath(path5, config2 = emptyConfig, generatedHeader = false) {
-  const normalized = normalizeProjectPath2(path5);
-  if (!normalized) return { content: "unknown", source: "unknown" };
-  const override = lastConfiguredOverride(normalized, config2);
-  if (override) return { content: override, source: "configuration_override" };
-  const explicit = lastConfiguredClass(normalized, config2);
-  if (explicit) return { content: explicit, source: "configuration" };
-  const marker = markerClass(normalized, generatedHeader);
-  return marker ? { content: marker, source: markerSource(marker) } : { content: "unknown", source: "unknown" };
-}
-function markerSource(marker) {
-  if (marker === "generated") return "generated_marker";
-  if (marker === "test") return "test_marker";
-  return "production_marker";
-}
-function matchesDiscoveryFilters2(...args) {
-  const [path5, classification, filters, candidate] = args;
-  const normalized = normalizeProjectPath2(path5);
-  return normalized !== void 0 && matchesDiscoveryFilters(normalized, classification, filters, candidate);
-}
-
-// src/discovery/source-file-collector.ts
-import { lstatSync as lstatSync8, readdirSync as readdirSync7 } from "node:fs";
-import { join as join19 } from "node:path";
-function collectSourceFiles(root) {
-  const found = [];
-  visit2(root.canonicalPath, "", found);
-  return found;
-}
-function visit2(directory, prefix, found) {
-  for (const entry of readdirSync7(directory, { withFileTypes: true })) {
-    const relative6 = prefix ? `${prefix}/${entry.name}` : entry.name;
-    const absolute = join19(directory, entry.name);
-    visitEntry3({ entry, relative: relative6, absolute, found });
-  }
-}
-function visitEntry3(options) {
-  const { entry, relative: relative6, absolute, found } = options;
-  if (isExcludedEntry(relative6, absolute)) return;
-  if (entry.isDirectory()) return visitDirectory2(relative6, absolute, found);
-  if (entry.isFile() && languageForPath(relative6)) found.push(relative6);
-}
-function visitDirectory2(relative6, absolute, found) {
-  if (!isIgnoredDirectory(relative6)) visit2(absolute, relative6, found);
-}
-function isExcludedEntry(relative6, absolute) {
-  return isSensitiveProjectPath(relative6) || isClassificationConfigPath(relative6) || lstatSync8(absolute).isSymbolicLink();
-}
-function isIgnoredDirectory(path5) {
-  return path5.split("/").some(
-    (part) => /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(part)
-  );
-}
-function languageForPath(path5) {
-  const extension = path5.split(".").at(-1)?.toLowerCase();
-  return {
-    rs: "rust",
-    py: "python",
-    pyi: "python",
-    cs: "csharp",
-    ts: "typescript",
-    tsx: "typescript",
-    js: "javascript",
-    jsx: "javascript"
-  }[extension ?? ""];
-}
-function hasGeneratedHeader(root, path5) {
-  try {
-    const header = root.protectedRead(path5).bytes.slice(0, 2048);
-    const generatedHeaderPattern = new RegExp(
-      "(?:^|\\n)\\s*(?:\\/\\/|#|\\/\\*)\\s*(?:<auto-generated>|auto-generated\\b|generated by\\b)",
-      "iu"
-    );
-    return generatedHeaderPattern.test(header);
-  } catch {
-    return false;
-  }
-}
-
-// src/discovery/pipeline-files.ts
-function collectPipelineFiles(root, config2) {
-  return collectSourceFiles(root).map((path5) => ({
-    type: "file",
-    path: path5,
-    identity: `file:${path5}`,
-    classification: classifyProjectPath(
-      path5,
-      config2,
-      hasGeneratedHeader(root, path5)
-    )
-  }));
-}
-
-// src/discovery/discovery-search-candidates.ts
-function normalizeBackendSymbol(root, symbol) {
-  const portablePath = symbol.location.path.replaceAll("\\", "/").replace(/^\.\//, "");
-  if (!isAbsoluteBackendPath(portablePath)) {
-    if (!portablePath || portablePath.split("/").includes(".."))
-      throw new ProjectPathError("path_outside_project");
-    return { ...symbol, location: { ...symbol.location, path: portablePath } };
-  }
-  const classified = root.classifyBackendPath(portablePath);
-  if ("external" in classified)
-    throw new ProjectPathError("path_outside_project");
-  return {
-    ...symbol,
-    location: { ...symbol.location, path: classified.relative_path }
-  };
-}
-function isAbsoluteBackendPath(path5) {
-  return path5.startsWith("/") || /^[A-Za-z]:\//.test(path5);
-}
-function symbolCandidates(root, config2, symbols) {
-  return symbols.map((symbol) => normalizeBackendSymbol(root, symbol)).filter((symbol) => !isSensitiveProjectPath(symbol.location.path)).map((symbol) => ({
-    type: "symbol",
-    name: symbol.name,
-    path: symbol.location.path,
-    kind: symbol.kind,
-    identity: symbol.id,
-    classification: classifyProjectPath(
-      symbol.location.path,
-      config2,
-      hasGeneratedHeader(root, symbol.location.path)
-    ),
-    language: symbol.language
-  }));
-}
-function allowedCandidates(options) {
-  const { root, filters, files, symbols } = options;
-  const allCandidates = [...files, ...symbols];
-  return allCandidates.filter(
-    (candidate) => matchesDiscoveryFilters2(candidate.path, candidate.classification, filters, {
-      language: candidate.type === "symbol" ? candidate.language : languageForPath(candidate.path),
-      ...candidate.type === "symbol" ? { kind: candidate.kind } : {}
-    })
-  );
-}
-
 // src/discovery/discovery-search-pipeline.ts
 function resultLimit(filters) {
   return Math.max(0, filters.limit ?? 50);
@@ -27744,6 +29656,10 @@ function createDiscoveryPipeline(root) {
 }
 
 // src/freshness/project-generation-scheduler.ts
+var project_generation_scheduler_exports = {};
+__export(project_generation_scheduler_exports, {
+  ProjectGenerationScheduler: () => ProjectGenerationScheduler
+});
 var ProjectGenerationScheduler = class {
   constructor(freshness) {
     this.freshness = freshness;
@@ -27791,2183 +29707,6 @@ var ProjectGenerationScheduler = class {
     return response;
   }
 };
-
-// src/freshness/freshness-runtime.ts
-var FreshnessRuntime = class {
-  status = {
-    current_generation: 0,
-    pending_generation: null,
-    state: "initializing",
-    mode: "watching"
-  };
-  manifest = /* @__PURE__ */ new Map();
-  watcher;
-  activeSessions = 0;
-  coalesceTimer;
-  pollTimer;
-  manifestTimer;
-  running;
-  forceRefresh = false;
-  nextGeneration = 1;
-  reserveGeneration() {
-    const generation = this.nextGeneration++;
-    this.status = {
-      current_generation: this.status.current_generation,
-      pending_generation: generation,
-      state: "refreshing",
-      mode: this.status.mode
-    };
-    return generation;
-  }
-  failRefresh() {
-    this.forceRefresh = false;
-    this.status = {
-      current_generation: this.status.current_generation,
-      pending_generation: null,
-      state: "refresh_failed",
-      mode: this.status.mode
-    };
-  }
-  reserveRefresh() {
-    if (this.status.pending_generation === null) this.reserveGeneration();
-    this.forceRefresh = true;
-  }
-  degrade(cause) {
-    this.forceRefresh = false;
-    this.status = {
-      current_generation: this.status.current_generation,
-      pending_generation: null,
-      state: "degraded",
-      mode: this.status.mode,
-      degraded_cause: cause
-    };
-  }
-  ready(generation, manifest) {
-    this.manifest = new Map(manifest);
-    this.status = {
-      current_generation: generation,
-      pending_generation: null,
-      state: "ready",
-      mode: this.status.mode
-    };
-    this.forceRefresh = false;
-  }
-};
-
-// ../../node_modules/chokidar/esm/index.js
-import { stat as statcb } from "fs";
-import { stat as stat3, readdir as readdir2 } from "fs/promises";
-import { EventEmitter } from "events";
-import * as sysPath2 from "path";
-
-// ../../node_modules/readdirp/esm/index.js
-import { stat, lstat, readdir, realpath as realpath2 } from "node:fs/promises";
-import { Readable } from "node:stream";
-import { resolve as presolve, relative as prelative, join as pjoin, sep as psep } from "node:path";
-var EntryTypes = {
-  FILE_TYPE: "files",
-  DIR_TYPE: "directories",
-  FILE_DIR_TYPE: "files_directories",
-  EVERYTHING_TYPE: "all"
-};
-var defaultOptions2 = {
-  root: ".",
-  fileFilter: (_entryInfo) => true,
-  directoryFilter: (_entryInfo) => true,
-  type: EntryTypes.FILE_TYPE,
-  lstat: false,
-  depth: 2147483648,
-  alwaysStat: false,
-  highWaterMark: 4096
-};
-Object.freeze(defaultOptions2);
-var RECURSIVE_ERROR_CODE = "READDIRP_RECURSIVE_ERROR";
-var NORMAL_FLOW_ERRORS = /* @__PURE__ */ new Set(["ENOENT", "EPERM", "EACCES", "ELOOP", RECURSIVE_ERROR_CODE]);
-var ALL_TYPES = [
-  EntryTypes.DIR_TYPE,
-  EntryTypes.EVERYTHING_TYPE,
-  EntryTypes.FILE_DIR_TYPE,
-  EntryTypes.FILE_TYPE
-];
-var DIR_TYPES = /* @__PURE__ */ new Set([
-  EntryTypes.DIR_TYPE,
-  EntryTypes.EVERYTHING_TYPE,
-  EntryTypes.FILE_DIR_TYPE
-]);
-var FILE_TYPES = /* @__PURE__ */ new Set([
-  EntryTypes.EVERYTHING_TYPE,
-  EntryTypes.FILE_DIR_TYPE,
-  EntryTypes.FILE_TYPE
-]);
-var isNormalFlowError = (error2) => NORMAL_FLOW_ERRORS.has(error2.code);
-var wantBigintFsStats = process.platform === "win32";
-var emptyFn = (_entryInfo) => true;
-var normalizeFilter = (filter) => {
-  if (filter === void 0)
-    return emptyFn;
-  if (typeof filter === "function")
-    return filter;
-  if (typeof filter === "string") {
-    const fl = filter.trim();
-    return (entry) => entry.basename === fl;
-  }
-  if (Array.isArray(filter)) {
-    const trItems = filter.map((item) => item.trim());
-    return (entry) => trItems.some((f) => entry.basename === f);
-  }
-  return emptyFn;
-};
-var ReaddirpStream = class extends Readable {
-  constructor(options = {}) {
-    super({
-      objectMode: true,
-      autoDestroy: true,
-      highWaterMark: options.highWaterMark
-    });
-    const opts = { ...defaultOptions2, ...options };
-    const { root, type } = opts;
-    this._fileFilter = normalizeFilter(opts.fileFilter);
-    this._directoryFilter = normalizeFilter(opts.directoryFilter);
-    const statMethod = opts.lstat ? lstat : stat;
-    if (wantBigintFsStats) {
-      this._stat = (path5) => statMethod(path5, { bigint: true });
-    } else {
-      this._stat = statMethod;
-    }
-    this._maxDepth = opts.depth ?? defaultOptions2.depth;
-    this._wantsDir = type ? DIR_TYPES.has(type) : false;
-    this._wantsFile = type ? FILE_TYPES.has(type) : false;
-    this._wantsEverything = type === EntryTypes.EVERYTHING_TYPE;
-    this._root = presolve(root);
-    this._isDirent = !opts.alwaysStat;
-    this._statsProp = this._isDirent ? "dirent" : "stats";
-    this._rdOptions = { encoding: "utf8", withFileTypes: this._isDirent };
-    this.parents = [this._exploreDir(root, 1)];
-    this.reading = false;
-    this.parent = void 0;
-  }
-  async _read(batch) {
-    if (this.reading)
-      return;
-    this.reading = true;
-    try {
-      while (!this.destroyed && batch > 0) {
-        const par = this.parent;
-        const fil = par && par.files;
-        if (fil && fil.length > 0) {
-          const { path: path5, depth } = par;
-          const slice = fil.splice(0, batch).map((dirent) => this._formatEntry(dirent, path5));
-          const awaited = await Promise.all(slice);
-          for (const entry of awaited) {
-            if (!entry)
-              continue;
-            if (this.destroyed)
-              return;
-            const entryType = await this._getEntryType(entry);
-            if (entryType === "directory" && this._directoryFilter(entry)) {
-              if (depth <= this._maxDepth) {
-                this.parents.push(this._exploreDir(entry.fullPath, depth + 1));
-              }
-              if (this._wantsDir) {
-                this.push(entry);
-                batch--;
-              }
-            } else if ((entryType === "file" || this._includeAsFile(entry)) && this._fileFilter(entry)) {
-              if (this._wantsFile) {
-                this.push(entry);
-                batch--;
-              }
-            }
-          }
-        } else {
-          const parent = this.parents.pop();
-          if (!parent) {
-            this.push(null);
-            break;
-          }
-          this.parent = await parent;
-          if (this.destroyed)
-            return;
-        }
-      }
-    } catch (error2) {
-      this.destroy(error2);
-    } finally {
-      this.reading = false;
-    }
-  }
-  async _exploreDir(path5, depth) {
-    let files;
-    try {
-      files = await readdir(path5, this._rdOptions);
-    } catch (error2) {
-      this._onError(error2);
-    }
-    return { files, depth, path: path5 };
-  }
-  async _formatEntry(dirent, path5) {
-    let entry;
-    const basename4 = this._isDirent ? dirent.name : dirent;
-    try {
-      const fullPath = presolve(pjoin(path5, basename4));
-      entry = { path: prelative(this._root, fullPath), fullPath, basename: basename4 };
-      entry[this._statsProp] = this._isDirent ? dirent : await this._stat(fullPath);
-    } catch (err) {
-      this._onError(err);
-      return;
-    }
-    return entry;
-  }
-  _onError(err) {
-    if (isNormalFlowError(err) && !this.destroyed) {
-      this.emit("warn", err);
-    } else {
-      this.destroy(err);
-    }
-  }
-  async _getEntryType(entry) {
-    if (!entry && this._statsProp in entry) {
-      return "";
-    }
-    const stats = entry[this._statsProp];
-    if (stats.isFile())
-      return "file";
-    if (stats.isDirectory())
-      return "directory";
-    if (stats && stats.isSymbolicLink()) {
-      const full = entry.fullPath;
-      try {
-        const entryRealPath = await realpath2(full);
-        const entryRealPathStats = await lstat(entryRealPath);
-        if (entryRealPathStats.isFile()) {
-          return "file";
-        }
-        if (entryRealPathStats.isDirectory()) {
-          const len = entryRealPath.length;
-          if (full.startsWith(entryRealPath) && full.substr(len, 1) === psep) {
-            const recursiveError = new Error(`Circular symlink detected: "${full}" points to "${entryRealPath}"`);
-            recursiveError.code = RECURSIVE_ERROR_CODE;
-            return this._onError(recursiveError);
-          }
-          return "directory";
-        }
-      } catch (error2) {
-        this._onError(error2);
-        return "";
-      }
-    }
-  }
-  _includeAsFile(entry) {
-    const stats = entry && entry[this._statsProp];
-    return stats && this._wantsEverything && !stats.isDirectory();
-  }
-};
-function readdirp(root, options = {}) {
-  let type = options.entryType || options.type;
-  if (type === "both")
-    type = EntryTypes.FILE_DIR_TYPE;
-  if (type)
-    options.type = type;
-  if (!root) {
-    throw new Error("readdirp: root argument is required. Usage: readdirp(root, options)");
-  } else if (typeof root !== "string") {
-    throw new TypeError("readdirp: root argument must be a string. Usage: readdirp(root, options)");
-  } else if (type && !ALL_TYPES.includes(type)) {
-    throw new Error(`readdirp: Invalid type passed. Use one of ${ALL_TYPES.join(", ")}`);
-  }
-  options.root = root;
-  return new ReaddirpStream(options);
-}
-
-// ../../node_modules/chokidar/esm/handler.js
-import { watchFile, unwatchFile, watch as fs_watch } from "fs";
-import { open as open3, stat as stat2, lstat as lstat2, realpath as fsrealpath } from "fs/promises";
-import * as sysPath from "path";
-import { type as osType } from "os";
-var STR_DATA = "data";
-var STR_END = "end";
-var STR_CLOSE = "close";
-var EMPTY_FN = () => {
-};
-var pl = process.platform;
-var isWindows = pl === "win32";
-var isMacos = pl === "darwin";
-var isLinux = pl === "linux";
-var isFreeBSD = pl === "freebsd";
-var isIBMi = osType() === "OS400";
-var EVENTS = {
-  ALL: "all",
-  READY: "ready",
-  ADD: "add",
-  CHANGE: "change",
-  ADD_DIR: "addDir",
-  UNLINK: "unlink",
-  UNLINK_DIR: "unlinkDir",
-  RAW: "raw",
-  ERROR: "error"
-};
-var EV = EVENTS;
-var THROTTLE_MODE_WATCH = "watch";
-var statMethods = { lstat: lstat2, stat: stat2 };
-var KEY_LISTENERS = "listeners";
-var KEY_ERR = "errHandlers";
-var KEY_RAW = "rawEmitters";
-var HANDLER_KEYS = [KEY_LISTENERS, KEY_ERR, KEY_RAW];
-var binaryExtensions = /* @__PURE__ */ new Set([
-  "3dm",
-  "3ds",
-  "3g2",
-  "3gp",
-  "7z",
-  "a",
-  "aac",
-  "adp",
-  "afdesign",
-  "afphoto",
-  "afpub",
-  "ai",
-  "aif",
-  "aiff",
-  "alz",
-  "ape",
-  "apk",
-  "appimage",
-  "ar",
-  "arj",
-  "asf",
-  "au",
-  "avi",
-  "bak",
-  "baml",
-  "bh",
-  "bin",
-  "bk",
-  "bmp",
-  "btif",
-  "bz2",
-  "bzip2",
-  "cab",
-  "caf",
-  "cgm",
-  "class",
-  "cmx",
-  "cpio",
-  "cr2",
-  "cur",
-  "dat",
-  "dcm",
-  "deb",
-  "dex",
-  "djvu",
-  "dll",
-  "dmg",
-  "dng",
-  "doc",
-  "docm",
-  "docx",
-  "dot",
-  "dotm",
-  "dra",
-  "DS_Store",
-  "dsk",
-  "dts",
-  "dtshd",
-  "dvb",
-  "dwg",
-  "dxf",
-  "ecelp4800",
-  "ecelp7470",
-  "ecelp9600",
-  "egg",
-  "eol",
-  "eot",
-  "epub",
-  "exe",
-  "f4v",
-  "fbs",
-  "fh",
-  "fla",
-  "flac",
-  "flatpak",
-  "fli",
-  "flv",
-  "fpx",
-  "fst",
-  "fvt",
-  "g3",
-  "gh",
-  "gif",
-  "graffle",
-  "gz",
-  "gzip",
-  "h261",
-  "h263",
-  "h264",
-  "icns",
-  "ico",
-  "ief",
-  "img",
-  "ipa",
-  "iso",
-  "jar",
-  "jpeg",
-  "jpg",
-  "jpgv",
-  "jpm",
-  "jxr",
-  "key",
-  "ktx",
-  "lha",
-  "lib",
-  "lvp",
-  "lz",
-  "lzh",
-  "lzma",
-  "lzo",
-  "m3u",
-  "m4a",
-  "m4v",
-  "mar",
-  "mdi",
-  "mht",
-  "mid",
-  "midi",
-  "mj2",
-  "mka",
-  "mkv",
-  "mmr",
-  "mng",
-  "mobi",
-  "mov",
-  "movie",
-  "mp3",
-  "mp4",
-  "mp4a",
-  "mpeg",
-  "mpg",
-  "mpga",
-  "mxu",
-  "nef",
-  "npx",
-  "numbers",
-  "nupkg",
-  "o",
-  "odp",
-  "ods",
-  "odt",
-  "oga",
-  "ogg",
-  "ogv",
-  "otf",
-  "ott",
-  "pages",
-  "pbm",
-  "pcx",
-  "pdb",
-  "pdf",
-  "pea",
-  "pgm",
-  "pic",
-  "png",
-  "pnm",
-  "pot",
-  "potm",
-  "potx",
-  "ppa",
-  "ppam",
-  "ppm",
-  "pps",
-  "ppsm",
-  "ppsx",
-  "ppt",
-  "pptm",
-  "pptx",
-  "psd",
-  "pya",
-  "pyc",
-  "pyo",
-  "pyv",
-  "qt",
-  "rar",
-  "ras",
-  "raw",
-  "resources",
-  "rgb",
-  "rip",
-  "rlc",
-  "rmf",
-  "rmvb",
-  "rpm",
-  "rtf",
-  "rz",
-  "s3m",
-  "s7z",
-  "scpt",
-  "sgi",
-  "shar",
-  "snap",
-  "sil",
-  "sketch",
-  "slk",
-  "smv",
-  "snk",
-  "so",
-  "stl",
-  "suo",
-  "sub",
-  "swf",
-  "tar",
-  "tbz",
-  "tbz2",
-  "tga",
-  "tgz",
-  "thmx",
-  "tif",
-  "tiff",
-  "tlz",
-  "ttc",
-  "ttf",
-  "txz",
-  "udf",
-  "uvh",
-  "uvi",
-  "uvm",
-  "uvp",
-  "uvs",
-  "uvu",
-  "viv",
-  "vob",
-  "war",
-  "wav",
-  "wax",
-  "wbmp",
-  "wdp",
-  "weba",
-  "webm",
-  "webp",
-  "whl",
-  "wim",
-  "wm",
-  "wma",
-  "wmv",
-  "wmx",
-  "woff",
-  "woff2",
-  "wrm",
-  "wvx",
-  "xbm",
-  "xif",
-  "xla",
-  "xlam",
-  "xls",
-  "xlsb",
-  "xlsm",
-  "xlsx",
-  "xlt",
-  "xltm",
-  "xltx",
-  "xm",
-  "xmind",
-  "xpi",
-  "xpm",
-  "xwd",
-  "xz",
-  "z",
-  "zip",
-  "zipx"
-]);
-var isBinaryPath = (filePath) => binaryExtensions.has(sysPath.extname(filePath).slice(1).toLowerCase());
-var foreach = (val, fn) => {
-  if (val instanceof Set) {
-    val.forEach(fn);
-  } else {
-    fn(val);
-  }
-};
-var addAndConvert = (main2, prop, item) => {
-  let container = main2[prop];
-  if (!(container instanceof Set)) {
-    main2[prop] = container = /* @__PURE__ */ new Set([container]);
-  }
-  container.add(item);
-};
-var clearItem = (cont) => (key) => {
-  const set = cont[key];
-  if (set instanceof Set) {
-    set.clear();
-  } else {
-    delete cont[key];
-  }
-};
-var delFromSet = (main2, prop, item) => {
-  const container = main2[prop];
-  if (container instanceof Set) {
-    container.delete(item);
-  } else if (container === item) {
-    delete main2[prop];
-  }
-};
-var isEmptySet = (val) => val instanceof Set ? val.size === 0 : !val;
-var FsWatchInstances = /* @__PURE__ */ new Map();
-function createFsWatchInstance(path5, options, listener, errHandler, emitRaw) {
-  const handleEvent = (rawEvent, evPath) => {
-    listener(path5);
-    emitRaw(rawEvent, evPath, { watchedPath: path5 });
-    if (evPath && path5 !== evPath) {
-      fsWatchBroadcast(sysPath.resolve(path5, evPath), KEY_LISTENERS, sysPath.join(path5, evPath));
-    }
-  };
-  try {
-    return fs_watch(path5, {
-      persistent: options.persistent
-    }, handleEvent);
-  } catch (error2) {
-    errHandler(error2);
-    return void 0;
-  }
-}
-var fsWatchBroadcast = (fullPath, listenerType, val1, val2, val3) => {
-  const cont = FsWatchInstances.get(fullPath);
-  if (!cont)
-    return;
-  foreach(cont[listenerType], (listener) => {
-    listener(val1, val2, val3);
-  });
-};
-var setFsWatchListener = (path5, fullPath, options, handlers) => {
-  const { listener, errHandler, rawEmitter } = handlers;
-  let cont = FsWatchInstances.get(fullPath);
-  let watcher;
-  if (!options.persistent) {
-    watcher = createFsWatchInstance(path5, options, listener, errHandler, rawEmitter);
-    if (!watcher)
-      return;
-    return watcher.close.bind(watcher);
-  }
-  if (cont) {
-    addAndConvert(cont, KEY_LISTENERS, listener);
-    addAndConvert(cont, KEY_ERR, errHandler);
-    addAndConvert(cont, KEY_RAW, rawEmitter);
-  } else {
-    watcher = createFsWatchInstance(
-      path5,
-      options,
-      fsWatchBroadcast.bind(null, fullPath, KEY_LISTENERS),
-      errHandler,
-      // no need to use broadcast here
-      fsWatchBroadcast.bind(null, fullPath, KEY_RAW)
-    );
-    if (!watcher)
-      return;
-    watcher.on(EV.ERROR, async (error2) => {
-      const broadcastErr = fsWatchBroadcast.bind(null, fullPath, KEY_ERR);
-      if (cont)
-        cont.watcherUnusable = true;
-      if (isWindows && error2.code === "EPERM") {
-        try {
-          const fd = await open3(path5, "r");
-          await fd.close();
-          broadcastErr(error2);
-        } catch (err) {
-        }
-      } else {
-        broadcastErr(error2);
-      }
-    });
-    cont = {
-      listeners: listener,
-      errHandlers: errHandler,
-      rawEmitters: rawEmitter,
-      watcher
-    };
-    FsWatchInstances.set(fullPath, cont);
-  }
-  return () => {
-    delFromSet(cont, KEY_LISTENERS, listener);
-    delFromSet(cont, KEY_ERR, errHandler);
-    delFromSet(cont, KEY_RAW, rawEmitter);
-    if (isEmptySet(cont.listeners)) {
-      cont.watcher.close();
-      FsWatchInstances.delete(fullPath);
-      HANDLER_KEYS.forEach(clearItem(cont));
-      cont.watcher = void 0;
-      Object.freeze(cont);
-    }
-  };
-};
-var FsWatchFileInstances = /* @__PURE__ */ new Map();
-var setFsWatchFileListener = (path5, fullPath, options, handlers) => {
-  const { listener, rawEmitter } = handlers;
-  let cont = FsWatchFileInstances.get(fullPath);
-  const copts = cont && cont.options;
-  if (copts && (copts.persistent < options.persistent || copts.interval > options.interval)) {
-    unwatchFile(fullPath);
-    cont = void 0;
-  }
-  if (cont) {
-    addAndConvert(cont, KEY_LISTENERS, listener);
-    addAndConvert(cont, KEY_RAW, rawEmitter);
-  } else {
-    cont = {
-      listeners: listener,
-      rawEmitters: rawEmitter,
-      options,
-      watcher: watchFile(fullPath, options, (curr, prev) => {
-        foreach(cont.rawEmitters, (rawEmitter2) => {
-          rawEmitter2(EV.CHANGE, fullPath, { curr, prev });
-        });
-        const currmtime = curr.mtimeMs;
-        if (curr.size !== prev.size || currmtime > prev.mtimeMs || currmtime === 0) {
-          foreach(cont.listeners, (listener2) => listener2(path5, curr));
-        }
-      })
-    };
-    FsWatchFileInstances.set(fullPath, cont);
-  }
-  return () => {
-    delFromSet(cont, KEY_LISTENERS, listener);
-    delFromSet(cont, KEY_RAW, rawEmitter);
-    if (isEmptySet(cont.listeners)) {
-      FsWatchFileInstances.delete(fullPath);
-      unwatchFile(fullPath);
-      cont.options = cont.watcher = void 0;
-      Object.freeze(cont);
-    }
-  };
-};
-var NodeFsHandler = class {
-  constructor(fsW) {
-    this.fsw = fsW;
-    this._boundHandleError = (error2) => fsW._handleError(error2);
-  }
-  /**
-   * Watch file for changes with fs_watchFile or fs_watch.
-   * @param path to file or dir
-   * @param listener on fs change
-   * @returns closer for the watcher instance
-   */
-  _watchWithNodeFs(path5, listener) {
-    const opts = this.fsw.options;
-    const directory = sysPath.dirname(path5);
-    const basename4 = sysPath.basename(path5);
-    const parent = this.fsw._getWatchedDir(directory);
-    parent.add(basename4);
-    const absolutePath = sysPath.resolve(path5);
-    const options = {
-      persistent: opts.persistent
-    };
-    if (!listener)
-      listener = EMPTY_FN;
-    let closer;
-    if (opts.usePolling) {
-      const enableBin = opts.interval !== opts.binaryInterval;
-      options.interval = enableBin && isBinaryPath(basename4) ? opts.binaryInterval : opts.interval;
-      closer = setFsWatchFileListener(path5, absolutePath, options, {
-        listener,
-        rawEmitter: this.fsw._emitRaw
-      });
-    } else {
-      closer = setFsWatchListener(path5, absolutePath, options, {
-        listener,
-        errHandler: this._boundHandleError,
-        rawEmitter: this.fsw._emitRaw
-      });
-    }
-    return closer;
-  }
-  /**
-   * Watch a file and emit add event if warranted.
-   * @returns closer for the watcher instance
-   */
-  _handleFile(file, stats, initialAdd) {
-    if (this.fsw.closed) {
-      return;
-    }
-    const dirname10 = sysPath.dirname(file);
-    const basename4 = sysPath.basename(file);
-    const parent = this.fsw._getWatchedDir(dirname10);
-    let prevStats = stats;
-    if (parent.has(basename4))
-      return;
-    const listener = async (path5, newStats) => {
-      if (!this.fsw._throttle(THROTTLE_MODE_WATCH, file, 5))
-        return;
-      if (!newStats || newStats.mtimeMs === 0) {
-        try {
-          const newStats2 = await stat2(file);
-          if (this.fsw.closed)
-            return;
-          const at = newStats2.atimeMs;
-          const mt = newStats2.mtimeMs;
-          if (!at || at <= mt || mt !== prevStats.mtimeMs) {
-            this.fsw._emit(EV.CHANGE, file, newStats2);
-          }
-          if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== newStats2.ino) {
-            this.fsw._closeFile(path5);
-            prevStats = newStats2;
-            const closer2 = this._watchWithNodeFs(file, listener);
-            if (closer2)
-              this.fsw._addPathCloser(path5, closer2);
-          } else {
-            prevStats = newStats2;
-          }
-        } catch (error2) {
-          this.fsw._remove(dirname10, basename4);
-        }
-      } else if (parent.has(basename4)) {
-        const at = newStats.atimeMs;
-        const mt = newStats.mtimeMs;
-        if (!at || at <= mt || mt !== prevStats.mtimeMs) {
-          this.fsw._emit(EV.CHANGE, file, newStats);
-        }
-        prevStats = newStats;
-      }
-    };
-    const closer = this._watchWithNodeFs(file, listener);
-    if (!(initialAdd && this.fsw.options.ignoreInitial) && this.fsw._isntIgnored(file)) {
-      if (!this.fsw._throttle(EV.ADD, file, 0))
-        return;
-      this.fsw._emit(EV.ADD, file, stats);
-    }
-    return closer;
-  }
-  /**
-   * Handle symlinks encountered while reading a dir.
-   * @param entry returned by readdirp
-   * @param directory path of dir being read
-   * @param path of this item
-   * @param item basename of this item
-   * @returns true if no more processing is needed for this entry.
-   */
-  async _handleSymlink(entry, directory, path5, item) {
-    if (this.fsw.closed) {
-      return;
-    }
-    const full = entry.fullPath;
-    const dir = this.fsw._getWatchedDir(directory);
-    if (!this.fsw.options.followSymlinks) {
-      this.fsw._incrReadyCount();
-      let linkPath;
-      try {
-        linkPath = await fsrealpath(path5);
-      } catch (e) {
-        this.fsw._emitReady();
-        return true;
-      }
-      if (this.fsw.closed)
-        return;
-      if (dir.has(item)) {
-        if (this.fsw._symlinkPaths.get(full) !== linkPath) {
-          this.fsw._symlinkPaths.set(full, linkPath);
-          this.fsw._emit(EV.CHANGE, path5, entry.stats);
-        }
-      } else {
-        dir.add(item);
-        this.fsw._symlinkPaths.set(full, linkPath);
-        this.fsw._emit(EV.ADD, path5, entry.stats);
-      }
-      this.fsw._emitReady();
-      return true;
-    }
-    if (this.fsw._symlinkPaths.has(full)) {
-      return true;
-    }
-    this.fsw._symlinkPaths.set(full, true);
-  }
-  _handleRead(directory, initialAdd, wh, target, dir, depth, throttler) {
-    directory = sysPath.join(directory, "");
-    throttler = this.fsw._throttle("readdir", directory, 1e3);
-    if (!throttler)
-      return;
-    const previous = this.fsw._getWatchedDir(wh.path);
-    const current = /* @__PURE__ */ new Set();
-    let stream = this.fsw._readdirp(directory, {
-      fileFilter: (entry) => wh.filterPath(entry),
-      directoryFilter: (entry) => wh.filterDir(entry)
-    });
-    if (!stream)
-      return;
-    stream.on(STR_DATA, async (entry) => {
-      if (this.fsw.closed) {
-        stream = void 0;
-        return;
-      }
-      const item = entry.path;
-      let path5 = sysPath.join(directory, item);
-      current.add(item);
-      if (entry.stats.isSymbolicLink() && await this._handleSymlink(entry, directory, path5, item)) {
-        return;
-      }
-      if (this.fsw.closed) {
-        stream = void 0;
-        return;
-      }
-      if (item === target || !target && !previous.has(item)) {
-        this.fsw._incrReadyCount();
-        path5 = sysPath.join(dir, sysPath.relative(dir, path5));
-        this._addToNodeFs(path5, initialAdd, wh, depth + 1);
-      }
-    }).on(EV.ERROR, this._boundHandleError);
-    return new Promise((resolve5, reject) => {
-      if (!stream)
-        return reject();
-      stream.once(STR_END, () => {
-        if (this.fsw.closed) {
-          stream = void 0;
-          return;
-        }
-        const wasThrottled = throttler ? throttler.clear() : false;
-        resolve5(void 0);
-        previous.getChildren().filter((item) => {
-          return item !== directory && !current.has(item);
-        }).forEach((item) => {
-          this.fsw._remove(directory, item);
-        });
-        stream = void 0;
-        if (wasThrottled)
-          this._handleRead(directory, false, wh, target, dir, depth, throttler);
-      });
-    });
-  }
-  /**
-   * Read directory to add / remove files from `@watched` list and re-read it on change.
-   * @param dir fs path
-   * @param stats
-   * @param initialAdd
-   * @param depth relative to user-supplied path
-   * @param target child path targeted for watch
-   * @param wh Common watch helpers for this path
-   * @param realpath
-   * @returns closer for the watcher instance.
-   */
-  async _handleDir(dir, stats, initialAdd, depth, target, wh, realpath3) {
-    const parentDir = this.fsw._getWatchedDir(sysPath.dirname(dir));
-    const tracked = parentDir.has(sysPath.basename(dir));
-    if (!(initialAdd && this.fsw.options.ignoreInitial) && !target && !tracked) {
-      this.fsw._emit(EV.ADD_DIR, dir, stats);
-    }
-    parentDir.add(sysPath.basename(dir));
-    this.fsw._getWatchedDir(dir);
-    let throttler;
-    let closer;
-    const oDepth = this.fsw.options.depth;
-    if ((oDepth == null || depth <= oDepth) && !this.fsw._symlinkPaths.has(realpath3)) {
-      if (!target) {
-        await this._handleRead(dir, initialAdd, wh, target, dir, depth, throttler);
-        if (this.fsw.closed)
-          return;
-      }
-      closer = this._watchWithNodeFs(dir, (dirPath, stats2) => {
-        if (stats2 && stats2.mtimeMs === 0)
-          return;
-        this._handleRead(dirPath, false, wh, target, dir, depth, throttler);
-      });
-    }
-    return closer;
-  }
-  /**
-   * Handle added file, directory, or glob pattern.
-   * Delegates call to _handleFile / _handleDir after checks.
-   * @param path to file or ir
-   * @param initialAdd was the file added at watch instantiation?
-   * @param priorWh depth relative to user-supplied path
-   * @param depth Child path actually targeted for watch
-   * @param target Child path actually targeted for watch
-   */
-  async _addToNodeFs(path5, initialAdd, priorWh, depth, target) {
-    const ready = this.fsw._emitReady;
-    if (this.fsw._isIgnored(path5) || this.fsw.closed) {
-      ready();
-      return false;
-    }
-    const wh = this.fsw._getWatchHelpers(path5);
-    if (priorWh) {
-      wh.filterPath = (entry) => priorWh.filterPath(entry);
-      wh.filterDir = (entry) => priorWh.filterDir(entry);
-    }
-    try {
-      const stats = await statMethods[wh.statMethod](wh.watchPath);
-      if (this.fsw.closed)
-        return;
-      if (this.fsw._isIgnored(wh.watchPath, stats)) {
-        ready();
-        return false;
-      }
-      const follow = this.fsw.options.followSymlinks;
-      let closer;
-      if (stats.isDirectory()) {
-        const absPath = sysPath.resolve(path5);
-        const targetPath = follow ? await fsrealpath(path5) : path5;
-        if (this.fsw.closed)
-          return;
-        closer = await this._handleDir(wh.watchPath, stats, initialAdd, depth, target, wh, targetPath);
-        if (this.fsw.closed)
-          return;
-        if (absPath !== targetPath && targetPath !== void 0) {
-          this.fsw._symlinkPaths.set(absPath, targetPath);
-        }
-      } else if (stats.isSymbolicLink()) {
-        const targetPath = follow ? await fsrealpath(path5) : path5;
-        if (this.fsw.closed)
-          return;
-        const parent = sysPath.dirname(wh.watchPath);
-        this.fsw._getWatchedDir(parent).add(wh.watchPath);
-        this.fsw._emit(EV.ADD, wh.watchPath, stats);
-        closer = await this._handleDir(parent, stats, initialAdd, depth, path5, wh, targetPath);
-        if (this.fsw.closed)
-          return;
-        if (targetPath !== void 0) {
-          this.fsw._symlinkPaths.set(sysPath.resolve(path5), targetPath);
-        }
-      } else {
-        closer = this._handleFile(wh.watchPath, stats, initialAdd);
-      }
-      ready();
-      if (closer)
-        this.fsw._addPathCloser(path5, closer);
-      return false;
-    } catch (error2) {
-      if (this.fsw._handleError(error2)) {
-        ready();
-        return path5;
-      }
-    }
-  }
-};
-
-// ../../node_modules/chokidar/esm/index.js
-var SLASH = "/";
-var SLASH_SLASH = "//";
-var ONE_DOT = ".";
-var TWO_DOTS = "..";
-var STRING_TYPE = "string";
-var BACK_SLASH_RE = /\\/g;
-var DOUBLE_SLASH_RE = /\/\//;
-var DOT_RE = /\..*\.(sw[px])$|~$|\.subl.*\.tmp/;
-var REPLACER_RE = /^\.[/\\]/;
-function arrify(item) {
-  return Array.isArray(item) ? item : [item];
-}
-var isMatcherObject = (matcher) => typeof matcher === "object" && matcher !== null && !(matcher instanceof RegExp);
-function createPattern(matcher) {
-  if (typeof matcher === "function")
-    return matcher;
-  if (typeof matcher === "string")
-    return (string3) => matcher === string3;
-  if (matcher instanceof RegExp)
-    return (string3) => matcher.test(string3);
-  if (typeof matcher === "object" && matcher !== null) {
-    return (string3) => {
-      if (matcher.path === string3)
-        return true;
-      if (matcher.recursive) {
-        const relative6 = sysPath2.relative(matcher.path, string3);
-        if (!relative6) {
-          return false;
-        }
-        return !relative6.startsWith("..") && !sysPath2.isAbsolute(relative6);
-      }
-      return false;
-    };
-  }
-  return () => false;
-}
-function normalizePath(path5) {
-  if (typeof path5 !== "string")
-    throw new Error("string expected");
-  path5 = sysPath2.normalize(path5);
-  path5 = path5.replace(/\\/g, "/");
-  let prepend = false;
-  if (path5.startsWith("//"))
-    prepend = true;
-  const DOUBLE_SLASH_RE2 = /\/\//;
-  while (path5.match(DOUBLE_SLASH_RE2))
-    path5 = path5.replace(DOUBLE_SLASH_RE2, "/");
-  if (prepend)
-    path5 = "/" + path5;
-  return path5;
-}
-function matchPatterns(patterns, testString, stats) {
-  const path5 = normalizePath(testString);
-  for (let index = 0; index < patterns.length; index++) {
-    const pattern = patterns[index];
-    if (pattern(path5, stats)) {
-      return true;
-    }
-  }
-  return false;
-}
-function anymatch(matchers, testString) {
-  if (matchers == null) {
-    throw new TypeError("anymatch: specify first argument");
-  }
-  const matchersArray = arrify(matchers);
-  const patterns = matchersArray.map((matcher) => createPattern(matcher));
-  if (testString == null) {
-    return (testString2, stats) => {
-      return matchPatterns(patterns, testString2, stats);
-    };
-  }
-  return matchPatterns(patterns, testString);
-}
-var unifyPaths = (paths_) => {
-  const paths = arrify(paths_).flat();
-  if (!paths.every((p) => typeof p === STRING_TYPE)) {
-    throw new TypeError(`Non-string provided as watch path: ${paths}`);
-  }
-  return paths.map(normalizePathToUnix);
-};
-var toUnix = (string3) => {
-  let str = string3.replace(BACK_SLASH_RE, SLASH);
-  let prepend = false;
-  if (str.startsWith(SLASH_SLASH)) {
-    prepend = true;
-  }
-  while (str.match(DOUBLE_SLASH_RE)) {
-    str = str.replace(DOUBLE_SLASH_RE, SLASH);
-  }
-  if (prepend) {
-    str = SLASH + str;
-  }
-  return str;
-};
-var normalizePathToUnix = (path5) => toUnix(sysPath2.normalize(toUnix(path5)));
-var normalizeIgnored = (cwd = "") => (path5) => {
-  if (typeof path5 === "string") {
-    return normalizePathToUnix(sysPath2.isAbsolute(path5) ? path5 : sysPath2.join(cwd, path5));
-  } else {
-    return path5;
-  }
-};
-var getAbsolutePath = (path5, cwd) => {
-  if (sysPath2.isAbsolute(path5)) {
-    return path5;
-  }
-  return sysPath2.join(cwd, path5);
-};
-var EMPTY_SET = Object.freeze(/* @__PURE__ */ new Set());
-var DirEntry = class {
-  constructor(dir, removeWatcher) {
-    this.path = dir;
-    this._removeWatcher = removeWatcher;
-    this.items = /* @__PURE__ */ new Set();
-  }
-  add(item) {
-    const { items } = this;
-    if (!items)
-      return;
-    if (item !== ONE_DOT && item !== TWO_DOTS)
-      items.add(item);
-  }
-  async remove(item) {
-    const { items } = this;
-    if (!items)
-      return;
-    items.delete(item);
-    if (items.size > 0)
-      return;
-    const dir = this.path;
-    try {
-      await readdir2(dir);
-    } catch (err) {
-      if (this._removeWatcher) {
-        this._removeWatcher(sysPath2.dirname(dir), sysPath2.basename(dir));
-      }
-    }
-  }
-  has(item) {
-    const { items } = this;
-    if (!items)
-      return;
-    return items.has(item);
-  }
-  getChildren() {
-    const { items } = this;
-    if (!items)
-      return [];
-    return [...items.values()];
-  }
-  dispose() {
-    this.items.clear();
-    this.path = "";
-    this._removeWatcher = EMPTY_FN;
-    this.items = EMPTY_SET;
-    Object.freeze(this);
-  }
-};
-var STAT_METHOD_F = "stat";
-var STAT_METHOD_L = "lstat";
-var WatchHelper = class {
-  constructor(path5, follow, fsw) {
-    this.fsw = fsw;
-    const watchPath = path5;
-    this.path = path5 = path5.replace(REPLACER_RE, "");
-    this.watchPath = watchPath;
-    this.fullWatchPath = sysPath2.resolve(watchPath);
-    this.dirParts = [];
-    this.dirParts.forEach((parts) => {
-      if (parts.length > 1)
-        parts.pop();
-    });
-    this.followSymlinks = follow;
-    this.statMethod = follow ? STAT_METHOD_F : STAT_METHOD_L;
-  }
-  entryPath(entry) {
-    return sysPath2.join(this.watchPath, sysPath2.relative(this.watchPath, entry.fullPath));
-  }
-  filterPath(entry) {
-    const { stats } = entry;
-    if (stats && stats.isSymbolicLink())
-      return this.filterDir(entry);
-    const resolvedPath = this.entryPath(entry);
-    return this.fsw._isntIgnored(resolvedPath, stats) && this.fsw._hasReadPermissions(stats);
-  }
-  filterDir(entry) {
-    return this.fsw._isntIgnored(this.entryPath(entry), entry.stats);
-  }
-};
-var FSWatcher = class extends EventEmitter {
-  // Not indenting methods for history sake; for now.
-  constructor(_opts = {}) {
-    super();
-    this.closed = false;
-    this._closers = /* @__PURE__ */ new Map();
-    this._ignoredPaths = /* @__PURE__ */ new Set();
-    this._throttled = /* @__PURE__ */ new Map();
-    this._streams = /* @__PURE__ */ new Set();
-    this._symlinkPaths = /* @__PURE__ */ new Map();
-    this._watched = /* @__PURE__ */ new Map();
-    this._pendingWrites = /* @__PURE__ */ new Map();
-    this._pendingUnlinks = /* @__PURE__ */ new Map();
-    this._readyCount = 0;
-    this._readyEmitted = false;
-    const awf = _opts.awaitWriteFinish;
-    const DEF_AWF = { stabilityThreshold: 2e3, pollInterval: 100 };
-    const opts = {
-      // Defaults
-      persistent: true,
-      ignoreInitial: false,
-      ignorePermissionErrors: false,
-      interval: 100,
-      binaryInterval: 300,
-      followSymlinks: true,
-      usePolling: false,
-      // useAsync: false,
-      atomic: true,
-      // NOTE: overwritten later (depends on usePolling)
-      ..._opts,
-      // Change format
-      ignored: _opts.ignored ? arrify(_opts.ignored) : arrify([]),
-      awaitWriteFinish: awf === true ? DEF_AWF : typeof awf === "object" ? { ...DEF_AWF, ...awf } : false
-    };
-    if (isIBMi)
-      opts.usePolling = true;
-    if (opts.atomic === void 0)
-      opts.atomic = !opts.usePolling;
-    const envPoll = process.env.CHOKIDAR_USEPOLLING;
-    if (envPoll !== void 0) {
-      const envLower = envPoll.toLowerCase();
-      if (envLower === "false" || envLower === "0")
-        opts.usePolling = false;
-      else if (envLower === "true" || envLower === "1")
-        opts.usePolling = true;
-      else
-        opts.usePolling = !!envLower;
-    }
-    const envInterval = process.env.CHOKIDAR_INTERVAL;
-    if (envInterval)
-      opts.interval = Number.parseInt(envInterval, 10);
-    let readyCalls = 0;
-    this._emitReady = () => {
-      readyCalls++;
-      if (readyCalls >= this._readyCount) {
-        this._emitReady = EMPTY_FN;
-        this._readyEmitted = true;
-        process.nextTick(() => this.emit(EVENTS.READY));
-      }
-    };
-    this._emitRaw = (...args) => this.emit(EVENTS.RAW, ...args);
-    this._boundRemove = this._remove.bind(this);
-    this.options = opts;
-    this._nodeFsHandler = new NodeFsHandler(this);
-    Object.freeze(opts);
-  }
-  _addIgnoredPath(matcher) {
-    if (isMatcherObject(matcher)) {
-      for (const ignored of this._ignoredPaths) {
-        if (isMatcherObject(ignored) && ignored.path === matcher.path && ignored.recursive === matcher.recursive) {
-          return;
-        }
-      }
-    }
-    this._ignoredPaths.add(matcher);
-  }
-  _removeIgnoredPath(matcher) {
-    this._ignoredPaths.delete(matcher);
-    if (typeof matcher === "string") {
-      for (const ignored of this._ignoredPaths) {
-        if (isMatcherObject(ignored) && ignored.path === matcher) {
-          this._ignoredPaths.delete(ignored);
-        }
-      }
-    }
-  }
-  // Public methods
-  /**
-   * Adds paths to be watched on an existing FSWatcher instance.
-   * @param paths_ file or file list. Other arguments are unused
-   */
-  add(paths_, _origAdd, _internal) {
-    const { cwd } = this.options;
-    this.closed = false;
-    this._closePromise = void 0;
-    let paths = unifyPaths(paths_);
-    if (cwd) {
-      paths = paths.map((path5) => {
-        const absPath = getAbsolutePath(path5, cwd);
-        return absPath;
-      });
-    }
-    paths.forEach((path5) => {
-      this._removeIgnoredPath(path5);
-    });
-    this._userIgnored = void 0;
-    if (!this._readyCount)
-      this._readyCount = 0;
-    this._readyCount += paths.length;
-    Promise.all(paths.map(async (path5) => {
-      const res = await this._nodeFsHandler._addToNodeFs(path5, !_internal, void 0, 0, _origAdd);
-      if (res)
-        this._emitReady();
-      return res;
-    })).then((results) => {
-      if (this.closed)
-        return;
-      results.forEach((item) => {
-        if (item)
-          this.add(sysPath2.dirname(item), sysPath2.basename(_origAdd || item));
-      });
-    });
-    return this;
-  }
-  /**
-   * Close watchers or start ignoring events from specified paths.
-   */
-  unwatch(paths_) {
-    if (this.closed)
-      return this;
-    const paths = unifyPaths(paths_);
-    const { cwd } = this.options;
-    paths.forEach((path5) => {
-      if (!sysPath2.isAbsolute(path5) && !this._closers.has(path5)) {
-        if (cwd)
-          path5 = sysPath2.join(cwd, path5);
-        path5 = sysPath2.resolve(path5);
-      }
-      this._closePath(path5);
-      this._addIgnoredPath(path5);
-      if (this._watched.has(path5)) {
-        this._addIgnoredPath({
-          path: path5,
-          recursive: true
-        });
-      }
-      this._userIgnored = void 0;
-    });
-    return this;
-  }
-  /**
-   * Close watchers and remove all listeners from watched paths.
-   */
-  close() {
-    if (this._closePromise) {
-      return this._closePromise;
-    }
-    this.closed = true;
-    this.removeAllListeners();
-    const closers = [];
-    this._closers.forEach((closerList) => closerList.forEach((closer) => {
-      const promise = closer();
-      if (promise instanceof Promise)
-        closers.push(promise);
-    }));
-    this._streams.forEach((stream) => stream.destroy());
-    this._userIgnored = void 0;
-    this._readyCount = 0;
-    this._readyEmitted = false;
-    this._watched.forEach((dirent) => dirent.dispose());
-    this._closers.clear();
-    this._watched.clear();
-    this._streams.clear();
-    this._symlinkPaths.clear();
-    this._throttled.clear();
-    this._closePromise = closers.length ? Promise.all(closers).then(() => void 0) : Promise.resolve();
-    return this._closePromise;
-  }
-  /**
-   * Expose list of watched paths
-   * @returns for chaining
-   */
-  getWatched() {
-    const watchList = {};
-    this._watched.forEach((entry, dir) => {
-      const key = this.options.cwd ? sysPath2.relative(this.options.cwd, dir) : dir;
-      const index = key || ONE_DOT;
-      watchList[index] = entry.getChildren().sort();
-    });
-    return watchList;
-  }
-  emitWithAll(event, args) {
-    this.emit(event, ...args);
-    if (event !== EVENTS.ERROR)
-      this.emit(EVENTS.ALL, event, ...args);
-  }
-  // Common helpers
-  // --------------
-  /**
-   * Normalize and emit events.
-   * Calling _emit DOES NOT MEAN emit() would be called!
-   * @param event Type of event
-   * @param path File or directory path
-   * @param stats arguments to be passed with event
-   * @returns the error if defined, otherwise the value of the FSWatcher instance's `closed` flag
-   */
-  async _emit(event, path5, stats) {
-    if (this.closed)
-      return;
-    const opts = this.options;
-    if (isWindows)
-      path5 = sysPath2.normalize(path5);
-    if (opts.cwd)
-      path5 = sysPath2.relative(opts.cwd, path5);
-    const args = [path5];
-    if (stats != null)
-      args.push(stats);
-    const awf = opts.awaitWriteFinish;
-    let pw;
-    if (awf && (pw = this._pendingWrites.get(path5))) {
-      pw.lastChange = /* @__PURE__ */ new Date();
-      return this;
-    }
-    if (opts.atomic) {
-      if (event === EVENTS.UNLINK) {
-        this._pendingUnlinks.set(path5, [event, ...args]);
-        setTimeout(() => {
-          this._pendingUnlinks.forEach((entry, path6) => {
-            this.emit(...entry);
-            this.emit(EVENTS.ALL, ...entry);
-            this._pendingUnlinks.delete(path6);
-          });
-        }, typeof opts.atomic === "number" ? opts.atomic : 100);
-        return this;
-      }
-      if (event === EVENTS.ADD && this._pendingUnlinks.has(path5)) {
-        event = EVENTS.CHANGE;
-        this._pendingUnlinks.delete(path5);
-      }
-    }
-    if (awf && (event === EVENTS.ADD || event === EVENTS.CHANGE) && this._readyEmitted) {
-      const awfEmit = (err, stats2) => {
-        if (err) {
-          event = EVENTS.ERROR;
-          args[0] = err;
-          this.emitWithAll(event, args);
-        } else if (stats2) {
-          if (args.length > 1) {
-            args[1] = stats2;
-          } else {
-            args.push(stats2);
-          }
-          this.emitWithAll(event, args);
-        }
-      };
-      this._awaitWriteFinish(path5, awf.stabilityThreshold, event, awfEmit);
-      return this;
-    }
-    if (event === EVENTS.CHANGE) {
-      const isThrottled = !this._throttle(EVENTS.CHANGE, path5, 50);
-      if (isThrottled)
-        return this;
-    }
-    if (opts.alwaysStat && stats === void 0 && (event === EVENTS.ADD || event === EVENTS.ADD_DIR || event === EVENTS.CHANGE)) {
-      const fullPath = opts.cwd ? sysPath2.join(opts.cwd, path5) : path5;
-      let stats2;
-      try {
-        stats2 = await stat3(fullPath);
-      } catch (err) {
-      }
-      if (!stats2 || this.closed)
-        return;
-      args.push(stats2);
-    }
-    this.emitWithAll(event, args);
-    return this;
-  }
-  /**
-   * Common handler for errors
-   * @returns The error if defined, otherwise the value of the FSWatcher instance's `closed` flag
-   */
-  _handleError(error2) {
-    const code = error2 && error2.code;
-    if (error2 && code !== "ENOENT" && code !== "ENOTDIR" && (!this.options.ignorePermissionErrors || code !== "EPERM" && code !== "EACCES")) {
-      this.emit(EVENTS.ERROR, error2);
-    }
-    return error2 || this.closed;
-  }
-  /**
-   * Helper utility for throttling
-   * @param actionType type being throttled
-   * @param path being acted upon
-   * @param timeout duration of time to suppress duplicate actions
-   * @returns tracking object or false if action should be suppressed
-   */
-  _throttle(actionType, path5, timeout) {
-    if (!this._throttled.has(actionType)) {
-      this._throttled.set(actionType, /* @__PURE__ */ new Map());
-    }
-    const action = this._throttled.get(actionType);
-    if (!action)
-      throw new Error("invalid throttle");
-    const actionPath = action.get(path5);
-    if (actionPath) {
-      actionPath.count++;
-      return false;
-    }
-    let timeoutObject;
-    const clear = () => {
-      const item = action.get(path5);
-      const count = item ? item.count : 0;
-      action.delete(path5);
-      clearTimeout(timeoutObject);
-      if (item)
-        clearTimeout(item.timeoutObject);
-      return count;
-    };
-    timeoutObject = setTimeout(clear, timeout);
-    const thr = { timeoutObject, clear, count: 0 };
-    action.set(path5, thr);
-    return thr;
-  }
-  _incrReadyCount() {
-    return this._readyCount++;
-  }
-  /**
-   * Awaits write operation to finish.
-   * Polls a newly created file for size variations. When files size does not change for 'threshold' milliseconds calls callback.
-   * @param path being acted upon
-   * @param threshold Time in milliseconds a file size must be fixed before acknowledging write OP is finished
-   * @param event
-   * @param awfEmit Callback to be called when ready for event to be emitted.
-   */
-  _awaitWriteFinish(path5, threshold, event, awfEmit) {
-    const awf = this.options.awaitWriteFinish;
-    if (typeof awf !== "object")
-      return;
-    const pollInterval = awf.pollInterval;
-    let timeoutHandler;
-    let fullPath = path5;
-    if (this.options.cwd && !sysPath2.isAbsolute(path5)) {
-      fullPath = sysPath2.join(this.options.cwd, path5);
-    }
-    const now = /* @__PURE__ */ new Date();
-    const writes = this._pendingWrites;
-    function awaitWriteFinishFn(prevStat) {
-      statcb(fullPath, (err, curStat) => {
-        if (err || !writes.has(path5)) {
-          if (err && err.code !== "ENOENT")
-            awfEmit(err);
-          return;
-        }
-        const now2 = Number(/* @__PURE__ */ new Date());
-        if (prevStat && curStat.size !== prevStat.size) {
-          writes.get(path5).lastChange = now2;
-        }
-        const pw = writes.get(path5);
-        const df = now2 - pw.lastChange;
-        if (df >= threshold) {
-          writes.delete(path5);
-          awfEmit(void 0, curStat);
-        } else {
-          timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval, curStat);
-        }
-      });
-    }
-    if (!writes.has(path5)) {
-      writes.set(path5, {
-        lastChange: now,
-        cancelWait: () => {
-          writes.delete(path5);
-          clearTimeout(timeoutHandler);
-          return event;
-        }
-      });
-      timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval);
-    }
-  }
-  /**
-   * Determines whether user has asked to ignore this path.
-   */
-  _isIgnored(path5, stats) {
-    if (this.options.atomic && DOT_RE.test(path5))
-      return true;
-    if (!this._userIgnored) {
-      const { cwd } = this.options;
-      const ign = this.options.ignored;
-      const ignored = (ign || []).map(normalizeIgnored(cwd));
-      const ignoredPaths = [...this._ignoredPaths];
-      const list = [...ignoredPaths.map(normalizeIgnored(cwd)), ...ignored];
-      this._userIgnored = anymatch(list, void 0);
-    }
-    return this._userIgnored(path5, stats);
-  }
-  _isntIgnored(path5, stat4) {
-    return !this._isIgnored(path5, stat4);
-  }
-  /**
-   * Provides a set of common helpers and properties relating to symlink handling.
-   * @param path file or directory pattern being watched
-   */
-  _getWatchHelpers(path5) {
-    return new WatchHelper(path5, this.options.followSymlinks, this);
-  }
-  // Directory helpers
-  // -----------------
-  /**
-   * Provides directory tracking objects
-   * @param directory path of the directory
-   */
-  _getWatchedDir(directory) {
-    const dir = sysPath2.resolve(directory);
-    if (!this._watched.has(dir))
-      this._watched.set(dir, new DirEntry(dir, this._boundRemove));
-    return this._watched.get(dir);
-  }
-  // File helpers
-  // ------------
-  /**
-   * Check for read permissions: https://stackoverflow.com/a/11781404/1358405
-   */
-  _hasReadPermissions(stats) {
-    if (this.options.ignorePermissionErrors)
-      return true;
-    return Boolean(Number(stats.mode) & 256);
-  }
-  /**
-   * Handles emitting unlink events for
-   * files and directories, and via recursion, for
-   * files and directories within directories that are unlinked
-   * @param directory within which the following item is located
-   * @param item      base path of item/directory
-   */
-  _remove(directory, item, isDirectory) {
-    const path5 = sysPath2.join(directory, item);
-    const fullPath = sysPath2.resolve(path5);
-    isDirectory = isDirectory != null ? isDirectory : this._watched.has(path5) || this._watched.has(fullPath);
-    if (!this._throttle("remove", path5, 100))
-      return;
-    if (!isDirectory && this._watched.size === 1) {
-      this.add(directory, item, true);
-    }
-    const wp = this._getWatchedDir(path5);
-    const nestedDirectoryChildren = wp.getChildren();
-    nestedDirectoryChildren.forEach((nested) => this._remove(path5, nested));
-    const parent = this._getWatchedDir(directory);
-    const wasTracked = parent.has(item);
-    parent.remove(item);
-    if (this._symlinkPaths.has(fullPath)) {
-      this._symlinkPaths.delete(fullPath);
-    }
-    let relPath = path5;
-    if (this.options.cwd)
-      relPath = sysPath2.relative(this.options.cwd, path5);
-    if (this.options.awaitWriteFinish && this._pendingWrites.has(relPath)) {
-      const event = this._pendingWrites.get(relPath).cancelWait();
-      if (event === EVENTS.ADD)
-        return;
-    }
-    this._watched.delete(path5);
-    this._watched.delete(fullPath);
-    const eventName = isDirectory ? EVENTS.UNLINK_DIR : EVENTS.UNLINK;
-    if (wasTracked && !this._isIgnored(path5))
-      this._emit(eventName, path5);
-    this._closePath(path5);
-  }
-  /**
-   * Closes all watchers for a path
-   */
-  _closePath(path5) {
-    this._closeFile(path5);
-    const dir = sysPath2.dirname(path5);
-    this._getWatchedDir(dir).remove(sysPath2.basename(path5));
-  }
-  /**
-   * Closes only file-specific watchers
-   */
-  _closeFile(path5) {
-    const closers = this._closers.get(path5);
-    if (!closers)
-      return;
-    closers.forEach((closer) => closer());
-    this._closers.delete(path5);
-  }
-  _addPathCloser(path5, closer) {
-    if (!closer)
-      return;
-    let list = this._closers.get(path5);
-    if (!list) {
-      list = [];
-      this._closers.set(path5, list);
-    }
-    list.push(closer);
-  }
-  _readdirp(root, opts) {
-    if (this.closed)
-      return;
-    const options = { type: EVENTS.ALL, alwaysStat: true, lstat: true, ...opts, depth: 0 };
-    let stream = readdirp(root, options);
-    this._streams.add(stream);
-    stream.once(STR_CLOSE, () => {
-      stream = void 0;
-    });
-    stream.once(STR_END, () => {
-      if (stream) {
-        this._streams.delete(stream);
-        stream = void 0;
-      }
-    });
-    return stream;
-  }
-};
-function watch(paths, options = {}) {
-  const watcher = new FSWatcher(options);
-  watcher.add(paths);
-  return watcher;
-}
-var esm_default = { watch, FSWatcher };
-
-// src/freshness/workspace-freshness-support.ts
-var coalesceMilliseconds = 100;
-var chokidarWatchOptions = {
-  atomic: 100,
-  awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 100 },
-  alwaysStat: true,
-  followSymlinks: false,
-  ignorePermissionErrors: false
-};
-function sameManifest(left, right) {
-  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
-}
-function canPublishGeneration(...args) {
-  const [currentGeneration, analyzedGeneration, captured, prepublication] = args;
-  return analyzedGeneration > currentGeneration && sameManifest(captured, prepublication);
-}
-function createChokidarWatcher(paths) {
-  return esm_default.watch(
-    [...paths],
-    chokidarWatchOptions
-  );
-}
-function createWatcher(options, schedule) {
-  try {
-    return attachWatcher(createWatcherFor(options), schedule);
-  } catch {
-    return void 0;
-  }
-}
-function createWatcherFor(options) {
-  return options.createWatcher ? options.createWatcher() : createChokidarWatcher(options.watch_paths ?? []);
-}
-function attachWatcher(watcher, schedule) {
-  watcher.on("all", schedule);
-  watcher.on("error", schedule);
-  return watcher;
-}
-function clearTimer(options, timer) {
-  const clear = options.clearTimeout ?? globalThis.clearTimeout;
-  clear(timer);
-}
-function clearTimers(options, runtime) {
-  for (const timer of [
-    runtime.coalesceTimer,
-    runtime.pollTimer,
-    runtime.manifestTimer
-  ]) {
-    if (timer !== void 0) clearTimer(options, timer);
-  }
-}
-
-// src/freshness/workspace-reconciliation.ts
-function sameManifest2(left, right) {
-  return left.size === right.size && [...left].every(([path5, hash]) => right.get(path5) === hash);
-}
-function canReuseCurrent(runtime, captured) {
-  return !runtime.forceRefresh && runtime.status.current_generation > 0 && sameManifest2(runtime.manifest, captured);
-}
-function readyCurrent(runtime) {
-  runtime.status = {
-    current_generation: runtime.status.current_generation,
-    pending_generation: null,
-    state: "ready",
-    mode: runtime.status.mode
-  };
-  runtime.forceRefresh = false;
-}
-async function reconcileAttempt(options, runtime) {
-  const captured = await options.reconcile();
-  if ("cause" in captured) {
-    runtime.degrade(captured.cause);
-    return true;
-  }
-  if (canReuseCurrent(runtime, captured.manifest)) {
-    readyCurrent(runtime);
-    return true;
-  }
-  return analyzeAndPublish(options, runtime, captured.manifest);
-}
-async function analyzeAndPublish(options, runtime, captured) {
-  const generation = generationFor(runtime);
-  await options.analyze?.(generation, captured);
-  const published = await publishedResult(options, captured);
-  if ("cause" in published) {
-    runtime.degrade(published.cause);
-    return true;
-  }
-  if (canPublishGeneration(
-    runtime.status.current_generation,
-    generation,
-    captured,
-    published.manifest
-  )) {
-    runtime.ready(generation, published.manifest);
-    return true;
-  }
-  runtime.reserveGeneration();
-  return false;
-}
-function generationFor(runtime) {
-  if (runtime.status.pending_generation !== null)
-    return runtime.status.pending_generation;
-  return runtime.reserveGeneration();
-}
-function publishedResult(options, captured) {
-  if (options.verify) return options.verify();
-  return Promise.resolve({ manifest: captured });
-}
-async function reconcileWorkspace(options, runtime) {
-  for (let mismatchCount = 0; mismatchCount < 3; mismatchCount += 1) {
-    if (await reconcileAttempt(options, runtime)) return;
-  }
-  runtime.degrade("workspace_churn");
-}
-
-// src/freshness/workspace-scheduling.ts
-function schedulePolling(options) {
-  const { runtime, timeout, reconcile, schedulePolling: schedulePolling2 } = options;
-  if (runtime.status.mode !== "polling" || runtime.activeSessions === 0 || runtime.pollTimer !== void 0)
-    return;
-  runtime.pollTimer = timeout(() => {
-    runtime.pollTimer = void 0;
-    void reconcile().finally(schedulePolling2);
-  }, 5e3);
-}
-function scheduleManifestCheck(options) {
-  const { runtime, timeout, reconcile, scheduleManifestCheck: scheduleManifestCheck2 } = options;
-  if (runtime.activeSessions === 0 || runtime.manifestTimer !== void 0)
-    return;
-  runtime.manifestTimer = timeout(() => {
-    runtime.manifestTimer = void 0;
-    void reconcile().finally(scheduleManifestCheck2);
-  }, 3e4);
-}
-function scheduleWorkspaceTimers(options) {
-  schedulePolling({ ...options, schedulePolling: options.schedule });
-  scheduleManifestCheck({
-    ...options,
-    scheduleManifestCheck: options.schedule
-  });
-}
-
-// src/freshness/workspace-freshness.ts
-var WorkspaceFreshness = class {
-  constructor(options) {
-    this.options = options;
-  }
-  options;
-  #runtime = new FreshnessRuntime();
-  status() {
-    return { ...this.#runtime.status };
-  }
-  failRefresh() {
-    this.#runtime.failRefresh();
-  }
-  reserveRefresh() {
-    this.#runtime.reserveRefresh();
-    return this.status();
-  }
-  async start(activeSessions = 0) {
-    this.#runtime.activeSessions = activeSessions;
-    const watcher = createWatcher(this.options, () => this.schedule());
-    if (watcher) this.#runtime.watcher = watcher;
-    if (!watcher) {
-      this.#runtime.status = { ...this.#runtime.status, mode: "polling" };
-      this.#scheduleTimers();
-    }
-    this.#scheduleTimers();
-    await this.reconcile();
-  }
-  setActiveSessions(count) {
-    this.#runtime.activeSessions = count;
-    this.#scheduleTimers();
-  }
-  schedule() {
-    if (this.#runtime.coalesceTimer !== void 0) return;
-    this.#runtime.coalesceTimer = this.timeout(() => {
-      this.#runtime.coalesceTimer = void 0;
-      void this.reconcile();
-    }, coalesceMilliseconds);
-  }
-  async reconcile() {
-    if (this.#runtime.running) return this.#runtime.running;
-    if (this.#runtime.status.pending_generation === null)
-      this.#runtime.reserveGeneration();
-    const run = reconcileWorkspace(this.options, this.#runtime).catch(() => this.#runtime.degrade("freshness_unavailable")).finally(() => {
-      this.#runtime.running = void 0;
-    });
-    return this.#runtime.running = run;
-  }
-  async close() {
-    clearTimers(this.options, this.#runtime);
-    await this.#runtime.watcher?.close();
-  }
-  #scheduleTimers() {
-    scheduleWorkspaceTimers({
-      runtime: this.#runtime,
-      timeout: (callback, delay2) => this.timeout(callback, delay2),
-      reconcile: () => this.reconcile(),
-      schedule: () => this.#scheduleTimers()
-    });
-  }
-  timeout(callback, delay2) {
-    return (this.options.setTimeout ?? globalThis.setTimeout)(callback, delay2);
-  }
-};
-
-// src/freshness/native-manifest-files.ts
-import { readdir as readdir3 } from "node:fs/promises";
-import { join as join22, relative as relative5 } from "node:path";
-function withinScanLimits(started, now, output) {
-  if (now() - started > 6e4 || output.length > 5e4)
-    throw new Error("scan_limit");
-}
-function ignoredDirectory(name) {
-  return /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(name);
-}
-async function visit3(root, directory, supported, started, now, output) {
-  withinScanLimits(started, now, output);
-  for (const entry of await readdir3(directory, { withFileTypes: true })) {
-    const absolute = join22(directory, entry.name);
-    if (entry.isDirectory()) {
-      if (!ignoredDirectory(entry.name))
-        await visit3(root, absolute, supported, started, now, output);
-      continue;
-    }
-    const path5 = relative5(root, absolute).replaceAll("\\", "/");
-    if (supported(path5)) output.push(path5);
-  }
-}
-async function walkSupportedFiles(root, supported, started, now) {
-  const output = [];
-  await visit3(root, root, supported, started, now, output);
-  if (output.length > 5e4) throw new Error("scan_limit");
-  return output.sort();
-}
-
-// src/freshness/native-manifest-hashing.ts
-import { createHash as createHash4 } from "node:crypto";
-import { open as open4 } from "node:fs/promises";
-import { join as join23 } from "node:path";
-async function stableHash(path5, now, sleep) {
-  const started = now();
-  for (; ; ) {
-    const stable = await stableAttempt(path5, sleep);
-    if (stable) return stable;
-    if (now() - started >= 1e4) return "incomplete_write";
-  }
-}
-async function stableAttempt(path5, sleep) {
-  const file = await open4(path5, "r");
-  try {
-    const before = await file.stat();
-    if (before.size > 4 * 1024 * 1024) return "scan_limit";
-    await sleep(100);
-    const after = await file.stat();
-    if (before.size !== after.size || before.mtimeMs !== after.mtimeMs)
-      return void 0;
-    return createHash4("sha256").update(await file.readFile()).digest("hex");
-  } finally {
-    await file.close();
-  }
-}
-async function stableBatch(options, files) {
-  return await Promise.all(
-    files.map(
-      async (file) => [
-        file,
-        await stableHash(
-          join23(options.root, file),
-          options.now ?? Date.now,
-          options.sleep ?? delay
-        )
-      ]
-    )
-  );
-}
-function delay(milliseconds) {
-  return new Promise((resolve_) => setTimeout(resolve_, milliseconds));
-}
-
-// src/freshness/native-manifest.ts
-async function buildManifest(options, files) {
-  const manifest = /* @__PURE__ */ new Map();
-  for (let offset = 0; offset < files.length; offset += 64) {
-    const cause = mergeStableBatch(
-      manifest,
-      await stableBatch(options, files.slice(offset, offset + 64))
-    );
-    if (cause) return { cause };
-  }
-  return { manifest };
-}
-function mergeStableBatch(manifest, stable) {
-  for (const [file, hash] of stable) {
-    if (hash === "incomplete_write" || hash === "scan_limit") return hash;
-    manifest.set(file, hash);
-  }
-  return void 0;
-}
-function failureCause(error2) {
-  if (error2 instanceof Error && error2.message === "scan_limit")
-    return "scan_limit";
-  return "freshness_unavailable";
-}
-async function reconcileNativeManifest(options) {
-  const now = options.now ?? Date.now;
-  const started = now();
-  try {
-    const files = await walkSupportedFiles(
-      options.root,
-      options.supported,
-      started,
-      now
-    );
-    return buildManifest(options, files);
-  } catch (error2) {
-    return { cause: failureCause(error2) };
-  }
-}
-
-// src/freshness/workspace-native.ts
-function createNativeWorkspaceFreshness(options) {
-  return new WorkspaceFreshness({
-    reconcile: () => reconcileNativeManifest(options),
-    verify: () => reconcileNativeManifest(options),
-    watch_paths: [options.root]
-  });
-}
-
-// src/navigation/error-details-sanitizer.ts
-var detailKeys = /* @__PURE__ */ new Set([
-  "field",
-  "limit",
-  "actual",
-  "view_generation",
-  "current_generation",
-  "state",
-  "path"
-]);
-function isNormalizedProjectRelativePath(value) {
-  return value.length > 0 && !value.startsWith("/") && !/^[A-Za-z]:[\\/]/.test(value) && !value.includes("\\") && !value.split("/").includes("..");
-}
-function validDetail(key, value) {
-  if (!detailKeys.has(key)) return false;
-  if (key === "path")
-    return typeof value === "string" && isNormalizedProjectRelativePath(value);
-  return typeof value === "string" || typeof value === "number";
-}
-function sanitizeDetails(details) {
-  return Object.fromEntries(
-    Object.entries(details).filter(([key, value]) => validDetail(key, value))
-  );
-}
-
-// src/navigation/error.ts
-var errorCodes = [
-  "unknown_tool",
-  "invalid_request",
-  "invalid_session",
-  "invalid_view_handle",
-  "stale_view",
-  "request_id_conflict",
-  "resource_limit",
-  "project_capacity",
-  "workspace_unavailable",
-  "backend_timeout",
-  "backend_crashed",
-  "backend_unavailable",
-  "unavailable_relation",
-  "invalid_backend_result",
-  "backend_response_limit",
-  "path_outside_project",
-  "path_identity_unavailable",
-  "path_identity_changed",
-  "invalid_project_root",
-  "project_root_inaccessible",
-  "project_root_unavailable",
-  "backend_identity_unverifiable",
-  "backend_identity_changed",
-  "backend_endpoint_rejected",
-  "backend_write_rejected",
-  "backend_capability_rejected",
-  "unsafe_backend_mode",
-  "unsupported_backend_version",
-  "classification_config_invalid",
-  "freshness_unavailable",
-  "incomplete_write",
-  "scan_limit",
-  "workspace_churn",
-  "refresh_failed",
-  "internal_error"
-];
-var retryableCodes = /* @__PURE__ */ new Set([
-  "invalid_session",
-  "project_capacity",
-  "workspace_unavailable",
-  "backend_timeout",
-  "backend_crashed",
-  "backend_unavailable",
-  "path_identity_changed",
-  "project_root_inaccessible",
-  "freshness_unavailable",
-  "incomplete_write",
-  "workspace_churn",
-  "refresh_failed"
-]);
-var codeSet = new Set(errorCodes);
-function codeExplorerError(code, details) {
-  return {
-    schema_version: 1,
-    code,
-    message: code,
-    retryable: retryableCodes.has(code),
-    ...details && Object.keys(details).length > 0 ? { details: sanitizeDetails(details) } : {}
-  };
-}
-function normalizeError(error2) {
-  const message = error2 instanceof Error ? error2.message : void 0;
-  return codeExplorerError(
-    message && codeSet.has(message) ? message : "internal_error"
-  );
-}
 
 // src/navigation/stable-symbol-id.ts
 import { createHash as createHash5 } from "node:crypto";
@@ -30615,99 +30354,34 @@ var SessionManager = class {
   }
 };
 
-// src/index.ts
-var filename = fileURLToPath5(import.meta.url);
-var packagePath = path4.join(path4.dirname(filename), "..", "package.json");
-var packageInfo = JSON.parse(readFileSync8(packagePath, "utf-8"));
-var toolNames = ["code_search", "code_focus", "code_follow", "code_history", "code_status"];
-function isToolName(name) {
-  return toolNames.includes(name);
-}
-function unknownTool() {
-  return codeExplorerError("unknown_tool");
-}
-function invalidRequest() {
-  return codeExplorerError("invalid_request");
-}
-function pathOutsideProject() {
-  return codeExplorerError("path_outside_project");
-}
-function resourceLimit() {
-  return codeExplorerError("resource_limit");
-}
-function limitedResource(limit) {
-  return codeExplorerError("resource_limit", limit);
-}
-function backendTimeout() {
-  return codeExplorerError("backend_timeout");
-}
-function invalidSession() {
-  return codeExplorerError("invalid_session");
-}
-function projectCapacity() {
-  return codeExplorerError("project_capacity");
-}
-function invalidViewHandle() {
-  return codeExplorerError("invalid_view_handle");
-}
-function staleView() {
-  return codeExplorerError("stale_view");
-}
-function requestIdConflict() {
-  return codeExplorerError("request_id_conflict");
-}
-function readyViewEnvelope(view, freshness, historyPosition2) {
+// src/server/create-runtime.ts
+var { ProjectGenerationScheduler: ProjectGenerationScheduler2 } = project_generation_scheduler_exports;
+function createServerRuntime(options) {
+  const freshness = options.freshness ?? new WorkspaceFreshness({
+    reconcile: async () => ({ manifest: /* @__PURE__ */ new Map() })
+  });
   return {
-    schema_version: 1,
-    project_id: "project",
-    project_generation: freshness.current_generation,
-    pending_generation: freshness.pending_generation,
-    state: "ready",
-    data: { ...view, history_position: historyPosition2 }
+    options,
+    connectionId: options.connection_id ?? mintOpaqueId(),
+    sessions: new SessionManager(),
+    backendRequests: new BackendRequestLimiter(options.backend_timeout_ms),
+    freshness,
+    generationScheduler: options.generation_scheduler ?? new ProjectGenerationScheduler2(freshness),
+    rootAccess: new RootAccessGate(
+      options.projectRoot,
+      options.adapters ?? [],
+      options.now
+    ),
+    state: {
+      refreshGeneration: 0,
+      viewHistory: [],
+      discovery: options.projectRoot ? createDiscoveryPipeline(options.projectRoot) : void 0,
+      landmarks: options.landmarks ?? landmarksNotReady()
+    }
   };
 }
-function hasValidRequestId(value) {
-  const bytes = Buffer6.byteLength(value, "utf8");
-  return bytes >= 16 && bytes <= 128;
-}
-var schemas = {
-  code_search: external_exports.object({
-    query: external_exports.string(),
-    path_globs: external_exports.array(external_exports.string()).optional(),
-    languages: external_exports.array(external_exports.string()).optional(),
-    kinds: external_exports.array(external_exports.string()).optional(),
-    content: external_exports.enum(["all", "production", "tests"]).optional(),
-    include_generated: external_exports.boolean().optional(),
-    limit: external_exports.number().int().optional()
-  }).strict(),
-  code_focus: external_exports.object({
-    session_id: external_exports.string(),
-    request_id: external_exports.string(),
-    symbol_id: external_exports.string(),
-    body_limit_bytes: external_exports.number().int().optional()
-  }).strict(),
-  code_follow: external_exports.object({
-    session_id: external_exports.string(),
-    request_id: external_exports.string(),
-    view_id: external_exports.string(),
-    handle: external_exports.string(),
-    relation: external_exports.enum(["definition", "references", "callers", "callees", "type", "implementation"]),
-    limit: external_exports.number().int().optional()
-  }).strict(),
-  code_history: external_exports.union([
-    external_exports.object({ session_id: external_exports.string(), request_id: external_exports.string(), action: external_exports.enum(["back", "forward"]) }).strict(),
-    external_exports.object({
-      session_id: external_exports.string(),
-      request_id: external_exports.string(),
-      action: external_exports.literal("recent"),
-      limit: external_exports.number().int().optional()
-    }).strict()
-  ]),
-  code_status: external_exports.union([
-    external_exports.object({ action: external_exports.enum(["status", "start_session"]) }).strict(),
-    external_exports.object({ action: external_exports.literal("refresh"), session_id: external_exports.string(), request_id: external_exports.string() }).strict()
-  ])
-};
+
+// src/server/input-schemas.ts
 var inputSchemas = {
   code_search: {
     type: "object",
@@ -30741,7 +30415,9 @@ var inputSchemas = {
       request_id: { type: "string" },
       view_id: { type: "string" },
       handle: { type: "string" },
-      relation: { enum: ["definition", "references", "callers", "callees", "type", "implementation"] },
+      relation: {
+        enum: browserRelationNames
+      },
       limit: { type: "integer" }
     },
     required: ["session_id", "request_id", "view_id", "handle", "relation"],
@@ -30790,340 +30466,536 @@ var inputSchemas = {
       },
       {
         type: "object",
-        properties: { action: { const: "refresh" }, session_id: { type: "string" }, request_id: { type: "string" } },
+        properties: {
+          action: { const: "refresh" },
+          session_id: { type: "string" },
+          request_id: { type: "string" }
+        },
         required: ["action", "session_id", "request_id"],
         additionalProperties: false
       }
     ]
   }
 };
-function toMcpToolResult(result, isError = false) {
+
+// src/server/server-call.ts
+import { Buffer as Buffer6 } from "node:buffer";
+
+// src/server/envelope.ts
+function createEnvelope(freshness, state, data) {
   return {
-    content: [{ type: "text", text: JSON.stringify(result) }],
-    structuredContent: result,
-    ...isError ? { isError: true } : {}
+    schema_version: 1,
+    project_id: "project",
+    project_generation: freshness.current_generation,
+    pending_generation: freshness.pending_generation,
+    state,
+    data
   };
 }
-var toolDescriptions = {
-  code_search: "Search the frozen project for symbols and files, or return project landmarks for an empty query.",
-  code_focus: "Open one search result in a bounded source view owned by an active navigation session.",
-  code_follow: "Follow one visible handle from a current view through a named semantic relation.",
-  code_history: "Restore a prior or next immutable view, or list recent views in the active navigation session.",
-  code_status: "Read workspace and backend status, start a navigation session, or refresh derived navigation data."
+
+// src/navigation/error-details-sanitizer.ts
+var detailKeys = /* @__PURE__ */ new Set([
+  "field",
+  "limit",
+  "actual",
+  "view_generation",
+  "current_generation",
+  "state",
+  "path"
+]);
+function isNormalizedProjectRelativePath(value) {
+  return value.length > 0 && !value.startsWith("/") && !/^[A-Za-z]:[\\/]/.test(value) && !value.includes("\\") && !value.split("/").includes("..");
+}
+function validDetail(key, value) {
+  if (!detailKeys.has(key)) return false;
+  if (key === "path")
+    return typeof value === "string" && isNormalizedProjectRelativePath(value);
+  return typeof value === "string" || typeof value === "number";
+}
+function sanitizeDetails(details) {
+  return Object.fromEntries(
+    Object.entries(details).filter(([key, value]) => validDetail(key, value))
+  );
+}
+
+// src/navigation/error.ts
+var errorCodes = [
+  "unknown_tool",
+  "invalid_request",
+  "invalid_session",
+  "invalid_view_handle",
+  "stale_view",
+  "request_id_conflict",
+  "resource_limit",
+  "project_capacity",
+  "workspace_unavailable",
+  "backend_timeout",
+  "backend_crashed",
+  "backend_unavailable",
+  "unavailable_relation",
+  "invalid_backend_result",
+  "backend_response_limit",
+  "path_outside_project",
+  "path_identity_unavailable",
+  "path_identity_changed",
+  "invalid_project_root",
+  "project_root_inaccessible",
+  "project_root_unavailable",
+  "backend_identity_unverifiable",
+  "backend_identity_changed",
+  "backend_endpoint_rejected",
+  "backend_write_rejected",
+  "backend_capability_rejected",
+  "unsafe_backend_mode",
+  "unsupported_backend_version",
+  "classification_config_invalid",
+  "freshness_unavailable",
+  "incomplete_write",
+  "scan_limit",
+  "workspace_churn",
+  "refresh_failed",
+  "internal_error"
+];
+var retryableCodes = /* @__PURE__ */ new Set([
+  "invalid_session",
+  "project_capacity",
+  "workspace_unavailable",
+  "backend_timeout",
+  "backend_crashed",
+  "backend_unavailable",
+  "path_identity_changed",
+  "project_root_inaccessible",
+  "freshness_unavailable",
+  "incomplete_write",
+  "workspace_churn",
+  "refresh_failed"
+]);
+var codeSet = new Set(errorCodes);
+function codeExplorerError(code, details) {
+  return {
+    schema_version: 1,
+    code,
+    message: code,
+    retryable: retryableCodes.has(code),
+    ...details && Object.keys(details).length > 0 ? { details: sanitizeDetails(details) } : {}
+  };
+}
+function normalizeError(error2) {
+  const message = error2 instanceof Error ? error2.message : void 0;
+  return codeExplorerError(
+    message && codeSet.has(message) ? message : "internal_error"
+  );
+}
+
+// src/server/errors.ts
+function unknownTool() {
+  return codeExplorerError("unknown_tool");
+}
+function invalidRequest() {
+  return codeExplorerError("invalid_request");
+}
+function resourceLimit() {
+  return codeExplorerError("resource_limit");
+}
+function limitedResource(limit) {
+  return codeExplorerError("resource_limit", limit);
+}
+function backendTimeout() {
+  return codeExplorerError("backend_timeout");
+}
+function invalidSession() {
+  return codeExplorerError("invalid_session");
+}
+function projectCapacity() {
+  return codeExplorerError("project_capacity");
+}
+function invalidViewHandle() {
+  return codeExplorerError("invalid_view_handle");
+}
+function staleView() {
+  return codeExplorerError("stale_view");
+}
+function requestIdConflict() {
+  return codeExplorerError("request_id_conflict");
+}
+function normalizeBackendFailure(error2) {
+  if (error2 instanceof BackendTimeoutError) return backendTimeout();
+  if (error2 instanceof BackendCapacityError) return resourceLimit();
+  if (error2 instanceof SessionCapacityError) return projectCapacity();
+  if (error2 instanceof ProjectPathError) return codeExplorerError(error2.code);
+  return normalizeError(error2);
+}
+
+// src/server/focus-action.ts
+import * as path4 from "node:path";
+
+// src/server/schemas.ts
+var schemas = {
+  code_search: external_exports.object({
+    query: external_exports.string(),
+    path_globs: external_exports.array(external_exports.string()).optional(),
+    languages: external_exports.array(external_exports.string()).optional(),
+    kinds: external_exports.array(external_exports.string()).optional(),
+    content: external_exports.enum(["all", "production", "tests"]).optional(),
+    include_generated: external_exports.boolean().optional(),
+    limit: external_exports.number().int().optional()
+  }).strict(),
+  code_focus: external_exports.object({
+    session_id: external_exports.string(),
+    request_id: external_exports.string(),
+    symbol_id: external_exports.string(),
+    body_limit_bytes: external_exports.number().int().optional()
+  }).strict(),
+  code_follow: external_exports.object({
+    session_id: external_exports.string(),
+    request_id: external_exports.string(),
+    view_id: external_exports.string(),
+    handle: external_exports.string(),
+    relation: external_exports.enum(browserRelationNames),
+    limit: external_exports.number().int().optional()
+  }).strict(),
+  code_history: external_exports.union([
+    external_exports.object({
+      session_id: external_exports.string(),
+      request_id: external_exports.string(),
+      action: external_exports.enum(["back", "forward"])
+    }).strict(),
+    external_exports.object({
+      session_id: external_exports.string(),
+      request_id: external_exports.string(),
+      action: external_exports.literal("recent"),
+      limit: external_exports.number().int().optional()
+    }).strict()
+  ]),
+  code_status: external_exports.union([
+    external_exports.object({ action: external_exports.enum(["status", "start_session"]) }).strict(),
+    external_exports.object({
+      action: external_exports.literal("refresh"),
+      session_id: external_exports.string(),
+      request_id: external_exports.string()
+    }).strict()
+  ])
 };
-function createServer2(options = {}) {
-  let refreshGeneration = 0;
-  const viewHistory = [];
-  const connectionId = options.connection_id ?? mintOpaqueId();
-  const sessions = new SessionManager();
-  const backendRequests = new BackendRequestLimiter(options.backend_timeout_ms);
-  const freshness = options.freshness ?? new WorkspaceFreshness({ reconcile: async () => ({ manifest: /* @__PURE__ */ new Map() }) });
-  let freshnessStarted;
-  const ensureFreshness = () => freshnessStarted ??= freshness.start();
-  const generationScheduler = options.generation_scheduler ?? new ProjectGenerationScheduler(freshness);
-  const rootAccess = new RootAccessGate(options.projectRoot, options.adapters ?? [], options.now);
-  const mcp = new McpServer({ name: "code-explorer", version: packageInfo.version }, { capabilities: { tools: {} } });
-  let discovery = options.projectRoot ? createDiscoveryPipeline(options.projectRoot) : void 0;
-  let landmarks = options.landmarks;
-  const call = async (name, arguments_) => {
-    if (!isToolName(name)) return unknownTool();
-    const limit = validateResourceLimits(name, arguments_);
-    if (limit) return limitedResource(limit);
-    const parsed = schemas[name].safeParse(arguments_);
-    if (!parsed.success) return invalidRequest();
-    if (!(name === "code_status" && arguments_.action === "start_session")) await ensureFreshness();
-    if (name === "code_status" && arguments_.action === "start_session") {
-      const sessionId2 = sessions.tryStart(connectionId, options.now?.());
-      if (!sessionId2) return projectCapacity();
-      const rootStatus = await rootAccess.check();
-      return {
-        schema_version: 1,
-        project_id: "project",
-        project_generation: 0,
-        pending_generation: null,
-        state: rootStatus.state === "ready" ? "ready" : "degraded",
-        data: {
-          session_id: sessionId2,
-          project_root: ".",
-          root_access: rootStatus.state,
-          restart_required: rootStatus.restart_required
-        }
-      };
-    }
-    const parsedArguments = parsed.data;
-    const sessionId = typeof parsedArguments.session_id === "string" ? parsedArguments.session_id : void 0;
-    const requestId = typeof parsedArguments.request_id === "string" ? parsedArguments.request_id : void 0;
-    const stateChanging = name === "code_focus" || name === "code_follow" || name === "code_history" || name === "code_status" && arguments_.action === "refresh";
-    if (stateChanging && !(requestId && hasValidRequestId(requestId) && sessionId)) return invalidRequest();
-    const perform = async () => {
-      const rootStatus = await rootAccess.check();
-      if (name !== "code_status" && rootStatus.state !== "ready") return codeExplorerError(rootStatus.state);
-      let capturedFreshness;
-      if (name === "code_status" && arguments_.action === "refresh") {
-        await generationScheduler.refresh(async () => {
-          refreshGeneration += 1;
-          await Promise.all(
-            (options.adapters ?? []).flatMap((adapter) => {
-              const refresh = adapter.refresh;
-              return refresh ? [backendRequests.run(sessionId, () => refresh())] : [];
-            })
-          );
-          const replacement = await options.rebuild_derived?.();
-          if (options.projectRoot) discovery = createDiscoveryPipeline(options.projectRoot);
-          if (replacement?.landmarks) landmarks = replacement.landmarks;
-        });
-        capturedFreshness = freshness.status();
-      } else {
-        capturedFreshness = (await generationScheduler.accept()).status;
-      }
-      if (name === "code_focus") {
-        const focus = schemas.code_focus.parse(arguments_);
-        const saveView = (view) => {
-          if (sessions.addView(connectionId, focus.session_id, view) === "project_capacity") return projectCapacity();
-          viewHistory.push(view.view_id);
-          return readyViewEnvelope(
-            view,
-            capturedFreshness,
-            sessions.historyPosition(connectionId, focus.session_id) ?? 0
-          );
-        };
-        if (focus.symbol_id.startsWith("file:") && options.projectRoot) {
-          const filePath = focus.symbol_id.slice("file:".length);
-          const body = options.projectRoot.protectedRead(filePath).bytes;
-          const lineCount = body.split("\n").length;
-          const view = createFocusView(
-            {
-              id: focus.symbol_id,
-              name: path4.posix.basename(filePath),
-              language: path4.posix.extname(filePath).slice(1) || "text",
-              kind: "file",
-              location: {
-                path: filePath,
-                range: { start: { line: 0, character: 0 }, end: { line: lineCount, character: 0 } }
-              }
-            },
-            { body, visible_symbols: [] },
-            focus.body_limit_bytes,
-            capturedFreshness.current_generation
-          );
-          return saveView(view);
-        }
-        const selected = await collectFocusedSymbol(
-          options.adapters ?? [],
-          focus.symbol_id,
-          (operation) => backendRequests.run(focus.session_id, operation)
-        );
-        if (selected) {
-          try {
-            const view = createFocusView(
-              selected.symbol,
-              selected.content,
-              focus.body_limit_bytes,
-              capturedFreshness.current_generation
-            );
-            return saveView(view);
-          } catch (error2) {
-            if (error2 instanceof FocusBodyLimitError) return resourceLimit();
-            throw error2;
-          }
-        }
-      }
-      const relation = arguments_.relation;
-      if (name === "code_follow" && typeof relation === "string") {
-        const follow = schemas.code_follow.parse(arguments_);
-        const resolved = sessions.resolveHandle(
-          connectionId,
-          follow.session_id,
-          follow.view_id,
-          follow.handle,
-          capturedFreshness.current_generation
-        );
-        if (resolved.state === "stale_view") {
-          if (resolved.viewGeneration === void 0) return staleView();
-          return codeExplorerError("stale_view", {
-            view_generation: resolved.viewGeneration,
-            current_generation: resolved.currentGeneration ?? capturedFreshness.current_generation
-          });
-        }
-        if (resolved.state !== "ok") return invalidViewHandle();
-        const symbolId = resolved.symbolId;
-        const semanticRelation = follow.relation === "type" ? "type_definition" : follow.relation;
-        const replies = await collectRelations(
-          options.adapters ?? [],
-          semanticRelation,
-          symbolId,
-          (operation) => backendRequests.run(follow.session_id, operation)
-        );
-        if (replies.length === 0) {
-          return {
-            schema_version: 1,
-            project_id: "project",
-            project_generation: capturedFreshness.current_generation,
-            pending_generation: capturedFreshness.pending_generation,
-            state: "unavailable_relation",
-            data: { relation }
-          };
-        }
-        const { adapter, result } = replies[0];
-        const limit2 = Math.min(follow.limit ?? 50, 200);
-        const candidates = result.relations.map(
-          (candidate) => relationCandidate(candidate, relation, adapter, sessions, connectionId, follow.session_id)
-        ).sort(compareRelationCandidates).slice(0, limit2);
-        if (relation === "definition") {
-          const local = candidates.find((candidate) => candidate.external === false);
-          if (local) {
-            return {
-              schema_version: 1,
-              project_id: "project",
-              project_generation: capturedFreshness.current_generation,
-              pending_generation: capturedFreshness.pending_generation,
-              state: "ready",
-              data: { focus: local, source_location: local.range }
-            };
-          }
-        }
-        return {
-          schema_version: 1,
-          project_id: "project",
-          project_generation: capturedFreshness.current_generation,
-          pending_generation: capturedFreshness.pending_generation,
-          state: "ready",
-          data: { relation, candidates }
-        };
-      }
-      if (name === "code_history") {
-        const history2 = schemas.code_history.parse(arguments_);
-        if (history2.action === "recent") {
-          const recent2 = sessions.recent(connectionId, history2.session_id, history2.limit ?? 64);
-          if (!recent2) return invalidSession();
-          return {
-            schema_version: 1,
-            project_id: "project",
-            project_generation: capturedFreshness.current_generation,
-            pending_generation: capturedFreshness.pending_generation,
-            state: "ready",
-            data: { views: recent2 }
-          };
-        }
-        const restored = sessions.restore(connectionId, history2.session_id, history2.action);
-        if (!restored) return invalidViewHandle();
-        return {
-          schema_version: 1,
-          project_id: "project",
-          project_generation: capturedFreshness.current_generation,
-          pending_generation: capturedFreshness.pending_generation,
-          state: "ready",
-          data: {
-            ...restored,
-            history_position: sessions.historyPosition(connectionId, history2.session_id) ?? 0,
-            stale: restored.project_generation !== capturedFreshness.current_generation
-          }
-        };
-      }
-      if (name === "code_search" && discovery) {
-        const search = schemas.code_search.parse(arguments_);
-        if (normalizeDiscoveryQuery(search.query).length === 0) {
-          const currentLandmarks = landmarks ?? landmarksNotReady();
-          return {
-            schema_version: 1,
-            project_id: "project",
-            project_generation: capturedFreshness.current_generation,
-            pending_generation: capturedFreshness.pending_generation,
-            state: currentLandmarks.state === "ready" ? "ready" : "landmarks_not_ready",
-            data: { landmarks: currentLandmarks.landmarks, landmark_state: currentLandmarks.state }
-          };
-        }
-        const semantic = await collectSemanticSymbols(
-          options.adapters ?? [],
-          search.query,
-          (operation) => backendRequests.run(void 0, operation)
-        );
-        let results;
-        try {
-          results = discovery.searchResult(search.query, search, semantic.symbols);
-          if (results.candidates.length === 0 && semantic.failure) throw semantic.failure;
-        } catch (error2) {
-          if (error2 instanceof ProjectPathError && error2.code === "path_outside_project") return pathOutsideProject();
-          throw error2;
-        }
-        return {
-          schema_version: 1,
-          project_id: "project",
-          project_generation: capturedFreshness.current_generation,
-          pending_generation: capturedFreshness.pending_generation,
-          state: "ready",
-          data: results
-        };
-      }
-      const backendStatus = name === "code_status" ? {
-        backend_status: createBackendStatusReport(options.adapters ?? []),
-        sensitive_paths_excluded: options.sensitive_paths_excluded ?? 0,
-        project_root: ".",
-        current_generation: capturedFreshness.current_generation,
-        pending_generation: capturedFreshness.pending_generation,
-        workspace_state: capturedFreshness.state,
-        pending_analysis: capturedFreshness.pending_generation !== null,
-        root_access: rootStatus.state,
-        restart_required: rootStatus.restart_required,
-        ...options.workspace_status?.() ?? nativeWorkspaceStatus(options.projectRoot),
-        ...discovery?.status()
-      } : {};
-      return {
-        schema_version: 1,
-        project_id: "project",
-        project_generation: capturedFreshness.current_generation,
-        pending_generation: capturedFreshness.pending_generation,
-        state: name === "code_status" && rootStatus.state !== "ready" ? "degraded" : name === "code_status" && arguments_.action === "refresh" && capturedFreshness.state === "ready" ? "refreshed" : capturedFreshness.state === "refreshing" || capturedFreshness.state === "degraded" || capturedFreshness.state === "refresh_failed" ? capturedFreshness.state : "ready",
-        data: backendStatus
-      };
-    };
-    if (stateChanging && sessionId && requestId) {
-      const execution = sessions.execute(
-        connectionId,
-        sessionId,
-        requestId,
-        name,
-        parsedArguments,
-        perform,
-        options.now?.()
-      );
-      if (execution.state === "invalid_session") return invalidSession();
-      if (execution.state === "request_id_conflict") return requestIdConflict();
-      if (execution.state === "project_capacity") return projectCapacity();
-      if (execution.state === "ok") return execution.response.catch(normalizeBackendFailure);
-      return invalidSession();
-    }
-    return perform().catch(normalizeBackendFailure);
+
+// src/server/semantic-operations.ts
+async function collectSemanticSymbols(adapters, query, run) {
+  const replies = await Promise.allSettled(
+    adapters.map(
+      (adapter) => run(() => adapter.request({ operation: "search", query }))
+    )
+  );
+  const symbols = replies.flatMap(
+    (reply) => reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : []
+  );
+  const failure = replies.find(
+    (reply) => reply.status === "rejected"
+  )?.reason;
+  return { symbols, failure };
+}
+async function collectFocusedSymbol(adapters, symbolId, run) {
+  const replies = await Promise.allSettled(
+    adapters.map(
+      (adapter) => run(() => adapter.request({ operation: "focus", symbol_id: symbolId }))
+    )
+  );
+  const focused = replies.find(
+    (reply) => reply.status === "fulfilled" && reply.value.operation === "focus"
+  )?.value;
+  if (focused) return focused;
+  throwBackendLimitFailure(replies);
+  return void 0;
+}
+function throwBackendLimitFailure(replies) {
+  const failed = replies.find(
+    (reply) => reply.status === "rejected"
+  );
+  if (failed) throw failed.reason;
+}
+
+// src/server/focus-action.ts
+async function handleFocus(runtime, arguments_, freshness) {
+  const focus = schemas.code_focus.parse(arguments_);
+  const saveView = (view) => {
+    if (runtime.sessions.addView(runtime.connectionId, focus.session_id, view) === "project_capacity")
+      return projectCapacity();
+    runtime.state.viewHistory.push(view.view_id);
+    return createEnvelope(freshness, "ready", {
+      ...view,
+      history_position: runtime.sessions.historyPosition(
+        runtime.connectionId,
+        focus.session_id
+      ) ?? 0
+    });
   };
-  mcp.server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: toolNames.map((name) => ({
-      name,
-      description: toolDescriptions[name],
-      inputSchema: inputSchemas[name]
-    }))
-  }));
-  mcp.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const result = await call(request.params.name, request.params.arguments ?? {});
-    return toMcpToolResult(result, "code" in result);
-  });
+  if (focus.symbol_id.startsWith("file:") && runtime.options.projectRoot) {
+    const filePath = focus.symbol_id.slice("file:".length);
+    const body = runtime.options.projectRoot.protectedRead(filePath).bytes;
+    const lineCount = body.split("\n").length;
+    const view = createFocusView(
+      {
+        id: focus.symbol_id,
+        name: path4.posix.basename(filePath),
+        language: path4.posix.extname(filePath).slice(1) || "text",
+        kind: "file",
+        location: {
+          path: filePath,
+          range: {
+            start: { line: 0, character: 0 },
+            end: { line: lineCount, character: 0 }
+          }
+        }
+      },
+      { body, visible_symbols: [] },
+      focus.body_limit_bytes,
+      freshness.current_generation
+    );
+    return saveView(view);
+  }
+  const selected = await collectFocusedSymbol(
+    runtime.options.adapters ?? [],
+    focus.symbol_id,
+    (operation) => runtime.backendRequests.run(focus.session_id, operation)
+  );
+  if (!selected) return;
+  try {
+    return saveView(
+      createFocusView(
+        selected.symbol,
+        selected.content,
+        focus.body_limit_bytes,
+        freshness.current_generation
+      )
+    );
+  } catch (error2) {
+    if (error2 instanceof FocusBodyLimitError) return resourceLimit();
+    throw error2;
+  }
+}
+
+// src/server/relation-candidate.ts
+function mapRelationCandidate(candidate, relation, adapter) {
+  const status = adapter.status();
+  if ("external" in candidate) {
+    return {
+      candidate: {
+        relation,
+        relation_source: "semantic",
+        backend_name: status.backend_name,
+        backend_version: status.backend_version,
+        display_name: candidate.external.display_name,
+        external: true
+      }
+    };
+  }
+  const symbol = candidate.symbol;
+  const sourceRange = "range" in candidate.location ? candidate.location.range : symbol.location.range;
   return {
-    mcp,
-    call,
-    state: () => ({ refresh_generation: refreshGeneration, view_history: [...viewHistory] }),
-    projectRoot: options.projectRoot,
-    closeConnection: () => sessions.closeConnection(connectionId),
-    close: async () => {
-      sessions.closeConnection(connectionId);
-      await freshness.close();
+    symbol,
+    candidate: {
+      relation,
+      relation_source: "semantic",
+      backend_name: status.backend_name,
+      backend_version: status.backend_version,
+      symbol_id: symbol.id,
+      display_name: symbol.name,
+      path: symbol.location.path.replaceAll("\\", "/"),
+      kind: symbol.kind,
+      range: sourceRange,
+      ...candidate.call_site ? {
+        call_site: {
+          path: candidate.call_site.path.replaceAll("\\", "/"),
+          range: candidate.call_site.range
+        }
+      } : {},
+      external: false
     }
   };
 }
+function retainRelationCandidateView(mapped, sessions, connectionId, sessionId) {
+  if (!mapped.symbol) return mapped.candidate;
+  const view = createFocusView(mapped.symbol, {
+    declaration: mapped.symbol.name,
+    visible_symbols: [
+      { name: mapped.symbol.name, symbol_id: mapped.symbol.id }
+    ]
+  });
+  if (sessions.addView(connectionId, sessionId, view) !== "ok")
+    throw new SessionCapacityError();
+  return {
+    ...mapped.candidate,
+    view_id: view.view_id,
+    ...view.handles[0]?.handle ? { handle: view.handles[0].handle } : {},
+    handles: view.handles,
+    content: view.content
+  };
+}
+function compareRelationCandidates(left, right) {
+  if (left.external !== right.external) return left.external ? 1 : -1;
+  return relationCandidateSortKey(left).localeCompare(
+    relationCandidateSortKey(right)
+  );
+}
+function relationCandidateSortKey(candidate) {
+  return [
+    candidate.path ?? "",
+    candidate.range?.start.line ?? 0,
+    candidate.range?.start.character ?? 0,
+    candidate.kind ?? "",
+    candidate.symbol_id ?? candidate.display_name ?? ""
+  ].join("\0");
+}
+
+// src/server/relation-operations.ts
+async function collectRelations(adapters, relation, symbolId, run) {
+  const supported = adapters.filter(
+    (adapter) => adapter.status().capabilities[relation].state === "ready"
+  );
+  const replies = await Promise.allSettled(
+    supported.map(
+      (adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId }))
+    )
+  );
+  const results = replies.flatMap(
+    (reply, index) => reply.status === "fulfilled" && reply.value.operation === relation ? [{ adapter: supported[index], result: reply.value }] : []
+  );
+  if (results.length === 0) throwBackendLimitFailure(replies);
+  return results;
+}
+function mapRelationCandidates(result, relation, adapter, sessions, connectionId, sessionId, limit) {
+  return result.relations.map((candidate) => mapRelationCandidate(candidate, relation, adapter)).sort(
+    (left, right) => compareRelationCandidates(left.candidate, right.candidate)
+  ).slice(0, limit).map(
+    (mapped) => retainRelationCandidateView(mapped, sessions, connectionId, sessionId)
+  );
+}
+
+// src/server/follow-action.ts
+async function handleFollow(runtime, arguments_, freshness) {
+  const relation = arguments_.relation;
+  if (typeof relation !== "string") return;
+  const follow = schemas.code_follow.parse(arguments_);
+  const resolved = runtime.sessions.resolveHandle(
+    runtime.connectionId,
+    follow.session_id,
+    follow.view_id,
+    follow.handle,
+    freshness.current_generation
+  );
+  if (resolved.state === "stale_view") {
+    if (resolved.viewGeneration === void 0) return staleView();
+    return codeExplorerError("stale_view", {
+      view_generation: resolved.viewGeneration,
+      current_generation: resolved.currentGeneration ?? freshness.current_generation
+    });
+  }
+  if (resolved.state !== "ok") return invalidViewHandle();
+  const semanticRelation = follow.relation === "type" ? "type_definition" : follow.relation;
+  const replies = await collectRelations(
+    runtime.options.adapters ?? [],
+    semanticRelation,
+    resolved.symbolId,
+    (operation) => runtime.backendRequests.run(follow.session_id, operation)
+  );
+  if (replies.length === 0)
+    return createEnvelope(freshness, "unavailable_relation", { relation });
+  const { adapter, result } = replies[0];
+  const candidates = mapRelationCandidates(
+    result,
+    relation,
+    adapter,
+    runtime.sessions,
+    runtime.connectionId,
+    follow.session_id,
+    Math.min(follow.limit ?? 50, 200)
+  );
+  if (relation === "definition") {
+    const local = candidates.find((candidate) => candidate.external === false);
+    if (local)
+      return createEnvelope(freshness, "ready", {
+        focus: local,
+        source_location: local.range
+      });
+  }
+  return createEnvelope(freshness, "ready", { relation, candidates });
+}
+
+// src/server/history-action.ts
+function handleHistory(runtime, arguments_, freshness) {
+  const history2 = schemas.code_history.parse(arguments_);
+  if (history2.action === "recent") {
+    const recent2 = runtime.sessions.recent(
+      runtime.connectionId,
+      history2.session_id,
+      history2.limit ?? 64
+    );
+    if (!recent2) return invalidSession();
+    return createEnvelope(freshness, "ready", { views: recent2 });
+  }
+  const restored = runtime.sessions.restore(
+    runtime.connectionId,
+    history2.session_id,
+    history2.action
+  );
+  if (!restored) return invalidViewHandle();
+  return createEnvelope(freshness, "ready", {
+    ...restored,
+    history_position: runtime.sessions.historyPosition(
+      runtime.connectionId,
+      history2.session_id
+    ) ?? 0,
+    stale: restored.project_generation !== freshness.current_generation
+  });
+}
+
+// src/server/search-action.ts
+async function handleSearch(runtime, arguments_, freshness) {
+  const search = schemas.code_search.parse(arguments_);
+  if (normalizeDiscoveryQuery(search.query).length === 0) {
+    const currentLandmarks = runtime.state.landmarks ?? landmarksNotReady();
+    return createEnvelope(
+      freshness,
+      currentLandmarks.state === "ready" ? "ready" : "landmarks_not_ready",
+      {
+        landmarks: currentLandmarks.landmarks,
+        landmark_state: currentLandmarks.state
+      }
+    );
+  }
+  const semantic = await collectSemanticSymbols(
+    runtime.options.adapters ?? [],
+    search.query,
+    (operation) => runtime.backendRequests.run(void 0, operation)
+  );
+  const discovery = runtime.state.discovery;
+  if (!discovery) return createEnvelope(freshness, "ready", {});
+  let results;
+  try {
+    results = discovery.searchResult(search.query, search, semantic.symbols);
+    if (results.candidates.length === 0 && semantic.failure)
+      throw semantic.failure;
+  } catch (error2) {
+    if (error2 instanceof ProjectPathError && error2.code === "path_outside_project")
+      return codeExplorerError("path_outside_project");
+    throw error2;
+  }
+  return createEnvelope(freshness, "ready", results);
+}
+
+// src/server/workspace-status.ts
+import { execFileSync } from "node:child_process";
 function nativeWorkspaceStatus(root) {
-  if (!root) return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
+  if (!root)
+    return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
   try {
     const output = execFileSync(
       "git",
-      ["-C", root.canonicalPath, "status", "--porcelain=v1", "--untracked-files=all"],
+      [
+        "-C",
+        root.canonicalPath,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all"
+      ],
       {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "ignore"]
@@ -31137,114 +31009,236 @@ function nativeWorkspaceStatus(root) {
       if (!candidate || candidate.startsWith("/") || /^[A-Za-z]:\//u.test(candidate) || candidate.split("/").includes(".."))
         continue;
       if (!/\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)) continue;
-      if (status === "??") untracked_paths.push({ path: candidate, state: "untracked" });
-      else changed_paths.push({ path: candidate, state: status.includes("D") ? "deleted" : "modified" });
+      if (status === "??")
+        untracked_paths.push({ path: candidate, state: "untracked" });
+      else
+        changed_paths.push({
+          path: candidate,
+          state: status.includes("D") ? "deleted" : "modified"
+        });
     }
     return {
       changed_paths,
       untracked_paths,
-      active_exclusions: ["dist/**", "target/**", "bin/**", "obj/**", ".venv/**"]
+      active_exclusions: [
+        "dist/**",
+        "target/**",
+        "bin/**",
+        "obj/**",
+        ".venv/**"
+      ]
     };
   } catch {
     return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
   }
 }
-function normalizeBackendFailure(error2) {
-  if (error2 instanceof BackendTimeoutError) return backendTimeout();
-  if (error2 instanceof BackendCapacityError) return resourceLimit();
-  if (error2 instanceof SessionCapacityError) return projectCapacity();
-  if (error2 instanceof ProjectPathError) return codeExplorerError(error2.code);
-  return normalizeError(error2);
+
+// src/server/status-action.ts
+function handleStatus(runtime, name, arguments_, freshness, rootStatus) {
+  const backendStatus = name === "code_status" ? {
+    backend_status: createBackendStatusReport(
+      runtime.options.adapters ?? []
+    ),
+    sensitive_paths_excluded: runtime.options.sensitive_paths_excluded ?? 0,
+    project_root: ".",
+    current_generation: freshness.current_generation,
+    pending_generation: freshness.pending_generation,
+    workspace_state: freshness.state,
+    pending_analysis: freshness.pending_generation !== null,
+    root_access: rootStatus.state,
+    restart_required: rootStatus.restart_required,
+    ...runtime.options.workspace_status?.() ?? nativeWorkspaceStatus(runtime.options.projectRoot),
+    ...runtime.state.discovery?.status()
+  } : {};
+  const state = name === "code_status" && rootStatus.state !== "ready" ? "degraded" : name === "code_status" && arguments_.action === "refresh" && freshness.state === "ready" ? "refreshed" : freshness.state === "refreshing" || freshness.state === "degraded" || freshness.state === "refresh_failed" ? freshness.state : "ready";
+  return createEnvelope(freshness, state, backendStatus);
 }
-async function collectSemanticSymbols(adapters, query, run) {
-  const replies = await Promise.allSettled(
-    adapters.map((adapter) => run(() => adapter.request({ operation: "search", query })))
-  );
-  const symbols = replies.flatMap(
-    (reply) => reply.status === "fulfilled" && reply.value.operation === "search" ? reply.value.symbols : []
-  );
-  const failure = replies.find((reply) => reply.status === "rejected")?.reason;
-  return { symbols, failure };
-}
-async function collectFocusedSymbol(adapters, symbolId, run) {
-  const replies = await Promise.allSettled(
-    adapters.map((adapter) => run(() => adapter.request({ operation: "focus", symbol_id: symbolId })))
-  );
-  const focused = replies.find(
-    (reply) => reply.status === "fulfilled" && reply.value.operation === "focus"
-  )?.value;
-  if (focused) return focused;
-  throwBackendLimitFailure(replies);
-  return void 0;
-}
-async function collectRelations(adapters, relation, symbolId, run) {
-  const supported = adapters.filter((adapter) => adapter.status().capabilities[relation].state === "ready");
-  const replies = await Promise.allSettled(
-    supported.map((adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId })))
-  );
-  const results = replies.flatMap(
-    (reply, index) => reply.status === "fulfilled" && reply.value.operation === relation ? [{ adapter: supported[index], result: reply.value }] : []
-  );
-  if (results.length === 0) throwBackendLimitFailure(replies);
-  return results;
-}
-function throwBackendLimitFailure(replies) {
-  const failed = replies.find((reply) => reply.status === "rejected");
-  if (failed) throw failed.reason;
-}
-function relationCandidate(candidate, relation, adapter, sessions, connectionId, sessionId) {
-  const status = adapter.status();
-  if ("external" in candidate) {
-    return {
-      relation,
-      relation_source: "semantic",
-      backend_name: status.backend_name,
-      backend_version: status.backend_version,
-      display_name: candidate.external.display_name,
-      external: true
-    };
+
+// src/server/perform-call.ts
+async function performCall(runtime, name, arguments_, sessionId) {
+  const rootStatus = await runtime.rootAccess.check();
+  if (name !== "code_status" && rootStatus.state !== "ready")
+    return codeExplorerError(rootStatus.state);
+  let capturedFreshness;
+  if (name === "code_status" && arguments_.action === "refresh") {
+    await runtime.generationScheduler.refresh(async () => {
+      runtime.state.refreshGeneration += 1;
+      await Promise.all(
+        (runtime.options.adapters ?? []).flatMap((adapter) => {
+          const refresh = adapter.refresh;
+          return refresh ? [runtime.backendRequests.run(sessionId, () => refresh())] : [];
+        })
+      );
+      const replacement = await runtime.options.rebuild_derived?.();
+      if (runtime.options.projectRoot)
+        runtime.state.discovery = createDiscoveryPipeline(
+          runtime.options.projectRoot
+        );
+      if (replacement?.landmarks)
+        runtime.state.landmarks = replacement.landmarks;
+    });
+    capturedFreshness = runtime.freshness.status();
+  } else {
+    capturedFreshness = (await runtime.generationScheduler.accept()).status;
   }
-  const symbol = candidate.symbol;
-  const view = createFocusView(symbol, {
-    declaration: symbol.name,
-    visible_symbols: [{ name: symbol.name, symbol_id: symbol.id }]
-  });
-  if (sessions.addView(connectionId, sessionId, view) !== "ok") throw new SessionCapacityError();
-  const handle = view.handles[0]?.handle;
-  const sourceRange = "range" in candidate.location ? candidate.location.range : symbol.location.range;
-  return {
-    relation,
-    relation_source: "semantic",
-    backend_name: status.backend_name,
-    backend_version: status.backend_version,
-    symbol_id: symbol.id,
-    display_name: symbol.name,
-    path: symbol.location.path.replaceAll("\\", "/"),
-    kind: symbol.kind,
-    range: sourceRange,
-    ...candidate.call_site ? { call_site: { path: candidate.call_site.path.replaceAll("\\", "/"), range: candidate.call_site.range } } : {},
-    external: false,
-    view_id: view.view_id,
-    ...handle ? { handle } : {},
-    handles: view.handles,
-    content: view.content
+  if (name === "code_focus") {
+    const result = await handleFocus(runtime, arguments_, capturedFreshness);
+    if (result) return result;
+  }
+  if (name === "code_follow") {
+    const result = await handleFollow(runtime, arguments_, capturedFreshness);
+    if (result) return result;
+  }
+  if (name === "code_history")
+    return handleHistory(runtime, arguments_, capturedFreshness);
+  if (name === "code_search" && runtime.state.discovery)
+    return handleSearch(runtime, arguments_, capturedFreshness);
+  return handleStatus(runtime, name, arguments_, capturedFreshness, rootStatus);
+}
+
+// src/server/tool-name.ts
+var toolNames = [
+  "code_search",
+  "code_focus",
+  "code_follow",
+  "code_history",
+  "code_status"
+];
+function isToolName(name) {
+  return toolNames.includes(name);
+}
+
+// src/server/server-call.ts
+function hasValidRequestId(value) {
+  const bytes = Buffer6.byteLength(value, "utf8");
+  return bytes >= 16 && bytes <= 128;
+}
+function createServerCall(runtime) {
+  const ensureFreshness = () => runtime.state.freshnessStarted ??= runtime.freshness.start();
+  return async function call(name, arguments_) {
+    if (!isToolName(name)) return unknownTool();
+    const limit = validateResourceLimits(name, arguments_);
+    if (limit) return limitedResource(limit);
+    const parsed = schemas[name].safeParse(arguments_);
+    if (!parsed.success) return invalidRequest();
+    if (!(name === "code_status" && arguments_.action === "start_session"))
+      await ensureFreshness();
+    if (name === "code_status" && arguments_.action === "start_session") {
+      const sessionId2 = runtime.sessions.tryStart(
+        runtime.connectionId,
+        runtime.options.now?.()
+      );
+      if (!sessionId2) return projectCapacity();
+      const rootStatus = await runtime.rootAccess.check();
+      return createEnvelope(
+        { current_generation: 0, pending_generation: null },
+        rootStatus.state === "ready" ? "ready" : "degraded",
+        {
+          session_id: sessionId2,
+          project_root: ".",
+          root_access: rootStatus.state,
+          restart_required: rootStatus.restart_required
+        }
+      );
+    }
+    const parsedArguments = parsed.data;
+    const sessionId = typeof parsedArguments.session_id === "string" ? parsedArguments.session_id : void 0;
+    const requestId = typeof parsedArguments.request_id === "string" ? parsedArguments.request_id : void 0;
+    const stateChanging = name === "code_focus" || name === "code_follow" || name === "code_history" || name === "code_status" && arguments_.action === "refresh";
+    if (stateChanging && !(requestId && hasValidRequestId(requestId) && sessionId))
+      return invalidRequest();
+    const perform = () => performCall(runtime, name, parsedArguments, sessionId);
+    if (stateChanging && sessionId && requestId) {
+      const execution = runtime.sessions.execute(
+        runtime.connectionId,
+        sessionId,
+        requestId,
+        name,
+        parsedArguments,
+        perform,
+        runtime.options.now?.()
+      );
+      if (execution.state === "invalid_session") return invalidSession();
+      if (execution.state === "request_id_conflict") return requestIdConflict();
+      if (execution.state === "project_capacity") return projectCapacity();
+      if (execution.state === "ok")
+        return execution.response.catch(normalizeBackendFailure);
+      return invalidSession();
+    }
+    return perform().catch(normalizeBackendFailure);
   };
 }
-function compareRelationCandidates(left, right) {
-  if (left.external !== right.external) return left.external ? 1 : -1;
-  return `${left.path ?? ""}\0${left.range?.start.line ?? 0}\0${left.range?.start.character ?? 0}\0${left.kind ?? ""}\0${left.symbol_id ?? left.display_name ?? ""}`.localeCompare(
-    `${right.path ?? ""}\0${right.range?.start.line ?? 0}\0${right.range?.start.character ?? 0}\0${right.kind ?? ""}\0${right.symbol_id ?? right.display_name ?? ""}`
-  );
+
+// src/server/tool-descriptions.ts
+var toolDescriptions = {
+  code_search: "Search the frozen project for symbols and files, or return project landmarks for an empty query.",
+  code_focus: "Open one search result in a bounded source view owned by an active navigation session.",
+  code_follow: "Follow one visible handle from a current view through a named semantic relation.",
+  code_history: "Restore a prior or next immutable view, or list recent views in the active navigation session.",
+  code_status: "Read workspace and backend status, start a navigation session, or refresh derived navigation data."
+};
+
+// src/server/tool-result.ts
+function toMcpToolResult(result, isError = false) {
+  return {
+    content: [{ type: "text", text: JSON.stringify(result) }],
+    structuredContent: result,
+    ...isError ? { isError: true } : {}
+  };
 }
-async function stopAdapters(adapters) {
-  await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
+
+// src/server/create-server.ts
+function createServer2(options = {}) {
+  const runtime = createServerRuntime(options);
+  const mcp = new McpServer(
+    { name: "code-explorer", version: packageInfo.version },
+    { capabilities: { tools: {} } }
+  );
+  const call = createServerCall(runtime);
+  mcp.server.setRequestHandler(ListToolsRequestSchema, () => ({
+    tools: toolNames.map((name) => ({
+      name,
+      description: toolDescriptions[name],
+      inputSchema: inputSchemas[name]
+    }))
+  }));
+  mcp.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const result = await call(
+      request.params.name,
+      request.params.arguments ?? {}
+    );
+    return toMcpToolResult(result, "code" in result);
+  });
+  return {
+    mcp,
+    call,
+    state: () => ({
+      refresh_generation: runtime.state.refreshGeneration,
+      view_history: [...runtime.state.viewHistory]
+    }),
+    projectRoot: options.projectRoot,
+    closeConnection: () => runtime.sessions.closeConnection(runtime.connectionId),
+    close: async () => {
+      runtime.sessions.closeConnection(runtime.connectionId);
+      await runtime.freshness.close();
+    }
+  };
+}
+
+// src/runtime-core.ts
+var { createNativeWorkspaceFreshness: createNativeWorkspaceFreshness2 } = workspace_native_exports;
+var { createServer: createCodeExplorerServer } = create_server_exports;
+function stopAdapters(adapters) {
+  return Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
 }
 function createRuntimeServer(projectRoot, adapters) {
-  return createServer2({
+  return createCodeExplorerServer({
     projectRoot,
     adapters,
-    sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
-    freshness: createNativeWorkspaceFreshness({
+    sensitive_paths_excluded: countSensitivePathsUnderRoot(
+      projectRoot.canonicalPath
+    ),
+    freshness: createNativeWorkspaceFreshness2({
       root: projectRoot.canonicalPath,
       supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)
     })
@@ -31252,7 +31246,9 @@ function createRuntimeServer(projectRoot, adapters) {
 }
 function abortPromise(signal) {
   return new Promise(
-    (_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true })
+    (_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted")), {
+      once: true
+    })
   );
 }
 function createRuntimeCore(server, adapters) {
@@ -31263,6 +31259,7 @@ function createRuntimeCore(server, adapters) {
   };
   return {
     call: (name, arguments_) => server.call(name, arguments_),
+    connect: (transport) => server.mcp.connect(transport),
     close: async (signal) => {
       if (signal.aborted) throw new Error("aborted");
       closing ??= cleanup();
@@ -31270,13 +31267,19 @@ function createRuntimeCore(server, adapters) {
     }
   };
 }
-async function startRuntimeCore({ projectRoot, signal }) {
+async function startRuntimeCore({
+  projectRoot,
+  signal
+}) {
   loadAdapterSelectionRecord();
   let adapters = [];
   try {
     adapters = await createStartedRuntimeAdapters(projectRoot, signal);
     if (signal.aborted) throw new Error("aborted");
-    return createRuntimeCore(createRuntimeServer(projectRoot, adapters), adapters);
+    return createRuntimeCore(
+      createRuntimeServer(projectRoot, adapters),
+      adapters
+    );
   } catch (error2) {
     await stopAdapters(adapters);
     throw error2;
@@ -31285,17 +31288,225 @@ async function startRuntimeCore({ projectRoot, signal }) {
 function createRuntimeCoreFactory() {
   return { start: startRuntimeCore };
 }
+
+// src/runtime-main.ts
+import process5 from "node:process";
+
+// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+var stdio_exports = {};
+__export(stdio_exports, {
+  StdioServerTransport: () => StdioServerTransport
+});
+import process4 from "node:process";
+
+// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
+var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
+var ReadBuffer = class {
+  constructor(options) {
+    this._maxBufferSize = options?.maxBufferSize ?? STDIO_DEFAULT_MAX_BUFFER_SIZE;
+  }
+  append(chunk) {
+    const newSize = (this._buffer?.length ?? 0) + chunk.length;
+    if (newSize > this._maxBufferSize) {
+      this.clear();
+      throw new Error(`ReadBuffer exceeded maximum size of ${this._maxBufferSize} bytes`);
+    }
+    this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
+  }
+  readMessage() {
+    if (!this._buffer) {
+      return null;
+    }
+    const index = this._buffer.indexOf("\n");
+    if (index === -1) {
+      return null;
+    }
+    const line = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
+    this._buffer = this._buffer.subarray(index + 1);
+    return deserializeMessage(line);
+  }
+  clear() {
+    this._buffer = void 0;
+  }
+};
+function deserializeMessage(line) {
+  return JSONRPCMessageSchema.parse(JSON.parse(line));
+}
+function serializeMessage(message) {
+  return JSON.stringify(message) + "\n";
+}
+
+// ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
+var StdioServerTransport = class {
+  constructor(_stdin = process4.stdin, _stdout = process4.stdout, options) {
+    this._stdin = _stdin;
+    this._stdout = _stdout;
+    this._started = false;
+    this._ondata = (chunk) => {
+      try {
+        this._readBuffer.append(chunk);
+        this.processReadBuffer();
+      } catch (error2) {
+        this.onerror?.(error2);
+        this.close().catch(() => {
+        });
+      }
+    };
+    this._onerror = (error2) => {
+      this.onerror?.(error2);
+    };
+    this._readBuffer = new ReadBuffer({ maxBufferSize: options?.maxBufferSize });
+  }
+  /**
+   * Starts listening for messages on stdin.
+   */
+  async start() {
+    if (this._started) {
+      throw new Error("StdioServerTransport already started! If using Server class, note that connect() calls start() automatically.");
+    }
+    this._started = true;
+    this._stdin.on("data", this._ondata);
+    this._stdin.on("error", this._onerror);
+  }
+  processReadBuffer() {
+    while (true) {
+      try {
+        const message = this._readBuffer.readMessage();
+        if (message === null) {
+          break;
+        }
+        this.onmessage?.(message);
+      } catch (error2) {
+        this.onerror?.(error2);
+      }
+    }
+  }
+  async close() {
+    this._stdin.off("data", this._ondata);
+    this._stdin.off("error", this._onerror);
+    const remainingDataListeners = this._stdin.listenerCount("data");
+    if (remainingDataListeners === 0) {
+      this._stdin.pause();
+    }
+    this._readBuffer.clear();
+    this.onclose?.();
+  }
+  send(message) {
+    return new Promise((resolve5) => {
+      const json2 = serializeMessage(message);
+      if (this._stdout.write(json2)) {
+        resolve5();
+      } else {
+        this._stdout.once("drain", resolve5);
+      }
+    });
+  }
+};
+
+// src/browser-server/embedded-runtime.ts
+var embedded_runtime_exports = {};
+__export(embedded_runtime_exports, {
+  startEmbeddedBrowserRuntime: () => startEmbeddedBrowserRuntime
+});
+
+// src/browser-server/embedded-runtime-result.ts
+function createEmbeddedRuntime(options) {
+  const router = new BrowserHttpRouter({
+    origin: options.origin,
+    assetRoot: options.assetRoot,
+    call: options.core.call ?? unavailableBrowserCall
+  });
+  return {
+    projectRoot: options.projectRoot,
+    handle: (request) => router.handle(request),
+    close: closeCore(options)
+  };
+}
+function closeCore(options) {
+  let closing;
+  return () => {
+    if (closing) return closing;
+    closing = closeRuntime(options);
+    return closing;
+  };
+}
+async function closeRuntime(options) {
+  options.controller.abort();
+  await options.core.close(AbortSignal.timeout(1e4));
+  options.unlinkAbortSignal();
+}
+
+// src/browser-server/embedded-runtime.ts
+function loopbackOrigin(origin) {
+  const parsed = new URL(origin);
+  if (parsed.protocol !== "http:" || parsed.hostname !== "127.0.0.1" || !parsed.port) {
+    throw new BrowserServerError("invalid_request");
+  }
+  return parsed;
+}
+function linkAbortSignal(parent, child) {
+  if (!parent) return () => void 0;
+  const abort = () => child.abort(parent.reason);
+  if (parent.aborted) {
+    abort();
+    return () => void 0;
+  }
+  parent.addEventListener("abort", abort, { once: true });
+  return () => parent.removeEventListener("abort", abort);
+}
+async function startCore(options, unlinkAbortSignal) {
+  try {
+    const core = await options.coreFactory.start({
+      projectRoot: options.projectRoot,
+      signal: options.signal
+    });
+    if (options.signal.aborted) {
+      await core.close(AbortSignal.timeout(1e4));
+      throw new Error("aborted");
+    }
+    return core;
+  } catch (error2) {
+    unlinkAbortSignal();
+    throw error2;
+  }
+}
+async function startEmbeddedBrowserRuntime(options) {
+  const parsedOrigin = loopbackOrigin(options.origin);
+  const projectRoot = createNativeProjectRoot(options.projectRoot);
+  const controller = new AbortController();
+  const unlinkAbortSignal = linkAbortSignal(options.signal, controller);
+  const core = await startCore(
+    {
+      coreFactory: options.coreFactory,
+      projectRoot,
+      signal: controller.signal
+    },
+    unlinkAbortSignal
+  );
+  return createEmbeddedRuntime({
+    projectRoot,
+    origin: parsedOrigin.origin,
+    assetRoot: options.assetRoot,
+    core,
+    controller,
+    unlinkAbortSignal
+  });
+}
+
+// src/runtime-main.ts
+var { startEmbeddedBrowserRuntime: startEmbeddedBrowserRuntime2 } = embedded_runtime_exports;
+var { StdioServerTransport: StdioServerTransport2 } = stdio_exports;
 async function createEmbeddedBrowserRuntime(options) {
-  return startEmbeddedBrowserRuntime({
+  return startEmbeddedBrowserRuntime2({
     projectRoot: options.project_root,
     origin: options.origin,
     signal: options.signal,
-    assetRoot: path4.join(path4.dirname(filename), "browser"),
+    assetRoot: browserAssetRoot,
     coreFactory: options.core_factory ?? createRuntimeCoreFactory()
   });
 }
-async function main() {
-  const arguments_ = process.argv.slice(2);
+async function runMain() {
+  const arguments_ = process5.argv.slice(2);
   if (arguments_[0] === "serve") {
     const parsed = parseServeArguments(arguments_);
     const service = await startBrowserServer({
@@ -31303,47 +31514,52 @@ async function main() {
       coreFactory: createRuntimeCoreFactory(),
       binder: nativePortBinder,
       opener: nativeBrowserOpener,
-      write: (line) => process.stdout.write(`${line}
+      write: (line) => process5.stdout.write(`${line}
 `),
-      writeError: (line) => process.stderr.write(`${line}
+      writeError: (line) => process5.stderr.write(`${line}
 `)
     });
-    const shutdown = () => void service.close().then(() => process.exit(0));
-    process.once("SIGINT", shutdown);
-    process.once("SIGTERM", shutdown);
+    const shutdown = () => void service.close().then(() => process5.exit(0));
+    process5.once("SIGINT", shutdown);
+    process5.once("SIGTERM", shutdown);
     return;
   }
-  loadAdapterSelectionRecord();
-  const projectRoot = createNativeProjectRoot(parseProjectRootArgument(arguments_));
-  const adapters = await createStartedRuntimeAdapters(projectRoot);
-  const server = createServer2({
+  const projectRoot = createNativeProjectRoot(
+    parseProjectRootArgument(arguments_)
+  );
+  const controller = new AbortController();
+  const core = await createRuntimeCoreFactory().start({
     projectRoot,
-    adapters,
-    sensitive_paths_excluded: countSensitivePathsUnderRoot(projectRoot.canonicalPath),
-    freshness: createNativeWorkspaceFreshness({
-      root: projectRoot.canonicalPath,
-      supported: (candidate) => /\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)
-    })
+    signal: controller.signal
   });
-  const transport = new StdioServerTransport();
-  let shuttingDown;
-  const shutdownBackends = () => {
-    shuttingDown ??= Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.())).then(() => void 0);
-    return shuttingDown;
+  const transport = new StdioServerTransport2();
+  let closing;
+  const close = () => {
+    controller.abort();
+    closing ??= core.close(AbortSignal.timeout(1e4));
+    return closing;
   };
-  transport.onclose = () => {
-    void server.close().then(shutdownBackends);
-  };
-  process.stdin.once("end", () => void server.close().then(shutdownBackends));
-  await server.mcp.connect(transport);
+  transport.onclose = () => void close();
+  process5.stdin.once("end", () => void close());
+  try {
+    if (!core.connect) throw new Error("runtime_core_transport_unavailable");
+    await core.connect(transport);
+  } catch (error2) {
+    await close();
+    throw error2;
+  }
 }
 function parseProjectRootArgument(arguments_) {
-  if (arguments_.length === 0) return void 0;
-  if (arguments_.length === 2 && arguments_[0] === "--project-root" && arguments_[1].length > 0) return arguments_[1];
+  if (arguments_.length === 0) return;
+  if (arguments_.length === 2 && arguments_[0] === "--project-root" && arguments_[1].length > 0)
+    return arguments_[1];
   throw new ProjectPathError("invalid_project_root", "project_root");
 }
+
+// src/index.ts
+var filename = fileURLToPath6(import.meta.url);
 function isMainModule() {
-  const argument = process.argv[1];
+  const argument = process6.argv[1];
   if (!argument) return false;
   try {
     return realpathSync3(argument) === realpathSync3(filename);
@@ -31352,11 +31568,11 @@ function isMainModule() {
   }
 }
 if (isMainModule()) {
-  main().catch((error2) => {
+  runMain().catch((error2) => {
     const message = error2 instanceof ProjectPathError ? `${error2.code}:${error2.root_source ?? "cwd"}` : error2 instanceof BrowserServerError ? error2.code : String(error2);
-    process.stderr.write(`code-explorer MCP server failed: ${message}
+    process6.stderr.write(`code-explorer MCP server failed: ${message}
 `);
-    process.exit(1);
+    process6.exit(1);
   });
 }
 export {

@@ -5,7 +5,7 @@ import {
   createBackendLaunchPolicy,
   identity,
   policyAllowlist,
-} from "../testing/backend-launch-policy-test-support.js";
+} from "../testing/backend/backend-launch-policy-test-support.js";
 
 it("uses configured platform path comparison and rejects project descendants", () => {
   const windowsIdentity = {

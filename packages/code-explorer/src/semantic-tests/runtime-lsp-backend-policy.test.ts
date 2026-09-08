@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createRustAdapter } from "../semantic/adapters/language-adapter.js";
 import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
-import { Process, policyFailureOptions, runtimeOptions } from "../testing/runtime-lsp-test-support.js";
+import { Process, policyFailureOptions, runtimeOptions } from "../testing/runtime/runtime-lsp-test-support.js";
 
 it("preserves post-initialize policy failure code", async () => {
   const process = new Process([]);

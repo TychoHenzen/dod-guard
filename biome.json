@@ -104,6 +104,37 @@
       "formatter": {
         "lineWidth": 80
       }
+    },
+    {
+      "includes": [
+        "packages/code-explorer/src/index.ts",
+        "packages/code-explorer/src/package-info.ts",
+        "packages/code-explorer/src/runtime-core.ts",
+        "packages/code-explorer/src/runtime-main.ts",
+        "packages/code-explorer/src/server/create-runtime.ts",
+        "packages/code-explorer/src/server/create-server.ts",
+        "packages/code-explorer/src/server/errors.ts",
+        "packages/code-explorer/src/server/focus-action.ts",
+        "packages/code-explorer/src/server/follow-action.ts",
+        "packages/code-explorer/src/server/history-action.ts",
+        "packages/code-explorer/src/server/perform-call.ts",
+        "packages/code-explorer/src/server/relation-candidate.ts",
+        "packages/code-explorer/src/server/relation-operations.ts",
+        "packages/code-explorer/src/server/schemas.ts",
+        "packages/code-explorer/src/server/search-action.ts",
+        "packages/code-explorer/src/server/semantic-operations.ts",
+        "packages/code-explorer/src/server/server-call.ts",
+        "packages/code-explorer/src/server/server-contract.ts",
+        "packages/code-explorer/src/server/server-options.ts",
+        "packages/code-explorer/src/server/status-action.ts",
+        "packages/code-explorer/src/server/tool-descriptions.ts",
+        "packages/code-explorer/src/server/tool-name.ts",
+        "packages/code-explorer/src/server/tool-result.ts",
+        "packages/code-explorer/src/server/workspace-status.ts"
+      ],
+      "formatter": {
+        "lineWidth": 80
+      }
     }
   ]
 }

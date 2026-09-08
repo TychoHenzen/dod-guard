@@ -4,6 +4,7 @@ import { focusReply, relationReply } from "./relation-replies.js";
 export function relationAdapter(
   relation: "definition" | "references" | "callers" | "callees",
   overrides: Record<string, unknown> = {},
+  count = 1,
 ): LanguageAdapter {
   return {
     status: () =>
@@ -14,7 +15,7 @@ export function relationAdapter(
       }),
     request: async (request) => {
       if (request.operation === "focus") return focusReply();
-      if (request.operation === relation) return relationReply(relation);
+      if (request.operation === relation) return relationReply(relation, count);
       throw new Error("unexpected relation");
     },
   };

@@ -5,7 +5,7 @@ import {
   identity,
   policy,
   policyAllowlist,
-} from "../testing/backend-launch-policy-test-support.js";
+} from "../testing/backend/backend-launch-policy-test-support.js";
 
 it("refuses a restart when its accepted identity tuple changes", () => {
   let current = identity;

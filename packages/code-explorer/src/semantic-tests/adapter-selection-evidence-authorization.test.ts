@@ -6,11 +6,11 @@ import {
   parseAdapterSelectionRecord,
 } from "../semantic/adapter-selection/adapter-selection.js";
 import type { AdapterSelectionRecord } from "../semantic/adapter-selection/adapter-selection-record.js";
-import * as support from "../testing/adapter-selection-test-support.js";
+import * as support from "../testing/backend/adapter-selection-test-support.js";
 
 it("binds each production authorization to the exact sentinel binary", () => {
-  const recordInput = support.loadAdapterSelectionJson("../../adapter-selection.json") as AdapterSelectionRecord;
-  const evidenceInput = support.loadAdapterSelectionJson("../../adapter-selection-evidence.json");
+  const recordInput = support.loadAdapterSelectionJson("../../../adapter-selection.json") as AdapterSelectionRecord;
+  const evidenceInput = support.loadAdapterSelectionJson("../../../adapter-selection-evidence.json");
   type RecordMutation = (record: AdapterSelectionRecord) => void;
   const cases: ReadonlyArray<readonly [string, RecordMutation]> = [
     ["selected executable", (record) => (record.runtime_backends[0].platform_executables.win32 = "other.exe")],
