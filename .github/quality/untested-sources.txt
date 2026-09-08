@@ -447,7 +447,6 @@ packages/fossil/src/reference-source-reader.ts
 packages/fossil/src/repo-workspace-input.ts
 packages/fossil/src/repository-analysis-candidate-finding.ts
 packages/fossil/src/repository-analysis-candidate-scoring.ts
-packages/fossil/src/repository-analysis-findings.ts
 packages/fossil/src/repository-analysis-history-boundary.ts
 packages/fossil/src/repository-analysis-history-head.ts
 packages/fossil/src/repository-analysis-history-repository.ts
