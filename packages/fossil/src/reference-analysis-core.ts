@@ -29,7 +29,5 @@ export type {
   ReferenceSourceMetadataReader,
   ReferenceSourceReader,
   ReferenceSourceSnapshot,
-  StableReferenceSourceRead,
-  StableReferenceSourceReader,
   StableReferenceSourceBoundary,
 } from "./reference-analysis-types/index.js";

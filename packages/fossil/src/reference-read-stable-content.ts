@@ -2,11 +2,13 @@ import {
   addBinaryReferenceWarning,
   addReferenceWarning,
 } from "./reference-read-support.js";
-import type {
-  ReferenceSourceSnapshot,
-  StableReferenceSourceRead,
-} from "./reference-analysis-types.js";
+import type { ReferenceSourceSnapshot } from "./reference-analysis-types.js";
 import type { StableReadInput } from "./reference-read-stable-types.js";
+
+type StableReferenceSourceRead = {
+  readonly content: string;
+  readonly byteLength: number;
+};
 
 function maximumReadableBytes(input: StableReadInput): number {
   return Math.min(
