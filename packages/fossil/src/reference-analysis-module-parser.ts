@@ -6,6 +6,11 @@ const STATIC_IMPORT = /\bimport\s+(?:[^"'`;\r\n]*?\s+from\s+)?(["'])([^"'\r\n]+)
 const REQUIRE_CALL = /\brequire\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
 const DYNAMIC_IMPORT = /\bimport\s*\(\s*(["'])([^"'\r\n]+)\1\s*\)/g;
 
+interface ModulePattern {
+  kind: ParsedReference["kind"];
+  pattern: RegExp;
+}
+
 function isModuleSource(source: ReferenceSourceContent): boolean {
   return source.language === "typescript" || source.language === "javascript";
 }
@@ -42,13 +47,13 @@ function compareModuleReferences(left: ParsedReference, right: ParsedReference):
 
 export function parsedModuleReferences(source: ReferenceSourceContent): ParsedReference[] {
   if (!isModuleSource(source)) return [];
-  const patterns: readonly [ParsedReference["kind"], RegExp][] = [
-    ["import", STATIC_IMPORT],
-    ["require", REQUIRE_CALL],
-    ["dynamic-import", DYNAMIC_IMPORT],
+  const patterns: readonly ModulePattern[] = [
+    { kind: "import", pattern: STATIC_IMPORT },
+    { kind: "require", pattern: REQUIRE_CALL },
+    { kind: "dynamic-import", pattern: DYNAMIC_IMPORT },
   ];
   const references: ParsedReference[] = [];
-  for (const [kind, pattern] of patterns) {
+  for (const { kind, pattern } of patterns) {
     pattern.lastIndex = 0;
     for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
       const reference = moduleReference(source, kind, match);

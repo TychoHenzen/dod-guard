@@ -25,12 +25,12 @@ test("includes untracked and ignored files exactly on the modification-age cutof
     [{ path: "scratch/cutoff.ts", kind: "untracked", modifiedTimestampMs: cutoff }],
   );
   assert.deepEqual(
-    oldIgnoredWorkspaceCandidates(
-      [{ path: "scratch/cutoff.cache", isRegularFile: true, modifiedTimestampMs: cutoff }],
-      [{ path: "scratch/cutoff.cache", rule: "*.cache", source: "repository" }],
-      now,
-      7,
-    ),
+    oldIgnoredWorkspaceCandidates({
+      files: [{ path: "scratch/cutoff.cache", isRegularFile: true, modifiedTimestampMs: cutoff }],
+      provenance: [{ path: "scratch/cutoff.cache", rule: "*.cache", source: "repository" }],
+      analysisTimestampMs: now,
+      minimumAgeDays: 7,
+    }),
     [
       {
         path: "scratch/cutoff.cache",

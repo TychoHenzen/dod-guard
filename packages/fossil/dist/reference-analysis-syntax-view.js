@@ -24,7 +24,7 @@ function commentEnd(content, start, lineComment) {
         index += 1;
     return lineComment ? index : Math.min(content.length, index + 2);
 }
-function maskComment(state, content, start, end) {
+function maskComment({ state, content, start, end }) {
     for (let index = start; index < end; index += 1) {
         if (state.characters[index] !== "\n")
             state.characters[index] = " ";
@@ -38,7 +38,7 @@ function consumeCommentStart(content, index, state) {
         return undefined;
     const lineComment = next === "/";
     const end = commentEnd(content, index + 2, lineComment);
-    maskComment(state, content, index, end);
+    maskComment({ state, content, start: index, end });
     return end - 1;
 }
 function consumeQuoteStart(content, index, state) {

@@ -52,7 +52,7 @@ export function oldUntrackedWorkspaceCandidates(files, analysisTimestampMs, mini
         .map(({ path, modifiedTimestampMs }) => ({ path, kind: "untracked", modifiedTimestampMs }));
 }
 /** Selects old regular ignored files and preserves their matching Git ignore rule provenance. */
-export function oldIgnoredWorkspaceCandidates(files, provenance, analysisTimestampMs, minimumAgeDays) {
+export function oldIgnoredWorkspaceCandidates({ files, provenance, analysisTimestampMs, minimumAgeDays }) {
     const provenanceByPath = new Map(provenance.map((entry) => [entry.path, entry]));
     const cutoffTimestampMs = analysisTimestampMs - minimumAgeDays * 24 * 60 * 60 * 1_000;
     return files.flatMap((file) => {

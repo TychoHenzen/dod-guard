@@ -59,12 +59,12 @@ export function oldUntrackedWorkspaceCandidates(
 }
 
 /** Selects old regular ignored files and preserves their matching Git ignore rule provenance. */
-export function oldIgnoredWorkspaceCandidates(
-  files: readonly WorkspaceFileMetadata[],
-  provenance: readonly IgnoreProvenance[],
-  analysisTimestampMs: number,
-  minimumAgeDays: number,
-): readonly IgnoredWorkspaceCandidate[] {
+export function oldIgnoredWorkspaceCandidates({ files, provenance, analysisTimestampMs, minimumAgeDays }: {
+  files: readonly WorkspaceFileMetadata[];
+  provenance: readonly IgnoreProvenance[];
+  analysisTimestampMs: number;
+  minimumAgeDays: number;
+}): readonly IgnoredWorkspaceCandidate[] {
   const provenanceByPath = new Map(provenance.map((entry) => [entry.path, entry]));
   const cutoffTimestampMs = analysisTimestampMs - minimumAgeDays * 24 * 60 * 60 * 1_000;
   return files.flatMap((file) => {

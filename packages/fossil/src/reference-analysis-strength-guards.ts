@@ -1,5 +1,6 @@
 import type { ParsedReference } from "./types.js";
 import type { ReferenceSourceContent } from "./reference-analysis-types/reference-source-content.js";
+import type { ReferenceRange } from "./reference-analysis-types/reference-range.js";
 import { declarationRange } from "./reference-analysis-declarations.js";
 import { csharpGuardRanges, rustGuardRanges } from "./reference-analysis-guards.js";
 import { syntaxView } from "./reference-analysis-syntax-view.js";
@@ -35,12 +36,10 @@ function guardUses(
   view: ReturnType<typeof syntaxView>,
 ): number[] {
   const symbol = guardSymbol(reference, source);
-  const [declarationStart, declarationEnd] = declarationRange(source.content, reference.span.start);
+  const declaration = declarationRange(source.content, reference.span.start);
   return [...source.content.matchAll(new RegExp(`\\b${symbol}\\b`, "g"))]
     .map((match) => match.index ?? -1)
-    .filter(
-      (index) => (index < declarationStart || index >= declarationEnd) && view.code[index] === source.content[index],
-    );
+    .filter((index) => (index < declaration.start || index >= declaration.end) && view.code[index] === source.content[index]);
 }
 
 function guardRanges(reference: ParsedReference, view: ReturnType<typeof syntaxView>) {
@@ -48,9 +47,9 @@ function guardRanges(reference: ParsedReference, view: ReturnType<typeof syntaxV
   return rustGuardRanges(view);
 }
 
-function allUsesAreGuarded(uses: readonly number[], ranges: readonly [number, number][]): boolean {
+function allUsesAreGuarded(uses: readonly number[], ranges: readonly ReferenceRange[]): boolean {
   if (uses.length === 0) return false;
-  return uses.every((index) => ranges.some(([start, end]) => index > start && index < end));
+  return uses.every((index) => ranges.some((range) => index > range.start && index < range.end));
 }
 
 export function guardedReferenceStrength(

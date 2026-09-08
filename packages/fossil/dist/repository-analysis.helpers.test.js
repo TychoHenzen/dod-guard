@@ -26,6 +26,6 @@ export function createRunGit(directory, overrides) {
         { arguments: ["rev-parse", "--is-shallow-repository"], output: gitOutput("false\n") },
     ];
     const responses = new Map([...defaults, ...overrides].map(({ arguments: arguments_, output }) => [arguments_.join("\0"), output]));
-    return (arguments_) => Promise.resolve(responses.get(arguments_.join("\0")) ?? gitOutput());
+    return ({ arguments_ }) => Promise.resolve(responses.get(arguments_.join("\0")) ?? gitOutput());
 }
 //# sourceMappingURL=repository-analysis.helpers.test.js.map

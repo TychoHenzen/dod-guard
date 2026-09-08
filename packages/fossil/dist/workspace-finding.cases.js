@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { workspaceDebrisFinding } from "./workspace-debris.js";
 test("reports an unreferenced old candidate as separate workspace debris", () => {
-    const finding = workspaceDebrisFinding({ path: "scratch/old.ts", kind: "untracked", modifiedTimestampMs: 0 }, [{ path: "src/live.ts", language: "typescript", content: "export const live = true;\n" }], ["src/live.ts", "scratch/old.ts"], "C:/repo", ["dynamic runtime loading"]);
+    const finding = workspaceDebrisFinding({
+        candidate: { path: "scratch/old.ts", kind: "untracked", modifiedTimestampMs: 0 },
+        sources: [{ path: "src/live.ts", language: "typescript", content: "export const live = true;\n" }],
+        inventoryPaths: ["src/live.ts", "scratch/old.ts"],
+        analysisBoundary: "C:/repo",
+        unobservedMechanisms: ["dynamic runtime loading"],
+    });
     assert.deepEqual(finding, {
         classification: "advisory",
         review: "possible workspace debris",
@@ -18,7 +24,13 @@ test("reports an unreferenced old candidate as separate workspace debris", () =>
     });
 });
 test("labels a high-confidence-looking debris candidate for review with mtime uncertainty", () => {
-    const finding = workspaceDebrisFinding({ path: "scratch/very-old.ts", kind: "untracked", modifiedTimestampMs: 0 }, [], ["scratch/very-old.ts"], "C:/repo", ["runtime reflection"]);
+    const finding = workspaceDebrisFinding({
+        candidate: { path: "scratch/very-old.ts", kind: "untracked", modifiedTimestampMs: 0 },
+        sources: [],
+        inventoryPaths: ["scratch/very-old.ts"],
+        analysisBoundary: "C:/repo",
+        unobservedMechanisms: ["runtime reflection"],
+    });
     assert.ok(finding);
     assert.equal(finding.classification, "advisory");
     assert.equal(finding.review, "possible workspace debris");

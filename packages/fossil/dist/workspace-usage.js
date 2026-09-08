@@ -24,15 +24,15 @@ function edgeTargetsCandidate(edge, candidate) {
 function hasGraphUsage(graph, candidate) {
     return graph.edges.some((edge) => edgeTargetsCandidate(edge, candidate));
 }
-function valueUsesCandidate(value, candidate, candidateBasename, basenameCount) {
+function valueUsesCandidate({ value, candidate, candidateBasename, basenameCount }) {
     if (value === candidate)
         return true;
     return basenameCount === 1 && value === candidateBasename;
 }
-function sourceUsesCandidate(source, candidate, candidateBasename, basenameCount) {
+function sourceUsesCandidate({ source, candidate, candidateBasename, basenameCount }) {
     if (normalizedRepositoryPath(source.path) === candidate)
         return false;
-    return sourceStringValues(source.content).some((value) => valueUsesCandidate(value, candidate, candidateBasename, basenameCount));
+    return sourceStringValues(source.content).some((value) => valueUsesCandidate({ value, candidate, candidateBasename, basenameCount }));
 }
 /** Detects resolved imports and exact source-string evidence that an old workspace candidate is in use. */
 export function hasInboundWorkspaceUsage(candidatePath, sources, inventoryPaths) {
@@ -43,7 +43,12 @@ export function hasInboundWorkspaceUsage(candidatePath, sources, inventoryPaths)
     const candidateBasename = basename(normalizedCandidate);
     const normalizedInventory = new Set([...inventoryPaths, candidatePath].map(normalizedRepositoryPath));
     const basenameCount = [...normalizedInventory].filter((path) => basename(path) === candidateBasename).length;
-    return sources.some((source) => sourceUsesCandidate(source, normalizedCandidate, candidateBasename, basenameCount));
+    return sources.some((source) => sourceUsesCandidate({
+        source,
+        candidate: normalizedCandidate,
+        candidateBasename,
+        basenameCount,
+    }));
 }
 /** Omits workspace candidates when any inbound repository-contained usage evidence is found. */
 export function omitUsedWorkspaceCandidates(candidates, sources, inventoryPaths) {

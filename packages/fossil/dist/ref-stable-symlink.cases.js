@@ -3,19 +3,22 @@ import { test } from "node:test";
 import { readStableReferenceSources } from "./ref-analyzer.js";
 test("keeps a directory symlink candidate unavailable without reading its content", () => {
     const contentReads = [];
-    const result = readStableReferenceSources([
-        { path: "src/ordinary.ts", language: "typescript" },
-        { path: "src/directory-link.ts", language: "typescript" },
-    ], {
-        inspect: (source) => ({
-            identity: source.path,
-            isRegularFile: source.path !== "src/directory-link.ts",
-            byteLength: 7,
-            canonicalPath: `C:/repo/${source.path}`,
-        }),
-        read: (source) => {
-            contentReads.push(source.path);
-            return "content";
+    const result = readStableReferenceSources({
+        sources: [
+            { path: "src/ordinary.ts", language: "typescript" },
+            { path: "src/directory-link.ts", language: "typescript" },
+        ],
+        boundary: {
+            inspect: (source) => ({
+                identity: source.path,
+                isRegularFile: source.path !== "src/directory-link.ts",
+                byteLength: 7,
+                canonicalPath: `C:/repo/${source.path}`,
+            }),
+            read: (source) => {
+                contentReads.push(source.path);
+                return "content";
+            },
         },
     });
     assert.deepEqual(contentReads, ["src/ordinary.ts"]);

@@ -32,7 +32,12 @@ function recordPaths(state: LogicalIdentityState, change: GitFileChange): void {
   if (state.paths.at(-1) !== change.path) state.paths.push(change.path);
 }
 
-function record(identity: string, change: GitFileChange, commit: GitCommit, context: IdentityContext): void {
+function record({ identity, change, commit, context }: {
+  identity: string;
+  change: GitFileChange;
+  commit: GitCommit;
+  context: IdentityContext;
+}): void {
   const state = context.states.get(identity);
   if (!state) throw new Error(`Missing logical identity: ${identity}`);
   state.events.push({ change, commit });
@@ -47,7 +52,7 @@ function recordRename(change: GitFileChange, commit: GitCommit, context: Identit
   context.activeByPath.set(change.path, identity);
   const state = context.states.get(identity);
   if (state) state.currentPath = change.path;
-  record(identity, change, commit, context);
+  record({ identity, change, commit, context });
 }
 
 function recordDeleted(change: GitFileChange, identity: string, context: IdentityContext): void {
@@ -63,11 +68,11 @@ function recordChange(change: GitFileChange, commit: GitCommit, context: Identit
   }
   if (change.status === "copied" || change.status === "added") {
     const identity = createIdentity(change.path, context);
-    record(identity, change, commit, context);
+    record({ identity, change, commit, context });
     return;
   }
   const identity = activeIdentity(change.path, context);
-  record(identity, change, commit, context);
+  record({ identity, change, commit, context });
   if (change.status === "deleted") recordDeleted(change, identity, context);
 }
 

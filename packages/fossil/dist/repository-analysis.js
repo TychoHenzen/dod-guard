@@ -7,10 +7,20 @@ import { buildWorkspaceDebrisFindings } from "./repository-analysis-workspace-fi
 /** Composes safe Git, source, scoring, and workspace boundaries into a truthful repository report. */
 export async function analyzeRepositoryCore(repositoryPath, options, runGit = runGitCommand) {
     const historyStage = await analyzeHistoryStage(repositoryPath, options, runGit);
-    const workspaceStage = await analyzeWorkspaceStage(rootFor(historyStage), options, runGit, historyStage.analysisTimestampMs);
+    const workspaceStage = await analyzeWorkspaceStage({
+        root: rootFor(historyStage),
+        options,
+        runGit,
+        analysisTimestampMs: historyStage.analysisTimestampMs,
+    });
     const reports = buildBurstReports(historyStage.bursts, workspaceStage.references, options.threshold);
-    const workspaceDebris = buildWorkspaceDebrisFindings(workspaceStage.workspaceCandidates, workspaceStage.references, workspaceStage.inventory, rootFor(historyStage));
-    return buildAnalysisReport(historyStage, workspaceStage, options, reports, workspaceDebris);
+    const workspaceDebris = buildWorkspaceDebrisFindings({
+        candidates: workspaceStage.workspaceCandidates,
+        references: workspaceStage.references,
+        inventory: workspaceStage.inventory,
+        root: rootFor(historyStage),
+    });
+    return buildAnalysisReport({ historyStage, workspaceStage, options, reports, workspaceDebris });
 }
 function rootFor(stage) {
     return stage.root;

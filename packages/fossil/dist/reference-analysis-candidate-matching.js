@@ -31,7 +31,7 @@ function matchesCandidate(normalizedTarget, candidate, basenameCounts) {
         return matchesFullPath(normalizedTarget, normalizedCandidate);
     return matchesBasename(normalizedTarget, normalizedCandidate, basenameCounts);
 }
-function markUnresolvedTarget(target, candidates, basenameCounts, unavailable) {
+function markUnresolvedTarget({ target, candidates, basenameCounts, unavailable }) {
     const normalizedTarget = normalizeCandidatePath(target);
     if (!normalizedTarget)
         return;
@@ -40,10 +40,10 @@ function markUnresolvedTarget(target, candidates, basenameCounts, unavailable) {
             unavailable.add(candidate);
     }
 }
-export function markUnresolvedReference(unresolved, candidates, basenameCounts, unavailable) {
+export function markUnresolvedReference({ unresolved, candidates, basenameCounts, unavailable }) {
     if (unresolved.resolution !== "unresolved")
         return;
     for (const target of unresolved.targetCandidates)
-        markUnresolvedTarget(target, candidates, basenameCounts, unavailable);
+        markUnresolvedTarget({ target, candidates, basenameCounts, unavailable });
 }
 //# sourceMappingURL=reference-analysis-candidate-matching.js.map

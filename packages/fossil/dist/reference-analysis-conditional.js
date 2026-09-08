@@ -3,18 +3,18 @@ function conditionalBody(view, matchIndex) {
     const conditionOpen = nextNonWhitespace(view.code, matchIndex);
     if (view.code[conditionOpen] !== "(")
         return undefined;
-    const conditionClose = balancedClose(view.code, conditionOpen, "(", ")");
+    const conditionClose = balancedClose({ code: view.code, open: conditionOpen, opening: "(", closing: ")" });
     if (conditionClose === undefined)
         return undefined;
     const bodyOpen = nextNonWhitespace(view.code, conditionClose + 1);
     if (view.code[bodyOpen] !== "{")
         return undefined;
-    const bodyClose = balancedClose(view.code, bodyOpen, "{", "}");
+    const bodyClose = balancedClose({ code: view.code, open: bodyOpen, opening: "{", closing: "}" });
     if (bodyClose === undefined)
         return undefined;
     return { conditionOpen, conditionClose, bodyOpen, bodyClose };
 }
-function hasConditionalFallback(view, matchIndex, conditionOpen, conditionClose) {
+function hasConditionalFallback({ view, matchIndex, conditionOpen, conditionClose }) {
     if (hasFallbackToken(view.code.slice(conditionOpen + 1, conditionClose)))
         return true;
     return hasLeadingFallbackComment(view, matchIndex);
@@ -31,21 +31,26 @@ function elseBody(view, bodyClose, fallbackIf) {
     const elseBodyOpen = nextNonWhitespace(view.code, elseStart + 4);
     if (view.code[elseBodyOpen] !== "{")
         return undefined;
-    const elseBodyClose = balancedClose(view.code, elseBodyOpen, "{", "}");
+    const elseBodyClose = balancedClose({ code: view.code, open: elseBodyOpen, opening: "{", closing: "}" });
     if (elseBodyClose === undefined)
         return undefined;
     if (!hasFallbackElse(view, fallbackIf, elseStart))
         return undefined;
-    return [elseBodyOpen, elseBodyClose];
+    return { start: elseBodyOpen, end: elseBodyClose };
 }
 function conditionalRanges(view, matchIndex) {
     const body = conditionalBody(view, matchIndex + 2);
     if (!body)
         return [];
-    const fallbackIf = hasConditionalFallback(view, matchIndex, body.conditionOpen, body.conditionClose);
+    const fallbackIf = hasConditionalFallback({
+        view,
+        matchIndex,
+        conditionOpen: body.conditionOpen,
+        conditionClose: body.conditionClose,
+    });
     const ranges = [];
     if (fallbackIf)
-        ranges.push([body.bodyOpen, body.bodyClose]);
+        ranges.push({ start: body.bodyOpen, end: body.bodyClose });
     const fallbackElse = elseBody(view, body.bodyClose, fallbackIf);
     if (fallbackElse)
         ranges.push(fallbackElse);

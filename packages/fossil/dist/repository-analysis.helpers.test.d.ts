@@ -12,7 +12,9 @@ export interface GitResponse {
     readonly arguments: readonly string[];
     readonly output: ReturnType<typeof gitOutput>;
 }
-export declare function createRunGit(directory: string, overrides: readonly GitResponse[]): (arguments_: readonly string[]) => Promise<{
+export declare function createRunGit(directory: string, overrides: readonly GitResponse[]): ({ arguments_ }: {
+    arguments_: readonly string[];
+}) => Promise<{
     exitCode: number;
     stdout: string;
     stderr: string;

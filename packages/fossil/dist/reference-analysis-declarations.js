@@ -25,6 +25,6 @@ export function localImportBindings(declaration) {
 export function declarationRange(content, position) {
     const start = content.lastIndexOf("\n", position) + 1;
     const nextNewline = content.indexOf("\n", position);
-    return [start, nextNewline === -1 ? content.length : nextNewline];
+    return { start, end: nextNewline === -1 ? content.length : nextNewline };
 }
 //# sourceMappingURL=reference-analysis-declarations.js.map

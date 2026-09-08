@@ -3,6 +3,7 @@ export type { ReferenceAnalysisResult } from "./reference-analysis-result.js";
 export type { ReferenceCandidate } from "./reference-candidate.js";
 export type { ReferenceContainmentBoundary } from "./reference-containment-boundary.js";
 export type { ReferenceReadResult } from "./reference-read-result.js";
+export type { ReferenceRange } from "./reference-range.js";
 export type { ReferenceSourceContent } from "./reference-source-content.js";
 export type { ReferenceSourceMetadataReader } from "./reference-source-metadata-reader.js";
 export type { ReferenceSourceReader } from "./reference-source-reader.js";

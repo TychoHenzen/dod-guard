@@ -10,13 +10,13 @@ import {
   reportUsage,
 } from "./repository-analysis-report-parts.js";
 
-export function buildAnalysisReport(
-  historyStage: Awaited<ReturnType<typeof analyzeHistoryStage>>,
-  workspaceStage: Awaited<ReturnType<typeof analyzeWorkspaceStage>>,
-  options: NormalizedAnalysisOptions,
-  reports: readonly FossilReport["bursts"][number][],
-  workspaceDebris: FossilReport["workspaceDebris"],
-): FossilReport {
+export function buildAnalysisReport({ historyStage, workspaceStage, options, reports, workspaceDebris }: {
+  historyStage: Awaited<ReturnType<typeof analyzeHistoryStage>>;
+  workspaceStage: Awaited<ReturnType<typeof analyzeWorkspaceStage>>;
+  options: NormalizedAnalysisOptions;
+  reports: readonly FossilReport["bursts"][number][];
+  workspaceDebris: FossilReport["workspaceDebris"];
+}): FossilReport {
   const warnings = [...historyStage.warnings, ...workspaceStage.warnings];
   return finalizeFossilReport({
     schemaVersion: 1,

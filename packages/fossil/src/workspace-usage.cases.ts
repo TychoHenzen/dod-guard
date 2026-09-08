@@ -37,5 +37,11 @@ test("omits old candidates with resolved imports, exact paths, or a unique basen
     true,
   );
   assert.deepEqual(omitUsedWorkspaceCandidates([candidate], sources, inventory), []);
-  assert.equal(workspaceDebrisFinding(candidate, sources, inventory, "C:/repo", []), undefined);
+  assert.equal(workspaceDebrisFinding({
+    candidate,
+    sources,
+    inventoryPaths: inventory,
+    analysisBoundary: "C:/repo",
+    unobservedMechanisms: [],
+  }), undefined);
 });

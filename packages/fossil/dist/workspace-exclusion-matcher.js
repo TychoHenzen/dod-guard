@@ -18,7 +18,7 @@ function canConsumePathSegment(path, pathIndex, recursiveWildcard) {
         return true;
     return path[pathIndex - 1] !== "/";
 }
-function wildcardCell(path, pathIndex, recursiveWildcard, previous, current) {
+function wildcardCell({ path, pathIndex, recursiveWildcard, previous, current }) {
     if (previous[pathIndex])
         return true;
     if (!canConsumePathSegment(path, pathIndex, recursiveWildcard))
@@ -32,24 +32,31 @@ function questionCell(path, pathIndex, previous) {
         return false;
     return Boolean(previous[pathIndex - 1]);
 }
-function exactCell(character, path, pathIndex, previous) {
+function exactCell({ character, path, pathIndex, previous }) {
     if (character !== path[pathIndex - 1])
         return false;
     return Boolean(previous[pathIndex - 1]);
 }
-function patternCell(character, recursiveWildcard, path, pathIndex, previous, current) {
+function patternCell({ character, recursiveWildcard, path, pathIndex, previous, current }) {
     if (character === "*")
-        return wildcardCell(path, pathIndex, recursiveWildcard, previous, current);
+        return wildcardCell({ path, pathIndex, recursiveWildcard, previous, current });
     if (pathIndex === 0)
         return false;
     if (character === QUESTION_MARK)
         return questionCell(path, pathIndex, previous);
-    return exactCell(character, path, pathIndex, previous);
+    return exactCell({ character, path, pathIndex, previous });
 }
 function applyPattern(path, token, previous) {
     const current = new Array(path.length + 1).fill(false);
     for (let pathIndex = 0; pathIndex <= path.length; pathIndex += 1)
-        current[pathIndex] = patternCell(token.character, token.recursiveWildcard, path, pathIndex, previous, current);
+        current[pathIndex] = patternCell({
+            character: token.character,
+            recursiveWildcard: token.recursiveWildcard,
+            path,
+            pathIndex,
+            previous,
+            current,
+        });
     return current;
 }
 function globResult(previous, path) {

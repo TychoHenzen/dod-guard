@@ -25,7 +25,7 @@ export function markUnresolvedCandidateEvidence(
   const basenameCounts = candidateBasenameCounts(candidates);
   const unavailable = new Set(graph.unavailablePaths);
   for (const unresolved of graph.unresolved)
-    markUnresolvedReference(unresolved, candidates, basenameCounts, unavailable);
+    markUnresolvedReference({ unresolved, candidates, basenameCounts, unavailable });
   const unavailablePaths = [...unavailable].sort(compareText);
   return { ...graph, complete: graph.complete && unavailablePaths.length === 0, unavailablePaths };
 }

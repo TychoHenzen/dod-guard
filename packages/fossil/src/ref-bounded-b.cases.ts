@@ -5,22 +5,22 @@ import { readBoundedReferenceSources } from "./ref-analyzer.js";
 test("stops all later source reads when the total content budget is reached or exceeded", () => {
   const exactMetadataReads: string[] = [];
   const exactContentReads: string[] = [];
-  const exactLimit = readBoundedReferenceSources(
-    [
+  const exactLimit = readBoundedReferenceSources({
+    sources: [
       { path: "src/exact.ts", language: "typescript" as const },
       { path: "src/after-exact.ts", language: "typescript" as const },
     ],
-    (source) => {
+    readMetadata: (source) => {
       exactMetadataReads.push(source.path);
       return { byteLength: source.path === "src/exact.ts" ? 10 : 1 };
     },
-    (source) => {
+    readSource: (source) => {
       exactContentReads.push(source.path);
       return "content";
     },
-    10,
-    10,
-  );
+    maximumFileBytes: 10,
+    maximumTotalBytes: 10,
+  });
   assert.deepEqual(exactMetadataReads, ["src/exact.ts"]);
   assert.deepEqual(exactContentReads, ["src/exact.ts"]);
   assert.equal(exactLimit.acceptedBytes, 10);
@@ -28,23 +28,23 @@ test("stops all later source reads when the total content budget is reached or e
 
   const metadataReads: string[] = [];
   const contentReads: string[] = [];
-  const exceededLimit = readBoundedReferenceSources(
-    [
+  const exceededLimit = readBoundedReferenceSources({
+    sources: [
       { path: "src/accepted.ts", language: "typescript" as const },
       { path: "src/exceeds.ts", language: "typescript" as const },
       { path: "src/smaller-later.ts", language: "typescript" as const },
     ],
-    (source) => {
+    readMetadata: (source) => {
       metadataReads.push(source.path);
       return { byteLength: source.path === "src/accepted.ts" ? 6 : source.path === "src/exceeds.ts" ? 5 : 1 };
     },
-    (source) => {
+    readSource: (source) => {
       contentReads.push(source.path);
       return "content";
     },
-    10,
-    10,
-  );
+    maximumFileBytes: 10,
+    maximumTotalBytes: 10,
+  });
   assert.deepEqual(metadataReads, ["src/accepted.ts", "src/exceeds.ts"]);
   assert.deepEqual(contentReads, ["src/accepted.ts"]);
   assert.equal(exceededLimit.acceptedBytes, 6);

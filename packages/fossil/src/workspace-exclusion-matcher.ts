@@ -18,13 +18,13 @@ function canConsumePathSegment(path: string, pathIndex: number, recursiveWildcar
   return path[pathIndex - 1] !== "/";
 }
 
-function wildcardCell(
-  path: string,
-  pathIndex: number,
-  recursiveWildcard: boolean,
-  previous: readonly boolean[],
-  current: readonly boolean[],
-): boolean {
+function wildcardCell({ path, pathIndex, recursiveWildcard, previous, current }: {
+  path: string;
+  pathIndex: number;
+  recursiveWildcard: boolean;
+  previous: readonly boolean[];
+  current: readonly boolean[];
+}): boolean {
   if (previous[pathIndex]) return true;
   if (!canConsumePathSegment(path, pathIndex, recursiveWildcard)) return false;
   return Boolean(current[pathIndex - 1]);
@@ -36,23 +36,28 @@ function questionCell(path: string, pathIndex: number, previous: readonly boolea
   return Boolean(previous[pathIndex - 1]);
 }
 
-function exactCell(character: string | undefined, path: string, pathIndex: number, previous: readonly boolean[]): boolean {
+function exactCell({ character, path, pathIndex, previous }: {
+  character: string | undefined;
+  path: string;
+  pathIndex: number;
+  previous: readonly boolean[];
+}): boolean {
   if (character !== path[pathIndex - 1]) return false;
   return Boolean(previous[pathIndex - 1]);
 }
 
-function patternCell(
-  character: string | undefined,
-  recursiveWildcard: boolean,
-  path: string,
-  pathIndex: number,
-  previous: readonly boolean[],
-  current: readonly boolean[],
-): boolean {
-  if (character === "*") return wildcardCell(path, pathIndex, recursiveWildcard, previous, current);
+function patternCell({ character, recursiveWildcard, path, pathIndex, previous, current }: {
+  character: string | undefined;
+  recursiveWildcard: boolean;
+  path: string;
+  pathIndex: number;
+  previous: readonly boolean[];
+  current: readonly boolean[];
+}): boolean {
+  if (character === "*") return wildcardCell({ path, pathIndex, recursiveWildcard, previous, current });
   if (pathIndex === 0) return false;
   if (character === QUESTION_MARK) return questionCell(path, pathIndex, previous);
-  return exactCell(character, path, pathIndex, previous);
+  return exactCell({ character, path, pathIndex, previous });
 }
 
 function applyPattern(
@@ -62,7 +67,14 @@ function applyPattern(
 ): boolean[] {
   const current = new Array<boolean>(path.length + 1).fill(false);
   for (let pathIndex = 0; pathIndex <= path.length; pathIndex += 1)
-    current[pathIndex] = patternCell(token.character, token.recursiveWildcard, path, pathIndex, previous, current);
+    current[pathIndex] = patternCell({
+      character: token.character,
+      recursiveWildcard: token.recursiveWildcard,
+      path,
+      pathIndex,
+      previous,
+      current,
+    });
   return current;
 }
 

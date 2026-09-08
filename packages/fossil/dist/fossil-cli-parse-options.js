@@ -8,14 +8,14 @@ function commaSeparatedValues(value) {
             .map((item) => item.trim())
             .filter(Boolean);
 }
-function validNumberText(value, number, minimum, maximum) {
+function validNumberText({ value, number, minimum, maximum }) {
     return value.trim() !== "" && Number.isFinite(number) && number >= minimum && number <= maximum;
 }
-function finiteNumber(value, fallback, option, minimum, maximum) {
+function finiteNumber({ value, fallback, option, minimum, maximum }) {
     if (value === undefined)
         return fallback;
     const number = Number(value);
-    if (validNumberText(value, number, minimum, maximum))
+    if (validNumberText({ value, number, minimum, maximum }))
         return number;
     throw new FossilUsageError(`${option} must be a finite number from ${minimum} through ${maximum}.`);
 }
@@ -31,16 +31,29 @@ function extensionOptions(value) {
         throw new FossilUsageError("--extensions accepts at most 64 nonempty values.");
     return extensions;
 }
+function normalizedNumberOptions(options) {
+    const defaults = DEFAULT_NORMALIZED_ANALYSIS_OPTIONS;
+    return {
+        days: finiteNumber({ value: options.days, fallback: defaults.days, option: "--days", minimum: 1, maximum: 3650 }),
+        gapHours: finiteNumber({ value: options.gapHours, fallback: defaults.gapHours, option: "--gap-hours", minimum: 1, maximum: 8760 }),
+        threshold: finiteNumber({ value: options.threshold, fallback: defaults.threshold, option: "--threshold", minimum: 0, maximum: 1 }),
+        untrackedAgeDays: finiteNumber({
+            value: options.untrackedAge,
+            fallback: defaults.untrackedAgeDays,
+            option: "--untracked-age",
+            minimum: 1,
+            maximum: 3650,
+        }),
+    };
+}
 export function normalizeAnalyzeOptions(options) {
     const extensions = extensionOptions(options.extensions);
     const format = formatOption(options.format);
+    const numeric = normalizedNumberOptions(options);
     return validateNormalizedAnalysisOptions({
-        days: finiteNumber(options.days, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.days, "--days", 1, 3650),
-        gapHours: finiteNumber(options.gapHours, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.gapHours, "--gap-hours", 1, 8760),
-        threshold: finiteNumber(options.threshold, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.threshold, "--threshold", 0, 1),
+        ...numeric,
         format,
         extensions,
-        untrackedAgeDays: finiteNumber(options.untrackedAge, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.untrackedAgeDays, "--untracked-age", 1, 3650),
         exclude: commaSeparatedValues(options.exclude),
         verbose: options.verbose ?? DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.verbose,
     });

@@ -18,12 +18,17 @@ function readStableSource(input: StableReadInput): void {
 }
 
 /** Reads stable regular files after re-checking their identity, type, and canonical path. */
-export function readStableReferenceSources(
-  sources: readonly ReferenceCandidate[],
-  boundary: StableReferenceSourceBoundary,
+export function readStableReferenceSources({
+  sources,
+  boundary,
   maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
   maximumTotalBytes = DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES,
-): BoundedReferenceReadResult {
+}: {
+  sources: readonly ReferenceCandidate[];
+  boundary: StableReferenceSourceBoundary;
+  maximumFileBytes?: number;
+  maximumTotalBytes?: number;
+}): BoundedReferenceReadResult {
   const collections = newReferenceReadCollections();
   const budget = newReferenceReadBudget();
   sources.forEach((source) => {

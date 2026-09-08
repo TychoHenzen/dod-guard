@@ -45,12 +45,12 @@ function matchesCandidate(
   return matchesBasename(normalizedTarget, normalizedCandidate, basenameCounts);
 }
 
-function markUnresolvedTarget(
-  target: string,
-  candidates: readonly string[],
-  basenameCounts: ReadonlyMap<string, number>,
-  unavailable: Set<string>,
-): void {
+function markUnresolvedTarget({ target, candidates, basenameCounts, unavailable }: {
+  target: string;
+  candidates: readonly string[];
+  basenameCounts: ReadonlyMap<string, number>;
+  unavailable: Set<string>;
+}): void {
   const normalizedTarget = normalizeCandidatePath(target);
   if (!normalizedTarget) return;
   for (const candidate of candidates) {
@@ -58,13 +58,13 @@ function markUnresolvedTarget(
   }
 }
 
-export function markUnresolvedReference(
-  unresolved: ReferenceGraph["unresolved"][number],
-  candidates: readonly string[],
-  basenameCounts: ReadonlyMap<string, number>,
-  unavailable: Set<string>,
-): void {
+export function markUnresolvedReference({ unresolved, candidates, basenameCounts, unavailable }: {
+  unresolved: ReferenceGraph["unresolved"][number];
+  candidates: readonly string[];
+  basenameCounts: ReadonlyMap<string, number>;
+  unavailable: Set<string>;
+}): void {
   if (unresolved.resolution !== "unresolved") return;
   for (const target of unresolved.targetCandidates)
-    markUnresolvedTarget(target, candidates, basenameCounts, unavailable);
+    markUnresolvedTarget({ target, candidates, basenameCounts, unavailable });
 }

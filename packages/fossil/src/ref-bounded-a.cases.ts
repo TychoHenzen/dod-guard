@@ -15,14 +15,14 @@ test("skips oversized sources before reading content and retains later bounded s
     ["src/oversized.ts", maximumBytes + 1],
     ["src/later.ts", 7],
   ]);
-  const result = readBoundedReferenceSources(
+  const result = readBoundedReferenceSources({
     sources,
-    (source) => ({ byteLength: sizes.get(source.path) ?? 0 }),
-    (source) => {
+    readMetadata: (source) => ({ byteLength: sizes.get(source.path) ?? 0 }),
+    readSource: (source) => {
       contentReads.push(source.path);
       return `// ${source.path}\n`;
     },
-  );
+  });
 
   assert.deepEqual(contentReads, ["src/exact.ts", "src/later.ts"]);
   assert.deepEqual(
@@ -50,14 +50,14 @@ test("omits binary content from bounded reference sources and continues with lat
     ["src/binary.ts", "text\0not-source"],
     ["src/later.ts", "export const later = true;\n"],
   ]);
-  const result = readBoundedReferenceSources(
-    [
+  const result = readBoundedReferenceSources({
+    sources: [
       { path: "src/binary.ts", language: "typescript" as const },
       { path: "src/later.ts", language: "typescript" as const },
     ],
-    () => ({ byteLength: 12 }),
-    (source) => sourceContents.get(source.path) ?? "",
-  );
+    readMetadata: () => ({ byteLength: 12 }),
+    readSource: (source) => sourceContents.get(source.path) ?? "",
+  });
 
   assert.deepEqual(result.sources, [
     { path: "src/later.ts", language: "typescript", content: "export const later = true;\n" },

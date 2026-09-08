@@ -1,5 +1,6 @@
 import type { ParsedReference } from "./types.js";
 import type { ReferenceSourceContent } from "./reference-analysis-types/reference-source-content.js";
+import type { ReferenceRange } from "./reference-analysis-types/reference-range.js";
 import { conditionalFallbackRanges } from "./reference-analysis-conditional.js";
 import { localImportBindings } from "./reference-analysis-declarations.js";
 import { fallbackOperandRanges } from "./reference-analysis-fallback-operands.js";
@@ -32,45 +33,45 @@ function isOutsideDeclaration(index: number, declarationStart: number, declarati
   return index > declarationEnd;
 }
 
-function isCodeUse(
-  index: number,
-  source: ReferenceSourceContent,
-  declarationStart: number,
-  declarationEnd: number,
-  view: ReturnType<typeof syntaxView>,
-): boolean {
+function isCodeUse({ index, source, declarationStart, declarationEnd, view }: {
+  index: number;
+  source: ReferenceSourceContent;
+  declarationStart: number;
+  declarationEnd: number;
+  view: ReturnType<typeof syntaxView>;
+}): boolean {
   if (!isOutsideDeclaration(index, declarationStart, declarationEnd)) return false;
   return view.code[index] === source.content[index];
 }
 
-function bindingUses(
-  binding: string,
-  source: ReferenceSourceContent,
-  declarationStart: number,
-  declarationEnd: number,
-  view: ReturnType<typeof syntaxView>,
-): number[] {
+function bindingUses({ binding, source, declarationStart, declarationEnd, view }: {
+  binding: string;
+  source: ReferenceSourceContent;
+  declarationStart: number;
+  declarationEnd: number;
+  view: ReturnType<typeof syntaxView>;
+}): number[] {
   return [...source.content.matchAll(bindingPattern(binding))]
     .map(referenceIndex)
-    .filter((index) => isCodeUse(index, source, declarationStart, declarationEnd, view));
+    .filter((index) => isCodeUse({ index, source, declarationStart, declarationEnd, view }));
 }
 
-function importUses(
-  bindings: readonly string[],
-  source: ReferenceSourceContent,
-  declarationStart: number,
-  declarationEnd: number,
-  view: ReturnType<typeof syntaxView>,
-): number[] {
-  return bindings.flatMap((binding) => bindingUses(binding, source, declarationStart, declarationEnd, view));
+function importUses({ bindings, source, declarationStart, declarationEnd, view }: {
+  bindings: readonly string[];
+  source: ReferenceSourceContent;
+  declarationStart: number;
+  declarationEnd: number;
+  view: ReturnType<typeof syntaxView>;
+}): number[] {
+  return bindings.flatMap((binding) => bindingUses({ binding, source, declarationStart, declarationEnd, view }));
 }
 
 function fallbackRegions(source: ReferenceSourceContent, view: ReturnType<typeof syntaxView>) {
   return [...tryCatchRanges(source.content), ...conditionalFallbackRanges(view), ...fallbackOperandRanges(view.code)];
 }
 
-function isInsideFallback(index: number, regions: readonly [number, number][]): boolean {
-  return regions.some(([start, end]) => index > start && index < end);
+function isInsideFallback(index: number, regions: readonly ReferenceRange[]): boolean {
+  return regions.some((range) => index > range.start && index < range.end);
 }
 
 export function importReferenceStrength(
@@ -83,7 +84,7 @@ export function importReferenceStrength(
   const bindings = localImportBindings(declaration);
   if (bindings.length === 0) return "strong";
   const view = syntaxView(source.content);
-  const uses = importUses(bindings, source, declarationStart, declarationEnd, view);
+  const uses = importUses({ bindings, source, declarationStart, declarationEnd, view });
   const regions = fallbackRegions(source, view);
   if (uses.length === 0) return "strong";
   if (!uses.every((index) => isInsideFallback(index, regions))) return "strong";

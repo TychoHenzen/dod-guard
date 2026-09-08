@@ -4,7 +4,12 @@ export function hasFallbackToken(text: string): boolean {
   return /\b(?:fallback|legacy|old|default)\b/i.test(text);
 }
 
-export function balancedClose(code: string, open: number, opening: string, closing: string): number | undefined {
+export function balancedClose({ code, open, opening, closing }: {
+  code: string;
+  open: number;
+  opening: string;
+  closing: string;
+}): number | undefined {
   let depth = 0;
   for (let index = open; index < code.length; index += 1) {
     if (code[index] === opening) depth += 1;

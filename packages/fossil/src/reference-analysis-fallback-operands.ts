@@ -1,4 +1,5 @@
 import { nextNonWhitespace } from "./reference-analysis-fallback-helpers.js";
+import type { ReferenceRange } from "./reference-analysis-types/reference-range.js";
 
 const CLOSING_DELIMITERS = new Set([")", "]", "}"]);
 const OPERAND_STOPS = new Set([";", ",", "\n"]);
@@ -33,15 +34,15 @@ function operandEnd(code: string, start: number): number {
   return code.length;
 }
 
-function fallbackOperandRange(code: string, match: RegExpExecArray): [number, number] | undefined {
+function fallbackOperandRange(code: string, match: RegExpExecArray): ReferenceRange | undefined {
   const start = nextNonWhitespace(code, (match.index ?? 0) + match[0].length);
   const end = operandEnd(code, start);
   if (end <= start) return undefined;
-  return [start - 1, end];
+  return { start: start - 1, end };
 }
 
-export function fallbackOperandRanges(code: string): readonly [number, number][] {
-  const ranges: [number, number][] = [];
+export function fallbackOperandRanges(code: string): readonly ReferenceRange[] {
+  const ranges: ReferenceRange[] = [];
   const matcher = /\|\||\?\?/g;
   for (let match = matcher.exec(code); match; match = matcher.exec(code)) {
     const range = fallbackOperandRange(code, match);

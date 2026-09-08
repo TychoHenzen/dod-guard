@@ -10,7 +10,7 @@ function recordCsharpDirective(match, starts, ranges) {
     const start = starts.pop();
     if (start === undefined)
         return;
-    ranges.push([start, matchIndex(match) + match[0].length]);
+    ranges.push({ start, end: matchIndex(match) + match[0].length });
 }
 export function csharpGuardRanges(view) {
     const ranges = [];
@@ -23,7 +23,7 @@ export function csharpGuardRanges(view) {
 }
 function rustAttributeItem(view, attributeStart) {
     const conditionOpen = view.code.indexOf("(", attributeStart);
-    const conditionClose = balancedClose(view.code, conditionOpen, "(", ")");
+    const conditionClose = balancedClose({ code: view.code, open: conditionOpen, opening: "(", closing: ")" });
     if (conditionClose === undefined)
         return undefined;
     const attributeEnd = nextNonWhitespace(view.code, conditionClose + 1);
@@ -41,15 +41,15 @@ function rustGuardRange(view, match) {
         return undefined;
     const itemEnd = rustBlockEnd(view, item);
     if (itemEnd !== undefined)
-        return [item.itemStart, itemEnd];
+        return { start: item.itemStart, end: itemEnd };
     if (view.code[item.delimiter] === ";")
-        return [item.itemStart, item.delimiter];
+        return { start: item.itemStart, end: item.delimiter };
     return undefined;
 }
 function rustBlockEnd(view, item) {
     if (view.code[item.delimiter] !== "{")
         return undefined;
-    return balancedClose(view.code, item.delimiter, "{", "}");
+    return balancedClose({ code: view.code, open: item.delimiter, opening: "{", closing: "}" });
 }
 export function rustGuardRanges(view) {
     const ranges = [];

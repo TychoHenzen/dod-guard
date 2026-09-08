@@ -1,1 +1,2 @@
-export declare function tryCatchRanges(content: string): readonly [number, number][];
+import type { ReferenceRange } from "./reference-analysis-types/reference-range.js";
+export declare function tryCatchRanges(content: string): readonly ReferenceRange[];

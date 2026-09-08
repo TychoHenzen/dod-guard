@@ -23,8 +23,9 @@ export function localImportBindings(declaration: string): string[] {
   return [...bindings];
 }
 
-export function declarationRange(content: string, position: number): readonly [number, number] {
+export function declarationRange(content: string, position: number): ReferenceRange {
   const start = content.lastIndexOf("\n", position) + 1;
   const nextNewline = content.indexOf("\n", position);
-  return [start, nextNewline === -1 ? content.length : nextNewline];
+  return { start, end: nextNewline === -1 ? content.length : nextNewline };
 }
+import type { ReferenceRange } from "./reference-analysis-types/reference-range.js";

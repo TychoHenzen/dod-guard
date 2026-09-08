@@ -37,5 +37,6 @@ export function createRunGit(directory: string, overrides: readonly GitResponse[
   const responses = new Map(
     [...defaults, ...overrides].map(({ arguments: arguments_, output }) => [arguments_.join("\0"), output]),
   );
-  return (arguments_: readonly string[]) => Promise.resolve(responses.get(arguments_.join("\0")) ?? gitOutput());
+  return ({ arguments_ }: { arguments_: readonly string[] }) =>
+    Promise.resolve(responses.get(arguments_.join("\0")) ?? gitOutput());
 }

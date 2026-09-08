@@ -23,13 +23,13 @@ function ignoredDirectoryCounts(findings: readonly WorkspaceDebrisFinding[]): Ma
   return counts;
 }
 
-function addWorkspaceRow(
-  rows: WorkspaceDebrisTableRow[],
-  finding: WorkspaceDebrisFinding,
-  summarizedDirectories: ReadonlySet<string>,
-  emittedDirectories: Set<string>,
-  directoryCounts: ReadonlyMap<string, number>,
-): void {
+function addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts }: {
+  rows: WorkspaceDebrisTableRow[];
+  finding: WorkspaceDebrisFinding;
+  summarizedDirectories: ReadonlySet<string>;
+  emittedDirectories: Set<string>;
+  directoryCounts: ReadonlyMap<string, number>;
+}): void {
   const directory = findingDirectory(finding);
   if (!isSummarized(directory, summarizedDirectories)) {
     rows.push({ kind: "finding", finding });
@@ -57,6 +57,6 @@ export function workspaceDebrisTableRows(
   const emittedDirectories = new Set<string>();
   const rows: WorkspaceDebrisTableRow[] = [];
   for (const finding of findings)
-    addWorkspaceRow(rows, finding, summarizedDirectories, emittedDirectories, directoryCounts);
+    addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts });
   return rows;
 }

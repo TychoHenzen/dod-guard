@@ -27,24 +27,24 @@ function isOutsideDeclaration(index, declarationStart, declarationEnd) {
         return true;
     return index > declarationEnd;
 }
-function isCodeUse(index, source, declarationStart, declarationEnd, view) {
+function isCodeUse({ index, source, declarationStart, declarationEnd, view }) {
     if (!isOutsideDeclaration(index, declarationStart, declarationEnd))
         return false;
     return view.code[index] === source.content[index];
 }
-function bindingUses(binding, source, declarationStart, declarationEnd, view) {
+function bindingUses({ binding, source, declarationStart, declarationEnd, view }) {
     return [...source.content.matchAll(bindingPattern(binding))]
         .map(referenceIndex)
-        .filter((index) => isCodeUse(index, source, declarationStart, declarationEnd, view));
+        .filter((index) => isCodeUse({ index, source, declarationStart, declarationEnd, view }));
 }
-function importUses(bindings, source, declarationStart, declarationEnd, view) {
-    return bindings.flatMap((binding) => bindingUses(binding, source, declarationStart, declarationEnd, view));
+function importUses({ bindings, source, declarationStart, declarationEnd, view }) {
+    return bindings.flatMap((binding) => bindingUses({ binding, source, declarationStart, declarationEnd, view }));
 }
 function fallbackRegions(source, view) {
     return [...tryCatchRanges(source.content), ...conditionalFallbackRanges(view), ...fallbackOperandRanges(view.code)];
 }
 function isInsideFallback(index, regions) {
-    return regions.some(([start, end]) => index > start && index < end);
+    return regions.some((range) => index > range.start && index < range.end);
 }
 export function importReferenceStrength(reference, source) {
     const declarationStart = source.content.lastIndexOf("import", reference.span.start);
@@ -54,7 +54,7 @@ export function importReferenceStrength(reference, source) {
     if (bindings.length === 0)
         return "strong";
     const view = syntaxView(source.content);
-    const uses = importUses(bindings, source, declarationStart, declarationEnd, view);
+    const uses = importUses({ bindings, source, declarationStart, declarationEnd, view });
     const regions = fallbackRegions(source, view);
     if (uses.length === 0)
         return "strong";

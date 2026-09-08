@@ -20,7 +20,7 @@ function recordPaths(state, change) {
     if (state.paths.at(-1) !== change.path)
         state.paths.push(change.path);
 }
-function record(identity, change, commit, context) {
+function record({ identity, change, commit, context }) {
     const state = context.states.get(identity);
     if (!state)
         throw new Error(`Missing logical identity: ${identity}`);
@@ -36,7 +36,7 @@ function recordRename(change, commit, context) {
     const state = context.states.get(identity);
     if (state)
         state.currentPath = change.path;
-    record(identity, change, commit, context);
+    record({ identity, change, commit, context });
 }
 function recordDeleted(change, identity, context) {
     context.activeByPath.delete(change.path);
@@ -51,11 +51,11 @@ function recordChange(change, commit, context) {
     }
     if (change.status === "copied" || change.status === "added") {
         const identity = createIdentity(change.path, context);
-        record(identity, change, commit, context);
+        record({ identity, change, commit, context });
         return;
     }
     const identity = activeIdentity(change.path, context);
-    record(identity, change, commit, context);
+    record({ identity, change, commit, context });
     if (change.status === "deleted")
         recordDeleted(change, identity, context);
 }

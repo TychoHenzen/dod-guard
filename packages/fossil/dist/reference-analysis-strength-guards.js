@@ -29,10 +29,10 @@ function guardSymbol(reference, source) {
 }
 function guardUses(reference, source, view) {
     const symbol = guardSymbol(reference, source);
-    const [declarationStart, declarationEnd] = declarationRange(source.content, reference.span.start);
+    const declaration = declarationRange(source.content, reference.span.start);
     return [...source.content.matchAll(new RegExp(`\\b${symbol}\\b`, "g"))]
         .map((match) => match.index ?? -1)
-        .filter((index) => (index < declarationStart || index >= declarationEnd) && view.code[index] === source.content[index]);
+        .filter((index) => (index < declaration.start || index >= declaration.end) && view.code[index] === source.content[index]);
 }
 function guardRanges(reference, view) {
     if (reference.kind === "csharp-using")
@@ -42,7 +42,7 @@ function guardRanges(reference, view) {
 function allUsesAreGuarded(uses, ranges) {
     if (uses.length === 0)
         return false;
-    return uses.every((index) => ranges.some(([start, end]) => index > start && index < end));
+    return uses.every((index) => ranges.some((range) => index > range.start && index < range.end));
 }
 export function guardedReferenceStrength(reference, source) {
     const view = syntaxView(source.content);

@@ -45,7 +45,7 @@ export function discoverGitRepository(repositoryPath, runGit = spawnGit, environ
     });
 }
 /** Runs one noninteractive Git command and retains only bounded collected output. */
-export async function runGitCommand(arguments_, repositoryPath, input, historyMode = false) {
+export async function runGitCommand({ arguments_, repositoryPath, input, historyMode = false }) {
     const scopedArguments = repositoryPath === undefined ? arguments_ : ["-C", repositoryPath, ...arguments_];
     const child = spawn("git", [...SAFE_GIT_BASE_ARGUMENTS, ...scopedArguments], {
         shell: false,

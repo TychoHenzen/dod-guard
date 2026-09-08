@@ -38,7 +38,7 @@ function fallbackOperandRange(code, match) {
     const end = operandEnd(code, start);
     if (end <= start)
         return undefined;
-    return [start - 1, end];
+    return { start: start - 1, end };
 }
 export function fallbackOperandRanges(code) {
     const ranges = [];

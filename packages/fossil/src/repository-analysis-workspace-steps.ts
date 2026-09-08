@@ -17,9 +17,9 @@ import {
 } from "./workspace-debris-boundary.js";
 
 export async function discoverWorkspace(root: string, runGit: typeof runGitCommand) {
-  const trackedOutput = await successfulGit(runGit, ["ls-files", "-z"], root);
-  const untrackedOutput = await successfulGit(runGit, UNTRACKED_DISCOVERY_ARGUMENTS, root);
-  const ignoredOutput = await successfulGit(runGit, IGNORED_DISCOVERY_ARGUMENTS, root);
+  const trackedOutput = await successfulGit({ runGit, arguments_: ["ls-files", "-z"], repositoryPath: root });
+  const untrackedOutput = await successfulGit({ runGit, arguments_: UNTRACKED_DISCOVERY_ARGUMENTS, repositoryPath: root });
+  const ignoredOutput = await successfulGit({ runGit, arguments_: IGNORED_DISCOVERY_ARGUMENTS, repositoryPath: root });
   return {
     trackedOutput,
     untrackedOutput,
@@ -42,15 +42,20 @@ export function inspectWorkspacePaths(root: string, paths: readonly string[], ex
   return inspectWorkspaceFileMetadataWithWarnings(paths, inspect, exclude);
 }
 
-export async function readIgnoredProvenance(
-  root: string,
-  ignored: readonly string[],
-  exclude: readonly string[],
-  runGit: typeof runGitCommand,
-) {
+export async function readIgnoredProvenance({ root, ignored, exclude, runGit }: {
+  root: string;
+  ignored: readonly string[];
+  exclude: readonly string[];
+  runGit: typeof runGitCommand;
+}) {
   const filteredIgnored = filterWorkspaceDiscoveryPaths(ignored, exclude);
   if (filteredIgnored.length === 0) return { ignoreOutput: undefined, ignoredProvenance: parseVerboseCheckIgnore("") };
-  const ignoreOutput = await successfulGit(runGit, CHECK_IGNORE_ARGUMENTS, root, `${filteredIgnored.join("\0")}\0`);
+  const ignoreOutput = await successfulGit({
+    runGit,
+    arguments_: CHECK_IGNORE_ARGUMENTS,
+    repositoryPath: root,
+    input: `${filteredIgnored.join("\0")}\0`,
+  });
   return { ignoreOutput, ignoredProvenance: parseVerboseCheckIgnore(ignoreOutput.stdout) };
 }
 
@@ -67,12 +72,12 @@ export function buildWorkspaceCandidates(input: {
       input.analysisTimestampMs,
       input.minimumAgeDays,
     ),
-    ...oldIgnoredWorkspaceCandidates(
-      input.ignoredMetadata.metadata,
-      input.ignoredProvenance,
-      input.analysisTimestampMs,
-      input.minimumAgeDays,
-    ),
+    ...oldIgnoredWorkspaceCandidates({
+      files: input.ignoredMetadata.metadata,
+      provenance: input.ignoredProvenance,
+      analysisTimestampMs: input.analysisTimestampMs,
+      minimumAgeDays: input.minimumAgeDays,
+    }),
   ];
 }
 

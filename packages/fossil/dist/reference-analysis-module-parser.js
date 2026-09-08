@@ -34,12 +34,12 @@ export function parsedModuleReferences(source) {
     if (!isModuleSource(source))
         return [];
     const patterns = [
-        ["import", STATIC_IMPORT],
-        ["require", REQUIRE_CALL],
-        ["dynamic-import", DYNAMIC_IMPORT],
+        { kind: "import", pattern: STATIC_IMPORT },
+        { kind: "require", pattern: REQUIRE_CALL },
+        { kind: "dynamic-import", pattern: DYNAMIC_IMPORT },
     ];
     const references = [];
-    for (const [kind, pattern] of patterns) {
+    for (const { kind, pattern } of patterns) {
         pattern.lastIndex = 0;
         for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
             const reference = moduleReference(source, kind, match);

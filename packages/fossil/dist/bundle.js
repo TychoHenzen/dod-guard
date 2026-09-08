@@ -3504,7 +3504,7 @@ function ignoredDirectoryCounts(findings) {
   }
   return counts;
 }
-function addWorkspaceRow(rows, finding, summarizedDirectories, emittedDirectories, directoryCounts) {
+function addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts }) {
   const directory = findingDirectory(finding);
   if (!isSummarized(directory, summarizedDirectories)) {
     rows.push({ kind: "finding", finding });
@@ -3526,7 +3526,7 @@ function workspaceDebrisTableRows(findings, mode) {
   const emittedDirectories = /* @__PURE__ */ new Set();
   const rows = [];
   for (const finding of findings)
-    addWorkspaceRow(rows, finding, summarizedDirectories, emittedDirectories, directoryCounts);
+    addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts });
   return rows;
 }
 
@@ -3739,7 +3739,7 @@ function assertSupportedGitVersion(output) {
     });
   return version;
 }
-async function runGitCommand(arguments_, repositoryPath, input, historyMode = false) {
+async function runGitCommand({ arguments_, repositoryPath, input, historyMode = false }) {
   const scopedArguments = repositoryPath === void 0 ? arguments_ : ["-C", repositoryPath, ...arguments_];
   const child = spawn("git", [...SAFE_GIT_BASE_ARGUMENTS, ...scopedArguments], {
     shell: false,
@@ -3917,7 +3917,7 @@ function recordPaths(state, change) {
   }
   if (state.paths.at(-1) !== change.path) state.paths.push(change.path);
 }
-function record(identity, change, commit, context) {
+function record({ identity, change, commit, context }) {
   const state = context.states.get(identity);
   if (!state) throw new Error(`Missing logical identity: ${identity}`);
   state.events.push({ change, commit });
@@ -3931,7 +3931,7 @@ function recordRename(change, commit, context) {
   context.activeByPath.set(change.path, identity);
   const state = context.states.get(identity);
   if (state) state.currentPath = change.path;
-  record(identity, change, commit, context);
+  record({ identity, change, commit, context });
 }
 function recordDeleted(change, identity, context) {
   context.activeByPath.delete(change.path);
@@ -3945,11 +3945,11 @@ function recordChange(change, commit, context) {
   }
   if (change.status === "copied" || change.status === "added") {
     const identity2 = createIdentity(change.path, context);
-    record(identity2, change, commit, context);
+    record({ identity: identity2, change, commit, context });
     return;
   }
   const identity = activeIdentity(change.path, context);
-  record(identity, change, commit, context);
+  record({ identity, change, commit, context });
   if (change.status === "deleted") recordDeleted(change, identity, context);
 }
 function resolveLogicalActivities(commits) {
@@ -4067,34 +4067,34 @@ function weightedSimilarity(commits, cut, identities) {
 // src/git-history-change-point.ts
 var MIN_CHANGE_POINT_GAP_MS = 4 * 60 * 60 * 1e3;
 var MAX_CHANGE_POINT_SIMILARITY = 0.1;
-function validChangePoint(commits, cut, start, end, identities) {
+function validChangePoint({ commits, cut, start, end, identities }) {
   const gapMilliseconds = commits[cut].committerTimestampMs - commits[cut - 1].committerTimestampMs;
   return gapMilliseconds >= MIN_CHANGE_POINT_GAP_MS && partitionQualifies(commits.slice(start, cut), identities) && partitionQualifies(commits.slice(cut, end), identities);
 }
 function compareChangePoints(left, right) {
   return left.similarity - right.similarity || right.gapMilliseconds - left.gapMilliseconds || left.cut - right.cut;
 }
-function selectChangePoint(commits, start, end, identities) {
+function selectChangePoint({ commits, start, end, identities }) {
   const candidates = [];
   for (let cut = start + 5; cut <= end - 5; cut += 1) {
-    if (!validChangePoint(commits, cut, start, end, identities)) continue;
+    if (!validChangePoint({ commits, cut, start, end, identities })) continue;
     const gapMilliseconds = commits[cut].committerTimestampMs - commits[cut - 1].committerTimestampMs;
     const similarity = weightedSimilarity(commits, cut, identities);
     if (similarity <= MAX_CHANGE_POINT_SIMILARITY) candidates.push({ cut, gapMilliseconds, similarity });
   }
   return candidates.sort(compareChangePoints)[0];
 }
-function splitChangePoints(commits, start, end, identities) {
-  const candidate = selectChangePoint(commits, start, end, identities);
+function splitChangePoints({ commits, start, end, identities }) {
+  const candidate = selectChangePoint({ commits, start, end, identities });
   if (!candidate) return [commits.slice(start, end)];
   return [
-    ...splitChangePoints(commits, start, candidate.cut, identities),
-    ...splitChangePoints(commits, candidate.cut, end, identities)
+    ...splitChangePoints({ commits, start, end: candidate.cut, identities }),
+    ...splitChangePoints({ commits, start: candidate.cut, end, identities })
   ];
 }
 function splitAtChangePoint(commits) {
   if (commits.length === 0) return [];
-  return splitChangePoints(commits, 0, commits.length, fileIdentities(commits));
+  return splitChangePoints({ commits, start: 0, end: commits.length, identities: fileIdentities(commits) });
 }
 
 // src/git-history-closure.ts
@@ -4169,7 +4169,7 @@ function finalCommitIndex(commits, commitIndexByHash) {
 }
 
 // src/git-history-burst-assembly.ts
-function burstFile(identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution) {
+function burstFile({ identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution }) {
   const activity = activitiesByIdentity.get(identity);
   return {
     identity,
@@ -4184,12 +4184,13 @@ function burstFile(identity, changes, commits, fullChronologicalHistory, finalIn
     existsAtHead: activity?.existsAtHead ?? true
   };
 }
-function assembleBurst(partition, fullChronologicalHistory, activitiesByIdentity, resolution, commitByHash, commitIndexByHash) {
+function assembleBurst(input) {
+  const { partition, fullChronologicalHistory, activitiesByIdentity, resolution, commitByHash, commitIndexByHash } = input;
   const commits = partitionCommits(partition, commitByHash);
   const identities = changesByIdentity(commits, resolution.identitiesByChange);
   const finalIndex = finalCommitIndex(commits, commitIndexByHash);
   const files = [...identities].map(
-    ([identity, changes]) => burstFile(identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution)
+    ([identity, changes]) => burstFile({ identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution })
   );
   const first = commits[0];
   const last = commits.at(-1);
@@ -4212,7 +4213,14 @@ function assembleClosedBursts(fullChronologicalHistory, closedTemporalClusters) 
   const commitIndexByHash = new Map(fullChronologicalHistory.map((commit, index) => [commit.hash, index]));
   const finalPartitions = closedTemporalClusters.flatMap((cluster) => splitAtChangePoint(cluster)).filter((partition) => partitionQualifies(partition, resolution.identitiesByChange));
   return finalPartitions.map(
-    (partition) => assembleBurst(partition, fullChronologicalHistory, activitiesByIdentity, resolution, commitByHash, commitIndexByHash)
+    (partition) => assembleBurst({
+      partition,
+      fullChronologicalHistory,
+      activitiesByIdentity,
+      resolution,
+      commitByHash,
+      commitIndexByHash
+    })
   );
 }
 
@@ -4223,10 +4231,10 @@ function gitFailure(message) {
 function emptyHistoryOutput() {
   return { exitCode: 0, stdout: "", stderr: "", stdoutBytes: 0, stderrBytes: 0, statusRecordCount: 0 };
 }
-async function successfulGit(runGit, arguments_, repositoryPath, input, historyMode = false) {
+async function successfulGit({ runGit, arguments_, repositoryPath, input, historyMode = false }) {
   let result;
   try {
-    result = await runGit(arguments_, repositoryPath, input, historyMode);
+    result = await runGit({ arguments_, repositoryPath, input, historyMode });
   } catch {
     throw gitFailure("Git command could not be started or read.");
   }
@@ -4238,34 +4246,34 @@ async function successfulGit(runGit, arguments_, repositoryPath, input, historyM
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 async function resolveHistoryRepository(repositoryPath, runGit) {
-  const version = await successfulGit(runGit, ["--version"]);
+  const version = await successfulGit({ runGit, arguments_: ["--version"] });
   assertSupportedGitVersion(version.stdout);
-  const discovery = await runGit(["rev-parse", "--show-toplevel"], repositoryPath);
+  const discovery = await runGit({ arguments_: ["rev-parse", "--show-toplevel"], repositoryPath });
   if (discovery.exitCode !== 0)
     throw new FossilAnalysisError({ code: "not_repository", message: "Not a Git repository." });
-  const prefix = await successfulGit(runGit, ["rev-parse", "--show-prefix"], repositoryPath);
+  const prefix = await successfulGit({ runGit, arguments_: ["rev-parse", "--show-prefix"], repositoryPath });
   const root = resolve(
     realpathSync(repositoryPath),
     ...prefix.stdout.trim().split("/").filter(Boolean).map(() => "..")
   );
   const analysisTimestampMs = Date.now();
-  const head = await runGit(["rev-parse", "--verify", "HEAD"], root);
+  const head = await runGit({ arguments_: ["rev-parse", "--verify", "HEAD"], repositoryPath: root });
   const historyOutput = await historyOutputForHead(head.exitCode, runGit, root);
   return { version, discovery, prefix, head, historyOutput, analysisTimestampMs, root };
 }
 async function historyOutputForHead(exitCode, runGit, root) {
   if (exitCode !== 0) return emptyHistoryOutput();
-  return successfulGit(runGit, nonMergeGitLogArguments(), root, void 0, true);
+  return successfulGit({ runGit, arguments_: nonMergeGitLogArguments(), repositoryPath: root, historyMode: true });
 }
 async function sparseCheckoutOutput(runGit, root) {
   try {
-    return await successfulGit(runGit, sparseCheckoutArguments(), root);
+    return await successfulGit({ runGit, arguments_: sparseCheckoutArguments(), repositoryPath: root });
   } catch (error) {
     if (error instanceof FossilAnalysisError) return emptyHistoryOutput();
     throw error;
   }
 }
-function historyWarnings(includedHistory, analysisTimestampMs, shallow, sparse, submodules) {
+function historyWarnings({ includedHistory, analysisTimestampMs, shallow, sparse, submodules }) {
   const warnings = [
     ...emptyHistoryWarnings(includedHistory),
     ...futureCommitWarnings(includedHistory, analysisTimestampMs),
@@ -4284,29 +4292,47 @@ function historyBursts(includedHistory, analysisTimestampMs, gapHours) {
 }
 
 // src/repository-analysis-history.ts
-async function analyzeHistoryStage(repositoryPath, options, runGit = runGitCommand) {
-  const repository = await resolveHistoryRepository(repositoryPath, runGit);
+async function historyEvidence({ repository, options, runGit }) {
   const parsedHistory = parseNonMergeGitLog(repository.historyOutput.stdout);
   const minimumTimestamp = repository.analysisTimestampMs - options.days * 24 * 60 * 60 * 1e3;
   const includedHistory = filterHistoryByExtensions(
     parsedHistory.filter((commit) => commit.committerTimestampMs >= minimumTimestamp),
     new Set(normalizeExtensions(options.extensions))
   );
-  const shallow = await successfulGit(runGit, shallowRepositoryArguments(), repository.root);
+  const shallow = await successfulGit({ runGit, arguments_: shallowRepositoryArguments(), repositoryPath: repository.root });
   const sparse = await sparseCheckoutOutput(runGit, repository.root);
-  const submodules = await successfulGit(runGit, ["submodule", "status", "--recursive"], repository.root);
-  const warnings = historyWarnings(includedHistory, repository.analysisTimestampMs, shallow, sparse, submodules);
+  const submodules = await successfulGit({
+    runGit,
+    arguments_: ["submodule", "status", "--recursive"],
+    repositoryPath: repository.root
+  });
+  const warnings = historyWarnings({
+    includedHistory,
+    analysisTimestampMs: repository.analysisTimestampMs,
+    shallow,
+    sparse,
+    submodules
+  });
   const bursts = historyBursts(includedHistory, repository.analysisTimestampMs, options.gapHours);
+  return { shallow, sparse, submodules, includedHistory, warnings, bursts };
+}
+async function analyzeHistoryStage(repositoryPath, options, runGit = runGitCommand) {
+  const repository = await resolveHistoryRepository(repositoryPath, runGit);
+  const evidence = await historyEvidence({ repository, options, runGit });
   return {
     repositoryPath,
     ...repository,
-    shallow,
-    sparse,
-    submodules,
-    includedHistory,
-    warnings,
-    bursts,
-    gitOutputs: [repository.version, repository.discovery, repository.prefix, repository.head, repository.historyOutput, shallow, sparse, submodules]
+    ...evidence,
+    gitOutputs: [
+      repository.version,
+      repository.discovery,
+      repository.prefix,
+      repository.head,
+      repository.historyOutput,
+      evidence.shallow,
+      evidence.sparse,
+      evidence.submodules
+    ]
   };
 }
 
@@ -4363,7 +4389,7 @@ function reportStatistics(historyStage, reports, workspaceDebris) {
 }
 
 // src/repository-analysis-report.ts
-function buildAnalysisReport(historyStage, workspaceStage, options, reports, workspaceDebris) {
+function buildAnalysisReport({ historyStage, workspaceStage, options, reports, workspaceDebris }) {
   const warnings = [...historyStage.warnings, ...workspaceStage.warnings];
   return finalizeFossilReport({
     schemaVersion: 1,
@@ -4484,14 +4510,14 @@ function localImportBindings(declaration) {
 function declarationRange(content, position) {
   const start = content.lastIndexOf("\n", position) + 1;
   const nextNewline = content.indexOf("\n", position);
-  return [start, nextNewline === -1 ? content.length : nextNewline];
+  return { start, end: nextNewline === -1 ? content.length : nextNewline };
 }
 
 // src/reference-analysis-fallback-helpers.ts
 function hasFallbackToken(text) {
   return /\b(?:fallback|legacy|old|default)\b/i.test(text);
 }
-function balancedClose(code, open, opening, closing) {
+function balancedClose({ code, open, opening, closing }) {
   let depth = 0;
   for (let index = open; index < code.length; index += 1) {
     if (code[index] === opening) depth += 1;
@@ -4521,7 +4547,7 @@ function recordCsharpDirective(match, starts, ranges) {
   }
   const start = starts.pop();
   if (start === void 0) return;
-  ranges.push([start, matchIndex(match) + match[0].length]);
+  ranges.push({ start, end: matchIndex(match) + match[0].length });
 }
 function csharpGuardRanges(view) {
   const ranges = [];
@@ -4534,7 +4560,7 @@ function csharpGuardRanges(view) {
 }
 function rustAttributeItem(view, attributeStart) {
   const conditionOpen = view.code.indexOf("(", attributeStart);
-  const conditionClose = balancedClose(view.code, conditionOpen, "(", ")");
+  const conditionClose = balancedClose({ code: view.code, open: conditionOpen, opening: "(", closing: ")" });
   if (conditionClose === void 0) return void 0;
   const attributeEnd = nextNonWhitespace(view.code, conditionClose + 1);
   if (view.code[attributeEnd] !== "]") return void 0;
@@ -4547,13 +4573,13 @@ function rustGuardRange(view, match) {
   const item = rustAttributeItem(view, matchIndex(match));
   if (!item) return void 0;
   const itemEnd = rustBlockEnd(view, item);
-  if (itemEnd !== void 0) return [item.itemStart, itemEnd];
-  if (view.code[item.delimiter] === ";") return [item.itemStart, item.delimiter];
+  if (itemEnd !== void 0) return { start: item.itemStart, end: itemEnd };
+  if (view.code[item.delimiter] === ";") return { start: item.itemStart, end: item.delimiter };
   return void 0;
 }
 function rustBlockEnd(view, item) {
   if (view.code[item.delimiter] !== "{") return void 0;
-  return balancedClose(view.code, item.delimiter, "{", "}");
+  return balancedClose({ code: view.code, open: item.delimiter, opening: "{", closing: "}" });
 }
 function rustGuardRanges(view) {
   const ranges = [];
@@ -4587,7 +4613,7 @@ function commentEnd(content, start, lineComment) {
   while (commentContinues(content, index, lineComment)) index += 1;
   return lineComment ? index : Math.min(content.length, index + 2);
 }
-function maskComment(state, content, start, end) {
+function maskComment({ state, content, start, end }) {
   for (let index = start; index < end; index += 1) {
     if (state.characters[index] !== "\n") state.characters[index] = " ";
   }
@@ -4599,7 +4625,7 @@ function consumeCommentStart(content, index, state) {
   if (character !== "/" || !(next === "/" || next === "*")) return void 0;
   const lineComment = next === "/";
   const end = commentEnd(content, index + 2, lineComment);
-  maskComment(state, content, index, end);
+  maskComment({ state, content, start: index, end });
   return end - 1;
 }
 function consumeQuoteStart(content, index, state) {
@@ -4657,10 +4683,8 @@ function guardSymbol(reference, source) {
 }
 function guardUses(reference, source, view) {
   const symbol = guardSymbol(reference, source);
-  const [declarationStart, declarationEnd] = declarationRange(source.content, reference.span.start);
-  return [...source.content.matchAll(new RegExp(`\\b${symbol}\\b`, "g"))].map((match) => match.index ?? -1).filter(
-    (index) => (index < declarationStart || index >= declarationEnd) && view.code[index] === source.content[index]
-  );
+  const declaration = declarationRange(source.content, reference.span.start);
+  return [...source.content.matchAll(new RegExp(`\\b${symbol}\\b`, "g"))].map((match) => match.index ?? -1).filter((index) => (index < declaration.start || index >= declaration.end) && view.code[index] === source.content[index]);
 }
 function guardRanges(reference, view) {
   if (reference.kind === "csharp-using") return csharpGuardRanges(view);
@@ -4668,7 +4692,7 @@ function guardRanges(reference, view) {
 }
 function allUsesAreGuarded(uses, ranges) {
   if (uses.length === 0) return false;
-  return uses.every((index) => ranges.some(([start, end]) => index > start && index < end));
+  return uses.every((index) => ranges.some((range) => index > range.start && index < range.end));
 }
 function guardedReferenceStrength(reference, source) {
   const view = syntaxView(source.content);
@@ -4682,15 +4706,15 @@ function guardedReferenceStrength(reference, source) {
 function conditionalBody(view, matchIndex2) {
   const conditionOpen = nextNonWhitespace(view.code, matchIndex2);
   if (view.code[conditionOpen] !== "(") return void 0;
-  const conditionClose = balancedClose(view.code, conditionOpen, "(", ")");
+  const conditionClose = balancedClose({ code: view.code, open: conditionOpen, opening: "(", closing: ")" });
   if (conditionClose === void 0) return void 0;
   const bodyOpen = nextNonWhitespace(view.code, conditionClose + 1);
   if (view.code[bodyOpen] !== "{") return void 0;
-  const bodyClose = balancedClose(view.code, bodyOpen, "{", "}");
+  const bodyClose = balancedClose({ code: view.code, open: bodyOpen, opening: "{", closing: "}" });
   if (bodyClose === void 0) return void 0;
   return { conditionOpen, conditionClose, bodyOpen, bodyClose };
 }
-function hasConditionalFallback(view, matchIndex2, conditionOpen, conditionClose) {
+function hasConditionalFallback({ view, matchIndex: matchIndex2, conditionOpen, conditionClose }) {
   if (hasFallbackToken(view.code.slice(conditionOpen + 1, conditionClose))) return true;
   return hasLeadingFallbackComment(view, matchIndex2);
 }
@@ -4703,17 +4727,22 @@ function elseBody(view, bodyClose, fallbackIf) {
   if (view.code.slice(elseStart, elseStart + 4) !== "else") return void 0;
   const elseBodyOpen = nextNonWhitespace(view.code, elseStart + 4);
   if (view.code[elseBodyOpen] !== "{") return void 0;
-  const elseBodyClose = balancedClose(view.code, elseBodyOpen, "{", "}");
+  const elseBodyClose = balancedClose({ code: view.code, open: elseBodyOpen, opening: "{", closing: "}" });
   if (elseBodyClose === void 0) return void 0;
   if (!hasFallbackElse(view, fallbackIf, elseStart)) return void 0;
-  return [elseBodyOpen, elseBodyClose];
+  return { start: elseBodyOpen, end: elseBodyClose };
 }
 function conditionalRanges(view, matchIndex2) {
   const body = conditionalBody(view, matchIndex2 + 2);
   if (!body) return [];
-  const fallbackIf = hasConditionalFallback(view, matchIndex2, body.conditionOpen, body.conditionClose);
+  const fallbackIf = hasConditionalFallback({
+    view,
+    matchIndex: matchIndex2,
+    conditionOpen: body.conditionOpen,
+    conditionClose: body.conditionClose
+  });
   const ranges = [];
-  if (fallbackIf) ranges.push([body.bodyOpen, body.bodyClose]);
+  if (fallbackIf) ranges.push({ start: body.bodyOpen, end: body.bodyClose });
   const fallbackElse = elseBody(view, body.bodyClose, fallbackIf);
   if (fallbackElse) ranges.push(fallbackElse);
   return ranges;
@@ -4761,7 +4790,7 @@ function fallbackOperandRange(code, match) {
   const start = nextNonWhitespace(code, (match.index ?? 0) + match[0].length);
   const end = operandEnd(code, start);
   if (end <= start) return void 0;
-  return [start - 1, end];
+  return { start: start - 1, end };
 }
 function fallbackOperandRanges(code) {
   const ranges = [];
@@ -4874,7 +4903,7 @@ function consumeBrace(content, index, state) {
   }
   if (content[index] !== "}") return void 0;
   const opened = state.stack.pop();
-  if (opened?.kind) state.ranges.push([opened.start, index]);
+  if (opened?.kind) state.ranges.push({ start: opened.start, end: index });
   return index;
 }
 function consumeTryCatchStructuralCharacter(content, index, state) {
@@ -4923,21 +4952,21 @@ function isOutsideDeclaration(index, declarationStart, declarationEnd) {
   if (index < declarationStart) return true;
   return index > declarationEnd;
 }
-function isCodeUse(index, source, declarationStart, declarationEnd, view) {
+function isCodeUse({ index, source, declarationStart, declarationEnd, view }) {
   if (!isOutsideDeclaration(index, declarationStart, declarationEnd)) return false;
   return view.code[index] === source.content[index];
 }
-function bindingUses(binding, source, declarationStart, declarationEnd, view) {
-  return [...source.content.matchAll(bindingPattern(binding))].map(referenceIndex).filter((index) => isCodeUse(index, source, declarationStart, declarationEnd, view));
+function bindingUses({ binding, source, declarationStart, declarationEnd, view }) {
+  return [...source.content.matchAll(bindingPattern(binding))].map(referenceIndex).filter((index) => isCodeUse({ index, source, declarationStart, declarationEnd, view }));
 }
-function importUses(bindings, source, declarationStart, declarationEnd, view) {
-  return bindings.flatMap((binding) => bindingUses(binding, source, declarationStart, declarationEnd, view));
+function importUses({ bindings, source, declarationStart, declarationEnd, view }) {
+  return bindings.flatMap((binding) => bindingUses({ binding, source, declarationStart, declarationEnd, view }));
 }
 function fallbackRegions(source, view) {
   return [...tryCatchRanges(source.content), ...conditionalFallbackRanges(view), ...fallbackOperandRanges(view.code)];
 }
 function isInsideFallback(index, regions) {
-  return regions.some(([start, end]) => index > start && index < end);
+  return regions.some((range) => index > range.start && index < range.end);
 }
 function importReferenceStrength(reference, source) {
   const declarationStart = source.content.lastIndexOf("import", reference.span.start);
@@ -4946,7 +4975,7 @@ function importReferenceStrength(reference, source) {
   const bindings = localImportBindings(declaration);
   if (bindings.length === 0) return "strong";
   const view = syntaxView(source.content);
-  const uses = importUses(bindings, source, declarationStart, declarationEnd, view);
+  const uses = importUses({ bindings, source, declarationStart, declarationEnd, view });
   const regions = fallbackRegions(source, view);
   if (uses.length === 0) return "strong";
   if (!uses.every((index) => isInsideFallback(index, regions))) return "strong";
@@ -5034,12 +5063,12 @@ function compareModuleReferences(left, right) {
 function parsedModuleReferences(source) {
   if (!isModuleSource(source)) return [];
   const patterns = [
-    ["import", STATIC_IMPORT],
-    ["require", REQUIRE_CALL],
-    ["dynamic-import", DYNAMIC_IMPORT]
+    { kind: "import", pattern: STATIC_IMPORT },
+    { kind: "require", pattern: REQUIRE_CALL },
+    { kind: "dynamic-import", pattern: DYNAMIC_IMPORT }
   ];
   const references = [];
-  for (const [kind, pattern] of patterns) {
+  for (const { kind, pattern } of patterns) {
     pattern.lastIndex = 0;
     for (let match = pattern.exec(source.content); match; match = pattern.exec(source.content)) {
       const reference = moduleReference(source, kind, match);
@@ -5197,17 +5226,17 @@ function matchesCandidate(normalizedTarget, candidate, basenameCounts) {
   if (normalizedTarget.includes("/")) return matchesFullPath(normalizedTarget, normalizedCandidate);
   return matchesBasename(normalizedTarget, normalizedCandidate, basenameCounts);
 }
-function markUnresolvedTarget(target, candidates, basenameCounts, unavailable) {
+function markUnresolvedTarget({ target, candidates, basenameCounts, unavailable }) {
   const normalizedTarget = normalizeCandidatePath(target);
   if (!normalizedTarget) return;
   for (const candidate of candidates) {
     if (matchesCandidate(normalizedTarget, candidate, basenameCounts)) unavailable.add(candidate);
   }
 }
-function markUnresolvedReference(unresolved, candidates, basenameCounts, unavailable) {
+function markUnresolvedReference({ unresolved, candidates, basenameCounts, unavailable }) {
   if (unresolved.resolution !== "unresolved") return;
   for (const target of unresolved.targetCandidates)
-    markUnresolvedTarget(target, candidates, basenameCounts, unavailable);
+    markUnresolvedTarget({ target, candidates, basenameCounts, unavailable });
 }
 
 // src/reference-analysis-candidate-evidence.ts
@@ -5224,7 +5253,7 @@ function markUnresolvedCandidateEvidence(graph, candidatePaths) {
   const basenameCounts = candidateBasenameCounts(candidates);
   const unavailable = new Set(graph.unavailablePaths);
   for (const unresolved of graph.unresolved)
-    markUnresolvedReference(unresolved, candidates, basenameCounts, unavailable);
+    markUnresolvedReference({ unresolved, candidates, basenameCounts, unavailable });
   const unavailablePaths = [...unavailable].sort(compareText);
   return { ...graph, complete: graph.complete && unavailablePaths.length === 0, unavailablePaths };
 }
@@ -5332,7 +5361,12 @@ function readStableSource(input) {
   if (!current) return;
   readStableContent(input, initial);
 }
-function readStableReferenceSources(sources, boundary, maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES, maximumTotalBytes = DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES) {
+function readStableReferenceSources({
+  sources,
+  boundary,
+  maximumFileBytes = DEFAULT_MAXIMUM_REFERENCE_FILE_BYTES,
+  maximumTotalBytes = DEFAULT_MAXIMUM_REFERENCE_TOTAL_BYTES
+}) {
   const collections = newReferenceReadCollections();
   const budget = newReferenceReadBudget();
   sources.forEach((source) => {
@@ -5502,9 +5536,12 @@ function referenceSources(root, paths) {
   const candidates = paths.map((path) => ({ path, language: languageForPath(path) }));
   const supported = candidates.filter((candidate) => candidate.language !== "unsupported");
   const readSource = (source) => readFileSync(join(root, source.path), "utf8");
-  const reads = readStableReferenceSources(supported, {
-    inspect: (source) => inspectReferenceSource(root, source),
-    read: readSource
+  const reads = readStableReferenceSources({
+    sources: supported,
+    boundary: {
+      inspect: (source) => inspectReferenceSource(root, source),
+      read: readSource
+    }
   });
   const unsupported = unsupportedCandidateReferenceGraph(candidates);
   const graph = analyzeReferences(reads.sources);
@@ -5567,7 +5604,7 @@ function canConsumePathSegment(path, pathIndex, recursiveWildcard) {
   if (recursiveWildcard) return true;
   return path[pathIndex - 1] !== "/";
 }
-function wildcardCell(path, pathIndex, recursiveWildcard, previous, current) {
+function wildcardCell({ path, pathIndex, recursiveWildcard, previous, current }) {
   if (previous[pathIndex]) return true;
   if (!canConsumePathSegment(path, pathIndex, recursiveWildcard)) return false;
   return Boolean(current[pathIndex - 1]);
@@ -5577,20 +5614,27 @@ function questionCell(path, pathIndex, previous) {
   if (path[pathIndex - 1] === "/") return false;
   return Boolean(previous[pathIndex - 1]);
 }
-function exactCell(character, path, pathIndex, previous) {
+function exactCell({ character, path, pathIndex, previous }) {
   if (character !== path[pathIndex - 1]) return false;
   return Boolean(previous[pathIndex - 1]);
 }
-function patternCell(character, recursiveWildcard, path, pathIndex, previous, current) {
-  if (character === "*") return wildcardCell(path, pathIndex, recursiveWildcard, previous, current);
+function patternCell({ character, recursiveWildcard, path, pathIndex, previous, current }) {
+  if (character === "*") return wildcardCell({ path, pathIndex, recursiveWildcard, previous, current });
   if (pathIndex === 0) return false;
   if (character === QUESTION_MARK) return questionCell(path, pathIndex, previous);
-  return exactCell(character, path, pathIndex, previous);
+  return exactCell({ character, path, pathIndex, previous });
 }
 function applyPattern(path, token, previous) {
   const current = new Array(path.length + 1).fill(false);
   for (let pathIndex = 0; pathIndex <= path.length; pathIndex += 1)
-    current[pathIndex] = patternCell(token.character, token.recursiveWildcard, path, pathIndex, previous, current);
+    current[pathIndex] = patternCell({
+      character: token.character,
+      recursiveWildcard: token.recursiveWildcard,
+      path,
+      pathIndex,
+      previous,
+      current
+    });
   return current;
 }
 function globResult(previous, path) {
@@ -5721,7 +5765,7 @@ function oldUntrackedWorkspaceCandidates(files, analysisTimestampMs, minimumAgeD
   const cutoffTimestampMs = analysisTimestampMs - minimumAgeDays * 24 * 60 * 60 * 1e3;
   return files.filter((file) => file.isRegularFile && file.modifiedTimestampMs <= cutoffTimestampMs).map(({ path, modifiedTimestampMs }) => ({ path, kind: "untracked", modifiedTimestampMs }));
 }
-function oldIgnoredWorkspaceCandidates(files, provenance, analysisTimestampMs, minimumAgeDays) {
+function oldIgnoredWorkspaceCandidates({ files, provenance, analysisTimestampMs, minimumAgeDays }) {
   const provenanceByPath = new Map(provenance.map((entry) => [entry.path, entry]));
   const cutoffTimestampMs = analysisTimestampMs - minimumAgeDays * 24 * 60 * 60 * 1e3;
   return files.flatMap((file) => {
@@ -5762,14 +5806,14 @@ function edgeTargetsCandidate(edge, candidate) {
 function hasGraphUsage(graph, candidate) {
   return graph.edges.some((edge) => edgeTargetsCandidate(edge, candidate));
 }
-function valueUsesCandidate(value, candidate, candidateBasename, basenameCount) {
+function valueUsesCandidate({ value, candidate, candidateBasename, basenameCount }) {
   if (value === candidate) return true;
   return basenameCount === 1 && value === candidateBasename;
 }
-function sourceUsesCandidate(source, candidate, candidateBasename, basenameCount) {
+function sourceUsesCandidate({ source, candidate, candidateBasename, basenameCount }) {
   if (normalizedRepositoryPath(source.path) === candidate) return false;
   return sourceStringValues(source.content).some(
-    (value) => valueUsesCandidate(value, candidate, candidateBasename, basenameCount)
+    (value) => valueUsesCandidate({ value, candidate, candidateBasename, basenameCount })
   );
 }
 function hasInboundWorkspaceUsage(candidatePath, sources, inventoryPaths) {
@@ -5779,11 +5823,16 @@ function hasInboundWorkspaceUsage(candidatePath, sources, inventoryPaths) {
   const candidateBasename = basename2(normalizedCandidate);
   const normalizedInventory = new Set([...inventoryPaths, candidatePath].map(normalizedRepositoryPath));
   const basenameCount = [...normalizedInventory].filter((path) => basename2(path) === candidateBasename).length;
-  return sources.some((source) => sourceUsesCandidate(source, normalizedCandidate, candidateBasename, basenameCount));
+  return sources.some((source) => sourceUsesCandidate({
+    source,
+    candidate: normalizedCandidate,
+    candidateBasename,
+    basenameCount
+  }));
 }
 
 // src/workspace-finding.ts
-function workspaceDebrisFinding(candidate, sources, inventoryPaths, analysisBoundary, unobservedMechanisms) {
+function workspaceDebrisFinding({ candidate, sources, inventoryPaths, analysisBoundary, unobservedMechanisms }) {
   if (hasInboundWorkspaceUsage(candidate.path, sources, inventoryPaths)) return void 0;
   return {
     classification: "advisory",
@@ -5807,9 +5856,9 @@ var CHECK_IGNORE_ARGUMENTS = ["check-ignore", "-z", "-v", "--stdin"];
 
 // src/repository-analysis-workspace-steps.ts
 async function discoverWorkspace(root, runGit) {
-  const trackedOutput = await successfulGit(runGit, ["ls-files", "-z"], root);
-  const untrackedOutput = await successfulGit(runGit, UNTRACKED_DISCOVERY_ARGUMENTS, root);
-  const ignoredOutput = await successfulGit(runGit, IGNORED_DISCOVERY_ARGUMENTS, root);
+  const trackedOutput = await successfulGit({ runGit, arguments_: ["ls-files", "-z"], repositoryPath: root });
+  const untrackedOutput = await successfulGit({ runGit, arguments_: UNTRACKED_DISCOVERY_ARGUMENTS, repositoryPath: root });
+  const ignoredOutput = await successfulGit({ runGit, arguments_: IGNORED_DISCOVERY_ARGUMENTS, repositoryPath: root });
   return {
     trackedOutput,
     untrackedOutput,
@@ -5830,10 +5879,15 @@ function inspectWorkspacePaths(root, paths, exclude) {
   };
   return inspectWorkspaceFileMetadataWithWarnings(paths, inspect, exclude);
 }
-async function readIgnoredProvenance(root, ignored, exclude, runGit) {
+async function readIgnoredProvenance({ root, ignored, exclude, runGit }) {
   const filteredIgnored = filterWorkspaceDiscoveryPaths(ignored, exclude);
   if (filteredIgnored.length === 0) return { ignoreOutput: void 0, ignoredProvenance: parseVerboseCheckIgnore("") };
-  const ignoreOutput = await successfulGit(runGit, CHECK_IGNORE_ARGUMENTS, root, `${filteredIgnored.join("\0")}\0`);
+  const ignoreOutput = await successfulGit({
+    runGit,
+    arguments_: CHECK_IGNORE_ARGUMENTS,
+    repositoryPath: root,
+    input: `${filteredIgnored.join("\0")}\0`
+  });
   return { ignoreOutput, ignoredProvenance: parseVerboseCheckIgnore(ignoreOutput.stdout) };
 }
 function buildWorkspaceCandidates(input) {
@@ -5843,12 +5897,12 @@ function buildWorkspaceCandidates(input) {
       input.analysisTimestampMs,
       input.minimumAgeDays
     ),
-    ...oldIgnoredWorkspaceCandidates(
-      input.ignoredMetadata.metadata,
-      input.ignoredProvenance,
-      input.analysisTimestampMs,
-      input.minimumAgeDays
-    )
+    ...oldIgnoredWorkspaceCandidates({
+      files: input.ignoredMetadata.metadata,
+      provenance: input.ignoredProvenance,
+      analysisTimestampMs: input.analysisTimestampMs,
+      minimumAgeDays: input.minimumAgeDays
+    })
   ];
 }
 function buildWorkspaceInventory(input) {
@@ -5865,11 +5919,11 @@ function assertWorkspaceInventoryLimit(inventory) {
 }
 
 // src/repository-analysis-workspace.ts
-async function analyzeWorkspaceStage(root, options, runGit, analysisTimestampMs) {
+async function analyzeWorkspaceStage({ root, options, runGit, analysisTimestampMs }) {
   const discovery = await discoverWorkspace(root, runGit);
   const untrackedMetadata = inspectWorkspacePaths(root, discovery.untracked, options.exclude);
   const ignoredMetadata = inspectWorkspacePaths(root, discovery.ignored, options.exclude);
-  const provenance = await readIgnoredProvenance(root, discovery.ignored, options.exclude, runGit);
+  const provenance = await readIgnoredProvenance({ root, ignored: discovery.ignored, exclude: options.exclude, runGit });
   const workspaceCandidates = buildWorkspaceCandidates({
     untrackedMetadata,
     ignoredMetadata,
@@ -5892,14 +5946,20 @@ async function analyzeWorkspaceStage(root, options, runGit, analysisTimestampMs)
 }
 
 // src/repository-analysis-workspace-findings.ts
-function buildWorkspaceDebrisFindings(candidates, references, inventory, root) {
+function buildWorkspaceDebrisFindings({ candidates, references, inventory, root }) {
   return candidates.flatMap((candidate) => {
-    const finding = workspaceDebrisFinding(candidate, references.sources, inventory, root, [
-      "dynamic runtime loading",
-      "reflection",
-      "external consumers",
-      "generated configuration"
-    ]);
+    const finding = workspaceDebrisFinding({
+      candidate,
+      sources: references.sources,
+      inventoryPaths: inventory,
+      analysisBoundary: root,
+      unobservedMechanisms: [
+        "dynamic runtime loading",
+        "reflection",
+        "external consumers",
+        "generated configuration"
+      ]
+    });
     return finding ? [finding] : [];
   });
 }
@@ -5907,15 +5967,20 @@ function buildWorkspaceDebrisFindings(candidates, references, inventory, root) {
 // src/repository-analysis.ts
 async function analyzeRepositoryCore(repositoryPath, options, runGit = runGitCommand) {
   const historyStage = await analyzeHistoryStage(repositoryPath, options, runGit);
-  const workspaceStage = await analyzeWorkspaceStage(rootFor(historyStage), options, runGit, historyStage.analysisTimestampMs);
+  const workspaceStage = await analyzeWorkspaceStage({
+    root: rootFor(historyStage),
+    options,
+    runGit,
+    analysisTimestampMs: historyStage.analysisTimestampMs
+  });
   const reports = buildBurstReports(historyStage.bursts, workspaceStage.references, options.threshold);
-  const workspaceDebris = buildWorkspaceDebrisFindings(
-    workspaceStage.workspaceCandidates,
-    workspaceStage.references,
-    workspaceStage.inventory,
-    rootFor(historyStage)
-  );
-  return buildAnalysisReport(historyStage, workspaceStage, options, reports, workspaceDebris);
+  const workspaceDebris = buildWorkspaceDebrisFindings({
+    candidates: workspaceStage.workspaceCandidates,
+    references: workspaceStage.references,
+    inventory: workspaceStage.inventory,
+    root: rootFor(historyStage)
+  });
+  return buildAnalysisReport({ historyStage, workspaceStage, options, reports, workspaceDebris });
 }
 function rootFor(stage) {
   return stage.root;
@@ -5985,13 +6050,13 @@ async function analyzeRepository(repositoryPath, options, core = analyzeReposito
 function commaSeparatedValues(value) {
   return value === void 0 ? [] : value.split(",").map((item) => item.trim()).filter(Boolean);
 }
-function validNumberText(value, number, minimum, maximum) {
+function validNumberText({ value, number, minimum, maximum }) {
   return value.trim() !== "" && Number.isFinite(number) && number >= minimum && number <= maximum;
 }
-function finiteNumber(value, fallback, option, minimum, maximum) {
+function finiteNumber({ value, fallback, option, minimum, maximum }) {
   if (value === void 0) return fallback;
   const number = Number(value);
-  if (validNumberText(value, number, minimum, maximum)) return number;
+  if (validNumberText({ value, number, minimum, maximum })) return number;
   throw new FossilUsageError(`${option} must be a finite number from ${minimum} through ${maximum}.`);
 }
 function formatOption(value) {
@@ -6004,22 +6069,29 @@ function extensionOptions(value) {
   if (extensions.length > 64) throw new FossilUsageError("--extensions accepts at most 64 nonempty values.");
   return extensions;
 }
+function normalizedNumberOptions(options) {
+  const defaults = DEFAULT_NORMALIZED_ANALYSIS_OPTIONS;
+  return {
+    days: finiteNumber({ value: options.days, fallback: defaults.days, option: "--days", minimum: 1, maximum: 3650 }),
+    gapHours: finiteNumber({ value: options.gapHours, fallback: defaults.gapHours, option: "--gap-hours", minimum: 1, maximum: 8760 }),
+    threshold: finiteNumber({ value: options.threshold, fallback: defaults.threshold, option: "--threshold", minimum: 0, maximum: 1 }),
+    untrackedAgeDays: finiteNumber({
+      value: options.untrackedAge,
+      fallback: defaults.untrackedAgeDays,
+      option: "--untracked-age",
+      minimum: 1,
+      maximum: 3650
+    })
+  };
+}
 function normalizeAnalyzeOptions(options) {
   const extensions = extensionOptions(options.extensions);
   const format = formatOption(options.format);
+  const numeric = normalizedNumberOptions(options);
   return validateNormalizedAnalysisOptions({
-    days: finiteNumber(options.days, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.days, "--days", 1, 3650),
-    gapHours: finiteNumber(options.gapHours, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.gapHours, "--gap-hours", 1, 8760),
-    threshold: finiteNumber(options.threshold, DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.threshold, "--threshold", 0, 1),
+    ...numeric,
     format,
     extensions,
-    untrackedAgeDays: finiteNumber(
-      options.untrackedAge,
-      DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.untrackedAgeDays,
-      "--untracked-age",
-      1,
-      3650
-    ),
     exclude: commaSeparatedValues(options.exclude),
     verbose: options.verbose ?? DEFAULT_NORMALIZED_ANALYSIS_OPTIONS.verbose
   });

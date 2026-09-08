@@ -1,6 +1,11 @@
 import { runGitCommand } from "./git-process-boundary.js";
 import type { NormalizedAnalysisOptions } from "./types.js";
-export declare function analyzeWorkspaceStage(root: string, options: NormalizedAnalysisOptions, runGit: typeof runGitCommand, analysisTimestampMs: number): Promise<{
+export declare function analyzeWorkspaceStage({ root, options, runGit, analysisTimestampMs }: {
+    root: string;
+    options: NormalizedAnalysisOptions;
+    runGit: typeof runGitCommand;
+    analysisTimestampMs: number;
+}): Promise<{
     references: {
         sources: readonly import("./reference-analysis-core.js").ReferenceSourceContent[];
         warnings: readonly import("./types.js").AnalysisWarning[];

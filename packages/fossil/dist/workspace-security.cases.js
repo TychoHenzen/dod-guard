@@ -8,10 +8,15 @@ test("excludes dependency-store paths before metadata reads and ignored candidat
         return { path, isRegularFile: true, modifiedTimestampMs: 0 };
     });
     assert.deepEqual(metadataReads, ["scratch/old.cache"]);
-    assert.deepEqual(oldIgnoredWorkspaceCandidates(metadata, [
-        { path: "node_modules/old.cache", rule: "*.cache", source: "repository" },
-        { path: "scratch/old.cache", rule: "*.cache", source: "repository" },
-    ], 10 * 24 * 60 * 60 * 1_000, 7), [
+    assert.deepEqual(oldIgnoredWorkspaceCandidates({
+        files: metadata,
+        provenance: [
+            { path: "node_modules/old.cache", rule: "*.cache", source: "repository" },
+            { path: "scratch/old.cache", rule: "*.cache", source: "repository" },
+        ],
+        analysisTimestampMs: 10 * 24 * 60 * 60 * 1_000,
+        minimumAgeDays: 7,
+    }), [
         {
             path: "scratch/old.cache",
             kind: "ignored",

@@ -15,7 +15,7 @@ function consumeBrace(content, index, state) {
         return undefined;
     const opened = state.stack.pop();
     if (opened?.kind)
-        state.ranges.push([opened.start, index]);
+        state.ranges.push({ start: opened.start, end: index });
     return index;
 }
 export function consumeTryCatchStructuralCharacter(content, index, state) {

@@ -21,6 +21,12 @@ test("omits old candidates with resolved imports, exact paths, or a unique basen
     assert.equal(hasInboundWorkspaceUsage(candidate.path, [{ path: "src/path-user.ts", language: "typescript", content: 'const source = "scratch/old.ts";\n' }], ["src/path-user.ts", "scratch/old.ts", "other/old.ts"]), true);
     assert.equal(hasInboundWorkspaceUsage("scratch/unique.ts", [{ path: "src/user.ts", language: "typescript", content: 'const source = "unique.ts";\n' }], ["src/user.ts", "scratch/unique.ts"]), true);
     assert.deepEqual(omitUsedWorkspaceCandidates([candidate], sources, inventory), []);
-    assert.equal(workspaceDebrisFinding(candidate, sources, inventory, "C:/repo", []), undefined);
+    assert.equal(workspaceDebrisFinding({
+        candidate,
+        sources,
+        inventoryPaths: inventory,
+        analysisBoundary: "C:/repo",
+        unobservedMechanisms: [],
+    }), undefined);
 });
 //# sourceMappingURL=workspace-usage.cases.js.map

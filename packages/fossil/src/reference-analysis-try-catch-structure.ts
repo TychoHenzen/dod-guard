@@ -14,7 +14,7 @@ function consumeBrace(content: string, index: number, state: TryCatchState): num
   }
   if (content[index] !== "}") return undefined;
   const opened = state.stack.pop();
-  if (opened?.kind) state.ranges.push([opened.start, index]);
+  if (opened?.kind) state.ranges.push({ start: opened.start, end: index });
   return index;
 }
 

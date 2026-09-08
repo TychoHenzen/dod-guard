@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { burstTableRows } from "./output.js";
 test("adds exactly one verbose explanation immediately after each candidate", () => {
-    const activity = (path, createdInBurst, burstCommits, postBurstCommits) => ({
+    const activity = ({ path, createdInBurst, burstCommits, postBurstCommits }) => ({
         identity: path,
         path,
         createdInBurst,
@@ -22,7 +22,7 @@ test("adds exactly one verbose explanation immediately after each candidate", ()
                 classification: "advisory",
                 burstId: "verbose-burst",
                 path: "src/unavailable.ts",
-                activity: activity("src/unavailable.ts", true, 3, 0),
+                activity: activity({ path: "src/unavailable.ts", createdInBurst: true, burstCommits: 3, postBurstCommits: 0 }),
                 score: 0.9,
                 scoreBasis: "git-only",
                 subscores: { churn: 1, abandonment: 1 },
@@ -35,7 +35,7 @@ test("adds exactly one verbose explanation immediately after each candidate", ()
                 classification: "advisory",
                 burstId: "verbose-burst",
                 path: "src/complete.ts",
-                activity: activity("src/complete.ts", false, 2, 4),
+                activity: activity({ path: "src/complete.ts", createdInBurst: false, burstCommits: 2, postBurstCommits: 4 }),
                 score: 0.8,
                 scoreBasis: "full",
                 subscores: { churn: 0.5, abandonment: 0, referenceWeakness: 0.5, clusterIsolation: 0.5 },

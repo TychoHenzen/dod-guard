@@ -18,7 +18,7 @@ function ignoredDirectoryCounts(findings) {
     }
     return counts;
 }
-function addWorkspaceRow(rows, finding, summarizedDirectories, emittedDirectories, directoryCounts) {
+function addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts }) {
     const directory = findingDirectory(finding);
     if (!isSummarized(directory, summarizedDirectories)) {
         rows.push({ kind: "finding", finding });
@@ -41,7 +41,7 @@ export function workspaceDebrisTableRows(findings, mode) {
     const emittedDirectories = new Set();
     const rows = [];
     for (const finding of findings)
-        addWorkspaceRow(rows, finding, summarizedDirectories, emittedDirectories, directoryCounts);
+        addWorkspaceRow({ rows, finding, summarizedDirectories, emittedDirectories, directoryCounts });
     return rows;
 }
 //# sourceMappingURL=fossil-workspace-output.js.map

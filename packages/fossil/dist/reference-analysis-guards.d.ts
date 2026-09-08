@@ -1,3 +1,4 @@
 import type { SyntaxView } from "./reference-analysis-types/syntax-view.js";
-export declare function csharpGuardRanges(view: SyntaxView): readonly [number, number][];
-export declare function rustGuardRanges(view: SyntaxView): readonly [number, number][];
+import type { ReferenceRange } from "./reference-analysis-types/reference-range.js";
+export declare function csharpGuardRanges(view: SyntaxView): readonly ReferenceRange[];
+export declare function rustGuardRanges(view: SyntaxView): readonly ReferenceRange[];

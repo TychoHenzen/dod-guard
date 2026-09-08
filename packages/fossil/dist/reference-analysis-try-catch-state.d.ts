@@ -1,5 +1,6 @@
+import type { ReferenceRange } from "./reference-analysis-types/reference-range.js";
 export interface TryCatchState {
-    ranges: [number, number][];
+    ranges: ReferenceRange[];
     stack: {
         kind: boolean;
         start: number;

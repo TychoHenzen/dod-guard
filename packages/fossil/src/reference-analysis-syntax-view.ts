@@ -30,7 +30,12 @@ function commentEnd(content: string, start: number, lineComment: boolean): numbe
   return lineComment ? index : Math.min(content.length, index + 2);
 }
 
-function maskComment(state: SyntaxState, content: string, start: number, end: number): void {
+function maskComment({ state, content, start, end }: {
+  state: SyntaxState;
+  content: string;
+  start: number;
+  end: number;
+}): void {
   for (let index = start; index < end; index += 1) {
     if (state.characters[index] !== "\n") state.characters[index] = " ";
   }
@@ -43,7 +48,7 @@ function consumeCommentStart(content: string, index: number, state: SyntaxState)
   if (character !== "/" || !(next === "/" || next === "*")) return undefined;
   const lineComment = next === "/";
   const end = commentEnd(content, index + 2, lineComment);
-  maskComment(state, content, index, end);
+  maskComment({ state, content, start: index, end });
   return end - 1;
 }
 

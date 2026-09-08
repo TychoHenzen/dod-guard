@@ -10,6 +10,13 @@ export function assembleClosedBursts(fullChronologicalHistory, closedTemporalClu
     const finalPartitions = closedTemporalClusters
         .flatMap((cluster) => splitAtChangePoint(cluster))
         .filter((partition) => partitionQualifies(partition, resolution.identitiesByChange));
-    return finalPartitions.map((partition) => assembleBurst(partition, fullChronologicalHistory, activitiesByIdentity, resolution, commitByHash, commitIndexByHash));
+    return finalPartitions.map((partition) => assembleBurst({
+        partition,
+        fullChronologicalHistory,
+        activitiesByIdentity,
+        resolution,
+        commitByHash,
+        commitIndexByHash,
+    }));
 }
 //# sourceMappingURL=git-history-bursts.js.map

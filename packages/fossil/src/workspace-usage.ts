@@ -28,20 +28,25 @@ function hasGraphUsage(graph: ReturnType<typeof analyzeReferences>, candidate: s
   return graph.edges.some((edge) => edgeTargetsCandidate(edge, candidate));
 }
 
-function valueUsesCandidate(value: string, candidate: string, candidateBasename: string, basenameCount: number): boolean {
+function valueUsesCandidate({ value, candidate, candidateBasename, basenameCount }: {
+  value: string;
+  candidate: string;
+  candidateBasename: string;
+  basenameCount: number;
+}): boolean {
   if (value === candidate) return true;
   return basenameCount === 1 && value === candidateBasename;
 }
 
-function sourceUsesCandidate(
-  source: ReferenceSourceContent,
-  candidate: string,
-  candidateBasename: string,
-  basenameCount: number,
-): boolean {
+function sourceUsesCandidate({ source, candidate, candidateBasename, basenameCount }: {
+  source: ReferenceSourceContent;
+  candidate: string;
+  candidateBasename: string;
+  basenameCount: number;
+}): boolean {
   if (normalizedRepositoryPath(source.path) === candidate) return false;
   return sourceStringValues(source.content).some((value) =>
-    valueUsesCandidate(value, candidate, candidateBasename, basenameCount),
+    valueUsesCandidate({ value, candidate, candidateBasename, basenameCount }),
   );
 }
 
@@ -57,7 +62,12 @@ export function hasInboundWorkspaceUsage(
   const candidateBasename = basename(normalizedCandidate);
   const normalizedInventory = new Set([...inventoryPaths, candidatePath].map(normalizedRepositoryPath));
   const basenameCount = [...normalizedInventory].filter((path) => basename(path) === candidateBasename).length;
-  return sources.some((source) => sourceUsesCandidate(source, normalizedCandidate, candidateBasename, basenameCount));
+  return sources.some((source) => sourceUsesCandidate({
+    source,
+    candidate: normalizedCandidate,
+    candidateBasename,
+    basenameCount,
+  }));
 }
 
 /** Omits workspace candidates when any inbound repository-contained usage evidence is found. */

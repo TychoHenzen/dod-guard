@@ -26,7 +26,12 @@ test("retains NUL-delimited ignore rule provenance for an old ignored regular fi
         { path: "scratch/old.cache", rule: "*.cache", source: "repository" },
         { path: "scratch/global.tmp", rule: "*.tmp", source: "global-exclude" },
     ]);
-    const candidates = oldIgnoredWorkspaceCandidates([{ path: "scratch/old.cache", isRegularFile: true, modifiedTimestampMs: 0 }], provenance, 10 * 24 * 60 * 60 * 1_000, 7);
+    const candidates = oldIgnoredWorkspaceCandidates({
+        files: [{ path: "scratch/old.cache", isRegularFile: true, modifiedTimestampMs: 0 }],
+        provenance,
+        analysisTimestampMs: 10 * 24 * 60 * 60 * 1_000,
+        minimumAgeDays: 7,
+    });
     assert.deepEqual(candidates, [
         {
             path: "scratch/old.cache",
@@ -40,6 +45,11 @@ test("omits recent untracked and ignored workspace files", () => {
     const now = 10 * 24 * 60 * 60 * 1_000;
     const recentTimestampMs = now - 24 * 60 * 60 * 1_000;
     assert.deepEqual(oldUntrackedWorkspaceCandidates([{ path: "scratch/recent.ts", isRegularFile: true, modifiedTimestampMs: recentTimestampMs }], now, 7), []);
-    assert.deepEqual(oldIgnoredWorkspaceCandidates([{ path: "scratch/recent.cache", isRegularFile: true, modifiedTimestampMs: recentTimestampMs }], [{ path: "scratch/recent.cache", rule: "*.cache", source: "repository" }], now, 7), []);
+    assert.deepEqual(oldIgnoredWorkspaceCandidates({
+        files: [{ path: "scratch/recent.cache", isRegularFile: true, modifiedTimestampMs: recentTimestampMs }],
+        provenance: [{ path: "scratch/recent.cache", rule: "*.cache", source: "repository" }],
+        analysisTimestampMs: now,
+        minimumAgeDays: 7,
+    }), []);
 });
 //# sourceMappingURL=workspace-candidates-a.cases.js.map

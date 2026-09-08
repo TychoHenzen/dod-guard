@@ -7,4 +7,9 @@ export declare function parseVerboseCheckIgnore(output: string, globalExcludePat
 /** Selects old regular untracked files before later ignore and usage-evidence checks. */
 export declare function oldUntrackedWorkspaceCandidates(files: readonly WorkspaceFileMetadata[], analysisTimestampMs: number, minimumAgeDays: number): readonly UntrackedWorkspaceCandidate[];
 /** Selects old regular ignored files and preserves their matching Git ignore rule provenance. */
-export declare function oldIgnoredWorkspaceCandidates(files: readonly WorkspaceFileMetadata[], provenance: readonly IgnoreProvenance[], analysisTimestampMs: number, minimumAgeDays: number): readonly IgnoredWorkspaceCandidate[];
+export declare function oldIgnoredWorkspaceCandidates({ files, provenance, analysisTimestampMs, minimumAgeDays }: {
+    files: readonly WorkspaceFileMetadata[];
+    provenance: readonly IgnoreProvenance[];
+    analysisTimestampMs: number;
+    minimumAgeDays: number;
+}): readonly IgnoredWorkspaceCandidate[];

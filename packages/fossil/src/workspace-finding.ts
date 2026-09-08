@@ -5,13 +5,13 @@ import type { UntrackedWorkspaceCandidate } from "./workspace-types/untracked-wo
 import { hasInboundWorkspaceUsage } from "./workspace-usage.js";
 
 /** Creates a separate advisory workspace-debris finding when no inbound usage evidence is discovered. */
-export function workspaceDebrisFinding(
-  candidate: UntrackedWorkspaceCandidate | IgnoredWorkspaceCandidate,
-  sources: readonly ReferenceSourceContent[],
-  inventoryPaths: readonly string[],
-  analysisBoundary: string,
-  unobservedMechanisms: readonly string[],
-): WorkspaceDebrisFinding | undefined {
+export function workspaceDebrisFinding({ candidate, sources, inventoryPaths, analysisBoundary, unobservedMechanisms }: {
+  candidate: UntrackedWorkspaceCandidate | IgnoredWorkspaceCandidate;
+  sources: readonly ReferenceSourceContent[];
+  inventoryPaths: readonly string[];
+  analysisBoundary: string;
+  unobservedMechanisms: readonly string[];
+}): WorkspaceDebrisFinding | undefined {
   if (hasInboundWorkspaceUsage(candidate.path, sources, inventoryPaths)) return undefined;
   return {
     classification: "advisory",

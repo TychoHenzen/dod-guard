@@ -1,6 +1,6 @@
 import { hasInboundWorkspaceUsage } from "./workspace-usage.js";
 /** Creates a separate advisory workspace-debris finding when no inbound usage evidence is discovered. */
-export function workspaceDebrisFinding(candidate, sources, inventoryPaths, analysisBoundary, unobservedMechanisms) {
+export function workspaceDebrisFinding({ candidate, sources, inventoryPaths, analysisBoundary, unobservedMechanisms }) {
     if (hasInboundWorkspaceUsage(candidate.path, sources, inventoryPaths))
         return undefined;
     return {

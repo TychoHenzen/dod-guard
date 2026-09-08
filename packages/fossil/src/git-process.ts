@@ -76,12 +76,12 @@ export function discoverGitRepository(
 }
 
 /** Runs one noninteractive Git command and retains only bounded collected output. */
-export async function runGitCommand(
-  arguments_: readonly string[],
-  repositoryPath?: string,
-  input?: string,
-  historyMode = false,
-): Promise<CollectedGitOutput> {
+export async function runGitCommand({ arguments_, repositoryPath, input, historyMode = false }: {
+  arguments_: readonly string[];
+  repositoryPath?: string;
+  input?: string;
+  historyMode?: boolean;
+}): Promise<CollectedGitOutput> {
   const scopedArguments = repositoryPath === undefined ? arguments_ : ["-C", repositoryPath, ...arguments_];
   const child = spawn("git", [...SAFE_GIT_BASE_ARGUMENTS, ...scopedArguments], {
     shell: false,

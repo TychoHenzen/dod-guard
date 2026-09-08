@@ -1,4 +1,5 @@
 import type { Burst, GitCommit, GitFileChange, LogicalFileActivity } from "./types.js";
+import type { AssembleBurstInput } from "./git-history-types/assemble-burst-input.js";
 import type { LogicalIdentityResolution } from "./git-history-types/logical-identity-resolution.js";
 import {
   changesByIdentity,
@@ -8,15 +9,15 @@ import {
   partitionCommits,
 } from "./git-history-burst-helpers.js";
 
-function burstFile(
-  identity: string,
-  changes: readonly GitFileChange[],
-  commits: readonly GitCommit[],
-  fullChronologicalHistory: readonly GitCommit[],
-  finalIndex: number,
-  activitiesByIdentity: ReadonlyMap<string, LogicalFileActivity>,
-  resolution: LogicalIdentityResolution,
-) {
+function burstFile({ identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution }: {
+  identity: string;
+  changes: readonly GitFileChange[];
+  commits: readonly GitCommit[];
+  fullChronologicalHistory: readonly GitCommit[];
+  finalIndex: number;
+  activitiesByIdentity: ReadonlyMap<string, LogicalFileActivity>;
+  resolution: LogicalIdentityResolution;
+}) {
   const activity = activitiesByIdentity.get(identity);
   return {
     identity,
@@ -32,19 +33,13 @@ function burstFile(
   };
 }
 
-export function assembleBurst(
-  partition: readonly GitCommit[],
-  fullChronologicalHistory: readonly GitCommit[],
-  activitiesByIdentity: ReadonlyMap<string, LogicalFileActivity>,
-  resolution: LogicalIdentityResolution,
-  commitByHash: ReadonlyMap<string, GitCommit>,
-  commitIndexByHash: ReadonlyMap<string, number>,
-): Burst {
+export function assembleBurst(input: AssembleBurstInput): Burst {
+  const { partition, fullChronologicalHistory, activitiesByIdentity, resolution, commitByHash, commitIndexByHash } = input;
   const commits = partitionCommits(partition, commitByHash);
   const identities = changesByIdentity(commits, resolution.identitiesByChange);
   const finalIndex = finalCommitIndex(commits, commitIndexByHash);
   const files = [...identities].map(([identity, changes]) =>
-    burstFile(identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution),
+    burstFile({ identity, changes, commits, fullChronologicalHistory, finalIndex, activitiesByIdentity, resolution }),
   );
   const first = commits[0];
   const last = commits.at(-1);

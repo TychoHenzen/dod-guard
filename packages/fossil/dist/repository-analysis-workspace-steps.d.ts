@@ -8,7 +8,12 @@ export declare function discoverWorkspace(root: string, runGit: typeof runGitCom
     ignored: readonly string[];
 }>;
 export declare function inspectWorkspacePaths(root: string, paths: readonly string[], exclude: readonly string[]): import("./workspace-debris-boundary.js").WorkspaceMetadataInspectionResult;
-export declare function readIgnoredProvenance(root: string, ignored: readonly string[], exclude: readonly string[], runGit: typeof runGitCommand): Promise<{
+export declare function readIgnoredProvenance({ root, ignored, exclude, runGit }: {
+    root: string;
+    ignored: readonly string[];
+    exclude: readonly string[];
+    runGit: typeof runGitCommand;
+}): Promise<{
     ignoreOutput: undefined;
     ignoredProvenance: readonly import("./workspace-debris-boundary.js").IgnoreProvenance[];
 } | {

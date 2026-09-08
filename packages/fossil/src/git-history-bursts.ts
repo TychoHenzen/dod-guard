@@ -17,6 +17,13 @@ export function assembleClosedBursts(
     .filter((partition) => partitionQualifies(partition, resolution.identitiesByChange));
 
   return finalPartitions.map((partition) =>
-    assembleBurst(partition, fullChronologicalHistory, activitiesByIdentity, resolution, commitByHash, commitIndexByHash),
+    assembleBurst({
+      partition,
+      fullChronologicalHistory,
+      activitiesByIdentity,
+      resolution,
+      commitByHash,
+      commitIndexByHash,
+    }),
   );
 }

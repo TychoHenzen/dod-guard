@@ -34,9 +34,12 @@ export function referenceSources(root: string, paths: readonly string[]) {
   const candidates: ReferenceCandidate[] = paths.map((path) => ({ path, language: languageForPath(path) }));
   const supported = candidates.filter((candidate) => candidate.language !== "unsupported");
   const readSource = (source: ReferenceCandidate) => readFileSync(join(root, source.path), "utf8");
-  const reads = readStableReferenceSources(supported, {
-    inspect: (source) => inspectReferenceSource(root, source),
-    read: readSource,
+  const reads = readStableReferenceSources({
+    sources: supported,
+    boundary: {
+      inspect: (source) => inspectReferenceSource(root, source),
+      read: readSource,
+    },
   });
   const unsupported = unsupportedCandidateReferenceGraph(candidates);
   const graph = analyzeReferences(reads.sources);

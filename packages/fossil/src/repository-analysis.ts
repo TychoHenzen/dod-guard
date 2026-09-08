@@ -13,15 +13,20 @@ export async function analyzeRepositoryCore(
   runGit: typeof runGitCommand = runGitCommand,
 ): Promise<FossilReport> {
   const historyStage = await analyzeHistoryStage(repositoryPath, options, runGit);
-  const workspaceStage = await analyzeWorkspaceStage(rootFor(historyStage), options, runGit, historyStage.analysisTimestampMs);
+  const workspaceStage = await analyzeWorkspaceStage({
+    root: rootFor(historyStage),
+    options,
+    runGit,
+    analysisTimestampMs: historyStage.analysisTimestampMs,
+  });
   const reports = buildBurstReports(historyStage.bursts, workspaceStage.references, options.threshold);
-  const workspaceDebris = buildWorkspaceDebrisFindings(
-    workspaceStage.workspaceCandidates,
-    workspaceStage.references,
-    workspaceStage.inventory,
-    rootFor(historyStage),
-  );
-  return buildAnalysisReport(historyStage, workspaceStage, options, reports, workspaceDebris);
+  const workspaceDebris = buildWorkspaceDebrisFindings({
+    candidates: workspaceStage.workspaceCandidates,
+    references: workspaceStage.references,
+    inventory: workspaceStage.inventory,
+    root: rootFor(historyStage),
+  });
+  return buildAnalysisReport({ historyStage, workspaceStage, options, reports, workspaceDebris });
 }
 
 function rootFor(stage: Awaited<ReturnType<typeof analyzeHistoryStage>>): string {

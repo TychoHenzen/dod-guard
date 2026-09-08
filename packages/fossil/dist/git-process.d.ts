@@ -24,4 +24,9 @@ export declare function readHistoryWithSupportedGit<T>(readVersion: () => Promis
 /** Starts repository discovery with the path held as one Git argument rather than shell source. */
 export declare function discoverGitRepository(repositoryPath: string, runGit?: GitSpawn, environment?: NodeJS.ProcessEnv): ChildProcess;
 /** Runs one noninteractive Git command and retains only bounded collected output. */
-export declare function runGitCommand(arguments_: readonly string[], repositoryPath?: string, input?: string, historyMode?: boolean): Promise<CollectedGitOutput>;
+export declare function runGitCommand({ arguments_, repositoryPath, input, historyMode }: {
+    arguments_: readonly string[];
+    repositoryPath?: string;
+    input?: string;
+    historyMode?: boolean;
+}): Promise<CollectedGitOutput>;
