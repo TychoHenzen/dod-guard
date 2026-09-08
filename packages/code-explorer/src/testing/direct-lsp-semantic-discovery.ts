@@ -1,25 +1,27 @@
 import { semanticClient } from "./direct-lsp-semantic-client.js";
+import { testLocation, testRange } from "./semantic-test-shapes.js";
+
+function workspaceSymbols() {
+  return [{ name: "helper", kind: 12, location: { uri: "file:///project/src/main.rs", range: testRange({ line: 0, character: 3 }, { line: 0, character: 9 }) } }];
+}
+
+function pythonDocumentSymbols() {
+  return [{ name: "helper", kind: 12, range: testRange({ line: 3, character: 0 }, { line: 4, character: 8 }), selectionRange: testRange({ line: 3, character: 4 }, { line: 3, character: 10 }) }];
+}
 
 export function workspaceSearchClient(methods: string[]) {
   return semanticClient(async (method: string) => {
     methods.push(method);
-    return method === "workspace/symbol"
-      ? [{ name: "helper", kind: 12, location: { uri: "file:///project/src/main.rs", range: { start: { line: 0, character: 3 }, end: { line: 0, character: 9 } } } }]
-      : [];
+    if (method === "workspace/symbol") return workspaceSymbols();
+    return [];
   });
 }
 
 export function pythonDocumentSymbolClient(methods: string[]) {
   return semanticClient(async (method: string) => {
     methods.push(method);
-    return method === "textDocument/documentSymbol"
-      ? [{
-          name: "helper",
-          kind: 12,
-          range: { start: { line: 3, character: 0 }, end: { line: 4, character: 8 } },
-          selectionRange: { start: { line: 3, character: 4 }, end: { line: 3, character: 10 } },
-        }]
-      : [];
+    if (method === "textDocument/documentSymbol") return pythonDocumentSymbols();
+    return [];
   });
 }
 
@@ -29,7 +31,7 @@ export function pythonDiscoverySymbol(index: number) {
     name: "helper",
     language: "python" as const,
     kind: "function" as const,
-    location: { path: "src/main.py", range: { start: { line: 3, character: 4 }, end: { line: 3, character: 10 } } },
+    location: testLocation("src/main.py", { line: 3, character: 4 }, { line: 3, character: 10 }),
   };
 }
 
@@ -39,6 +41,6 @@ export function csharpDiscoverySymbol() {
     name: "Helper",
     language: "csharp" as const,
     kind: "method" as const,
-    location: { path: "src/Demo.cs", range: { start: { line: 2, character: 24 }, end: { line: 2, character: 30 } } },
+    location: testLocation("src/Demo.cs", { line: 2, character: 24 }, { line: 2, character: 30 }),
   };
 }

@@ -24,21 +24,35 @@ export class Process implements LspProcess {
       params?: unknown;
     };
     this.sent.push(message);
-    if (message.method === "initialize") {
-      this.respond({ jsonrpc: "2.0", id: message.id, result: { capabilities: this.serverCapabilities } });
-    }
-    if (message.method === "shutdown" && !this.ignoreShutdown)
-      this.respond({ jsonrpc: "2.0", id: message.id, result: null });
-    if (message.method === "exit" && !this.ignoreExit) {
-      this.events.push("exit");
-      for (const listener of this.exit) listener();
-    }
-    if (message.id !== undefined && message.method && this.responseFor && message.method !== "initialize")
-      this.respond({
-        jsonrpc: "2.0",
-        id: message.id,
-        result: this.responseFor(message.method, message.params),
-      });
+    this.respondToInitialize(message);
+    this.respondToShutdown(message);
+    this.recordExit(message);
+    this.respondToRequest(message);
+  }
+
+  private respondToInitialize(message: { id?: number; method?: string }): void {
+    if (message.method !== "initialize") return;
+    this.respond({ jsonrpc: "2.0", id: message.id, result: { capabilities: this.serverCapabilities } });
+  }
+
+  private respondToShutdown(message: { id?: number; method?: string }): void {
+    if (message.method !== "shutdown" || this.ignoreShutdown) return;
+    this.respond({ jsonrpc: "2.0", id: message.id, result: null });
+  }
+
+  private recordExit(message: { method?: string }): void {
+    if (message.method !== "exit" || this.ignoreExit) return;
+    this.events.push("exit");
+    for (const listener of this.exit) listener();
+  }
+
+  private respondToRequest(message: { id?: number; method?: string; params?: unknown }): void {
+    if (message.id === undefined || message.method === undefined || this.responseFor === undefined || message.method === "initialize") return;
+    this.respond({
+      jsonrpc: "2.0",
+      id: message.id,
+      result: this.responseFor(message.method, message.params),
+    });
   }
 
   onStdout(listener: (chunk: Uint8Array) => void): void {

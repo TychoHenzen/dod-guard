@@ -4,23 +4,23 @@ export type Entry = {
   ino: number;
 };
 
+function requiredEntry(entries: Record<string, Entry>, path: string): Entry {
+  const entry = entries[path] ?? entries[path.replaceAll("\\", "/")];
+  if (!entry) throw new Error("ENOENT");
+  return entry;
+}
+
 export function filesystem(entries: Record<string, Entry>) {
-  const entryFor = (path: string): Entry | undefined =>
-    entries[path] ?? entries[path.replaceAll("\\", "/")];
   return {
     realpath(path: string) {
-      const entry = entryFor(path);
-      if (!entry) throw new Error("ENOENT");
-      return entry.realpath;
+      return requiredEntry(entries, path).realpath;
     },
     stat(path: string) {
-      const entry = entryFor(path);
-      if (!entry) throw new Error("ENOENT");
+      const entry = requiredEntry(entries, path);
       return { dev: entry.dev, ino: entry.ino };
     },
     open(path: string) {
-      const entry = entryFor(path);
-      if (!entry) throw new Error("ENOENT");
+      requiredEntry(entries, path);
       return path;
     },
     fstat(handle: string) {

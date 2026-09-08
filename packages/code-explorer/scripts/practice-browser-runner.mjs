@@ -9,26 +9,29 @@ import { reconcile } from "./practice-browser-reconciliation.mjs";
 import { createPracticeWorkspace, preparePracticeWorkspace } from "./practice-browser-workspace.mjs";
 import { stopChild, waitForEndpoint } from "./practice-browser-transport.mjs";
 
+async function runPracticeFlow({ language, evidence, fixture, root, resources }) {
+  await preparePracticeWorkspace(language, fixture, root);
+  resources.child = spawn(process.execPath, [join(packageRoot, "dist", "bundle.js"), "serve", "--project-root", root, "--no-open"], { cwd: packageRoot, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  const endpoint = await waitForEndpoint(resources.child);
+  resources.browser = await chromium.launch({ headless: true });
+  const page = await resources.browser.newPage();
+  await page.goto(endpoint);
+  const { tab, session, state } = await createSession(page, endpoint);
+  evidence.operation_states.session = state;
+  const startGeneration = await waitForBackend({ page, endpoint, session, tab, language, evidence });
+  const navigation = await navigate({ page, endpoint, session, tab, oracle: resources.oracle, evidence });
+  await reconcile({ page, endpoint, session, tab, root, oracle: resources.oracle, evidence, startGeneration, ...navigation });
+}
+
 export async function practice(language) {
   const { backend, oracle } = await loadPrerequisite(language);
   const evidence = baseEvidence(language, backend);
   const { workspace, fixture, root } = await createPracticeWorkspace(language);
   const started = Date.now();
-  let browser;
-  let child;
-  const timeout = setTimeout(() => child?.kill(), practiceTimeoutMs);
+  const resources = { browser: undefined, child: undefined, oracle };
+  const timeout = setTimeout(() => resources.child?.kill(), practiceTimeoutMs);
   try {
-    await preparePracticeWorkspace(language, fixture, root);
-    child = spawn(process.execPath, [join(packageRoot, "dist", "bundle.js"), "serve", "--project-root", root, "--no-open"], { cwd: packageRoot, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
-    const endpoint = await waitForEndpoint(child);
-    browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.goto(endpoint);
-    const { tab, session, state } = await createSession(page, endpoint);
-    evidence.operation_states.session = state;
-    const startGeneration = await waitForBackend({ page, endpoint, session, tab, language, evidence });
-    const navigation = await navigate({ page, endpoint, session, tab, oracle, evidence });
-    await reconcile({ page, endpoint, session, tab, root, oracle, evidence, startGeneration, ...navigation });
+    await runPracticeFlow({ language, evidence, fixture, root, resources });
     evidence.elapsed_ms = Date.now() - started;
     await writeEvidence(evidence);
     return evidence;
@@ -39,8 +42,8 @@ export async function practice(language) {
     throw error;
   } finally {
     clearTimeout(timeout);
-    await browser?.close();
-    await stopChild(child);
+    await resources.browser?.close();
+    await stopChild(resources.child);
     await rm(workspace, { recursive: true, force: true });
   }
 }

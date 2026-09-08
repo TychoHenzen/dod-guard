@@ -13,6 +13,27 @@ const initializationOptions =
       : { use_project_environment: false, mirror_only: true };
 const request = { jsonrpc: "2.0", id: 1, method: "initialize", params: { processId: null, rootUri: `file:///${fixture.replaceAll("\\", "/")}`, capabilities: {}, initializationOptions } };
 
+function navigationRequests(language_, fixture_) {
+  if (language_ !== "csharp") return [{ jsonrpc: "2.0", id: 2, method: "workspace/symbol", params: { query: "fixture" } }];
+  const uri = `file:///${resolve(fixture_, "Fixture.cs").replaceAll("\\", "/")}`;
+  return [
+    { jsonrpc: "2.0", method: "textDocument/didOpen", params: { textDocument: { uri, languageId: "csharp", version: 1, text: "public static class Fixture { public static void Run() {} }\n" } } },
+    { jsonrpc: "2.0", id: 2, method: "textDocument/definition", params: { textDocument: { uri }, position: { line: 0, character: 49 } } },
+  ];
+}
+
+function sendRequests(child_, requests) {
+  for (const message of requests) {
+    const body = JSON.stringify(message);
+    child_.stdin.write(`Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`);
+  }
+}
+
+function frameLabel(message) {
+  if (message.method !== undefined) return message.method;
+  return `id:${message.id ?? "none"}`;
+}
+
 const child = spawn(executable, [...prefixArguments, ...(language === "rust" ? [] : ["--stdio"])], {
   cwd: fixture,
   shell: false,
@@ -36,31 +57,20 @@ const timer = setTimeout(() => {
   );
 }, 30_000);
 child.stderr.on("data", (chunk) => (stderr += chunk));
-const handleFrame = (message) => {
-  frames.push(message.method ?? `id:${message.id ?? "none"}`);
-  if (message.id === 1 && !initialized) {
-    initialized = true;
-    const initializedNotification = { jsonrpc: "2.0", method: "initialized", params: {} };
-    const navigation =
-      language === "csharp"
-        ? [
-            { jsonrpc: "2.0", method: "textDocument/didOpen", params: { textDocument: { uri: `file:///${resolve(fixture, "Fixture.cs").replaceAll("\\", "/")}`, languageId: "csharp", version: 1, text: "public static class Fixture { public static void Run() {} }\n" } } },
-            { jsonrpc: "2.0", id: 2, method: "textDocument/definition", params: { textDocument: { uri: `file:///${resolve(fixture, "Fixture.cs").replaceAll("\\", "/")}` }, position: { line: 0, character: 49 } } },
-          ]
-        : [{ jsonrpc: "2.0", id: 2, method: "workspace/symbol", params: { query: "fixture" } }];
-    for (const request of [initializedNotification, ...navigation]) {
-      const body = JSON.stringify(request);
-      child.stdin.write(`Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`);
-    }
-    return;
-  }
-  if (message.id !== 2) return;
+const complete = () => {
   clearTimeout(timer);
   child.kill();
   process.stdout.write(
     `${JSON.stringify({ initialized, navigation_responded: true, side_effect_absent: sideEffectAbsent(), frames, stderr })}\n`,
   );
   return false;
+};
+const handleFrame = (message) => {
+  frames.push(frameLabel(message));
+  if (message.id === 2) return complete();
+  if (message.id !== 1 || initialized) return;
+  initialized = true;
+  sendRequests(child, [{ jsonrpc: "2.0", method: "initialized", params: {} }, ...navigationRequests(language, fixture)]);
 };
 child.stdout.on("data", createLspFrameStream(handleFrame));
 child.on("error", (error) => {

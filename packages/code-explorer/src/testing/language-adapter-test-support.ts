@@ -4,11 +4,13 @@ import type {
   SemanticResult,
 } from "../semantic/contracts/contract.js";
 
+type AdapterResultFactory = (request: SemanticRequest) => SemanticResult;
+
 export function createAdapterResult(
   language: Language,
   path: string,
   kind: string,
-): (request: SemanticRequest) => SemanticResult {
+): AdapterResultFactory {
   const location = {
     path,
     range: {
@@ -16,31 +18,21 @@ export function createAdapterResult(
       end: { line: 0, character: 6 },
     },
   };
-  return (request) => {
-    const revision = {
-      generation: 1,
-      manifest_sha256: "manifest-sha256",
-    };
-    if (request.operation === "search")
-      return { operation: "search", revision, symbols: [] };
-    if (request.operation === "focus")
-      return {
-        operation: "focus",
-        revision,
-        symbol: {
-          id: `${language}:helper`,
-          name: "helper",
-          language,
-          kind,
-          location,
-        },
-      };
-    return {
-      operation: request.operation,
-      revision,
-      relations: [],
-    };
-  };
+  return (request) => adapterResult(request, { language, kind, location });
+}
+
+function adapterResult(
+  request: SemanticRequest,
+  context: { language: Language; kind: string; location: { path: string; range: { start: { line: number; character: number }; end: { line: number; character: number } } } },
+): SemanticResult {
+  const revision = { generation: 1, manifest_sha256: "manifest-sha256" };
+  if (request.operation === "search") return { operation: "search", revision, symbols: [] };
+  if (request.operation === "focus") return focusResult({ ...context, revision });
+  return { operation: request.operation, revision, relations: [] };
+}
+
+function focusResult(context: { language: Language; kind: string; location: { path: string; range: { start: { line: number; character: number }; end: { line: number; character: number } } }; revision: { generation: number; manifest_sha256: string } }): SemanticResult {
+  return { operation: "focus", revision: context.revision, symbol: { id: `${context.language}:helper`, name: "helper", language: context.language, kind: context.kind, location: context.location } };
 }
 
 export function adapterRequests(symbolId: string): SemanticRequest[] {

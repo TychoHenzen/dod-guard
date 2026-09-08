@@ -26,13 +26,41 @@ const child = spawn(process.execPath, [serverEntrypoint, "--stdio"], {
     CODE_EXPLORER_SENTINEL_PATH: sentinel,
   },
 });
+
+function isConfigurationRequest(message) {
+  return message.method === "workspace/configuration" && message.id !== undefined;
+}
+
+function isInitializeResponse(message, initialized_) {
+  return message.id === 1 && message.method === undefined && !initialized_;
+}
+
+function sendInitialization(child_, mirror_, root_) {
+  const uri = mirror_.uriFor("src/fixture.py");
+  const text = root_.protectedRead("src/fixture.py").bytes;
+  send(child_, { jsonrpc: "2.0", method: "initialized", params: {} });
+  send(child_, { jsonrpc: "2.0", method: "textDocument/didOpen", params: { textDocument: { uri, languageId: "python", version: 1, text } } });
+  send(child_, { jsonrpc: "2.0", id: 2, method: "textDocument/definition", params: { textDocument: { uri }, position: { line: 0, character: 7 } } });
+}
+
+function sendConfiguration(child_, message) {
+  const items = message.params?.items ?? [];
+  send(child_, {
+    jsonrpc: "2.0",
+    id: message.id,
+    result: items.map((item) =>
+      ["python.pythonPath", "python.venvPath", "python.analysis.extraPaths"].includes(item.section) ? [] : null,
+    ),
+  });
+}
+
 let stderr = "";
 let initialized = false;
 let finished = false;
 let configurationReplies = 0;
-const send = (message) => {
+const send = (child_, message) => {
   const body = JSON.stringify(message);
-  child.stdin.write(`Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`);
+  child_.stdin.write(`Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`);
 };
 const finish = (result) => {
   if (finished) return;
@@ -55,31 +83,20 @@ const timeout = setTimeout(() => finish({ initialized, definition_responded: fal
 child.stderr.on("data", (chunk) => (stderr += chunk));
 child.on("error", (error) => finish({ initialized, definition_responded: false, error: String(error) }));
 const handleFrame = (message) => {
-  if (message.id === 1 && !initialized) {
+  if (isInitializeResponse(message, initialized)) {
     initialized = true;
-    const uri = mirror.uriFor("src/fixture.py");
-    const text = root.protectedRead("src/fixture.py").bytes;
-    send({ jsonrpc: "2.0", method: "initialized", params: {} });
-    send({ jsonrpc: "2.0", method: "textDocument/didOpen", params: { textDocument: { uri, languageId: "python", version: 1, text } } });
-    send({ jsonrpc: "2.0", id: 2, method: "textDocument/definition", params: { textDocument: { uri }, position: { line: 0, character: 7 } } });
+    sendInitialization(child, mirror, root);
     return;
   }
-  if (message.method === "workspace/configuration" && message.id !== undefined) {
+  if (isConfigurationRequest(message)) {
     configurationReplies += 1;
-    const items = message.params?.items ?? [];
-    send({
-      jsonrpc: "2.0",
-      id: message.id,
-      result: items.map((item) =>
-        ["python.pythonPath", "python.venvPath", "python.analysis.extraPaths"].includes(item.section) ? [] : null,
-      ),
-    });
+    sendConfiguration(child, message);
     return;
   }
   if (message.id === 2) finish({ initialized, definition_responded: true, definition: message.result });
 };
 child.stdout.on("data", createLspFrameStream(handleFrame));
-send({
+send(child, {
   jsonrpc: "2.0",
   id: 1,
   method: "initialize",

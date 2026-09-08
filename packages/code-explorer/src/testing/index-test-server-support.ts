@@ -2,6 +2,7 @@ import { createServer } from "../index.js";
 import type { LanguageAdapter } from "../semantic/adapters/language-adapter.js";
 import { readyCapabilities } from "./direct-lsp-semantic-support.js";
 import { unavailableCapabilities } from "./runtime-lsp-test-support.js";
+import { testLocation } from "./semantic-test-shapes.js";
 
 export function symbol(kind: string, path: string) {
   return {
@@ -9,7 +10,7 @@ export function symbol(kind: string, path: string) {
     name: "helper",
     language: "rust" as const,
     kind,
-    location: { path, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } } },
+    location: testLocation(path, { line: 0, character: 0 }, { line: 0, character: 6 }),
   };
 }
 
@@ -35,6 +36,15 @@ export async function followDefinition({
   });
 }
 
+function focusedNavigationResult(focused: ReturnType<typeof symbol>) {
+  return {
+    operation: "focus" as const,
+    revision: { generation: 1, manifest_sha256: "test" },
+    symbol: focused,
+    content: { body: "Target", visible_symbols: [{ name: "Target", symbol_id: "target" }] },
+  };
+}
+
 type TestAdapterStatus = ReturnType<LanguageAdapter["status"]>;
 
 function testAdapterStatus(
@@ -56,12 +66,7 @@ export function focusableNavigationAdapter(): LanguageAdapter {
   const focused = symbol("function", "src/helper.rs");
   return {
     status: () => testAdapterStatus("rust", unavailableCapabilities),
-    request: async () => ({
-      operation: "focus",
-      revision: { generation: 1, manifest_sha256: "test" },
-      symbol: focused,
-      content: { body: "Target", visible_symbols: [{ name: "Target", symbol_id: "target" }] },
-    }),
+    request: async () => focusedNavigationResult(focused),
   };
 }
 

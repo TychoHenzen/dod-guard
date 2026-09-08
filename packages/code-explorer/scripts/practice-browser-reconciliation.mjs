@@ -4,6 +4,18 @@ import { join } from "node:path";
 import { PracticeFailure } from "./practice-browser-config.mjs";
 import { call, expectSuccess, waitForGeneration } from "./practice-browser-transport.mjs";
 
+function recordRefocus(refocus, evidence) {
+  if (refocus.status === 200 && !refocus.payload?.code) {
+    evidence.operation_states.refocus = refocus.payload.state;
+    return;
+  }
+  if (refocus.payload?.code === "backend_unavailable") {
+    evidence.operation_states.refocus = refocus.payload.code;
+    return;
+  }
+  throw new PracticeFailure("practice_refocus_failed");
+}
+
 export async function reconcile({ page, endpoint, session, tab, root, oracle, evidence, startGeneration, candidate, focus, handle }) {
   const sourcePath = join(root, ...oracle.source_file.split("/"));
   const original = await readFile(sourcePath, "utf8");
@@ -19,9 +31,7 @@ export async function reconcile({ page, endpoint, session, tab, root, oracle, ev
   if (stale.payload?.code !== "stale_view") throw new PracticeFailure("practice_stale_failed");
   evidence.operation_states.stale = stale.payload.code;
   const refocus = await call(page, endpoint, session, tab, "/api/focus", { request_id: randomUUID(), symbol_id: candidate.identity });
-  if (refocus.status === 200 && !refocus.payload?.code) evidence.operation_states.refocus = refocus.payload.state;
-  else if (refocus.payload?.code === "backend_unavailable") evidence.operation_states.refocus = refocus.payload.code;
-  else throw new PracticeFailure("practice_refocus_failed");
+  recordRefocus(refocus, evidence);
   const refreshPayload = expectSuccess(await call(page, endpoint, session, tab, "/api/status", { action: "refresh", request_id: randomUUID() }), "refresh");
   evidence.operation_states.refresh = refreshPayload.state;
   evidence.generations.final = refreshPayload.data?.current_generation ?? refreshPayload.project_generation;

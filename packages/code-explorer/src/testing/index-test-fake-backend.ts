@@ -9,35 +9,7 @@ export type FakeBackendLog = {
   configuration_sections: string[];
 };
 
-export async function waitForFakeConfiguration(counter: string): Promise<void> {
-  let observed = "";
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    const log = JSON.parse(readFileSync(counter, "utf8")) as FakeBackendLog;
-    observed = JSON.stringify(log);
-    if (log.configuration_sections.length === 3) return;
-    await new Promise((resolve_) => setTimeout(resolve_, 20));
-  }
-  throw new Error(`fake_backend_configuration_timeout:${observed}`);
-}
-
-export async function removeTemporaryTree(path: string): Promise<void> {
-  let lastError: unknown;
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    try {
-      rmSync(path, { recursive: true, force: true, maxRetries: 1, retryDelay: 20 });
-      return;
-    } catch (error) {
-      lastError = error;
-      await new Promise((resolve_) => setTimeout(resolve_, 20));
-    }
-  }
-  throw lastError;
-}
-
-export function writeFakeLspServer(path: string): void {
-  writeFileSync(
-    path,
-    `import { readFileSync, writeFileSync } from "node:fs";
+const fakeLspServerSource = `import { readFileSync, writeFileSync } from "node:fs";
 const logPath = process.env.CODE_EXPLORER_FAKE_COUNTER;
 const log = () => JSON.parse(readFileSync(logPath, "utf8"));
 const save = (value) => writeFileSync(logPath, JSON.stringify(value));
@@ -85,7 +57,33 @@ process.stdin.on("data", (chunk) => {
     input = input.subarray(end);
   }
 });
-`,
-    "utf8",
-  );
+`;
+
+export async function waitForFakeConfiguration(counter: string): Promise<void> {
+  let observed = "";
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const log = JSON.parse(readFileSync(counter, "utf8")) as FakeBackendLog;
+    observed = JSON.stringify(log);
+    if (log.configuration_sections.length === 3) return;
+    await new Promise((resolve_) => setTimeout(resolve_, 20));
+  }
+  throw new Error(`fake_backend_configuration_timeout:${observed}`);
+}
+
+export async function removeTemporaryTree(path: string): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    try {
+      rmSync(path, { recursive: true, force: true, maxRetries: 1, retryDelay: 20 });
+      return;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve_) => setTimeout(resolve_, 20));
+    }
+  }
+  throw lastError;
+}
+
+export function writeFakeLspServer(path: string): void {
+  writeFileSync(path, fakeLspServerSource, "utf8");
 }

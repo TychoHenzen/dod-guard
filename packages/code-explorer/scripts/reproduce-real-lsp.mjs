@@ -18,8 +18,14 @@ const selected = record.runtime_backends.find((backend) => backend.language === 
 if (!selected) throw new Error(`missing ${language} selection`);
 const spawnedProcesses = new Set();
 const spawn = createTracingSpawn(temporaryRoot, spawnedProcesses);
+function sourceRange(position, name) {
+  const end = { line: position.line, character: position.character + name.length };
+  return { start: position, end };
+}
+
 function symbol(id, name, position) {
-  return { id: `${language}:${id}`, name, language, kind: "function", location: { path: fixture.path, range: { start: position, end: { line: position.line, character: position.character + name.length } } } };
+  const location = { path: fixture.path, range: sourceRange(position, name) };
+  return { id: `${language}:${id}`, name, language, kind: "function", location };
 }
 const sources = {
   helperDefinition: symbol("helper-definition", "helper", fixture.positions.helperDefinition),

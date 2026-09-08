@@ -33,9 +33,19 @@ export async function loadPrerequisite(language) {
     throw new PracticeFailure("practice_prerequisite_failed");
   }
   const backend = selection?.runtime_backends?.find((candidate) => candidate.language === language);
-  if (selection?.schema_version !== 1 || oracle?.schema_version !== 1 || oracle?.language !== language || !backend?.compatible_version || selection?.selected_paths?.[language] !== "direct_standard_public_lsp")
+  if (!validPrerequisite(selection, oracle, backend, language))
     throw new PracticeFailure("practice_prerequisite_failed");
   return { backend, oracle };
+}
+
+function validPrerequisite(selection, oracle, backend, language) {
+  return [
+    selection?.schema_version === 1,
+    oracle?.schema_version === 1,
+    oracle?.language === language,
+    Boolean(backend?.compatible_version),
+    selection?.selected_paths?.[language] === "direct_standard_public_lsp",
+  ].every(Boolean);
 }
 
 export function baseEvidence(language, backend) {

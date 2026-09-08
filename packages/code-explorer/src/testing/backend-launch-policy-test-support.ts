@@ -13,6 +13,25 @@ export { assert, createBackendLaunchPolicy, createPythonMirrorPlan };
 
 export { identity, pythonIdentity } from "./backend-launch-policy-test-identity.js";
 
+const rustAllowlistEntry = {
+  language: "rust" as const,
+  executable_basename: "rust-analyzer",
+  executable_sha256: "a".repeat(64),
+  compatible_version: "^1.0.0",
+  arguments: ["--stdio"],
+  endpoint: "http://127.0.0.1:8181",
+  environment: { RUST_BACKTRACE: "0" },
+  safe_initialization_options: {
+    cargo: {
+      buildScripts: { enable: false },
+      procMacro: { enable: false },
+      checkOnSave: { enable: false },
+    },
+    projectConfiguration: { enable: false },
+  },
+  sentinel_passed: true,
+};
+
 export function policy(
   overrides: Partial<BackendIdentity> & {
     endpoint?: "stdio" | string;
@@ -28,27 +47,7 @@ export function policy(
 }
 
 export function policyAllowlist(overrides: Record<string, unknown> = {}) {
-  return [
-    {
-      language: "rust" as const,
-      executable_basename: "rust-analyzer",
-      executable_sha256: "a".repeat(64),
-      compatible_version: "^1.0.0",
-      arguments: ["--stdio"],
-      endpoint: "http://127.0.0.1:8181",
-      environment: { RUST_BACKTRACE: "0" },
-      safe_initialization_options: {
-        cargo: {
-          buildScripts: { enable: false },
-          procMacro: { enable: false },
-          checkOnSave: { enable: false },
-        },
-        projectConfiguration: { enable: false },
-      },
-      sentinel_passed: true,
-      ...overrides,
-    },
-  ];
+  return [{ ...structuredClone(rustAllowlistEntry), ...overrides }];
 }
 
 export function pythonAllowlist(overrides: Record<string, unknown> = {}) {

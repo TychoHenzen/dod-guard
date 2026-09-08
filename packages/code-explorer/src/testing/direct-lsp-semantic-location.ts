@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import type { ProtectedDocumentContent } from "../semantic/direct-lsp/direct-lsp.js";
 import { semanticClient } from "./direct-lsp-semantic-client.js";
+import { testRange } from "./semantic-test-shapes.js";
+
+function definitionLocation() {
+  return { uri: "file:///project/src/main.rs", range: testRange({ line: 0, character: 3 }, { line: 0, character: 7 }) };
+}
 
 export function locationClient(
   methods: string[],
@@ -9,7 +14,7 @@ export function locationClient(
   return semanticClient(
     async (method: string) => {
       methods.push(method);
-      return { uri: "file:///project/src/main.rs", range: { start: { line: 0, character: 3 }, end: { line: 0, character: 7 } } };
+      return definitionLocation();
     },
     { definitionProvider: true, referencesProvider: true },
     openProtectedDocument,

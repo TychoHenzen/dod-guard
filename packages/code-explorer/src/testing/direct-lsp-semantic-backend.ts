@@ -3,6 +3,7 @@ import { createDirectLspSemanticBackend } from "../semantic/direct-lsp/direct-ls
 import { defaultClient, semanticClient } from "./direct-lsp-semantic-client.js";
 import { readyCapabilities } from "./direct-lsp-semantic-capabilities.js";
 import { fixtureRevision, semanticRoot } from "./direct-lsp-semantic-root.js";
+import { testLocation } from "./semantic-test-shapes.js";
 
 export function createSemanticBackend(overrides: Partial<DirectLspSemanticOptions> = {}) {
   return createDirectLspSemanticBackend({
@@ -24,7 +25,7 @@ export function unavailableRelationBackend(methods: string[]) {
     name: "main",
     language: "python" as const,
     kind: "function" as const,
-    location: { path: "src/main.py", range: { start: { line: 0, character: 4 }, end: { line: 0, character: 8 } } },
+    location: testLocation("src/main.py", { line: 0, character: 4 }, { line: 0, character: 8 }),
   };
   return createSemanticBackend({
     language: "python",

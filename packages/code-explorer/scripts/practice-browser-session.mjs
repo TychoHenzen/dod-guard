@@ -2,6 +2,18 @@ import { randomUUID } from "node:crypto";
 import { PracticeFailure, readinessTimeoutMs } from "./practice-browser-config.mjs";
 import { call, expectSuccess } from "./practice-browser-transport.mjs";
 
+function backendStateReady(candidate) {
+  return ["ready", "degraded"].includes(candidate?.state);
+}
+
+function backendReady(candidate, evidence) {
+  return [
+    backendStateReady(candidate),
+    candidate?.backend_name === evidence.backend.name,
+    candidate?.backend_version === evidence.backend.version,
+  ].every(Boolean);
+}
+
 export async function createSession(page, endpoint) {
   const tab = randomUUID();
   const created = await page.evaluate(
@@ -24,10 +36,10 @@ export async function waitForBackend({ page, endpoint, session, tab, language, e
   do {
     status = expectSuccess(await call(page, endpoint, session, tab, "/api/status", { action: "status" }), "status");
     selectedBackend = status.data?.backend_status?.backends?.find((candidate) => candidate.language === language);
-    if (["ready", "degraded"].includes(selectedBackend?.state)) break;
+    if (backendStateReady(selectedBackend)) break;
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 250));
   } while (Date.now() <= readyDeadline);
-  if (!selectedBackend || !["ready", "degraded"].includes(selectedBackend.state) || selectedBackend.backend_name !== evidence.backend.name || selectedBackend.backend_version !== evidence.backend.version)
+  if (!backendReady(selectedBackend, evidence))
     throw new PracticeFailure("practice_prerequisite_failed");
   const startGeneration = status.data?.current_generation;
   if (!Number.isInteger(startGeneration)) throw new PracticeFailure("practice_generation_failed");

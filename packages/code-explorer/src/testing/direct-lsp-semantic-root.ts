@@ -1,5 +1,6 @@
 import type { ProjectRevision, SymbolIdentity } from "../semantic/contracts/contract.js";
 import type { ProjectRoot } from "../semantic/api/public-api.js";
+import { testLocation } from "./semantic-test-shapes.js";
 
 export const semanticRoot: ProjectRoot = {
   canonicalPath: "/project",
@@ -24,7 +25,7 @@ export function mainRustSymbol() {
     name: "main",
     language: "rust" as const,
     kind: "function" as const,
-    location: { path: "src/main.rs", range: { start: { line: 0, character: 3 }, end: { line: 0, character: 7 } } },
+    location: testLocation("src/main.rs", { line: 0, character: 3 }, { line: 0, character: 7 }),
   };
 }
 
@@ -34,7 +35,7 @@ export function rustEntrySymbol(): SymbolIdentity {
     name: "entry",
     language: "rust",
     kind: "function",
-    location: { path: "src/main.rs", range: { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } } },
+    location: testLocation("src/main.rs", { line: 0, character: 0 }, { line: 0, character: 5 }),
   };
 }
 

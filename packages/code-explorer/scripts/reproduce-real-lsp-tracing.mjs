@@ -11,25 +11,39 @@ function summarizeMessage(message, temporaryRoot) {
   };
 }
 
+function traceChunk(chunk, temporaryRoot) {
+  const text = new TextDecoder().decode(chunk);
+  for (const body of text.split(/Content-Length: \d+\r\n\r\n/).filter(Boolean)) {
+    try {
+      console.error(JSON.stringify(summarizeMessage(JSON.parse(body), temporaryRoot)));
+    } catch {
+      console.error(JSON.stringify({ undecodedBytes: chunk.byteLength }));
+    }
+  }
+}
+
+function tracedProcess(process_, temporaryRoot, spawnedProcesses) {
+  return {
+    ...process_,
+    onStdout(listener) {
+      process_.onStdout((chunk) => {
+        traceChunk(chunk, temporaryRoot);
+        listener(chunk);
+      });
+    },
+    onExit(listener) {
+      process_.onExit(() => {
+        spawnedProcesses.delete(process_);
+        listener();
+      });
+    },
+  };
+}
+
 export function createTracingSpawn(temporaryRoot, spawnedProcesses) {
   return function tracingSpawn(executable, arguments_, environment) {
     const process_ = spawnNativeLspProcess(executable, arguments_, environment);
     spawnedProcesses.add(process_);
-    return {
-      ...process_,
-      onStdout(listener) {
-        process_.onStdout((chunk) => {
-          const text = new TextDecoder().decode(chunk);
-          for (const body of text.split(/Content-Length: \d+\r\n\r\n/).filter(Boolean)) {
-            try { console.error(JSON.stringify(summarizeMessage(JSON.parse(body), temporaryRoot))); }
-            catch { console.error(JSON.stringify({ undecodedBytes: chunk.byteLength })); }
-          }
-          listener(chunk);
-        });
-      },
-      onExit(listener) {
-        process_.onExit(() => { spawnedProcesses.delete(process_); listener(); });
-      },
-    };
+    return tracedProcess(process_, temporaryRoot, spawnedProcesses);
   };
 }

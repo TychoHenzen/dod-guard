@@ -42,51 +42,75 @@ class InitializingProcess implements LspProcess {
   }
 }
 
+function createFixtureSource(): string {
+  const source = mkdtempSync(join(tmpdir(), "code-explorer-managed-python-"));
+  mkdirSync(join(source, "src"));
+  writeFileSync(join(source, "src", "main.py"), "def helper():\n    pass\n");
+  return source;
+}
+
+function recordPythonRoot(child: InitializingProcess, roots: string[]): void {
+  const initialize = child.sent.find(
+    (message) => message.method === "initialize",
+  )?.params as { rootUri?: string } | undefined;
+  roots[roots.length - 1] = initialize?.rootUri ?? "";
+}
+
+function pythonWriter(
+  write: (chunk: Uint8Array) => void,
+  child: InitializingProcess,
+  roots: string[],
+)
+{
+  return (chunk: Uint8Array) => {
+    write(chunk);
+    recordPythonRoot(child, roots);
+  };
+}
+
+function spawnPythonProcess(roots: string[]): LspProcess {
+  const child = new InitializingProcess();
+  roots.push("");
+  const write = child.write.bind(child);
+  child.write = pythonWriter(write, child, roots);
+  return child;
+}
+
+function createPythonSpawn(roots: string[]) {
+  return () => spawnPythonProcess(roots);
+}
+
+function createPythonPolicy() {
+  const runtime = runtimeOptions(new InitializingProcess());
+  return {
+    prepare: () => ({ ...runtime.prepare(), executable: "fake" }),
+    confirmInitialized: runtime.confirmInitialized,
+  };
+}
+
+async function exerciseManagedPython(source: string, roots: string[]): Promise<void> {
+  const backend = createManagedPythonBackend({
+    projectRoot: createNativeProjectRoot(source),
+    policy: createPythonPolicy(),
+    capabilities: unavailableCapabilities,
+    options: { symbols: new Map(), spawn: createPythonSpawn(roots) },
+  });
+  await backend.start?.();
+  await new Promise((resolve) => setImmediate(resolve));
+  writeFileSync(join(source, "src", "main.py"), "def helper():\n    return 1\n");
+  await backend.refresh?.();
+  await new Promise((resolve) => setImmediate(resolve));
+  await backend.shutdown?.();
+}
+
 export async function managedPythonRoots(): Promise<{
   roots: string[];
   source: string;
 }> {
-  const source = mkdtempSync(join(tmpdir(), "code-explorer-managed-python-"));
-  mkdirSync(join(source, "src"));
-  writeFileSync(join(source, "src", "main.py"), "def helper():\n    pass\n");
+  const source = createFixtureSource();
   const roots: string[] = [];
-  const spawn = (): LspProcess => {
-    const child = new InitializingProcess();
-    roots.push("");
-    const write = child.write.bind(child);
-    child.write = (chunk) => {
-      write(chunk);
-      const initialize = child.sent.find(
-        (message) => message.method === "initialize",
-      )?.params as { rootUri?: string } | undefined;
-      roots[roots.length - 1] = initialize?.rootUri ?? "";
-    };
-    return child;
-  };
-  const runtime = runtimeOptions(new InitializingProcess());
-  const policy = {
-    prepare: () => ({ ...runtime.prepare(), executable: "fake" }),
-    confirmInitialized: runtime.confirmInitialized,
-  };
   try {
-    const backend = createManagedPythonBackend({
-      projectRoot: createNativeProjectRoot(source),
-      policy,
-      capabilities: unavailableCapabilities,
-      options: {
-        symbols: new Map(),
-        spawn,
-      },
-    });
-    await backend.start?.();
-    await new Promise((resolve) => setImmediate(resolve));
-    writeFileSync(
-      join(source, "src", "main.py"),
-      "def helper():\n    return 1\n",
-    );
-    await backend.refresh?.();
-    await new Promise((resolve) => setImmediate(resolve));
-    await backend.shutdown?.();
+    await exerciseManagedPython(source, roots);
     return { roots, source };
   } finally {
     rmSync(source, { recursive: true, force: true });
