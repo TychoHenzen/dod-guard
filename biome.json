@@ -39,11 +39,7 @@
   },
   "formatter": {
     "enabled": true,
-    "includes": [
-      "packages/*/src/**/*.ts",
-      "packages/quality-guard/scripts/**/*.mjs",
-      "scripts/ci/**/*.mjs"
-    ],
+    "includes": ["packages/*/src/**/*.ts", "packages/quality-guard/scripts/**/*.mjs", "scripts/ci/**/*.mjs"],
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 120

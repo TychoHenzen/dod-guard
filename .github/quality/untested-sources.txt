@@ -550,7 +550,6 @@ packages/quality-guard/src/commit-gate/cli-command-check.ts
 packages/quality-guard/src/commit-gate/cli-decision-input.ts
 packages/quality-guard/src/commit-gate/cli-decision.ts
 packages/quality-guard/src/commit-gate/cli-render.ts
-packages/quality-guard/src/commit-gate/cli-tree-scanner.ts
 packages/quality-guard/src/commit-gate/cli-tree.ts
 packages/quality-guard/src/commit-gate/cli-usage.ts
 packages/quality-guard/src/commit-gate/command-result.ts
