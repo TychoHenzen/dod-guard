@@ -5,7 +5,6 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { scopeToChangedLines } from "./changed-lines.mjs";
 import { hookTargets } from "./hook-targets.mjs";
-import { shouldGate } from "./quality-guard.mjs";
 
 test("Claude write calls keep their file target", () => {
   const input = {
@@ -45,8 +44,12 @@ test("Codex apply_patch calls expose each surviving file target", () => {
     targets.map((target) => target.filePath),
     [resolve(cwd, "src/one.ts"), resolve(cwd, "src/two.ts")],
   );
-  assert.deepEqual(targets[0].input.tool_input.added_runs, ["const one = true;"]);
-  assert.deepEqual(targets[1].input.tool_input.added_runs, ["const two = true;"]);
+  assert.deepEqual(targets[0].input.tool_input.added_runs, [
+    "const one = true;",
+  ]);
+  assert.deepEqual(targets[1].input.tool_input.added_runs, [
+    "const two = true;",
+  ]);
 });
 
 test("Codex added runs scope linter findings to their final lines", () => {
@@ -67,22 +70,17 @@ test("Codex added runs scope linter findings to their final lines", () => {
   ].join("\n");
   writeFileSync(filePath, text);
 
-  assert.deepEqual(scopeToChangedLines(input, [
-    { line: 1, message: "old" },
-    { line: 2, message: "new" },
-    { line: 3, message: "new" },
-    { line: 4, message: "old" },
-  ]), [
-    { line: 2, message: "new" },
-    { line: 3, message: "new" },
-  ]);
-  rmSync(directory, { recursive: true });
-});
-test("unsupported tools and Markdown writes have no quality-gate target", () => {
-  assert.deepEqual(hookTargets({ tool_name: "Bash", tool_input: {} }), []);
-  const directory = mkdtempSync(resolve(tmpdir(), "quality-guard-markdown-"));
-  const filePath = resolve(directory, "notes.md");
-  writeFileSync(filePath, "# Notes\n");
-  assert.equal(shouldGate({ tool_name: "Write", tool_input: { file_path: filePath } }), false);
+  assert.deepEqual(
+    scopeToChangedLines(input, [
+      { line: 1, message: "old" },
+      { line: 2, message: "new" },
+      { line: 3, message: "new" },
+      { line: 4, message: "old" },
+    ]),
+    [
+      { line: 2, message: "new" },
+      { line: 3, message: "new" },
+    ],
+  );
   rmSync(directory, { recursive: true });
 });

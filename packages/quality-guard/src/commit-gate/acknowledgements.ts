@@ -9,37 +9,64 @@ export interface ArchitectureAcknowledgement {
 }
 
 function nonEmptyString(value: unknown, location: string): string {
-  if (typeof value !== "string" || !value.trim()) throw new Error(`${location} must be a non-empty string`);
+  if (typeof value !== "string" || !value.trim())
+    throw new Error(`${location} must be a non-empty string`);
   return value.trim();
 }
 
-/** Parses the append-only record with an intentionally closed five-field schema. */
-export function parseArchitectureAcknowledgements(source: string): ArchitectureAcknowledgement[] {
+function recordValue(
+  record: Record<string, unknown>,
+  key: string,
+  index: number,
+): string {
+  return nonEmptyString(
+    record[key],
+    `${DECISION_RECORD_PATH}[${index}].${key}`,
+  );
+}
+
+/** Parses the append-only record with an intentionally closed five-field
+ * schema. */
+export function parseArchitectureAcknowledgements(
+  source: string,
+): ArchitectureAcknowledgement[] {
   let parsed: unknown;
   try {
     parsed = JSON.parse(source);
   } catch {
     throw new Error(`${DECISION_RECORD_PATH} must contain valid JSON`);
   }
-  if (!Array.isArray(parsed)) throw new Error(`${DECISION_RECORD_PATH} must contain an array`);
-  return parsed.map((item, index) => {
-    if (item === null || typeof item !== "object" || Array.isArray(item))
-      throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
-    const record = item as Record<string, unknown>;
-    const unexpected = Object.keys(record).filter(
-      (key) => !["findingId", "fingerprint", "reason", "author", "time"].includes(key),
-    );
-    if (unexpected.length > 0) throw new Error(`${DECISION_RECORD_PATH}[${index}].${unexpected[0]} is not supported`);
-    return {
-      findingId: nonEmptyString(record.findingId, `${DECISION_RECORD_PATH}[${index}].findingId`),
-      fingerprint: nonEmptyString(record.fingerprint, `${DECISION_RECORD_PATH}[${index}].fingerprint`),
-      reason: nonEmptyString(record.reason, `${DECISION_RECORD_PATH}[${index}].reason`),
-      author: nonEmptyString(record.author, `${DECISION_RECORD_PATH}[${index}].author`),
-      time: nonEmptyString(record.time, `${DECISION_RECORD_PATH}[${index}].time`),
-    };
-  });
+  if (!Array.isArray(parsed))
+    throw new Error(`${DECISION_RECORD_PATH} must contain an array`);
+  return parsed.map(parseRecord);
 }
 
-export function appendArchitectureAcknowledgement(source: string, record: ArchitectureAcknowledgement): string {
-  return `${JSON.stringify([...parseArchitectureAcknowledgements(source), record], null, 2)}\n`;
+function parseRecord(
+  item: unknown,
+  index: number,
+): ArchitectureAcknowledgement {
+  if (item === null || typeof item !== "object" || Array.isArray(item))
+    throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
+  const record = item as Record<string, unknown>;
+  const allowed = ["findingId", "fingerprint", "reason", "author", "time"];
+  const unexpected = Object.keys(record).find((key) => !allowed.includes(key));
+  if (unexpected)
+    throw new Error(
+      `${DECISION_RECORD_PATH}[${index}].${unexpected} is not supported`,
+    );
+  return {
+    findingId: recordValue(record, "findingId", index),
+    fingerprint: recordValue(record, "fingerprint", index),
+    reason: recordValue(record, "reason", index),
+    author: recordValue(record, "author", index),
+    time: recordValue(record, "time", index),
+  };
+}
+
+export function appendArchitectureAcknowledgement(
+  source: string,
+  record: ArchitectureAcknowledgement,
+): string {
+  const records = [...parseArchitectureAcknowledgements(source), record];
+  return `${JSON.stringify(records, null, 2)}\n`;
 }

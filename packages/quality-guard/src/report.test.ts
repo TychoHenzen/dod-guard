@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildQualityReport } from "./report.js";
+import { buildQualityReport } from "./report-builder.js";
 
-test("scores every scanned file and keeps architecture outside the score", () => {
+test("scores files and excludes architecture from score", () => {
   const report = buildQualityReport(
     {
       profile: "default",
@@ -11,9 +11,27 @@ test("scores every scanned file and keeps architecture outside the score", () =>
         { path: "tests/noisy.test.ts", language: "ts", classification: "test" },
       ],
       violations: [
-        { file: "tests/noisy.test.ts", line: 4, rule: "complexity", severity: "error", message: "12 > 10" },
-        { file: "tests/noisy.test.ts", line: 8, rule: "else-branch", severity: "warn", message: "prefer guard" },
-        { file: "tests/noisy.test.ts", line: 9, rule: "todo-marker", severity: "warn", message: "TODO" },
+        {
+          file: "tests/noisy.test.ts",
+          line: 4,
+          rule: "complexity",
+          severity: "error",
+          message: "12 > 10",
+        },
+        {
+          file: "tests/noisy.test.ts",
+          line: 8,
+          rule: "else-branch",
+          severity: "warn",
+          message: "prefer guard",
+        },
+        {
+          file: "tests/noisy.test.ts",
+          line: 9,
+          rule: "todo-marker",
+          severity: "warn",
+          message: "TODO",
+        },
       ],
     },
     {
@@ -49,10 +67,18 @@ test("scores stop at zero and findings have deterministic order", () => {
   const report = buildQualityReport(
     {
       profile: "strict",
-      files: [{ path: "src/bad.ts", language: "ts", classification: "production" }],
+      files: [
+        { path: "src/bad.ts", language: "ts", classification: "production" },
+      ],
       violations,
     },
-    { placement: [], dependencies: [], cycles: [], encapsulation: [], errors: [] },
+    {
+      placement: [],
+      dependencies: [],
+      cycles: [],
+      encapsulation: [],
+      errors: [],
+    },
   );
 
   assert.equal(report.files[0]?.score, 0);

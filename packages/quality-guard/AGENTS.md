@@ -107,7 +107,7 @@ repository turned on as errors.
 - The hook must exit 0 on any internal failure. A broken gate must not stop work.
 - Per-file scans cannot decide `duplicate-block`, `dead-export` or
   `test-only-export`. Those need whole-project reachability, so a per-file run
-  would call every export dead. `FILE_RULES` in `quality-guard.mjs` lists what
+  would call every export dead. `FILE_RULES` in `quality-guard-gate-scan.mjs` lists what
   a single-file scan may judge.
 - `comment-bloat` and `comment-restates-code` judge a comment against the code
   under it, so `rules-comments.mjs` reads the blanked source, not the raw file.

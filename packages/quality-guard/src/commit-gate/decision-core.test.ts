@@ -24,5 +24,8 @@ test("passes a documentation-only snapshot without source findings", () => {
 
   assert.equal(decision.verdict, "PASS");
   assert.deepEqual(decision.findings, []);
-  assert.match(decision.input.reason ?? "", /No source quality decision was required/);
+  assert.match(
+    decision.input.reason ?? "",
+    /No source quality decision was required/,
+  );
 });

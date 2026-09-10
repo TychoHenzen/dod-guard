@@ -10,19 +10,29 @@ function fakeFile(path, rel, lang = "cs") {
   return { path, rel, lang };
 }
 
-test("loadFiles marks a file under a declared test-path fragment as test code", () => {
+test(
+  "loadFiles marks a file under a declared test-path fragment as test code",
+  () => {
   const files = [fakeFile(import.meta.filename, "Scenario/Runner.cs")];
   const [loaded] = loadFiles(files, ["Scenario/"]);
   assert.equal(loaded.isTest, true);
 });
 
-test("loadFiles leaves an ordinary production path alone when a declared fragment does not match it", () => {
-  const files = [fakeFile(import.meta.filename, "Scripts/PlayerController.cs")];
-  const [loaded] = loadFiles(files, ["Scenario/"]);
-  assert.equal(loaded.isTest, false);
-});
+test(
+  "loadFiles leaves an ordinary production path alone when a declared " +
+    "fragment does not match it",
+  () => {
+    const files = [
+      fakeFile(import.meta.filename, "Scripts/PlayerController.cs"),
+    ];
+    const [loaded] = loadFiles(files, ["Scenario/"]);
+    assert.equal(loaded.isTest, false);
+  },
+);
 
-test("loadFiles called with no declared fragments behaves exactly as before", () => {
+test(
+  "loadFiles called with no declared fragments behaves exactly as before",
+  () => {
   const files = [
     fakeFile(import.meta.filename, "src/foo.test.mjs", "ts"),
     fakeFile(import.meta.filename, "src/foo.mjs", "ts"),

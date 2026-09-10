@@ -11,7 +11,13 @@
  * That is the point: this bypass is easy, but it is never silent.
  */
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 
 export const SENTINEL_NAME = ".quality-skip";
@@ -56,10 +62,17 @@ export function readSkipLog(repoRoot) {
 /** Append one consumption record. Returns the record that was written. */
 export function recordConsumption(repoRoot, entry) {
   const path = join(repoRoot, SKIP_LOG);
-  const record = { ...entry, at: new Date().toISOString(), acknowledged: false };
+  const record = {
+    ...entry,
+    at: new Date().toISOString(),
+    acknowledged: false,
+  };
   try {
     mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, `${JSON.stringify([...readSkipLog(repoRoot), record], null, 2)}\n`);
+    writeFileSync(
+      path,
+      `${JSON.stringify([...readSkipLog(repoRoot), record], null, 2)}\n`,
+    );
   } catch {
     // Losing the log must not silently lose the block, so the caller still
     // reports. A tree that cannot be written cannot be committed either.

@@ -12,14 +12,20 @@
 
 import { unacknowledged } from "./sentinel.mjs";
 
-export function renderOpen(records) {
-  const lines = [`quality-guard: ${records.length} unacknowledged waiver(s).`, ""];
+function renderOpen(records) {
+  const lines = [
+    `quality-guard: ${records.length} unacknowledged waiver(s).`,
+    "",
+  ];
   for (const record of records) {
     const kind = record.rebaseline ? "rebaseline" : "new-file ceiling";
     lines.push(`  ${record.file}  [${kind}]  ${record.at ?? "unknown time"}`);
   }
   lines.push("");
-  lines.push('Review each one, then set "acknowledged": true in .github/quality/skip-log.json.');
+  lines.push(
+    'Review each one, then set "acknowledged": true in ' +
+      ".github/quality/skip-log.json.",
+  );
   return lines.join("\n");
 }
 

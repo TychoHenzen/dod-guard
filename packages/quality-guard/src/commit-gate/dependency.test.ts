@@ -3,47 +3,53 @@ import { test } from "node:test";
 import { parseQualityConfig } from "./config.js";
 import { analyzeDependencies } from "./dependency.js";
 
-test("reports a staged forbidden dependency with both normalized paths and the import", () => {
-  const config = parseQualityConfig(
-    '{"pathGroups":{"policy":["src/policy/**"],"infrastructure":["src/drivers/**"]},"dependencyDirections":[{"from":"policy","to":"infrastructure","allowed":false}]}',
-  );
-  const result = analyzeDependencies(
-    [
-      { path: "src/policy/rules.ts", imports: [] },
-      { path: "src/drivers/clock.ts", imports: [] },
-    ],
-    [
-      { path: "src/policy/rules.ts", imports: ["../drivers/clock"] },
-      { path: "src/drivers/clock.ts", imports: [] },
-    ],
-    ["src/policy/rules.ts"],
-    config,
-  );
-  assert.deepEqual(result, [
-    {
-      kind: "forbidden-direction",
-      from: "src/policy/rules.ts",
-      to: "src/drivers/clock.ts",
-      dependency: "../drivers/clock",
-      fromGroup: "policy",
-      toGroup: "infrastructure",
-    },
-  ]);
-});
+test(
+  "reports a staged forbidden dependency with both normalized paths and the " +
+    "import",
+  () => {
+    const config = parseQualityConfig(
+      '{"pathGroups":{"policy":["src/policy/**"],"infrastructure":' +
+        '["src/drivers/**"]},"dependencyDirections":[{"from":"policy",' +
+        '"to":"infrastructure","allowed":false}]}',
+    );
+    const result = analyzeDependencies({
+      beforeFiles: [
+        { path: "src/policy/rules.ts", imports: [] },
+        { path: "src/drivers/clock.ts", imports: [] },
+      ],
+      afterFiles: [
+        { path: "src/policy/rules.ts", imports: ["../drivers/clock"] },
+        { path: "src/drivers/clock.ts", imports: [] },
+      ],
+      affectedPaths: ["src/policy/rules.ts"],
+      config,
+    });
+    assert.deepEqual(result, [
+      {
+        kind: "forbidden-direction",
+        from: "src/policy/rules.ts",
+        to: "src/drivers/clock.ts",
+        dependency: "../drivers/clock",
+        fromGroup: "policy",
+        toGroup: "infrastructure",
+      },
+    ]);
+  },
+);
 test("reports the complete normalized cycle closed by a staged edge", () => {
   const config = parseQualityConfig("{}");
-  const result = analyzeDependencies(
-    [
+  const result = analyzeDependencies({
+    beforeFiles: [
       { path: "src/a.ts", imports: ["./b"] },
       { path: "src/b.ts", imports: [] },
     ],
-    [
+    afterFiles: [
       { path: "src/a.ts", imports: ["./b"] },
       { path: "src/b.ts", imports: ["./a"] },
     ],
-    ["src/b.ts"],
+    affectedPaths: ["src/b.ts"],
     config,
-  );
+  });
   assert.deepEqual(result, [
     {
       kind: "cycle",
@@ -53,19 +59,21 @@ test("reports the complete normalized cycle closed by a staged edge", () => {
   ]);
 });
 
-test("excludes test and generated modules from the production dependency graph", () => {
-  const config = parseQualityConfig('{"generatedPaths":["generated/**"],"testPaths":["test/**"]}');
+test("excludes test and generated modules", () => {
+  const config = parseQualityConfig(
+    '{"generatedPaths":["generated/**"],"testPaths":["test/**"]}',
+  );
   assert.deepEqual(
-    analyzeDependencies(
-      [{ path: "src/a.ts", imports: [] }],
-      [
+    analyzeDependencies({
+      beforeFiles: [{ path: "src/a.ts", imports: [] }],
+      afterFiles: [
         { path: "src/a.ts", imports: ["../generated/driver"] },
         { path: "generated/driver.ts", imports: ["../src/a"] },
         { path: "test/a.test.ts", imports: ["../src/a"] },
       ],
-      ["src/a.ts"],
+      affectedPaths: ["src/a.ts"],
       config,
-    ),
+    }),
     [],
   );
 });

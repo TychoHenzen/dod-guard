@@ -9,7 +9,12 @@ test("fingerprints source content but ignores documentation content", () => {
     {
       baseIdentity: "base",
       targetIdentity: "target",
-      changes: [{ kind: "add", after: { path: "src/a.ts", content: "export const value = 1;" } }],
+      changes: [
+        {
+          kind: "add",
+          after: { path: "src/a.ts", content: "export const value = 1;" },
+        },
+      ],
     },
     config,
   );
@@ -17,7 +22,12 @@ test("fingerprints source content but ignores documentation content", () => {
     {
       baseIdentity: "base",
       targetIdentity: "target",
-      changes: [{ kind: "add", after: { path: "src/a.ts", content: "export const value = 2;" } }],
+      changes: [
+        {
+          kind: "add",
+          after: { path: "src/a.ts", content: "export const value = 2;" },
+        },
+      ],
     },
     config,
   );
@@ -25,7 +35,9 @@ test("fingerprints source content but ignores documentation content", () => {
     {
       baseIdentity: "base",
       targetIdentity: "target",
-      changes: [{ kind: "add", after: { path: "README.md", content: "documentation" } }],
+      changes: [
+        { kind: "add", after: { path: "README.md", content: "documentation" } },
+      ],
     },
     config,
   );

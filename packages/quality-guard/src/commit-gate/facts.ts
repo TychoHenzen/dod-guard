@@ -1,19 +1,17 @@
-import { extractArchitectureFacts } from "../../skills/quality-refactor/scripts/lib/architecture-facts.mjs";
-import type { ArchitectureFileFact } from "./encapsulation.js";
-import type { SnapshotFile } from "./snapshot.js";
-
-export interface FactInventory {
-  files: ArchitectureFileFact[];
-  errors: string[];
-}
+import { extractArchitectureFacts } from "#quality-guard-architecture-facts";
+import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 
 /** Typed bridge to the scanner's zero-dependency parser facts. */
-export function extractFactInventory(files: SnapshotFile[], requiredPaths: string[]): FactInventory {
+export function extractFactInventory(
+  files: Array<{ path: string; content: string }>,
+  requiredPaths: string[],
+): { files: ArchitectureFileFact[]; errors: string[] } {
   const required = new Set(requiredPaths);
   const errors: string[] = [];
   const facts = files.flatMap((file) => {
     const result = extractArchitectureFacts(file);
-    if (required.has(file.path)) errors.push(...result.errors.map((error) => `${file.path}: ${error}`));
+    if (required.has(file.path))
+      errors.push(...result.errors.map((error) => `${file.path}: ${error}`));
     return result.facts
       ? [
           {

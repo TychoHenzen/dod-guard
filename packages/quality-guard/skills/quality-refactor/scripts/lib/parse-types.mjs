@@ -1,5 +1,3 @@
-// Type declaration extraction.
-
 import { lineAt } from "./offsets.mjs";
 
 const TYPE_KEYWORDS = {
@@ -11,13 +9,13 @@ const TYPE_KEYWORDS = {
   cpp: /\b(class|struct|enum)\s+([A-Za-z_]\w*)/g,
   py: /^class\s+([A-Za-z_]\w*)/gm,
 };
-
-/**
- * Braces that group rather than nest. A C# `namespace` or a Rust `mod` wraps
- * the whole file, so counting its brace would make every type look nested and
- * silently disable the one-type-per-file rule.
- */
 const CONTAINER_BLOCK = /\b(?:namespace|mod|package)\s+[\w.:]*\s*\{/g;
+const RUST_IMPL_HEADER = new RegExp(
+  String.raw`\bimpl(?:<[^{}]*>)?\s+` +
+    String.raw`(?:[A-Za-z_][\w:]*(?:<[^{}]*>)?\s+for\s+)?` +
+    String.raw`([A-Za-z_][\w:]*)(?:<[^{}]*>)?\s*(?:where[^{]*)?\{`,
+  "g",
+);
 
 function containerOpens(code) {
   const opens = new Set();
@@ -30,68 +28,64 @@ function containerOpens(code) {
   return opens;
 }
 
-/**
- * Forward-only brace depth. Returns a function that reports the depth at an
- * offset; offsets must be requested in increasing order, which is what a
- * global regex produces.
- */
-function depthTracker(code) {
-  const skip = containerOpens(code);
-  const stack = [];
-  let cursor = 0;
-  let depth = 0;
-  return (offset) => {
-    while (cursor < offset) {
-      if (code[cursor] === "{") {
-        const skipped = skip.has(cursor);
-        stack.push(skipped);
-        if (!skipped) depth += 1;
-      } else if (code[cursor] === "}" && stack.pop() === false) depth -= 1;
-      cursor += 1;
-    }
-    return depth;
-  };
+function advanceDepth({ code, state, skip, offset }) {
+  while (state.cursor < offset) {
+    updateDepth({ ch: code[state.cursor], state, skip, cursor: state.cursor });
+    state.cursor += 1;
+  }
+  return state.depth;
 }
 
-/** Top-level type declarations only — nested types are a different concern. */
-export function findTypes(code, lang, starts) {
-  const pattern = TYPE_KEYWORDS[lang];
-  if (!pattern) return [];
+function updateDepth({ ch, state, skip, cursor }) {
+  if (ch === "{") {
+    const ignored = skip.has(cursor);
+    state.stack.push(ignored);
+    state.depth += !ignored;
+  }
+  if (ch === "}" && state.stack.pop() === false) state.depth -= 1;
+}
+
+function depthTracker(code) {
+  const state = { cursor: 0, depth: 0, stack: [] };
+  const skip = containerOpens(code);
+  return (offset) => advanceDepth({ code, state, skip, offset });
+}
+
+function typeName(lang, isPy, match) {
+  return lang === "go" || isPy ? match[1] : match[2];
+}
+function collectTypes({ code, lang, starts, pattern }) {
   const isPy = lang === "py";
   const depthAt = depthTracker(code);
   const found = [];
   pattern.lastIndex = 0;
   let match = pattern.exec(code);
   while (match !== null) {
-    const name = lang === "go" || isPy ? match[1] : match[2];
     if (isPy || depthAt(match.index) === 0) {
-      found.push({ name, line: lineAt(starts, match.index), offset: match.index });
+      found.push({
+        name: typeName(lang, isPy, match),
+        line: lineAt(starts, match.index),
+        offset: match.index,
+      });
     }
     match = pattern.exec(code);
   }
   return found;
 }
 
-/**
- * Rust impl headers: `impl Type {}`, `impl<T> Type<T> {}`, `impl Trait for
- * Type {}`. Captures only the implementing type's name; classSpans
- * (rules-file.mjs) borrows that type's fields from its struct span. Trait,
- * generics, and `where` are skipped via `[^{}]`, since none contain braces.
- */
-const RUST_IMPL_HEADER =
-  /\bimpl(?:<[^{}]*>)?\s+(?:[A-Za-z_][\w:]*(?:<[^{}]*>)?\s+for\s+)?([A-Za-z_][\w:]*)(?:<[^{}]*>)?\s*(?:where[^{]*)?\{/g;
+export function findTypes(code, lang, starts) {
+  const pattern = TYPE_KEYWORDS[lang];
+  return pattern ? collectTypes({ code, lang, starts, pattern }) : [];
+}
 
-/** Impl spans, split from findTypes so `struct Foo` + `impl Foo` count as one
- * type not two. Reuses depthTracker so a `mod`-wrapped impl is not top-level. */
 export function findRustImpls(code) {
   const depthAt = depthTracker(code);
   const found = [];
   RUST_IMPL_HEADER.lastIndex = 0;
   let match = RUST_IMPL_HEADER.exec(code);
   while (match !== null) {
-    if (depthAt(match.index) === 0) {
+    if (depthAt(match.index) === 0)
       found.push({ typeName: match[1], offset: match.index });
-    }
     match = RUST_IMPL_HEADER.exec(code);
   }
   return found;

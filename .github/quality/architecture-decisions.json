@@ -8805,5 +8805,1937 @@
     "reason": "Reviewed for issue #54: this internal surface finding reflects intentional Fossil analysis decomposition and test seams, not expansion of the public plugin protocol or external compatibility API. Fossil tests, build, bundle, CLI smoke, and strict scan passed.",
     "author": "Codex",
     "time": "2026-09-08T21:14:48.727Z"
+  },
+  {
+    "findingId": "000ac656dcfbb8e97898bd15ba87d2f075e43c943f131ba12392292733e723be",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "011bc41da65fe0772670966db29225710adedda4150cd7f4552df09f9cc93c9f",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "026c94c5a0f99d2079e05d8cee765369f105256022622ea03660a2d620e02cbd",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "02dfcef380fd3a9250a0d34011d47150430323d6de85d28bf68c230f68e8742e",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "08f017f6e97df92382e59ae8b5685098882ef5ca370b0322930893011c0b3cc0",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "0a3a8ec5b73c8c0ca953d4468c7ce38f8bf61e1cb34ca90edf39de5e3a20e945",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "0d3b091f92e0046085b5f64c7bf7f77c2a6680fc2cd36bb31ca31b609743c0b7",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "0f8123d9e7fa365db2d027dfba1270380a21cbb9cca1d11b4e72a33fb830055a",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "11151d7bb053c95d82b4dcda8830c73395454ed29005c1f25af191543e365558",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "138e1f6ebffff2b8a48808a9eb5f3c4e861bd2471b9f032e42c4bd2b00027464",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "13972d1e85012fc6fd05838eb410177d76063ec595347a0b25b47fd2f56aace5",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "153e62d36eeae6b4ac847beddb2d80827c751d2d06d422f966829e005e02f3a6",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "1c2364492d8f1c54de4f5765118d853b59a44fe6dd440cd0be35d660d3542224",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "1c582501987c6f2c0d754f0d793dc9137e6d56b48c8c80b0ef05ee20308fc5b9",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "1d848d40fe20cc0941ff354231e117843a48261ab7ba25952eef0b81c172ccca",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "206907e382985b058af8ba8e9335511e41faca05e5af2a33cac8bd5804f5dea2",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "21119648d98fd4b25a5c05f5f9d5e6c0211f727c385923536ca98665f9ecab1c",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "2388e94c06cdfad53bef4547a36ec0b788e421c028823a745d74da0e0610c076",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "28ba8208602f2d510374f195cb2ec1e445dbd6c8e6ac8fe8e1816d3a0e8c3296",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "30f4925554965c8b944ea1304569e8a2e17b4bf3d36ae140245a3401eb936097",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "317cf3d26c33e02a9efa4b891eef479ddf80f752f357a7b1740331d963b3cbf6",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "31839ddc3f669d4f9988a9d49671d60ea8a1148e91277717a88858d017626ec0",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "31d82be25302d47bc5e95416574f041395d3ff2863a63fac1386a70f92e3cb52",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "3701bf5fad6d2363f652033bb6d3d79953fab470c5bbd4c9d25ebe39d89cd06b",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "372ab80e6ce0ed970ccfca742db09c25bbcd24c1b5a67d74aed6c5fbe2c1ed74",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "3ac8f255cbebc97fa4a5bc5f8ecdb3e80c7d44ff4969bedb442a3851c1a415f6",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "3ae8557d3ecbab8c024d05f4b95065d2b8af0af17fe2f1e3c972cf5b8637d7f3",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "3c28d3f88ed40f564d33725b576f9d5427fd24e2ac8b868fed424d6689100df2",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "467656f5991f7f43a8e67c966e1d9e949d23a07a5934dc14596850400b7dd9b6",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "4682661501c3daf1267ea87398626cba7a95fcb219b07b9c06960af30888c31c",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "46ca6acc8be791e263cebff58b278b3c5f85900e1c7aef3d49c308c6632f4260",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "4975508cc3efdcec6c35a87245fb02bbf6563fa9d7f6e7743020ff3a2e71d719",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "4af772002f1d7ef8353d9be34b6816ed5e7c316019d5395a422810717e8ba4d6",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "4e2a4424f85e721e3f7e7bb570f5ff21652a241e7349737aecd0494371c15f8b",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "4f5c10b146bd69c553a80232e1d63b574ff6f05c621e566cb03c4f54970b5385",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "50a65cc13487b4d8c7924ce79d99153bfd2efc5d2d15a43f545fcb085f15d866",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "54ed6f2b086aa9375b9e9423b93e554601cd530979741afccdfe02cf8f7bb1a6",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "5a21458b353cb0ef3ea2ad3aa5c6211bc657a8997d8e1c341103a2d941501f61",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "61509a49e78d1ea44a65b6d9f4b22e27e901e5e14c2f3bf2b093dcb894f568d4",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "62cb3e7ef4f835d3db65a37329f453f757340bd8503d8b4ef14c273a5e663fcf",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "7027194ef9dd878d7e09ab1c2864e075a5ee4c553024df1b7d4526fcac56787a",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "751d15e3f3247d143cbb4ef8bbdd3adf8870d2bab266793cb939a2d0d639fa18",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "7aa15549f7f84fab54642c5e26fa6233350dcb0c8e355e936f05ea674c73f7b2",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "7e118c51e96c23d5b0a7aeb36f4646a942d9580cef46240d461340a4b705a1fe",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "8448626a4fa79a21e0e8f847d7d70866e0a85ae4e4ed31c76a54305b4fa70731",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "8893db5f257f810afe1b517067c4760590d0c6609abee75aa501ec26d9a7b60f",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "88c8c8835c4e3e89e4fc5ed913dd3c4619d8e125a807b2f3d33d08281cd0ea2b",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "8d444eba7f83e3d75cd50d936ec2a2320964526e9bc21a0f4b6b4af43cd826c0",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "955c7e6071d58abb19923f0d3de41668b9e5ce0f1ba8afef1ce31c5e7bd9a933",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "97efec369cec6ad2c8ad155837e37238a944e64cdaa9506e1c85c50501e91fea",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "98abeae5d11a9e9f549d365254b3c2efd01d6435f2b05fbbe55bba3c13398a2f",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "9bc7c6ec1288e7bb8cc7c92d784d3900a23eab0fed558c9fdc81cd4747f6b8e3",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "a38bc25777665f6c7e8d05653ce3ba715648f9f986f1f250843528f430431dfe",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "a52b5f7066931e75c0c077f7ce6a383d843876ca2065a0ffaf1b1f3e7e0085f2",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "a558f6cc333a487d606943dc5ad99f3c00f6fb25858f559c9af759d162d17ca4",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "a76df1760c8454672272a27c17b632fed44bab737053cd186806e03bde3dd4ba",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "abe305d8968b983185ac9c31a25ba78ef38244323903552cdba9ee62db00482d",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "b13d2c5256218d07f318895a6318d5b84f2b9aa39509a21bff8b3cc615639e68",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "b434d4dd6b9015a4cffe0edfbb62ca658fe2edc4964d1a04937086494443214d",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "b69b51b5f04c0566ca93f3f72bff3dd1dba4708edb446e54e2f259bc04dcf570",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "b99ba633d720b293f1f1925664afae99baf25b1d40f0aad64162a20e54e20af0",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "bc9855f7c5d7a7bcfc86127d9dabffa441a06a926f6aa384df003cc212e8b061",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "bcdaa410f617415826a7d44468e25d88f5993d643a64d4008aeb4e5255df0661",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "bd13b3e2aa105380ed5ca97b36bc49b2195c42de94eae25199684fe4fb6ebd12",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "c1ae2e23b3e6a4a833822b483986c66da50ae2402ce3f7e78f851695a5a5a506",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "c4d249de0edcc2c40cbe950b96a1d6f903f71af42e2aea7be6751fa37bb7d618",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "c53683a19eb762074488313709b3d7244f8134502faf0bf1434e0880c1e33499",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "c728dc95b788a884358f0043ff00d5ab3c342ea14482ddff7e5b163c1e213326",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "ca5ad151d45df9ed97f471d3f8c250fa06d478c2bc44727de10eab73cd10a813",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "caa83fd9b2cfd648889b117fd28df666d7086d1ccdb1065e362d9c20eeaf4636",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "cb61d93ac2996d58d7d117c61b01ec8a47aee75522700ba342318f222f491d50",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "cce0cdba9debf77ad3cebf0f49dcc706e0edb3faf3040970a25ca3fb63de51c5",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "d1090fba79ece59a11ca83dd15338316555749096fd3a776b9fdbde3282dcc5c",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "d1544482702cbbed5e8a986087a34db9b285e71ef9d175f6455979435e59d382",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "d2bb4e01ade08a615fe91653875bdf7ea4bd800fa871953a741fcbd6fd53a555",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "d4d638ea4a71419242896d7b2f13b4a61232dfd052777899b11ea56e6aff5941",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "d83852bd53cb54fa7abea217f1f81dac9ec6595da4921892ccf75477ec9a152d",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "d92b884e2b9abbd3bd5121fffd32013312b893133acf09910316f48331afdd20",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "db39057ce27a6a95f56c71764d76ee89e216189cf9a81a7886ad5e82559ea4e2",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "dcc2861daf6dc6cf7134b1ed92be56a2be8b4633c71a3f256c775251a3ad8229",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "de0daed8c87c8d009c557d6a23f8e7f367de8cd623a72d874dc4f99e8a181d2c",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "de38de0928b01f4fe0851de14a427f3b748e6355613ff526d15d1f52674785d1",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "dec6bc978f2aaaa8ad826e09af93a73a7344f48d20cbf676f863e3f6cba4649d",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "e0b8cbbea8a6df970a43e68f752081b59cdac308f43bf1e0181768c27effe329",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "e18a9c8a3d01ee07c78f48940866c9fa4ff3bfff4d34e345011f400b67d556d9",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "e56ff60cc27a6906d57cc7698cd4ed4cef1c56e0c90dd6a0fd74de446f6fd327",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "e6a04d256437ee6c2f300400a608f76a21c2503ab6a408bb3b5b1837fde9c530",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "e737a6525a8b84fc07e6613957d472ca0b411437d96708621bb8db9c7b53ef3e",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "ef510c9cbe9c9c366dd4fb9c00e803c12c1f5aef577ac4a3e289720416b3dbc2",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "f067a42422cdd058f8fb7d1c23fe63104fcaec4a5eadf158245f5e7fe4334966",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "f5f7c59882d4255181bc9b29b79562824e204d6dee7f4ae70e8c65a28eca8341",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "f903f3557f1b7c62069dc6ad44724b96f0c3a1dbce5f7204f4a02920bf808b0a",
+    "fingerprint": "f6de18048590b2c6905bc36deb509862bcce40a0d7d16355d8c15f42ec314050",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T17:59:42.495Z"
+  },
+  {
+    "findingId": "000ac656dcfbb8e97898bd15ba87d2f075e43c943f131ba12392292733e723be",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "011bc41da65fe0772670966db29225710adedda4150cd7f4552df09f9cc93c9f",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "026c94c5a0f99d2079e05d8cee765369f105256022622ea03660a2d620e02cbd",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "02dfcef380fd3a9250a0d34011d47150430323d6de85d28bf68c230f68e8742e",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "08f017f6e97df92382e59ae8b5685098882ef5ca370b0322930893011c0b3cc0",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "0a3a8ec5b73c8c0ca953d4468c7ce38f8bf61e1cb34ca90edf39de5e3a20e945",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "0d3b091f92e0046085b5f64c7bf7f77c2a6680fc2cd36bb31ca31b609743c0b7",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "0f8123d9e7fa365db2d027dfba1270380a21cbb9cca1d11b4e72a33fb830055a",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "11151d7bb053c95d82b4dcda8830c73395454ed29005c1f25af191543e365558",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "138e1f6ebffff2b8a48808a9eb5f3c4e861bd2471b9f032e42c4bd2b00027464",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "13972d1e85012fc6fd05838eb410177d76063ec595347a0b25b47fd2f56aace5",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "153e62d36eeae6b4ac847beddb2d80827c751d2d06d422f966829e005e02f3a6",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "1c2364492d8f1c54de4f5765118d853b59a44fe6dd440cd0be35d660d3542224",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "1c582501987c6f2c0d754f0d793dc9137e6d56b48c8c80b0ef05ee20308fc5b9",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "1d848d40fe20cc0941ff354231e117843a48261ab7ba25952eef0b81c172ccca",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "206907e382985b058af8ba8e9335511e41faca05e5af2a33cac8bd5804f5dea2",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "21119648d98fd4b25a5c05f5f9d5e6c0211f727c385923536ca98665f9ecab1c",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "2388e94c06cdfad53bef4547a36ec0b788e421c028823a745d74da0e0610c076",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "28ba8208602f2d510374f195cb2ec1e445dbd6c8e6ac8fe8e1816d3a0e8c3296",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "30f4925554965c8b944ea1304569e8a2e17b4bf3d36ae140245a3401eb936097",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "317cf3d26c33e02a9efa4b891eef479ddf80f752f357a7b1740331d963b3cbf6",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "31839ddc3f669d4f9988a9d49671d60ea8a1148e91277717a88858d017626ec0",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "31d82be25302d47bc5e95416574f041395d3ff2863a63fac1386a70f92e3cb52",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "3701bf5fad6d2363f652033bb6d3d79953fab470c5bbd4c9d25ebe39d89cd06b",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "372ab80e6ce0ed970ccfca742db09c25bbcd24c1b5a67d74aed6c5fbe2c1ed74",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "3ac8f255cbebc97fa4a5bc5f8ecdb3e80c7d44ff4969bedb442a3851c1a415f6",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "3ae8557d3ecbab8c024d05f4b95065d2b8af0af17fe2f1e3c972cf5b8637d7f3",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "3c28d3f88ed40f564d33725b576f9d5427fd24e2ac8b868fed424d6689100df2",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "467656f5991f7f43a8e67c966e1d9e949d23a07a5934dc14596850400b7dd9b6",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "4682661501c3daf1267ea87398626cba7a95fcb219b07b9c06960af30888c31c",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "46ca6acc8be791e263cebff58b278b3c5f85900e1c7aef3d49c308c6632f4260",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "4975508cc3efdcec6c35a87245fb02bbf6563fa9d7f6e7743020ff3a2e71d719",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "4af772002f1d7ef8353d9be34b6816ed5e7c316019d5395a422810717e8ba4d6",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "4e2a4424f85e721e3f7e7bb570f5ff21652a241e7349737aecd0494371c15f8b",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "4f5c10b146bd69c553a80232e1d63b574ff6f05c621e566cb03c4f54970b5385",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "50a65cc13487b4d8c7924ce79d99153bfd2efc5d2d15a43f545fcb085f15d866",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "54ed6f2b086aa9375b9e9423b93e554601cd530979741afccdfe02cf8f7bb1a6",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "5a21458b353cb0ef3ea2ad3aa5c6211bc657a8997d8e1c341103a2d941501f61",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "61509a49e78d1ea44a65b6d9f4b22e27e901e5e14c2f3bf2b093dcb894f568d4",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "62cb3e7ef4f835d3db65a37329f453f757340bd8503d8b4ef14c273a5e663fcf",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "7027194ef9dd878d7e09ab1c2864e075a5ee4c553024df1b7d4526fcac56787a",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "751d15e3f3247d143cbb4ef8bbdd3adf8870d2bab266793cb939a2d0d639fa18",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "7aa15549f7f84fab54642c5e26fa6233350dcb0c8e355e936f05ea674c73f7b2",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "7e118c51e96c23d5b0a7aeb36f4646a942d9580cef46240d461340a4b705a1fe",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "8448626a4fa79a21e0e8f847d7d70866e0a85ae4e4ed31c76a54305b4fa70731",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "8893db5f257f810afe1b517067c4760590d0c6609abee75aa501ec26d9a7b60f",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "88c8c8835c4e3e89e4fc5ed913dd3c4619d8e125a807b2f3d33d08281cd0ea2b",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "8d444eba7f83e3d75cd50d936ec2a2320964526e9bc21a0f4b6b4af43cd826c0",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "955c7e6071d58abb19923f0d3de41668b9e5ce0f1ba8afef1ce31c5e7bd9a933",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "97efec369cec6ad2c8ad155837e37238a944e64cdaa9506e1c85c50501e91fea",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "98abeae5d11a9e9f549d365254b3c2efd01d6435f2b05fbbe55bba3c13398a2f",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "9bc7c6ec1288e7bb8cc7c92d784d3900a23eab0fed558c9fdc81cd4747f6b8e3",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "a38bc25777665f6c7e8d05653ce3ba715648f9f986f1f250843528f430431dfe",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "a52b5f7066931e75c0c077f7ce6a383d843876ca2065a0ffaf1b1f3e7e0085f2",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "a558f6cc333a487d606943dc5ad99f3c00f6fb25858f559c9af759d162d17ca4",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "a76df1760c8454672272a27c17b632fed44bab737053cd186806e03bde3dd4ba",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "abe305d8968b983185ac9c31a25ba78ef38244323903552cdba9ee62db00482d",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "b13d2c5256218d07f318895a6318d5b84f2b9aa39509a21bff8b3cc615639e68",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "b434d4dd6b9015a4cffe0edfbb62ca658fe2edc4964d1a04937086494443214d",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "b69b51b5f04c0566ca93f3f72bff3dd1dba4708edb446e54e2f259bc04dcf570",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "b99ba633d720b293f1f1925664afae99baf25b1d40f0aad64162a20e54e20af0",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "bc9855f7c5d7a7bcfc86127d9dabffa441a06a926f6aa384df003cc212e8b061",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "bcdaa410f617415826a7d44468e25d88f5993d643a64d4008aeb4e5255df0661",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "bd13b3e2aa105380ed5ca97b36bc49b2195c42de94eae25199684fe4fb6ebd12",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "c1ae2e23b3e6a4a833822b483986c66da50ae2402ce3f7e78f851695a5a5a506",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "c4d249de0edcc2c40cbe950b96a1d6f903f71af42e2aea7be6751fa37bb7d618",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "c53683a19eb762074488313709b3d7244f8134502faf0bf1434e0880c1e33499",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "c728dc95b788a884358f0043ff00d5ab3c342ea14482ddff7e5b163c1e213326",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "ca5ad151d45df9ed97f471d3f8c250fa06d478c2bc44727de10eab73cd10a813",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "caa83fd9b2cfd648889b117fd28df666d7086d1ccdb1065e362d9c20eeaf4636",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "cb61d93ac2996d58d7d117c61b01ec8a47aee75522700ba342318f222f491d50",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "cce0cdba9debf77ad3cebf0f49dcc706e0edb3faf3040970a25ca3fb63de51c5",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "d1090fba79ece59a11ca83dd15338316555749096fd3a776b9fdbde3282dcc5c",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "d1544482702cbbed5e8a986087a34db9b285e71ef9d175f6455979435e59d382",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "d2bb4e01ade08a615fe91653875bdf7ea4bd800fa871953a741fcbd6fd53a555",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "d4d638ea4a71419242896d7b2f13b4a61232dfd052777899b11ea56e6aff5941",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "d83852bd53cb54fa7abea217f1f81dac9ec6595da4921892ccf75477ec9a152d",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "d92b884e2b9abbd3bd5121fffd32013312b893133acf09910316f48331afdd20",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "db39057ce27a6a95f56c71764d76ee89e216189cf9a81a7886ad5e82559ea4e2",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "dcc2861daf6dc6cf7134b1ed92be56a2be8b4633c71a3f256c775251a3ad8229",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "de0daed8c87c8d009c557d6a23f8e7f367de8cd623a72d874dc4f99e8a181d2c",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "de38de0928b01f4fe0851de14a427f3b748e6355613ff526d15d1f52674785d1",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "dec6bc978f2aaaa8ad826e09af93a73a7344f48d20cbf676f863e3f6cba4649d",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "e0b8cbbea8a6df970a43e68f752081b59cdac308f43bf1e0181768c27effe329",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "e18a9c8a3d01ee07c78f48940866c9fa4ff3bfff4d34e345011f400b67d556d9",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "e56ff60cc27a6906d57cc7698cd4ed4cef1c56e0c90dd6a0fd74de446f6fd327",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "e6a04d256437ee6c2f300400a608f76a21c2503ab6a408bb3b5b1837fde9c530",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "e737a6525a8b84fc07e6613957d472ca0b411437d96708621bb8db9c7b53ef3e",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "ef510c9cbe9c9c366dd4fb9c00e803c12c1f5aef577ac4a3e289720416b3dbc2",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "f067a42422cdd058f8fb7d1c23fe63104fcaec4a5eadf158245f5e7fe4334966",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "f5f7c59882d4255181bc9b29b79562824e204d6dee7f4ae70e8c65a28eca8341",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+    "findingId": "f903f3557f1b7c62069dc6ad44724b96f0c3a1dbce5f7204f4a02920bf808b0a",
+    "fingerprint": "df039aa83315f9124f0d32883e799d10545a47fd4c4f1dc08c2f4c1de6a32208",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T19:02:08.973Z"
+  },
+  {
+   "findingId": "000ac656dcfbb8e97898bd15ba87d2f075e43c943f131ba12392292733e723be",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "011bc41da65fe0772670966db29225710adedda4150cd7f4552df09f9cc93c9f",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "026c94c5a0f99d2079e05d8cee765369f105256022622ea03660a2d620e02cbd",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "02dfcef380fd3a9250a0d34011d47150430323d6de85d28bf68c230f68e8742e",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "08f017f6e97df92382e59ae8b5685098882ef5ca370b0322930893011c0b3cc0",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "0a3a8ec5b73c8c0ca953d4468c7ce38f8bf61e1cb34ca90edf39de5e3a20e945",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "0d3b091f92e0046085b5f64c7bf7f77c2a6680fc2cd36bb31ca31b609743c0b7",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "0f8123d9e7fa365db2d027dfba1270380a21cbb9cca1d11b4e72a33fb830055a",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "11151d7bb053c95d82b4dcda8830c73395454ed29005c1f25af191543e365558",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "138e1f6ebffff2b8a48808a9eb5f3c4e861bd2471b9f032e42c4bd2b00027464",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "13972d1e85012fc6fd05838eb410177d76063ec595347a0b25b47fd2f56aace5",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "153e62d36eeae6b4ac847beddb2d80827c751d2d06d422f966829e005e02f3a6",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "1c2364492d8f1c54de4f5765118d853b59a44fe6dd440cd0be35d660d3542224",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "1c582501987c6f2c0d754f0d793dc9137e6d56b48c8c80b0ef05ee20308fc5b9",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "1d848d40fe20cc0941ff354231e117843a48261ab7ba25952eef0b81c172ccca",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "206907e382985b058af8ba8e9335511e41faca05e5af2a33cac8bd5804f5dea2",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "21119648d98fd4b25a5c05f5f9d5e6c0211f727c385923536ca98665f9ecab1c",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "2388e94c06cdfad53bef4547a36ec0b788e421c028823a745d74da0e0610c076",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "28ba8208602f2d510374f195cb2ec1e445dbd6c8e6ac8fe8e1816d3a0e8c3296",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "30f4925554965c8b944ea1304569e8a2e17b4bf3d36ae140245a3401eb936097",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "317cf3d26c33e02a9efa4b891eef479ddf80f752f357a7b1740331d963b3cbf6",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "31839ddc3f669d4f9988a9d49671d60ea8a1148e91277717a88858d017626ec0",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "31d82be25302d47bc5e95416574f041395d3ff2863a63fac1386a70f92e3cb52",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "3701bf5fad6d2363f652033bb6d3d79953fab470c5bbd4c9d25ebe39d89cd06b",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "372ab80e6ce0ed970ccfca742db09c25bbcd24c1b5a67d74aed6c5fbe2c1ed74",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "3ac8f255cbebc97fa4a5bc5f8ecdb3e80c7d44ff4969bedb442a3851c1a415f6",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "3ae8557d3ecbab8c024d05f4b95065d2b8af0af17fe2f1e3c972cf5b8637d7f3",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "3c28d3f88ed40f564d33725b576f9d5427fd24e2ac8b868fed424d6689100df2",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "467656f5991f7f43a8e67c966e1d9e949d23a07a5934dc14596850400b7dd9b6",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "4682661501c3daf1267ea87398626cba7a95fcb219b07b9c06960af30888c31c",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "46ca6acc8be791e263cebff58b278b3c5f85900e1c7aef3d49c308c6632f4260",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "4975508cc3efdcec6c35a87245fb02bbf6563fa9d7f6e7743020ff3a2e71d719",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "4af772002f1d7ef8353d9be34b6816ed5e7c316019d5395a422810717e8ba4d6",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "4e2a4424f85e721e3f7e7bb570f5ff21652a241e7349737aecd0494371c15f8b",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "4f5c10b146bd69c553a80232e1d63b574ff6f05c621e566cb03c4f54970b5385",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "50a65cc13487b4d8c7924ce79d99153bfd2efc5d2d15a43f545fcb085f15d866",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "54ed6f2b086aa9375b9e9423b93e554601cd530979741afccdfe02cf8f7bb1a6",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "5a21458b353cb0ef3ea2ad3aa5c6211bc657a8997d8e1c341103a2d941501f61",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "61509a49e78d1ea44a65b6d9f4b22e27e901e5e14c2f3bf2b093dcb894f568d4",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "62cb3e7ef4f835d3db65a37329f453f757340bd8503d8b4ef14c273a5e663fcf",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "7027194ef9dd878d7e09ab1c2864e075a5ee4c553024df1b7d4526fcac56787a",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "751d15e3f3247d143cbb4ef8bbdd3adf8870d2bab266793cb939a2d0d639fa18",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "7aa15549f7f84fab54642c5e26fa6233350dcb0c8e355e936f05ea674c73f7b2",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "7e118c51e96c23d5b0a7aeb36f4646a942d9580cef46240d461340a4b705a1fe",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "8448626a4fa79a21e0e8f847d7d70866e0a85ae4e4ed31c76a54305b4fa70731",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "8893db5f257f810afe1b517067c4760590d0c6609abee75aa501ec26d9a7b60f",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "88c8c8835c4e3e89e4fc5ed913dd3c4619d8e125a807b2f3d33d08281cd0ea2b",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "8d444eba7f83e3d75cd50d936ec2a2320964526e9bc21a0f4b6b4af43cd826c0",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "955c7e6071d58abb19923f0d3de41668b9e5ce0f1ba8afef1ce31c5e7bd9a933",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "97efec369cec6ad2c8ad155837e37238a944e64cdaa9506e1c85c50501e91fea",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "98abeae5d11a9e9f549d365254b3c2efd01d6435f2b05fbbe55bba3c13398a2f",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "9bc7c6ec1288e7bb8cc7c92d784d3900a23eab0fed558c9fdc81cd4747f6b8e3",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "a38bc25777665f6c7e8d05653ce3ba715648f9f986f1f250843528f430431dfe",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "a52b5f7066931e75c0c077f7ce6a383d843876ca2065a0ffaf1b1f3e7e0085f2",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "a558f6cc333a487d606943dc5ad99f3c00f6fb25858f559c9af759d162d17ca4",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "a76df1760c8454672272a27c17b632fed44bab737053cd186806e03bde3dd4ba",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "abe305d8968b983185ac9c31a25ba78ef38244323903552cdba9ee62db00482d",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "b13d2c5256218d07f318895a6318d5b84f2b9aa39509a21bff8b3cc615639e68",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "b434d4dd6b9015a4cffe0edfbb62ca658fe2edc4964d1a04937086494443214d",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "b69b51b5f04c0566ca93f3f72bff3dd1dba4708edb446e54e2f259bc04dcf570",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "b99ba633d720b293f1f1925664afae99baf25b1d40f0aad64162a20e54e20af0",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "bc9855f7c5d7a7bcfc86127d9dabffa441a06a926f6aa384df003cc212e8b061",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "bcdaa410f617415826a7d44468e25d88f5993d643a64d4008aeb4e5255df0661",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "bd13b3e2aa105380ed5ca97b36bc49b2195c42de94eae25199684fe4fb6ebd12",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "c1ae2e23b3e6a4a833822b483986c66da50ae2402ce3f7e78f851695a5a5a506",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "c4d249de0edcc2c40cbe950b96a1d6f903f71af42e2aea7be6751fa37bb7d618",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "c53683a19eb762074488313709b3d7244f8134502faf0bf1434e0880c1e33499",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "c728dc95b788a884358f0043ff00d5ab3c342ea14482ddff7e5b163c1e213326",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "ca5ad151d45df9ed97f471d3f8c250fa06d478c2bc44727de10eab73cd10a813",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "caa83fd9b2cfd648889b117fd28df666d7086d1ccdb1065e362d9c20eeaf4636",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "cb61d93ac2996d58d7d117c61b01ec8a47aee75522700ba342318f222f491d50",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "cce0cdba9debf77ad3cebf0f49dcc706e0edb3faf3040970a25ca3fb63de51c5",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "d1090fba79ece59a11ca83dd15338316555749096fd3a776b9fdbde3282dcc5c",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "d1544482702cbbed5e8a986087a34db9b285e71ef9d175f6455979435e59d382",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "d2bb4e01ade08a615fe91653875bdf7ea4bd800fa871953a741fcbd6fd53a555",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "d4d638ea4a71419242896d7b2f13b4a61232dfd052777899b11ea56e6aff5941",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "d83852bd53cb54fa7abea217f1f81dac9ec6595da4921892ccf75477ec9a152d",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "d92b884e2b9abbd3bd5121fffd32013312b893133acf09910316f48331afdd20",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "db39057ce27a6a95f56c71764d76ee89e216189cf9a81a7886ad5e82559ea4e2",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "dcc2861daf6dc6cf7134b1ed92be56a2be8b4633c71a3f256c775251a3ad8229",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "de0daed8c87c8d009c557d6a23f8e7f367de8cd623a72d874dc4f99e8a181d2c",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "de38de0928b01f4fe0851de14a427f3b748e6355613ff526d15d1f52674785d1",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "dec6bc978f2aaaa8ad826e09af93a73a7344f48d20cbf676f863e3f6cba4649d",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "e0b8cbbea8a6df970a43e68f752081b59cdac308f43bf1e0181768c27effe329",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "e18a9c8a3d01ee07c78f48940866c9fa4ff3bfff4d34e345011f400b67d556d9",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "e56ff60cc27a6906d57cc7698cd4ed4cef1c56e0c90dd6a0fd74de446f6fd327",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "e6a04d256437ee6c2f300400a608f76a21c2503ab6a408bb3b5b1837fde9c530",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "e737a6525a8b84fc07e6613957d472ca0b411437d96708621bb8db9c7b53ef3e",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "ef510c9cbe9c9c366dd4fb9c00e803c12c1f5aef577ac4a3e289720416b3dbc2",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "f067a42422cdd058f8fb7d1c23fe63104fcaec4a5eadf158245f5e7fe4334966",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "f5f7c59882d4255181bc9b29b79562824e204d6dee7f4ae70e8c65a28eca8341",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "f903f3557f1b7c62069dc6ad44724b96f0c3a1dbce5f7204f4a02920bf808b0a",
+    "fingerprint": "b6f5e2380aae742965c2d5af9d1a9619e1a00be736ae9d2793a1fa7eb651b8c6",
+    "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
+    "author": "Codex",
+    "time": "2026-09-10T20:54:20.182Z"
   }
 ]

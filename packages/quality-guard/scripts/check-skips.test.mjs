@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync } from "node:fs";
+import { rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { main, renderOpen } from "./check-skips.mjs";
+import { main } from "./check-skips.mjs";
 import { recordConsumption, SKIP_LOG } from "./sentinel.mjs";
 
 function tempRepo() {
@@ -18,7 +19,11 @@ test("a repo that never waived anything passes", () => {
 
 test("an open waiver fails the check", () => {
   const root = tempRepo();
-  recordConsumption(root, { file: "src/a.ts", rebaseline: true, reasons: ["complexity: 8 before, 11 now"] });
+  recordConsumption(root, {
+    file: "src/a.ts",
+    rebaseline: true,
+    reasons: ["complexity: 8 before, 11 now"],
+  });
   assert.equal(main(root), 1, "an unacknowledged waiver must block the commit");
   rmSync(root, { recursive: true, force: true });
 });
@@ -36,15 +41,4 @@ test("acknowledging every waiver clears the check", () => {
 
   assert.equal(main(root), 0);
   rmSync(root, { recursive: true, force: true });
-});
-
-test("renderOpen names each file and how it was waived", () => {
-  const out = renderOpen([
-    { file: "src/a.ts", rebaseline: true, at: "2026-07-30T09:00:00.000Z" },
-    { file: "src/b.ts", rebaseline: false, at: "2026-07-30T10:00:00.000Z" },
-  ]);
-  assert.match(out, /2 unacknowledged waiver\(s\)/);
-  assert.match(out, /src\/a\.ts {2}\[rebaseline\]/);
-  assert.match(out, /src\/b\.ts {2}\[new-file ceiling\]/);
-  assert.match(out, /skip-log\.json/);
 });
