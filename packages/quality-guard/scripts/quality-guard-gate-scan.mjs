@@ -13,7 +13,7 @@ export const SCANNER = join(
   "quality-scan.mjs",
 );
 const BASELINE = join(".github", "quality", "quality-baseline.json");
-const FILE_RULES =
+export const FILE_RULES =
   "file-length,function-length,complexity,param-count," +
   "nesting-depth,types-per-file,else-branch,unnamed-tuple," +
   "unused-local,commented-out-code,todo-marker,stateless-method," +
@@ -35,7 +35,7 @@ export function findRepoRoot(filePath) {
   return dirname(resolve(filePath));
 }
 
-export function runScanner(filePath, repoRoot) {
+export function runScanner(filePath, repoRoot, rules = FILE_RULES) {
   const result = spawnSync(
     process.execPath,
     [
@@ -43,7 +43,7 @@ export function runScanner(filePath, repoRoot) {
       filePath,
       `--root=${repoRoot}`,
       "--format=json",
-      `--rules=${FILE_RULES}`,
+      `--rules=${rules}`,
     ],
     { encoding: "utf8", timeout: SCAN_TIMEOUT_MS, cwd: repoRoot },
   );

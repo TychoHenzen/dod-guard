@@ -9,6 +9,7 @@ import {
   waive,
 } from "./quality-guard-gate-support.mjs";
 import {
+  FILE_RULES,
   baselinePath,
   findRepoRoot,
   readComparison,
@@ -24,10 +25,11 @@ function blockingFor(scan, comparison, relPath) {
   return { unseen, blocking };
 }
 
-function blockingResult({ repoRoot, filePath, relPath, unseen, blocking }) {
+function blockingResult(context) {
+  const { repoRoot, filePath, relPath, unseen, blocking, deps } = context;
   if (
     blocking.length === 0 ||
-    waive(repoRoot, readSentinelState(repoRoot), {
+    deps.waive(repoRoot, deps.readSentinelState(repoRoot), {
       isNew: unseen,
       record: { file: relPath, reasons: blocking },
     })
@@ -41,14 +43,9 @@ function blockingResult({ repoRoot, filePath, relPath, unseen, blocking }) {
   );
 }
 
-function continueGate({
-  input,
-  filePath,
-  repoRoot,
-  scan,
-  comparison,
-  relPath,
-}) {
+function continueGate(context) {
+  const { input, filePath, repoRoot, scan, comparison, relPath, deps } =
+    context;
   const { unseen, blocking } = blockingFor(scan, comparison, relPath);
   const blocked = blockingResult({
     repoRoot,
@@ -56,9 +53,10 @@ function continueGate({
     relPath,
     unseen,
     blocking,
+    deps,
   });
   if (blocked !== 0) return blocked;
-  const local = localResult(input, filePath, repoRoot);
+  const local = deps.localResult(input, filePath, repoRoot);
   if (local !== 0) return local;
   process.stderr.write(
     `quality-guard file-local feedback passed for ${filePath}. This is ` +
@@ -68,13 +66,25 @@ function continueGate({
   return 0;
 }
 
-export function gate(input, filePath, deps) {
+export function gate(input, filePath, deps = {}) {
+  const services = {
+    localResult,
+    readSentinelState,
+    runScanner,
+    waive,
+    ...deps,
+  };
   const repoRoot = findRepoRoot(filePath);
   const baseline = baselinePath(repoRoot);
-  const scan = runScanner(filePath, repoRoot);
+  const scan = services.runScanner(filePath, repoRoot, FILE_RULES);
   if (!scan || !Array.isArray(scan.violations)) return 0;
   const relPath = relativePath(repoRoot, filePath);
-  const comparison = readComparison({ baseline, scan, relPath, deps });
+  const comparison = readComparison({
+    baseline,
+    scan,
+    relPath,
+    deps: services,
+  });
   if (!comparison.ok) return 0;
   return continueGate({
     input,
@@ -83,5 +93,6 @@ export function gate(input, filePath, deps) {
     scan,
     comparison: comparison.value,
     relPath,
+    deps: services,
   });
 }

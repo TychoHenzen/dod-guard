@@ -24,9 +24,7 @@ test("a clippy error whose primary span names the edited file surfaces", () => {
   });
   rmSync(root, { recursive: true, force: true });
 });
-test(
-  "a diagnostic whose primary span names a different file is dropped",
-  () => {
+test("diagnostics for another file are dropped", () => {
   const root = tempCrate();
   const filePath = join(root, "src", "main.rs");
   const spawn = stubSpawn(

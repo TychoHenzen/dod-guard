@@ -21743,7 +21743,10 @@ function optionalArgs(request) {
   return [
     flag("--root", request.root),
     flag("--profile", request.profile),
-    flag("--rules", request.rules?.join(",")),
+    flag(
+      "--rules",
+      request.rules?.length ? request.rules.join(",") : void 0
+    ),
     flag("--baseline", request.baseline),
     flag("--write-baseline", request.writeBaseline),
     flag("--fail-on", request.failOn)
@@ -21801,15 +21804,14 @@ function commitScanRequest(root) {
     failOn: "regression"
   };
 }
-function materializeTree(root, ref) {
-  const target = mkdtempSync(path3.join(tmpdir(), "quality-guard-index-"));
+function materializeTree(root, ref, target) {
   if (ref === "index") {
     execFileSync2(
       "git",
       ["checkout-index", "--all", `--prefix=${target}${path3.sep}`],
       { cwd: root, stdio: "ignore" }
     );
-    return target;
+    return;
   }
   const indexPath = path3.join(target, "index");
   const env = { ...process.env, GIT_INDEX_FILE: indexPath };
@@ -21817,18 +21819,15 @@ function materializeTree(root, ref) {
   execFileSync2(
     "git",
     ["checkout-index", "--all", `--prefix=${target}${path3.sep}`],
-    {
-      cwd: root,
-      env,
-      stdio: "ignore"
-    }
+    { cwd: root, env, stdio: "ignore" }
   );
   rmSync(indexPath, { force: true });
-  return target;
 }
 function scannerEvidence(root, ref) {
-  const stagedRoot = materializeTree(root, ref);
+  let stagedRoot;
   try {
+    stagedRoot = mkdtempSync(path3.join(tmpdir(), "quality-guard-index-"));
+    materializeTree(root, ref, stagedRoot);
     const result = runScan(commitScanRequest(stagedRoot));
     if (result.exitCode === 0) return { findings: [] };
     return {
@@ -21848,7 +21847,7 @@ function scannerEvidence(root, ref) {
       errors: [error2 instanceof Error ? error2.message : String(error2)]
     };
   } finally {
-    rmSync(stagedRoot, { recursive: true, force: true });
+    if (stagedRoot) rmSync(stagedRoot, { recursive: true, force: true });
   }
 }
 
@@ -22772,11 +22771,6 @@ function progressValues(beforeFiles, afterFiles, config2) {
   };
 }
 
-// src/commit-gate/refactor-progress-builder.ts
-function buildProgressMetrics(beforeFiles, afterFiles, config2) {
-  return progressValues(beforeFiles, afterFiles, config2);
-}
-
 // src/commit-gate/refactor-progress.ts
 function ownershipIndicator(metrics) {
   return {
@@ -22832,7 +22826,7 @@ function indicators(metrics) {
   };
 }
 function analyzeRefactorProgress(input) {
-  const metrics = buildProgressMetrics(input.before, input.after, input.config);
+  const metrics = progressValues(input.before, input.after, input.config);
   const result = indicators(metrics);
   return {
     ownershipMoves: metrics.moves,

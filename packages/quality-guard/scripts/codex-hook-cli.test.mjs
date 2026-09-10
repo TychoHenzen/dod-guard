@@ -6,9 +6,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { hookTargets } from "./hook-targets.mjs";
 
-test(
-  "unsupported tools and Markdown writes have no quality-gate target",
-  () => {
+test("unsupported tools and Markdown have no gate target", () => {
   assert.deepEqual(hookTargets({ tool_name: "Bash", tool_input: {} }), []);
   const directory = mkdtempSync(resolve(tmpdir(), "quality-guard-markdown-"));
   const filePath = resolve(directory, "notes.md");

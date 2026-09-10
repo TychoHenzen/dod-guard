@@ -1,9 +1,9 @@
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import type { QualityConfig } from "./config.js";
-import { buildProgressMetrics } from "./refactor-progress-builder.js";
+import { progressValues } from "./refactor-progress-metrics.js";
 import type { RefactorProgress } from "./refactor-progress-types.js";
 
-function ownershipIndicator(metrics: ReturnType<typeof buildProgressMetrics>) {
+function ownershipIndicator(metrics: ReturnType<typeof progressValues>) {
   return {
     status:
       metrics.moves.length > 0 ? ("improved" as const) : ("unchanged" as const),
@@ -15,7 +15,7 @@ function ownershipIndicator(metrics: ReturnType<typeof buildProgressMetrics>) {
   };
 }
 
-function dependencyIndicator(metrics: ReturnType<typeof buildProgressMetrics>) {
+function dependencyIndicator(metrics: ReturnType<typeof progressValues>) {
   return {
     status:
       metrics.reductions.length > 0
@@ -31,7 +31,7 @@ function dependencyIndicator(metrics: ReturnType<typeof buildProgressMetrics>) {
 }
 
 function countIndicator(
-  metrics: ReturnType<typeof buildProgressMetrics>,
+  metrics: ReturnType<typeof progressValues>,
   before: number,
   after: number,
 ) {
@@ -44,7 +44,7 @@ function countIndicator(
 }
 
 function indicators(
-  metrics: ReturnType<typeof buildProgressMetrics>,
+  metrics: ReturnType<typeof progressValues>,
 ): RefactorProgress["indicators"] {
   const placement = countIndicator(
     metrics,
@@ -76,7 +76,7 @@ export function analyzeRefactorProgress(input: {
   affectedPaths: string[];
   config: QualityConfig;
 }): RefactorProgress {
-  const metrics = buildProgressMetrics(input.before, input.after, input.config);
+  const metrics = progressValues(input.before, input.after, input.config);
   const result = indicators(metrics);
   return {
     ownershipMoves: metrics.moves,

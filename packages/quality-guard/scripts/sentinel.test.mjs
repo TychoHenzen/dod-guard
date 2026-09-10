@@ -50,9 +50,7 @@ test("unparseable sentinel content degrades to the plain waiver", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test(
-  "deleteSentinel removes the file so the waiver cannot stay switched on",
-  () => {
+test("deleteSentinel removes the waiver file", () => {
   const root = tempRepo();
   const path = join(root, SENTINEL_NAME);
   writeFileSync(path, "");

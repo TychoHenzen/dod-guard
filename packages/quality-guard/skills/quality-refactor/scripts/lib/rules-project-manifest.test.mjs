@@ -17,8 +17,12 @@ test("a manifest reference keeps a C# type reachable", () => {
     { rel: "RootScene.tscn", text: '[node type="TerminalDisplay"]' },
   ];
   assert.equal(
-    checkReachability(files, scansFor(files), buildConfig("default"), manifests)
-      .length,
+    checkReachability({
+      files,
+      scans: scansFor(files),
+      config: buildConfig("default"),
+      manifests,
+    }).length,
     0,
   );
 });
@@ -28,12 +32,12 @@ test("a markdown mention is not manifest evidence", () => {
     fileWithCode("Scripts/Widget.cs", "public class Widget {}", { lang: "cs" }),
     fileWithCode("Scripts/Other.cs", "// unrelated", { lang: "cs" }),
   ];
-  const found = checkReachability(
+  const found = checkReachability({
     files,
-    scansFor(files),
-    buildConfig("default"),
-    [],
-  );
+    scans: scansFor(files),
+    config: buildConfig("default"),
+    manifests: [],
+  });
   assert.equal(found.length, 1);
   assert.match(found[0].message, /Widget/);
 });
@@ -46,12 +50,12 @@ test("an unrelated manifest does not keep a type reachable", () => {
   const manifests = [
     { rel: "RootScene.tscn", text: '[node type="SomethingElse"]' },
   ];
-  const found = checkReachability(
+  const found = checkReachability({
     files,
-    scansFor(files),
-    buildConfig("default"),
+    scans: scansFor(files),
+    config: buildConfig("default"),
     manifests,
-  );
+  });
   assert.equal(found.length, 1);
   assert.equal(found[0].rule, "dead-export");
 });
@@ -67,12 +71,12 @@ test("a manifest file is never reported as a violation source", () => {
   const manifests = [
     { rel: "RootScene.tscn", text: '[node type="TerminalDisplay"]' },
   ];
-  const found = checkReachability(
+  const found = checkReachability({
     files,
-    scansFor(files),
-    buildConfig("default"),
+    scans: scansFor(files),
+    config: buildConfig("default"),
     manifests,
-  );
+  });
   assert.equal(
     found.some((violation) => violation.file === "RootScene.tscn"),
     false,

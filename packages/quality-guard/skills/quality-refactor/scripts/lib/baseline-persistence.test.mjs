@@ -3,8 +3,12 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { adoptNewFiles, compareToBaseline } from "./baseline.mjs";
-import { readBaseline, writeBaseline } from "./baseline.mjs";
+import {
+  adoptNewFiles,
+  compareToBaseline,
+  readBaseline,
+  writeBaseline,
+} from "./baseline.mjs";
 import { baselineOf, violation } from "./baseline-test-helpers.test.mjs";
 
 test("extracting a module is not a regression", () => {

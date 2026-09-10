@@ -2,8 +2,9 @@ import {
   adoptNewFiles,
   buildBaseline,
   compareToBaseline,
+  readBaseline,
+  writeBaseline,
 } from "./lib/baseline.mjs";
-import { readBaseline, writeBaseline } from "./lib/baseline.mjs";
 import { renderJson, renderText, toWorkUnits } from "./lib/report.mjs";
 
 function compareAndAdopt(path, violations, scanned) {

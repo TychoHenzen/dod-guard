@@ -538,7 +538,6 @@ packages/fossil/src/workspace-usage.ts
 packages/quality-guard/src/commit-gate/acknowledge-options.ts
 packages/quality-guard/src/commit-gate/architecture-file-fact.ts
 packages/quality-guard/src/commit-gate/architecture-member-fact.ts
-packages/quality-guard/src/commit-gate/architecture-member-kind.ts
 packages/quality-guard/src/commit-gate/architecture-type-fact.ts
 packages/quality-guard/src/commit-gate/architecture-visibility.ts
 packages/quality-guard/src/commit-gate/canonical.ts
@@ -579,7 +578,6 @@ packages/quality-guard/src/commit-gate/placement-analysis.ts
 packages/quality-guard/src/commit-gate/placement-current.ts
 packages/quality-guard/src/commit-gate/placement-findings.ts
 packages/quality-guard/src/commit-gate/placement-paths.ts
-packages/quality-guard/src/commit-gate/refactor-progress-builder.ts
 packages/quality-guard/src/commit-gate/refactor-progress-counts.ts
 packages/quality-guard/src/commit-gate/refactor-progress-dependencies.ts
 packages/quality-guard/src/commit-gate/refactor-progress-metrics.ts

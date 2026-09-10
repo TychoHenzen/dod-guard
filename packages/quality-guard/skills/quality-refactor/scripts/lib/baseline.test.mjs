@@ -3,8 +3,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { compareToBaseline } from "./baseline.mjs";
-import { readBaseline, writeBaseline } from "./baseline.mjs";
+import { compareToBaseline, readBaseline, writeBaseline } from "./baseline.mjs";
 import { baselineOf, violation } from "./baseline-test-helpers.test.mjs";
 
 test("buildBaseline records every scanned file, including clean ones", () => {

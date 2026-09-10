@@ -39,7 +39,11 @@
   },
   "formatter": {
     "enabled": true,
-    "includes": ["packages/*/src/**/*.ts", "scripts/ci/**/*.mjs"],
+    "includes": [
+      "packages/*/src/**/*.ts",
+      "packages/quality-guard/scripts/**/*.mjs",
+      "scripts/ci/**/*.mjs"
+    ],
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 120
@@ -106,6 +110,12 @@
     },
     {
       "includes": ["packages/quality-guard/src/**/*.ts"],
+      "formatter": {
+        "lineWidth": 80
+      }
+    },
+    {
+      "includes": ["packages/quality-guard/scripts/**/*.mjs"],
       "formatter": {
         "lineWidth": 80
       }

@@ -16,6 +16,8 @@ export function scan(options, config) {
     collectFiles(targets, options.root, options.excludes),
     options.testPaths,
   );
+  // Collect manifests from the repository root because a narrowed source target
+  // must still see scenes and project files that reference its exported types.
   const manifests = collectManifests(options.root, options.excludes);
   const scans = new Map();
   let violations = [];
@@ -25,7 +27,7 @@ export function scan(options, config) {
     violations = violations.concat(result.violations);
   }
   violations = violations.concat(
-    checkReachability(files, scans, config, manifests),
+    checkReachability({ files, scans, config, manifests }),
   );
   violations = violations.concat(checkDuplication(files, config));
   if (options.rules)

@@ -45,7 +45,10 @@ function optionalArgs(request: ScanRequest): string[] {
   return [
     flag("--root", request.root),
     flag("--profile", request.profile),
-    flag("--rules", request.rules?.join(",")),
+    flag(
+      "--rules",
+      request.rules?.length ? request.rules.join(",") : undefined,
+    ),
     flag("--baseline", request.baseline),
     flag("--write-baseline", request.writeBaseline),
     flag("--fail-on", request.failOn),

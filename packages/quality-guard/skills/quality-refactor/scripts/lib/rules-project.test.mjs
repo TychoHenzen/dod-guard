@@ -9,11 +9,11 @@ test("an export referenced by production code is not dead", () => {
     fileWithCode("src/a.ts", "export function foo() {}"),
     fileWithCode("src/b.ts", "foo();"),
   ];
-  const found = checkReachability(
+  const found = checkReachability({
     files,
-    scansFor(files),
-    buildConfig("default"),
-  );
+    scans: scansFor(files),
+    config: buildConfig("default"),
+  });
   assert.equal(
     found.some((violation) => violation.file === "src/a.ts"),
     false,
@@ -26,7 +26,7 @@ test("an export with no in-repo references is dead-export", () => {
     fileWithCode("src/b.ts", "console.log('nothing to do with it')"),
   ];
   const config = buildConfig("default");
-  const found = checkReachability(files, scansFor(files), config);
+  const found = checkReachability({ files, scans: scansFor(files), config });
   assert.equal(found.length, 1);
   assert.equal(found[0].rule, "dead-export");
   assert.equal(found[0].severity, config.presence["dead-export"]);
@@ -39,7 +39,7 @@ test("an export referenced only by a test is test-only-export", () => {
     fileWithCode("src/b.test.ts", "testOnlyFn();", { isTest: true }),
   ];
   const config = buildConfig("default");
-  const found = checkReachability(files, scansFor(files), config);
+  const found = checkReachability({ files, scans: scansFor(files), config });
   assert.equal(found.length, 1);
   assert.equal(found[0].rule, "test-only-export");
   assert.equal(found[0].severity, config.presence["test-only-export"]);
@@ -51,11 +51,11 @@ test("calling reachability without manifests preserves the default", () => {
     fileWithCode("src/a.ts", "export function unusedFn() {}"),
     fileWithCode("src/b.ts", "console.log('nothing to do with it')"),
   ];
-  const found = checkReachability(
+  const found = checkReachability({
     files,
-    scansFor(files),
-    buildConfig("default"),
-  );
+    scans: scansFor(files),
+    config: buildConfig("default"),
+  });
   assert.equal(found.length, 1);
   assert.equal(found[0].rule, "dead-export");
 });
@@ -66,7 +66,11 @@ test("entry files are skipped by reachability", () => {
     fileWithCode("src/other.ts", "// nothing"),
   ];
   assert.equal(
-    checkReachability(files, scansFor(files), buildConfig("default")).length,
+    checkReachability({
+      files,
+      scans: scansFor(files),
+      config: buildConfig("default"),
+    }).length,
     0,
   );
 });

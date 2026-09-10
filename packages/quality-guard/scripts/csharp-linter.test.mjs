@@ -10,9 +10,7 @@ import {
 } from "./csharp-linter-fixtures.test.mjs";
 import { rmSync, writeFileSync } from "node:fs";
 
-test(
-  "an error-level diagnostic whose FilePath names the edited file surfaces",
-  () => {
+test("matching FilePath diagnostics surface", () => {
   const root = tempProject();
   const filePath = join(root, "Program.cs");
   const spawn = stubSpawn(() => [reportEntry(filePath)]);

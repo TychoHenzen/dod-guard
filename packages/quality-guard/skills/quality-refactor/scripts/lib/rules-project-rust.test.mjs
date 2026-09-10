@@ -4,6 +4,15 @@ import { buildConfig } from "./config.mjs";
 import { checkReachability } from "./rules-project.mjs";
 import { rustFile, rustScansFor } from "./rules-project-fixtures.test.mjs";
 
+function reachable(files) {
+  const config = buildConfig("default");
+  return checkReachability({
+    files,
+    scans: rustScansFor(files, config),
+    config,
+  });
+}
+
 test("a Rust symbol referenced only from cfg(test) is test-only-export", () => {
   const code = [
     "pub fn tally(items: &[u32]) -> u32 { items.iter().sum() }",
@@ -13,9 +22,7 @@ test("a Rust symbol referenced only from cfg(test) is test-only-export", () => {
     "    fn it_works() { assert_eq!(tally(&[]), 0); }",
     "}",
   ].join("\n");
-  const files = [rustFile("src/stats.rs", code)];
-  const config = buildConfig("default");
-  const found = checkReachability(files, rustScansFor(files, config), config);
+  const found = reachable([rustFile("src/stats.rs", code)]);
   assert.equal(found.length, 1);
   assert.equal(found[0].rule, "test-only-export");
   assert.match(found[0].message, /tally/);
@@ -28,9 +35,7 @@ test("a Rust symbol also used by production stays reachable", () => {
     "#[cfg(test)]",
     "mod tests { #[test] fn it_works() { assert_eq!(tally(&[]), 0); } }",
   ].join("\n");
-  const files = [rustFile("src/stats.rs", code)];
-  const config = buildConfig("default");
-  const found = checkReachability(files, rustScansFor(files, config), config);
+  const found = reachable([rustFile("src/stats.rs", code)]);
   assert.equal(
     found.some((violation) => violation.message.includes("tally")),
     false,
@@ -50,8 +55,7 @@ test(
       'pub fn show(total: u32) { println!("{tally}"); }',
     ),
   ];
-  const config = buildConfig("default");
-  const found = checkReachability(files, rustScansFor(files, config), config);
+  const found = reachable(files);
   assert.equal(
     found.some((violation) => violation.message.includes("tally")),
     false,

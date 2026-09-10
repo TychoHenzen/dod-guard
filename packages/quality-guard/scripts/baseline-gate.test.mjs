@@ -53,9 +53,7 @@ test("absoluteVerdict blocks presence errors without a numeric bound", () => {
   assert.equal(blocking.length, 1);
   assert.match(blocking[0], /2 types in one file/);
 });
-test(
-  "ratchetVerdict reports only regressions belonging to the scanned file",
-  () => {
+test("ratchetVerdict filters regressions to the scanned file", () => {
   const comparison = {
     regressions: [
       { file: "src/a.ts", rule: "complexity", before: 8, now: 11 },

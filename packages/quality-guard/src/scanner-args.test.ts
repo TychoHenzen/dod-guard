@@ -69,6 +69,13 @@ test("buildArgs passes the gate options through", () => {
   ]);
 });
 
+test("buildArgs omits an empty rule list", () => {
+  assert.deepEqual(captureArgs({ paths: ["src"], rules: [] }).slice(1), [
+    "src",
+    "--format=json",
+  ]);
+});
+
 test("buildArgs omits every flag the caller did not set", () => {
   const args = captureArgs({ paths: ["src"] }).slice(1);
   assert.equal(

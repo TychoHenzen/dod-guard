@@ -6,6 +6,8 @@ import { runScan, type ScanRequest } from "../scanner.js";
 import type { Snapshot } from "./snapshot.js";
 import type { DecisionResult } from "./types.js";
 
+// The commit gate follows CI's structural rules. Biome owns line length, and
+// generated dist output is excluded because bundles have a separate gate.
 const RATCHET_RULES = [
   "file-length",
   "function-length",
@@ -38,15 +40,14 @@ function commitScanRequest(root: string): ScanRequest {
   };
 }
 
-function materializeTree(root: string, ref: string): string {
-  const target = mkdtempSync(path.join(tmpdir(), "quality-guard-index-"));
+function materializeTree(root: string, ref: string, target: string): void {
   if (ref === "index") {
     execFileSync(
       "git",
       ["checkout-index", "--all", `--prefix=${target}${path.sep}`],
       { cwd: root, stdio: "ignore" },
     );
-    return target;
+    return;
   }
   const indexPath = path.join(target, "index");
   const env = { ...process.env, GIT_INDEX_FILE: indexPath };
@@ -54,14 +55,9 @@ function materializeTree(root: string, ref: string): string {
   execFileSync(
     "git",
     ["checkout-index", "--all", `--prefix=${target}${path.sep}`],
-    {
-      cwd: root,
-      env,
-      stdio: "ignore",
-    },
+    { cwd: root, env, stdio: "ignore" },
   );
   rmSync(indexPath, { force: true });
-  return target;
 }
 
 export function scannerEvidence(
@@ -71,8 +67,10 @@ export function scannerEvidence(
   findings: Array<Omit<DecisionResult["findings"][number], "id">>;
   errors?: string[];
 } {
-  const stagedRoot = materializeTree(root, ref);
+  let stagedRoot: string | undefined;
   try {
+    stagedRoot = mkdtempSync(path.join(tmpdir(), "quality-guard-index-"));
+    materializeTree(root, ref, stagedRoot);
     const result = runScan(commitScanRequest(stagedRoot));
     if (result.exitCode === 0) return { findings: [] };
     return {
@@ -92,6 +90,6 @@ export function scannerEvidence(
       errors: [error instanceof Error ? error.message : String(error)],
     };
   } finally {
-    rmSync(stagedRoot, { recursive: true, force: true });
+    if (stagedRoot) rmSync(stagedRoot, { recursive: true, force: true });
   }
 }
