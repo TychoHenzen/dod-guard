@@ -547,7 +547,6 @@ packages/quality-guard/src/commit-gate/cli-acknowledge-arguments.ts
 packages/quality-guard/src/commit-gate/cli-arguments.ts
 packages/quality-guard/src/commit-gate/cli-check-arguments.ts
 packages/quality-guard/src/commit-gate/cli-check-options.ts
-packages/quality-guard/src/commit-gate/cli-command-acknowledge.ts
 packages/quality-guard/src/commit-gate/cli-command-check.ts
 packages/quality-guard/src/commit-gate/cli-decision-input.ts
 packages/quality-guard/src/commit-gate/cli-decision.ts
