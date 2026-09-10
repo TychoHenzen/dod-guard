@@ -1,12 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import { parseQualityConfig } from "./commit-gate/config.js";
-import {
-  analyzeCurrentArchitecture,
-} from "./commit-gate/current-architecture.js";
+import * as currentArchitecture from "./commit-gate/current-architecture.js";
 import { extractFactInventory } from "./commit-gate/facts.js";
 import { buildQualityReport } from "./report-builder.js";
 import { runScan, type ScanRequest } from "./scanner.js";
+
+const analyzeArchitecture = currentArchitecture.analyzeCurrentArchitecture;
 
 function architectureFor(
   root: string,
@@ -24,7 +24,7 @@ function architectureFor(
     sourceFiles,
     sourceFiles.map((file) => file.path),
   );
-  const analyzed = analyzeCurrentArchitecture(inventory.files, config);
+  const analyzed = analyzeArchitecture(inventory.files, config);
   return {
     ...analyzed,
     errors: inventory.errors.map((message) => {

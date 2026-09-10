@@ -1,6 +1,6 @@
+import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import type { QualityConfig } from "./config.js";
 import { analyzeCurrentDependencies } from "./dependency-current.js";
-import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzeCurrentPlacement } from "./placement-current.js";
 

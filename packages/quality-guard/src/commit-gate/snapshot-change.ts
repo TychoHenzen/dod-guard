@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
-import type { Snapshot } from "./snapshot-types.js";
 import { changeAt } from "./snapshot-change-entries.js";
+import type { Snapshot } from "./snapshot-types.js";
 
 const GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
 

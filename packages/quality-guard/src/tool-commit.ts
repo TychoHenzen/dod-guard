@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { renderDecision, runStagedCheck } from "./commit-gate/cli.js";
 import { text, toolError } from "./tool-response.js";
-import { z } from "zod";
 
 function commitGateResponse(input: {
   root: string;

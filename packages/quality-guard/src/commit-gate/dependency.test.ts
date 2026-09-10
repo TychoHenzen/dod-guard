@@ -59,9 +59,7 @@ test("reports the complete normalized cycle closed by a staged edge", () => {
   ]);
 });
 
-test(
-  "excludes test and generated modules from the production dependency graph",
-  () => {
+test("excludes test and generated modules", () => {
   const config = parseQualityConfig(
     '{"generatedPaths":["generated/**"],"testPaths":["test/**"]}',
   );

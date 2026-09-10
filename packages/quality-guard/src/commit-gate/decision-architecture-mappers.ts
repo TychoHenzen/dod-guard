@@ -1,5 +1,5 @@
-import { analyzeDependencies } from "./dependency.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
+import { analyzeDependencies } from "./dependency.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzePlacement } from "./placement.js";
 import { createFinding, type DecisionResult } from "./types.js";

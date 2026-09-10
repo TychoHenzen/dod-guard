@@ -36,9 +36,7 @@ test("accepts named path groups and placement-related policy", () => {
   assert.equal(config.history.maxFirstParentCommits, 25);
 });
 
-test(
-  "validates explicit dependency directions against configured groups",
-  () => {
+test("validates configured dependency directions", () => {
   const config = parseQualityConfig(
     JSON.stringify({
       pathGroups: {
@@ -55,9 +53,7 @@ test(
   ]);
 });
 
-test(
-  "rejects unknown keys, invalid values, and unknown group references",
-  () => {
+test("rejects invalid and unknown config", () => {
   for (const source of [
     '{"unexpected": true}',
     '{"directTypeLimit": 0}',

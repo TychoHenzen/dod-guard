@@ -1,6 +1,4 @@
-import {
-  extractArchitectureFacts,
-} from "../../skills/quality-refactor/scripts/lib/architecture-facts.mjs";
+import { extractArchitectureFacts } from "#quality-guard-architecture-facts";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 
 /** Typed bridge to the scanner's zero-dependency parser facts. */

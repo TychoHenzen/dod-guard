@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { RefactorProgress } from "./refactor-progress-types.js";
 import { canonical } from "./canonical.js";
+import type { RefactorProgress } from "./refactor-progress-types.js";
 
 export interface DecisionResult {
   verdict: "PASS" | "REVIEW_REQUIRED" | "FAIL";

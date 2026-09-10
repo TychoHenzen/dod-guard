@@ -77,7 +77,7 @@ function boundary(item: unknown, index: number) {
 export function desired(value: unknown) {
   const root = object(value, "responsibility map.desired");
   onlyKeys(root, ["ownership", "boundaries"], "responsibility map.desired");
-  if (!Array.isArray(root.ownership) || !Array.isArray(root.boundaries))
+  if (!(Array.isArray(root.ownership) && Array.isArray(root.boundaries)))
     throw new Error(
       "responsibility map.desired requires ownership and boundaries arrays",
     );

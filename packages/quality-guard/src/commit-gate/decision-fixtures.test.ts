@@ -1,6 +1,6 @@
 import { parseQualityConfig } from "./config.js";
-import { createFinding } from "./types.js";
 import type { Snapshot } from "./snapshot.js";
+import { createFinding } from "./types.js";
 
 export const snapshot: Snapshot = {
   baseIdentity: "base",

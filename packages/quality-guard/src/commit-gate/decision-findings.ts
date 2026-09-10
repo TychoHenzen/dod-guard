@@ -1,5 +1,5 @@
-import type { QualityConfig } from "./config.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
+import type { QualityConfig } from "./config.js";
 import { structuralFindings } from "./decision-findings-architecture.js";
 import type { ResponsibilityMap } from "./responsibility-map.js";
 import {

@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseQualityConfig } from "./config.js";
 import { decideQuality } from "./decision-core.js";
-import { fingerprintSnapshot } from "./fingerprint.js";
 import { growthDecisionInput, snapshot } from "./decision-fixtures.test.js";
-import { createFinding, normalizeFindings } from "./types.js";
+import { fingerprintSnapshot } from "./fingerprint.js";
 import type { Snapshot } from "./snapshot.js";
+import { createFinding, normalizeFindings } from "./types.js";
 
 test("normalizes findings into stable identifiers and order", () => {
   const one = createFinding({

@@ -1,6 +1,6 @@
-import type { CommandResult } from "./command-result.js";
 import { runAcknowledgeCommand } from "./cli-command-acknowledge.js";
 import { runCommittedCommand, runStagedCommand } from "./cli-command-check.js";
+import type { CommandResult } from "./command-result.js";
 export function runCheckCommand(
   args: string[],
   root = process.cwd(),

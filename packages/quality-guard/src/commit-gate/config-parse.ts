@@ -1,5 +1,5 @@
-import { ConfigError } from "./config-error.js";
 import type { QualityConfig } from "./config-defaults.js";
+import { ConfigError } from "./config-error.js";
 import { pathList, positiveInteger } from "./config-parse-paths.js";
 import { keysOnly, parseHistory, record } from "./config-parse-support.js";
 
@@ -47,7 +47,7 @@ function assertKnownGroups(
   groups: Record<string, string[]>,
   location: string,
 ): void {
-  if (!(direction.from in groups) || !(direction.to in groups))
+  if (!(direction.from in groups && direction.to in groups))
     throw new ConfigError(`${location} references an unknown path group`);
 }
 export function parseDirections(

@@ -21520,7 +21520,7 @@ function targetOption(args, index) {
   const arg = args[index];
   const inline = arg.startsWith("--target=");
   const value = inline ? arg.slice("--target=".length) : args[index + 1];
-  if (!inline && !value)
+  if (!(inline || value))
     return usage("--target requires a repository-relative path");
   return { value: value ?? "", next: inline ? index : index + 1 };
 }
@@ -21591,6 +21591,316 @@ function parseCheckArguments(args) {
   const error2 = validCheckState(state);
   if (error2) return error2;
   return state;
+}
+
+// src/commit-gate/cli-command-acknowledge.ts
+import { execFileSync as execFileSync5 } from "node:child_process";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import * as path8 from "node:path";
+
+// src/commit-gate/fingerprint.ts
+import { createHash } from "node:crypto";
+
+// src/commit-gate/canonical.ts
+function canonical(value) {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical(item)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+// src/commit-gate/fingerprint.ts
+var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
+var SOURCE_PATH = /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
+function fingerprintSnapshot(snapshot, config2) {
+  const changes = snapshot.changes.filter(isDecisionChange).filter(isSourceChange).map(fingerprintChange).sort(compareChanges);
+  return createHash("sha256").update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config: config2 })).digest("hex");
+}
+function isDecisionChange(change) {
+  return change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH;
+}
+function isSourceChange(change) {
+  return isSourceFile(change.before) || isSourceFile(change.after);
+}
+function isSourceFile(file) {
+  return file !== void 0 && SOURCE_PATH.test(file.path);
+}
+function fingerprintChange(change) {
+  return { kind: change.kind, before: change.before, after: change.after };
+}
+function changePath(change) {
+  return change.after?.path ?? change.before?.path ?? "";
+}
+function compareChanges(left, right) {
+  return changePath(left).localeCompare(changePath(right));
+}
+
+// src/commit-gate/acknowledgements.ts
+function nonEmptyString(value, location) {
+  if (typeof value !== "string" || !value.trim())
+    throw new Error(`${location} must be a non-empty string`);
+  return value.trim();
+}
+function recordValue(record3, key2, index) {
+  return nonEmptyString(
+    record3[key2],
+    `${DECISION_RECORD_PATH}[${index}].${key2}`
+  );
+}
+function parseArchitectureAcknowledgements(source) {
+  let parsed;
+  try {
+    parsed = JSON.parse(source);
+  } catch {
+    throw new Error(`${DECISION_RECORD_PATH} must contain valid JSON`);
+  }
+  if (!Array.isArray(parsed))
+    throw new Error(`${DECISION_RECORD_PATH} must contain an array`);
+  return parsed.map(parseRecord);
+}
+function parseRecord(item, index) {
+  if (item === null || typeof item !== "object" || Array.isArray(item))
+    throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
+  const record3 = item;
+  const allowed = ["findingId", "fingerprint", "reason", "author", "time"];
+  const unexpected = Object.keys(record3).find((key2) => !allowed.includes(key2));
+  if (unexpected)
+    throw new Error(
+      `${DECISION_RECORD_PATH}[${index}].${unexpected} is not supported`
+    );
+  return {
+    findingId: recordValue(record3, "findingId", index),
+    fingerprint: recordValue(record3, "fingerprint", index),
+    reason: recordValue(record3, "reason", index),
+    author: recordValue(record3, "author", index),
+    time: recordValue(record3, "time", index)
+  };
+}
+function appendArchitectureAcknowledgement(source, record3) {
+  const records = [...parseArchitectureAcknowledgements(source), record3];
+  return `${JSON.stringify(records, null, 2)}
+`;
+}
+
+// src/commit-gate/cli-tree.ts
+import { execFileSync as execFileSync3 } from "node:child_process";
+
+// src/commit-gate/cli-tree-scanner.ts
+import { execFileSync as execFileSync2 } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path3 from "node:path";
+
+// src/scanner.ts
+import { execFileSync } from "node:child_process";
+import * as path2 from "node:path";
+import { fileURLToPath } from "node:url";
+
+// src/scanner-failure.ts
+function parsedFailure(error2) {
+  const failure = error2;
+  const stdout = failure.stdout;
+  if (typeof stdout !== "string") return void 0;
+  if (!stdout.trim()) return void 0;
+  const status = typeof failure.status === "number" ? failure.status : 1;
+  return { exitCode: status, report: JSON.parse(stdout) };
+}
+function failureMessage(error2) {
+  const message = error2.message;
+  return typeof message === "string" ? message : String(error2);
+}
+function scanFailure(error2) {
+  const result = parsedFailure(error2);
+  if (result) return result;
+  throw new Error(`quality scan failed: ${failureMessage(error2)}`);
+}
+
+// src/scanner.ts
+var SCAN_TIMEOUT_MS = 12e4;
+var MAX_BUFFER = 32 * 1024 * 1024;
+function scannerPath() {
+  const here = path2.dirname(fileURLToPath(import.meta.url));
+  return path2.join(
+    here,
+    "..",
+    "skills",
+    "quality-refactor",
+    "scripts",
+    "quality-scan.mjs"
+  );
+}
+function buildArgs(request) {
+  return [
+    ...request.paths,
+    "--format=json",
+    ...optionalArgs(request),
+    ...repeatedArgs("--exclude", request.excludes),
+    ...repeatedArgs("--test-path", request.testPaths)
+  ];
+}
+function optionalArgs(request) {
+  return [
+    flag("--root", request.root),
+    flag("--profile", request.profile),
+    flag("--rules", request.rules?.join(",")),
+    flag("--baseline", request.baseline),
+    flag("--write-baseline", request.writeBaseline),
+    flag("--fail-on", request.failOn)
+  ].filter((value) => value !== void 0);
+}
+function flag(name, value) {
+  return value === void 0 ? void 0 : `${name}=${value}`;
+}
+function repeatedArgs(name, values) {
+  return (values ?? []).map((value) => `${name}=${value}`);
+}
+function runScan(request, run = execFileSync) {
+  const args = [scannerPath(), ...buildArgs(request)];
+  try {
+    const stdout = run(process.execPath, args, {
+      encoding: "utf8",
+      timeout: SCAN_TIMEOUT_MS,
+      maxBuffer: MAX_BUFFER,
+      cwd: request.root
+    });
+    return { exitCode: 0, report: JSON.parse(stdout) };
+  } catch (err) {
+    return scanFailure(err);
+  }
+}
+
+// src/commit-gate/cli-tree-scanner.ts
+var RATCHET_RULES = [
+  "file-length",
+  "function-length",
+  "complexity",
+  "param-count",
+  "nesting-depth",
+  "types-per-file",
+  "duplicate-block",
+  "else-branch",
+  "unnamed-tuple",
+  "dead-export",
+  "unused-local",
+  "test-only-export",
+  "commented-out-code",
+  "todo-marker",
+  "stateless-method",
+  "comment-bloat",
+  "comment-restates-code",
+  "assumption-marker"
+];
+function commitScanRequest(root) {
+  return {
+    paths: ["packages"],
+    root,
+    rules: RATCHET_RULES,
+    excludes: ["/dist/", "node_modules"],
+    baseline: ".github/quality/quality-baseline.json",
+    failOn: "regression"
+  };
+}
+function materializeTree(root, ref) {
+  const target = mkdtempSync(path3.join(tmpdir(), "quality-guard-index-"));
+  if (ref === "index") {
+    execFileSync2(
+      "git",
+      ["checkout-index", "--all", `--prefix=${target}${path3.sep}`],
+      { cwd: root, stdio: "ignore" }
+    );
+    return target;
+  }
+  const indexPath = path3.join(target, "index");
+  const env = { ...process.env, GIT_INDEX_FILE: indexPath };
+  execFileSync2("git", ["read-tree", ref], { cwd: root, env, stdio: "ignore" });
+  execFileSync2(
+    "git",
+    ["checkout-index", "--all", `--prefix=${target}${path3.sep}`],
+    {
+      cwd: root,
+      env,
+      stdio: "ignore"
+    }
+  );
+  rmSync(indexPath, { force: true });
+  return target;
+}
+function scannerEvidence(root, ref) {
+  const stagedRoot = materializeTree(root, ref);
+  try {
+    const result = runScan(commitScanRequest(stagedRoot));
+    if (result.exitCode === 0) return { findings: [] };
+    return {
+      findings: [
+        {
+          severity: "fail",
+          affectedPaths: [],
+          before: {},
+          after: { exitCode: result.exitCode, report: result.report },
+          reason: "structural ratchet reported a deterministic regression"
+        }
+      ]
+    };
+  } catch (error2) {
+    return {
+      findings: [],
+      errors: [error2 instanceof Error ? error2.message : String(error2)]
+    };
+  } finally {
+    rmSync(stagedRoot, { recursive: true, force: true });
+  }
+}
+
+// src/commit-gate/cli-tree.ts
+var SOURCE_PATTERN = new RegExp(
+  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
+  "i"
+);
+function treeFile(input) {
+  try {
+    return execFileSync3(
+      "git",
+      [
+        "show",
+        input.ref === "index" ? `:${input.filePath}` : `${input.ref}:${input.filePath}`
+      ],
+      {
+        cwd: input.root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"]
+      }
+    );
+  } catch {
+    if (input.fallback !== void 0) return input.fallback;
+    const location = input.ref === "index" ? "the staged index" : `tree ${input.ref}`;
+    throw new Error(`${input.filePath} is not present in ${location}`);
+  }
+}
+function snapshotConfig(root, ref) {
+  return treeFile({
+    root,
+    ref,
+    filePath: ".quality-guard.json",
+    fallback: "{}"
+  });
+}
+function isSourceOrConfiguration(filePath) {
+  return SOURCE_PATTERN.test(filePath) || filePath === ".quality-guard.json";
+}
+function isDistributionPath(filePath) {
+  return /(?:^|[/\\])dist(?:[/\\]|$)/.test(filePath);
+}
+function withoutDistributionChanges(snapshot) {
+  return {
+    ...snapshot,
+    changes: snapshot.changes.filter(
+      (change) => [change.before?.path, change.after?.path].filter((filePath) => Boolean(filePath)).some((filePath) => !isDistributionPath(filePath))
+    )
+  };
+}
+function sourceChange(filePath) {
+  return isSourceOrConfiguration(filePath);
 }
 
 // src/commit-gate/config-defaults.ts
@@ -21695,7 +22005,7 @@ function assertDirectionTypes(direction, location) {
   }
 }
 function assertKnownGroups(direction, groups, location) {
-  if (!(direction.from in groups) || !(direction.to in groups))
+  if (!(direction.from in groups && direction.to in groups))
     throw new ConfigError(`${location} references an unknown path group`);
 }
 function parseDirections(value, groups) {
@@ -21758,6 +22068,111 @@ function parseQualityConfig(source) {
   };
 }
 
+// src/commit-gate/decision-core-summary.ts
+var SOURCE_PATH2 = new RegExp(
+  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
+  "i"
+);
+var QUALITY_CONFIGURATION_PATH = ".quality-guard.json";
+function changedPaths(snapshot) {
+  const paths = snapshot.changes.flatMap((change) => [
+    change.before?.path,
+    change.after?.path
+  ]);
+  return [
+    ...new Set(paths.filter((path13) => Boolean(path13)))
+  ].sort((left, right) => left.localeCompare(right));
+}
+function changedSourcePaths(snapshot) {
+  return changedPaths(snapshot).filter(
+    (filePath) => SOURCE_PATH2.test(filePath)
+  );
+}
+function requiresSourceDecision(snapshot) {
+  return changedPaths(snapshot).some(
+    (filePath) => SOURCE_PATH2.test(filePath) || filePath === QUALITY_CONFIGURATION_PATH
+  );
+}
+function summaryFor(snapshot, changedSourcePaths2) {
+  return {
+    baseIdentity: snapshot.baseIdentity,
+    targetIdentity: snapshot.targetIdentity,
+    changedSourcePaths: changedSourcePaths2
+  };
+}
+function noDecision(summary) {
+  return {
+    verdict: "PASS",
+    findings: [],
+    errors: [],
+    input: {
+      ...summary,
+      reason: "No source quality decision was required because the staged change contains no supported source or quality configuration."
+    }
+  };
+}
+
+// src/commit-gate/types.ts
+import { createHash as createHash2 } from "node:crypto";
+function createFinding(input) {
+  const affectedPaths2 = [...new Set(input.affectedPaths)].sort(
+    (left, right) => left.localeCompare(right)
+  );
+  const identity = canonical({ ...input, affectedPaths: affectedPaths2 });
+  return {
+    ...input,
+    affectedPaths: affectedPaths2,
+    id: createHash2("sha256").update(identity).digest("hex")
+  };
+}
+function normalizeFindings(findings) {
+  return findings.map(({ id: _id, ...finding }) => createFinding(finding)).sort((left, right) => left.id.localeCompare(right.id));
+}
+
+// src/commit-gate/decision-architecture-mappers.ts
+function architectureFinding(input) {
+  return createFinding({
+    severity: input.severity,
+    affectedPaths: input.affectedPaths,
+    before: {},
+    after: input.evidence,
+    reason: `${input.kind}: ${input.reason}`
+  });
+}
+function placementFindings(findings) {
+  return findings.map(
+    (finding) => architectureFinding({
+      kind: finding.kind,
+      severity: "review",
+      affectedPaths: [finding.directory],
+      evidence: { ...finding },
+      reason: "placement pressure increased"
+    })
+  );
+}
+function dependencyFindings(findings) {
+  return findings.map(
+    (finding) => architectureFinding({
+      kind: finding.kind,
+      severity: "fail",
+      affectedPaths: finding.kind === "cycle" ? finding.cycle : [finding.from, finding.to],
+      evidence: finding,
+      reason: "a deterministic dependency boundary was introduced"
+    })
+  );
+}
+function encapsulationFindings(findings) {
+  return findings.map(
+    (finding) => architectureFinding({
+      kind: finding.kind,
+      severity: "review",
+      affectedPaths: [finding.path],
+      evidence: finding,
+      reason: "public or compatibility surface changed"
+    })
+  );
+}
+
 // src/commit-gate/dependency-cycles.ts
 function canonicalCycle(cycle) {
   const open = cycle.slice(0, -1);
@@ -21803,6 +22218,12 @@ function findCycles(graph2) {
 }
 
 // src/commit-gate/dependency-graph.ts
+import * as path6 from "node:path";
+
+// src/commit-gate/placement-analysis.ts
+import * as path5 from "node:path";
+
+// src/commit-gate/placement-findings.ts
 import * as path4 from "node:path";
 
 // src/commit-gate/placement-paths.ts
@@ -21831,11 +22252,7 @@ function isProductionArchitecturePath(filePath, config2) {
   ) || isTestPath(normalized, config2.testPaths));
 }
 
-// src/commit-gate/placement-analysis.ts
-import * as path3 from "node:path";
-
 // src/commit-gate/placement-findings.ts
-import * as path2 from "node:path";
 function addedTypes(file, previous) {
   return [...file.types].filter((name) => !previous.has(name)).sort((left, right) => left.localeCompare(right));
 }
@@ -21860,9 +22277,9 @@ function typeFinding(name, context) {
 }
 function contextForFile(input) {
   const normalized = normalizeArchitecturePath(input.file.path);
-  if (!input.changed.has(normalized) || !isProductionArchitecturePath(input.file.path, input.config))
+  if (!(input.changed.has(normalized) && isProductionArchitecturePath(input.file.path, input.config)))
     return null;
-  const directory = path2.posix.dirname(normalized);
+  const directory = path4.posix.dirname(normalized);
   const { previous, current } = directoryTypes(
     input.before,
     input.after,
@@ -21877,7 +22294,7 @@ function findingsForFile(input) {
   return addedTypes(input.file, previous).flatMap(
     (name) => typeFinding(name, {
       generic: input.config.genericBuckets.includes(
-        path2.posix.basename(directory).toLowerCase()
+        path4.posix.basename(directory).toLowerCase()
       ),
       beforeCount: previous.size,
       afterCount: current.size,
@@ -21897,7 +22314,7 @@ function typeNames(files, config2) {
   return result;
 }
 function addTypes(result, file) {
-  const directory = path3.posix.dirname(normalizeArchitecturePath(file.path));
+  const directory = path5.posix.dirname(normalizeArchitecturePath(file.path));
   const names = result.get(directory) ?? /* @__PURE__ */ new Set();
   for (const name of file.types) names.add(name);
   result.set(directory, names);
@@ -21964,8 +22381,8 @@ function extensionless(filePath) {
 }
 function resolveDependency(from, dependency, paths) {
   const normalized = normalizeArchitecturePath(dependency);
-  const candidate = dependency.startsWith(".") ? path4.posix.normalize(
-    path4.posix.join(path4.posix.dirname(from), normalized)
+  const candidate = dependency.startsWith(".") ? path6.posix.normalize(
+    path6.posix.join(path6.posix.dirname(from), normalized)
   ) : normalized;
   if (paths.has(candidate)) return candidate;
   const target = extensionless(candidate);
@@ -22155,78 +22572,6 @@ function analyzeEncapsulation(input) {
   );
 }
 
-// src/commit-gate/types.ts
-import { createHash } from "node:crypto";
-
-// src/commit-gate/canonical.ts
-function canonical(value) {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  if (value !== null && typeof value === "object") {
-    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical(item)}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-
-// src/commit-gate/types.ts
-function createFinding(input) {
-  const affectedPaths2 = [...new Set(input.affectedPaths)].sort(
-    (left, right) => left.localeCompare(right)
-  );
-  const identity = canonical({ ...input, affectedPaths: affectedPaths2 });
-  return {
-    ...input,
-    affectedPaths: affectedPaths2,
-    id: createHash("sha256").update(identity).digest("hex")
-  };
-}
-function normalizeFindings(findings) {
-  return findings.map(({ id: _id, ...finding }) => createFinding(finding)).sort((left, right) => left.id.localeCompare(right.id));
-}
-
-// src/commit-gate/decision-architecture-mappers.ts
-function architectureFinding(input) {
-  return createFinding({
-    severity: input.severity,
-    affectedPaths: input.affectedPaths,
-    before: {},
-    after: input.evidence,
-    reason: `${input.kind}: ${input.reason}`
-  });
-}
-function placementFindings(findings) {
-  return findings.map(
-    (finding) => architectureFinding({
-      kind: finding.kind,
-      severity: "review",
-      affectedPaths: [finding.directory],
-      evidence: { ...finding },
-      reason: "placement pressure increased"
-    })
-  );
-}
-function dependencyFindings(findings) {
-  return findings.map(
-    (finding) => architectureFinding({
-      kind: finding.kind,
-      severity: "fail",
-      affectedPaths: finding.kind === "cycle" ? finding.cycle : [finding.from, finding.to],
-      evidence: finding,
-      reason: "a deterministic dependency boundary was introduced"
-    })
-  );
-}
-function encapsulationFindings(findings) {
-  return findings.map(
-    (finding) => architectureFinding({
-      kind: finding.kind,
-      severity: "review",
-      affectedPaths: [finding.path],
-      evidence: finding,
-      reason: "public or compatibility surface changed"
-    })
-  );
-}
-
 // src/commit-gate/decision-findings-architecture.ts
 function typeFacts(files) {
   return files.map((file) => ({
@@ -22299,39 +22644,12 @@ function collectFindings(input) {
   ]);
 }
 
-// src/commit-gate/fingerprint.ts
-import { createHash as createHash2 } from "node:crypto";
-var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
-var SOURCE_PATH = /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
-function fingerprintSnapshot(snapshot, config2) {
-  const changes = snapshot.changes.filter(isDecisionChange).filter(isSourceChange).map(fingerprintChange).sort(compareChanges);
-  return createHash2("sha256").update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config: config2 })).digest("hex");
-}
-function isDecisionChange(change) {
-  return change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH;
-}
-function isSourceChange(change) {
-  return isSourceFile(change.before) || isSourceFile(change.after);
-}
-function isSourceFile(file) {
-  return file !== void 0 && SOURCE_PATH.test(file.path);
-}
-function fingerprintChange(change) {
-  return { kind: change.kind, before: change.before, after: change.after };
-}
-function changePath(change) {
-  return change.after?.path ?? change.before?.path ?? "";
-}
-function compareChanges(left, right) {
-  return changePath(left).localeCompare(changePath(right));
-}
-
 // src/commit-gate/refactor-progress-counts.ts
-import * as path5 from "node:path";
+import * as path7 from "node:path";
 function directTypePressure(types, config2) {
   const counts = /* @__PURE__ */ new Map();
   for (const item of types) {
-    const directory = path5.posix.dirname(item.path);
+    const directory = path7.posix.dirname(item.path);
     counts.set(directory, (counts.get(directory) ?? 0) + 1);
   }
   return [...counts.values()].reduce(
@@ -22350,6 +22668,28 @@ function compatibilityPathCount(types) {
     (total, item) => total + item.type.forwardingPaths.length,
     0
   );
+}
+
+// src/commit-gate/refactor-progress-dependencies.ts
+function dependencyKeys(types) {
+  return new Set(
+    types.flatMap(
+      (item) => item.type.dependencies.map(
+        (dependency) => `${item.type.name}\0${dependency}`
+      )
+    )
+  );
+}
+function dependencyReduction(moves, before, after) {
+  const beforeTypes = new Map(
+    before.map((item) => [item.type.name, item.type])
+  );
+  const afterTypes = new Map(after.map((item) => [item.type.name, item.type]));
+  return moves.flatMap((move) => {
+    const oldDependencies = beforeTypes.get(move.from)?.dependencies ?? [];
+    const newDependencies = afterTypes.get(move.from)?.dependencies ?? [];
+    return oldDependencies.filter((dependency) => !newDependencies.includes(dependency)).sort().map((dependency) => `${move.from} no longer depends on ${dependency}`);
+  });
 }
 
 // src/commit-gate/refactor-progress-operations.ts
@@ -22398,28 +22738,6 @@ function ownershipMoves(before, after) {
   return moves.sort(
     (left, right) => left.operation.localeCompare(right.operation) || left.from.localeCompare(right.from) || left.to.localeCompare(right.to)
   );
-}
-
-// src/commit-gate/refactor-progress-dependencies.ts
-function dependencyKeys(types) {
-  return new Set(
-    types.flatMap(
-      (item) => item.type.dependencies.map(
-        (dependency) => `${item.type.name}\0${dependency}`
-      )
-    )
-  );
-}
-function dependencyReduction(moves, before, after) {
-  const beforeTypes = new Map(
-    before.map((item) => [item.type.name, item.type])
-  );
-  const afterTypes = new Map(after.map((item) => [item.type.name, item.type]));
-  return moves.flatMap((move) => {
-    const oldDependencies = beforeTypes.get(move.from)?.dependencies ?? [];
-    const newDependencies = afterTypes.get(move.from)?.dependencies ?? [];
-    return oldDependencies.filter((dependency) => !newDependencies.includes(dependency)).sort().map((dependency) => `${move.from} no longer depends on ${dependency}`);
-  });
 }
 
 // src/commit-gate/refactor-progress-metrics.ts
@@ -22591,7 +22909,7 @@ function boundary(item, index) {
 function desired(value) {
   const root = object3(value, "responsibility map.desired");
   onlyKeys(root, ["ownership", "boundaries"], "responsibility map.desired");
-  if (!Array.isArray(root.ownership) || !Array.isArray(root.boundaries))
+  if (!(Array.isArray(root.ownership) && Array.isArray(root.boundaries)))
     throw new Error(
       "responsibility map.desired requires ownership and boundaries arrays"
     );
@@ -22664,11 +22982,14 @@ function desiredOutcomes(map, before, after) {
       before: owns(before, outcome.responsibility, outcome.owner),
       after: owns(after, outcome.responsibility, outcome.owner)
     })),
-    ...map.desired.boundaries.map((outcome) => ({
-      description: `${outcome.from} -> ${outcome.to} is ` + (outcome.allowed ? "allowed" : "absent"),
-      before: hasDependency(before, outcome.from, outcome.to) === outcome.allowed,
-      after: hasDependency(after, outcome.from, outcome.to) === outcome.allowed
-    }))
+    ...map.desired.boundaries.map((outcome) => {
+      const availability = outcome.allowed ? "allowed" : "absent";
+      return {
+        description: `${outcome.from} -> ${outcome.to} is ${availability}`,
+        before: hasDependency(before, outcome.from, outcome.to) === outcome.allowed,
+        after: hasDependency(after, outcome.from, outcome.to) === outcome.allowed
+      };
+    })
   ];
 }
 function evaluateResponsibilityMap(map, input) {
@@ -22685,50 +23006,6 @@ function evaluateResponsibilityMap(map, input) {
     hasDeclaredOutcomeProgress: outcomes.some(
       (outcome) => !outcome.before && outcome.after
     )
-  };
-}
-
-// src/commit-gate/decision-core-summary.ts
-var SOURCE_PATH2 = new RegExp(
-  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
-  "i"
-);
-var QUALITY_CONFIGURATION_PATH = ".quality-guard.json";
-function changedPaths(snapshot) {
-  const paths = snapshot.changes.flatMap((change) => [
-    change.before?.path,
-    change.after?.path
-  ]);
-  return [
-    ...new Set(paths.filter((path13) => Boolean(path13)))
-  ].sort((left, right) => left.localeCompare(right));
-}
-function changedSourcePaths(snapshot) {
-  return changedPaths(snapshot).filter(
-    (filePath) => SOURCE_PATH2.test(filePath)
-  );
-}
-function requiresSourceDecision(snapshot) {
-  return changedPaths(snapshot).some(
-    (filePath) => SOURCE_PATH2.test(filePath) || filePath === QUALITY_CONFIGURATION_PATH
-  );
-}
-function summaryFor(snapshot, changedSourcePaths2) {
-  return {
-    baseIdentity: snapshot.baseIdentity,
-    targetIdentity: snapshot.targetIdentity,
-    changedSourcePaths: changedSourcePaths2
-  };
-}
-function noDecision(summary) {
-  return {
-    verdict: "PASS",
-    findings: [],
-    errors: [],
-    input: {
-      ...summary,
-      reason: "No source quality decision was required because the staged change contains no supported source or quality configuration."
-    }
   };
 }
 
@@ -22787,424 +23064,6 @@ function decideQuality(input) {
     staleAcknowledgements: staleAcknowledgements(input, fingerprint),
     refactorProgress
   };
-}
-
-// src/commit-gate/snapshot-change.ts
-import { execFileSync } from "node:child_process";
-
-// src/commit-gate/snapshot-change-entries.ts
-function renameChange(input) {
-  const beforePath = input.values[input.index + 1];
-  const afterPath = input.values[input.index + 2];
-  return {
-    next: input.index + 2,
-    change: {
-      kind: "rename",
-      before: {
-        path: beforePath,
-        content: input.readContent(input.contentSpec(beforePath, false))
-      },
-      after: {
-        path: afterPath,
-        content: input.readContent(input.contentSpec(afterPath, true))
-      }
-    }
-  };
-}
-function addedChange(input, filePath) {
-  return {
-    kind: "add",
-    after: {
-      path: filePath,
-      content: input.readContent(input.contentSpec(filePath, true))
-    }
-  };
-}
-function deletedChange(input, filePath) {
-  return {
-    kind: "delete",
-    before: {
-      path: filePath,
-      content: input.readContent(input.contentSpec(filePath, false))
-    }
-  };
-}
-function modifiedChange(input, filePath) {
-  return {
-    kind: "modify",
-    before: {
-      path: filePath,
-      content: input.readContent(input.contentSpec(filePath, false))
-    },
-    after: {
-      path: filePath,
-      content: input.readContent(input.contentSpec(filePath, true))
-    }
-  };
-}
-function fileChange(input, code, filePath) {
-  if (code === "A") return addedChange(input, filePath);
-  if (code === "D") return deletedChange(input, filePath);
-  return modifiedChange(input, filePath);
-}
-function changeAt(input) {
-  const status = input.values[input.index];
-  if (!status) return { next: input.index, change: void 0 };
-  if (status[0] === "R" || status[0] === "C") return renameChange(input);
-  return {
-    next: input.index + 1,
-    change: fileChange(input, status[0], input.values[input.index + 1])
-  };
-}
-
-// src/commit-gate/snapshot-change.ts
-var GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
-function git(root, args, encoding = "utf8") {
-  return execFileSync("git", args, {
-    cwd: root,
-    encoding,
-    maxBuffer: GIT_OUTPUT_MAX_BUFFER
-  });
-}
-function objectContent(root, spec) {
-  return git(root, ["show", spec]);
-}
-function changePath2(change) {
-  return change.after?.path ?? change.before?.path ?? "";
-}
-function changesFrom(root, values, contentSpec) {
-  const changes = [];
-  for (let index = 0; index < values.length; index += 1) {
-    const result = changeAt({
-      values,
-      index,
-      contentSpec,
-      readContent: (spec) => objectContent(root, spec)
-    });
-    if (result.change) changes.push(result.change);
-    index = result.next;
-  }
-  return changes.sort(
-    (left, right) => changePath2(left).localeCompare(changePath2(right))
-  );
-}
-function changeSnapshot(root, source) {
-  const output = git(
-    root,
-    ["diff", "--name-status", "-z", "-M", source.base, source.target],
-    "buffer"
-  );
-  const values = output.toString("utf8").split("\0").filter(Boolean);
-  return {
-    baseIdentity: git(root, ["rev-parse", source.base]).trim(),
-    targetIdentity: git(root, ["rev-parse", source.target]).trim(),
-    changes: changesFrom(root, values, source.contentSpec)
-  };
-}
-
-// src/commit-gate/snapshot.ts
-var SOURCE_PATH3 = new RegExp(
-  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
-  "i"
-);
-var DISTRIBUTION_PATH = /(?:^|[/\\])dist(?:[/\\]|$)/;
-function readStagedSnapshot(root) {
-  return changeSnapshot(root, {
-    base: "HEAD",
-    target: "--cached",
-    contentSpec: (filePath, after) => after ? `:${filePath}` : `HEAD:${filePath}`
-  });
-}
-function readCommittedSnapshot(root, commit = "HEAD") {
-  const parent = git(root, ["rev-parse", `${commit}^`]).trim();
-  return changeSnapshot(root, {
-    base: parent,
-    target: commit,
-    contentSpec: (filePath, after) => `${after ? commit : parent}:${filePath}`
-  });
-}
-function sourcePaths(root, ref) {
-  const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", ref];
-  return git(root, args, "buffer").toString("utf8").split("\0").filter(
-    (filePath) => SOURCE_PATH3.test(filePath) && !DISTRIBUTION_PATH.test(filePath)
-  ).sort((left, right) => left.localeCompare(right));
-}
-function readSourceInventory(root, ref) {
-  return sourcePaths(root, ref).map((filePath) => ({
-    path: filePath,
-    content: objectContent(
-      root,
-      ref === "index" ? `:${filePath}` : `${ref}:${filePath}`
-    )
-  }));
-}
-
-// src/commit-gate/cli-tree.ts
-import { execFileSync as execFileSync4 } from "node:child_process";
-
-// src/commit-gate/cli-tree-scanner.ts
-import { execFileSync as execFileSync3 } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import * as path7 from "node:path";
-
-// src/scanner.ts
-import { execFileSync as execFileSync2 } from "node:child_process";
-import * as path6 from "node:path";
-import { fileURLToPath } from "node:url";
-
-// src/scanner-failure.ts
-function parsedFailure(error2) {
-  const failure = error2;
-  const stdout = failure.stdout;
-  if (typeof stdout !== "string") return void 0;
-  if (!stdout.trim()) return void 0;
-  const status = typeof failure.status === "number" ? failure.status : 1;
-  return { exitCode: status, report: JSON.parse(stdout) };
-}
-function failureMessage(error2) {
-  const message = error2.message;
-  return typeof message === "string" ? message : String(error2);
-}
-function scanFailure(error2) {
-  const result = parsedFailure(error2);
-  if (result) return result;
-  throw new Error(`quality scan failed: ${failureMessage(error2)}`);
-}
-
-// src/scanner.ts
-var SCAN_TIMEOUT_MS = 12e4;
-var MAX_BUFFER = 32 * 1024 * 1024;
-function scannerPath() {
-  const here = path6.dirname(fileURLToPath(import.meta.url));
-  return path6.join(
-    here,
-    "..",
-    "skills",
-    "quality-refactor",
-    "scripts",
-    "quality-scan.mjs"
-  );
-}
-function buildArgs(request) {
-  return [
-    ...request.paths,
-    "--format=json",
-    ...optionalArgs(request),
-    ...repeatedArgs("--exclude", request.excludes),
-    ...repeatedArgs("--test-path", request.testPaths)
-  ];
-}
-function optionalArgs(request) {
-  return [
-    flag("--root", request.root),
-    flag("--profile", request.profile),
-    flag("--rules", request.rules?.join(",")),
-    flag("--baseline", request.baseline),
-    flag("--write-baseline", request.writeBaseline),
-    flag("--fail-on", request.failOn)
-  ].filter((value) => value !== void 0);
-}
-function flag(name, value) {
-  return value === void 0 ? void 0 : `${name}=${value}`;
-}
-function repeatedArgs(name, values) {
-  return (values ?? []).map((value) => `${name}=${value}`);
-}
-function runScan(request, run = execFileSync2) {
-  const args = [scannerPath(), ...buildArgs(request)];
-  try {
-    const stdout = run(process.execPath, args, {
-      encoding: "utf8",
-      timeout: SCAN_TIMEOUT_MS,
-      maxBuffer: MAX_BUFFER,
-      cwd: request.root
-    });
-    return { exitCode: 0, report: JSON.parse(stdout) };
-  } catch (err) {
-    return scanFailure(err);
-  }
-}
-
-// src/commit-gate/cli-tree-scanner.ts
-var RATCHET_RULES = [
-  "file-length",
-  "function-length",
-  "complexity",
-  "param-count",
-  "nesting-depth",
-  "types-per-file",
-  "duplicate-block",
-  "else-branch",
-  "unnamed-tuple",
-  "dead-export",
-  "unused-local",
-  "test-only-export",
-  "commented-out-code",
-  "todo-marker",
-  "stateless-method",
-  "comment-bloat",
-  "comment-restates-code",
-  "assumption-marker"
-];
-function commitScanRequest(root) {
-  return {
-    paths: ["packages"],
-    root,
-    rules: RATCHET_RULES,
-    excludes: ["/dist/", "node_modules"],
-    baseline: ".github/quality/quality-baseline.json",
-    failOn: "regression"
-  };
-}
-function materializeTree(root, ref) {
-  const target = mkdtempSync(path7.join(tmpdir(), "quality-guard-index-"));
-  if (ref === "index") {
-    execFileSync3(
-      "git",
-      ["checkout-index", "--all", `--prefix=${target}${path7.sep}`],
-      { cwd: root, stdio: "ignore" }
-    );
-    return target;
-  }
-  const indexPath = path7.join(target, "index");
-  const env = { ...process.env, GIT_INDEX_FILE: indexPath };
-  execFileSync3("git", ["read-tree", ref], { cwd: root, env, stdio: "ignore" });
-  execFileSync3(
-    "git",
-    ["checkout-index", "--all", `--prefix=${target}${path7.sep}`],
-    {
-      cwd: root,
-      env,
-      stdio: "ignore"
-    }
-  );
-  rmSync(indexPath, { force: true });
-  return target;
-}
-function scannerEvidence(root, ref) {
-  const stagedRoot = materializeTree(root, ref);
-  try {
-    const result = runScan(commitScanRequest(stagedRoot));
-    if (result.exitCode === 0) return { findings: [] };
-    return {
-      findings: [
-        {
-          severity: "fail",
-          affectedPaths: [],
-          before: {},
-          after: { exitCode: result.exitCode, report: result.report },
-          reason: "structural ratchet reported a deterministic regression"
-        }
-      ]
-    };
-  } catch (error2) {
-    return {
-      findings: [],
-      errors: [error2 instanceof Error ? error2.message : String(error2)]
-    };
-  } finally {
-    rmSync(stagedRoot, { recursive: true, force: true });
-  }
-}
-
-// src/commit-gate/cli-tree.ts
-var SOURCE_PATTERN = new RegExp(
-  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
-  "i"
-);
-function treeFile(input) {
-  try {
-    return execFileSync4(
-      "git",
-      [
-        "show",
-        input.ref === "index" ? `:${input.filePath}` : `${input.ref}:${input.filePath}`
-      ],
-      {
-        cwd: input.root,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"]
-      }
-    );
-  } catch {
-    if (input.fallback !== void 0) return input.fallback;
-    throw new Error(
-      `${input.filePath} is not present in ` + (input.ref === "index" ? "the staged index" : `tree ${input.ref}`)
-    );
-  }
-}
-function snapshotConfig(root, ref) {
-  return treeFile({
-    root,
-    ref,
-    filePath: ".quality-guard.json",
-    fallback: "{}"
-  });
-}
-function isSourceOrConfiguration(filePath) {
-  return SOURCE_PATTERN.test(filePath) || filePath === ".quality-guard.json";
-}
-function isDistributionPath(filePath) {
-  return /(?:^|[/\\])dist(?:[/\\]|$)/.test(filePath);
-}
-function withoutDistributionChanges(snapshot) {
-  return {
-    ...snapshot,
-    changes: snapshot.changes.filter(
-      (change) => [change.before?.path, change.after?.path].filter((filePath) => Boolean(filePath)).some((filePath) => !isDistributionPath(filePath))
-    )
-  };
-}
-function sourceChange(filePath) {
-  return isSourceOrConfiguration(filePath);
-}
-
-// src/commit-gate/acknowledgements.ts
-function nonEmptyString(value, location) {
-  if (typeof value !== "string" || !value.trim())
-    throw new Error(`${location} must be a non-empty string`);
-  return value.trim();
-}
-function recordValue(record3, key2, index) {
-  return nonEmptyString(
-    record3[key2],
-    `${DECISION_RECORD_PATH}[${index}].${key2}`
-  );
-}
-function parseArchitectureAcknowledgements(source) {
-  let parsed;
-  try {
-    parsed = JSON.parse(source);
-  } catch {
-    throw new Error(`${DECISION_RECORD_PATH} must contain valid JSON`);
-  }
-  if (!Array.isArray(parsed))
-    throw new Error(`${DECISION_RECORD_PATH} must contain an array`);
-  return parsed.map(parseRecord);
-}
-function parseRecord(item, index) {
-  if (item === null || typeof item !== "object" || Array.isArray(item))
-    throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
-  const record3 = item;
-  const allowed = ["findingId", "fingerprint", "reason", "author", "time"];
-  const unexpected = Object.keys(record3).find((key2) => !allowed.includes(key2));
-  if (unexpected)
-    throw new Error(
-      `${DECISION_RECORD_PATH}[${index}].${unexpected} is not supported`
-    );
-  return {
-    findingId: recordValue(record3, "findingId", index),
-    fingerprint: recordValue(record3, "fingerprint", index),
-    reason: recordValue(record3, "reason", index),
-    author: recordValue(record3, "author", index),
-    time: recordValue(record3, "time", index)
-  };
-}
-function appendArchitectureAcknowledgement(source, record3) {
-  const records = [...parseArchitectureAcknowledgements(source), record3];
-  return `${JSON.stringify(records, null, 2)}
-`;
 }
 
 // skills/quality-refactor/scripts/lib/architecture-language.mjs
@@ -23594,6 +23453,156 @@ function extractFactInventory(files, requiredPaths) {
   };
 }
 
+// src/commit-gate/snapshot-change.ts
+import { execFileSync as execFileSync4 } from "node:child_process";
+
+// src/commit-gate/snapshot-change-entries.ts
+function renameChange(input) {
+  const beforePath = input.values[input.index + 1];
+  const afterPath = input.values[input.index + 2];
+  return {
+    next: input.index + 2,
+    change: {
+      kind: "rename",
+      before: {
+        path: beforePath,
+        content: input.readContent(input.contentSpec(beforePath, false))
+      },
+      after: {
+        path: afterPath,
+        content: input.readContent(input.contentSpec(afterPath, true))
+      }
+    }
+  };
+}
+function addedChange(input, filePath) {
+  return {
+    kind: "add",
+    after: {
+      path: filePath,
+      content: input.readContent(input.contentSpec(filePath, true))
+    }
+  };
+}
+function deletedChange(input, filePath) {
+  return {
+    kind: "delete",
+    before: {
+      path: filePath,
+      content: input.readContent(input.contentSpec(filePath, false))
+    }
+  };
+}
+function modifiedChange(input, filePath) {
+  return {
+    kind: "modify",
+    before: {
+      path: filePath,
+      content: input.readContent(input.contentSpec(filePath, false))
+    },
+    after: {
+      path: filePath,
+      content: input.readContent(input.contentSpec(filePath, true))
+    }
+  };
+}
+function fileChange(input, code, filePath) {
+  if (code === "A") return addedChange(input, filePath);
+  if (code === "D") return deletedChange(input, filePath);
+  return modifiedChange(input, filePath);
+}
+function changeAt(input) {
+  const status = input.values[input.index];
+  if (!status) return { next: input.index, change: void 0 };
+  if (status[0] === "R" || status[0] === "C") return renameChange(input);
+  return {
+    next: input.index + 1,
+    change: fileChange(input, status[0], input.values[input.index + 1])
+  };
+}
+
+// src/commit-gate/snapshot-change.ts
+var GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
+function git(root, args, encoding = "utf8") {
+  return execFileSync4("git", args, {
+    cwd: root,
+    encoding,
+    maxBuffer: GIT_OUTPUT_MAX_BUFFER
+  });
+}
+function objectContent(root, spec) {
+  return git(root, ["show", spec]);
+}
+function changePath2(change) {
+  return change.after?.path ?? change.before?.path ?? "";
+}
+function changesFrom(root, values, contentSpec) {
+  const changes = [];
+  for (let index = 0; index < values.length; index += 1) {
+    const result = changeAt({
+      values,
+      index,
+      contentSpec,
+      readContent: (spec) => objectContent(root, spec)
+    });
+    if (result.change) changes.push(result.change);
+    index = result.next;
+  }
+  return changes.sort(
+    (left, right) => changePath2(left).localeCompare(changePath2(right))
+  );
+}
+function changeSnapshot(root, source) {
+  const output = git(
+    root,
+    ["diff", "--name-status", "-z", "-M", source.base, source.target],
+    "buffer"
+  );
+  const values = output.toString("utf8").split("\0").filter(Boolean);
+  return {
+    baseIdentity: git(root, ["rev-parse", source.base]).trim(),
+    targetIdentity: git(root, ["rev-parse", source.target]).trim(),
+    changes: changesFrom(root, values, source.contentSpec)
+  };
+}
+
+// src/commit-gate/snapshot.ts
+var SOURCE_PATH3 = new RegExp(
+  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
+  "i"
+);
+var DISTRIBUTION_PATH = /(?:^|[/\\])dist(?:[/\\]|$)/;
+function readStagedSnapshot(root) {
+  return changeSnapshot(root, {
+    base: "HEAD",
+    target: "--cached",
+    contentSpec: (filePath, after) => after ? `:${filePath}` : `HEAD:${filePath}`
+  });
+}
+function readCommittedSnapshot(root, commit = "HEAD") {
+  const parent = git(root, ["rev-parse", `${commit}^`]).trim();
+  return changeSnapshot(root, {
+    base: parent,
+    target: commit,
+    contentSpec: (filePath, after) => `${after ? commit : parent}:${filePath}`
+  });
+}
+function sourcePaths(root, ref) {
+  const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", ref];
+  return git(root, args, "buffer").toString("utf8").split("\0").filter(
+    (filePath) => SOURCE_PATH3.test(filePath) && !DISTRIBUTION_PATH.test(filePath)
+  ).sort((left, right) => left.localeCompare(right));
+}
+function readSourceInventory(root, ref) {
+  return sourcePaths(root, ref).map((filePath) => ({
+    path: filePath,
+    content: objectContent(
+      root,
+      ref === "index" ? `:${filePath}` : `${ref}:${filePath}`
+    )
+  }));
+}
+
 // src/commit-gate/cli-decision-input.ts
 function affectedPaths(snapshot) {
   return snapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((filePath) => Boolean(filePath));
@@ -23679,44 +23688,7 @@ function runCommittedCheck(root, commit, options) {
   });
 }
 
-// src/commit-gate/cli-render.ts
-function refactorLines(result) {
-  if (!result.refactorProgress) return [];
-  return Object.entries(result.refactorProgress.indicators).map(
-    ([name, indicator]) => `REFACTOR: ${name} ${indicator.status} (${indicator.before} -> ${indicator.after})`
-  );
-}
-function decisionLines(result) {
-  const lines = [result.verdict];
-  if (result.input.reason) lines.push(result.input.reason);
-  lines.push(...result.errors.map((error2) => `ERROR: ${error2}`));
-  lines.push(
-    ...result.findings.map(
-      (finding) => `${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`
-    )
-  );
-  lines.push(
-    ...(result.staleAcknowledgements ?? []).map(
-      (findingId) => `STALE: acknowledgement for ${findingId} does not match the current staged fingerprint`
-    )
-  );
-  lines.push(...refactorLines(result));
-  return lines;
-}
-function exitCodeFor(result) {
-  if (result.verdict === "PASS") return 0;
-  if (result.verdict === "FAIL") return 1;
-  return 2;
-}
-function renderDecision(result, json) {
-  if (json) return JSON.stringify(result, null, 2);
-  return decisionLines(result).join("\n");
-}
-
 // src/commit-gate/cli-command-acknowledge.ts
-import { execFileSync as execFileSync5 } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import * as path8 from "node:path";
 function acknowledgementSource(recordPath) {
   try {
     return readFileSync(recordPath, "utf8");
@@ -23730,10 +23702,12 @@ function findAcknowledgement(decision, options) {
   );
   if (!finding)
     return acknowledgeUsage(`unknown or stale finding ${options.findingId}`);
-  if (finding.severity !== "review")
+  if (finding.severity !== "review") {
+    const reason = "cannot be acknowledged";
     return acknowledgeUsage(
-      `finding ${options.findingId} is deterministic and cannot be acknowledged`
+      `finding ${options.findingId} is deterministic and ${reason}`
     );
+  }
   if (!decision.fingerprint)
     return acknowledgeUsage(
       "no current staged source fingerprint is available"
@@ -23742,7 +23716,7 @@ function findAcknowledgement(decision, options) {
 }
 function writeAcknowledgement(root, options, fingerprint) {
   const recordPath = path8.join(root, DECISION_RECORD_PATH);
-  mkdirSync(path8["dirname"](recordPath), { recursive: true });
+  mkdirSync(path8.dirname(recordPath), { recursive: true });
   writeFileSync(
     recordPath,
     appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
@@ -23776,6 +23750,44 @@ function runAcknowledgeCommand(args, root) {
       error2 instanceof Error ? error2.message : String(error2)
     );
   }
+}
+
+// src/commit-gate/cli-render.ts
+function refactorLines(result) {
+  if (!result.refactorProgress) return [];
+  return Object.entries(result.refactorProgress.indicators).map(
+    ([name, indicator]) => `REFACTOR: ${name} ${indicator.status} (${indicator.before} -> ${indicator.after})`
+  );
+}
+function decisionLines(result) {
+  const lines = [result.verdict];
+  if (result.input.reason) lines.push(result.input.reason);
+  lines.push(...result.errors.map((error2) => `ERROR: ${error2}`));
+  lines.push(
+    ...result.findings.map(
+      (finding) => `${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`
+    )
+  );
+  lines.push(
+    ...(result.staleAcknowledgements ?? []).map(
+      (findingId) => [
+        "STALE: acknowledgement for",
+        findingId,
+        "does not match the current staged fingerprint"
+      ].join(" ")
+    )
+  );
+  lines.push(...refactorLines(result));
+  return lines;
+}
+function exitCodeFor(result) {
+  if (result.verdict === "PASS") return 0;
+  if (result.verdict === "FAIL") return 1;
+  return 2;
+}
+function renderDecision(result, json) {
+  if (json) return JSON.stringify(result, null, 2);
+  return decisionLines(result).join("\n");
 }
 
 // src/commit-gate/cli-command-check.ts
@@ -23968,6 +23980,7 @@ function buildQualityReport(scan, architecture) {
 }
 
 // src/report.ts
+var analyzeArchitecture = analyzeCurrentArchitecture;
 function architectureFor(root, scan) {
   const configPath = path10.join(root, ".quality-guard.json");
   const config2 = parseQualityConfig(
@@ -23981,7 +23994,7 @@ function architectureFor(root, scan) {
     sourceFiles,
     sourceFiles.map((file) => file.path)
   );
-  const analyzed = analyzeCurrentArchitecture(inventory.files, config2);
+  const analyzed = analyzeArchitecture(inventory.files, config2);
   return {
     ...analyzed,
     errors: inventory.errors.map((message) => {
@@ -24059,79 +24072,6 @@ function registerQualityCommitGate(server2) {
   );
 }
 
-// src/tool-schemas.ts
-var PATHS = external_exports.array(external_exports.string()).min(1).describe("Paths to scan, relative to root");
-var ROOT = external_exports.string().optional().describe(
-  "Repository root. Point this at the repo, not at the target, so manifest files are in scope"
-);
-var EXCLUDES = external_exports.array(external_exports.string()).optional().describe("Skip paths containing these fragments");
-var TEST_PATHS = external_exports.array(external_exports.string()).optional().describe("Treat paths containing these fragments as test code");
-
-// src/tool-scan.ts
-function registerQualityScan(server2) {
-  server2.tool(
-    "quality_scan",
-    QUALITY_SCAN_DESCRIPTION,
-    QUALITY_SCAN_INPUT,
-    qualityScan
-  );
-}
-var QUALITY_SCAN_DESCRIPTION = "Measure structural quality of the given paths and return the raw report. No verdict, no baseline. Use quality_gate to decide pass or fail.";
-var QUALITY_SCAN_INPUT = {
-  paths: PATHS,
-  root: ROOT,
-  rules: external_exports.array(external_exports.string()).optional().describe("Only run these rules"),
-  excludes: EXCLUDES,
-  testPaths: TEST_PATHS,
-  profile: external_exports.enum(["default", "strict"]).optional()
-};
-async function qualityScan(input) {
-  try {
-    const { report } = runScan(input);
-    return text(JSON.stringify(report, null, 2));
-  } catch (err) {
-    return toolError(err);
-  }
-}
-var QUALITY_GATE_INPUT = {
-  paths: PATHS,
-  baseline: external_exports.string().describe(
-    "Path to the baseline, normally .github/quality/quality-baseline.json"
-  ),
-  root: ROOT,
-  rules: external_exports.array(external_exports.string()).optional(),
-  excludes: EXCLUDES,
-  testPaths: TEST_PATHS,
-  failOn: external_exports.enum(["none", "error", "regression", "any"]).optional().describe("Default regression")
-};
-async function qualityGate(input) {
-  try {
-    const result = runGateScan(input);
-    const verdict2 = result.exitCode === 0 ? "PASS" : "FAIL";
-    return text(
-      `${verdict2} (exit ${result.exitCode})
-
-` + JSON.stringify(result.report, null, 2)
-    );
-  } catch (err) {
-    return toolError(err);
-  }
-}
-function runGateScan(input) {
-  return runScan({
-    ...input,
-    failOn: input.failOn ?? "regression"
-  });
-}
-function registerQualityGate(server2) {
-  server2.tool(
-    "quality_gate",
-    "Compare the given paths against a recorded baseline and report regressions. Existing debt is allowed, making it worse is not. A file the baseline has never seen is adopted rather than failed.",
-    QUALITY_GATE_INPUT,
-    qualityGate
-  );
-}
-
 // src/skips.ts
 import { existsSync as existsSync2, readFileSync as readFileSync3 } from "node:fs";
 import * as path11 from "node:path";
@@ -24178,6 +24118,14 @@ function recordReasons(record3) {
   );
 }
 
+// src/tool-schemas.ts
+var PATHS = external_exports.array(external_exports.string()).min(1).describe("Paths to scan, relative to root");
+var ROOT = external_exports.string().optional().describe(
+  "Repository root. Point this at the repo, not at the target, so manifest files are in scope"
+);
+var EXCLUDES = external_exports.array(external_exports.string()).optional().describe("Skip paths containing these fragments");
+var TEST_PATHS = external_exports.array(external_exports.string()).optional().describe("Treat paths containing these fragments as test code");
+
 // src/tool-report.ts
 function registerQualityReport(server2) {
   server2.tool(
@@ -24216,6 +24164,70 @@ function registerQualitySkips(server2) {
         return toolError(err);
       }
     }
+  );
+}
+
+// src/tool-scan.ts
+function registerQualityScan(server2) {
+  server2.tool(
+    "quality_scan",
+    QUALITY_SCAN_DESCRIPTION,
+    QUALITY_SCAN_INPUT,
+    qualityScan
+  );
+}
+var QUALITY_SCAN_DESCRIPTION = "Measure structural quality of the given paths and return the raw report. No verdict, no baseline. Use quality_gate to decide pass or fail.";
+var QUALITY_SCAN_INPUT = {
+  paths: PATHS,
+  root: ROOT,
+  rules: external_exports.array(external_exports.string()).optional().describe("Only run these rules"),
+  excludes: EXCLUDES,
+  testPaths: TEST_PATHS,
+  profile: external_exports.enum(["default", "strict"]).optional()
+};
+async function qualityScan(input) {
+  try {
+    const { report } = runScan(input);
+    return text(JSON.stringify(report, null, 2));
+  } catch (err) {
+    return toolError(err);
+  }
+}
+var QUALITY_GATE_INPUT = {
+  paths: PATHS,
+  baseline: external_exports.string().describe(
+    "Path to the baseline, normally .github/quality/quality-baseline.json"
+  ),
+  root: ROOT,
+  rules: external_exports.array(external_exports.string()).optional(),
+  excludes: EXCLUDES,
+  testPaths: TEST_PATHS,
+  failOn: external_exports.enum(["none", "error", "regression", "any"]).optional().describe("Default regression")
+};
+async function qualityGate(input) {
+  try {
+    const result = runGateScan(input);
+    const verdict2 = result.exitCode === 0 ? "PASS" : "FAIL";
+    const report = JSON.stringify(result.report, null, 2);
+    return text(`${verdict2} (exit ${result.exitCode})
+
+${report}`);
+  } catch (err) {
+    return toolError(err);
+  }
+}
+function runGateScan(input) {
+  return runScan({
+    ...input,
+    failOn: input.failOn ?? "regression"
+  });
+}
+function registerQualityGate(server2) {
+  server2.tool(
+    "quality_gate",
+    "Compare the given paths against a recorded baseline and report regressions. Existing debt is allowed, making it worse is not. A file the baseline has never seen is adopted rather than failed.",
+    QUALITY_GATE_INPUT,
+    qualityGate
   );
 }
 

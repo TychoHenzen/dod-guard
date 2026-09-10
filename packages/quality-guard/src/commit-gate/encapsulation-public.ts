@@ -1,12 +1,12 @@
-import type { QualityConfig } from "./config.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import type { ArchitectureMemberFact } from "./architecture-member-fact.js";
 import type { ArchitectureTypeFact } from "./architecture-type-fact.js";
+import type { QualityConfig } from "./config.js";
+import { observedCallers } from "./encapsulation-callers.js";
 import {
   isProductionArchitecturePath,
   normalizeArchitecturePath,
 } from "./placement.js";
-import { observedCallers } from "./encapsulation-callers.js";
 
 function key(
   type: ArchitectureTypeFact,

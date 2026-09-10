@@ -1,5 +1,7 @@
 import { changeSnapshot, git, objectContent } from "./snapshot-change.js";
+
 export type { Snapshot } from "./snapshot-types.js";
+
 import type { Snapshot } from "./snapshot-types.js";
 
 const SOURCE_PATH = new RegExp(

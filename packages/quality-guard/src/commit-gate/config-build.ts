@@ -1,5 +1,5 @@
-import { ConfigError } from "./config-error.js";
 import { DEFAULT_CONFIG, type QualityConfig } from "./config-defaults.js";
+import { ConfigError } from "./config-error.js";
 import {
   keysOnly,
   parseDirections,

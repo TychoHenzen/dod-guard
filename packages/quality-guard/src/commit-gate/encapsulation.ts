@@ -1,11 +1,11 @@
-import type { QualityConfig } from "./config.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import type { ArchitectureTypeFact } from "./architecture-type-fact.js";
+import type { QualityConfig } from "./config.js";
+import { publicFindings } from "./encapsulation-public.js";
 import {
   isProductionArchitecturePath,
   normalizeArchitecturePath,
 } from "./placement.js";
-import { publicFindings } from "./encapsulation-public.js";
 
 function forwardingKeys(type: ArchitectureTypeFact): Set<string> {
   return new Set(

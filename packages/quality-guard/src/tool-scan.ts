@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { runScan, type ScanRequest } from "./scanner.js";
 import { text, toolError } from "./tool-response.js";
 import { EXCLUDES, PATHS, ROOT, TEST_PATHS } from "./tool-schemas.js";
-import { z } from "zod";
 
 export function registerQualityScan(server: McpServer): void {
   server.tool(
@@ -56,10 +56,8 @@ async function qualityGate(input: ScanRequest) {
   try {
     const result = runGateScan(input);
     const verdict = result.exitCode === 0 ? "PASS" : "FAIL";
-    return text(
-      `${verdict} (exit ${result.exitCode})\n\n` +
-        JSON.stringify(result.report, null, 2),
-    );
+    const report = JSON.stringify(result.report, null, 2);
+    return text(`${verdict} (exit ${result.exitCode})\n\n${report}`);
   } catch (err) {
     return toolError(err);
   }

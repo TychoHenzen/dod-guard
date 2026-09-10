@@ -1,7 +1,6 @@
-import {
-  parseArchitectureAcknowledgements as parseAcknowledgements,
-} from "./acknowledgements.js";
+import * as acknowledgements from "./acknowledgements.js";
 import type { CheckOptions } from "./check-options.js";
+import { treeFile } from "./cli-tree.js";
 import { parseQualityConfig } from "./config.js";
 import { decideQuality } from "./decision-core.js";
 import { extractFactInventory } from "./facts.js";
@@ -9,7 +8,6 @@ import { DECISION_RECORD_PATH } from "./fingerprint.js";
 import { parseResponsibilityMap } from "./responsibility-map.js";
 import { readSourceInventory, type Snapshot } from "./snapshot.js";
 import type { DecisionResult } from "./types.js";
-import { treeFile } from "./cli-tree.js";
 
 export function affectedPaths(snapshot: Snapshot): string[] {
   return snapshot.changes
@@ -28,7 +26,7 @@ export function noSourceDecision(snapshot: Snapshot): DecisionResult {
 }
 
 export function acknowledgementRecords(root: string, ref: string) {
-  return parseAcknowledgements(
+  return acknowledgements.parseArchitectureAcknowledgements(
     treeFile({ root, ref, filePath: DECISION_RECORD_PATH, fallback: "[]" }),
   );
 }

@@ -1,7 +1,7 @@
 import type { QualityConfig } from "./config.js";
+import { findCycles } from "./dependency-cycles.js";
 import type { DependencyEdge } from "./dependency-edge.js";
 import type { DependencyFinding } from "./dependency-finding.js";
-import { findCycles } from "./dependency-cycles.js";
 import { addedEdges, graph } from "./dependency-graph.js";
 import {
   forbiddenFindings,

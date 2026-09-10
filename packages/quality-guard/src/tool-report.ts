@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { runQualityReport } from "./report.js";
 import { formatSkips, readSkipLog } from "./skips.js";
 import { text, toolError } from "./tool-response.js";
 import { EXCLUDES, ROOT, TEST_PATHS } from "./tool-schemas.js";
-import { z } from "zod";
 
 export function registerQualityReport(server: McpServer): void {
   server.tool(

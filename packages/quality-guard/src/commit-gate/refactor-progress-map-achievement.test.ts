@@ -3,11 +3,11 @@ import { test } from "node:test";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import { parseQualityConfig } from "./config.js";
 import { decideQuality } from "./decision-core.js";
+import { before } from "./refactor-progress-map-fixtures.test.js";
 import {
   evaluateResponsibilityMap,
   parseResponsibilityMap,
 } from "./responsibility-map.js";
-import { before } from "./refactor-progress-map-fixtures.test.js";
 
 test("recognizes when the declared ownership outcome is achieved", () => {
   const after: ArchitectureFileFact[] = [

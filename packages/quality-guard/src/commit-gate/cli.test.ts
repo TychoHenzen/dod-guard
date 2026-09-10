@@ -47,9 +47,7 @@ test("refactor intent without a target is a usage error", () => {
   assert.match("output" in result ? result.output : "", /requires --target/);
 });
 
-test(
-  "review-required maps to hook-blocking exit code and matching renderers",
-  () => {
+test("review-required maps to blocking output", () => {
   assert.equal(exitCodeFor(review), 2);
   assert.match(renderDecision(review, false), /^REVIEW_REQUIRED/m);
   assert.equal(

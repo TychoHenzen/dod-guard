@@ -1,6 +1,6 @@
 import type { AcknowledgeOptions } from "./acknowledge-options.js";
-import type { CommandResult } from "./command-result.js";
 import { acknowledgeUsage } from "./cli-usage.js";
+import type { CommandResult } from "./command-result.js";
 
 function optionName(arg: string): string | undefined {
   return ["--finding", "--reason", "--author"].find(

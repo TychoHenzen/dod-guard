@@ -1,5 +1,5 @@
-import type { QualityConfig } from "./config.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
+import type { QualityConfig } from "./config.js";
 import { progressValues } from "./refactor-progress-metrics.js";
 
 export function buildProgressMetrics(

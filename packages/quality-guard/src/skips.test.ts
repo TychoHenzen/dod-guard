@@ -51,9 +51,7 @@ test("a corrupt log reads as empty rather than throwing", () => {
   assert.deepEqual(readSkipLog(root), []);
   rmSync(root, { recursive: true, force: true });
 });
-test(
-  "formatSkips reports nothing open when every waiver is acknowledged",
-  () => {
+test("formatSkips reports no open waivers", () => {
   const out = formatSkips([{ file: "src/a.ts", acknowledged: true }]);
   assert.equal(out, "No unacknowledged quality-gate waivers.");
 });

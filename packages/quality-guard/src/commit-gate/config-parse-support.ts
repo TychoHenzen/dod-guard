@@ -1,5 +1,5 @@
-import { ConfigError } from "./config-error.js";
 import { DEFAULT_CONFIG } from "./config-defaults.js";
+import { ConfigError } from "./config-error.js";
 import { positiveInteger } from "./config-parse-paths.js";
 
 export function record(

@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { connect } from "./index-fixtures.test.js";
 
-test(
-  "the MCP server lists scan, baseline, waiver, and commit-gate tools",
-  async () => {
+test("MCP server lists all quality tools", async () => {
   const connection = await connect();
   try {
     const tools = await connection.client.listTools();

@@ -1,19 +1,19 @@
-import type { QualityConfig } from "./config.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
+import type { QualityConfig } from "./config.js";
 import {
   compatibilityPathCount,
   directTypePressure,
   publicSurfaceCount,
 } from "./refactor-progress-counts.js";
 import {
+  dependencyKeys,
+  dependencyReduction,
+} from "./refactor-progress-dependencies.js";
+import {
   operations,
   ownershipMoves,
   productionTypes,
 } from "./refactor-progress-operations.js";
-import {
-  dependencyKeys,
-  dependencyReduction,
-} from "./refactor-progress-dependencies.js";
 
 function statusFromCounts(
   before: number,

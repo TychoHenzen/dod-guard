@@ -20,10 +20,12 @@ function decisionLines(result: DecisionResult): string[] {
     ),
   );
   lines.push(
-    ...(result.staleAcknowledgements ?? []).map(
-      (findingId) =>
-        `STALE: acknowledgement for ${findingId} does not match the ` +
-        "current staged fingerprint",
+    ...(result.staleAcknowledgements ?? []).map((findingId) =>
+      [
+        "STALE: acknowledgement for",
+        findingId,
+        "does not match the current staged fingerprint",
+      ].join(" "),
     ),
   );
   lines.push(...refactorLines(result));

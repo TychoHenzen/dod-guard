@@ -5,9 +5,7 @@ import {
   parseArchitectureAcknowledgements,
 } from "./acknowledgements.js";
 
-test(
-  "stores the exact tracked acknowledgement fields in append-only order",
-  () => {
+test("stores tracked acknowledgement fields", () => {
   const output = appendArchitectureAcknowledgement("[]", {
     findingId: "finding",
     fingerprint: "fingerprint",

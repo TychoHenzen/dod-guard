@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
+import { canonical } from "./canonical.js";
 import type { QualityConfig } from "./config.js";
 import type { Snapshot } from "./snapshot.js";
-import { canonical } from "./canonical.js";
 
 export const DECISION_RECORD_PATH =
   ".github/quality/architecture-decisions.json";

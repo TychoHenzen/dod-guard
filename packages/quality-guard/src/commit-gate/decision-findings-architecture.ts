@@ -1,14 +1,15 @@
-import type { QualityConfig } from "./config.js";
-import { analyzeDependencies } from "./dependency.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
-import { analyzeEncapsulation } from "./encapsulation.js";
-import { analyzePlacement } from "./placement.js";
-import type { DecisionResult } from "./types.js";
+import type { QualityConfig } from "./config.js";
 import {
   dependencyFindings,
   encapsulationFindings,
   placementFindings,
 } from "./decision-architecture-mappers.js";
+import { analyzeDependencies } from "./dependency.js";
+import { analyzeEncapsulation } from "./encapsulation.js";
+import { analyzePlacement } from "./placement.js";
+import type { DecisionResult } from "./types.js";
+
 function typeFacts(files: ArchitectureFileFact[]) {
   return files.map((file) => ({
     path: file.path,

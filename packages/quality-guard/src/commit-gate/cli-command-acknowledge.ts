@@ -1,14 +1,14 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
-import { appendArchitectureAcknowledgement } from "./acknowledgements.js";
 import type { AcknowledgeOptions } from "./acknowledge-options.js";
-import type { CommandResult } from "./command-result.js";
+import { appendArchitectureAcknowledgement } from "./acknowledgements.js";
 import {
   acknowledgeUsage,
   parseAcknowledgeArguments,
 } from "./cli-arguments.js";
 import { runStagedCheck } from "./cli-decision.js";
+import type { CommandResult } from "./command-result.js";
 import { DECISION_RECORD_PATH } from "./fingerprint.js";
 
 function acknowledgementSource(recordPath: string): string {
@@ -28,11 +28,12 @@ function findAcknowledgement(
   );
   if (!finding)
     return acknowledgeUsage(`unknown or stale finding ${options.findingId}`);
-  if (finding.severity !== "review")
+  if (finding.severity !== "review") {
+    const reason = "cannot be acknowledged";
     return acknowledgeUsage(
-      `finding ${options.findingId} is deterministic and ` +
-        "cannot be acknowledged",
+      `finding ${options.findingId} is deterministic and ${reason}`,
     );
+  }
   if (!decision.fingerprint)
     return acknowledgeUsage(
       "no current staged source fingerprint is available",
@@ -46,7 +47,7 @@ function writeAcknowledgement(
   fingerprint: string,
 ): CommandResult {
   const recordPath = path.join(root, DECISION_RECORD_PATH);
-  mkdirSync(path["dirname"](recordPath), { recursive: true });
+  mkdirSync(path.dirname(recordPath), { recursive: true });
   writeFileSync(
     recordPath,
     appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {

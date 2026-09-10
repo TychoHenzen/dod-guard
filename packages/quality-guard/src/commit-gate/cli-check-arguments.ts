@@ -1,8 +1,9 @@
 import * as path from "node:path";
 import type { CheckOptions } from "./check-options.js";
-import type { CommandResult } from "./command-result.js";
-import { usage } from "./cli-usage.js";
 import { applyCheckOption } from "./cli-check-options.js";
+import { usage } from "./cli-usage.js";
+import type { CommandResult } from "./command-result.js";
+
 function validTarget(value: string): boolean {
   return (
     Boolean(value.trim()) &&

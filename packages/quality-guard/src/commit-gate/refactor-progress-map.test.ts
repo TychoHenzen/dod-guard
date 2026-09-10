@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseQualityConfig } from "./config.js";
 import { decideQuality } from "./decision-core.js";
+import { before, mapSource } from "./refactor-progress-map-fixtures.test.js";
 import {
   evaluateResponsibilityMap,
   parseResponsibilityMap,
 } from "./responsibility-map.js";
-import { before, mapSource } from "./refactor-progress-map-fixtures.test.js";
+
 test(
   "requires declared ownership progress instead of accepting local metric " +
     "improvements",

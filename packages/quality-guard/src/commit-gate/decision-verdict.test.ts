@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseQualityConfig } from "./config.js";
 import { decideQuality } from "./decision-core.js";
-import { fingerprintSnapshot } from "./fingerprint.js";
 import {
   growthDecisionInput,
   growthFinding,
   snapshot,
 } from "./decision-fixtures.test.js";
+import { fingerprintSnapshot } from "./fingerprint.js";
 
 test("a deterministic failure wins while preserving review findings", () => {
   const result = decideQuality({
@@ -28,9 +28,7 @@ test("a deterministic failure wins while preserving review findings", () => {
   assert.ok(result.findings.some((finding) => finding.severity === "fail"));
 });
 
-test(
-  "accepted review evidence produces pass when deterministic checks pass",
-  () => {
+test("accepted review evidence passes deterministic checks", () => {
   const result = decideQuality({
     ...growthDecisionInput(),
     acknowledgements: [growthFinding().id],
@@ -39,9 +37,7 @@ test(
   assert.equal(result.errors.length, 0);
 });
 
-test(
-  "current acknowledgement records accept only matching review findings",
-  () => {
+test("matching acknowledgement records pass", () => {
   const review = growthFinding();
   const result = decideQuality({
     ...growthDecisionInput(),
@@ -59,9 +55,7 @@ test(
   assert.deepEqual(result.staleAcknowledgements, []);
 });
 
-test(
-  "documentation-only changes report that no source decision was required",
-  () => {
+test("documentation-only changes need no source decision", () => {
   const result = decideQuality({
     snapshot: {
       baseIdentity: "base",

@@ -33,9 +33,7 @@ test("the MCP commit-gate tool returns the staged decision JSON", async () => {
   }
 });
 
-test(
-  "the MCP commit-gate tool returns a concise refactor usage error",
-  async () => {
+test("commit-gate tool reports concise refactor usage", async () => {
   const connection = await connect();
   try {
     const result = await connection.client.callTool({

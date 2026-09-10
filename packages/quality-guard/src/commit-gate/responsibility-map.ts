@@ -1,7 +1,9 @@
-import type { QualityConfig } from "./config.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
+import type { QualityConfig } from "./config.js";
 import { analyzeRefactorProgress } from "./refactor-progress.js";
+
 export type { ResponsibilityMap } from "./responsibility-map-types.js";
+
 import type { ResponsibilityMap } from "./responsibility-map-types.js";
 
 export { parseResponsibilityMap } from "./responsibility-map-parse.js";
@@ -46,14 +48,16 @@ function desiredOutcomes(
       before: owns(before, outcome.responsibility, outcome.owner),
       after: owns(after, outcome.responsibility, outcome.owner),
     })),
-    ...map.desired.boundaries.map((outcome) => ({
-      description:
-        `${outcome.from} -> ${outcome.to} is ` +
-        (outcome.allowed ? "allowed" : "absent"),
-      before:
-        hasDependency(before, outcome.from, outcome.to) === outcome.allowed,
-      after: hasDependency(after, outcome.from, outcome.to) === outcome.allowed,
-    })),
+    ...map.desired.boundaries.map((outcome) => {
+      const availability = outcome.allowed ? "allowed" : "absent";
+      return {
+        description: `${outcome.from} -> ${outcome.to} is ${availability}`,
+        before:
+          hasDependency(before, outcome.from, outcome.to) === outcome.allowed,
+        after:
+          hasDependency(after, outcome.from, outcome.to) === outcome.allowed,
+      };
+    }),
   ];
 }
 

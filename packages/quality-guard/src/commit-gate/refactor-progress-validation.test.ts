@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseResponsibilityMap } from "./responsibility-map.js";
 
-test(
-  "rejects incomplete, outcome-free, and unknown responsibility map fields",
-  () => {
+test("rejects incomplete responsibility maps", () => {
   assert.throws(
     () =>
       parseResponsibilityMap(

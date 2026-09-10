@@ -22,3 +22,7 @@ declare module "*architecture-facts.mjs" {
     errors: string[];
   };
 }
+
+declare module "#quality-guard-architecture-facts" {
+  export * from "*architecture-facts.mjs";
+}

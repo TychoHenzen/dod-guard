@@ -2,9 +2,7 @@ import { readFileSync, realpathSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  StdioServerTransport,
-} from "@modelcontextprotocol/sdk/server/stdio.js";
+import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
 import { runCheckCommand } from "./commit-gate/cli.js";
 import { runQualityReport } from "./report.js";
 import { registerQualityGuardTools } from "./server-tools.js";
@@ -51,7 +49,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   if (args[0] === "report") return runReportCommand(args);
   if (isCheckCommand(args)) return runCheckCommandLine(args);
-  await server.connect(new StdioServerTransport());
+  await server.connect(new stdio.StdioServerTransport());
 }
 
 function isMainModule(): boolean {

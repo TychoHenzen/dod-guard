@@ -1,4 +1,17 @@
 import type { CheckOptions } from "./check-options.js";
+import {
+  acknowledgementRecords,
+  affectedPaths,
+  noSourceDecision,
+  refactorMapFor,
+  sourceInventories,
+} from "./cli-decision-input.js";
+import {
+  scannerEvidence,
+  snapshotConfig,
+  sourceChange,
+  withoutDistributionChanges,
+} from "./cli-tree.js";
 import { parseQualityConfig } from "./config.js";
 import { decideQuality } from "./decision-core.js";
 import {
@@ -7,19 +20,6 @@ import {
   type Snapshot,
 } from "./snapshot.js";
 import type { DecisionResult } from "./types.js";
-import {
-  scannerEvidence,
-  snapshotConfig,
-  sourceChange,
-  withoutDistributionChanges,
-} from "./cli-tree.js";
-import {
-  acknowledgementRecords,
-  affectedPaths,
-  noSourceDecision,
-  refactorMapFor,
-  sourceInventories,
-} from "./cli-decision-input.js";
 
 type SnapshotInput = {
   root: string;

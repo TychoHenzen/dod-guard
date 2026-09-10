@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import type { Snapshot } from "./snapshot.js";
+
 export { scannerEvidence } from "./cli-tree-scanner.js";
 
 const SOURCE_PATTERN = new RegExp(
@@ -32,10 +33,9 @@ export function treeFile(input: {
     );
   } catch {
     if (input.fallback !== undefined) return input.fallback;
-    throw new Error(
-      `${input.filePath} is not present in ` +
-        (input.ref === "index" ? "the staged index" : `tree ${input.ref}`),
-    );
+    const location =
+      input.ref === "index" ? "the staged index" : `tree ${input.ref}`;
+    throw new Error(`${input.filePath} is not present in ${location}`);
   }
 }
 

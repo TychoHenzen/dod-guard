@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildQualityReport } from "./report-builder.js";
 
-test(
-  "scores every scanned file and keeps architecture outside the score",
-  () => {
+test("scores files and excludes architecture from score", () => {
   const report = buildQualityReport(
     {
       profile: "default",

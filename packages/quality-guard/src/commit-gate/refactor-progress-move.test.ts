@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseQualityConfig } from "./config.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
+import { parseQualityConfig } from "./config.js";
 import { analyzeRefactorProgress } from "./refactor-progress.js";
 
 test(

@@ -1,10 +1,10 @@
 import * as path from "node:path";
 import type { QualityConfig } from "./config.js";
+import { findingsForFile } from "./placement-findings.js";
 import {
   isProductionArchitecturePath,
   normalizeArchitecturePath,
 } from "./placement-paths.js";
-import { findingsForFile } from "./placement-findings.js";
 
 export function typeNames(
   files: Array<{ path: string; types: string[] }>,

@@ -6,10 +6,12 @@ import {
   isProductionArchitecturePath,
   normalizeArchitecturePath,
 } from "./placement.js";
+
 export {
   forbiddenFindings,
   sortForbiddenFindings,
 } from "./dependency-graph-findings.js";
+
 function extensionless(filePath: string): string {
   return filePath.replace(/\.[^/.]+$/, "");
 }

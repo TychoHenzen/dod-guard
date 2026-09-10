@@ -59,8 +59,10 @@ function contextForFile(input: {
 }) {
   const normalized = normalizeArchitecturePath(input.file.path);
   if (
-    !input.changed.has(normalized) ||
-    !isProductionArchitecturePath(input.file.path, input.config)
+    !(
+      input.changed.has(normalized) &&
+      isProductionArchitecturePath(input.file.path, input.config)
+    )
   )
     return null;
   const directory = path.posix.dirname(normalized);

@@ -1,6 +1,6 @@
 import type { CheckOptions } from "./check-options.js";
-import type { CommandResult } from "./command-result.js";
 import { usage } from "./cli-usage.js";
+import type { CommandResult } from "./command-result.js";
 
 function intentOption(
   args: string[],
@@ -21,7 +21,7 @@ function targetOption(
   const arg = args[index];
   const inline = arg.startsWith("--target=");
   const value = inline ? arg.slice("--target=".length) : args[index + 1];
-  if (!inline && !value)
+  if (!(inline || value))
     return usage("--target requires a repository-relative path");
   return { value: value ?? "", next: inline ? index : index + 1 };
 }

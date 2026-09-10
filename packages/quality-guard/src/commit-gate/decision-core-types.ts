@@ -1,9 +1,9 @@
 import type { ArchitectureAcknowledgement } from "./acknowledgements.js";
-import type { QualityConfig } from "./config.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
+import type { QualityConfig } from "./config.js";
+import type { ResponsibilityMap } from "./responsibility-map.js";
 import type { Snapshot } from "./snapshot.js";
 import type { DecisionResult } from "./types.js";
-import type { ResponsibilityMap } from "./responsibility-map.js";
 
 export interface DecisionCoreInput {
   snapshot: Snapshot;
