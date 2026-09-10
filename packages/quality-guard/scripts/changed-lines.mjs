@@ -6,7 +6,7 @@
  * keep only the findings that land on lines this call produced.
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync } from "node:fs";
 
 const WHOLE_FILE = [{ from: 1, to: Number.MAX_SAFE_INTEGER }];
 
@@ -17,11 +17,15 @@ function countLines(text) {
 /** Ranges for one edit, or null when the new text is no longer in the file. */
 function rangesForEdit(edit, text) {
   const added = edit.new_string;
-  if (typeof added !== 'string' || !added) return [];
-  let at = text.indexOf(added);
+  if (typeof added !== "string" || !added) return [];
+  const at = text.indexOf(added);
   if (at === -1) return null;
+  return collectEditRanges({ edit, text, added, first: at });
+}
 
+function collectEditRanges({ edit, text, added, first }) {
   const ranges = [];
+  let at = first;
   while (at !== -1) {
     const from = countLines(text.slice(0, at)) + 1;
     ranges.push({ from, to: from + countLines(added) });
@@ -38,23 +42,20 @@ function rangesForApplyPatch(input, text) {
 }
 
 function rangeForRun(run, text) {
-  if (typeof run !== 'string' || !run) return [];
+  if (typeof run !== "string" || !run) return [];
   const at = text.indexOf(run);
   if (at === -1) return [];
   const from = countLines(text.slice(0, at)) + 1;
   return [{ from, to: from + countLines(run) }];
 }
 
-/** Line ranges, 1-based and inclusive, that this tool call wrote. */
-function changedRanges(input, text) {
-  const tool = input.tool_name;
-  if (tool === 'apply_patch') return rangesForApplyPatch(input, text);
-  if (tool !== 'Edit' && tool !== 'MultiEdit') return WHOLE_FILE;
-
-  const edits = tool === 'MultiEdit'
-    ? (input.tool_input?.edits || [])
+function editsFor(input, tool) {
+  return tool === "MultiEdit"
+    ? input.tool_input?.edits || []
     : [input.tool_input || {}];
+}
 
+function rangesForEdits(edits, text) {
   const ranges = [];
   for (const edit of edits) {
     const found = rangesForEdit(edit, text);
@@ -64,18 +65,28 @@ function changedRanges(input, text) {
   return ranges.length ? ranges : WHOLE_FILE;
 }
 
+/** Line ranges, 1-based and inclusive, that this tool call wrote. */
+function changedRanges(input, text) {
+  const tool = input.tool_name;
+  if (tool === "apply_patch") return rangesForApplyPatch(input, text);
+  if (tool !== "Edit" && tool !== "MultiEdit") return WHOLE_FILE;
+  return rangesForEdits(editsFor(input, tool), text);
+}
+
 /** Keep only the findings whose line falls inside a changed range. */
 export function scopeToChangedLines(input, findings) {
   const filePath = input.tool_input?.file_path;
   if (!filePath || !findings.length) return findings;
   let text;
   try {
-    text = readFileSync(filePath, 'utf8');
+    text = readFileSync(filePath, "utf8");
   } catch {
     return findings;
   }
   const ranges = changedRanges(input, text);
-  return findings.filter((finding) => ranges.some(
-    (range) => finding.line >= range.from && finding.line <= range.to,
-  ));
+  return findings.filter((finding) =>
+    ranges.some(
+      (range) => finding.line >= range.from && finding.line <= range.to,
+    ),
+  );
 }

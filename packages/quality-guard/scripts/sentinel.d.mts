@@ -9,20 +9,21 @@
 export declare const SENTINEL_NAME: string;
 export declare const SKIP_LOG: string;
 
-export interface SentinelIntent {
-  rebaseline: boolean;
-}
+type SentinelRecord = {
+	file: string;
+	reasons?: string[];
+	rebaseline?: boolean;
+	at?: string;
+	acknowledged?: boolean;
+};
 
-export interface SkipRecord {
-  file: string;
-  reasons?: string[];
-  rebaseline?: boolean;
-  at?: string;
-  acknowledged?: boolean;
-}
-
-export declare function readSentinel(repoRoot: string): SentinelIntent | null;
+export declare function readSentinel(
+  repoRoot: string,
+): { rebaseline: boolean } | null;
 export declare function deleteSentinel(repoRoot: string): void;
-export declare function readSkipLog(repoRoot: string): SkipRecord[];
-export declare function recordConsumption(repoRoot: string, entry: Partial<SkipRecord>): SkipRecord;
-export declare function unacknowledged(repoRoot: string): SkipRecord[];
+export declare function readSkipLog(repoRoot: string): Array<SentinelRecord>;
+export declare function recordConsumption(
+  repoRoot: string,
+  entry: Partial<SentinelRecord>,
+): SentinelRecord;
+export declare function unacknowledged(repoRoot: string): Array<SentinelRecord>;

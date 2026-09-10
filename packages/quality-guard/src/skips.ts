@@ -10,9 +10,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 
-export const SKIP_LOG = path.join(".github", "quality", "skip-log.json");
+const SKIP_LOG = path.join(".github", "quality", "skip-log.json");
 
-export interface SkipRecord {
+interface SkipRecord {
   file: string;
   reasons?: string[];
   rebaseline?: boolean;
@@ -35,14 +35,35 @@ export function formatSkips(records: SkipRecord[]): string {
   const open = records.filter((record) => record.acknowledged !== true);
   if (open.length === 0) return "No unacknowledged quality-gate waivers.";
 
-  const lines = [`${open.length} unacknowledged waiver(s):`, ""];
-  for (const record of open) {
-    const kind = record.rebaseline ? "rebaseline" : "new-file ceiling";
-    lines.push(`${record.file}  [${kind}]  ${record.at ?? "unknown time"}`);
-    for (const reason of record.reasons ?? []) {
-      for (const line of reason.split("\n")) lines.push(`    ${line}`);
-    }
-  }
-  lines.push("", `Acknowledge by setting "acknowledged": true in ${SKIP_LOG}.`);
-  return lines.join("\n");
+  return [
+    `${open.length} unacknowledged waiver(s):`,
+    "",
+    ...open.flatMap(formatRecord),
+    "",
+    `Acknowledge by setting "acknowledged": true in ${SKIP_LOG}.`,
+  ].join("\n");
+}
+
+function formatRecord(record: SkipRecord): string[] {
+  return [
+    `${record.file}  [${recordKind(record)}]  ${recordTime(record)}`,
+    ...recordReasons(record),
+  ];
+}
+
+function recordKind(record: SkipRecord): string {
+  if (record.rebaseline) return "rebaseline";
+  return "new-file ceiling";
+}
+
+function recordTime(record: SkipRecord): string {
+  if (record.at) return record.at;
+  return "unknown time";
+}
+
+function recordReasons(record: SkipRecord): string[] {
+  if (!record.reasons) return [];
+  return record.reasons.flatMap((reason) =>
+    reason.split("\n").map((line) => `    ${line}`),
+  );
 }

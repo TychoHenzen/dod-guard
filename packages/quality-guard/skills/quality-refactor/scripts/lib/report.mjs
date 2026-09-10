@@ -1,12 +1,6 @@
-// Output formatting: human text, machine JSON, and step-plan grouping.
+import { renderJson, renderText } from "./report-render.mjs";
 
 const SEVERITY_ORDER = { error: 0, warn: 1 };
-
-/**
- * Rules ordered by how much they should be fixed first. Structural problems
- * come before cosmetic ones because fixing structure moves the cosmetic
- * numbers for free, and cosmetic fixes applied first get thrown away.
- */
 const RULE_ORDER = [
   "dead-export",
   "test-only-export",
@@ -44,81 +38,55 @@ export function sortViolations(violations) {
   });
 }
 
-export function summarize(violations) {
-  const byRule = {};
-  const byFile = {};
-  let errors = 0;
-  for (const violation of violations) {
-    byRule[violation.rule] = (byRule[violation.rule] ?? 0) + 1;
-    byFile[violation.file] = (byFile[violation.file] ?? 0) + 1;
-    if (violation.severity === "error") errors += 1;
-  }
-  return { total: violations.length, errors, warnings: violations.length - errors, byRule, byFile };
+function increment(counts, key) {
+  counts[key] = (counts[key] ?? 0) + 1;
 }
 
-/**
- * Group violations into per-file work units, ordered worst-first. Each unit is
- * one atomic refactoring step: one file, every rule it violates, fixed in one
- * pass so the file is only touched once.
- */
+function recordSummary(summary, violation) {
+  increment(summary.byRule, violation.rule);
+  increment(summary.byFile, violation.file);
+  summary.errors += violation.severity === "error";
+}
+
+export function summarize(violations) {
+  const summary = {
+    total: violations.length,
+    errors: 0,
+    byRule: {},
+    byFile: {},
+  };
+  for (const violation of violations) recordSummary(summary, violation);
+  return {
+    total: summary.total,
+    errors: summary.errors,
+    warnings: summary.total - summary.errors,
+    byRule: summary.byRule,
+    byFile: summary.byFile,
+  };
+}
+
+function addToWorkUnit(byFile, violation) {
+  const unit = byFile.get(violation.file) ?? {
+    file: violation.file,
+    errors: 0,
+    warnings: 0,
+    rules: {},
+    items: [],
+  };
+  unit.items.push(violation);
+  increment(unit.rules, violation.rule);
+  unit.errors += violation.severity === "error";
+  unit.warnings += violation.severity !== "error";
+  byFile.set(violation.file, unit);
+}
+
 export function toWorkUnits(violations) {
   const byFile = new Map();
-  for (const violation of sortViolations(violations)) {
-    const unit = byFile.get(violation.file) ?? { file: violation.file, errors: 0, warnings: 0, rules: {}, items: [] };
-    unit.items.push(violation);
-    unit.rules[violation.rule] = (unit.rules[violation.rule] ?? 0) + 1;
-    if (violation.severity === "error") unit.errors += 1;
-    else unit.warnings += 1;
-    byFile.set(violation.file, unit);
-  }
-  return [...byFile.values()].sort((a, b) => b.errors - a.errors || b.warnings - a.warnings);
+  for (const violation of sortViolations(violations))
+    addToWorkUnit(byFile, violation);
+  return [...byFile.values()].sort(
+    (a, b) => b.errors - a.errors || b.warnings - a.warnings,
+  );
 }
 
-function topEntries(counts, limit) {
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit);
-}
-
-function renderAdoptions(comparison, lines) {
-  const recorded = comparison.adopted.reduce((sum, item) => sum + item.now, 0);
-  const files = [...new Set(comparison.adopted.map((a) => a.file))].sort();
-  lines.push(`Adopted ${files.length} file(s) into the baseline (${recorded} violations recorded):`);
-  for (const file of files.slice(0, 20)) lines.push(`  ${file}`);
-  if (files.length > 20) lines.push(`  ... ${files.length - 20} more`);
-}
-
-function renderComparison(comparison) {
-  const lines = [""];
-  lines.push(`Baseline: ${comparison.totalBefore} -> ${comparison.totalNow}`);
-  if (comparison.regressions.length > 0) {
-    lines.push(`REGRESSIONS (${comparison.regressions.length}):`);
-    for (const item of comparison.regressions) {
-      lines.push(`  ${item.file}  ${item.rule}  ${item.before} -> ${item.now}`);
-    }
-  } else {
-    lines.push("No regressions.");
-  }
-  lines.push(`Improvements: ${comparison.improvements.length} (file, rule) pairs`);
-  if (comparison.adopted.length > 0) renderAdoptions(comparison, lines);
-  return lines.join("\n");
-}
-
-export function renderText(result, top) {
-  const { summary, comparison } = result;
-  const lines = [];
-  const counts = `${summary.errors} error, ${summary.warnings} warn`;
-  lines.push(`Scanned ${result.fileCount} files — ${summary.total} violations (${counts})`);
-  lines.push("");
-  lines.push("By rule:");
-  for (const [rule, count] of topEntries(summary.byRule, 20)) lines.push(`  ${String(count).padStart(6)}  ${rule}`);
-  lines.push("");
-  lines.push(`Worst files (top ${top}):`);
-  for (const [file, count] of topEntries(summary.byFile, top)) lines.push(`  ${String(count).padStart(6)}  ${file}`);
-  if (comparison) lines.push(renderComparison(comparison));
-  return lines.join("\n");
-}
-
-export function renderJson(result) {
-  return JSON.stringify(result, null, 2);
-}
+export { renderJson, renderText };

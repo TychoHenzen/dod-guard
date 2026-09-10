@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { appendArchitectureAcknowledgement, parseArchitectureAcknowledgements } from "./acknowledgements.js";
+import {
+  appendArchitectureAcknowledgement,
+  parseArchitectureAcknowledgements,
+} from "./acknowledgements.js";
 
-test("stores the exact tracked acknowledgement fields in append-only order", () => {
+test(
+  "stores the exact tracked acknowledgement fields in append-only order",
+  () => {
   const output = appendArchitectureAcknowledgement("[]", {
     findingId: "finding",
     fingerprint: "fingerprint",
@@ -25,9 +30,13 @@ test("rejects decision records with unsupported or missing fields", () => {
   assert.throws(
     () =>
       parseArchitectureAcknowledgements(
-        '[{"findingId":"a","fingerprint":"b","reason":"c","author":"d","time":"e","extra":true}]',
+        '[{"findingId":"a","fingerprint":"b","reason":"c",' +
+          '"author":"d","time":"e","extra":true}]',
       ),
     /not supported/,
   );
-  assert.throws(() => parseArchitectureAcknowledgements('[{"findingId":"a"}]'), /fingerprint/);
+  assert.throws(
+    () => parseArchitectureAcknowledgements('[{"findingId":"a"}]'),
+    /fingerprint/,
+  );
 });

@@ -3262,8 +3262,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path9) {
-      let input = path9;
+    function removeDotSegments(path13) {
+      let input = path13;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3672,8 +3672,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path9 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path9 && path9 !== "/" ? path9 : void 0;
+        const path13 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path13 && path13 !== "/" ? path13 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -7200,7 +7200,7 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync as readFileSync4, realpathSync } from "node:fs";
-import * as path8 from "node:path";
+import * as path12 from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
@@ -7681,8 +7681,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path9, errorMaps, issueData } = params;
-  const fullPath = [...path9, ...issueData.path || []];
+  const { data, path: path13, errorMaps, issueData } = params;
+  const fullPath = [...path13, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7798,11 +7798,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path9, key2) {
+  constructor(parent, value, path13, key2) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path9;
+    this._path = path13;
     this._key = key2;
   }
   get path() {
@@ -11439,10 +11439,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path9) {
-  if (!path9)
+function getElementAtPath(obj, path13) {
+  if (!path13)
     return obj;
-  return path9.reduce((acc, key2) => acc?.[key2], obj);
+  return path13.reduce((acc, key2) => acc?.[key2], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11762,11 +11762,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path9, issues) {
+function prefixIssues(path13, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path9);
+    iss.path.unshift(path13);
     return iss;
   });
 }
@@ -15177,11 +15177,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path9) {
-  if (path9.length === 0) {
+function getDotPath(path13) {
+  if (path13.length === 0) {
     return "object root";
   }
-  return path9.reduce((acc, seg, index) => {
+  return path13.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -18575,8 +18575,8 @@ var parseReadonlyDef = (def, refs) => {
 };
 
 // ../../node_modules/zod-to-json-schema/dist/esm/selectParser.js
-var selectParser = (def, typeName, refs) => {
-  switch (typeName) {
+var selectParser = (def, typeName2, refs) => {
+  switch (typeName2) {
     case ZodFirstPartyTypeKind.ZodString:
       return parseStringDef(def, refs);
     case ZodFirstPartyTypeKind.ZodNumber:
@@ -18646,7 +18646,7 @@ var selectParser = (def, typeName, refs) => {
     case ZodFirstPartyTypeKind.ZodSymbol:
       return void 0;
     default:
-      return /* @__PURE__ */ ((_) => void 0)(typeName);
+      return /* @__PURE__ */ ((_) => void 0)(typeName2);
   }
 };
 
@@ -21437,113 +21437,163 @@ var StdioServerTransport = class {
   }
 };
 
-// src/commit-gate/cli.ts
-import { execFileSync as execFileSync3 } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import * as path5 from "node:path";
-
-// src/scanner.ts
-import { execFileSync } from "node:child_process";
-import * as path from "node:path";
-import { fileURLToPath } from "node:url";
-var SCAN_TIMEOUT_MS = 12e4;
-var MAX_BUFFER = 32 * 1024 * 1024;
-function scannerPath() {
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  return path.join(here, "..", "skills", "quality-refactor", "scripts", "quality-scan.mjs");
+// src/commit-gate/cli-usage.ts
+function usage(message) {
+  const usageText = "Usage: quality-guard check --staged [--intent change|refactor] [--target <repository-relative-path>] [--json]";
+  return {
+    exitCode: 3,
+    output: `${message ? `Usage error: ${message}
+` : ""}${usageText}`
+  };
 }
-function buildArgs(request) {
-  const args = [...request.paths, "--format=json"];
-  if (request.root) args.push(`--root=${request.root}`);
-  if (request.profile) args.push(`--profile=${request.profile}`);
-  if (request.rules?.length) args.push(`--rules=${request.rules.join(",")}`);
-  for (const exclude of request.excludes ?? []) args.push(`--exclude=${exclude}`);
-  for (const testPath of request.testPaths ?? []) args.push(`--test-path=${testPath}`);
-  if (request.baseline) args.push(`--baseline=${request.baseline}`);
-  if (request.writeBaseline) args.push(`--write-baseline=${request.writeBaseline}`);
-  if (request.failOn) args.push(`--fail-on=${request.failOn}`);
-  return args;
-}
-function runScan(request, run = execFileSync) {
-  const args = [scannerPath(), ...buildArgs(request)];
-  try {
-    const stdout = run(process.execPath, args, {
-      encoding: "utf8",
-      timeout: SCAN_TIMEOUT_MS,
-      maxBuffer: MAX_BUFFER,
-      cwd: request.root
-    });
-    return { exitCode: 0, report: JSON.parse(stdout) };
-  } catch (err) {
-    const failure = err;
-    if (typeof failure.stdout === "string" && failure.stdout.trim()) {
-      return { exitCode: failure.status ?? 1, report: JSON.parse(failure.stdout) };
-    }
-    throw new Error(`quality scan failed: ${failure.message ?? String(err)}`);
-  }
+function acknowledgeUsage(message) {
+  const usageText = "Usage: quality-guard acknowledge --finding <finding-id> --reason <reason> --author <author>";
+  return {
+    exitCode: 3,
+    output: `${message ? `Usage error: ${message}
+` : ""}${usageText}`
+  };
 }
 
-// src/commit-gate/fingerprint.ts
-import { createHash } from "node:crypto";
-var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
-var SOURCE_PATH = /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
-function canonical(value) {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  if (value !== null && typeof value === "object") {
-    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical(item)}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-function fingerprintSnapshot(snapshot, config2) {
-  const changes = snapshot.changes.filter((change) => change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH).filter((change) => SOURCE_PATH.test(change.before?.path ?? "") || SOURCE_PATH.test(change.after?.path ?? "")).map((change) => ({ kind: change.kind, before: change.before, after: change.after })).sort(
-    (left, right) => `${left.after?.path ?? left.before?.path}`.localeCompare(`${right.after?.path ?? right.before?.path}`)
+// src/commit-gate/cli-acknowledge-arguments.ts
+function optionName(arg) {
+  return ["--finding", "--reason", "--author"].find(
+    (flag2) => arg === flag2 || arg.startsWith(`${flag2}=`)
   );
-  return createHash("sha256").update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config: config2 })).digest("hex");
+}
+function optionValue(args, index, name) {
+  const arg = args[index];
+  return arg.startsWith(`${name}=`) ? { value: inlineValue(arg, name.length + 1), next: index } : { value: args[index + 1], next: index + 1 };
+}
+function inlineValue(value, start) {
+  let result = "";
+  for (let index = start; index < value.length; index += 1)
+    result += value[index];
+  return result;
+}
+function applyAcknowledgement(name, value, state) {
+  if (name === "--finding") state.findingId = value;
+  if (name === "--reason") state.reason = value;
+  if (name === "--author") state.author = value;
+}
+function validAcknowledgement(state) {
+  if (!state.findingId?.trim())
+    return acknowledgeUsage("--finding requires a finding identifier");
+  if (!state.reason?.trim())
+    return acknowledgeUsage("--reason requires a non-empty reason");
+  if (!state.author?.trim())
+    return acknowledgeUsage("--author requires a non-empty author");
+  return void 0;
+}
+function parseAcknowledgeArguments(args) {
+  if (args[0] !== "acknowledge") return acknowledgeUsage();
+  const state = {};
+  for (let index = 1; index < args.length; index += 1) {
+    const name = optionName(args[index]);
+    if (!name) return acknowledgeUsage(`unsupported option ${args[index]}`);
+    const result = optionValue(args, index, name);
+    applyAcknowledgement(name, result.value, state);
+    index = result.next;
+  }
+  const error2 = validAcknowledgement(state);
+  if (error2) return error2;
+  return {
+    findingId: state.findingId.trim(),
+    reason: state.reason.trim(),
+    author: state.author.trim()
+  };
 }
 
-// src/commit-gate/acknowledgements.ts
-function nonEmptyString(value, location) {
-  if (typeof value !== "string" || !value.trim()) throw new Error(`${location} must be a non-empty string`);
-  return value.trim();
+// src/commit-gate/cli-check-arguments.ts
+import * as path from "node:path";
+
+// src/commit-gate/cli-check-options.ts
+function intentOption(args, index) {
+  const arg = args[index];
+  const inline = arg.startsWith("--intent=");
+  const value = inline ? arg.slice("--intent=".length) : args[index + 1];
+  if (value !== "change" && value !== "refactor")
+    return usage(`unsupported intent ${value ?? ""}`.trim());
+  return { value, next: inline ? index : index + 1 };
 }
-function parseArchitectureAcknowledgements(source) {
-  let parsed;
-  try {
-    parsed = JSON.parse(source);
-  } catch {
-    throw new Error(`${DECISION_RECORD_PATH} must contain valid JSON`);
-  }
-  if (!Array.isArray(parsed)) throw new Error(`${DECISION_RECORD_PATH} must contain an array`);
-  return parsed.map((item, index) => {
-    if (item === null || typeof item !== "object" || Array.isArray(item))
-      throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
-    const record3 = item;
-    const unexpected = Object.keys(record3).filter(
-      (key2) => !["findingId", "fingerprint", "reason", "author", "time"].includes(key2)
-    );
-    if (unexpected.length > 0) throw new Error(`${DECISION_RECORD_PATH}[${index}].${unexpected[0]} is not supported`);
-    return {
-      findingId: nonEmptyString(record3.findingId, `${DECISION_RECORD_PATH}[${index}].findingId`),
-      fingerprint: nonEmptyString(record3.fingerprint, `${DECISION_RECORD_PATH}[${index}].fingerprint`),
-      reason: nonEmptyString(record3.reason, `${DECISION_RECORD_PATH}[${index}].reason`),
-      author: nonEmptyString(record3.author, `${DECISION_RECORD_PATH}[${index}].author`),
-      time: nonEmptyString(record3.time, `${DECISION_RECORD_PATH}[${index}].time`)
-    };
-  });
+function targetOption(args, index) {
+  const arg = args[index];
+  const inline = arg.startsWith("--target=");
+  const value = inline ? arg.slice("--target=".length) : args[index + 1];
+  if (!inline && !value)
+    return usage("--target requires a repository-relative path");
+  return { value: value ?? "", next: inline ? index : index + 1 };
 }
-function appendArchitectureAcknowledgement(source, record3) {
-  return `${JSON.stringify([...parseArchitectureAcknowledgements(source), record3], null, 2)}
-`;
+function jsonOption(args, index, state) {
+  if (args[index] !== "--json") return void 0;
+  state.json = true;
+  return index;
+}
+function intentOptionResult(args, index, state) {
+  const arg = args[index];
+  if (!(arg === "--intent" || arg.startsWith("--intent="))) return void 0;
+  const result = intentOption(args, index);
+  if (typeof result === "number" || "exitCode" in result) return result;
+  state.intent = result.value;
+  return result.next;
+}
+function targetOptionResult(args, index, state) {
+  const arg = args[index];
+  if (!(arg === "--target" || arg.startsWith("--target="))) return void 0;
+  const result = targetOption(args, index);
+  if (typeof result === "number" || "exitCode" in result) return result;
+  state.target = result.value;
+  return result.next;
+}
+function firstOptionResult(results, arg) {
+  const result = results.find((item) => item !== void 0);
+  if (result === void 0) return usage(`unsupported option ${arg}`);
+  return result;
+}
+function applyCheckOption(args, index, state) {
+  const arg = args[index];
+  return firstOptionResult(
+    [
+      jsonOption(args, index, state),
+      intentOptionResult(args, index, state),
+      targetOptionResult(args, index, state)
+    ],
+    arg
+  );
 }
 
-// src/commit-gate/config.ts
-var ConfigError = class extends Error {
-  constructor(message) {
-    super(`Invalid .quality-guard.json: ${message}`);
-    this.name = "ConfigError";
+// src/commit-gate/cli-check-arguments.ts
+function validTarget(value) {
+  return Boolean(value.trim()) && !path.isAbsolute(value) && !/^[a-zA-Z]:[\\/]/.test(value) && !value.split(/[\\/]/).includes("..");
+}
+function validCheckState(state) {
+  if (state.intent === "refactor" && !state.target)
+    return usage("refactor intent requires --target");
+  if (state.target && !validTarget(state.target))
+    return usage("--target must be a repository-relative path");
+  return void 0;
+}
+function validCommandStart(args) {
+  return args[0] === "check" && args[1] === "--staged";
+}
+function parseCheckArguments(args) {
+  if (!validCommandStart(args)) return usage();
+  const state = {
+    json: false,
+    intent: "change",
+    target: void 0
+  };
+  for (let index = 2; index < args.length; index += 1) {
+    const next = applyCheckOption(args, index, state);
+    if (typeof next !== "number") return next;
+    index = next;
   }
-};
+  const error2 = validCheckState(state);
+  if (error2) return error2;
+  return state;
+}
+
+// src/commit-gate/config-defaults.ts
 var DEFAULT_CONFIG = {
   pathGroups: {},
   dependencyDirections: [],
@@ -21553,36 +21603,129 @@ var DEFAULT_CONFIG = {
   testPaths: [],
   history: { maxFirstParentCommits: 200 }
 };
-function record2(value, location) {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new ConfigError(`${location} must be an object`);
+
+// src/commit-gate/config-error.ts
+var ConfigError = class extends Error {
+  constructor(message) {
+    super(`Invalid .quality-guard.json: ${message}`);
+    this.name = "ConfigError";
   }
+};
+
+// src/commit-gate/config-parse-paths.ts
+function pathList(value, location) {
+  assertPathList(value, location);
+  const result = value.map((item) => item.trim());
+  assertUniquePaths(result, location);
+  assertRelativePaths(result, location);
+  return result;
+}
+function assertPathList(value, location) {
+  if (!Array.isArray(value) || value.length === 0)
+    throw new ConfigError(
+      `${location} must be a non-empty array of path patterns`
+    );
+  if (value.some((item) => typeof item !== "string" || !item.trim()))
+    throw new ConfigError(`${location} must contain non-empty strings`);
+}
+function assertUniquePaths(paths, location) {
+  if (new Set(paths).size !== paths.length)
+    throw new ConfigError(`${location} contains a duplicate path pattern`);
+}
+function assertRelativePaths(paths, location) {
+  if (paths.some((item) => item.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(item)))
+    throw new ConfigError(`${location} paths must be repository-relative`);
+}
+function positiveInteger(value, location) {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1)
+    throw new ConfigError(`${location} must be a positive integer`);
+  return value;
+}
+
+// src/commit-gate/config-parse-support.ts
+function record2(value, location) {
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    throw new ConfigError(`${location} must be an object`);
   return value;
 }
 function keysOnly(value, allowed, location) {
-  for (const key2 of Object.keys(value)) {
-    if (!allowed.includes(key2)) throw new ConfigError(`${location}.${key2} is not supported`);
-  }
+  const unsupported = Object.keys(value).find((key2) => !allowed.includes(key2));
+  if (unsupported)
+    throw new ConfigError(`${location}.${unsupported} is not supported`);
 }
-function pathList(value, location) {
-  if (!Array.isArray(value) || value.length === 0 || value.some((item) => typeof item !== "string" || !item.trim())) {
-    throw new ConfigError(`${location} must be a non-empty array of path patterns`);
-  }
-  const result = value.map((item) => item.trim());
-  if (new Set(result).size !== result.length) throw new ConfigError(`${location} contains a duplicate path pattern`);
-  if (result.some((item) => item.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(item))) {
-    throw new ConfigError(`${location} paths must be repository-relative`);
+function parseHistory(value) {
+  if (value === void 0) return { ...DEFAULT_CONFIG.history };
+  const input = record2(value, "history");
+  keysOnly(input, ["maxFirstParentCommits"], "history");
+  if (input.maxFirstParentCommits === void 0)
+    throw new ConfigError("history must declare maxFirstParentCommits");
+  return {
+    maxFirstParentCommits: positiveInteger(
+      input.maxFirstParentCommits,
+      "history.maxFirstParentCommits"
+    )
+  };
+}
+
+// src/commit-gate/config-parse.ts
+function parseGroups(value) {
+  if (value === void 0) return {};
+  const groups = record2(value, "pathGroups");
+  const result = {};
+  for (const [name, patterns] of Object.entries(groups)) {
+    if (!name.trim())
+      throw new ConfigError("pathGroups contains an empty group name");
+    result[name] = pathList(patterns, `pathGroups.${name}`);
   }
   return result;
 }
-function stringList(value, location) {
-  return pathList(value, location);
+function parseDirection(item, index, groups) {
+  const location = `dependencyDirections[${index}]`;
+  const direction = record2(item, location);
+  keysOnly(direction, ["from", "to", "allowed"], location);
+  assertDirectionTypes(direction, location);
+  assertKnownGroups(direction, groups, location);
+  return { from: direction.from, to: direction.to, allowed: direction.allowed };
 }
-function positiveInteger(value, location) {
-  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) {
-    throw new ConfigError(`${location} must be a positive integer`);
+function assertDirectionTypes(direction, location) {
+  if (typeof direction.from !== "string" || typeof direction.to !== "string" || typeof direction.allowed !== "boolean") {
+    throw new ConfigError(
+      `${location} requires string from/to and boolean allowed`
+    );
   }
-  return value;
+}
+function assertKnownGroups(direction, groups, location) {
+  if (!(direction.from in groups) || !(direction.to in groups))
+    throw new ConfigError(`${location} references an unknown path group`);
+}
+function parseDirections(value, groups) {
+  if (value === void 0) return [];
+  if (!Array.isArray(value))
+    throw new ConfigError("dependencyDirections must be an array");
+  return value.map((item, index) => parseDirection(item, index, groups));
+}
+function parseScalar(value, fallback, location) {
+  return value === void 0 ? fallback : positiveInteger(value, location);
+}
+function parseStrings(value, fallback, location) {
+  return value === void 0 ? [...fallback] : pathList(value, location);
+}
+
+// src/commit-gate/config-build.ts
+var CONFIG_KEYS = [
+  "pathGroups",
+  "dependencyDirections",
+  "directTypeLimit",
+  "genericBuckets",
+  "generatedPaths",
+  "testPaths",
+  "history"
+];
+function optionalPaths(input) {
+  return {
+    generatedPaths: input.generatedPaths === void 0 ? [] : parseStrings(input.generatedPaths, [], "generatedPaths"),
+    testPaths: input.testPaths === void 0 ? [] : parseStrings(input.testPaths, [], "testPaths")
+  };
 }
 function parseQualityConfig(source) {
   let parsed;
@@ -21592,145 +21735,238 @@ function parseQualityConfig(source) {
     throw new ConfigError("must contain valid JSON");
   }
   const input = record2(parsed, "root");
-  keysOnly(
-    input,
-    [
-      "pathGroups",
-      "dependencyDirections",
-      "directTypeLimit",
-      "genericBuckets",
-      "generatedPaths",
-      "testPaths",
-      "history"
-    ],
-    "root"
-  );
-  const pathGroups = {};
-  if (input.pathGroups !== void 0) {
-    const groups = record2(input.pathGroups, "pathGroups");
-    for (const [name, patterns] of Object.entries(groups)) {
-      if (!name.trim()) throw new ConfigError("pathGroups contains an empty group name");
-      pathGroups[name] = pathList(patterns, `pathGroups.${name}`);
-    }
-  }
-  const dependencyDirections = [];
-  if (input.dependencyDirections !== void 0) {
-    if (!Array.isArray(input.dependencyDirections)) throw new ConfigError("dependencyDirections must be an array");
-    for (const [index, item] of input.dependencyDirections.entries()) {
-      const direction = record2(item, `dependencyDirections[${index}]`);
-      keysOnly(direction, ["from", "to", "allowed"], `dependencyDirections[${index}]`);
-      if (typeof direction.from !== "string" || typeof direction.to !== "string" || typeof direction.allowed !== "boolean") {
-        throw new ConfigError(`dependencyDirections[${index}] requires string from/to and boolean allowed`);
-      }
-      if (!(direction.from in pathGroups && direction.to in pathGroups)) {
-        throw new ConfigError(`dependencyDirections[${index}] references an unknown path group`);
-      }
-      dependencyDirections.push({ from: direction.from, to: direction.to, allowed: direction.allowed });
-    }
-  }
-  let history = { ...DEFAULT_CONFIG.history };
-  if (input.history !== void 0) {
-    const historyInput = record2(input.history, "history");
-    keysOnly(historyInput, ["maxFirstParentCommits"], "history");
-    if (historyInput.maxFirstParentCommits === void 0)
-      throw new ConfigError("history must declare maxFirstParentCommits");
-    history = {
-      maxFirstParentCommits: positiveInteger(historyInput.maxFirstParentCommits, "history.maxFirstParentCommits")
-    };
-  }
+  keysOnly(input, CONFIG_KEYS, "root");
+  const pathGroups = parseGroups(input.pathGroups);
   return {
     pathGroups,
-    dependencyDirections,
-    directTypeLimit: input.directTypeLimit === void 0 ? DEFAULT_CONFIG.directTypeLimit : positiveInteger(input.directTypeLimit, "directTypeLimit"),
-    genericBuckets: input.genericBuckets === void 0 ? [...DEFAULT_CONFIG.genericBuckets] : stringList(input.genericBuckets, "genericBuckets"),
-    generatedPaths: input.generatedPaths === void 0 ? [] : stringList(input.generatedPaths, "generatedPaths"),
-    testPaths: input.testPaths === void 0 ? [] : stringList(input.testPaths, "testPaths"),
-    history
+    dependencyDirections: parseDirections(
+      input.dependencyDirections,
+      pathGroups
+    ),
+    directTypeLimit: parseScalar(
+      input.directTypeLimit,
+      DEFAULT_CONFIG.directTypeLimit,
+      "directTypeLimit"
+    ),
+    genericBuckets: parseStrings(
+      input.genericBuckets,
+      DEFAULT_CONFIG.genericBuckets,
+      "genericBuckets"
+    ),
+    ...optionalPaths(input),
+    history: parseHistory(input.history)
   };
 }
 
-// src/commit-gate/dependency.ts
-import * as path3 from "node:path";
+// src/commit-gate/dependency-cycles.ts
+function canonicalCycle(cycle) {
+  const open = cycle.slice(0, -1);
+  const rotations = open.map((_, index) => [
+    ...open.slice(index),
+    ...open.slice(0, index)
+  ]);
+  rotations.sort(
+    (left, right) => left.join("\0").localeCompare(right.join("\0"))
+  );
+  return [...rotations[0] ?? [], rotations[0]?.[0] ?? ""];
+}
+function isClosingEdge(edge, start, trail) {
+  return edge.to === start && trail.length > 1;
+}
+function canVisit(edge, start, trail) {
+  return !trail.includes(edge.to) && edge.to.localeCompare(start) >= 0;
+}
+function edgesAt(graph2, node) {
+  return graph2.get(node) ?? [];
+}
+function visit(input) {
+  for (const edge of edgesAt(input.graph, input.node)) {
+    if (isClosingEdge(edge, input.start, input.trail)) {
+      const cycle = canonicalCycle([...input.trail, input.start]);
+      input.found.set(cycle.join("\0"), cycle);
+      continue;
+    }
+    if (!canVisit(edge, input.start, input.trail)) continue;
+    visit({ ...input, node: edge.to, trail: [...input.trail, edge.to] });
+  }
+}
+function findCycles(graph2) {
+  const found = /* @__PURE__ */ new Map();
+  for (const start of [...graph2.keys()].sort(
+    (left, right) => left.localeCompare(right)
+  )) {
+    visit({ start, node: start, trail: [start], graph: graph2, found });
+  }
+  return [...found.values()].sort(
+    (left, right) => left.join("\0").localeCompare(right.join("\0"))
+  );
+}
 
-// src/commit-gate/placement.ts
-import * as path2 from "node:path";
+// src/commit-gate/dependency-graph.ts
+import * as path4 from "node:path";
+
+// src/commit-gate/placement-paths.ts
 function normalizeArchitecturePath(filePath) {
   return filePath.replaceAll("\\", "/").replace(/^\.\//, "");
 }
 function matchesArchitecturePath(filePath, pattern) {
   const expression = pattern.replaceAll("\\", "/").replace(/[.+^${}()|[\]\\]/g, "\\$&").replaceAll("**", "@@DOUBLE_STAR@@").replaceAll("*", "[^/]*").replaceAll("@@DOUBLE_STAR@@/", "(?:.*/)?").replaceAll("@@DOUBLE_STAR@@", ".*");
-  return new RegExp(`^${expression}$`).test(normalizeArchitecturePath(filePath));
+  return new RegExp(`^${expression}$`).test(
+    normalizeArchitecturePath(filePath)
+  );
 }
 function isTestPath(filePath, declaredPaths) {
   const normalized = normalizeArchitecturePath(filePath);
-  return declaredPaths.some((pattern) => matchesArchitecturePath(normalized, pattern)) || /(?:^|\/)(?:test|tests|__tests__|testing|fixtures|mocks|stubs)(?:\/|$)/i.test(normalized) || /(?:\.(?:test|spec)\.|_test\.)[^/]*$/i.test(normalized);
+  return declaredPaths.some(
+    (pattern) => matchesArchitecturePath(normalized, pattern)
+  ) || new RegExp(
+    String.raw`(?:^|\/)(?:test|tests|__tests__|testing|fixtures|mocks|` + String.raw`stubs)(?:\/|$)`,
+    "i"
+  ).test(normalized) || /(?:\.(?:test|spec)\.|_test\.)[^/]*$/i.test(normalized);
 }
 function isProductionArchitecturePath(filePath, config2) {
   const normalized = normalizeArchitecturePath(filePath);
-  return !(config2.generatedPaths.some((pattern) => matchesArchitecturePath(normalized, pattern)) || isTestPath(normalized, config2.testPaths));
+  return !(config2.generatedPaths.some(
+    (pattern) => matchesArchitecturePath(normalized, pattern)
+  ) || isTestPath(normalized, config2.testPaths));
 }
+
+// src/commit-gate/placement-analysis.ts
+import * as path3 from "node:path";
+
+// src/commit-gate/placement-findings.ts
+import * as path2 from "node:path";
+function addedTypes(file, previous) {
+  return [...file.types].filter((name) => !previous.has(name)).sort((left, right) => left.localeCompare(right));
+}
+function directoryTypes(before, after, directory) {
+  return {
+    previous: before.get(directory) ?? /* @__PURE__ */ new Set(),
+    current: after.get(directory) ?? /* @__PURE__ */ new Set()
+  };
+}
+function typeFinding(name, context) {
+  if (!(context.generic || context.beforeCount > context.limit)) return [];
+  return [
+    {
+      kind: context.generic ? "generic-bucket" : "flat-accumulation",
+      directory: context.directory,
+      addedType: name,
+      beforeCount: context.beforeCount,
+      afterCount: context.afterCount,
+      limit: context.limit
+    }
+  ];
+}
+function contextForFile(input) {
+  const normalized = normalizeArchitecturePath(input.file.path);
+  if (!input.changed.has(normalized) || !isProductionArchitecturePath(input.file.path, input.config))
+    return null;
+  const directory = path2.posix.dirname(normalized);
+  const { previous, current } = directoryTypes(
+    input.before,
+    input.after,
+    directory
+  );
+  return { directory, previous, current };
+}
+function findingsForFile(input) {
+  const context = contextForFile(input);
+  if (!context) return [];
+  const { directory, previous, current } = context;
+  return addedTypes(input.file, previous).flatMap(
+    (name) => typeFinding(name, {
+      generic: input.config.genericBuckets.includes(
+        path2.posix.basename(directory).toLowerCase()
+      ),
+      beforeCount: previous.size,
+      afterCount: current.size,
+      directory,
+      limit: input.config.directTypeLimit
+    })
+  );
+}
+
+// src/commit-gate/placement-analysis.ts
 function typeNames(files, config2) {
   const result = /* @__PURE__ */ new Map();
-  for (const file of files) {
-    if (!isProductionArchitecturePath(file.path, config2)) continue;
-    const directory = path2.posix.dirname(normalizeArchitecturePath(file.path));
-    const names = result.get(directory) ?? /* @__PURE__ */ new Set();
-    for (const name of file.types) names.add(name);
-    result.set(directory, names);
-  }
+  for (const file of files.filter(
+    (item) => isProductionArchitecturePath(item.path, config2)
+  ))
+    addTypes(result, file);
   return result;
 }
-function analyzePlacement(beforeFiles, afterFiles, affectedPaths, config2) {
-  const before = typeNames(beforeFiles, config2);
-  const after = typeNames(afterFiles, config2);
-  const changed = new Set(affectedPaths.map(normalizeArchitecturePath));
-  const findings = [];
-  for (const file of afterFiles) {
-    const normalized = normalizeArchitecturePath(file.path);
-    if (!(changed.has(normalized) && isProductionArchitecturePath(file.path, config2))) continue;
-    const directory = path2.posix.dirname(normalized);
-    const previous = before.get(directory) ?? /* @__PURE__ */ new Set();
-    const current = after.get(directory) ?? /* @__PURE__ */ new Set();
-    const beforeCount = previous.size;
-    const afterCount = current.size;
-    const generic = config2.genericBuckets.includes(path2.posix.basename(directory).toLowerCase());
-    for (const addedType of [...file.types].filter((name) => !previous.has(name)).sort((left, right) => left.localeCompare(right))) {
-      if (generic || beforeCount > config2.directTypeLimit) {
-        findings.push({
-          kind: generic ? "generic-bucket" : "flat-accumulation",
-          directory,
-          addedType,
-          beforeCount,
-          afterCount,
-          limit: config2.directTypeLimit
-        });
-      }
-    }
-  }
+function addTypes(result, file) {
+  const directory = path3.posix.dirname(normalizeArchitecturePath(file.path));
+  const names = result.get(directory) ?? /* @__PURE__ */ new Set();
+  for (const name of file.types) names.add(name);
+  result.set(directory, names);
+}
+function analyzePlacement(input) {
+  const before = typeNames(input.beforeFiles, input.config);
+  const after = typeNames(input.afterFiles, input.config);
+  const changed = new Set(input.affectedPaths.map(normalizeArchitecturePath));
+  const findings = input.afterFiles.flatMap(
+    (file) => findingsForFile({ file, before, after, changed, config: input.config })
+  );
   return findings.sort(
     (left, right) => left.directory.localeCompare(right.directory) || left.addedType.localeCompare(right.addedType) || left.kind.localeCompare(right.kind)
   );
 }
-function analyzeCurrentPlacement(files, config2) {
-  const directories = typeNames(files, config2);
-  return [...directories.entries()].filter(
-    ([directory, types]) => config2.genericBuckets.includes(path2.posix.basename(directory).toLowerCase()) || types.size > config2.directTypeLimit
-  ).map(([directory, types]) => ({
-    kind: config2.genericBuckets.includes(path2.posix.basename(directory).toLowerCase()) ? "generic-bucket" : "flat-accumulation",
-    directory,
-    typeCount: types.size,
-    limit: config2.directTypeLimit,
-    types: [...types].sort((left, right) => left.localeCompare(right))
-  })).sort((left, right) => left.directory.localeCompare(right.directory) || left.kind.localeCompare(right.kind));
+
+// src/commit-gate/dependency-graph-findings.ts
+function groupFor(filePath, groups) {
+  return Object.entries(groups).filter(
+    ([, patterns]) => patterns.some((pattern) => matchesArchitecturePath(filePath, pattern))
+  ).map(([name]) => name).sort((left, right) => left.localeCompare(right));
+}
+function directionForbidden(config2, fromGroup, toGroup) {
+  return config2.dependencyDirections.some(
+    (rule) => rule.from === fromGroup && rule.to === toGroup && !rule.allowed
+  );
+}
+function forbiddenFindings(edges, config2) {
+  return edges.flatMap(
+    (edge) => groupFor(edge.from, config2.pathGroups).flatMap(
+      (fromGroup) => groupFor(edge.to, config2.pathGroups).flatMap(
+        (toGroup) => directionForbidden(config2, fromGroup, toGroup) ? [
+          {
+            kind: "forbidden-direction",
+            ...edge,
+            fromGroup,
+            toGroup
+          }
+        ] : []
+      )
+    )
+  );
+}
+function sortForbiddenFindings(findings) {
+  return findings.sort((left, right) => {
+    if (left.kind === "cycle" || right.kind === "cycle")
+      return JSON.stringify(left).localeCompare(JSON.stringify(right));
+    const leftKey = [left.from, left.to, left.fromGroup, left.toGroup].join(
+      "\0"
+    );
+    const rightKey = [
+      right.from,
+      right.to,
+      right.fromGroup,
+      right.toGroup
+    ].join("\0");
+    return leftKey.localeCompare(rightKey);
+  });
 }
 
-// src/commit-gate/dependency.ts
+// src/commit-gate/dependency-graph.ts
 function extensionless(filePath) {
   return filePath.replace(/\.[^/.]+$/, "");
 }
 function resolveDependency(from, dependency, paths) {
   const normalized = normalizeArchitecturePath(dependency);
-  const candidate = dependency.startsWith(".") ? path3.posix.normalize(path3.posix.join(path3.posix.dirname(from), normalized)) : normalized;
+  const candidate = dependency.startsWith(".") ? path4.posix.normalize(
+    path4.posix.join(path4.posix.dirname(from), normalized)
+  ) : normalized;
   if (paths.has(candidate)) return candidate;
   const target = extensionless(candidate);
   return [...paths].sort((left, right) => left.localeCompare(right)).find((filePath) => extensionless(filePath) === target);
@@ -21744,94 +21980,85 @@ function graph(files, config2) {
       file.imports.map((dependency) => {
         const to = resolveDependency(file.path, dependency, paths);
         return to ? { from: file.path, to, dependency } : void 0;
-      }).filter((edge) => edge !== void 0).sort((left, right) => left.to.localeCompare(right.to) || left.dependency.localeCompare(right.dependency))
+      }).filter((edge) => edge !== void 0).sort(
+        (left, right) => left.to.localeCompare(right.to) || left.dependency.localeCompare(right.dependency)
+      )
     ])
   );
 }
 function edgeKeys(graphInput) {
-  return new Set([...graphInput.values()].flat().map((edge) => `${edge.from}\0${edge.to}`));
+  return new Set(
+    [...graphInput.values()].flat().map((edge) => `${edge.from}\0${edge.to}`)
+  );
 }
-function groupFor(filePath, groups) {
-  return Object.entries(groups).filter(([, patterns]) => patterns.some((pattern) => matchesArchitecturePath(filePath, pattern))).map(([name]) => name).sort((left, right) => left.localeCompare(right));
-}
-function canonicalCycle(cycle) {
-  const open = cycle.slice(0, -1);
-  const rotations = open.map((_, index) => [...open.slice(index), ...open.slice(0, index)]);
-  rotations.sort((left, right) => left.join("\0").localeCompare(right.join("\0")));
-  return [...rotations[0] ?? [], rotations[0]?.[0] ?? ""];
-}
-function cycles(graphInput) {
-  const found = /* @__PURE__ */ new Map();
-  const nodes = [...graphInput.keys()].sort((left, right) => left.localeCompare(right));
-  for (const start of nodes) {
-    const visit = (node, trail) => {
-      for (const edge of graphInput.get(node) ?? []) {
-        if (edge.to === start && trail.length > 1) {
-          const cycle = canonicalCycle([...trail, start]);
-          found.set(cycle.join("\0"), cycle);
-        } else if (!trail.includes(edge.to) && edge.to.localeCompare(start) >= 0) {
-          visit(edge.to, [...trail, edge.to]);
-        }
-      }
-    };
-    visit(start, [start]);
-  }
-  return [...found.values()].sort((left, right) => left.join("\0").localeCompare(right.join("\0")));
-}
-function analyzeDependencies(beforeFiles, afterFiles, affectedPaths, config2) {
-  const before = graph(beforeFiles, config2);
-  const after = graph(afterFiles, config2);
+function addedEdges(before, after, affectedPaths2) {
   const oldEdges = edgeKeys(before);
-  const changed = new Set(affectedPaths.map(normalizeArchitecturePath));
-  const stagedEdges = [...after.values()].flat().filter((edge) => changed.has(edge.from) && !oldEdges.has(`${edge.from}\0${edge.to}`)).sort(
+  const changed = new Set(affectedPaths2.map(normalizeArchitecturePath));
+  return [...after.values()].flat().filter(
+    (edge) => changed.has(edge.from) && !oldEdges.has(`${edge.from}\0${edge.to}`)
+  ).sort(
     (left, right) => left.from.localeCompare(right.from) || left.to.localeCompare(right.to) || left.dependency.localeCompare(right.dependency)
   );
-  const findings = [];
-  for (const edge of stagedEdges) {
-    for (const fromGroup of groupFor(edge.from, config2.pathGroups)) {
-      for (const toGroup of groupFor(edge.to, config2.pathGroups)) {
-        if (config2.dependencyDirections.some((rule) => rule.from === fromGroup && rule.to === toGroup && !rule.allowed)) {
-          findings.push({ kind: "forbidden-direction", ...edge, fromGroup, toGroup });
-        }
-      }
-    }
-  }
-  const beforeCycles = new Set(cycles(before).map((cycle) => cycle.join("\0")));
-  for (const cycle of cycles(after)) {
-    if (beforeCycles.has(cycle.join("\0"))) continue;
-    const cycleEdges = cycle.slice(0, -1).flatMap((from, index) => (after.get(from) ?? []).filter((edge) => edge.to === cycle[index + 1]));
-    const stagedEdge = cycleEdges.find(
-      (edge) => stagedEdges.some((added) => added.from === edge.from && added.to === edge.to)
-    );
-    if (stagedEdge) findings.push({ kind: "cycle", cycle, stagedEdge });
-  }
-  return findings.sort((left, right) => {
-    const leftKey = left.kind === "cycle" ? `cycle:${left.cycle.join("\0")}` : `forbidden:${left.from}\0${left.to}`;
-    const rightKey = right.kind === "cycle" ? `cycle:${right.cycle.join("\0")}` : `forbidden:${right.from}\0${right.to}`;
-    return leftKey.localeCompare(rightKey);
-  });
 }
-function analyzeCurrentDependencies(files, config2) {
-  const current = graph(files, config2);
-  const dependencies = [...current.values()].flat().flatMap(
-    (edge) => groupFor(edge.from, config2.pathGroups).flatMap(
-      (fromGroup) => groupFor(edge.to, config2.pathGroups).flatMap(
-        (toGroup) => config2.dependencyDirections.some((rule) => rule.from === fromGroup && rule.to === toGroup && !rule.allowed) ? [{ kind: "forbidden-direction", ...edge, fromGroup, toGroup }] : []
-      )
-    )
-  ).sort(
-    (left, right) => `${left.from}\0${left.to}\0${left.fromGroup}\0${left.toGroup}`.localeCompare(
-      `${right.from}\0${right.to}\0${right.fromGroup}\0${right.toGroup}`
+
+// src/commit-gate/dependency.ts
+function cycleFinding(input) {
+  if (input.beforeCycles.has(input.cycle.join("\0"))) return [];
+  const cycleEdges = edgesForCycle(input.cycle, input.after);
+  const stagedEdge = stagedEdgeFor(cycleEdges, input.stagedEdges);
+  return stagedEdge ? [{ kind: "cycle", cycle: input.cycle, stagedEdge }] : [];
+}
+function edgesForCycle(cycle, after) {
+  return cycle.slice(0, -1).flatMap(
+    (from, index) => (after.get(from) ?? []).filter((edge) => edge.to === cycle[index + 1])
+  );
+}
+function stagedEdgeFor(cycleEdges, stagedEdges) {
+  return cycleEdges.find(
+    (edge) => stagedEdges.some(
+      (added) => added.from === edge.from && added.to === edge.to
     )
   );
+}
+function cycleFindings(before, after, stagedEdges) {
+  const beforeCycles = new Set(
+    findCycles(before).map((cycle) => cycle.join("\0"))
+  );
+  return findCycles(after).flatMap(
+    (cycle) => cycleFinding({ cycle, after, beforeCycles, stagedEdges })
+  );
+}
+function analyzeDependencies(input) {
+  const before = graph(input.beforeFiles, input.config);
+  const after = graph(input.afterFiles, input.config);
+  const stagedEdges = addedEdges(before, after, input.affectedPaths);
+  return sortForbiddenFindings([
+    ...forbiddenFindings(stagedEdges, input.config),
+    ...cycleFindings(before, after, stagedEdges)
+  ]);
+}
+
+// src/commit-gate/encapsulation-callers.ts
+function observedCallers(symbol, files, config2) {
+  const productionCallers = [];
+  const testCallers = [];
+  for (const file of files) {
+    const filePath = normalizeArchitecturePath(file.path);
+    if (!file.references.some(
+      (reference) => reference === symbol || reference.endsWith(`.${symbol}`)
+    ))
+      continue;
+    if (isProductionArchitecturePath(filePath, config2))
+      productionCallers.push(filePath);
+    else testCallers.push(filePath);
+  }
   return {
-    dependencies,
-    cycles: cycles(current).map((cycle) => ({ kind: "cycle", cycle }))
+    productionCallers: [...new Set(productionCallers)].sort(),
+    testCallers: [...new Set(testCallers)].sort()
   };
 }
 
-// src/commit-gate/encapsulation.ts
-var GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
+// src/commit-gate/encapsulation-public.ts
 function key(type, member) {
   return `${type.name}.${member.name}`;
 }
@@ -21840,108 +22067,277 @@ function members(type) {
     type.members.filter((member) => member.visibility === "public").map((member) => `${member.kind}\0${member.name}`)
   );
 }
-function observedCallers(symbol, files, config2) {
-  const productionCallers = [];
-  const testCallers = [];
-  for (const file of files) {
-    const path9 = normalizeArchitecturePath(file.path);
-    if (!file.references.some((reference) => reference === symbol || reference.endsWith(`.${symbol}`))) continue;
-    if (isProductionArchitecturePath(path9, config2)) productionCallers.push(path9);
-    else testCallers.push(path9);
-  }
-  return { productionCallers: [...new Set(productionCallers)].sort(), testCallers: [...new Set(testCallers)].sort() };
+function surfaceFinding(filePath, symbol, callers) {
+  return {
+    kind: "public-surface-growth",
+    path: filePath,
+    symbol,
+    ...callers
+  };
 }
-function forwardingKeys(type) {
-  return new Set(type.forwardingPaths.map((path9) => `${path9.member}\0${path9.target}`));
+function testOnlyFinding(filePath, symbol, callers) {
+  return {
+    kind: "test-only-seam",
+    path: filePath,
+    symbol,
+    ...callers
+  };
 }
-function analyzeEncapsulation(beforeFiles, afterFiles, affectedPaths, config2) {
-  const beforeByPath = new Map(beforeFiles.map((file) => [normalizeArchitecturePath(file.path), file]));
-  const affected = new Set(affectedPaths.map(normalizeArchitecturePath));
-  const findings = [];
-  for (const afterFile of afterFiles) {
-    const filePath = normalizeArchitecturePath(afterFile.path);
-    if (!(affected.has(filePath) && isProductionArchitecturePath(filePath, config2))) continue;
-    const beforeTypes = new Map((beforeByPath.get(filePath)?.types ?? []).map((type) => [type.name, type]));
-    for (const type of afterFile.types) {
-      const previous = beforeTypes.get(type.name);
-      const priorMembers = previous ? members(previous) : /* @__PURE__ */ new Set();
-      for (const member of type.members.filter((item) => item.visibility === "public")) {
-        if (priorMembers.has(`${member.kind}\0${member.name}`)) continue;
-        const symbol = key(type, member);
-        const callers = observedCallers(symbol, afterFiles, config2);
-        findings.push({ kind: "public-surface-growth", path: filePath, symbol, ...callers });
-        if (callers.productionCallers.length === 0 && callers.testCallers.length > 0) {
-          findings.push({ kind: "test-only-seam", path: filePath, symbol, ...callers });
-        }
-      }
-      const priorForwarding = previous ? forwardingKeys(previous) : /* @__PURE__ */ new Set();
-      for (const path9 of type.forwardingPaths) {
-        if (!priorForwarding.has(`${path9.member}\0${path9.target}`)) {
-          findings.push({
-            kind: "forwarding-path",
-            path: filePath,
-            type: type.name,
-            member: path9.member,
-            target: path9.target
-          });
-        }
-      }
-    }
+function memberFindings(input) {
+  if (input.priorMembers.has(`${input.member.kind}\0${input.member.name}`))
+    return [];
+  const symbol = key(input.type, input.member);
+  const callers = observedCallers(symbol, input.afterFiles, input.config);
+  const finding = surfaceFinding(input.filePath, symbol, callers);
+  if (callers.productionCallers.length === 0 && callers.testCallers.length > 0) {
+    return [finding, testOnlyFinding(input.filePath, symbol, callers)];
   }
-  return findings.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  return [finding];
+}
+function publicFindings(input) {
+  const priorMembers = input.previous ? members(input.previous) : /* @__PURE__ */ new Set();
+  return input.type.members.filter((member) => member.visibility === "public").flatMap((member) => memberFindings({ ...input, member, priorMembers }));
 }
 
-// src/commit-gate/refactor-progress.ts
-import * as path4 from "node:path";
-function productionTypes(files, config2) {
-  return files.filter((file) => isProductionArchitecturePath(file.path, config2)).flatMap((file) => file.types.map((type) => ({ path: normalizeArchitecturePath(file.path), type }))).sort((left, right) => left.path.localeCompare(right.path) || left.type.name.localeCompare(right.type.name));
-}
-function operations(types) {
-  const result = /* @__PURE__ */ new Map();
-  for (const item of types) {
-    for (const member of item.type.members.filter((member2) => member2.kind === "method")) {
-      const owners = result.get(member.name) ?? [];
-      owners.push(item.type.name);
-      result.set(member.name, owners);
-    }
-  }
-  for (const owners of result.values()) owners.sort();
-  return result;
-}
-function ownershipMoves(before, after) {
-  const beforeOperations = operations(before);
-  const afterOperations = operations(after);
-  const moves = [];
-  for (const [operation, oldOwners] of beforeOperations) {
-    const newOwners = afterOperations.get(operation);
-    if (!newOwners || oldOwners.length !== 1 || newOwners.length !== 1 || oldOwners[0] === newOwners[0]) continue;
-    moves.push({ operation, from: oldOwners[0], to: newOwners[0] });
-  }
-  return moves.sort(
-    (left, right) => left.operation.localeCompare(right.operation) || left.from.localeCompare(right.from) || left.to.localeCompare(right.to)
-  );
-}
-function dependencyKeys(types) {
+// src/commit-gate/encapsulation.ts
+function forwardingKeys(type) {
   return new Set(
-    types.flatMap((item) => item.type.dependencies.map((dependency) => `${item.type.name}\0${dependency}`))
+    type.forwardingPaths.map((path13) => `${path13.member}\0${path13.target}`)
   );
 }
-function dependencyReduction(moves, before, after) {
-  const beforeTypes = new Map(before.map((item) => [item.type.name, item.type]));
-  const afterTypes = new Map(after.map((item) => [item.type.name, item.type]));
-  return moves.flatMap((move) => {
-    const oldDependencies = beforeTypes.get(move.from)?.dependencies ?? [];
-    const newDependencies = afterTypes.get(move.from)?.dependencies ?? [];
-    return oldDependencies.filter((dependency) => !newDependencies.includes(dependency)).sort().map((dependency) => `${move.from} no longer depends on ${dependency}`);
+function forwardingFindings(type, previous, filePath) {
+  const priorForwarding = previous ? forwardingKeys(previous) : /* @__PURE__ */ new Set();
+  return type.forwardingPaths.flatMap((forwarding) => {
+    if (priorForwarding.has(`${forwarding.member}\0${forwarding.target}`))
+      return [];
+    return [
+      {
+        kind: "forwarding-path",
+        path: filePath,
+        type: type.name,
+        member: forwarding.member,
+        target: forwarding.target
+      }
+    ];
   });
 }
+function fileFindings(afterFile, beforeByPath, input) {
+  const filePath = normalizeArchitecturePath(afterFile.path);
+  const previousTypes = beforeByPath.get(filePath)?.types ?? [];
+  const previous = new Map(previousTypes.map((type) => [type.name, type]));
+  return afterFile.types.flatMap((type) => [
+    ...publicFindings({
+      ...input,
+      type,
+      previous: previous.get(type.name),
+      filePath
+    }),
+    ...forwardingFindings(type, previous.get(type.name), filePath)
+  ]);
+}
+function analyzeEncapsulation(input) {
+  const beforeByPath = new Map(
+    input.beforeFiles.map((file) => [
+      normalizeArchitecturePath(file.path),
+      file
+    ])
+  );
+  const affected = new Set(input.affectedPaths.map(normalizeArchitecturePath));
+  const findings = [];
+  for (const afterFile of input.afterFiles) {
+    const filePath = normalizeArchitecturePath(afterFile.path);
+    if (!(affected.has(filePath) && isProductionArchitecturePath(filePath, input.config)))
+      continue;
+    findings.push(...fileFindings(afterFile, beforeByPath, input));
+  }
+  return findings.sort(
+    (left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))
+  );
+}
+
+// src/commit-gate/types.ts
+import { createHash } from "node:crypto";
+
+// src/commit-gate/canonical.ts
+function canonical(value) {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical(item)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+// src/commit-gate/types.ts
+function createFinding(input) {
+  const affectedPaths2 = [...new Set(input.affectedPaths)].sort(
+    (left, right) => left.localeCompare(right)
+  );
+  const identity = canonical({ ...input, affectedPaths: affectedPaths2 });
+  return {
+    ...input,
+    affectedPaths: affectedPaths2,
+    id: createHash("sha256").update(identity).digest("hex")
+  };
+}
+function normalizeFindings(findings) {
+  return findings.map(({ id: _id, ...finding }) => createFinding(finding)).sort((left, right) => left.id.localeCompare(right.id));
+}
+
+// src/commit-gate/decision-architecture-mappers.ts
+function architectureFinding(input) {
+  return createFinding({
+    severity: input.severity,
+    affectedPaths: input.affectedPaths,
+    before: {},
+    after: input.evidence,
+    reason: `${input.kind}: ${input.reason}`
+  });
+}
+function placementFindings(findings) {
+  return findings.map(
+    (finding) => architectureFinding({
+      kind: finding.kind,
+      severity: "review",
+      affectedPaths: [finding.directory],
+      evidence: { ...finding },
+      reason: "placement pressure increased"
+    })
+  );
+}
+function dependencyFindings(findings) {
+  return findings.map(
+    (finding) => architectureFinding({
+      kind: finding.kind,
+      severity: "fail",
+      affectedPaths: finding.kind === "cycle" ? finding.cycle : [finding.from, finding.to],
+      evidence: finding,
+      reason: "a deterministic dependency boundary was introduced"
+    })
+  );
+}
+function encapsulationFindings(findings) {
+  return findings.map(
+    (finding) => architectureFinding({
+      kind: finding.kind,
+      severity: "review",
+      affectedPaths: [finding.path],
+      evidence: finding,
+      reason: "public or compatibility surface changed"
+    })
+  );
+}
+
+// src/commit-gate/decision-findings-architecture.ts
+function typeFacts(files) {
+  return files.map((file) => ({
+    path: file.path,
+    types: file.types.map((type) => type.name)
+  }));
+}
+function placementStructural(input) {
+  return placementFindings(
+    analyzePlacement({
+      beforeFiles: typeFacts(input.beforeFiles),
+      afterFiles: typeFacts(input.afterFiles),
+      affectedPaths: input.affectedPaths,
+      config: input.config
+    })
+  );
+}
+function dependencyStructural(input) {
+  return dependencyFindings(
+    analyzeDependencies({
+      beforeFiles: input.beforeFiles,
+      afterFiles: input.afterFiles,
+      affectedPaths: input.affectedPaths,
+      config: input.config
+    })
+  );
+}
+function encapsulationStructural(input) {
+  return encapsulationFindings(
+    analyzeEncapsulation({
+      beforeFiles: input.beforeFiles,
+      afterFiles: input.afterFiles,
+      affectedPaths: input.affectedPaths,
+      config: input.config
+    })
+  );
+}
+function structuralFindings(input) {
+  return [
+    ...placementStructural(input),
+    ...dependencyStructural(input),
+    ...encapsulationStructural(input)
+  ];
+}
+
+// src/commit-gate/decision-findings.ts
+function progressFindings(progress, refactorMap, affectedPaths2) {
+  if (!progress || progress.hasDeclaredOutcomeProgress) return [];
+  return [
+    createFinding({
+      severity: "review",
+      affectedPaths: refactorMap?.targetScope ?? affectedPaths2,
+      before: {},
+      after: { ...progress },
+      reason: "refactor-structural-progress: declared ownership or boundary outcome is unchanged"
+    })
+  ];
+}
+function collectFindings(input) {
+  return normalizeFindings([
+    ...input.scanner.findings.map(createFinding),
+    ...(input.hardBounds ?? []).map(createFinding),
+    ...(input.responsibilityFindings ?? []).map(createFinding),
+    ...structuralFindings(input),
+    ...progressFindings(
+      input.refactorProgress,
+      input.refactorMap,
+      input.affectedPaths
+    )
+  ]);
+}
+
+// src/commit-gate/fingerprint.ts
+import { createHash as createHash2 } from "node:crypto";
+var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
+var SOURCE_PATH = /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
+function fingerprintSnapshot(snapshot, config2) {
+  const changes = snapshot.changes.filter(isDecisionChange).filter(isSourceChange).map(fingerprintChange).sort(compareChanges);
+  return createHash2("sha256").update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config: config2 })).digest("hex");
+}
+function isDecisionChange(change) {
+  return change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH;
+}
+function isSourceChange(change) {
+  return isSourceFile(change.before) || isSourceFile(change.after);
+}
+function isSourceFile(file) {
+  return file !== void 0 && SOURCE_PATH.test(file.path);
+}
+function fingerprintChange(change) {
+  return { kind: change.kind, before: change.before, after: change.after };
+}
+function changePath(change) {
+  return change.after?.path ?? change.before?.path ?? "";
+}
+function compareChanges(left, right) {
+  return changePath(left).localeCompare(changePath(right));
+}
+
+// src/commit-gate/refactor-progress-counts.ts
+import * as path5 from "node:path";
 function directTypePressure(types, config2) {
   const counts = /* @__PURE__ */ new Map();
   for (const item of types) {
-    const directory = path4.posix.dirname(item.path);
+    const directory = path5.posix.dirname(item.path);
     counts.set(directory, (counts.get(directory) ?? 0) + 1);
   }
-  return [...counts.values()].reduce((total, count) => total + Math.max(0, count - config2.directTypeLimit), 0);
+  return [...counts.values()].reduce(
+    (total, count) => total + Math.max(0, count - config2.directTypeLimit),
+    0
+  );
 }
 function publicSurfaceCount(types) {
   return types.reduce(
@@ -21950,577 +22346,568 @@ function publicSurfaceCount(types) {
   );
 }
 function compatibilityPathCount(types) {
-  return types.reduce((total, item) => total + item.type.forwardingPaths.length, 0);
+  return types.reduce(
+    (total, item) => total + item.type.forwardingPaths.length,
+    0
+  );
 }
+
+// src/commit-gate/refactor-progress-operations.ts
+function productionTypes(files, config2) {
+  return files.filter((file) => isProductionArchitecturePath(file.path, config2)).flatMap(
+    (file) => file.types.map((type) => ({
+      path: normalizeArchitecturePath(file.path),
+      type
+    }))
+  ).sort(
+    (left, right) => left.path.localeCompare(right.path) || left.type.name.localeCompare(right.type.name)
+  );
+}
+function addOperations(result, item) {
+  for (const member of item.type.members.filter(
+    (member2) => member2.kind === "method"
+  )) {
+    const owners = result.get(member.name) ?? [];
+    owners.push(item.type.name);
+    result.set(member.name, owners);
+  }
+}
+function operations(types) {
+  const result = /* @__PURE__ */ new Map();
+  for (const item of types) addOperations(result, item);
+  for (const owners of result.values()) owners.sort();
+  return result;
+}
+function moveFor(operation, oldOwners, newOwners) {
+  if (!newOwners || oldOwners.length !== 1 || newOwners.length !== 1 || oldOwners[0] === newOwners[0])
+    return void 0;
+  return {
+    operation,
+    from: oldOwners[0],
+    to: newOwners[0]
+  };
+}
+function ownershipMoves(before, after) {
+  const beforeOperations = operations(before);
+  const afterOperations = operations(after);
+  const moves = [];
+  for (const [operation, oldOwners] of beforeOperations) {
+    const move = moveFor(operation, oldOwners, afterOperations.get(operation));
+    if (move) moves.push(move);
+  }
+  return moves.sort(
+    (left, right) => left.operation.localeCompare(right.operation) || left.from.localeCompare(right.from) || left.to.localeCompare(right.to)
+  );
+}
+
+// src/commit-gate/refactor-progress-dependencies.ts
+function dependencyKeys(types) {
+  return new Set(
+    types.flatMap(
+      (item) => item.type.dependencies.map(
+        (dependency) => `${item.type.name}\0${dependency}`
+      )
+    )
+  );
+}
+function dependencyReduction(moves, before, after) {
+  const beforeTypes = new Map(
+    before.map((item) => [item.type.name, item.type])
+  );
+  const afterTypes = new Map(after.map((item) => [item.type.name, item.type]));
+  return moves.flatMap((move) => {
+    const oldDependencies = beforeTypes.get(move.from)?.dependencies ?? [];
+    const newDependencies = afterTypes.get(move.from)?.dependencies ?? [];
+    return oldDependencies.filter((dependency) => !newDependencies.includes(dependency)).sort().map((dependency) => `${move.from} no longer depends on ${dependency}`);
+  });
+}
+
+// src/commit-gate/refactor-progress-metrics.ts
 function statusFromCounts(before, after) {
   if (after < before) return "improved";
   if (after > before) return "regressed";
   return "unchanged";
 }
-function analyzeRefactorProgress(beforeFiles, afterFiles, _affectedPaths, config2) {
+function progressValues(beforeFiles, afterFiles, config2) {
   const before = productionTypes(beforeFiles, config2);
   const after = productionTypes(afterFiles, config2);
   const moves = ownershipMoves(before, after);
   const beforeDependencies = dependencyKeys(before);
   const afterDependencies = dependencyKeys(after);
   const reductions = dependencyReduction(moves, before, after);
-  const ownership = {
-    status: moves.length > 0 ? "improved" : "unchanged",
-    before: operations(before).size,
-    after: operations(after).size,
-    details: moves.map((move) => `${move.operation}: ${move.from} -> ${move.to}`)
-  };
-  const dependencyEdges = {
-    status: reductions.length > 0 ? "improved" : statusFromCounts(beforeDependencies.size, afterDependencies.size),
-    before: beforeDependencies.size,
-    after: afterDependencies.size,
-    details: reductions
-  };
-  const placement = {
-    status: statusFromCounts(directTypePressure(before, config2), directTypePressure(after, config2)),
-    before: directTypePressure(before, config2),
-    after: directTypePressure(after, config2),
-    details: []
-  };
-  const publicSurface = {
-    status: statusFromCounts(publicSurfaceCount(before), publicSurfaceCount(after)),
-    before: publicSurfaceCount(before),
-    after: publicSurfaceCount(after),
-    details: []
-  };
-  const compatibility = {
-    status: statusFromCounts(compatibilityPathCount(before), compatibilityPathCount(after)),
-    before: compatibilityPathCount(before),
-    after: compatibilityPathCount(after),
-    details: []
-  };
-  const indicators = { ownership, dependencyEdges, placement, publicSurface, compatibilityPaths: compatibility };
   return {
-    ownershipMoves: moves,
-    indicators,
-    hasArchitecturalProgress: Object.values(indicators).some((indicator) => indicator.status === "improved")
+    before,
+    after,
+    moves,
+    reductions,
+    beforeDependencies,
+    afterDependencies,
+    beforeOperations: operations(before).size,
+    afterOperations: operations(after).size,
+    beforePressure: directTypePressure(before, config2),
+    afterPressure: directTypePressure(after, config2),
+    beforePublic: publicSurfaceCount(before),
+    afterPublic: publicSurfaceCount(after),
+    beforeCompatibility: compatibilityPathCount(before),
+    afterCompatibility: compatibilityPathCount(after),
+    statusFromCounts
   };
 }
 
-// src/commit-gate/responsibility-map.ts
+// src/commit-gate/refactor-progress-builder.ts
+function buildProgressMetrics(beforeFiles, afterFiles, config2) {
+  return progressValues(beforeFiles, afterFiles, config2);
+}
+
+// src/commit-gate/refactor-progress.ts
+function ownershipIndicator(metrics) {
+  return {
+    status: metrics.moves.length > 0 ? "improved" : "unchanged",
+    before: metrics.beforeOperations,
+    after: metrics.afterOperations,
+    details: metrics.moves.map(
+      (move) => `${move.operation}: ${move.from} -> ${move.to}`
+    )
+  };
+}
+function dependencyIndicator(metrics) {
+  return {
+    status: metrics.reductions.length > 0 ? "improved" : metrics.statusFromCounts(
+      metrics.beforeDependencies.size,
+      metrics.afterDependencies.size
+    ),
+    before: metrics.beforeDependencies.size,
+    after: metrics.afterDependencies.size,
+    details: metrics.reductions
+  };
+}
+function countIndicator(metrics, before, after) {
+  return {
+    status: metrics.statusFromCounts(before, after),
+    before,
+    after,
+    details: []
+  };
+}
+function indicators(metrics) {
+  const placement = countIndicator(
+    metrics,
+    metrics.beforePressure,
+    metrics.afterPressure
+  );
+  const publicSurface = countIndicator(
+    metrics,
+    metrics.beforePublic,
+    metrics.afterPublic
+  );
+  const compatibilityPaths = countIndicator(
+    metrics,
+    metrics.beforeCompatibility,
+    metrics.afterCompatibility
+  );
+  return {
+    ownership: ownershipIndicator(metrics),
+    dependencyEdges: dependencyIndicator(metrics),
+    placement,
+    publicSurface,
+    compatibilityPaths
+  };
+}
+function analyzeRefactorProgress(input) {
+  const metrics = buildProgressMetrics(input.before, input.after, input.config);
+  const result = indicators(metrics);
+  return {
+    ownershipMoves: metrics.moves,
+    indicators: result,
+    hasArchitecturalProgress: Object.values(result).some(
+      (indicator) => indicator.status === "improved"
+    )
+  };
+}
+
+// src/commit-gate/responsibility-map-values.ts
 function object3(value, location) {
   if (value === null || typeof value !== "object" || Array.isArray(value))
     throw new Error(`${location} must be an object`);
   return value;
 }
 function onlyKeys(value, allowed, location) {
-  for (const key2 of Object.keys(value))
-    if (!allowed.includes(key2)) throw new Error(`${location}.${key2} is not supported`);
+  Object.keys(value).forEach((key2) => {
+    if (!allowed.includes(key2))
+      throw new Error(`${location}.${key2} is not supported`);
+  });
 }
 function strings(value, location) {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item.trim()))
+  if (!Array.isArray(value))
+    throw new Error(`${location} must be an array of non-empty strings`);
+  if (value.some((item) => typeof item !== "string" || !item.trim()))
     throw new Error(`${location} must be an array of non-empty strings`);
   const result = value.map((item) => item.trim());
-  if (new Set(result).size !== result.length) throw new Error(`${location} contains duplicates`);
+  if (new Set(result).size !== result.length)
+    throw new Error(`${location} contains duplicates`);
   return result;
 }
 function string3(value, location) {
-  if (typeof value !== "string" || !value.trim()) throw new Error(`${location} must be a non-empty string`);
+  if (typeof value !== "string" || !value.trim())
+    throw new Error(`${location} must be a non-empty string`);
   return value.trim();
 }
+function responsibility(item, index) {
+  const location = `responsibility map.responsibilities[${index}]`;
+  const value = object3(item, location);
+  onlyKeys(
+    value,
+    ["name", "currentOwners", "consumers", "dependencies"],
+    location
+  );
+  return {
+    name: string3(value.name, `${location}.name`),
+    currentOwners: strings(value.currentOwners, `${location}.currentOwners`),
+    consumers: strings(value.consumers, `${location}.consumers`),
+    dependencies: strings(value.dependencies, `${location}.dependencies`)
+  };
+}
+function ownership(item, index) {
+  const location = `responsibility map.desired.ownership[${index}]`;
+  const value = object3(item, location);
+  onlyKeys(value, ["responsibility", "owner"], location);
+  return {
+    responsibility: string3(value.responsibility, `${location}.responsibility`),
+    owner: string3(value.owner, `${location}.owner`)
+  };
+}
+function boundary(item, index) {
+  const location = `responsibility map.desired.boundaries[${index}]`;
+  const value = object3(item, location);
+  onlyKeys(value, ["from", "to", "allowed"], location);
+  if (typeof value.allowed !== "boolean")
+    throw new Error(`${location}.allowed must be boolean`);
+  return {
+    from: string3(value.from, `${location}.from`),
+    to: string3(value.to, `${location}.to`),
+    allowed: value.allowed
+  };
+}
+function desired(value) {
+  const root = object3(value, "responsibility map.desired");
+  onlyKeys(root, ["ownership", "boundaries"], "responsibility map.desired");
+  if (!Array.isArray(root.ownership) || !Array.isArray(root.boundaries))
+    throw new Error(
+      "responsibility map.desired requires ownership and boundaries arrays"
+    );
+  const parsed = {
+    ownership: root.ownership.map(ownership),
+    boundaries: root.boundaries.map(boundary)
+  };
+  if (parsed.ownership.length + parsed.boundaries.length === 0)
+    throw new Error(
+      "responsibility map.desired must contain an ownership or boundary outcome"
+    );
+  return parsed;
+}
+
+// src/commit-gate/responsibility-map-parse.ts
 function parseResponsibilityMap(source) {
-  let parsed;
+  const parsed = parseJson(source);
+  const root = object3(parsed, "responsibility map");
+  onlyKeys(
+    root,
+    ["targetScope", "responsibilities", "desired"],
+    "responsibility map"
+  );
+  const targetScope = strings(
+    root.targetScope,
+    "responsibility map.targetScope"
+  );
+  if (targetScope.length === 0)
+    throw new Error("responsibility map.targetScope must not be empty");
+  if (!Array.isArray(root.responsibilities) || root.responsibilities.length === 0)
+    throw new Error(
+      "responsibility map.responsibilities must be a non-empty array"
+    );
+  const responsibilities = root.responsibilities.map(responsibility);
+  if (responsibilities.some((item) => item.currentOwners.length === 0))
+    throw new Error(
+      "responsibility map responsibilities require at least one current owner"
+    );
+  return { targetScope, responsibilities, desired: desired(root.desired) };
+}
+function parseJson(source) {
   try {
-    parsed = JSON.parse(source);
+    return JSON.parse(source);
   } catch {
     throw new Error("responsibility map must contain valid JSON");
   }
-  const root = object3(parsed, "responsibility map");
-  onlyKeys(root, ["targetScope", "responsibilities", "desired"], "responsibility map");
-  const targetScope = strings(root.targetScope, "responsibility map.targetScope");
-  if (targetScope.length === 0) throw new Error("responsibility map.targetScope must not be empty");
-  if (!Array.isArray(root.responsibilities) || root.responsibilities.length === 0)
-    throw new Error("responsibility map.responsibilities must be a non-empty array");
-  const responsibilities = root.responsibilities.map((item, index) => {
-    const responsibility = object3(item, `responsibility map.responsibilities[${index}]`);
-    onlyKeys(
-      responsibility,
-      ["name", "currentOwners", "consumers", "dependencies"],
-      `responsibility map.responsibilities[${index}]`
-    );
-    return {
-      name: string3(responsibility.name, `responsibility map.responsibilities[${index}].name`),
-      currentOwners: strings(
-        responsibility.currentOwners,
-        `responsibility map.responsibilities[${index}].currentOwners`
-      ),
-      consumers: strings(responsibility.consumers, `responsibility map.responsibilities[${index}].consumers`),
-      dependencies: strings(responsibility.dependencies, `responsibility map.responsibilities[${index}].dependencies`)
-    };
-  });
-  if (responsibilities.some((responsibility) => responsibility.currentOwners.length === 0)) {
-    throw new Error("responsibility map responsibilities require at least one current owner");
-  }
-  const desired = object3(root.desired, "responsibility map.desired");
-  onlyKeys(desired, ["ownership", "boundaries"], "responsibility map.desired");
-  if (!(Array.isArray(desired.ownership) && Array.isArray(desired.boundaries)))
-    throw new Error("responsibility map.desired requires ownership and boundaries arrays");
-  const ownership = desired.ownership.map((item, index) => {
-    const outcome = object3(item, `responsibility map.desired.ownership[${index}]`);
-    onlyKeys(outcome, ["responsibility", "owner"], `responsibility map.desired.ownership[${index}]`);
-    return {
-      responsibility: string3(outcome.responsibility, `responsibility map.desired.ownership[${index}].responsibility`),
-      owner: string3(outcome.owner, `responsibility map.desired.ownership[${index}].owner`)
-    };
-  });
-  const boundaries = desired.boundaries.map((item, index) => {
-    const outcome = object3(item, `responsibility map.desired.boundaries[${index}]`);
-    onlyKeys(outcome, ["from", "to", "allowed"], `responsibility map.desired.boundaries[${index}]`);
-    if (typeof outcome.allowed !== "boolean")
-      throw new Error(`responsibility map.desired.boundaries[${index}].allowed must be boolean`);
-    return {
-      from: string3(outcome.from, `responsibility map.desired.boundaries[${index}].from`),
-      to: string3(outcome.to, `responsibility map.desired.boundaries[${index}].to`),
-      allowed: outcome.allowed
-    };
-  });
-  if (ownership.length + boundaries.length === 0)
-    throw new Error("responsibility map.desired must contain an ownership or boundary outcome");
-  return { targetScope, responsibilities, desired: { ownership, boundaries } };
 }
-function owns(files, responsibility, owner) {
+
+// src/commit-gate/responsibility-map.ts
+function owns(files, responsibility2, owner) {
   return files.some(
     (file) => file.types.some(
-      (type) => type.name === owner && type.members.some((member) => member.kind === "method" && member.name === responsibility)
+      (type) => type.name === owner && type.members.some(
+        (member) => member.kind === "method" && member.name === responsibility2
+      )
     )
   );
 }
 function hasDependency(files, from, to) {
-  return files.some((file) => file.types.some((type) => type.name === from && type.dependencies.includes(to)));
+  return files.some(
+    (file) => file.types.some(
+      (type) => type.name === from && type.dependencies.includes(to)
+    )
+  );
 }
-function evaluateResponsibilityMap(map, before, after, config2) {
-  const progress = analyzeRefactorProgress(before, after, map.targetScope, config2);
-  const outcomes = [
+function desiredOutcomes(map, before, after) {
+  return [
     ...map.desired.ownership.map((outcome) => ({
       description: `${outcome.responsibility} is owned by ${outcome.owner}`,
       before: owns(before, outcome.responsibility, outcome.owner),
       after: owns(after, outcome.responsibility, outcome.owner)
     })),
     ...map.desired.boundaries.map((outcome) => ({
-      description: `${outcome.from} -> ${outcome.to} is ${outcome.allowed ? "allowed" : "absent"}`,
+      description: `${outcome.from} -> ${outcome.to} is ` + (outcome.allowed ? "allowed" : "absent"),
       before: hasDependency(before, outcome.from, outcome.to) === outcome.allowed,
       after: hasDependency(after, outcome.from, outcome.to) === outcome.allowed
     }))
   ];
+}
+function evaluateResponsibilityMap(map, input) {
+  const progress = analyzeRefactorProgress({
+    before: input.before,
+    after: input.after,
+    affectedPaths: map.targetScope,
+    config: input.config
+  });
+  const outcomes = desiredOutcomes(map, input.before, input.after);
   return {
     ...progress,
     outcomes,
-    hasDeclaredOutcomeProgress: outcomes.some((outcome) => !outcome.before && outcome.after)
+    hasDeclaredOutcomeProgress: outcomes.some(
+      (outcome) => !outcome.before && outcome.after
+    )
   };
 }
 
-// src/commit-gate/types.ts
-import { createHash as createHash2 } from "node:crypto";
-function canonical2(value) {
-  if (Array.isArray(value)) return `[${value.map(canonical2).join(",")}]`;
-  if (value !== null && typeof value === "object") {
-    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical2(item)}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-function createFinding(input) {
-  const affectedPaths = [...new Set(input.affectedPaths)].sort((left, right) => left.localeCompare(right));
-  const identity = canonical2({ ...input, affectedPaths });
-  return { ...input, affectedPaths, id: createHash2("sha256").update(identity).digest("hex") };
-}
-function normalizeFindings(findings) {
-  return findings.map(({ id: _id, ...finding }) => createFinding(finding)).sort((left, right) => left.id.localeCompare(right.id));
-}
-
-// src/commit-gate/decision-core.ts
-var SOURCE_PATH2 = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
+// src/commit-gate/decision-core-summary.ts
+var SOURCE_PATH2 = new RegExp(
+  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
+  "i"
+);
 var QUALITY_CONFIGURATION_PATH = ".quality-guard.json";
 function changedPaths(snapshot) {
+  const paths = snapshot.changes.flatMap((change) => [
+    change.before?.path,
+    change.after?.path
+  ]);
   return [
-    ...new Set(
-      snapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((path9) => Boolean(path9))
-    )
+    ...new Set(paths.filter((path13) => Boolean(path13)))
   ].sort((left, right) => left.localeCompare(right));
 }
-function sourcePaths(snapshot) {
-  return changedPaths(snapshot).filter((filePath) => SOURCE_PATH2.test(filePath));
+function changedSourcePaths(snapshot) {
+  return changedPaths(snapshot).filter(
+    (filePath) => SOURCE_PATH2.test(filePath)
+  );
 }
 function requiresSourceDecision(snapshot) {
   return changedPaths(snapshot).some(
     (filePath) => SOURCE_PATH2.test(filePath) || filePath === QUALITY_CONFIGURATION_PATH
   );
 }
-function architectureFinding(kind, severity, affectedPaths, evidence, reason) {
-  return createFinding({ severity, affectedPaths, before: {}, after: evidence, reason: `${kind}: ${reason}` });
+function summaryFor(snapshot, changedSourcePaths2) {
+  return {
+    baseIdentity: snapshot.baseIdentity,
+    targetIdentity: snapshot.targetIdentity,
+    changedSourcePaths: changedSourcePaths2
+  };
 }
-function placementFindings(findings) {
-  return findings.map(
-    (finding) => architectureFinding(finding.kind, "review", [finding.directory], { ...finding }, "placement pressure increased")
+function noDecision(summary) {
+  return {
+    verdict: "PASS",
+    findings: [],
+    errors: [],
+    input: {
+      ...summary,
+      reason: "No source quality decision was required because the staged change contains no supported source or quality configuration."
+    }
+  };
+}
+
+// src/commit-gate/decision-core.ts
+function acceptedFindings(input, fingerprint) {
+  const current = (input.acknowledgementRecords ?? []).filter(
+    (record3) => record3.fingerprint === fingerprint
   );
+  return /* @__PURE__ */ new Set([
+    ...input.acknowledgements ?? [],
+    ...current.map((record3) => record3.findingId)
+  ]);
 }
-function dependencyFindings(findings) {
-  return findings.map((finding) => {
-    const paths = finding.kind === "cycle" ? finding.cycle : [finding.from, finding.to];
-    return architectureFinding(
-      finding.kind,
-      "fail",
-      paths,
-      finding,
-      "a deterministic dependency boundary was introduced"
-    );
+function progressFor(input) {
+  if (!input.refactorMap) return void 0;
+  return evaluateResponsibilityMap(input.refactorMap, {
+    before: input.beforeFiles,
+    after: input.afterFiles,
+    config: input.config
   });
 }
-function encapsulationFindings(findings) {
-  return findings.map(
-    (finding) => architectureFinding(finding.kind, "review", [finding.path], finding, "public or compatibility surface changed")
-  );
+function analysisErrors(input) {
+  return [
+    ...input.scanner.errors ?? [],
+    ...input.analysisErrors ?? []
+  ].sort((left, right) => left.localeCompare(right));
+}
+function staleAcknowledgements(input, fingerprint) {
+  return (input.acknowledgementRecords ?? []).filter((record3) => record3.fingerprint !== fingerprint).map((record3) => record3.findingId).sort();
+}
+function verdict(errors, findings, accepted) {
+  if (errors.length > 0 || findings.some((finding) => finding.severity === "fail"))
+    return "FAIL";
+  return findings.some(
+    (finding) => finding.severity === "review" && !accepted.has(finding.id)
+  ) ? "REVIEW_REQUIRED" : "PASS";
 }
 function decideQuality(input) {
-  const affectedPaths = sourcePaths(input.snapshot);
-  const summary = {
-    baseIdentity: input.snapshot.baseIdentity,
-    targetIdentity: input.snapshot.targetIdentity,
-    changedSourcePaths: affectedPaths
-  };
-  if (!requiresSourceDecision(input.snapshot)) {
-    return {
-      verdict: "PASS",
-      findings: [],
-      errors: [],
-      input: {
-        ...summary,
-        reason: "No source quality decision was required because the staged change contains no supported source or quality configuration."
-      }
-    };
-  }
-  const refactorProgress = input.refactorMap ? evaluateResponsibilityMap(input.refactorMap, input.beforeFiles, input.afterFiles, input.config) : void 0;
-  const findings = [
-    ...input.scanner.findings.map(createFinding),
-    ...(input.hardBounds ?? []).map(createFinding),
-    ...(input.responsibilityFindings ?? []).map(createFinding),
-    ...placementFindings(
-      analyzePlacement(
-        input.beforeFiles.map((file) => ({ path: file.path, types: file.types.map((type) => type.name) })),
-        input.afterFiles.map((file) => ({ path: file.path, types: file.types.map((type) => type.name) })),
-        affectedPaths,
-        input.config
-      )
-    ),
-    ...dependencyFindings(analyzeDependencies(input.beforeFiles, input.afterFiles, affectedPaths, input.config)),
-    ...encapsulationFindings(analyzeEncapsulation(input.beforeFiles, input.afterFiles, affectedPaths, input.config)),
-    ...refactorProgress && !refactorProgress.hasDeclaredOutcomeProgress ? [
-      architectureFinding(
-        "refactor-structural-progress",
-        "review",
-        input.refactorMap?.targetScope ?? affectedPaths,
-        { ...refactorProgress },
-        "declared ownership or boundary outcome is unchanged"
-      )
-    ] : []
-  ];
-  const normalized = normalizeFindings(findings);
+  const affectedPaths2 = changedSourcePaths(input.snapshot);
+  const summary = summaryFor(input.snapshot, affectedPaths2);
+  if (!requiresSourceDecision(input.snapshot)) return noDecision(summary);
+  const refactorProgress = progressFor(input);
+  const findings = collectFindings({
+    ...input,
+    affectedPaths: affectedPaths2,
+    refactorProgress
+  });
   const fingerprint = fingerprintSnapshot(input.snapshot, input.config);
-  const currentRecords = (input.acknowledgementRecords ?? []).filter((record3) => record3.fingerprint === fingerprint);
-  const accepted = /* @__PURE__ */ new Set([...input.acknowledgements ?? [], ...currentRecords.map((record3) => record3.findingId)]);
-  const staleAcknowledgements = (input.acknowledgementRecords ?? []).filter((record3) => record3.fingerprint !== fingerprint).map((record3) => record3.findingId).sort();
-  const errors = [...input.scanner.errors ?? [], ...input.analysisErrors ?? []].sort(
-    (left, right) => left.localeCompare(right)
-  );
-  const hasFailure = errors.length > 0 || normalized.some((finding) => finding.severity === "fail");
-  const hasUnacknowledgedReview = normalized.some(
-    (finding) => finding.severity === "review" && !accepted.has(finding.id)
-  );
+  const errors = analysisErrors(input);
   return {
-    verdict: hasFailure ? "FAIL" : hasUnacknowledgedReview ? "REVIEW_REQUIRED" : "PASS",
+    verdict: verdict(errors, findings, acceptedFindings(input, fingerprint)),
     fingerprint,
-    findings: normalized,
+    findings,
     errors,
     input: summary,
-    staleAcknowledgements,
+    staleAcknowledgements: staleAcknowledgements(input, fingerprint),
     refactorProgress
   };
 }
 
-// skills/quality-refactor/scripts/lib/architecture-facts.mjs
-import { extname } from "node:path";
+// src/commit-gate/snapshot-change.ts
+import { execFileSync } from "node:child_process";
 
-// skills/quality-refactor/scripts/lib/offsets.mjs
-function matchBracket(code, open, pair) {
-  const [left, right] = pair;
-  let depth = 0;
-  for (let i = open; i < code.length; i += 1) {
-    if (code[i] === left) depth += 1;
-    else if (code[i] === right) {
-      depth -= 1;
-      if (depth === 0) return i;
-    }
-  }
-  return -1;
-}
-
-// skills/quality-refactor/scripts/lib/architecture-facts.mjs
-var LANGUAGE_BY_EXTENSION = {
-  ".ts": "ts",
-  ".tsx": "ts",
-  ".mts": "ts",
-  ".cts": "ts",
-  ".js": "ts",
-  ".jsx": "ts",
-  ".mjs": "ts",
-  ".cjs": "ts",
-  ".cs": "cs",
-  ".java": "java",
-  ".kt": "java",
-  ".rs": "rs",
-  ".py": "py",
-  ".go": "go",
-  ".c": "cpp",
-  ".h": "cpp",
-  ".cpp": "cpp",
-  ".cc": "cpp",
-  ".hpp": "cpp"
-};
-var TYPE_PATTERNS = {
-  ts: /\b(?:export\s+)?(?:abstract\s+)?(class|interface|enum)\s+([A-Za-z_$][\w$]*)/g,
-  cs: /\b(?:public\s+|internal\s+|private\s+|protected\s+)?(class|interface|struct|enum|record)\s+([A-Za-z_]\w*)/g,
-  java: /\b(?:public\s+|internal\s+|private\s+|protected\s+)?(class|interface|enum|record)\s+([A-Za-z_]\w*)/g,
-  rs: /\b(?:pub\s+)?(struct|enum|trait|union)\s+([A-Za-z_]\w*)/g,
-  go: /\btype\s+([A-Za-z_]\w*)\s+(struct|interface)\b/g,
-  cpp: /\b(class|struct|enum)\s+([A-Za-z_]\w*)/g
-};
-function unique(values) {
-  return [...new Set(values)].sort((left, right) => left.localeCompare(right));
-}
-function visibility(prefix, lang, name) {
-  if (/\b(?:public|pub)\b/.test(prefix)) return "public";
-  if (/\b(?:private)\b/.test(prefix) || name.startsWith("#")) return "private";
-  if (/\bprotected\b/.test(prefix)) return "protected";
-  if (lang === "ts" || lang === "go") return "public";
-  return "internal";
-}
-function importsFor(source, lang) {
-  const patterns = {
-    ts: /\b(?:import|export)\s+(?:[^;\n]*?\s+from\s+)?["']([^"']+)["']/g,
-    cs: /^\s*using\s+([\w.]+)/gm,
-    java: /^\s*import\s+([\w.*]+)/gm,
-    rs: /^\s*use\s+([^;\n]+)/gm,
-    py: /^\s*(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))/gm,
-    go: /^\s*import\s+(?:\([^)]*?\)|"([^"]+)")/gms,
-    cpp: /^\s*#include\s+[<"]([^>"]+)[>"]/gm
-  };
-  const pattern = patterns[lang];
-  if (!pattern) return [];
-  const found = [];
-  let match;
-  while ((match = pattern.exec(source)) !== null) {
-    if (lang === "go" && match[0].includes("(")) {
-      found.push(...[...match[0].matchAll(/"([^"]+)"/g)].map((item) => item[1]));
-    } else found.push(match[1] ?? match[2]);
-  }
-  return unique(found.filter(Boolean));
-}
-function braceBody(source, offset) {
-  const open = source.indexOf("{", offset);
-  if (open === -1) return null;
-  const close = matchBracket(source, open, "{}");
-  if (close === -1) return null;
-  return { start: open + 1, end: close, text: source.slice(open + 1, close) };
-}
-function blankComments(source) {
-  return source.replace(/\/\/[^\r\n]*|\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\r\n]/g, " "));
-}
-function pythonTypes(source) {
-  const lines = source.split("\n");
-  const result = [];
-  let offset = 0;
-  for (let index = 0; index < lines.length; index += 1) {
-    const match = /^(\s*)class\s+([A-Za-z_]\w*)/.exec(lines[index]);
-    if (!match) {
-      offset += lines[index].length + 1;
-      continue;
-    }
-    const indent = match[1].replace(/\t/g, "    ").length;
-    let end = index + 1;
-    while (end < lines.length && (lines[end].trim() === "" || /^[ \t]*/.exec(lines[end])[0].replace(/\t/g, "    ").length > indent)) end += 1;
-    const bodyStart = offset + lines[index].length + 1;
-    const bodyEnd = bodyStart + lines.slice(index + 1, end).join("\n").length;
-    result.push({ kind: "class", name: match[2], start: offset, body: { start: bodyStart, end: bodyEnd, text: source.slice(bodyStart, bodyEnd) } });
-    offset += lines[index].length + 1;
-  }
-  return result;
-}
-function declaredTypes(source, lang) {
-  if (lang === "py") return { types: pythonTypes(source) };
-  const pattern = TYPE_PATTERNS[lang];
-  const searchable = blankComments(source);
-  const types = [];
-  let match;
-  while ((match = pattern.exec(searchable)) !== null) {
-    const name = lang === "go" ? match[1] : match[2];
-    const kind = lang === "go" ? match[2] : match[1];
-    const body = braceBody(source, match.index + match[0].length);
-    if (!body) return { types: [], error: `cannot extract required architecture facts: ${name} has no closed body` };
-    types.push({ kind, name, start: match.index, body });
-  }
-  return { types };
-}
-function methodMembers(body, lang) {
-  const patterns = {
-    ts: /(^|[;{}\n])\s*((?:(?:public|private|protected|static|async|readonly)\s+)*)?([#A-Za-z_$][\w$]*)\s*\([^;{}]*\)\s*[{=>]/g,
-    cs: /(^|[;{}\n])\s*((?:(?:public|private|protected|internal|static|async|virtual|override)\s+)*)?\w[\w<>?,.\[\]]*\s+([A-Za-z_]\w*)\s*\([^;{}]*\)\s*{/g,
-    java: /(^|[;{}\n])\s*((?:(?:public|private|protected|internal|static|suspend|open|override)\s+)*)?[\w<>?,.\[\]]+\s+([A-Za-z_]\w*)\s*\([^;{}]*\)\s*{/g,
-    rs: /\b((?:pub\s+)?(?:async\s+)?(?:unsafe\s+)?)fn\s+([A-Za-z_]\w*)\s*\([^)]*\)/g,
-    go: /\bfunc\s+(?:\([^)]*\)\s+)?([A-Za-z_]\w*)\s*\([^)]*\)/g,
-    cpp: /(^|[;{}\n])\s*((?:(?:public|private|protected|static|virtual|explicit)\s+)*)?[\w:<>*&]+\s+([A-Za-z_]\w*)\s*\([^;{}]*\)\s*{/g,
-    py: /^\s*def\s+([A-Za-z_]\w*)\s*\(/gm
-  };
-  const pattern = patterns[lang];
-  const members2 = [];
-  let match;
-  while ((match = pattern.exec(body)) !== null) {
-    const name = lang === "go" || lang === "py" ? match[1] : match[3] ?? match[2];
-    const prefix = lang === "go" || lang === "py" ? "" : match[2] ?? match[1] ?? "";
-    if (["if", "for", "while", "switch", "catch"].includes(name)) continue;
-    members2.push({ name, kind: "method", visibility: visibility(prefix, lang, name) });
-  }
-  return members2;
-}
-function fieldMembers(body, lang) {
-  const members2 = [];
-  const add = (name, prefix = "") => members2.push({ name, kind: "field", visibility: visibility(prefix, lang, name) });
-  if (lang === "py") {
-    for (const match of body.matchAll(/\bself\.([A-Za-z_]\w*)\s*=/g)) add(match[1]);
-    return members2;
-  }
-  if (lang === "rs" || lang === "go" || lang === "cpp" || lang === "cs" || lang === "java" || lang === "ts") {
-    for (const line of body.split(/[;\n]/)) {
-      const assignment = line.indexOf("=");
-      if (line.includes("(") && (assignment === -1 || line.indexOf("(") < assignment) || /^\s*(?:public|private|protected)\s*:/.test(line)) continue;
-      const beforeAssignment = line.split(/[:=,]/, 1)[0].trim();
-      const names = beforeAssignment.match(/[#A-Za-z_$][\w$]*/g) ?? [];
-      const name = names.at(-1);
-      const prefix = names.slice(0, -1).join(" ");
-      if (name && !["return", "use", "type"].includes(name)) add(name, prefix);
-    }
-  }
-  return members2;
-}
-function forwardingPaths(body, methods) {
-  return methods.flatMap((method) => {
-    const expression = new RegExp(`${method.name}\\s*\\([^)]*\\)\\s*\\{?\\s*(?:return\\s+)?(?:this\\.|self\\.|[A-Za-z_]\\w*->)([A-Za-z_]\\w*)\\.([A-Za-z_]\\w*)\\s*\\(`).exec(body);
-    return expression ? [{ member: method.name, target: `${expression[1]}.${expression[2]}` }] : [];
-  });
-}
-function fieldDependencies(body) {
-  const dependencies = [];
-  for (const line of body.split(/[;\n]/)) {
-    const assignment = line.indexOf("=");
-    if (line.includes("(") && (assignment === -1 || line.indexOf("(") < assignment)) continue;
-    const match = /(?:\bnew\s+|:\s*|\b)([A-Z][A-Za-z0-9_]*)\b/.exec(line);
-    if (match) dependencies.push(match[1]);
-  }
-  return unique(dependencies);
-}
-function typeFacts(type, lang) {
-  const methods = methodMembers(type.body.text, lang);
-  const fields = fieldMembers(type.body.text, lang);
-  const members2 = [...methods, ...fields].sort((left, right) => left.kind.localeCompare(right.kind) || left.name.localeCompare(right.name));
-  return { name: type.name, kind: type.kind, members: members2, dependencies: fieldDependencies(type.body.text), forwardingPaths: forwardingPaths(type.body.text, methods) };
-}
-function referencesFor(source, types, imports) {
-  const names = [...source.matchAll(/\b[A-Z][A-Za-z0-9_]*\b/g)].map((match) => match[0]);
-  const importedNames = imports.flatMap((item) => item.split(/[./:]/)).filter((item) => /^[A-Z]/.test(item));
-  return unique([...names, ...importedNames].filter((name) => !types.some((type) => type.name === name)));
-}
-function extractArchitectureFacts(file) {
-  const lang = LANGUAGE_BY_EXTENSION[extname(file.path).toLowerCase()];
-  if (!lang) return { facts: { path: file.path, language: null, imports: [], references: [], types: [] }, errors: [] };
-  const declared = declaredTypes(file.content, lang);
-  if (declared.error) return { facts: null, errors: [declared.error] };
-  const types = declared.types.map((type) => typeFacts(type, lang)).sort((left, right) => left.name.localeCompare(right.name));
-  const imports = importsFor(file.content, lang);
-  return { facts: { path: file.path, language: lang, imports, references: referencesFor(file.content, types, imports), types }, errors: [] };
-}
-
-// src/commit-gate/facts.ts
-function extractFactInventory(files, requiredPaths) {
-  const required2 = new Set(requiredPaths);
-  const errors = [];
-  const facts = files.flatMap((file) => {
-    const result = extractArchitectureFacts(file);
-    if (required2.has(file.path)) errors.push(...result.errors.map((error2) => `${file.path}: ${error2}`));
-    return result.facts ? [
-      {
-        path: result.facts.path,
-        imports: result.facts.imports,
-        references: result.facts.references,
-        types: result.facts.types
-      }
-    ] : [];
-  });
+// src/commit-gate/snapshot-change-entries.ts
+function renameChange(input) {
+  const beforePath = input.values[input.index + 1];
+  const afterPath = input.values[input.index + 2];
   return {
-    files: facts.sort((left, right) => left.path.localeCompare(right.path)),
-    errors: errors.sort((left, right) => left.localeCompare(right))
+    next: input.index + 2,
+    change: {
+      kind: "rename",
+      before: {
+        path: beforePath,
+        content: input.readContent(input.contentSpec(beforePath, false))
+      },
+      after: {
+        path: afterPath,
+        content: input.readContent(input.contentSpec(afterPath, true))
+      }
+    }
+  };
+}
+function addedChange(input, filePath) {
+  return {
+    kind: "add",
+    after: {
+      path: filePath,
+      content: input.readContent(input.contentSpec(filePath, true))
+    }
+  };
+}
+function deletedChange(input, filePath) {
+  return {
+    kind: "delete",
+    before: {
+      path: filePath,
+      content: input.readContent(input.contentSpec(filePath, false))
+    }
+  };
+}
+function modifiedChange(input, filePath) {
+  return {
+    kind: "modify",
+    before: {
+      path: filePath,
+      content: input.readContent(input.contentSpec(filePath, false))
+    },
+    after: {
+      path: filePath,
+      content: input.readContent(input.contentSpec(filePath, true))
+    }
+  };
+}
+function fileChange(input, code, filePath) {
+  if (code === "A") return addedChange(input, filePath);
+  if (code === "D") return deletedChange(input, filePath);
+  return modifiedChange(input, filePath);
+}
+function changeAt(input) {
+  const status = input.values[input.index];
+  if (!status) return { next: input.index, change: void 0 };
+  if (status[0] === "R" || status[0] === "C") return renameChange(input);
+  return {
+    next: input.index + 1,
+    change: fileChange(input, status[0], input.values[input.index + 1])
   };
 }
 
-// src/commit-gate/snapshot.ts
-import { execFileSync as execFileSync2 } from "node:child_process";
-var SOURCE_PATH3 = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
-var DISTRIBUTION_PATH = /(?:^|[/\\])dist(?:[/\\]|$)/;
-var GIT_OUTPUT_MAX_BUFFER2 = 64 * 1024 * 1024;
+// src/commit-gate/snapshot-change.ts
+var GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
 function git(root, args, encoding = "utf8") {
-  return execFileSync2("git", args, { cwd: root, encoding, maxBuffer: GIT_OUTPUT_MAX_BUFFER2 });
+  return execFileSync("git", args, {
+    cwd: root,
+    encoding,
+    maxBuffer: GIT_OUTPUT_MAX_BUFFER
+  });
 }
 function objectContent(root, spec) {
   return git(root, ["show", spec]);
 }
-function changeSnapshot(root, source) {
-  const output = git(root, ["diff", "--name-status", "-z", "-M", source.base, source.target], "buffer");
-  const values = output.toString("utf8").split("\0").filter(Boolean);
+function changePath2(change) {
+  return change.after?.path ?? change.before?.path ?? "";
+}
+function changesFrom(root, values, contentSpec) {
   const changes = [];
   for (let index = 0; index < values.length; index += 1) {
-    const status = values[index];
-    if (!status) continue;
-    const code = status[0];
-    if (code === "R" || code === "C") {
-      const beforePath = values[++index];
-      const afterPath = values[++index];
-      changes.push({
-        kind: "rename",
-        before: { path: beforePath, content: objectContent(root, source.contentSpec(beforePath, false)) },
-        after: { path: afterPath, content: objectContent(root, source.contentSpec(afterPath, true)) }
-      });
-      continue;
-    }
-    const filePath = values[++index];
-    if (code === "A") {
-      changes.push({
-        kind: "add",
-        after: { path: filePath, content: objectContent(root, source.contentSpec(filePath, true)) }
-      });
-    } else if (code === "D") {
-      changes.push({
-        kind: "delete",
-        before: { path: filePath, content: objectContent(root, source.contentSpec(filePath, false)) }
-      });
-    } else {
-      changes.push({
-        kind: "modify",
-        before: { path: filePath, content: objectContent(root, source.contentSpec(filePath, false)) },
-        after: { path: filePath, content: objectContent(root, source.contentSpec(filePath, true)) }
-      });
-    }
+    const result = changeAt({
+      values,
+      index,
+      contentSpec,
+      readContent: (spec) => objectContent(root, spec)
+    });
+    if (result.change) changes.push(result.change);
+    index = result.next;
   }
-  changes.sort(
-    (left, right) => (left.after?.path ?? left.before?.path ?? "").localeCompare(right.after?.path ?? right.before?.path ?? "")
+  return changes.sort(
+    (left, right) => changePath2(left).localeCompare(changePath2(right))
   );
+}
+function changeSnapshot(root, source) {
+  const output = git(
+    root,
+    ["diff", "--name-status", "-z", "-M", source.base, source.target],
+    "buffer"
+  );
+  const values = output.toString("utf8").split("\0").filter(Boolean);
   return {
     baseIdentity: git(root, ["rev-parse", source.base]).trim(),
     targetIdentity: git(root, ["rev-parse", source.target]).trim(),
-    changes
+    changes: changesFrom(root, values, source.contentSpec)
   };
 }
+
+// src/commit-gate/snapshot.ts
+var SOURCE_PATH3 = new RegExp(
+  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
+  "i"
+);
+var DISTRIBUTION_PATH = /(?:^|[/\\])dist(?:[/\\]|$)/;
 function readStagedSnapshot(root) {
   return changeSnapshot(root, {
     base: "HEAD",
@@ -22529,25 +22916,117 @@ function readStagedSnapshot(root) {
   });
 }
 function readCommittedSnapshot(root, commit = "HEAD") {
-  const parent = git(root, ["rev-parse", `${commit}^`]);
+  const parent = git(root, ["rev-parse", `${commit}^`]).trim();
   return changeSnapshot(root, {
-    base: parent.trim(),
+    base: parent,
     target: commit,
-    contentSpec: (filePath, after) => `${after ? commit : parent.trim()}:${filePath}`
+    contentSpec: (filePath, after) => `${after ? commit : parent}:${filePath}`
   });
 }
-function sourcePaths2(root, ref) {
+function sourcePaths(root, ref) {
   const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", ref];
-  return git(root, args, "buffer").toString("utf8").split("\0").filter((filePath) => SOURCE_PATH3.test(filePath) && !DISTRIBUTION_PATH.test(filePath)).sort((left, right) => left.localeCompare(right));
+  return git(root, args, "buffer").toString("utf8").split("\0").filter(
+    (filePath) => SOURCE_PATH3.test(filePath) && !DISTRIBUTION_PATH.test(filePath)
+  ).sort((left, right) => left.localeCompare(right));
 }
 function readSourceInventory(root, ref) {
-  return sourcePaths2(root, ref).map((filePath) => ({
+  return sourcePaths(root, ref).map((filePath) => ({
     path: filePath,
-    content: objectContent(root, ref === "index" ? `:${filePath}` : `${ref}:${filePath}`)
+    content: objectContent(
+      root,
+      ref === "index" ? `:${filePath}` : `${ref}:${filePath}`
+    )
   }));
 }
 
-// src/commit-gate/cli.ts
+// src/commit-gate/cli-tree.ts
+import { execFileSync as execFileSync4 } from "node:child_process";
+
+// src/commit-gate/cli-tree-scanner.ts
+import { execFileSync as execFileSync3 } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path7 from "node:path";
+
+// src/scanner.ts
+import { execFileSync as execFileSync2 } from "node:child_process";
+import * as path6 from "node:path";
+import { fileURLToPath } from "node:url";
+
+// src/scanner-failure.ts
+function parsedFailure(error2) {
+  const failure = error2;
+  const stdout = failure.stdout;
+  if (typeof stdout !== "string") return void 0;
+  if (!stdout.trim()) return void 0;
+  const status = typeof failure.status === "number" ? failure.status : 1;
+  return { exitCode: status, report: JSON.parse(stdout) };
+}
+function failureMessage(error2) {
+  const message = error2.message;
+  return typeof message === "string" ? message : String(error2);
+}
+function scanFailure(error2) {
+  const result = parsedFailure(error2);
+  if (result) return result;
+  throw new Error(`quality scan failed: ${failureMessage(error2)}`);
+}
+
+// src/scanner.ts
+var SCAN_TIMEOUT_MS = 12e4;
+var MAX_BUFFER = 32 * 1024 * 1024;
+function scannerPath() {
+  const here = path6.dirname(fileURLToPath(import.meta.url));
+  return path6.join(
+    here,
+    "..",
+    "skills",
+    "quality-refactor",
+    "scripts",
+    "quality-scan.mjs"
+  );
+}
+function buildArgs(request) {
+  return [
+    ...request.paths,
+    "--format=json",
+    ...optionalArgs(request),
+    ...repeatedArgs("--exclude", request.excludes),
+    ...repeatedArgs("--test-path", request.testPaths)
+  ];
+}
+function optionalArgs(request) {
+  return [
+    flag("--root", request.root),
+    flag("--profile", request.profile),
+    flag("--rules", request.rules?.join(",")),
+    flag("--baseline", request.baseline),
+    flag("--write-baseline", request.writeBaseline),
+    flag("--fail-on", request.failOn)
+  ].filter((value) => value !== void 0);
+}
+function flag(name, value) {
+  return value === void 0 ? void 0 : `${name}=${value}`;
+}
+function repeatedArgs(name, values) {
+  return (values ?? []).map((value) => `${name}=${value}`);
+}
+function runScan(request, run = execFileSync2) {
+  const args = [scannerPath(), ...buildArgs(request)];
+  try {
+    const stdout = run(process.execPath, args, {
+      encoding: "utf8",
+      timeout: SCAN_TIMEOUT_MS,
+      maxBuffer: MAX_BUFFER,
+      cwd: request.root
+    });
+    return { exitCode: 0, report: JSON.parse(stdout) };
+  } catch (err) {
+    return scanFailure(err);
+  }
+}
+
+// src/commit-gate/cli-tree-scanner.ts
 var RATCHET_RULES = [
   "file-length",
   "function-length",
@@ -22578,104 +23057,28 @@ function commitScanRequest(root) {
     failOn: "regression"
   };
 }
-function usage(message) {
-  return {
-    exitCode: 3,
-    output: `${message ? `Usage error: ${message}
-` : ""}Usage: quality-guard check --staged [--intent change|refactor] [--target <repository-relative-path>] [--json]`
-  };
-}
-function acknowledgeUsage(message) {
-  return {
-    exitCode: 3,
-    output: `${message ? `Usage error: ${message}
-` : ""}Usage: quality-guard acknowledge --finding <finding-id> --reason <reason> --author <author>`
-  };
-}
-function validTarget(value) {
-  return Boolean(value.trim()) && !path5.isAbsolute(value) && !/^[a-zA-Z]:[\\/]/.test(value) && !value.split(/[\\/]/).includes("..");
-}
-function parseCheckArguments(args) {
-  if (args[0] !== "check" || args[1] !== "--staged") return usage();
-  let json = false;
-  let intent = "change";
-  let target;
-  for (let index = 2; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-    } else if (arg === "--intent") {
-      const value = args[++index];
-      if (value !== "change" && value !== "refactor") return usage(`unsupported intent ${value ?? ""}`.trim());
-      intent = value;
-    } else if (arg.startsWith("--intent=")) {
-      const value = arg.slice("--intent=".length);
-      if (value !== "change" && value !== "refactor") return usage(`unsupported intent ${value}`);
-      intent = value;
-    } else if (arg === "--target") {
-      target = args[++index];
-      if (!target) return usage("--target requires a repository-relative path");
-    } else if (arg.startsWith("--target=")) {
-      target = arg.slice("--target=".length);
-    } else {
-      return usage(`unsupported option ${arg}`);
-    }
-  }
-  if (intent === "refactor" && !target) return usage("refactor intent requires --target");
-  if (target && !validTarget(target)) return usage("--target must be a repository-relative path");
-  return { json, intent, target };
-}
-function parseAcknowledgeArguments(args) {
-  if (args[0] !== "acknowledge") return acknowledgeUsage();
-  let findingId;
-  let reason;
-  let author;
-  for (let index = 1; index < args.length; index += 1) {
-    const arg = args[index];
-    const value = arg.startsWith("--finding=") ? arg.slice("--finding=".length) : arg.startsWith("--reason=") ? arg.slice("--reason=".length) : arg.startsWith("--author=") ? arg.slice("--author=".length) : args[++index];
-    if (arg === "--finding" || arg.startsWith("--finding=")) findingId = value;
-    else if (arg === "--reason" || arg.startsWith("--reason=")) reason = value;
-    else if (arg === "--author" || arg.startsWith("--author=")) author = value;
-    else return acknowledgeUsage(`unsupported option ${arg}`);
-  }
-  if (!findingId?.trim()) return acknowledgeUsage("--finding requires a finding identifier");
-  if (!reason?.trim()) return acknowledgeUsage("--reason requires a non-empty reason");
-  if (!author?.trim()) return acknowledgeUsage("--author requires a non-empty author");
-  return { findingId: findingId.trim(), reason: reason.trim(), author: author.trim() };
-}
-function exitCodeFor(result) {
-  return result.verdict === "PASS" ? 0 : result.verdict === "FAIL" ? 1 : 2;
-}
-function renderDecision(result, json) {
-  if (json) return JSON.stringify(result, null, 2);
-  const lines = [result.verdict];
-  if (result.input.reason) lines.push(result.input.reason);
-  for (const error2 of result.errors) lines.push(`ERROR: ${error2}`);
-  for (const finding of result.findings)
-    lines.push(`${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`);
-  for (const findingId of result.staleAcknowledgements ?? [])
-    lines.push(`STALE: acknowledgement for ${findingId} does not match the current staged fingerprint`);
-  if (result.refactorProgress) {
-    for (const [name, indicator] of Object.entries(result.refactorProgress.indicators)) {
-      lines.push(`REFACTOR: ${name} ${indicator.status} (${indicator.before} -> ${indicator.after})`);
-    }
-  }
-  return lines.join("\n");
-}
 function materializeTree(root, ref) {
-  const target = mkdtempSync(path5.join(tmpdir(), "quality-guard-index-"));
+  const target = mkdtempSync(path7.join(tmpdir(), "quality-guard-index-"));
   if (ref === "index") {
-    execFileSync3("git", ["checkout-index", "--all", `--prefix=${target}${path5.sep}`], { cwd: root, stdio: "ignore" });
+    execFileSync3(
+      "git",
+      ["checkout-index", "--all", `--prefix=${target}${path7.sep}`],
+      { cwd: root, stdio: "ignore" }
+    );
     return target;
   }
-  const indexPath = path5.join(target, "index");
+  const indexPath = path7.join(target, "index");
   const env = { ...process.env, GIT_INDEX_FILE: indexPath };
   execFileSync3("git", ["read-tree", ref], { cwd: root, env, stdio: "ignore" });
-  execFileSync3("git", ["checkout-index", "--all", `--prefix=${target}${path5.sep}`], {
-    cwd: root,
-    env,
-    stdio: "ignore"
-  });
+  execFileSync3(
+    "git",
+    ["checkout-index", "--all", `--prefix=${target}${path7.sep}`],
+    {
+      cwd: root,
+      env,
+      stdio: "ignore"
+    }
+  );
   rmSync(indexPath, { force: true });
   return target;
 }
@@ -22684,22 +23087,63 @@ function scannerEvidence(root, ref) {
   try {
     const result = runScan(commitScanRequest(stagedRoot));
     if (result.exitCode === 0) return { findings: [] };
-    const finding = {
-      severity: "fail",
-      affectedPaths: [],
-      before: {},
-      after: { exitCode: result.exitCode, report: result.report },
-      reason: "structural ratchet reported a deterministic regression"
+    return {
+      findings: [
+        {
+          severity: "fail",
+          affectedPaths: [],
+          before: {},
+          after: { exitCode: result.exitCode, report: result.report },
+          reason: "structural ratchet reported a deterministic regression"
+        }
+      ]
     };
-    return { findings: [finding] };
   } catch (error2) {
-    return { findings: [], errors: [error2 instanceof Error ? error2.message : String(error2)] };
+    return {
+      findings: [],
+      errors: [error2 instanceof Error ? error2.message : String(error2)]
+    };
   } finally {
     rmSync(stagedRoot, { recursive: true, force: true });
   }
 }
+
+// src/commit-gate/cli-tree.ts
+var SOURCE_PATTERN = new RegExp(
+  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
+  "i"
+);
+function treeFile(input) {
+  try {
+    return execFileSync4(
+      "git",
+      [
+        "show",
+        input.ref === "index" ? `:${input.filePath}` : `${input.ref}:${input.filePath}`
+      ],
+      {
+        cwd: input.root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"]
+      }
+    );
+  } catch {
+    if (input.fallback !== void 0) return input.fallback;
+    throw new Error(
+      `${input.filePath} is not present in ` + (input.ref === "index" ? "the staged index" : `tree ${input.ref}`)
+    );
+  }
+}
+function snapshotConfig(root, ref) {
+  return treeFile({
+    root,
+    ref,
+    filePath: ".quality-guard.json",
+    fallback: "{}"
+  });
+}
 function isSourceOrConfiguration(filePath) {
-  return /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i.test(filePath) || filePath === ".quality-guard.json";
+  return SOURCE_PATTERN.test(filePath) || filePath === ".quality-guard.json";
 }
 function isDistributionPath(filePath) {
   return /(?:^|[/\\])dist(?:[/\\]|$)/.test(filePath);
@@ -22707,144 +23151,742 @@ function isDistributionPath(filePath) {
 function withoutDistributionChanges(snapshot) {
   return {
     ...snapshot,
-    changes: snapshot.changes.filter((change) => {
-      const paths = [change.before?.path, change.after?.path].filter(
-        (filePath) => Boolean(filePath)
-      );
-      return paths.some((filePath) => !isDistributionPath(filePath));
-    })
+    changes: snapshot.changes.filter(
+      (change) => [change.before?.path, change.after?.path].filter((filePath) => Boolean(filePath)).some((filePath) => !isDistributionPath(filePath))
+    )
   };
 }
-function treeFile(root, ref, filePath, fallback) {
-  try {
-    return execFileSync3("git", ["show", ref === "index" ? `:${filePath}` : `${ref}:${filePath}`], {
-      cwd: root,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"]
-    });
-  } catch {
-    if (fallback !== void 0) return fallback;
-    throw new Error(`${filePath} is not present in ${ref === "index" ? "the staged index" : `tree ${ref}`}`);
-  }
+function sourceChange(filePath) {
+  return isSourceOrConfiguration(filePath);
 }
-function snapshotConfig(root, ref) {
-  return treeFile(root, ref, ".quality-guard.json", "{}");
+
+// src/commit-gate/acknowledgements.ts
+function nonEmptyString(value, location) {
+  if (typeof value !== "string" || !value.trim())
+    throw new Error(`${location} must be a non-empty string`);
+  return value.trim();
 }
-function decisionForSnapshot(root, snapshot, baseRef, targetRef, options, skipStructural = false) {
-  const decisionSnapshot = withoutDistributionChanges(snapshot);
-  const refactorMap = options.intent === "refactor" && options.target ? parseResponsibilityMap(treeFile(root, targetRef, options.target)) : void 0;
-  const affected = decisionSnapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((filePath) => Boolean(filePath));
-  if (!affected.some(isSourceOrConfiguration)) {
-    return decideQuality({
-      snapshot: decisionSnapshot,
-      config: parseQualityConfig("{}"),
-      beforeFiles: [],
-      afterFiles: [],
-      scanner: { findings: [] }
-    });
-  }
-  const config2 = parseQualityConfig(snapshotConfig(root, targetRef));
-  const before = extractFactInventory(readSourceInventory(root, baseRef), affected);
-  const after = extractFactInventory(readSourceInventory(root, targetRef), affected);
-  const acknowledgementRecords = parseArchitectureAcknowledgements(
-    treeFile(root, targetRef, DECISION_RECORD_PATH, "[]")
+function recordValue(record3, key2, index) {
+  return nonEmptyString(
+    record3[key2],
+    `${DECISION_RECORD_PATH}[${index}].${key2}`
   );
+}
+function parseArchitectureAcknowledgements(source) {
+  let parsed;
+  try {
+    parsed = JSON.parse(source);
+  } catch {
+    throw new Error(`${DECISION_RECORD_PATH} must contain valid JSON`);
+  }
+  if (!Array.isArray(parsed))
+    throw new Error(`${DECISION_RECORD_PATH} must contain an array`);
+  return parsed.map(parseRecord);
+}
+function parseRecord(item, index) {
+  if (item === null || typeof item !== "object" || Array.isArray(item))
+    throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
+  const record3 = item;
+  const allowed = ["findingId", "fingerprint", "reason", "author", "time"];
+  const unexpected = Object.keys(record3).find((key2) => !allowed.includes(key2));
+  if (unexpected)
+    throw new Error(
+      `${DECISION_RECORD_PATH}[${index}].${unexpected} is not supported`
+    );
+  return {
+    findingId: recordValue(record3, "findingId", index),
+    fingerprint: recordValue(record3, "fingerprint", index),
+    reason: recordValue(record3, "reason", index),
+    author: recordValue(record3, "author", index),
+    time: recordValue(record3, "time", index)
+  };
+}
+function appendArchitectureAcknowledgement(source, record3) {
+  const records = [...parseArchitectureAcknowledgements(source), record3];
+  return `${JSON.stringify(records, null, 2)}
+`;
+}
+
+// skills/quality-refactor/scripts/lib/architecture-language.mjs
+import { extname } from "node:path";
+
+// skills/quality-refactor/scripts/lib/config-values.mjs
+var LANG_BY_EXT = {
+  ".ts": "ts",
+  ".tsx": "ts",
+  ".mts": "ts",
+  ".cts": "ts",
+  ".js": "ts",
+  ".jsx": "ts",
+  ".mjs": "ts",
+  ".cjs": "ts",
+  ".cs": "cs",
+  ".rs": "rs",
+  ".py": "py",
+  ".go": "go",
+  ".c": "cpp",
+  ".java": "java",
+  ".kt": "java",
+  ".cpp": "cpp",
+  ".cc": "cpp",
+  ".hpp": "cpp",
+  ".h": "cpp"
+};
+
+// skills/quality-refactor/scripts/lib/architecture-language.mjs
+var DEFAULT_VISIBILITY = {
+  ts: "public",
+  go: "public",
+  cs: "internal",
+  java: "internal",
+  rs: "internal",
+  py: "internal",
+  cpp: "internal"
+};
+var PUBLIC_PATTERN = /\b(?:public|pub)\b/;
+var PRIVATE_PATTERN = /\bprivate\b/;
+var PROTECTED_PATTERN = /\bprotected\b/;
+function unique(values) {
+  return [...new Set(values)].sort((left, right) => left.localeCompare(right));
+}
+function languageFor(filePath) {
+  return LANG_BY_EXT[extname(filePath).toLowerCase()];
+}
+function visibility(prefix, lang, name) {
+  if (PUBLIC_PATTERN.test(prefix)) return "public";
+  if (PRIVATE_PATTERN.test(prefix)) return "private";
+  if (name.startsWith("#")) return "private";
+  if (PROTECTED_PATTERN.test(prefix)) return "protected";
+  return DEFAULT_VISIBILITY[lang];
+}
+
+// skills/quality-refactor/scripts/lib/architecture-imports.mjs
+var IMPORT_PATTERNS = {
+  ts: /\b(?:import|export)\s+(?:[^;\n]*?\s+from\s+)?["']([^"']+)["']/g,
+  cs: /^\s*using\s+([\w.]+)/gm,
+  java: /^\s*import\s+([\w.*]+)/gm,
+  rs: /^\s*use\s+([^;\n]+)/gm,
+  py: /^\s*(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))/gm,
+  go: /^\s*import\s+(?:\([^)]*?\)|"([^"]+)")/gms,
+  cpp: /^\s*#include\s+[<"]([^>"]+)[>"]/gm
+};
+function importValues(match, lang) {
+  if (lang !== "go" || !match[0].includes("(")) return [match[1] ?? match[2]];
+  return [...match[0].matchAll(/"([^"]+)"/g)].map((item) => item[1]);
+}
+function importsFor(source, lang) {
+  const pattern = IMPORT_PATTERNS[lang];
+  if (!pattern) return [];
+  const found = [];
+  let match = pattern.exec(source);
+  while (match !== null) {
+    found.push(...importValues(match, lang));
+    match = pattern.exec(source);
+  }
+  return unique(found.filter(Boolean));
+}
+
+// skills/quality-refactor/scripts/lib/offsets.mjs
+function matchBracket(code, open, pair) {
+  const [left, right] = pair;
+  let depth = 0;
+  for (let i = open; i < code.length; i += 1) {
+    if (code[i] === left) {
+      depth += 1;
+      continue;
+    }
+    if (code[i] !== right) continue;
+    depth -= 1;
+    if (depth === 0) return i;
+  }
+  return -1;
+}
+
+// skills/quality-refactor/scripts/lib/architecture-python-types.mjs
+function indentation(line) {
+  return /^[ \t]*/.exec(line)[0].replace(/\t/g, "    ").length;
+}
+function pythonEnd(lines, start, indent) {
+  let end = start + 1;
+  while (end < lines.length) {
+    const line = lines[end];
+    if (line.trim() !== "" && indentation(line) <= indent) break;
+    end += 1;
+  }
+  return end;
+}
+function pythonTypes(source) {
+  const lines = source.split("\n");
+  const result = [];
+  let offset = 0;
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = /^(\s*)class\s+([A-Za-z_]\w*)/.exec(lines[index]);
+    if (!match) {
+      offset += lines[index].length + 1;
+      continue;
+    }
+    const end = pythonEnd(lines, index, indentation(match[1]));
+    const bodyStart = offset + lines[index].length + 1;
+    const bodyEnd = bodyStart + lines.slice(index + 1, end).join("\n").length;
+    result.push({
+      kind: "class",
+      name: match[2],
+      start: offset,
+      body: {
+        start: bodyStart,
+        end: bodyEnd,
+        text: source.slice(bodyStart, bodyEnd)
+      }
+    });
+    offset += lines[index].length + 1;
+  }
+  return result;
+}
+
+// skills/quality-refactor/scripts/lib/architecture-types.mjs
+var TYPE_PATTERNS = {
+  ts: new RegExp(
+    String.raw`\b(?:export\s+)?(?:abstract\s+)?` + String.raw`(class|interface|enum)\s+([A-Za-z_$][\w$]*)`,
+    "g"
+  ),
+  cs: new RegExp(
+    String.raw`\b(?:public\s+|internal\s+|private\s+|protected\s+)?` + String.raw`(class|interface|struct|enum|record)\s+([A-Za-z_]\w*)`,
+    "g"
+  ),
+  java: new RegExp(
+    String.raw`\b(?:public\s+|internal\s+|private\s+|protected\s+)?` + String.raw`(class|interface|enum|record)\s+([A-Za-z_]\w*)`,
+    "g"
+  ),
+  rs: /\b(?:pub\s+)?(struct|enum|trait|union)\s+([A-Za-z_]\w*)/g,
+  go: /\btype\s+([A-Za-z_]\w*)\s+(struct|interface)\b/g,
+  cpp: /\b(class|struct|enum)\s+([A-Za-z_]\w*)/g
+};
+function braceBody(source, offset) {
+  const open = source.indexOf("{", offset);
+  if (open === -1) return null;
+  const close = matchBracket(source, open, "{}");
+  if (close === -1) return null;
+  return { start: open + 1, end: close, text: source.slice(open + 1, close) };
+}
+function blankComments(source) {
+  return source.replace(
+    /\/\/[^\r\n]*|\/\*[\s\S]*?\*\//g,
+    (comment) => comment.replace(/[^\r\n]/g, " ")
+  );
+}
+function typeName(match, lang) {
+  return lang === "go" ? match[1] : match[2];
+}
+function typeKind(match, lang) {
+  return lang === "go" ? match[2] : match[1];
+}
+function declaredTypes(source, lang) {
+  if (lang === "py") return { types: pythonTypes(source) };
+  const pattern = TYPE_PATTERNS[lang];
+  const searchable = blankComments(source);
+  const types = [];
+  let match = pattern.exec(searchable);
+  while (match !== null) {
+    const body = braceBody(source, match.index + match[0].length);
+    if (!body)
+      return {
+        types: [],
+        error: `cannot extract required architecture facts: ${typeName(match, lang)} has no closed body`
+      };
+    types.push({
+      kind: typeKind(match, lang),
+      name: typeName(match, lang),
+      start: match.index,
+      body
+    });
+    match = pattern.exec(searchable);
+  }
+  return { types };
+}
+
+// skills/quality-refactor/scripts/lib/architecture-fields.mjs
+function isCallLine(line) {
+  const assignment = line.indexOf("=");
+  if (!line.includes("(")) return false;
+  return assignment === -1 || line.indexOf("(") < assignment;
+}
+function addMember(members2, { name, lang, prefix = "" }) {
+  if (!name || ["return", "use", "type"].includes(name)) return;
+  members2.push({
+    name,
+    kind: "field",
+    visibility: visibility(prefix, lang, name)
+  });
+}
+function pythonFields(body, lang) {
+  const members2 = [];
+  for (const match of body.matchAll(/\bself\.([A-Za-z_]\w*)\s*=/g)) {
+    addMember(members2, { name: match[1], lang });
+  }
+  return members2;
+}
+function braceFields(body, lang) {
+  const members2 = [];
+  for (const line of body.split(/[;\n]/)) {
+    if (isFieldLine(line)) continue;
+    const names = line.split(/[:=,]/, 1)[0].trim().match(/[#A-Za-z_$][\w$]*/g) ?? [];
+    addMember(members2, {
+      name: names.at(-1),
+      lang,
+      prefix: names.slice(0, -1).join(" ")
+    });
+  }
+  return members2;
+}
+function isFieldLine(line) {
+  if (isCallLine(line)) return true;
+  return /^\s*(?:public|private|protected)\s*:/.test(line);
+}
+function fieldMembers(body, lang) {
+  return lang === "py" ? pythonFields(body, lang) : braceFields(body, lang);
+}
+function forwardingPaths(body, methods) {
+  return methods.flatMap((method) => {
+    const expression = new RegExp(
+      method.name + "\\s*\\([^)]*\\)\\s*\\{?\\s*(?:return\\s+)?(?:this\\.|self\\.|[A-Za-z_]\\w*->)([A-Za-z_]\\w*)\\.([A-Za-z_]\\w*)\\s*\\("
+    ).exec(body);
+    return expression ? [{ member: method.name, target: expression[1] + "." + expression[2] }] : [];
+  });
+}
+function fieldDependencies(body) {
+  const dependencies = [];
+  for (const line of body.split(/[;\n]/)) {
+    if (isCallLine(line)) continue;
+    const match = /(?:\bnew\s+|:\s*|\b)([A-Z][A-Za-z0-9_]*)\b/.exec(line);
+    if (match) dependencies.push(match[1]);
+  }
+  return unique(dependencies);
+}
+
+// skills/quality-refactor/scripts/lib/architecture-members.mjs
+var METHOD_PATTERNS = {
+  ts: new RegExp(
+    String.raw`(^|[;{}\n])\s*((?:(?:public|private|` + String.raw`protected|static|async|readonly)\s+)*)?` + String.raw`([#A-Za-z_$][\w$]*)\s*\([^;{}]*\)\s*[{=>]`,
+    "g"
+  ),
+  cs: new RegExp(
+    String.raw`(^|[;{}\n])\s*((?:(?:public|private|protected|` + String.raw`internal|static|async|virtual|override)\s+)*)?` + String.raw`\w[\w<>?,.\[\]]*\s+([A-Za-z_]\w*)\s*\([^;{}]*\)\s*{`,
+    "g"
+  ),
+  java: new RegExp(
+    String.raw`(^|[;{}\n])\s*((?:(?:public|private|protected|` + String.raw`internal|static|suspend|open|override)\s+)*)?` + String.raw`[\w<>?,.\[\]]+\s+([A-Za-z_]\w*)\s*\([^;{}]*\)\s*{`,
+    "g"
+  ),
+  rs: new RegExp(
+    String.raw`\b((?:pub\s+)?(?:async\s+)?(?:unsafe\s+)?)fn\s+` + String.raw`([A-Za-z_]\w*)\s*\([^)]*\)`,
+    "g"
+  ),
+  go: /\bfunc\s+(?:\([^)]*\)\s+)?([A-Za-z_]\w*)\s*\([^)]*\)/g,
+  cpp: new RegExp(
+    String.raw`(^|[;{}\n])\s*((?:(?:public|private|protected|` + String.raw`static|virtual|explicit)\s+)*)?` + String.raw`[\w:<>*&]+\s+([A-Za-z_]\w*)\s*\([^;{}]*\)\s*{`,
+    "g"
+  ),
+  py: /^\s*def\s+([A-Za-z_]\w*)\s*\(/gm
+};
+function methodName(match, lang) {
+  return lang === "go" || lang === "py" ? match[1] : match[3] ?? match[2];
+}
+function methodPrefix(match, lang) {
+  if (lang === "go" || lang === "py") return "";
+  return [match[2], match[1], ""].find((value) => value !== void 0);
+}
+function isControl(name) {
+  return ["if", "for", "while", "switch", "catch"].includes(name);
+}
+function methodMembers(body, lang) {
+  const pattern = METHOD_PATTERNS[lang];
+  const members2 = [];
+  let match = pattern.exec(body);
+  while (match !== null) {
+    const name = methodName(match, lang);
+    if (!isControl(name)) {
+      members2.push({
+        name,
+        kind: "method",
+        visibility: visibility(methodPrefix(match, lang), lang, name)
+      });
+    }
+    match = pattern.exec(body);
+  }
+  return members2;
+}
+function typeFacts2(type, lang) {
+  const methods = methodMembers(type.body.text, lang);
+  const fields = fieldMembers(type.body.text, lang);
+  const members2 = [...methods, ...fields].sort(
+    (left, right) => left.kind.localeCompare(right.kind) || left.name.localeCompare(right.name)
+  );
+  return {
+    name: type.name,
+    kind: type.kind,
+    members: members2,
+    dependencies: fieldDependencies(type.body.text),
+    forwardingPaths: forwardingPaths(type.body.text, methods)
+  };
+}
+
+// skills/quality-refactor/scripts/lib/architecture-facts.mjs
+function referencesFor(source, types, imports) {
+  const names = [...source.matchAll(/\b[A-Z][A-Za-z0-9_]*\b/g)].map(
+    (match) => match[0]
+  );
+  const importedNames = imports.flatMap((item) => item.split(/[./:]/)).filter((item) => /^[A-Z]/.test(item));
+  return unique(
+    [...names, ...importedNames].filter(
+      (name) => !types.some((type) => type.name === name)
+    )
+  );
+}
+function extractArchitectureFacts(file) {
+  const lang = languageFor(file.path);
+  if (!lang)
+    return {
+      facts: {
+        path: file.path,
+        language: null,
+        imports: [],
+        references: [],
+        types: []
+      },
+      errors: []
+    };
+  const declared = declaredTypes(file.content, lang);
+  if (declared.error) return { facts: null, errors: [declared.error] };
+  const types = declared.types.map((type) => typeFacts2(type, lang)).sort((left, right) => left.name.localeCompare(right.name));
+  const imports = importsFor(file.content, lang);
+  return {
+    facts: {
+      path: file.path,
+      language: lang,
+      imports,
+      references: referencesFor(file.content, types, imports),
+      types
+    },
+    errors: []
+  };
+}
+
+// src/commit-gate/facts.ts
+function extractFactInventory(files, requiredPaths) {
+  const required2 = new Set(requiredPaths);
+  const errors = [];
+  const facts = files.flatMap((file) => {
+    const result = extractArchitectureFacts(file);
+    if (required2.has(file.path))
+      errors.push(...result.errors.map((error2) => `${file.path}: ${error2}`));
+    return result.facts ? [
+      {
+        path: result.facts.path,
+        imports: result.facts.imports,
+        references: result.facts.references,
+        types: result.facts.types
+      }
+    ] : [];
+  });
+  return {
+    files: facts.sort((left, right) => left.path.localeCompare(right.path)),
+    errors: errors.sort((left, right) => left.localeCompare(right))
+  };
+}
+
+// src/commit-gate/cli-decision-input.ts
+function affectedPaths(snapshot) {
+  return snapshot.changes.flatMap((change) => [change.before?.path, change.after?.path]).filter((filePath) => Boolean(filePath));
+}
+function noSourceDecision(snapshot) {
   return decideQuality({
-    snapshot: decisionSnapshot,
+    snapshot,
+    config: parseQualityConfig("{}"),
+    beforeFiles: [],
+    afterFiles: [],
+    scanner: { findings: [] }
+  });
+}
+function acknowledgementRecords(root, ref) {
+  return parseArchitectureAcknowledgements(
+    treeFile({ root, ref, filePath: DECISION_RECORD_PATH, fallback: "[]" })
+  );
+}
+function refactorMapFor(input) {
+  if (input.options.intent !== "refactor" || !input.options.target)
+    return void 0;
+  return parseResponsibilityMap(
+    treeFile({
+      root: input.root,
+      ref: input.targetRef,
+      filePath: input.options.target
+    })
+  );
+}
+function sourceInventories(input) {
+  return {
+    before: extractFactInventory(
+      readSourceInventory(input.root, input.baseRef),
+      input.changed
+    ),
+    after: extractFactInventory(
+      readSourceInventory(input.root, input.targetRef),
+      input.changed
+    )
+  };
+}
+
+// src/commit-gate/cli-decision.ts
+function decisionWithSources(input, snapshot, changed) {
+  const config2 = parseQualityConfig(
+    snapshotConfig(input.root, input.targetRef)
+  );
+  const { before, after } = sourceInventories({ ...input, changed });
+  return decideQuality({
+    snapshot,
     config: config2,
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
-    scanner: skipStructural ? { findings: [] } : scannerEvidence(root, targetRef),
-    acknowledgementRecords,
-    refactorMap
+    scanner: input.skipStructural ? { findings: [] } : scannerEvidence(input.root, input.targetRef),
+    acknowledgementRecords: acknowledgementRecords(input.root, input.targetRef),
+    refactorMap: refactorMapFor(input)
   });
 }
+function decisionForSnapshot(input) {
+  const snapshot = withoutDistributionChanges(input.snapshot);
+  const changed = affectedPaths(snapshot);
+  if (!changed.some(sourceChange)) return noSourceDecision(snapshot);
+  return decisionWithSources(input, snapshot, changed);
+}
 function runStagedCheck(root, options) {
-  const snapshot = readStagedSnapshot(root);
-  return decisionForSnapshot(root, snapshot, "HEAD", "index", options);
+  return decisionForSnapshot({
+    root,
+    snapshot: readStagedSnapshot(root),
+    baseRef: "HEAD",
+    targetRef: "index",
+    options
+  });
 }
 function runCommittedCheck(root, commit, options) {
-  const snapshot = readCommittedSnapshot(root, commit);
-  return decisionForSnapshot(
+  return decisionForSnapshot({
     root,
-    snapshot,
-    `${commit}^`,
-    commit,
+    snapshot: readCommittedSnapshot(root, commit),
+    baseRef: `${commit}^`,
+    targetRef: commit,
     options,
-    process.env.QUALITY_GUARD_SKIP_STRUCTURAL === "1"
+    skipStructural: process.env.QUALITY_GUARD_SKIP_STRUCTURAL === "1"
+  });
+}
+
+// src/commit-gate/cli-render.ts
+function refactorLines(result) {
+  if (!result.refactorProgress) return [];
+  return Object.entries(result.refactorProgress.indicators).map(
+    ([name, indicator]) => `REFACTOR: ${name} ${indicator.status} (${indicator.before} -> ${indicator.after})`
   );
+}
+function decisionLines(result) {
+  const lines = [result.verdict];
+  if (result.input.reason) lines.push(result.input.reason);
+  lines.push(...result.errors.map((error2) => `ERROR: ${error2}`));
+  lines.push(
+    ...result.findings.map(
+      (finding) => `${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`
+    )
+  );
+  lines.push(
+    ...(result.staleAcknowledgements ?? []).map(
+      (findingId) => `STALE: acknowledgement for ${findingId} does not match the current staged fingerprint`
+    )
+  );
+  lines.push(...refactorLines(result));
+  return lines;
+}
+function exitCodeFor(result) {
+  if (result.verdict === "PASS") return 0;
+  if (result.verdict === "FAIL") return 1;
+  return 2;
+}
+function renderDecision(result, json) {
+  if (json) return JSON.stringify(result, null, 2);
+  return decisionLines(result).join("\n");
+}
+
+// src/commit-gate/cli-command-acknowledge.ts
+import { execFileSync as execFileSync5 } from "node:child_process";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import * as path8 from "node:path";
+function acknowledgementSource(recordPath) {
+  try {
+    return readFileSync(recordPath, "utf8");
+  } catch {
+    return "[]";
+  }
+}
+function findAcknowledgement(decision, options) {
+  const finding = decision.findings.find(
+    (item) => item.id === options.findingId
+  );
+  if (!finding)
+    return acknowledgeUsage(`unknown or stale finding ${options.findingId}`);
+  if (finding.severity !== "review")
+    return acknowledgeUsage(
+      `finding ${options.findingId} is deterministic and cannot be acknowledged`
+    );
+  if (!decision.fingerprint)
+    return acknowledgeUsage(
+      "no current staged source fingerprint is available"
+    );
+  return { fingerprint: decision.fingerprint };
+}
+function writeAcknowledgement(root, options, fingerprint) {
+  const recordPath = path8.join(root, DECISION_RECORD_PATH);
+  mkdirSync(path8["dirname"](recordPath), { recursive: true });
+  writeFileSync(
+    recordPath,
+    appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
+      ...options,
+      fingerprint,
+      time: (/* @__PURE__ */ new Date()).toISOString()
+    }),
+    "utf8"
+  );
+  execFileSync5("git", ["add", "--", DECISION_RECORD_PATH], {
+    cwd: root,
+    stdio: "ignore"
+  });
+  return {
+    exitCode: 0,
+    output: `Acknowledged review finding ${options.findingId}`
+  };
 }
 function runAcknowledgeCommand(args, root) {
   const options = parseAcknowledgeArguments(args);
   if ("exitCode" in options) return options;
   try {
-    const decision = runStagedCheck(root, { json: false, intent: "change" });
-    const finding = decision.findings.find((item) => item.id === options.findingId);
-    if (!finding) return acknowledgeUsage(`unknown or stale finding ${options.findingId}`);
-    if (finding.severity !== "review")
-      return acknowledgeUsage(`finding ${options.findingId} is deterministic and cannot be acknowledged`);
-    if (!decision.fingerprint) return acknowledgeUsage("no current staged source fingerprint is available");
-    const recordPath = path5.join(root, DECISION_RECORD_PATH);
-    let source = "[]";
-    try {
-      source = readFileSync(recordPath, "utf8");
-    } catch {
-    }
-    mkdirSync(path5.dirname(recordPath), { recursive: true });
-    writeFileSync(
-      recordPath,
-      appendArchitectureAcknowledgement(source, {
-        ...options,
-        fingerprint: decision.fingerprint,
-        time: (/* @__PURE__ */ new Date()).toISOString()
-      }),
-      "utf8"
+    const match = findAcknowledgement(
+      runStagedCheck(root, { json: false, intent: "change" }),
+      options
     );
-    execFileSync3("git", ["add", "--", DECISION_RECORD_PATH], { cwd: root, stdio: "ignore" });
-    return { exitCode: 0, output: `Acknowledged review finding ${options.findingId}` };
+    if ("exitCode" in match) return match;
+    return writeAcknowledgement(root, options, match.fingerprint);
   } catch (error2) {
-    return acknowledgeUsage(error2 instanceof Error ? error2.message : String(error2));
+    return acknowledgeUsage(
+      error2 instanceof Error ? error2.message : String(error2)
+    );
   }
 }
-function runCheckCommand(args, root = process.cwd()) {
-  if (args[0] === "acknowledge") return runAcknowledgeCommand(args, root);
-  if (args[0] === "check" && args[1] === "--committed") {
-    const commit = args[2];
-    if (!commit || commit.startsWith("-")) return usage("--committed requires a Git ref");
-    const options2 = parseCheckArguments(["check", "--staged", "--json", ...args.slice(3)]);
-    if ("exitCode" in options2) return options2;
-    try {
-      const result = runCommittedCheck(root, commit, options2);
-      return { exitCode: exitCodeFor(result), output: renderDecision(result, true) };
-    } catch (error2) {
-      return usage(error2 instanceof Error ? error2.message : String(error2));
-    }
+
+// src/commit-gate/cli-command-check.ts
+function isCommandResult(value) {
+  return typeof value !== "string";
+}
+function committedRef(args) {
+  const commit = args[2];
+  if (!commit) return usage("--committed requires a Git ref");
+  if (commit.startsWith("-")) return usage("--committed requires a Git ref");
+  return commit;
+}
+function runCommittedCommand(args, root) {
+  const commit = committedRef(args);
+  if (isCommandResult(commit)) return commit;
+  const options = parseCheckArguments([
+    "check",
+    "--staged",
+    "--json",
+    ...args.slice(3)
+  ]);
+  if ("exitCode" in options) return options;
+  try {
+    const result = runCommittedCheck(root, commit, options);
+    return {
+      exitCode: exitCodeFor(result),
+      output: renderDecision(result, true)
+    };
+  } catch (error2) {
+    return usage(error2 instanceof Error ? error2.message : String(error2));
   }
+}
+function runStagedCommand(args, root) {
   const options = parseCheckArguments(args);
   if ("exitCode" in options) return options;
   try {
     const result = runStagedCheck(root, options);
-    return { exitCode: exitCodeFor(result), output: renderDecision(result, options.json) };
+    return {
+      exitCode: exitCodeFor(result),
+      output: renderDecision(result, options.json)
+    };
   } catch (error2) {
     return usage(error2 instanceof Error ? error2.message : String(error2));
   }
 }
 
+// src/commit-gate/cli-command.ts
+function runCheckCommand(args, root = process.cwd()) {
+  if (args[0] === "acknowledge") return runAcknowledgeCommand(args, root);
+  if (args[0] === "check" && args[1] === "--committed")
+    return runCommittedCommand(args, root);
+  return runStagedCommand(args, root);
+}
+
 // src/report.ts
 import { existsSync, readFileSync as readFileSync2 } from "node:fs";
-import * as path6 from "node:path";
+import * as path10 from "node:path";
+
+// src/commit-gate/dependency-current.ts
+function analyzeCurrentDependencies(files, config2) {
+  const current = graph(files, config2);
+  return {
+    dependencies: sortForbiddenFindings(
+      forbiddenFindings([...current.values()].flat(), config2)
+    ),
+    cycles: findCycles(current).map((cycle) => ({
+      kind: "cycle",
+      cycle
+    }))
+  };
+}
+
+// src/commit-gate/placement-current.ts
+import * as path9 from "node:path";
+function analyzeCurrentPlacement(files, config2) {
+  const directories = typeNames(files, config2);
+  return [...directories.entries()].filter(
+    ([directory, types]) => config2.genericBuckets.includes(
+      path9.posix.basename(directory).toLowerCase()
+    ) || types.size > config2.directTypeLimit
+  ).map(([directory, types]) => ({
+    kind: config2.genericBuckets.includes(
+      path9.posix.basename(directory).toLowerCase()
+    ) ? "generic-bucket" : "flat-accumulation",
+    directory,
+    typeCount: types.size,
+    limit: config2.directTypeLimit,
+    types: [...types].sort((left, right) => left.localeCompare(right))
+  })).sort(
+    (left, right) => left.directory.localeCompare(right.directory) || left.kind.localeCompare(right.kind)
+  );
+}
 
 // src/commit-gate/current-architecture.ts
 function analyzeCurrentArchitecture(files, config2) {
   const paths = files.map((file) => file.path);
   const dependency = analyzeCurrentDependencies(files, config2);
-  const encapsulation = analyzeEncapsulation([], files, paths, config2).filter(
+  const encapsulation = analyzeEncapsulation({
+    beforeFiles: [],
+    afterFiles: files,
+    affectedPaths: paths,
+    config: config2
+  }).filter(
     (finding) => finding.kind !== "public-surface-growth" || finding.productionCallers.length === 0
   );
   return {
     placement: analyzeCurrentPlacement(
-      files.map((file) => ({ path: file.path, types: file.types.map((type) => type.name) })),
+      files.map((file) => ({
+        path: file.path,
+        types: file.types.map((type) => type.name)
+      })),
       config2
     ),
     dependencies: dependency.dependencies,
@@ -22853,51 +23895,87 @@ function analyzeCurrentArchitecture(files, config2) {
   };
 }
 
-// src/report.ts
-function compareFinding(left, right) {
-  return left.line - right.line || left.rule.localeCompare(right.rule) || left.message.localeCompare(right.message);
-}
+// src/report-summaries.ts
 function summarize(files) {
   const fileCount = files.length;
   const errors = files.reduce((sum, file) => sum + file.errors, 0);
   const warnings = files.reduce((sum, file) => sum + file.warnings, 0);
-  const averageScore = fileCount === 0 ? null : files.reduce((sum, file) => sum + file.score, 0) / fileCount;
-  const minimumScore = fileCount === 0 ? null : Math.min(...files.map((file) => file.score));
-  return { fileCount, errors, warnings, averageScore, minimumScore };
+  const scores = files.map((file) => file.score);
+  return {
+    fileCount,
+    errors,
+    warnings,
+    averageScore: fileCount === 0 ? null : scores.reduce((sum, score) => sum + score, 0) / fileCount,
+    minimumScore: fileCount === 0 ? null : Math.min(...scores)
+  };
 }
-function buildQualityReport(scan, architecture) {
-  const byFile = /* @__PURE__ */ new Map();
-  for (const finding of scan.violations) {
-    const findings = byFile.get(finding.file) ?? [];
-    findings.push(finding);
-    byFile.set(finding.file, findings);
-  }
-  const files = [...scan.files].sort((left, right) => left.path.localeCompare(right.path)).map((file) => {
-    const findings = [...byFile.get(file.path) ?? []].sort(compareFinding);
-    const errors = findings.filter((finding) => finding.severity === "error").length;
-    const warnings = findings.length - errors;
-    return { ...file, score: Math.max(0, 100 - errors * 5 - warnings), errors, warnings, findings };
-  });
-  const production = files.filter((file) => file.classification === "production");
+function reportSummaries(files) {
+  const production = files.filter(
+    (file) => file.classification === "production"
+  );
   const tests = files.filter((file) => file.classification === "test");
   return {
+    overall: summarize(files),
+    production: summarize(production),
+    test: summarize(tests)
+  };
+}
+
+// src/report-builder.ts
+function compareFinding(left, right) {
+  return left.line - right.line || left.rule.localeCompare(right.rule) || left.message.localeCompare(right.message);
+}
+function findingsByFile(scan) {
+  const byFile = /* @__PURE__ */ new Map();
+  for (const finding of scan.violations)
+    byFile.set(finding.file, [...byFile.get(finding.file) ?? [], finding]);
+  return byFile;
+}
+function scoredFiles(scan, byFile) {
+  return [...scan.files].sort((left, right) => left.path.localeCompare(right.path)).map((file) => {
+    const findings = [...byFile.get(file.path) ?? []].sort(compareFinding);
+    const errors = findings.filter(
+      (finding) => finding.severity === "error"
+    ).length;
+    const warnings = findings.length - errors;
+    return {
+      ...file,
+      score: Math.max(0, 100 - errors * 5 - warnings),
+      errors,
+      warnings,
+      findings
+    };
+  });
+}
+function buildQualityReport(scan, architecture) {
+  const files = scoredFiles(scan, findingsByFile(scan));
+  return {
     schemaVersion: 1,
-    scoring: { initial: 100, errorDeduction: 5, warningDeduction: 1, minimum: 0 },
+    scoring: {
+      initial: 100,
+      errorDeduction: 5,
+      warningDeduction: 1,
+      minimum: 0
+    },
     scanner: {
       profile: scan.profile,
       fileSelection: "supported handwritten source; generated, dependency, build, binary, unreadable, and symlinked files excluded"
     },
-    summaries: { overall: summarize(files), production: summarize(production), test: summarize(tests) },
+    summaries: reportSummaries(files),
     files,
     architecture
   };
 }
+
+// src/report.ts
 function architectureFor(root, scan) {
-  const configPath = path6.join(root, ".quality-guard.json");
-  const config2 = parseQualityConfig(existsSync(configPath) ? readFileSync2(configPath, "utf8") : "{}");
+  const configPath = path10.join(root, ".quality-guard.json");
+  const config2 = parseQualityConfig(
+    existsSync(configPath) ? readFileSync2(configPath, "utf8") : "{}"
+  );
   const sourceFiles = scan.files.map((file) => ({
     path: file.path,
-    content: readFileSync2(path6.join(root, file.path), "utf8")
+    content: readFileSync2(path10.join(root, file.path), "utf8")
   }));
   const inventory = extractFactInventory(
     sourceFiles,
@@ -22924,17 +24002,142 @@ function asReportScan(report) {
   return candidate;
 }
 function runQualityReport(request) {
-  const root = path6.resolve(request.root ?? process.cwd());
+  const root = path10.resolve(request.root ?? process.cwd());
   const scan = asReportScan(runScan({ ...request, root, paths: ["."] }).report);
   return buildQualityReport(scan, architectureFor(root, scan));
 }
 
+// src/tool-response.ts
+function text(value) {
+  return { content: [{ type: "text", text: value }] };
+}
+function toolError(err) {
+  return {
+    content: [
+      {
+        type: "text",
+        text: `ERROR: ${err instanceof Error ? err.message : String(err)}`
+      }
+    ]
+  };
+}
+
+// src/tool-commit.ts
+function commitGateResponse(input) {
+  if (input.intent === "refactor" && !input.target)
+    return text("ERROR: Usage error: refactor intent requires --target");
+  return text(
+    renderDecision(
+      runStagedCheck(input.root, {
+        json: true,
+        intent: input.intent ?? "change",
+        target: input.target
+      }),
+      true
+    )
+  );
+}
+async function commitGateTool(input) {
+  try {
+    return commitGateResponse(input);
+  } catch (err) {
+    return toolError(err);
+  }
+}
+function registerQualityCommitGate(server2) {
+  server2.tool(
+    "quality_commit_gate",
+    "Judge staged source content through the authoritative commit decision. Returns a stable JSON verdict, fingerprint, and ordered findings.",
+    {
+      root: external_exports.string().min(1).describe("Repository root"),
+      intent: external_exports.enum(["change", "refactor"]).optional().describe("Change intent. Defaults to change."),
+      target: external_exports.string().optional().describe(
+        "Repository-relative responsibility-map path required for refactor intent"
+      )
+    },
+    commitGateTool
+  );
+}
+
+// src/tool-schemas.ts
+var PATHS = external_exports.array(external_exports.string()).min(1).describe("Paths to scan, relative to root");
+var ROOT = external_exports.string().optional().describe(
+  "Repository root. Point this at the repo, not at the target, so manifest files are in scope"
+);
+var EXCLUDES = external_exports.array(external_exports.string()).optional().describe("Skip paths containing these fragments");
+var TEST_PATHS = external_exports.array(external_exports.string()).optional().describe("Treat paths containing these fragments as test code");
+
+// src/tool-scan.ts
+function registerQualityScan(server2) {
+  server2.tool(
+    "quality_scan",
+    QUALITY_SCAN_DESCRIPTION,
+    QUALITY_SCAN_INPUT,
+    qualityScan
+  );
+}
+var QUALITY_SCAN_DESCRIPTION = "Measure structural quality of the given paths and return the raw report. No verdict, no baseline. Use quality_gate to decide pass or fail.";
+var QUALITY_SCAN_INPUT = {
+  paths: PATHS,
+  root: ROOT,
+  rules: external_exports.array(external_exports.string()).optional().describe("Only run these rules"),
+  excludes: EXCLUDES,
+  testPaths: TEST_PATHS,
+  profile: external_exports.enum(["default", "strict"]).optional()
+};
+async function qualityScan(input) {
+  try {
+    const { report } = runScan(input);
+    return text(JSON.stringify(report, null, 2));
+  } catch (err) {
+    return toolError(err);
+  }
+}
+var QUALITY_GATE_INPUT = {
+  paths: PATHS,
+  baseline: external_exports.string().describe(
+    "Path to the baseline, normally .github/quality/quality-baseline.json"
+  ),
+  root: ROOT,
+  rules: external_exports.array(external_exports.string()).optional(),
+  excludes: EXCLUDES,
+  testPaths: TEST_PATHS,
+  failOn: external_exports.enum(["none", "error", "regression", "any"]).optional().describe("Default regression")
+};
+async function qualityGate(input) {
+  try {
+    const result = runGateScan(input);
+    const verdict2 = result.exitCode === 0 ? "PASS" : "FAIL";
+    return text(
+      `${verdict2} (exit ${result.exitCode})
+
+` + JSON.stringify(result.report, null, 2)
+    );
+  } catch (err) {
+    return toolError(err);
+  }
+}
+function runGateScan(input) {
+  return runScan({
+    ...input,
+    failOn: input.failOn ?? "regression"
+  });
+}
+function registerQualityGate(server2) {
+  server2.tool(
+    "quality_gate",
+    "Compare the given paths against a recorded baseline and report regressions. Existing debt is allowed, making it worse is not. A file the baseline has never seen is adopted rather than failed.",
+    QUALITY_GATE_INPUT,
+    qualityGate
+  );
+}
+
 // src/skips.ts
 import { existsSync as existsSync2, readFileSync as readFileSync3 } from "node:fs";
-import * as path7 from "node:path";
-var SKIP_LOG = path7.join(".github", "quality", "skip-log.json");
+import * as path11 from "node:path";
+var SKIP_LOG = path11.join(".github", "quality", "skip-log.json");
 function readSkipLog(root) {
-  const target = path7.join(root, SKIP_LOG);
+  const target = path11.join(root, SKIP_LOG);
   if (!existsSync2(target)) return [];
   try {
     const parsed = JSON.parse(readFileSync3(target, "utf8"));
@@ -22946,109 +24149,66 @@ function readSkipLog(root) {
 function formatSkips(records) {
   const open = records.filter((record3) => record3.acknowledged !== true);
   if (open.length === 0) return "No unacknowledged quality-gate waivers.";
-  const lines = [`${open.length} unacknowledged waiver(s):`, ""];
-  for (const record3 of open) {
-    const kind = record3.rebaseline ? "rebaseline" : "new-file ceiling";
-    lines.push(`${record3.file}  [${kind}]  ${record3.at ?? "unknown time"}`);
-    for (const reason of record3.reasons ?? []) {
-      for (const line of reason.split("\n")) lines.push(`    ${line}`);
-    }
-  }
-  lines.push("", `Acknowledge by setting "acknowledged": true in ${SKIP_LOG}.`);
-  return lines.join("\n");
+  return [
+    `${open.length} unacknowledged waiver(s):`,
+    "",
+    ...open.flatMap(formatRecord),
+    "",
+    `Acknowledge by setting "acknowledged": true in ${SKIP_LOG}.`
+  ].join("\n");
+}
+function formatRecord(record3) {
+  return [
+    `${record3.file}  [${recordKind(record3)}]  ${recordTime(record3)}`,
+    ...recordReasons(record3)
+  ];
+}
+function recordKind(record3) {
+  if (record3.rebaseline) return "rebaseline";
+  return "new-file ceiling";
+}
+function recordTime(record3) {
+  if (record3.at) return record3.at;
+  return "unknown time";
+}
+function recordReasons(record3) {
+  if (!record3.reasons) return [];
+  return record3.reasons.flatMap(
+    (reason) => reason.split("\n").map((line) => `    ${line}`)
+  );
 }
 
-// src/index.ts
-var _dirname = path8.dirname(fileURLToPath2(import.meta.url));
-var _pkg = JSON.parse(readFileSync4(path8.join(_dirname, "..", "package.json"), "utf-8"));
-var PATHS = external_exports.array(external_exports.string()).min(1).describe("Paths to scan, relative to root");
-var ROOT = external_exports.string().optional().describe("Repository root. Point this at the repo, not at the target, so manifest files are in scope");
-function text(value) {
-  return { content: [{ type: "text", text: value }] };
-}
-function toolError(err) {
-  return { content: [{ type: "text", text: `ERROR: ${err instanceof Error ? err.message : String(err)}` }] };
-}
-function createQualityGuardServer() {
-  const server2 = new McpServer({
-    name: "quality-guard",
-    version: _pkg.version
-  });
-  server2.tool(
-    "quality_scan",
-    "Measure structural quality of the given paths and return the raw report. No verdict, no baseline. Use quality_gate to decide pass or fail.",
-    {
-      paths: PATHS,
-      root: ROOT,
-      rules: external_exports.array(external_exports.string()).optional().describe("Only run these rules"),
-      excludes: external_exports.array(external_exports.string()).optional().describe("Skip paths containing these fragments"),
-      testPaths: external_exports.array(external_exports.string()).optional().describe("Treat paths containing these fragments as test code"),
-      profile: external_exports.enum(["default", "strict"]).optional()
-    },
-    async ({ paths, root, rules, excludes, testPaths, profile }) => {
-      try {
-        const { report } = runScan({ paths, root, rules, excludes, testPaths, profile });
-        return text(JSON.stringify(report, null, 2));
-      } catch (err) {
-        return toolError(err);
-      }
-    }
-  );
-  server2.tool(
-    "quality_gate",
-    "Compare the given paths against a recorded baseline and report regressions. Existing debt is allowed, making it worse is not. A file the baseline has never seen is adopted rather than failed.",
-    {
-      paths: PATHS,
-      baseline: external_exports.string().describe("Path to the baseline, normally .github/quality/quality-baseline.json"),
-      root: ROOT,
-      rules: external_exports.array(external_exports.string()).optional(),
-      excludes: external_exports.array(external_exports.string()).optional(),
-      testPaths: external_exports.array(external_exports.string()).optional(),
-      failOn: external_exports.enum(["none", "error", "regression", "any"]).optional().describe("Default regression")
-    },
-    async ({ paths, baseline, root, rules, excludes, testPaths, failOn }) => {
-      try {
-        const result = runScan({
-          paths,
-          baseline,
-          root,
-          rules,
-          excludes,
-          testPaths,
-          failOn: failOn ?? "regression"
-        });
-        const verdict = result.exitCode === 0 ? "PASS" : "FAIL";
-        return text(`${verdict} (exit ${result.exitCode})
-
-${JSON.stringify(result.report, null, 2)}`);
-      } catch (err) {
-        return toolError(err);
-      }
-    }
-  );
+// src/tool-report.ts
+function registerQualityReport(server2) {
   server2.tool(
     "quality_report",
     "Score every supported source file under the repository root and return a current-state architecture appendix. Read-only and not a gate verdict.",
     {
       root: ROOT,
-      excludes: external_exports.array(external_exports.string()).optional().describe("Skip paths containing these fragments"),
-      testPaths: external_exports.array(external_exports.string()).optional().describe("Treat paths containing these fragments as test code"),
+      excludes: EXCLUDES,
+      testPaths: TEST_PATHS,
       profile: external_exports.enum(["default", "strict"]).optional()
     },
     async ({ root, excludes, testPaths, profile }) => {
       try {
-        return text(JSON.stringify(runQualityReport({ root, excludes, testPaths, profile }), null, 2));
+        return text(
+          JSON.stringify(
+            runQualityReport({ root, excludes, testPaths, profile }),
+            null,
+            2
+          )
+        );
       } catch (err) {
         return toolError(err);
       }
     }
   );
+}
+function registerQualitySkips(server2) {
   server2.tool(
     "quality_skips",
     "List .quality-skip waivers that were consumed but never acknowledged. Each one is a place where the quality gate was bypassed on purpose. The pre-commit hook refuses to commit while any remain open.",
-    {
-      root: external_exports.string().describe("Repository root")
-    },
+    { root: external_exports.string().describe("Repository root") },
     async ({ root }) => {
       try {
         return text(formatSkips(readSkipLog(root)));
@@ -23057,44 +24217,53 @@ ${JSON.stringify(result.report, null, 2)}`);
       }
     }
   );
-  server2.tool(
-    "quality_commit_gate",
-    "Judge staged source content through the authoritative commit decision. Returns a stable JSON verdict, fingerprint, and ordered findings.",
-    {
-      root: external_exports.string().min(1).describe("Repository root"),
-      intent: external_exports.enum(["change", "refactor"]).optional().describe("Change intent. Defaults to change."),
-      target: external_exports.string().optional().describe("Repository-relative responsibility-map path required for refactor intent")
-    },
-    async ({ root, intent, target }) => {
-      if (intent === "refactor" && !target) return text("ERROR: Usage error: refactor intent requires --target");
-      try {
-        return text(renderDecision(runStagedCheck(root, { json: true, intent: intent ?? "change", target }), true));
-      } catch (err) {
-        return toolError(err);
-      }
-    }
-  );
+}
+
+// src/server-tools.ts
+function registerQualityGuardTools(server2) {
+  registerQualityScan(server2);
+  registerQualityGate(server2);
+  registerQualityReport(server2);
+  registerQualitySkips(server2);
+  registerQualityCommitGate(server2);
+}
+
+// src/index.ts
+var _dirname = path12.dirname(fileURLToPath2(import.meta.url));
+var _pkg = JSON.parse(
+  readFileSync4(path12.join(_dirname, "..", "package.json"), "utf-8")
+);
+function createQualityGuardServer() {
+  const server2 = new McpServer({
+    name: "quality-guard",
+    version: _pkg.version
+  });
+  registerQualityGuardTools(server2);
   return server2;
 }
 var server = createQualityGuardServer();
 var _filename = fileURLToPath2(import.meta.url);
+function runReportCommand(args) {
+  const root = args.find((arg) => arg.startsWith("--root="))?.slice("--root=".length);
+  process.stdout.write(
+    `${JSON.stringify(runQualityReport({ root }), null, 2)}
+`
+  );
+}
+function runCheckCommandLine(args) {
+  const result = runCheckCommand(args);
+  process.stdout.write(`${result.output}
+`);
+  process.exitCode = result.exitCode;
+}
+function isCheckCommand(args) {
+  return args[0] === "check" || args[0] === "acknowledge";
+}
 async function main() {
   const args = process.argv.slice(2);
-  if (args[0] === "report") {
-    const root = args.find((arg) => arg.startsWith("--root="))?.slice("--root=".length);
-    process.stdout.write(`${JSON.stringify(runQualityReport({ root }), null, 2)}
-`);
-    return;
-  }
-  if (args[0] === "check" || args[0] === "acknowledge") {
-    const result = runCheckCommand(args);
-    process.stdout.write(`${result.output}
-`);
-    process.exitCode = result.exitCode;
-    return;
-  }
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  if (args[0] === "report") return runReportCommand(args);
+  if (isCheckCommand(args)) return runCheckCommandLine(args);
+  await server.connect(new StdioServerTransport());
 }
 function isMainModule() {
   const arg = process.argv[1];

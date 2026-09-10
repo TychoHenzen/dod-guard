@@ -2,14 +2,14 @@
 import { TaxCalculator } from "./tax-calculator";
 
 export class InvoiceService {
-  private total = 0;
-  private calculator = new TaxCalculator();
+	private total = 0;
+	private calculator = new TaxCalculator();
 
-  summarize() {
-    return this.total.toString();
-  }
+	summarize() {
+		return this.total.toString();
+	}
 
-  public calculateTax() {
-    return this.calculator.for(this.total);
-  }
+	public calculateTax() {
+		return this.calculator.for(this.total);
+	}
 }

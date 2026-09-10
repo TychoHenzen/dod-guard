@@ -3,16 +3,10 @@ import { test } from "node:test";
 import { parseQualityConfig } from "./config.js";
 import { decideQuality } from "./decision-core.js";
 import { fingerprintSnapshot } from "./fingerprint.js";
+import { growthDecisionInput, snapshot } from "./decision-fixtures.test.js";
+import { createFinding, normalizeFindings } from "./types.js";
 import type { Snapshot } from "./snapshot.js";
-import { createFinding, failureResult, normalizeFindings } from "./types.js";
 
-const snapshot: Snapshot = {
-  baseIdentity: "base",
-  targetIdentity: "index",
-  changes: [
-    { kind: "modify", before: { path: "src/a.ts", content: "before" }, after: { path: "src/a.ts", content: "after" } },
-  ],
-};
 test("normalizes findings into stable identifiers and order", () => {
   const one = createFinding({
     severity: "review",
@@ -21,7 +15,13 @@ test("normalizes findings into stable identifiers and order", () => {
     after: { count: 2 },
     reason: "growth",
   });
-  const two = createFinding({ severity: "fail", affectedPaths: ["z.ts"], before: {}, after: {}, reason: "boundary" });
+  const two = createFinding({
+    severity: "fail",
+    affectedPaths: ["z.ts"],
+    before: {},
+    after: {},
+    reason: "boundary",
+  });
   const first = normalizeFindings([one, two]);
   const second = normalizeFindings([two, one]);
   assert.deepEqual(first, second);
@@ -30,131 +30,60 @@ test("normalizes findings into stable identifiers and order", () => {
 });
 
 test("required-analysis errors cannot return a clean decision", () => {
-  const result = failureResult(
-    { baseIdentity: "base", targetIdentity: "index", changedSourcePaths: ["src/a.ts"] },
-    "cannot read staged source",
-  );
+  const result = decideQuality({
+    ...growthDecisionInput(),
+    scanner: { findings: [], errors: ["cannot read staged source"] },
+  });
   assert.equal(result.verdict, "FAIL");
   assert.deepEqual(result.errors, ["cannot read staged source"]);
 });
-test("fingerprint excludes only the tracked decision record and changes for source or configuration", () => {
-  const config = parseQualityConfig("{}");
-  const original = fingerprintSnapshot(snapshot, config);
-  const withDecisionRecord: Snapshot = {
-    ...snapshot,
-    changes: [
-      ...snapshot.changes,
-      {
-        kind: "modify",
-        before: { path: ".github/quality/architecture-decisions.json", content: "[]" },
-        after: { path: ".github/quality/architecture-decisions.json", content: "[{}]" },
-      },
-    ],
-  };
-  assert.equal(fingerprintSnapshot(withDecisionRecord, config), original);
-  assert.notEqual(
-    fingerprintSnapshot(
-      {
-        ...snapshot,
-        changes: [
-          {
-            kind: "modify",
-            before: { path: "src/a.ts", content: "before" },
-            after: { path: "src/a.ts", content: "changed" },
-          },
-        ],
-      },
-      config,
-    ),
-    original,
-  );
-  assert.notEqual(fingerprintSnapshot(snapshot, parseQualityConfig('{"directTypeLimit": 13}')), original);
-});
-test("a deterministic failure wins while preserving review findings", () => {
-  const result = decideQuality({
-    snapshot,
-    config: parseQualityConfig("{}"),
-    beforeFiles: [],
-    afterFiles: [],
-    scanner: {
-      findings: [{ severity: "review", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "growth" }],
-    },
-    hardBounds: [{ severity: "fail", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "bound" }],
-  });
-  assert.equal(result.verdict, "FAIL");
-  assert.equal(result.findings.length, 2);
-  assert.ok(result.findings.some((finding) => finding.severity === "review"));
-  assert.ok(result.findings.some((finding) => finding.severity === "fail"));
-});
-test("accepted review evidence produces pass when deterministic checks pass", () => {
-  const review = createFinding({
-    severity: "review",
-    affectedPaths: ["src/a.ts"],
-    before: {},
-    after: {},
-    reason: "growth",
-  });
-  const result = decideQuality({
-    snapshot,
-    config: parseQualityConfig("{}"),
-    beforeFiles: [],
-    afterFiles: [],
-    scanner: {
-      findings: [{ severity: "review", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "growth" }],
-    },
-    acknowledgements: [review.id],
-  });
-  assert.equal(result.verdict, "PASS");
-  assert.equal(result.errors.length, 0);
-});
-test("current acknowledgement records accept only matching review findings", () => {
-  const review = createFinding({
-    severity: "review",
-    affectedPaths: ["src/a.ts"],
-    before: {},
-    after: {},
-    reason: "growth",
-  });
-  const result = decideQuality({
-    snapshot,
-    config: parseQualityConfig("{}"),
-    beforeFiles: [],
-    afterFiles: [],
-    scanner: {
-      findings: [{ severity: "review", affectedPaths: ["src/a.ts"], before: {}, after: {}, reason: "growth" }],
-    },
-    acknowledgementRecords: [
-      {
-        findingId: review.id,
-        fingerprint: fingerprintSnapshot(snapshot, parseQualityConfig("{}")),
-        reason: "Reviewed",
-        author: "A. Reviewer",
-        time: "2026-08-31T00:00:00.000Z",
-      },
-    ],
-  });
-  assert.equal(result.verdict, "PASS");
-  assert.deepEqual(result.staleAcknowledgements, []);
-});
-test("documentation-only changes report that no source decision was required", () => {
-  const result = decideQuality({
-    snapshot: {
-      baseIdentity: "base",
-      targetIdentity: "index",
+
+test(
+  "fingerprint excludes only the tracked decision record and changes for " +
+    "source or configuration",
+  () => {
+    const config = parseQualityConfig("{}");
+    const original = fingerprintSnapshot(snapshot, config);
+    const withDecisionRecord: Snapshot = {
+      ...snapshot,
       changes: [
+        ...snapshot.changes,
         {
           kind: "modify",
-          before: { path: "README.md", content: "before" },
-          after: { path: "README.md", content: "after" },
+          before: {
+            path: ".github/quality/architecture-decisions.json",
+            content: "[]",
+          },
+          after: {
+            path: ".github/quality/architecture-decisions.json",
+            content: "[{}]",
+          },
         },
       ],
-    },
-    config: parseQualityConfig("{}"),
-    beforeFiles: [],
-    afterFiles: [],
-    scanner: { findings: [] },
-  });
-  assert.equal(result.verdict, "PASS");
-  assert.match(result.input.reason ?? "", /No source quality decision was required/);
-  assert.equal(result.findings.length, 0);
-});
+    };
+    assert.equal(fingerprintSnapshot(withDecisionRecord, config), original);
+    assert.notEqual(
+      fingerprintSnapshot(
+        {
+          ...snapshot,
+          changes: [
+            {
+              kind: "modify",
+              before: { path: "src/a.ts", content: "before" },
+              after: { path: "src/a.ts", content: "changed" },
+            },
+          ],
+        },
+        config,
+      ),
+      original,
+    );
+    assert.notEqual(
+      fingerprintSnapshot(
+        snapshot,
+        parseQualityConfig('{"directTypeLimit": 13}'),
+      ),
+      original,
+    );
+  },
+);

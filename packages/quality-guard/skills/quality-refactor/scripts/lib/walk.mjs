@@ -1,10 +1,17 @@
 // Source file discovery.
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { extname, join, relative, sep } from "node:path";
-import { IGNORED_DIRS, IGNORED_FILE_PATTERNS, LANG_BY_EXT, isTestPath } from "./config.mjs";
+import {
+  IGNORED_DIRS,
+  IGNORED_FILE_PATTERNS,
+  LANG_BY_EXT,
+  isTestPath,
+} from "./config.mjs";
+import { collectTarget } from "./walk-target.mjs";
 
-/** Control bytes that never appear in hand-written source. This is the binary guard. */
+/** Control bytes never found in hand-written source.
+ * This is the binary guard. */
 const BINARY_MARKER = /[\x00-\x08\x0e-\x1f]/;
 
 /** Normalize to forward slashes so output and baselines are OS-independent. */
@@ -24,8 +31,20 @@ export function readText(path) {
 
 /**
  * Recursive descent honoring `IGNORED_DIRS` and `ctx.excludes`. Calls
- * `onFile(entry, full, rel)` for every plain file. `ctx` is `{ root, excludes }`.
+ * `onFile(entry, full, rel)` visits every plain file. `ctx` is
+ * `{ root, excludes }`.
  */
+function visitEntry({ dir, ctx, onFile, entry }) {
+  const full = join(dir, entry.name);
+  const rel = toPosix(relative(ctx.root, full));
+  if (ctx.excludes.some((frag) => rel.includes(frag))) return;
+  if (entry.isDirectory()) {
+    if (!IGNORED_DIRS.has(entry.name)) walkDir(full, ctx, onFile);
+    return;
+  }
+  if (entry.isFile()) onFile(entry, full, rel);
+}
+
 export function walkDir(dir, ctx, onFile) {
   let entries;
   try {
@@ -33,18 +52,7 @@ export function walkDir(dir, ctx, onFile) {
   } catch {
     return;
   }
-  for (const entry of entries) {
-    const full = join(dir, entry.name);
-    const rel = toPosix(relative(ctx.root, full));
-    if (ctx.excludes.some((frag) => rel.includes(frag))) continue;
-    if (entry.isDirectory()) {
-      if (IGNORED_DIRS.has(entry.name)) continue;
-      walkDir(full, ctx, onFile);
-      continue;
-    }
-    if (!entry.isFile()) continue;
-    onFile(entry, full, rel);
-  }
+  for (const entry of entries) visitEntry({ dir, ctx, onFile, entry });
 }
 
 /**
@@ -58,20 +66,8 @@ export function collectFiles(targets, root, excludes) {
     const lang = LANG_BY_EXT[extname(entry.name).toLowerCase()];
     if (lang) out.push({ path: full, rel, lang });
   };
-  for (const target of targets) {
-    let info;
-    try {
-      info = statSync(target);
-    } catch {
-      continue;
-    }
-    if (info.isDirectory()) {
-      walkDir(target, { root, excludes }, take);
-      continue;
-    }
-    const lang = LANG_BY_EXT[extname(target).toLowerCase()];
-    if (lang) out.push({ path: target, rel: toPosix(relative(root, target)), lang });
-  }
+  for (const target of targets)
+    collectTarget({ target, root, excludes, take, out, walk: walkDir });
   const seen = new Set();
   return out.filter((file) => !seen.has(file.rel) && seen.add(file.rel));
 }

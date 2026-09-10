@@ -14,8 +14,11 @@ export function lineAt(starts, offset) {
   let hi = starts.length - 1;
   while (lo < hi) {
     const mid = (lo + hi + 1) >> 1;
-    if (starts[mid] <= offset) lo = mid;
-    else hi = mid - 1;
+    if (starts[mid] <= offset) {
+      lo = mid;
+      continue;
+    }
+    hi = mid - 1;
   }
   return lo + 1;
 }
@@ -25,11 +28,13 @@ export function matchBracket(code, open, pair) {
   const [left, right] = pair;
   let depth = 0;
   for (let i = open; i < code.length; i += 1) {
-    if (code[i] === left) depth += 1;
-    else if (code[i] === right) {
-      depth -= 1;
-      if (depth === 0) return i;
+    if (code[i] === left) {
+      depth += 1;
+      continue;
     }
+    if (code[i] !== right) continue;
+    depth -= 1;
+    if (depth === 0) return i;
   }
   return -1;
 }

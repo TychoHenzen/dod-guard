@@ -14,9 +14,11 @@ declare module "*architecture-facts.mjs" {
       forwardingPaths: Array<{ member: string; target: string }>;
     }>;
   }
-  export function extractArchitectureFacts(file: { path: string; content: string }): {
+  export function extractArchitectureFacts(file: {
+    path: string;
+    content: string;
+  }): {
     facts: ExtractedArchitectureFacts | null;
     errors: string[];
   };
-  export function analyzeResponsibilityGrowth(before: unknown, after: unknown): unknown;
 }

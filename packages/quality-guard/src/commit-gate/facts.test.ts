@@ -25,5 +25,8 @@ test("reports extraction errors for required malformed files", () => {
   );
 
   assert.deepEqual(inventory.files, []);
-  assert.match(inventory.errors[0] ?? "", /src\/broken\.ts: cannot extract required architecture facts/);
+  assert.match(
+    inventory.errors[0] ?? "",
+    /src\/broken\.ts: cannot extract required architecture facts/,
+  );
 });

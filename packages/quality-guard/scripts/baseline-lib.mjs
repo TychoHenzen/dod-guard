@@ -5,4 +5,8 @@
  * CI ratchet cannot drift onto different implementations of the same format.
  */
 
-export { compareToBaseline, readBaseline, writeBaseline } from "../skills/quality-refactor/scripts/lib/baseline.mjs";
+export {
+  compareToBaseline,
+  readBaseline,
+  writeBaseline,
+} from "../skills/quality-refactor/scripts/lib/baseline.mjs";

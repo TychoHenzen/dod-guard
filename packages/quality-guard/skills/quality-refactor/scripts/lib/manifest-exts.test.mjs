@@ -22,7 +22,13 @@ test("a generic data file is not usage evidence", () => {
     // audit reports take, and those are usually gitignored. Counting them made
     // the same commit pass locally and fail in CI. Only a file a human connects
     // on purpose belongs in MANIFEST_EXTS.
-    for (const name of ["report.json", "config.yaml", "data.xml", "settings.toml", "notes.md"]) {
+    for (const name of [
+      "report.json",
+      "config.yaml",
+      "data.xml",
+      "settings.toml",
+      "notes.md",
+    ]) {
       writeFileSync(join(dir, name), "PlayerController\n");
     }
     assert.deepEqual(collectManifests(dir), []);
@@ -31,7 +37,10 @@ test("a generic data file is not usage evidence", () => {
 
 test("a scene file is still usage evidence", () => {
   withTempDir((dir) => {
-    writeFileSync(join(dir, "Root.tscn"), '[ext_resource path=\"res://PlayerController.cs\"]\n');
+    writeFileSync(
+      join(dir, "Root.tscn"),
+      '[ext_resource path=\"res://PlayerController.cs\"]\n',
+    );
     assert.deepEqual(
       collectManifests(dir).map((m) => m.rel),
       ["Root.tscn"],
