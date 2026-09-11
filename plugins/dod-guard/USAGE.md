@@ -36,9 +36,8 @@ creates one issue.
 Backlog items are real issues, not drafts, so the Project Repository field
 stays populated. The result maps every identified feature to its issue URL.
 
-Refine one Backlog item into a Todo PBI, when its scope is coherent and
-independently deliverable, and any
-independently completable subtasks:
+Refine one Backlog item into a coherent, independently deliverable Todo PBI,
+with independently completable subtasks when needed:
 
 ```text
 /dod-guard:refine-backlog-item 42

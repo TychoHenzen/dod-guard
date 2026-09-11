@@ -122,6 +122,17 @@ that supports the classification. Do not create missing standard labels.
 
 ## Refine the PBI
 
+After discovery is complete, save a mutation snapshot of the issue body,
+labels, state, repository membership, Project item, Project membership, and
+current Status. Before each issue write, including a body, label, or
+linked-sub-issue mutation, re-read those values and compare them with the
+latest mutation snapshot. If any value changed, stop without writing and
+report the mismatch. After each successful write, read back the affected
+issue and Project item and replace the snapshot before the next write.
+Immediately before moving to `Todo`, repeat the same comparison and require
+the issue to remain in the repository, the Project item to remain present with
+Status `Backlog`, and the body and labels to match the current refinement.
+
 Update the parent issue with these sections:
 
 - `## Outcome`: the observable user or system result;
@@ -185,7 +196,8 @@ assumptions. Do not create duplicate linked sub-issues or scale labels.
 
 ## Apply labels and verify before Todo
 
-Re-read the issue's current labels before editing. Add the chosen priority,
+Immediately before the label edit, run the mutation snapshot check above.
+Re-read the issue's current labels as part of that check. Add the chosen priority,
 effort, and standard labels with
 `gh issue edit {issue-number} --repo {owner}/{repo}`.
 Remove every other current priority or effort label, including stale scale
