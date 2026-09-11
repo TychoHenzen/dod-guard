@@ -13,6 +13,11 @@ description: >-
 Treat migration as a sequence of user-directed slices. Preserve deliberate collaboration rules,
 including mandatory check-ins. Replace only assumptions tied to an unavailable interface.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## 1. Inventory without editing
 
 Run:

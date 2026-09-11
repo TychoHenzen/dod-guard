@@ -9,6 +9,11 @@ argument-hint: "[current branch, Git ref, PR URL or ID, or ado:<id>] [Azure repo
 Review the final target revision without checking it out or editing it. Git is
 the default mode. Azure DevOps is an additional explicit mode.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Boundaries
 
 - Never switch branches, edit the target, approve, mark ready, merge, or close it.

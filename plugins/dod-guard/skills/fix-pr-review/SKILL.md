@@ -10,9 +10,19 @@ Fix selected findings produced by `/dod-guard:review-pr`. Revalidate each
 finding against the current head before editing. Keep stale, unsupported, and
 unresolved findings visible.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Scope
 
-- Work only on the reviewed branch. Stop if the checkout is dirty or on a different head.
+- Work only on the reviewed branch. A dirty checkout is not a blocker by
+  itself. Classify pending paths without mutation and preserve clearly in-scope
+  ordinary changes until the provider input, reviewed head, parent PBI, and
+  selected findings are validated. Stop for a different head, secrets,
+  destructive intent, unrelated changes, or work that cannot be separated
+  safely. Invoke `/commit` only after the selected fixes and their checks pass.
 - Load the parent PBI, its acceptance criteria, and linked sub-issues before editing.
 - Treat a review comment as a claim to verify, not as authority to change behavior.
 - Fix one coherent batch at the code boundary that owns the behavior.
@@ -27,8 +37,9 @@ containing this loaded `SKILL.md`.
 ## Resolve the input
 
 Confirm the current directory is a Git worktree. Record `git status --short`,
-the current branch, its upstream, and `git rev-parse HEAD`. Require a clean
-checkout and a non-default feature branch.
+the current branch, its upstream, and `git rev-parse HEAD`. Classify pending
+paths before editing, then require the selected non-default feature branch and
+the reviewed head to match.
 
 Accept one of these sources:
 
@@ -108,6 +119,12 @@ edit for it.
 Apply the smallest coherent fix batch. Add a user-path or edge-case test when
 the finding exposed missing behavioral proof. Follow every repository
 instruction that applies to touched files.
+
+For code shape, prefer small pure functions with explicit inputs and outputs,
+keep external I/O at boundaries, and use ordinary loops or mutation when that
+is clearer. When a test fails, update a stale expectation and rerun it, or fix
+the implementation when it violates the contract. Never weaken or delete a
+test only to obtain a pass.
 
 Run focused tests first. Then run the repository's complete pre-PR gates and
 map each fixed finding to fresh evidence. Inspect the complete diff. Stage only
