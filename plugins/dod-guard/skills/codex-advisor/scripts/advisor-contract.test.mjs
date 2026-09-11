@@ -48,7 +48,7 @@ switch (process.env.ADVISOR_MODE) {
     await writeFile(outputPath, JSON.stringify({ advice: "   " }));
     break;
   case "hang":
-    await new Promise(() => {});
+    await new Promise(() => setInterval(() => {}, 1_000));
     break;
   default:
     await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
