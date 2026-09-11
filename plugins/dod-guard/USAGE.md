@@ -65,14 +65,16 @@ feature or material ambiguity needs explicit decisions, a plan, tasks, and a
 convergence check. The canonical records and handoffs are in
 [`standards/project-workflow.md`](standards/project-workflow.md).
 
-| Stage | Owning skill | GitHub artifact and handoff |
-| --- | --- | --- |
-| Principles | `/setup-repository` | Existing `AGENTS.md` and `CLAUDE.md` instructions |
-| Problem | `/add-backlog-idea` | Concise issue in `Backlog` -> `/refine-backlog-item` |
-| Requirements and clarification | `/refine-backlog-item` | Issue outcome, scope, decisions, and acceptance -> plan |
-| Plan and tasks | `/refine-backlog-item` | `implementation-plan`, `task-list`, and independent sub-issues -> `Todo` |
-| Implementation handoff | `/next-ticket` | Issue task list -> branch, commits, and verification |
-| Convergence | `/submit-draft-pr` | Draft PR `## Convergence` -> read-only review |
+| Stage | Owner | GitHub-backed artifact | Handoff |
+| --- | --- | --- | --- |
+| Principles | `/setup-repository` | Repository instructions | Existing rules guide capture and refinement. |
+| Problem | `/add-backlog-idea` | Issue in `Backlog` with concise outcome and scope | Refine one coherent issue. |
+| Requirements | `/refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
+| Clarification | `/refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
+| Plan | `/refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
+| Tasks | `/refine-backlog-item` | `task-list` record and independent linked sub-issues only when needed | `Todo` PBI hands the task list to implementation. |
+| Implementation handoff | `/next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
+| Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
 The structured path does not create a parallel local plan. It preserves stops
 for material ambiguity, credentials, destructive or authority-bound actions,

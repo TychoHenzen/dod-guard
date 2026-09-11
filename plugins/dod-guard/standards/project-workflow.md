@@ -69,12 +69,17 @@ acceptance criteria, and verification evidence. The draft PR body records:
 ## Convergence
 - Outcome: verified or actionable remainder
 - Requirements and clarifications: verified or named remainder
-- Plan and tasks: each mapped to branch evidence
+- Plan and tasks: each mapped to applicable branch or verified remote-state evidence
 - Acceptance and verification: each mapped to fresh evidence
 - Remainder: none, or the exact next task and owner
 ```
 
-An incomplete or contradicted result is not reported as complete. Leave the
-PBI or its task list with an actionable remainder and stop before creating or
-updating the draft PR. Small fixes use the ordinary verification path and do
-not require these records.
+An incomplete or contradicted result is not reported as complete. Before any
+remainder write, snapshot the issue body, task list, labels, links, Project item,
+and Status. Immediately before each remainder mutation, reread those values and
+compare them with the latest snapshot. If any value changed, stop and report the
+drift without writing. After each successful mutation, read back the changed
+state and replace the snapshot before the next mutation. Leave the PBI or its
+task list with an actionable remainder and stop before creating or updating the
+draft PR. Small fixes use the ordinary verification path and do not require
+these records.

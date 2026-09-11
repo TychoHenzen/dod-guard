@@ -71,8 +71,10 @@ criteria form one coherent implementation slice.
 Stop and name the missing section when the issue is incomplete. Do not invent
 requirements.
 
-Read `standards/project-workflow.md` and classify the PBI before editing. A
-small, clear fix may use the ordinary path. A feature or materially ambiguous
+Resolve the active dod-guard plugin root from the directory containing this skill,
+then read `<plugin-root>/standards/project-workflow.md` and classify the PBI
+before editing. Do not assume the target checkout contains the shared standard.
+A small, clear fix may use the ordinary path. A feature or materially ambiguous
 PBI uses its `requirements`, `clarifications`, `implementation-plan`, and
 `task-list` records as the implementation handoff. Do not create a tracked
 planning file or bypass stops for credentials, destructive or authority-bound

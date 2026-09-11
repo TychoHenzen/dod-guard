@@ -41,20 +41,24 @@ The issue holds the requested outcome and acceptance sub-issues. The branch
 holds implementation. The pull request holds the result and verification. A
 human review followed by `/complete-pr` is the explicit acceptance boundary.
 
-For feature work or material ambiguity, use the structured path in
+For feature work or material ambiguity, use the structured path in the
 [`standards/project-workflow.md`](standards/project-workflow.md):
 
-| Stage | Owner | Artifact |
-| --- | --- | --- |
-| Principles and problem | `/setup-repository`, `/add-backlog-idea` | Repository instructions, Backlog issue |
-| Requirements and clarification | `/refine-backlog-item` | Issue outcome, scope, decisions, acceptance |
-| Plan and tasks | `/refine-backlog-item` | Issue records and independent sub-issues |
-| Implementation handoff | `/next-ticket` | Issue branch, commits, verification |
-| Convergence | `/submit-draft-pr` | Draft PR convergence record |
+| Stage | Owner | GitHub-backed artifact | Handoff |
+| --- | --- | --- | --- |
+| Principles | `/setup-repository` | Repository instructions | Existing rules guide capture and refinement. |
+| Problem | `/add-backlog-idea` | Issue in `Backlog` with concise outcome and scope | Refine one coherent issue. |
+| Requirements | `/refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
+| Clarification | `/refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
+| Plan | `/refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
+| Tasks | `/refine-backlog-item` | `task-list` record and independent linked sub-issues only when needed | `Todo` PBI hands the task list to implementation. |
+| Implementation handoff | `/next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
+| Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
-Use the ordinary path for a small, clear fix. Neither path bypasses credential,
-destructive-action, authority, unrelated-work, provider-mismatch, or missing-
-evidence stops. OpenSpec references remain historical only.
+Use the ordinary path for a small, clear fix. Neither path bypasses stops for
+material ambiguity, credentials, destructive or authority-bound actions,
+unrelated work, provider or head mismatch, or missing high-risk evidence.
+OpenSpec references remain historical only.
 
 ## Skills
 

@@ -188,8 +188,10 @@ deliverable, its outcome, scope, and acceptance criteria remain coherent, and
 no material requirement was invented. Keep the issue in `Backlog` when those
 requirements cannot be stated safely.
 
-For feature work or material ambiguity, follow
-`standards/project-workflow.md` and keep these named records in
+For feature work or material ambiguity, resolve the active dod-guard plugin root
+from the directory containing this skill, then read
+`<plugin-root>/standards/project-workflow.md`. Do not assume the target checkout
+contains the shared standard. Keep these named records in
 `## Implementation notes`: `requirements`, `clarifications`,
 `implementation-plan`, and `task-list`. Use the existing discovery markers as
 the evidence inside those records. The task list must identify dependencies and
