@@ -3,6 +3,11 @@
 A code-free plugin for GitHub issue delivery and focused repository
 maintenance.
 
+Every skill applies the shared working defaults in
+`standards/working-defaults.md`: clear low-risk choices proceed, ordinary
+dirty worktree changes use the normal commit path, stale tests follow the
+current contract, and explicit safety or authority boundaries remain.
+
 ## Repository setup
 
 `/setup-repository` connects a local project to GitHub, merges applicable

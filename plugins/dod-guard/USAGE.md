@@ -58,9 +58,7 @@ and discovery evidence are verified before Todo. Material unresolved
 requirements keep the issue in Backlog until the missing decision or evidence
 is available.
 
-Start or continue the Todo PBI from a clean checkout:
-
-From a clean Git checkout:
+Start or continue the Todo PBI from the current checkout:
 
 ```text
 /dod-guard:next-ticket 42
@@ -69,6 +67,10 @@ From a clean Git checkout:
 The selected issue must contain a short outcome, implementation notes, and
 verifiable acceptance criteria. Use GitHub sub-issues for criteria that should
 be completed independently.
+
+`next-ticket` inspects pending Git changes. Clearly in-scope ordinary changes
+use the normal commit path. Secrets, destructive intent, unrelated changes,
+and work that cannot be separated safely remain stop conditions.
 
 `next-ticket` then:
 

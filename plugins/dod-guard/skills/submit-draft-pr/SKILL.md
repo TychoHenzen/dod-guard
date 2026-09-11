@@ -9,16 +9,30 @@ Create or update the one draft pull request for a pushed parent-PBI branch. Do
 not change implementation scope, approve, mark ready, merge, close the PR, or
 close the parent issue.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Preconditions
 
 1. Resolve the repository and default branch with `gh repo view --json nameWithOwner,defaultBranchRef,url`.
 2. Verify the supplied parent issue belongs to that repository, is in its one
    open linked Project, and has Status `In Progress`.
-3. Verify the current branch is the PBI's `codex/<issue>-<slug>` branch, has an
+3. Inspect `git status --short` and classify pending paths. A dirty worktree is
+   not a blocker by itself. Keep clearly in-scope ordinary changes uncommitted
+   until the branch, PBI, and acceptance evidence are verified. Stop for
+   secrets, destructive intent, unrelated changes, or work that cannot be
+   separated safely.
+4. Verify the current branch is the PBI's `codex/<issue>-<slug>` branch, has an
    upstream on `origin`, and has pushed commits ahead of the default branch.
-4. Read the PBI and its linked sub-issues. Stop if a required acceptance
+5. Read the PBI and its linked sub-issues. Stop if a required acceptance
    criterion lacks evidence or a code-backed closed sub-issue lacks a pushed
    implementation commit.
+6. If clearly in-scope ordinary changes were pending, invoke `/commit` on the
+   verified PBI branch. Reread the branch head and rerun the required pre-PR
+   checks before creating or updating the draft. Stop on a failed or unavailable
+   check.
 
 Run the repository's required pre-PR checks when fresh evidence is unavailable.
 Stop on a failed or unavailable required check.

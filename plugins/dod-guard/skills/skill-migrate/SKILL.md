@@ -16,6 +16,11 @@ description: >-
 One artifact per invocation. Phases execute in numeric order, 0 through 9. Do not apply every
 result automatically. Show the diff instead and let the caller decide.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Runtime paths
 
 Resolve `<skill-dir>` before running a bundled script. In Claude, use
