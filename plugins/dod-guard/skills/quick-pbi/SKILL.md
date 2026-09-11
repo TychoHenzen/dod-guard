@@ -30,7 +30,9 @@ referenced skill from the active plugin root before invoking it.
 
 1. Invoke `/add-backlog-idea` once with the complete user request. Keep its
    feature split and issue mappings. If it creates multiple independent
-   issues, process them one at a time in creation order.
+   issues, process them one at a time in creation order. If capture reports
+   text that cannot be assigned to a feature, stop with that blocker and do not
+   ask the user to assign it or guess where it belongs.
 2. For each created issue, invoke `/refine-backlog-item <issue-number>`.
    When refinement finds missing user constraints, ask all currently
    independent questions in one round, wait for the answers, and resume the
@@ -41,8 +43,11 @@ referenced skill from the active plugin root before invoking it.
    as the implementation handoff. Do not select another ticket.
 4. Invoke `/submit-draft-pr <issue-number>` and retain the returned pull
    request and head.
-5. Invoke `/review-pr <pull-request>` on that exact head. If it reports
-   validated actionable findings, invoke `/fix-pr-review <pull-request>
+5. Invoke `/review-pr <pull-request>` on that exact head. If it reports an
+   incomplete review, reviewer-validation failure, or missing reviewer
+   coverage, stop and report that gate. Proceed only when all four reviewers
+   are validated and no actionable findings remain. If it reports validated
+   actionable findings, invoke `/fix-pr-review <pull-request>
    <finding-ids>` with every unresolved finding from that review. Do not ask
    the user to select findings. Re-review the pushed head and repeat this
    review-fix cycle until no actionable findings remain.

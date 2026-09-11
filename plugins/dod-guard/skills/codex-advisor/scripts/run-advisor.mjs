@@ -70,6 +70,13 @@ function failure(message, processResult) {
   };
 }
 
+function optionError(name, value) {
+  if (typeof value !== "string" || !value || /[\s"&|<>^()%!]/u.test(value)) {
+    return `Codex advisor ${name} contains unsupported shell characters`;
+  }
+  return undefined;
+}
+
 function parseAdvice(raw) {
   let response;
   try {
@@ -100,6 +107,13 @@ export async function runAdvisor({
   timeoutMs = 60_000,
   env = {},
 }) {
+  const invalidOption = [
+    ["model", model],
+    ["reasoning effort", reasoningEffort],
+    ...prefixArgs.map((value, index) => [`prefix argument ${index + 1}`, value]),
+  ].find(([name, value]) => value !== undefined && optionError(name, value));
+  if (invalidOption) return { ok: false, error: optionError(...invalidOption) };
+
   let workdir;
   try {
     workdir = await mkdtemp(join(tempRoot, "dod-guard-codex-advisor-"));

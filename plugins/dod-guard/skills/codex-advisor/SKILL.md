@@ -51,6 +51,9 @@ rules below are the exception only where they are more specific.
    exit path. Codex can print banners or hook diagnostics to stdout, so they
    are not the response. On exit code `0`, the runner reads the output file,
    validates the schema response, and relays only its trimmed `advice` value.
+   Model, reasoning, and prefix arguments must be single shell-safe values.
+   The runner rejects shell metacharacters before starting the Windows command
+   shim.
 
 ## Failure handling
 

@@ -15,6 +15,7 @@ async function createFixture() {
   const runs = join(root, "runs");
   const record = join(root, "record.json");
   const executable = join(root, "fake-codex.mjs");
+  const commandExecutable = join(root, "fake-codex.cmd");
   await mkdir(runs);
   await writeFile(
     executable,
@@ -55,7 +56,8 @@ switch (process.env.ADVISOR_MODE) {
 }
 `,
   );
-  return { env: { ADVISOR_RECORD: record }, executable, record, root, runs };
+  await writeFile(commandExecutable, `@echo off\r\nnode "${executable}" %*\r\n`);
+  return { commandExecutable, env: { ADVISOR_RECORD: record }, executable, record, root, runs };
 }
 
 async function runFixture(fixture, mode, options = {}) {
@@ -125,6 +127,28 @@ test("advisor runner exposes start, exit, output, schema, and timeout failures",
     });
     assert.equal(missing.ok, false);
     assert.match(missing.error, /missing or cannot start/);
+    assert.deepEqual(await readdir(fixture.runs), []);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("advisor runner rejects shell metacharacters before a Windows shim starts", { skip: process.platform !== "win32" }, async () => {
+  const fixture = await createFixture();
+  const marker = join(fixture.root, "injected.txt");
+  try {
+    const result = await runAdvisor({
+      env: fixture.env,
+      executable: fixture.commandExecutable,
+      model: `safe&echo INJECTED>${marker}`,
+      prompt: "Problem",
+      tempRoot: fixture.runs,
+    });
+    assert.deepEqual(result, {
+      ok: false,
+      error: "Codex advisor model contains unsupported shell characters",
+    });
+    await assert.rejects(readFile(marker));
     assert.deepEqual(await readdir(fixture.runs), []);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
