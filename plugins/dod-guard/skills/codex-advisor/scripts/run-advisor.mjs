@@ -93,6 +93,7 @@ export async function runAdvisor({
   prompt,
   executable = process.platform === "win32" ? "codex.cmd" : "codex",
   prefixArgs = [],
+  model,
   reasoningEffort = "low",
   schemaPath = defaultSchemaPath,
   tempRoot = tmpdir(),
@@ -106,6 +107,7 @@ export async function runAdvisor({
     const args = [
       ...prefixArgs,
       "exec",
+      ...(model === undefined ? [] : ["--model", model]),
       "-c",
       `model_reasoning_effort=${reasoningEffort}`,
       "-s",
@@ -160,7 +162,10 @@ export async function runAdvisor({
 function optionValue(name, fallback) {
   const prefix = `${name}=`;
   const argument = process.argv.find((value) => value.startsWith(prefix));
-  return argument ? argument.slice(prefix.length) : fallback;
+  if (argument) return argument.slice(prefix.length);
+  const index = process.argv.indexOf(name);
+  const value = index === -1 ? undefined : process.argv[index + 1];
+  return value && !value.startsWith("-") ? value : fallback;
 }
 
 async function readStdin() {
@@ -176,6 +181,7 @@ async function main() {
   const result = await runAdvisor({
     prefixArgs,
     prompt: await readStdin(),
+    model: optionValue("--model"),
     reasoningEffort: optionValue("--reasoning-effort", "low"),
     timeoutMs: Number(optionValue("--timeout-ms", "60000")),
   });

@@ -36,6 +36,9 @@ acceptance of the current head and completes the guarded merge.
 acceptance. Each delivery skill resolves the current repository and requires
 exactly one open GitHub Project explicitly linked to it.
 
+`/quick-pbi` runs those delivery stages in order for a user request. It asks
+questions only when `/refine-backlog-item` needs material clarification.
+
 One issue becomes one branch and one draft pull request:
 
 ```text
@@ -74,6 +77,7 @@ GitHub-backed skills share the request policy in
 |---|---|
 | `/setup-repository` | Bootstrap a local project into the protected dod-guard GitHub workflow. |
 | `/add-backlog-idea` | Capture each independently deliverable feature as a Backlog issue. |
+| `/quick-pbi` | Run backlog capture through guarded merge without extra prompts outside refinement. |
 | `/refine-backlog-item` | Deliberatively refine a Backlog issue, moving it to Todo only when its PBI is coherent and independently deliverable. |
 | `/next-ticket` | Execute a Todo PBI through independent completion review and verified, pushed commits. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |

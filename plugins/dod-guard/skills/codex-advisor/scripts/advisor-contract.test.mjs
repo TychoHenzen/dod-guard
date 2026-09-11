@@ -65,6 +65,7 @@ async function runFixture(fixture, mode, options = {}) {
     prefixArgs: [fixture.executable],
     prompt: "Problem with\nmultiple lines.",
     tempRoot: fixture.runs,
+    ...options,
     timeoutMs: options.timeoutMs ?? 2_000,
   });
   assert.deepEqual(await readdir(fixture.runs), []);
@@ -74,12 +75,18 @@ async function runFixture(fixture, mode, options = {}) {
 test("advisor runner uses an isolated bounded Codex process", async () => {
   const fixture = await createFixture();
   try {
-    const result = await runFixture(fixture, "valid");
+    const result = await runFixture(fixture, "valid", {
+      model: "gpt-test-model",
+      reasoningEffort: "medium",
+    });
     assert.deepEqual(result, { ok: true, advice: "Use the smallest safe change." });
     const record = JSON.parse(await readFile(fixture.record, "utf8"));
     assert.equal(record.input, "Problem with\nmultiple lines.");
     assert.notEqual(record.cwd, process.cwd());
     assert.equal(record.args[0], "exec");
+    const modelIndex = record.args.indexOf("--model");
+    assert.equal(record.args[modelIndex + 1], "gpt-test-model");
+    assert.equal(record.args[record.args.indexOf("-c") + 1], "model_reasoning_effort=medium");
     assert.ok(record.args.includes("-s"));
     assert.ok(record.args.includes("read-only"));
     assert.ok(record.args.includes("--ignore-user-config"));
@@ -128,7 +135,8 @@ test("advisor skill has the bounded Codex invocation contract", () => {
   assert.match(skill, /^---\nname: codex-advisor\n/m);
   for (const signal of [
     /scripts[\\/]run-advisor\.mjs/,
-    /lowest reasoning value reported by that current CLI/,
+    /low, medium, and high/,
+    /does not enumerate reasoning values/i,
     /empty,\s+non-repository working directory/,
     /-s read-only/,
     /--ignore-user-config/,
@@ -140,6 +148,8 @@ test("advisor skill has the bounded Codex invocation contract", () => {
     /cleans up its temporary\s+directory on every\s+exit path/,
     /stdin/,
     /--output-schema/,
+    /--model/,
+    /requested model and reasoning effort/i,
     /skip repository research/,
     /avoid\s+all tools and mutations/,
   ]) {

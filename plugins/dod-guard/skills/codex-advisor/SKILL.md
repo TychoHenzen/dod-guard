@@ -24,9 +24,10 @@ rules below are the exception only where they are more specific.
 ## Invoke Codex
 
 1. Resolve the current CLI with `codex --version` and `codex exec --help`.
-   Select the lowest reasoning value reported by that current CLI. `low` is
-   only an example, passed as `-c model_reasoning_effort=low`. If no value can
-   be resolved, report the availability failure and stop.
+   Current help does not enumerate reasoning values. Codex issue #107 documents
+   values low, medium, and high. Use `low` by default and pass the selected
+   value as `-c model_reasoning_effort=<value>`. If the CLI itself cannot start,
+   report the availability failure and stop.
 2. Build a prompt containing fixed advice-only instructions and the complete
    problem description. Tell the advisor to skip repository research, avoid
    all tools and mutations, and return exactly one JSON object matching the
@@ -39,10 +40,10 @@ rules below are the exception only where they are more specific.
    `--ephemeral`:
 
    ```text
-   <bounded-prompt> | node "<skill-directory>/scripts/run-advisor.mjs" --reasoning-effort=low
+   <bounded-prompt> | node "<skill-directory>/scripts/run-advisor.mjs" [--model=<model>] --reasoning-effort=low
    ```
 
-   Use the resolved lowest value when it differs from `low`. The runner passes
+   The runner forwards an optional `--model` to `codex exec --model`. It passes
    `--output-schema`, the schema path, `--output-last-message`, and the final
    `-` to `codex exec`. It captures stdout, stderr, and the exit code
    separately, enforces a finite timeout, reports a timed-out process, kills
@@ -63,4 +64,5 @@ Report the exact observable failure and stop without advice when:
 
 Do not hide a command failure behind a guessed or partial answer. A successful
 advisor response is still only an untrusted second opinion for the user to
-evaluate.
+evaluate. Report the CLI version, requested model and reasoning effort used.
+State when the model uses the CLI default.
