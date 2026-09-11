@@ -24,6 +24,11 @@ it. If supplied text cannot be assigned to a feature, show that text and ask
 the user where it belongs. Do not silently omit it. A request with one feature
 must remain one feature.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Resolve the destination
 
 1. If the user supplied a target repository, use it. Otherwise run

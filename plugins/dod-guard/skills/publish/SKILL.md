@@ -8,6 +8,11 @@ description: Release changed dod-guard marketplace plugins through a functional 
 Use this skill only when the user explicitly asks to publish or release a
 completed change in this monorepo.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Release model
 
 This repository is a Claude Code and Codex plugin marketplace. Nothing
@@ -23,8 +28,11 @@ the bump.
 ## Procedure
 
 1. Inspect `git status --short`, the current branch, and `gh repo view`. A
-   dirty workspace is the release input. Include every pending change in this
-   release. Do not filter or leave changes behind.
+   dirty workspace can be the release input. List and classify every pending
+   path first. Include every ordinary path only when it is clearly part of the
+   authorized release. Preserve and report credential-like files, destructive
+   intent, unrelated or indistinguishable work, and stop before `/commit`
+   rather than silently filtering it.
 2. Classify the complete pending tree before requiring a PBI or pull request.
    Treat changes as `functional` when they alter runtime code, plugin manifests,
    plugin version or marketplace behavior, MCP or hook wiring, or any other
@@ -36,9 +44,9 @@ the bump.
 3. Confirm each changed plugin's Claude Code and Codex manifest versions and
    descriptions match its shipped skills or agents. Update the root marketplace
    description if it states a changed skill count.
-4. Invoke `/commit` for all pending changes. `/commit` owns staging, the commit
-   message, push, and remote sync. Do not manually stage, commit, or push a
-   subset of the release.
+4. After every pending path passes that classification, invoke `/commit` for
+   all release changes. `/commit` owns staging, the commit message, push, and
+   remote sync. Do not manually stage, commit, or push a subset of the release.
 5. Run the release gates from the repository root:
 
    ```text

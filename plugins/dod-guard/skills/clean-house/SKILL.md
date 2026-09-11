@@ -22,6 +22,17 @@ deprecated export there may have consumers you cannot see. Skip a pair
 that turns out to be a facade over an implementation. That is one design,
 not two.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
+This skill has a local deletion exception. Inspect `git status --short` before
+the archaeology stages, report every pending path, and preserve or stop for
+secrets, unapproved destructive intent, unrelated work, or changes that cannot
+be separated from the proposed deletion. `git rm` is allowed only for the
+exact items the user approves. It does not authorize unrelated dirty changes.
+
 ## Ground rules
 
 Git and a repo-wide text search are the whole floor. Two extras help when
