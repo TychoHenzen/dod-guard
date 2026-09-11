@@ -98,16 +98,52 @@ async function confirmClosedIssues(client, pullNumber, options) {
   stop("linked_issue_open", "A linked closing issue remained open after the pull request merged.");
 }
 
-async function deleteTrustedBranch(client, branchName, trustedHead) {
-  const branch = await client.getBranchRef(branchName);
-  if (branch === null) {
-    return "already_absent";
+function validateMergedRecoveryState(repository, pullRequest) {
+  if (pullRequest.state !== "MERGED") {
+    stop("not_merged_pull_request", "The selected pull request must already be merged.");
   }
-  if (branch.sha !== trustedHead) {
+  if (pullRequest.isCrossRepository || pullRequest.headRepository !== repository.nameWithOwner) {
+    stop("cross_repository_head", "The pull request head must belong to the current repository.");
+  }
+  if (pullRequest.baseBranch !== repository.defaultBranch) {
+    stop("wrong_base_branch", `The pull request must target ${repository.defaultBranch}.`);
+  }
+  if (pullRequest.headBranch === repository.defaultBranch) {
+    stop("default_branch_head", "The pull request head cannot be the default branch.");
+  }
+  if (!repository.canPush) {
+    stop("missing_permission", "The active GitHub user lacks repository push permission.");
+  }
+  if (!(pullRequest.headSha && pullRequest.mergeCommitSha)) {
+    stop("unverified_merge", "The merged pull request lacks a trusted head or merge commit.");
+  }
+}
+
+async function confirmDoneProjects(client, issues) {
+  const projectStatuses = await Promise.all(issues.map((issue) => client.getIssueProjectStatuses(issue.number)));
+  for (let index = 0; index < issues.length; index += 1) {
+    const statuses = projectStatuses[index];
+    if (!statuses.includes("Done")) {
+      stop("project_not_done", `Linked issue #${issues[index].number} is not in a Done project status.`);
+    }
+  }
+}
+
+async function inspectTrustedBranch(client, branchName, trustedHead) {
+  const branch = await client.getBranchRef(branchName);
+  if (branch !== null && branch.sha !== trustedHead) {
     stop(
       "branch_ref_changed",
       `Remote branch ${branchName} points to ${branch.sha}, not merged head ${trustedHead}; it was not deleted.`,
     );
+  }
+  return branch;
+}
+
+async function deleteTrustedBranch(client, branchName, trustedHead) {
+  const branch = await inspectTrustedBranch(client, branchName, trustedHead);
+  if (branch === null) {
+    return "already_absent";
   }
 
   await client.deleteBranchRef(branchName);
@@ -115,6 +151,53 @@ async function deleteTrustedBranch(client, branchName, trustedHead) {
     stop("branch_delete_unconfirmed", `Remote branch ${branchName} still exists after deletion.`);
   }
   return "deleted";
+}
+
+async function recoverMergedPullRequest(client, overrides = {}) {
+  const options = {
+    issuePollLimit: 6,
+    pollMs: 10_000,
+    dryRun: false,
+    ...overrides,
+  };
+  const repository = await client.getRepository();
+  const pullRequest = await client.getPullRequest();
+  validateMergedRecoveryState(repository, pullRequest);
+
+  const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(pullRequest.number));
+  if (!checksPassed) {
+    stop("unverified_merge", "The pull request merged without complete required-check evidence.");
+  }
+
+  const linkedIssues = await confirmClosedIssues(client, pullRequest.number, options);
+  await confirmDoneProjects(client, linkedIssues);
+  const branchRef = await inspectTrustedBranch(client, pullRequest.headBranch, pullRequest.headSha);
+
+  if (options.dryRun) {
+    let branch = "already_absent";
+    if (branchRef !== null) {
+      branch = "would_delete";
+    }
+    return {
+      acceptedHead: pullRequest.headSha,
+      branch,
+      headBranch: pullRequest.headBranch,
+      linkedIssues,
+      mergeCommitSha: pullRequest.mergeCommitSha,
+      pullNumber: pullRequest.number,
+      trustedHead: pullRequest.headSha,
+    };
+  }
+
+  return {
+    acceptedHead: pullRequest.headSha,
+    branch: await deleteTrustedBranch(client, pullRequest.headBranch, pullRequest.headSha),
+    headBranch: pullRequest.headBranch,
+    linkedIssues,
+    mergeCommitSha: pullRequest.mergeCommitSha,
+    pullNumber: pullRequest.number,
+    trustedHead: pullRequest.headSha,
+  };
 }
 
 async function waitForMerge(client, completion) {
@@ -194,4 +277,4 @@ async function completePullRequest(client, overrides = {}) {
   return waitForMerge(client, { acceptedHead, options, pullNumber });
 }
 
-export { CompletionError, completePullRequest };
+export { CompletionError, completePullRequest, recoverMergedPullRequest };

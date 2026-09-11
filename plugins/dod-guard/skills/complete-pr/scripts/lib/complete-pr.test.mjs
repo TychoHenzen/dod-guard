@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { completePullRequest } from "./complete-pr.mjs";
+import { completePullRequest, recoverMergedPullRequest } from "./complete-pr.mjs";
 import { GitHubClient, normalizePullRequest } from "./github-client.mjs";
 
 const pendingChecks = [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }];
@@ -47,6 +47,7 @@ class FixtureClient {
     this.checks = [...(options.checks ?? [passingChecks])];
     this.commits = options.commits ?? {};
     this.issues = [...(options.issues ?? [[{ number: 24, state: "CLOSED", url: "issue" }]])];
+    this.projectStatuses = [...(options.projectStatuses ?? [["Done"]])];
     this.refs = [...(options.refs ?? [{ sha: "head-1" }, null])];
     this.enableRepositoryError = options.enableRepositoryError;
     this.calls = [];
@@ -91,6 +92,10 @@ class FixtureClient {
 
   getLinkedIssues() {
     return nextValue(this.issues);
+  }
+
+  getIssueProjectStatuses() {
+    return nextValue(this.projectStatuses);
   }
 
   getBranchRef() {
@@ -139,6 +144,20 @@ test("normalizes the narrow REST pull request payload used by the completion loo
   );
 });
 
+test("normalizes a REST closed pull request with merged_at as merged", () => {
+  assert.equal(
+    normalizePullRequest(
+      {
+        head: { ref: "codex/24-complete-pr", sha: "head-1", repo: { full_name: "owner/repo" } },
+        merged_at: "2026-09-11T21:55:49Z",
+        state: "closed",
+      },
+      "owner/repo",
+    ).state,
+    "MERGED",
+  );
+});
+
 test("waits for required checks, confirms merge, and deletes the trusted remote branch", async () => {
   const client = new FixtureClient({
     checks: [pendingChecks, passingChecks],
@@ -160,6 +179,34 @@ test("waits for required checks, confirms merge, and deletes the trusted remote 
   assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
     ["deleteBranchRef", "codex/24-complete-pr"],
   ]);
+});
+
+test("recovers an already-merged pull request through the guarded branch deletion", async () => {
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [{ sha: "head-1" }, { sha: "head-1" }, null],
+  });
+
+  const result = await recoverMergedPullRequest(client, immediateOptions);
+
+  assert.equal(result.acceptedHead, "head-1");
+  assert.equal(result.mergeCommitSha, "merge-1");
+  assert.equal(result.branch, "deleted");
+  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
+    ["deleteBranchRef", "codex/24-complete-pr"],
+  ]);
+});
+
+test("dry-runs merged pull-request recovery without deleting the trusted branch", async () => {
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [{ sha: "head-1" }],
+  });
+
+  const result = await recoverMergedPullRequest(client, { ...immediateOptions, dryRun: true });
+
+  assert.equal(result.branch, "would_delete");
+  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
 });
 
 test("marks a draft pull request ready through the narrow REST adapter", () => {

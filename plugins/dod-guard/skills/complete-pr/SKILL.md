@@ -62,6 +62,19 @@ it marks it ready. If it is already ready, it preserves that state. It then:
 - verifies the same-repository remote branch still points to the merged head,
   deletes it, and confirms it is absent.
 
+If a prior run already merged the pull request but stopped before branch
+cleanup, use the explicit recovery mode after checking the live state:
+
+```text
+node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --recover-merged --dry-run
+node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --recover-merged
+```
+
+Recovery accepts only an already-merged pull request with complete required
+checks, closed linked issues, and `Done` Project status. It deletes the remote
+head only when that branch still points to the merged head, then confirms the
+ref is absent. The dry run performs these checks without deleting the branch.
+
 Never use `--admin`, force-push, weaken repository protections, or delete a ref
 whose SHA differs from the merged pull request head.
 

@@ -10737,5 +10737,33 @@
     "reason": "Reviewed for issue #55: these parser-level public-surface findings reflect intentional Quality Guard module decomposition and type-only/test seams. They do not expand the package MCP protocol or external compatibility API. Quality Guard tests, build, bundle, strict scan, and CI contract gates passed.",
     "author": "Codex",
     "time": "2026-09-10T20:54:20.182Z"
+  },
+  {
+    "findingId": "301ef238f685c431713a0e14aafba11be44e15b74371246b23ab82d19fed9ad5",
+    "fingerprint": "e4cb6db82288ca86b00ada46366fde8ea75821ef8bbf9c28fa92a175341cc563",
+    "reason": "Reviewed for PR #100: complete-pr recovery keeps GitHub CLI access in the bounded GitHubClient adapter. The new project-status method is used by production recovery validation, while projectItems, return, and issue are parser-level method-body artifacts. This does not expand the package MCP protocol or external compatibility API.",
+    "author": "Codex",
+    "time": "2026-09-11T22:23:07.887Z"
+  },
+  {
+    "findingId": "81d7a86bc6c2825d9ed029b14610ed9010c04c55d4b81b477958bd930c978813",
+    "fingerprint": "e4cb6db82288ca86b00ada46366fde8ea75821ef8bbf9c28fa92a175341cc563",
+    "reason": "Reviewed for PR #100: complete-pr recovery keeps GitHub CLI access in the bounded GitHubClient adapter. The new project-status method is used by production recovery validation, while projectItems, return, and issue are parser-level method-body artifacts. This does not expand the package MCP protocol or external compatibility API.",
+    "author": "Codex",
+    "time": "2026-09-11T22:23:07.888Z"
+  },
+  {
+    "findingId": "85eec0fa65dc724dac4ae868d76691c1fb122361cdfa8a4a6750aad028f509bc",
+    "fingerprint": "e4cb6db82288ca86b00ada46366fde8ea75821ef8bbf9c28fa92a175341cc563",
+    "reason": "Reviewed for PR #100: complete-pr recovery keeps GitHub CLI access in the bounded GitHubClient adapter. The new project-status method is used by production recovery validation, while projectItems, return, and issue are parser-level method-body artifacts. This does not expand the package MCP protocol or external compatibility API.",
+    "author": "Codex",
+    "time": "2026-09-11T22:23:07.888Z"
+  },
+  {
+    "findingId": "cfe265e7efcfa45ddf888751bc2cd4ee2af540a6043f95cb942445896cc56e0a",
+    "fingerprint": "e4cb6db82288ca86b00ada46366fde8ea75821ef8bbf9c28fa92a175341cc563",
+    "reason": "Reviewed for PR #100: complete-pr recovery keeps GitHub CLI access in the bounded GitHubClient adapter. The new project-status method is used by production recovery validation, while projectItems, return, and issue are parser-level method-body artifacts. This does not expand the package MCP protocol or external compatibility API.",
+    "author": "Codex",
+    "time": "2026-09-11T22:23:07.888Z"
   }
 ]
