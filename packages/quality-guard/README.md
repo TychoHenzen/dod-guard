@@ -21,6 +21,32 @@ quality-guard check --staged --json
 for a repository and writes the JSON result to standard output. It is
 read-only with respect to the repository.
 
+Check complete plaintext supplied by an agent runtime with:
+
+```bash
+printf '%s' "$TEXT" | quality-guard readability --stdin
+```
+
+The readability boundary uses the optional Python `textstat` runtime. It
+It normalizes input with Unicode NFKC, removes Markdown markers, link targets,
+citation markers, identifiers, URLs, and fenced or inline code, then counts
+Unicode-letter words. Non-ASCII Latin prose remains. Other language scripts
+are reported as unsupported. For Flesch Reading Ease `ease` and Flesch-Kincaid
+Grade `grade`, it calculates `easeScore = clamp(ease / 60 * 100, 0, 100)` and
+`gradeScore = clamp((12 - grade) / (12 - 9) * 100, 0, 100)`. The combined score
+is `0.6 * easeScore + 0.4 * gradeScore`, rounded to two decimals. A combined
+score of 80 passes, subject to a maximum sentence length of 25 words. Empty or
+shorter-than-20-word input is skipped. A sentence over that limit fails the
+bounded dyslexia-friendly heuristic. These are readability heuristics, not
+clinical accessibility validation.
+
+The command returns `pass`, `fail`, `skipped`, or `unavailable` JSON. A failed
+check exits 2. Missing, timed-out, unsupported, or malformed `textstat`
+execution returns `unavailable` and exits 0, so the check fails open without
+claiming a passing score. The existing PostToolUse hook only receives supported
+file-write payloads and cannot expose complete assistant chat prose. Runtimes
+that can provide the final response should pipe it through this command.
+
 For a responsibility-moving refactor, provide a repository-relative responsibility map:
 
 ```bash

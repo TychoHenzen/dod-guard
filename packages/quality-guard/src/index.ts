@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
 import { runCheckCommand } from "./commit-gate/cli.js";
+import {
+  checkPlaintextReadability,
+  readabilityExitCode,
+} from "./plaintext-readability.js";
 import { runQualityReport } from "./report.js";
 import { registerQualityGuardTools } from "./server-tools.js";
 
@@ -41,6 +45,36 @@ function runCheckCommandLine(args: string[]): void {
   process.exitCode = result.exitCode;
 }
 
+function runReadabilityCommand(args: string[]): void {
+  if (args[1] !== "--stdin" || args.length !== 2) {
+    process.stdout.write("Usage: quality-guard readability --stdin\n");
+    process.exitCode = 3;
+    return;
+  }
+  let text: string;
+  try {
+    text = readFileSync(0, "utf8");
+  } catch (error) {
+    const result = checkPlaintextReadability("");
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          ...result,
+          status: "unavailable",
+          reason: `could not read stdin: ${error instanceof Error ? error.message : String(error)}`,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    process.exitCode = 0;
+    return;
+  }
+  const result = checkPlaintextReadability(text);
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  process.exitCode = readabilityExitCode(result.status);
+}
+
 function isCheckCommand(args: string[]): boolean {
   return args[0] === "check" || args[0] === "acknowledge";
 }
@@ -48,6 +82,7 @@ function isCheckCommand(args: string[]): boolean {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   if (args[0] === "report") return runReportCommand(args);
+  if (args[0] === "readability") return runReadabilityCommand(args);
   if (isCheckCommand(args)) return runCheckCommandLine(args);
   await server.connect(new stdio.StdioServerTransport());
 }

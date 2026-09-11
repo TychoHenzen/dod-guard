@@ -1,7 +1,7 @@
 {
   "name": "quality-guard",
   "version": "0.5.11",
-  "description": "Structural code quality gate. File-local write feedback, staged commit decisions, committed-tree CI replay, and an MCP server. Ships 1 skill: /quality-refactor.",
+  "description": "Structural code quality gate with file-local write feedback, staged commit decisions, committed-tree CI replay, plaintext readability checks, and an MCP server. Ships 1 skill: /quality-refactor.",
   "type": "module",
   "imports": {
     "#quality-guard-architecture-facts": "./skills/quality-refactor/scripts/lib/architecture-facts.mjs"

@@ -23836,6 +23836,237 @@ function runCheckCommand(args, root = process.cwd()) {
   return runStagedCommand(args, root);
 }
 
+// src/plaintext-readability.ts
+import { spawnSync } from "node:child_process";
+var READABILITY_POLICY = {
+  minimumWords: 20,
+  threshold: 80,
+  maximumSentenceWords: 25,
+  weights: {
+    fleschReadingEase: 0.6,
+    fleschKincaidGrade: 0.4
+  },
+  targets: {
+    fleschReadingEase: 60,
+    fleschKincaidGrade: 9
+  }
+};
+var TEXTSTAT_TIMEOUT_MS = 2e3;
+var TEXTSTAT_PYTHON = [
+  "import json, sys, textstat",
+  "text = sys.stdin.read()",
+  "print(json.dumps({",
+  "  'measures': {",
+  "    'fleschReadingEase': textstat.flesch_reading_ease(text),",
+  "    'fleschKincaidGrade': textstat.flesch_kincaid_grade(text),",
+  "  }",
+  "}))"
+].join("\n");
+function textOf(value) {
+  return typeof value === "string" ? value : String(value ?? "");
+}
+function commandArgs() {
+  const configured = process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
+  if (!configured) return ["-c", TEXTSTAT_PYTHON];
+  try {
+    const parsed = JSON.parse(configured);
+    if (!Array.isArray(parsed) || parsed.some((argument) => typeof argument !== "string")) {
+      return {
+        status: "unavailable",
+        reason: "QUALITY_GUARD_TEXTSTAT_ARGS must be a JSON array of strings"
+      };
+    }
+    return parsed;
+  } catch {
+    return {
+      status: "unavailable",
+      reason: "QUALITY_GUARD_TEXTSTAT_ARGS is not valid JSON"
+    };
+  }
+}
+function finiteMeasures(value) {
+  if (!value || typeof value !== "object") return void 0;
+  const candidate = value;
+  const fleschReadingEase = candidate.fleschReadingEase;
+  const fleschKincaidGrade = candidate.fleschKincaidGrade;
+  if (typeof fleschReadingEase !== "number") return void 0;
+  if (!Number.isFinite(fleschReadingEase)) return void 0;
+  if (typeof fleschKincaidGrade !== "number") return void 0;
+  if (!Number.isFinite(fleschKincaidGrade)) return void 0;
+  return { fleschReadingEase, fleschKincaidGrade };
+}
+function providerResponse(stdout) {
+  let parsed;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    return {
+      status: "unavailable",
+      reason: "textstat returned malformed JSON"
+    };
+  }
+  if (!parsed || typeof parsed !== "object") {
+    return {
+      status: "unavailable",
+      reason: "textstat returned a non-object response"
+    };
+  }
+  const object4 = parsed;
+  if (object4.languageSupported === false) {
+    return {
+      status: "unavailable",
+      reason: "textstat reported that the input language is unsupported"
+    };
+  }
+  const measures = finiteMeasures(object4.measures ?? object4);
+  if (!measures) {
+    return {
+      status: "unavailable",
+      reason: "textstat returned missing or non-finite measures"
+    };
+  }
+  return { status: "ok", measures };
+}
+function runTextstat(text2, options = {}) {
+  const args = options.args ?? commandArgs();
+  if (!Array.isArray(args)) return args;
+  const command = options.command ?? process.env.QUALITY_GUARD_TEXTSTAT_COMMAND ?? "python";
+  const spawn = options.spawn ?? spawnSync;
+  let result;
+  try {
+    result = spawn(command, args, {
+      encoding: "utf8",
+      input: text2,
+      timeout: TEXTSTAT_TIMEOUT_MS,
+      windowsHide: true
+    });
+  } catch (error2) {
+    return {
+      status: "unavailable",
+      reason: `textstat could not start: ${error2 instanceof Error ? error2.message : String(error2)}`
+    };
+  }
+  if (result.error || result.status !== 0) {
+    const detail = textOf(result.stderr).trim() || result.error?.message;
+    return {
+      status: "unavailable",
+      reason: detail ? `textstat failed: ${detail.slice(0, 300)}` : `textstat exited with code ${result.status ?? "unknown"}`
+    };
+  }
+  return providerResponse(textOf(result.stdout));
+}
+function normalizePlaintext(text2) {
+  return text2.normalize("NFKC").replace(/```[\s\S]*?```/gu, " ").replace(/`[^`]*`/gu, " ").replace(/!?\[([^\]]*)\]\([^)]*\)/gu, "$1").replace(/\[[0-9]+(?:\s*[,;-]\s*[0-9]+)*\]/gu, " ").replace(/https?:\/\/\S+/giu, " ").replace(/^\s{0,3}(?:#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s*)/gmu, "").replace(/\b[A-Za-z][A-Za-z0-9]*[_$][A-Za-z0-9_$]*\b/gu, " ").replace(/\b[A-Za-z_$][A-Za-z0-9_$]*(?:[./][A-Za-z0-9_$-]+)+\b/gu, " ").replace(/[ \t]+/gu, " ").replace(/\n{3,}/gu, "\n\n").trim();
+}
+function wordsIn(text2) {
+  return text2.match(new RegExp("\\p{L}[\\p{L}\\p{M}'\u2019-]*", "gu")) ?? [];
+}
+function sentenceWordCounts(text2) {
+  return text2.split(/[.!?]+|\n+/u).map((sentence) => wordsIn(sentence).length).filter((count) => count > 0);
+}
+function hasUnsupportedScript(text2) {
+  const letters = text2.match(new RegExp("\\p{L}", "gu")) ?? [];
+  return letters.some((letter) => !new RegExp("\\p{Script=Latin}", "u").test(letter));
+}
+function clamp(value) {
+  return Math.min(100, Math.max(0, value));
+}
+function rounded(value) {
+  return Math.round(value * 100) / 100;
+}
+function scoreMeasures(measures) {
+  const easeScore = clamp(
+    measures.fleschReadingEase / READABILITY_POLICY.targets.fleschReadingEase * 100
+  );
+  const gradeScore = clamp(
+    (12 - measures.fleschKincaidGrade) / (12 - READABILITY_POLICY.targets.fleschKincaidGrade) * 100
+  );
+  return rounded(
+    easeScore * READABILITY_POLICY.weights.fleschReadingEase + gradeScore * READABILITY_POLICY.weights.fleschKincaidGrade
+  );
+}
+function contextFor(text2) {
+  const context = text2.slice(0, 240);
+  return context.length === text2.length ? context : `${context}...`;
+}
+function messageFor(status, reason, measures, score, constraintFailures = [], context) {
+  if (status !== "fail") return `Readability check ${status}: ${reason}.`;
+  const values = measures ? `Flesch Reading Ease ${measures.fleschReadingEase}; Flesch-Kincaid Grade ${measures.fleschKincaidGrade}; combined score ${score}; threshold ${READABILITY_POLICY.threshold}.` : "No readability measures were available.";
+  const constraints = constraintFailures.length ? ` Constraints failed: ${constraintFailures.join("; ")}.` : "";
+  return `Readability check failed. ${values}${constraints} Context: ${JSON.stringify(context ?? "")}`;
+}
+function baseResult(status, reason, wordCount, extra = {}) {
+  return {
+    status,
+    reason,
+    message: messageFor(
+      status,
+      reason,
+      extra.measures,
+      extra.score,
+      extra.constraintFailures,
+      extra.context
+    ),
+    wordCount,
+    threshold: READABILITY_POLICY.threshold,
+    constraintFailures: [],
+    policy: READABILITY_POLICY,
+    ...extra
+  };
+}
+function checkPlaintextReadability(text2, provider = runTextstat) {
+  const normalized = normalizePlaintext(text2);
+  const wordCount = wordsIn(normalized).length;
+  if (wordCount === 0) {
+    return baseResult("skipped", "input is empty after normalization", 0);
+  }
+  if (hasUnsupportedScript(normalized)) {
+    return baseResult(
+      "unavailable",
+      "input uses a language script outside the supported Latin policy",
+      wordCount
+    );
+  }
+  if (wordCount < READABILITY_POLICY.minimumWords) {
+    return baseResult(
+      "skipped",
+      `input has ${wordCount} words and needs at least ${READABILITY_POLICY.minimumWords}`,
+      wordCount
+    );
+  }
+  let providerResult;
+  try {
+    providerResult = provider(normalized);
+  } catch (error2) {
+    return baseResult(
+      "unavailable",
+      `textstat provider failed: ${error2 instanceof Error ? error2.message : String(error2)}`,
+      wordCount
+    );
+  }
+  if (providerResult.status === "unavailable") {
+    return baseResult("unavailable", providerResult.reason, wordCount);
+  }
+  const measures = providerResult.measures;
+  const score = scoreMeasures(measures);
+  const sentenceCounts = sentenceWordCounts(normalized);
+  const longestSentence = Math.max(0, ...sentenceCounts);
+  const constraintFailures = longestSentence > READABILITY_POLICY.maximumSentenceWords ? [
+    `a sentence has ${longestSentence} words, over the ${READABILITY_POLICY.maximumSentenceWords}-word limit`
+  ] : [];
+  const status = score >= READABILITY_POLICY.threshold && constraintFailures.length === 0 ? "pass" : "fail";
+  const reason = status === "pass" ? "combined score and sentence-length policy passed" : score < READABILITY_POLICY.threshold ? "combined score is below the threshold" : "dyslexia-friendly sentence-length policy failed";
+  return baseResult(status, reason, wordCount, {
+    score,
+    measures,
+    constraintFailures,
+    context: status === "fail" ? contextFor(normalized) : void 0
+  });
+}
+function readabilityExitCode(status) {
+  return status === "fail" ? 2 : 0;
+}
+
 // src/report.ts
 import { existsSync, readFileSync as readFileSync2 } from "node:fs";
 import * as path10 from "node:path";
@@ -24262,12 +24493,44 @@ function runCheckCommandLine(args) {
 `);
   process.exitCode = result.exitCode;
 }
+function runReadabilityCommand(args) {
+  if (args[1] !== "--stdin" || args.length !== 2) {
+    process.stdout.write("Usage: quality-guard readability --stdin\n");
+    process.exitCode = 3;
+    return;
+  }
+  let text2;
+  try {
+    text2 = readFileSync4(0, "utf8");
+  } catch (error2) {
+    const result2 = checkPlaintextReadability("");
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          ...result2,
+          status: "unavailable",
+          reason: `could not read stdin: ${error2 instanceof Error ? error2.message : String(error2)}`
+        },
+        null,
+        2
+      )}
+`
+    );
+    process.exitCode = 0;
+    return;
+  }
+  const result = checkPlaintextReadability(text2);
+  process.stdout.write(`${JSON.stringify(result, null, 2)}
+`);
+  process.exitCode = readabilityExitCode(result.status);
+}
 function isCheckCommand(args) {
   return args[0] === "check" || args[0] === "acknowledge";
 }
 async function main() {
   const args = process.argv.slice(2);
   if (args[0] === "report") return runReportCommand(args);
+  if (args[0] === "readability") return runReadabilityCommand(args);
   if (isCheckCommand(args)) return runCheckCommandLine(args);
   await server.connect(new StdioServerTransport());
 }
