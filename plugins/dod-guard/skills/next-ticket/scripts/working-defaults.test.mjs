@@ -42,7 +42,7 @@ const exceptionRules = new Map([
 ]);
 
 test("every shipped skill applies the shared working defaults", () => {
-  assert.equal(skillNames.length, 15);
+  assert.equal(skillNames.length, 16);
   for (const [name, skill] of skills) {
     assert.match(skill, /standards\/working-defaults\.md/, name);
   }

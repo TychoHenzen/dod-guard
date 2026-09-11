@@ -30,6 +30,7 @@ const githubSkills = [
   fixReview,
   await read("plugins/dod-guard/skills/complete-pr/SKILL.md"),
   await read("plugins/dod-guard/skills/publish/SKILL.md"),
+  await read("plugins/dod-guard/skills/quick-pbi/SKILL.md"),
 ];
 
 test("README and usage expose every structured stage contract", () => {
