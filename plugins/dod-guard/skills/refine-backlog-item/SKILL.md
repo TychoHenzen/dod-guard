@@ -31,13 +31,70 @@ Stop and report the missing or ambiguous value. Do not infer product decisions.
 Do not accept a draft issue. Backlog items are repository issues so their target
 repository stays explicit.
 
-## Research before classification
+## Research and discovery triage
 
 Read the issue, relevant repository instructions, the affected code, callers,
-and existing tests before finalizing priority, effort, or implementation
-direction. For documentation or skill work, read the affected instructions,
-their entry points, and existing validation. Record absent code or test
-coverage instead of assuming it exists.
+and existing tests before classifying any missing context or finalizing
+priority, effort, or implementation direction. For documentation or skill
+work, read the affected instructions, their entry points, and existing
+validation. Record absent code or test coverage instead of assuming it exists.
+
+After that repository and issue research, state a discovery triage in the
+implementation notes. Classify each unresolved point as one of these:
+
+- `user constraints or priorities`: the user's intended behavior, priority, or
+  acceptance boundary is missing;
+- `external facts or context`: the repository cannot establish a fact needed to
+  choose or describe the implementation;
+- `genuine tradeoff`: the relevant facts and user constraints are known, but a
+  concrete decision still has multiple plausible options with unclear tradeoffs;
+- `no gap`: the task and evidence support one clear direction.
+
+A PBI may need more than one route. Resolve user constraints and external facts
+before using debate. Do not ask the user for facts that repository inspection,
+the web, or Context7 can establish. When the result is `no gap`, continue
+without invoking a discovery workflow.
+
+When user constraints or priorities are missing, use the existing `/interview`
+workflow's research-first contract through ordinary conversation. This skill
+intentionally overrides its one-question-at-a-time interaction rule. Ask every
+currently independent clarification question in one round, give each question
+multiple concrete options, and mark the recommended default. Defer questions
+whose options depend on an earlier answer to a later round. Record the resulting
+behavioral contract in an `interview-contract` implementation note.
+Wait for the current round's answers before using an answer-dependent option.
+Do not ask dependent questions or finalize labels or `Todo` while a material
+answer is missing. If an answer is unavailable, record an `unresolved-decision`
+and apply the residual-uncertainty gate below.
+
+Do not require a provider-specific `AskUserQuestion` tool. If `/interview` is
+unavailable, preserve its contract through ordinary conversation when possible.
+Otherwise record the unavailable workflow, the fallback, its impact, and the
+next decision or evidence needed. Keep the issue in Backlog when a material
+requirement cannot be stated without inventing it.
+
+When external facts or context are missing, perform targeted research. Inspect
+the code, callers, tests, and current architecture first. Use the web or
+Context7 only when the missing fact is outside the repository or needs current
+external evidence. Record each source and its relevant finding in a
+`research-source` implementation note. Do not ask the user for a fact that this
+research can answer.
+
+When a genuine tradeoff remains, frame one concrete decision and invoke the
+existing `$debate` protocol only after the required facts and user constraints
+are available. Select three to five named real experts whose documented
+positions match the competing concerns. Record each expert's name, lens,
+competing concern, and why that lens applies, plus the challenges, acknowledged
+uncertainty, synthesis, accepted option, and rejected options in
+`debate-synthesis`, `accepted-option`, and `rejected-option` implementation
+notes. Follow the existing multi-round protocol, keep raw debate scratch files
+outside the repository, and do not turn expert speculation into a requirement.
+
+After each interview, research, or debate round, run the triage again. If new
+evidence exposes a missing user constraint or external fact, return to the
+matching route before finalizing the PBI. If debate reveals a new tradeoff,
+record it and continue the same decision. Do not silently convert a new gap
+into an assumption.
 
 Use the live label descriptions as the classification contract. Select exactly
 one priority and one effort label whose description fits the researched
@@ -69,14 +126,18 @@ Update the parent issue with these sections:
 
 - `## Outcome`: the observable user or system result;
 - `## Scope`: included behavior and explicit non-goals;
-- `## Implementation notes`: affected boundaries and constraints, researched
-  code/caller/test evidence, the selected priority and effort with supporting
-  evidence tied to their live descriptions, standard classification rationale,
-  and the evidence supporting the implementation direction;
+- `## Implementation notes`: the discovery triage and applicable interview,
+  research, debate, option, and unresolved-decision summaries, plus affected
+  boundaries and constraints, researched code/caller/test evidence, the
+  selected priority and effort with supporting evidence tied to their live
+  descriptions, standard classification rationale, and the evidence
+  supporting the implementation direction;
 - `## Acceptance criteria`: checkboxes with observable outcomes;
 - `## Verification`: the checks that can prove each criterion.
 
-Ask for direction instead of writing a false choice as a requirement.
+Ask for direction when a missing choice changes observable behavior, a public
+interface, data handling, or an acceptance test. Do not write a false choice as
+a requirement.
 
 Create linked GitHub sub-issues only when a criterion can be completed,
 committed, and closed independently. Each sub-issue needs its own outcome,
@@ -94,6 +155,34 @@ does not clear the block. The original issue can move to `Todo` only if its
 remaining scope is independently deliverable and evidence supports a lower
 effort label. Do not close the original issue as part of refinement.
 
+## Record discovery and re-refinement state
+
+Keep concise discovery evidence in `## Implementation notes`. Include a
+`discovery-triage` result and, when applicable, these named summaries:
+
+- `interview-contract`: the questions asked, options, recommended defaults,
+  answers, and deferred dependent questions;
+- `research-source`: the source, relevant finding, and remaining uncertainty;
+- `debate-synthesis`: the decision, each named expert's lens and why it applies
+  to a competing concern, challenges, uncertainty, and synthesis;
+- `accepted-option`: the chosen option and the evidence supporting it;
+- `rejected-option`: each rejected option and the reason it was rejected;
+- `unresolved-decision`: what remains unclear, why, its impact, and the next
+  decision or evidence needed.
+
+If a question, fact, or tradeoff remains unresolved, or a named workflow was
+unavailable, document the exact gap, fallback, impact, and next step. An
+unresolved item does not by itself block `Todo` when the PBI is independently
+deliverable, its outcome, scope, and acceptance criteria remain coherent, and
+no material requirement was invented. Keep the issue in `Backlog` when those
+requirements cannot be stated safely.
+
+For re-refinement, read the existing discovery notes and compare them with the
+current requirements, code, callers, tests, sources, and decisions. Reuse
+evidence that is still current. Repeat only phases made stale or newly
+triggered, and update the existing summaries instead of appending conflicting
+assumptions. Do not create duplicate linked sub-issues or scale labels.
+
 ## Apply labels and verify before Todo
 
 Re-read the issue's current labels before editing. Add the chosen priority,
@@ -107,6 +196,8 @@ research establishes that they no longer apply.
 
 For re-refinement, the issue must still satisfy the `Backlog` precondition.
 Replace previous estimates and their rationale instead of accumulating them.
+Reuse current discovery evidence and replace only stale or newly triggered
+summaries.
 
 Read back the issue body, labels, linked sub-issues, and Project status from
 GitHub. Confirm all required sections and evidence exist, sub-issues are
