@@ -12,12 +12,22 @@ After selection, create the PBI's feature branch, assign the issue, move it
 to In Progress, implement it, verify it, review completion, commit it, and push
 the branch.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Preconditions
 
 1. Confirm the current directory is inside a Git worktree.
 2. Run `gh auth status`. Stop if the active token lacks `repo` or `project`.
-3. Read `git status --short --branch`. Stop if the worktree has tracked or
-   untracked changes. List the paths that prevent a clean start.
+3. Read `git status --short --branch` and classify every pending path. A dirty
+   worktree is not a blocker by itself. If ordinary pending changes clearly
+   belong to the requested work, keep them uncommitted until the ticket branch
+   exists, then carry them through the normal `/commit` path on that branch.
+   Do not commit them on the current or default branch to clear status.
+   Preserve and report secrets, destructive intent, unrelated changes, or work
+   that cannot be separated safely.
 
 ## Resolve the repository
 
@@ -109,7 +119,10 @@ resolved value are unambiguous.
 
 Perform these actions in order:
 
-1. Create the local branch from the fetched remote default branch.
+1. Create the local branch from the fetched remote default branch while
+   retaining the classified in-scope pending changes. If Git cannot create the
+   branch without overwriting or losing them, stop rather than stash, discard,
+   or commit them on another branch.
 2. Push it with upstream tracking to the branch of the same name on `origin`.
 3. Assign the issue to the active GitHub user with `gh issue edit` and
    `--add-assignee @me`.
@@ -134,6 +147,14 @@ repository's own instructions.
 For a structured PBI, map each task to the changed files, commit, and fresh
 verification evidence in the completion report. Do not report a task complete
 when its requirement is contradicted or its evidence is missing.
+
+For code shape, prefer small pure functions with explicit inputs and outputs,
+keep external I/O at boundaries, and use ordinary loops or mutation when that
+is clearer. Do not require a functional language or dense composition.
+
+When a test fails, compare its expectation with the clear task contract. Update
+a stale expectation and rerun it. Fix the implementation when it violates the
+contract. Never weaken or delete a test only to obtain a pass.
 
 Do not create a tracked planning document. Temporary working notes must stay
 outside the repository or be removed before the commit.
@@ -201,6 +222,10 @@ its work is finished. Keep this gate local to ticket execution. `/review-pr`
 continues to own branch and pull-request review.
 
 ## Commit and push
+
+After implementation, required checks, and the independent completion review,
+include the classified pending changes only when they are in scope for this PBI
+and covered by the final diff.
 
 Inspect `git status`, the complete diff, and the staged diff. Preserve unrelated
 files and never use a blanket staging command. Stage only reviewed files that

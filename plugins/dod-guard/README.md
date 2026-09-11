@@ -3,6 +3,11 @@
 A code-free plugin for GitHub issue delivery and focused repository
 maintenance.
 
+Every skill applies the shared working defaults in
+`standards/working-defaults.md`: clear low-risk choices proceed, ordinary
+dirty worktree changes use the normal commit path, stale tests follow the
+current contract, and explicit safety or authority boundaries remain.
+
 ## Repository setup
 
 `/setup-repository` connects a local project to GitHub, merges applicable
@@ -74,6 +79,7 @@ OpenSpec references remain historical only.
 | `/complete-pr` | Complete an explicitly accepted draft through guarded auto-merge and branch deletion. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
+| `/codex-advisor` | Get a bounded advice-only second opinion from a separate Codex process. |
 | `/codex-migrate` | Adapt Claude-oriented repository instructions for Codex. |
 | `/doc-reconcile` | Resolve contradictory documentation using Git history. |
 | `/skill-debug` | Compare skill instructions with recorded executions. |

@@ -20,6 +20,17 @@ rather than reimplementing it. The commit-gate core combines that structural
 evidence with architecture facts, fingerprint-bound acknowledgements, and
 responsibility-map progress.
 
+## Plaintext boundary
+
+`quality-guard readability --stdin` is the supported plaintext path. It reads
+the complete response from standard input and invokes the optional Python
+`textstat` runtime. The policy and result states live in
+`src/plaintext-readability.ts`; missing, timed-out, unsupported, and malformed
+provider output is `unavailable` and exits 0. The PostToolUse hook remains a
+source-write gate because its supported payloads do not contain complete chat
+responses. Do not merge the plaintext result into structural findings,
+baselines, staged decisions, or waivers.
+
 ## Build and test
 
 ```bash

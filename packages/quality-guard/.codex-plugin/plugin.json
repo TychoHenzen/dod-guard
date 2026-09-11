@@ -1,7 +1,7 @@
 {
   "name": "quality-guard",
   "version": "0.5.11",
-  "description": "Structural code quality analysis, commit decisions, and guided refactoring.",
+  "description": "Structural code quality analysis, plaintext readability checks, commit decisions, and guided refactoring.",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"
@@ -18,8 +18,8 @@
   },
   "interface": {
     "displayName": "quality-guard",
-    "shortDescription": "Structural quality checks and refactoring guidance.",
-    "longDescription": "Scans structural quality, reports tracked exceptions, and evaluates staged or committed changes.",
+    "shortDescription": "Structural and plaintext quality checks with refactoring guidance.",
+    "longDescription": "Scans structural quality, checks complete plaintext through the optional textstat boundary, reports tracked exceptions, and evaluates staged or committed changes.",
     "developerName": "tychohenzen",
     "category": "Developer Tools",
     "capabilities": ["MCP tools", "Skills"],

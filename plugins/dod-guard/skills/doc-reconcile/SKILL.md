@@ -17,6 +17,11 @@ deletes the older half when the history is clear enough to be sure.
 Throughout, a *claim* is one scanned piece of text and a *pair* is two claims held
 up against each other. No other names for those two things.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Fixed limits
 
 - Record the initial tree state. Exclude uncommitted files from automatic dating and

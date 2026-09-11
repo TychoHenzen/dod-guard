@@ -82,9 +82,7 @@ unrelated work, provider or head mismatch, and missing high-risk evidence.
 OpenSpec is historical reference material only. It is not an active runtime or
 dependency.
 
-Start or continue the Todo PBI from a clean checkout:
-
-From a clean Git checkout:
+Start or continue the Todo PBI from the current checkout:
 
 ```text
 /dod-guard:next-ticket 42
@@ -93,6 +91,10 @@ From a clean Git checkout:
 The selected issue must contain a short outcome, implementation notes, and
 verifiable acceptance criteria. Use GitHub sub-issues for criteria that should
 be completed independently.
+
+`next-ticket` inspects pending Git changes. Clearly in-scope ordinary changes
+use the normal commit path. Secrets, destructive intent, unrelated changes,
+and work that cannot be separated safely remain stop conditions.
 
 `next-ticket` then:
 
@@ -109,6 +111,24 @@ block commit and implementation push until repaired, verified, and reviewed agai
 The initial branch-only push remains permitted. An unavailable or failed review
 also blocks completion. The result reports every disposition before stopping
 with the verified branch pushed. This review edits no files or remote comments.
+
+## Ask for a bounded second opinion
+
+Use the Codex advisor when a fix or design needs independent advice before
+implementation:
+
+```text
+/dod-guard:codex-advisor
+```
+
+The skill sends a bounded prompt containing fixed advice-only instructions and
+the complete problem description through stdin to a separate `codex exec`
+process. It selects the lowest reasoning effort reported by the current CLI,
+uses an empty non-repository working directory, read-only restrictions, and an
+ephemeral session, and tells the advisor to skip repository research and
+mutations. Missing commands, non-zero exits, timeouts, and malformed responses
+remain visible failures. The skill never edits files, changes Git or GitHub
+state, or dispatches another advisor.
 
 Submit or refresh its draft pull request in a separate step:
 
