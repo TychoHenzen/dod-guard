@@ -36,19 +36,27 @@ creates one issue.
 Backlog items are real issues, not drafts, so the Project Repository field
 stays populated. The result maps every identified feature to its issue URL.
 
-Refine one Backlog item into a Todo PBI and any independently completable
-subtasks:
+Refine one Backlog item into a coherent, independently deliverable Todo PBI,
+with independently completable subtasks when needed:
 
 ```text
 /dod-guard:refine-backlog-item 42
 ```
 
-Refinement reads affected code, callers, and tests before choosing priority,
-Fibonacci effort, and standard labels from the repository's live descriptions.
-Missing scale labels stop refinement. Implementation notes record the evidence.
-Re-refinement from Backlog replaces stale estimates. Unknown priority records
-the missing information. Effort 13 stays in Backlog and requires independent
-issues before implementation. Body, labels, and links are verified before Todo.
+Refinement reads affected code, callers, tests, and architecture before choosing
+priority, Fibonacci effort, and standard labels from the repository's live
+descriptions. It then triages missing user constraints, external context, and
+genuine tradeoffs. It uses ordinary conversation to batch independent
+`/interview` questions, targeted web or Context7 research for external facts,
+and `$debate` only after facts and constraints are known. Discovery evidence,
+accepted and rejected options, and unresolved decisions stay in the issue's
+implementation notes. Missing scale labels stop refinement. Re-refinement from
+Backlog reuses current evidence and repeats only stale or newly triggered phases.
+Unknown priority records the missing information. Effort 13 stays in Backlog
+and requires independent issues before implementation. Body, labels, links,
+and discovery evidence are verified before Todo. Material unresolved
+requirements keep the issue in Backlog until the missing decision or evidence
+is available.
 
 Start or continue the Todo PBI from a clean checkout:
 

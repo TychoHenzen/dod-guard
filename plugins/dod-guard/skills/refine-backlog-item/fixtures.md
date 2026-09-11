@@ -29,6 +29,23 @@ new feature or request. Other unrelated labels may exist.
 | Effort 8 - Huge | Very complex, hard to estimate, often needs breakdown. |
 | Effort 13 - Epic | Too big to implement; must be split before development. |
 
+## Discovery routing cases
+
+Run these after the shared repository and issue research. Record the observed
+triage and summaries in the disposable issue's `## Implementation notes`.
+
+| Case | Input variation | Expected route and record |
+|---|---|---|
+| No gap | The task and repository evidence define one clear, low-risk documentation change. | Record `discovery-triage: no gap`. Do not invoke interview, external research, or debate. |
+| Batched clarification | Two independent user choices affect visible behavior, and a third question depends on the first answer. | Use ordinary conversation through `/interview`. Ask both independent questions in one round, give multiple options and a recommended default for each, defer the dependent question, and record `interview-contract`. |
+| Unanswered clarification | A first-round answer is still missing and a dependent question cannot yet be answered. | Wait for the answer or record `unresolved-decision`. Do not ask the dependent question or move to `Todo` while the material constraint is missing. |
+| Repository context | A caller, test boundary, or architectural owner is unclear from the issue. | Inspect the code, callers, tests, and current architecture. Record `research-source` findings and remaining uncertainty. Do not ask the user for repository facts. |
+| External context | The repository cannot establish a current provider rule or external compatibility fact. | Use targeted web or Context7 research. Record the source, relevant finding, and uncertainty in `research-source`. Do not debate before the fact is known. |
+| Debate after constraints | The facts and user constraints are known, but two implementation options have real unclear tradeoffs. | Frame one concrete decision. Use the existing multi-round `$debate` protocol with three to five named real experts selected for the competing concerns. Record each expert's lens and why it applies, plus challenges, uncertainty, and synthesis in `debate-synthesis`, `accepted-option`, and `rejected-option`. |
+| Newly discovered gap | Research or debate exposes a missing user constraint or external fact. | Return to the matching interview or research route. Update the triage and notes. Do not turn the gap into an assumption. |
+| Unavailable workflow | A named workflow cannot run, or a question, fact, or tradeoff remains unresolved. | Record what is unclear, the unavailable workflow or fallback, the impact, and the next decision or evidence. Move to `Todo` only when the PBI remains coherent and independently deliverable without invented requirements. Keep it in `Backlog` otherwise. |
+| Re-refinement | Existing notes contain current evidence and one stale source or newly triggered question. | Reuse current summaries, repeat only the stale or new phase, update notes in place, and create no duplicate sub-issues or scale labels. |
+
 ## Classification cases
 
 Treat each row's evidence as the result of code, caller, and test research.
@@ -73,6 +90,9 @@ repository and add it to the linked Project as Backlog. Seed stale priority
 and effort labels. Refine a small documentation change using the checked-out
 skill, live descriptions, affected documentation, entry points, and validation.
 Read back the final body, exact labels, sub-issue links (empty is valid for one
-coherent slice), and Todo status. Confirm the rationale agrees with the labels.
-Repeat from Backlog to check replacement stability. Close the disposable issue
-as not planned and remove its Project item after recording the evidence.
+coherent slice), discovery summaries, and Todo status. Confirm the rationale
+agrees with the labels. Exercise a second disposable path where a material
+requirement cannot be stated and confirm it remains in Backlog. A coherent PBI
+with documented residual uncertainty may reach Todo. Repeat one coherent path
+from Backlog to check replacement stability. Close the disposable issues as not
+planned and remove their Project items after recording the evidence.

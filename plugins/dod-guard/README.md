@@ -14,9 +14,13 @@ and tool configuration.
 ## Delivery workflow
 
 `/add-backlog-idea` splits a brain dump into independently deliverable Backlog
-issues. `/refine-backlog-item` researches one and assigns justified priority,
-Fibonacci effort, and standard labels before Todo. Epics stay in Backlog until
-split into independently deliverable PBIs. `/next-ticket`
+issues. `/refine-backlog-item` researches one, triages missing user constraints
+and external context, uses interview or targeted research as needed, and uses
+debate only after facts and constraints are known. It then assigns justified
+priority, Fibonacci effort, and standard labels before moving a coherent,
+independently deliverable PBI to Todo. Material unresolved requirements keep
+the issue in Backlog. Epics stay there until split into independently
+deliverable PBIs. `/next-ticket`
 implements that PBI and runs one independent completion review before committing
 and pushing implementation changes. Every challenge needs an evidenced
 disposition. `/submit-draft-pr` submits its verified draft
@@ -30,7 +34,7 @@ exactly one open GitHub Project explicitly linked to it.
 One issue becomes one branch and one draft pull request:
 
 ```text
-backlog idea -> Todo PBI -> codex/<issue>-<slug> -> verified commits -> draft PR -> accepted merge
+backlog idea -> research and discovery -> coherent Todo PBI -> codex/<issue>-<slug> -> verified commits -> draft PR -> accepted merge
 ```
 
 The issue holds the requested outcome and acceptance sub-issues. The branch
@@ -43,7 +47,7 @@ human review followed by `/complete-pr` is the explicit acceptance boundary.
 |---|---|
 | `/setup-repository` | Bootstrap a local project into the protected dod-guard GitHub workflow. |
 | `/add-backlog-idea` | Capture each independently deliverable feature as a Backlog issue. |
-| `/refine-backlog-item` | Turn a Backlog issue into a Todo PBI and independent subtasks. |
+| `/refine-backlog-item` | Deliberatively refine a Backlog issue, moving it to Todo only when its PBI is coherent and independently deliverable. |
 | `/next-ticket` | Execute a Todo PBI through independent completion review and verified, pushed commits. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
 | `/review-pr` | Review Git or GitHub inline with four agents, or produce one Azure DevOps report. |
