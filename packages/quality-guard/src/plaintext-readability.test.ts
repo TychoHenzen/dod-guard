@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   checkPlaintextReadability,
   READABILITY_POLICY,
+  readabilityExitCode,
   runTextstat,
   unavailableReadabilityResult,
 } from "./plaintext-readability.js";
@@ -73,6 +74,33 @@ test("default textstat uses an isolated interpreter environment and cwd", () => 
     assert.equal(existsSync(observedCwd), false);
     assert.equal(observedEnv?.PYTHONPATH, undefined);
     assert.equal(observedEnv?.PYTHONHOME, undefined);
+
+    const actualPlatform = process.platform;
+    let alternateEnv: NodeJS.ProcessEnv | undefined;
+    try {
+      Object.defineProperty(process, "platform", {
+        value: actualPlatform === "win32" ? "linux" : "win32",
+      });
+      const alternate = runTextstat(easyText, {
+        spawn: (_command, _spawnArgs, options) => {
+          alternateEnv = options.env;
+          return {
+            pid: 1,
+            output: [],
+            stdout: JSON.stringify({
+              measures: { fleschReadingEase: 70, fleschKincaidGrade: 8 },
+            }),
+            stderr: "",
+            status: 0,
+            signal: null,
+          };
+        },
+      });
+      assert.equal(alternate.status, "ok");
+      assert.ok(alternateEnv);
+    } finally {
+      Object.defineProperty(process, "platform", { value: actualPlatform });
+    }
   } finally {
     if (command === undefined)
       delete process.env.QUALITY_GUARD_TEXTSTAT_COMMAND;
@@ -80,6 +108,30 @@ test("default textstat uses an isolated interpreter environment and cwd", () => 
     if (args === undefined) delete process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
     else process.env.QUALITY_GUARD_TEXTSTAT_ARGS = args;
   }
+});
+
+test("reports textstat start failures and maps readability exit codes", () => {
+  const errorResult = runTextstat(easyText, {
+    spawn: () => {
+      throw new Error("python missing");
+    },
+  });
+  assert.equal(errorResult.status, "unavailable");
+  if (errorResult.status === "unavailable") {
+    assert.match(errorResult.reason, /python missing/);
+  }
+
+  const valueResult = runTextstat(easyText, {
+    spawn: () => {
+      throw "python missing";
+    },
+  });
+  assert.equal(valueResult.status, "unavailable");
+  if (valueResult.status === "unavailable") {
+    assert.match(valueResult.reason, /python missing/);
+  }
+  assert.equal(readabilityExitCode("fail"), 2);
+  assert.equal(readabilityExitCode("pass"), 0);
 });
 
 test("unavailable results report unavailable rather than skipped", () => {
@@ -171,12 +223,66 @@ test("reports an unsupported language and missing textstat as unavailable", () =
   assert.equal(missing.status, "unavailable");
 });
 
+test("validates configured textstat arguments", () => {
+  const previous = process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
+  const response = {
+    pid: 1,
+    output: [],
+    stdout: JSON.stringify({
+      measures: { fleschReadingEase: 70, fleschKincaidGrade: 8 },
+    }),
+    stderr: "",
+    status: 0,
+    signal: null,
+  };
+  try {
+    process.env.QUALITY_GUARD_TEXTSTAT_ARGS = "not json";
+    assert.equal(
+      runTextstat(easyText, { spawn: () => response }).status,
+      "unavailable",
+    );
+
+    process.env.QUALITY_GUARD_TEXTSTAT_ARGS = JSON.stringify(["-c", "ok"]);
+    const configured = runTextstat(easyText, {
+      spawn: (_command, args) => {
+        assert.deepEqual(args, ["-c", "ok"]);
+        return response;
+      },
+    });
+    assert.equal(configured.status, "ok");
+
+    process.env.QUALITY_GUARD_TEXTSTAT_ARGS = JSON.stringify(["-c", 1]);
+    assert.equal(
+      runTextstat(easyText, { spawn: () => response }).status,
+      "unavailable",
+    );
+  } finally {
+    if (previous === undefined) delete process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
+    else process.env.QUALITY_GUARD_TEXTSTAT_ARGS = previous;
+  }
+});
+
 test("fails open for malformed, timed-out, and internally failing providers", () => {
   const malformed = runTextstat(easyText, {
     command: process.execPath,
     args: ["-e", "process.stdout.write('not json')"],
   });
   assert.equal(malformed.status, "unavailable");
+
+  const scalar = runTextstat(easyText, {
+    command: process.execPath,
+    args: ["-e", "process.stdout.write('null')"],
+  });
+  assert.equal(scalar.status, "unavailable");
+
+  const unsupported = runTextstat(easyText, {
+    command: process.execPath,
+    args: [
+      "-e",
+      "process.stdout.write(JSON.stringify({ languageSupported: false }))",
+    ],
+  });
+  assert.equal(unsupported.status, "unavailable");
 
   const invalidMeasures = runTextstat(easyText, {
     command: process.execPath,
@@ -186,6 +292,12 @@ test("fails open for malformed, timed-out, and internally failing providers", ()
     ],
   });
   assert.equal(invalidMeasures.status, "unavailable");
+
+  const missingMeasures = runTextstat(easyText, {
+    command: process.execPath,
+    args: ["-e", "process.stdout.write(JSON.stringify({ measures: null }))"],
+  });
+  assert.equal(missingMeasures.status, "unavailable");
 
   const timedOut = runTextstat(easyText, {
     command: process.execPath,
@@ -197,4 +309,9 @@ test("fails open for malformed, timed-out, and internally failing providers", ()
     throw new Error("provider failure");
   });
   assert.equal(internalFailure.status, "unavailable");
+
+  const valueFailure = checkPlaintextReadability(easyText, () => {
+    throw "provider failure";
+  });
+  assert.equal(valueFailure.status, "unavailable");
 });
