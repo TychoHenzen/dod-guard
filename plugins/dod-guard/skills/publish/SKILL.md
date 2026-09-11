@@ -33,7 +33,11 @@ the bump.
    authorized release. Preserve and report credential-like files, destructive
    intent, unrelated or indistinguishable work, and stop before `/commit`
    rather than silently filtering it.
-2. Classify the complete pending tree before requiring a PBI or pull request.
+2. Before `/commit`, run the existing repository inspector against the complete
+   pending tree:
+   `node <plugin-root>/skills/setup-repository/scripts/inspect-repository.mjs <repository-root>`.
+   Stop when `credentialFindings` is non-empty. Never print matched values.
+3. Classify the complete pending tree before requiring a PBI or pull request.
    Treat changes as `functional` when they alter runtime code, plugin manifests,
    plugin version or marketplace behavior, MCP or hook wiring, or any other
    installed behavior. Treat changes as `maintenance-only` only when they are
@@ -41,13 +45,13 @@ the bump.
    generated reports, or equivalent non-product maintenance. Inspect file
    contents when a path classification is unclear. If any file is functional,
    use the functional path for the whole release.
-3. Confirm each changed plugin's Claude Code and Codex manifest versions and
+4. Confirm each changed plugin's Claude Code and Codex manifest versions and
    descriptions match its shipped skills or agents. Update the root marketplace
    description if it states a changed skill count.
-4. After every pending path passes that classification, invoke `/commit` for
+5. After every pending path passes that classification, invoke `/commit` for
    all release changes. `/commit` owns staging, the commit message, push, and
    remote sync. Do not manually stage, commit, or push a subset of the release.
-5. Run the release gates from the repository root:
+6. Run the release gates from the repository root:
 
    ```text
    npm run build
@@ -57,19 +61,19 @@ the bump.
    npx @biomejs/biome check packages/*/src/ scripts/ci/ --no-errors-on-unmatched
    ```
 
-6. If a release gate generates tracked changes, invoke `/commit` again so every
+7. If a release gate generates tracked changes, invoke `/commit` again so every
    pending change reaches the release branch.
-7. For a `maintenance-only` release, check whether the target branch accepts a
+8. For a `maintenance-only` release, check whether the target branch accepts a
    direct push. Push the committed release only when the repository permits it.
    If branch protection requires a pull request, stop and report that exact
    condition. Do not create a PBI, invoke `/submit-draft-pr`, bypass protection,
    or claim that the release completed.
-8. For a `functional` release, invoke `/submit-draft-pr` with the parent PBI
+9. For a `functional` release, invoke `/submit-draft-pr` with the parent PBI
    number. Do not create or update the pull request yourself. Never approve,
    mark ready, merge, or close that pull request.
-9. After a human merges a functional release, inspect the merge commit's CI run. It must pass
+10. After a human merges a functional release, inspect the merge commit's CI run. It must pass
    `build-test`, `plugin-config`, `static-analysis`, and `package-integrity`.
-10. After a direct maintenance push or a merged functional release has green CI,
+11. After a direct maintenance push or a merged functional release has green CI,
    refresh both clients:
 
    ```text

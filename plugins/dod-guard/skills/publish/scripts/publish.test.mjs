@@ -13,6 +13,16 @@ test("publish skill classifies the complete tree before PBI routing", async () =
   assert.match(skill, /For a `functional` release, invoke `\/submit-draft-pr`/);
 });
 
+test("publish scans pending content before commit", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  const scan = skill.indexOf("inspect-repository.mjs");
+  const commit = skill.indexOf("invoke `/commit` for");
+
+  assert.ok(scan >= 0 && scan < commit);
+  assert.match(skill, /Stop when `credentialFindings` is non-empty/);
+  assert.match(skill, /Never print matched values/);
+});
+
 test("maintenance path preserves protection and skips PBI ceremony", async () => {
   const skill = await readFile(skillPath, "utf8");
 

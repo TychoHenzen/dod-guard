@@ -31,6 +31,14 @@ const exceptionRules = new Map([
     /unrelated or indistinguishable work/i,
     /stop before `\/commit`/i,
   ]],
+  ["skill-migrate", [
+    /only step that blocks on user input/i,
+    /Proceed only\s+after the user responds/i,
+  ]],
+  ["doc-reconcile", [
+    /Exclude uncommitted files from automatic dating and\s+deletion/i,
+    /Do not commit, stash, reset, or overwrite user work/i,
+  ]],
 ]);
 
 test("every shipped skill applies the shared working defaults", () => {

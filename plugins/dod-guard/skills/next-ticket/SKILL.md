@@ -118,8 +118,6 @@ Perform these actions in order:
    `--add-assignee @me`.
 4. Set the issue's project Status to `In Progress` with
    `gh project item-edit` and the ids resolved above.
-5. If pending changes existed, invoke the normal `/commit` path on this ticket
-   branch before implementing the remaining issue work.
 
 Do not create or switch to an existing branch. Report the exact completed
 actions if a later mutation fails. Keep the successfully created branch and
@@ -210,6 +208,10 @@ its work is finished. Keep this gate local to ticket execution. `/review-pr`
 continues to own branch and pull-request review.
 
 ## Commit and push
+
+After implementation, required checks, and the independent completion review,
+include the classified pending changes only when they are in scope for this PBI
+and covered by the final diff.
 
 Inspect `git status`, the complete diff, and the staged diff. Preserve unrelated
 files and never use a blanket staging command. Stage only reviewed files that

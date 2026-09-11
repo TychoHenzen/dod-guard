@@ -60,8 +60,6 @@ is available.
 
 Start or continue the Todo PBI from the current checkout:
 
-From the current Git checkout:
-
 ```text
 /dod-guard:next-ticket 42
 ```
