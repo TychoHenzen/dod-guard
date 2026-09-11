@@ -23838,6 +23838,9 @@ function runCheckCommand(args, root = process.cwd()) {
 
 // src/plaintext-readability.ts
 import { spawnSync } from "node:child_process";
+import { mkdtempSync as mkdtempSync2, rmSync as rmSync2 } from "node:fs";
+import { tmpdir as tmpdir2 } from "node:os";
+import { join as join4 } from "node:path";
 var READABILITY_POLICY = {
   minimumWords: 20,
   threshold: 80,
@@ -23883,6 +23886,20 @@ function commandArgs() {
       reason: "QUALITY_GUARD_TEXTSTAT_ARGS is not valid JSON"
     };
   }
+}
+function isolatedEnvironment(workdir) {
+  const names = process.platform === "win32" ? ["PATH", "Path", "PATHEXT", "SystemRoot", "WINDIR"] : ["PATH", "HOME", "LANG", "LC_ALL"];
+  const environment = {};
+  for (const name of names) {
+    if (process.env[name]) environment[name] = process.env[name];
+  }
+  if (process.platform === "win32") {
+    environment.TEMP = workdir;
+    environment.TMP = workdir;
+  } else {
+    environment.TMPDIR = workdir;
+  }
+  return environment;
 }
 function finiteMeasures(value) {
   if (!value || typeof value !== "object") return void 0;
@@ -23932,19 +23949,27 @@ function runTextstat(text2, options = {}) {
   if (!Array.isArray(args)) return args;
   const command = options.command ?? process.env.QUALITY_GUARD_TEXTSTAT_COMMAND ?? "python";
   const spawn = options.spawn ?? spawnSync;
+  const useIsolation = options.command === void 0 && options.args === void 0 && !process.env.QUALITY_GUARD_TEXTSTAT_COMMAND && !process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
+  let workdir;
   let result;
   try {
-    result = spawn(command, args, {
+    if (useIsolation)
+      workdir = mkdtempSync2(join4(tmpdir2(), "quality-guard-textstat-"));
+    const spawnArgs = useIsolation ? ["-I", ...args] : args;
+    result = spawn(command, spawnArgs, {
       encoding: "utf8",
       input: text2,
       timeout: TEXTSTAT_TIMEOUT_MS,
-      windowsHide: true
+      windowsHide: true,
+      ...workdir ? { cwd: workdir, env: isolatedEnvironment(workdir) } : {}
     });
   } catch (error2) {
     return {
       status: "unavailable",
       reason: `textstat could not start: ${error2 instanceof Error ? error2.message : String(error2)}`
     };
+  } finally {
+    if (workdir) rmSync2(workdir, { recursive: true, force: true });
   }
   if (result.error || result.status !== 0) {
     const detail = textOf(result.stderr).trim() || result.error?.message;
@@ -23961,8 +23986,11 @@ function normalizePlaintext(text2) {
 function wordsIn(text2) {
   return text2.match(new RegExp("\\p{L}[\\p{L}\\p{M}'\u2019-]*", "gu")) ?? [];
 }
-function sentenceWordCounts(text2) {
-  return text2.split(/[.!?]+|\n+/u).map((sentence) => wordsIn(sentence).length).filter((count) => count > 0);
+function sentenceDetails(text2) {
+  return text2.split(/[.!?]+|(?:\r?\n){2,}/u).map((sentence) => ({
+    count: wordsIn(sentence).length,
+    text: sentence.trim()
+  })).filter((sentence) => sentence.count > 0);
 }
 function hasUnsupportedScript(text2) {
   const letters = text2.match(new RegExp("\\p{L}", "gu")) ?? [];
@@ -24014,6 +24042,9 @@ function baseResult(status, reason, wordCount, extra = {}) {
     ...extra
   };
 }
+function unavailableReadabilityResult(reason) {
+  return baseResult("unavailable", reason, 0);
+}
 function checkPlaintextReadability(text2, provider = runTextstat) {
   const normalized = normalizePlaintext(text2);
   const wordCount = wordsIn(normalized).length;
@@ -24049,8 +24080,11 @@ function checkPlaintextReadability(text2, provider = runTextstat) {
   }
   const measures = providerResult.measures;
   const score = scoreMeasures(measures);
-  const sentenceCounts = sentenceWordCounts(normalized);
-  const longestSentence = Math.max(0, ...sentenceCounts);
+  const longest = sentenceDetails(normalized).reduce(
+    (current, sentence) => sentence.count > current.count ? sentence : current,
+    { count: 0, text: "" }
+  );
+  const longestSentence = longest.count;
   const constraintFailures = longestSentence > READABILITY_POLICY.maximumSentenceWords ? [
     `a sentence has ${longestSentence} words, over the ${READABILITY_POLICY.maximumSentenceWords}-word limit`
   ] : [];
@@ -24060,7 +24094,7 @@ function checkPlaintextReadability(text2, provider = runTextstat) {
     score,
     measures,
     constraintFailures,
-    context: status === "fail" ? contextFor(normalized) : void 0
+    context: status === "fail" ? contextFor(longest.text || normalized) : void 0
   });
 }
 function readabilityExitCode(status) {
@@ -24503,19 +24537,11 @@ function runReadabilityCommand(args) {
   try {
     text2 = readFileSync4(0, "utf8");
   } catch (error2) {
-    const result2 = checkPlaintextReadability("");
-    process.stdout.write(
-      `${JSON.stringify(
-        {
-          ...result2,
-          status: "unavailable",
-          reason: `could not read stdin: ${error2 instanceof Error ? error2.message : String(error2)}`
-        },
-        null,
-        2
-      )}
-`
+    const result2 = unavailableReadabilityResult(
+      `could not read stdin: ${error2 instanceof Error ? error2.message : String(error2)}`
     );
+    process.stdout.write(`${JSON.stringify(result2, null, 2)}
+`);
     process.exitCode = 0;
     return;
   }

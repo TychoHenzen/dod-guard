@@ -28,7 +28,7 @@ printf '%s' "$TEXT" | quality-guard readability --stdin
 ```
 
 The readability boundary uses the optional Python `textstat` runtime. It
-It normalizes input with Unicode NFKC, removes Markdown markers, link targets,
+normalizes input with Unicode NFKC, removes Markdown markers, link targets,
 citation markers, identifiers, URLs, and fenced or inline code, then counts
 Unicode-letter words. Non-ASCII Latin prose remains. Other language scripts
 are reported as unsupported. For Flesch Reading Ease `ease` and Flesch-Kincaid

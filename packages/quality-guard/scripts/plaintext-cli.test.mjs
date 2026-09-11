@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const cli = resolve(packageRoot, "dist", "index.js");
+const cli = resolve(packageRoot, "dist", "bundle.js");
 
 function runFixture(measures, text) {
   const root = mkdtempSync(resolve(tmpdir(), "quality-guard-textstat-"));

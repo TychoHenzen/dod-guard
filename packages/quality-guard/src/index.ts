@@ -7,6 +7,7 @@ import { runCheckCommand } from "./commit-gate/cli.js";
 import {
   checkPlaintextReadability,
   readabilityExitCode,
+  unavailableReadabilityResult,
 } from "./plaintext-readability.js";
 import { runQualityReport } from "./report.js";
 import { registerQualityGuardTools } from "./server-tools.js";
@@ -55,18 +56,10 @@ function runReadabilityCommand(args: string[]): void {
   try {
     text = readFileSync(0, "utf8");
   } catch (error) {
-    const result = checkPlaintextReadability("");
-    process.stdout.write(
-      `${JSON.stringify(
-        {
-          ...result,
-          status: "unavailable",
-          reason: `could not read stdin: ${error instanceof Error ? error.message : String(error)}`,
-        },
-        null,
-        2,
-      )}\n`,
+    const result = unavailableReadabilityResult(
+      `could not read stdin: ${error instanceof Error ? error.message : String(error)}`,
     );
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     process.exitCode = 0;
     return;
   }

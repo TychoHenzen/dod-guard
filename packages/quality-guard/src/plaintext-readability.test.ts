@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { test } from "node:test";
 import {
   checkPlaintextReadability,
   READABILITY_POLICY,
   runTextstat,
+  unavailableReadabilityResult,
 } from "./plaintext-readability.js";
 
 const easyText =
@@ -36,6 +38,55 @@ test("reports measured values, threshold, and context for failing text", () => {
   assert.equal(result.score, 20);
   assert.match(result.message, /combined score 20; threshold 80/);
   assert.match(result.message, /Context:/);
+});
+
+test("default textstat uses an isolated interpreter environment and cwd", () => {
+  const command = process.env.QUALITY_GUARD_TEXTSTAT_COMMAND;
+  const args = process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
+  let observedCwd: string | undefined;
+  let observedArgs: string[] = [];
+  let observedEnv: NodeJS.ProcessEnv | undefined;
+  delete process.env.QUALITY_GUARD_TEXTSTAT_COMMAND;
+  delete process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
+  try {
+    const result = runTextstat(easyText, {
+      spawn: (_command, spawnArgs, options) => {
+        observedCwd = options.cwd;
+        observedArgs = spawnArgs;
+        observedEnv = options.env;
+        return {
+          pid: 1,
+          output: [],
+          stdout: JSON.stringify({
+            measures: { fleschReadingEase: 70, fleschKincaidGrade: 8 },
+          }),
+          stderr: "",
+          status: 0,
+          signal: null,
+        };
+      },
+    });
+    assert.equal(result.status, "ok");
+    assert.equal(observedArgs[0], "-I");
+    assert.ok(observedCwd);
+    assert.notEqual(observedCwd, process.cwd());
+    assert.equal(existsSync(observedCwd), false);
+    assert.equal(observedEnv?.PYTHONPATH, undefined);
+    assert.equal(observedEnv?.PYTHONHOME, undefined);
+  } finally {
+    if (command === undefined)
+      delete process.env.QUALITY_GUARD_TEXTSTAT_COMMAND;
+    else process.env.QUALITY_GUARD_TEXTSTAT_COMMAND = command;
+    if (args === undefined) delete process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
+    else process.env.QUALITY_GUARD_TEXTSTAT_ARGS = args;
+  }
+});
+
+test("unavailable results report unavailable rather than skipped", () => {
+  const result = unavailableReadabilityResult("stdin broke");
+  assert.equal(result.status, "unavailable");
+  assert.match(result.message, /Readability check unavailable: stdin broke/);
+  assert.doesNotMatch(result.message, /skipped/);
 });
 
 test("skips empty and short input without invoking textstat", () => {
@@ -82,6 +133,24 @@ test("normalizes Markdown, code, identifiers, citations, and keeps non-ASCII pro
   assert.match(checked, /café/);
   assert.doesNotMatch(checked, /hidden_identifier|internalName/);
   assert.doesNotMatch(checked, /```|\[1\]|https:\/\//);
+});
+
+test("keeps soft line breaks inside one sentence and reports its context", () => {
+  const longSentence = [
+    "laterMarker",
+    ...Array.from({ length: 25 }, () => "plain"),
+  ].join(" ");
+  const result = checkPlaintextReadability(
+    `Intro sentence.\n${longSentence}`,
+    () => ({
+      status: "ok",
+      measures: { fleschReadingEase: 70, fleschKincaidGrade: 8 },
+    }),
+  );
+
+  assert.equal(result.status, "fail");
+  assert.match(result.constraintFailures[0], /26 words/);
+  assert.match(result.context ?? "", /laterMarker/);
 });
 
 test("reports an unsupported language and missing textstat as unavailable", () => {

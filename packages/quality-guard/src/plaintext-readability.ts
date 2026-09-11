@@ -1,4 +1,7 @@
 import { type SpawnSyncReturns, spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 export const READABILITY_POLICY = {
   minimumWords: 20,
@@ -54,6 +57,8 @@ type Spawn = (
     input: string;
     timeout: number;
     windowsHide: boolean;
+    cwd?: string;
+    env?: NodeJS.ProcessEnv;
   },
 ) => SpawnSyncReturns<string>;
 
@@ -94,6 +99,24 @@ function commandArgs(): string[] | TextstatResult {
       reason: "QUALITY_GUARD_TEXTSTAT_ARGS is not valid JSON",
     };
   }
+}
+
+function isolatedEnvironment(workdir: string): NodeJS.ProcessEnv {
+  const names =
+    process.platform === "win32"
+      ? ["PATH", "Path", "PATHEXT", "SystemRoot", "WINDIR"]
+      : ["PATH", "HOME", "LANG", "LC_ALL"];
+  const environment: NodeJS.ProcessEnv = {};
+  for (const name of names) {
+    if (process.env[name]) environment[name] = process.env[name];
+  }
+  if (process.platform === "win32") {
+    environment.TEMP = workdir;
+    environment.TMP = workdir;
+  } else {
+    environment.TMPDIR = workdir;
+  }
+  return environment;
 }
 
 function finiteMeasures(value: unknown): TextstatMeasures | undefined {
@@ -150,19 +173,31 @@ export function runTextstat(
   const command =
     options.command ?? process.env.QUALITY_GUARD_TEXTSTAT_COMMAND ?? "python";
   const spawn = options.spawn ?? (spawnSync as Spawn);
+  const useIsolation =
+    options.command === undefined &&
+    options.args === undefined &&
+    !process.env.QUALITY_GUARD_TEXTSTAT_COMMAND &&
+    !process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
+  let workdir: string | undefined;
   let result: SpawnSyncReturns<string>;
   try {
-    result = spawn(command, args, {
+    if (useIsolation)
+      workdir = mkdtempSync(join(tmpdir(), "quality-guard-textstat-"));
+    const spawnArgs = useIsolation ? ["-I", ...args] : args;
+    result = spawn(command, spawnArgs, {
       encoding: "utf8",
       input: text,
       timeout: TEXTSTAT_TIMEOUT_MS,
       windowsHide: true,
+      ...(workdir ? { cwd: workdir, env: isolatedEnvironment(workdir) } : {}),
     });
   } catch (error) {
     return {
       status: "unavailable",
       reason: `textstat could not start: ${error instanceof Error ? error.message : String(error)}`,
     };
+  } finally {
+    if (workdir) rmSync(workdir, { recursive: true, force: true });
   }
   if (result.error || result.status !== 0) {
     const detail = textOf(result.stderr).trim() || result.error?.message;
@@ -196,11 +231,16 @@ function wordsIn(text: string): string[] {
   return text.match(/\p{L}[\p{L}\p{M}'’-]*/gu) ?? [];
 }
 
-function sentenceWordCounts(text: string): number[] {
+type SentenceDetail = { count: number; text: string };
+
+function sentenceDetails(text: string): SentenceDetail[] {
   return text
-    .split(/[.!?]+|\n+/u)
-    .map((sentence) => wordsIn(sentence).length)
-    .filter((count) => count > 0);
+    .split(/[.!?]+|(?:\r?\n){2,}/u)
+    .map((sentence) => ({
+      count: wordsIn(sentence).length,
+      text: sentence.trim(),
+    }))
+    .filter((sentence) => sentence.count > 0);
 }
 
 function hasUnsupportedScript(text: string): boolean {
@@ -283,6 +323,12 @@ function baseResult(
   };
 }
 
+export function unavailableReadabilityResult(
+  reason: string,
+): ReadabilityResult {
+  return baseResult("unavailable", reason, 0);
+}
+
 export function checkPlaintextReadability(
   text: string,
   provider: TextstatProvider = runTextstat,
@@ -323,8 +369,12 @@ export function checkPlaintextReadability(
 
   const measures = providerResult.measures;
   const score = scoreMeasures(measures);
-  const sentenceCounts = sentenceWordCounts(normalized);
-  const longestSentence = Math.max(0, ...sentenceCounts);
+  const longest = sentenceDetails(normalized).reduce(
+    (current, sentence) =>
+      sentence.count > current.count ? sentence : current,
+    { count: 0, text: "" },
+  );
+  const longestSentence = longest.count;
   const constraintFailures =
     longestSentence > READABILITY_POLICY.maximumSentenceWords
       ? [
@@ -345,7 +395,8 @@ export function checkPlaintextReadability(
     score,
     measures,
     constraintFailures,
-    context: status === "fail" ? contextFor(normalized) : undefined,
+    context:
+      status === "fail" ? contextFor(longest.text || normalized) : undefined,
   });
 }
 
