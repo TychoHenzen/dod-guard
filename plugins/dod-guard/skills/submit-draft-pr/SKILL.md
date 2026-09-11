@@ -14,9 +14,13 @@ close the parent issue.
 Read and apply `standards/working-defaults.md` from the plugin root. Local
 safety or authority boundaries below remain stricter.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Preconditions
 
-1. Resolve the repository and default branch with `gh repo view --json nameWithOwner,defaultBranchRef,url`.
+1. Resolve the repository and default branch with the GitHub MCP repository
+   metadata operation. If MCP is unavailable, use
+   `gh repo view --json nameWithOwner,defaultBranchRef,url`.
 2. Verify the supplied parent issue belongs to that repository, is in its one
    open linked Project, and has Status `In Progress`.
 3. Inspect `git status --short` and classify pending paths. A dirty worktree is

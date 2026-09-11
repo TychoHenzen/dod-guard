@@ -17,6 +17,8 @@ the branch.
 Read and apply `standards/working-defaults.md` from the plugin root. Local
 safety or authority boundaries below remain stricter.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Preconditions
 
 1. Confirm the current directory is inside a Git worktree.
@@ -31,11 +33,14 @@ safety or authority boundaries below remain stricter.
 
 ## Resolve the repository
 
-Run:
+When the GitHub MCP connector is unavailable, run:
 
 ```text
 gh repo view --json nameWithOwner,defaultBranchRef,url
 ```
+
+With MCP, use its narrow repository metadata operation and retain the returned
+repository snapshot for the rest of the workflow.
 
 Use `nameWithOwner` as the repository identity. Do not derive identity by
 parsing an `origin` URL when `gh repo view` succeeds. Stop if the repository
@@ -124,8 +129,8 @@ Perform these actions in order:
    branch without overwriting or losing them, stop rather than stash, discard,
    or commit them on another branch.
 2. Push it with upstream tracking to the branch of the same name on `origin`.
-3. Assign the issue to the active GitHub user with `gh issue edit` and
-   `--add-assignee @me`.
+3. Assign the issue with the GitHub MCP assignee operation. If MCP is
+   unavailable, use `gh issue edit` with `--add-assignee @me`.
 4. Set the issue's project Status to `In Progress` with
    `gh project item-edit` and the ids resolved above.
 

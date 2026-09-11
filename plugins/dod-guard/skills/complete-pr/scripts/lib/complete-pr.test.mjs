@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { completePullRequest } from "./complete-pr.mjs";
+import { GitHubClient, normalizePullRequest } from "./github-client.mjs";
 
 const pendingChecks = [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }];
 const passingChecks = [{ bucket: "pass", name: "build-test", state: "SUCCESS" }];
@@ -107,6 +108,37 @@ class FixtureClient {
 
 const immediateOptions = { issuePollLimit: 2, pollLimit: 8, pollMs: 0, updatePollLimit: 2 };
 
+test("normalizes the narrow REST pull request payload used by the completion loop", () => {
+  assert.deepEqual(
+    normalizePullRequest({
+      base: { ref: "master", sha: "base-1" },
+      draft: true,
+      head: { ref: "codex/24-complete-pr", sha: "head-1", repo: { full_name: "owner/repo" } },
+      html_url: "https://github.com/owner/repo/pull/24",
+      merge_commit_sha: null,
+      mergeable: true,
+      mergeable_state: "blocked",
+      number: 24,
+      state: "open",
+    }, "owner/repo"),
+    {
+      baseBranch: "master",
+      baseSha: "base-1",
+      headBranch: "codex/24-complete-pr",
+      headRepository: "owner/repo",
+      headSha: "head-1",
+      isCrossRepository: false,
+      isDraft: true,
+      mergeCommitSha: null,
+      mergeState: "BLOCKED",
+      mergeable: "MERGEABLE",
+      number: 24,
+      state: "OPEN",
+      url: "https://github.com/owner/repo/pull/24",
+    },
+  );
+});
+
 test("waits for required checks, confirms merge, and deletes the trusted remote branch", async () => {
   const client = new FixtureClient({
     checks: [pendingChecks, passingChecks],
@@ -124,9 +156,19 @@ test("waits for required checks, confirms merge, and deletes the trusted remote 
   assert.equal(result.acceptedHead, "head-1");
   assert.equal(result.mergeCommitSha, "merge-1");
   assert.equal(result.branch, "deleted");
+  assert.deepEqual(client.calls.filter(([name]) => name === "markReady"), [["markReady", 24]]);
   assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
     ["deleteBranchRef", "codex/24-complete-pr"],
   ]);
+});
+
+test("marks a draft pull request ready through the narrow REST adapter", () => {
+  const calls = [];
+  const client = new GitHubClient("owner/repo", 24, (args) => calls.push(args));
+
+  client.markReady(24);
+
+  assert.deepEqual(calls, [["api", "--method", "PATCH", "repos/owner/repo/pulls/24", "-F", "draft=false"]]);
 });
 
 test("accepts an already-ready pull request without marking it ready again", async () => {

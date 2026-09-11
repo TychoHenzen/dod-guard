@@ -85,7 +85,8 @@ test("reports unclassified source extensions so unsupported checks need an expli
 test("reports likely credentials without returning their values", async (t) => {
   const root = await fixture(t, "credentials");
   await writeFile(path.join(root, ".env"), "TOKEN=secret\n");
-  await writeFile(path.join(root, "config.txt"), "github_pat_abcdefghijklmnopqrstuvwxyz123456\n");
+  const token = ["github", "_pat_", "abcdefghijklmnopqrstuvwxyz123456"].join("");
+  await writeFile(path.join(root, "config.txt"), `${token}\n`);
 
   const report = await inspectRepository(root);
 
@@ -93,7 +94,7 @@ test("reports likely credentials without returning their values", async (t) => {
     { file: ".env", line: null, signal: "secret-like-filename" },
     { file: "config.txt", line: 1, signal: "github-token" },
   ]);
-  assert.doesNotMatch(JSON.stringify(report), /github_pat_abcdefghijklmnopqrstuvwxyz123456/);
+  assert.doesNotMatch(JSON.stringify(report), new RegExp(token));
 });
 
 test("blocks ambiguous linked Project state", () => {

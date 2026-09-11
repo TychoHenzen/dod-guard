@@ -32,10 +32,32 @@ function encodeBranch(branchName) {
     .join("/");
 }
 
+export function normalizePullRequest(data, repository) {
+  const headRepository = data.head?.repo?.full_name ?? null;
+  return {
+    baseBranch: data.base?.ref ?? null,
+    baseSha: data.base?.sha ?? null,
+    headBranch: data.head?.ref ?? null,
+    headRepository,
+    headSha: data.head?.sha ?? null,
+    isCrossRepository: headRepository !== repository,
+    isDraft: data.draft === true,
+    mergeCommitSha: data.merge_commit_sha ?? null,
+    mergeState: data.mergeable_state?.toUpperCase() ?? null,
+    mergeable: data.mergeable === true ? "MERGEABLE" : data.mergeable === false ? "CONFLICTING" : "UNKNOWN",
+    number: data.number,
+    state: data.state?.toUpperCase() ?? null,
+    url: data.html_url ?? null,
+  };
+}
+
 export class GitHubClient {
-  constructor(repository, pullNumber) {
+  #commandRunner;
+
+  constructor(repository, pullNumber, commandRunner = runGh) {
     this.repository = repository;
     this.pullNumber = pullNumber;
+    this.#commandRunner = commandRunner;
   }
 
   getRepository() {
@@ -49,57 +71,20 @@ export class GitHubClient {
   }
 
   getPullRequest(pullNumber = this.pullNumber) {
-    const fields = [
-      "baseRefName",
-      "baseRefOid",
-      "headRefName",
-      "headRefOid",
-      "headRepository",
-      "isCrossRepository",
-      "isDraft",
-      "mergeCommit",
-      "mergeStateStatus",
-      "mergeable",
-      "number",
-      "state",
-      "url",
-    ].join(",");
-    const { data } = ghJson([
-      "pr",
-      "view",
-      String(pullNumber),
-      "--repo",
-      this.repository,
-      "--json",
-      fields,
-    ]);
-    return {
-      baseBranch: data.baseRefName,
-      baseSha: data.baseRefOid,
-      headBranch: data.headRefName,
-      headRepository: data.headRepository?.nameWithOwner,
-      headSha: data.headRefOid,
-      isCrossRepository: data.isCrossRepository,
-      isDraft: data.isDraft,
-      mergeCommitSha: data.mergeCommit?.oid ?? null,
-      mergeState: data.mergeStateStatus,
-      mergeable: data.mergeable,
-      number: data.number,
-      state: data.state,
-      url: data.url,
-    };
+    const { data } = ghJson(["api", `repos/${this.repository}/pulls/${pullNumber}`]);
+    return normalizePullRequest(data, this.repository);
   }
 
   markReady(pullNumber) {
-    runGh(["pr", "ready", String(pullNumber), "--repo", this.repository]);
+    this.#commandRunner(["api", "--method", "PATCH", `repos/${this.repository}/pulls/${pullNumber}`, "-F", "draft=false"]);
   }
 
   enableRepositoryAutoMerge() {
-    runGh(["api", "--method", "PATCH", `repos/${this.repository}`, "-F", "allow_auto_merge=true"]);
+    this.#commandRunner(["api", "--method", "PATCH", `repos/${this.repository}`, "-F", "allow_auto_merge=true"]);
   }
 
   enablePullRequestAutoMerge(pullNumber, expectedHead) {
-    runGh([
+    this.#commandRunner([
       "pr",
       "merge",
       String(pullNumber),
@@ -130,7 +115,7 @@ export class GitHubClient {
   }
 
   updateBranch(pullNumber, expectedHead) {
-    runGh([
+    this.#commandRunner([
       "api",
       "--method",
       "PUT",
@@ -180,7 +165,7 @@ export class GitHubClient {
 
   deleteBranchRef(branchName) {
     const encodedBranch = encodeBranch(branchName);
-    runGh(["api", "--method", "DELETE", `repos/${this.repository}/git/refs/heads/${encodedBranch}`]);
+    this.#commandRunner(["api", "--method", "DELETE", `repos/${this.repository}/git/refs/heads/${encodedBranch}`]);
   }
 
   async wait(milliseconds) {

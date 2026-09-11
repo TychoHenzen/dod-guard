@@ -11,6 +11,7 @@ const root = path.resolve(
 
 const read = (file) => readFile(path.join(root, file), "utf8");
 const standard = await read("plugins/dod-guard/standards/project-workflow.md");
+const githubDiscipline = await read("plugins/dod-guard/standards/github-request-discipline.md");
 const readme = await read("plugins/dod-guard/README.md");
 const usage = await read("plugins/dod-guard/USAGE.md");
 const addBacklog = await read("plugins/dod-guard/skills/add-backlog-idea/SKILL.md");
@@ -18,6 +19,18 @@ const refine = await read("plugins/dod-guard/skills/refine-backlog-item/SKILL.md
 const nextTicket = await read("plugins/dod-guard/skills/next-ticket/SKILL.md");
 const submit = await read("plugins/dod-guard/skills/submit-draft-pr/SKILL.md");
 const setup = await read("plugins/dod-guard/skills/setup-repository/SKILL.md");
+const fixReview = await read("plugins/dod-guard/skills/fix-pr-review/SKILL.md");
+const githubSkills = [
+  addBacklog,
+  refine,
+  nextTicket,
+  submit,
+  setup,
+  await read("plugins/dod-guard/skills/review-pr/SKILL.md"),
+  fixReview,
+  await read("plugins/dod-guard/skills/complete-pr/SKILL.md"),
+  await read("plugins/dod-guard/skills/publish/SKILL.md"),
+];
 
 test("README and usage expose every structured stage contract", () => {
   const stages = [
@@ -93,4 +106,14 @@ test("structured work retains safety stops and historical OpenSpec boundaries", 
   assert.match(standard, /PBI #59 owns forgiving defaults/);
   assert.match(usage, /OpenSpec is historical reference material only/);
   assert.match(usage, /not an active runtime or/);
+});
+
+test("every GitHub-facing skill shares the request discipline", () => {
+  assert.match(githubDiscipline, /GitHub MCP connector/);
+  assert.match(githubDiscipline, /reuses a run snapshot/);
+  assert.match(githubDiscipline, /Project v2/);
+  for (const skill of githubSkills) {
+    assert.match(skill, /standards\/github-request-discipline\.md/);
+  }
+  assert.match(fixReview, /gh api "repos\/\{owner\}\/\{repo\}\/pulls\/\{number\}"/);
 });

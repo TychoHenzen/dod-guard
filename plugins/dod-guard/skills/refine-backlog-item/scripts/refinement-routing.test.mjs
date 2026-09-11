@@ -23,6 +23,11 @@ test("revalidates mutation state before issue writes and Todo", () => {
   assert.match(skill, /Immediately before moving to `Todo`, repeat the same comparison/);
 });
 
+test("paginates the complete live label inventory", () => {
+  assert.match(skill, /gh api --paginate "repos\/\{owner\}\/\{repo\}\/labels\?per_page=100"/);
+  assert.match(fixtures, /Put the only matching scale label on the second API page/);
+});
+
 test("defines provider-neutral interview and debate contracts", () => {
   assert.match(skill, /ordinary conversation/);
   assert.match(skill, /every\s+currently independent clarification question in one round/);
