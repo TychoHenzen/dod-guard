@@ -1,7 +1,7 @@
 {
   "name": "quality-guard",
   "version": "0.5.11",
-  "description": "Structural code quality gate. The PostToolUse hook gives file-local feedback, while the staged gate makes the commit decision and CI replays it from the committed tree. Ships 1 skill: /quality-refactor (systematic refactoring to an explicit machine-checked quality bar).",
+  "description": "Structural code quality gate with an optional plaintext readability boundary. The PostToolUse hook gives file-local feedback, while the staged gate makes the commit decision and CI replays it from the committed tree. Ships 1 skill: /quality-refactor (systematic refactoring to an explicit machine-checked quality bar).",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"

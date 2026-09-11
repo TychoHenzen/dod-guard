@@ -9,9 +9,19 @@ Treat invocation of this skill as the user's explicit acceptance of the current
 pull request code. Do not infer acceptance from review comments, passing checks,
 or an earlier command.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Resolve the pull request
 
-1. Confirm the current directory is inside a clean Git worktree.
+1. Confirm the current directory is inside a Git worktree and inspect
+   `git status --short`. A dirty tree is not automatically a failure. Classify
+   pending paths without mutation and preserve ordinary changes that are clearly
+   part of the accepted PBI. Stop for secrets, destructive intent, unrelated or
+   indistinguishable work, or when the accepted pull request no longer
+   represents reviewed code.
 2. Run `gh auth status`. Require `repo` access.
 3. Resolve the repository and default branch with
    `gh repo view --json nameWithOwner,defaultBranchRef,url`.
@@ -21,6 +31,10 @@ or an earlier command.
    default branch.
 5. Read the pull request, linked issue, review result, and latest verification
    evidence. Stop if the draft does not represent the reviewed and verified code.
+6. If the classified pending changes are clearly part of the accepted PBI,
+   invoke `/commit` on this verified branch. Reread the pull request head and
+   verification evidence. Stop unless the new head has fresh review and
+   verification evidence for those changes.
 
 ## Complete the accepted pull request
 

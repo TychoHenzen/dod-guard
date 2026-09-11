@@ -21,6 +21,11 @@ You have shell and file tools. This skill dispatches no subagents.
 
 Scope: one target skill per invocation, and every finding covers that skill alone.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Runtime path
 
 Resolve `<skill-dir>` before running a bundled script. In Claude, use

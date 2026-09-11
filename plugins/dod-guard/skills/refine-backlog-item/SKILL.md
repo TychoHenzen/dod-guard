@@ -9,6 +9,11 @@ Turn one existing backlog issue into an implementation-ready parent PBI. Its
 repository is the issue's target repository. Do not create a branch, assign the
 PBI, change it to In Progress, implement code, or open a pull request.
 
+## Shared working defaults
+
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+safety or authority boundaries below remain stricter.
+
 ## Preconditions
 
 1. Resolve the repository with `gh repo view --json nameWithOwner,defaultBranchRef,url`.
