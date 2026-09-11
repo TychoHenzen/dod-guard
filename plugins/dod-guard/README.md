@@ -60,6 +60,9 @@ material ambiguity, credentials, destructive or authority-bound actions,
 unrelated work, provider or head mismatch, or missing high-risk evidence.
 OpenSpec references remain historical only.
 
+GitHub-backed skills share the request policy in
+[`standards/github-request-discipline.md`](standards/github-request-discipline.md).
+
 ## Skills
 
 | Skill | Purpose |

@@ -10,6 +10,8 @@ Fix selected findings produced by `/dod-guard:review-pr`. Revalidate each
 finding against the current head before editing. Keep stale, unsupported, and
 unresolved findings visible.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Scope
 
 - Work only on the reviewed branch. Stop if the checkout is dirty or on a different head.
@@ -32,8 +34,9 @@ checkout and a non-default feature branch.
 
 Accept one of these sources:
 
-- A GitHub PR URL or `#number`: resolve the PR with `gh pr view` and require its
-  same-repository head branch to be checked out.
+- A GitHub PR URL or `#number`: resolve the PR with the narrow GitHub MCP pull
+  request metadata operation when available. Otherwise use `gh pr view`. Require
+  its same-repository head branch to be checked out.
 - The current or named Git branch: use the active client's inline review
   findings. Require the user to identify the selected finding IDs when more
   than one unresolved finding exists.
@@ -41,7 +44,9 @@ Accept one of these sources:
   entries and require the report's recorded head to match the checked-out
   branch history.
 
-For GitHub, query `reviewThreads(first:100)` through GraphQL. Include each
+For GitHub, use the GitHub MCP review-thread operation when available. It
+returns the thread identifiers and resolution metadata needed below. If MCP is
+unavailable, query `reviewThreads(first:100)` through GraphQL. Include each
 thread's `id`, `isResolved`, `isOutdated`, `path`, `line`, and root comment
 `databaseId`, `url`, `body`, and `commit.oid`. Save the response outside the
 repository, then run:
@@ -71,8 +76,10 @@ valid.
 ## Load the behavior contract
 
 Resolve the parent PBI from the pull request's closing issue, its linked issue,
-or the unambiguous `codex/<issue>-<slug>` branch segment. Query GitHub
-`subIssues` or Azure hierarchy-forward child work items. Include each item's
+or the unambiguous `codex/<issue>-<slug>` branch segment. Use the narrow GitHub
+MCP issue operation for the issue body and state. Query GitHub `subIssues` only
+when the connector does not provide that relationship, or use Azure
+hierarchy-forward child work items. Include each item's
 title, body, state, URL, and acceptance text. Stop if no parent PBI can be
 resolved.
 
@@ -118,7 +125,8 @@ existing upstream. Never force-push or rewrite commits.
 
 Re-read the provider head and require it to equal the pushed commit.
 
-- GitHub: reply to each fixed root comment through
+- GitHub: use the connector's reply and exact-thread resolution operations when
+  available. Otherwise reply through
   `POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies`. Include the
   commit SHA and verification command. Then resolve its exact review thread
   with GraphQL `resolveReviewThread`. Leave every other thread unchanged.

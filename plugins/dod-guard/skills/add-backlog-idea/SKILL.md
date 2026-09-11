@@ -13,6 +13,8 @@ For the structured path, the issue's concise outcome and scope are the problem
 handoff to `/refine-backlog-item`. Keep requirements, decisions, plans, and
 tasks out of this capture step.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Split the request
 
 Before creating anything, split the user's request only when it contains
@@ -30,17 +32,20 @@ must remain one feature.
 
 ## Resolve the destination
 
-1. If the user supplied a target repository, use it. Otherwise run
-   `gh repo view --json nameWithOwner,defaultBranchRef,url` from the current
-   working directory. If it succeeds, use that repository.
+1. If the user supplied a target repository, use it. Otherwise use the GitHub
+   MCP repository operation from the current working directory. If MCP is
+   unavailable, run `gh repo view --json nameWithOwner,defaultBranchRef,url`.
+   If it succeeds, use that repository.
 2. If no target was supplied and the current directory is not a valid GitHub
-   repository, run `gh api user --jq .login`, then
+   repository, use the GitHub MCP identity and repository-list operations, or
+   run `gh api user --jq .login`, then
    `gh repo list <login> --limit 100 --json nameWithOwner,description,url`.
    Show the available repositories as a numbered list and ask the user to
    choose one. Do not create anything until they choose.
-3. Run `gh auth status`. Stop if the active credential lacks `repo` or
-   `project` access.
-4. Resolve the selected target with
+3. Verify the connected GitHub MCP identity and required repository and Project
+   access. If MCP is unavailable, run `gh auth status`. Stop if access is
+   missing.
+4. Resolve the selected target with the GitHub MCP repository operation, or
    `gh repo view <target> --json nameWithOwner,defaultBranchRef,url` when it
    was supplied or chosen from the list.
 5. Query that repository's `projectsV2` connection once. Keep only open projects.

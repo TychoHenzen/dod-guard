@@ -9,6 +9,8 @@ argument-hint: "[current branch, Git ref, PR URL or ID, or ado:<id>] [Azure repo
 Review the final target revision without checking it out or editing it. Git is
 the default mode. Azure DevOps is an additional explicit mode.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Boundaries
 
 - Never switch branches, edit the target, approve, mark ready, merge, or close it.
@@ -67,14 +69,18 @@ each changed file at `headSha`.
 
 ### Git and GitHub
 
-Use `gh repo view --json nameWithOwner,defaultBranchRef,url` when the checkout
-has a GitHub repository. Resolve the base from that result. Otherwise use the
-remote HEAD of the target's actual remote. Stop if the base is ambiguous.
+Use the GitHub MCP repository metadata operation when the checkout has a
+GitHub repository. If MCP is unavailable, use
+`gh repo view --json nameWithOwner,defaultBranchRef,url`. Resolve the base from
+that result. Otherwise use the remote HEAD of the target's actual remote. Stop
+if the base is ambiguous.
 
 Resolve local and remote refs with `git rev-parse --verify`. Fetch a requested
 remote ref when needed, but never create or switch a branch. For a GitHub PR,
-use `gh pr view` and GraphQL to resolve the base, immutable head SHA, head
-repository, changed files, closing issues, and linked issue hierarchy. Read
+use the narrow GitHub MCP PR metadata operation for the base, immutable head
+SHA, and head repository. Fetch changed files and patches only when reviewers
+need them. Use the connector's issue operation for closing issues. Use GraphQL
+only for linked issue hierarchy when no connector operation exists. Read
 same-repository files with `git show <headSha>:<path>`. Read fork files through
 the GitHub Contents API at the exact SHA.
 
@@ -202,7 +208,8 @@ it changed.
   and so on in their titles so `/fix-pr-review` can select them later. In Codex
   use `::code-comment`; in Claude Code use its clickable `file:line` review
   finding. Do not post externally.
-- GitHub: create one `COMMENT` review whose comments use `commit_id=headSha`,
+- GitHub: use the GitHub MCP review operation when available. Otherwise create one
+  `COMMENT` review whose comments use `commit_id=headSha`,
   the validated path, final line, and `side=RIGHT`. Use one PR-level comment
   only for accepted records without an honest line. Never submit `APPROVE` or
   `REQUEST_CHANGES`.

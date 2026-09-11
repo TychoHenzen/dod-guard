@@ -18,6 +18,8 @@ principles source described in `standards/project-workflow.md`. Preserve both
 `AGENTS.md` and `CLAUDE.md` when they contain unique guidance. Do not add a
 second constitution or planning system.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 This invocation authorizes the setup changes described below. Ask only when required repository
 identity is missing or existing state has incompatible meanings. Never replace working state merely
 to make setup uniform.
@@ -58,15 +60,18 @@ Do not stage or initialize Git yet. A dirty worktree is allowed because setup ma
 commit. Separate intended project files from generated files, local secrets, and unrelated work.
 Stop for one concise scope decision only when those groups cannot be distinguished safely.
 
-Run `gh auth status`. Required scopes are `repo`, `project`, and `workflow`. Stop if authentication
-or a required scope is missing.
+Verify the connected GitHub MCP identity and required repository, Project, and
+workflow access. If MCP is unavailable, run `gh auth status`. Stop if
+authentication or a required scope is missing.
 
 ## 2. Resolve repository identity
 
 ### Existing GitHub remote
 
-Use `gh repo view --json nameWithOwner,defaultBranchRef,url,visibility` from the project. Verify the
-result against the actual fetch and push URLs. Use `nameWithOwner` as repository identity.
+Use the GitHub MCP repository metadata operation from the project. If MCP is
+unavailable, use `gh repo view --json nameWithOwner,defaultBranchRef,url,visibility`.
+Verify the result against the actual fetch and push URLs. Use `nameWithOwner` as
+repository identity.
 
 - Keep every existing remote.
 - If `origin` already names a different repository, stop. Do not replace it.

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { completePullRequest } from "./complete-pr.mjs";
+import { normalizePullRequest } from "./github-client.mjs";
 
 const pendingChecks = [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }];
 const passingChecks = [{ bucket: "pass", name: "build-test", state: "SUCCESS" }];
@@ -106,6 +107,37 @@ class FixtureClient {
 }
 
 const immediateOptions = { issuePollLimit: 2, pollLimit: 8, pollMs: 0, updatePollLimit: 2 };
+
+test("normalizes the narrow REST pull request payload used by the completion loop", () => {
+  assert.deepEqual(
+    normalizePullRequest({
+      base: { ref: "master", sha: "base-1" },
+      draft: true,
+      head: { ref: "codex/24-complete-pr", sha: "head-1", repo: { full_name: "owner/repo" } },
+      html_url: "https://github.com/owner/repo/pull/24",
+      merge_commit_sha: null,
+      mergeable: true,
+      mergeable_state: "blocked",
+      number: 24,
+      state: "open",
+    }, "owner/repo"),
+    {
+      baseBranch: "master",
+      baseSha: "base-1",
+      headBranch: "codex/24-complete-pr",
+      headRepository: "owner/repo",
+      headSha: "head-1",
+      isCrossRepository: false,
+      isDraft: true,
+      mergeCommitSha: null,
+      mergeState: "BLOCKED",
+      mergeable: "MERGEABLE",
+      number: 24,
+      state: "OPEN",
+      url: "https://github.com/owner/repo/pull/24",
+    },
+  );
+});
 
 test("waits for required checks, confirms merge, and deletes the trusted remote branch", async () => {
   const client = new FixtureClient({

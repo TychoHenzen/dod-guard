@@ -9,11 +9,15 @@ Treat invocation of this skill as the user's explicit acceptance of the current
 pull request code. Do not infer acceptance from review comments, passing checks,
 or an earlier command.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Resolve the pull request
 
 1. Confirm the current directory is inside a clean Git worktree.
-2. Run `gh auth status`. Require `repo` access.
-3. Resolve the repository and default branch with
+2. Verify the connected GitHub MCP identity and repository access. If MCP is
+   unavailable, run `gh auth status`. Require `repo` access.
+3. Resolve the repository and default branch with the GitHub MCP repository
+   operation. If MCP is unavailable, use
    `gh repo view --json nameWithOwner,defaultBranchRef,url`.
 4. Resolve the one open pull request for the current branch, or use the pull
    request number supplied by the user. Accept either a draft or ready pull

@@ -8,6 +8,8 @@ description: Release changed dod-guard marketplace plugins through a functional 
 Use this skill only when the user explicitly asks to publish or release a
 completed change in this monorepo.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Release model
 
 This repository is a Claude Code and Codex plugin marketplace. Nothing
@@ -22,7 +24,8 @@ the bump.
 
 ## Procedure
 
-1. Inspect `git status --short`, the current branch, and `gh repo view`. A
+1. Inspect `git status --short`, the current branch, and the GitHub MCP
+   repository metadata operation. If MCP is unavailable, use `gh repo view`. A
    dirty workspace is the release input. Include every pending change in this
    release. Do not filter or leave changes behind.
 2. Classify the complete pending tree before requiring a PBI or pull request.

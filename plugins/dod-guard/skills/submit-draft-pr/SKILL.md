@@ -9,9 +9,13 @@ Create or update the one draft pull request for a pushed parent-PBI branch. Do
 not change implementation scope, approve, mark ready, merge, close the PR, or
 close the parent issue.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Preconditions
 
-1. Resolve the repository and default branch with `gh repo view --json nameWithOwner,defaultBranchRef,url`.
+1. Resolve the repository and default branch with the GitHub MCP repository
+   metadata operation. If MCP is unavailable, use
+   `gh repo view --json nameWithOwner,defaultBranchRef,url`.
 2. Verify the supplied parent issue belongs to that repository, is in its one
    open linked Project, and has Status `In Progress`.
 3. Verify the current branch is the PBI's `codex/<issue>-<slug>` branch, has an
