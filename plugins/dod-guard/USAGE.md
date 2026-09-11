@@ -58,6 +58,30 @@ and discovery evidence are verified before Todo. Material unresolved
 requirements keep the issue in Backlog until the missing decision or evidence
 is available.
 
+## Structured work
+
+Use the ordinary path for a small, clear fix. Use the structured path when a
+feature or material ambiguity needs explicit decisions, a plan, tasks, and a
+convergence check. The canonical records and handoffs are in
+[`standards/project-workflow.md`](standards/project-workflow.md).
+
+| Stage | Owner | GitHub-backed artifact | Handoff |
+| --- | --- | --- | --- |
+| Principles | `/setup-repository` | Repository instructions | Existing rules guide capture and refinement. |
+| Problem | `/add-backlog-idea` | Issue in `Backlog` with concise outcome and scope | Refine one coherent issue. |
+| Requirements | `/refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
+| Clarification | `/refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
+| Plan | `/refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
+| Tasks | `/refine-backlog-item` | `task-list` record and independent linked sub-issues only when needed | `Todo` PBI hands the task list to implementation. |
+| Implementation handoff | `/next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
+| Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
+
+The structured path does not create a parallel local plan. It preserves stops
+for material ambiguity, credentials, destructive or authority-bound actions,
+unrelated work, provider or head mismatch, and missing high-risk evidence.
+OpenSpec is historical reference material only. It is not an active runtime or
+dependency.
+
 Start or continue the Todo PBI from the current checkout:
 
 ```text

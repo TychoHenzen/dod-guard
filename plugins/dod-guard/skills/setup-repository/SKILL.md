@@ -13,6 +13,11 @@ Turn the current local project into a clean, pushed GitHub repository that can u
 `/add-backlog-idea`, `/refine-backlog-item`, `/next-ticket`, `/submit-draft-pr`, review, and
 `/complete-pr`.
 
+For structured work, the existing repository instructions are the project-
+principles source described in `standards/project-workflow.md`. Preserve both
+`AGENTS.md` and `CLAUDE.md` when they contain unique guidance. Do not add a
+second constitution or planning system.
+
 This invocation authorizes the setup changes described below. Ask only when required repository
 identity is missing or existing state has incompatible meanings. Never replace working state merely
 to make setup uniform.
