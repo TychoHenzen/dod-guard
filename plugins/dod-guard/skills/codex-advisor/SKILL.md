@@ -8,6 +8,9 @@ description: Get a bounded advice-only second opinion from a separate Codex proc
 Use this skill for a second opinion, not for implementation. Keep the advice
 process separate from the current conversation and keep its scope bounded.
 
+Read and apply `standards/working-defaults.md` from the plugin root. Local
+rules below are the exception only where they are more specific.
+
 ## Boundaries
 
 - Include the complete problem description supplied for this advice request in
