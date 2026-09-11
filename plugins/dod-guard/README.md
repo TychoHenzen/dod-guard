@@ -60,6 +60,7 @@ human review followed by `/complete-pr` is the explicit acceptance boundary.
 | `/complete-pr` | Complete an explicitly accepted draft through guarded auto-merge and branch deletion. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
+| `/codex-advisor` | Get a bounded advice-only second opinion from a separate Codex process. |
 | `/codex-migrate` | Adapt Claude-oriented repository instructions for Codex. |
 | `/doc-reconcile` | Resolve contradictory documentation using Git history. |
 | `/skill-debug` | Compare skill instructions with recorded executions. |
