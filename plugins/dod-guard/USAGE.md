@@ -36,6 +36,18 @@ creates one issue.
 Backlog items are real issues, not drafts, so the Project Repository field
 stays populated. The result maps every identified feature to its issue URL.
 
+Run the complete lifecycle without intermediate confirmation:
+
+```text
+/dod-guard:quick-pbi Add the requested outcome
+```
+
+`quick-pbi` invokes `/add-backlog-idea`, `/refine-backlog-item`,
+`/next-ticket`, `/submit-draft-pr`, `/review-pr`, `/fix-pr-review`, and
+`/complete-pr` in order. It asks only the batched clarification questions that
+refinement requires. It fixes every validated actionable review finding and
+repeats review before the guarded merge.
+
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:
 
@@ -126,12 +138,14 @@ implementation:
 
 The skill sends a bounded prompt containing fixed advice-only instructions and
 the complete problem description through stdin to a separate `codex exec`
-process. It selects the lowest reasoning effort reported by the current CLI,
-uses an empty non-repository working directory, read-only restrictions, and an
+process. It uses `low` by default, supports the `low`, `medium`, and `high`
+reasoning values, and accepts an optional `--model=<model>` setting. It uses an
+empty non-repository working directory, read-only restrictions, and an
 ephemeral session, and tells the advisor to skip repository research and
 mutations. Missing commands, non-zero exits, timeouts, and malformed responses
-remain visible failures. The skill never edits files, changes Git or GitHub
-state, or dispatches another advisor.
+remain visible failures. The result reports the CLI version, model setting,
+and reasoning effort. The skill never edits files, changes Git or GitHub state,
+or dispatches another advisor.
 
 Submit or refresh its draft pull request in a separate step:
 

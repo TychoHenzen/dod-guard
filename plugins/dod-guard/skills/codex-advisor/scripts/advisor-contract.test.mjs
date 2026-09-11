@@ -15,6 +15,7 @@ async function createFixture() {
   const runs = join(root, "runs");
   const record = join(root, "record.json");
   const executable = join(root, "fake-codex.mjs");
+  const commandExecutable = join(root, "fake-codex.cmd");
   await mkdir(runs);
   await writeFile(
     executable,
@@ -55,7 +56,8 @@ switch (process.env.ADVISOR_MODE) {
 }
 `,
   );
-  return { env: { ADVISOR_RECORD: record }, executable, record, root, runs };
+  await writeFile(commandExecutable, `@echo off\r\nnode "${executable}" %*\r\n`);
+  return { commandExecutable, env: { ADVISOR_RECORD: record }, executable, record, root, runs };
 }
 
 async function runFixture(fixture, mode, options = {}) {
@@ -65,6 +67,7 @@ async function runFixture(fixture, mode, options = {}) {
     prefixArgs: [fixture.executable],
     prompt: "Problem with\nmultiple lines.",
     tempRoot: fixture.runs,
+    ...options,
     timeoutMs: options.timeoutMs ?? 2_000,
   });
   assert.deepEqual(await readdir(fixture.runs), []);
@@ -74,12 +77,18 @@ async function runFixture(fixture, mode, options = {}) {
 test("advisor runner uses an isolated bounded Codex process", async () => {
   const fixture = await createFixture();
   try {
-    const result = await runFixture(fixture, "valid");
+    const result = await runFixture(fixture, "valid", {
+      model: "gpt-test-model",
+      reasoningEffort: "medium",
+    });
     assert.deepEqual(result, { ok: true, advice: "Use the smallest safe change." });
     const record = JSON.parse(await readFile(fixture.record, "utf8"));
     assert.equal(record.input, "Problem with\nmultiple lines.");
     assert.notEqual(record.cwd, process.cwd());
     assert.equal(record.args[0], "exec");
+    const modelIndex = record.args.indexOf("--model");
+    assert.equal(record.args[modelIndex + 1], "gpt-test-model");
+    assert.equal(record.args[record.args.indexOf("-c") + 1], "model_reasoning_effort=medium");
     assert.ok(record.args.includes("-s"));
     assert.ok(record.args.includes("read-only"));
     assert.ok(record.args.includes("--ignore-user-config"));
@@ -124,11 +133,34 @@ test("advisor runner exposes start, exit, output, schema, and timeout failures",
   }
 });
 
+test("advisor runner rejects shell metacharacters before a Windows shim starts", { skip: process.platform !== "win32" }, async () => {
+  const fixture = await createFixture();
+  const marker = join(fixture.root, "injected.txt");
+  try {
+    const result = await runAdvisor({
+      env: fixture.env,
+      executable: fixture.commandExecutable,
+      model: `safe&echo INJECTED>${marker}`,
+      prompt: "Problem",
+      tempRoot: fixture.runs,
+    });
+    assert.deepEqual(result, {
+      ok: false,
+      error: "Codex advisor model contains unsupported shell characters",
+    });
+    await assert.rejects(readFile(marker));
+    assert.deepEqual(await readdir(fixture.runs), []);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test("advisor skill has the bounded Codex invocation contract", () => {
   assert.match(skill, /^---\nname: codex-advisor\n/m);
   for (const signal of [
     /scripts[\\/]run-advisor\.mjs/,
-    /lowest reasoning value reported by that current CLI/,
+    /low, medium, and high/,
+    /does not enumerate reasoning values/i,
     /empty,\s+non-repository working directory/,
     /-s read-only/,
     /--ignore-user-config/,
@@ -140,6 +172,8 @@ test("advisor skill has the bounded Codex invocation contract", () => {
     /cleans up its temporary\s+directory on every\s+exit path/,
     /stdin/,
     /--output-schema/,
+    /--model/,
+    /requested model and reasoning effort/i,
     /skip repository research/,
     /avoid\s+all tools and mutations/,
   ]) {

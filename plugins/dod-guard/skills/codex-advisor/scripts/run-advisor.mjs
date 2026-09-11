@@ -70,6 +70,13 @@ function failure(message, processResult) {
   };
 }
 
+function optionError(name, value) {
+  if (typeof value !== "string" || !value || /[\s"&|<>^()%!]/u.test(value)) {
+    return `Codex advisor ${name} contains unsupported shell characters`;
+  }
+  return undefined;
+}
+
 function parseAdvice(raw) {
   let response;
   try {
@@ -93,12 +100,20 @@ export async function runAdvisor({
   prompt,
   executable = process.platform === "win32" ? "codex.cmd" : "codex",
   prefixArgs = [],
+  model,
   reasoningEffort = "low",
   schemaPath = defaultSchemaPath,
   tempRoot = tmpdir(),
   timeoutMs = 60_000,
   env = {},
 }) {
+  const invalidOption = [
+    ["model", model],
+    ["reasoning effort", reasoningEffort],
+    ...prefixArgs.map((value, index) => [`prefix argument ${index + 1}`, value]),
+  ].find(([name, value]) => value !== undefined && optionError(name, value));
+  if (invalidOption) return { ok: false, error: optionError(...invalidOption) };
+
   let workdir;
   try {
     workdir = await mkdtemp(join(tempRoot, "dod-guard-codex-advisor-"));
@@ -106,6 +121,7 @@ export async function runAdvisor({
     const args = [
       ...prefixArgs,
       "exec",
+      ...(model === undefined ? [] : ["--model", model]),
       "-c",
       `model_reasoning_effort=${reasoningEffort}`,
       "-s",
@@ -160,7 +176,10 @@ export async function runAdvisor({
 function optionValue(name, fallback) {
   const prefix = `${name}=`;
   const argument = process.argv.find((value) => value.startsWith(prefix));
-  return argument ? argument.slice(prefix.length) : fallback;
+  if (argument) return argument.slice(prefix.length);
+  const index = process.argv.indexOf(name);
+  const value = index === -1 ? undefined : process.argv[index + 1];
+  return value && !value.startsWith("-") ? value : fallback;
 }
 
 async function readStdin() {
@@ -176,6 +195,7 @@ async function main() {
   const result = await runAdvisor({
     prefixArgs,
     prompt: await readStdin(),
+    model: optionValue("--model"),
     reasoningEffort: optionValue("--reasoning-effort", "low"),
     timeoutMs: Number(optionValue("--timeout-ms", "60000")),
   });
