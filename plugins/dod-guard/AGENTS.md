@@ -31,6 +31,11 @@ definitions. It has no package workspace, MCP server, or bundle.
 - Never approve, ready, merge, or close the agent's own pull request outside an
   explicit `/complete-pr` invocation.
 
+The structured stage map and its issue handoff records live in
+`standards/project-workflow.md`. Keep project principles in the repository's
+existing `AGENTS.md` and `CLAUDE.md` instructions. Do not create a parallel
+planning system or let structured work bypass the safety and authority stops.
+
 ## Validation
 
 From the repository root:

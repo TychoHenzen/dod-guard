@@ -9,6 +9,10 @@ Create one minimal GitHub issue per independently deliverable feature in the
 user-chosen target repository. Do not inspect the codebase for a design, create
 a branch, assign an owner, or add implementation subtasks.
 
+For the structured path, the issue's concise outcome and scope are the problem
+handoff to `/refine-backlog-item`. Keep requirements, decisions, plans, and
+tasks out of this capture step.
+
 ## Split the request
 
 Before creating anything, split the user's request only when it contains

@@ -41,6 +41,21 @@ The issue holds the requested outcome and acceptance sub-issues. The branch
 holds implementation. The pull request holds the result and verification. A
 human review followed by `/complete-pr` is the explicit acceptance boundary.
 
+For feature work or material ambiguity, use the structured path in
+[`standards/project-workflow.md`](standards/project-workflow.md):
+
+| Stage | Owner | Artifact |
+| --- | --- | --- |
+| Principles and problem | `/setup-repository`, `/add-backlog-idea` | Repository instructions, Backlog issue |
+| Requirements and clarification | `/refine-backlog-item` | Issue outcome, scope, decisions, acceptance |
+| Plan and tasks | `/refine-backlog-item` | Issue records and independent sub-issues |
+| Implementation handoff | `/next-ticket` | Issue branch, commits, verification |
+| Convergence | `/submit-draft-pr` | Draft PR convergence record |
+
+Use the ordinary path for a small, clear fix. Neither path bypasses credential,
+destructive-action, authority, unrelated-work, provider-mismatch, or missing-
+evidence stops. OpenSpec references remain historical only.
+
 ## Skills
 
 | Skill | Purpose |

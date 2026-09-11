@@ -23,6 +23,32 @@ close the parent issue.
 Run the repository's required pre-PR checks when fresh evidence is unavailable.
 Stop on a failed or unavailable required check.
 
+## Converge structured work
+
+Read `standards/project-workflow.md`. For a structured PBI, compare the pushed
+branch with its outcome, `requirements`, `clarifications`,
+`implementation-plan`, `task-list`, acceptance criteria, and verification
+evidence before creating or updating the draft PR.
+
+Map every task and linked sub-issue to branch evidence. If implementation is
+incomplete or contradicted, leave an actionable remainder in the PBI or task
+list and stop without creating or updating the draft PR. Do not call passing
+tests convergence by themselves. When all records agree, include this section
+in the draft PR body:
+
+```text
+## Convergence
+- Outcome: verified
+- Requirements and clarifications: verified
+- Plan and tasks: mapped to branch evidence
+- Acceptance and verification: mapped to fresh evidence
+- Remainder: none
+```
+
+Small, clear fixes use the ordinary path and do not require structured records.
+This gate does not bypass credential, destructive-action, authority, unrelated-
+work, provider-mismatch, or missing-evidence stops.
+
 ## Create or update the draft
 
 Confirm whether an open PR already uses the current head branch. If none exists,

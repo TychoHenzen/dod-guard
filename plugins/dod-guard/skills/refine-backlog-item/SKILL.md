@@ -188,6 +188,14 @@ deliverable, its outcome, scope, and acceptance criteria remain coherent, and
 no material requirement was invented. Keep the issue in `Backlog` when those
 requirements cannot be stated safely.
 
+For feature work or material ambiguity, follow
+`standards/project-workflow.md` and keep these named records in
+`## Implementation notes`: `requirements`, `clarifications`,
+`implementation-plan`, and `task-list`. Use the existing discovery markers as
+the evidence inside those records. The task list must identify dependencies and
+mark a task `independent` only when it can be committed and closed separately.
+Small, clear fixes may use the ordinary path and do not need these records.
+
 For re-refinement, read the existing discovery notes and compare them with the
 current requirements, code, callers, tests, sources, and decisions. Reuse
 evidence that is still current. Repeat only phases made stale or newly
@@ -217,6 +225,9 @@ linked, the PBI is still in Backlog, exactly one label from each scale remains,
 and at least one standard
 label applies. Confirm unknown priority explains missing evidence and effort
 is below 13 before moving that PBI to `Todo` with `gh project item-edit`.
+For a structured PBI, also confirm the named `requirements`, `clarifications`,
+`implementation-plan`, and `task-list` records are present and coherent before
+moving it to `Todo`.
 If an edit fails or readback disagrees, stop before the status change and
 report the actual partial state. Do not claim the PBI is ready.
 

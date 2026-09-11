@@ -58,6 +58,28 @@ and discovery evidence are verified before Todo. Material unresolved
 requirements keep the issue in Backlog until the missing decision or evidence
 is available.
 
+## Structured work
+
+Use the ordinary path for a small, clear fix. Use the structured path when a
+feature or material ambiguity needs explicit decisions, a plan, tasks, and a
+convergence check. The canonical records and handoffs are in
+[`standards/project-workflow.md`](standards/project-workflow.md).
+
+| Stage | Owning skill | GitHub artifact and handoff |
+| --- | --- | --- |
+| Principles | `/setup-repository` | Existing `AGENTS.md` and `CLAUDE.md` instructions |
+| Problem | `/add-backlog-idea` | Concise issue in `Backlog` -> `/refine-backlog-item` |
+| Requirements and clarification | `/refine-backlog-item` | Issue outcome, scope, decisions, and acceptance -> plan |
+| Plan and tasks | `/refine-backlog-item` | `implementation-plan`, `task-list`, and independent sub-issues -> `Todo` |
+| Implementation handoff | `/next-ticket` | Issue task list -> branch, commits, and verification |
+| Convergence | `/submit-draft-pr` | Draft PR `## Convergence` -> read-only review |
+
+The structured path does not create a parallel local plan. It preserves stops
+for material ambiguity, credentials, destructive or authority-bound actions,
+unrelated work, provider or head mismatch, and missing high-risk evidence.
+OpenSpec is historical reference material only. It is not an active runtime or
+dependency.
+
 Start or continue the Todo PBI from a clean checkout:
 
 From a clean Git checkout:

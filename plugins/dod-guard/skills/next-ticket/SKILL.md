@@ -71,6 +71,14 @@ criteria form one coherent implementation slice.
 Stop and name the missing section when the issue is incomplete. Do not invent
 requirements.
 
+Read `standards/project-workflow.md` and classify the PBI before editing. A
+small, clear fix may use the ordinary path. A feature or materially ambiguous
+PBI uses its `requirements`, `clarifications`, `implementation-plan`, and
+`task-list` records as the implementation handoff. Do not create a tracked
+planning file or bypass stops for credentials, destructive or authority-bound
+actions, unrelated work, provider or head mismatch, or missing high-risk
+evidence.
+
 ## Prepare the mutation
 
 Resolve every value before changing local or remote state:
@@ -120,6 +128,10 @@ Inspect the affected code, its callers, and its existing tests before editing.
 Implement every acceptance criterion. Add or update tests where an observable
 criterion can be checked automatically. Follow any smaller-step boundary in the
 repository's own instructions.
+
+For a structured PBI, map each task to the changed files, commit, and fresh
+verification evidence in the completion report. Do not report a task complete
+when its requirement is contradicted or its evidence is missing.
 
 Do not create a tracked planning document. Temporary working notes must stay
 outside the repository or be removed before the commit.
