@@ -52,10 +52,12 @@ export function normalizePullRequest(data, repository) {
 }
 
 export class GitHubClient {
+  #commandRunner;
+
   constructor(repository, pullNumber, commandRunner = runGh) {
     this.repository = repository;
     this.pullNumber = pullNumber;
-    this.commandRunner = commandRunner;
+    this.#commandRunner = commandRunner;
   }
 
   getRepository() {
@@ -74,15 +76,15 @@ export class GitHubClient {
   }
 
   markReady(pullNumber) {
-    this.commandRunner(["api", "--method", "PATCH", `repos/${this.repository}/pulls/${pullNumber}`, "-F", "draft=false"]);
+    this.#commandRunner(["api", "--method", "PATCH", `repos/${this.repository}/pulls/${pullNumber}`, "-F", "draft=false"]);
   }
 
   enableRepositoryAutoMerge() {
-    this.commandRunner(["api", "--method", "PATCH", `repos/${this.repository}`, "-F", "allow_auto_merge=true"]);
+    this.#commandRunner(["api", "--method", "PATCH", `repos/${this.repository}`, "-F", "allow_auto_merge=true"]);
   }
 
   enablePullRequestAutoMerge(pullNumber, expectedHead) {
-    this.commandRunner([
+    this.#commandRunner([
       "pr",
       "merge",
       String(pullNumber),
@@ -113,7 +115,7 @@ export class GitHubClient {
   }
 
   updateBranch(pullNumber, expectedHead) {
-    this.commandRunner([
+    this.#commandRunner([
       "api",
       "--method",
       "PUT",
@@ -163,7 +165,7 @@ export class GitHubClient {
 
   deleteBranchRef(branchName) {
     const encodedBranch = encodeBranch(branchName);
-    this.commandRunner(["api", "--method", "DELETE", `repos/${this.repository}/git/refs/heads/${encodedBranch}`]);
+    this.#commandRunner(["api", "--method", "DELETE", `repos/${this.repository}/git/refs/heads/${encodedBranch}`]);
   }
 
   async wait(milliseconds) {
