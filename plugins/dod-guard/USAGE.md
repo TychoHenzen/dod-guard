@@ -86,6 +86,22 @@ The initial branch-only push remains permitted. An unavailable or failed review
 also blocks completion. The result reports every disposition before stopping
 with the verified branch pushed. This review edits no files or remote comments.
 
+## Ask for a bounded second opinion
+
+Use the Codex advisor when a fix or design needs independent advice before
+implementation:
+
+```text
+/dod-guard:codex-advisor
+```
+
+The skill sends only the complete problem description through stdin to a
+separate `codex exec` process. It selects the lowest resolved reasoning effort,
+uses a read-only sandbox and an ephemeral session, and tells the advisor to
+skip repository research and mutations. Missing commands, non-zero exits, and
+malformed responses remain visible failures. The skill never edits files,
+changes Git or GitHub state, or dispatches another advisor.
+
 Submit or refresh its draft pull request in a separate step:
 
 ```text
