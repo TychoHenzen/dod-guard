@@ -82,6 +82,9 @@ unrelated work, provider or head mismatch, and missing high-risk evidence.
 OpenSpec is historical reference material only. It is not an active runtime or
 dependency.
 
+All GitHub-backed commands follow the shared request policy in
+[`standards/github-request-discipline.md`](standards/github-request-discipline.md).
+
 Start or continue the Todo PBI from the current checkout:
 
 ```text

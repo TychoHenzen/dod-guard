@@ -14,6 +14,8 @@ or an earlier command.
 Read and apply `standards/working-defaults.md` from the plugin root. Local
 safety or authority boundaries below remain stricter.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Resolve the pull request
 
 1. Confirm the current directory is inside a Git worktree and inspect
@@ -23,7 +25,8 @@ safety or authority boundaries below remain stricter.
    indistinguishable work, or when the accepted pull request no longer
    represents reviewed code.
 2. Run `gh auth status`. Require `repo` access.
-3. Resolve the repository and default branch with
+3. Resolve the repository and default branch with the GitHub MCP repository
+   operation. If MCP is unavailable, use
    `gh repo view --json nameWithOwner,defaultBranchRef,url`.
 4. Resolve the one open pull request for the current branch, or use the pull
    request number supplied by the user. Accept either a draft or ready pull

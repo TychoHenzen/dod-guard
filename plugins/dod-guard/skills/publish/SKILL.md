@@ -13,6 +13,8 @@ completed change in this monorepo.
 Read and apply `standards/working-defaults.md` from the plugin root. Local
 safety or authority boundaries below remain stricter.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Release model
 
 This repository is a Claude Code and Codex plugin marketplace. Nothing
@@ -27,7 +29,8 @@ the bump.
 
 ## Procedure
 
-1. Inspect `git status --short`, the current branch, and `gh repo view`. A
+1. Inspect `git status --short`, the current branch, and the GitHub MCP
+   repository metadata operation. If MCP is unavailable, use `gh repo view`. A
    dirty workspace can be the release input. List and classify every pending
    path first. Include every ordinary path only when it is clearly part of the
    authorized release. Preserve and report credential-like files, destructive

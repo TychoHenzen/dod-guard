@@ -5,7 +5,8 @@ definitions. It has no package workspace, MCP server, or bundle.
 
 ## Delivery contract
 
-- Resolve repository identity with `gh repo view`.
+- Resolve repository identity with the connected GitHub MCP operation. Use
+  `gh repo view` only when MCP is unavailable.
 - Select only the single open Project explicitly linked to that repository.
 - Use `/add-backlog-idea` to split an unrefined brain dump into one Backlog
   issue per independently deliverable feature in its target repository.
@@ -35,6 +36,11 @@ The structured stage map and its issue handoff records live in
 `standards/project-workflow.md`. Keep project principles in the repository's
 existing `AGENTS.md` and `CLAUDE.md` instructions. Do not create a parallel
 planning system or let structured work bypass the safety and authority stops.
+
+All GitHub-facing skills also follow
+`standards/github-request-discipline.md`. Resolve shared metadata once, reuse
+the run snapshot, prefer narrow GitHub MCP operations or REST endpoints, and
+reserve GraphQL for Project v2 or relationships without a REST equivalent.
 
 ## Validation
 

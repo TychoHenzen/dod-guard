@@ -14,14 +14,20 @@ PBI, change it to In Progress, implement code, or open a pull request.
 Read and apply `standards/working-defaults.md` from the plugin root. Local
 safety or authority boundaries below remain stricter.
 
+Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+
 ## Preconditions
 
-1. Resolve the repository with `gh repo view --json nameWithOwner,defaultBranchRef,url`.
+1. Resolve the repository with the GitHub MCP repository operation. If MCP is
+   unavailable, use `gh repo view --json nameWithOwner,defaultBranchRef,url`.
 2. Resolve exactly one open Project explicitly linked to that repository.
 3. Verify the specified issue belongs to the repository, appears in that
    Project, and has Status `Backlog`.
 4. Resolve exactly one `Status` field with one case-insensitive `Todo` option.
 5. Query all live labels in the target repository, including descriptions:
+
+   Use the GitHub MCP repository-resource operation with the labels endpoint.
+   If MCP is unavailable, use:
 
    ```text
    gh api --paginate "repos/{owner}/{repo}/labels?per_page=100"
@@ -213,8 +219,8 @@ assumptions. Do not create duplicate linked sub-issues or scale labels.
 
 Immediately before the label edit, run the mutation snapshot check above.
 Re-read the issue's current labels as part of that check. Add the chosen priority,
-effort, and standard labels with
-`gh issue edit {issue-number} --repo {owner}/{repo}`.
+effort, and standard labels with the GitHub MCP issue update operation. If MCP is
+unavailable, use `gh issue edit {issue-number} --repo {owner}/{repo}`.
 Remove every other current priority or effort label, including stale scale
 variants with a `Prio <number>` or `Effort <number>` prefix. Use repeated
 `--add-label` and `--remove-label` arguments in the same edit. Preserve
