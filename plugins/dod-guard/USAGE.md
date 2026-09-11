@@ -95,12 +95,14 @@ implementation:
 /dod-guard:codex-advisor
 ```
 
-The skill sends only the complete problem description through stdin to a
-separate `codex exec` process. It selects the lowest resolved reasoning effort,
-uses a read-only sandbox and an ephemeral session, and tells the advisor to
-skip repository research and mutations. Missing commands, non-zero exits, and
-malformed responses remain visible failures. The skill never edits files,
-changes Git or GitHub state, or dispatches another advisor.
+The skill sends a bounded prompt containing fixed advice-only instructions and
+the complete problem description through stdin to a separate `codex exec`
+process. It selects the lowest reasoning effort reported by the current CLI,
+uses an empty non-repository working directory, read-only restrictions, and an
+ephemeral session, and tells the advisor to skip repository research and
+mutations. Missing commands, non-zero exits, timeouts, and malformed responses
+remain visible failures. The skill never edits files, changes Git or GitHub
+state, or dispatches another advisor.
 
 Submit or refresh its draft pull request in a separate step:
 
