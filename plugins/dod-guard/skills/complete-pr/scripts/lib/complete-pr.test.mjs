@@ -162,13 +162,41 @@ test("waits for required checks, confirms merge, and deletes the trusted remote 
   ]);
 });
 
-test("marks a draft pull request ready through the narrow REST adapter", () => {
+test("stops before auto-merge when the ready transition leaves a draft", async () => {
+  const client = new FixtureClient({ pulls: [pull(), pull()] });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "ready_transition_failed" });
+  assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
+  assert.equal(client.calls.some(([name]) => name === "enablePullRequestAutoMerge"), false);
+});
+
+test("stops before auto-merge when marking a draft ready fails", async () => {
+  const client = new FixtureClient({ pulls: [pull()] });
+  client.markReady = () => {
+    throw new Error("gh pr ready failed");
+  };
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { message: "gh pr ready failed" });
+  assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
+  assert.equal(client.calls.some(([name]) => name === "enablePullRequestAutoMerge"), false);
+});
+
+test("marks a draft pull request ready through GitHub CLI", () => {
   const calls = [];
   const client = new GitHubClient("owner/repo", 24, (args) => calls.push(args));
 
   client.markReady(24);
 
-  assert.deepEqual(calls, [["api", "--method", "PATCH", "repos/owner/repo/pulls/24", "-F", "draft=false"]]);
+  assert.deepEqual(calls, [["pr", "ready", "24", "--repo", "owner/repo"]]);
+});
+
+test("surfaces failures from the GitHub ready command", () => {
+  const failure = new Error("gh pr ready failed");
+  const client = new GitHubClient("owner/repo", 24, () => {
+    throw failure;
+  });
+
+  assert.throws(() => client.markReady(24), failure);
 });
 
 test("accepts an already-ready pull request without marking it ready again", async () => {
@@ -253,6 +281,8 @@ test("stops when the head changes outside a guarded base update", async () => {
   });
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "unexpected_head_change" });
+  assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
+  assert.equal(client.calls.some(([name]) => name === "enablePullRequestAutoMerge"), false);
 });
 
 test("surfaces repository permission failures before enabling pull request auto-merge", async () => {

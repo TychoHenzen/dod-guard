@@ -76,7 +76,7 @@ export class GitHubClient {
   }
 
   markReady(pullNumber) {
-    this.#commandRunner(["api", "--method", "PATCH", `repos/${this.repository}/pulls/${pullNumber}`, "-F", "draft=false"]);
+    this.#commandRunner(["pr", "ready", String(pullNumber), "--repo", this.repository]);
   }
 
   enableRepositoryAutoMerge() {
