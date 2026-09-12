@@ -47,8 +47,10 @@ listed in [`rules-file-metrics.mjs`](../packages/quality-guard/skills/quality-re
 
 `complexityOf` computes a token-pattern value for each extracted function.
 The scanner emits findings according to configured thresholds. The public
-[`quality_report`](../packages/quality-guard/src/tool-report.ts) consumes those
-findings and assigns a file score from them. It does not expose a complete
+[`quality_report`](../packages/quality-guard/src/tool-report.ts) path runs the
+scan and passes its findings to
+[`report-builder.ts`](../packages/quality-guard/src/report-builder.ts). The
+builder assigns a file score from those findings. It does not expose a complete
 method inventory or coverage input.
 
 [`package.json`](../packages/quality-guard/package.json) has a `c8` command for
