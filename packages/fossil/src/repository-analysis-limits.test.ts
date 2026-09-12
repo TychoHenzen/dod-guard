@@ -33,7 +33,8 @@ test(
   "rejects over-limit included history before " + "producing a report",
   async () => {
     const directory = mkdtempSync(join(tmpdir(), "fossil-history-limit-"));
-    const record = `\u001ehash\0${Math.floor(Date.now() / 1_000)}\0A\0file.ts\0`;
+    const timestamp = Math.floor(Date.now() / 1_000);
+    const record = `\u001ehash\0${timestamp}\0A\0file.ts\0`;
     const history = record.repeat(100_001);
     const runGit = createRunGit(directory, [
       {
