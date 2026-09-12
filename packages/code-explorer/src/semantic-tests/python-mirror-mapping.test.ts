@@ -2,8 +2,12 @@ import assert from "node:assert/strict";
 import { existsSync, lstatSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "node:test";
-import { createNativePythonMirror } from "../semantic/python-mirror/python-mirror-runtime.js";
-import { disposeFixture, project } from "../testing/runtime/python-mirror-runtime-test-support.js";
+import { createNativePythonMirror } from "../semantic/\
+python-mirror/python-mirror-runtime.js";
+import {
+  disposeFixture,
+  project,
+} from "../testing/runtime/python-mirror-runtime-test-support.js";
 
 it("maps unchanged source through an immutable generation", () => {
   const fixture = project({
@@ -16,8 +20,13 @@ it("maps unchanged source through an immutable generation", () => {
     assert.equal(mirror.pathForUri(uri), "src/a.py");
     assert.equal(mirror.pathForUri(`${uri}/../escape.py`), undefined);
     assert.equal(mirror.uriFor("src/missing.py"), "");
-    assert.equal(lstatSync(join(mirror.root, "src", "a.py")).isSymbolicLink(), false);
-    assert.ok(existsSync(join(mirror.root, "typeshed", "stdlib", "builtins.pyi")));
+    assert.equal(
+      lstatSync(join(mirror.root, "src", "a.py")).isSymbolicLink(),
+      false,
+    );
+    assert.ok(
+      existsSync(join(mirror.root, "typeshed", "stdlib", "builtins.pyi")),
+    );
     assert.equal(statSync(mirror.root).mode & 0o222, 0);
     assert.equal(statSync(join(mirror.root, "src")).mode & 0o222, 0);
     assert.equal(statSync(join(mirror.root, "src", "a.py")).mode & 0o222, 0);

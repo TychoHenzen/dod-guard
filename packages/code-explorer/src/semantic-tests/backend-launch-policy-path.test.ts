@@ -7,7 +7,8 @@ import {
   policyAllowlist,
 } from "../testing/backend/backend-launch-policy-test-support.js";
 
-it("uses configured platform path comparison and rejects project descendants", () => {
+it("uses configured platform path comparison \
+and rejects project descendants", () => {
   const windowsIdentity = {
     ...identity,
     canonical_path: "C:\\host\\rust-analyzer.exe",
@@ -28,18 +29,25 @@ it("uses configured platform path comparison and rejects project descendants", (
         canonical_path,
       }),
     });
-  assert.equal(create(windowsIdentity.canonical_path).prepare("rust").status, "ready");
-  assert.deepEqual(create("C:\\project\\bin\\rust-analyzer.exe").prepare("rust"), {
-    status: "unavailable",
-    code: "backend_identity_unverifiable",
-  });
+  assert.equal(
+    create(windowsIdentity.canonical_path).prepare("rust").status,
+    "ready",
+  );
+  assert.deepEqual(
+    create("C:\\project\\bin\\rust-analyzer.exe").prepare("rust"),
+    {
+      status: "unavailable",
+      code: "backend_identity_unverifiable",
+    },
+  );
   assert.deepEqual(create("C:\\host\\other.exe").prepare("rust"), {
     status: "unavailable",
     code: "backend_identity_unverifiable",
   });
 });
 
-it("treats Windows executable path and basename case changes as the same identity", () => {
+it("treats Windows executable path and basename \
+case changes as the same identity", () => {
   let current = {
     ...identity,
     canonical_path: "C:\\HOST\\RUST-ANALYZER.EXE",

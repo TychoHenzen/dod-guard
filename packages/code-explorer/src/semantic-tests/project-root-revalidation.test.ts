@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createProjectRoot } from "../semantic/project-root/project-root.js";
-import { filesystem, windowsProjectFilesystem } from "../testing/project-root/project-root-test-support.js";
+import {
+  filesystem,
+  windowsProjectFilesystem,
+} from "../testing/project-root/project-root-test-support.js";
 
 const root = "C:/repo";
 
-it("reports unavailable identity when fstat cannot prove the opened file", () => {
+it("reports unavailable identity when \
+fstat cannot prove the opened file", () => {
   const fs = windowsProjectFilesystem(root);
   fs.fstat = () => ({ dev: 1, ino: Number.NaN });
   const guard = createProjectRoot({
@@ -13,7 +17,10 @@ it("reports unavailable identity when fstat cannot prove the opened file", () =>
     filesystem: fs,
     platform: "win32",
   });
-  assert.throws(() => guard.openProtected("src/lib.rs"), /path_identity_unavailable/);
+  assert.throws(
+    () => guard.openProtected("src/lib.rs"),
+    /path_identity_unavailable/,
+  );
 });
 
 it("distinguishes transient root access failures from a changed root", () => {

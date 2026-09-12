@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
+import { createRuntimeLspBackend } from "../semantic/runtime/\
+runtime-lsp-backend.js";
 import {
   degradedCapabilities,
   degradedProcess,
@@ -8,7 +9,8 @@ import {
   runtimeOptions,
 } from "../testing/runtime/runtime-lsp-test-support.js";
 
-it("publishes a degraded relation status from the runtime backend", async () => {
+it("publishes a degraded relation \
+status from the runtime backend", async () => {
   const process = degradedProcess();
   const backend = createRuntimeLspBackend(
     runtimeOptions(process, {

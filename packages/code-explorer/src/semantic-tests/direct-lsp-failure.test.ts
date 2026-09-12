@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { encode, FakeProcess, ready, tick } from "../testing/direct-lsp/direct-lsp-test-support.js";
+import {
+  encode,
+  FakeProcess,
+  ready,
+  tick,
+} from "../testing/direct-lsp/direct-lsp-test-support.js";
 
 async function assertInvalidFrame(invalid: Uint8Array): Promise<void> {
   const process = new FakeProcess();
@@ -12,11 +17,13 @@ async function assertInvalidFrame(invalid: Uint8Array): Promise<void> {
   assert.equal(client.status().state, "failed");
 }
 
-it("terminates on malformed, non-ASCII, incomplete, invalid, and oversized frames", async () => {
+it("terminates on malformed, non-ASCII, incomplete, \
+invalid, and oversized frames", async () => {
   for (const invalid of [
     new TextEncoder().encode("Content-Length: 2\n\n{}"),
     new Uint8Array([
-      67, 111, 110, 116, 101, 110, 116, 45, 76, 101, 110, 103, 116, 104, 58, 32, 49, 128, 13, 10, 13, 10, 123,
+      67, 111, 110, 116, 101, 110, 116, 45, 76, 101, 110, 103, 116, 104, 58, 32,
+      49, 128, 13, 10, 13, 10, 123,
     ]),
     encode({ jsonrpc: "2.0", id: 0, result: [] }),
     encode({
@@ -29,7 +36,10 @@ it("terminates on malformed, non-ASCII, incomplete, invalid, and oversized frame
   }
   const incomplete = new FakeProcess();
   const { client: incompleteClient } = await ready(incomplete);
-  const incompletePending = incompleteClient.request("textDocument/definition", {});
+  const incompletePending = incompleteClient.request(
+    "textDocument/definition",
+    {},
+  );
   incomplete.emit(new TextEncoder().encode("Content-Length: 4\r\n\r\n{"));
   incomplete.crash();
   await assert.rejects(incompletePending, {
@@ -38,7 +48,8 @@ it("terminates on malformed, non-ASCII, incomplete, invalid, and oversized frame
   assert.equal(incomplete.killed, true);
 });
 
-it("cancels timeouts, rejects writes locally, and ignores late responses", async () => {
+it("cancels timeouts, rejects writes \
+locally, and ignores late responses", async () => {
   const process = new FakeProcess();
   const { client, scheduler } = await ready(process);
   const pending = client.request("textDocument/references", {});
@@ -59,7 +70,8 @@ it("cancels timeouts, rejects writes locally, and ignores late responses", async
   });
 });
 
-it("force terminates after two semantic timeouts and rejects operations", async () => {
+it("force terminates after two semantic \
+timeouts and rejects operations", async () => {
   const process = new FakeProcess();
   const { client, scheduler } = await ready(process);
   const first = client.request("textDocument/definition", {});

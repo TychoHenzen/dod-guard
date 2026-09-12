@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { assertHelperOracle, loadFixture } from "../testing/semantic/language-fixture-oracle-support.js";
+import {
+  assertHelperOracle,
+  loadFixture,
+} from "../testing/semantic/language-fixture-oracle-support.js";
 
 it("keeps the Rust helper definition and call hierarchy ranges", async () => {
   const fixture = await loadFixture("rust");
@@ -30,7 +33,8 @@ it("keeps the Python helper definition and call hierarchy ranges", async () => {
   assertHelperOracle(fixture);
 });
 
-it("keeps the C# Helper definition and call hierarchy ranges exactly", async () => {
+it("keeps the C# Helper definition \
+and call hierarchy ranges exactly", async () => {
   const fixture = await loadFixture("csharp");
   assert.equal(fixture.manifest.source_file, "src/Demo.cs");
   assert.deepEqual(fixture.manifest.relations.definition.from_call, {

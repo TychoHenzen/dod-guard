@@ -8,7 +8,8 @@ import {
   ready,
 } from "../testing/direct-lsp/direct-lsp-test-support.js";
 
-it("opens each protected file URI once without generic file access", async () => {
+it("opens each protected file URI \
+once without generic file access", async () => {
   const process = new FakeProcess();
   const { client } = await ready(process);
 
@@ -22,7 +23,11 @@ it("opens each protected file URI once without generic file access", async () =>
   });
 
   assert.equal(process.sent.at(-1)?.method, "textDocument/didOpen");
-  assert.equal(process.sent.filter((message) => message.method === "textDocument/didOpen").length, 1);
+  assert.equal(
+    process.sent.filter((message) => message.method === "textDocument/didOpen")
+      .length,
+    1,
+  );
   assertNoGenericNotificationRoute(client);
   assert.throws(
     () =>

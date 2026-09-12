@@ -57,8 +57,14 @@ it("returns a redacted external relation for an external file", async () => {
 it("does not degrade a relation when transport fails", async () => {
   const backend = createSemanticBackend({
     symbols: new Map([["entry", rustEntrySymbol()]]),
-    client: semanticClient(() => Promise.reject(new Error("transport failed")), { definitionProvider: true }),
+    client: semanticClient(
+      () => Promise.reject(new Error("transport failed")),
+      { definitionProvider: true },
+    ),
   });
-  await assert.rejects(backend.query({ operation: "definition", symbol_id: "entry" }), { message: "transport failed" });
+  await assert.rejects(
+    backend.query({ operation: "definition", symbol_id: "entry" }),
+    { message: "transport failed" },
+  );
   assert.deepEqual(backend.readiness(), { state: "ready" });
 });

@@ -1,7 +1,9 @@
 import { it } from "node:test";
-import * as support from "../testing/backend/backend-launch-policy-test-support.js";
+import * as support from "../testing/backend/\
+backend-launch-policy-test-support.js";
 
-it("snapshots server-owned launch data and freezes returned preparation", () => {
+it("snapshots server-owned launch data \
+and freezes returned preparation", () => {
   const entry = support.policyAllowlist()[0];
   const launch = support.createBackendLaunchPolicy({
     project_root: "/project",
@@ -9,7 +11,8 @@ it("snapshots server-owned launch data and freezes returned preparation", () => 
     inspect: () => support.identity,
   });
   const preparation = launch.prepare("rust");
-  if (preparation.status !== "ready") throw new Error("expected launch preparation");
+  if (preparation.status !== "ready")
+    throw new Error("expected launch preparation");
   entry.arguments.push("--mutated");
   entry.environment.RUST_BACKTRACE = "1";
   (
@@ -29,7 +32,10 @@ it("snapshots server-owned launch data and freezes returned preparation", () => 
     ).buildScripts.enable,
     false,
   );
-  support.assert.throws(() => (preparation.arguments as string[]).push("--also-mutated"), TypeError);
+  support.assert.throws(
+    () => (preparation.arguments as string[]).push("--also-mutated"),
+    TypeError,
+  );
   support.assert.throws(
     () =>
       ((

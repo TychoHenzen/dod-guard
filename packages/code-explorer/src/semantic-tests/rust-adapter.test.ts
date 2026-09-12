@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createRustAdapter } from "../semantic/adapters/language-adapter.js";
 import type { SemanticRequest } from "../semantic/contracts/contract.js";
-import { FakeSemanticAdapter } from "../testing/semantic/fake-semantic-adapter.js";
+import { FakeSemanticAdapter } from "../testing/semantic/\
+fake-semantic-adapter.js";
 import {
   adapterRequests,
   createAdapterResult,
@@ -29,7 +30,8 @@ it("reports a compatible Rust backend and forwards requests", async () => {
   });
   const resultFor = createAdapterResult("rust", "src/lib.rs", "function");
   const requests = adapterRequests("rust:helper");
-  for (const request of requests) backend.setResult(request, resultFor(request));
+  for (const request of requests)
+    backend.setResult(request, resultFor(request));
 
   assert.equal(adapter.status().language, "rust");
   assert.equal(adapter.status().state, "degraded");
@@ -40,7 +42,8 @@ it("reports a compatible Rust backend and forwards requests", async () => {
     state: "unavailable",
   });
 
-  for (const request of requests) assert.deepEqual(await adapter.request(request), resultFor(request));
+  for (const request of requests)
+    assert.deepEqual(await adapter.request(request), resultFor(request));
   assert.deepEqual(backend.requests(), requests);
 });
 
@@ -61,7 +64,8 @@ it("observes readiness changes after adapter construction", () => {
   });
 });
 
-it("validates runtime requests and injected results at the boundary", async () => {
+it("validates runtime requests and \
+injected results at the boundary", async () => {
   const backend = new FakeSemanticAdapter();
   backend.setReady();
   const adapter = rustAdapter(backend);

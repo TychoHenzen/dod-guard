@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
+import { createRuntimeLspBackend } from "../semantic/runtime/\
+runtime-lsp-backend.js";
 import {
   assertSourceDocumentOpened,
   Process,
@@ -16,7 +17,9 @@ it("opens approved Python mirror documents before work begins", async () => {
     query: "helper",
   });
   assert.deepEqual(
-    process.sent.filter((message) => message.method === "textDocument/didOpen").map((message) => message.params),
+    process.sent
+      .filter((message) => message.method === "textDocument/didOpen")
+      .map((message) => message.params),
     [
       {
         textDocument: {

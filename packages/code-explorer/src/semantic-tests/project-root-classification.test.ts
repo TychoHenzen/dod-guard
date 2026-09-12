@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createProjectRoot } from "../semantic/project-root/project-root.js";
-import { filesystem } from "../testing/project-root/project-root-test-support.js";
+import { filesystem } from "../testing/project-root/\
+project-root-test-support.js";
 
 const root = "C:/repo";
 
-it("classifies an escaped backend path as external without retaining it", () => {
+it("classifies an escaped backend path \
+as external without retaining it", () => {
   const guard = createProjectRoot({
     cwd: root,
     filesystem: filesystem({

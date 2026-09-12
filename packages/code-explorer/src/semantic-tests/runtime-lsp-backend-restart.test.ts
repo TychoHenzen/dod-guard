@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { createRuntimeLspBackend } from "../semantic/runtime/runtime-lsp-backend.js";
+import { createRuntimeLspBackend } from "../semantic/runtime/\
+runtime-lsp-backend.js";
 import {
   assertReplacementDocuments,
   Process,
@@ -8,7 +9,8 @@ import {
   runtimeSourceOptions,
 } from "../testing/runtime/runtime-lsp-test-support.js";
 
-it("reopens one protected source document for a replacement process", async () => {
+it("reopens one protected source \
+document for a replacement process", async () => {
   const { backend, first, replacement, scheduler } = restartingSourceFixture();
   await backend.query({
     operation: "definition",
@@ -28,7 +30,8 @@ it("reopens one protected source document for a replacement process", async () =
   assertReplacementDocuments(first, replacement);
 });
 
-it("confirms identity before publishing and disposes only after shutdown", async () => {
+it("confirms identity before publishing \
+and disposes only after shutdown", async () => {
   const events: string[] = [];
   const process = new Process(events);
   const backend = createRuntimeLspBackend(
