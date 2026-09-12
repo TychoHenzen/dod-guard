@@ -34,6 +34,11 @@ function encodeBranch(branchName) {
 
 export function normalizePullRequest(data, repository) {
   const headRepository = data.head?.repo?.full_name ?? null;
+  let state = data.state?.toUpperCase() ?? null;
+  if (data.merged_at) {
+    state = "MERGED";
+  }
+
   return {
     baseBranch: data.base?.ref ?? null,
     baseSha: data.base?.sha ?? null,
@@ -46,7 +51,7 @@ export function normalizePullRequest(data, repository) {
     mergeState: data.mergeable_state?.toUpperCase() ?? null,
     mergeable: data.mergeable === true ? "MERGEABLE" : data.mergeable === false ? "CONFLICTING" : "UNKNOWN",
     number: data.number,
-    state: data.state?.toUpperCase() ?? null,
+    state,
     url: data.html_url ?? null,
   };
 }

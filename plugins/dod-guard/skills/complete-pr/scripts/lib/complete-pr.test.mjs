@@ -139,7 +139,16 @@ test("normalizes the narrow REST pull request payload used by the completion loo
   );
 });
 
+test("normalizes closed REST pull requests only when merged_at is populated", () => {
+  assert.equal(normalizePullRequest({ state: "closed", merged_at: "2026-09-12T13:47:19Z" }, "owner/repo").state, "MERGED");
+  assert.equal(normalizePullRequest({ state: "closed", merged_at: null }, "owner/repo").state, "CLOSED");
+});
+
 test("waits for required checks, confirms merge, and deletes the trusted remote branch", async () => {
+  const mergedState = normalizePullRequest(
+    { state: "closed", merged_at: "2026-09-12T13:47:19Z" },
+    "owner/repo",
+  ).state;
   const client = new FixtureClient({
     checks: [pendingChecks, passingChecks],
     pulls: [
@@ -147,7 +156,7 @@ test("waits for required checks, confirms merge, and deletes the trusted remote 
       pull({ isDraft: false }),
       pull({ isDraft: false }),
       pull({ isDraft: false }),
-      pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: mergedState }),
     ],
   });
 
@@ -160,6 +169,20 @@ test("waits for required checks, confirms merge, and deletes the trusted remote 
   assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
     ["deleteBranchRef", "codex/24-complete-pr"],
   ]);
+});
+
+test("does not run cleanup for a closed pull request without merged_at", async () => {
+  const closedState = normalizePullRequest({ state: "closed", merged_at: null }, "owner/repo").state;
+  const client = new FixtureClient({
+    pulls: [
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, state: closedState }),
+    ],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "pull_request_closed" });
+  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
 });
 
 test("stops before auto-merge when the ready transition leaves a draft", async () => {
