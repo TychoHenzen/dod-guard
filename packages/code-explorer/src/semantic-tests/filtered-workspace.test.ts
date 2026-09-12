@@ -4,7 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  rmSync,
+  rmSync as removeSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -50,7 +50,7 @@ it("creates a native backend root without sensitive paths", () => {
       filtered.dispose();
     }
   } finally {
-    rmSync(project, { recursive: true, force: true });
+    removeSync(project, { recursive: true, force: true });
   }
 });
 
@@ -86,6 +86,6 @@ it("never copies classification configuration into the workspace", () => {
       filtered.dispose();
     }
   } finally {
-    rmSync(project, { recursive: true, force: true });
+    removeSync(project, { recursive: true, force: true });
   }
 });
