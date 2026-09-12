@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createServer } from "../../index.js";
-import { relationNames } from "../../semantic/contracts/contract.js";
 import type * as language from "../../semantic/adapters/language-adapter.js";
+import { relationNames } from "../../semantic/contracts/contract.js";
 import { FakeSemanticAdapter } from "../semantic/fake-semantic-adapter.js";
 import {
   followDefinition,

@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "strict",
-  "createdAt": "2026-09-12T19:59:25.249Z",
-  "total": 168,
+  "createdAt": "2026-09-12T21:53:45.000Z",
+  "total": 169,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -1563,6 +1563,7 @@
     "packages/code-explorer/scripts/practice-browser-transport.mjs::duplicate-block": 2,
     "packages/code-explorer/src/semantic/contracts/contract-values.ts::duplicate-block": 1,
     "packages/code-explorer/src/semantic/python-mirror/python-mirror-validation.ts::duplicate-block": 3,
+    "packages/code-explorer/src/semantic/python-mirror/python-mirror-validation.ts::test-only-export": 1,
     "packages/code-explorer/src/testing/index/index-navigation-owner.test.ts::duplicate-block": 1,
     "packages/code-explorer/src/testing/runtime/python-mirror-runtime-test-support.ts::duplicate-block": 3,
     "packages/fossil/src/fossil-cli-core.ts::duplicate-block": 2,
