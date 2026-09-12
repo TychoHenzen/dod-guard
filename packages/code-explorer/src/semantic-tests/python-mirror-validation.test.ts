@@ -16,6 +16,11 @@ it("rejects execution hooks before mirroring", () => {
       "pyproject.toml": `[tool.pyright]\n${key} = "../outside"\n`,
     });
   }
+  unsafe({
+    "pyrightconfig.json": JSON.stringify({
+      "python.analysis.extraPaths": ["src"],
+    }),
+  });
   unsafe({ "pyrightconfig.json": "not-json" });
   unsafe({
     "pyproject.toml": "[tool.pyright]\nnot valid toml\n",
