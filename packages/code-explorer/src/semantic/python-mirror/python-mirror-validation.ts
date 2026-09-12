@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { posix, win32 } from "node:path";
 import type { PythonMirrorInput } from "./python-mirror-input.js";
 
-const PROHIBITED_KEYS = new Set([
+export const prohibitedPythonConfigurationKeys = Object.freeze([
   "extends",
   "venvPath",
   "venv",
@@ -14,7 +14,9 @@ const PROHIBITED_KEYS = new Set([
   "python.pythonPath",
   "python.venvPath",
   "python.analysis.extraPaths",
-]);
+] as const);
+
+const PROHIBITED_KEYS = new Set<string>(prohibitedPythonConfigurationKeys);
 
 export function containsUnsafePythonConfiguration(
   value: unknown,

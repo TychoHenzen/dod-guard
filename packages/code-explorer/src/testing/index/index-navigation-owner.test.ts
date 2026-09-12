@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createServer } from "../../index.js";
 import type * as language from "../../semantic/adapters/language-adapter.js";
+import { relationNames } from "../../semantic/contracts/contract.js";
 import { FakeSemanticAdapter } from "../semantic/fake-semantic-adapter.js";
 import {
   followDefinition,
@@ -17,14 +18,7 @@ it(
   async () => {
     const focused = symbol("function", "src/helper.rs");
     const capabilities = Object.fromEntries(
-      [
-        "definition",
-        "references",
-        "type_definition",
-        "implementation",
-        "callers",
-        "callees",
-      ].map((name) => [name, { state: "ready" }]),
+      relationNames.map((name) => [name, { state: "ready" }]),
     ) as never;
     const status = (language: "rust" | "python") => ({
       language,

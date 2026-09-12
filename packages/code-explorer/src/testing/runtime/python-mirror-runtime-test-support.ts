@@ -5,16 +5,7 @@ import { join } from "node:path";
 import { createNativeProjectRoot } from "../../semantic/project-root/project-root.js";
 import { createNativePythonMirror } from "../../semantic/python-mirror/python-mirror-runtime.js";
 
-export const unsafePythonConfigurationKeys = [
-  "extends",
-  "venvPath",
-  "venv",
-  "extraPaths",
-  "typeshedPath",
-  "stubPath",
-  "executionEnvironments",
-  "pythonPath",
-] as const;
+export { prohibitedPythonConfigurationKeys as unsafePythonConfigurationKeys } from "../../semantic/python-mirror/python-mirror-validation.js";
 
 export function project(files: Record<string, string>) {
   const root = mkdtempSync(join(tmpdir(), "code-explorer-python-test-"));

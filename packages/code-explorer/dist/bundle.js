@@ -12678,7 +12678,7 @@ import { pathToFileURL } from "node:url";
 // src/semantic/python-mirror/python-mirror-validation.ts
 import { createHash } from "node:crypto";
 import { posix as posix3, win32 as win323 } from "node:path";
-var PROHIBITED_KEYS = /* @__PURE__ */ new Set([
+var prohibitedPythonConfigurationKeys = Object.freeze([
   "extends",
   "venvPath",
   "venv",
@@ -12691,6 +12691,7 @@ var PROHIBITED_KEYS = /* @__PURE__ */ new Set([
   "python.venvPath",
   "python.analysis.extraPaths"
 ]);
+var PROHIBITED_KEYS = new Set(prohibitedPythonConfigurationKeys);
 function containsUnsafePythonConfiguration(value, key) {
   return unsafeConfigurationValue(value, key);
 }
