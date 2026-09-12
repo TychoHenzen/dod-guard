@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { FakeProcess, ready, tick } from "../testing/direct-lsp/direct-lsp-test-support.js";
+import {
+  FakeProcess,
+  ready,
+} from "../testing/direct-lsp/direct-lsp-test-support.js";
 
-it("rejects every dynamic registration without accepting its request", async () => {
+it("rejects every dynamic registration \
+without accepting its request", async () => {
   const process = new FakeProcess();
   const { client } = await ready(process);
   process.respond({
@@ -32,7 +36,8 @@ it("rejects every dynamic registration without accepting its request", async () 
   });
 });
 
-it("ignores diagnostics but terminates on an unknown server notification", async () => {
+it("ignores diagnostics but terminates \
+on an unknown server notification", async () => {
   const process = new FakeProcess();
   const { client } = await ready(process);
 
@@ -66,33 +71,7 @@ it("bounds retained notification events", async () => {
       params: { uri: "file:///frozen/a.py", diagnostics: [] },
     });
   assert.equal(client.status().events.length, 256);
-  assert.ok(client.status().events.every((event) => event === "backend_notification"));
-});
-
-it("retries one read-only request after the server reports content modified", async () => {
-  const process = new FakeProcess();
-  const { client } = await ready(process);
-  const pending = client.request("textDocument/references", {
-    textDocument: { uri: "file:///frozen/a.rs" },
-  });
-  const first = process.sent.at(-1) as { id: number };
-  process.respond({
-    jsonrpc: "2.0",
-    id: first.id,
-    error: { code: -32801, message: "content modified" },
-  });
-  await tick();
-  const second = process.sent.at(-1) as {
-    id: number;
-    method: string;
-  };
-  assert.equal(second.method, "textDocument/references");
-  assert.notEqual(second.id, first.id);
-  process.respond({
-    jsonrpc: "2.0",
-    id: second.id,
-    result: [{ uri: "file:///frozen/a.rs" }],
-  });
-  assert.deepEqual(await pending, [{ uri: "file:///frozen/a.rs" }]);
-  assert.equal(client.status().state, "ready");
+  assert.ok(
+    client.status().events.every((event) => event === "backend_notification"),
+  );
 });

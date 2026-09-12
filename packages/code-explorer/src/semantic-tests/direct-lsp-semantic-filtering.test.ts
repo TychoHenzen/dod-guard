@@ -8,7 +8,8 @@ import {
   workspaceSearchClient,
 } from "../testing/direct-lsp/direct-lsp-semantic-support.js";
 
-it("preserves public workspace-symbol names and kinds for discovery", async () => {
+it("preserves public workspace-symbol \
+names and kinds for discovery", async () => {
   const backend = createSemanticBackend({
     symbols: new Map(),
     capabilities: {} as never,
@@ -36,7 +37,8 @@ it("preserves public workspace-symbol names and kinds for discovery", async () =
   );
 });
 
-it("does not send a relation request that initialize reported unavailable", async () => {
+it("does not send a relation request that \
+initialize reported unavailable", async () => {
   const methods: string[] = [];
   const backend = unavailableRelationBackend(methods);
   await assert.rejects(
@@ -49,7 +51,8 @@ it("does not send a relation request that initialize reported unavailable", asyn
   assert.deepEqual(methods, []);
 });
 
-it("does not retain a backend URI outside the protected project root", async () => {
+it("does not retain a backend URI \
+outside the protected project root", async () => {
   const backend = createSemanticBackend({
     symbols: new Map(),
     client: semanticClient(),

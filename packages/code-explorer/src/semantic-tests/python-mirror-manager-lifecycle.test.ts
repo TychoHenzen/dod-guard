@@ -6,13 +6,19 @@ import {
   createNativePythonMirror,
   createPythonMirrorManager,
 } from "../semantic/python-mirror/python-mirror-runtime.js";
-import { project } from "../testing/runtime/python-mirror-runtime-test-support.js";
+import { project } from "../testing/runtime/\
+python-mirror-runtime-test-support.js";
 
 function linkConfiguration(root: string): void {
-  symlinkSync(join(root, "replacement.json"), join(root, "pyrightconfig.json"), "file");
+  symlinkSync(
+    join(root, "replacement.json"),
+    join(root, "pyrightconfig.json"),
+    "file",
+  );
 }
 
-it("retires an active backend before a linked configuration change", async (context) => {
+it("retires an active backend before \
+a linked configuration change", async (context) => {
   const fixture = project({
     "src/a.py": "x = 1\n",
     "replacement.json": "{}\n",

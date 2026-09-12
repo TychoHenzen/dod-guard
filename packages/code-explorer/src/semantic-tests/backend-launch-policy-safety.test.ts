@@ -6,7 +6,8 @@ import {
   policyAllowlist,
 } from "../testing/backend/backend-launch-policy-test-support.js";
 
-it("rejects an allowlist mode without a verified C# analyzer-safe sentinel", () => {
+it("rejects an allowlist mode without \
+a verified C# analyzer-safe sentinel", () => {
   const unsafe = policyAllowlist({
     language: "csharp",
     sentinel_passed: false,

@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { it } from "node:test";
-import { unsafe, unsafePythonConfigurationKeys } from "../testing/runtime/python-mirror-runtime-test-support.js";
+import {
+  unsafe,
+  unsafePythonConfigurationKeys,
+} from "../testing/runtime/python-mirror-runtime-test-support.js";
 
 it("rejects execution hooks before mirroring", () => {
   for (const key of unsafePythonConfigurationKeys) {
@@ -27,7 +30,10 @@ it("rejects every checked-in unsafe selector fixture before Pyright", () => {
     "configuration-replacement.pyrightconfig.json",
   ]) {
     const source = readFileSync(
-      new URL(`../../fixtures/safe-mode-sentinels/python/selectors/${selector}`, import.meta.url),
+      new URL(
+        `../../fixtures/safe-mode-sentinels/python/selectors/${selector}`,
+        import.meta.url,
+      ),
       "utf8",
     );
     unsafe({ "pyrightconfig.json": source });

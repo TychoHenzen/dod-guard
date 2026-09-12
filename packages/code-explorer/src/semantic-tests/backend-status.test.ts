@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { createPythonAdapter, createRustAdapter } from "../semantic/adapters/language-adapter.js";
-import { createBackendStatusReport } from "../semantic/backend-status/backend-status.js";
-import { statusBackend } from "../testing/backend/backend-status-test-support.js";
+import { createBackendStatusReport } from "../semantic/\
+backend-status/backend-status.js";
+import {
+  createPythonAdapter,
+  createRustAdapter,
+} from "../semantic/adapters/language-adapter.js";
+import { statusBackend } from "../testing/backend/\
+backend-status-test-support.js";
 
 it("reports a missing backend without attempting semantic work", () => {
   const adapter = createRustAdapter({
@@ -19,7 +24,8 @@ it("reports a missing backend without attempting semantic work", () => {
     state: "unavailable",
   });
 });
-it("keeps supported navigation ready when call hierarchy is unavailable", () => {
+it("keeps supported navigation ready \
+when call hierarchy is unavailable", () => {
   const adapter = createRustAdapter({
     backend: statusBackend("ready"),
     compatible: true,
@@ -64,7 +70,8 @@ it("isolates a stable initialization failure from ready adapters", () => {
   assert.equal(report.backends[1].state, "ready");
   assert.equal(JSON.stringify(report).includes("protocol"), false);
 });
-it("keeps discovery-only data separate when every backend is unavailable", () => {
+it("keeps discovery-only data separate \
+when every backend is unavailable", () => {
   const adapter = createRustAdapter({
     backend: statusBackend("unavailable"),
     compatible: true,

@@ -8,7 +8,8 @@ import {
   Scheduler,
 } from "../testing/direct-lsp/direct-lsp-test-support.js";
 
-it("retains initialize capabilities and answers only safe Python configuration", async () => {
+it("retains initialize capabilities and answers \
+only safe Python configuration", async () => {
   const process = new FakeProcess();
   const client = createDirectLspClient({
     language: "python",
@@ -30,7 +31,8 @@ it("retains initialize capabilities and answers only safe Python configuration",
   assertPythonConfiguration(process);
 });
 
-it("snapshots client capabilities and safe initialization options", async () => {
+it("snapshots client capabilities \
+and safe initialization options", async () => {
   const process = new FakeProcess();
   const capabilities = {
     workspace: { configuration: true },

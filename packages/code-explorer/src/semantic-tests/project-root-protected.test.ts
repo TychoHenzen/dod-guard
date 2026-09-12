@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createProjectRoot } from "../semantic/project-root/project-root.js";
-import * as rootSupport from "../testing/project-root/project-root-test-support.js";
+import * as rootSupport from "../testing/project-root/\
+project-root-test-support.js";
 
 const root = "C:/repo";
 
@@ -13,7 +14,10 @@ it("fails a protected read when opened-file identity changes", () => {
     platform: "win32",
   });
   fs.fstat = () => ({ dev: 1, ino: 3 });
-  assert.throws(() => guard.openProtected("src/lib.rs"), /path_identity_changed/);
+  assert.throws(
+    () => guard.openProtected("src/lib.rs"),
+    /path_identity_changed/,
+  );
 });
 
 it("accepts an opened Windows file when stat has no device identity", () => {
@@ -30,7 +34,8 @@ it("accepts an opened Windows file when stat has no device identity", () => {
   });
 });
 
-it("closes the protected handle and returns no bytes when a path changes", () => {
+it("closes the protected handle and \
+returns no bytes when a path changes", () => {
   const fs = rootSupport.windowsProjectFilesystem(root);
   let closed = false;
   fs.read = () => {
@@ -45,6 +50,9 @@ it("closes the protected handle and returns no bytes when a path changes", () =>
     filesystem: fs,
     platform: "win32",
   });
-  assert.throws(() => guard.protectedRead("src/lib.rs"), /path_identity_changed/);
+  assert.throws(
+    () => guard.protectedRead("src/lib.rs"),
+    /path_identity_changed/,
+  );
   assert.equal(closed, true);
 });

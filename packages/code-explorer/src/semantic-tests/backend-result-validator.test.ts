@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { validateBackendResult } from "../semantic/backend-result/backend-result-validator.js";
-import { definition, options } from "../testing/backend/backend-result-validator-test-support.js";
+import { validateBackendResult } from "../semantic/backend-result/\
+backend-result-validator.js";
+import {
+  definition,
+  options,
+} from "../testing/backend/backend-result-validator-test-support.js";
 
-it("rejects a negative or out-of-file range before a result is returned", () => {
+it("rejects a negative or out-of-file \
+range before a result is returned", () => {
   const invalid = definition({
     relations: [
       {
@@ -24,7 +29,8 @@ it("rejects a negative or out-of-file range before a result is returned", () => 
     code: "invalid_backend_result",
   });
 });
-it("rejects a response larger than one MiB without returning its payload", () => {
+it("rejects a response larger than one \
+MiB without returning its payload", () => {
   const oversized = {
     ...definition(),
     padding: "x".repeat(1024 * 1024),

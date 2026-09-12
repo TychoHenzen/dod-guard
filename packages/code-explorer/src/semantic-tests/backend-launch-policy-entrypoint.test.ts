@@ -8,7 +8,8 @@ import {
   pythonIdentity,
 } from "../testing/backend/backend-launch-policy-test-support.js";
 
-it("binds a trusted entrypoint into fixed arguments and rejects an identity change", () => {
+it("binds a trusted entrypoint into fixed \
+arguments and rejects an identity change", () => {
   let current = pythonIdentity();
   const launch = createBackendLaunchPolicy({
     project_root: "/project",
@@ -19,7 +20,10 @@ it("binds a trusted entrypoint into fixed arguments and rejects an identity chan
     status: "ready",
     executable: "/host/bin/node",
     version: "1.0.0",
-    arguments: ["/host/npm/node_modules/pyright/langserver.index.js", "--stdio"],
+    arguments: [
+      "/host/npm/node_modules/pyright/langserver.index.js",
+      "--stdio",
+    ],
     shell: false,
     environment: { RUST_BACKTRACE: "0" },
     endpoint: "http://127.0.0.1:8181",

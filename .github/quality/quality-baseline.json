@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "strict",
-  "createdAt": "2026-09-11T13:35:01.938Z",
-  "total": 169,
+  "createdAt": "2026-09-12T19:59:25.249Z",
+  "total": 168,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -319,6 +319,7 @@
     "packages/code-explorer/src/semantic-tests/direct-lsp-old-process.test.ts",
     "packages/code-explorer/src/semantic-tests/direct-lsp-protected.test.ts",
     "packages/code-explorer/src/semantic-tests/direct-lsp-restart.test.ts",
+    "packages/code-explorer/src/semantic-tests/direct-lsp-retry.test.ts",
     "packages/code-explorer/src/semantic-tests/direct-lsp-semantic-discovery.test.ts",
     "packages/code-explorer/src/semantic-tests/direct-lsp-semantic-filtering.test.ts",
     "packages/code-explorer/src/semantic-tests/direct-lsp-semantic-hierarchy-outgoing.test.ts",
@@ -1618,7 +1619,6 @@
     "packages/code-explorer/scripts/practice-browser-session.mjs::function-length": 1,
     "packages/code-explorer/scripts/reproduce-real-lsp-observe.mjs::function-length": 1,
     "packages/code-explorer/src/runtime-main.ts::function-length": 1,
-    "packages/code-explorer/src/semantic-tests/python-mirror-manager-generation.test.ts::function-length": 1,
     "packages/code-explorer/src/server/create-server.ts::function-length": 1,
     "packages/code-explorer/src/server/focus-action.ts::function-length": 1,
     "packages/code-explorer/src/server/follow-action.ts::function-length": 1,

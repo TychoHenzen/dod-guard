@@ -1,12 +1,20 @@
 import { it } from "node:test";
-import { assert, assertRustPreparation, policy } from "../testing/backend/backend-launch-policy-test-support.js";
+import {
+  assert,
+  assertRustPreparation,
+  policy,
+} from "../testing/backend/backend-launch-policy-test-support.js";
 
 it("ignores project backend commands and keeps the allowlisted command", () => {
   const preparation = policy().prepare("rust", {
     command: "project-owned-server",
     arguments: ["--unsafe"],
   });
-  assertRustPreparation(preparation, "/host/bin/rust-analyzer", "project_backend_config_ignored");
+  assertRustPreparation(
+    preparation,
+    "/host/bin/rust-analyzer",
+    "project_backend_config_ignored",
+  );
 });
 
 it("rejects protocol write requests without retaining their payload", () => {
@@ -47,7 +55,13 @@ it("rejects non-loopback backend endpoints", () => {
     }).setEndpoint("rust", "http://127.1.2.3:8181"),
     { status: "ready" },
   );
-  assert.deepEqual(policy({ endpoint: "http://[::1]:8181" }).setEndpoint("rust", "http://[::1]:8181"), {
-    status: "ready",
-  });
+  assert.deepEqual(
+    policy({ endpoint: "http://[::1]:8181" }).setEndpoint(
+      "rust",
+      "http://[::1]:8181",
+    ),
+    {
+      status: "ready",
+    },
+  );
 });

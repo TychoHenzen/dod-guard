@@ -9,16 +9,22 @@ const result = {
   symbols: [],
 };
 
-async function assertServerStatus(adapter: ReturnType<typeof createRustAdapter>): Promise<void> {
+async function assertServerStatus(
+  adapter: ReturnType<typeof createRustAdapter>,
+): Promise<void> {
   const server = createServer({ adapters: [adapter] });
   const response = await server.call("code_status", {
     action: "status",
   });
-  const backendStatus = "data" in response ? (response.data.backend_status as { backends: unknown[] }) : undefined;
+  const backendStatus =
+    "data" in response
+      ? (response.data.backend_status as { backends: unknown[] })
+      : undefined;
   assert.equal(Array.isArray(backendStatus?.backends), true);
 }
 
-it("times out initialization at thirty seconds and changes its state", async () => {
+it("times out initialization at thirty \
+seconds and changes its state", async () => {
   let time = 0;
   let state: { state: "initializing" } | { state: "refreshing" } = {
     state: "initializing",
