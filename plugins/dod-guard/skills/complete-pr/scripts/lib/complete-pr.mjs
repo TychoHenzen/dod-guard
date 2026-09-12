@@ -183,6 +183,12 @@ async function completePullRequest(client, overrides = {}) {
     await client.markReady(pullNumber);
     pullRequest = await client.getPullRequest(pullNumber);
     requireTrustedHead(pullRequest, acceptedHead);
+    if (pullRequest.isDraft) {
+      stop(
+        "ready_transition_failed",
+        `Pull request #${pullNumber} remained a draft after the ready transition.`,
+      );
+    }
   }
 
   if (!repository.autoMergeAllowed) {
