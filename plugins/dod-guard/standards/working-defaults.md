@@ -26,5 +26,9 @@ destructive action.
   I/O at boundaries, and use ordinary loops or mutation when clearer. Do not
   require a functional language or dense composition.
 - Keep read-only review, explicit user approval, branch protection, and other
-  authority boundaries. These defaults do not permit external mutation or a
-  claim of unverified success.
+  authority boundaries. The explicit `/publish` maintenance-only route may
+  temporarily disable only admin enforcement, then push a version-bumped
+  fast-forward to `master` with `--force-with-lease` pinned to the saved SHA.
+  Restore every saved protection setting immediately and keep all required
+  checks. Other users remain subject to branch rules. These defaults do not
+  permit unrelated external mutation or an unverified success claim.

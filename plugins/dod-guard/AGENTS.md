@@ -25,9 +25,11 @@ definitions. It has no package workspace, MCP server, or bundle.
 - Use `/complete-pr` only when the user explicitly accepts the current pull request.
   It owns guarded ready, auto-merge, issue confirmation, and remote branch
   deletion.
-- Use `/publish` for a completed marketplace release. It sends every pending
-  change through `/commit`, then delegates the draft pull request to
-  `/submit-draft-pr`.
+- Use `/publish` for a completed marketplace release. Functional releases
+  require a PBI and draft PR. Maintenance-only releases skip both and push a
+  version-bumped fast-forward with `--force-with-lease` pinned to the saved
+  `master` SHA after validation. Temporarily disable only admin enforcement if
+  needed, then restore the complete saved protection immediately.
 - Commit and push before closing code-backed sub-issues.
 - Never approve, ready, merge, or close the agent's own pull request outside an
   explicit `/complete-pr` invocation.

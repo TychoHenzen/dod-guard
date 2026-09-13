@@ -46,7 +46,15 @@ invokes `/complete-pr` to accept the current pull request head. That command
 owns the guarded ready, auto-merge, issue confirmation, and branch deletion
 flow.
 
-`master` requires a pull request and these current checks:
+Functional changes to `master` require a pull request and these current checks.
+An explicitly invoked maintenance-only `/publish` may push a version-bumped
+commit directly to `master` without a PBI or PR. Require its parent to equal
+the saved `master` SHA and use `--force-with-lease` pinned to that SHA. This is
+still a fast-forward, and the lease rejects any intervening update. Require
+`allow_force_pushes` to be enabled. Temporarily disable only admin enforcement,
+restore every saved protection setting immediately, and wait for all required
+checks before refreshing plugin caches. Other users remain subject to the
+branch rules:
 
 - `build-test`
 - `plugin-config`
@@ -73,5 +81,7 @@ replaces that project's saved report. Other report views only read saved data.
 
 ## Release boundary
 
-Nothing publishes to npm. Merge the reviewed pull request, wait for CI, then
-refresh the consuming plugin cache. Do not copy bundles into runtime caches.
+Nothing publishes to npm. Functional changes use a reviewed pull request and
+green CI. A maintenance-only `/publish` release can skip the PBI and PR, use
+the bounded force-with-lease fast-forward to `master`, and refresh the consuming
+plugin cache after CI passes. Do not copy bundles into runtime caches.
