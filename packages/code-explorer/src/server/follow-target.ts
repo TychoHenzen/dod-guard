@@ -26,8 +26,7 @@ export function resolveFollowTarget({
     generation,
   );
   if (resolved.state === "stale_view") {
-    if (resolved.viewGeneration === undefined)
-      return { error: staleView() };
+    if (resolved.viewGeneration === undefined) return { error: staleView() };
     return {
       error: codeExplorerError("stale_view", {
         view_generation: resolved.viewGeneration,

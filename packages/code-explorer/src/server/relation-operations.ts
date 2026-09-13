@@ -23,17 +23,15 @@ type MapRelationOptions = {
   limit: number;
 };
 
-export function mapRelationCandidates(
-  {
-    result,
-    relation,
-    adapter,
-    sessions,
-    connectionId,
-    sessionId,
-    limit,
-  }: MapRelationOptions,
-): FollowCandidate[] {
+export function mapRelationCandidates({
+  result,
+  relation,
+  adapter,
+  sessions,
+  connectionId,
+  sessionId,
+  limit,
+}: MapRelationOptions): FollowCandidate[] {
   return result.relations
     .map((candidate) => mapRelationCandidate(candidate, relation, adapter))
     .sort((left, right) =>

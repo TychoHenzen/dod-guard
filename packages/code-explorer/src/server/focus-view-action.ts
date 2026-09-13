@@ -1,10 +1,7 @@
 import * as path from "node:path";
 import type { FreshnessStatus } from "../freshness/workspace-freshness.js";
 import type { CodeExplorerError } from "../navigation/error.js";
-import {
-  createFocusView,
-  type FocusView,
-} from "../navigation/focus-view.js";
+import { createFocusView, type FocusView } from "../navigation/focus-view.js";
 import type {
   ProjectRoot,
   SymbolIdentity,

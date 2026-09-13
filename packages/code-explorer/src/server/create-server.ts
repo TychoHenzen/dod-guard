@@ -13,9 +13,7 @@ import { toolDescriptions } from "./tool-descriptions.js";
 import { toolNames } from "./tool-name.js";
 import { toMcpToolResult } from "./tool-result.js";
 
-function createMcpServer(
-  call: ReturnType<typeof createServerCall>,
-): McpServer {
+function createMcpServer(call: ReturnType<typeof createServerCall>): McpServer {
   const mcp = new McpServer(
     { name: "code-explorer", version: packageInfo.version },
     { capabilities: { tools: {} } },

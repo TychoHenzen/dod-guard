@@ -21,11 +21,7 @@ function relationCandidateSortKey(candidate: FollowCandidate): string {
 
 function relationPositionKey(range: FollowCandidate["range"]): string {
   if (!range) return "0\u00000";
-  return (
-    String(range.start.line) +
-    "\u0000" +
-    String(range.start.character)
-  );
+  return `${range.start.line}\u0000${range.start.character}`;
 }
 
 function relationIdentityKey(candidate: FollowCandidate): string {

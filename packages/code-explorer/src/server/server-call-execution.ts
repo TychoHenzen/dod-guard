@@ -2,7 +2,6 @@ import type { CodeExplorerError } from "../navigation/error.js";
 import type { CodeExplorerEnvelope } from "./envelope.js";
 import { invalidRequest, normalizeBackendFailure } from "./errors.js";
 import { performCall } from "./perform-call.js";
-import type { ServerRuntime } from "./server-runtime.js";
 import { executeInSession, startSession } from "./server-call-session.js";
 import {
   hasValidRequestId,
@@ -10,6 +9,7 @@ import {
   isStateChangingCall,
   stringArgument,
 } from "./server-call-validation.js";
+import type { ServerRuntime } from "./server-runtime.js";
 import type { ToolName } from "./tool-name.js";
 
 function ensureFreshness(runtime: ServerRuntime): Promise<void> {
@@ -19,7 +19,7 @@ function ensureFreshness(runtime: ServerRuntime): Promise<void> {
 function sessionRequest(arguments_: Record<string, unknown>) {
   const sessionId = stringArgument(arguments_, "session_id");
   const requestId = stringArgument(arguments_, "request_id");
-  if (!sessionId || !requestId || !hasValidRequestId(requestId)) return;
+  if (!(sessionId && requestId && hasValidRequestId(requestId))) return;
   return { sessionId, requestId };
 }
 
@@ -29,8 +29,7 @@ async function performValidatedCall(
   arguments_: Record<string, unknown>,
 ): Promise<CodeExplorerEnvelope | CodeExplorerError> {
   const sessionId = stringArgument(arguments_, "session_id");
-  const perform = () =>
-    performCall({ runtime, name, arguments_, sessionId });
+  const perform = () => performCall({ runtime, name, arguments_, sessionId });
   if (!isStateChangingCall(name, arguments_))
     return perform().catch(normalizeBackendFailure);
   const request = sessionRequest(arguments_);

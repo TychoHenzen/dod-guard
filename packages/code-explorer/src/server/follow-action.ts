@@ -1,18 +1,14 @@
 import type { FreshnessStatus } from "../freshness/workspace-freshness.js";
-import {
-  type CodeExplorerError,
-} from "../navigation/error.js";
+import { type CodeExplorerError } from "../navigation/error.js";
+import type { RelationName } from "../semantic/api/public-api.js";
+import { collectRelations } from "./collect-relations.js";
 import { type CodeExplorerEnvelope, createEnvelope } from "./envelope.js";
 import { createFollowEnvelope } from "./follow-result.js";
-import { schemas } from "./schemas.js";
-import type { FollowCandidate } from "./relation-candidate.js";
-import {
-  mapRelationCandidates,
-} from "./relation-operations.js";
-import { collectRelations } from "./collect-relations.js";
-import type { RelationName } from "../semantic/api/public-api.js";
-import type { ServerRuntime } from "./server-runtime.js";
 import { resolveFollowTarget } from "./follow-target.js";
+import type { FollowCandidate } from "./relation-candidate.js";
+import { mapRelationCandidates } from "./relation-operations.js";
+import { schemas } from "./schemas.js";
+import type { ServerRuntime } from "./server-runtime.js";
 
 async function loadFollowCandidates({
   runtime,

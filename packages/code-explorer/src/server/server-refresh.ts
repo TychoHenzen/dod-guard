@@ -43,8 +43,7 @@ async function refreshProject(
     runtime.state.discovery = createDiscoveryPipeline(
       runtime.options.projectRoot,
     );
-  if (replacement?.landmarks)
-    runtime.state.landmarks = replacement.landmarks;
+  if (replacement?.landmarks) runtime.state.landmarks = replacement.landmarks;
 }
 
 export async function requestFreshness(

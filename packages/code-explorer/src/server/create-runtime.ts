@@ -30,8 +30,7 @@ function createGenerationScheduler(
   freshness: WorkspaceFreshness,
 ): generation.ProjectGenerationScheduler {
   return (
-    options.generation_scheduler ??
-    new ProjectGenerationScheduler(freshness)
+    options.generation_scheduler ?? new ProjectGenerationScheduler(freshness)
   );
 }
 

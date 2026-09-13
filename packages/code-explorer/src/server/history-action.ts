@@ -68,10 +68,8 @@ function restoreHistory({
   if (!restored) return invalidViewHandle();
   return createEnvelope(freshness, "ready", {
     ...restored,
-    history_position: runtime.sessions.historyPosition(
-      runtime.connectionId,
-      sessionId,
-    ) ?? 0,
+    history_position:
+      runtime.sessions.historyPosition(runtime.connectionId, sessionId) ?? 0,
     stale: restored.project_generation !== freshness.current_generation,
   });
 }

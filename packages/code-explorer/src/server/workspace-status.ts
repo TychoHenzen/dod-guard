@@ -50,13 +50,7 @@ function parseWorkspaceStatus(output: string): Record<string, unknown> {
   return {
     changed_paths,
     untracked_paths,
-    active_exclusions: [
-      "dist/**",
-      "target/**",
-      "bin/**",
-      "obj/**",
-      ".venv/**",
-    ],
+    active_exclusions: ["dist/**", "target/**", "bin/**", "obj/**", ".venv/**"],
   };
 }
 
@@ -84,7 +78,6 @@ function nativeWorkspaceStatus(
     return emptyWorkspaceStatus();
   }
 }
-
 
 export function readWorkspaceStatus(
   runtime: ServerRuntime,

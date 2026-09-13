@@ -23,8 +23,7 @@ function sessionError(
   >,
 ): CodeExplorerError {
   return (
-    sessionErrors[state as keyof typeof sessionErrors]?.() ??
-    invalidSession()
+    sessionErrors[state as keyof typeof sessionErrors]?.() ?? invalidSession()
   );
 }
 

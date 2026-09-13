@@ -30817,6 +30817,28 @@ async function handleFocus(runtime, arguments_, freshness) {
   return createSemanticFocusView({ runtime, focus, freshness });
 }
 
+// src/server/collect-relations.ts
+async function collectRelations({
+  adapters,
+  relation,
+  symbolId,
+  run
+}) {
+  const supported = adapters.filter(
+    (adapter) => adapter.status().capabilities[relation].state === "ready"
+  );
+  const replies = await Promise.allSettled(
+    supported.map(
+      (adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId }))
+    )
+  );
+  const results = replies.flatMap(
+    (reply, index) => reply.status === "fulfilled" && reply.value.operation === relation ? [{ adapter: supported[index], result: reply.value }] : []
+  );
+  if (results.length === 0) throwBackendLimitFailure(replies);
+  return results;
+}
+
 // src/server/follow-result.ts
 function createFollowEnvelope(relation, candidates, freshness) {
   if (relation === "definition") {
@@ -30828,6 +30850,34 @@ function createFollowEnvelope(relation, candidates, freshness) {
       });
   }
   return createEnvelope(freshness, "ready", { relation, candidates });
+}
+
+// src/server/follow-target.ts
+function resolveFollowTarget({
+  runtime,
+  sessionId,
+  viewId,
+  handle,
+  generation
+}) {
+  const resolved = runtime.sessions.resolveHandle(
+    runtime.connectionId,
+    sessionId,
+    viewId,
+    handle,
+    generation
+  );
+  if (resolved.state === "stale_view") {
+    if (resolved.viewGeneration === void 0) return { error: staleView() };
+    return {
+      error: codeExplorerError("stale_view", {
+        view_generation: resolved.viewGeneration,
+        current_generation: resolved.currentGeneration ?? generation
+      })
+    };
+  }
+  if (resolved.state !== "ok") return { error: invalidViewHandle() };
+  return { symbolId: resolved.symbolId };
 }
 
 // src/server/relation-candidate.ts
@@ -30886,7 +30936,7 @@ function relationCandidateSortKey(candidate) {
 }
 function relationPositionKey(range) {
   if (!range) return "0\x000";
-  return String(range.start.line) + "\0" + String(range.start.character);
+  return `${range.start.line}\0${range.start.character}`;
 }
 function relationIdentityKey(candidate) {
   if (candidate.symbol_id !== void 0) return candidate.symbol_id;
@@ -30936,57 +30986,6 @@ function retainRelationCandidateView({
     handles: view.handles,
     content: view.content
   };
-}
-
-// src/server/collect-relations.ts
-async function collectRelations({
-  adapters,
-  relation,
-  symbolId,
-  run
-}) {
-  const supported = adapters.filter(
-    (adapter) => adapter.status().capabilities[relation].state === "ready"
-  );
-  const replies = await Promise.allSettled(
-    supported.map(
-      (adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId }))
-    )
-  );
-  const results = replies.flatMap(
-    (reply, index) => reply.status === "fulfilled" && reply.value.operation === relation ? [{ adapter: supported[index], result: reply.value }] : []
-  );
-  if (results.length === 0) throwBackendLimitFailure(replies);
-  return results;
-}
-
-// src/server/follow-target.ts
-function resolveFollowTarget({
-  runtime,
-  sessionId,
-  viewId,
-  handle,
-  generation
-}) {
-  const resolved = runtime.sessions.resolveHandle(
-    runtime.connectionId,
-    sessionId,
-    viewId,
-    handle,
-    generation
-  );
-  if (resolved.state === "stale_view") {
-    if (resolved.viewGeneration === void 0)
-      return { error: staleView() };
-    return {
-      error: codeExplorerError("stale_view", {
-        view_generation: resolved.viewGeneration,
-        current_generation: resolved.currentGeneration ?? generation
-      })
-    };
-  }
-  if (resolved.state !== "ok") return { error: invalidViewHandle() };
-  return { symbolId: resolved.symbolId };
 }
 
 // src/server/follow-action.ts
@@ -31093,10 +31092,7 @@ function restoreHistory({
   if (!restored) return invalidViewHandle();
   return createEnvelope(freshness, "ready", {
     ...restored,
-    history_position: runtime.sessions.historyPosition(
-      runtime.connectionId,
-      sessionId
-    ) ?? 0,
+    history_position: runtime.sessions.historyPosition(runtime.connectionId, sessionId) ?? 0,
     stale: restored.project_generation !== freshness.current_generation
   });
 }
@@ -31170,8 +31166,7 @@ async function refreshProject(runtime, sessionId) {
     runtime.state.discovery = createDiscoveryPipeline(
       runtime.options.projectRoot
     );
-  if (replacement?.landmarks)
-    runtime.state.landmarks = replacement.landmarks;
+  if (replacement?.landmarks) runtime.state.landmarks = replacement.landmarks;
 }
 async function requestFreshness(request) {
   const { runtime, name, arguments_, sessionId } = request;
@@ -31218,13 +31213,7 @@ function parseWorkspaceStatus(output) {
   return {
     changed_paths,
     untracked_paths,
-    active_exclusions: [
-      "dist/**",
-      "target/**",
-      "bin/**",
-      "obj/**",
-      ".venv/**"
-    ]
+    active_exclusions: ["dist/**", "target/**", "bin/**", "obj/**", ".venv/**"]
   };
 }
 function nativeWorkspaceStatus(root) {
@@ -31430,7 +31419,7 @@ function ensureFreshness(runtime) {
 function sessionRequest(arguments_) {
   const sessionId = stringArgument(arguments_, "session_id");
   const requestId = stringArgument(arguments_, "request_id");
-  if (!sessionId || !requestId || !hasValidRequestId(requestId)) return;
+  if (!(sessionId && requestId && hasValidRequestId(requestId))) return;
   return { sessionId, requestId };
 }
 async function performValidatedCall(runtime, name, arguments_) {

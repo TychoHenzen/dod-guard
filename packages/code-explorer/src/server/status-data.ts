@@ -1,6 +1,6 @@
 import { createBackendStatusReport } from "../semantic/api/public-api.js";
-import type { CodeExplorerEnvelope } from "./envelope.js";
 import type { ServerActionContext } from "./action-context.js";
+import type { CodeExplorerEnvelope } from "./envelope.js";
 import { readWorkspaceStatus } from "./workspace-status.js";
 
 function backendStatus(runtime: ServerActionContext["runtime"]) {
@@ -36,10 +36,7 @@ export function statusData(
 }
 
 function hasUnavailableRoot(context: ServerActionContext): boolean {
-  return (
-    context.name === "code_status" &&
-    context.rootStatus.state !== "ready"
-  );
+  return context.name === "code_status" && context.rootStatus.state !== "ready";
 }
 
 function refreshCompleted(context: ServerActionContext): boolean {
