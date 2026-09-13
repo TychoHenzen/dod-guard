@@ -30357,28 +30357,41 @@ var SessionManager = class {
 
 // src/server/create-runtime.ts
 var { ProjectGenerationScheduler: ProjectGenerationScheduler2 } = project_generation_scheduler_exports;
+async function reconcileEmptyManifest() {
+  return { manifest: /* @__PURE__ */ new Map() };
+}
+function createFreshness(options) {
+  return options.freshness ?? new WorkspaceFreshness({ reconcile: reconcileEmptyManifest });
+}
+function createGenerationScheduler(options, freshness) {
+  return options.generation_scheduler ?? new ProjectGenerationScheduler2(freshness);
+}
+function createRootAccess(options) {
+  return new RootAccessGate(
+    options.projectRoot,
+    options.adapters ?? [],
+    options.now
+  );
+}
+function createRuntimeState(options) {
+  return {
+    refreshGeneration: 0,
+    viewHistory: [],
+    discovery: options.projectRoot ? createDiscoveryPipeline(options.projectRoot) : void 0,
+    landmarks: options.landmarks ?? landmarksNotReady()
+  };
+}
 function createServerRuntime(options) {
-  const freshness = options.freshness ?? new WorkspaceFreshness({
-    reconcile: async () => ({ manifest: /* @__PURE__ */ new Map() })
-  });
+  const freshness = createFreshness(options);
   return {
     options,
     connectionId: options.connection_id ?? mintOpaqueId(),
     sessions: new SessionManager(),
     backendRequests: new BackendRequestLimiter(options.backend_timeout_ms),
     freshness,
-    generationScheduler: options.generation_scheduler ?? new ProjectGenerationScheduler2(freshness),
-    rootAccess: new RootAccessGate(
-      options.projectRoot,
-      options.adapters ?? [],
-      options.now
-    ),
-    state: {
-      refreshGeneration: 0,
-      viewHistory: [],
-      discovery: options.projectRoot ? createDiscoveryPipeline(options.projectRoot) : void 0,
-      landmarks: options.landmarks ?? landmarksNotReady()
-    }
+    generationScheduler: createGenerationScheduler(options, freshness),
+    rootAccess: createRootAccess(options),
+    state: createRuntimeState(options)
   };
 }
 
@@ -30478,21 +30491,6 @@ var inputSchemas = {
     ]
   }
 };
-
-// src/server/server-call.ts
-import { Buffer as Buffer6 } from "node:buffer";
-
-// src/server/envelope.ts
-function createEnvelope(freshness, state, data) {
-  return {
-    schema_version: 1,
-    project_id: "project",
-    project_generation: freshness.current_generation,
-    pending_generation: freshness.pending_generation,
-    state,
-    data
-  };
-}
 
 // src/navigation/error-details-sanitizer.ts
 var detailKeys = /* @__PURE__ */ new Set([
@@ -30627,8 +30625,61 @@ function normalizeBackendFailure(error2) {
   return normalizeError(error2);
 }
 
-// src/server/focus-action.ts
+// src/server/focus-view-action.ts
 import * as path4 from "node:path";
+
+// src/server/envelope.ts
+function createEnvelope(freshness, state, data) {
+  return {
+    schema_version: 1,
+    project_id: "project",
+    project_generation: freshness.current_generation,
+    pending_generation: freshness.pending_generation,
+    state,
+    data
+  };
+}
+
+// src/server/focus-view-action.ts
+function saveFocusView({
+  runtime,
+  sessionId,
+  freshness,
+  view
+}) {
+  if (runtime.sessions.addView(runtime.connectionId, sessionId, view) === "project_capacity")
+    return projectCapacity();
+  runtime.state.viewHistory.push(view.view_id);
+  return createEnvelope(freshness, "ready", {
+    ...view,
+    history_position: runtime.sessions.historyPosition(runtime.connectionId, sessionId) ?? 0
+  });
+}
+function fileLocation(filePath, lineCount) {
+  const range = {
+    start: { line: 0, character: 0 },
+    end: { line: lineCount, character: 0 }
+  };
+  return { path: filePath, range };
+}
+function createFileFocusView(root, focus, freshness) {
+  const filePath = focus.symbol_id.slice("file:".length);
+  const body = root.protectedRead(filePath).bytes;
+  const lineCount = body.split("\n").length;
+  const symbol = {
+    id: focus.symbol_id,
+    name: path4.posix.basename(filePath),
+    language: path4.posix.extname(filePath).slice(1) || "text",
+    kind: "file",
+    location: fileLocation(filePath, lineCount)
+  };
+  return createFocusView(
+    symbol,
+    { body, visible_symbols: [] },
+    focus.body_limit_bytes,
+    freshness.current_generation
+  );
+}
 
 // src/server/schemas.ts
 var schemas = {
@@ -30714,94 +30765,149 @@ function throwBackendLimitFailure(replies) {
 }
 
 // src/server/focus-action.ts
-async function handleFocus(runtime, arguments_, freshness) {
-  const focus = schemas.code_focus.parse(arguments_);
-  const saveView = (view) => {
-    if (runtime.sessions.addView(runtime.connectionId, focus.session_id, view) === "project_capacity")
-      return projectCapacity();
-    runtime.state.viewHistory.push(view.view_id);
-    return createEnvelope(freshness, "ready", {
-      ...view,
-      history_position: runtime.sessions.historyPosition(
-        runtime.connectionId,
-        focus.session_id
-      ) ?? 0
-    });
-  };
-  if (focus.symbol_id.startsWith("file:") && runtime.options.projectRoot) {
-    const filePath = focus.symbol_id.slice("file:".length);
-    const body = runtime.options.projectRoot.protectedRead(filePath).bytes;
-    const lineCount = body.split("\n").length;
+function createSelectedFocusView({
+  runtime,
+  focus,
+  freshness,
+  selected
+}) {
+  try {
     const view = createFocusView(
-      {
-        id: focus.symbol_id,
-        name: path4.posix.basename(filePath),
-        language: path4.posix.extname(filePath).slice(1) || "text",
-        kind: "file",
-        location: {
-          path: filePath,
-          range: {
-            start: { line: 0, character: 0 },
-            end: { line: lineCount, character: 0 }
-          }
-        }
-      },
-      { body, visible_symbols: [] },
+      selected.symbol,
+      selected.content,
       focus.body_limit_bytes,
       freshness.current_generation
     );
-    return saveView(view);
+    return saveFocusView({
+      runtime,
+      sessionId: focus.session_id,
+      freshness,
+      view
+    });
+  } catch (error2) {
+    if (error2 instanceof FocusBodyLimitError) return resourceLimit();
+    throw error2;
   }
+}
+async function createSemanticFocusView({
+  runtime,
+  focus,
+  freshness
+}) {
   const selected = await collectFocusedSymbol(
     runtime.options.adapters ?? [],
     focus.symbol_id,
     (operation) => runtime.backendRequests.run(focus.session_id, operation)
   );
   if (!selected) return;
-  try {
-    return saveView(
-      createFocusView(
-        selected.symbol,
-        selected.content,
-        focus.body_limit_bytes,
-        freshness.current_generation
-      )
-    );
-  } catch (error2) {
-    if (error2 instanceof FocusBodyLimitError) return resourceLimit();
-    throw error2;
+  return createSelectedFocusView({ runtime, focus, freshness, selected });
+}
+async function handleFocus(runtime, arguments_, freshness) {
+  const focus = schemas.code_focus.parse(arguments_);
+  const root = runtime.options.projectRoot;
+  if (focus.symbol_id.startsWith("file:") && root) {
+    const view = createFileFocusView(root, focus, freshness);
+    return saveFocusView({
+      runtime,
+      sessionId: focus.session_id,
+      freshness,
+      view
+    });
   }
+  return createSemanticFocusView({ runtime, focus, freshness });
+}
+
+// src/server/collect-relations.ts
+async function collectRelations({
+  adapters,
+  relation,
+  symbolId,
+  run
+}) {
+  const supported = adapters.filter(
+    (adapter) => adapter.status().capabilities[relation].state === "ready"
+  );
+  const replies = await Promise.allSettled(
+    supported.map(
+      (adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId }))
+    )
+  );
+  const results = replies.flatMap(
+    (reply, index) => reply.status === "fulfilled" && reply.value.operation === relation ? [{ adapter: supported[index], result: reply.value }] : []
+  );
+  if (results.length === 0) throwBackendLimitFailure(replies);
+  return results;
+}
+
+// src/server/follow-result.ts
+function createFollowEnvelope(relation, candidates, freshness) {
+  if (relation === "definition") {
+    const local = candidates.find((candidate) => candidate.external === false);
+    if (local)
+      return createEnvelope(freshness, "ready", {
+        focus: local,
+        source_location: local.range
+      });
+  }
+  return createEnvelope(freshness, "ready", { relation, candidates });
+}
+
+// src/server/follow-target.ts
+function resolveFollowTarget({
+  runtime,
+  sessionId,
+  viewId,
+  handle,
+  generation
+}) {
+  const resolved = runtime.sessions.resolveHandle(
+    runtime.connectionId,
+    sessionId,
+    viewId,
+    handle,
+    generation
+  );
+  if (resolved.state === "stale_view") {
+    if (resolved.viewGeneration === void 0) return { error: staleView() };
+    return {
+      error: codeExplorerError("stale_view", {
+        view_generation: resolved.viewGeneration,
+        current_generation: resolved.currentGeneration ?? generation
+      })
+    };
+  }
+  if (resolved.state !== "ok") return { error: invalidViewHandle() };
+  return { symbolId: resolved.symbolId };
 }
 
 // src/server/relation-candidate.ts
 function mapRelationCandidate(candidate, relation, adapter) {
   const status = adapter.status();
+  const base = {
+    relation,
+    relation_source: "semantic",
+    backend_name: status.backend_name,
+    backend_version: status.backend_version
+  };
   if ("external" in candidate) {
     return {
       candidate: {
-        relation,
-        relation_source: "semantic",
-        backend_name: status.backend_name,
-        backend_version: status.backend_version,
+        ...base,
         display_name: candidate.external.display_name,
         external: true
       }
     };
   }
   const symbol = candidate.symbol;
-  const sourceRange = "range" in candidate.location ? candidate.location.range : symbol.location.range;
   return {
     symbol,
     candidate: {
-      relation,
-      relation_source: "semantic",
-      backend_name: status.backend_name,
-      backend_version: status.backend_version,
+      ...base,
       symbol_id: symbol.id,
       display_name: symbol.name,
       path: symbol.location.path.replaceAll("\\", "/"),
       kind: symbol.kind,
-      range: sourceRange,
+      range: "range" in candidate.location ? candidate.location.range : symbol.location.range,
       ...candidate.call_site ? {
         call_site: {
           path: candidate.call_site.path.replaceAll("\\", "/"),
@@ -30812,7 +30918,58 @@ function mapRelationCandidate(candidate, relation, adapter) {
     }
   };
 }
-function retainRelationCandidateView(mapped, sessions, connectionId, sessionId) {
+
+// src/server/relation-order.ts
+function compareRelationCandidates(left, right) {
+  if (left.external !== right.external) return left.external ? 1 : -1;
+  return relationCandidateSortKey(left).localeCompare(
+    relationCandidateSortKey(right)
+  );
+}
+function relationCandidateSortKey(candidate) {
+  return [
+    candidate.path ?? "",
+    relationPositionKey(candidate.range),
+    candidate.kind ?? "",
+    relationIdentityKey(candidate)
+  ].join("\0");
+}
+function relationPositionKey(range) {
+  if (!range) return "0\x000";
+  return `${range.start.line}\0${range.start.character}`;
+}
+function relationIdentityKey(candidate) {
+  if (candidate.symbol_id !== void 0) return candidate.symbol_id;
+  return candidate.display_name ?? "";
+}
+
+// src/server/relation-operations.ts
+function mapRelationCandidates({
+  result,
+  relation,
+  adapter,
+  sessions,
+  connectionId,
+  sessionId,
+  limit
+}) {
+  return result.relations.map((candidate) => mapRelationCandidate(candidate, relation, adapter)).sort(
+    (left, right) => compareRelationCandidates(left.candidate, right.candidate)
+  ).slice(0, limit).map(
+    (mapped) => retainRelationCandidateView({
+      mapped,
+      sessions,
+      connectionId,
+      sessionId
+    })
+  );
+}
+function retainRelationCandidateView({
+  mapped,
+  sessions,
+  connectionId,
+  sessionId
+}) {
   if (!mapped.symbol) return mapped.candidate;
   const view = createFocusView(mapped.symbol, {
     declaration: mapped.symbol.name,
@@ -30830,120 +30987,112 @@ function retainRelationCandidateView(mapped, sessions, connectionId, sessionId) 
     content: view.content
   };
 }
-function compareRelationCandidates(left, right) {
-  if (left.external !== right.external) return left.external ? 1 : -1;
-  return relationCandidateSortKey(left).localeCompare(
-    relationCandidateSortKey(right)
-  );
-}
-function relationCandidateSortKey(candidate) {
-  return [
-    candidate.path ?? "",
-    candidate.range?.start.line ?? 0,
-    candidate.range?.start.character ?? 0,
-    candidate.kind ?? "",
-    candidate.symbol_id ?? candidate.display_name ?? ""
-  ].join("\0");
-}
-
-// src/server/relation-operations.ts
-async function collectRelations(adapters, relation, symbolId, run) {
-  const supported = adapters.filter(
-    (adapter) => adapter.status().capabilities[relation].state === "ready"
-  );
-  const replies = await Promise.allSettled(
-    supported.map(
-      (adapter) => run(() => adapter.request({ operation: relation, symbol_id: symbolId }))
-    )
-  );
-  const results = replies.flatMap(
-    (reply, index) => reply.status === "fulfilled" && reply.value.operation === relation ? [{ adapter: supported[index], result: reply.value }] : []
-  );
-  if (results.length === 0) throwBackendLimitFailure(replies);
-  return results;
-}
-function mapRelationCandidates(result, relation, adapter, sessions, connectionId, sessionId, limit) {
-  return result.relations.map((candidate) => mapRelationCandidate(candidate, relation, adapter)).sort(
-    (left, right) => compareRelationCandidates(left.candidate, right.candidate)
-  ).slice(0, limit).map(
-    (mapped) => retainRelationCandidateView(mapped, sessions, connectionId, sessionId)
-  );
-}
 
 // src/server/follow-action.ts
+async function loadFollowCandidates({
+  runtime,
+  follow,
+  relation,
+  symbolId
+}) {
+  const replies = await collectRelations({
+    adapters: runtime.options.adapters ?? [],
+    relation: semanticRelation(follow.relation),
+    symbolId,
+    run: (operation) => runtime.backendRequests.run(follow.session_id, operation)
+  });
+  return followCandidatesFromReplies({ runtime, follow, relation, replies });
+}
+function semanticRelation(relation) {
+  return relation === "type" ? "type_definition" : relation;
+}
+function followCandidatesFromReplies({
+  runtime,
+  follow,
+  relation,
+  replies
+}) {
+  if (replies.length === 0) return;
+  const { adapter, result } = replies[0];
+  return mapRelationCandidates({
+    result,
+    relation,
+    adapter,
+    sessions: runtime.sessions,
+    connectionId: runtime.connectionId,
+    sessionId: follow.session_id,
+    limit: Math.min(follow.limit ?? 50, 200)
+  });
+}
 async function handleFollow(runtime, arguments_, freshness) {
   const relation = arguments_.relation;
   if (typeof relation !== "string") return;
   const follow = schemas.code_follow.parse(arguments_);
-  const resolved = runtime.sessions.resolveHandle(
-    runtime.connectionId,
-    follow.session_id,
-    follow.view_id,
-    follow.handle,
-    freshness.current_generation
-  );
-  if (resolved.state === "stale_view") {
-    if (resolved.viewGeneration === void 0) return staleView();
-    return codeExplorerError("stale_view", {
-      view_generation: resolved.viewGeneration,
-      current_generation: resolved.currentGeneration ?? freshness.current_generation
-    });
-  }
-  if (resolved.state !== "ok") return invalidViewHandle();
-  const semanticRelation = follow.relation === "type" ? "type_definition" : follow.relation;
-  const replies = await collectRelations(
-    runtime.options.adapters ?? [],
-    semanticRelation,
-    resolved.symbolId,
-    (operation) => runtime.backendRequests.run(follow.session_id, operation)
-  );
-  if (replies.length === 0)
-    return createEnvelope(freshness, "unavailable_relation", { relation });
-  const { adapter, result } = replies[0];
-  const candidates = mapRelationCandidates(
-    result,
+  const target = resolveFollowTarget({
+    runtime,
+    sessionId: follow.session_id,
+    viewId: follow.view_id,
+    handle: follow.handle,
+    generation: freshness.current_generation
+  });
+  if ("error" in target) return target.error;
+  const candidates = await loadFollowCandidates({
+    runtime,
+    follow,
     relation,
-    adapter,
-    runtime.sessions,
-    runtime.connectionId,
-    follow.session_id,
-    Math.min(follow.limit ?? 50, 200)
-  );
-  if (relation === "definition") {
-    const local = candidates.find((candidate) => candidate.external === false);
-    if (local)
-      return createEnvelope(freshness, "ready", {
-        focus: local,
-        source_location: local.range
-      });
-  }
-  return createEnvelope(freshness, "ready", { relation, candidates });
+    symbolId: target.symbolId
+  });
+  if (!candidates)
+    return createEnvelope(freshness, "unavailable_relation", { relation });
+  return createFollowEnvelope(relation, candidates, freshness);
 }
 
 // src/server/history-action.ts
 function handleHistory(runtime, arguments_, freshness) {
   const history2 = schemas.code_history.parse(arguments_);
-  if (history2.action === "recent") {
-    const recent2 = runtime.sessions.recent(
-      runtime.connectionId,
-      history2.session_id,
-      history2.limit ?? 64
-    );
-    if (!recent2) return invalidSession();
-    return createEnvelope(freshness, "ready", { views: recent2 });
-  }
+  if (history2.action === "recent")
+    return recentHistory({
+      runtime,
+      sessionId: history2.session_id,
+      limit: history2.limit,
+      freshness
+    });
+  return restoreHistory({
+    runtime,
+    sessionId: history2.session_id,
+    action: history2.action,
+    freshness
+  });
+}
+function recentHistory({
+  runtime,
+  sessionId,
+  limit,
+  freshness
+}) {
+  const recent2 = runtime.sessions.recent(
+    runtime.connectionId,
+    sessionId,
+    limit ?? 64
+  );
+  if (!recent2) return invalidSession();
+  return createEnvelope(freshness, "ready", { views: recent2 });
+}
+function restoreHistory({
+  runtime,
+  sessionId,
+  action,
+  freshness
+}) {
   const restored = runtime.sessions.restore(
     runtime.connectionId,
-    history2.session_id,
-    history2.action
+    sessionId,
+    action
   );
   if (!restored) return invalidViewHandle();
   return createEnvelope(freshness, "ready", {
     ...restored,
-    history_position: runtime.sessions.historyPosition(
-      runtime.connectionId,
-      history2.session_id
-    ) ?? 0,
+    history_position: runtime.sessions.historyPosition(runtime.connectionId, sessionId) ?? 0,
     stale: restored.project_generation !== freshness.current_generation
   });
 }
@@ -30951,17 +31100,22 @@ function handleHistory(runtime, arguments_, freshness) {
 // src/server/search-action.ts
 async function handleSearch(runtime, arguments_, freshness) {
   const search = schemas.code_search.parse(arguments_);
-  if (normalizeDiscoveryQuery(search.query).length === 0) {
-    const currentLandmarks = runtime.state.landmarks ?? landmarksNotReady();
-    return createEnvelope(
-      freshness,
-      currentLandmarks.state === "ready" ? "ready" : "landmarks_not_ready",
-      {
-        landmarks: currentLandmarks.landmarks,
-        landmark_state: currentLandmarks.state
-      }
-    );
-  }
+  if (normalizeDiscoveryQuery(search.query).length === 0)
+    return searchLandmarks(runtime, freshness);
+  return searchSemantic(runtime, search, freshness);
+}
+function searchLandmarks(runtime, freshness) {
+  const currentLandmarks = runtime.state.landmarks ?? landmarksNotReady();
+  return createEnvelope(
+    freshness,
+    currentLandmarks.state === "ready" ? "ready" : "landmarks_not_ready",
+    {
+      landmarks: currentLandmarks.landmarks,
+      landmark_state: currentLandmarks.state
+    }
+  );
+}
+async function searchSemantic(runtime, search, freshness) {
   const semantic = await collectSemanticSymbols(
     runtime.options.adapters ?? [],
     search.query,
@@ -30969,24 +31123,101 @@ async function handleSearch(runtime, arguments_, freshness) {
   );
   const discovery = runtime.state.discovery;
   if (!discovery) return createEnvelope(freshness, "ready", {});
+  return searchDiscovery({ discovery, search, semantic, freshness });
+}
+function isPathOutsideProject(error2) {
+  return error2 instanceof ProjectPathError && error2.code === "path_outside_project";
+}
+function searchDiscovery({
+  discovery,
+  search,
+  semantic,
+  freshness
+}) {
   let results;
   try {
     results = discovery.searchResult(search.query, search, semantic.symbols);
     if (results.candidates.length === 0 && semantic.failure)
       throw semantic.failure;
+    return createEnvelope(freshness, "ready", results);
   } catch (error2) {
-    if (error2 instanceof ProjectPathError && error2.code === "path_outside_project")
+    if (isPathOutsideProject(error2))
       return codeExplorerError("path_outside_project");
     throw error2;
   }
-  return createEnvelope(freshness, "ready", results);
+}
+
+// src/server/server-refresh.ts
+function queueAdapterRefresh(runtime, adapter, sessionId) {
+  const refresh = adapter.refresh;
+  return refresh ? [runtime.backendRequests.run(sessionId, () => refresh())] : [];
+}
+async function refreshAdapters(runtime, sessionId) {
+  const operations = (runtime.options.adapters ?? []).flatMap(
+    (adapter) => queueAdapterRefresh(runtime, adapter, sessionId)
+  );
+  await Promise.all(operations);
+}
+async function refreshProject(runtime, sessionId) {
+  runtime.state.refreshGeneration += 1;
+  await refreshAdapters(runtime, sessionId);
+  const replacement = await runtime.options.rebuild_derived?.();
+  if (runtime.options.projectRoot)
+    runtime.state.discovery = createDiscoveryPipeline(
+      runtime.options.projectRoot
+    );
+  if (replacement?.landmarks) runtime.state.landmarks = replacement.landmarks;
+}
+async function requestFreshness(request) {
+  const { runtime, name, arguments_, sessionId } = request;
+  if (name === "code_status" && arguments_.action === "refresh") {
+    await runtime.generationScheduler.refresh(
+      () => refreshProject(runtime, sessionId)
+    );
+    return runtime.freshness.status();
+  }
+  return (await runtime.generationScheduler.accept()).status;
 }
 
 // src/server/workspace-status.ts
 import { execFileSync } from "node:child_process";
+function emptyWorkspaceStatus() {
+  return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
+}
+function hasSafeRelativePath(candidate) {
+  return Boolean(candidate) && !candidate.startsWith("/") && !/^[A-Za-z]:\//u.test(candidate) && !candidate.split("/").includes("..");
+}
+function parseWorkspaceLine(line) {
+  const status = line.slice(0, 2);
+  const candidate = line.slice(3).replaceAll("\\", "/");
+  if (!hasSafeRelativePath(candidate)) return;
+  if (!/\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)) return;
+  if (status === "??") return { path: candidate, state: "untracked" };
+  return {
+    path: candidate,
+    state: status.includes("D") ? "deleted" : "modified"
+  };
+}
+function parseWorkspaceStatus(output) {
+  const changed_paths = [];
+  const untracked_paths = [];
+  for (const line of output.split(/\r?\n/u)) {
+    const entry = parseWorkspaceLine(line);
+    if (!entry) continue;
+    if (entry.state === "untracked") {
+      untracked_paths.push(entry);
+      continue;
+    }
+    changed_paths.push(entry);
+  }
+  return {
+    changed_paths,
+    untracked_paths,
+    active_exclusions: ["dist/**", "target/**", "bin/**", "obj/**", ".venv/**"]
+  };
+}
 function nativeWorkspaceStatus(root) {
-  if (!root)
-    return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
+  if (!root) return emptyWorkspaceStatus();
   try {
     const output = execFileSync(
       "git",
@@ -31002,45 +31233,31 @@ function nativeWorkspaceStatus(root) {
         stdio: ["ignore", "pipe", "ignore"]
       }
     );
-    const changed_paths = [];
-    const untracked_paths = [];
-    for (const line of output.split(/\r?\n/u)) {
-      const status = line.slice(0, 2);
-      const candidate = line.slice(3).replaceAll("\\", "/");
-      if (!candidate || candidate.startsWith("/") || /^[A-Za-z]:\//u.test(candidate) || candidate.split("/").includes(".."))
-        continue;
-      if (!/\.(?:rs|py|cs|ts|tsx|js|jsx|json)$/iu.test(candidate)) continue;
-      if (status === "??")
-        untracked_paths.push({ path: candidate, state: "untracked" });
-      else
-        changed_paths.push({
-          path: candidate,
-          state: status.includes("D") ? "deleted" : "modified"
-        });
-    }
-    return {
-      changed_paths,
-      untracked_paths,
-      active_exclusions: [
-        "dist/**",
-        "target/**",
-        "bin/**",
-        "obj/**",
-        ".venv/**"
-      ]
-    };
+    return parseWorkspaceStatus(output);
   } catch {
-    return { changed_paths: [], untracked_paths: [], active_exclusions: [] };
+    return emptyWorkspaceStatus();
   }
 }
+function readWorkspaceStatus(runtime) {
+  return runtime.options.workspace_status?.() ?? nativeWorkspaceStatus(runtime.options.projectRoot);
+}
 
-// src/server/status-action.ts
-function handleStatus(runtime, name, arguments_, freshness, rootStatus) {
-  const backendStatus = name === "code_status" ? {
-    backend_status: createBackendStatusReport(
-      runtime.options.adapters ?? []
-    ),
-    sensitive_paths_excluded: runtime.options.sensitive_paths_excluded ?? 0,
+// src/server/status-data.ts
+function backendStatus(runtime) {
+  return createBackendStatusReport(runtime.options.adapters ?? []);
+}
+function sensitivePathsExcluded(runtime) {
+  return runtime.options.sensitive_paths_excluded ?? 0;
+}
+function discoveryStatus(runtime) {
+  return runtime.state.discovery?.status() ?? {};
+}
+function statusData(context) {
+  const { runtime, name, freshness, rootStatus } = context;
+  if (name !== "code_status") return {};
+  return {
+    backend_status: backendStatus(runtime),
+    sensitive_paths_excluded: sensitivePathsExcluded(runtime),
     project_root: ".",
     current_generation: freshness.current_generation,
     pending_generation: freshness.pending_generation,
@@ -31048,54 +31265,112 @@ function handleStatus(runtime, name, arguments_, freshness, rootStatus) {
     pending_analysis: freshness.pending_generation !== null,
     root_access: rootStatus.state,
     restart_required: rootStatus.restart_required,
-    ...runtime.options.workspace_status?.() ?? nativeWorkspaceStatus(runtime.options.projectRoot),
-    ...runtime.state.discovery?.status()
-  } : {};
-  const state = name === "code_status" && rootStatus.state !== "ready" ? "degraded" : name === "code_status" && arguments_.action === "refresh" && freshness.state === "ready" ? "refreshed" : freshness.state === "refreshing" || freshness.state === "degraded" || freshness.state === "refresh_failed" ? freshness.state : "ready";
-  return createEnvelope(freshness, state, backendStatus);
+    ...readWorkspaceStatus(runtime),
+    ...discoveryStatus(runtime)
+  };
+}
+function hasUnavailableRoot(context) {
+  return context.name === "code_status" && context.rootStatus.state !== "ready";
+}
+function refreshCompleted(context) {
+  return context.name === "code_status" && context.arguments_.action === "refresh" && context.freshness.state === "ready";
+}
+function intermediateEnvelopeState(state) {
+  if (state === "refreshing" || state === "degraded" || state === "refresh_failed")
+    return state;
+}
+function statusEnvelopeState(context) {
+  if (hasUnavailableRoot(context)) return "degraded";
+  if (refreshCompleted(context)) return "refreshed";
+  const intermediate = intermediateEnvelopeState(context.freshness.state);
+  if (intermediate) return intermediate;
+  return "ready";
+}
+
+// src/server/status-action.ts
+function handleStatus(context) {
+  return createEnvelope(
+    context.freshness,
+    statusEnvelopeState(context),
+    statusData(context)
+  );
 }
 
 // src/server/perform-call.ts
-async function performCall(runtime, name, arguments_, sessionId) {
+async function dispatchAction(context) {
+  const { runtime, name, arguments_, freshness } = context;
+  const handlers = {
+    code_focus: () => handleFocus(runtime, arguments_, freshness),
+    code_follow: () => handleFollow(runtime, arguments_, freshness),
+    code_history: () => handleHistory(runtime, arguments_, freshness)
+  };
+  const handler = handlers[name];
+  if (handler) {
+    const result = await handler();
+    if (result) return result;
+  }
+  if (name === "code_search" && runtime.state.discovery)
+    return handleSearch(runtime, arguments_, freshness);
+  return handleStatus(context);
+}
+async function performCall(request) {
+  const { runtime, name } = request;
   const rootStatus = await runtime.rootAccess.check();
   if (name !== "code_status" && rootStatus.state !== "ready")
     return codeExplorerError(rootStatus.state);
-  let capturedFreshness;
-  if (name === "code_status" && arguments_.action === "refresh") {
-    await runtime.generationScheduler.refresh(async () => {
-      runtime.state.refreshGeneration += 1;
-      await Promise.all(
-        (runtime.options.adapters ?? []).flatMap((adapter) => {
-          const refresh = adapter.refresh;
-          return refresh ? [runtime.backendRequests.run(sessionId, () => refresh())] : [];
-        })
-      );
-      const replacement = await runtime.options.rebuild_derived?.();
-      if (runtime.options.projectRoot)
-        runtime.state.discovery = createDiscoveryPipeline(
-          runtime.options.projectRoot
-        );
-      if (replacement?.landmarks)
-        runtime.state.landmarks = replacement.landmarks;
-    });
-    capturedFreshness = runtime.freshness.status();
-  } else {
-    capturedFreshness = (await runtime.generationScheduler.accept()).status;
-  }
-  if (name === "code_focus") {
-    const result = await handleFocus(runtime, arguments_, capturedFreshness);
-    if (result) return result;
-  }
-  if (name === "code_follow") {
-    const result = await handleFollow(runtime, arguments_, capturedFreshness);
-    if (result) return result;
-  }
-  if (name === "code_history")
-    return handleHistory(runtime, arguments_, capturedFreshness);
-  if (name === "code_search" && runtime.state.discovery)
-    return handleSearch(runtime, arguments_, capturedFreshness);
-  return handleStatus(runtime, name, arguments_, capturedFreshness, rootStatus);
+  const freshness = await requestFreshness(request);
+  return dispatchAction({
+    runtime,
+    name,
+    arguments_: request.arguments_,
+    freshness,
+    rootStatus
+  });
 }
+
+// src/server/server-call-session.ts
+var sessionErrors = {
+  invalid_session: invalidSession,
+  request_id_conflict: requestIdConflict,
+  project_capacity: projectCapacity
+};
+function sessionError(state) {
+  return sessionErrors[state]?.() ?? invalidSession();
+}
+async function startSession(runtime) {
+  const sessionId = runtime.sessions.tryStart(
+    runtime.connectionId,
+    runtime.options.now?.()
+  );
+  if (!sessionId) return projectCapacity();
+  const rootStatus = await runtime.rootAccess.check();
+  return createEnvelope(
+    { current_generation: 0, pending_generation: null },
+    rootStatus.state === "ready" ? "ready" : "degraded",
+    {
+      session_id: sessionId,
+      project_root: ".",
+      root_access: rootStatus.state,
+      restart_required: rootStatus.restart_required
+    }
+  );
+}
+async function executeInSession(runtime, request) {
+  const execution = runtime.sessions.execute(
+    runtime.connectionId,
+    request.sessionId,
+    request.requestId,
+    request.name,
+    request.arguments_,
+    request.perform,
+    runtime.options.now?.()
+  );
+  if (execution.state !== "ok") return sessionError(execution.state);
+  return execution.response.catch(normalizeBackendFailure);
+}
+
+// src/server/server-call-validation.ts
+import { Buffer as Buffer6 } from "node:buffer";
 
 // src/server/tool-name.ts
 var toolNames = [
@@ -31109,65 +31384,72 @@ function isToolName(name) {
   return toolNames.includes(name);
 }
 
-// src/server/server-call.ts
+// src/server/server-call-validation.ts
+function validateServerCall(name, arguments_) {
+  if (!isToolName(name)) return { ok: false, error: unknownTool() };
+  const limit = validateResourceLimits(name, arguments_);
+  if (limit) return { ok: false, error: limitedResource(limit) };
+  const parsed = schemas[name].safeParse(arguments_);
+  if (!parsed.success) return { ok: false, error: invalidRequest() };
+  return {
+    ok: true,
+    name,
+    arguments_: parsed.data
+  };
+}
+function isStartSessionCall(name, arguments_) {
+  return name === "code_status" && arguments_.action === "start_session";
+}
+function isStateChangingCall(name, arguments_) {
+  return name === "code_focus" || name === "code_follow" || name === "code_history" || name === "code_status" && arguments_.action === "refresh";
+}
+function stringArgument(arguments_, name) {
+  const value = arguments_[name];
+  return typeof value === "string" ? value : void 0;
+}
 function hasValidRequestId(value) {
   const bytes = Buffer6.byteLength(value, "utf8");
   return bytes >= 16 && bytes <= 128;
 }
-function createServerCall(runtime) {
-  const ensureFreshness = () => runtime.state.freshnessStarted ??= runtime.freshness.start();
-  return async function call(name, arguments_) {
-    if (!isToolName(name)) return unknownTool();
-    const limit = validateResourceLimits(name, arguments_);
-    if (limit) return limitedResource(limit);
-    const parsed = schemas[name].safeParse(arguments_);
-    if (!parsed.success) return invalidRequest();
-    if (!(name === "code_status" && arguments_.action === "start_session"))
-      await ensureFreshness();
-    if (name === "code_status" && arguments_.action === "start_session") {
-      const sessionId2 = runtime.sessions.tryStart(
-        runtime.connectionId,
-        runtime.options.now?.()
-      );
-      if (!sessionId2) return projectCapacity();
-      const rootStatus = await runtime.rootAccess.check();
-      return createEnvelope(
-        { current_generation: 0, pending_generation: null },
-        rootStatus.state === "ready" ? "ready" : "degraded",
-        {
-          session_id: sessionId2,
-          project_root: ".",
-          root_access: rootStatus.state,
-          restart_required: rootStatus.restart_required
-        }
-      );
-    }
-    const parsedArguments = parsed.data;
-    const sessionId = typeof parsedArguments.session_id === "string" ? parsedArguments.session_id : void 0;
-    const requestId = typeof parsedArguments.request_id === "string" ? parsedArguments.request_id : void 0;
-    const stateChanging = name === "code_focus" || name === "code_follow" || name === "code_history" || name === "code_status" && arguments_.action === "refresh";
-    if (stateChanging && !(requestId && hasValidRequestId(requestId) && sessionId))
-      return invalidRequest();
-    const perform = () => performCall(runtime, name, parsedArguments, sessionId);
-    if (stateChanging && sessionId && requestId) {
-      const execution = runtime.sessions.execute(
-        runtime.connectionId,
-        sessionId,
-        requestId,
-        name,
-        parsedArguments,
-        perform,
-        runtime.options.now?.()
-      );
-      if (execution.state === "invalid_session") return invalidSession();
-      if (execution.state === "request_id_conflict") return requestIdConflict();
-      if (execution.state === "project_capacity") return projectCapacity();
-      if (execution.state === "ok")
-        return execution.response.catch(normalizeBackendFailure);
-      return invalidSession();
-    }
+
+// src/server/server-call-execution.ts
+function ensureFreshness(runtime) {
+  return runtime.state.freshnessStarted ??= runtime.freshness.start();
+}
+function sessionRequest(arguments_) {
+  const sessionId = stringArgument(arguments_, "session_id");
+  const requestId = stringArgument(arguments_, "request_id");
+  if (!(sessionId && requestId && hasValidRequestId(requestId))) return;
+  return { sessionId, requestId };
+}
+async function performValidatedCall(runtime, name, arguments_) {
+  const sessionId = stringArgument(arguments_, "session_id");
+  const perform = () => performCall({ runtime, name, arguments_, sessionId });
+  if (!isStateChangingCall(name, arguments_))
     return perform().catch(normalizeBackendFailure);
-  };
+  const request = sessionRequest(arguments_);
+  if (!request) return invalidRequest();
+  return executeInSession(runtime, {
+    name,
+    arguments_,
+    ...request,
+    perform
+  });
+}
+async function executeValidatedCall(runtime, name, arguments_) {
+  if (isStartSessionCall(name, arguments_)) return startSession(runtime);
+  await ensureFreshness(runtime);
+  return performValidatedCall(runtime, name, arguments_);
+}
+
+// src/server/server-call.ts
+async function handleServerCall(runtime, name, arguments_) {
+  const parsed = validateServerCall(name, arguments_);
+  if (!parsed.ok) return parsed.error;
+  return executeValidatedCall(runtime, parsed.name, parsed.arguments_);
+}
+function createServerCall(runtime) {
+  return (name, arguments_) => handleServerCall(runtime, name, arguments_);
 }
 
 // src/server/tool-descriptions.ts
@@ -31189,13 +31471,11 @@ function toMcpToolResult(result, isError = false) {
 }
 
 // src/server/create-server.ts
-function createServer2(options = {}) {
-  const runtime = createServerRuntime(options);
+function createMcpServer(call) {
   const mcp = new McpServer(
     { name: "code-explorer", version: packageInfo.version },
     { capabilities: { tools: {} } }
   );
-  const call = createServerCall(runtime);
   mcp.server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: toolNames.map((name) => ({
       name,
@@ -31210,8 +31490,13 @@ function createServer2(options = {}) {
     );
     return toMcpToolResult(result, "code" in result);
   });
+  return mcp;
+}
+function createServer2(options = {}) {
+  const runtime = createServerRuntime(options);
+  const call = createServerCall(runtime);
   return {
-    mcp,
+    mcp: createMcpServer(call),
     call,
     state: () => ({
       refresh_generation: runtime.state.refreshGeneration,

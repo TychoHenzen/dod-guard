@@ -13,13 +13,11 @@ import { toolDescriptions } from "./tool-descriptions.js";
 import { toolNames } from "./tool-name.js";
 import { toMcpToolResult } from "./tool-result.js";
 
-export function createServer(options: ServerOptions = {}): CodeExplorerServer {
-  const runtime = createServerRuntime(options);
+function createMcpServer(call: ReturnType<typeof createServerCall>): McpServer {
   const mcp = new McpServer(
     { name: "code-explorer", version: packageInfo.version },
     { capabilities: { tools: {} } },
   );
-  const call = createServerCall(runtime);
   mcp.server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: toolNames.map((name) => ({
       name,
@@ -34,8 +32,14 @@ export function createServer(options: ServerOptions = {}): CodeExplorerServer {
     );
     return toMcpToolResult(result, "code" in result);
   });
+  return mcp;
+}
+
+export function createServer(options: ServerOptions = {}): CodeExplorerServer {
+  const runtime = createServerRuntime(options);
+  const call = createServerCall(runtime);
   return {
-    mcp,
+    mcp: createMcpServer(call),
     call,
     state: () => ({
       refresh_generation: runtime.state.refreshGeneration,

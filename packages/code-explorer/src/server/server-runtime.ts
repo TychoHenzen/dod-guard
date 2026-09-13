@@ -7,15 +7,13 @@ import { SessionManager } from "../navigation/session.js";
 import type { RootAccessGate } from "../semantic/api/public-api.js";
 import type { ServerOptions } from "./server-options.js";
 
-type ProjectGenerationScheduler = generation.ProjectGenerationScheduler;
-
 export type ServerRuntime = {
   options: ServerOptions;
   connectionId: string;
   sessions: SessionManager;
   backendRequests: BackendRequestLimiter;
   freshness: WorkspaceFreshness;
-  generationScheduler: ProjectGenerationScheduler;
+  generationScheduler: generation.ProjectGenerationScheduler;
   rootAccess: RootAccessGate;
   state: {
     refreshGeneration: number;
