@@ -1,68 +1,93 @@
 import type { FreshnessStatus } from "../freshness/workspace-freshness.js";
 import {
   type CodeExplorerError,
-  codeExplorerError,
 } from "../navigation/error.js";
-import { createEnvelope } from "./envelope.js";
-import { invalidViewHandle, staleView } from "./errors.js";
+import { type CodeExplorerEnvelope, createEnvelope } from "./envelope.js";
+import { createFollowEnvelope } from "./follow-result.js";
+import { schemas } from "./schemas.js";
+import type { FollowCandidate } from "./relation-candidate.js";
 import {
-  collectRelations,
   mapRelationCandidates,
 } from "./relation-operations.js";
-import { schemas } from "./schemas.js";
+import { collectRelations } from "./collect-relations.js";
+import type { RelationName } from "../semantic/api/public-api.js";
 import type { ServerRuntime } from "./server-runtime.js";
+import { resolveFollowTarget } from "./follow-target.js";
+
+async function loadFollowCandidates({
+  runtime,
+  follow,
+  relation,
+  symbolId,
+}: {
+  runtime: ServerRuntime;
+  follow: ReturnType<typeof schemas.code_follow.parse>;
+  relation: string;
+  symbolId: string;
+}): Promise<FollowCandidate[] | undefined> {
+  const replies = await collectRelations({
+    adapters: runtime.options.adapters ?? [],
+    relation: semanticRelation(follow.relation),
+    symbolId,
+    run: (operation) =>
+      runtime.backendRequests.run(follow.session_id, operation),
+  });
+  return followCandidatesFromReplies({ runtime, follow, relation, replies });
+}
+
+function semanticRelation(
+  relation: ReturnType<typeof schemas.code_follow.parse>["relation"],
+): RelationName {
+  return relation === "type" ? "type_definition" : relation;
+}
+
+function followCandidatesFromReplies({
+  runtime,
+  follow,
+  relation,
+  replies,
+}: {
+  runtime: ServerRuntime;
+  follow: ReturnType<typeof schemas.code_follow.parse>;
+  relation: string;
+  replies: Awaited<ReturnType<typeof collectRelations>>;
+}): FollowCandidate[] | undefined {
+  if (replies.length === 0) return;
+  const { adapter, result } = replies[0];
+  return mapRelationCandidates({
+    result,
+    relation,
+    adapter,
+    sessions: runtime.sessions,
+    connectionId: runtime.connectionId,
+    sessionId: follow.session_id,
+    limit: Math.min(follow.limit ?? 50, 200),
+  });
+}
 
 export async function handleFollow(
   runtime: ServerRuntime,
   arguments_: Record<string, unknown>,
   freshness: FreshnessStatus,
-): Promise<ReturnType<typeof createEnvelope> | CodeExplorerError | undefined> {
+): Promise<CodeExplorerEnvelope | CodeExplorerError | undefined> {
   const relation = arguments_.relation;
   if (typeof relation !== "string") return;
   const follow = schemas.code_follow.parse(arguments_);
-  const resolved = runtime.sessions.resolveHandle(
-    runtime.connectionId,
-    follow.session_id,
-    follow.view_id,
-    follow.handle,
-    freshness.current_generation,
-  );
-  if (resolved.state === "stale_view") {
-    if (resolved.viewGeneration === undefined) return staleView();
-    return codeExplorerError("stale_view", {
-      view_generation: resolved.viewGeneration,
-      current_generation:
-        resolved.currentGeneration ?? freshness.current_generation,
-    });
-  }
-  if (resolved.state !== "ok") return invalidViewHandle();
-  const semanticRelation =
-    follow.relation === "type" ? "type_definition" : follow.relation;
-  const replies = await collectRelations(
-    runtime.options.adapters ?? [],
-    semanticRelation,
-    resolved.symbolId,
-    (operation) => runtime.backendRequests.run(follow.session_id, operation),
-  );
-  if (replies.length === 0)
-    return createEnvelope(freshness, "unavailable_relation", { relation });
-  const { adapter, result } = replies[0];
-  const candidates = mapRelationCandidates(
-    result,
+  const target = resolveFollowTarget({
+    runtime,
+    sessionId: follow.session_id,
+    viewId: follow.view_id,
+    handle: follow.handle,
+    generation: freshness.current_generation,
+  });
+  if ("error" in target) return target.error;
+  const candidates = await loadFollowCandidates({
+    runtime,
+    follow,
     relation,
-    adapter,
-    runtime.sessions,
-    runtime.connectionId,
-    follow.session_id,
-    Math.min(follow.limit ?? 50, 200),
-  );
-  if (relation === "definition") {
-    const local = candidates.find((candidate) => candidate.external === false);
-    if (local)
-      return createEnvelope(freshness, "ready", {
-        focus: local,
-        source_location: local.range,
-      });
-  }
-  return createEnvelope(freshness, "ready", { relation, candidates });
+    symbolId: target.symbolId,
+  });
+  if (!candidates)
+    return createEnvelope(freshness, "unavailable_relation", { relation });
+  return createFollowEnvelope(relation, candidates, freshness);
 }

@@ -6,8 +6,6 @@ import type {
   ProjectRoot,
 } from "../semantic/api/public-api.js";
 
-type ProjectGenerationScheduler = generation.ProjectGenerationScheduler;
-
 export type ServerOptions = {
   adapters?: readonly LanguageAdapter[];
   projectRoot?: ProjectRoot;
@@ -17,7 +15,7 @@ export type ServerOptions = {
   now?: () => number;
   backend_timeout_ms?: number;
   freshness?: WorkspaceFreshness;
-  generation_scheduler?: ProjectGenerationScheduler;
+  generation_scheduler?: generation.ProjectGenerationScheduler;
   rebuild_derived?: () => Promise<
     { landmarks?: LandmarkDiscovery } | undefined
   >;

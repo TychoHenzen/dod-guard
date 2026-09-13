@@ -14,32 +14,56 @@ import type { ServerRuntime } from "./server-runtime.js";
 
 const { ProjectGenerationScheduler } = generation;
 
-export function createServerRuntime(options: ServerOptions): ServerRuntime {
-  const freshness =
+async function reconcileEmptyManifest() {
+  return { manifest: new Map<string, string>() };
+}
+
+function createFreshness(options: ServerOptions): WorkspaceFreshness {
+  return (
     options.freshness ??
-    new WorkspaceFreshness({
-      reconcile: async () => ({ manifest: new Map<string, string>() }),
-    });
+    new WorkspaceFreshness({ reconcile: reconcileEmptyManifest })
+  );
+}
+
+function createGenerationScheduler(
+  options: ServerOptions,
+  freshness: WorkspaceFreshness,
+): generation.ProjectGenerationScheduler {
+  return (
+    options.generation_scheduler ??
+    new ProjectGenerationScheduler(freshness)
+  );
+}
+
+function createRootAccess(options: ServerOptions): RootAccessGate {
+  return new RootAccessGate(
+    options.projectRoot,
+    options.adapters ?? [],
+    options.now,
+  );
+}
+
+function createRuntimeState(options: ServerOptions): ServerRuntime["state"] {
+  return {
+    refreshGeneration: 0,
+    viewHistory: [],
+    discovery: options.projectRoot
+      ? createDiscoveryPipeline(options.projectRoot)
+      : undefined,
+    landmarks: options.landmarks ?? landmarksNotReady(),
+  };
+}
+
+export function createServerRuntime(options: ServerOptions): ServerRuntime {
+  const freshness = createFreshness(options);
   return {
     options,
     connectionId: options.connection_id ?? mintOpaqueId(),
     sessions: new SessionManager(),
     backendRequests: new BackendRequestLimiter(options.backend_timeout_ms),
     freshness,
-    generationScheduler:
-      options.generation_scheduler ?? new ProjectGenerationScheduler(freshness),
-    rootAccess: new RootAccessGate(
-      options.projectRoot,
-      options.adapters ?? [],
-      options.now,
-    ),
-    state: {
-      refreshGeneration: 0,
-      viewHistory: [],
-      discovery: options.projectRoot
-        ? createDiscoveryPipeline(options.projectRoot)
-        : undefined,
-      landmarks: options.landmarks ?? landmarksNotReady(),
-    },
+    generationScheduler: createGenerationScheduler(options, freshness),
+    rootAccess: createRootAccess(options),
+    state: createRuntimeState(options),
   };
 }

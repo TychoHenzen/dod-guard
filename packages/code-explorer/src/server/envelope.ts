@@ -1,5 +1,4 @@
 import type { FreshnessStatus } from "../freshness/workspace-freshness.js";
-import type { FocusView } from "../navigation/focus-view.js";
 
 export type CodeExplorerEnvelope = {
   schema_version: 1;
@@ -16,17 +15,6 @@ export type CodeExplorerEnvelope = {
     | "landmarks_not_ready";
   data: Record<string, unknown>;
 };
-
-export function readyViewEnvelope(
-  view: FocusView,
-  freshness: FreshnessStatus,
-  historyPosition: number,
-): CodeExplorerEnvelope {
-  return createEnvelope(freshness, "ready", {
-    ...view,
-    history_position: historyPosition,
-  });
-}
 
 export function createEnvelope(
   freshness: FreshnessStatus,

@@ -1,49 +1,38 @@
-import type { SessionManager } from "../navigation/session.js";
+import { createFocusView } from "../navigation/focus-view.js";
+import {
+  SessionCapacityError,
+  type SessionManager,
+} from "../navigation/session.js";
 import type {
   LanguageAdapter,
-  RelationName,
   RelationResult,
 } from "../semantic/api/public-api.js";
 import {
-  compareRelationCandidates,
   type FollowCandidate,
   mapRelationCandidate,
-  retainRelationCandidateView,
 } from "./relation-candidate.js";
-import type { BackendOperation } from "./semantic-operations.js";
-import { throwBackendLimitFailure } from "./semantic-operations.js";
+import { compareRelationCandidates } from "./relation-order.js";
 
-export async function collectRelations(
-  adapters: readonly LanguageAdapter[],
-  relation: RelationName,
-  symbolId: string,
-  run: BackendOperation,
-) {
-  const supported = adapters.filter(
-    (adapter) => adapter.status().capabilities[relation].state === "ready",
-  );
-  const replies = await Promise.allSettled(
-    supported.map((adapter) =>
-      run(() => adapter.request({ operation: relation, symbol_id: symbolId })),
-    ),
-  );
-  const results = replies.flatMap((reply, index) =>
-    reply.status === "fulfilled" && reply.value.operation === relation
-      ? [{ adapter: supported[index], result: reply.value as RelationResult }]
-      : [],
-  );
-  if (results.length === 0) throwBackendLimitFailure(replies);
-  return results;
-}
+type MapRelationOptions = {
+  result: RelationResult;
+  relation: string;
+  adapter: LanguageAdapter;
+  sessions: SessionManager;
+  connectionId: string;
+  sessionId: string;
+  limit: number;
+};
 
 export function mapRelationCandidates(
-  result: RelationResult,
-  relation: string,
-  adapter: LanguageAdapter,
-  sessions: SessionManager,
-  connectionId: string,
-  sessionId: string,
-  limit: number,
+  {
+    result,
+    relation,
+    adapter,
+    sessions,
+    connectionId,
+    sessionId,
+    limit,
+  }: MapRelationOptions,
 ): FollowCandidate[] {
   return result.relations
     .map((candidate) => mapRelationCandidate(candidate, relation, adapter))
@@ -52,6 +41,40 @@ export function mapRelationCandidates(
     )
     .slice(0, limit)
     .map((mapped) =>
-      retainRelationCandidateView(mapped, sessions, connectionId, sessionId),
+      retainRelationCandidateView({
+        mapped,
+        sessions,
+        connectionId,
+        sessionId,
+      }),
     );
+}
+
+function retainRelationCandidateView({
+  mapped,
+  sessions,
+  connectionId,
+  sessionId,
+}: {
+  mapped: ReturnType<typeof mapRelationCandidate>;
+  sessions: SessionManager;
+  connectionId: string;
+  sessionId: string;
+}): FollowCandidate {
+  if (!mapped.symbol) return mapped.candidate;
+  const view = createFocusView(mapped.symbol, {
+    declaration: mapped.symbol.name,
+    visible_symbols: [
+      { name: mapped.symbol.name, symbol_id: mapped.symbol.id },
+    ],
+  });
+  if (sessions.addView(connectionId, sessionId, view) !== "ok")
+    throw new SessionCapacityError();
+  return {
+    ...mapped.candidate,
+    view_id: view.view_id,
+    ...(view.handles[0]?.handle ? { handle: view.handles[0].handle } : {}),
+    handles: view.handles,
+    content: view.content,
+  };
 }

@@ -19,10 +19,6 @@ export function invalidRequest(): CodeExplorerError {
   return codeExplorerError("invalid_request");
 }
 
-export function pathOutsideProject(): CodeExplorerError {
-  return codeExplorerError("path_outside_project");
-}
-
 export function resourceLimit(): CodeExplorerError {
   return codeExplorerError("resource_limit");
 }
@@ -31,7 +27,7 @@ export function limitedResource(limit: ResourceLimit): CodeExplorerError {
   return codeExplorerError("resource_limit", limit);
 }
 
-export function backendTimeout(): CodeExplorerError {
+function backendTimeout(): CodeExplorerError {
   return codeExplorerError("backend_timeout");
 }
 
