@@ -91,6 +91,7 @@ GitHub-backed skills share the request policy in
 | `/doc-reconcile` | Resolve contradictory documentation using Git history. |
 | `/skill-debug` | Compare skill instructions with recorded executions. |
 | `/skill-migrate` | Migrate agent instruction artifacts for current models. |
+| `/wiring-audit` | Check whether a feature reaches its intended user through the repository's real surfaces. |
 
 `review-pr-feature`, `review-pr-design`, `review-pr-reliability`, and
 `review-pr-hygiene` provide the independent review angles. The coordinator
