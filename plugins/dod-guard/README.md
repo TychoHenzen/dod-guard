@@ -92,6 +92,7 @@ GitHub-backed skills share the request policy in
 | `/skill-debug` | Compare skill instructions with recorded executions. |
 | `/skill-migrate` | Migrate agent instruction artifacts for current models. |
 | `/wiring-audit` | Check whether a feature reaches its intended user through the repository's real surfaces. |
+| `/usability-review` | Review user-facing workflows for usability, accessibility, and AI trust cues. |
 
 `review-pr-feature`, `review-pr-design`, `review-pr-reliability`, and
 `review-pr-hygiene` provide the independent review angles. The coordinator
