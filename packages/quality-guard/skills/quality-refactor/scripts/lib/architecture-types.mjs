@@ -1,5 +1,7 @@
 import { matchBracket } from "./offsets.mjs";
 import { pythonTypes } from "./architecture-python-types.mjs";
+import { strip } from "./strip.mjs";
+import { csharpRecordBody } from "./architecture-csharp-records.mjs";
 
 const TYPE_PATTERNS = {
   ts: new RegExp(
@@ -8,8 +10,9 @@ const TYPE_PATTERNS = {
     "g",
   ),
   cs: new RegExp(
-    String.raw`\b(?:public\s+|internal\s+|private\s+|protected\s+)?` +
-      String.raw`(class|interface|struct|enum|record)\s+([A-Za-z_]\w*)`,
+      String.raw`\b(?:public\s+|internal\s+|private\s+|protected\s+)?` +
+      String.raw`(record(?:\s+struct)?|class|interface|struct|enum)\s+` +
+      String.raw`([A-Za-z_]\w*)(?:\s*<[^;{}()]*>)?`,
     "g",
   ),
   java: new RegExp(
@@ -30,28 +33,33 @@ function braceBody(source, offset) {
   return { start: open + 1, end: close, text: source.slice(open + 1, close) };
 }
 
-function blankComments(source) {
-  return source.replace(/\/\/[^\r\n]*|\/\*[\s\S]*?\*\//g, (comment) =>
-    comment.replace(/[^\r\n]/g, " "),
-  );
-}
-
 function typeName(match, lang) {
   return lang === "go" ? match[1] : match[2];
 }
 
 function typeKind(match, lang) {
-  return lang === "go" ? match[2] : match[1];
+  if (lang === "go") return match[2];
+  if (lang === "cs" && /^record\s+struct$/.test(match[1])) return "struct";
+  return match[1];
+}
+
+function declarationBody({ source, searchable, match, lang }) {
+  const offset = match.index + match[0].length;
+  const csharpBody = lang === "cs"
+    ? csharpRecordBody({ source, searchable, match })
+    : undefined;
+  return csharpBody === undefined ? braceBody(source, offset) : csharpBody;
 }
 
 export function declaredTypes(source, lang) {
   if (lang === "py") return { types: pythonTypes(source) };
   const pattern = TYPE_PATTERNS[lang];
-  const searchable = blankComments(source);
+  pattern.lastIndex = 0;
+  const searchable = strip(source, lang).code;
   const types = [];
   let match = pattern.exec(searchable);
   while (match !== null) {
-    const body = braceBody(source, match.index + match[0].length);
+    const body = declarationBody({ source, searchable, match, lang });
     if (!body)
       return {
         types: [],

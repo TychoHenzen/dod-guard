@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "strict",
   "createdAt": "2026-09-14T18:36:36.011Z",
-  "total": 116,
+  "total": 117,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -1341,6 +1341,7 @@
     "packages/quality-guard/scripts/sentinel.d.mts",
     "packages/quality-guard/scripts/sentinel.mjs",
     "packages/quality-guard/scripts/sentinel.test.mjs",
+    "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-csharp-records.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-facts-errors.test.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-facts.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-facts.test.mjs",
@@ -1350,6 +1351,7 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-members.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-python-types.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-types.mjs",
+    "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-types.test.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/baseline-counts.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/baseline-more.test.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/baseline-persistence.test.mjs",
@@ -1629,6 +1631,7 @@
     "packages/quality-guard/src/plaintext-readability.ts::else-branch": 1,
     "packages/code-explorer/src/testing/index/index-navigation-owner.test.ts::stateless-method": 2,
     "packages/code-explorer/scripts/reproduce-real-lsp-tracing.mjs::unused-local": 1,
-    "packages/code-explorer/src/runtime-main.ts::unused-local": 1
+    "packages/code-explorer/src/runtime-main.ts::unused-local": 1,
+    "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-types.test.mjs::file-length": 1
   }
 }

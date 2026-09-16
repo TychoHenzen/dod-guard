@@ -23196,6 +23196,521 @@ function pythonTypes(source) {
   return result;
 }
 
+// skills/quality-refactor/scripts/lib/strip-readers.mjs
+function blank(text2) {
+  return text2.replace(/[^\n]/g, " ");
+}
+function readLineComment(src, start) {
+  const end = src.indexOf("\n", start);
+  return end === -1 ? src.length : end;
+}
+function readBlockComment(src, start) {
+  const end = src.indexOf("*/", start + 2);
+  return end === -1 ? src.length : end + 2;
+}
+function readQuoted(src, start, quote) {
+  let i = start + quote.length;
+  while (i < src.length) {
+    if (src[i] === "\\") {
+      i += 2;
+      continue;
+    }
+    if (src.startsWith(quote, i)) return i + quote.length;
+    i += 1;
+  }
+  return src.length;
+}
+function readVerbatim(src, start) {
+  let i = start + 2;
+  while (i < src.length) {
+    if (src[i] !== '"') {
+      i += 1;
+      continue;
+    }
+    if (src[i + 1] === '"') {
+      i += 2;
+      continue;
+    }
+    return i + 1;
+  }
+  return src.length;
+}
+function readRawCsOpener(src, i) {
+  let j = i;
+  while (src[j] === "$") j += 1;
+  const dollarCount = j - i;
+  let quotes = 0;
+  while (src[j + quotes] === '"') quotes += 1;
+  return quotes < 3 ? null : { end: j + quotes, quoteCount: quotes, dollarCount };
+}
+function readRawCsBody(src, start, quoteCount) {
+  let i = start;
+  while (i < src.length) {
+    if (src[i] !== '"') {
+      i += 1;
+      continue;
+    }
+    let run = 0;
+    while (src[i + run] === '"') run += 1;
+    if (run >= quoteCount) return i + run;
+    i += run;
+  }
+  return src.length;
+}
+function readRawRust(src, start) {
+  const opener = /^r(#*)"/.exec(src.slice(start, start + 16));
+  if (!opener) return null;
+  const terminator = `"${opener[1]}`;
+  const end = src.indexOf(terminator, start + opener[0].length);
+  return end === -1 ? src.length : end + terminator.length;
+}
+function rustUnicodeChar(src, backslash) {
+  const close = src.indexOf("}", backslash + 3);
+  return close !== -1 && src[close + 1] === "'" ? close + 2 : null;
+}
+function rustEscapeChar(src, index) {
+  if (src[index + 1] === "u" && src[index + 2] === "{")
+    return rustUnicodeChar(src, index);
+  return src[index + 2] === "'" ? index + 3 : null;
+}
+function readRustChar(src, i) {
+  const next = i + 1;
+  if (src[next] === "\\") return rustEscapeChar(src, next);
+  return src[next + 1] === "'" ? next + 2 : null;
+}
+
+// skills/quality-refactor/scripts/lib/strip-exotic.mjs
+var EXOTIC_STRINGS = {
+  py: (src, i) => {
+    const triple = src.slice(i, i + 3);
+    if (triple !== '"""' && triple !== "'''") return null;
+    return { end: readQuoted(src, i, triple), isComment: true };
+  },
+  cs: (src, i) => {
+    if (src.startsWith('@"', i) || src.startsWith('$@"', i)) {
+      const start = src[i] === "$" ? i + 1 : i;
+      const end = readVerbatim(src, start);
+      const captures = src[i] === "$" ? { braceCount: 1, escaped: true } : null;
+      return { end, isComment: false, captures };
+    }
+    const opener = readRawCsOpener(src, i);
+    if (opener) {
+      const end = readRawCsBody(src, opener.end, opener.quoteCount);
+      const captures = opener.dollarCount > 0 ? { braceCount: opener.dollarCount, escaped: false } : null;
+      return { end, isComment: false, captures };
+    }
+    if (src[i] === "$" && src[i + 1] === '"') {
+      return {
+        end: readQuoted(src, i + 1, '"'),
+        isComment: false,
+        captures: { braceCount: 1, escaped: true }
+      };
+    }
+    return null;
+  },
+  rs: (src, i) => {
+    if (src[i] === "'") {
+      const end2 = readRustChar(src, i);
+      return end2 === null ? null : { end: end2, isComment: false };
+    }
+    if (src[i] !== "r") return null;
+    const end = readRawRust(src, i);
+    return end === null ? null : { end, isComment: false };
+  }
+};
+
+// skills/quality-refactor/scripts/lib/strip-regex.mjs
+function bracketState(ch) {
+  if (ch === "[") return true;
+  if (ch === "]") return false;
+  return null;
+}
+function slashEnd(ch, inClass, index) {
+  return ch === "/" && !inClass ? index + 1 : null;
+}
+function regexStep(src, i, inClass) {
+  const ch = src[i];
+  if (ch === "\\") return { next: i + 2, inClass };
+  if (ch === "\n") return { end: null };
+  const brackets = bracketState(ch);
+  if (brackets !== null) return { next: i + 1, inClass: brackets };
+  const end = slashEnd(ch, inClass, i);
+  if (end !== null) return { end };
+  return { next: i + 1, inClass };
+}
+function readFlags(src, end) {
+  let next = end;
+  while (next < src.length && /[a-z]/.test(src[next])) next += 1;
+  return next;
+}
+function readRegex(src, start) {
+  let i = start + 1;
+  let inClass = false;
+  while (i < src.length) {
+    const step = regexStep(src, i, inClass);
+    if (step.end !== void 0) {
+      if (step.end === null) return null;
+      return readFlags(src, step.end);
+    }
+    i = step.next;
+    inClass = step.inClass;
+  }
+  return null;
+}
+
+// skills/quality-refactor/scripts/lib/strip-lexical.mjs
+var LINE_COMMENT = {
+  ts: "//",
+  cs: "//",
+  rs: "//",
+  go: "//",
+  java: "//",
+  cpp: "//",
+  py: "#"
+};
+var REGEX_AFTER = new Set("(,=:[!&|?{};+-*%<>~^\n");
+var REGEX_AFTER_WORD = /* @__PURE__ */ new Set([
+  "return",
+  "typeof",
+  "case",
+  "in",
+  "of",
+  "new",
+  "delete",
+  "void",
+  "yield",
+  "await"
+]);
+function blockComment(src, i, lang) {
+  if (lang === "py" || !src.startsWith("/*", i)) return null;
+  return { end: readBlockComment(src, i), isComment: true };
+}
+function lineComment(src, i, lang) {
+  const marker = LINE_COMMENT[lang] ?? "//";
+  return src.startsWith(marker, i) ? { end: readLineComment(src, i), isComment: true } : null;
+}
+function tryComment(src, i, lang) {
+  return blockComment(src, i, lang) ?? lineComment(src, i, lang);
+}
+function isRustLifetimeQuote(lang, ch) {
+  return lang === "rs" && ch === "'";
+}
+function rustStringCaptures(lang, ch) {
+  return lang === "rs" && ch === '"' ? { braceCount: 1, escaped: true } : null;
+}
+function tryString(src, i, lang) {
+  const exotic = EXOTIC_STRINGS[lang]?.(src, i);
+  if (exotic) return exotic;
+  const ch = src[i];
+  if (isRustLifetimeQuote(lang, ch)) return null;
+  if (ch !== '"' && ch !== "'") return null;
+  return {
+    end: readQuoted(src, i, ch),
+    isComment: false,
+    captures: rustStringCaptures(lang, ch)
+  };
+}
+function canOpenRegex({ src, i, lang, previous }) {
+  if (lang !== "ts" || src[i] !== "/") return false;
+  const opensRegex = REGEX_AFTER.has(previous.char) || REGEX_AFTER_WORD.has(previous.word);
+  return opensRegex;
+}
+function tryRegex({ src, i, lang, previous }) {
+  if (!canOpenRegex({ src, i, lang, previous })) return null;
+  const end = readRegex(src, i);
+  return end === null ? null : { end, isComment: false };
+}
+function matchSpan(state) {
+  const { source, cursor, lang, previous } = state;
+  const i = cursor.index;
+  return tryComment(source, i, lang) ?? tryRegex({ src: source, i, lang, previous }) ?? tryString(source, i, lang);
+}
+
+// skills/quality-refactor/scripts/lib/strip-captures.mjs
+function countNewlines(text2) {
+  let count = 0;
+  for (const ch of text2) if (ch === "\n") count += 1;
+  return count;
+}
+function identifiersInCapture(content) {
+  const colonAt = content.indexOf(":");
+  const questionAt = content.indexOf("?");
+  const cut = Math.min(
+    ...[content.length, colonAt, questionAt].filter((index) => index !== -1)
+  );
+  return [...content.slice(0, cut).matchAll(/[A-Za-z_]\w*/g)].map((match) => ({
+    name: match[0],
+    offset: match.index
+  }));
+}
+function isCaptureDelimiter(run, mode) {
+  return mode.escaped ? run === mode.braceCount : run >= mode.braceCount;
+}
+function findCaptureClose(text2, from, mode) {
+  let j = from;
+  while (j < text2.length) {
+    if (text2[j] !== "}") {
+      j += 1;
+      continue;
+    }
+    let run = 0;
+    while (text2[j + run] === "}") run += 1;
+    if (isCaptureDelimiter(run, mode)) return j;
+    j += run;
+  }
+  return -1;
+}
+function readCapture(ctx, cursor, span) {
+  const { text: text2, mode } = ctx;
+  const { start, captureStart, close } = span;
+  const content = text2.slice(captureStart, close);
+  const openLine = cursor.line + countNewlines(text2.slice(start, captureStart));
+  const ids = identifiersInCapture(content).map(({ name, offset }) => ({
+    name,
+    line: openLine + countNewlines(content.slice(0, offset))
+  }));
+  cursor.line += countNewlines(text2.slice(start, close + mode.braceCount));
+  cursor.index = close + mode.braceCount;
+  return ids;
+}
+function openCapture(ctx, cursor) {
+  const { text: text2, mode } = ctx;
+  const start = cursor.index;
+  let run = 0;
+  while (text2[start + run] === "{") run += 1;
+  if (!isCaptureDelimiter(run, mode)) {
+    cursor.index += run;
+    return [];
+  }
+  const captureStart = start + mode.braceCount;
+  const close = findCaptureClose(text2, captureStart, mode);
+  if (close === -1) {
+    cursor.index += run;
+    return [];
+  }
+  return readCapture(ctx, cursor, { start, captureStart, close });
+}
+function captureStep(ctx, cursor) {
+  const ch = ctx.text[cursor.index];
+  if (ch === "\n") {
+    cursor.line += 1;
+    cursor.index += 1;
+    return [];
+  }
+  if (ch !== "{") {
+    cursor.index += 1;
+    return [];
+  }
+  return openCapture(ctx, cursor);
+}
+function extractCaptures(text2, startLine, mode) {
+  const found = [];
+  const ctx = { text: text2, mode };
+  const cursor = { index: 0, line: startLine };
+  while (cursor.index < text2.length) found.push(...captureStep(ctx, cursor));
+  return found;
+}
+
+// skills/quality-refactor/scripts/lib/strip-frame-actions.mjs
+function advancePrevious(previous, ch) {
+  if (/\s/.test(ch)) {
+    if (ch === "\n") previous.char = "\n";
+    return;
+  }
+  previous.char = ch;
+  previous.word = /\w/.test(ch) ? previous.word + ch : "";
+}
+function consumeSpan(state, span) {
+  const { source, cursor, comments, parts, previous, interpolations } = state;
+  const at = cursor.index;
+  const raw = source.slice(at, span.end);
+  if (span.isComment) comments.push({ line: cursor.line, text: raw });
+  if (!span.isComment) previous.char = "x";
+  if (span.captures)
+    interpolations.push(...extractCaptures(raw, cursor.line, span.captures));
+  parts.push(blank(raw));
+  previous.word = "";
+  cursor.index = span.end;
+}
+function consumePlain(state) {
+  const { source, cursor, parts, previous } = state;
+  const ch = source[cursor.index];
+  parts.push(ch);
+  advancePrevious(previous, ch);
+  cursor.index += 1;
+}
+function openTemplate(state) {
+  state.parts.push(" ");
+  state.cursor.index += 1;
+  state.stack.push({ kind: "template" });
+  state.previous.char = "x";
+  state.previous.word = "";
+}
+function closeTemplate(state) {
+  state.parts.push(" ");
+  state.cursor.index += 1;
+  state.stack.pop();
+  state.previous.char = "x";
+  state.previous.word = "";
+}
+function openInterp(state) {
+  state.parts.push("  ");
+  state.cursor.index += 2;
+  state.stack.push({ kind: "interp", depth: 0 });
+  state.previous.char = "{";
+  state.previous.word = "";
+}
+function closeInterp(state) {
+  state.parts.push(" ");
+  state.cursor.index += 1;
+  state.stack.pop();
+  state.previous.char = "x";
+  state.previous.word = "";
+}
+function consumeTemplateEscape(state) {
+  const { source, cursor, parts } = state;
+  const raw = source.slice(cursor.index, cursor.index + 2);
+  parts.push(blank(raw));
+  cursor.index += raw.length;
+}
+function blankTemplateChar(ch) {
+  return ch === "\n" ? "\n" : " ";
+}
+function trackBrace(frame, ch) {
+  if (ch === "{") {
+    frame.depth += 1;
+    return false;
+  }
+  if (ch !== "}") return false;
+  if (frame.depth === 0) return true;
+  frame.depth -= 1;
+  return false;
+}
+
+// skills/quality-refactor/scripts/lib/strip-frame-scan.mjs
+function opensTemplate(state) {
+  return state.lang === "ts" && state.source[state.cursor.index] === "`";
+}
+function opensInterp(state) {
+  const { source, cursor } = state;
+  return source[cursor.index] === "$" && source[cursor.index + 1] === "{";
+}
+function stepCode(state) {
+  if (opensTemplate(state)) return openTemplate(state);
+  const span = matchSpan(state);
+  if (span) return consumeSpan(state, span);
+  consumePlain(state);
+}
+function stepInterp(state, frame) {
+  if (opensTemplate(state)) return openTemplate(state);
+  const span = matchSpan(state);
+  if (span) return consumeSpan(state, span);
+  const ch = state.source[state.cursor.index];
+  if (trackBrace(frame, ch)) return closeInterp(state);
+  consumePlain(state);
+}
+function stepTemplate(state) {
+  const { source, cursor, parts } = state;
+  const ch = source[cursor.index];
+  if (ch === "\\") return consumeTemplateEscape(state);
+  if (ch === "`") return closeTemplate(state);
+  if (opensInterp(state)) return openInterp(state);
+  parts.push(blankTemplateChar(ch));
+  cursor.index += 1;
+}
+function dispatch(state) {
+  const frame = state.stack[state.stack.length - 1];
+  if (frame.kind === "template") return stepTemplate(state);
+  if (frame.kind === "interp") return stepInterp(state, frame);
+  return stepCode(state);
+}
+
+// skills/quality-refactor/scripts/lib/strip.mjs
+function createState(source, lang) {
+  return {
+    source,
+    lang,
+    cursor: { index: 0, line: 1, scanned: 0 },
+    parts: [],
+    comments: [],
+    interpolations: [],
+    previous: { char: "\n", word: "" },
+    stack: [{ kind: "code" }]
+  };
+}
+function advanceLine(source, cursor) {
+  while (cursor.scanned < cursor.index) {
+    if (source[cursor.scanned] === "\n") cursor.line += 1;
+    cursor.scanned += 1;
+  }
+}
+function strip(source, lang) {
+  const state = createState(source, lang);
+  while (state.cursor.index < state.source.length) {
+    advanceLine(state.source, state.cursor);
+    dispatch(state);
+  }
+  return {
+    code: state.parts.join(""),
+    comments: state.comments,
+    interpolations: state.interpolations
+  };
+}
+
+// skills/quality-refactor/scripts/lib/architecture-csharp-records.mjs
+var BRACKET_DEPTH = { "(": 1, "[": 1, "{": 1, ")": -1, "]": -1, "}": -1 };
+var ANGLE_DEPTH = { "<": 1, ">": -1 };
+function isDefaultValue(state, character) {
+  return state.defaultValue || character === "=" && state.depth === 0 && state.angleDepth === 0;
+}
+function angleChange(state, character) {
+  return state.defaultValue ? 0 : ANGLE_DEPTH[character] || 0;
+}
+function updateDepth(state, character) {
+  state.defaultValue = isDefaultValue(state, character);
+  state.depth += BRACKET_DEPTH[character] || 0;
+  state.angleDepth = Math.max(
+    0,
+    state.angleDepth + angleChange(state, character)
+  );
+}
+function positionalCharacter(state, character) {
+  if (character !== ",") return character;
+  return state.depth === 0 && state.angleDepth === 0 ? ";" : " ";
+}
+function positionalBody(parameters) {
+  const state = { depth: 0, angleDepth: 0, defaultValue: false };
+  const blanked = parameters.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, (literal2) => " ".repeat(literal2.length));
+  return [...blanked].map((character) => {
+    updateDepth(state, character);
+    return positionalCharacter(state, character);
+  }).join("");
+}
+function bodyAfter({ searchable, start, parameters }) {
+  const terminator = /[;{]/.exec(searchable.slice(start));
+  if (terminator?.[0] === "{") {
+    const tail = searchable.slice(start, start + terminator.index);
+    if (!/^\s*(?::[\s\S]*|where\b[\s\S]*)?\s*$/.test(tail)) return null;
+    return void 0;
+  }
+  if (terminator?.[0] !== ";") return void 0;
+  return {
+    start,
+    end: start + terminator.index,
+    text: positionalBody(parameters)
+  };
+}
+function csharpRecordBody({ source, searchable, match }) {
+  if (!/^record(?:\s+struct)?$/.test(match[1])) return void 0;
+  const offset = match.index + match[0].length;
+  const openMatch = /^\s*\(/.exec(searchable.slice(offset));
+  if (!openMatch) return bodyAfter({ searchable, start: offset, parameters: "" });
+  const open = offset + openMatch[0].length - 1;
+  const close = matchBracket(searchable, open, "()");
+  if (close === -1) return null;
+  return bodyAfter({ searchable, start: close + 1, parameters: searchable.slice(open + 1, close) });
+}
+
 // skills/quality-refactor/scripts/lib/architecture-types.mjs
 var TYPE_PATTERNS = {
   ts: new RegExp(
@@ -23203,7 +23718,7 @@ var TYPE_PATTERNS = {
     "g"
   ),
   cs: new RegExp(
-    String.raw`\b(?:public\s+|internal\s+|private\s+|protected\s+)?` + String.raw`(class|interface|struct|enum|record)\s+([A-Za-z_]\w*)`,
+    String.raw`\b(?:public\s+|internal\s+|private\s+|protected\s+)?` + String.raw`(record(?:\s+struct)?|class|interface|struct|enum)\s+` + String.raw`([A-Za-z_]\w*)(?:\s*<[^;{}()]*>)?`,
     "g"
   ),
   java: new RegExp(
@@ -23221,26 +23736,28 @@ function braceBody(source, offset) {
   if (close === -1) return null;
   return { start: open + 1, end: close, text: source.slice(open + 1, close) };
 }
-function blankComments(source) {
-  return source.replace(
-    /\/\/[^\r\n]*|\/\*[\s\S]*?\*\//g,
-    (comment) => comment.replace(/[^\r\n]/g, " ")
-  );
-}
 function typeName(match, lang) {
   return lang === "go" ? match[1] : match[2];
 }
 function typeKind(match, lang) {
-  return lang === "go" ? match[2] : match[1];
+  if (lang === "go") return match[2];
+  if (lang === "cs" && /^record\s+struct$/.test(match[1])) return "struct";
+  return match[1];
+}
+function declarationBody({ source, searchable, match, lang }) {
+  const offset = match.index + match[0].length;
+  const csharpBody = lang === "cs" ? csharpRecordBody({ source, searchable, match }) : void 0;
+  return csharpBody === void 0 ? braceBody(source, offset) : csharpBody;
 }
 function declaredTypes(source, lang) {
   if (lang === "py") return { types: pythonTypes(source) };
   const pattern = TYPE_PATTERNS[lang];
-  const searchable = blankComments(source);
+  pattern.lastIndex = 0;
+  const searchable = strip(source, lang).code;
   const types = [];
   let match = pattern.exec(searchable);
   while (match !== null) {
-    const body = braceBody(source, match.index + match[0].length);
+    const body = declarationBody({ source, searchable, match, lang });
     if (!body)
       return {
         types: [],
@@ -23260,8 +23777,12 @@ function declaredTypes(source, lang) {
 // skills/quality-refactor/scripts/lib/architecture-fields.mjs
 function isCallLine(line) {
   const assignment = line.indexOf("=");
-  if (!line.includes("(")) return false;
-  return assignment === -1 || line.indexOf("(") < assignment;
+  const open = line.indexOf("(");
+  if (open === -1) return false;
+  const beforeAssignment = assignment === -1 ? line : line.slice(0, assignment);
+  if (/\)[^A-Za-z_]*[A-Za-z_]\w*\s*$/.test(beforeAssignment)) return false;
+  if (assignment !== -1) return open < assignment;
+  return !/[A-Za-z_]\w*\s*$/.test(line);
 }
 function addMember(members2, { name, lang, prefix = "" }) {
   if (!name || ["return", "use", "type"].includes(name)) return;
