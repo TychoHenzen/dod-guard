@@ -14,6 +14,9 @@ dist/browser/*
 !dist/browser/client.js
 !dist/browser/style.css
 
+# Separate TypeScript test-project output
+dist-test/
+
 # Logs
 *.log
 npm-debug.log*

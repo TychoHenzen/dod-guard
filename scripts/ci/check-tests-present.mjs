@@ -57,6 +57,8 @@ function hasTestFile(file) {
 }
 
 function sourceRootFor(file) {
+  const parts = relative(ROOT, file).split(sep);
+  if (parts[0] === "packages" && parts[1]) return join(ROOT, "packages", parts[1]);
   const sourceMarker = `${sep}src${sep}`;
   return file.slice(0, file.indexOf(sourceMarker));
 }
@@ -81,7 +83,7 @@ function centralTestAreaFor(file) {
 }
 
 function canCentralTestReach(file, area) {
-  return sourceAreaFor(file) === "testing" || sourceAreaFor(file) === area;
+  return area === undefined || sourceAreaFor(file) === "testing" || sourceAreaFor(file) === area;
 }
 
 function importSpecifiers(file) {
@@ -113,23 +115,30 @@ function aggregateTests(files) {
         .split(/[\s,]+/)
         .map((specifier) => sourceImportPath(file, specifier))
         .filter((target) => target && !target.endsWith(TEST_SUFFIX));
-      return targets.length > 0 ? [{ file, area: sourceAreaFor(file), targets: new Set(targets) }] : [];
+      return targets.length > 0 ? [{ file, area: undefined, targets: new Set(targets) }] : [];
     });
   });
 }
 
-function testedSources(files) {
-  const directlyTested = files.filter((file) => !file.endsWith(TEST_SUFFIX) && hasCentralTestFile(file));
+function testedSources(sourceFiles, testFiles) {
+  const files = [...sourceFiles, ...testFiles];
+  const directlyTested = sourceFiles.filter((file) => hasCentralTestFile(file));
   const queue = [];
   const aggregateReachable = new Set();
-  for (const file of files) {
+  const tested = new Set(directlyTested);
+  for (const file of sourceFiles) {
     const area = centralTestAreaFor(file);
     if (area && file.endsWith(TEST_SUFFIX)) queue.push({ file, area });
   }
-  for (const entry of aggregateTests(files)) queue.push(entry);
+  for (const file of testFiles) {
+    if (file.endsWith(TEST_SUFFIX)) queue.push({ file, area: undefined });
+  }
+  for (const entry of aggregateTests(files)) {
+    for (const target of entry.targets ?? []) tested.add(target);
+    queue.push(entry);
+  }
   for (const file of directlyTested) queue.push({ file, area: sourceAreaFor(file) });
   const visited = new Set();
-  const tested = new Set(directlyTested);
   while (queue.length > 0) {
     const entry = queue.pop();
     const { file, area } = entry;
@@ -155,9 +164,10 @@ function untestedSources() {
   const packagesDir = join(ROOT, "packages");
   const gaps = [];
   for (const pkg of readdirSync(packagesDir)) {
-    const files = walk(join(packagesDir, pkg, "src"));
-    const tested = testedSources(files);
-    for (const file of files) {
+    const sourceFiles = walk(join(packagesDir, pkg, "src"));
+    const testFiles = walk(join(packagesDir, pkg, "tests"));
+    const tested = testedSources(sourceFiles, testFiles);
+    for (const file of sourceFiles) {
       if (!file.endsWith(".ts") || file.endsWith(".test.ts") || file.endsWith(".d.ts")) continue;
       if (EXEMPT.has(file.split(/[/\\]/).pop())) continue;
       if (hasTestFile(file) || tested.has(file)) continue;
@@ -185,7 +195,7 @@ function main(argv) {
   if (argv.includes("--write-baseline")) {
     const header =
       "# Source files with no matching or statically reachable .test.ts. Ratcheted by scripts/ci/check-tests-present.mjs.\n# This list may shrink, never grow.\n";
-    writeFileSync(BASELINE, `${header}${current.join("\n")}\n`);
+    writeFileSync(BASELINE, current.length > 0 ? `${header}${current.join("\n")}\n` : header);
     process.stdout.write(`wrote baseline with ${current.length} untested source(s)\n`);
     return 0;
   }

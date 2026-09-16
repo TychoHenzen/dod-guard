@@ -20,5 +20,6 @@ entry point is `dist/bundle.js`.
 backend processes, discovery, navigation state, and test fixtures behind this
 package boundary. Do not add write or project-editing MCP tools.
 
-`src/testing/` contains controllable test support. It must not launch a real
-semantic backend.
+`tests/` contains controllable test support and semantic tests. It must not
+launch a real semantic backend. The test project writes to `dist-test/`, so
+test code cannot enter the production `dist/` build.

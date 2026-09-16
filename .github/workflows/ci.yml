@@ -121,7 +121,7 @@ jobs:
         continue-on-error: true
         run: |
           node "$QUALITY_SCAN" packages \
-            --exclude=/dist/ --exclude=node_modules \
+            --exclude=/dist/ --exclude=/dist-test/ --exclude=node_modules \
             --profile=strict \
             --rules="$QUALITY_RULES" \
             --baseline=.github/quality/quality-baseline.json \
@@ -132,7 +132,7 @@ jobs:
         run: |
           if ! grep -q "Improvements: 0 " quality-report.txt; then
             node "$QUALITY_SCAN" packages \
-              --exclude=/dist/ --exclude=node_modules \
+              --exclude=/dist/ --exclude=/dist-test/ --exclude=node_modules \
               --profile=strict \
               --rules="$QUALITY_RULES" \
               --write-baseline=.github/quality/quality-baseline.json

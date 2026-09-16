@@ -33,8 +33,19 @@ export function mapCompiledTest(root, testPath) {
   if (!existsSync(resolve(packageRoot, "package.json"))) throw new Error(`package does not exist: ${packageName}`);
 
   if (parts[2] === "dist" && source.endsWith(".test.js")) return { packageName, compiledTest: source };
+  if (parts[2] === "tests" && source.endsWith(".test.ts")) {
+    const compiledParts = parts.slice(3);
+    compiledParts[compiledParts.length - 1] = compiledParts.at(-1).replace(/\.ts$/, ".js");
+    return {
+      packageName,
+      testProject: true,
+      compiledTest: resolve(packageRoot, "dist-test", "tests", ...compiledParts),
+    };
+  }
   if (parts[2] !== "src" || !source.endsWith(".test.ts")) {
-    throw new Error(`expected a packages/<name>/src/**/*.test.ts or dist/**/*.test.js path: ${testPath}`);
+    throw new Error(
+      `expected a packages/<name>/tests/**/*.test.ts, src/**/*.test.ts, or dist/**/*.test.js path: ${testPath}`,
+    );
   }
 
   const compiledParts = parts.slice(3);
@@ -60,7 +71,7 @@ function findNpmCli() {
 export function main(args) {
   if (args.length !== 1) {
     process.stderr.write(
-      "usage: run-compiled-js-test.mjs <packages/<name>/(src/**/*.test.ts|dist/**/*.test.js)|tools/**/*.test.(js|mjs)>\n",
+      "usage: run-compiled-js-test.mjs <packages/<name>/(tests/**/*.test.ts|src/**/*.test.ts|dist/**/*.test.js)|tools/**/*.test.(js|mjs)>\n",
     );
     return 3;
   }
@@ -81,6 +92,27 @@ export function main(args) {
     }
     const buildStatus = run(process.execPath, [npmCli, "run", "build", "-w", `packages/${mapped.packageName}`]);
     if (buildStatus !== 0) return buildStatus;
+    if (mapped.testProject) {
+      const testBuildStatus = run(process.execPath, [
+        npmCli,
+        "run",
+        "build:test",
+        "-w",
+        `packages/${mapped.packageName}`,
+      ]);
+      if (testBuildStatus !== 0) return testBuildStatus;
+      const prepareScript = resolve(
+        workspaceRoot,
+        "packages",
+        mapped.packageName,
+        "scripts",
+        "prepare-test-project.mjs",
+      );
+      if (existsSync(prepareScript)) {
+        const prepareStatus = run(process.execPath, [prepareScript]);
+        if (prepareStatus !== 0) return prepareStatus;
+      }
+    }
   }
   if (!existsSync(mapped.compiledTest)) {
     process.stderr.write(`compiled test was not created: ${relative(workspaceRoot, mapped.compiledTest)}\n`);

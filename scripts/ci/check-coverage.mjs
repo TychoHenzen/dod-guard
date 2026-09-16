@@ -6,10 +6,10 @@
 // package or blocks the build the day it lands. This records what each package
 // covers today. It fails only when a package drops below its own number.
 //
-// c8 matches --include against the files it loads. Those are the compiled
-// dist/*.js, not the src/*.ts the report names after remapping through the
-// source map. An include written against src matches nothing at all. c8
-// enforces no threshold when nothing matches. Keep these globs on dist.
+// c8 matches --include against the compiled production files it loads, not
+// the TypeScript the report names after source-map remapping. Separate test
+// projects load production code from dist-test/src, while the shipped build
+// remains in dist. Keep each package's include and test globs paired.
 //
 // Usage: node scripts/ci/check-coverage.mjs [--write-baseline]
 //
@@ -37,12 +37,14 @@ const NOTE = "Coverage each package holds today. A drop below its own number fai
 
 function c8Args(pkg, reportDir) {
   const dist = `packages/${pkg}/dist`;
+  const testDist = ["fossil", "quality-guard"].includes(pkg) ? `packages/${pkg}/dist-test` : dist;
+  const coverageDist = ["fossil", "quality-guard"].includes(pkg) ? `${testDist}/src` : dist;
   return [
     "c8",
-    `--include=${dist}/**/*.js`,
-    `--exclude=${dist}/**/*.test.js`,
-    `--exclude=${dist}/types.js`,
-    `--exclude=${dist}/constants.js`,
+    `--include=${coverageDist}/**/*.js`,
+    `--exclude=${testDist}/**/*.test.js`,
+    `--exclude=${coverageDist}/types.js`,
+    `--exclude=${coverageDist}/constants.js`,
     `--exclude=${dist}/bundle.js`,
     "--reporter=json-summary",
     `--report-dir=${reportDir}`,
@@ -52,7 +54,7 @@ function c8Args(pkg, reportDir) {
     // Recursive, to match --include above. A non-recursive glob leaves a
     // nested test unrun while its source still counts, which reads as a
     // coverage drop that no amount of testing can fix.
-    `${dist}/**/*.test.js`,
+    `${testDist}/**/*.test.js`,
   ];
 }
 
