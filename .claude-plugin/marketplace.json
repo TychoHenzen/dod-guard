@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "dod-guard",
-      "description": "GitHub repository setup, deliberative backlog refinement, quick PBI delivery, issue delivery with researched priority and effort, independent completion review, user-facing wiring and usability/accessibility reviews, four-agent PR review and finding fixes for GitHub, Git, and Azure DevOps, guarded completion, maintenance, and marketplace release. Ships 18 skills and 6 agents.",
+      "description": "GitHub repository setup, deliberative backlog refinement, quick PBI delivery, issue delivery with researched priority and effort, independent completion review, user-facing wiring and usability/accessibility reviews, repository learning and teach-back, four-agent PR review and finding fixes for GitHub, Git, and Azure DevOps, guarded completion, maintenance, and marketplace release. Ships 20 skills and 6 agents.",
       "source": "./plugins/dod-guard",
       "category": "productivity"
     },
