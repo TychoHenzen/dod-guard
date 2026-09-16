@@ -2,8 +2,12 @@ import { unique, visibility } from "./architecture-language.mjs";
 
 function isCallLine(line) {
   const assignment = line.indexOf("=");
-  if (!line.includes("(")) return false;
-  return assignment === -1 || line.indexOf("(") < assignment;
+  const open = line.indexOf("(");
+  if (open === -1) return false;
+  const beforeAssignment = assignment === -1 ? line : line.slice(0, assignment);
+  if (/\)[^A-Za-z_]*[A-Za-z_]\w*\s*$/.test(beforeAssignment)) return false;
+  if (assignment !== -1) return open < assignment;
+  return !/[A-Za-z_]\w*\s*$/.test(line);
 }
 
 function addMember(members, { name, lang, prefix = "" }) {
