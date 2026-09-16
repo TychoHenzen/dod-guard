@@ -10740,7 +10740,7 @@
   },
   {
     "findingId": "2df9dff6e5ea03e83e6933a366bef8d02a418dd6b540fae95f2205dd30babd94",
-    "fingerprint": "c9ee4bf7d7cd06fa410369bbb3afc8e401da0e444dc09133424caad3d002d279",
+    "fingerprint": "df84a8f32878a3dfc392d77dcb4b0ca18320abb8f159d8582b61a9a9346bda83",
     "reason": "Reviewed for #128 and #129: packages/code-explorer/scripts has 18 direct files, below the 25-file similarity trigger. The audit found four coherent clusters and zero outliers. prepare-test-project.mjs belongs to test-project preparation, and this change does not alter existing script ownership. Defer a split until the threshold, a confirmed outlier, or an ownership boundary. The production-test separation invariant remains enforced by explicit test projects, dist-test exclusion, and the production artifact check.",
     "author": "Codex",
     "time": "2026-09-16T13:10:00.000Z"
