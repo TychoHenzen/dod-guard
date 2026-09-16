@@ -6,6 +6,10 @@
 workspace files. It is not an MCP server or marketplace plugin. Every finding is advisory and fossil never mutates
 the repository it examines.
 
+Production TypeScript lives in `src/`. Test cases, fixtures, and test support
+live in `tests/` and compile to `dist-test/`. Test code must not enter the
+production `dist/` build.
+
 ## File responsibilities
 
 | File | Responsibility |
@@ -49,7 +53,7 @@ Run from the repository root:
 npm run build -w packages/fossil
 npm test -w packages/fossil
 npm run bundle -w packages/fossil
-node --experimental-test-module-mocks --test packages/fossil/dist/<file>.test.js
+node --experimental-test-module-mocks --test packages/fossil/dist-test/tests/<file>.test.js
 ```
 
 The executable entry point is `dist/bundle.js`. It is tracked and rebuilt by CI. `package-integrity` runs the

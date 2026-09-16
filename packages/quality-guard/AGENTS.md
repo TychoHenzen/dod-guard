@@ -39,8 +39,14 @@ npm test -w packages/quality-guard         # tsc + dist tests + hook tests + sca
 npm run bundle -w packages/quality-guard   # esbuild to dist/bundle.js
 ```
 
-Three test globs run, and all three must stay wired in `package.json`:
-`dist/*.test.js`, `scripts/*.test.mjs`, `skills/*/scripts/lib/*.test.mjs`.
+Three test roots run, and all three must stay wired in `package.json`:
+`dist-test/tests/src/**/*.test.js`, `tests/scripts/*.test.mjs`, and
+`tests/skill-scripts/quality-refactor/scripts/lib/*.test.mjs`.
+
+Production TypeScript remains in `src/`. Plain production scripts remain in
+`scripts/` and `skills/`. Test sources and fixture code live under `tests/`.
+The TypeScript test project writes to `dist-test/`, so test code cannot enter
+the shipped `dist/` bundle or skill paths.
 
 ## One baseline, one format
 
@@ -134,7 +140,7 @@ repository turned on as errors.
   has a `Cargo.toml` or a `.sln`/`.csproj`. Outside one they return no
   findings, the same as a timeout or a missing binary. A quiet write there is
   not proof the crate or solution is clean.
-- The fixture corpus at `skills/quality-refactor/scripts/lib/target/` holds
+- The fixture corpus at `tests/skill-scripts/quality-refactor/scripts/lib/target/` holds
   one realistic file per supported language, checked by
   `language-fixtures.test.mjs`. It sits in a directory literally named
   `target` on purpose: that name is in the scanner's own `IGNORED_DIRS`

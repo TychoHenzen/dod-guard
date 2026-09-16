@@ -3,11 +3,14 @@ import { resolve } from "node:path";
 import { test } from "node:test";
 import { mapCompiledTest, workspaceRoot } from "./run-compiled-js-test.mjs";
 
-test("maps a package source TypeScript test to its compiled test", () => {
-  const mapped = mapCompiledTest(workspaceRoot, "packages/code-explorer/src/testing/example.test.ts");
+test("maps a package test-project TypeScript test to its compiled test", () => {
+  const mapped = mapCompiledTest(workspaceRoot, "packages/code-explorer/tests/testing/example.test.ts");
 
   assert.equal(mapped.packageName, "code-explorer");
-  assert.equal(mapped.compiledTest, resolve(workspaceRoot, "packages/code-explorer/dist/testing/example.test.js"));
+  assert.equal(
+    mapped.compiledTest,
+    resolve(workspaceRoot, "packages/code-explorer/dist-test/tests/testing/example.test.js"),
+  );
 });
 
 test("keeps an already compiled package test after rebuilding its package", () => {

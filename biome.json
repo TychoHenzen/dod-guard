@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
   "assist": {
-    "includes": ["packages/*/src/**/*.ts", "scripts/ci/**/*.mjs"],
+    "includes": ["packages/*/src/**/*.ts", "packages/*/tests/**/*.ts", "scripts/ci/**/*.mjs"],
     "actions": {
       "source": {
         "organizeImports": "on"
@@ -39,7 +39,13 @@
   },
   "formatter": {
     "enabled": true,
-    "includes": ["packages/*/src/**/*.ts", "packages/quality-guard/scripts/**/*.mjs", "scripts/ci/**/*.mjs"],
+    "includes": [
+      "packages/*/src/**/*.ts",
+      "packages/*/tests/**/*.ts",
+      "packages/quality-guard/scripts/**/*.mjs",
+      "packages/quality-guard/tests/**/*.mjs",
+      "scripts/ci/**/*.mjs"
+    ],
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 120
@@ -53,17 +59,18 @@
       "**/*.mjs",
       "**/*.cjs",
       "!**/dist",
+      "!**/dist-test",
       "!**/coverage",
       "!**/fixtures",
       "!**/node_modules",
       "!**/spike",
-      "!packages/quality-guard/skills/quality-refactor/scripts/lib/target"
+      "!packages/quality-guard/tests/skill-scripts/quality-refactor/scripts/lib/target"
     ],
     "ignoreUnknown": true
   },
   "overrides": [
     {
-      "includes": ["packages/*/src/**/*.ts", "scripts/ci/**/*.mjs"],
+      "includes": ["packages/*/src/**/*.ts", "packages/*/tests/**/*.ts", "scripts/ci/**/*.mjs"],
       "linter": {
         "rules": {
           "style": {
@@ -92,7 +99,7 @@
       }
     },
     {
-      "includes": ["packages/fossil/src/**/*.ts"],
+      "includes": ["packages/fossil/src/**/*.ts", "packages/fossil/tests/**/*.ts"],
       "assist": {
         "actions": {
           "source": {
@@ -105,13 +112,13 @@
       }
     },
     {
-      "includes": ["packages/quality-guard/src/**/*.ts"],
+      "includes": ["packages/quality-guard/src/**/*.ts", "packages/quality-guard/tests/**/*.ts"],
       "formatter": {
         "lineWidth": 80
       }
     },
     {
-      "includes": ["packages/quality-guard/scripts/**/*.mjs"],
+      "includes": ["packages/quality-guard/scripts/**/*.mjs", "packages/quality-guard/tests/**/*.mjs"],
       "formatter": {
         "lineWidth": 80
       }
@@ -119,7 +126,7 @@
     {
       "includes": [
         "packages/code-explorer/src/semantic/**/*.ts",
-        "packages/code-explorer/src/testing/**/*.ts",
+        "packages/code-explorer/tests/**/*.ts",
         "packages/code-explorer/src/browser-server/**/*.ts",
         "packages/code-explorer/src/browser/**/*.ts",
         "packages/code-explorer/src/navigation/**/*.ts",

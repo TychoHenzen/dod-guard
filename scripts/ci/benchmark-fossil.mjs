@@ -36,7 +36,7 @@ function runJsonAnalysis(repositoryPath) {
 
 export async function benchmarkFossilCli() {
   const { benchmarkPerformanceFixture, createPerformanceFixture, performanceBenchmarkJson } = await import(
-    pathToFileURL(join(FOSSIL, "dist", "testing", "performance.js")).href
+    pathToFileURL(join(FOSSIL, "dist-test", "tests", "testing", "performance.js")).href
   );
   const fixture = await createPerformanceFixture();
   try {

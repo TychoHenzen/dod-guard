@@ -9,4 +9,4 @@ paths-ignore:
   - "openspec/changes/archive/**"
   - "packages/code-explorer/spike/**"
   - "**/fixtures/**"
-  - "packages/quality-guard/skills/quality-refactor/scripts/lib/target/**"
+  - "packages/quality-guard/tests/skill-scripts/quality-refactor/scripts/lib/target/**"
