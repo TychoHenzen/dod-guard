@@ -5,6 +5,8 @@ import { analyzeSimilarity } from "./architecture-similarity.js";
 import { parseQualityConfig } from "./config.js";
 import { structuralFindings } from "./decision-findings-architecture.js";
 
+// test-sources: ./architecture-similarity-assessment.ts ./architecture-similarity-changes.ts ./architecture-similarity-clusters.ts ./architecture-similarity-outlier.ts ./architecture-similarity-signature.ts
+
 const config = parseQualityConfig("{}");
 function fact(
   index: number,
