@@ -127,6 +127,19 @@ The initial branch-only push remains permitted. An unavailable or failed review
 also blocks completion. The result reports every disposition before stopping
 with the verified branch pushed. This review edits no files or remote comments.
 
+## Learn the repository
+
+Use `/learn-repository` when you want the assistant to teach one small concept
+from the current source, callers, tests, configuration, or documentation. The
+skill asks what to explore, offers related topic choices, and checks your
+understanding with a restatement, trace, prediction, or example.
+
+Use `/teach-back` when you want to explain what you learned while the assistant
+acts as a curious student. It asks one question at a time, tests why and how,
+separates facts from inferences and unknowns, and periodically gives you a
+short correction opportunity. Each skill points to the other, but you choose
+when to switch.
+
 ## Ask for a bounded second opinion
 
 Use the Codex advisor when a fix or design needs independent advice before

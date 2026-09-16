@@ -80,6 +80,8 @@ GitHub-backed skills share the request policy in
 | `/quick-pbi` | Run backlog capture through guarded merge without extra prompts outside refinement. |
 | `/refine-backlog-item` | Deliberatively refine a Backlog issue, moving it to Todo only when its PBI is coherent and independently deliverable. |
 | `/next-ticket` | Execute a Todo PBI through independent completion review and verified, pushed commits. |
+| `/learn-repository` | Learn one repository concept at a time from current source evidence. |
+| `/teach-back` | Explain a repository concept while a curious student tests the explanation. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
 | `/review-pr` | Review Git or GitHub inline with four agents, or produce one Azure DevOps report. |
 | `/fix-pr-review` | Revalidate and fix selected GitHub, local Git, or Azure review findings. |
