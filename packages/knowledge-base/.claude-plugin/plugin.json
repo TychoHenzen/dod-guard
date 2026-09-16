@@ -1,0 +1,12 @@
+{
+  "name": "knowledge-base",
+  "version": "0.1.0",
+  "description": "Persistent Markdown-backed progressive knowledge retrieval for agents.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/TychoHenzen"
+  },
+  "repository": "https://github.com/TychoHenzen/dod-guard",
+  "license": "MIT",
+  "keywords": ["knowledge-base", "markdown", "mcp", "retrieval"]
+}

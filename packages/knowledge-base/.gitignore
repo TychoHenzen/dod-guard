@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+
+# TypeScript compiler output (bundle.js is tracked)
+dist/*
+!dist/bundle.js
+dist-test/
+
+# Derived knowledge indexes are runtime state, not source examples
+.knowledge-index.json
+
+# Coverage
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment files
+.env
+.env.local

@@ -1,12 +1,13 @@
 # dod-guard monorepo
 
-npm workspaces monorepo with two MCP plugins, one CLI workspace, and two
+npm workspaces monorepo with three MCP plugins, one CLI workspace, and two
 code-free plugins.
 
 | Path | Purpose |
 |---|---|
 | `packages/quality-guard` | Structural scanner, staged commit gate, and quality-refactor skill. |
 | `packages/code-explorer` | Read-only source navigation MCP server. |
+| `packages/knowledge-base` | Persistent Markdown-backed knowledge retrieval MCP server. |
 | `packages/fossil` | Git-history and workspace-debris CLI. |
 | `plugins/dod-guard` | GitHub issue delivery and repository-maintenance skills. |
 | `plugins/natural-output-style` | Natural and Neurodivergent output styles. |

@@ -1,7 +1,7 @@
 /**
  * Shared esbuild driver for every package bundle.
  *
- * The five packages differ only in which native modules stay external and
+ * Workspace packages differ only in which native modules stay external and
  * whether the output needs a shebang or a CommonJS `require` shim. Keeping
  * one driver here means a change to the bundle contract lands once. It also
  * keeps the per-package config below the duplicate-block bar.

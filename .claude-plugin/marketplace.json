@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "dod-guard-monorepo",
-  "description": "Developer workflow and code-quality plugins.",
+  "description": "Developer workflow, code-quality, and knowledge plugins.",
   "owner": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"
@@ -23,6 +23,12 @@
       "name": "code-explorer",
       "description": "Read-only MCP source navigation for one project. Provides search, focus, semantic relation following, history, and workspace status without project-editing tools.",
       "source": "./packages/code-explorer",
+      "category": "productivity"
+    },
+    {
+      "name": "knowledge-base",
+      "description": "Persistent Markdown-backed knowledge retrieval for agents. Browse chapters, sections, and entry summaries before requesting full source-linked content.",
+      "source": "./packages/knowledge-base",
       "category": "productivity"
     },
     {

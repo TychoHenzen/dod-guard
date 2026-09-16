@@ -9,6 +9,7 @@ export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const PACKAGES = [
   { name: "code-explorer", productionRoots: ["src", "dist"] },
   { name: "fossil", productionRoots: ["src", "dist"] },
+  { name: "knowledge-base", productionRoots: ["src", "dist"] },
   {
     name: "quality-guard",
     productionRoots: ["src", "dist", "scripts", "skills/quality-refactor/scripts"],
@@ -64,7 +65,7 @@ export function findViolations(root = ROOT) {
 export function main(root = ROOT) {
   const violations = findViolations(root);
   if (violations.length === 0) {
-    process.stdout.write("production-test separation OK - 3 packages, 0 violations\n");
+    process.stdout.write(`production-test separation OK - ${PACKAGES.length} packages, 0 violations\n`);
     return 0;
   }
   process.stdout.write(`production-test separation FAILED - ${violations.length} violation(s)\n`);

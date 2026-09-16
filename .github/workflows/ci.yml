@@ -237,7 +237,7 @@ jobs:
       - name: Bundle MCP handshake
         run: |
           FAILED=""
-          for pkg in quality-guard code-explorer; do
+          for pkg in quality-guard code-explorer knowledge-base; do
             node scripts/ci/smoke-bundle.mjs "$pkg" || FAILED="$FAILED $pkg"
           done
           [ -z "$FAILED" ] || { echo "BUNDLE SMOKE FAILED for:$FAILED"; exit 1; }

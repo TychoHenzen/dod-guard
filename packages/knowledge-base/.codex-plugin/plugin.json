@@ -1,0 +1,31 @@
+{
+  "name": "knowledge-base",
+  "version": "0.1.0",
+  "description": "Persistent Markdown-backed progressive knowledge retrieval for agents.",
+  "author": {
+    "name": "tychohenzen",
+    "url": "https://github.com/TychoHenzen"
+  },
+  "repository": "https://github.com/TychoHenzen/dod-guard",
+  "license": "MIT",
+  "keywords": ["knowledge-base", "markdown", "mcp", "retrieval"],
+  "mcpServers": {
+    "knowledge-base": {
+      "command": "node",
+      "args": ["dist/bundle.js"],
+      "cwd": "."
+    }
+  },
+  "interface": {
+    "displayName": "knowledge-base",
+    "shortDescription": "Browse persistent Markdown knowledge in stages.",
+    "longDescription": "Stores source-linked Markdown entries, indexes keys and text, and returns chapter, section, summary, and full-content views separately.",
+    "developerName": "tychohenzen",
+    "category": "Developer Tools",
+    "capabilities": ["MCP tools", "Progressive retrieval"],
+    "defaultPrompt": [
+      "List the available knowledge chapters.",
+      "Search the knowledge base and retrieve one selected entry."
+    ]
+  }
+}

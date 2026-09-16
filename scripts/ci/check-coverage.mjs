@@ -26,7 +26,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const BASELINE = join(ROOT, ".github", "quality", "coverage-baseline.json");
-const PACKAGES = ["quality-guard", "fossil"];
+const PACKAGES = ["quality-guard", "fossil", "knowledge-base"];
+const TEST_PROJECT_PACKAGES = new Set(["quality-guard", "fossil", "knowledge-base"]);
 const METRICS = ["statements", "branches", "functions", "lines"];
 
 // Slack in percentage points covers small platform-dependent differences. A
@@ -37,8 +38,8 @@ const NOTE = "Coverage each package holds today. A drop below its own number fai
 
 function c8Args(pkg, reportDir) {
   const dist = `packages/${pkg}/dist`;
-  const testDist = ["fossil", "quality-guard"].includes(pkg) ? `packages/${pkg}/dist-test` : dist;
-  const coverageDist = ["fossil", "quality-guard"].includes(pkg) ? `${testDist}/src` : dist;
+  const testDist = TEST_PROJECT_PACKAGES.has(pkg) ? `packages/${pkg}/dist-test` : dist;
+  const coverageDist = TEST_PROJECT_PACKAGES.has(pkg) ? `${testDist}/src` : dist;
   return [
     "c8",
     `--include=${coverageDist}/**/*.js`,
