@@ -242,6 +242,8 @@ jobs:
           done
           [ -z "$FAILED" ] || { echo "BUNDLE SMOKE FAILED for:$FAILED"; exit 1; }
 
+      - name: Build Fossil test project
+        run: npm run build:test -w packages/fossil
       - name: Fossil CLI bundle smoke
         run: node scripts/ci/smoke-cli-bundle.mjs fossil
 
