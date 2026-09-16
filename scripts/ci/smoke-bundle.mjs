@@ -189,6 +189,24 @@ async function main(argv) {
     process.stdout.write("  code-explorer tool contract OK: five MCP tools listed\n");
   }
 
+  if (pkgName === "knowledge-base") {
+    const expectedTools = [
+      "knowledge_list_chapters",
+      "knowledge_list_sections",
+      "knowledge_list_entries",
+      "knowledge_search",
+      "knowledge_get_entry",
+      "knowledge_save",
+    ];
+    if (JSON.stringify(directResult.tools) !== JSON.stringify(expectedTools)) {
+      process.stdout.write(
+        `smoke FAILED for knowledge-base tool contract\n  fresh task listed ${JSON.stringify(directResult.tools)}\n`,
+      );
+      return 1;
+    }
+    process.stdout.write("  knowledge-base tool contract OK: six MCP tools listed\n");
+  }
+
   return 0;
 }
 

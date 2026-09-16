@@ -10744,5 +10744,656 @@
     "reason": "Reviewed for #128 and #129: packages/code-explorer/scripts has 18 direct files, below the 25-file similarity trigger. The audit found four coherent clusters and zero outliers. prepare-test-project.mjs belongs to test-project preparation, and this change does not alter existing script ownership. Defer a split until the threshold, a confirmed outlier, or an ownership boundary. The production-test separation invariant remains enforced by explicit test projects, dist-test exclusion, and the production artifact check.",
     "author": "Codex",
     "time": "2026-09-16T13:10:00.000Z"
+  },
+  {
+    "findingId": "003329a0c086ec2353115de6ff80b2d6406582ec0873a5ee264438417a46f874",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "00e7422f87725800fdcd6ad467690d6ce4cf92cc1d14f3f3efc5958c4cd1def4",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "03093ddde0ddbb2f3d8553670feef8a95467841a9b616533ad80df50722c4c84",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "064a22b4e7154762af02424f2b8b0cc0886b9fd6b31a551b51e854f356a1b8e5",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "06f996a82b4d7ad2e846b4b8f8338be4bfb4178ea8ca35e7544e1f408980c089",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "0b552962c9c256fce9b701512d2822533bef1b84172c94fc2f6bbb36e01a5e58",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "10640c5068adc7ce41c1ea0a2ab21845933bed564111833eddea68858585e85b",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "17835f551d2957bbc73cce1693b207a63ecd11bc3e7b90ea1c34d9024ed182d6",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "17fb630b6fd5c75be1e54f15542a3cfea27a17a9377512462a338c59f63f2fa9",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "1c2a97af328f2ee5e3bbb83bd2565faf0c41802ff6be8e561a53ab7eb287f79c",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "24c503dfc8e73469d484a62fbe36941157fd298850bb29e1290338714b470b7e",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "28d4b224820d2e69f7fc400ec364dc40aa66926455d979e3764b02e5a2521327",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "2a054b8b45b543b0444901d9faeef30786a3b717012d2f49edfa989538374d20",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "30e926d2a1ccdbf5ceb8d692ee8757053c342f36ae4e907069477e97e8b08019",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "363b999389975abfa6f8aa488e3fe87f36db4d9d6584447ba1080cf912f07fae",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "3696b9b735b67d27c63ac0f3cb40890524aa1168340ef6cf64c7e94fe291fc01",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "36e19e551ae3047af955d1d840c15117dfdee0a07fad85949db0ba2628b06e77",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "37972f5a9b5f0dbc216c40a585243711a6599fbec5e02c14be9e13a723db0faf",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "37c71369fb8f7b666700fa5b412f4368e1e3b8e48c63327d9df57e995db4e2ff",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "381afb1679367eb93de80eb4910dd3bef131382dbafb300f2396b041bc83968e",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "3f9f40e6b7019d430028419161b259346f780564423cbf23d1ea0579ace7051a",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "403ff2c7fbd1bbe0dbff38d80afb38909de8a3c284b4470a603346f27982151f",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "4231aa7e99eea05da92943b1e02d744aca62374cda9f1278fafbde7347880377",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "456e1a06043d24f944c899b453828425331365859e43ecbdc5258bfa7b584282",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "470f0ffbb1d67e8e124d40929f9d62613a3afd7442ca7cbd26fcc4abaa8db958",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "476f9df7ca91dfb5fd80fa68455aeb984c007f597058e9b17ee737ef7436f1a3",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "4799a4b1a8b4af85d0463facf9d3e4889f08e2dea10b80937724a7b7d03a1b36",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "4c3d8017d686ca1169c3058477fd61637c6ce11aa8b78a52b134787735ceba82",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "53f8cb14cb08e18bd675a58f98da1bcaeed00d1df07c61fc20955704330f8840",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "58aa8365fc2b66906b6e0ca37f962483e0f337b6155cb3a97409c54714e42954",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "591bba3eea5cac6bf8ecf8aedd983431809420d1954c9e99c7df3a25c56f8aad",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "5a9433799a07fa59b17e91b27e7b5b2387823ac902870badfc295431c5134453",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "5c10fd5b304ffba307112153961702c3d63c77959b1a18a983bce784504d4b42",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "5d9d7159e0691a72ff5edd3923a5919b0b619edeba5e5ff69932471a745054a2",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "5dcbe6b614ac2c314400b50a8cff1152e722df119e3800ee937442fa1bd9010b",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "613176fcb6683127bdd6d4f2ccf03dcaa35aae71eb90fa773752b52b9331f2ac",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "6cb7ed851f720fd9211b3f114ac68ef9700db398a7c161aa41449c7c50766e1d",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "6e249164635cc9f953e1c0d57542bb1a4859bd5135a3a35ee4f538b6ed8b1be8",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "6ef971a2111684a8933d7ca0a820cc54dbece27e65f701f4d8fbbcdafa802a58",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "70f1c0503d2481c943cfcebd9c423d434e301c5c0fc9c755c730b9dc4761f7c6",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "7468b183da8a5ede0209890167a34ed0c318e142bac7aa0c6fb16a57bf8ff75a",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "74d30861e26ce05f22448d27655b4b8e645f92bae57878a80d0c9d84ad1ea73b",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "763cb745cbaccc53765d7100dfd038e8687852176ad0c59c10680c90a21e06d1",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "77a61ee3da01c9c187f7538911c4e7ef7eae40befaec853e03cca27ebb6d90e9",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "7a6570b58a707381a413536c39807277572c03d93c613d2fa403216c02794a4f",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "7aaa95b48dcfb370ff1b3adb75cc395280be38edb34dcf2a071eab57da6205c9",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "7acd4d1605c5f4dae700854eacd630a797ef8cfec1738f354f610ea515cc3491",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "7e9011e31fee834c6afd5dae80a9622db9bb208f7cf6440fa06ca4fbc2d172d5",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "83a76521da967c3478f4c6b20850c9bea172f33a62256883be57bddc44455c6b",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "858aa221395e19fdc541ca0ef7377ae9c8bc05c708e3cd3f34190577a4be9126",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "90a0fb8b074c89fb54896c6ded5acf2a5d79135d2afc9191850f0ee2bd0cce44",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "9599d579b4fba561792d132c7c8d302c1e021f9ade470b1cacec4b3ee9c4313e",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "96ddb040d24303969e670e3e8cecc96177d3c3bc6bc1d03f26de007a04205d13",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "96e3c06d07f037a28231848f9c4ca2b289fb6e191566cdea3e3b5fcb1a3a2f32",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "a281402cabb5d5a94dd15dcbf744aaaedda47be2be1ce65bd17f3a09ebd40d5e",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "a5f0e7a36ac7fbf268df2e1ea9b29881e088bd6215431c90363f1d0c2b325c0c",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "a5f2e4a25f1afeec5aa8745cd0657c6c15314f7a835025d362c40fcd4163a187",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "a8dffa8c8a2e09e68586f6b4385dd9e76df755d143c57a11f8f9c51b7813c148",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "a9da44e447463229943d9a8bb76619d34078f02bc95bc1cb2c03029ddea9c754",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "ad604087d67a0e6c93d177bf2f2316a292e9e96b6ac0dad1fda0930b8f2bbaab",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "b3031508a93c5012e6b10d6f29f722aa5facabfdc315e1b09c69124d39678806",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "b3eeddf0b3623eb78b6b8e95f4593bbf1613c55e54bcb944bd1f09e42a9da21e",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "b757dc0d3166227a0a414f0759ea726f52a183914b3e5b87e4f3759c81ccf74c",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "b7c8d40470b4e7194a906ae0a8ec5c2b4c1b8cf204b840340f7c9c4d4be3343b",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "bb23dedabb4ca4fba2c8472f50782345539348626a819651403d27c64c72e9d5",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "bf3ade773f7a71fa2ff44ddaa7fe3e15f4f38bc4720421a0ffc7d02091c6797b",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "c6bf12471327eb113c8ab25f53e0f754d7c46e233ec914f1101af2e5e12701a3",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "cb29c6a75a8717ea88e5af06c9f8502d188b2832669938e4b5624e4b54ea4c34",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "cecf5022c078439a77f3da1ece5c21877b621d4b7c9c69689ddd7e3caaf0382a",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "d2095e7e2168e7521f1b6d2ba800936590179c7c221b1b87c3c550a868f7fb18",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "d33995076182f67271af76ae15d61ae83809187eac8365440afcdccd0c42b272",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "d4ac7f1fcab7f0c999a50850d5fad97a817a1558234db2efdf29174f61094819",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "d505fb2e8aca88e4bd4a43cf9701ddc052824f5724737107be004b6cdd478b6c",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "da3422516d18e3a7bcca7c8a0c3d5b60a37480094c2890dc3c2804064c12aeb7",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "dd8ad3a27a2305d5581baefb0883f691cf4653fd9276c60acbb4d46a8b0a5db9",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "df6cb6edc34a1dbc83cbe8f8c41e5b646bddcb3ceb803c752678ff32f923b645",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "e1464e8017eb2ac65f887d9a0e921e406630d279c9849c9e5dbcb965f26deb4e",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "e1efc3b735343c08d673e870c0e97586fa5b5640272a772c7ea819ec7b828934",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "e2543b8061ec1ba760437048e6595e6253b48673faf3523073b24739bee7457c",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "e2ac53d429e5714620207e4b13972996e5d54b093553540c4361c7b4491f6a0d",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "e30700407d0ddedeaceae926569c273af67c7fc0b895966e6b6997da0a6eca4f",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "e47a86ce6889a339d9428725386949a0e88928cd35dd4998732c2d15a7d0455a",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "e63d920f3a1f5d4a5c28551e50758a4c56336332a3c4f95e003fa2c8df681a87",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "e6ac5c18c979ab0592549adcd466019eb4c25fcfda23ed99005fb2574557da6d",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "e721943d9b249cb3620379884ac536a698f5f19649651c0403fdc801c9fc5151",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "eaf40a636dca3272ed8667f9a237456654a36582a7ac9ee104703d2798155b77",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "ef4dd286136e43aa0f51df054091d00497e6a8eae9f4fd3cd3c24fe4862dc259",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "f527f808f5eb38b15e2300515b9f8edec735c6be72b654c037e1867e6fb35b27",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "f6779f4ea1c6c6c015f246837913ebb8ff8ddf7c31d5cbe8eacbfbc7072cee55",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "f6c3beb08dbabd8bf22cea1c22f57e57c6226e7a6b610ad80700d2de99767fc8",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "f8aeebac8b75d6e75c3c898acf4e02e73524f5c996ce40b17ad23ebe0ef24f22",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "fb10f3b29e24142a181409e9dafc490a5631bce59a6d75c3b3a894d7be333a74",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
+  },
+  {
+    "findingId": "fe7f643a03d7c2d45066a61af0c15c31ace4ce5182fbcde21d3bddfd2ce243ba",
+    "fingerprint": "96a82deaf0b245fc7ec6dced2bb193b639965b3cf2fa0cc5f3e41f2ab7073f0a",
+    "reason": "Reviewed for #119-#124: these public-surface findings are intentional API and type declarations for the new Markdown-backed knowledge-base package. The MCP tools provide the user-facing contract, and the typed schema and store seams keep the package reusable and testable. No existing package surface changed. Package tests, repository gates, plugin validation, bundle smoke, coverage, separation, and test-presence checks passed. The first slice deliberately uses a rebuilt keyword index without semantic embeddings or a cross-process writer lock, documented in README.",
+    "author": "Codex",
+    "time": "2026-09-16T14:33:31.8231412Z"
   }
 ]
