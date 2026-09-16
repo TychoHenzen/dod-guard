@@ -1,4 +1,5 @@
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
+import { analyzeSimilarity } from "./architecture-similarity.js";
 import type { QualityConfig } from "./config.js";
 import { analyzeCurrentDependencies } from "./dependency-current.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
@@ -12,7 +13,35 @@ export function analyzeCurrentArchitecture(
 ) {
   const paths = files.map((file) => file.path);
   const dependency = analyzeCurrentDependencies(files, config);
-  const encapsulation = analyzeEncapsulation({
+  return {
+    placement: placementFor(files, config),
+    similarity: analyzeSimilarity({
+      afterFiles: files,
+      affectedPaths: paths,
+      config,
+    }),
+    dependencies: dependency.dependencies,
+    cycles: dependency.cycles,
+    encapsulation: encapsulationFor(files, paths, config),
+  };
+}
+
+function placementFor(files: ArchitectureFileFact[], config: QualityConfig) {
+  return analyzeCurrentPlacement(
+    files.map((file) => ({
+      path: file.path,
+      types: file.types.map((type) => type.name),
+    })),
+    config,
+  );
+}
+
+function encapsulationFor(
+  files: ArchitectureFileFact[],
+  paths: string[],
+  config: QualityConfig,
+) {
+  return analyzeEncapsulation({
     beforeFiles: [],
     afterFiles: files,
     affectedPaths: paths,
@@ -22,16 +51,4 @@ export function analyzeCurrentArchitecture(
       finding.kind !== "public-surface-growth" ||
       finding.productionCallers.length === 0,
   );
-  return {
-    placement: analyzeCurrentPlacement(
-      files.map((file) => ({
-        path: file.path,
-        types: file.types.map((type) => type.name),
-      })),
-      config,
-    ),
-    dependencies: dependency.dependencies,
-    cycles: dependency.cycles,
-    encapsulation,
-  };
 }

@@ -2978,22 +2978,22 @@ var require_compile = __commonJS({
       }
     }
     exports.compileSchema = compileSchema;
-    function resolveRef(root, baseId, ref) {
+    function resolveRef(root2, baseId, ref) {
       var _a;
       ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, ref);
-      const schOrFunc = root.refs[ref];
+      const schOrFunc = root2.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve2.call(this, root, ref);
+      let _sch = resolve2.call(this, root2, ref);
       if (_sch === void 0) {
-        const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
+        const schema = (_a = root2.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
         if (schema)
-          _sch = new SchemaEnv({ schema, schemaId, root, baseId });
+          _sch = new SchemaEnv({ schema, schemaId, root: root2, baseId });
       }
       if (_sch === void 0)
         return;
-      return root.refs[ref] = inlineOrCompile.call(this, _sch);
+      return root2.refs[ref] = inlineOrCompile.call(this, _sch);
     }
     exports.resolveRef = resolveRef;
     function inlineOrCompile(sch) {
@@ -3011,23 +3011,23 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve2(root, ref) {
+    function resolve2(root2, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
-      return sch || this.schemas[ref] || resolveSchema.call(this, root, ref);
+      return sch || this.schemas[ref] || resolveSchema.call(this, root2, ref);
     }
-    function resolveSchema(root, ref) {
+    function resolveSchema(root2, ref) {
       const p = this.opts.uriResolver.parse(ref);
       const refPath = (0, resolve_1._getFullPath)(this.opts.uriResolver, p);
-      let baseId = (0, resolve_1.getFullPath)(this.opts.uriResolver, root.baseId, void 0);
-      if (Object.keys(root.schema).length > 0 && refPath === baseId) {
-        return getJsonPointer.call(this, p, root);
+      let baseId = (0, resolve_1.getFullPath)(this.opts.uriResolver, root2.baseId, void 0);
+      if (Object.keys(root2.schema).length > 0 && refPath === baseId) {
+        return getJsonPointer.call(this, p, root2);
       }
       const id = (0, resolve_1.normalizeId)(refPath);
       const schOrRef = this.refs[id] || this.schemas[id];
       if (typeof schOrRef == "string") {
-        const sch = resolveSchema.call(this, root, schOrRef);
+        const sch = resolveSchema.call(this, root2, schOrRef);
         if (typeof (sch === null || sch === void 0 ? void 0 : sch.schema) !== "object")
           return;
         return getJsonPointer.call(this, p, sch);
@@ -3042,7 +3042,7 @@ var require_compile = __commonJS({
         const schId = schema[schemaId];
         if (schId)
           baseId = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schId);
-        return new SchemaEnv({ schema, schemaId, root, baseId });
+        return new SchemaEnv({ schema, schemaId, root: root2, baseId });
       }
       return getJsonPointer.call(this, p, schOrRef);
     }
@@ -3054,7 +3054,7 @@ var require_compile = __commonJS({
       "dependencies",
       "definitions"
     ]);
-    function getJsonPointer(parsedRef, { baseId, schema, root }) {
+    function getJsonPointer(parsedRef, { baseId, schema, root: root2 }) {
       var _a;
       if (((_a = parsedRef.fragment) === null || _a === void 0 ? void 0 : _a[0]) !== "/")
         return;
@@ -3073,10 +3073,10 @@ var require_compile = __commonJS({
       let env;
       if (typeof schema != "boolean" && schema.$ref && !(0, util_1.schemaHasRulesButRef)(schema, this.RULES)) {
         const $ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schema.$ref);
-        env = resolveSchema.call(this, root, $ref);
+        env = resolveSchema.call(this, root2, $ref);
       }
       const { schemaId } = this.opts;
-      env = env || new SchemaEnv({ schema, schemaId, root, baseId });
+      env = env || new SchemaEnv({ schema, schemaId, root: root2, baseId });
       if (env.schema !== env.root.schema)
         return env;
       return void 0;
@@ -3262,8 +3262,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path13) {
-      let input = path13;
+    function removeDotSegments(path15) {
+      let input = path15;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3672,8 +3672,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path13 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path13 && path13 !== "/" ? path13 : void 0;
+        const path15 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path15 && path15 !== "/" ? path15 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -4514,8 +4514,8 @@ var require_core = __commonJS({
           keyRef = sch;
         if (sch === void 0) {
           const { schemaId } = this.opts;
-          const root = new compile_1.SchemaEnv({ schema: {}, schemaId });
-          sch = compile_1.resolveSchema.call(this, root, keyRef);
+          const root2 = new compile_1.SchemaEnv({ schema: {}, schemaId });
+          sch = compile_1.resolveSchema.call(this, root2, keyRef);
           if (!sch)
             return;
           this.refs[keyRef] = sch;
@@ -4876,20 +4876,20 @@ var require_ref = __commonJS({
       code(cxt) {
         const { gen, schema: $ref, it } = cxt;
         const { baseId, schemaEnv: env, validateName, opts, self } = it;
-        const { root } = env;
-        if (($ref === "#" || $ref === "#/") && baseId === root.baseId)
+        const { root: root2 } = env;
+        if (($ref === "#" || $ref === "#/") && baseId === root2.baseId)
           return callRootRef();
-        const schOrEnv = compile_1.resolveRef.call(self, root, baseId, $ref);
+        const schOrEnv = compile_1.resolveRef.call(self, root2, baseId, $ref);
         if (schOrEnv === void 0)
           throw new ref_error_1.default(it.opts.uriResolver, baseId, $ref);
         if (schOrEnv instanceof compile_1.SchemaEnv)
           return callValidate(schOrEnv);
         return inlineRefSchema(schOrEnv);
         function callRootRef() {
-          if (env === root)
+          if (env === root2)
             return callRef(cxt, validateName, env, env.$async);
-          const rootName = gen.scopeValue("root", { ref: root });
-          return callRef(cxt, (0, codegen_1._)`${rootName}.validate`, root, root.$async);
+          const rootName = gen.scopeValue("root", { ref: root2 });
+          return callRef(cxt, (0, codegen_1._)`${rootName}.validate`, root2, root2.$async);
         }
         function callValidate(sch) {
           const v = getValidate(cxt, sch);
@@ -7200,7 +7200,7 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync as readFileSync4, realpathSync } from "node:fs";
-import * as path12 from "node:path";
+import * as path14 from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
@@ -7681,8 +7681,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path13, errorMaps, issueData } = params;
-  const fullPath = [...path13, ...issueData.path || []];
+  const { data, path: path15, errorMaps, issueData } = params;
+  const fullPath = [...path15, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7798,11 +7798,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path13, key2) {
+  constructor(parent, value, path15, key2) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path13;
+    this._path = path15;
     this._key = key2;
   }
   get path() {
@@ -11439,10 +11439,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path13) {
-  if (!path13)
+function getElementAtPath(obj, path15) {
+  if (!path15)
     return obj;
-  return path13.reduce((acc, key2) => acc?.[key2], obj);
+  return path15.reduce((acc, key2) => acc?.[key2], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11762,11 +11762,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path13, issues) {
+function prefixIssues(path15, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path13);
+    iss.path.unshift(path15);
     return iss;
   });
 }
@@ -14768,8 +14768,8 @@ var JSONSchemaGenerator = class {
       // uri: _params?.uri ?? ((id) => `${id}`),
       external: _params?.external ?? void 0
     };
-    const root = this.seen.get(schema);
-    if (!root)
+    const root2 = this.seen.get(schema);
+    if (!root2)
       throw new Error("Unprocessed schema. This is a bug in Zod.");
     const makeURI = (entry) => {
       const defsSegment = this.target === "draft-2020-12" ? "$defs" : "definitions";
@@ -14783,7 +14783,7 @@ var JSONSchemaGenerator = class {
         entry[1].defId = id;
         return { defId: id, ref: `${uriGenerator("__shared")}#/${defsSegment}/${id}` };
       }
-      if (entry[1] === root) {
+      if (entry[1] === root2) {
         return { ref: "#" };
       }
       const uriPrefix = `#`;
@@ -14889,7 +14889,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         throw new Error("Schema is missing an `id` property");
       result.$id = params.external.uri(id);
     }
-    Object.assign(result, root.def);
+    Object.assign(result, root2.def);
     const defs = params.external?.defs ?? {};
     for (const entry of this.seen.entries()) {
       const seen = entry[1];
@@ -15177,11 +15177,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path13) {
-  if (path13.length === 0) {
+function getDotPath(path15) {
+  if (path15.length === 0) {
     return "object root";
   }
-  return path13.reduce((acc, seg, index) => {
+  return path15.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -21596,7 +21596,7 @@ function parseCheckArguments(args) {
 // src/commit-gate/cli-command-acknowledge.ts
 import { execFileSync as execFileSync5 } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import * as path8 from "node:path";
+import * as path10 from "node:path";
 
 // src/commit-gate/fingerprint.ts
 import { createHash } from "node:crypto";
@@ -21794,40 +21794,40 @@ var RATCHET_RULES = [
   "comment-restates-code",
   "assumption-marker"
 ];
-function commitScanRequest(root) {
+function commitScanRequest(root2) {
   return {
     paths: ["packages"],
-    root,
+    root: root2,
     rules: RATCHET_RULES,
     excludes: ["/dist/", "node_modules"],
     baseline: ".github/quality/quality-baseline.json",
     failOn: "regression"
   };
 }
-function materializeTree(root, ref, target) {
+function materializeTree(root2, ref, target) {
   if (ref === "index") {
     execFileSync2(
       "git",
       ["checkout-index", "--all", `--prefix=${target}${path3.sep}`],
-      { cwd: root, stdio: "ignore" }
+      { cwd: root2, stdio: "ignore" }
     );
     return;
   }
   const indexPath = path3.join(target, "index");
   const env = { ...process.env, GIT_INDEX_FILE: indexPath };
-  execFileSync2("git", ["read-tree", ref], { cwd: root, env, stdio: "ignore" });
+  execFileSync2("git", ["read-tree", ref], { cwd: root2, env, stdio: "ignore" });
   execFileSync2(
     "git",
     ["checkout-index", "--all", `--prefix=${target}${path3.sep}`],
-    { cwd: root, env, stdio: "ignore" }
+    { cwd: root2, env, stdio: "ignore" }
   );
   rmSync(indexPath, { force: true });
 }
-function scannerEvidence(root, ref) {
+function scannerEvidence(root2, ref) {
   let stagedRoot;
   try {
     stagedRoot = mkdtempSync(path3.join(tmpdir(), "quality-guard-index-"));
-    materializeTree(root, ref, stagedRoot);
+    materializeTree(root2, ref, stagedRoot);
     const result = runScan(commitScanRequest(stagedRoot));
     if (result.exitCode === 0) return { findings: [] };
     return {
@@ -21876,9 +21876,9 @@ function treeFile(input) {
     throw new Error(`${input.filePath} is not present in ${location}`);
   }
 }
-function snapshotConfig(root, ref) {
+function snapshotConfig(root2, ref) {
   return treeFile({
-    root,
+    root: root2,
     ref,
     filePath: ".quality-guard.json",
     fallback: "{}"
@@ -22079,7 +22079,7 @@ function changedPaths(snapshot) {
     change.after?.path
   ]);
   return [
-    ...new Set(paths.filter((path13) => Boolean(path13)))
+    ...new Set(paths.filter((path15) => Boolean(path15)))
   ].sort((left, right) => left.localeCompare(right));
 }
 function changedSourcePaths(snapshot) {
@@ -22109,6 +22109,280 @@ function noDecision(summary) {
       reason: "No source quality decision was required because the staged change contains no supported source or quality configuration."
     }
   };
+}
+
+// src/commit-gate/architecture-similarity.ts
+import * as path5 from "node:path";
+
+// src/commit-gate/architecture-similarity-signature.ts
+import * as path4 from "node:path";
+
+// src/commit-gate/placement-paths.ts
+function normalizeArchitecturePath(filePath) {
+  return filePath.replaceAll("\\", "/").replace(/^\.\//, "");
+}
+function matchesArchitecturePath(filePath, pattern) {
+  const expression = pattern.replaceAll("\\", "/").replace(/[.+^${}()|[\]\\]/g, "\\$&").replaceAll("**", "@@DOUBLE_STAR@@").replaceAll("*", "[^/]*").replaceAll("@@DOUBLE_STAR@@/", "(?:.*/)?").replaceAll("@@DOUBLE_STAR@@", ".*");
+  return new RegExp(`^${expression}$`).test(
+    normalizeArchitecturePath(filePath)
+  );
+}
+function isTestPath(filePath, declaredPaths) {
+  const normalized = normalizeArchitecturePath(filePath);
+  return declaredPaths.some(
+    (pattern) => matchesArchitecturePath(normalized, pattern)
+  ) || new RegExp(
+    String.raw`(?:^|\/)(?:test|tests|__tests__|testing|fixtures|mocks|` + String.raw`stubs)(?:\/|$)`,
+    "i"
+  ).test(normalized) || /(?:\.(?:test|spec)\.|_test\.)[^/]*$/i.test(normalized);
+}
+function isProductionArchitecturePath(filePath, config2) {
+  const normalized = normalizeArchitecturePath(filePath);
+  return !(config2.generatedPaths.some(
+    (pattern) => matchesArchitecturePath(normalized, pattern)
+  ) || isTestPath(normalized, config2.testPaths));
+}
+
+// src/commit-gate/architecture-similarity-signature.ts
+var IGNORED_TOKENS = new Set(
+  "async class common const default export function get index interface internal private protected set shared src static test tests type typescript utils ts tsx mts cts js jsx mjs cjs cs rs py go java kt c cc cpp cxx h hpp".split(" ")
+);
+function similarityTokens(value) {
+  return value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 1 && !IGNORED_TOKENS.has(token));
+}
+function addTokens(signature, value, weight2) {
+  for (const token of similarityTokens(value))
+    signature.set(token, Math.max(signature.get(token) ?? 0, weight2));
+}
+function signatureFor(file) {
+  const signature = /* @__PURE__ */ new Map();
+  const normalized = normalizeArchitecturePath(file.path);
+  addTokens(
+    signature,
+    path4.posix.basename(normalized, path4.posix.extname(normalized)),
+    6
+  );
+  for (const type of file.types) {
+    addTokens(signature, type.name, 3);
+    for (const member of type.members) {
+      addTokens(signature, member.name, 2);
+      addTokens(signature, member.kind, 1);
+    }
+    for (const dependency of type.dependencies)
+      addTokens(signature, dependency, 1);
+  }
+  for (const imported of [...file.imports, ...file.references])
+    addTokens(signature, imported, 1);
+  return signature;
+}
+function weight(signature, token) {
+  return signature.get(token) ?? 0;
+}
+function pairWeight(input) {
+  const weights = [
+    weight(input.left, input.token),
+    weight(input.right, input.token)
+  ];
+  return input.operator === "min" ? Math.min(...weights) : Math.max(...weights);
+}
+function weightedTotal(left, right, operator) {
+  const all = [.../* @__PURE__ */ new Set([...left.keys(), ...right.keys()])];
+  return all.reduce((total, token) => {
+    return total + pairWeight({ token, left, right, operator });
+  }, 0);
+}
+function weightedSimilarity(left, right) {
+  const union2 = weightedTotal(left, right, "max");
+  const intersection2 = weightedTotal(left, right, "min");
+  return union2 === 0 ? 0 : intersection2 / union2;
+}
+
+// src/commit-gate/architecture-similarity-clusters.ts
+var CLUSTER_SIMILARITY = 0.45;
+function similarityMatrix(signatures) {
+  const matrix = signatures.map(() => signatures.map(() => 1));
+  for (let left = 0; left < signatures.length; left += 1)
+    for (let right = left + 1; right < signatures.length; right += 1) {
+      const score = weightedSimilarity(signatures[left], signatures[right]);
+      matrix[left][right] = score;
+      matrix[right][left] = score;
+    }
+  return matrix;
+}
+function root(parent, index) {
+  while (parent[index] !== index) {
+    parent[index] = parent[parent[index]];
+    index = parent[index];
+  }
+  return index;
+}
+function join3(parent, left, right) {
+  const leftRoot = root(parent, left);
+  const rightRoot = root(parent, right);
+  if (leftRoot !== rightRoot) parent[rightRoot] = leftRoot;
+}
+function joinSimilar(parent, scores) {
+  for (let left = 0; left < scores.length; left += 1)
+    for (let right = left + 1; right < scores.length; right += 1)
+      if (scores[left][right] >= CLUSTER_SIMILARITY) join3(parent, left, right);
+}
+function grouped(parent, count) {
+  const groups = /* @__PURE__ */ new Map();
+  for (let index = 0; index < count; index += 1) {
+    const group = groups.get(root(parent, index)) ?? [];
+    group.push(index);
+    groups.set(root(parent, index), group);
+  }
+  return groups;
+}
+function sortedGroups(groups, files) {
+  return [...groups.values()].sort(
+    (left, right) => right.length - left.length || files[left[0]].path.localeCompare(files[right[0]].path)
+  );
+}
+function clustersFor(files, scores) {
+  const parent = files.map((_, index) => index);
+  joinSimilar(parent, scores);
+  return sortedGroups(grouped(parent, files.length), files);
+}
+
+// src/commit-gate/architecture-similarity-outlier.ts
+function better(left, right) {
+  return left.similarity > right.similarity || left.similarity === right.similarity && left.path < right.path;
+}
+function outlierEvidence(input) {
+  let nearest = { path: "", similarity: -1 };
+  for (const candidate of input.dominant) {
+    const next = {
+      path: input.files[candidate].path,
+      similarity: input.scores[input.index][candidate]
+    };
+    if (better(next, nearest)) nearest = next;
+  }
+  return {
+    path: input.files[input.index].path,
+    nearest: nearest.path,
+    similarity: Math.round(nearest.similarity * 1e3) / 1e3
+  };
+}
+function largeFinding(input) {
+  const dominant = input.clusters[0];
+  const dominantSet = new Set(dominant);
+  return {
+    kind: "similarity-outlier",
+    directory: input.directory,
+    fileCount: input.files.length,
+    trigger: "file-count",
+    clusters: input.clusterPaths,
+    outliers: input.files.map((_, index) => index).filter((index) => !dominantSet.has(index)).map((index) => outlierEvidence({ ...input, index, dominant })).sort((left, right) => left.path.localeCompare(right.path))
+  };
+}
+
+// src/commit-gate/architecture-similarity-assessment.ts
+var SIMILARITY_TRIGGER = 25;
+function clusterPaths(files, clusters) {
+  return clusters.map(
+    (cluster) => cluster.map((index) => files[index].path).sort((left, right) => left.localeCompare(right))
+  );
+}
+function smallFinding(directory, files, clusters) {
+  return {
+    kind: "similarity-split",
+    directory,
+    fileCount: files.length,
+    trigger: "distinct-clusters",
+    clusters: clusterPaths(files, clusters).filter(
+      (cluster) => cluster.length > 1
+    ),
+    outliers: []
+  };
+}
+function needsFinding(fileCount, clusters) {
+  const significant = clusters.filter((cluster) => cluster.length > 1);
+  return fileCount >= SIMILARITY_TRIGGER ? clusters.length > 1 : significant.length > 1;
+}
+function assessSimilarity(directory, files) {
+  if (files.length < 2) return void 0;
+  const scores = similarityMatrix(files.map(signatureFor));
+  const clusters = clustersFor(files, scores);
+  if (!needsFinding(files.length, clusters)) return void 0;
+  return files.length < SIMILARITY_TRIGGER ? smallFinding(
+    directory,
+    files,
+    clusters.filter((cluster) => cluster.length > 1)
+  ) : largeFinding({
+    directory,
+    files,
+    scores,
+    clusters,
+    clusterPaths: clusterPaths(files, clusters)
+  });
+}
+
+// src/commit-gate/architecture-similarity-changes.ts
+function changeSets(input) {
+  return {
+    before: new Set(
+      (input.beforeFiles ?? []).map(
+        (file) => normalizeArchitecturePath(file.path)
+      )
+    ),
+    affected: new Set(
+      input.affectedPaths.filter(
+        (filePath) => isProductionArchitecturePath(filePath, input.config)
+      ).map(normalizeArchitecturePath)
+    )
+  };
+}
+function changedOutlier(finding, changes) {
+  if (finding.kind !== "similarity-outlier") return finding;
+  const outliers = finding.outliers.filter(
+    (outlier) => changes.affected.has(normalizeArchitecturePath(outlier.path)) && !changes.before.has(normalizeArchitecturePath(outlier.path))
+  );
+  return outliers.length > 0 ? { ...finding, outliers } : void 0;
+}
+
+// src/commit-gate/architecture-similarity.ts
+function affectedDirectories(input) {
+  return new Set(
+    input.affectedPaths.filter(
+      (filePath) => isProductionArchitecturePath(filePath, input.config)
+    ).map(
+      (filePath) => path5.posix.dirname(normalizeArchitecturePath(filePath))
+    )
+  );
+}
+function filesByDirectory(input) {
+  const directories = /* @__PURE__ */ new Map();
+  for (const file of input.afterFiles.filter(
+    (candidate) => isEligible(candidate, input)
+  )) {
+    const directory = path5.posix.dirname(normalizeArchitecturePath(file.path));
+    const files = directories.get(directory) ?? [];
+    files.push(file);
+    directories.set(directory, files);
+  }
+  return directories;
+}
+function isEligible(file, input) {
+  const normalized = normalizeArchitecturePath(file.path);
+  return isProductionArchitecturePath(normalized, input.config) && input.affected.has(path5.posix.dirname(normalized));
+}
+function analyzeSimilarity(input) {
+  const changes = changeSets(input);
+  const directories = filesByDirectory({
+    afterFiles: input.afterFiles,
+    affected: affectedDirectories(input),
+    config: input.config
+  });
+  return [...directories.entries()].sort(([left], [right]) => left.localeCompare(right)).flatMap(([directory, files]) => {
+    const finding = assessSimilarity(
+      directory,
+      files.sort((left, right) => left.path.localeCompare(right.path))
+    );
+    const changed = finding && changedOutlier(finding, changes);
+    return changed ? [changed] : [];
+  });
 }
 
 // src/commit-gate/types.ts
@@ -22146,6 +22420,20 @@ function placementFindings(findings) {
       affectedPaths: [finding.directory],
       evidence: { ...finding },
       reason: "placement pressure increased"
+    })
+  );
+}
+function similarityFindings(findings) {
+  return findings.map(
+    (finding) => architectureFinding({
+      kind: finding.kind,
+      severity: "review",
+      affectedPaths: [
+        finding.directory,
+        ...finding.outliers.map((outlier) => outlier.path)
+      ],
+      evidence: { ...finding },
+      reason: "directory ownership signals are split"
     })
   );
 }
@@ -22217,41 +22505,13 @@ function findCycles(graph2) {
 }
 
 // src/commit-gate/dependency-graph.ts
-import * as path6 from "node:path";
+import * as path8 from "node:path";
 
 // src/commit-gate/placement-analysis.ts
-import * as path5 from "node:path";
+import * as path7 from "node:path";
 
 // src/commit-gate/placement-findings.ts
-import * as path4 from "node:path";
-
-// src/commit-gate/placement-paths.ts
-function normalizeArchitecturePath(filePath) {
-  return filePath.replaceAll("\\", "/").replace(/^\.\//, "");
-}
-function matchesArchitecturePath(filePath, pattern) {
-  const expression = pattern.replaceAll("\\", "/").replace(/[.+^${}()|[\]\\]/g, "\\$&").replaceAll("**", "@@DOUBLE_STAR@@").replaceAll("*", "[^/]*").replaceAll("@@DOUBLE_STAR@@/", "(?:.*/)?").replaceAll("@@DOUBLE_STAR@@", ".*");
-  return new RegExp(`^${expression}$`).test(
-    normalizeArchitecturePath(filePath)
-  );
-}
-function isTestPath(filePath, declaredPaths) {
-  const normalized = normalizeArchitecturePath(filePath);
-  return declaredPaths.some(
-    (pattern) => matchesArchitecturePath(normalized, pattern)
-  ) || new RegExp(
-    String.raw`(?:^|\/)(?:test|tests|__tests__|testing|fixtures|mocks|` + String.raw`stubs)(?:\/|$)`,
-    "i"
-  ).test(normalized) || /(?:\.(?:test|spec)\.|_test\.)[^/]*$/i.test(normalized);
-}
-function isProductionArchitecturePath(filePath, config2) {
-  const normalized = normalizeArchitecturePath(filePath);
-  return !(config2.generatedPaths.some(
-    (pattern) => matchesArchitecturePath(normalized, pattern)
-  ) || isTestPath(normalized, config2.testPaths));
-}
-
-// src/commit-gate/placement-findings.ts
+import * as path6 from "node:path";
 function addedTypes(file, previous) {
   return [...file.types].filter((name) => !previous.has(name)).sort((left, right) => left.localeCompare(right));
 }
@@ -22278,7 +22538,7 @@ function contextForFile(input) {
   const normalized = normalizeArchitecturePath(input.file.path);
   if (!(input.changed.has(normalized) && isProductionArchitecturePath(input.file.path, input.config)))
     return null;
-  const directory = path4.posix.dirname(normalized);
+  const directory = path6.posix.dirname(normalized);
   const { previous, current } = directoryTypes(
     input.before,
     input.after,
@@ -22293,7 +22553,7 @@ function findingsForFile(input) {
   return addedTypes(input.file, previous).flatMap(
     (name) => typeFinding(name, {
       generic: input.config.genericBuckets.includes(
-        path4.posix.basename(directory).toLowerCase()
+        path6.posix.basename(directory).toLowerCase()
       ),
       beforeCount: previous.size,
       afterCount: current.size,
@@ -22313,7 +22573,7 @@ function typeNames(files, config2) {
   return result;
 }
 function addTypes(result, file) {
-  const directory = path5.posix.dirname(normalizeArchitecturePath(file.path));
+  const directory = path7.posix.dirname(normalizeArchitecturePath(file.path));
   const names = result.get(directory) ?? /* @__PURE__ */ new Set();
   for (const name of file.types) names.add(name);
   result.set(directory, names);
@@ -22380,8 +22640,8 @@ function extensionless(filePath) {
 }
 function resolveDependency(from, dependency, paths) {
   const normalized = normalizeArchitecturePath(dependency);
-  const candidate = dependency.startsWith(".") ? path6.posix.normalize(
-    path6.posix.join(path6.posix.dirname(from), normalized)
+  const candidate = dependency.startsWith(".") ? path8.posix.normalize(
+    path8.posix.join(path8.posix.dirname(from), normalized)
   ) : normalized;
   if (paths.has(candidate)) return candidate;
   const target = extensionless(candidate);
@@ -22518,7 +22778,7 @@ function publicFindings(input) {
 // src/commit-gate/encapsulation.ts
 function forwardingKeys(type) {
   return new Set(
-    type.forwardingPaths.map((path13) => `${path13.member}\0${path13.target}`)
+    type.forwardingPaths.map((path15) => `${path15.member}\0${path15.target}`)
   );
 }
 function forwardingFindings(type, previous, filePath) {
@@ -22608,9 +22868,20 @@ function encapsulationStructural(input) {
     })
   );
 }
+function similarityStructural(input) {
+  return similarityFindings(
+    analyzeSimilarity({
+      beforeFiles: input.beforeFiles,
+      afterFiles: input.afterFiles,
+      affectedPaths: input.affectedPaths,
+      config: input.config
+    })
+  );
+}
 function structuralFindings(input) {
   return [
     ...placementStructural(input),
+    ...similarityStructural(input),
     ...dependencyStructural(input),
     ...encapsulationStructural(input)
   ];
@@ -22644,11 +22915,11 @@ function collectFindings(input) {
 }
 
 // src/commit-gate/refactor-progress-counts.ts
-import * as path7 from "node:path";
+import * as path9 from "node:path";
 function directTypePressure(types, config2) {
   const counts = /* @__PURE__ */ new Map();
   for (const item of types) {
-    const directory = path7.posix.dirname(item.path);
+    const directory = path9.posix.dirname(item.path);
     counts.set(directory, (counts.get(directory) ?? 0) + 1);
   }
   return [...counts.values()].reduce(
@@ -22901,15 +23172,15 @@ function boundary(item, index) {
   };
 }
 function desired(value) {
-  const root = object3(value, "responsibility map.desired");
-  onlyKeys(root, ["ownership", "boundaries"], "responsibility map.desired");
-  if (!(Array.isArray(root.ownership) && Array.isArray(root.boundaries)))
+  const root2 = object3(value, "responsibility map.desired");
+  onlyKeys(root2, ["ownership", "boundaries"], "responsibility map.desired");
+  if (!(Array.isArray(root2.ownership) && Array.isArray(root2.boundaries)))
     throw new Error(
       "responsibility map.desired requires ownership and boundaries arrays"
     );
   const parsed = {
-    ownership: root.ownership.map(ownership),
-    boundaries: root.boundaries.map(boundary)
+    ownership: root2.ownership.map(ownership),
+    boundaries: root2.boundaries.map(boundary)
   };
   if (parsed.ownership.length + parsed.boundaries.length === 0)
     throw new Error(
@@ -22921,28 +23192,28 @@ function desired(value) {
 // src/commit-gate/responsibility-map-parse.ts
 function parseResponsibilityMap(source) {
   const parsed = parseJson(source);
-  const root = object3(parsed, "responsibility map");
+  const root2 = object3(parsed, "responsibility map");
   onlyKeys(
-    root,
+    root2,
     ["targetScope", "responsibilities", "desired"],
     "responsibility map"
   );
   const targetScope = strings(
-    root.targetScope,
+    root2.targetScope,
     "responsibility map.targetScope"
   );
   if (targetScope.length === 0)
     throw new Error("responsibility map.targetScope must not be empty");
-  if (!Array.isArray(root.responsibilities) || root.responsibilities.length === 0)
+  if (!Array.isArray(root2.responsibilities) || root2.responsibilities.length === 0)
     throw new Error(
       "responsibility map.responsibilities must be a non-empty array"
     );
-  const responsibilities = root.responsibilities.map(responsibility);
+  const responsibilities = root2.responsibilities.map(responsibility);
   if (responsibilities.some((item) => item.currentOwners.length === 0))
     throw new Error(
       "responsibility map responsibilities require at least one current owner"
     );
-  return { targetScope, responsibilities, desired: desired(root.desired) };
+  return { targetScope, responsibilities, desired: desired(root2.desired) };
 }
 function parseJson(source) {
   try {
@@ -24038,27 +24309,27 @@ function changeAt(input) {
 
 // src/commit-gate/snapshot-change.ts
 var GIT_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
-function git(root, args, encoding = "utf8") {
+function git(root2, args, encoding = "utf8") {
   return execFileSync4("git", args, {
-    cwd: root,
+    cwd: root2,
     encoding,
     maxBuffer: GIT_OUTPUT_MAX_BUFFER
   });
 }
-function objectContent(root, spec) {
-  return git(root, ["show", spec]);
+function objectContent(root2, spec) {
+  return git(root2, ["show", spec]);
 }
 function changePath2(change) {
   return change.after?.path ?? change.before?.path ?? "";
 }
-function changesFrom(root, values, contentSpec) {
+function changesFrom(root2, values, contentSpec) {
   const changes = [];
   for (let index = 0; index < values.length; index += 1) {
     const result = changeAt({
       values,
       index,
       contentSpec,
-      readContent: (spec) => objectContent(root, spec)
+      readContent: (spec) => objectContent(root2, spec)
     });
     if (result.change) changes.push(result.change);
     index = result.next;
@@ -24067,17 +24338,17 @@ function changesFrom(root, values, contentSpec) {
     (left, right) => changePath2(left).localeCompare(changePath2(right))
   );
 }
-function changeSnapshot(root, source) {
+function changeSnapshot(root2, source) {
   const output = git(
-    root,
+    root2,
     ["diff", "--name-status", "-z", "-M", source.base, source.target],
     "buffer"
   );
   const values = output.toString("utf8").split("\0").filter(Boolean);
   return {
-    baseIdentity: git(root, ["rev-parse", source.base]).trim(),
-    targetIdentity: git(root, ["rev-parse", source.target]).trim(),
-    changes: changesFrom(root, values, source.contentSpec)
+    baseIdentity: git(root2, ["rev-parse", source.base]).trim(),
+    targetIdentity: git(root2, ["rev-parse", source.target]).trim(),
+    changes: changesFrom(root2, values, source.contentSpec)
   };
 }
 
@@ -24087,32 +24358,32 @@ var SOURCE_PATH3 = new RegExp(
   "i"
 );
 var DISTRIBUTION_PATH = /(?:^|[/\\])dist(?:[/\\]|$)/;
-function readStagedSnapshot(root) {
-  return changeSnapshot(root, {
+function readStagedSnapshot(root2) {
+  return changeSnapshot(root2, {
     base: "HEAD",
     target: "--cached",
     contentSpec: (filePath, after) => after ? `:${filePath}` : `HEAD:${filePath}`
   });
 }
-function readCommittedSnapshot(root, commit = "HEAD") {
-  const parent = git(root, ["rev-parse", `${commit}^`]).trim();
-  return changeSnapshot(root, {
+function readCommittedSnapshot(root2, commit = "HEAD") {
+  const parent = git(root2, ["rev-parse", `${commit}^`]).trim();
+  return changeSnapshot(root2, {
     base: parent,
     target: commit,
     contentSpec: (filePath, after) => `${after ? commit : parent}:${filePath}`
   });
 }
-function sourcePaths(root, ref) {
+function sourcePaths(root2, ref) {
   const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", ref];
-  return git(root, args, "buffer").toString("utf8").split("\0").filter(
+  return git(root2, args, "buffer").toString("utf8").split("\0").filter(
     (filePath) => SOURCE_PATH3.test(filePath) && !DISTRIBUTION_PATH.test(filePath)
   ).sort((left, right) => left.localeCompare(right));
 }
-function readSourceInventory(root, ref) {
-  return sourcePaths(root, ref).map((filePath) => ({
+function readSourceInventory(root2, ref) {
+  return sourcePaths(root2, ref).map((filePath) => ({
     path: filePath,
     content: objectContent(
-      root,
+      root2,
       ref === "index" ? `:${filePath}` : `${ref}:${filePath}`
     )
   }));
@@ -24131,9 +24402,9 @@ function noSourceDecision(snapshot) {
     scanner: { findings: [] }
   });
 }
-function acknowledgementRecords(root, ref) {
+function acknowledgementRecords(root2, ref) {
   return parseArchitectureAcknowledgements(
-    treeFile({ root, ref, filePath: DECISION_RECORD_PATH, fallback: "[]" })
+    treeFile({ root: root2, ref, filePath: DECISION_RECORD_PATH, fallback: "[]" })
   );
 }
 function refactorMapFor(input) {
@@ -24183,19 +24454,19 @@ function decisionForSnapshot(input) {
   if (!changed.some(sourceChange)) return noSourceDecision(snapshot);
   return decisionWithSources(input, snapshot, changed);
 }
-function runStagedCheck(root, options) {
+function runStagedCheck(root2, options) {
   return decisionForSnapshot({
-    root,
-    snapshot: readStagedSnapshot(root),
+    root: root2,
+    snapshot: readStagedSnapshot(root2),
     baseRef: "HEAD",
     targetRef: "index",
     options
   });
 }
-function runCommittedCheck(root, commit, options) {
+function runCommittedCheck(root2, commit, options) {
   return decisionForSnapshot({
-    root,
-    snapshot: readCommittedSnapshot(root, commit),
+    root: root2,
+    snapshot: readCommittedSnapshot(root2, commit),
     baseRef: `${commit}^`,
     targetRef: commit,
     options,
@@ -24229,9 +24500,9 @@ function findAcknowledgement(decision, options) {
     );
   return { fingerprint: decision.fingerprint };
 }
-function writeAcknowledgement(root, options, fingerprint) {
-  const recordPath = path8.join(root, DECISION_RECORD_PATH);
-  mkdirSync(path8.dirname(recordPath), { recursive: true });
+function writeAcknowledgement(root2, options, fingerprint) {
+  const recordPath = path10.join(root2, DECISION_RECORD_PATH);
+  mkdirSync(path10.dirname(recordPath), { recursive: true });
   writeFileSync(
     recordPath,
     appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
@@ -24242,7 +24513,7 @@ function writeAcknowledgement(root, options, fingerprint) {
     "utf8"
   );
   execFileSync5("git", ["add", "--", DECISION_RECORD_PATH], {
-    cwd: root,
+    cwd: root2,
     stdio: "ignore"
   });
   return {
@@ -24250,16 +24521,16 @@ function writeAcknowledgement(root, options, fingerprint) {
     output: `Acknowledged review finding ${options.findingId}`
   };
 }
-function runAcknowledgeCommand(args, root) {
+function runAcknowledgeCommand(args, root2) {
   const options = parseAcknowledgeArguments(args);
   if ("exitCode" in options) return options;
   try {
     const match = findAcknowledgement(
-      runStagedCheck(root, { json: false, intent: "change" }),
+      runStagedCheck(root2, { json: false, intent: "change" }),
       options
     );
     if ("exitCode" in match) return match;
-    return writeAcknowledgement(root, options, match.fingerprint);
+    return writeAcknowledgement(root2, options, match.fingerprint);
   } catch (error2) {
     return acknowledgeUsage(
       error2 instanceof Error ? error2.message : String(error2)
@@ -24315,7 +24586,7 @@ function committedRef(args) {
   if (commit.startsWith("-")) return usage("--committed requires a Git ref");
   return commit;
 }
-function runCommittedCommand(args, root) {
+function runCommittedCommand(args, root2) {
   const commit = committedRef(args);
   if (isCommandResult(commit)) return commit;
   const options = parseCheckArguments([
@@ -24326,7 +24597,7 @@ function runCommittedCommand(args, root) {
   ]);
   if ("exitCode" in options) return options;
   try {
-    const result = runCommittedCheck(root, commit, options);
+    const result = runCommittedCheck(root2, commit, options);
     return {
       exitCode: exitCodeFor(result),
       output: renderDecision(result, true)
@@ -24335,11 +24606,11 @@ function runCommittedCommand(args, root) {
     return usage(error2 instanceof Error ? error2.message : String(error2));
   }
 }
-function runStagedCommand(args, root) {
+function runStagedCommand(args, root2) {
   const options = parseCheckArguments(args);
   if ("exitCode" in options) return options;
   try {
-    const result = runStagedCheck(root, options);
+    const result = runStagedCheck(root2, options);
     return {
       exitCode: exitCodeFor(result),
       output: renderDecision(result, options.json)
@@ -24350,18 +24621,18 @@ function runStagedCommand(args, root) {
 }
 
 // src/commit-gate/cli-command.ts
-function runCheckCommand(args, root = process.cwd()) {
-  if (args[0] === "acknowledge") return runAcknowledgeCommand(args, root);
+function runCheckCommand(args, root2 = process.cwd()) {
+  if (args[0] === "acknowledge") return runAcknowledgeCommand(args, root2);
   if (args[0] === "check" && args[1] === "--committed")
-    return runCommittedCommand(args, root);
-  return runStagedCommand(args, root);
+    return runCommittedCommand(args, root2);
+  return runStagedCommand(args, root2);
 }
 
 // src/plaintext-readability.ts
 import { spawnSync } from "node:child_process";
 import { mkdtempSync as mkdtempSync2, rmSync as rmSync2 } from "node:fs";
 import { tmpdir as tmpdir2 } from "node:os";
-import { join as join4 } from "node:path";
+import { join as join5 } from "node:path";
 var READABILITY_POLICY = {
   minimumWords: 20,
   threshold: 80,
@@ -24475,7 +24746,7 @@ function runTextstat(text2, options = {}) {
   let result;
   try {
     if (useIsolation)
-      workdir = mkdtempSync2(join4(tmpdir2(), "quality-guard-textstat-"));
+      workdir = mkdtempSync2(join5(tmpdir2(), "quality-guard-textstat-"));
     const spawnArgs = useIsolation ? ["-I", ...args] : args;
     result = spawn(command, spawnArgs, {
       encoding: "utf8",
@@ -24624,7 +24895,7 @@ function readabilityExitCode(status) {
 
 // src/report.ts
 import { existsSync, readFileSync as readFileSync2 } from "node:fs";
-import * as path10 from "node:path";
+import * as path12 from "node:path";
 
 // src/commit-gate/dependency-current.ts
 function analyzeCurrentDependencies(files, config2) {
@@ -24641,16 +24912,16 @@ function analyzeCurrentDependencies(files, config2) {
 }
 
 // src/commit-gate/placement-current.ts
-import * as path9 from "node:path";
+import * as path11 from "node:path";
 function analyzeCurrentPlacement(files, config2) {
   const directories = typeNames(files, config2);
   return [...directories.entries()].filter(
     ([directory, types]) => config2.genericBuckets.includes(
-      path9.posix.basename(directory).toLowerCase()
+      path11.posix.basename(directory).toLowerCase()
     ) || types.size > config2.directTypeLimit
   ).map(([directory, types]) => ({
     kind: config2.genericBuckets.includes(
-      path9.posix.basename(directory).toLowerCase()
+      path11.posix.basename(directory).toLowerCase()
     ) ? "generic-bucket" : "flat-accumulation",
     directory,
     typeCount: types.size,
@@ -24665,7 +24936,29 @@ function analyzeCurrentPlacement(files, config2) {
 function analyzeCurrentArchitecture(files, config2) {
   const paths = files.map((file) => file.path);
   const dependency = analyzeCurrentDependencies(files, config2);
-  const encapsulation = analyzeEncapsulation({
+  return {
+    placement: placementFor(files, config2),
+    similarity: analyzeSimilarity({
+      afterFiles: files,
+      affectedPaths: paths,
+      config: config2
+    }),
+    dependencies: dependency.dependencies,
+    cycles: dependency.cycles,
+    encapsulation: encapsulationFor(files, paths, config2)
+  };
+}
+function placementFor(files, config2) {
+  return analyzeCurrentPlacement(
+    files.map((file) => ({
+      path: file.path,
+      types: file.types.map((type) => type.name)
+    })),
+    config2
+  );
+}
+function encapsulationFor(files, paths, config2) {
+  return analyzeEncapsulation({
     beforeFiles: [],
     afterFiles: files,
     affectedPaths: paths,
@@ -24673,18 +24966,6 @@ function analyzeCurrentArchitecture(files, config2) {
   }).filter(
     (finding) => finding.kind !== "public-surface-growth" || finding.productionCallers.length === 0
   );
-  return {
-    placement: analyzeCurrentPlacement(
-      files.map((file) => ({
-        path: file.path,
-        types: file.types.map((type) => type.name)
-      })),
-      config2
-    ),
-    dependencies: dependency.dependencies,
-    cycles: dependency.cycles,
-    encapsulation
-  };
 }
 
 // src/report-summaries.ts
@@ -24761,14 +25042,14 @@ function buildQualityReport(scan, architecture) {
 
 // src/report.ts
 var analyzeArchitecture = analyzeCurrentArchitecture;
-function architectureFor(root, scan) {
-  const configPath = path10.join(root, ".quality-guard.json");
+function architectureFor(root2, scan) {
+  const configPath = path12.join(root2, ".quality-guard.json");
   const config2 = parseQualityConfig(
     existsSync(configPath) ? readFileSync2(configPath, "utf8") : "{}"
   );
   const sourceFiles = scan.files.map((file) => ({
     path: file.path,
-    content: readFileSync2(path10.join(root, file.path), "utf8")
+    content: readFileSync2(path12.join(root2, file.path), "utf8")
   }));
   const inventory = extractFactInventory(
     sourceFiles,
@@ -24795,9 +25076,9 @@ function asReportScan(report) {
   return candidate;
 }
 function runQualityReport(request) {
-  const root = path10.resolve(request.root ?? process.cwd());
-  const scan = asReportScan(runScan({ ...request, root, paths: ["."] }).report);
-  return buildQualityReport(scan, architectureFor(root, scan));
+  const root2 = path12.resolve(request.root ?? process.cwd());
+  const scan = asReportScan(runScan({ ...request, root: root2, paths: ["."] }).report);
+  return buildQualityReport(scan, architectureFor(root2, scan));
 }
 
 // src/tool-response.ts
@@ -24854,10 +25135,10 @@ function registerQualityCommitGate(server2) {
 
 // src/skips.ts
 import { existsSync as existsSync2, readFileSync as readFileSync3 } from "node:fs";
-import * as path11 from "node:path";
-var SKIP_LOG = path11.join(".github", "quality", "skip-log.json");
-function readSkipLog(root) {
-  const target = path11.join(root, SKIP_LOG);
+import * as path13 from "node:path";
+var SKIP_LOG = path13.join(".github", "quality", "skip-log.json");
+function readSkipLog(root2) {
+  const target = path13.join(root2, SKIP_LOG);
   if (!existsSync2(target)) return [];
   try {
     const parsed = JSON.parse(readFileSync3(target, "utf8"));
@@ -24917,11 +25198,11 @@ function registerQualityReport(server2) {
       testPaths: TEST_PATHS,
       profile: external_exports.enum(["default", "strict"]).optional()
     },
-    async ({ root, excludes, testPaths, profile }) => {
+    async ({ root: root2, excludes, testPaths, profile }) => {
       try {
         return text(
           JSON.stringify(
-            runQualityReport({ root, excludes, testPaths, profile }),
+            runQualityReport({ root: root2, excludes, testPaths, profile }),
             null,
             2
           )
@@ -24937,9 +25218,9 @@ function registerQualitySkips(server2) {
     "quality_skips",
     "List .quality-skip waivers that were consumed but never acknowledged. Each one is a place where the quality gate was bypassed on purpose. The pre-commit hook refuses to commit while any remain open.",
     { root: external_exports.string().describe("Repository root") },
-    async ({ root }) => {
+    async ({ root: root2 }) => {
       try {
-        return text(formatSkips(readSkipLog(root)));
+        return text(formatSkips(readSkipLog(root2)));
       } catch (err) {
         return toolError(err);
       }
@@ -25021,9 +25302,9 @@ function registerQualityGuardTools(server2) {
 }
 
 // src/index.ts
-var _dirname = path12.dirname(fileURLToPath2(import.meta.url));
+var _dirname = path14.dirname(fileURLToPath2(import.meta.url));
 var _pkg = JSON.parse(
-  readFileSync4(path12.join(_dirname, "..", "package.json"), "utf-8")
+  readFileSync4(path14.join(_dirname, "..", "package.json"), "utf-8")
 );
 function createQualityGuardServer() {
   const server2 = new McpServer({
@@ -25036,9 +25317,9 @@ function createQualityGuardServer() {
 var server = createQualityGuardServer();
 var _filename = fileURLToPath2(import.meta.url);
 function runReportCommand(args) {
-  const root = args.find((arg) => arg.startsWith("--root="))?.slice("--root=".length);
+  const root2 = args.find((arg) => arg.startsWith("--root="))?.slice("--root=".length);
   process.stdout.write(
-    `${JSON.stringify(runQualityReport({ root }), null, 2)}
+    `${JSON.stringify(runQualityReport({ root: root2 }), null, 2)}
 `
   );
 }

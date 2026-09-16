@@ -1,4 +1,5 @@
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
+import type { analyzeSimilarity } from "./architecture-similarity.js";
 import { analyzeDependencies } from "./dependency.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzePlacement } from "./placement.js";
@@ -30,6 +31,23 @@ export function placementFindings(
       affectedPaths: [finding.directory],
       evidence: { ...finding },
       reason: "placement pressure increased",
+    }),
+  );
+}
+
+export function similarityFindings(
+  findings: ReturnType<typeof analyzeSimilarity>,
+): DecisionResult["findings"] {
+  return findings.map((finding) =>
+    architectureFinding({
+      kind: finding.kind,
+      severity: "review",
+      affectedPaths: [
+        finding.directory,
+        ...finding.outliers.map((outlier) => outlier.path),
+      ],
+      evidence: { ...finding },
+      reason: "directory ownership signals are split",
     }),
   );
 }

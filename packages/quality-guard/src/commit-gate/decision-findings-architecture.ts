@@ -1,9 +1,11 @@
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
+import { analyzeSimilarity } from "./architecture-similarity.js";
 import type { QualityConfig } from "./config.js";
 import {
   dependencyFindings,
   encapsulationFindings,
   placementFindings,
+  similarityFindings,
 } from "./decision-architecture-mappers.js";
 import { analyzeDependencies } from "./dependency.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
@@ -52,11 +54,22 @@ function encapsulationStructural(input: StructuralInput) {
     }),
   );
 }
+function similarityStructural(input: StructuralInput) {
+  return similarityFindings(
+    analyzeSimilarity({
+      beforeFiles: input.beforeFiles,
+      afterFiles: input.afterFiles,
+      affectedPaths: input.affectedPaths,
+      config: input.config,
+    }),
+  );
+}
 export function structuralFindings(
   input: StructuralInput,
 ): DecisionResult["findings"] {
   return [
     ...placementStructural(input),
+    ...similarityStructural(input),
     ...dependencyStructural(input),
     ...encapsulationStructural(input),
   ];

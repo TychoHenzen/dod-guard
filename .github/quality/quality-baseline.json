@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "strict",
-  "createdAt": "2026-09-14T18:36:36.011Z",
-  "total": 117,
+  "createdAt": "2026-09-16T10:33:20.079Z",
+  "total": 118,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -1446,6 +1446,13 @@
     "packages/quality-guard/src/commit-gate/acknowledgements.ts",
     "packages/quality-guard/src/commit-gate/architecture-file-fact.ts",
     "packages/quality-guard/src/commit-gate/architecture-member-fact.ts",
+    "packages/quality-guard/src/commit-gate/architecture-similarity-assessment.ts",
+    "packages/quality-guard/src/commit-gate/architecture-similarity-changes.ts",
+    "packages/quality-guard/src/commit-gate/architecture-similarity-clusters.ts",
+    "packages/quality-guard/src/commit-gate/architecture-similarity-outlier.ts",
+    "packages/quality-guard/src/commit-gate/architecture-similarity-signature.ts",
+    "packages/quality-guard/src/commit-gate/architecture-similarity.test.ts",
+    "packages/quality-guard/src/commit-gate/architecture-similarity.ts",
     "packages/quality-guard/src/commit-gate/architecture-type-fact.ts",
     "packages/quality-guard/src/commit-gate/architecture-visibility.ts",
     "packages/quality-guard/src/commit-gate/canonical.ts",
@@ -1596,6 +1603,8 @@
     "packages/code-explorer/src/testing/index/index-test-standalone-record.ts::file-length": 1,
     "packages/code-explorer/src/testing/runtime/runtime-bootstrap-test-support.ts::file-length": 1,
     "packages/code-explorer/src/testing/runtime/runtime-test-process.ts::file-length": 1,
+    "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-types.test.mjs::file-length": 1,
+    "packages/quality-guard/src/commit-gate/architecture-similarity.test.ts::file-length": 1,
     "packages/quality-guard/src/plaintext-readability.test.ts::file-length": 1,
     "packages/quality-guard/src/plaintext-readability.ts::file-length": 1,
     "packages/code-explorer/src/runtime-main.ts::complexity": 1,
@@ -1631,7 +1640,6 @@
     "packages/quality-guard/src/plaintext-readability.ts::else-branch": 1,
     "packages/code-explorer/src/testing/index/index-navigation-owner.test.ts::stateless-method": 2,
     "packages/code-explorer/scripts/reproduce-real-lsp-tracing.mjs::unused-local": 1,
-    "packages/code-explorer/src/runtime-main.ts::unused-local": 1,
-    "packages/quality-guard/skills/quality-refactor/scripts/lib/architecture-types.test.mjs::file-length": 1
+    "packages/code-explorer/src/runtime-main.ts::unused-local": 1
   }
 }
