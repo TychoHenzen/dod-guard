@@ -24,6 +24,7 @@ const BASELINE = join(ROOT, ".github", "quality", "untested-sources.txt");
 // Type-only and constant-only modules have no behavior worth asserting.
 const EXEMPT = new Set(["types.ts", "constants.ts", "index.ts"]);
 const TEST_SUFFIX = ".test.ts";
+const AGGREGATE_DECLARATION = /^\s*\/\/\s*test-sources:\s*(.+)$/gm;
 
 function walk(dir) {
   if (!existsSync(dir)) return [];
@@ -102,13 +103,30 @@ function sourceImportPath(file, specifier) {
   return candidates.find((candidate) => existsSync(candidate) && candidate.endsWith(".ts"));
 }
 
+function aggregateTests(files) {
+  return files.flatMap((file) => {
+    if (!file.endsWith(TEST_SUFFIX)) return [];
+    const source = readFileSync(file, "utf8");
+    AGGREGATE_DECLARATION.lastIndex = 0;
+    return [...source.matchAll(AGGREGATE_DECLARATION)].flatMap((match) => {
+      const targets = match[1]
+        .split(/[\s,]+/)
+        .map((specifier) => sourceImportPath(file, specifier))
+        .filter((target) => target && !target.endsWith(TEST_SUFFIX));
+      return targets.length > 0 ? [{ file, area: sourceAreaFor(file), targets: new Set(targets) }] : [];
+    });
+  });
+}
+
 function testedSources(files) {
   const directlyTested = files.filter((file) => !file.endsWith(TEST_SUFFIX) && hasCentralTestFile(file));
   const queue = [];
+  const aggregateReachable = new Set();
   for (const file of files) {
     const area = centralTestAreaFor(file);
     if (area && file.endsWith(TEST_SUFFIX)) queue.push({ file, area });
   }
+  for (const entry of aggregateTests(files)) queue.push(entry);
   for (const file of directlyTested) queue.push({ file, area: sourceAreaFor(file) });
   const visited = new Set();
   const tested = new Set(directlyTested);
@@ -121,13 +139,15 @@ function testedSources(files) {
     for (const specifier of importSpecifiers(file)) {
       const imported = sourceImportPath(file, specifier);
       if (!imported || imported.endsWith(".d.ts")) continue;
-      if (imported.endsWith(TEST_SUFFIX)) queue.push({ file: imported, area });
+      if (entry.targets?.has(imported)) aggregateReachable.add(imported);
+      if (imported.endsWith(TEST_SUFFIX)) queue.push({ file: imported, area, targets: entry.targets });
       else if (canCentralTestReach(imported, area)) {
-        tested.add(imported);
-        queue.push({ file: imported, area });
+        if (!entry.targets) tested.add(imported);
+        queue.push({ file: imported, area, targets: entry.targets });
       }
     }
   }
+  for (const file of aggregateReachable) tested.add(file);
   return tested;
 }
 
