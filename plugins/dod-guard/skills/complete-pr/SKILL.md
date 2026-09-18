@@ -1,13 +1,16 @@
 ---
 name: complete-pr
-description: Complete an explicitly accepted open pull request through guarded auto-merge, required checks, linked-issue confirmation, and remote branch deletion.
+description: Complete a verified open pull request through guarded auto-merge, required checks, linked-issue confirmation, and remote branch deletion.
 ---
 
 # Complete PR
 
-Treat invocation of this skill as the user's explicit acceptance of the current
-pull request code. Do not infer acceptance from review comments, passing checks,
-or an earlier command.
+Treat invocation of this skill as the explicit acceptance gate for the current
+pull request, not a separate human-approval step. Before invoking it, verify
+the current head, linked child acceptance, review remediation, required checks,
+and cleanup conditions. Do not infer that the gate is satisfied from review
+comments, passing checks, or an earlier command; this invocation performs the
+final guarded verification.
 
 ## Shared working defaults
 
