@@ -67,6 +67,36 @@ export function normalizePullRequest(data, repository) {
   };
 }
 
+function readFallbackRequiredChecks(repository, pullRequest, commandRunner) {
+  const branch = encodeBranch(pullRequest.baseBranch);
+  const protectionResponse = ghJson(
+    ["api", `repos/${repository}/branches/${branch}/protection/required_status_checks`],
+    [0, 1],
+    commandRunner,
+  );
+  if (protectionResponse.result.status === 1 && HTTP_NOT_FOUND.test(protectionResponse.result.stderr)) {
+    return [];
+  }
+  const protection = protectionResponse.data ?? {};
+  const checkRuns = ghJsonPages(
+    `repos/${repository}/commits/${pullRequest.headSha}/check-runs?per_page=100`,
+    "check_runs",
+    commandRunner,
+  );
+  const statusPages = ghJsonPagesData(
+    `repos/${repository}/commits/${pullRequest.headSha}/status?per_page=100`,
+    commandRunner,
+  );
+  const statusSha = statusPages.map((page) => page?.sha).find(Boolean) ?? null;
+  const statuses = statusPages.flatMap((page) =>
+    (Array.isArray(page?.statuses) ? page.statuses : []).map((status) => ({
+      ...status,
+      sha: status.sha ?? statusSha,
+    })),
+  );
+  return normalizeRequiredChecks(protection, checkRuns, statuses, pullRequest.headSha);
+}
+
 export class GitHubClient {
   #commandRunner;
 
@@ -133,33 +163,7 @@ export class GitHubClient {
     }
 
     const currentPullRequest = pullRequest ?? this.getPullRequest(pullNumber);
-    const branch = encodeBranch(currentPullRequest.baseBranch);
-    const protectionResponse = ghJson(
-      ["api", `repos/${this.repository}/branches/${branch}/protection/required_status_checks`],
-      [0, 1],
-      this.#commandRunner,
-    );
-    if (protectionResponse.result.status === 1 && HTTP_NOT_FOUND.test(protectionResponse.result.stderr)) {
-      return [];
-    }
-    const protection = protectionResponse.data ?? {};
-    const checkRuns = ghJsonPages(
-      `repos/${this.repository}/commits/${currentPullRequest.headSha}/check-runs?per_page=100`,
-      "check_runs",
-      this.#commandRunner,
-    );
-    const statusPages = ghJsonPagesData(
-      `repos/${this.repository}/commits/${currentPullRequest.headSha}/status?per_page=100`,
-      this.#commandRunner,
-    );
-    const statusSha = statusPages.map((page) => page?.sha).find(Boolean) ?? null;
-    const statuses = statusPages.flatMap((page) =>
-      (Array.isArray(page?.statuses) ? page.statuses : []).map((status) => ({
-        ...status,
-        sha: status.sha ?? statusSha,
-      })),
-    );
-    return normalizeRequiredChecks(protection, checkRuns, statuses, currentPullRequest.headSha);
+    return readFallbackRequiredChecks(this.repository, currentPullRequest, this.#commandRunner);
   }
 
   updateBranch(pullNumber, expectedHead) {
