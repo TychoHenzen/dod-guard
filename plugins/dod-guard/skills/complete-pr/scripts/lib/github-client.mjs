@@ -162,8 +162,11 @@ export class GitHubClient {
       return data;
     }
 
-    const currentPullRequest = pullRequest ?? this.getPullRequest(pullNumber);
-    return readFallbackRequiredChecks(this.repository, currentPullRequest, this.#commandRunner);
+    return readFallbackRequiredChecks(
+      this.repository,
+      pullRequest ?? this.getPullRequest(pullNumber),
+      this.#commandRunner,
+    );
   }
 
   updateBranch(pullNumber, expectedHead) {
