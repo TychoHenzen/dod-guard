@@ -1,13 +1,16 @@
 ---
 name: complete-pr
-description: Complete an explicitly accepted open pull request through guarded auto-merge, required checks, linked-issue confirmation, and remote branch deletion.
+description: Complete a verified open pull request through guarded auto-merge, required checks, linked-issue confirmation, and remote branch deletion.
 ---
 
 # Complete PR
 
-Treat invocation of this skill as the user's explicit acceptance of the current
-pull request code. Do not infer acceptance from review comments, passing checks,
-or an earlier command.
+Treat invocation of this skill as the explicit acceptance gate for the current
+pull request, not a separate human-approval step. Before invoking it, verify
+the current head, linked child acceptance, review remediation, required checks,
+and cleanup conditions. Do not infer that the gate is satisfied from review
+comments, passing checks, or an earlier command; this invocation performs the
+final guarded verification.
 
 ## Shared working defaults
 
@@ -53,6 +56,12 @@ it marks it ready. If it is already ready, it preserves that state. It then:
 - enables repository auto-merge when needed;
 - enables merge-commit auto-merge with `--match-head-commit`;
 - waits for every required check and stops on failure or cancellation;
+- if the normal required-check query is empty, reads branch protection and
+  verifies check runs and commit statuses from the exact pull-request head,
+  including any expected GitHub App provider;
+- treats `success`, `neutral`, and `skipped` as passing, keeps pending results
+  pending, and fails closed for missing, stale, duplicate, mismatched, or
+  unsupported evidence;
 - updates a stale branch only with its trusted head SHA;
 - accepts an update commit only when its parents are the prior trusted head and
   the observed base head;

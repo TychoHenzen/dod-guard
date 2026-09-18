@@ -1,5 +1,6 @@
 // biome-ignore lint/correctness/noNodejsModules: This adapter invokes the local GitHub CLI from Node.
 import { spawnSync } from "node:child_process";
+import { normalizeRequiredChecks } from "./check-normalization.mjs";
 
 const GH_CHECKS_PENDING_EXIT = 8;
 const HTTP_NOT_FOUND = /HTTP 404/;
@@ -16,13 +17,23 @@ function runGh(args, acceptedExitCodes = [0]) {
   return result;
 }
 
-function ghJson(args, acceptedExitCodes = [0]) {
-  const result = runGh(args, acceptedExitCodes);
+function ghJson(args, acceptedExitCodes = [0], commandRunner = runGh) {
+  const result = commandRunner(args, acceptedExitCodes);
   let data = null;
   if (result.stdout.trim()) {
     data = JSON.parse(result.stdout);
   }
   return { data, result };
+}
+
+function ghJsonPages(endpoint, field, commandRunner) {
+  const pages = ghJsonPagesData(endpoint, commandRunner);
+  return pages.flatMap((page) => (Array.isArray(page?.[field]) ? page[field] : []));
+}
+
+function ghJsonPagesData(endpoint, commandRunner) {
+  const { data } = ghJson(["api", "--paginate", "--slurp", endpoint], [0], commandRunner);
+  return Array.isArray(data) ? data : [data];
 }
 
 function encodeBranch(branchName) {
@@ -56,6 +67,36 @@ export function normalizePullRequest(data, repository) {
   };
 }
 
+function readFallbackRequiredChecks(repository, pullRequest, commandRunner) {
+  const branch = encodeBranch(pullRequest.baseBranch);
+  const protectionResponse = ghJson(
+    ["api", `repos/${repository}/branches/${branch}/protection/required_status_checks`],
+    [0, 1],
+    commandRunner,
+  );
+  if (protectionResponse.result.status === 1 && HTTP_NOT_FOUND.test(protectionResponse.result.stderr)) {
+    return [];
+  }
+  const protection = protectionResponse.data ?? {};
+  const checkRuns = ghJsonPages(
+    `repos/${repository}/commits/${pullRequest.headSha}/check-runs?per_page=100`,
+    "check_runs",
+    commandRunner,
+  );
+  const statusPages = ghJsonPagesData(
+    `repos/${repository}/commits/${pullRequest.headSha}/status?per_page=100`,
+    commandRunner,
+  );
+  const statusSha = statusPages.map((page) => page?.sha).find(Boolean) ?? null;
+  const statuses = statusPages.flatMap((page) =>
+    (Array.isArray(page?.statuses) ? page.statuses : []).map((status) => ({
+      ...status,
+      sha: status.sha ?? statusSha,
+    })),
+  );
+  return normalizeRequiredChecks(protection, checkRuns, statuses, pullRequest.headSha);
+}
+
 export class GitHubClient {
   #commandRunner;
 
@@ -66,7 +107,7 @@ export class GitHubClient {
   }
 
   getRepository() {
-    const { data } = ghJson(["api", `repos/${this.repository}`]);
+    const { data } = ghJson(["api", `repos/${this.repository}`], [0], this.#commandRunner);
     return {
       autoMergeAllowed: data.allow_auto_merge === true,
       canPush: data.permissions?.push === true,
@@ -76,7 +117,7 @@ export class GitHubClient {
   }
 
   getPullRequest(pullNumber = this.pullNumber) {
-    const { data } = ghJson(["api", `repos/${this.repository}/pulls/${pullNumber}`]);
+    const { data } = ghJson(["api", `repos/${this.repository}/pulls/${pullNumber}`], [0], this.#commandRunner);
     return normalizePullRequest(data, this.repository);
   }
 
@@ -102,7 +143,7 @@ export class GitHubClient {
     ]);
   }
 
-  getRequiredChecks(pullNumber) {
+  getRequiredChecks(pullNumber, pullRequest) {
     const { data } = ghJson(
       [
         "pr",
@@ -115,8 +156,17 @@ export class GitHubClient {
         "bucket,name,state",
       ],
       [0, GH_CHECKS_PENDING_EXIT],
+      this.#commandRunner,
     );
-    return data;
+    if (Array.isArray(data) && data.length > 0) {
+      return data;
+    }
+
+    return readFallbackRequiredChecks(
+      this.repository,
+      pullRequest ?? this.getPullRequest(pullNumber),
+      this.#commandRunner,
+    );
   }
 
   updateBranch(pullNumber, expectedHead) {
@@ -131,7 +181,7 @@ export class GitHubClient {
   }
 
   getCommit(sha) {
-    const { data } = ghJson(["api", `repos/${this.repository}/commits/${sha}`]);
+    const { data } = ghJson(["api", `repos/${this.repository}/commits/${sha}`], [0], this.#commandRunner);
     return { parents: data.parents.map((parent) => parent.sha), sha: data.sha };
   }
 
@@ -144,10 +194,14 @@ export class GitHubClient {
       this.repository,
       "--json",
       "closingIssuesReferences",
-    ]);
+    ], [0], this.#commandRunner);
     return data.closingIssuesReferences.map((issue) => {
       const issueRepository = `${issue.repository.owner.login}/${issue.repository.name}`;
-      const { data: currentIssue } = ghJson(["api", `repos/${issueRepository}/issues/${issue.number}`]);
+      const { data: currentIssue } = ghJson(
+        ["api", `repos/${issueRepository}/issues/${issue.number}`],
+        [0],
+        this.#commandRunner,
+      );
       return {
         number: issue.number,
         state: currentIssue.state.toUpperCase(),
@@ -158,7 +212,11 @@ export class GitHubClient {
 
   getBranchRef(branchName) {
     const encodedBranch = encodeBranch(branchName);
-    const { data, result } = ghJson(["api", `repos/${this.repository}/git/ref/heads/${encodedBranch}`], [0, 1]);
+    const { data, result } = ghJson(
+      ["api", `repos/${this.repository}/git/ref/heads/${encodedBranch}`],
+      [0, 1],
+      this.#commandRunner,
+    );
     if (result.status === 1 && HTTP_NOT_FOUND.test(result.stderr)) {
       return null;
     }

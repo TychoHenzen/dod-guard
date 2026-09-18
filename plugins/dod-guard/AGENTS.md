@@ -22,17 +22,18 @@ definitions. It has no package workspace, MCP server, or bundle.
   Markdown review reports. It never changes the reviewed branch.
 - Use `/fix-pr-review` to revalidate and fix selected review findings. It
   updates provider state only after verified commits are pushed.
-- Use `/complete-pr` only when the user explicitly accepts the current pull request.
-  It owns guarded ready, auto-merge, issue confirmation, and remote branch
-  deletion.
+- Use `/complete-pr` as the final acceptance gate after implementation, review,
+  remediation, and current-head checks. It owns guarded ready, auto-merge,
+  issue confirmation, and remote branch deletion; it verifies completion rather
+  than waiting for a separate human-approval step.
 - Use `/publish` for a completed marketplace release. Functional releases
   require a PBI and draft PR. Maintenance-only releases skip both and push a
   version-bumped fast-forward with `--force-with-lease` pinned to the saved
   `master` SHA after validation. Temporarily disable only admin enforcement if
   needed, then restore the complete saved protection immediately.
 - Commit and push before closing code-backed sub-issues.
-- Never approve, ready, merge, or close the agent's own pull request outside an
-  explicit `/complete-pr` invocation.
+- Never approve, ready, merge, or close the agent's own pull request outside the
+  `/complete-pr` verification gate.
 
 The structured stage map and its issue handoff records live in
 `standards/project-workflow.md`. Keep project principles in the repository's

@@ -1,4 +1,5 @@
-const FAILED_CHECK_BUCKETS = new Set(["cancel", "fail", "skipping"]);
+const FAILED_CHECK_BUCKETS = new Set(["cancel", "fail"]);
+const PASSING_CHECK_BUCKETS = new Set(["pass", "skipping"]);
 
 class CompletionError extends Error {
   constructor(code, message) {
@@ -32,13 +33,13 @@ function inspectRequiredChecks(checks) {
     stop("required_check_failed", `Required checks did not pass: ${summary}.`);
   }
 
-  const unknown = checks.filter((check) => check.bucket !== "pass" && check.bucket !== "pending");
+  const unknown = checks.filter((check) => !PASSING_CHECK_BUCKETS.has(check.bucket) && check.bucket !== "pending");
   if (unknown.length > 0) {
-    const summary = unknown.map((check) => `${check.name}=${check.bucket}`).join(", ");
+    const summary = unknown.map((check) => `${check.name}=${check.state ?? check.bucket}`).join(", ");
     stop("unknown_check_state", `Required checks returned unsupported states: ${summary}.`);
   }
 
-  return checks.every((check) => check.bucket === "pass");
+  return checks.every((check) => PASSING_CHECK_BUCKETS.has(check.bucket));
 }
 
 function validateInitialState(repository, pullRequest) {
@@ -48,9 +49,7 @@ function validateInitialState(repository, pullRequest) {
   if (pullRequest.isCrossRepository || pullRequest.headRepository !== repository.nameWithOwner) {
     stop("cross_repository_head", "The pull request head must belong to the current repository.");
   }
-  if (pullRequest.baseBranch !== repository.defaultBranch) {
-    stop("wrong_base_branch", `The pull request must target ${repository.defaultBranch}.`);
-  }
+  requireDefaultBase(pullRequest, repository.defaultBranch);
   if (pullRequest.headBranch === repository.defaultBranch) {
     stop("default_branch_head", "The pull request head cannot be the default branch.");
   }
@@ -59,11 +58,18 @@ function validateInitialState(repository, pullRequest) {
   }
 }
 
+function requireDefaultBase(pullRequest, defaultBranch) {
+  if (pullRequest.baseBranch !== defaultBranch) {
+    stop("wrong_base_branch", `The pull request must target ${defaultBranch}.`);
+  }
+}
+
 async function waitForGuardedUpdate(client, update) {
-  const { baseHead, options, previousHead, pullNumber } = update;
+  const { baseHead, defaultBranch, options, previousHead, pullNumber } = update;
   for (let attempt = 0; attempt < options.updatePollLimit; attempt += 1) {
     // biome-ignore lint/performance/noAwaitInLoops: Each poll depends on the preceding GitHub state.
     const pullRequest = await client.getPullRequest(pullNumber);
+    requireDefaultBase(pullRequest, defaultBranch);
     if (pullRequest.headSha === previousHead) {
       await client.wait(options.pollMs);
     } else {
@@ -118,13 +124,14 @@ async function deleteTrustedBranch(client, branchName, trustedHead) {
 }
 
 async function waitForMerge(client, completion) {
-  const { acceptedHead, options, pullNumber } = completion;
+  const { acceptedHead, defaultBranch, options, pullNumber } = completion;
   let trustedHead = acceptedHead;
   for (let attempt = 0; attempt < options.pollLimit; attempt += 1) {
     // biome-ignore lint/performance/noAwaitInLoops: Merge completion requires ordered polling and guarded mutations.
     let pullRequest = await client.getPullRequest(pullNumber);
     requireTrustedHead(pullRequest, trustedHead);
-    const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(pullNumber));
+    requireDefaultBase(pullRequest, defaultBranch);
+    const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(pullNumber, pullRequest));
 
     if (pullRequest.state === "MERGED") {
       if (!(checksPassed && pullRequest.mergeCommitSha)) {
@@ -154,7 +161,13 @@ async function waitForMerge(client, completion) {
       const previousHead = trustedHead;
       const baseHead = pullRequest.baseSha;
       await client.updateBranch(pullNumber, previousHead);
-      pullRequest = await waitForGuardedUpdate(client, { baseHead, options, previousHead, pullNumber });
+      pullRequest = await waitForGuardedUpdate(client, {
+        baseHead,
+        defaultBranch,
+        options,
+        previousHead,
+        pullNumber,
+      });
       trustedHead = pullRequest.headSha;
       await client.enablePullRequestAutoMerge(pullNumber, trustedHead);
     } else {
@@ -183,6 +196,7 @@ async function completePullRequest(client, overrides = {}) {
     await client.markReady(pullNumber);
     pullRequest = await client.getPullRequest(pullNumber);
     requireTrustedHead(pullRequest, acceptedHead);
+    requireDefaultBase(pullRequest, repository.defaultBranch);
     if (pullRequest.isDraft) {
       stop(
         "ready_transition_failed",
@@ -191,13 +205,15 @@ async function completePullRequest(client, overrides = {}) {
     }
   }
 
+  requireDefaultBase(pullRequest, repository.defaultBranch);
   if (!repository.autoMergeAllowed) {
     await client.enableRepositoryAutoMerge();
   }
   pullRequest = await client.getPullRequest(pullNumber);
   requireTrustedHead(pullRequest, acceptedHead);
+  requireDefaultBase(pullRequest, repository.defaultBranch);
   await client.enablePullRequestAutoMerge(pullNumber, acceptedHead);
-  return waitForMerge(client, { acceptedHead, options, pullNumber });
+  return waitForMerge(client, { acceptedHead, defaultBranch: repository.defaultBranch, options, pullNumber });
 }
 
 export { CompletionError, completePullRequest };

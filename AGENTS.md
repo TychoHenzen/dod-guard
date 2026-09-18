@@ -41,11 +41,11 @@ One parent issue maps to one `codex/<issue>-<slug>` branch and one draft pull
 request. Close a code-backed sub-issue only after its commit is pushed. Keep the
 parent issue and Project item In Progress until a human merges the pull request.
 
-Agents may create and update the draft pull request. They must not approve it,
-mark it ready, merge it, or close the parent issue unless the user explicitly
-invokes `/complete-pr` to accept the current pull request head. That command
-owns the guarded ready, auto-merge, issue confirmation, and branch deletion
-flow.
+Agents may create and update the pull request. Before merging, they must invoke
+`/complete-pr` as the final acceptance gate: verify the current head, linked
+child acceptance, review remediation, required checks, and cleanup conditions.
+That command owns the guarded ready, auto-merge, issue confirmation, and branch
+deletion flow; it is a verification gate, not a separate human-approval stop.
 
 Functional changes to `master` require a pull request and these current checks.
 An explicitly invoked maintenance-only `/publish` may push a version-bumped
