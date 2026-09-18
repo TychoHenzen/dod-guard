@@ -210,6 +210,21 @@ export class GitHubClient {
     });
   }
 
+  getIssueProjectStatuses(issueNumber) {
+    const { data } = ghJson([
+      "issue",
+      "view",
+      String(issueNumber),
+      "--repo",
+      this.repository,
+      "--json",
+      "projectItems",
+    ], [0], this.#commandRunner);
+    return (data.projectItems ?? [])
+      .map((item) => item.status?.name)
+      .filter((status) => typeof status === "string");
+  }
+
   getBranchRef(branchName) {
     const encodedBranch = encodeBranch(branchName);
     const { data, result } = ghJson(

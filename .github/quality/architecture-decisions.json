@@ -11396,4 +11396,215 @@
     "author": "Codex",
     "time": "2026-09-16T14:33:31.8231412Z"
   }
+  ,
+  {
+    "findingId": "0cf46cf46d3a4d73c3d8ae877f74c7b3c35347521705f9c5061b7cdbeef377c7",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "1022f424d21e49240dab0788824479931c272876de5e1076558194f4cd041f43",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "11cd141979d6eb907bb46e7ed2fec8a5a9561057debff6d5f9a6e0aaa1a1cf5a",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "1fa56e218a4fb8d1eac60c3455309e31a10523f976a44cc72c7ba29d3ea68a1d",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "301ef238f685c431713a0e14aafba11be44e15b74371246b23ab82d19fed9ad5",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "3ba4da0473d35d377b194fa014e34298fdb5ca9a1d54dde6e2052bd13efdccb7",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "3f1f03553230ac687b3520c1b44deac4c8a831e3de4b63d9d3c0c3e2757f4d08",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "453dedcfcec1288ee66408970a44609a538ca168eec3df2163aabb759115bbb3",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "709e7f7de2b7aa67515316038687ea949ef54602842febd5353b6e37b9763918",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "7a67d3988524b897ab5b9c81ccc8efc5f7a68fe8159eb3ed7e7c3e2aa36d3e4c",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "81d7a86bc6c2825d9ed029b14610ed9010c04c55d4b81b477958bd930c978813",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "83d949f22af6d233688d2f0b73468cfa90fd3b28626570c88841bd73e0aa27c7",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "85eec0fa65dc724dac4ae868d76691c1fb122361cdfa8a4a6750aad028f509bc",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "8d03258ccf50bd835a15a7add08e76d76f51a74ff9980ee1d17340f4e56e622b",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "8df5f4ba942b550095755cb4f92c17f3a414da24175b35470a0802e18f97c36a",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "8f3910ac2ec0496dc7f92feebba397dc7958548234d9d6d00a4ef7fc8ac5b61c",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "9985afef22284544b0ec45cb147a018fac51e23b858e841bc9318f90156498d4",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "9ec2aadde21fa02f831497db641096a2be643c55431e0e1d773e20d17f43fb78",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "a487b559814866423c7f18cbe6ccdbb10a5a787800fd058f6b9119cc43465fbb",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "ac736acb2a8e6e1c61ad2c963f737ea1d5e7ea24fefb7cb6632b4dc661289516",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "b743dcee753b1917efa4029688aad6194c7e22e57551c920ec59fdab500836b4",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "c7c927f041fc0d0b5390058b54c10c1b67fcf0f0ce8e6d846ec2841d88ab5972",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "cfe265e7efcfa45ddf888751bc2cd4ee2af540a6043f95cb942445896cc56e0a",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "dd4189d61019e3085715b25fdab91d31bca20a3f248fec7842e9cf636089144e",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "dd81803f23239151a2da3bfff0c9095873e1074adf047be56620e094b0c0c600",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "e9c9aaf37a9e2f899650adcaa769ef0bf4f78574a3e5732f1a4e2ea4184aa9d0",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "f273e131a1886e435bfaa0302a1424680e1862b877948757e5fe4b4afe6bd25d",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "f46bd661c52c5092ddbda7920536a130ca6090400e34dafebb3466c209617894",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "f9c33420ff79a16e463c21c724410eae83e64e64611e8f461366ef8ddbe54b8c",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  },
+  {
+    "findingId": "fac8f7eaba1f1b7c5478be6c6454e434b9ca945d7039c96dba9b30d1815f2925",
+    "fingerprint": "208ccbba2a439b6708a7a9c3086fc8f9f962afd1922f7b6253dc9e0f0c11d6c7",
+    "reason": "Reviewed for #142: complete-pr keeps GitHub and local Git I/O in narrow adapters. These JavaScript parser and method symbols are internal implementation detail for exact-head recovery and safe local cleanup; focused tests and plugin gates cover the command boundary.",
+    "author": "Codex",
+    "time": "2026-09-18T23:30:37.9851282Z"
+  }
 ]

@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { completePullRequest } from "./complete-pr.mjs";
+import { completePullRequest, recoverMergedPullRequest } from "./complete-pr.mjs";
 import { GitHubClient, normalizePullRequest } from "./github-client.mjs";
 
 const pendingChecks = [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }];
@@ -47,6 +47,7 @@ class FixtureClient {
     this.checks = [...(options.checks ?? [passingChecks])];
     this.commits = options.commits ?? {};
     this.issues = [...(options.issues ?? [[{ number: 24, state: "CLOSED", url: "issue" }]])];
+    this.projectStatuses = [...(options.projectStatuses ?? [["Done"]])];
     this.refs = [...(options.refs ?? [{ sha: "head-1" }, null])];
     this.enableRepositoryError = options.enableRepositoryError;
     this.calls = [];
@@ -93,6 +94,10 @@ class FixtureClient {
     return nextValue(this.issues);
   }
 
+  getIssueProjectStatuses() {
+    return nextValue(this.projectStatuses);
+  }
+
   getBranchRef() {
     return nextValue(this.refs);
   }
@@ -104,6 +109,17 @@ class FixtureClient {
   wait() {
     this.calls.push(["wait"]);
   }
+}
+
+function createFixtureLocalGit(result = { branch: "deleted", remainingWorktrees: [], worktrees: [] }) {
+  const calls = [];
+  return {
+    calls,
+    cleanupBranch(branchName, defaultBranch, options) {
+      calls.push([branchName, defaultBranch, options]);
+      return result;
+    },
+  };
 }
 
 const immediateOptions = { issuePollLimit: 2, pollLimit: 8, pollMs: 0, updatePollLimit: 2 };
@@ -142,6 +158,59 @@ test("normalizes the narrow REST pull request payload used by the completion loo
 test("normalizes closed REST pull requests only when merged_at is populated", () => {
   assert.equal(normalizePullRequest({ state: "closed", merged_at: "2026-09-12T13:47:19Z" }, "owner/repo").state, "MERGED");
   assert.equal(normalizePullRequest({ state: "closed", merged_at: null }, "owner/repo").state, "CLOSED");
+});
+
+test("reads linked Project statuses through the GitHub client adapter", () => {
+  const calls = [];
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    calls.push(args);
+    return { status: 0, stderr: "", stdout: '{"projectItems":[{"status":{"name":"Done"}},{"status":{}}]}' };
+  });
+
+  assert.deepEqual(client.getIssueProjectStatuses(24), ["Done"]);
+  assert.deepEqual(calls, [["issue", "view", "24", "--repo", "owner/repo", "--json", "projectItems"]]);
+});
+
+test("recovers an already-merged pull request through guarded remote and local cleanup", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [{ sha: "head-1" }, null],
+  });
+
+  const result = await recoverMergedPullRequest(client, { ...immediateOptions, localGit });
+
+  assert.equal(result.branch, "deleted");
+  assert.equal(result.local.branch, "deleted");
+  assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
+  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [["deleteBranchRef", "codex/24-complete-pr"]]);
+});
+
+test("dry-runs merged pull-request recovery without cleanup mutation", async () => {
+  const localGit = createFixtureLocalGit({ branch: "would_delete", remainingWorktrees: [], worktrees: [] });
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [{ sha: "head-1" }],
+  });
+
+  const result = await recoverMergedPullRequest(client, { ...immediateOptions, dryRun: true, localGit });
+
+  assert.equal(result.branch, "would_delete");
+  assert.equal(result.local.branch, "would_delete");
+  assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: true }]]);
+  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+});
+
+test("refuses merged recovery when a linked issue is not Done in its Project", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    projectStatuses: [[]],
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+  });
+
+  await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), { code: "project_not_done" });
+  assert.equal(localGit.calls.length, 0);
+  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
 });
 
 test("waits for required checks, confirms merge, and deletes the trusted remote branch", async () => {
