@@ -74,9 +74,9 @@ test("removes a clean non-current worktree and confirms local branch deletion", 
   const fixture = createGitFixture([
     ...baseEntries([result(INITIAL_WORKTREES), result(ROOT_WORKTREE)]),
     [["-C", FEATURE_ROOT, "status", "--porcelain"], [result()]],
-    [["worktree", "remove", FEATURE_ROOT], [result()]],
+    [["worktree", "remove", "--", FEATURE_ROOT], [result()]],
     [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result(), result("", 1)]],
-    [["branch", "-d", TARGET_BRANCH], [result()]],
+    [["branch", "-d", "--", TARGET_BRANCH], [result()]],
   ]);
   const git = new LocalGit(fixture.runner);
 
@@ -96,7 +96,7 @@ test("updates a clean current worktree before deleting its merged branch", () =>
     [["switch", "master"], [result()]],
     [["merge", "--ff-only", "origin/master"], [result()]],
     [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result(), result("", 1)]],
-    [["branch", "-d", TARGET_BRANCH], [result()]],
+    [["branch", "-d", "--", TARGET_BRANCH], [result()]],
   ]);
   const git = new LocalGit(fixture.runner);
 

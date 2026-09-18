@@ -78,7 +78,7 @@ export class LocalGit {
     if (dryRun) {
       return { path: worktree.path, result: "would_remove" };
     }
-    if (this.#tryRun(["worktree", "remove", worktree.path])) {
+    if (this.#tryRun(["worktree", "remove", "--", worktree.path])) {
       return { path: worktree.path, result: "remove_refused" };
     }
     return { path: worktree.path, result: "removed" };
@@ -108,7 +108,7 @@ export class LocalGit {
     if (dryRun) {
       return "would_delete";
     }
-    const failed = this.#tryRun(["branch", "-d", branchName]) || this.hasLocalBranch(branchName);
+    const failed = this.#tryRun(["branch", "-d", "--", branchName]) || this.hasLocalBranch(branchName);
     if (failed) {
       return "delete_refused";
     }
