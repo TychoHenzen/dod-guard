@@ -34,15 +34,15 @@ test("adversarial review asks for grounded challenges without mutation authority
   assert.match(review, /comments, commit, push, approve, mark ready, merge, or close a pull request or/);
 });
 
-test("coordinator must substantiate dispositions and re-review repaired gaps", () => {
+test("coordinator must substantiate dispositions without re-review", () => {
   assert.match(review, /Independently check every challenge against the PBI contract and final files/);
   assert.match(review, /`resolved`: a valid gap was fixed/);
   assert.match(review, /`invalid`: current files or verification disprove/);
   assert.match(review, /`irrelevant`: the challenge asks for behavior outside the PBI/);
   assert.match(review, /A valid unresolved gap blocks completion, commit, and implementation push/);
   assert.match(review, /fix it, and rerun affected checks/);
-  assert.match(review, /repeat independent review with the updated diff, files, verification/);
-  assert.match(review, /Any later implementation change invalidates the reviewed state/);
+  assert.match(review, /Do not invoke another independent reviewer after those fixes/);
+  assert.match(review, /local verification, not the one-review limit/);
   assert.match(review, /every challenge has an evidenced\s+disposition/);
   assert.match(skill.slice(commitStart), /every challenge's\s+disposition with evidence/);
 });

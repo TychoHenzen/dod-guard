@@ -26,7 +26,7 @@ priority, Fibonacci effort, and standard labels before moving a coherent,
 independently deliverable PBI to Todo. Material unresolved requirements keep
 the issue in Backlog. Epics stay there until split into independently
 deliverable PBIs. `/next-ticket`
-implements that PBI and runs one independent completion review before committing
+implements that PBI and runs the completion review before committing
 and pushing implementation changes. Every challenge needs an evidenced
 disposition. `/submit-draft-pr` submits its verified draft
 pull request. `/review-pr` checks the final branch or pull request with four
