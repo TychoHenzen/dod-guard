@@ -200,10 +200,11 @@ required proof cannot run. State the exact failed command or unverified item.
 ## Independent completion review
 
 After implementation and initial verification, invoke one fresh independent
-reviewer through the active client's subagent tool. Do not reuse an implementer
-or substitute your own review. If independent review is unavailable or fails,
-stop before committing or pushing implementation changes and report the missing
-review. The initial branch-only push in Start the ticket remains permitted.
+reviewer through the active client's subagent tool. This is the only completion
+review for the PBI. Do not reuse an implementer or substitute your own review.
+If independent review is unavailable or fails, stop before committing or
+pushing implementation changes and report the missing review. The initial
+branch-only push in Start the ticket remains permitted.
 
 Give the reviewer the parent PBI's full description, implementation notes, and
 acceptance criteria. Include every linked sub-issue and its pushed evidence when closed.
@@ -235,11 +236,9 @@ Keep each challenge and its disposition in the session's completion evidence:
 
 A valid unresolved gap blocks completion, commit, and implementation push.
 Return to the owning implementation step, fix it, and rerun affected checks.
-Then repeat independent review with the updated diff, files, verification, and
-challenge dispositions. Do not label an unresolved gap resolved or dismiss a
-finding solely because tests pass. Stop if required evidence cannot be obtained.
-Any later implementation change invalidates the reviewed state and requires
-affected verification and another review before commit and push.
+Update every challenge disposition and rerun the affected checks. Do not label
+an unresolved gap resolved or dismiss a finding solely because tests pass. Stop
+if required evidence cannot be obtained.
 
 Proceed only after review has completed and every challenge has an evidenced
 disposition. Record a no-gap result explicitly. Stop or close the reviewer when
