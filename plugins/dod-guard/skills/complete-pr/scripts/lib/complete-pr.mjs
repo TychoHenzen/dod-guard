@@ -1,17 +1,8 @@
+import { CompletionError, stop } from "./completion-error.mjs";
+import { cleanupTrustedBranch } from "./trusted-cleanup.mjs";
+
 const FAILED_CHECK_BUCKETS = new Set(["cancel", "fail"]);
 const PASSING_CHECK_BUCKETS = new Set(["pass", "skipping"]);
-
-class CompletionError extends Error {
-  constructor(code, message) {
-    super(message);
-    this.name = "CompletionError";
-    this.code = code;
-  }
-}
-
-function stop(code, message) {
-  throw new CompletionError(code, message);
-}
 
 function requireTrustedHead(pullRequest, trustedHead) {
   if (pullRequest.headSha !== trustedHead) {
@@ -135,30 +126,6 @@ async function confirmDoneProjects(client, issues) {
   }
 }
 
-async function inspectTrustedBranch(client, branchName, trustedHead) {
-  const branch = await client.getBranchRef(branchName);
-  if (branch !== null && branch.sha !== trustedHead) {
-    stop(
-      "branch_ref_changed",
-      `Remote branch ${branchName} points to ${branch.sha}, not merged head ${trustedHead}; it was not deleted.`,
-    );
-  }
-  return branch;
-}
-
-async function deleteTrustedBranch(client, branchName, trustedHead) {
-  const branch = await inspectTrustedBranch(client, branchName, trustedHead);
-  if (branch === null) {
-    return "already_absent";
-  }
-
-  await client.deleteBranchRef(branchName);
-  if ((await client.getBranchRef(branchName)) !== null) {
-    stop("branch_delete_unconfirmed", `Remote branch ${branchName} still exists after deletion.`);
-  }
-  return "deleted";
-}
-
 async function recoverMergedPullRequest(client, overrides = {}) {
   const options = {
     issuePollLimit: 6,
@@ -170,36 +137,27 @@ async function recoverMergedPullRequest(client, overrides = {}) {
   const pullRequest = await client.getPullRequest();
   validateMergedRecoveryState(repository, pullRequest);
 
-  const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(pullRequest.number));
+  const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(pullRequest.number, pullRequest));
   if (!checksPassed) {
     stop("unverified_merge", "The pull request merged without complete required-check evidence.");
   }
 
   const linkedIssues = await confirmClosedIssues(client, pullRequest.number, options);
   await confirmDoneProjects(client, linkedIssues);
-  const branchRef = await inspectTrustedBranch(client, pullRequest.headBranch, pullRequest.headSha);
-
-  if (options.dryRun) {
-    let branch = "already_absent";
-    if (branchRef !== null) {
-      branch = "would_delete";
-    }
-    return {
-      acceptedHead: pullRequest.headSha,
-      branch,
-      headBranch: pullRequest.headBranch,
-      linkedIssues,
-      mergeCommitSha: pullRequest.mergeCommitSha,
-      pullNumber: pullRequest.number,
-      trustedHead: pullRequest.headSha,
-    };
-  }
+  const cleanup = await cleanupTrustedBranch(client, {
+    branchName: pullRequest.headBranch,
+    defaultBranch: repository.defaultBranch,
+    dryRun: options.dryRun,
+    localGit: options.localGit,
+    trustedHead: pullRequest.headSha,
+  });
 
   return {
     acceptedHead: pullRequest.headSha,
-    branch: await deleteTrustedBranch(client, pullRequest.headBranch, pullRequest.headSha),
+    branch: cleanup.branch,
     headBranch: pullRequest.headBranch,
     linkedIssues,
+    local: cleanup.local,
     mergeCommitSha: pullRequest.mergeCommitSha,
     pullNumber: pullRequest.number,
     trustedHead: pullRequest.headSha,
@@ -221,12 +179,18 @@ async function waitForMerge(client, completion) {
         stop("unverified_merge", "The pull request merged without complete required-check evidence.");
       }
       const linkedIssues = await confirmClosedIssues(client, pullNumber, options);
-      const branch = await deleteTrustedBranch(client, pullRequest.headBranch, trustedHead);
+      const cleanup = await cleanupTrustedBranch(client, {
+        branchName: pullRequest.headBranch,
+        defaultBranch,
+        localGit: options.localGit,
+        trustedHead,
+      });
       return {
         acceptedHead,
-        branch,
+        branch: cleanup.branch,
         headBranch: pullRequest.headBranch,
         linkedIssues,
+        local: cleanup.local,
         mergeCommitSha: pullRequest.mergeCommitSha,
         pullNumber,
         trustedHead,

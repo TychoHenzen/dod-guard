@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { completePullRequest, recoverMergedPullRequest } from "./lib/complete-pr.mjs";
 import { GitHubClient } from "./lib/github-client.mjs";
+import { LocalGit } from "./lib/local-git.mjs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
 import process from "node:process";
 
@@ -13,11 +14,12 @@ const validFlags = flags.length === 0 || (recoveryMode && (flags.length === 1 ||
 if (repository && Number.isInteger(pullNumber) && pullNumber > 0 && validFlags) {
   try {
     const client = new GitHubClient(repository, pullNumber);
+    const localGit = new LocalGit();
     let result;
     if (recoveryMode) {
-      result = await recoverMergedPullRequest(client, { dryRun });
+      result = await recoverMergedPullRequest(client, { dryRun, localGit });
     } else {
-      result = await completePullRequest(client);
+      result = await completePullRequest(client, { localGit });
     }
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   } catch (error) {
