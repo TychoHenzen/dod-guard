@@ -173,3 +173,26 @@ test("reads protected exact-head checks when the required-check query is empty",
   assert.ok(checkRunsCall.some((arg) => /commits\/head-1\/check-runs\?per_page=100$/.test(arg)));
   assert.ok(statusesCall.some((arg) => /commits\/head-1\/status\?per_page=100$/.test(arg)));
 });
+
+test("uses the combined-status envelope SHA for status-only requirements", () => {
+  const responses = [
+    { check_runs: [] },
+    { sha: "head-1", statuses: [{ context: "build-test", state: "success" }] },
+  ];
+  const commandRunner = (args) => {
+    if (args[0] === "pr") {
+      return { stderr: "", status: 0, stdout: "[]" };
+    }
+    if (args[1]?.includes("required_status_checks")) {
+      return { stderr: "", status: 0, stdout: JSON.stringify({ contexts: ["build-test"] }) };
+    }
+    return { stderr: "", status: 0, stdout: JSON.stringify(responses.shift()) };
+  };
+
+  const checks = new GitHubClient("owner/repo", 24, commandRunner).getRequiredChecks(24, {
+    baseBranch: "master",
+    headSha: "head-1",
+  });
+
+  assert.deepEqual(checks, [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
+});

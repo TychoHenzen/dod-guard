@@ -27,9 +27,13 @@ function ghJson(args, acceptedExitCodes = [0], commandRunner = runGh) {
 }
 
 function ghJsonPages(endpoint, field, commandRunner) {
-  const { data } = ghJson(["api", "--paginate", "--slurp", endpoint], [0], commandRunner);
-  const pages = Array.isArray(data) ? data : [data];
+  const pages = ghJsonPagesData(endpoint, commandRunner);
   return pages.flatMap((page) => (Array.isArray(page?.[field]) ? page[field] : []));
+}
+
+function ghJsonPagesData(endpoint, commandRunner) {
+  const { data } = ghJson(["api", "--paginate", "--slurp", endpoint], [0], commandRunner);
+  return Array.isArray(data) ? data : [data];
 }
 
 function encodeBranch(branchName) {
@@ -144,10 +148,16 @@ export class GitHubClient {
       "check_runs",
       this.#commandRunner,
     );
-    const statuses = ghJsonPages(
+    const statusPages = ghJsonPagesData(
       `repos/${this.repository}/commits/${currentPullRequest.headSha}/status?per_page=100`,
-      "statuses",
       this.#commandRunner,
+    );
+    const statusSha = statusPages.map((page) => page?.sha).find(Boolean) ?? null;
+    const statuses = statusPages.flatMap((page) =>
+      (Array.isArray(page?.statuses) ? page.statuses : []).map((status) => ({
+        ...status,
+        sha: status.sha ?? statusSha,
+      })),
     );
     return normalizeRequiredChecks(protection, checkRuns, statuses, currentPullRequest.headSha);
   }
