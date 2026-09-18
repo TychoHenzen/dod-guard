@@ -171,6 +171,62 @@ test("waits for required checks, confirms merge, and deletes the trusted remote 
   ]);
 });
 
+test("treats skipped required checks as passing", async () => {
+  const client = new FixtureClient({
+    checks: [[{ bucket: "skipping", name: "build-test", state: "SKIPPED" }]],
+    pulls: [
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+    ],
+  });
+
+  const result = await completePullRequest(client, immediateOptions);
+
+  assert.equal(result.mergeCommitSha, "merge-1");
+  assert.equal(result.branch, "deleted");
+});
+
+test("reports the fallback reason for unsupported required-check evidence", async () => {
+  const client = new FixtureClient({
+    checks: [[{ bucket: "unknown", name: "build-test", state: "PROVIDER_MISMATCH" }]],
+    pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), {
+    code: "unknown_check_state",
+    message: /PROVIDER_MISMATCH/,
+  });
+});
+
+test("stops on missing fallback evidence without merge or branch cleanup", async () => {
+  const client = new FixtureClient({
+    checks: [[{ bucket: "unknown", name: "build-test", state: "MISSING" }]],
+    pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), {
+    code: "unknown_check_state",
+    message: /MISSING/,
+  });
+  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+});
+
+test("rejects a pull request whose base changes before fallback verification", async () => {
+  const client = new FixtureClient({
+    pulls: [
+      pull(),
+      pull({ baseBranch: "release", isDraft: false }),
+    ],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "wrong_base_branch" });
+  assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
+  assert.equal(client.calls.some(([name]) => name === "enablePullRequestAutoMerge"), false);
+  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+});
+
 test("does not run cleanup for a closed pull request without merged_at", async () => {
   const closedState = normalizePullRequest({ state: "closed", merged_at: null }, "owner/repo").state;
   const client = new FixtureClient({

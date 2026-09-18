@@ -53,6 +53,12 @@ it marks it ready. If it is already ready, it preserves that state. It then:
 - enables repository auto-merge when needed;
 - enables merge-commit auto-merge with `--match-head-commit`;
 - waits for every required check and stops on failure or cancellation;
+- if the normal required-check query is empty, reads branch protection and
+  verifies check runs and commit statuses from the exact pull-request head,
+  including any expected GitHub App provider;
+- treats `success`, `neutral`, and `skipped` as passing, keeps pending results
+  pending, and fails closed for missing, stale, duplicate, mismatched, or
+  unsupported evidence;
 - updates a stale branch only with its trusted head SHA;
 - accepts an update commit only when its parents are the prior trusted head and
   the observed base head;
