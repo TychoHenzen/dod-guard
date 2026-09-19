@@ -97,7 +97,9 @@ dependency.
 All GitHub-backed commands follow the shared request policy in
 [`standards/github-request-discipline.md`](standards/github-request-discipline.md).
 
-Start or continue the Todo PBI from the current checkout:
+Start or continue the Todo PBI from the repository's main checkout. Use an
+isolated worktree only when that checkout cannot safely retain the selected
+branch and user-owned changes, and record the exception and recovery path:
 
 ```text
 /dod-guard:next-ticket 42

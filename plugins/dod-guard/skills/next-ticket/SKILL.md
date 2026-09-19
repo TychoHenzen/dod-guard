@@ -5,8 +5,14 @@ description: Execute a refined GitHub Project PBI through implementation, indepe
 
 # Next ticket
 
-Use the current Git checkout as the source of truth. Never choose a project by
-title similarity or from a remembered owner.
+Use the repository's main checkout as the source of truth for ordinary ticket
+work. Before selection, run `git worktree list --porcelain`; its first worktree
+is the main checkout. When it can safely create the selected branch from the
+fetched default, run there. Otherwise use one isolated worktree only for a
+locked, unavailable, active, or unsafe user-owned main checkout, and record the
+reason, affected checkout, and recovery path. Never reset, stash, overwrite,
+move, or silently include user-owned changes. Never choose a project by title
+similarity or from a remembered owner.
 
 After selection, create the PBI's feature branch, assign the issue, move it
 to In Progress, implement it, verify it, review completion, commit it, and push
