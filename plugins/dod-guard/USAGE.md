@@ -138,6 +138,20 @@ The initial branch-only push remains permitted. An unavailable or failed review
 also blocks completion. The result reports every disposition before stopping
 with the verified branch pushed. This review edits no files or remote comments.
 
+## Execute an explicit plan
+
+Use `/step-by-step` with a numbered plan, or name one repository plan file.
+The main thread keeps the checkpoint and verifies every result; each fresh
+subagent receives only one bounded step. It does not discover plans, create a
+branch or pull request, skip failed steps, or restart completed work.
+
+```text
+/dod-guard:step-by-step
+1. Add the focused test.
+2. Implement the smallest behavior.
+3. Run the named verification.
+```
+
 ## Learn the repository
 
 Use `/learn-repository` when you want the assistant to teach one small concept
