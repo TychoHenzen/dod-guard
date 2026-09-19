@@ -77,4 +77,42 @@ export function checkTypes({ file, config, types, out }) {
   });
 }
 
+function outputParameter(lang, param) {
+  if (lang === "cs") return /\b(?:ref|out)\b/.test(param);
+  if (lang === "rs") return /:\s*&(?:'[A-Za-z_]\w*\s+)?mut\b/.test(param);
+  return false;
+}
+
+function booleanParameter(lang, param) {
+  if (lang === "cs") return /(?:^|\s)(?:bool|System\.Boolean)\s+\w+(?:\s*=|$)/.test(param);
+  if (lang === "ts") return /:\s*boolean\s*(?:=|$)/.test(param);
+  if (lang === "rs") return /:\s*bool\s*(?:=|$)/.test(param);
+  return false;
+}
+
+export function checkFunctionSmells({ file, config, fn, out }) {
+  for (const param of fn.params) {
+    if (outputParameter(file.lang, param))
+      push({
+        out,
+        file,
+        line: fn.line,
+        rule: "output-parameter",
+        severity: config.presence["output-parameter"],
+        message: `${fn.name}() exposes an output parameter; return a value instead`,
+        metric: 1,
+      });
+    if (booleanParameter(file.lang, param))
+      push({
+        out,
+        file,
+        line: fn.line,
+        rule: "flag-parameter",
+        severity: config.presence["flag-parameter"],
+        message: `${fn.name}() takes a boolean flag; split the behavior or name the policy`,
+        metric: 1,
+      });
+  }
+}
+
 export { EXPORT_KEYWORD, IMPLICIT_CALLERS, MODULE_SCOPED_LANGS, isStatic };
