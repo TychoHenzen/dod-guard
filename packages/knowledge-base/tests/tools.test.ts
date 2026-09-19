@@ -36,7 +36,7 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     const chapters = JSON.parse(text(await client.callTool({ name: "knowledge_list_chapters", arguments: {} })));
     assert.deepEqual(
       chapters.chapters.map((item: { key: string }) => item.key),
-      ["design-patterns", "refactoring", "ux-ui-design"],
+      ["clean-code", "design-patterns", "refactoring", "ux-ui-design"],
     );
     assert.equal(chapters.next, "knowledge_list_sections");
     assert.doesNotMatch(JSON.stringify(chapters), /Move behavior/);
@@ -48,6 +48,25 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
       sections.sections.map((item: { key: string }) => item.key),
       ["refactoring.method-movement"],
     );
+
+    const cleanCodeSections = JSON.parse(
+      text(await client.callTool({ name: "knowledge_list_sections", arguments: { chapter: "clean-code" } })),
+    );
+    assert.deepEqual(
+      cleanCodeSections.sections.map((item: { key: string }) => item.key),
+      ["clean-code.foundation"],
+    );
+
+    const cleanCodeSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.foundation" },
+        }),
+      ),
+    );
+    assert.equal(cleanCodeSummaries.entries[0].key, "clean-code.clean-code");
+    assert.equal("content" in cleanCodeSummaries.entries[0], false);
 
     const summaries = JSON.parse(
       text(
@@ -74,6 +93,15 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(full.guidance.precedence, /Explicit task and project instructions take precedence/);
     assert.equal(full.entry.sources[0].project, "spatial-wires");
     assert.match(full.entry.content, /Strategy/);
+
+    const cleanCode = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.clean-code" } })),
+    );
+    assert.equal(cleanCode.guidance.kind, "reference_guidance");
+    assert.equal(cleanCode.guidance.executable, false);
+    assert.match(cleanCode.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(cleanCode.entry.sources[0].label, /PDF pages 33-47/);
+    assert.match(cleanCode.entry.content, /Boy Scout rule/);
 
     const saved = JSON.parse(
       text(

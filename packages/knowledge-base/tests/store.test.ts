@@ -12,7 +12,11 @@ test("persists, indexes, searches, and reloads entries", async () => {
     const base = new KnowledgeBase(root, () => "2026-09-16T00:00:00.000Z");
     assert.deepEqual(
       (await base.chapters()).map((item) => item.key),
-      ["design-patterns", "refactoring", "ux-ui-design"],
+      ["clean-code", "design-patterns", "refactoring", "ux-ui-design"],
+    );
+    assert.deepEqual(
+      (await base.sections("clean-code")).map((item) => item.key),
+      ["clean-code.foundation"],
     );
     assert.deepEqual(
       (await base.sections("refactoring")).map((item) => item.key),
@@ -27,6 +31,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
       ["design-patterns.strategy"],
     );
     assert.equal((await base.get("design-patterns.strategy")).language, "C#");
+    assert.match((await base.get("clean-code.clean-code")).sources[0]?.label ?? "", /PDF pages 33-47/);
     assert.equal(existsSync(join(root, ".knowledge-index.json")), true);
 
     const newEntry: SaveKnowledgeEntryInput = {

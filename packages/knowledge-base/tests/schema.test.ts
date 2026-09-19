@@ -25,6 +25,20 @@ test("parses and serializes a portable Markdown entry schema", async () => {
   assert.deepEqual(roundTrip, entry);
 });
 
+test("preserves Chapter 1 source provenance and hierarchy", async () => {
+  const entry = parseKnowledgeDocument(
+    await exampleText("clean-code.clean-code.md"),
+    "entries/clean-code.clean-code.md",
+  );
+
+  assert.equal(entry.key, "clean-code.clean-code");
+  assert.equal(entry.chapter, "clean-code");
+  assert.equal(entry.section, "clean-code.foundation");
+  assert.match(entry.sources[0]?.label ?? "", /printed pages 1-16/);
+  assert.match(entry.sources[0]?.label ?? "", /PDF pages 33-47/);
+  assert.match(entry.content, /executable detail of a requirement/);
+});
+
 test("rejects malformed and duplicate hierarchy keys", async () => {
   assert.throws(
     () =>
