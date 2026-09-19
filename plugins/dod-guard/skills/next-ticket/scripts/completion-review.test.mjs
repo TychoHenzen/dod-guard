@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
+const usage = await readFile(new URL("../../../USAGE.md", import.meta.url), "utf8");
 const reviewStart = skill.indexOf("## Independent completion review");
 const commitStart = skill.indexOf("## Commit and push");
 const review = skill.slice(reviewStart, commitStart);
@@ -12,8 +13,8 @@ test("completion review gates implementation commits after initial verification"
   assert.ok(commitStart > reviewStart);
   assert.match(review, /invoke one fresh independent\s+reviewer/);
   assert.match(review, /Do not reuse an implementer/);
-  assert.match(review, /unavailable or fails,\s+stop before committing or pushing implementation changes/);
-  assert.match(review, /initial branch-only push in Start the ticket remains permitted/);
+  assert.match(review, /unavailable or fails,\s+stop before committing or\s+pushing implementation changes/);
+  assert.match(review, /initial\s+branch-only push in Start the ticket remains permitted/);
 });
 
 test("reviewer gets a self-contained contract and final-state evidence", () => {
@@ -34,15 +35,21 @@ test("adversarial review asks for grounded challenges without mutation authority
   assert.match(review, /comments, commit, push, approve, mark ready, merge, or close a pull request or/);
 });
 
-test("coordinator must substantiate dispositions and re-review repaired gaps", () => {
+test("coordinator must substantiate dispositions without re-review", () => {
   assert.match(review, /Independently check every challenge against the PBI contract and final files/);
   assert.match(review, /`resolved`: a valid gap was fixed/);
   assert.match(review, /`invalid`: current files or verification disprove/);
   assert.match(review, /`irrelevant`: the challenge asks for behavior outside the PBI/);
   assert.match(review, /A valid unresolved gap blocks completion, commit, and implementation push/);
   assert.match(review, /fix it, and rerun affected checks/);
-  assert.match(review, /repeat independent review with the updated diff, files, verification/);
-  assert.match(review, /Any later implementation change invalidates the reviewed state/);
+  assert.match(review, /This is the only completion\s+review for the PBI/);
+  assert.match(review, /Do not invoke another independent\s+reviewer after those fixes/);
+  assert.match(review, /local\s+verification\.\s+They\s+do not count as a second completion review/);
   assert.match(review, /every challenge has an evidenced\s+disposition/);
   assert.match(skill.slice(commitStart), /every challenge's\s+disposition with evidence/);
+});
+
+test("usage keeps the one-review limit consistent", () => {
+  assert.match(usage, /affected checks are\s+rerun; do not invoke another completion review/);
+  assert.doesNotMatch(usage, /reviewed again/);
 });
