@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync, statSync } from "node:fs";
 import { extname, isAbsolute, relative, resolve } from "node:path";
 import { LANG_BY_EXT } from "./config.mjs";
 import { readText } from "./walk.mjs";
@@ -11,6 +11,7 @@ import { checkReachability } from "./rules-reachability.mjs";
 const SEE_TAG = /^@see\s+([^\s#]+)(?:#([A-Za-z_$][\w$]*))?\s*$/i;
 const CONFIG_TAG = /^@config\s+([^\s:]+):([A-Za-z_][\w.-]*)\s*$/i;
 const URL = /^https?:\/\//i;
+const MAX_REFERENCE_BYTES = 1024 * 1024;
 
 function escaped(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -22,24 +23,66 @@ function symbolPattern(symbol) {
   );
 }
 
-function pathInside(root, target) {
-  const candidate = resolve(root, target.replaceAll("\\", "/"));
+function pathInside(root, candidate) {
   const fromRoot = relative(root, candidate);
-  if (fromRoot === "" || fromRoot === ".." || fromRoot.startsWith("../") || isAbsolute(fromRoot)) return null;
-  return candidate;
+  return fromRoot !== "" && fromRoot !== ".." && !fromRoot.startsWith("../") && !isAbsolute(fromRoot);
 }
 
-function missingSee(root, target, symbol, files) {
-  if (URL.test(target)) return false;
-  const file = pathInside(root, target);
-  if (file === null || !existsSync(file)) return true;
+function checkedFile(root, candidate) {
+  try {
+    const rootPath = realpathSync(root);
+    const realPath = realpathSync(candidate);
+    if (!pathInside(rootPath, realPath)) return { kind: "unavailable" };
+    const stats = statSync(realPath);
+    if (!stats.isFile()) return { kind: "unavailable" };
+    if (stats.size > MAX_REFERENCE_BYTES) return { kind: "unavailable" };
+    return { kind: "file", path: realPath };
+  } catch {
+    return { kind: "unavailable" };
+  }
+}
+
+function targetFor(root, target) {
+  const candidate = resolve(root, target.replaceAll("\\", "/"));
+  if (!pathInside(root, candidate)) return { kind: "missing" };
+  if (!existsSync(candidate)) return { kind: "missing" };
+  return checkedFile(root, candidate);
+}
+
+function loadTarget(root, target, cache) {
+  if (cache.targets.has(target)) return cache.targets.get(target);
+  const resolved = targetFor(root, target);
+  if (resolved.kind !== "file") {
+    cache.targets.set(target, resolved);
+    return resolved;
+  }
+  const source = readText(resolved.path);
+  const loaded = source === null ? { kind: "unavailable" } : { kind: "file", path: resolved.path, source };
+  cache.targets.set(target, loaded);
+  return loaded;
+}
+
+function remember(cache, key, value) {
+  cache.results.set(key, value);
+  return value;
+}
+
+function seeResult(loaded, symbol, files) {
+  if (loaded.kind === "missing") return true;
+  if (loaded.kind === "unavailable") return null;
   if (!symbol) return false;
-  const source = readText(file);
-  if (source === null) return null;
-  const targetFile = files.find((item) => resolve(item.path) === file);
-  const lang = targetFile?.lang ?? LANG_BY_EXT[extname(file).toLowerCase()];
-  const code = lang ? strip(source, lang).code : source;
+  const targetFile = files.find((item) => resolve(item.path) === loaded.path);
+  const lang = targetFile?.lang ?? LANG_BY_EXT[extname(loaded.path).toLowerCase()];
+  const code = lang ? strip(loaded.source, lang).code : loaded.source;
   return !symbolPattern(symbol).test(code);
+}
+
+function missingSee(target, symbol, { root, files, cache }) {
+  if (URL.test(target)) return false;
+  const key = `see:${target}#${symbol ?? ""}`;
+  if (cache.results.has(key)) return cache.results.get(key);
+  const loaded = loadTarget(root, target, cache);
+  return remember(cache, key, seeResult(loaded, symbol, files));
 }
 
 function hasKey(value, key) {
@@ -61,19 +104,24 @@ function configKeyPresent(source, key) {
   }
 }
 
-function missingConfig(root, target, key) {
-  const file = pathInside(root, target);
-  if (file === null || !existsSync(file)) return true;
-  const source = readText(file);
-  if (source === null) return null;
-  if (/\.json$/i.test(file)) {
+function configResult(loaded, key) {
+  if (loaded.kind === "missing") return true;
+  if (loaded.kind === "unavailable") return null;
+  if (/\.json$/i.test(loaded.path)) {
     try {
-      return !hasKey(JSON.parse(source), key);
+      return !hasKey(JSON.parse(loaded.source), key);
     } catch {
       return null;
     }
   }
-  return !configKeyPresent(source, key);
+  return !configKeyPresent(loaded.source, key);
+}
+
+function missingConfig(target, key, { root, cache }) {
+  const resultKey = `config:${target}:${key}`;
+  if (cache.results.has(resultKey)) return cache.results.get(resultKey);
+  const loaded = loadTarget(root, target, cache);
+  return remember(cache, resultKey, configResult(loaded, key));
 }
 
 function commentFinding(file, config, line, message) {
@@ -96,11 +144,13 @@ function commentBodies(comment) {
 
 function checkCommentReferences({ root, files, scans, config }) {
   const violations = [];
+  const cache = { targets: new Map(), results: new Map() };
+  const context = { root, files, cache };
   for (const file of files) {
     for (const comment of scans.get(file.rel)?.comments ?? []) {
       for (const item of commentBodies(comment)) {
         const see = SEE_TAG.exec(item.body);
-        if (see && missingSee(root, see[1], see[2], files)) {
+        if (see && missingSee(see[1], see[2], context)) {
           push({
             out: violations,
             ...commentFinding(
@@ -113,7 +163,7 @@ function checkCommentReferences({ root, files, scans, config }) {
           continue;
         }
         const configTag = CONFIG_TAG.exec(item.body);
-        if (configTag && missingConfig(root, configTag[1], configTag[2])) {
+        if (configTag && missingConfig(configTag[1], configTag[2], context)) {
           push({
             out: violations,
             ...commentFinding(
