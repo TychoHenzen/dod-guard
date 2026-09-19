@@ -16,7 +16,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
     );
     assert.deepEqual(
       (await base.sections("clean-code")).map((item) => item.key),
-      ["clean-code.foundation", "clean-code.meaningful-names"],
+      ["clean-code.foundation", "clean-code.functions", "clean-code.meaningful-names"],
     );
     assert.deepEqual(
       (await base.sections("refactoring")).map((item) => item.key),
@@ -33,6 +33,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
     assert.equal((await base.get("design-patterns.strategy")).language, "C#");
     assert.match((await base.get("clean-code.clean-code")).sources[0]?.label ?? "", /PDF pages 33-47/);
     assert.match((await base.get("clean-code.meaningful-names")).sources[0].label, /PDF pages 48-61/);
+    assert.match((await base.get("clean-code.functions")).sources[0].label, /PDF pages 62-83/);
     assert.equal(existsSync(join(root, ".knowledge-index.json")), true);
 
     const newEntry: SaveKnowledgeEntryInput = {

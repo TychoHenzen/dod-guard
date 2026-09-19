@@ -53,6 +53,20 @@ test("preserves Chapter 2 source provenance and hierarchy", async () => {
   assert.match(entry.content, /expose intent/);
 });
 
+test("preserves Chapter 3 source provenance and hierarchy", async () => {
+  const entry = parseKnowledgeDocument(
+    await exampleText("clean-code.functions.md"),
+    "entries/clean-code.functions.md",
+  );
+
+  assert.equal(entry.key, "clean-code.functions");
+  assert.equal(entry.chapter, "clean-code");
+  assert.equal(entry.section, "clean-code.functions");
+  assert.match(entry.sources[0]?.label ?? "", /printed pages 31-52/);
+  assert.match(entry.sources[0]?.label ?? "", /PDF pages 62-83/);
+  assert.match(entry.content, /one level of abstraction/);
+});
+
 test("rejects malformed and duplicate hierarchy keys", async () => {
   assert.throws(
     () =>

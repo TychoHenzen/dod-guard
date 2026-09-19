@@ -54,7 +54,7 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     );
     assert.deepEqual(
       cleanCodeSections.sections.map((item: { key: string }) => item.key),
-      ["clean-code.foundation", "clean-code.meaningful-names"],
+      ["clean-code.foundation", "clean-code.functions", "clean-code.meaningful-names"],
     );
 
     const cleanCodeSummaries = JSON.parse(
@@ -123,6 +123,27 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(meaningfulNames.guidance.precedence, /Explicit task and project instructions take precedence/);
     assert.match(meaningfulNames.entry.sources[0].label, /PDF pages 48-61/);
     assert.match(meaningfulNames.entry.content, /pronounceable/);
+
+    const functionsSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.functions" },
+        }),
+      ),
+    );
+    assert.equal(functionsSummaries.entries[0].key, "clean-code.functions");
+    assert.match(functionsSummaries.entries[0].summary, /small|focused|story/);
+    assert.equal("content" in functionsSummaries.entries[0], false);
+
+    const functions = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.functions" } })),
+    );
+    assert.equal(functions.guidance.kind, "reference_guidance");
+    assert.equal(functions.guidance.executable, false);
+    assert.match(functions.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(functions.entry.sources[0].label, /PDF pages 62-83/);
+    assert.match(functions.entry.content, /side effects/);
 
     const saved = JSON.parse(
       text(
