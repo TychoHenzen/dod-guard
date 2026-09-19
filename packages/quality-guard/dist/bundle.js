@@ -21795,6 +21795,8 @@ var RATCHET_RULES = [
   "comment-metadata",
   "comment-placeholder",
   "comment-missing-reference",
+  "output-parameter",
+  "flag-parameter",
   "assumption-marker"
 ];
 function commitScanRequest(root2) {
