@@ -13,6 +13,8 @@ test("finalizes each structured parent child only after the guarded merge", () =
   assert.match(finalization, /gh project item-edit --id <item-id> --project-id <project-id> --field-id\s+<status-field-id> --single-select-option-id <done-option-id>/);
   assert.match(finalization, /Set every\s+mandatory child Project item to `Done`, then set the parent\s+item to `Done`/);
   assert.match(finalization, /after each mutation, read that item back from the shared Project/);
+  assert.match(finalization, /For every code-backed child, verify its pushed commit is\s+included in the verified merge/);
+  assert.match(finalization, /Close a still-open code-backed child only after\s+that verification/);
   assert.match(finalization, /Never finalize a parent or child before the helper's merge result/);
-  assert.match(finalization, /never alter unrelated Project items/);
+  assert.match(finalization, /never\s+alter unrelated Project items/);
 });

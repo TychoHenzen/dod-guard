@@ -103,11 +103,12 @@ shared Project, item, Status-field, and `Done` option IDs once, then use
 <status-field-id> --single-select-option-id <done-option-id>` for every status
 mutation. Set every mandatory child Project item to `Done`, then set the parent
 item to `Done`; after each mutation, read that item back from the shared Project
-before continuing. Close a code-backed child only after its pushed commit is
-included in the verified merge. If a parent or child is still Backlog, Todo, or
-In Progress after the pass, repair that item and read it back before reporting
-completion. Never finalize a parent or child before the helper's merge result,
-and never alter unrelated Project items.
+before continuing. For every code-backed child, verify its pushed commit is
+included in the verified merge. Close a still-open code-backed child only after
+that verification. If a parent or child is still Backlog, Todo, or In Progress
+after the pass, repair that item and read it back before reporting completion.
+Never finalize a parent or child before the helper's merge result, and never
+alter unrelated Project items.
 
 ## Result
 
