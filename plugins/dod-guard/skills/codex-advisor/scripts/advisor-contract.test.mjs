@@ -188,6 +188,8 @@ test("advisor skill has the bounded Codex invocation contract", () => {
 test("advisor defaults to Luna max for confirmed blockers", () => {
   assert.match(runner, /optionValue\("--model", "gpt-5\.6-luna"\)/);
   assert.match(runner, /optionValue\("--reasoning-effort", "max"\)/);
+  assert.match(runner, /model = "gpt-5\.6-luna"/);
+  assert.match(runner, /reasoningEffort = "max"/);
 });
 
 test("advisor schema rejects whitespace-only advice", () => {

@@ -162,8 +162,8 @@ implementation:
 
 The skill sends a bounded prompt containing fixed advice-only instructions and
 the complete problem description through stdin to a separate `codex exec`
-process. It uses `low` by default, supports the `low`, `medium`, and `high`
-reasoning values, and accepts an optional `--model=<model>` setting. It uses an
+process. It uses `gpt-5.6-luna` with `max` reasoning by default and accepts an
+optional `--model=<model>` setting. It uses an
 empty non-repository working directory, read-only restrictions, and an
 ephemeral session, and tells the advisor to skip repository research and
 mutations. Missing commands, non-zero exits, timeouts, and malformed responses

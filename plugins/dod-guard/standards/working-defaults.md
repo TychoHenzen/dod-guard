@@ -19,7 +19,7 @@ destructive action.
   then resume that checkpoint. Retry an identical transient failure at most
   once. Do not retry a mutation before its readback, loop blindly, or convert a
   security, authority, destructive, provider/head, or missing-evidence stop
-  into ordinary recovery. After local triage, a confirmed blocker may use
+  into ordinary recovery. After local triage, a confirmed blocker must use
   `/codex-advisor` with `gpt-5.6-luna` at `max` effort; its advice never
   replaces the invoking skill's repair or proof.
 - For a skill that commits or pushes, inspect a dirty worktree first. Treat
