@@ -4,6 +4,8 @@ import { failWithRestart } from "./direct-lsp-runtime-failure.js";
 import { sendRequest } from "./direct-lsp-runtime-request.js";
 import type { DirectLspRuntimeState } from "./direct-lsp-runtime-state.js";
 
+const EMPTY_SHUTDOWN_PARAMS = {};
+
 export async function shutdownRuntime(input: {
   state: DirectLspRuntimeState;
   onRestart?: RestartProcess;
@@ -20,7 +22,7 @@ export async function shutdownRuntime(input: {
       await sendRequest({
         state: input.state,
         method: "shutdown",
-        params: null,
+        params: EMPTY_SHUTDOWN_PARAMS,
         timeout: SHUTDOWN_TIMEOUT_MS,
         expectedEpoch,
         onRestart: input.onRestart,
