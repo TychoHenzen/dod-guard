@@ -73,3 +73,52 @@ test("does not treat normal prose as a placeholder", () => {
     assert.deepEqual(scan(language, code, "comment-placeholder"), []);
   }
 });
+
+test("keeps restatement findings covered across supported languages", () => {
+  for (const [language, code] of [
+    ["cs", "// The user name.\npublic string UserName { get; set; }"],
+    ["py", "# The user name.\nuser_name = value\n"],
+    ["rs", "/// The user name.\npub user_name: String,"],
+    ["ts", "// The user name.\nconst userName = value;"],
+  ]) {
+    assert.equal(
+      scan(language, code, "comment-restates-code").length,
+      1,
+      language,
+    );
+    assert.deepEqual(
+      scan(
+        language,
+        code.replace(
+          /The user name\./,
+          "The user name is normalized for the wire format.",
+        ),
+        "comment-restates-code",
+      ),
+      [],
+    );
+  }
+});
+
+test("keeps commented-out-code findings covered across supported languages", () => {
+  for (const [language, code] of [
+    ["cs", "// return value;\npublic int Value() { return 1; }"],
+    ["py", "# return value;\ndef value():\n    return 1\n"],
+    ["rs", "// return value;\npub fn value() -> i32 { 1 }"],
+    ["ts", "// return value;\nexport function value() { return 1; }"],
+  ]) {
+    assert.equal(
+      scan(language, code, "commented-out-code").length,
+      1,
+      language,
+    );
+    assert.deepEqual(
+      scan(
+        language,
+        code.replace("return value;", "the value is explained below"),
+        "commented-out-code",
+      ),
+      [],
+    );
+  }
+});

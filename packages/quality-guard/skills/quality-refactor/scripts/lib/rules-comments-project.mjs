@@ -55,6 +55,7 @@ function configKeyPresent(source, key) {
 function missingConfig(root, target, key) {
   const file = pathInside(root, target);
   if (file === null) return true;
+  if (!existsSync(file)) return true;
   const source = readText(file);
   if (source === null) return null;
   if (/\.json$/i.test(file)) {
