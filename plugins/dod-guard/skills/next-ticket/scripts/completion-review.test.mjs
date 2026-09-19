@@ -12,8 +12,8 @@ test("completion review gates implementation commits after initial verification"
   assert.ok(commitStart > reviewStart);
   assert.match(review, /invoke one fresh independent\s+reviewer/);
   assert.match(review, /Do not reuse an implementer/);
-  assert.match(review, /unavailable or fails,\s+stop before committing or pushing implementation changes/);
-  assert.match(review, /initial branch-only push in Start the ticket remains permitted/);
+  assert.match(review, /unavailable or fails,\s+stop before committing or\s+pushing implementation changes/);
+  assert.match(review, /initial\s+branch-only push in Start the ticket remains permitted/);
 });
 
 test("reviewer gets a self-contained contract and final-state evidence", () => {
@@ -41,8 +41,8 @@ test("coordinator must substantiate dispositions without re-review", () => {
   assert.match(review, /`irrelevant`: the challenge asks for behavior outside the PBI/);
   assert.match(review, /A valid unresolved gap blocks completion, commit, and implementation push/);
   assert.match(review, /fix it, and rerun affected checks/);
-  assert.match(review, /Do not invoke another independent reviewer after those fixes/);
-  assert.match(review, /local verification, not the one-review limit/);
+  assert.match(review, /Do not invoke another independent\s+reviewer after those fixes/);
+  assert.match(review, /local\s+verification,\s+not\s+the one-review limit/);
   assert.match(review, /every challenge has an evidenced\s+disposition/);
   assert.match(skill.slice(commitStart), /every challenge's\s+disposition with evidence/);
 });
