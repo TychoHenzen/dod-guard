@@ -271,6 +271,45 @@ type.
 
 ---
 
+## `output-parameter` - explicit output parameters
+
+**Detects:** C# `ref` / `out` parameters and Rust parameters whose type is
+directly `&mut T`. It does not infer output intent from names, containers,
+mutation, call sites, or unsupported languages.
+
+**Why hard:** an output parameter makes a function's result flow through a
+second channel. Callers must allocate and pass a value before they can see
+what the function produced.
+
+**Fix:** return the produced value, or return a small named result type when
+the operation has more than one result.
+
+**False positives:** APIs that must mutate caller-owned state or satisfy an
+external framework contract can keep the parameter. The scanner deliberately
+leaves Python and TypeScript output idioms quiet because their syntax does not
+prove output intent.
+
+---
+
+## `flag-parameter` - explicit boolean flags
+
+**Detects:** C# `bool` / `System.Boolean`, TypeScript `boolean`, and Rust
+`bool` parameters when the type is explicitly declared. Inferred, generic,
+union, nullable, reference, optional, and default-valued parameters are left
+quiet.
+
+**Why hard:** a boolean argument usually selects between two behaviors, which
+means the function has two responsibilities hidden behind one call shape.
+
+**Fix:** split the behaviors into named functions, or replace the flag with a
+policy type when the choice is an actual domain value.
+
+**False positives:** a boolean that is data rather than a behavior switch can
+be valid. Keep it when the two paths are genuinely one operation and the name
+makes the policy obvious.
+
+---
+
 ## `unnamed-tuple` - tuple types
 
 **Detects:** named and unnamed tuple types in supported type positions:

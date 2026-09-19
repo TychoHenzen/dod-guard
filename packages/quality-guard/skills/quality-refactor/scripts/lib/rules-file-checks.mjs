@@ -78,15 +78,22 @@ export function checkTypes({ file, config, types, out }) {
 }
 
 function outputParameter(lang, param) {
-  if (lang === "cs") return /\b(?:ref|out)\b/.test(param);
-  if (lang === "rs") return /:\s*&(?:'[A-Za-z_]\w*\s+)?mut\b/.test(param);
+  const value = param.trim();
+  if (lang === "cs")
+    return /^(?:\s*\[[^\]]*\]\s*)*(?:scoped\s+)?(?:ref|out)\b/.test(value);
+  if (lang === "rs")
+    return /^\s*(?:mut\s+)?[A-Za-z_]\w*\s*:\s*&\s*(?:'[A-Za-z_]\w*\s+)?mut\b/.test(value);
   return false;
 }
 
 function booleanParameter(lang, param) {
-  if (lang === "cs") return /(?:^|\s)(?:bool|System\.Boolean)\s+\w+(?:\s*=|$)/.test(param);
-  if (lang === "ts") return /:\s*boolean\s*(?:=|$)/.test(param);
-  if (lang === "rs") return /:\s*bool\s*(?:=|$)/.test(param);
+  const value = param.trim();
+  if (lang === "cs")
+    return /^(?:\s*\[[^\]]*\]\s*)*(?:(?:this|scoped|ref|out|in)\s+)*(?:bool|System\.Boolean)\s+\w+\s*$/.test(
+      value,
+    );
+  if (lang === "ts") return /^[A-Za-z_$][\w$]*\s*:\s*boolean\s*$/.test(value);
+  if (lang === "rs") return /^(?:mut\s+)?[A-Za-z_]\w*\s*:\s*bool\s*$/.test(value);
   return false;
 }
 
