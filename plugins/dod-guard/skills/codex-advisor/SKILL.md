@@ -47,8 +47,9 @@ rules below are the exception only where they are more specific.
    `--output-schema`, the schema path, `--output-last-message`, and the final
    `-` to `codex exec`. It captures stdout, stderr, and the exit code
    separately, waits for the advisor process to exit naturally, and cleans up
-   its temporary directory on every exit path. Do not add an elapsed-time kill
-   for long-running advice; external cancellation remains an operator action.
+   its temporary directory on every exit path. Captured output has a resource
+   bound; exceeding it fails the run without adding an elapsed-time kill.
+   External cancellation remains an operator action.
    Codex can print banners or hook diagnostics to stdout, so they are not the
    response. On exit code `0`, the runner reads the output file, validates the
    schema response, and relays only its trimmed `advice` value. Model,

@@ -5,12 +5,31 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const defaultSchemaPath = fileURLToPath(new URL("../response-schema.json", import.meta.url));
+const MAX_OUTPUT_BYTES = 8 * 1024 * 1024;
 
-function runProcess(executable, args, options, prompt) {
+function cancelProcessTree(child) {
+  if (!child.pid) return;
+  if (process.platform === "win32") {
+    spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
+      stdio: "ignore",
+      windowsHide: true,
+    });
+    return;
+  }
+  try {
+    process.kill(-child.pid, "SIGTERM");
+  } catch {
+    child.kill("SIGTERM");
+  }
+}
+
+function runProcess(executable, args, options, prompt, abortSignal) {
   return new Promise((resolveResult) => {
     let startError;
     let stdout = "";
     let stderr = "";
+    let outputLimitExceeded = false;
+    let cancelled = false;
     const child = spawn(executable, args, {
       cwd: options.cwd,
       env: options.env,
@@ -19,19 +38,43 @@ function runProcess(executable, args, options, prompt) {
       windowsHide: true,
       detached: process.platform !== "win32",
     });
+    const cancel = () => {
+      cancelled = true;
+      cancelProcessTree(child);
+    };
+    const appendOutput = (current, chunk) => {
+      const next = current + chunk;
+      if (Buffer.byteLength(next, "utf8") > MAX_OUTPUT_BYTES) {
+        outputLimitExceeded = true;
+        cancelProcessTree(child);
+        return current;
+      }
+      return next;
+    };
+    if (abortSignal?.aborted) cancel();
+    else abortSignal?.addEventListener("abort", cancel, { once: true });
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk) => {
-      stdout += chunk;
+      stdout = appendOutput(stdout, chunk);
     });
     child.stderr.on("data", (chunk) => {
-      stderr += chunk;
+      stderr = appendOutput(stderr, chunk);
     });
     child.once("error", (error) => {
       startError = error;
     });
-    child.once("close", (code, signal) => {
-      resolveResult({ code, signal, startError, stderr, stdout });
+    child.once("close", (code, exitSignal) => {
+      abortSignal?.removeEventListener("abort", cancel);
+      resolveResult({
+        code,
+        signal: exitSignal,
+        startError,
+        stderr,
+        stdout,
+        outputLimitExceeded,
+        cancelled,
+      });
     });
     child.stdin.end(prompt);
   });
@@ -81,6 +124,7 @@ export async function runAdvisor({
   reasoningEffort = "max",
   schemaPath = defaultSchemaPath,
   tempRoot = tmpdir(),
+  signal,
   env = {},
 }) {
   const invalidOption = [
@@ -119,7 +163,14 @@ export async function runAdvisor({
       args,
       { cwd: workdir, env: { ...process.env, ...env } },
       prompt,
+      signal,
     );
+    if (result.cancelled) {
+      return failure("Codex advisor cancelled by operator", result);
+    }
+    if (result.outputLimitExceeded) {
+      return failure(`Codex advisor output exceeded ${MAX_OUTPUT_BYTES} bytes`, result);
+    }
     if (result.startError) {
       return failure(`Codex advisor executable is missing or cannot start (${result.startError.message})`, result);
     }

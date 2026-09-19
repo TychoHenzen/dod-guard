@@ -49,9 +49,15 @@ switch (process.env.ADVISOR_MODE) {
   case "whitespace":
     await writeFile(outputPath, JSON.stringify({ advice: "   " }));
     break;
+  case "hang":
+    await new Promise(() => {});
+    break;
   case "slow":
     await new Promise((resolve) => setTimeout(resolve, 100));
     await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
+    break;
+  case "large-output":
+    process.stdout.write("x".repeat(8 * 1024 * 1024 + 1));
     break;
   default:
     await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
@@ -129,8 +135,25 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
     assert.match(missing.error, /missing or cannot start/);
     assert.deepEqual(await readdir(fixture.runs), []);
 
-    const slow = await runFixture(fixture, "slow");
+    const slow = await runFixture(fixture, "slow", { timeoutMs: 1 });
     assert.deepEqual(slow, { ok: true, advice: "Use the smallest safe change." });
+    const largeOutput = await runFixture(fixture, "large-output");
+    assert.equal(largeOutput.ok, false);
+    assert.match(largeOutput.error, /output exceeded/);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("advisor runner supports explicit cancellation", async () => {
+  const fixture = await createFixture();
+  const controller = new AbortController();
+  try {
+    const pending = runFixture(fixture, "hang", { signal: controller.signal });
+    controller.abort();
+    const result = await pending;
+    assert.equal(result.ok, false);
+    assert.match(result.error, /cancelled by operator/);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
@@ -187,7 +210,7 @@ test("advisor skill has the Codex invocation contract", () => {
 });
 
 test("advisor runner does not impose a wall-clock kill", () => {
-  assert.doesNotMatch(runner, /timeoutMs|killProcessTree|setTimeout/);
+  assert.doesNotMatch(runner, /timeoutMs|--timeout-ms|setTimeout/);
 });
 
 test("advisor defaults to Luna max for confirmed blockers", () => {
