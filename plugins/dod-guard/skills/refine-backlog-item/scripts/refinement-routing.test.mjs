@@ -39,10 +39,23 @@ test("defines provider-neutral interview and debate contracts", () => {
   assert.match(skill, /why\s+that lens applies/);
 });
 
+test("routes non-interactive clarification through one bounded advisor", () => {
+  assert.match(skill, /During an active goal or explicitly non-interactive refinement/);
+  assert.match(skill, /exactly\s+one fresh `\$dod-guard:codex-advisor`/);
+  assert.match(skill, /`gpt-5\.6-luna` with `max` reasoning effort/);
+  assert.match(skill, /candidate answers and recommended default/);
+  assert.match(skill, /The advisor is advice-only and cannot replace user authority/);
+  assert.match(skill, /`advisor-decision` implementation note/);
+  assert.match(skill, /Do not invoke another\s+advisor to retry, vote, or refine its answer/);
+  assert.match(skill, /If the advisor cannot\s+resolve a user-authority question/);
+  assert.match(skill, /keep the issue in\s+`Backlog`/);
+});
+
 test("requires durable discovery records and selective re-refinement", () => {
   for (const marker of [
     "discovery-triage",
     "interview-contract",
+    "advisor-decision",
     "research-source",
     "debate-synthesis",
     "accepted-option",
@@ -70,6 +83,8 @@ test("manual fixtures include each route and its record markers", () => {
   for (const [fixture, markers] of [
     ["No gap", ["discovery-triage: no gap", "Do not invoke interview, external research, or debate."]],
     ["Batched clarification", ["Use ordinary conversation through `/interview`", "record `interview-contract`"]],
+    ["Non-interactive clarification", ["Invoke exactly one fresh `$dod-guard:codex-advisor` with `gpt-5.6-luna` and `max`", "Record `advisor-decision`", "re-run triage"]],
+    ["Advisor cannot resolve user authority", ["Record `unresolved-decision` with the question, evidence, impact, and next required authority", "Keep the issue in `Backlog`"]],
     ["Unanswered clarification", ["record `unresolved-decision`", "Do not ask the dependent question or move to `Todo`"]],
     ["Repository context", ["Inspect the code, callers, tests, and current architecture.", "Record `research-source` findings"]],
     ["External context", ["Use targeted web or Context7 research.", "Record the source, relevant finding, and uncertainty in `research-source`."]],
