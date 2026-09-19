@@ -32,7 +32,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
     );
     assert.equal((await base.get("design-patterns.strategy")).language, "C#");
     assert.match((await base.get("clean-code.clean-code")).sources[0]?.label ?? "", /PDF pages 33-47/);
-    assert.match((await base.get("clean-code.meaningful-names")).sources[0]?.label ?? "", /PDF pages 48-61/);
+    assert.match((await base.get("clean-code.meaningful-names")).sources[0].label, /PDF pages 48-61/);
     assert.equal(existsSync(join(root, ".knowledge-index.json")), true);
 
     const newEntry: SaveKnowledgeEntryInput = {
