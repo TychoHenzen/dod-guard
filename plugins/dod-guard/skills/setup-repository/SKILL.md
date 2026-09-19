@@ -187,11 +187,8 @@ linked.
 ### Establish the common workflow labels
 
 Read every live repository label, including name, description, and color. Then
-read the canonical shared taxonomy with:
-
-```text
-node <skill-dir>/scripts/workflow-labels.mjs
-```
+read the canonical shared taxonomy in
+`<skill-dir>/scripts/workflow-labels.json`.
 
 For every label in that output, create a missing label or normalize its
 description and color through the repository labels REST endpoint. Preserve
