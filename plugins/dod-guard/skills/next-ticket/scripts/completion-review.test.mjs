@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
+const usage = await readFile(new URL("../../../USAGE.md", import.meta.url), "utf8");
 const reviewStart = skill.indexOf("## Independent completion review");
 const commitStart = skill.indexOf("## Commit and push");
 const review = skill.slice(reviewStart, commitStart);
@@ -45,4 +46,9 @@ test("coordinator must substantiate dispositions without re-review", () => {
   assert.match(review, /local\s+verification,\s+not\s+the one-review limit/);
   assert.match(review, /every challenge has an evidenced\s+disposition/);
   assert.match(skill.slice(commitStart), /every challenge's\s+disposition with evidence/);
+});
+
+test("usage keeps the one-review limit consistent", () => {
+  assert.match(usage, /affected checks are\s+rerun; do not invoke another completion review/);
+  assert.doesNotMatch(usage, /reviewed again/);
 });

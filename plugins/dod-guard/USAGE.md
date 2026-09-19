@@ -136,7 +136,8 @@ and work that cannot be separated safely remain stop conditions.
 The reviewer receives the PBI, linked sub-issues, repository instructions, final
 diff and files, and verification evidence. The coordinator checks every challenge
 and records it as `resolved`, `invalid`, or `irrelevant` with evidence. Valid gaps
-block commit and implementation push until repaired, verified, and reviewed again.
+block commit and implementation push until repaired and its affected checks are
+rerun; do not invoke another completion review.
 The initial branch-only push remains permitted. An unavailable or failed review
 also blocks completion. The result reports every disposition before stopping
 with the verified branch pushed. This review edits no files or remote comments.
