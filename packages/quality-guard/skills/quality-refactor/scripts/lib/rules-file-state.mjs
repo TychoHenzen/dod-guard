@@ -10,6 +10,7 @@ import {
   MODULE_SCOPED_LANGS,
   checkGuardStyle,
   checkMetrics,
+  checkFunctionSmells,
 } from "./rules-file-checks.mjs";
 import {
   checkStatelessMethod,
@@ -66,6 +67,7 @@ function checkFunction({ file, config, fn, context, out }) {
   };
   const input = { file, config, fn, out };
   checkMetrics({ ...input, metrics });
+  checkFunctionSmells(input);
   checkGuardStyle(input);
   checkStatelessMethod({ file, config, fn, context, out });
   checkUnusedLocal({ file, config, fn, context, out });

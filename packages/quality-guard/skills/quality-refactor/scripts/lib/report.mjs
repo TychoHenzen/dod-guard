@@ -18,6 +18,8 @@ const RULE_ORDER = [
   "comment-bloat",
   "comment-restates-code",
   "comment-missing-reference",
+  "output-parameter",
+  "flag-parameter",
   "comment-metadata",
   "comment-placeholder",
   "build-entrypoint",
