@@ -30,7 +30,8 @@ function missingSee(root, target, symbol) {
   if (file === null || !existsSync(file)) return true;
   if (!symbol) return false;
   const source = readText(file);
-  return source === null || !symbolPattern(symbol).test(source);
+  if (source === null) return null;
+  return !symbolPattern(symbol).test(source);
 }
 
 function hasKey(value, key) {

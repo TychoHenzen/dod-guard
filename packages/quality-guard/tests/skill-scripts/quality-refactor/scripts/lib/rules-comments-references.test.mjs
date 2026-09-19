@@ -57,6 +57,38 @@ test("accepts dollar-prefixed symbols", () => {
   assert.deepEqual(found, []);
 });
 
+test("checks explicit symbols across supported languages", () => {
+  for (const [extension, marker, declaration] of [
+    [".cs", "//", "public class Target {}\n"],
+    [".py", "#", "class Target:\n    pass\n"],
+    [".rs", "///", "pub struct Target;\n"],
+    [".ts", "//", "export class Target {}\n"],
+  ]) {
+    const target = `src/target${extension}#Target`;
+    const source = `${marker} @see ${target}\nexport const value = 1;\n`;
+    assert.deepEqual(
+      run(source, { [`src/target${extension}`]: declaration }, extension),
+      [],
+    );
+    assert.equal(
+      run(
+        source.replace("#Target", "#Missing"),
+        { [`src/target${extension}`]: declaration },
+        extension,
+      ).length,
+      1,
+      extension,
+    );
+  }
+});
+
+test("keeps unreadable see evidence unavailable", () => {
+  const found = run("// @see src/target.ts#Target\nexport const value = 1;\n", {
+    "src/target.ts": Buffer.from([0, 1, 2]),
+  });
+  assert.deepEqual(found, []);
+});
+
 test("finds explicit tags on later lines of a block comment", () => {
   const found = run(
     "/**\n * protocol note\n * @see src/missing.ts#Missing\n */\nexport const value = 1;\n",
