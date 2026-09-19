@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const exampleNames = [
+  "clean-code.clean-code.md",
   "refactoring.move-method.md",
   "design-patterns.strategy.md",
   "ux-ui-design.accessible-dialogs.md",
