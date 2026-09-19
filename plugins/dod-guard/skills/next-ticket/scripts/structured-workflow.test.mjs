@@ -128,3 +128,12 @@ test("every GitHub-facing skill shares the request discipline", () => {
   }
   assert.match(fixReview, /gh api "repos\/\{owner\}\/\{repo\}\/pulls\/\{number\}"/);
 });
+
+test("delivery recovery resumes only from observed checkpoints", () => {
+  assert.match(githubDiscipline, /read back that resource before\s+retrying or issuing another mutation/);
+  assert.match(githubDiscipline, /retry one identical transient provider failure at most once/);
+  assert.match(nextTicket, /read back\s+the local and remote branch, issue assignee, and Project status/);
+  assert.match(nextTicket, /never create a second branch, repeat an assignment, or\s+repeat a status mutation before its readback/);
+  assert.match(submit, /read back\s+the branch's open pull request and its head before retrying/);
+  assert.match(submit, /Do not create a second PR or alter a PR whose\s+head no longer matches the verified branch/);
+});
