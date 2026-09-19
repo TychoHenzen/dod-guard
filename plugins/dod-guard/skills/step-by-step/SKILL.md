@@ -34,7 +34,7 @@ For each step, in order:
    current branch, and prior completed steps.
 2. Dispatch one fresh subagent with only that checkpoint, applicable repository
    instructions, owned files/responsibility, and a prohibition on branches,
-   pull requests, or unrelated edits.
+   pull requests, worktrees, or unrelated edits.
 3. Read the subagent result and inspect the changed state. Run the step's named
    proof before marking it complete.
 4. Record the result, evidence, and next step in the main-thread checkpoint.
