@@ -195,8 +195,8 @@ async function main() {
   const result = await runAdvisor({
     prefixArgs,
     prompt: await readStdin(),
-    model: optionValue("--model"),
-    reasoningEffort: optionValue("--reasoning-effort", "low"),
+    model: optionValue("--model", "gpt-5.6-luna"),
+    reasoningEffort: optionValue("--reasoning-effort", "max"),
     timeoutMs: Number(optionValue("--timeout-ms", "60000")),
   });
   if (!result.ok) {

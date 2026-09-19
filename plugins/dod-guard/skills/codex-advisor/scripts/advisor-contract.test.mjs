@@ -159,7 +159,7 @@ test("advisor skill has the bounded Codex invocation contract", () => {
   assert.match(skill, /^---\nname: codex-advisor\n/m);
   for (const signal of [
     /scripts[\\/]run-advisor\.mjs/,
-    /low, medium, and high/,
+    /`gpt-5\.6-luna` with\s+`max` effort by default/,
     /does not enumerate reasoning values/i,
     /empty,\s+non-repository working directory/,
     /-s read-only/,
