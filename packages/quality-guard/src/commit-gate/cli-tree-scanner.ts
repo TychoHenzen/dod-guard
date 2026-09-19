@@ -28,6 +28,7 @@ const RATCHET_RULES = [
   "comment-restates-code",
   "comment-metadata",
   "comment-placeholder",
+  "comment-missing-reference",
   "assumption-marker",
 ];
 

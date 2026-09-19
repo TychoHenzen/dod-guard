@@ -42,6 +42,7 @@ export const PRESENCE_SEVERITY = {
   "comment-restates-code": "warn",
   "comment-metadata": "warn",
   "comment-placeholder": "warn",
+  "comment-missing-reference": "warn",
   "build-entrypoint": "warn",
   "test-entrypoint": "warn",
   "todo-marker": "warn",

@@ -34,6 +34,7 @@ export function scanFile(file, config) {
   return {
     violations: out,
     code,
+    comments,
     starts,
     functions,
     types,

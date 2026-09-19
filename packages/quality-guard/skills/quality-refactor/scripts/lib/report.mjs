@@ -19,6 +19,7 @@ const RULE_ORDER = [
   "comment-restates-code",
   "comment-metadata",
   "comment-placeholder",
+  "comment-missing-reference",
   "build-entrypoint",
   "test-entrypoint",
   "todo-marker",
