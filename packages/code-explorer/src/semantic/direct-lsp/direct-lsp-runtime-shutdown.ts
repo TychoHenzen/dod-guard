@@ -20,7 +20,7 @@ export async function shutdownRuntime(input: {
       await sendRequest({
         state: input.state,
         method: "shutdown",
-        params: null,
+        params: {},
         timeout: SHUTDOWN_TIMEOUT_MS,
         expectedEpoch,
         onRestart: input.onRestart,
