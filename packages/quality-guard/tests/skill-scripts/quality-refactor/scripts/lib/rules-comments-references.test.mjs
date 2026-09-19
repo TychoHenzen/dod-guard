@@ -5,13 +5,13 @@ import { test } from "node:test";
 import { buildConfig } from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
 import { scan } from "../../../../../skills/quality-refactor/scripts/quality-scan-run.mjs";
 
-function run(source, files = {}) {
+function run(source, files = {}, extension = ".ts") {
   const root = mkdtempSync(
     join(process.env.TEMP ?? process.cwd(), "quality-comments-"),
   );
   try {
     mkdirSync(join(root, "src"), { recursive: true });
-    writeFileSync(join(root, "src", "subject.ts"), source);
+    writeFileSync(join(root, "src", `subject${extension}`), source);
     for (const [path, text] of Object.entries(files))
       writeFileSync(join(root, path), text);
     return scan(
@@ -30,17 +30,30 @@ function run(source, files = {}) {
 }
 
 test("reports a missing explicit see target", () => {
-  const found = run(
-    "// @see src/missing.ts#Missing\nexport const value = 1;\n",
-  );
-  assert.equal(found.length, 1);
-  assert.match(found[0].message, /missing repository target/);
+  for (const [extension, source] of [
+    [".cs", "// @see src/missing.ts#Missing\npublic class Value {}"],
+    [".py", "# @see src/missing.ts#Missing\nvalue = 1\n"],
+    [".rs", "/// @see src/missing.ts#Missing\npub const VALUE: u8 = 1;"],
+    [".ts", "// @see src/missing.ts#Missing\nexport const value = 1;\n"],
+  ]) {
+    const found = run(source, {}, extension);
+    assert.equal(found.length, 1, extension);
+    assert.match(found[0].message, /missing repository target/);
+  }
 });
 
 test("accepts an explicit see target and symbol", () => {
   const found = run("// @see src/target.ts#Target\nexport const value = 1;\n", {
     "src/target.ts": "export class Target {}\n",
   });
+  assert.deepEqual(found, []);
+});
+
+test("accepts dollar-prefixed symbols", () => {
+  const found = run(
+    "// @see src/target.ts#$Target\nexport const value = 1;\n",
+    { "src/target.ts": "export const $Target = true;\n" },
+  );
   assert.deepEqual(found, []);
 });
 
@@ -51,6 +64,14 @@ test("reports a missing explicit configuration key", () => {
   );
   assert.equal(found.length, 1);
   assert.match(found[0].message, /missing configuration key/);
+});
+
+test("does not confuse a configuration value with a key", () => {
+  const found = run(
+    "// @config config.json:missing\nexport const value = 1;\n",
+    { "config.json": '{"present":"missing"}\n' },
+  );
+  assert.equal(found.length, 1);
 });
 
 test("ignores ordinary prose and external see links", () => {

@@ -12,6 +12,12 @@ function escaped(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function symbolPattern(symbol) {
+  return new RegExp(
+    `(?:^|[^A-Za-z0-9_$])${escaped(symbol)}(?=$|[^A-Za-z0-9_$])`,
+  );
+}
+
 function pathInside(root, target) {
   const candidate = resolve(root, target.replaceAll("\\", "/"));
   const fromRoot = relative(root, candidate);
@@ -25,14 +31,33 @@ function missingSee(root, target, symbol) {
   if (file === null || !existsSync(file)) return true;
   if (!symbol) return false;
   const source = readText(file);
-  return source === null || !new RegExp(`\\b${escaped(symbol)}\\b`).test(source);
+  return source === null || !symbolPattern(symbol).test(source);
+}
+
+function hasKey(value, key) {
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some((item) => hasKey(item, key));
+  return Object.entries(value).some(
+    ([name, child]) => name === key || hasKey(child, key),
+  );
+}
+
+function configKeyPresent(source, key) {
+  try {
+    return hasKey(JSON.parse(source), key);
+  } catch {
+    return new RegExp(
+      `^\\s*["']?${escaped(key)}["']?\\s*(?:[:=]|$)`,
+      "m",
+    ).test(source);
+  }
 }
 
 function missingConfig(root, target, key) {
   const file = pathInside(root, target);
   if (file === null) return true;
   const source = readText(file);
-  return source === null || !new RegExp(`(?:["']|^|\\s)${escaped(key)}(?:["']|\\s|:)`).test(source);
+  return source === null || !configKeyPresent(source, key);
 }
 
 function finding(file, config, line, message) {

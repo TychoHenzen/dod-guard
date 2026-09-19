@@ -11,7 +11,7 @@ const CODE_TAIL = /[;{}[\]),]\s*$/;
 const DOC_COMMENT = /^(\/\*\*|\/\/\/|\x22{3}|\x27{3})/;
 const METADATA_COMMENT =
   /^(?:@(?:author|version|since|date|history)\b|(?:created|last\s+modified|updated)\s+by\b)/i;
-const PLACEHOLDER_COMMENT = /^(?:tbd|tba|\?{3}|placeholder)\b[:\s-]*/i;
+const PLACEHOLDER_COMMENT = /^(?:(?:tbd|tba|placeholder)\b|\?{3})(?:[:\s-]|$)/i;
 
 function checkMetadata(ctx, body, line) {
   if (!METADATA_COMMENT.test(body)) return;
