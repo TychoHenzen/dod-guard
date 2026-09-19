@@ -307,7 +307,7 @@ export function assessGitHubSnapshot(snapshot) {
     protectionPayload: blockers.length === 0 ? {
       required_status_checks: { strict: true, contexts: uniqueCheckNames },
       enforce_admins: true,
-      required_pull_request_reviews: {},
+      required_pull_request_reviews: { required_approving_review_count: 0 },
       restrictions: null,
       required_linear_history: false,
       allow_force_pushes: false,
