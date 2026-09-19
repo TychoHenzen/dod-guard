@@ -171,9 +171,6 @@ export async function runAdvisor({
       prompt,
       signal,
     );
-    if (result.cancelled) {
-      return failure("Codex advisor cancelled by operator", result);
-    }
     if (result.outputLimitExceeded) {
       return failure(`Codex advisor output exceeded ${MAX_OUTPUT_BYTES} bytes`, result);
     }
@@ -182,6 +179,9 @@ export async function runAdvisor({
     }
     if (result.stdinError) {
       return failure(`Codex advisor prompt could not be written (${result.stdinError.message})`, result);
+    }
+    if (result.cancelled) {
+      return failure("Codex advisor cancelled by operator", result);
     }
     if (result.code !== 0) {
       return failure(`Codex advisor exits non-zero with code ${result.code}`, result);
