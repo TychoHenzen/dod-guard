@@ -6,41 +6,19 @@ import { fileURLToPath } from "node:url";
 
 const defaultSchemaPath = fileURLToPath(new URL("../response-schema.json", import.meta.url));
 
-function killProcessTree(child) {
-  if (!child.pid) return;
-  if (process.platform === "win32") {
-    spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
-      stdio: "ignore",
-      windowsHide: true,
-    });
-    return;
-  }
-  try {
-    process.kill(-child.pid, "SIGTERM");
-  } catch {
-    child.kill("SIGTERM");
-  }
-}
-
-function runProcess(executable, args, options, prompt, timeoutMs) {
+function runProcess(executable, args, options, prompt) {
   return new Promise((resolveResult) => {
-    let timedOut = false;
     let startError;
     let stdout = "";
     let stderr = "";
     const child = spawn(executable, args, {
       cwd: options.cwd,
       env: options.env,
-      shell: process.platform === "win32" && /\.(?:cmd|bat)$/i.test(executable),
+      shell: false,
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
       detached: process.platform !== "win32",
     });
-    const timer = setTimeout(() => {
-      timedOut = true;
-      killProcessTree(child);
-    }, timeoutMs);
-
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk) => {
@@ -53,8 +31,7 @@ function runProcess(executable, args, options, prompt, timeoutMs) {
       startError = error;
     });
     child.once("close", (code, signal) => {
-      clearTimeout(timer);
-      resolveResult({ code, signal, startError, stderr, stdout, timedOut });
+      resolveResult({ code, signal, startError, stderr, stdout });
     });
     child.stdin.end(prompt);
   });
@@ -98,13 +75,12 @@ function parseAdvice(raw) {
 
 export async function runAdvisor({
   prompt,
-  executable = process.platform === "win32" ? "codex.cmd" : "codex",
+  executable = process.platform === "win32" ? "codex.exe" : "codex",
   prefixArgs = [],
   model,
   reasoningEffort = "low",
   schemaPath = defaultSchemaPath,
   tempRoot = tmpdir(),
-  timeoutMs = 60_000,
   env = {},
 }) {
   const invalidOption = [
@@ -143,11 +119,7 @@ export async function runAdvisor({
       args,
       { cwd: workdir, env: { ...process.env, ...env } },
       prompt,
-      timeoutMs,
     );
-    if (result.timedOut) {
-      return failure(`Codex advisor timed out after ${timeoutMs} ms`, result);
-    }
     if (result.startError) {
       return failure(`Codex advisor executable is missing or cannot start (${result.startError.message})`, result);
     }
@@ -197,7 +169,6 @@ async function main() {
     prompt: await readStdin(),
     model: optionValue("--model"),
     reasoningEffort: optionValue("--reasoning-effort", "low"),
-    timeoutMs: Number(optionValue("--timeout-ms", "60000")),
   });
   if (!result.ok) {
     process.stderr.write(`${result.error}\n`);

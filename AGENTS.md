@@ -65,6 +65,10 @@ branch rules:
 CI has read-only repository permission. It does not commit formatting, bundles,
 or ratchet baselines.
 
+Do not add arbitrary wall-clock timeouts that kill long-running agents,
+advisors, reviewers, or delivery tasks. Wait for authoritative terminal state;
+retain only provider/resource safety limits or an explicit user cancellation.
+
 ## Plugin structure
 
 Code plugins live under `packages/` and contain `package.json`, plugin metadata,
