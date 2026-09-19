@@ -45,6 +45,7 @@ export const PRESENCE_SEVERITY = {
   "comment-missing-reference": "warn",
   "output-parameter": "warn",
   "flag-parameter": "warn",
+  "wildcard-import": "warn",
   "build-entrypoint": "warn",
   "test-entrypoint": "warn",
   "todo-marker": "warn",

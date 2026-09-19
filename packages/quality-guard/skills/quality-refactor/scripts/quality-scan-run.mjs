@@ -12,6 +12,7 @@ import {
   checkCommentReferences,
   checkEnvironment,
   checkReachability,
+  checkWildcardImports,
 } from "./lib/rules-project.mjs";
 import { collectManifests } from "./lib/manifests.mjs";
 import { collectFiles, loadFiles } from "./lib/walk.mjs";
@@ -34,6 +35,7 @@ export function scan(options, config) {
   violations = violations.concat(
     checkReachability({ files, scans, config, manifests }),
   );
+  violations = violations.concat(checkWildcardImports({ files, scans, config }));
   violations = violations.concat(checkCommentReferences({ root: options.root, files, scans, config }));
   violations = violations.concat(checkDuplication(files, config));
   violations = violations.concat(checkEnvironment(options.root, config));

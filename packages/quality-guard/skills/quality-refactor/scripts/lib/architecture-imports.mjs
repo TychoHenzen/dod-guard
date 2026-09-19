@@ -10,6 +10,11 @@ const IMPORT_PATTERNS = {
   cpp: /^\s*#include\s+[<"]([^>"]+)[>"]/gm,
 };
 
+const WILDCARD_IMPORT_PATTERNS = {
+  py: /^\s*from\s+([\w.]+)\s+import\s+\*\s*$/gm,
+  rs: /^\s*use\s+([\w:]+)::\s*\*\s*;\s*$/gm,
+};
+
 function importValues(match, lang) {
   if (lang !== "go" || !match[0].includes("(")) return [match[1] ?? match[2]];
   return [...match[0].matchAll(/"([^"]+)"/g)].map((item) => item[1]);
@@ -25,4 +30,17 @@ export function importsFor(source, lang) {
     match = pattern.exec(source);
   }
   return unique(found.filter(Boolean));
+}
+
+export function wildcardImportsFor(source, lang) {
+  const pattern = WILDCARD_IMPORT_PATTERNS[lang];
+  if (!pattern) return [];
+  const found = [];
+  pattern.lastIndex = 0;
+  let match = pattern.exec(source);
+  while (match !== null) {
+    found.push({ target: match[1], offset: match.index });
+    match = pattern.exec(source);
+  }
+  return found;
 }

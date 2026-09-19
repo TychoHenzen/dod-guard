@@ -7,6 +7,7 @@ import { push } from "./violations.mjs";
 import { checkDuplication } from "./rules-duplicate.mjs";
 import { checkEnvironment, resolveEntrypoints } from "./rules-project/environment.mjs";
 import { checkReachability } from "./rules-reachability.mjs";
+import { checkWildcardImports } from "./rules-imports.mjs";
 
 const SEE_TAG = /^@see\s+([^\s#]+)(?:#([A-Za-z_$][\w$]*))?\s*$/i;
 const CONFIG_TAG = /^@config\s+([^\s:]+):([A-Za-z_][\w.-]*)\s*$/i;
@@ -185,5 +186,6 @@ export {
   checkDuplication,
   checkEnvironment,
   checkReachability,
+  checkWildcardImports,
   resolveEntrypoints,
 };
