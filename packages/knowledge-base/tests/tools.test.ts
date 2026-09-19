@@ -165,6 +165,7 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(comments.guidance.precedence, /Explicit task and project instructions take precedence/);
     assert.match(comments.entry.sources[0].label, /PDF pages 84-105/);
     assert.match(comments.entry.content, /commented-out code/);
+    assert.match(comments.entry.content, /Javadocs for public APIs/);
 
     const saved = JSON.parse(
       text(

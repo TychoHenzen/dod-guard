@@ -18,4 +18,4 @@ Comments are a fallback for intent that the code cannot make clear on its own, n
 
 When a comment earns its place, keep it accurate and close to the code it explains. Legal notices, concise facts, design intent, clarifications for an unchangeable API, warnings about real consequences, and honest TODO notes can help a maintainer. The useful test is whether the comment gives context that the code cannot reasonably carry, rather than whether it fills space above a declaration.
 
-Treat stale or misleading comments as defects. Avoid commented-out code, HTML-heavy documentation in source, nonlocal system facts, historical essays, unexplained constants, and headers for short private functions. A small comment budget and expressive code make the remaining guidance easier to trust.
+Treat stale or misleading comments as defects. Avoid commented-out code, HTML-heavy documentation in source, nonlocal system facts, historical essays, unexplained constants, and headers for short private functions. Reserve Javadocs for public APIs rather than adding their formality to nonpublic code. A small comment budget and expressive code make the remaining guidance easier to trust.
