@@ -80,19 +80,25 @@ export function checkTypes({ file, config, types, out }) {
 function outputParameter(lang, param) {
   const value = param.trim();
   if (lang === "cs")
-    return /^(?:\s*\[[^\]]*\]\s*)*(?:scoped\s+)?(?:ref|out)\b/.test(value);
-  if (lang === "rs")
+    return /^(?:\[[^\]]*\]\s*)*(?:scoped\s+)?(?:ref(?!\s+readonly\b)|out)\b/.test(
+      value,
+    );
+  if (lang === "rs") {
+    if (/^(?:mut\s+)?self\s*:\s*&\s*(?:'[A-Za-z_]\w*\s+)?mut\s+Self\b/.test(value))
+      return false;
     return /^\s*(?:mut\s+)?[A-Za-z_]\w*\s*:\s*&\s*(?:'[A-Za-z_]\w*\s+)?mut\b/.test(value);
+  }
   return false;
 }
 
 function booleanParameter(lang, param) {
   const value = param.trim();
   if (lang === "cs")
-    return /^(?:\s*\[[^\]]*\]\s*)*(?:(?:this|scoped|ref|out|in)\s+)*(?:bool|System\.Boolean)\s+\w+\s*$/.test(
+    return /^(?:\[[^\]]*\]\s*)*(?:(?:this|scoped|ref|out|in)\s+)*(?:bool|System\.Boolean)\s+\w+\s*$/.test(
       value,
     );
-  if (lang === "ts") return /^[A-Za-z_$][\w$]*\s*:\s*boolean\s*$/.test(value);
+  if (lang === "ts")
+    return !/^this\s*:/.test(value) && /^[A-Za-z_$][\w$]*\s*:\s*boolean\s*$/.test(value);
   if (lang === "rs") return /^(?:mut\s+)?[A-Za-z_]\w*\s*:\s*bool\s*$/.test(value);
   return false;
 }

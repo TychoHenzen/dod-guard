@@ -28,7 +28,15 @@ test("reports only explicit output parameters", () => {
     [],
   );
   assert.deepEqual(
+    scan("cs", "void Write(ref readonly int value) { }", "output-parameter"),
+    [],
+  );
+  assert.deepEqual(
     scan("rs", "fn write(value: &i32) { }", "output-parameter"),
+    [],
+  );
+  assert.deepEqual(
+    scan("rs", "impl Thing { fn write(self: &mut Self) { } }", "output-parameter"),
     [],
   );
   assert.deepEqual(
@@ -60,6 +68,7 @@ test("reports only explicit typed boolean flags", () => {
     ["ts", "function run(verbose?: boolean) { return verbose; }"],
     ["ts", "function run(verbose: boolean = false) { return verbose; }"],
     ["ts", "function run(verbose: boolean | null) { return verbose; }"],
+    ["ts", "function run(this: boolean) { return this; }"],
     ["rs", "fn run(verbose: Option<bool>) { }"],
     ["rs", "fn run(verbose: &bool) { }"],
     ["rs", "fn run<T>(verbose: T) { }"],
