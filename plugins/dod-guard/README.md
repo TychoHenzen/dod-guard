@@ -22,9 +22,11 @@ for a solo owner without bypassing review or current-head checks.
 
 `/add-backlog-idea` splits a brain dump into independently deliverable Backlog
 issues. `/refine-backlog-item` researches one, triages missing user constraints
-and external context, uses interview or targeted research as needed, and uses
-debate only after facts and constraints are known. It then assigns justified
-priority, Fibonacci effort, and standard labels before moving a coherent,
+and external context, uses interview for interactive refinement or one fresh
+`gpt-5.6-luna` advisor at max reasoning effort for an active goal or explicitly
+non-interactive run, and uses targeted research or debate only when their
+prerequisites are known. It then assigns justified priority, Fibonacci effort,
+and standard labels before moving a coherent,
 independently deliverable PBI to Todo. Material unresolved requirements keep
 the issue in Backlog. Epics stay there until split into independently
 deliverable PBIs. `/next-ticket`

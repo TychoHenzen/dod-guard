@@ -67,9 +67,12 @@ with independently completable subtasks when needed:
 Refinement reads affected code, callers, tests, and architecture before choosing
 priority, Fibonacci effort, and standard labels from the repository's live
 descriptions. It then triages missing user constraints, external context, and
-genuine tradeoffs. It uses ordinary conversation to batch independent
-`/interview` questions, targeted web or Context7 research for external facts,
-and `$debate` only after facts and constraints are known. Discovery evidence,
+genuine tradeoffs. Interactive refinement uses ordinary conversation to batch
+independent `/interview` questions; an active goal or explicitly non-interactive
+run asks one fresh `/codex-advisor` with `gpt-5.6-luna` at `max` effort for
+bounded advice instead. Targeted web or Context7 research resolves external
+facts, and `$debate` runs only after facts and constraints are known. Discovery
+evidence,
 accepted and rejected options, and unresolved decisions stay in the issue's
 implementation notes. Missing scale labels stop refinement. Re-refinement from
 Backlog reuses current evidence and repeats only stale or newly triggered phases.
