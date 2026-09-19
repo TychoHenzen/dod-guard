@@ -161,7 +161,7 @@ If both `AGENTS.md` and `CLAUDE.md` contain unique guidance, preserve both. Keep
 in the canonical file and use an existing import convention only when the repository already uses
 one.
 
-## 5. Resolve one linked GitHub Project
+## 5. Resolve one linked GitHub Project and common labels
 
 Query the repository's `projectsV2` connection. Request project id, number, title, closed state,
 owner login, fields, and single-select options. Keep only open projects explicitly linked to this
@@ -183,6 +183,20 @@ statuses cannot be merged without changing item meaning.
 
 Re-query through the repository link. A Project found only by owner or title is not proof that it is
 linked.
+
+### Establish the common workflow labels
+
+Read every live repository label, including name, description, and color. Then
+read the canonical shared taxonomy in
+`<skill-dir>/scripts/workflow-labels.json`.
+
+For every label in that output, create a missing label or normalize its
+description and color through the repository labels REST endpoint. Preserve
+every label outside that exact catalog, including repository-specific labels.
+Do not delete, rename, or otherwise alter a non-catalog label. Re-read all
+labels after the mutations; each catalog label must have its exact canonical
+metadata and each preserved label must be unchanged. Stop and report a failed
+readback instead of claiming that the shared taxonomy exists.
 
 ## 6. Review credentials and staged content
 
@@ -256,16 +270,23 @@ Re-query protection and confirm all of these exact outcomes:
 - pull requests are required;
 - required status checks are strict and contain every observed generated check;
 - protection applies to administrators;
+- `required_approving_review_count` is explicitly `0` for a solo owner who
+  cannot self-approve;
 - force pushes are disabled;
 - branch deletion is disabled.
+
+Zero required approving reviews does not bypass the delivery workflow's
+independent review or its exact-current-head required-check gate.
 
 Delete only the temporary snapshot after verification. Do not delete the repository or Project.
 
 ## Result
 
 Report the local path, repository URL, default branch, pushed commit, linked Project, status options,
-applicability table, successful checks, security settings, protection settings, and clean worktree
-evidence. Include every skipped check with its concrete reason.
+shared labels and preserved repository-specific labels, applicability table, successful checks, security
+settings, protection settings including zero required approvals for the solo owner, and clean worktree
+evidence. State that independent review and exact-current-head required checks still gate delivery.
+Include every skipped check with its concrete reason.
 
 On partial failure, lead with the failed operation. Then list every completed mutation and the exact
 remaining state. Do not report setup complete while any required proof is absent.

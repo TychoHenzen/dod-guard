@@ -14,7 +14,9 @@ current contract, and explicit safety or authority boundaries remain.
 quality gates and delivery instructions, links one Project, enables supported
 security settings, and protects the observed default branch after its checks
 pass. It preserves existing Git history, remotes, instructions, ignore rules,
-and tool configuration.
+and tool configuration. Setup establishes the shared workflow labels while
+preserving repository-specific labels, and uses explicit zero required approvals
+for a solo owner without bypassing review or current-head checks.
 
 ## Delivery workflow
 

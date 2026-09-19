@@ -13,7 +13,10 @@ remote exists, it collects the owner, repository name, visibility, and default
 branch before creating one. It pushes reviewed files, waits for generated
 quality checks, links one Project with `Backlog`, `Todo`, `In Progress`, and
 `Done`, enables supported security settings, and then protects the default
-branch.
+branch. Setup establishes the shared priority, effort, and classification
+labels without changing repository-specific labels. Solo-owner protection
+explicitly requires zero approving reviews; independent review and checks on
+the current pull-request head still gate delivery.
 
 Unsupported plan features, failed checks, ambiguous Projects, and likely
 credentials stop setup with a mutation ledger. The skill never rewrites
