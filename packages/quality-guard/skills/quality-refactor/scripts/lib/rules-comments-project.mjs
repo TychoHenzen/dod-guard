@@ -1,15 +1,12 @@
 import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { readText } from "./walk.mjs";
+import { commentBody } from "./rules-comments-text.mjs";
 import { push } from "./violations.mjs";
 
 const SEE_TAG = /^@see\s+([^\s#]+)(?:#([A-Za-z_$][\w$]*))?\s*$/i;
 const CONFIG_TAG = /^@config\s+([^\s:]+):([A-Za-z_][\w.-]*)\s*$/i;
 const URL = /^https?:\/\//i;
-
-function bodyOf(comment) {
-  return comment.text.replace(/^[\s/*#]+|[\s*/]+$/g, "").trim();
-}
 
 function escaped(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -53,7 +50,7 @@ export function checkCommentReferences({ root, files, scans, config }) {
   const violations = [];
   for (const file of files) {
     for (const comment of scans.get(file.rel)?.comments ?? []) {
-      const body = bodyOf(comment);
+      const body = commentBody(comment);
       const see = SEE_TAG.exec(body);
       if (see && missingSee(root, see[1], see[2])) {
         push({
