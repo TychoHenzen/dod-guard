@@ -10,8 +10,9 @@ user-chosen target repository. Do not inspect the codebase for a design, create
 a branch, assign an owner, or add implementation subtasks.
 
 For the structured path, the issue's concise outcome and scope are the problem
-handoff to `/refine-backlog-item`. Keep requirements, decisions, plans, and
-tasks out of this capture step.
+handoff to `/refine-backlog-item`. Do not derive, resolve, or organize new
+requirements, decisions, plans, or tasks during capture; retain any supplied
+decision verbatim as `## Context` for later refinement.
 
 Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
 
@@ -24,11 +25,14 @@ Prefer one feature when several parts combine into one user-visible capability.
 Implementation layers, components, delivery steps, tests, documentation, and
 related details for that capability are not separate features.
 
-For each feature, prepare a concise title and retain only its relevant idea,
-context, and open questions. Keep shared context with every feature that needs
-it. If supplied text cannot be assigned to a feature, show that text and ask
-the user where it belongs. Do not silently omit it. A request with one feature
-must remain one feature.
+For each feature, prepare a concise title and map every substantive supplied
+detail to that feature, every relevant feature, or an explicit unresolved
+remainder. Substantive details include rationale, examples, constraints,
+decisions, and open questions. Keep shared context with every feature that
+needs it. If supplied text cannot be assigned to a feature, show that text and
+ask the user where it belongs. Do not silently omit, collapse, or paraphrase a
+concrete detail into a vague outcome. A request with one feature must remain one
+feature.
 
 ## Shared working defaults
 
@@ -64,7 +68,8 @@ For each prepared feature, create a repository issue with its concise title
 and a short body containing:
 
 - `## Idea`: that feature's requested outcome in the user's terms;
-- `## Context`: only facts the user supplied;
+- `## Context`: every mapped fact, rationale, example, constraint, and decision
+  the user supplied;
 - `## Open questions`: unresolved decisions, if any.
 
 After creating each issue, add it to the resolved Project and set Status to
