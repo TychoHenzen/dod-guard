@@ -50,7 +50,14 @@ switch (process.env.ADVISOR_MODE) {
     await writeFile(outputPath, JSON.stringify({ advice: "   " }));
     break;
   case "hang":
-    await new Promise(() => setInterval(() => {}, 1_000));
+    await new Promise(() => {});
+    break;
+  case "slow":
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
+    break;
+  case "large-output":
+    process.stdout.write("x".repeat(8 * 1024 * 1024 + 1));
     break;
   default:
     await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
@@ -69,13 +76,12 @@ async function runFixture(fixture, mode, options = {}) {
     prompt: "Problem with\nmultiple lines.",
     tempRoot: fixture.runs,
     ...options,
-    timeoutMs: options.timeoutMs ?? 2_000,
   });
   assert.deepEqual(await readdir(fixture.runs), []);
   return result;
 }
 
-test("advisor runner uses an isolated bounded Codex process", async () => {
+test("advisor runner uses an isolated Codex process", async () => {
   const fixture = await createFixture();
   try {
     const result = await runFixture(fixture, "valid", {
@@ -104,7 +110,7 @@ test("advisor runner uses an isolated bounded Codex process", async () => {
   }
 });
 
-test("advisor runner exposes start, exit, output, schema, and timeout failures", async () => {
+test("advisor runner exposes start, exit, output, and schema failures", async () => {
   const fixture = await createFixture();
   try {
     const cases = [
@@ -114,7 +120,6 @@ test("advisor runner exposes start, exit, output, schema, and timeout failures",
       ["malformed", /not valid JSON/],
       ["invalid-schema", /non-whitespace advice/],
       ["whitespace", /non-whitespace advice/],
-      ["hang", /timed out after 50 ms/, { timeoutMs: 50 }],
     ];
     for (const [mode, expected, options] of cases) {
       const result = await runFixture(fixture, mode, options);
@@ -129,6 +134,26 @@ test("advisor runner exposes start, exit, output, schema, and timeout failures",
     assert.equal(missing.ok, false);
     assert.match(missing.error, /missing or cannot start/);
     assert.deepEqual(await readdir(fixture.runs), []);
+
+    const slow = await runFixture(fixture, "slow", { timeoutMs: 1 });
+    assert.deepEqual(slow, { ok: true, advice: "Use the smallest safe change." });
+    const largeOutput = await runFixture(fixture, "large-output");
+    assert.equal(largeOutput.ok, false);
+    assert.match(largeOutput.error, /output exceeded/);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("advisor runner supports explicit cancellation", async () => {
+  const fixture = await createFixture();
+  const controller = new AbortController();
+  try {
+    const pending = runFixture(fixture, "hang", { signal: controller.signal });
+    controller.abort();
+    const result = await pending;
+    assert.equal(result.ok, false);
+    assert.match(result.error, /cancelled by operator/);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
@@ -156,7 +181,7 @@ test("advisor runner rejects shell metacharacters before a Windows shim starts",
   }
 });
 
-test("advisor skill has the bounded Codex invocation contract", () => {
+test("advisor skill has the Codex invocation contract", () => {
   assert.match(skill, /^---\nname: codex-advisor\n/m);
   for (const signal of [
     /scripts[\\/]run-advisor\.mjs/,
@@ -168,9 +193,8 @@ test("advisor skill has the bounded Codex invocation contract", () => {
     /--ignore-rules/,
     /--skip-git-repo-check/,
     /--ephemeral/,
-    /finite\s+timeout/,
-    /kills\s+the process tree/,
-    /cleans up its temporary\s+directory on every\s+exit path/,
+    /waits for the advisor process to exit/,
+    /cleans up\s+its temporary\s+directory on every\s+exit path/,
     /stdin/,
     /--output-schema/,
     /--model/,
@@ -183,6 +207,10 @@ test("advisor skill has the bounded Codex invocation contract", () => {
   assert.doesNotMatch(skill, /codec\s+exec/);
   assert.doesNotMatch(skill, /dangerously-bypass/);
   assert.doesNotMatch(skill, /researched host/);
+});
+
+test("advisor runner does not impose a wall-clock kill", () => {
+  assert.doesNotMatch(runner, /timeoutMs|--timeout-ms|setTimeout/);
 });
 
 test("advisor defaults to Luna max for confirmed blockers", () => {
@@ -204,7 +232,6 @@ test("advisor failures are observable and never relayed as advice", () => {
   for (const signal of [
     /executable is missing or cannot start/,
     /exits non-zero/,
-    /timed[- ]out/,
     /output file is missing, empty, not valid JSON/,
     /Do not hide a command failure behind a guessed or partial answer/,
   ]) {
