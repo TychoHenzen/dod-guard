@@ -14854,6 +14854,7 @@ function failAfterTimeout(input) {
 }
 
 // src/semantic/direct-lsp/direct-lsp-runtime-shutdown.ts
+var EMPTY_SHUTDOWN_PARAMS = {};
 async function shutdownRuntime(input) {
   input.state.cancelRestarts();
   if (!input.state.process || input.state.stopped) {
@@ -14867,7 +14868,7 @@ async function shutdownRuntime(input) {
       await sendRequest({
         state: input.state,
         method: "shutdown",
-        params: {},
+        params: EMPTY_SHUTDOWN_PARAMS,
         timeout: SHUTDOWN_TIMEOUT_MS,
         expectedEpoch,
         onRestart: input.onRestart
