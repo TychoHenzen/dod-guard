@@ -36,7 +36,11 @@ test("reports only explicit output parameters", () => {
     [],
   );
   assert.deepEqual(
-    scan("rs", "impl Thing { fn write(self: &mut Self) { } }", "output-parameter"),
+    scan(
+      "rs",
+      "impl Thing { fn write(self: &mut Self) { } }",
+      "output-parameter",
+    ),
     [],
   );
   assert.deepEqual(
