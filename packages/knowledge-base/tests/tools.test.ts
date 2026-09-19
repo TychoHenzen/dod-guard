@@ -116,9 +116,7 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.equal("content" in meaningfulNamesSummaries.entries[0], false);
 
     const meaningfulNames = JSON.parse(
-      text(
-        await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.meaningful-names" } }),
-      ),
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.meaningful-names" } })),
     );
     assert.equal(meaningfulNames.guidance.kind, "reference_guidance");
     assert.equal(meaningfulNames.guidance.executable, false);
