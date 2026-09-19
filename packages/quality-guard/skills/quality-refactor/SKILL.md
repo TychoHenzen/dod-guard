@@ -11,6 +11,19 @@ argument-hint: "[repository, directory, module, or files]"
 
 Preserve behavior. Scanner findings identify symptoms, not architecture.
 
+## Defaults and evidence
+
+- Use the supplied repository-relative scope. If no narrower scope is given,
+  scan the repository root; never widen the scope to another checkout.
+- Use the `default` profile unless the selected issue explicitly requires
+  `strict`. Keep the active repository configuration and baseline as evidence,
+  not as values to rewrite for a cleaner score.
+- Require a passing baseline build and test run before planning changes. Run the
+  scanner twice: once for readable findings and once with `--format=units`.
+- Keep `.quality/units.json`, `.quality/quality-report.json`, and
+  `.quality/responsibility-discovery.json` as the handoff evidence. A report is
+  read-only; it does not accept a commit or close an issue.
+
 ## Start
 
 1. Resolve the current GitHub repository and its single linked open Project.
@@ -48,6 +61,22 @@ Create brief GitHub sub-issues under the selected issue in this order:
 Each sub-issue states one observable structural outcome, affected boundary,
 preserved behavior, and verification command. Keep it open until its commit is
 pushed. Add the commit as evidence, then close it.
+
+## Recovery and stops
+
+- If build, tests, scanning, or the staged gate fails, keep the failure visible,
+  repair the owning path, and rerun the narrowest failed check before the full
+  confirmation suite. Do not call a failed or unavailable check a pass.
+- If a baseline is missing, malformed, stale, or regresses, inspect the source
+  and evidence first. Rebaseline only through the supported command with the
+  reason recorded; never edit a baseline or waiver to hide a finding.
+- `REVIEW_REQUIRED` needs a fingerprint-bound architecture acknowledgement;
+  `FAIL` needs a code or configuration repair. A read-only report never
+  substitutes for either decision.
+- Stop before mutation for credentials, destructive intent, indistinguishable
+  unrelated work, unresolved ownership, or missing acceptance evidence. Wait
+  for long-running scans to reach terminal state; do not add an arbitrary
+  elapsed-time kill.
 
 ## Execute
 
