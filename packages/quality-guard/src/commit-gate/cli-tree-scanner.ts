@@ -26,6 +26,9 @@ const RATCHET_RULES = [
   "stateless-method",
   "comment-bloat",
   "comment-restates-code",
+  "comment-metadata",
+  "comment-placeholder",
+  "comment-missing-reference",
   "assumption-marker",
 ];
 

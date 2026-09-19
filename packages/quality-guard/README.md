@@ -21,6 +21,12 @@ quality-guard check --staged --json
 for a repository and writes the JSON result to standard output. It is
 read-only with respect to the repository.
 
+Comment findings stay deliberately conservative: `comment-metadata` reports
+explicit metadata/history tags, `comment-placeholder` reports deterministic
+placeholder text, and `comment-missing-reference` checks only explicit
+`@see path[#Symbol]` and `@config file:key` references. Age, prose quality,
+grammar, and ordinary explanatory comments are not generic findings.
+
 Check complete plaintext supplied by an agent runtime with:
 
 ```bash

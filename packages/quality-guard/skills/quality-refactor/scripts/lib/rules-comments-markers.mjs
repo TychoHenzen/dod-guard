@@ -1,4 +1,5 @@
 import { push } from "./violations.mjs";
+import { commentBody } from "./rules-comments-text.mjs";
 
 const TODO_MARKER = /\b(TODO|FIXME|HACK|XXX)\b/;
 const ASSUMPTION_MARKER = /\bASSUMPTION\b/;
@@ -8,6 +9,35 @@ const CODE_IN_COMMENT = new RegExp(
 );
 const CODE_TAIL = /[;{}[\]),]\s*$/;
 const DOC_COMMENT = /^(\/\*\*|\/\/\/|\x22{3}|\x27{3})/;
+const METADATA_COMMENT =
+  /^(?:@(?:author|version|since|date|history)\b|(?:created|last\s+modified|updated)\s+by\b)/i;
+const PLACEHOLDER_COMMENT = /^(?:(?:tbd|tba|placeholder)\b|\?{3})(?:[:\s-]|$)/i;
+
+function checkMetadata(ctx, body, line) {
+  if (!METADATA_COMMENT.test(body)) return;
+  push({
+    out: ctx.out,
+    file: ctx.file,
+    line,
+    rule: "comment-metadata",
+    severity: ctx.config.presence["comment-metadata"],
+    message: "metadata/history comment belongs in repository records",
+    metric: 1,
+  });
+}
+
+function checkPlaceholder(ctx, body, line) {
+  if (!PLACEHOLDER_COMMENT.test(body)) return;
+  push({
+    out: ctx.out,
+    file: ctx.file,
+    line,
+    rule: "comment-placeholder",
+    severity: ctx.config.presence["comment-placeholder"],
+    message: "placeholder comment: replace it with a decision or remove it",
+    metric: 1,
+  });
+}
 
 function checkAssumptionMarker(ctx, body, line) {
   if (!ASSUMPTION_MARKER.test(body)) return;
@@ -60,8 +90,13 @@ function checkCommentedOutCode(ctx, body, comment) {
 }
 
 export function checkMarkerOrDeadCode(ctx, comment) {
-  const body = comment.text.replace(/^[\s/*#]+|[\s*/]+$/g, "");
-  checkAssumptionMarker(ctx, body, comment.line);
-  if (checkTodoMarker(ctx, body, comment.line)) return;
-  checkCommentedOutCode(ctx, body, comment);
+  for (const [offset, line] of comment.text.split(/\r?\n/).entries()) {
+    const body = commentBody({ text: line });
+    const lineNumber = comment.line + offset;
+    checkMetadata(ctx, body, lineNumber);
+    checkPlaceholder(ctx, body, lineNumber);
+    checkAssumptionMarker(ctx, body, lineNumber);
+    if (checkTodoMarker(ctx, body, lineNumber)) continue;
+    checkCommentedOutCode(ctx, body, { ...comment, line: lineNumber });
+  }
 }

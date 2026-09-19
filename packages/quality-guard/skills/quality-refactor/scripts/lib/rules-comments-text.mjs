@@ -12,6 +12,10 @@ const STOPWORDS = new Set([
   "then",
 ]);
 
+export function commentBody(comment) {
+  return comment.text.replace(/^[\s/*#]+|[\s*/]+$/g, "").trim();
+}
+
 function stem(word) {
   for (const suffix of ["ies", "ing", "ed", "es", "s"]) {
     if (word.length > suffix.length + 2 && word.endsWith(suffix))

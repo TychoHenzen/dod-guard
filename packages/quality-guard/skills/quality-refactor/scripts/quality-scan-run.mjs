@@ -9,6 +9,7 @@ import { sortViolations, summarize } from "./lib/report.mjs";
 import { scanFile } from "./lib/rules-file.mjs";
 import {
   checkDuplication,
+  checkCommentReferences,
   checkEnvironment,
   checkReachability,
 } from "./lib/rules-project.mjs";
@@ -33,6 +34,7 @@ export function scan(options, config) {
   violations = violations.concat(
     checkReachability({ files, scans, config, manifests }),
   );
+  violations = violations.concat(checkCommentReferences({ root: options.root, files, scans, config }));
   violations = violations.concat(checkDuplication(files, config));
   violations = violations.concat(checkEnvironment(options.root, config));
   if (options.rules)
