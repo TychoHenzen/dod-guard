@@ -46,14 +46,14 @@ rules below are the exception only where they are more specific.
    The runner forwards an optional `--model` to `codex exec --model`. It passes
    `--output-schema`, the schema path, `--output-last-message`, and the final
    `-` to `codex exec`. It captures stdout, stderr, and the exit code
-   separately, enforces a finite timeout, reports a timed-out process, kills
-   the process tree on timeout, and cleans up its temporary directory on every
-   exit path. Codex can print banners or hook diagnostics to stdout, so they
-   are not the response. On exit code `0`, the runner reads the output file,
-   validates the schema response, and relays only its trimmed `advice` value.
-   Model, reasoning, and prefix arguments must be single shell-safe values.
-   The runner rejects shell metacharacters before starting the Windows command
-   shim.
+   separately, waits for the advisor process to exit naturally, and cleans up
+   its temporary directory on every exit path. Do not add an elapsed-time kill
+   for long-running advice; external cancellation remains an operator action.
+   Codex can print banners or hook diagnostics to stdout, so they are not the
+   response. On exit code `0`, the runner reads the output file, validates the
+   schema response, and relays only its trimmed `advice` value. Model,
+   reasoning, and prefix arguments must be single shell-safe values. The runner
+   rejects shell metacharacters before starting the Windows command shim.
 
 ## Failure handling
 
@@ -61,7 +61,6 @@ Report the exact observable failure and stop without advice when:
 
 - the `codex` executable is missing or cannot start;
 - the process exits non-zero, including the exit code and stderr when present;
-- the process exceeds the finite timeout;
 - the output file is missing, empty, not valid JSON, or does not contain a
   non-whitespace `advice` string matching the schema.
 
