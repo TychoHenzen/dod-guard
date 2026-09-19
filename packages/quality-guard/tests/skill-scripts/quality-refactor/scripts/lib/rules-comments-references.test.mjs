@@ -57,6 +57,14 @@ test("accepts dollar-prefixed symbols", () => {
   assert.deepEqual(found, []);
 });
 
+test("finds explicit tags on later lines of a block comment", () => {
+  const found = run(
+    "/**\n * protocol note\n * @see src/missing.ts#Missing\n */\nexport const value = 1;\n",
+  );
+  assert.equal(found.length, 1);
+  assert.equal(found[0].line, 3);
+});
+
 test("reports a missing explicit configuration key", () => {
   const found = run(
     "// @config config.json:missing\nexport const value = 1;\n",
@@ -72,6 +80,21 @@ test("does not confuse a configuration value with a key", () => {
     { "config.json": '{"present":"missing"}\n' },
   );
   assert.equal(found.length, 1);
+});
+
+test("keeps malformed and unreadable configuration evidence unavailable", () => {
+  assert.deepEqual(
+    run("// @config config.json:missing\nexport const value = 1;\n", {
+      "config.json": '{"present":',
+    }),
+    [],
+  );
+  assert.deepEqual(
+    run("// @config config.json:missing\nexport const value = 1;\n", {
+      "config.json": Buffer.from([0, 1, 2]),
+    }),
+    [],
+  );
 });
 
 test("ignores ordinary prose and external see links", () => {

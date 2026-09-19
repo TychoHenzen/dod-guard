@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { readText } from "./walk.mjs";
-import { commentBody } from "./rules-comments-text.mjs";
 import { push } from "./violations.mjs";
 
 const SEE_TAG = /^@see\s+([^\s#]+)(?:#([A-Za-z_$][\w$]*))?\s*$/i;
@@ -57,7 +56,15 @@ function missingConfig(root, target, key) {
   const file = pathInside(root, target);
   if (file === null) return true;
   const source = readText(file);
-  return source === null || !configKeyPresent(source, key);
+  if (source === null) return null;
+  if (/\.json$/i.test(file)) {
+    try {
+      return !hasKey(JSON.parse(source), key);
+    } catch {
+      return null;
+    }
+  }
+  return !configKeyPresent(source, key);
 }
 
 function finding(file, config, line, message) {
@@ -75,31 +82,35 @@ export function checkCommentReferences({ root, files, scans, config }) {
   const violations = [];
   for (const file of files) {
     for (const comment of scans.get(file.rel)?.comments ?? []) {
-      const body = commentBody(comment);
-      const see = SEE_TAG.exec(body);
-      if (see && missingSee(root, see[1], see[2])) {
-        push({
-          out: violations,
-          ...finding(
-            file,
-            config,
-            comment.line,
-            `comment references missing repository target: ${see[1]}`,
-          ),
-        });
-        continue;
-      }
-      const configTag = CONFIG_TAG.exec(body);
-      if (configTag && missingConfig(root, configTag[1], configTag[2])) {
-        push({
-          out: violations,
-          ...finding(
-            file,
-            config,
-            comment.line,
-            `comment references missing configuration key: ${configTag[2]}`,
-          ),
-        });
+      const lines = comment.text.split(/\r?\n/);
+      for (const [offset, line] of lines.entries()) {
+        const body = line.replace(/^[\s/*#]+|[\s*/]+$/g, "").trim();
+        const lineNumber = comment.line + offset;
+        const see = SEE_TAG.exec(body);
+        if (see && missingSee(root, see[1], see[2])) {
+          push({
+            out: violations,
+            ...finding(
+              file,
+              config,
+              lineNumber,
+              `comment references missing repository target: ${see[1]}`,
+            ),
+          });
+          continue;
+        }
+        const configTag = CONFIG_TAG.exec(body);
+        if (configTag && missingConfig(root, configTag[1], configTag[2])) {
+          push({
+            out: violations,
+            ...finding(
+              file,
+              config,
+              lineNumber,
+              `comment references missing configuration key: ${configTag[2]}`,
+            ),
+          });
+        }
       }
     }
   }
