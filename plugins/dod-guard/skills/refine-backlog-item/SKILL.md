@@ -82,6 +82,8 @@ one fresh `$dod-guard:codex-advisor` instead of asking the user. Use
 `gpt-5.6-luna` with `max` reasoning effort. Give the advisor only the unresolved
 question, candidate answers and recommended default, repository and PBI context,
 the researched evidence, and the affected acceptance boundary and constraints.
+Batch every currently independent question into that one advisor brief. Defer a
+question whose options depend on an advisor answer until triage runs again.
 The advisor is advice-only and cannot replace user authority. Record an
 `advisor-decision` implementation note with the model, effort, briefing scope,
 advice, and the evidence for accepting or rejecting it. Do not invoke another
@@ -91,7 +93,9 @@ Re-run triage after either route. Do not ask dependent questions or finalize
 labels or `Todo` while a material answer is missing. If the advisor cannot
 resolve a user-authority question, record an `unresolved-decision` with the
 question, evidence, impact, and next required authority, then keep the issue in
-`Backlog`.
+`Backlog`. If the advisor invocation fails or its response is unusable, record
+an `unresolved-decision` with the question, researched evidence, exact advisor
+failure, impact, and next required authority, then keep the issue in `Backlog`.
 
 Do not require a provider-specific `AskUserQuestion` tool. If `/interview` is
 unavailable, preserve its contract through ordinary conversation when possible.

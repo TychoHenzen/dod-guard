@@ -79,8 +79,8 @@ Backlog reuses current evidence and repeats only stale or newly triggered phases
 Unknown priority records the missing information. Effort 13 stays in Backlog
 and requires independent issues before implementation. Body, labels, links,
 and discovery evidence are verified before Todo. Material unresolved
-requirements keep the issue in Backlog until the missing decision or evidence
-is available.
+requirements, including unavailable or inconclusive advisor advice, keep the
+issue in Backlog until the missing decision or evidence is available.
 
 ## Structured work
 
