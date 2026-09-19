@@ -145,13 +145,12 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
   }
 });
 
-test("advisor runner supports explicit cancellation", async () => {
+test("advisor runner supports explicit cancellation before prompt submission", async () => {
   const fixture = await createFixture();
   const controller = new AbortController();
   try {
-    const pending = runFixture(fixture, "hang", { signal: controller.signal });
     controller.abort();
-    const result = await pending;
+    const result = await runFixture(fixture, "hang", { signal: controller.signal });
     assert.equal(result.ok, false);
     assert.match(result.error, /cancelled by operator/);
   } finally {

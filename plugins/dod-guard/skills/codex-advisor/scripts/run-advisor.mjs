@@ -30,6 +30,7 @@ function runProcess(executable, args, options, prompt, abortSignal) {
     let stderr = "";
     let outputLimitExceeded = false;
     let cancelled = false;
+    let stdinError;
     const child = spawn(executable, args, {
       cwd: options.cwd,
       env: options.env,
@@ -64,12 +65,17 @@ function runProcess(executable, args, options, prompt, abortSignal) {
     child.once("error", (error) => {
       startError = error;
     });
+    child.stdin.once("error", (error) => {
+      if (cancelled && (error.code === "EPIPE" || error.code === "ERR_STREAM_DESTROYED")) return;
+      stdinError = error;
+    });
     child.once("close", (code, exitSignal) => {
       abortSignal?.removeEventListener("abort", cancel);
       resolveResult({
         code,
         signal: exitSignal,
         startError,
+        stdinError,
         stderr,
         stdout,
         outputLimitExceeded,
@@ -165,14 +171,17 @@ export async function runAdvisor({
       prompt,
       signal,
     );
-    if (result.cancelled) {
-      return failure("Codex advisor cancelled by operator", result);
-    }
     if (result.outputLimitExceeded) {
       return failure(`Codex advisor output exceeded ${MAX_OUTPUT_BYTES} bytes`, result);
     }
     if (result.startError) {
       return failure(`Codex advisor executable is missing or cannot start (${result.startError.message})`, result);
+    }
+    if (result.stdinError) {
+      return failure(`Codex advisor prompt could not be written (${result.stdinError.message})`, result);
+    }
+    if (result.cancelled) {
+      return failure("Codex advisor cancelled by operator", result);
     }
     if (result.code !== 0) {
       return failure(`Codex advisor exits non-zero with code ${result.code}`, result);
