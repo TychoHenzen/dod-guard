@@ -34,7 +34,7 @@ function runProcess(executable, args, options, prompt, abortSignal) {
     const child = spawn(executable, args, {
       cwd: options.cwd,
       env: options.env,
-      shell: process.platform === "win32" && /\.(?:cmd|bat)$/i.test(executable),
+      shell: false,
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
       detached: process.platform !== "win32",
@@ -124,7 +124,7 @@ function parseAdvice(raw) {
 
 export async function runAdvisor({
   prompt,
-  executable = process.platform === "win32" ? "codex.cmd" : "codex",
+  executable = process.platform === "win32" ? "codex.exe" : "codex",
   prefixArgs = [],
   model = "gpt-5.6-luna",
   reasoningEffort = "max",

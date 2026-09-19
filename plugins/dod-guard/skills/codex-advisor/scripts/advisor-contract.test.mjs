@@ -135,7 +135,7 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
     assert.match(missing.error, /missing or cannot start/);
     assert.deepEqual(await readdir(fixture.runs), []);
 
-    const slow = await runFixture(fixture, "slow", { timeoutMs: 1 });
+    const slow = await runFixture(fixture, "slow");
     assert.deepEqual(slow, { ok: true, advice: "Use the smallest safe change." });
     const largeOutput = await runFixture(fixture, "large-output");
     assert.equal(largeOutput.ok, false);
@@ -158,7 +158,7 @@ test("advisor runner supports explicit cancellation before prompt submission", a
   }
 });
 
-test("advisor runner rejects shell metacharacters before a Windows shim starts", { skip: process.platform !== "win32" }, async () => {
+test("advisor runner rejects shell metacharacters before a Windows executable starts", { skip: process.platform !== "win32" }, async () => {
   const fixture = await createFixture();
   const marker = join(fixture.root, "injected.txt");
   try {
@@ -210,6 +210,11 @@ test("advisor skill has the Codex invocation contract", () => {
 
 test("advisor runner does not impose a wall-clock kill", () => {
   assert.doesNotMatch(runner, /timeoutMs|--timeout-ms|setTimeout/);
+});
+
+test("advisor runner uses direct Windows executable invocation", () => {
+  assert.match(runner, /process\.platform === "win32" \? "codex\.exe"/);
+  assert.match(runner, /shell: false/);
 });
 
 test("advisor defaults to Luna max for confirmed blockers", () => {
