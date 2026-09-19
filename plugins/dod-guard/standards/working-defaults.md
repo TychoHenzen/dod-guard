@@ -19,6 +19,12 @@ destructive action.
   uncommitted until the target branch exists, then commit them only there. If
   Git cannot retain them without conflict, stop rather than stash, discard, or
   commit them on another branch.
+- Use the repository's main checkout for ordinary delivery work. Create an
+  isolated worktree only when that checkout cannot safely retain the selected
+  branch and classified user-owned changes, or when the maintenance-only
+  `/publish` contract needs its exact-`origin/master` release worktree. Record
+  the exception, affected checkout, and recovery path; never move user-owned
+  changes merely to make the main checkout available.
 - When a clear contract and a test disagree, update the stale expectation and
   rerun it. Fix the implementation when it violates the contract. Never
   weaken or delete a test only to make it pass.

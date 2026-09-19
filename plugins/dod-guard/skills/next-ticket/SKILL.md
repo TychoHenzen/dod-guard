@@ -5,8 +5,11 @@ description: Execute a refined GitHub Project PBI through implementation, indepe
 
 # Next ticket
 
-Use the current Git checkout as the source of truth. Never choose a project by
-title similarity or from a remembered owner.
+Use the repository's main checkout as the source of truth for ordinary ticket
+work. Never choose a project by title similarity or from a remembered owner.
+Use an isolated worktree only when the main checkout cannot safely retain the
+selected branch and classified user-owned changes; record that exception and
+its recovery path rather than moving or hiding those changes.
 
 After selection, create the PBI's feature branch, assign the issue, move it
 to In Progress, implement it, verify it, review completion, commit it, and push
