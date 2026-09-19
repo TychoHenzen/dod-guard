@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "strict",
-  "createdAt": "2026-09-19T12:20:31.514Z",
-  "total": 174,
+  "createdAt": "2026-09-19T12:29:30.563Z",
+  "total": 176,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -1651,7 +1651,7 @@
     "packages/code-explorer/tests/testing/index/index-standalone-ready.test.ts::complexity": 1,
     "packages/knowledge-base/src/schema.ts::complexity": 3,
     "packages/knowledge-base/src/store.ts::complexity": 2,
-    "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project.mjs::complexity": 3,
+    "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project.mjs::complexity": 4,
     "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project/environment.mjs::complexity": 1,
     "packages/quality-guard/src/plaintext-readability.ts::complexity": 5,
     "packages/code-explorer/scripts/practice-browser-navigation.mjs::function-length": 3,
@@ -1685,7 +1685,7 @@
     "packages/code-explorer/tests/testing/index/index-standalone-ready.test.ts::nesting-depth": 2,
     "packages/knowledge-base/tests/tools.test.ts::nesting-depth": 1,
     "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project.mjs::nesting-depth": 1,
-    "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project.mjs::param-count": 2,
+    "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project.mjs::param-count": 3,
     "packages/quality-guard/src/plaintext-readability.ts::param-count": 2,
     "packages/knowledge-base/src/store.ts::else-branch": 1,
     "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project/environment.mjs::else-branch": 1,
