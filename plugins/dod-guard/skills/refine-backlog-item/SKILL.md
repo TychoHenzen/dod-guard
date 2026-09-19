@@ -66,17 +66,36 @@ before using debate. Do not ask the user for facts that repository inspection,
 the web, or Context7 can establish. When the result is `no gap`, continue
 without invoking a discovery workflow.
 
-When user constraints or priorities are missing, use the existing `/interview`
-workflow's research-first contract through ordinary conversation. This skill
-intentionally overrides its one-question-at-a-time interaction rule. Ask every
-currently independent clarification question in one round, give each question
-multiple concrete options, and mark the recommended default. Defer questions
-whose options depend on an earlier answer to a later round. Record the resulting
-behavioral contract in an `interview-contract` implementation note.
-Wait for the current round's answers before using an answer-dependent option.
-Do not ask dependent questions or finalize labels or `Todo` while a material
-answer is missing. If an answer is unavailable, record an `unresolved-decision`
-and apply the residual-uncertainty gate below.
+When user constraints or priorities are missing, choose the route from the
+current run mode. In ordinary interactive refinement, use the existing
+`/interview` workflow's research-first contract through ordinary conversation.
+This skill intentionally overrides its one-question-at-a-time interaction rule.
+Ask every currently independent clarification question in one round, give each
+question multiple concrete options, and mark the recommended default. Defer
+questions whose options depend on an earlier answer to a later round. Record
+the resulting behavioral contract in an `interview-contract` implementation
+note. Wait for the current round's answers before using an answer-dependent
+option.
+
+During an active goal or explicitly non-interactive refinement, invoke exactly
+one fresh `$dod-guard:codex-advisor` instead of asking the user. Use
+`gpt-5.6-luna` with `max` reasoning effort. Give the advisor only the unresolved
+question, candidate answers and recommended default, repository and PBI context,
+the researched evidence, and the affected acceptance boundary and constraints.
+Batch every currently independent question into that one advisor brief. Defer a
+question whose options depend on an advisor answer until triage runs again.
+The advisor is advice-only and cannot replace user authority. Record an
+`advisor-decision` implementation note with the model, effort, briefing scope,
+advice, and the evidence for accepting or rejecting it. Do not invoke another
+advisor to retry, vote, or refine its answer.
+
+Re-run triage after either route. Do not ask dependent questions or finalize
+labels or `Todo` while a material answer is missing. If the advisor cannot
+resolve a user-authority question, record an `unresolved-decision` with the
+question, evidence, impact, and next required authority, then keep the issue in
+`Backlog`. If the advisor invocation fails or its response is unusable, record
+an `unresolved-decision` with the question, researched evidence, exact advisor
+failure, impact, and next required authority, then keep the issue in `Backlog`.
 
 Do not require a provider-specific `AskUserQuestion` tool. If `/interview` is
 unavailable, preserve its contract through ordinary conversation when possible.
@@ -195,6 +214,8 @@ Keep concise discovery evidence in `## Implementation notes`. Include a
 
 - `interview-contract`: the questions asked, options, recommended defaults,
   answers, and deferred dependent questions;
+- `advisor-decision`: the advisor model and effort, bounded briefing scope,
+  advice, and the evidence for accepting or rejecting it;
 - `research-source`: the source, relevant finding, and remaining uncertainty;
 - `debate-synthesis`: the decision, each named expert's lens and why it applies
   to a competing concern, challenges, uncertainty, and synthesis;
