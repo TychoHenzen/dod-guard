@@ -353,11 +353,11 @@ another file is missed.
 checkout. A project that needs readers to reconstruct its build sequence has no
 reliable build entry point.
 
-**Fix:** add a root `build` script that owns the complete build. Cargo and .NET
-project roots already have `cargo build` and `dotnet build <project>`; a Python
-root is accepted only when `pyproject.toml` declares both its build system and
-pytest configuration. Unknown layouts are not reported because the scanner does
-not invent commands.
+**Fix:** add a root `build` script that owns the complete build. Cargo and one
+.NET project root already have `cargo build` and `dotnet build <project>`; a
+Python root needs a `[build-system]` declaration. Multiple root .NET projects
+need one selected solution. Unknown layouts are not reported because the scanner
+does not invent commands.
 
 ---
 
@@ -369,10 +369,11 @@ not invent commands.
 test workflow that must be assembled from local knowledge cannot be verified
 consistently.
 
-**Fix:** add a root `test` script that runs the complete suite. Cargo and .NET
-project roots already have `cargo test` and `dotnet test <project>`; Python
-needs both a declared build system and pytest configuration. Unknown layouts are
-left explicit rather than guessed.
+**Fix:** add a root `test` script that runs the complete suite. Cargo and one
+.NET project root already have `cargo test` and `dotnet test <project>`; a
+Python root needs `[tool.pytest]` configuration. Multiple root .NET projects
+need one selected solution. Unknown layouts are left explicit rather than
+guessed.
 
 ---
 

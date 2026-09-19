@@ -85,8 +85,52 @@ test("leaves unsupported or undecidable layouts without an invented command", ()
   );
 });
 
+test("reports blank, unconfigured, and ambiguous supported root manifests", () => {
+  const cases = [
+    {
+      files: { "package.json": '{"scripts":{"build":" ","test":""}}\n' },
+      expected: ["build-entrypoint", "test-entrypoint"],
+    },
+    {
+      files: {
+        "pyproject.toml": '[build-system]\nrequires = ["setuptools"]\n',
+      },
+      expected: ["test-entrypoint"],
+    },
+    {
+      files: {
+        "first.csproj": "<Project />\n",
+        "second.csproj": "<Project />\n",
+      },
+      expected: ["build-entrypoint", "test-entrypoint"],
+    },
+  ];
+  for (const { files, expected } of cases) {
+    withProject(files, (root) => {
+      const found = checkEnvironment(root, buildConfig("default"));
+      assert.deepEqual(
+        found.map((violation) => violation.rule),
+        expected,
+      );
+    });
+  }
+});
+
 test("routes E1 and E2 findings through the repository scan", () => {
   withProject({ "package.json": "{}\n" }, (root) => {
+    const result = scan(
+      { paths: ["."], root, excludes: [], testPaths: [], rules: null },
+      buildConfig("default"),
+    );
+    assert.deepEqual(
+      result.violations.map((violation) => violation.rule),
+      ["build-entrypoint", "test-entrypoint"],
+    );
+  });
+});
+
+test("routes an unconfigured Python root through the repository scan", () => {
+  withProject({ "pyproject.toml": '[project]\nname = "sample"\n' }, (root) => {
     const result = scan(
       { paths: ["."], root, excludes: [], testPaths: [], rules: null },
       buildConfig("default"),

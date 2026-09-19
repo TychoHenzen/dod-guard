@@ -1,6 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+const BUILD_SYSTEM = /\[build-system\]/;
+const DOTNET_PROJECT = /\.(?:sln|csproj)$/i;
+const PYTEST_CONFIGURATION = /\[tool\.pytest(?:\.|\])/i;
+
 function read(root, name) {
   try {
     return readFileSync(join(root, name), "utf8");
@@ -21,41 +25,60 @@ function packageJson(root) {
 
 function dotnetProject(root) {
   try {
-    return readdirSync(root).find((name) => /\.(?:sln|csproj)$/i.test(name)) ?? null;
+    return readdirSync(root)
+      .filter((name) => DOTNET_PROJECT.test(name))
+      .sort();
   } catch {
-    return null;
+    return [];
   }
 }
 
-export function resolveEntrypoints(root) {
+function command(value, name) {
+  return typeof value === "string" && value.trim() !== "" ? name : null;
+}
+
+function rootEntrypoints(root) {
+  const found = [];
   const node = packageJson(root);
   if (node !== null) {
     const scripts = node.scripts ?? {};
-    return {
+    found.push({
       file: "package.json",
-      build: typeof scripts.build === "string" ? "npm run build" : null,
-      test: typeof scripts.test === "string" ? "npm test" : null,
-    };
+      build: command(scripts.build, "npm run build"),
+      test: command(scripts.test, "npm test"),
+    });
   }
-  if (existsSync(join(root, "Cargo.toml")))
-    return { file: "Cargo.toml", build: "cargo build", test: "cargo test" };
+  if (existsSync(join(root, "Cargo.toml"))) {
+    found.push({ file: "Cargo.toml", build: "cargo build", test: "cargo test" });
+  }
   const dotnet = dotnetProject(root);
-  if (dotnet !== null)
-    return {
-      file: dotnet,
-      build: `dotnet build ${dotnet}`,
-      test: `dotnet test ${dotnet}`,
-    };
+  if (dotnet.length === 1) {
+    found.push({
+      file: dotnet[0],
+      build: `dotnet build ${dotnet[0]}`,
+      test: `dotnet test ${dotnet[0]}`,
+    });
+  } else if (dotnet.length > 1) {
+    found.push({
+      file: dotnet[0],
+      build: null,
+      test: null,
+      reason: `multiple root .NET project files (${dotnet.join(", ")})`,
+    });
+  }
   const python = read(root, "pyproject.toml");
-  if (python !== null && /\[build-system\]/.test(python) && /\[tool\.pytest(?:\.|\])/i.test(python))
-    return { file: "pyproject.toml", build: "python -m build", test: "python -m pytest" };
-  return null;
+  if (python !== null) {
+    found.push({
+      file: "pyproject.toml",
+      build: BUILD_SYSTEM.test(python) ? "python -m build" : null,
+      test: PYTEST_CONFIGURATION.test(python) ? "python -m pytest" : null,
+    });
+  }
+  return found;
 }
 
-function nodeEntrypoints(root) {
-  const path = join(root, "package.json");
-  if (!existsSync(path)) return null;
-  return resolveEntrypoints(root);
+export function resolveEntrypoints(root) {
+  return rootEntrypoints(root)[0] ?? null;
 }
 
 function finding(rule, severity, message) {
@@ -63,24 +86,27 @@ function finding(rule, severity, message) {
 }
 
 export function checkEnvironment(root, config) {
-  const manifest = nodeEntrypoints(root);
-  if (manifest === null) return [];
-  const found = [];
-  if (manifest.build === null)
-    found.push(
-      finding(
-        "build-entrypoint",
-        config.presence["build-entrypoint"],
-        "E1: package.json has no build script — add one root npm run build entry point",
-      ),
-    );
-  if (manifest.test === null)
-    found.push(
-      finding(
-        "test-entrypoint",
-        config.presence["test-entrypoint"],
-        "E2: package.json has no test script — add one root npm test entry point",
-      ),
-    );
-  return found;
+  return rootEntrypoints(root).flatMap((manifest) => {
+    const found = [];
+    const reason = manifest.reason ?? `no declared ${manifest.file} entry point`;
+    if (manifest.build === null) {
+      found.push(
+        finding(
+          "build-entrypoint",
+          config.presence["build-entrypoint"],
+          `E1: ${reason} — add one root build entry point`,
+        ),
+      );
+    }
+    if (manifest.test === null) {
+      found.push(
+        finding(
+          "test-entrypoint",
+          config.presence["test-entrypoint"],
+          `E2: ${reason} — add one root test entry point`,
+        ),
+      );
+    }
+    return found.map((violation) => ({ ...violation, file: manifest.file }));
+  });
 }
