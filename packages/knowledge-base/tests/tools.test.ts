@@ -54,7 +54,7 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     );
     assert.deepEqual(
       cleanCodeSections.sections.map((item: { key: string }) => item.key),
-      ["clean-code.foundation", "clean-code.functions", "clean-code.meaningful-names"],
+      ["clean-code.comments", "clean-code.foundation", "clean-code.functions", "clean-code.meaningful-names"],
     );
 
     const cleanCodeSummaries = JSON.parse(
@@ -144,6 +144,28 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(functions.guidance.precedence, /Explicit task and project instructions take precedence/);
     assert.match(functions.entry.sources[0].label, /PDF pages 62-83/);
     assert.match(functions.entry.content, /side effects/);
+
+    const commentsSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.comments" },
+        }),
+      ),
+    );
+    assert.equal(commentsSummaries.entries[0].key, "clean-code.comments");
+    assert.match(commentsSummaries.entries[0].summary, /expressive|accurate|purposeful/);
+    assert.equal("content" in commentsSummaries.entries[0], false);
+
+    const comments = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.comments" } })),
+    );
+    assert.equal(comments.guidance.kind, "reference_guidance");
+    assert.equal(comments.guidance.executable, false);
+    assert.match(comments.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(comments.entry.sources[0].label, /PDF pages 84-105/);
+    assert.match(comments.entry.content, /commented-out code/);
+    assert.match(comments.entry.content, /Javadocs for public APIs/);
 
     const saved = JSON.parse(
       text(
