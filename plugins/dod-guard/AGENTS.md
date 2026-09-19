@@ -11,7 +11,8 @@ definitions. It has no package workspace, MCP server, or bundle.
 - Use `/add-backlog-idea` to split an unrefined brain dump into one Backlog
   issue per independently deliverable feature in its target repository.
   Backlog items are issues, not drafts. Use `/refine-backlog-item` to create a
-  Todo PBI with observable acceptance criteria and only independent sub-issues.
+  Todo PBI with observable acceptance criteria, ordinary independent sub-issues,
+  and the mandatory structured-parent child set when applicable.
   Research precedes priority, Fibonacci effort, and standard classification.
   Verify repository labels and their evidence before Todo; split Effort 13 epics.
 - Use one `codex/<issue>-<slug>` branch and one draft pull request per issue.

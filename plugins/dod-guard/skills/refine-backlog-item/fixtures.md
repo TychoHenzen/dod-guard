@@ -45,6 +45,8 @@ triage and summaries in the disposable issue's `## Implementation notes`.
 | Newly discovered gap | Research or debate exposes a missing user constraint or external fact. | Return to the matching interview or research route. Update the triage and notes. Do not turn the gap into an assumption. |
 | Unavailable workflow | A named workflow cannot run, or a question, fact, or tradeoff remains unresolved. | Record what is unclear, the unavailable workflow or fallback, the impact, and the next decision or evidence. Move to `Todo` only when the PBI remains coherent and independently deliverable without invented requirements. Keep it in `Backlog` otherwise. |
 | Re-refinement | Existing notes contain current evidence and one stale source or newly triggered question. | Reuse current summaries, repeat only the stale or new phase, update notes in place, and create no duplicate sub-issues or scale labels. |
+| Structured parent | A feature parent has no linked children. | Create exactly one actionable Todo child for implementation, wiring/usability, quality, and reliability before moving the parent to Todo. |
+| Partial structured parent | A feature parent already has implementation and quality children. | Reuse those two children, add only wiring/usability and reliability, and do not create child branches or PRs. |
 
 ## Classification cases
 

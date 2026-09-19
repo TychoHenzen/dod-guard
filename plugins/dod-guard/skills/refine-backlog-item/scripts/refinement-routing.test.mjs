@@ -55,6 +55,17 @@ test("requires durable discovery records and selective re-refinement", () => {
   assert.match(skill, /Do not create duplicate linked sub-issues or scale labels/);
 });
 
+test("requires one reusable mandatory child for every structured parent category", () => {
+  assert.match(skill, /require exactly one linked child for each category/);
+  assert.match(skill, /implementation; wiring and end-to-end\s+usability; refactoring and quality; fixing and reliability/);
+  assert.match(skill, /Reuse an existing\s+child/);
+  assert.match(skill, /never duplicate a category/);
+  assert.match(skill, /structured-parent exception to the ordinary\s+independence rule/);
+  assert.match(skill, /checklist work[\s\S]*not authorize child branches or pull requests/);
+  assert.match(skill, /four mandatory child categories are linked exactly once/);
+  assert.match(skill, /every child is\s+actionable and `Todo` before moving the parent to `Todo`/);
+});
+
 test("manual fixtures include each route and its record markers", () => {
   for (const [fixture, markers] of [
     ["No gap", ["discovery-triage: no gap", "Do not invoke interview, external research, or debate."]],
@@ -66,6 +77,8 @@ test("manual fixtures include each route and its record markers", () => {
     ["Newly discovered gap", ["Return to the matching interview or research route.", "Do not turn the gap into an assumption."]],
     ["Unavailable workflow", ["Record what is unclear, the unavailable workflow or fallback, the impact, and the next decision or evidence.", "Move to `Todo` only when the PBI remains coherent"]],
     ["Re-refinement", ["Reuse current summaries, repeat only the stale or new phase, update notes in place, and create no duplicate sub-issues or scale labels."]],
+    ["Structured parent", ["Create exactly one actionable Todo child for implementation, wiring/usability, quality, and reliability before moving the parent to Todo."]],
+    ["Partial structured parent", ["Reuse those two children, add only wiring/usability and reliability, and do not create child branches or PRs."]],
   ]) {
     const row = fixtures.split("\n").find((line) => line.startsWith(`| ${fixture} |`));
     assert.ok(row, `missing fixture row: ${fixture}`);

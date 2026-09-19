@@ -161,10 +161,21 @@ Ask for direction when a missing choice changes observable behavior, a public
 interface, data handling, or an acceptance test. Do not write a false choice as
 a requirement.
 
-Create linked GitHub sub-issues only when a criterion can be completed,
-committed, and closed independently. Each sub-issue needs its own outcome,
-implementation notes, acceptance criteria, and verification. Keep dependent
-steps in the parent PBI instead of inventing administrative subtasks.
+For an ordinary parent, create linked GitHub sub-issues only when a criterion
+can be completed, committed, and closed independently. Each sub-issue needs
+its own outcome, implementation notes, acceptance criteria, and verification.
+Keep dependent steps in the parent PBI instead of inventing administrative
+subtasks.
+
+For a structured parent PBI, require exactly one linked child for each category
+below before moving the parent to `Todo`: implementation; wiring and end-to-end
+usability; refactoring and quality; fixing and reliability. Reuse an existing
+child when its outcome and acceptance criteria already own that category. Add
+only missing categories, never duplicate a category, and give every created
+child minimal parent context, scope, acceptance criteria, and verification.
+These mandatory children are the structured-parent exception to the ordinary
+independence rule. They are checklist work within the parent's one branch and
+one PR; they do not authorize child branches or pull requests.
 
 Apply the same research, sections, and label requirements to any sub-issue
 being refined into a PBI. Reuse appropriate existing linked issues.
@@ -239,8 +250,9 @@ and at least one standard
 label applies. Confirm unknown priority explains missing evidence and effort
 is below 13 before moving that PBI to `Todo` with `gh project item-edit`.
 For a structured PBI, also confirm the named `requirements`, `clarifications`,
-`implementation-plan`, and `task-list` records are present and coherent before
-moving it to `Todo`.
+`implementation-plan`, and `task-list` records are present and coherent; the
+four mandatory child categories are linked exactly once; and every child is
+actionable and `Todo` before moving the parent to `Todo`.
 If an edit fails or readback disagrees, stop before the status change and
 report the actual partial state. Do not claim the PBI is ready.
 
