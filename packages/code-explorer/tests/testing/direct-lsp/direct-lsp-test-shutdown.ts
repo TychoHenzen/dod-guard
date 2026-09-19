@@ -35,6 +35,7 @@ export async function completeReadOnlyShutdown(
   await call;
   const stop = client.shutdown();
   const shutdown = process.sent.at(-1) as { id: number };
+  assert.deepEqual(process.sent.at(-1)?.params, {});
   process.respond({ jsonrpc: "2.0", id: shutdown.id, result: null });
   await tick();
   process.crash();
