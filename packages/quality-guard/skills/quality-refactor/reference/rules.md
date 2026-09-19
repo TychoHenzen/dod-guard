@@ -311,6 +311,22 @@ makes the policy obvious.
 
 ---
 
+## `wildcard-import` - explicit wildcard imports
+
+**Detects:** Python `from module import *` and Rust `use path::*` declarations.
+These are the only J1 forms with a syntax-proven wildcard boundary in the
+generic scanner.
+
+**Why hard:** wildcard imports hide the names a file depends on and make the
+public namespace harder to review. Import explicit names instead.
+
+**When quiet:** C# namespace `using`, TypeScript namespace imports and
+`export *`, inherited or static constants, and enum-like declarations are not
+reported. Those forms do not prove the corresponding Java-origin smell without
+language-specific semantic evidence.
+
+---
+
 ## `unnamed-tuple` - tuple types
 
 **Detects:** named and unnamed tuple types in supported type positions:
