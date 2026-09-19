@@ -239,8 +239,8 @@ Return to the owning implementation step, fix it, and rerun affected checks.
 Update every challenge disposition and rerun the affected checks. Do not label
 an unresolved gap resolved or dismiss a finding solely because tests pass. Stop
 if required evidence cannot be obtained. Do not invoke another independent
-reviewer after those fixes; use the affected checks as local verification, not
-the one-review limit.
+reviewer after those fixes; use the affected checks as local verification. They
+do not count as a second completion review.
 
 Proceed only after review has completed and every challenge has an evidenced
 disposition. Record a no-gap result explicitly. Stop or close the reviewer when
