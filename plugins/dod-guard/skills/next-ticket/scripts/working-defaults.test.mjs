@@ -80,7 +80,11 @@ test("delivery skills inspect dirty worktrees before their mutations", () => {
 
 test("branching and local mutation exceptions are explicit", () => {
   assert.match(defaults, /keep those changes[\s\S]*target branch/);
+  assert.match(defaults, /Use the repository's main checkout for ordinary delivery work/);
+  assert.match(defaults, /isolated worktree only when that checkout cannot safely retain/);
+  assert.match(defaults, /maintenance-only\s+`\/publish` contract needs its exact-`origin\/master` release worktree/);
   assert.match(skills.get("next-ticket"), /Do not commit them on the current or default branch/);
+  assert.match(skills.get("next-ticket"), /main checkout as the source of truth for ordinary ticket\s+work/);
   for (const [name, signals] of exceptionRules) {
     for (const signal of signals) assert.match(skills.get(name), signal, `${name}: ${signal}`);
   }
