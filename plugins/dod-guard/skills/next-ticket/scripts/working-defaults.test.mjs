@@ -80,14 +80,23 @@ test("delivery skills inspect dirty worktrees before their mutations", () => {
 
 test("branching and local mutation exceptions are explicit", () => {
   assert.match(defaults, /keep those changes[\s\S]*target branch/);
-  assert.match(defaults, /Use the repository's main checkout for ordinary delivery work/);
-  assert.match(defaults, /isolated worktree only when that checkout cannot safely retain/);
-  assert.match(defaults, /maintenance-only\s+`\/publish` contract needs its exact-`origin\/master` release worktree/);
+  assert.match(defaults, /Before selecting a delivery checkout, run `git worktree list --porcelain`/);
+  assert.match(defaults, /first worktree as the main checkout/);
+  assert.match(defaults, /isolated worktree and record the reason, affected checkout, and recovery path/);
+  assert.match(defaults, /maintenance-only\s+`\/publish` contract remains the only release exception/);
   assert.match(skills.get("next-ticket"), /Do not commit them on the current or default branch/);
   assert.match(skills.get("next-ticket"), /main checkout as the source of truth for ordinary ticket\s+work/);
+  assert.match(skills.get("next-ticket"), /Before selection, run `git worktree list --porcelain`/);
   for (const [name, signals] of exceptionRules) {
     for (const signal of signals) assert.match(skills.get(name), signal, `${name}: ${signal}`);
   }
+});
+
+test("main checkout exceptions preserve user work and release isolation", () => {
+  assert.match(defaults, /Never reset,\s+stash, overwrite, move, or silently include user-owned changes/);
+  assert.match(defaults, /its exact-`origin\/master` worktree protects the source checkout/);
+  assert.match(skills.get("next-ticket"), /locked, unavailable, active, or unsafe user-owned main checkout/);
+  assert.match(skills.get("next-ticket"), /Never reset, stash, overwrite,\s+move, or silently include user-owned changes/);
 });
 
 test("implementation and review repair retain functional-style guidance", () => {
