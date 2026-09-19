@@ -41,9 +41,9 @@ function createGitFixture(entries) {
   };
 }
 
-function baseEntries(worktreeResults) {
+function baseEntries(worktreeResults, currentBranch = "master") {
   return [
-    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
+    [["branch", "--show-current"], [result(`${currentBranch}\n`)]],
     [["worktree", "list", "--porcelain"], worktreeResults],
     [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result()]],
   ];
@@ -67,7 +67,7 @@ test("dry run reports a removable exact-branch worktree without mutating Git", (
 
   assert.equal(cleanup.branch, "would_delete");
   assert.deepEqual(cleanup.worktrees, [{ path: FEATURE_ROOT, result: "would_remove" }]);
-  assert.equal(fixture.calls.some((args) => args[0] === "branch" || args[1] === "remove"), false);
+  assert.equal(fixture.calls.some((args) => (args[0] === "branch" && args[1] === "-d") || (args[0] === "worktree" && args[1] === "remove")), false);
 });
 
 test("removes a clean non-current worktree and confirms local branch deletion", () => {
@@ -87,11 +87,11 @@ test("removes a clean non-current worktree and confirms local branch deletion", 
   assert.deepEqual(cleanup.worktrees, [{ path: FEATURE_ROOT, result: "removed" }]);
 });
 
-test("updates a clean current worktree before deleting its merged branch", () => {
-  const currentFeature = `worktree ${CURRENT_ROOT}\nHEAD feature\nbranch refs/heads/${TARGET_BRANCH}\n`;
+test("identifies the current worktree by branch despite a Windows path alias", () => {
+  const currentFeature = `worktree C:/Users/siriu/mcp-servers/dod-guard-142-recovery\nHEAD feature\nbranch refs/heads/${TARGET_BRANCH}\n`;
   const fixture = createGitFixture([
-    ...baseEntries([result(currentFeature), result(ROOT_WORKTREE)]),
-    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result()]],
+    ...baseEntries([result(currentFeature), result(ROOT_WORKTREE)], TARGET_BRANCH),
+    [["-C", "C:/Users/siriu/mcp-servers/dod-guard-142-recovery", "status", "--porcelain"], [result()]],
     [["fetch", "--no-tags", "origin", "master"], [result()]],
     [["switch", "master"], [result()]],
     [["merge", "--ff-only", "origin/master"], [result()]],
@@ -103,7 +103,7 @@ test("updates a clean current worktree before deleting its merged branch", () =>
   const cleanup = git.cleanupBranch(TARGET_BRANCH, "master");
 
   assert.equal(cleanup.branch, "deleted");
-  assert.deepEqual(cleanup.worktrees, [{ path: CURRENT_ROOT, result: "switched_to_default" }]);
+  assert.deepEqual(cleanup.worktrees, [{ path: "C:/Users/siriu/mcp-servers/dod-guard-142-recovery", result: "switched_to_default" }]);
 });
 
 test("preserves a dirty exact-branch worktree and its local ref", () => {
@@ -117,5 +117,5 @@ test("preserves a dirty exact-branch worktree and its local ref", () => {
 
   assert.equal(cleanup.branch, "retained_by_worktree");
   assert.deepEqual(cleanup.worktrees, [{ path: FEATURE_ROOT, result: "dirty" }]);
-  assert.equal(fixture.calls.some((args) => args[0] === "branch" || args[1] === "remove"), false);
+  assert.equal(fixture.calls.some((args) => (args[0] === "branch" && args[1] === "-d") || (args[0] === "worktree" && args[1] === "remove")), false);
 });

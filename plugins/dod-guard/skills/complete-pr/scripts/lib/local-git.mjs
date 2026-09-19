@@ -1,7 +1,6 @@
 // biome-ignore lint/correctness/noNodejsModules: This adapter invokes the local Git CLI from Node.
 import { spawnSync } from "node:child_process";
 
-const BACKSLASH = /\\/g;
 const RECORD_SEPARATOR = /\r?\n\r?\n/;
 const LINE_SEPARATOR = /\r?\n/;
 
@@ -15,10 +14,6 @@ function runGit(args, acceptedExitCodes = [0]) {
     throw new Error(detail);
   }
   return result;
-}
-
-function normalizePath(value) {
-  return value.replace(BACKSLASH, "/").toLowerCase();
 }
 
 export function parseWorktrees(output) {
@@ -84,14 +79,14 @@ export class LocalGit {
     return { path: worktree.path, result: "removed" };
   }
 
-  #cleanupWorktree(worktree, currentPath, defaultBranch, dryRun) {
+  #cleanupWorktree(worktree, currentBranch, defaultBranch, dryRun) {
     if (worktree.locked) {
       return { path: worktree.path, result: "locked" };
     }
     if (this.worktreeIsDirty(worktree.path)) {
       return { path: worktree.path, result: "dirty" };
     }
-    if (normalizePath(worktree.path) === normalizePath(currentPath)) {
+    if (worktree.branch === currentBranch) {
       return this.#cleanupCurrentWorktree(worktree, defaultBranch, dryRun);
     }
     return this.#cleanupOtherWorktree(worktree, dryRun);
@@ -115,8 +110,8 @@ export class LocalGit {
     return "deleted";
   }
 
-  currentWorktree() {
-    return this.#run(["rev-parse", "--show-toplevel"]).stdout.trim();
+  currentBranch() {
+    return this.#run(["branch", "--show-current"]).stdout.trim();
   }
 
   hasLocalBranch(branchName) {
@@ -132,9 +127,9 @@ export class LocalGit {
   }
 
   cleanupBranch(branchName, defaultBranch, { dryRun = false } = {}) {
-    const currentPath = this.currentWorktree();
+    const currentBranch = this.currentBranch();
     const targeted = this.listWorktrees().filter((worktree) => worktree.branch === branchName);
-    const worktrees = targeted.map((worktree) => this.#cleanupWorktree(worktree, currentPath, defaultBranch, dryRun));
+    const worktrees = targeted.map((worktree) => this.#cleanupWorktree(worktree, currentBranch, defaultBranch, dryRun));
     const remainingWorktrees = this.listWorktrees().filter((worktree) => worktree.branch === branchName);
     const branch = this.#branchResult(branchName, dryRun, worktrees, remainingWorktrees);
     return { branch, remainingWorktrees, worktrees };
