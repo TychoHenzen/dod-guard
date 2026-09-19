@@ -54,7 +54,7 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     );
     assert.deepEqual(
       cleanCodeSections.sections.map((item: { key: string }) => item.key),
-      ["clean-code.foundation"],
+      ["clean-code.foundation", "clean-code.meaningful-names"],
     );
 
     const cleanCodeSummaries = JSON.parse(
@@ -102,6 +102,27 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(cleanCode.guidance.precedence, /Explicit task and project instructions take precedence/);
     assert.match(cleanCode.entry.sources[0].label, /PDF pages 33-47/);
     assert.match(cleanCode.entry.content, /Boy Scout rule/);
+
+    const meaningfulNamesSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.meaningful-names" },
+        }),
+      ),
+    );
+    assert.equal(meaningfulNamesSummaries.entries[0].key, "clean-code.meaningful-names");
+    assert.match(meaningfulNamesSummaries.entries[0].summary, /intent|context|concept/);
+    assert.equal("content" in meaningfulNamesSummaries.entries[0], false);
+
+    const meaningfulNames = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.meaningful-names" } })),
+    );
+    assert.equal(meaningfulNames.guidance.kind, "reference_guidance");
+    assert.equal(meaningfulNames.guidance.executable, false);
+    assert.match(meaningfulNames.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(meaningfulNames.entry.sources[0].label, /PDF pages 48-61/);
+    assert.match(meaningfulNames.entry.content, /pronounceable/);
 
     const saved = JSON.parse(
       text(
