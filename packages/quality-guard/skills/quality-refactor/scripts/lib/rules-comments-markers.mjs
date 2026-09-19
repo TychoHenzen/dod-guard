@@ -90,10 +90,13 @@ function checkCommentedOutCode(ctx, body, comment) {
 }
 
 export function checkMarkerOrDeadCode(ctx, comment) {
-  const body = commentBody(comment);
-  checkMetadata(ctx, body, comment.line);
-  checkPlaceholder(ctx, body, comment.line);
-  checkAssumptionMarker(ctx, body, comment.line);
-  if (checkTodoMarker(ctx, body, comment.line)) return;
-  checkCommentedOutCode(ctx, body, comment);
+  for (const [offset, line] of comment.text.split(/\r?\n/).entries()) {
+    const body = commentBody({ text: line });
+    const lineNumber = comment.line + offset;
+    checkMetadata(ctx, body, lineNumber);
+    checkPlaceholder(ctx, body, lineNumber);
+    checkAssumptionMarker(ctx, body, lineNumber);
+    if (checkTodoMarker(ctx, body, lineNumber)) continue;
+    checkCommentedOutCode(ctx, body, { ...comment, line: lineNumber });
+  }
 }

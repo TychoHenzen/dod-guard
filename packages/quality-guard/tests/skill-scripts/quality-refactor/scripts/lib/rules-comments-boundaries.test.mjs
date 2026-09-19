@@ -122,3 +122,18 @@ test("keeps commented-out-code findings covered across supported languages", () 
     );
   }
 });
+
+test("finds metadata and placeholders after prose in block comments", () => {
+  const metadata = scan(
+    "ts",
+    "/**\n * protocol history\n * @author old record\n */\nexport const value = 1;",
+    "comment-metadata",
+  );
+  const placeholder = scan(
+    "ts",
+    "/*\n * protocol note\n * TBD: choose a policy\n */\nexport const value = 1;",
+    "comment-placeholder",
+  );
+  assert.equal(metadata.length, 1);
+  assert.equal(placeholder.length, 1);
+});
