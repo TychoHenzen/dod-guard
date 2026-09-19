@@ -1,5 +1,7 @@
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { extname, isAbsolute, relative, resolve } from "node:path";
+import { lineAt } from "./offsets.mjs";
+import { wildcardImportsFor } from "./architecture-imports.mjs";
 import { LANG_BY_EXT } from "./config.mjs";
 import { readText } from "./walk.mjs";
 import { strip } from "./strip.mjs";
@@ -7,12 +9,32 @@ import { push } from "./violations.mjs";
 import { checkDuplication } from "./rules-duplicate.mjs";
 import { checkEnvironment, resolveEntrypoints } from "./rules-project/environment.mjs";
 import { checkReachability } from "./rules-reachability.mjs";
-import { checkWildcardImports } from "./rules-imports.mjs";
 
 const SEE_TAG = /^@see\s+([^\s#]+)(?:#([A-Za-z_$][\w$]*))?\s*$/i;
 const CONFIG_TAG = /^@config\s+([^\s:]+):([A-Za-z_][\w.-]*)\s*$/i;
 const URL = /^https?:\/\//i;
 const MAX_REFERENCE_BYTES = 1024 * 1024;
+
+function checkWildcardImports({ files, scans, config }) {
+  const out = [];
+  for (const file of files) {
+    const scan = scans.get(file.rel);
+    for (const match of wildcardImportsFor(scan?.code ?? "", file.lang)) {
+      push({
+        out,
+        file,
+        line: lineAt(scan.starts, match.offset),
+        rule: "wildcard-import",
+        severity: config.presence["wildcard-import"],
+        message:
+          `${match.target} wildcard import obscures its imported API; ` +
+          "import explicit names instead",
+        metric: 1,
+      });
+    }
+  }
+  return out;
+}
 
 function escaped(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
