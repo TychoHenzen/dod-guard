@@ -48,9 +48,9 @@ its chapter, and a section key belongs to its chapter. Related keys must exist.
 Malformed documents and duplicate keys stop index refresh before the previous
 derived index is replaced.
 
-The repository includes examples for Refactoring, Design Patterns, and UX/UI
-Design. The examples use source metadata from more than one project and
-language.
+The repository includes examples for Clean Code, Refactoring, Design Patterns,
+and UX/UI Design. The examples use source metadata from more than one project
+and language.
 
 ## Guidance boundary
 
