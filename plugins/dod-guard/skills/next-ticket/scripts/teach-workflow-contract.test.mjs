@@ -34,6 +34,6 @@ test("README, usage, and manifests expose both entry points", () => {
     assert.match(document, /\/teach-back/);
   }
   for (const manifest of [marketplace, claudeManifest, codexManifest]) {
-    assert.match(manifest, /20 skills/);
+    assert.match(manifest, /21 skills/);
   }
 });
