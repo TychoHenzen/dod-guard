@@ -286,8 +286,10 @@ Delete only the temporary snapshot after verification. Do not delete the reposit
 ## Result
 
 Report the local path, repository URL, default branch, pushed commit, linked Project, status options,
-applicability table, successful checks, security settings, protection settings, and clean worktree
-evidence. Include every skipped check with its concrete reason.
+shared labels and preserved repository-specific labels, applicability table, successful checks, security
+settings, protection settings including zero required approvals for the solo owner, and clean worktree
+evidence. State that independent review and exact-current-head required checks still gate delivery.
+Include every skipped check with its concrete reason.
 
 On partial failure, lead with the failed operation. Then list every completed mutation and the exact
 remaining state. Do not report setup complete while any required proof is absent.
