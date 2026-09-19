@@ -40,6 +40,8 @@ export const PRESENCE_SEVERITY = {
   "test-only-export": "warn",
   "commented-out-code": "error",
   "comment-restates-code": "warn",
+  "build-entrypoint": "warn",
+  "test-entrypoint": "warn",
   "todo-marker": "warn",
   "assumption-marker": "warn",
   "stateless-method": "warn",

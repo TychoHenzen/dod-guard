@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "strict",
   "createdAt": "2026-09-16T14:08:26.565Z",
-  "total": 158,
+  "total": 161,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -1372,6 +1372,7 @@
     "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-file-tuples.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-file.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project.mjs",
+    "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project/environment.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-reachability-evidence.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-reachability-exports.mjs",
     "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-reachability.mjs",
@@ -1527,6 +1528,7 @@
     "packages/quality-guard/tests/skill-scripts/quality-refactor/scripts/lib/rules-comments-restatement.test.mjs",
     "packages/quality-guard/tests/skill-scripts/quality-refactor/scripts/lib/rules-comments-test-support.mjs",
     "packages/quality-guard/tests/skill-scripts/quality-refactor/scripts/lib/rules-comments.test.mjs",
+    "packages/quality-guard/tests/skill-scripts/quality-refactor/scripts/lib/rules-environment.test.mjs",
     "packages/quality-guard/tests/skill-scripts/quality-refactor/scripts/lib/rules-file-complexity.test.mjs",
     "packages/quality-guard/tests/skill-scripts/quality-refactor/scripts/lib/rules-file-fixtures.test.mjs",
     "packages/quality-guard/tests/skill-scripts/quality-refactor/scripts/lib/rules-file-interpolation.test.mjs",
@@ -1676,6 +1678,9 @@
     "packages/knowledge-base/src/store.ts::stateless-method": 1,
     "packages/code-explorer/scripts/reproduce-real-lsp-tracing.mjs::unused-local": 1,
     "packages/code-explorer/src/runtime-main.ts::unused-local": 1,
-    "packages/knowledge-base/src/index.ts::unused-local": 1
+    "packages/knowledge-base/src/index.ts::unused-local": 1,
+    "packages/quality-guard/tests/skill-scripts/quality-refactor/scripts/lib/rules-environment.test.mjs::file-length": 1,
+    "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project/environment.mjs::complexity": 1,
+    "packages/quality-guard/skills/quality-refactor/scripts/lib/rules-project/environment.mjs::else-branch": 1
   }
 }
