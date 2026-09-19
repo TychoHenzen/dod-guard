@@ -8,10 +8,14 @@ test("reports only Python and Rust wildcard imports", () => {
   const files = [
     fileWithCode("src/wild.py", "from package import *\n", { lang: "py" }),
     fileWithCode("src/wild.rs", "use crate::items::*;\n", { lang: "rs" }),
-    fileWithCode("src/ordinary.py", "from package import name\n", { lang: "py" }),
-    fileWithCode("src/ordinary.rs", "use crate::items::Name;\n", { lang: "rs" }),
+    fileWithCode("src/ordinary.py", "from package import name\n", {
+      lang: "py",
+    }),
+    fileWithCode("src/ordinary.rs", "use crate::items::Name;\n", {
+      lang: "rs",
+    }),
     fileWithCode("src/using.cs", "using System;\n", { lang: "cs" }),
-    fileWithCode("src/export.ts", "export * from \"./module.js\";\n"),
+    fileWithCode("src/export.ts", 'export * from "./module.js";\n'),
   ];
   const found = checkWildcardImports({
     files,
