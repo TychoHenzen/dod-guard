@@ -8,6 +8,7 @@ import {
 import { sortViolations, summarize } from "./lib/report.mjs";
 import { scanFile } from "./lib/rules-file.mjs";
 import { checkDuplication, checkReachability } from "./lib/rules-project.mjs";
+import { checkEnvironment } from "./lib/rules-environment.mjs";
 import { collectManifests } from "./lib/manifests.mjs";
 import { collectFiles, loadFiles } from "./lib/walk.mjs";
 export function scan(options, config) {
@@ -30,6 +31,7 @@ export function scan(options, config) {
     checkReachability({ files, scans, config, manifests }),
   );
   violations = violations.concat(checkDuplication(files, config));
+  violations = violations.concat(checkEnvironment(options.root, config));
   if (options.rules)
     violations = violations.filter((violation) =>
       options.rules.includes(violation.rule),
