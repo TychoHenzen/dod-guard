@@ -17,6 +17,8 @@ const RULE_ORDER = [
   "stateless-method",
   "comment-bloat",
   "comment-restates-code",
+  "comment-metadata",
+  "comment-placeholder",
   "build-entrypoint",
   "test-entrypoint",
   "todo-marker",
