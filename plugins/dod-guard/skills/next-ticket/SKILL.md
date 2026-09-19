@@ -79,9 +79,15 @@ Before reporting a ticket as ready, read its body and require:
 - implementation notes;
 - acceptance criteria written as checkboxes with observable outcomes.
 
-Require every linked sub-issue to be open or closed with pushed implementation
-evidence. A parent PBI with no linked sub-issues is valid when its acceptance
-criteria form one coherent implementation slice.
+For an ordinary parent, require every linked sub-issue to be open or closed
+with pushed implementation evidence. A parent PBI with no linked sub-issues is
+valid only when it is a small, clear implementation slice. For a structured
+PBI, require exactly one linked child for implementation; wiring and end-to-end
+usability; refactoring and quality; and fixing and reliability. Each mandatory
+child must be actionable and `Todo` before execution starts; require pushed
+implementation evidence before a commit or PR handoff, not before execution.
+Stop before implementation when a mandatory category is absent, duplicated, or
+not actionable.
 
 Stop and name the missing section when the issue is incomplete. Do not invent
 requirements.
@@ -173,9 +179,11 @@ Generate tracked build outputs and ratchet baselines on the feature branch when
 the repository requires them. Inspect those changes as part of the same review.
 Do not rely on CI to write generated files or repair the branch.
 
-Map each acceptance criterion to fresh evidence. Stop before committing when a
-criterion is unmet, a required check fails, or required proof cannot run. State
-the exact failed command or unverified criterion.
+Map each acceptance criterion to fresh evidence. For a structured PBI, also map
+every mandatory child to its owning task, changed files or verified remote
+state, commit, and fresh verification. Stop before committing or PR handoff
+when a criterion or mandatory child is unmet, a required check fails, or
+required proof cannot run. State the exact failed command or unverified item.
 
 ## Independent completion review
 
