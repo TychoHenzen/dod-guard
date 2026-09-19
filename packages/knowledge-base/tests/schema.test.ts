@@ -54,10 +54,7 @@ test("preserves Chapter 2 source provenance and hierarchy", async () => {
 });
 
 test("preserves Chapter 3 source provenance and hierarchy", async () => {
-  const entry = parseKnowledgeDocument(
-    await exampleText("clean-code.functions.md"),
-    "entries/clean-code.functions.md",
-  );
+  const entry = parseKnowledgeDocument(await exampleText("clean-code.functions.md"), "entries/clean-code.functions.md");
 
   assert.equal(entry.key, "clean-code.functions");
   assert.equal(entry.chapter, "clean-code");
