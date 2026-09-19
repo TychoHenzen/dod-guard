@@ -8,7 +8,7 @@ import { scan } from "../../../../../skills/quality-refactor/scripts/quality-sca
 import {
   checkEnvironment,
   resolveEntrypoints,
-} from "../../../../../skills/quality-refactor/scripts/lib/rules-environment.mjs";
+} from "../../../../../skills/quality-refactor/scripts/lib/rules-project.mjs";
 
 function withProject(files, check) {
   const root = mkdtempSync(join(tmpdir(), "quality-environment-"));

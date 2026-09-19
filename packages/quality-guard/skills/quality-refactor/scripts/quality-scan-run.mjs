@@ -7,8 +7,11 @@ import {
 } from "./quality-scan-output.mjs";
 import { sortViolations, summarize } from "./lib/report.mjs";
 import { scanFile } from "./lib/rules-file.mjs";
-import { checkDuplication, checkReachability } from "./lib/rules-project.mjs";
-import { checkEnvironment } from "./lib/rules-environment.mjs";
+import {
+  checkDuplication,
+  checkEnvironment,
+  checkReachability,
+} from "./lib/rules-project.mjs";
 import { collectManifests } from "./lib/manifests.mjs";
 import { collectFiles, loadFiles } from "./lib/walk.mjs";
 export function scan(options, config) {
