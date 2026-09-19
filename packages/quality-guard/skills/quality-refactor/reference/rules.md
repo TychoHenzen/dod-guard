@@ -295,8 +295,9 @@ prove output intent.
 
 **Detects:** C# `bool` / `System.Boolean`, TypeScript `boolean`, and Rust
 `bool` parameters when the type is explicitly declared. Inferred, generic,
-union, nullable, reference, optional, and default-valued parameters are left
-quiet.
+union, nullable, optional, and default-valued forms are left quiet. C# `ref`,
+`out`, and `in` modifiers do not suppress an explicit boolean type signal;
+Rust reference types and TypeScript's fake `this` parameter remain quiet.
 
 **Why hard:** a boolean argument usually selects between two behaviors, which
 means the function has two responsibilities hidden behind one call shape.
