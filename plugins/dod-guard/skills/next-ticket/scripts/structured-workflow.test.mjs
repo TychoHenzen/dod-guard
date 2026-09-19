@@ -40,7 +40,7 @@ test("README and usage expose every structured stage contract", () => {
     ["Requirements", "`/refine-backlog-item`", "Issue `Outcome`, `Scope`, and checked `Acceptance criteria`", "Clarify gaps, then plan."],
     ["Clarification", "`/refine-backlog-item`", "`Implementation notes` with decisions and discovery evidence", "Only resolved requirements enter the plan."],
     ["Plan", "`/refine-backlog-item`", "`implementation-plan` record in the issue", "Break the plan into actionable tasks."],
-    ["Tasks", "`/refine-backlog-item`", "`task-list` record and independent linked sub-issues only when needed", "`Todo` PBI hands the task list to implementation."],
+    ["Tasks", "`/refine-backlog-item`", "`task-list` record and four mandatory linked child PBIs for structured work", "`Todo` PBI hands every child evidence to implementation on one branch and PR."],
     ["Implementation handoff", "`/next-ticket`", "Issue task list, issue branch, commits, and verification evidence", "A pushed branch can enter draft-PR convergence."],
     ["Convergence", "`/submit-draft-pr`", "Draft PR `## Convergence` section and any actionable issue remainder", "Review and acceptance remain separate."],
   ];
@@ -90,6 +90,16 @@ test("convergence blocks incomplete work and leaves the small-fix bypass", () =>
   assert.match(standard, /Before any\s+remainder write,\s+snapshot the issue body/);
   assert.match(submit, /snapshot the\s+issue body, task list, labels, links, Project item, and Status/);
   assert.match(submit, /After each successful mutation, read back\s+the changed state/);
+});
+
+test("structured parents require one evidenced child in every delivery category", () => {
+  assert.match(nextTicket, /no linked sub-issues is\s+valid only when it is a small, clear implementation slice/);
+  assert.match(nextTicket, /exactly one\s+linked child for implementation; wiring and end-to-end\s+usability; refactoring\s+and quality; and fixing and reliability/);
+  assert.match(nextTicket, /Each mandatory\s+child must be actionable and `Todo` before execution starts/);
+  assert.match(nextTicket, /pushed\s+implementation evidence before a commit or PR handoff, not before execution/);
+  assert.match(nextTicket, /map\s+every mandatory child to its owning task, changed files or verified remote\s+state, commit, and fresh verification/);
+  assert.match(submit, /exactly one actionable child for implementation; wiring and\s+end-to-end usability; refactoring and quality; and fixing and reliability/);
+  assert.match(submit, /Mandatory child categories: each mapped to the same parent branch/);
 });
 
 test("structured work retains safety stops and historical OpenSpec boundaries", () => {
