@@ -22,6 +22,12 @@ Unsupported plan features, failed checks, ambiguous Projects, and likely
 credentials stop setup with a mutation ledger. The skill never rewrites
 history, force-pushes, or silently replaces configuration.
 
+Across delivery skills, ordinary failures retain their branch and checkpoint.
+After an uncertain write, the skill reads back the affected remote state before
+any retry, repairs the smallest verified cause, and resumes. One identical
+transient retry is allowed; safety, authority, credential, provider/head, and
+required-evidence failures still stop the workflow.
+
 ## Backlog to draft PR
 
 Capture one or more requested features without designing them:
