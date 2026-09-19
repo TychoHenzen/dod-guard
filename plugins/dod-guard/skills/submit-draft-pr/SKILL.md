@@ -50,10 +50,13 @@ branch with its outcome, `requirements`, `clarifications`,
 `implementation-plan`, `task-list`, acceptance criteria, and verification
 evidence before creating or updating the draft PR.
 
-Map every task and linked sub-issue to applicable evidence. For a code-backed
-sub-issue, map changed files and commits and require its pushed implementation.
-For an administrative sub-issue, map verified remote-state evidence instead of
-branch evidence. If implementation is incomplete or contradicted, snapshot the
+Map every task and linked sub-issue to applicable evidence. For a structured
+parent, require exactly one actionable child for implementation; wiring and
+end-to-end usability; refactoring and quality; and fixing and reliability, and
+map each category to the parent branch or verified remote-state evidence. For a
+code-backed sub-issue, map changed files and commits and require its pushed
+implementation. For an administrative sub-issue, map verified remote-state evidence
+instead of branch evidence. If implementation is incomplete or contradicted, snapshot the
 issue body, task list, labels, links, Project item, and Status before writing an
 actionable remainder. Immediately before each remainder mutation, reread those
 values and compare them with the latest snapshot. If any value changed, stop
@@ -67,6 +70,7 @@ by themselves. When all records agree, include this section in the draft PR body
 - Outcome: verified
 - Requirements and clarifications: verified
 - Plan and tasks: mapped to applicable branch or verified remote-state evidence
+- Mandatory child categories: each mapped to the same parent branch or verified remote-state evidence
 - Acceptance and verification: mapped to fresh evidence
 - Remainder: none
 ```

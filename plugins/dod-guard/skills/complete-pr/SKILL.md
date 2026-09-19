@@ -92,9 +92,27 @@ deleting a remote ref, local ref, or worktree.
 Never use `--admin`, force-push, weaken repository protections, or delete a ref
 whose SHA differs from the merged pull request head.
 
+## Finalize the parent unit
+
+Only after the helper returns a verified merge result, read the linked parent
+PBI, its linked child issues, and their one shared Project. For a structured
+parent, require exactly one child for implementation; wiring and end-to-end
+usability; refactoring and quality; and fixing and reliability. Resolve the
+shared Project, item, Status-field, and `Done` option IDs once, then use
+`gh project item-edit --id <item-id> --project-id <project-id> --field-id
+<status-field-id> --single-select-option-id <done-option-id>` for every status
+mutation. Set every mandatory child Project item to `Done`, then set the parent
+item to `Done`; after each mutation, read that item back from the shared Project
+before continuing. For every code-backed child, verify its pushed commit is
+included in the verified merge. Close a still-open code-backed child only after
+that verification. If a parent or child is still Backlog, Todo, or In Progress
+after the pass, repair that item and read it back before reporting completion.
+Never finalize a parent or child before the helper's merge result, and never
+alter unrelated Project items.
+
 ## Result
 
 Report the pull request, accepted head, final trusted head, merge commit, linked
-issue state, and remote branch deletion. Stop after the helper succeeds or
-returns a specific failure code. Publishing and plugin-cache refresh remain
-separate workflows.
+issue state, remote branch deletion, and parent/child Project finalization
+readback. Stop after the helper succeeds or returns a specific failure code.
+Publishing and plugin-cache refresh remain separate workflows.

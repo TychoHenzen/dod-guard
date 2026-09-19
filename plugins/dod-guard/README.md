@@ -59,7 +59,7 @@ For feature work or material ambiguity, use the structured path in the
 | Requirements | `/refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
 | Clarification | `/refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
 | Plan | `/refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
-| Tasks | `/refine-backlog-item` | `task-list` record and independent linked sub-issues only when needed | `Todo` PBI hands the task list to implementation. |
+| Tasks | `/refine-backlog-item` | `task-list` record and four mandatory linked child PBIs for structured work | `Todo` PBI hands every child evidence to implementation on one branch and PR. |
 | Implementation handoff | `/next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
 | Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
