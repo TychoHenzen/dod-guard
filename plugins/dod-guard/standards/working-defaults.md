@@ -11,6 +11,17 @@ destructive action.
   another security risk, destructive or irreversible intent, provider or
   commit-head mismatch, required evidence that cannot be obtained, or pending
   work that cannot be separated safely.
+- For an ordinary failure, preserve the original checkpoint and record the
+  exact error, stage, PBI, branch or head, and attempts. Read back remote state
+  after an uncertain write, then classify the failure as transient/provider,
+  stale state or race, code/test/quality, merge conflict, authorization/policy,
+  or skill/runtime. Use the smallest reversible repair and its narrow proof,
+  then resume that checkpoint. Retry an identical transient failure at most
+  once. Do not retry a mutation before its readback, loop blindly, or convert a
+  security, authority, destructive, provider/head, or missing-evidence stop
+  into ordinary recovery. After local triage, a confirmed blocker must use
+  `/codex-advisor` with `gpt-5.6-luna` at `max` effort; its advice never
+  replaces the invoking skill's repair or proof.
 - For a skill that commits or pushes, inspect a dirty worktree first. Treat
   ordinary, clearly in-scope pending changes as input to its normal `/commit`
   path. Preserve and report secrets, destructive intent, and unrelated or

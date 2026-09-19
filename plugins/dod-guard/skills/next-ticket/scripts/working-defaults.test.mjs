@@ -56,6 +56,10 @@ test("policy fixtures cover decisive choices, dirty state, stale tests, and safe
     /Never\s+weaken\s+or\s+delete a test/,
     /explicit user approval/,
     /unverified success/,
+    /preserve the original checkpoint/,
+    /Retry an identical transient failure at most\s+once/,
+    /Read back remote state\s+after an uncertain write/,
+    /confirmed blocker must use\s+`\/codex-advisor` with `gpt-5\.6-luna` at `max` effort/,
   ]) {
     assert.match(defaults, signal);
   }

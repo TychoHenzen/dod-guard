@@ -22,6 +22,12 @@ Unsupported plan features, failed checks, ambiguous Projects, and likely
 credentials stop setup with a mutation ledger. The skill never rewrites
 history, force-pushes, or silently replaces configuration.
 
+Across delivery skills, ordinary failures retain their branch and checkpoint.
+After an uncertain write, the skill reads back the affected remote state before
+any retry, repairs the smallest verified cause, and resumes. One identical
+transient retry is allowed; safety, authority, credential, provider/head, and
+required-evidence failures still stop the workflow.
+
 ## Backlog to draft PR
 
 Capture one or more requested features without designing them:
@@ -156,8 +162,8 @@ implementation:
 
 The skill sends a bounded prompt containing fixed advice-only instructions and
 the complete problem description through stdin to a separate `codex exec`
-process. It uses `low` by default, supports the `low`, `medium`, and `high`
-reasoning values, and accepts an optional `--model=<model>` setting. It uses an
+process. It uses `gpt-5.6-luna` with `max` reasoning by default and accepts an
+optional `--model=<model>` setting. It uses an
 empty non-repository working directory, read-only restrictions, and an
 ephemeral session, and tells the advisor to skip repository research and
 mutations. Missing commands, non-zero exits, timeouts, and malformed responses

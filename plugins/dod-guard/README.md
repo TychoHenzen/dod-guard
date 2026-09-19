@@ -41,6 +41,12 @@ exactly one open GitHub Project explicitly linked to it.
 `/quick-pbi` runs those delivery stages in order for a user request. It asks
 questions only when `/refine-backlog-item` needs material clarification.
 
+Ordinary provider, stale-state, test, or runtime failures keep their original
+checkpoint: the skill reads back uncertain writes, makes the smallest reversible
+repair, proves it narrowly, and resumes. It retries one identical transient
+failure at most once. Credentials, authority, destructive actions, provider or
+head mismatches, and missing required evidence remain stop conditions.
+
 One issue becomes one branch and one draft pull request:
 
 ```text

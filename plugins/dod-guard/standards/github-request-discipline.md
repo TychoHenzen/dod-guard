@@ -33,6 +33,9 @@ uses narrow operations, reuses a run snapshot, and avoids duplicate calls.
 - Re-read only the mutated resource for safety. Do not rebuild the whole
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.
+- After a failed, timed-out, or ambiguous write, read back that resource before
+  retrying or issuing another mutation. Resume only from the observed state;
+  retry one identical transient provider failure at most once.
 - On primary exhaustion, stop and report the reset time. On a secondary limit,
   honor `Retry-After` or the reset time, then use exponential backoff.
 - Use pagination only when one page cannot satisfy the request. Request up to

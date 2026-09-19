@@ -100,8 +100,8 @@ export async function runAdvisor({
   prompt,
   executable = process.platform === "win32" ? "codex.cmd" : "codex",
   prefixArgs = [],
-  model,
-  reasoningEffort = "low",
+  model = "gpt-5.6-luna",
+  reasoningEffort = "max",
   schemaPath = defaultSchemaPath,
   tempRoot = tmpdir(),
   timeoutMs = 60_000,
@@ -195,8 +195,8 @@ async function main() {
   const result = await runAdvisor({
     prefixArgs,
     prompt: await readStdin(),
-    model: optionValue("--model"),
-    reasoningEffort: optionValue("--reasoning-effort", "low"),
+    model: optionValue("--model", "gpt-5.6-luna"),
+    reasoningEffort: optionValue("--reasoning-effort", "max"),
     timeoutMs: Number(optionValue("--timeout-ms", "60000")),
   });
   if (!result.ok) {

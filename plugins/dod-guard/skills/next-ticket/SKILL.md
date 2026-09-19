@@ -150,6 +150,12 @@ Do not create or switch to an existing branch. Report the exact completed
 actions if a later mutation fails. Keep the successfully created branch and
 remote state for diagnosis instead of attempting an automatic rollback.
 
+If a Start-the-ticket action fails, times out, or returns ambiguously, read back
+the local and remote branch, issue assignee, and Project status before retrying.
+Preserve the created branch and resume only the missing action from that
+observed checkpoint; never create a second branch, repeat an assignment, or
+repeat a status mutation before its readback.
+
 ## Implement the issue
 
 Read the repository instructions that apply to every file the issue touches.

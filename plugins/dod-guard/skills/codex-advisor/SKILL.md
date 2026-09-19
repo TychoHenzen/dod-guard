@@ -24,9 +24,9 @@ rules below are the exception only where they are more specific.
 ## Invoke Codex
 
 1. Resolve the current CLI with `codex --version` and `codex exec --help`.
-   Current help does not enumerate reasoning values. Codex issue #107 documents
-   values low, medium, and high. Use `low` by default and pass the selected
-   value as `-c model_reasoning_effort=<value>`. If the CLI itself cannot start,
+   Current help does not enumerate reasoning values. Use `gpt-5.6-luna` with
+   `max` effort by default and pass the selected value as
+   `-c model_reasoning_effort=<value>`. If the CLI itself cannot start,
    report the availability failure and stop.
 2. Build a prompt containing fixed advice-only instructions and the complete
    problem description. Tell the advisor to skip repository research, avoid
@@ -40,7 +40,7 @@ rules below are the exception only where they are more specific.
    `--ephemeral`:
 
    ```text
-   <bounded-prompt> | node "<skill-directory>/scripts/run-advisor.mjs" [--model=<model>] --reasoning-effort=low
+   <bounded-prompt> | node "<skill-directory>/scripts/run-advisor.mjs" [--model=<model>] --reasoning-effort=max
    ```
 
    The runner forwards an optional `--model` to `codex exec --model`. It passes

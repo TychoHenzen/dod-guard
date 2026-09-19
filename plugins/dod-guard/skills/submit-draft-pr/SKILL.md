@@ -94,3 +94,9 @@ Keep the body short. Include:
 
 Leave the Project item `In Progress`. Report the PR URL, head commit, and
 verification evidence. Stop after the draft PR is updated.
+
+If pull-request creation or update fails, times out, or returns ambiguously,
+read back the branch's open pull request and its head before retrying. Update
+the one observed PR when it exists at the intended branch; otherwise retry one
+identical transient creation once. Do not create a second PR or alter a PR whose
+head no longer matches the verified branch.

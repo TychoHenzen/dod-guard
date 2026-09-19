@@ -8,6 +8,7 @@ import { runAdvisor } from "./run-advisor.mjs";
 
 const skillDirectory = fileURLToPath(new URL("../", import.meta.url));
 const skill = await readFile(`${skillDirectory}SKILL.md`, "utf8");
+const runner = await readFile(new URL("./run-advisor.mjs", import.meta.url), "utf8");
 const schema = JSON.parse(await readFile(`${skillDirectory}response-schema.json`, "utf8"));
 
 async function createFixture() {
@@ -159,7 +160,7 @@ test("advisor skill has the bounded Codex invocation contract", () => {
   assert.match(skill, /^---\nname: codex-advisor\n/m);
   for (const signal of [
     /scripts[\\/]run-advisor\.mjs/,
-    /low, medium, and high/,
+    /`gpt-5\.6-luna` with\s+`max` effort by default/,
     /does not enumerate reasoning values/i,
     /empty,\s+non-repository working directory/,
     /-s read-only/,
@@ -182,6 +183,13 @@ test("advisor skill has the bounded Codex invocation contract", () => {
   assert.doesNotMatch(skill, /codec\s+exec/);
   assert.doesNotMatch(skill, /dangerously-bypass/);
   assert.doesNotMatch(skill, /researched host/);
+});
+
+test("advisor defaults to Luna max for confirmed blockers", () => {
+  assert.match(runner, /optionValue\("--model", "gpt-5\.6-luna"\)/);
+  assert.match(runner, /optionValue\("--reasoning-effort", "max"\)/);
+  assert.match(runner, /model = "gpt-5\.6-luna"/);
+  assert.match(runner, /reasoningEffort = "max"/);
 });
 
 test("advisor schema rejects whitespace-only advice", () => {
