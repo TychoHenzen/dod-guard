@@ -4,7 +4,10 @@ import { parseKnowledgeDocument } from "../src/schema.js";
 import { exampleText } from "./test-support.js";
 
 test("preserves Chapter 13 source provenance and hierarchy", async () => {
-  const entry = parseKnowledgeDocument(await exampleText("clean-code.concurrency.md"), "entries/clean-code.concurrency.md");
+  const entry = parseKnowledgeDocument(
+    await exampleText("clean-code.concurrency.md"),
+    "entries/clean-code.concurrency.md",
+  );
 
   assert.equal(entry.key, "clean-code.concurrency");
   assert.equal(entry.chapter, "clean-code");
