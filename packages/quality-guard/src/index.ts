@@ -31,7 +31,6 @@ export function createQualityGuardServer(): McpServer {
 
 const server = createQualityGuardServer();
 const _filename = fileURLToPath(import.meta.url);
-
 function runReportCommand(args: string[]): void {
   const root = args
     .find((arg) => arg.startsWith("--root="))
