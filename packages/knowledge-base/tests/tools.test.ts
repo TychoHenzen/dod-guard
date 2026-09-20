@@ -214,6 +214,27 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(objectsData.entry.sources[0].label, /PDF pages 124-132/);
     assert.match(objectsData.entry.content, /Law of Demeter/);
 
+    const errorHandlingSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.error-handling" },
+        }),
+      ),
+    );
+    assert.equal(errorHandlingSummaries.entries[0].key, "clean-code.error-handling");
+    assert.match(errorHandlingSummaries.entries[0].summary, /exceptions|normal flow/);
+    assert.equal("content" in errorHandlingSummaries.entries[0], false);
+
+    const errorHandling = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.error-handling" } })),
+    );
+    assert.equal(errorHandling.guidance.kind, "reference_guidance");
+    assert.equal(errorHandling.guidance.executable, false);
+    assert.match(errorHandling.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(errorHandling.entry.sources[0].label, /PDF pages 134-143/);
+    assert.match(errorHandling.entry.content, /try-catch-finally/);
+
     const saved = JSON.parse(
       text(
         await client.callTool({
