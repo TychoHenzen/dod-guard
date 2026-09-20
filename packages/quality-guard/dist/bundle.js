@@ -22755,6 +22755,78 @@ function analyzeDependencies(input) {
   ]);
 }
 
+// src/commit-gate/design-smells/design-smells.ts
+function groupsFor(path15, config2) {
+  return config2.lowLevelPathGroups.filter(
+    (group) => config2.pathGroups[group]?.some(
+      (pattern) => matchesArchitecturePath(path15, pattern)
+    )
+  );
+}
+function configurationFindings(file, config2) {
+  const path15 = normalizeArchitecturePath(file.path);
+  return groupsFor(path15, config2).flatMap(
+    (group) => (file.configurationDefaults ?? []).map((defaultValue) => ({
+      kind: "configurable-data",
+      path: path15,
+      group,
+      ...defaultValue
+    }))
+  );
+}
+function markerMatch(value, markers) {
+  const normalized = value.toLowerCase();
+  return markers.some((marker) => normalized.includes(marker.toLowerCase()));
+}
+function navigationFindings(file, config2) {
+  const path15 = normalizeArchitecturePath(file.path);
+  return (file.transitiveNavigation ?? []).filter(
+    (chain) => !(markerMatch(chain.root, config2.fluentMarkers) || chain.hops.some((hop) => markerMatch(hop, config2.fluentMarkers)))
+  ).map((chain) => ({
+    kind: "transitive-navigation",
+    path: path15,
+    ...chain
+  }));
+}
+function key(finding) {
+  return JSON.stringify(finding);
+}
+function findingsFor(file, config2) {
+  return [
+    ...configurationFindings(file, config2),
+    ...navigationFindings(file, config2)
+  ];
+}
+function analyzeDesignSmells(input) {
+  const affected = new Set(input.affectedPaths.map(normalizeArchitecturePath));
+  const before = new Set(
+    input.beforeFiles.flatMap(
+      (file) => findingsFor(
+        { ...file, path: normalizeArchitecturePath(file.path) },
+        input.config
+      ).map(key)
+    )
+  );
+  return input.afterFiles.filter((file) => {
+    const path15 = normalizeArchitecturePath(file.path);
+    return affected.has(path15) && isProductionArchitecturePath(path15, input.config);
+  }).flatMap(
+    (file) => findingsFor(file, input.config).filter(
+      (finding) => !before.has(key(finding))
+    )
+  ).sort(
+    (left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))
+  );
+}
+function analyzeCurrentDesignSmells(files, config2) {
+  return analyzeDesignSmells({
+    beforeFiles: [],
+    afterFiles: files,
+    affectedPaths: files.map((file) => file.path),
+    config: config2
+  });
+}
+
 // src/commit-gate/encapsulation-callers.ts
 function observedCallers(symbol, files, config2) {
   const productionCallers = [];
@@ -22776,7 +22848,7 @@ function observedCallers(symbol, files, config2) {
 }
 
 // src/commit-gate/encapsulation-public.ts
-function key(type, member) {
+function key2(type, member) {
   return `${type.name}.${member.name}`;
 }
 function members(type) {
@@ -22803,7 +22875,7 @@ function testOnlyFinding(filePath, symbol, callers) {
 function memberFindings(input) {
   if (input.priorMembers.has(`${input.member.kind}\0${input.member.name}`))
     return [];
-  const symbol = key(input.type, input.member);
+  const symbol = key2(input.type, input.member);
   const callers = observedCallers(symbol, input.afterFiles, input.config);
   const finding = surfaceFinding(input.filePath, symbol, callers);
   if (callers.productionCallers.length === 0 && callers.testCallers.length > 0) {
@@ -22870,78 +22942,6 @@ function analyzeEncapsulation(input) {
   return findings.sort(
     (left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))
   );
-}
-
-// src/commit-gate/design-smells/design-smells.ts
-function groupsFor(path15, config2) {
-  return config2.lowLevelPathGroups.filter(
-    (group) => config2.pathGroups[group]?.some(
-      (pattern) => matchesArchitecturePath(path15, pattern)
-    )
-  );
-}
-function configurationFindings(file, config2) {
-  const path15 = normalizeArchitecturePath(file.path);
-  return groupsFor(path15, config2).flatMap(
-    (group) => (file.configurationDefaults ?? []).map((defaultValue) => ({
-      kind: "configurable-data",
-      path: path15,
-      group,
-      ...defaultValue
-    }))
-  );
-}
-function markerMatch(value, markers) {
-  const normalized = value.toLowerCase();
-  return markers.some((marker) => normalized.includes(marker.toLowerCase()));
-}
-function navigationFindings(file, config2) {
-  const path15 = normalizeArchitecturePath(file.path);
-  return (file.transitiveNavigation ?? []).filter(
-    (chain) => !markerMatch(chain.root, config2.fluentMarkers) && !chain.hops.some((hop) => markerMatch(hop, config2.fluentMarkers))
-  ).map((chain) => ({
-    kind: "transitive-navigation",
-    path: path15,
-    ...chain
-  }));
-}
-function key2(finding) {
-  return JSON.stringify(finding);
-}
-function findingsFor(file, config2) {
-  return [
-    ...configurationFindings(file, config2),
-    ...navigationFindings(file, config2)
-  ];
-}
-function analyzeDesignSmells(input) {
-  const affected = new Set(input.affectedPaths.map(normalizeArchitecturePath));
-  const before = new Set(
-    input.beforeFiles.flatMap(
-      (file) => findingsFor(
-        { ...file, path: normalizeArchitecturePath(file.path) },
-        input.config
-      ).map(key2)
-    )
-  );
-  return input.afterFiles.filter((file) => {
-    const path15 = normalizeArchitecturePath(file.path);
-    return affected.has(path15) && isProductionArchitecturePath(path15, input.config);
-  }).flatMap(
-    (file) => findingsFor(file, input.config).filter(
-      (finding) => !before.has(key2(finding))
-    )
-  ).sort(
-    (left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))
-  );
-}
-function analyzeCurrentDesignSmells(files, config2) {
-  return analyzeDesignSmells({
-    beforeFiles: [],
-    afterFiles: files,
-    affectedPaths: files.map((file) => file.path),
-    config: config2
-  });
 }
 
 // src/commit-gate/decision-findings-architecture.ts

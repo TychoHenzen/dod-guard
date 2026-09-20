@@ -1,11 +1,11 @@
 import type { ArchitectureFileFact } from "../architecture-file-fact.js";
 import type { QualityConfig } from "../config.js";
-import type { ConfigurationDefaultFact } from "./configuration-default-fact.js";
 import {
   isProductionArchitecturePath,
   matchesArchitecturePath,
   normalizeArchitecturePath,
 } from "../placement.js";
+import type { ConfigurationDefaultFact } from "./configuration-default-fact.js";
 
 type ConfigurationFinding = ConfigurationDefaultFact & {
   kind: "configurable-data";
@@ -46,8 +46,10 @@ function navigationFindings(file: ArchitectureFileFact, config: QualityConfig) {
   return (file.transitiveNavigation ?? [])
     .filter(
       (chain) =>
-        !markerMatch(chain.root, config.fluentMarkers) &&
-        !chain.hops.some((hop) => markerMatch(hop, config.fluentMarkers)),
+        !(
+          markerMatch(chain.root, config.fluentMarkers) ||
+          chain.hops.some((hop) => markerMatch(hop, config.fluentMarkers))
+        ),
     )
     .map((chain) => ({
       kind: "transitive-navigation" as const,

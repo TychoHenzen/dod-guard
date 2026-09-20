@@ -1,9 +1,9 @@
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import type { analyzeSimilarity } from "./architecture-similarity.js";
 import { analyzeDependencies } from "./dependency.js";
+import { reviewPathFindings } from "./design-smells/review-path-findings.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzePlacement } from "./placement.js";
-import { reviewPathFindings } from "./design-smells/review-path-findings.js";
 import { createFinding, type DecisionResult } from "./types.js";
 
 function architectureFinding(input: {

@@ -9,8 +9,8 @@ import {
   similarityFindings,
 } from "./decision-architecture-mappers.js";
 import { analyzeDependencies } from "./dependency.js";
-import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzeDesignSmells } from "./design-smells/design-smells.js";
+import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzePlacement } from "./placement.js";
 import type { DecisionResult } from "./types.js";
 
