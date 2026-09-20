@@ -377,6 +377,28 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(junitInternals.entry.content, /tests as documentation|test suite/);
     assert.match(junitInternals.entry.content, /Delete dead conditionals|dead conditionals/);
 
+    const serialDateSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.refactoring-serialdate" },
+        }),
+      ),
+    );
+    assert.equal(serialDateSummaries.entries[0].key, "clean-code.refactoring-serialdate");
+    assert.match(serialDateSummaries.entries[0].summary, /tests|refactor|clear/);
+    assert.equal("content" in serialDateSummaries.entries[0], false);
+
+    const serialDate = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.refactoring-serialdate" } })),
+    );
+    assert.equal(serialDate.guidance.kind, "reference_guidance");
+    assert.equal(serialDate.guidance.executable, false);
+    assert.match(serialDate.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(serialDate.entry.sources[0].label, /PDF pages 299-316/);
+    assert.match(serialDate.entry.content, /green|tests/);
+    assert.match(serialDate.entry.content, /flag arguments|named types/);
+
     const refinementSummaries = JSON.parse(
       text(
         await client.callTool({
