@@ -15,6 +15,7 @@ const exampleNames = [
   "clean-code.objects-data-structures.md",
   "clean-code.error-handling.md",
   "clean-code.unit-tests.md",
+  "clean-code.systems.md",
   "refactoring.move-method.md",
   "design-patterns.strategy.md",
   "ux-ui-design.accessible-dialogs.md",
@@ -30,6 +31,7 @@ export const cleanCodeSectionKeys = [
   "clean-code.functions",
   "clean-code.meaningful-names",
   "clean-code.objects-data-structures",
+  "clean-code.systems",
   "clean-code.unit-tests",
 ];
 
