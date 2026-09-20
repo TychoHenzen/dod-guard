@@ -18,28 +18,22 @@ function referencesFor(source, types, imports) {
   );
 }
 
-export function extractArchitectureFacts(file) {
-  const lang = languageFor(file.path);
-  if (!lang)
-    return {
-      facts: {
-        path: file.path,
-        language: null,
-        imports: [],
-        references: [],
-        types: [],
-        configurationDefaults: [],
-        transitiveNavigation: [],
-      },
-      errors: [],
-    };
-  const declared = declaredTypes(file.content, lang);
-  if (declared.error) return { facts: null, errors: [declared.error] };
-  const types = declared.types
-    .map((type) => typeFacts(type, lang))
-    .sort((left, right) => left.name.localeCompare(right.name));
-  const imports = importsFor(file.content, lang);
-  const design = designFacts(file.content, lang);
+function emptyFacts(path) {
+  return {
+    facts: {
+      path,
+      language: null,
+      imports: [],
+      references: [],
+      types: [],
+      configurationDefaults: [],
+      transitiveNavigation: [],
+    },
+    errors: [],
+  };
+}
+
+function factsFor(file, { lang, types, imports }) {
   return {
     facts: {
       path: file.path,
@@ -47,8 +41,20 @@ export function extractArchitectureFacts(file) {
       imports,
       references: referencesFor(file.content, types, imports),
       types,
-      ...design,
+      ...designFacts(file.content, lang),
     },
     errors: [],
   };
+}
+
+export function extractArchitectureFacts(file) {
+  const lang = languageFor(file.path);
+  if (!lang) return emptyFacts(file.path);
+  const declared = declaredTypes(file.content, lang);
+  if (declared.error) return { facts: null, errors: [declared.error] };
+  const types = declared.types
+    .map((type) => typeFacts(type, lang))
+    .sort((left, right) => left.name.localeCompare(right.name));
+  const imports = importsFor(file.content, lang);
+  return factsFor(file, { lang, types, imports });
 }

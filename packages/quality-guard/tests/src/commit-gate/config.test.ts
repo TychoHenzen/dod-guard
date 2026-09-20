@@ -78,3 +78,11 @@ test("rejects invalid and unknown config", () => {
     assert.throws(() => parseQualityConfig(source), ConfigError, source);
   }
 });
+
+test("rejects inherited path-group names", () => {
+  assert.throws(
+    () =>
+      parseQualityConfig(JSON.stringify({ lowLevelPathGroups: ["toString"] })),
+    ConfigError,
+  );
+});

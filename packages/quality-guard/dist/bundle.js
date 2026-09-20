@@ -22052,19 +22052,27 @@ function optionalPaths(input) {
     )
   };
 }
-function parseQualityConfig(source) {
+function validateLowLevelPathGroups(pathGroups, lowLevelPathGroups) {
+  if (lowLevelPathGroups.some((name) => !Object.hasOwn(pathGroups, name)))
+    throw new ConfigError(
+      "lowLevelPathGroups references an unknown path group"
+    );
+}
+function parseRoot(source) {
   let parsed;
   try {
     parsed = JSON.parse(source);
   } catch {
     throw new ConfigError("must contain valid JSON");
   }
-  const input = record2(parsed, "root");
+  return record2(parsed, "root");
+}
+function parseQualityConfig(source) {
+  const input = parseRoot(source);
   keysOnly(input, CONFIG_KEYS, "root");
   const pathGroups = parseGroups(input.pathGroups);
   const optional2 = optionalPaths(input);
-  if (optional2.lowLevelPathGroups.some((name) => !(name in pathGroups)))
-    throw new ConfigError("lowLevelPathGroups references an unknown path group");
+  validateLowLevelPathGroups(pathGroups, optional2.lowLevelPathGroups);
   return {
     pathGroups,
     dependencyDirections: parseDirections(
@@ -22421,6 +22429,19 @@ function normalizeFindings(findings) {
   return findings.map(({ id: _id, ...finding }) => createFinding(finding)).sort((left, right) => left.id.localeCompare(right.id));
 }
 
+// src/commit-gate/design-smells/review-path-findings.ts
+function reviewPathFindings(findings, reason) {
+  return findings.map(
+    (finding) => createFinding({
+      severity: "review",
+      affectedPaths: [finding.path],
+      before: {},
+      after: { ...finding },
+      reason: `${finding.kind}: ${reason(finding)}`
+    })
+  );
+}
+
 // src/commit-gate/decision-architecture-mappers.ts
 function architectureFinding(input) {
   return createFinding({
@@ -22468,25 +22489,15 @@ function dependencyFindings(findings) {
   );
 }
 function encapsulationFindings(findings) {
-  return findings.map(
-    (finding) => architectureFinding({
-      kind: finding.kind,
-      severity: "review",
-      affectedPaths: [finding.path],
-      evidence: finding,
-      reason: "public or compatibility surface changed"
-    })
+  return reviewPathFindings(
+    findings,
+    () => "public or compatibility surface changed"
   );
 }
 function designFindings(findings) {
-  return findings.map(
-    (finding) => architectureFinding({
-      kind: finding.kind,
-      severity: "review",
-      affectedPaths: [finding.path],
-      evidence: { ...finding },
-      reason: finding.kind === "configurable-data" ? "a configuration default is owned by a configured low-level module" : "a simple receiver chain crosses multiple collaborators"
-    })
+  return reviewPathFindings(
+    findings,
+    (finding) => finding.kind === "configurable-data" ? "a configuration default is owned by a configured low-level module" : "a simple receiver chain crosses multiple collaborators"
   );
 }
 
@@ -22898,19 +22909,31 @@ function key2(finding) {
   return JSON.stringify(finding);
 }
 function findingsFor(file, config2) {
-  return [...configurationFindings(file, config2), ...navigationFindings(file, config2)];
+  return [
+    ...configurationFindings(file, config2),
+    ...navigationFindings(file, config2)
+  ];
 }
 function analyzeDesignSmells(input) {
   const affected = new Set(input.affectedPaths.map(normalizeArchitecturePath));
   const before = new Set(
     input.beforeFiles.flatMap(
-      (file) => findingsFor({ ...file, path: normalizeArchitecturePath(file.path) }, input.config).map(key2)
+      (file) => findingsFor(
+        { ...file, path: normalizeArchitecturePath(file.path) },
+        input.config
+      ).map(key2)
     )
   );
   return input.afterFiles.filter((file) => {
     const path15 = normalizeArchitecturePath(file.path);
     return affected.has(path15) && isProductionArchitecturePath(path15, input.config);
-  }).flatMap((file) => findingsFor(file, input.config).filter((finding) => !before.has(key2(finding)))).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  }).flatMap(
+    (file) => findingsFor(file, input.config).filter(
+      (finding) => !before.has(key2(finding))
+    )
+  ).sort(
+    (left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))
+  );
 }
 function analyzeCurrentDesignSmells(files, config2) {
   return analyzeDesignSmells({
@@ -24379,20 +24402,42 @@ function nextParamDepth2(depth, ch) {
   if (")]}>".includes(ch)) return depth - 1;
   return depth;
 }
+function startsQuote(text2, index, ch) {
+  return ch !== "'" || !["&", ":", "<", ">"].includes(text2[index - 1]);
+}
+function nextQuoteState(state, ch) {
+  const escaped = state.escaped;
+  state.escaped = !escaped && ch === "\\";
+  if (!escaped && ch === state.quote) state.quote = void 0;
+}
+function appendUnquoted(state, ch, params) {
+  state.depth = nextParamDepth2(state.depth, ch);
+  if (ch === "," && state.depth === 0) {
+    params.push(state.current);
+    state.current = "";
+    return;
+  }
+  state.current += ch;
+}
 function splitTopLevel(text2) {
   const params = [];
-  let depth = 0;
-  let current = "";
-  for (const ch of text2) {
-    depth = nextParamDepth2(depth, ch);
-    if (ch === "," && depth === 0) {
-      params.push(current);
-      current = "";
+  const state = { depth: 0, current: "" };
+  let quoteState = { quote: void 0, escaped: false };
+  for (let index = 0; index < text2.length; index += 1) {
+    const ch = text2[index];
+    if (quoteState.quote) {
+      state.current += ch;
+      nextQuoteState(quoteState, ch);
       continue;
     }
-    current += ch;
+    if (`"'\``.includes(ch) && startsQuote(text2, index, ch)) {
+      quoteState = { quote: ch, escaped: false };
+      state.current += ch;
+      continue;
+    }
+    appendUnquoted(state, ch, params);
   }
-  params.push(current);
+  params.push(state.current);
   return params;
 }
 function isParameter(param) {
@@ -24560,12 +24605,15 @@ function defaultOffset(parameter) {
 function parameterName(left, lang) {
   const cleaned = left.replace(/\b(?:ref|out|in|params|mut)\b/g, "").trim();
   if (lang === "py") return /^\*{0,2}([A-Za-z_]\w*)/.exec(cleaned)?.[1];
-  if (lang === "ts") return /^\.\.\.?(?:\s*)?([A-Za-z_$][\w$]*)/.exec(cleaned)?.[1] ?? cleaned.split(":", 1)[0].trim().match(/[A-Za-z_$][\w$]*$/)?.[0];
+  if (lang === "ts")
+    return /^\.\.\.?(?:\s*)?([A-Za-z_$][\w$]*)/.exec(cleaned)?.[1] ?? cleaned.split(":", 1)[0].trim().match(/[A-Za-z_$][\w$]*$/)?.[0];
   return cleaned.match(/[A-Za-z_]\w*$/)?.[0];
 }
 function literalDefault(value) {
   const trimmed = value.trim();
-  return /^(?:[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?[uUlLfFdDmM]*|true|false|null|undefined|none|nil)$/i.test(trimmed) || /^(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')$/s.test(trimmed) ? trimmed : void 0;
+  return /^(?:[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?[uUlLfFdDmM]*|true|false|null|undefined|none|nil)$/i.test(
+    trimmed
+  ) || /^(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')$/s.test(trimmed) ? trimmed : void 0;
 }
 function configurationDefaults(source, lang) {
   if (lang === "rs") return [];
@@ -24577,7 +24625,14 @@ function configurationDefaults(source, lang) {
       if (split === -1) return [];
       const name = parameterName(parameter.slice(0, split), lang);
       const value = literalDefault(parameter.slice(split + 1));
-      return name && value && CONFIGURATION_PARAMETER.test(name) ? [{ method: fn.name, parameter: name, defaultValue: value, line: fn.line }] : [];
+      return name && value && CONFIGURATION_PARAMETER.test(name) ? [
+        {
+          method: fn.name,
+          parameter: name,
+          defaultValue: value,
+          line: fn.line
+        }
+      ] : [];
     })
   );
 }
@@ -24626,26 +24681,21 @@ function referencesFor(source, types, imports) {
     )
   );
 }
-function extractArchitectureFacts(file) {
-  const lang = languageFor(file.path);
-  if (!lang)
-    return {
-      facts: {
-        path: file.path,
-        language: null,
-        imports: [],
-        references: [],
-        types: [],
-        configurationDefaults: [],
-        transitiveNavigation: []
-      },
-      errors: []
-    };
-  const declared = declaredTypes(file.content, lang);
-  if (declared.error) return { facts: null, errors: [declared.error] };
-  const types = declared.types.map((type) => typeFacts2(type, lang)).sort((left, right) => left.name.localeCompare(right.name));
-  const imports = importsFor(file.content, lang);
-  const design = designFacts(file.content, lang);
+function emptyFacts(path15) {
+  return {
+    facts: {
+      path: path15,
+      language: null,
+      imports: [],
+      references: [],
+      types: [],
+      configurationDefaults: [],
+      transitiveNavigation: []
+    },
+    errors: []
+  };
+}
+function factsFor(file, { lang, types, imports }) {
   return {
     facts: {
       path: file.path,
@@ -24653,10 +24703,19 @@ function extractArchitectureFacts(file) {
       imports,
       references: referencesFor(file.content, types, imports),
       types,
-      ...design
+      ...designFacts(file.content, lang)
     },
     errors: []
   };
+}
+function extractArchitectureFacts(file) {
+  const lang = languageFor(file.path);
+  if (!lang) return emptyFacts(file.path);
+  const declared = declaredTypes(file.content, lang);
+  if (declared.error) return { facts: null, errors: [declared.error] };
+  const types = declared.types.map((type) => typeFacts2(type, lang)).sort((left, right) => left.name.localeCompare(right.name));
+  const imports = importsFor(file.content, lang);
+  return factsFor(file, { lang, types, imports });
 }
 
 // src/commit-gate/facts.ts
@@ -25392,7 +25451,9 @@ function analyzeCurrentArchitecture(files, config2) {
     dependencies: dependency.dependencies,
     cycles: dependency.cycles,
     encapsulation: encapsulationFor(files, paths, config2),
-    configurableData: design.filter((finding) => finding.kind === "configurable-data"),
+    configurableData: design.filter(
+      (finding) => finding.kind === "configurable-data"
+    ),
     transitiveNavigation: design.filter(
       (finding) => finding.kind === "transitive-navigation"
     )
@@ -25445,6 +25506,15 @@ function reportSummaries(files) {
 }
 
 // src/report-builder.ts
+var FILE_SELECTION = "supported handwritten source; generated, dependency, build, binary, unreadable, and symlinked files excluded";
+function scoring() {
+  return {
+    initial: 100,
+    errorDeduction: 5,
+    warningDeduction: 1,
+    minimum: 0
+  };
+}
 function compareFinding(left, right) {
   return left.line - right.line || left.rule.localeCompare(right.rule) || left.message.localeCompare(right.message);
 }
@@ -25474,15 +25544,10 @@ function buildQualityReport(scan, architecture) {
   const files = scoredFiles(scan, findingsByFile(scan));
   return {
     schemaVersion: 1,
-    scoring: {
-      initial: 100,
-      errorDeduction: 5,
-      warningDeduction: 1,
-      minimum: 0
-    },
+    scoring: scoring(),
     scanner: {
       profile: scan.profile,
-      fileSelection: "supported handwritten source; generated, dependency, build, binary, unreadable, and symlinked files excluded"
+      fileSelection: FILE_SELECTION
     },
     summaries: reportSummaries(files),
     files,

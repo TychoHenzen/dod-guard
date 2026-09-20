@@ -1,6 +1,6 @@
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
-import type { ConfigurationDefaultFact } from "./configuration-default-fact.js";
 import type { QualityConfig } from "./config.js";
+import type { ConfigurationDefaultFact } from "./design-smells/configuration-default-fact.js";
 import {
   isProductionArchitecturePath,
   matchesArchitecturePath,
@@ -61,7 +61,10 @@ function key(finding: object): string {
 }
 
 function findingsFor(file: ArchitectureFileFact, config: QualityConfig) {
-  return [...configurationFindings(file, config), ...navigationFindings(file, config)];
+  return [
+    ...configurationFindings(file, config),
+    ...navigationFindings(file, config),
+  ];
 }
 
 export function analyzeDesignSmells(input: {
@@ -73,16 +76,27 @@ export function analyzeDesignSmells(input: {
   const affected = new Set(input.affectedPaths.map(normalizeArchitecturePath));
   const before = new Set(
     input.beforeFiles.flatMap((file) =>
-      findingsFor({ ...file, path: normalizeArchitecturePath(file.path) }, input.config).map(key),
+      findingsFor(
+        { ...file, path: normalizeArchitecturePath(file.path) },
+        input.config,
+      ).map(key),
     ),
   );
   return input.afterFiles
     .filter((file) => {
       const path = normalizeArchitecturePath(file.path);
-      return affected.has(path) && isProductionArchitecturePath(path, input.config);
+      return (
+        affected.has(path) && isProductionArchitecturePath(path, input.config)
+      );
     })
-    .flatMap((file) => findingsFor(file, input.config).filter((finding) => !before.has(key(finding))))
-    .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+    .flatMap((file) =>
+      findingsFor(file, input.config).filter(
+        (finding) => !before.has(key(finding)),
+      ),
+    )
+    .sort((left, right) =>
+      JSON.stringify(left).localeCompare(JSON.stringify(right)),
+    );
 }
 
 export function analyzeCurrentDesignSmells(

@@ -38,20 +38,45 @@ function nextParamDepth(depth, ch) {
   return depth;
 }
 
+function startsQuote(text, index, ch) {
+  return ch !== "'" || !["&", ":", "<", ">"].includes(text[index - 1]);
+}
+
+function nextQuoteState(state, ch) {
+  const escaped = state.escaped;
+  state.escaped = !escaped && ch === "\\";
+  if (!escaped && ch === state.quote) state.quote = undefined;
+}
+
+function appendUnquoted(state, ch, params) {
+  state.depth = nextParamDepth(state.depth, ch);
+  if (ch === "," && state.depth === 0) {
+    params.push(state.current);
+    state.current = "";
+    return;
+  }
+  state.current += ch;
+}
+
 function splitTopLevel(text) {
   const params = [];
-  let depth = 0;
-  let current = "";
-  for (const ch of text) {
-    depth = nextParamDepth(depth, ch);
-    if (ch === "," && depth === 0) {
-      params.push(current);
-      current = "";
+  const state = { depth: 0, current: "" };
+  let quoteState = { quote: undefined, escaped: false };
+  for (let index = 0; index < text.length; index += 1) {
+    const ch = text[index];
+    if (quoteState.quote) {
+      state.current += ch;
+      nextQuoteState(quoteState, ch);
       continue;
     }
-    current += ch;
+    if (`\"'\``.includes(ch) && startsQuote(text, index, ch)) {
+      quoteState = { quote: ch, escaped: false };
+      state.current += ch;
+      continue;
+    }
+    appendUnquoted(state, ch, params);
   }
-  params.push(current);
+  params.push(state.current);
   return params;
 }
 

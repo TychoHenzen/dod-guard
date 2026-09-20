@@ -25,7 +25,9 @@ export function analyzeCurrentArchitecture(
     dependencies: dependency.dependencies,
     cycles: dependency.cycles,
     encapsulation: encapsulationFor(files, paths, config),
-    configurableData: design.filter((finding) => finding.kind === "configurable-data"),
+    configurableData: design.filter(
+      (finding) => finding.kind === "configurable-data",
+    ),
     transitiveNavigation: design.filter(
       (finding) => finding.kind === "transitive-navigation",
     ),

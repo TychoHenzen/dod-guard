@@ -4,15 +4,49 @@ import { designFacts } from "../../../../../skills/quality-refactor/scripts/lib/
 
 test("finds configuration-looking defaults across supported languages", () => {
   const fixtures = [
-    ["service.ts", "class Service { run(timeout: number = 30) {} }"] ,
-    ["Service.cs", "class Service { void Run(int timeout = 30) {} }"] ,
-    ["service.py", "class Service:\n    def run(self, timeout=30):\n        return timeout\n"],
+    ["service.ts", "class Service { run(timeout: number = 30) {} }"],
+    ["Service.cs", "class Service { void Run(int timeout = 30) {} }"],
+    [
+      "service.py",
+      "class Service:\n    def run(self, timeout=30):\n        return timeout\n",
+    ],
   ];
   for (const [path, source] of fixtures) {
-    assert.deepEqual(designFacts(source, path.split(".").at(-1) === "cs" ? "cs" : path.endsWith(".py") ? "py" : "ts").configurationDefaults, [
-      { method: path.endsWith(".cs") ? "Run" : "run", parameter: "timeout", defaultValue: "30", line: path.endsWith(".py") ? 2 : 1 },
-    ], path);
+    assert.deepEqual(
+      designFacts(
+        source,
+        path.split(".").at(-1) === "cs"
+          ? "cs"
+          : path.endsWith(".py")
+            ? "py"
+            : "ts",
+      ).configurationDefaults,
+      [
+        {
+          method: path.endsWith(".cs") ? "Run" : "run",
+          parameter: "timeout",
+          defaultValue: "30",
+          line: path.endsWith(".py") ? 2 : 1,
+        },
+      ],
+      path,
+    );
   }
+});
+
+test("keeps commas inside quoted defaults", () => {
+  assert.deepEqual(
+    designFacts('class Service { run(url: string = "https://a,b") {} }', "ts")
+      .configurationDefaults,
+    [
+      {
+        method: "run",
+        parameter: "url",
+        defaultValue: '"https://a,b"',
+        line: 1,
+      },
+    ],
+  );
 });
 
 test("keeps Rust defaults intentionally inapplicable and ignores non-configuration values", () => {
@@ -21,7 +55,8 @@ test("keeps Rust defaults intentionally inapplicable and ignores non-configurati
     [],
   );
   assert.deepEqual(
-    designFacts("class Service { run(count: number = 3) {} }", "ts").configurationDefaults,
+    designFacts("class Service { run(count: number = 3) {} }", "ts")
+      .configurationDefaults,
     [],
   );
 });
@@ -49,7 +84,11 @@ test("finds explicit two-hop receiver chains across supported languages", () => 
     const [fact] = designFacts(source, lang).transitiveNavigation;
     assert.deepEqual(
       fact && { root: fact.root, hops: fact.hops },
-      { root: "client", hops: lang === "cs" ? ["Get", "Store", "Save"] : ["get", "store", "save"] },
+      {
+        root: "client",
+        hops:
+          lang === "cs" ? ["Get", "Store", "Save"] : ["get", "store", "save"],
+      },
       lang,
     );
   }

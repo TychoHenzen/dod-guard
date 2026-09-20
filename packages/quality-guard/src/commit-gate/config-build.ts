@@ -44,19 +44,32 @@ function optionalPaths(input: Record<string, unknown>) {
   };
 }
 
-export function parseQualityConfig(source: string): QualityConfig {
+function validateLowLevelPathGroups(
+  pathGroups: Record<string, string[]>,
+  lowLevelPathGroups: string[],
+) {
+  if (lowLevelPathGroups.some((name) => !Object.hasOwn(pathGroups, name)))
+    throw new ConfigError(
+      "lowLevelPathGroups references an unknown path group",
+    );
+}
+
+function parseRoot(source: string): Record<string, unknown> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(source);
   } catch {
     throw new ConfigError("must contain valid JSON");
   }
-  const input = record(parsed, "root");
+  return record(parsed, "root");
+}
+
+export function parseQualityConfig(source: string): QualityConfig {
+  const input = parseRoot(source);
   keysOnly(input, CONFIG_KEYS, "root");
   const pathGroups = parseGroups(input.pathGroups);
   const optional = optionalPaths(input);
-  if (optional.lowLevelPathGroups.some((name) => !(name in pathGroups)))
-    throw new ConfigError("lowLevelPathGroups references an unknown path group");
+  validateLowLevelPathGroups(pathGroups, optional.lowLevelPathGroups);
   return {
     pathGroups,
     dependencyDirections: parseDirections(
