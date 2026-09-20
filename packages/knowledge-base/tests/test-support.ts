@@ -11,6 +11,7 @@ const exampleNames = [
   "clean-code.comments.md",
   "clean-code.formatting.md",
   "clean-code.objects-data-structures.md",
+  "clean-code.error-handling.md",
   "refactoring.move-method.md",
   "design-patterns.strategy.md",
   "ux-ui-design.accessible-dialogs.md",
@@ -18,6 +19,7 @@ const exampleNames = [
 
 export const cleanCodeSectionKeys = [
   "clean-code.comments",
+  "clean-code.error-handling",
   "clean-code.formatting",
   "clean-code.foundation",
   "clean-code.functions",
