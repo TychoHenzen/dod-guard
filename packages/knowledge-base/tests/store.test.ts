@@ -4,7 +4,7 @@ import { mkdir, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { KnowledgeBase, type SaveKnowledgeEntryInput } from "../src/store.js";
-import { exampleRoot, removeRoot } from "./test-support.js";
+import { cleanCodeSectionKeys, exampleRoot, removeRoot } from "./test-support.js";
 
 test("persists, indexes, searches, and reloads entries", async () => {
   const root = await exampleRoot();
@@ -16,14 +16,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
     );
     assert.deepEqual(
       (await base.sections("clean-code")).map((item) => item.key),
-      [
-        "clean-code.comments",
-        "clean-code.formatting",
-        "clean-code.foundation",
-        "clean-code.functions",
-        "clean-code.meaningful-names",
-        "clean-code.objects-data-structures",
-      ],
+      cleanCodeSectionKeys,
     );
     assert.deepEqual(
       (await base.sections("refactoring")).map((item) => item.key),

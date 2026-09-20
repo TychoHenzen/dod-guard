@@ -16,6 +16,15 @@ const exampleNames = [
   "ux-ui-design.accessible-dialogs.md",
 ];
 
+export const cleanCodeSectionKeys = [
+  "clean-code.comments",
+  "clean-code.formatting",
+  "clean-code.foundation",
+  "clean-code.functions",
+  "clean-code.meaningful-names",
+  "clean-code.objects-data-structures",
+];
+
 export async function exampleText(name: string): Promise<string> {
   return readFile(join(packageRoot, "examples", "entries", name), "utf8");
 }

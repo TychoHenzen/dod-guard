@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createKnowledgeBaseServer } from "../src/index.js";
-import { exampleRoot, packageRoot, removeRoot } from "./test-support.js";
+import { cleanCodeSectionKeys, exampleRoot, packageRoot, removeRoot } from "./test-support.js";
 
 function text(result: unknown): string {
   const content = (result as { content?: Array<{ type: string; text?: string }> }).content;
@@ -52,9 +52,10 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     const cleanCodeSections = JSON.parse(
       text(await client.callTool({ name: "knowledge_list_sections", arguments: { chapter: "clean-code" } })),
     );
-    const cleanCodeSectionKeys = cleanCodeSections.sections.map((item: { key: string }) => item.key);
-    assert.equal(cleanCodeSectionKeys.length, 6);
-    assert.ok(cleanCodeSectionKeys.includes("clean-code.objects-data-structures"));
+    assert.deepEqual(
+      cleanCodeSections.sections.map((item: { key: string }) => item.key),
+      cleanCodeSectionKeys,
+    );
 
     const cleanCodeSummaries = JSON.parse(
       text(
@@ -200,7 +201,12 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.equal("content" in objectsDataSummaries.entries[0], false);
 
     const objectsData = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.objects-data-structures" } })),
+      text(
+        await client.callTool({
+          name: "knowledge_get_entry",
+          arguments: { key: "clean-code.objects-data-structures" },
+        }),
+      ),
     );
     assert.equal(objectsData.guidance.kind, "reference_guidance");
     assert.equal(objectsData.guidance.executable, false);
