@@ -22872,7 +22872,7 @@ function analyzeEncapsulation(input) {
   );
 }
 
-// src/commit-gate/design-smells.ts
+// src/commit-gate/design-smells/design-smells.ts
 function groupsFor(path15, config2) {
   return config2.lowLevelPathGroups.filter(
     (group) => config2.pathGroups[group]?.some(

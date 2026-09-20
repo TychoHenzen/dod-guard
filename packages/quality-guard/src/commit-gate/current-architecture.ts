@@ -3,7 +3,7 @@ import { analyzeSimilarity } from "./architecture-similarity.js";
 import type { QualityConfig } from "./config.js";
 import { analyzeCurrentDependencies } from "./dependency-current.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
-import { analyzeCurrentDesignSmells } from "./design-smells.js";
+import { analyzeCurrentDesignSmells } from "./design-smells/design-smells.js";
 import { analyzeCurrentPlacement } from "./placement-current.js";
 
 /** Current-state audit used by reports.

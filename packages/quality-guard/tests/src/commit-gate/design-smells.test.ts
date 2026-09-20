@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { parseQualityConfig } from "../../../src/commit-gate/config.js";
 import { analyzeCurrentArchitecture } from "../../../src/commit-gate/current-architecture.js";
 import { structuralFindings } from "../../../src/commit-gate/decision-findings-architecture.js";
-import { analyzeDesignSmells } from "../../../src/commit-gate/design-smells.js";
+import { analyzeDesignSmells } from "../../../src/commit-gate/design-smells/design-smells.js";
 
 test("reports only configured low-level configuration defaults", () => {
   const config = parseQualityConfig(

@@ -1,11 +1,11 @@
-import type { ArchitectureFileFact } from "./architecture-file-fact.js";
-import type { QualityConfig } from "./config.js";
-import type { ConfigurationDefaultFact } from "./design-smells/configuration-default-fact.js";
+import type { ArchitectureFileFact } from "../architecture-file-fact.js";
+import type { QualityConfig } from "../config.js";
+import type { ConfigurationDefaultFact } from "./configuration-default-fact.js";
 import {
   isProductionArchitecturePath,
   matchesArchitecturePath,
   normalizeArchitecturePath,
-} from "./placement.js";
+} from "../placement.js";
 
 type ConfigurationFinding = ConfigurationDefaultFact & {
   kind: "configurable-data";
