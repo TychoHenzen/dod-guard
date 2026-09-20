@@ -64,6 +64,8 @@ export function buildQualityReport(
     dependencies: unknown[];
     cycles: unknown[];
     encapsulation: unknown[];
+    configurableData?: unknown[];
+    transitiveNavigation?: unknown[];
     errors: Array<{ code: string; target: string; message: string }>;
   },
 ) {

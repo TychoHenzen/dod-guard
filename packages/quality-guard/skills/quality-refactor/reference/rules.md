@@ -419,6 +419,39 @@ another file is missed.
 
 ---
 
+## `configurable-data` - Clean Code G35
+
+**Detects:** a configuration-looking parameter with a literal default inside a
+file matched by a configured lowLevelPathGroups entry. The current proxy
+recognizes names such as timeout, retry, limit, path, url, mode, capacity, and
+enabled, and only numeric, string, or boolean/null-like literal defaults. The
+finding is review evidence, not proof that the value is owned at the wrong
+abstraction level.
+
+Configure the ownership boundary explicitly:
+
+~~~json
+{
+  "pathGroups": { "infrastructure": ["src/infra/**"] },
+  "lowLevelPathGroups": ["infrastructure"]
+}
+~~~
+
+**Fix:** review whether the default belongs at an entry point or policy owner,
+then pass the selected value into the lower-level operation.
+
+**Not reported:** files outside configured low-level groups, tests, generated
+files, non-configuration parameter names, computed defaults, and Rust
+functions. Rust has no ordinary default-parameter syntax, so this exact proxy
+is intentionally inapplicable there rather than guessing that Option, Default,
+constants, environment reads, or builders mean the same thing.
+
+**False positives:** a low-level function may intentionally own a fallback or
+the configured path group may be broader than its real ownership boundary.
+Use the finding to review intent; it is never a fail-closed semantic violation.
+
+---
+
 ## `build-entrypoint` - Clean Code E1
 
 **Detects:** a root `package.json` without a `build` script.

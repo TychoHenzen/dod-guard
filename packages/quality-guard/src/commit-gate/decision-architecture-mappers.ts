@@ -80,3 +80,17 @@ export function encapsulationFindings(
     }),
   );
 }
+
+export function designFindings(
+  findings: Array<{ kind: string; path: string }>,
+): DecisionResult["findings"] {
+  return findings.map((finding) =>
+    architectureFinding({
+      kind: finding.kind,
+      severity: "review",
+      affectedPaths: [finding.path],
+      evidence: { ...finding },
+      reason: "a configuration default is owned by a configured low-level module",
+    }),
+  );
+}

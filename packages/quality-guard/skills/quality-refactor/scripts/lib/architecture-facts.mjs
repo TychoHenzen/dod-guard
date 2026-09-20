@@ -2,6 +2,7 @@ import { importsFor } from "./architecture-imports.mjs";
 import { languageFor, unique } from "./architecture-language.mjs";
 import { declaredTypes } from "./architecture-types.mjs";
 import { typeFacts } from "./architecture-members.mjs";
+import { designFacts } from "./design-facts.mjs";
 
 function referencesFor(source, types, imports) {
   const names = [...source.matchAll(/\b[A-Z][A-Za-z0-9_]*\b/g)].map(
@@ -27,6 +28,7 @@ export function extractArchitectureFacts(file) {
         imports: [],
         references: [],
         types: [],
+        configurationDefaults: [],
       },
       errors: [],
     };
@@ -36,6 +38,7 @@ export function extractArchitectureFacts(file) {
     .map((type) => typeFacts(type, lang))
     .sort((left, right) => left.name.localeCompare(right.name));
   const imports = importsFor(file.content, lang);
+  const design = designFacts(file.content, lang);
   return {
     facts: {
       path: file.path,
@@ -43,6 +46,7 @@ export function extractArchitectureFacts(file) {
       imports,
       references: referencesFor(file.content, types, imports),
       types,
+      ...design,
     },
     errors: [],
   };

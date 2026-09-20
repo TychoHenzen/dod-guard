@@ -5,6 +5,7 @@ export interface QualityConfig {
   genericBuckets: string[];
   generatedPaths: string[];
   testPaths: string[];
+  lowLevelPathGroups: string[];
   history: { maxFirstParentCommits: number };
 }
 
@@ -15,5 +16,6 @@ export const DEFAULT_CONFIG: QualityConfig = {
   genericBuckets: ["utils", "common", "helpers", "shared", "misc"],
   generatedPaths: [],
   testPaths: [],
+  lowLevelPathGroups: [],
   history: { maxFirstParentCommits: 200 },
 };

@@ -17,6 +17,7 @@ const CONFIG_KEYS = [
   "genericBuckets",
   "generatedPaths",
   "testPaths",
+  "lowLevelPathGroups",
   "history",
 ];
 
@@ -30,6 +31,10 @@ function optionalPaths(input: Record<string, unknown>) {
       input.testPaths === undefined
         ? []
         : parseStrings(input.testPaths, [], "testPaths"),
+    lowLevelPathGroups:
+      input.lowLevelPathGroups === undefined
+        ? []
+        : parseStrings(input.lowLevelPathGroups, [], "lowLevelPathGroups"),
   };
 }
 
@@ -43,6 +48,9 @@ export function parseQualityConfig(source: string): QualityConfig {
   const input = record(parsed, "root");
   keysOnly(input, CONFIG_KEYS, "root");
   const pathGroups = parseGroups(input.pathGroups);
+  const optional = optionalPaths(input);
+  if (optional.lowLevelPathGroups.some((name) => !(name in pathGroups)))
+    throw new ConfigError("lowLevelPathGroups references an unknown path group");
   return {
     pathGroups,
     dependencyDirections: parseDirections(
@@ -59,7 +67,7 @@ export function parseQualityConfig(source: string): QualityConfig {
       DEFAULT_CONFIG.genericBuckets,
       "genericBuckets",
     ),
-    ...optionalPaths(input),
+    ...optional,
     history: parseHistory(input.history),
   };
 }

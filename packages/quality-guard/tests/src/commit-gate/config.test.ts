@@ -15,6 +15,7 @@ test("uses conservative architecture policy defaults", () => {
   ]);
   assert.equal(config.history.maxFirstParentCommits, 200);
   assert.deepEqual(config.pathGroups, {});
+  assert.deepEqual(config.lowLevelPathGroups, []);
 });
 
 test("accepts named path groups and placement-related policy", () => {
@@ -28,12 +29,14 @@ test("accepts named path groups and placement-related policy", () => {
       genericBuckets: ["misc"],
       generatedPaths: ["generated/**"],
       testPaths: ["test/**"],
+      lowLevelPathGroups: ["infrastructure"],
       history: { maxFirstParentCommits: 25 },
     }),
   );
   assert.equal(config.pathGroups.policy?.[0], "src/policy/**");
   assert.equal(config.directTypeLimit, 7);
   assert.equal(config.history.maxFirstParentCommits, 25);
+  assert.deepEqual(config.lowLevelPathGroups, ["infrastructure"]);
 });
 
 test("validates configured dependency directions", () => {
@@ -62,6 +65,7 @@ test("rejects invalid and unknown config", () => {
       '[{"from":"policy","to":"missing","allowed":false}]}',
     '{"pathGroups": {"policy": ["src", "src"]}}',
     '{"history": {"limit": 2}}',
+    '{"pathGroups":{"policy":["src"]},"lowLevelPathGroups":["missing"]}',
   ]) {
     assert.throws(() => parseQualityConfig(source), ConfigError, source);
   }

@@ -13,6 +13,12 @@ declare module "*architecture-facts.mjs" {
       dependencies: string[];
       forwardingPaths: Array<{ member: string; target: string }>;
     }>;
+    configurationDefaults: Array<{
+      method: string;
+      parameter: string;
+      defaultValue: string;
+      line: number;
+    }>;
   }
   export function extractArchitectureFacts(file: {
     path: string;
