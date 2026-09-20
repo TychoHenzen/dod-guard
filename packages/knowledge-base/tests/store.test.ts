@@ -44,6 +44,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
     assert.match((await base.get("clean-code.systems")).sources[0].label, /PDF pages 184-201/);
     assert.match((await base.get("clean-code.emergence")).sources[0].label, /PDF pages 203-208/);
     assert.match((await base.get("clean-code.concurrency")).sources[0].label, /PDF pages 209-222/);
+    assert.match((await base.get("clean-code.successive-refinement")).sources[0].label, /PDF pages 225-282/);
     assert.equal(existsSync(join(root, ".knowledge-index.json")), true);
 
     const newEntry: SaveKnowledgeEntryInput = {

@@ -355,6 +355,33 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(concurrency.entry.content, /shutdown/);
     assert.match(concurrency.entry.content, /pluggable and tunable/);
 
+    const refinementSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.successive-refinement" },
+        }),
+      ),
+    );
+    assert.equal(refinementSummaries.entries[0].key, "clean-code.successive-refinement");
+    assert.match(refinementSummaries.entries[0].summary, /working|refine|tests/);
+    assert.equal("content" in refinementSummaries.entries[0], false);
+
+    const refinement = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_get_entry",
+          arguments: { key: "clean-code.successive-refinement" },
+        }),
+      ),
+    );
+    assert.equal(refinement.guidance.kind, "reference_guidance");
+    assert.equal(refinement.guidance.executable, false);
+    assert.match(refinement.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(refinement.entry.sources[0].label, /PDF pages 225-282/);
+    assert.match(refinement.entry.content, /small steps|small extractions/);
+    assert.match(refinement.entry.content, /deleting|deletion/i);
+
     const boundariesSummaries = JSON.parse(
       text(
         await client.callTool({
