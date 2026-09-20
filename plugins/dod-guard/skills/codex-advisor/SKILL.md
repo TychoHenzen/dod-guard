@@ -23,9 +23,11 @@ rules below are the exception only where they are more specific.
 
 ## Invoke Codex
 
-1. Resolve the current CLI with `codex --version` and `codex exec --help`.
-   Current help does not enumerate reasoning values. Use `gpt-5.6-luna` with
-   `max` effort by default and pass the selected value as
+1. Resolve the current CLI with `codex.exe --version` and
+   `codex.exe exec --help` on Windows, or `codex --version` and `codex exec
+   --help` elsewhere. The Windows direct executable must be on `PATH`; do not
+   substitute the npm command shim. Current help does not enumerate reasoning values.
+   Use `gpt-5.6-luna` with `max` effort by default and pass the selected value as
    `-c model_reasoning_effort=<value>`. If the CLI itself cannot start,
    report the availability failure and stop.
 2. Build a prompt containing fixed advice-only instructions and the complete
@@ -54,7 +56,7 @@ rules below are the exception only where they are more specific.
    response. On exit code `0`, the runner reads the output file, validates the
    schema response, and relays only its trimmed `advice` value. Model,
    reasoning, and prefix arguments must be single shell-safe values. The runner
-   rejects shell metacharacters before starting the Windows command shim.
+   rejects shell metacharacters before starting the direct Windows executable.
 
 ## Failure handling
 
