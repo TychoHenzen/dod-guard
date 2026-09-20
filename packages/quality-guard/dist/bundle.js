@@ -24582,7 +24582,7 @@ function findFunctions(code, lang, starts) {
   return braceLanguageFunctions(code, starts);
 }
 
-// skills/quality-refactor/scripts/lib/design-facts.mjs
+// skills/quality-refactor/scripts/lib/design-smells/design-facts.mjs
 var CONFIGURATION_PARAMETER = /(?:config|settings?|options?|timeout|deadline|retry|backoff|limit|threshold|capacity|size|batch|page(?:Size)?|host|port|url|path|directory|file|format|mode|enabled|disabled|region|connection|pool|cache|buffer|delay|interval|parallel|concurrency|max|min)/i;
 function parameterText(source, fn) {
   const open = source.indexOf("(", fn.headerStart);

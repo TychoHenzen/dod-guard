@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { designFacts } from "../../../../../skills/quality-refactor/scripts/lib/design-facts.mjs";
+import { designFacts } from "../../../../../skills/quality-refactor/scripts/lib/design-smells/design-facts.mjs";
 
 test("finds configuration-looking defaults across supported languages", () => {
   const fixtures = [

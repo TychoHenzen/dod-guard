@@ -2,7 +2,7 @@ import { importsFor } from "./architecture-imports.mjs";
 import { languageFor, unique } from "./architecture-language.mjs";
 import { declaredTypes } from "./architecture-types.mjs";
 import { typeFacts } from "./architecture-members.mjs";
-import { designFacts } from "./design-facts.mjs";
+import { designFacts } from "./design-smells/design-facts.mjs";
 
 function referencesFor(source, types, imports) {
   const names = [...source.matchAll(/\b[A-Z][A-Za-z0-9_]*\b/g)].map(
