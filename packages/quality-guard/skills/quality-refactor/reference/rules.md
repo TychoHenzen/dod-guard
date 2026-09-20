@@ -452,6 +452,31 @@ Use the finding to review intent; it is never a fail-closed semantic violation.
 
 ---
 
+## `transitive-navigation` - Clean Code G36
+
+**Detects:** an explicit this/self receiver followed by at least two simple
+zero-argument member calls, such as
+this.client.get().store().save(). The rule reports a review candidate with the
+receiver, ordered hops, method, and source line; it does not claim that every
+chain violates the Law of Demeter.
+
+**Fix:** review whether the operation belongs behind an immediate collaborator,
+facade, or aggregate method so the caller does not know the non-immediate
+collaborator path.
+
+**Not reported:** local-variable roots, optional or indexed access,
+argument-bearing or dynamic calls, declarations, tests, generated files, and
+chains whose receiver or hop names contain a configured fluent marker. The
+default markers are builder, fluent, pipeline, and query; add repository-specific
+markers with fluentMarkers when a legitimate fluent API uses another name.
+
+**False positives:** naming cannot prove that a chain is harmful, and a
+two-hop chain may still be a legitimate value transformation. Keep the
+finding review-only and treat unsupported syntax as silent rather than
+guessing.
+
+---
+
 ## `build-entrypoint` - Clean Code E1
 
 **Detects:** a root `package.json` without a `build` script.

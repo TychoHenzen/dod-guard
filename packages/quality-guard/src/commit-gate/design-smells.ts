@@ -36,12 +36,32 @@ function configurationFindings(
   );
 }
 
+function markerMatch(value: string, markers: string[]): boolean {
+  const normalized = value.toLowerCase();
+  return markers.some((marker) => normalized.includes(marker.toLowerCase()));
+}
+
+function navigationFindings(file: ArchitectureFileFact, config: QualityConfig) {
+  const path = normalizeArchitecturePath(file.path);
+  return (file.transitiveNavigation ?? [])
+    .filter(
+      (chain) =>
+        !markerMatch(chain.root, config.fluentMarkers) &&
+        !chain.hops.some((hop) => markerMatch(hop, config.fluentMarkers)),
+    )
+    .map((chain) => ({
+      kind: "transitive-navigation" as const,
+      path,
+      ...chain,
+    }));
+}
+
 function key(finding: object): string {
   return JSON.stringify(finding);
 }
 
 function findingsFor(file: ArchitectureFileFact, config: QualityConfig) {
-  return configurationFindings(file, config);
+  return [...configurationFindings(file, config), ...navigationFindings(file, config)];
 }
 
 export function analyzeDesignSmells(input: {

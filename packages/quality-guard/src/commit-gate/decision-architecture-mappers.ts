@@ -90,7 +90,10 @@ export function designFindings(
       severity: "review",
       affectedPaths: [finding.path],
       evidence: { ...finding },
-      reason: "a configuration default is owned by a configured low-level module",
+      reason:
+        finding.kind === "configurable-data"
+          ? "a configuration default is owned by a configured low-level module"
+          : "a simple receiver chain crosses multiple collaborators",
     }),
   );
 }

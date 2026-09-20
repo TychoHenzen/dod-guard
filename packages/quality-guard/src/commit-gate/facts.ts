@@ -20,6 +20,7 @@ export function extractFactInventory(
             references: result.facts.references,
             types: result.facts.types,
             configurationDefaults: result.facts.configurationDefaults,
+            transitiveNavigation: result.facts.transitiveNavigation,
           },
         ]
       : [];

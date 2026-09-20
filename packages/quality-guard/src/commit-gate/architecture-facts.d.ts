@@ -19,6 +19,13 @@ declare module "*architecture-facts.mjs" {
       defaultValue: string;
       line: number;
     }>;
+    transitiveNavigation: Array<{
+      method: string;
+      root: string;
+      hops: string[];
+      chain: string;
+      line: number;
+    }>;
   }
   export function extractArchitectureFacts(file: {
     path: string;

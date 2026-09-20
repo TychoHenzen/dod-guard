@@ -29,6 +29,7 @@ export function extractArchitectureFacts(file) {
         references: [],
         types: [],
         configurationDefaults: [],
+        transitiveNavigation: [],
       },
       errors: [],
     };

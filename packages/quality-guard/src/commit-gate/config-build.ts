@@ -18,6 +18,7 @@ const CONFIG_KEYS = [
   "generatedPaths",
   "testPaths",
   "lowLevelPathGroups",
+  "fluentMarkers",
   "history",
 ];
 
@@ -35,6 +36,11 @@ function optionalPaths(input: Record<string, unknown>) {
       input.lowLevelPathGroups === undefined
         ? []
         : parseStrings(input.lowLevelPathGroups, [], "lowLevelPathGroups"),
+    fluentMarkers: parseStrings(
+      input.fluentMarkers,
+      DEFAULT_CONFIG.fluentMarkers,
+      "fluentMarkers",
+    ),
   };
 }
 

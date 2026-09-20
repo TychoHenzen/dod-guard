@@ -16,6 +16,12 @@ test("uses conservative architecture policy defaults", () => {
   assert.equal(config.history.maxFirstParentCommits, 200);
   assert.deepEqual(config.pathGroups, {});
   assert.deepEqual(config.lowLevelPathGroups, []);
+  assert.deepEqual(config.fluentMarkers, [
+    "builder",
+    "fluent",
+    "pipeline",
+    "query",
+  ]);
 });
 
 test("accepts named path groups and placement-related policy", () => {
@@ -30,6 +36,7 @@ test("accepts named path groups and placement-related policy", () => {
       generatedPaths: ["generated/**"],
       testPaths: ["test/**"],
       lowLevelPathGroups: ["infrastructure"],
+      fluentMarkers: ["builder"],
       history: { maxFirstParentCommits: 25 },
     }),
   );
@@ -37,6 +44,7 @@ test("accepts named path groups and placement-related policy", () => {
   assert.equal(config.directTypeLimit, 7);
   assert.equal(config.history.maxFirstParentCommits, 25);
   assert.deepEqual(config.lowLevelPathGroups, ["infrastructure"]);
+  assert.deepEqual(config.fluentMarkers, ["builder"]);
 });
 
 test("validates configured dependency directions", () => {
