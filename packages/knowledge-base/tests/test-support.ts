@@ -18,6 +18,7 @@ const exampleNames = [
   "clean-code.systems.md",
   "clean-code.emergence.md",
   "clean-code.concurrency.md",
+  "clean-code.successive-refinement.md",
   "refactoring.move-method.md",
   "design-patterns.strategy.md",
   "ux-ui-design.accessible-dialogs.md",
@@ -35,6 +36,7 @@ export const cleanCodeSectionKeys = [
   "clean-code.functions",
   "clean-code.meaningful-names",
   "clean-code.objects-data-structures",
+  "clean-code.successive-refinement",
   "clean-code.systems",
   "clean-code.unit-tests",
 ];
