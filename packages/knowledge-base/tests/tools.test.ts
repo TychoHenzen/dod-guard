@@ -332,6 +332,29 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(emergenceContent, /good names|expressive.*tests/);
     assert.match(emergenceContent, /dogma|dogmatic/);
 
+    const concurrencySummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.concurrency" },
+        }),
+      ),
+    );
+    assert.equal(concurrencySummaries.entries[0].key, "clean-code.concurrency");
+    assert.match(concurrencySummaries.entries[0].summary, /concurrency|shared|test/);
+    assert.equal("content" in concurrencySummaries.entries[0], false);
+
+    const concurrency = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.concurrency" } })),
+    );
+    assert.equal(concurrency.guidance.kind, "reference_guidance");
+    assert.equal(concurrency.guidance.executable, false);
+    assert.match(concurrency.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(concurrency.entry.sources[0].label, /PDF pages 209-222/);
+    assert.match(concurrency.entry.content, /shared data/);
+    assert.match(concurrency.entry.content, /shutdown/);
+    assert.match(concurrency.entry.content, /pluggable and tunable/);
+
     const boundariesSummaries = JSON.parse(
       text(
         await client.callTool({
