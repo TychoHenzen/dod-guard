@@ -235,6 +235,27 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(errorHandling.entry.sources[0].label, /PDF pages 134-143/);
     assert.match(errorHandling.entry.content, /try-catch-finally/);
 
+    const boundariesSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.boundaries" },
+        }),
+      ),
+    );
+    assert.equal(boundariesSummaries.entries[0].key, "clean-code.boundaries");
+    assert.match(boundariesSummaries.entries[0].summary, /external|boundary|tests/);
+    assert.equal("content" in boundariesSummaries.entries[0], false);
+
+    const boundaries = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.boundaries" } })),
+    );
+    assert.equal(boundaries.guidance.kind, "reference_guidance");
+    assert.equal(boundaries.guidance.executable, false);
+    assert.match(boundaries.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(boundaries.entry.sources[0].label, /PDF pages 144-151/);
+    assert.match(boundaries.entry.content, /adapter|wrapper/);
+
     const saved = JSON.parse(
       text(
         await client.callTool({
