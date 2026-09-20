@@ -1,5 +1,4 @@
 import { renderJson, renderText } from "./report-render.mjs";
-
 const SEVERITY_ORDER = { error: 0, warn: 1 };
 const RULE_ORDER = [
   "dead-export",
@@ -20,6 +19,7 @@ const RULE_ORDER = [
   "comment-missing-reference",
   "output-parameter",
   "flag-parameter",
+  "naming-encoding",
   "comment-metadata",
   "comment-placeholder",
   "build-entrypoint",
@@ -95,5 +95,4 @@ export function toWorkUnits(violations) {
     (a, b) => b.errors - a.errors || b.warnings - a.warnings,
   );
 }
-
 export { renderJson, renderText };

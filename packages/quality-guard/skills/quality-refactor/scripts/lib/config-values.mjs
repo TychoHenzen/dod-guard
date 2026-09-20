@@ -46,6 +46,7 @@ export const PRESENCE_SEVERITY = {
   "output-parameter": "warn",
   "flag-parameter": "warn",
   "wildcard-import": "warn",
+  "naming-encoding": "warn",
   "build-entrypoint": "warn",
   "test-entrypoint": "warn",
   "todo-marker": "warn",

@@ -1,4 +1,5 @@
 import { severityFor } from "./config.mjs";
+import { lineAt } from "./offsets.mjs";
 import { push } from "./violations.mjs";
 
 const STATIC_OR_CONST = /\bconst\b|(?<!')\bstatic\b/;
@@ -11,6 +12,26 @@ const IMPLICIT_CALLERS = new Set([
   "setup",
   "teardown",
 ]);
+
+function encodedMemberMatches(file, code) {
+  if (/([\\/])(?:generated|interop)(?:[\\/]|$)|\.generated\./i.test(file.rel)) return [];
+  const patterns = {
+    cs: /\b(?:public|private|protected|internal|static|readonly|const|volatile|new)\s+[\w<>[\],.? ]+?\s+((?:m_|f_)[A-Za-z_]\w*)\s*(?:[;=,{])/g,
+    ts: /(?:^|[;{}\n])\s*(?:(?:public|private|protected|readonly|static)\s+)*((?:m_|f_)[A-Za-z_$][\w$]*)\s*(?::|=|;)/g,
+    rs: /^\s*(?:pub(?:\([^)]*\))?\s+)?((?:m_|f_)[A-Za-z_]\w*)\s*:/gm,
+    py: /^\s*self\.((?:m_|f_)[A-Za-z_]\w*)\s*=/gm,
+  };
+  const pattern = patterns[file.lang];
+  if (!pattern) return [];
+  pattern.lastIndex = 0;
+  const matches = [];
+  let match = pattern.exec(code);
+  while (match !== null) {
+    matches.push({ name: match[1], offset: match.index + match[0].lastIndexOf(match[1]) });
+    match = pattern.exec(code);
+  }
+  return matches;
+}
 
 export function checkMetrics({ file, config, fn, metrics, out }) {
   const label = `${fn.name}()`;
@@ -62,7 +83,8 @@ function isStatic(code, headerStart) {
   );
 }
 
-export function checkTypes({ file, config, types, out }) {
+export function checkTypes({ file, config, types, code, starts, out }) {
+  checkNamingEncodings({ file, config, code, starts, out });
   if (types.length <= 1) return;
   const names = types.map((type) => type.name).join(", ");
   const severity = severityFor(config, "types-per-file", types.length);
@@ -125,6 +147,20 @@ export function checkFunctionSmells({ file, config, fn, out }) {
         message: `${fn.name}() takes a boolean flag; split the behavior or name the policy`,
         metric: 1,
       });
+  }
+}
+
+function checkNamingEncodings({ file, config, code, starts, out }) {
+  for (const match of encodedMemberMatches(file, code)) {
+    push({
+      out,
+      file,
+      line: lineAt(starts, match.offset),
+      rule: "naming-encoding",
+      severity: config.presence["naming-encoding"],
+      message: `${match.name} uses a type or scope encoding; rename it without the m_/f_ prefix`,
+      metric: 1,
+    });
   }
 }
 
