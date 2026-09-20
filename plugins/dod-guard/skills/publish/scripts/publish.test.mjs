@@ -3,6 +3,21 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 const skillPath = new URL("../SKILL.md", import.meta.url);
+const usagePath = new URL("../../../USAGE.md", import.meta.url);
+
+test("publish guidance exposes the exact cross-client refresh sequence", async () => {
+  const documents = await Promise.all([
+    readFile(skillPath, "utf8"),
+    readFile(usagePath, "utf8"),
+  ]);
+
+  for (const document of documents) {
+    assert.match(document, /Claude Code: \/plugin marketplace update dod-guard, then \/reload-plugins/);
+    assert.match(document, /Codex: codex plugin marketplace upgrade dod-guard-monorepo/);
+    assert.match(document, /Codex: codex plugin add dod-guard@dod-guard-monorepo/);
+    assert.doesNotMatch(document, /Claude Code: \/plugin update(?:,| and)/);
+  }
+});
 
 test("publish skill classifies the complete tree before PBI routing", async () => {
   const skill = await readFile(skillPath, "utf8");

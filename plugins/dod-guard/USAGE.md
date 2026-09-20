@@ -260,13 +260,16 @@ pass, use:
 ```
 
 It delegates draft pull-request creation to `/submit-draft-pr`. After a human
-merges and CI passes, refresh both clients:
+merges it and the published commit has green CI, refresh both clients:
 
 ```text
-Claude Code: /plugin update, then /reload-plugins
+Claude Code: /plugin marketplace update dod-guard, then /reload-plugins
 Codex: codex plugin marketplace upgrade dod-guard-monorepo
 Codex: codex plugin add dod-guard@dod-guard-monorepo
 ```
+
+Confirm `codex plugin list` reports the released version. Do not copy files
+into either client cache manually.
 
 This repository does not publish npm packages or tags.
 

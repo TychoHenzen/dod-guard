@@ -112,7 +112,7 @@ maintenance content remains `maintenance-only`; any other manifest change is
    refresh both clients:
 
    ```text
-   Claude Code: /plugin update, then /reload-plugins
+   Claude Code: /plugin marketplace update dod-guard, then /reload-plugins
    Codex: codex plugin marketplace upgrade dod-guard-monorepo
    Codex: codex plugin add dod-guard@dod-guard-monorepo
    ```
