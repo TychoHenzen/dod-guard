@@ -7,6 +7,7 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const exampleNames = [
   "clean-code.clean-code.md",
   "clean-code.boundaries.md",
+  "clean-code.classes.md",
   "clean-code.meaningful-names.md",
   "clean-code.functions.md",
   "clean-code.comments.md",
@@ -21,6 +22,7 @@ const exampleNames = [
 
 export const cleanCodeSectionKeys = [
   "clean-code.boundaries",
+  "clean-code.classes",
   "clean-code.comments",
   "clean-code.error-handling",
   "clean-code.formatting",

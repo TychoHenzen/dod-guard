@@ -39,6 +39,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
     assert.match((await base.get("clean-code.formatting")).sources[0].label, /PDF pages 106-123/);
     assert.match((await base.get("clean-code.objects-data-structures")).sources[0].label, /PDF pages 124-132/);
     assert.match((await base.get("clean-code.error-handling")).sources[0].label, /PDF pages 134-143/);
+    assert.match((await base.get("clean-code.classes")).sources[0].label, /PDF pages 166-182/);
     assert.match((await base.get("clean-code.unit-tests")).sources[0].label, /PDF pages 152-164/);
     assert.equal(existsSync(join(root, ".knowledge-index.json")), true);
 
