@@ -32,6 +32,22 @@ node <quality-scan.mjs> . --root=<repository> --format=units > .quality/units.js
 quality-guard report --root=<repository> > .quality/quality-report.json
 ```
 
+When a repository supplies `.quality/test-quality.json`, inspect its explicit
+Clean Code T1-T9 evidence separately:
+
+```text
+quality-guard test-quality --root=<repository> \
+  --evidence=.quality/test-quality.json
+```
+
+This report accepts normalized evidence from C#, Python, TypeScript, and Rust.
+It requires behavior and boundary IDs with input/expected oracles, linked
+near-bug evidence, runtime failure signatures, and declared timing environments
+before making the related review signal. Coverage is a gap signal, not a
+universal percentage gate.
+Missing provider output, behavior oracles, skip reasons, or timing budgets is
+reported as unavailable/invalid evidence rather than guessed as a defect.
+
 ## Start
 
 1. Resolve the current GitHub repository and its single linked open Project.

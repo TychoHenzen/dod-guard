@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
+import { runTestQualityCommand } from "./cli-test-quality.js";
 import { runCheckCommand } from "./commit-gate/cli.js";
 import {
   checkPlaintextReadability,
@@ -16,7 +17,6 @@ const _dirname = path.dirname(fileURLToPath(import.meta.url));
 const _pkg = JSON.parse(
   readFileSync(path.join(_dirname, "..", "package.json"), "utf-8"),
 );
-
 export { text, toolError } from "./tool-response.js";
 
 export function createQualityGuardServer(): McpServer {
@@ -74,6 +74,7 @@ function isCheckCommand(args: string[]): boolean {
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
+  if (args[0] === "test-quality") return runTestQualityCommand(args);
   if (args[0] === "report") return runReportCommand(args);
   if (args[0] === "readability") return runReadabilityCommand(args);
   if (isCheckCommand(args)) return runCheckCommandLine(args);

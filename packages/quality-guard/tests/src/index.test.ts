@@ -12,6 +12,7 @@ test("MCP server lists all quality tools", async () => {
       "quality_report",
       "quality_scan",
       "quality_skips",
+      "quality_test_quality",
     ]);
     assert.equal(
       tools.tools.every((tool) => Boolean(tool.description)),
