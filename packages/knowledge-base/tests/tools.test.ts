@@ -299,6 +299,39 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(systems.entry.content, /construction from use|construction.*use/);
     assert.match(systems.entry.content, /test-drive the system architecture/i);
 
+    const emergenceSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.emergence" },
+        }),
+      ),
+    );
+    assert.equal(emergenceSummaries.entries[0].key, "clean-code.emergence");
+    assert.match(emergenceSummaries.entries[0].summary, /tests|duplication|intent/);
+    assert.equal("content" in emergenceSummaries.entries[0], false);
+
+    const emergence = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.emergence" } })),
+    );
+    assert.equal(emergence.guidance.kind, "reference_guidance");
+    assert.equal(emergence.guidance.executable, false);
+    assert.match(emergence.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(emergence.entry.sources[0].label, /PDF pages 203-208/);
+    const emergenceContent = emergence.entry.content.toLowerCase();
+    const emergencePriorities = ["all of its tests", "duplication", "express its intent", "class and method counts"];
+    assert.ok(
+      emergencePriorities.every(
+        (priority, index) =>
+          index === 0 || emergenceContent.indexOf(priority) > emergenceContent.indexOf(emergencePriorities[index - 1]),
+      ),
+    );
+    assert.match(emergenceContent, /testable boundary|testable/);
+    assert.match(emergenceContent, /incrementally refactor|refactor the design/);
+    assert.match(emergenceContent, /reuse in the small|smallest useful boundary/);
+    assert.match(emergenceContent, /good names|expressive.*tests/);
+    assert.match(emergenceContent, /dogma|dogmatic/);
+
     const boundariesSummaries = JSON.parse(
       text(
         await client.callTool({
