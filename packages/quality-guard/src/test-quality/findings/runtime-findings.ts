@@ -1,7 +1,7 @@
-import { makeFinding, sourceForBehavior } from "./finding.js";
-import { slowTests } from "./timing-findings.js";
 import { coverageFinding } from "../coverage-finding.js";
 import type { Evidence } from "../types.js";
+import { makeFinding, sourceForBehavior } from "./finding.js";
+import { slowTests } from "./timing-findings.js";
 
 function failureSource(
   evidence: Evidence,

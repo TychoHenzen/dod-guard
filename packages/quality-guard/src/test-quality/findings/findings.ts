@@ -1,7 +1,7 @@
+import type { Evidence } from "../types.js";
 import { behaviorFindings } from "./behavior-findings.js";
 import { evidenceFindings } from "./evidence-findings.js";
 import { runtimeFindings } from "./runtime-findings.js";
-import type { Evidence } from "../types.js";
 
 export function findingsFor(evidence: Evidence) {
   return [

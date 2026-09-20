@@ -21584,6 +21584,37 @@ function evidenceFindings(evidence) {
   ];
 }
 
+// src/test-quality/coverage-finding.ts
+function linkedBehaviorIds(observation) {
+  return [...new Set(observation.uncoveredBehaviorIds ?? [])];
+}
+function linkedFailures(evidence, behaviorIds) {
+  return (evidence.failures ?? []).filter(
+    (failure) => failure.behaviorId !== void 0 && behaviorIds.includes(failure.behaviorId)
+  );
+}
+function coverageFinding2(evidence, observation) {
+  const uncoveredBehaviorIds = linkedBehaviorIds(observation);
+  const failures = linkedFailures(evidence, uncoveredBehaviorIds);
+  const gaps = uncovered(observation);
+  if (failures.length === 0 || gaps.length === 0) return [];
+  return [
+    makeFinding({
+      heuristic: "T8",
+      rule: "coverage-pattern",
+      path: observation.sourcePath,
+      message: "uncovered coverage regions overlap a recorded runtime failure",
+      remediation: "Use the gap to inspect the failing behavior and add a focused test.",
+      evidence: {
+        sourcePath: observation.sourcePath,
+        uncovered: gaps,
+        uncoveredBehaviorIds,
+        failureTestIds: [...new Set(failures.map((failure) => failure.testId))]
+      }
+    })
+  ];
+}
+
 // src/test-quality/findings/timing-findings.ts
 function budgetMap(evidence) {
   return new Map(
@@ -21616,37 +21647,6 @@ function slowTests(evidence) {
     if (budget === void 0 || test.durationMs <= budget) return [];
     return [slowFinding(test, budget)];
   });
-}
-
-// src/test-quality/coverage-finding.ts
-function linkedBehaviorIds(observation) {
-  return [...new Set(observation.uncoveredBehaviorIds ?? [])];
-}
-function linkedFailures(evidence, behaviorIds) {
-  return (evidence.failures ?? []).filter(
-    (failure) => failure.behaviorId !== void 0 && behaviorIds.includes(failure.behaviorId)
-  );
-}
-function coverageFinding2(evidence, observation) {
-  const uncoveredBehaviorIds = linkedBehaviorIds(observation);
-  const failures = linkedFailures(evidence, uncoveredBehaviorIds);
-  const gaps = uncovered(observation);
-  if (failures.length === 0 || gaps.length === 0) return [];
-  return [
-    makeFinding({
-      heuristic: "T8",
-      rule: "coverage-pattern",
-      path: observation.sourcePath,
-      message: "uncovered coverage regions overlap a recorded runtime failure",
-      remediation: "Use the gap to inspect the failing behavior and add a focused test.",
-      evidence: {
-        sourcePath: observation.sourcePath,
-        uncovered: gaps,
-        uncoveredBehaviorIds,
-        failureTestIds: [...new Set(failures.map((failure) => failure.testId))]
-      }
-    })
-  ];
 }
 
 // src/test-quality/findings/runtime-findings.ts

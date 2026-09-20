@@ -1,12 +1,12 @@
 import type { Evidence } from "../../src/test-quality/types.js";
-import { signalSources } from "./test-quality-sources.js";
-import { signalTests } from "./test-quality-tests.js";
 import {
   signalBugs,
   signalCoverage,
   signalFailures,
   signalTiming,
 } from "./test-quality-signal-data.js";
+import { signalSources } from "./test-quality-sources.js";
+import { signalTests } from "./test-quality-tests.js";
 
 export function evidenceWithSignals(): Evidence {
   return {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { testSchema, text } from "./schema-basics.js";
 import {
   bugSchema,
   coverageSchema,
@@ -6,7 +7,6 @@ import {
   sourceSchema,
   timingSchema,
 } from "./schema-parts.js";
-import { testSchema, text } from "./schema-basics.js";
 
 export const EvidenceSchema = z
   .object({

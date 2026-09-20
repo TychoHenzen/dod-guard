@@ -17,6 +17,7 @@ const _dirname = path.dirname(fileURLToPath(import.meta.url));
 const _pkg = JSON.parse(
   readFileSync(path.join(_dirname, "..", "package.json"), "utf-8"),
 );
+
 export { text, toolError } from "./tool-response.js";
 
 export function createQualityGuardServer(): McpServer {

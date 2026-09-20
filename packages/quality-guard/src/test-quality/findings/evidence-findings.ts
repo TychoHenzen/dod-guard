@@ -1,5 +1,5 @@
-import { activeTests, makeFinding } from "./finding.js";
 import type { Evidence } from "../types.js";
+import { activeTests, makeFinding } from "./finding.js";
 
 function unavailableCoverageFinding() {
   return makeFinding({
