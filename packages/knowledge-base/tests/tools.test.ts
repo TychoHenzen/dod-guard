@@ -277,6 +277,28 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(classes.entry.sources[0].label, /PDF pages 166-182/);
     assert.match(classes.entry.content, /single coherent reason|one coherent reason/);
 
+    const systemsSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.systems" },
+        }),
+      ),
+    );
+    assert.equal(systemsSummaries.entries[0].key, "clean-code.systems");
+    assert.match(systemsSummaries.entries[0].summary, /system|dependencies|decisions/);
+    assert.equal("content" in systemsSummaries.entries[0], false);
+
+    const systems = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.systems" } })),
+    );
+    assert.equal(systems.guidance.kind, "reference_guidance");
+    assert.equal(systems.guidance.executable, false);
+    assert.match(systems.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(systems.entry.sources[0].label, /PDF pages 184-201/);
+    assert.match(systems.entry.content, /construction from use|construction.*use/);
+    assert.match(systems.entry.content, /test-drive the system architecture/i);
+
     const boundariesSummaries = JSON.parse(
       text(
         await client.callTool({
