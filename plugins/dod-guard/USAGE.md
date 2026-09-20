@@ -268,6 +268,9 @@ Codex: codex plugin marketplace upgrade dod-guard-monorepo
 Codex: codex plugin add dod-guard@dod-guard-monorepo
 ```
 
+Confirm `codex plugin list` reports the released version. Do not copy files
+into either client cache manually.
+
 This repository does not publish npm packages or tags.
 
 ## Quality dashboard
