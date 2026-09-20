@@ -200,6 +200,7 @@ test("advisor skill has the Codex invocation contract", () => {
     /requested model and reasoning effort/i,
     /skip repository research/,
     /avoid\s+all tools and mutations/,
+    /codex\.exe.*Windows|Windows.*codex\.exe/i,
   ]) {
     assert.match(skill, signal);
   }
