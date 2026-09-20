@@ -4,7 +4,7 @@ import { mkdir, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 import { KnowledgeBase, type SaveKnowledgeEntryInput } from "../src/store.js";
-import { exampleRoot, removeRoot } from "./test-support.js";
+import { cleanCodeSectionKeys, exampleRoot, removeRoot } from "./test-support.js";
 
 test("persists, indexes, searches, and reloads entries", async () => {
   const root = await exampleRoot();
@@ -16,13 +16,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
     );
     assert.deepEqual(
       (await base.sections("clean-code")).map((item) => item.key),
-      [
-        "clean-code.comments",
-        "clean-code.formatting",
-        "clean-code.foundation",
-        "clean-code.functions",
-        "clean-code.meaningful-names",
-      ],
+      cleanCodeSectionKeys,
     );
     assert.deepEqual(
       (await base.sections("refactoring")).map((item) => item.key),
@@ -42,6 +36,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
     assert.match((await base.get("clean-code.functions")).sources[0].label, /PDF pages 62-83/);
     assert.match((await base.get("clean-code.comments")).sources[0].label, /PDF pages 84-105/);
     assert.match((await base.get("clean-code.formatting")).sources[0].label, /PDF pages 106-123/);
+    assert.match((await base.get("clean-code.objects-data-structures")).sources[0].label, /PDF pages 124-132/);
     assert.equal(existsSync(join(root, ".knowledge-index.json")), true);
 
     const newEntry: SaveKnowledgeEntryInput = {
