@@ -22,6 +22,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
         "clean-code.foundation",
         "clean-code.functions",
         "clean-code.meaningful-names",
+        "clean-code.objects-data-structures",
       ],
     );
     assert.deepEqual(
@@ -42,6 +43,7 @@ test("persists, indexes, searches, and reloads entries", async () => {
     assert.match((await base.get("clean-code.functions")).sources[0].label, /PDF pages 62-83/);
     assert.match((await base.get("clean-code.comments")).sources[0].label, /PDF pages 84-105/);
     assert.match((await base.get("clean-code.formatting")).sources[0].label, /PDF pages 106-123/);
+    assert.match((await base.get("clean-code.objects-data-structures")).sources[0].label, /PDF pages 124-132/);
     assert.equal(existsSync(join(root, ".knowledge-index.json")), true);
 
     const newEntry: SaveKnowledgeEntryInput = {

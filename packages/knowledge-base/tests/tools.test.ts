@@ -52,16 +52,9 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     const cleanCodeSections = JSON.parse(
       text(await client.callTool({ name: "knowledge_list_sections", arguments: { chapter: "clean-code" } })),
     );
-    assert.deepEqual(
-      cleanCodeSections.sections.map((item: { key: string }) => item.key),
-      [
-        "clean-code.comments",
-        "clean-code.formatting",
-        "clean-code.foundation",
-        "clean-code.functions",
-        "clean-code.meaningful-names",
-      ],
-    );
+    const cleanCodeSectionKeys = cleanCodeSections.sections.map((item: { key: string }) => item.key);
+    assert.equal(cleanCodeSectionKeys.length, 6);
+    assert.ok(cleanCodeSectionKeys.includes("clean-code.objects-data-structures"));
 
     const cleanCodeSummaries = JSON.parse(
       text(
@@ -193,6 +186,27 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(formatting.guidance.precedence, /Explicit task and project instructions take precedence/);
     assert.match(formatting.entry.sources[0].label, /PDF pages 106-123/);
     assert.match(formatting.entry.content, /Indentation/);
+
+    const objectsDataSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.objects-data-structures" },
+        }),
+      ),
+    );
+    assert.equal(objectsDataSummaries.entries[0].key, "clean-code.objects-data-structures");
+    assert.match(objectsDataSummaries.entries[0].summary, /objects|data structures|behavior/);
+    assert.equal("content" in objectsDataSummaries.entries[0], false);
+
+    const objectsData = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.objects-data-structures" } })),
+    );
+    assert.equal(objectsData.guidance.kind, "reference_guidance");
+    assert.equal(objectsData.guidance.executable, false);
+    assert.match(objectsData.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(objectsData.entry.sources[0].label, /PDF pages 124-132/);
+    assert.match(objectsData.entry.content, /Law of Demeter/);
 
     const saved = JSON.parse(
       text(

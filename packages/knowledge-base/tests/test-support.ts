@@ -10,6 +10,7 @@ const exampleNames = [
   "clean-code.functions.md",
   "clean-code.comments.md",
   "clean-code.formatting.md",
+  "clean-code.objects-data-structures.md",
   "refactoring.move-method.md",
   "design-patterns.strategy.md",
   "ux-ui-design.accessible-dialogs.md",
