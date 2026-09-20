@@ -13,6 +13,7 @@ const exampleNames = [
   "clean-code.formatting.md",
   "clean-code.objects-data-structures.md",
   "clean-code.error-handling.md",
+  "clean-code.unit-tests.md",
   "refactoring.move-method.md",
   "design-patterns.strategy.md",
   "ux-ui-design.accessible-dialogs.md",
@@ -27,6 +28,7 @@ export const cleanCodeSectionKeys = [
   "clean-code.functions",
   "clean-code.meaningful-names",
   "clean-code.objects-data-structures",
+  "clean-code.unit-tests",
 ];
 
 export async function exampleText(name: string): Promise<string> {
