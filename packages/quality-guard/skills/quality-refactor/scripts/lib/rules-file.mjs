@@ -21,7 +21,7 @@ export function scanFile(file, config) {
   const testRegions = file.lang === "rs" ? findRustTestRegions(code) : [];
   const out = [];
   checkLines(file, config, out);
-  checkTypes({ file, config, types, code, starts, out });
+  checkTypes({ file, config, types, code, starts, spans, out });
   checkTuples({ file, config, code, starts, out });
   checkComments({ file, config, comments, codeLines: code.split("\n"), out });
   const context = { starts, spans, code, interpolations };

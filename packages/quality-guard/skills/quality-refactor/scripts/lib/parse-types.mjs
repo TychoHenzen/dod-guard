@@ -54,6 +54,10 @@ function depthTracker(code) {
 function typeName(lang, isPy, match) {
   return lang === "go" || isPy ? match[1] : match[2];
 }
+
+function typeKind(lang, isPy, match) {
+  return isPy ? "class" : lang === "go" ? match[2] : match[1];
+}
 function collectTypes({ code, lang, starts, pattern }) {
   const isPy = lang === "py";
   const depthAt = depthTracker(code);
@@ -64,6 +68,7 @@ function collectTypes({ code, lang, starts, pattern }) {
     if (isPy || depthAt(match.index) === 0) {
       found.push({
         name: typeName(lang, isPy, match),
+        kind: typeKind(lang, isPy, match),
         line: lineAt(starts, match.index),
         offset: match.index,
       });
