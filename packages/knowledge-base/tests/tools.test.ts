@@ -355,6 +355,28 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(concurrency.entry.content, /shutdown/);
     assert.match(concurrency.entry.content, /pluggable and tunable/);
 
+    const junitSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.junit-internals" },
+        }),
+      ),
+    );
+    assert.equal(junitSummaries.entries[0].key, "clean-code.junit-internals");
+    assert.match(junitSummaries.entries[0].summary, /tests|refactor|implementation/);
+    assert.equal("content" in junitSummaries.entries[0], false);
+
+    const junitInternals = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.junit-internals" } })),
+    );
+    assert.equal(junitInternals.guidance.kind, "reference_guidance");
+    assert.equal(junitInternals.guidance.executable, false);
+    assert.match(junitInternals.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(junitInternals.entry.sources[0].label, /PDF pages 283-298/);
+    assert.match(junitInternals.entry.content, /tests as documentation|test suite/);
+    assert.match(junitInternals.entry.content, /Delete dead conditionals|dead conditionals/);
+
     const refinementSummaries = JSON.parse(
       text(
         await client.callTool({
