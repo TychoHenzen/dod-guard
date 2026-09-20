@@ -1,5 +1,5 @@
 import { makeFinding } from "./finding.js";
-import type { Evidence } from "./types.js";
+import type { Evidence } from "../types.js";
 
 function budgetMap(evidence: Evidence) {
   return new Map(

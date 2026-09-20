@@ -16,6 +16,7 @@ export const coverageSchema = z
       z
         .object({
           sourcePath: text,
+          uncoveredBehaviorIds: z.array(text).optional(),
           statements: metricSchema.optional(),
           branches: metricSchema.optional(),
           functions: metricSchema.optional(),
@@ -30,7 +31,9 @@ export const bugSchema = z
   .object({
     id: text,
     sourcePath: text,
-    behaviorIds: z.array(text),
+    behaviorIds: z
+      .array(text)
+      .min(1, "bug records require at least one affected behavior"),
   })
   .strict();
 

@@ -57,7 +57,7 @@ test("returns a quiet unavailable result when a project has no evidence file", (
   try {
     mkdirSync(path.join(root, ".quality"));
     const report = runTestQualityReport({ root });
-    assert.equal(report.status, "ok");
+    assert.equal(report.status, "unavailable");
     assert.equal(
       report.evidencePath,
       path.join(".quality", "test-quality.json"),

@@ -1,4 +1,4 @@
-import type { Evidence, Facts } from "./types.js";
+import type { Evidence, Facts } from "../types.js";
 
 function bugReferenceErrors(
   bug: NonNullable<Evidence["bugs"]>[number],

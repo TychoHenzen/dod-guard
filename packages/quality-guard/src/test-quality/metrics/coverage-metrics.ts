@@ -1,4 +1,4 @@
-import type { Evidence } from "./types.js";
+import type { Evidence } from "../types.js";
 
 function uncoveredMetrics(
   evidence: NonNullable<Evidence["coverage"]>["observations"],

@@ -1,12 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import { analyzeTestQuality } from "./analyze.js";
-import { emptyMetrics } from "./metrics.js";
+import { emptyMetrics } from "./metrics/metrics.js";
 
 const DEFAULT_TEST_QUALITY_EVIDENCE = ".quality/test-quality.json";
 
 function emptyReport(
-  status: "ok" | "invalid",
+  status: "ok" | "invalid" | "unavailable",
   evidencePath: string,
   errors: string[],
 ) {
@@ -61,7 +61,7 @@ export function runTestQualityReport(input: {
 }) {
   const { absolutePath, relativePath } = pathsFor(input);
   if (!existsSync(absolutePath))
-    return emptyReport("ok", relativePath, [
+    return emptyReport("unavailable", relativePath, [
       `evidence file not found: ${relativePath}`,
     ]);
   return readReport(absolutePath, relativePath);

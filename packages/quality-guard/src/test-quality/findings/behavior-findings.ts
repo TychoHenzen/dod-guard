@@ -1,5 +1,5 @@
 import { activeTests, makeFinding } from "./finding.js";
-import type { Evidence } from "./types.js";
+import type { Evidence } from "../types.js";
 
 function detailsFor(
   behavior: Evidence["sources"][number]["behaviors"][number],

@@ -1,7 +1,7 @@
 import { coverageMetrics } from "./coverage-metrics.js";
 import { languageMetrics, sumMetrics } from "./language-metrics.js";
 import { timingMetrics } from "./timing-metrics.js";
-import type { Evidence } from "./types.js";
+import type { Evidence } from "../types.js";
 
 export { emptyMetrics } from "./metric-constants.js";
 

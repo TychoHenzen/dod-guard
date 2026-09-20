@@ -1,4 +1,4 @@
-import type { Evidence } from "./types.js";
+import type { Evidence } from "../types.js";
 import { bugErrors, failureErrors, timingErrors } from "./validate-links.js";
 import {
   coverageErrors,

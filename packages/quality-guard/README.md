@@ -34,7 +34,8 @@ with `sources`, `tests`, and optional `coverage`, `bugs`, `failures`, and
 the IDs it exercises, status, language, and optional duration. Coverage is
 per-source evidence from any provider, not a universal percentage threshold.
 Bug links, normalized failure signatures, skip reasons, boundary input/expected
-oracles, and test-class budgets make the remaining evidence explicit. Normalize
+oracles, explicit uncovered behavior links, and test-class budgets make the
+remaining evidence explicit. Normalize
 provider output for C#,
 Python, TypeScript, and Rust in the same manifest; aliases such as `cs`, `py`,
 `ts`, and `rs` are accepted.
@@ -70,10 +71,11 @@ The report emits review-only T1-T9 findings with a remediation and evidence
 payload. T1 checks declared behavior coverage, T2 checks coverage evidence,
 T3 checks trivial documentary tests, T4 checks ambiguity skips, T5 checks
 boundaries, T6 checks linked bug regressions, T7 clusters repeated runtime
-failures, T8 correlates uncovered regions with failures, and T9 compares
-measured durations with declared environment budgets. Missing evidence is
-reported as unavailable or invalid; it never becomes zero coverage or a commit
-gate failure. A missing default file is quiet and returns an empty report.
+failures, T8 correlates explicitly linked uncovered behavior regions with
+failures, and T9 compares measured durations with declared environment budgets.
+Missing evidence is reported as unavailable or invalid; it never becomes zero
+coverage or a commit gate failure. A missing default file is quiet and returns
+an empty unavailable report.
 
 Comment findings stay deliberately conservative: `comment-metadata` reports
 explicit metadata/history tags, `comment-placeholder` reports deterministic

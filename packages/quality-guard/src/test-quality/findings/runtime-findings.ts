@@ -1,6 +1,7 @@
-import { makeFinding, sourceForBehavior, uncovered } from "./finding.js";
+import { makeFinding, sourceForBehavior } from "./finding.js";
 import { slowTests } from "./timing-findings.js";
-import type { Evidence } from "./types.js";
+import { coverageFinding } from "../coverage-finding.js";
+import type { Evidence } from "../types.js";
 
 function failureSource(
   evidence: Evidence,
@@ -53,28 +54,6 @@ function failureClusters(evidence: Evidence) {
   return [...clusters.entries()].flatMap(([key, failures]) =>
     clusterFinding(key, failures),
   );
-}
-
-function coverageFinding(
-  evidence: Evidence,
-  observation: NonNullable<Evidence["coverage"]>["observations"][number],
-) {
-  const hasFailure = (evidence.failures ?? []).some(
-    (current) => failureSource(evidence, current) === observation.sourcePath,
-  );
-  const gaps = uncovered(observation);
-  if (!hasFailure || gaps.length === 0) return [];
-  return [
-    makeFinding({
-      heuristic: "T8",
-      rule: "coverage-pattern",
-      path: observation.sourcePath,
-      message: "uncovered coverage regions overlap a recorded runtime failure",
-      remediation:
-        "Use the gap to inspect the failing behavior and add a focused test.",
-      evidence: { sourcePath: observation.sourcePath, uncovered: gaps },
-    }),
-  ];
 }
 
 function coveragePatterns(evidence: Evidence) {

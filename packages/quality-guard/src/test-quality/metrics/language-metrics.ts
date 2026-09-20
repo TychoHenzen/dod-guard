@@ -1,7 +1,7 @@
-import { activeTests } from "./finding.js";
+import { activeTests } from "../findings/finding.js";
 import { behaviorStats, bugStats } from "./language-stats.js";
 import { METRIC_KEYS } from "./metric-constants.js";
-import type { Evidence } from "./types.js";
+import type { Evidence } from "../types.js";
 
 function normalizedLanguage(value: string): string {
   return (

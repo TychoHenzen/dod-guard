@@ -1,4 +1,4 @@
-import type { Evidence } from "./types.js";
+import type { Evidence } from "../types.js";
 
 export function makeFinding(input: {
   heuristic: string;

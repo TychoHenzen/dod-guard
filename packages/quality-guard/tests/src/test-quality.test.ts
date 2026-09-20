@@ -49,6 +49,15 @@ test("does not invent findings when declared evidence covers the behavior", () =
     durationMs: 10,
     testClass: "unit",
   });
+  evidence.tests.push({
+    id: "other.complete.test",
+    path: "tests/other.test.ts",
+    language: "ts",
+    covers: ["cs.behavior", "rs.behavior", "py.boundary"],
+    status: "passed",
+    durationMs: 10,
+    testClass: "unit",
+  });
   evidence.tests[2].skipReason = {
     kind: "environment",
     detail: "optional runtime unavailable",
@@ -57,11 +66,30 @@ test("does not invent findings when declared evidence covers the behavior", () =
     { sourcePath: "src/worker.cs", statements: { covered: 1, total: 1 } },
     { sourcePath: "src/worker.rs", statements: { covered: 1, total: 1 } },
   );
-  evidence.failures = [evidence.failures[0]];
+  evidence.failures = [];
   evidence.tests[3].status = "passed";
   evidence.tests[4].status = "passed";
   evidence.timing.budgets[0].maxDurationMs = 200;
 
   const report = analyzeTestQuality(evidence);
+  assert.equal(report.status, "ok");
   assert.deepEqual(report.findings, []);
+});
+
+test("does not infer T8 from source-level failure and coverage overlap", () => {
+  const evidence = evidenceWithSignals();
+  assert.ok(evidence.coverage);
+  assert.ok(evidence.failures);
+  evidence.coverage.observations[0].uncoveredBehaviorIds = undefined;
+  evidence.failures = evidence.failures.map((failure) => ({
+    ...failure,
+    behaviorId: undefined,
+  }));
+
+  const report = analyzeTestQuality(evidence);
+  assert.equal(report.status, "ok");
+  assert.equal(
+    report.findings.some((finding) => finding.heuristic === "T8"),
+    false,
+  );
 });

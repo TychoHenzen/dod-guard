@@ -5,6 +5,7 @@ export const signalCoverage = {
   observations: [
     {
       sourcePath: "src/service.ts",
+      uncoveredBehaviorIds: ["ts.behavior"],
       statements: { covered: 8, total: 10 },
       branches: { covered: 2, total: 4 },
     },
@@ -23,12 +24,14 @@ export const signalFailures = [
   {
     testId: "ts.failure.one",
     sourcePath: "src/service.ts",
+    behaviorId: "ts.behavior",
     signature: "unexpected-null",
     inputClass: "empty",
   },
   {
     testId: "ts.failure.two",
     sourcePath: "src/service.ts",
+    behaviorId: "ts.behavior",
     signature: "unexpected-null",
     inputClass: "empty",
   },

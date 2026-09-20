@@ -1,4 +1,4 @@
-import type { Evidence, Facts } from "./types.js";
+import type { Evidence, Facts } from "../types.js";
 
 function duplicateValues(values: string[], label: string): string[] {
   const seen = new Set<string>();
@@ -50,6 +50,24 @@ export function testErrors(evidence: Evidence, facts: Facts): string[] {
   return [...duplicates, ...unknown];
 }
 
+function coverageBehaviorErrors(
+  observations: NonNullable<Evidence["coverage"]>["observations"],
+  facts: Facts,
+) {
+  return observations.flatMap((observation) =>
+    (observation.uncoveredBehaviorIds ?? []).flatMap((behavior) => {
+      const sourcePath = facts.behaviors.get(behavior);
+      if (sourcePath === undefined)
+        return [`coverage observation references unknown behavior ${behavior}`];
+      if (sourcePath !== observation.sourcePath)
+        return [
+          `coverage observation behavior ${behavior} is outside ${observation.sourcePath}`,
+        ];
+      return [];
+    }),
+  );
+}
+
 export function coverageErrors(evidence: Evidence, facts: Facts): string[] {
   const observations = evidence.coverage?.observations ?? [];
   const unknown = observations
@@ -60,6 +78,7 @@ export function coverageErrors(evidence: Evidence, facts: Facts): string[] {
     );
   return [
     ...unknown,
+    ...coverageBehaviorErrors(observations, facts),
     ...duplicateValues(
       observations.map((observation) => observation.sourcePath),
       "coverage observation",

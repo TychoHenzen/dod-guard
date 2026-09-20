@@ -1,7 +1,7 @@
-import { EvidenceSchema } from "./schema.js";
-import { findingsFor } from "./findings.js";
-import { emptyMetrics, metricsFor } from "./metrics.js";
-import { validateEvidence } from "./validate.js";
+import { findingsFor } from "./findings/findings.js";
+import { emptyMetrics, metricsFor } from "./metrics/metrics.js";
+import { EvidenceSchema } from "./schema/schema.js";
+import { validateEvidence } from "./validation/validate.js";
 
 function invalidReport(errors: string[]) {
   return {
