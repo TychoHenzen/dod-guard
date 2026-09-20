@@ -1,5 +1,18 @@
 import { reportSummaries } from "./report-summaries.js";
 
+const FILE_SELECTION =
+  "supported handwritten source; generated, dependency, build, binary, " +
+  "unreadable, and symlinked files excluded";
+
+function scoring() {
+  return {
+    initial: 100,
+    errorDeduction: 5,
+    warningDeduction: 1,
+    minimum: 0,
+  };
+}
+
 type ScanInput = {
   profile: "default" | "strict";
   files: Array<{
@@ -64,23 +77,18 @@ export function buildQualityReport(
     dependencies: unknown[];
     cycles: unknown[];
     encapsulation: unknown[];
+    configurableData?: unknown[];
+    transitiveNavigation?: unknown[];
     errors: Array<{ code: string; target: string; message: string }>;
   },
 ) {
   const files = scoredFiles(scan, findingsByFile(scan));
   return {
     schemaVersion: 1,
-    scoring: {
-      initial: 100,
-      errorDeduction: 5,
-      warningDeduction: 1,
-      minimum: 0,
-    },
+    scoring: scoring(),
     scanner: {
       profile: scan.profile,
-      fileSelection:
-        "supported handwritten source; generated, dependency, build, binary, " +
-        "unreadable, and symlinked files excluded",
+      fileSelection: FILE_SELECTION,
     },
     summaries: reportSummaries(files),
     files,

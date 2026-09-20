@@ -5,6 +5,8 @@ export interface QualityConfig {
   genericBuckets: string[];
   generatedPaths: string[];
   testPaths: string[];
+  lowLevelPathGroups: string[];
+  fluentMarkers: string[];
   history: { maxFirstParentCommits: number };
 }
 
@@ -15,5 +17,7 @@ export const DEFAULT_CONFIG: QualityConfig = {
   genericBuckets: ["utils", "common", "helpers", "shared", "misc"],
   generatedPaths: [],
   testPaths: [],
+  lowLevelPathGroups: [],
+  fluentMarkers: ["builder", "fluent", "pipeline", "query"],
   history: { maxFirstParentCommits: 200 },
 };

@@ -1,6 +1,7 @@
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import type { analyzeSimilarity } from "./architecture-similarity.js";
 import { analyzeDependencies } from "./dependency.js";
+import { reviewPathFindings } from "./design-smells/review-path-findings.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzePlacement } from "./placement.js";
 import { createFinding, type DecisionResult } from "./types.js";
@@ -70,13 +71,18 @@ export function dependencyFindings(
 export function encapsulationFindings(
   findings: ReturnType<typeof analyzeEncapsulation>,
 ): DecisionResult["findings"] {
-  return findings.map((finding) =>
-    architectureFinding({
-      kind: finding.kind,
-      severity: "review",
-      affectedPaths: [finding.path],
-      evidence: finding,
-      reason: "public or compatibility surface changed",
-    }),
+  return reviewPathFindings(
+    findings,
+    () => "public or compatibility surface changed",
+  );
+}
+
+export function designFindings(
+  findings: Array<{ kind: string; path: string }>,
+): DecisionResult["findings"] {
+  return reviewPathFindings(findings, (finding) =>
+    finding.kind === "configurable-data"
+      ? "a configuration default is owned by a configured low-level module"
+      : "a simple receiver chain crosses multiple collaborators",
   );
 }

@@ -18,9 +18,9 @@ var __export = (target, all) => {
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
-    for (let key2 of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key2) && key2 !== except)
-        __defProp(to, key2, { get: () => from[key2], enumerable: !(desc = __getOwnPropDesc(from, key2)) || desc.enumerable });
+    for (let key3 of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key3) && key3 !== except)
+        __defProp(to, key3, { get: () => from[key3], enumerable: !(desc = __getOwnPropDesc(from, key3)) || desc.enumerable });
   }
   return to;
 };
@@ -169,15 +169,15 @@ var require_code = __commonJS({
       return JSON.stringify(x).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
     }
     exports.safeStringify = safeStringify;
-    function getProperty(key2) {
-      return typeof key2 == "string" && exports.IDENTIFIER.test(key2) ? new _Code(`.${key2}`) : _`[${key2}]`;
+    function getProperty(key3) {
+      return typeof key3 == "string" && exports.IDENTIFIER.test(key3) ? new _Code(`.${key3}`) : _`[${key3}]`;
     }
     exports.getProperty = getProperty;
-    function getEsmExportName(key2) {
-      if (typeof key2 == "string" && exports.IDENTIFIER.test(key2)) {
-        return new _Code(`${key2}`);
+    function getEsmExportName(key3) {
+      if (typeof key3 == "string" && exports.IDENTIFIER.test(key3)) {
+        return new _Code(`${key3}`);
       }
-      throw new Error(`CodeGen: invalid export name: ${key2}, use explicit $id name mapping`);
+      throw new Error(`CodeGen: invalid export name: ${key3}, use explicit $id name mapping`);
     }
     exports.getEsmExportName = getEsmExportName;
     function regexpCode(rx) {
@@ -804,11 +804,11 @@ var require_codegen = __commonJS({
       // returns code for object literal for the passed argument list of key-value pairs
       object(...keyValues) {
         const code = ["{"];
-        for (const [key2, value] of keyValues) {
+        for (const [key3, value] of keyValues) {
           if (code.length > 1)
             code.push(",");
-          code.push(key2);
-          if (key2 !== value || this.opts.es5) {
+          code.push(key3);
+          if (key3 !== value || this.opts.es5) {
             code.push(":");
             (0, code_1.addCodeArg)(code, value);
           }
@@ -1083,17 +1083,17 @@ var require_util = __commonJS({
       if (typeof schema === "boolean")
         return;
       const rules = self.RULES.keywords;
-      for (const key2 in schema) {
-        if (!rules[key2])
-          checkStrictMode(it, `unknown keyword: "${key2}"`);
+      for (const key3 in schema) {
+        if (!rules[key3])
+          checkStrictMode(it, `unknown keyword: "${key3}"`);
       }
     }
     exports.checkUnknownRules = checkUnknownRules;
     function schemaHasRules(schema, rules) {
       if (typeof schema == "boolean")
         return !schema;
-      for (const key2 in schema)
-        if (rules[key2])
+      for (const key3 in schema)
+        if (rules[key3])
           return true;
       return false;
     }
@@ -1101,8 +1101,8 @@ var require_util = __commonJS({
     function schemaHasRulesButRef(schema, RULES) {
       if (typeof schema == "boolean")
         return !schema;
-      for (const key2 in schema)
-        if (key2 !== "$ref" && RULES.all[key2])
+      for (const key3 in schema)
+        if (key3 !== "$ref" && RULES.all[key3])
           return true;
       return false;
     }
@@ -1680,8 +1680,8 @@ var require_defaults = __commonJS({
     function assignDefaults(it, ty) {
       const { properties, items } = it.schema;
       if (ty === "object" && properties) {
-        for (const key2 in properties) {
-          assignDefault(it, key2, properties[key2].default);
+        for (const key3 in properties) {
+          assignDefault(it, key3, properties[key3].default);
         }
       } else if (ty === "array" && Array.isArray(items)) {
         items.forEach((sch, i) => assignDefault(it, i, sch.default));
@@ -2065,8 +2065,8 @@ var require_fast_deep_equal = __commonJS({
         for (i = length; i-- !== 0; )
           if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
         for (i = length; i-- !== 0; ) {
-          var key2 = keys[i];
-          if (!equal(a[key2], b[key2])) return false;
+          var key3 = keys[i];
+          if (!equal(a[key3], b[key3])) return false;
         }
         return true;
       }
@@ -2138,20 +2138,20 @@ var require_json_schema_traverse = __commonJS({
     function _traverse(opts, pre, post, schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex) {
       if (schema && typeof schema == "object" && !Array.isArray(schema)) {
         pre(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
-        for (var key2 in schema) {
-          var sch = schema[key2];
+        for (var key3 in schema) {
+          var sch = schema[key3];
           if (Array.isArray(sch)) {
-            if (key2 in traverse.arrayKeywords) {
+            if (key3 in traverse.arrayKeywords) {
               for (var i = 0; i < sch.length; i++)
-                _traverse(opts, pre, post, sch[i], jsonPtr + "/" + key2 + "/" + i, rootSchema, jsonPtr, key2, schema, i);
+                _traverse(opts, pre, post, sch[i], jsonPtr + "/" + key3 + "/" + i, rootSchema, jsonPtr, key3, schema, i);
             }
-          } else if (key2 in traverse.propsKeywords) {
+          } else if (key3 in traverse.propsKeywords) {
             if (sch && typeof sch == "object") {
               for (var prop in sch)
-                _traverse(opts, pre, post, sch[prop], jsonPtr + "/" + key2 + "/" + escapeJsonPtr(prop), rootSchema, jsonPtr, key2, schema, prop);
+                _traverse(opts, pre, post, sch[prop], jsonPtr + "/" + key3 + "/" + escapeJsonPtr(prop), rootSchema, jsonPtr, key3, schema, prop);
             }
-          } else if (key2 in traverse.keywords || opts.allKeys && !(key2 in traverse.skipKeywords)) {
-            _traverse(opts, pre, post, sch, jsonPtr + "/" + key2, rootSchema, jsonPtr, key2, schema);
+          } else if (key3 in traverse.keywords || opts.allKeys && !(key3 in traverse.skipKeywords)) {
+            _traverse(opts, pre, post, sch, jsonPtr + "/" + key3, rootSchema, jsonPtr, key3, schema);
           }
         }
         post(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
@@ -2208,10 +2208,10 @@ var require_resolve = __commonJS({
       "$dynamicAnchor"
     ]);
     function hasRef(schema) {
-      for (const key2 in schema) {
-        if (REF_KEYWORDS.has(key2))
+      for (const key3 in schema) {
+        if (REF_KEYWORDS.has(key3))
           return true;
-        const sch = schema[key2];
+        const sch = schema[key3];
         if (Array.isArray(sch) && sch.some(hasRef))
           return true;
         if (typeof sch == "object" && hasRef(sch))
@@ -2221,14 +2221,14 @@ var require_resolve = __commonJS({
     }
     function countKeys(schema) {
       let count = 0;
-      for (const key2 in schema) {
-        if (key2 === "$ref")
+      for (const key3 in schema) {
+        if (key3 === "$ref")
           return Infinity;
         count++;
-        if (SIMPLE_INLINED.has(key2))
+        if (SIMPLE_INLINED.has(key3))
           continue;
-        if (typeof schema[key2] == "object") {
-          (0, util_1.eachItem)(schema[key2], (sch) => count += countKeys(sch));
+        if (typeof schema[key3] == "object") {
+          (0, util_1.eachItem)(schema[key3], (sch) => count += countKeys(sch));
         }
         if (count === Infinity)
           return Infinity;
@@ -2417,8 +2417,8 @@ var require_validate = __commonJS({
     function schemaCxtHasRules({ schema, self }) {
       if (typeof schema == "boolean")
         return !schema;
-      for (const key2 in schema)
-        if (self.RULES.all[key2])
+      for (const key3 in schema)
+        if (self.RULES.all[key3])
           return true;
       return false;
     }
@@ -4456,7 +4456,7 @@ var require_core = __commonJS({
         }
       }
       // Adds schema to the instance
-      addSchema(schema, key2, _meta, _validateSchema = this.opts.validateSchema) {
+      addSchema(schema, key3, _meta, _validateSchema = this.opts.validateSchema) {
         if (Array.isArray(schema)) {
           for (const sch of schema)
             this.addSchema(sch, void 0, _meta, _validateSchema);
@@ -4470,15 +4470,15 @@ var require_core = __commonJS({
             throw new Error(`schema ${schemaId} must be string`);
           }
         }
-        key2 = (0, resolve_1.normalizeId)(key2 || id);
-        this._checkUnique(key2);
-        this.schemas[key2] = this._addSchema(schema, _meta, key2, _validateSchema, true);
+        key3 = (0, resolve_1.normalizeId)(key3 || id);
+        this._checkUnique(key3);
+        this.schemas[key3] = this._addSchema(schema, _meta, key3, _validateSchema, true);
         return this;
       }
       // Add schema that will be used to validate other schemas
       // options in META_IGNORE_OPTIONS are alway set to false
-      addMetaSchema(schema, key2, _validateSchema = this.opts.validateSchema) {
-        this.addSchema(schema, key2, true, _validateSchema);
+      addMetaSchema(schema, key3, _validateSchema = this.opts.validateSchema) {
+        this.addSchema(schema, key3, true, _validateSchema);
         return this;
       }
       //  Validate schema against its meta-schema
@@ -4634,14 +4634,14 @@ var require_core = __commonJS({
           let keywords = metaSchema;
           for (const seg of segments)
             keywords = keywords[seg];
-          for (const key2 in rules) {
-            const rule = rules[key2];
+          for (const key3 in rules) {
+            const rule = rules[key3];
             if (typeof rule != "object")
               continue;
             const { $data } = rule.definition;
-            const schema = keywords[key2];
+            const schema = keywords[key3];
             if ($data && schema)
-              keywords[key2] = schemaOrData(schema);
+              keywords[key3] = schemaOrData(schema);
           }
         }
         return metaSchema;
@@ -4714,10 +4714,10 @@ var require_core = __commonJS({
     Ajv2.MissingRefError = ref_error_1.default;
     exports.default = Ajv2;
     function checkOptions(checkOpts, options, msg, log = "error") {
-      for (const key2 in checkOpts) {
-        const opt = key2;
+      for (const key3 in checkOpts) {
+        const opt = key3;
         if (opt in options)
-          this.logger[log](`${msg}: option ${key2}. ${checkOpts[opt]}`);
+          this.logger[log](`${msg}: option ${key3}. ${checkOpts[opt]}`);
       }
     }
     function getSchEnv(keyRef) {
@@ -4731,8 +4731,8 @@ var require_core = __commonJS({
       if (Array.isArray(optsSchemas))
         this.addSchema(optsSchemas);
       else
-        for (const key2 in optsSchemas)
-          this.addSchema(optsSchemas[key2], key2);
+        for (const key3 in optsSchemas)
+          this.addSchema(optsSchemas[key3], key3);
     }
     function addInitialFormats() {
       for (const name in this.opts.formats) {
@@ -5780,11 +5780,11 @@ var require_dependencies = __commonJS({
     function splitDependencies({ schema }) {
       const propertyDeps = {};
       const schemaDeps = {};
-      for (const key2 in schema) {
-        if (key2 === "__proto__")
+      for (const key3 in schema) {
+        if (key3 === "__proto__")
           continue;
-        const deps = Array.isArray(schema[key2]) ? propertyDeps : schemaDeps;
-        deps[key2] = schema[key2];
+        const deps = Array.isArray(schema[key3]) ? propertyDeps : schemaDeps;
+        deps[key3] = schema[key3];
       }
       return [propertyDeps, schemaDeps];
     }
@@ -5861,13 +5861,13 @@ var require_propertyNames = __commonJS({
         if ((0, util_1.alwaysValidSchema)(it, schema))
           return;
         const valid = gen.name("valid");
-        gen.forIn("key", data, (key2) => {
-          cxt.setParams({ propertyName: key2 });
+        gen.forIn("key", data, (key3) => {
+          cxt.setParams({ propertyName: key3 });
           cxt.subschema({
             keyword: "propertyNames",
-            data: key2,
+            data: key3,
             dataTypes: ["string"],
-            propertyName: key2,
+            propertyName: key3,
             compositeRule: true
           }, valid);
           gen.if((0, codegen_1.not)(valid), () => {
@@ -5916,38 +5916,38 @@ var require_additionalProperties = __commonJS({
         checkAdditionalProperties();
         cxt.ok((0, codegen_1._)`${errsCount} === ${names_1.default.errors}`);
         function checkAdditionalProperties() {
-          gen.forIn("key", data, (key2) => {
+          gen.forIn("key", data, (key3) => {
             if (!props.length && !patProps.length)
-              additionalPropertyCode(key2);
+              additionalPropertyCode(key3);
             else
-              gen.if(isAdditional(key2), () => additionalPropertyCode(key2));
+              gen.if(isAdditional(key3), () => additionalPropertyCode(key3));
           });
         }
-        function isAdditional(key2) {
+        function isAdditional(key3) {
           let definedProp;
           if (props.length > 8) {
             const propsSchema = (0, util_1.schemaRefOrVal)(it, parentSchema.properties, "properties");
-            definedProp = (0, code_1.isOwnProperty)(gen, propsSchema, key2);
+            definedProp = (0, code_1.isOwnProperty)(gen, propsSchema, key3);
           } else if (props.length) {
-            definedProp = (0, codegen_1.or)(...props.map((p) => (0, codegen_1._)`${key2} === ${p}`));
+            definedProp = (0, codegen_1.or)(...props.map((p) => (0, codegen_1._)`${key3} === ${p}`));
           } else {
             definedProp = codegen_1.nil;
           }
           if (patProps.length) {
-            definedProp = (0, codegen_1.or)(definedProp, ...patProps.map((p) => (0, codegen_1._)`${(0, code_1.usePattern)(cxt, p)}.test(${key2})`));
+            definedProp = (0, codegen_1.or)(definedProp, ...patProps.map((p) => (0, codegen_1._)`${(0, code_1.usePattern)(cxt, p)}.test(${key3})`));
           }
           return (0, codegen_1.not)(definedProp);
         }
-        function deleteAdditional(key2) {
-          gen.code((0, codegen_1._)`delete ${data}[${key2}]`);
+        function deleteAdditional(key3) {
+          gen.code((0, codegen_1._)`delete ${data}[${key3}]`);
         }
-        function additionalPropertyCode(key2) {
+        function additionalPropertyCode(key3) {
           if (opts.removeAdditional === "all" || opts.removeAdditional && schema === false) {
-            deleteAdditional(key2);
+            deleteAdditional(key3);
             return;
           }
           if (schema === false) {
-            cxt.setParams({ additionalProperty: key2 });
+            cxt.setParams({ additionalProperty: key3 });
             cxt.error();
             if (!allErrors)
               gen.break();
@@ -5956,22 +5956,22 @@ var require_additionalProperties = __commonJS({
           if (typeof schema == "object" && !(0, util_1.alwaysValidSchema)(it, schema)) {
             const valid = gen.name("valid");
             if (opts.removeAdditional === "failing") {
-              applyAdditionalSchema(key2, valid, false);
+              applyAdditionalSchema(key3, valid, false);
               gen.if((0, codegen_1.not)(valid), () => {
                 cxt.reset();
-                deleteAdditional(key2);
+                deleteAdditional(key3);
               });
             } else {
-              applyAdditionalSchema(key2, valid);
+              applyAdditionalSchema(key3, valid);
               if (!allErrors)
                 gen.if((0, codegen_1.not)(valid), () => gen.break());
             }
           }
         }
-        function applyAdditionalSchema(key2, valid, errors) {
+        function applyAdditionalSchema(key3, valid, errors) {
           const subschema = {
             keyword: "additionalProperties",
-            dataProp: key2,
+            dataProp: key3,
             dataPropType: util_1.Type.Str
           };
           if (errors === false) {
@@ -6096,19 +6096,19 @@ var require_patternProperties = __commonJS({
           }
         }
         function validateProperties(pat) {
-          gen.forIn("key", data, (key2) => {
-            gen.if((0, codegen_1._)`${(0, code_1.usePattern)(cxt, pat)}.test(${key2})`, () => {
+          gen.forIn("key", data, (key3) => {
+            gen.if((0, codegen_1._)`${(0, code_1.usePattern)(cxt, pat)}.test(${key3})`, () => {
               const alwaysValid = alwaysValidPatterns.includes(pat);
               if (!alwaysValid) {
                 cxt.subschema({
                   keyword: "patternProperties",
                   schemaProp: pat,
-                  dataProp: key2,
+                  dataProp: key3,
                   dataPropType: util_2.Type.Str
                 }, valid);
               }
               if (it.opts.unevaluated && props !== true) {
-                gen.assign((0, codegen_1._)`${props}[${key2}]`, true);
+                gen.assign((0, codegen_1._)`${props}[${key3}]`, true);
               } else if (!alwaysValid && !it.allErrors) {
                 gen.if((0, codegen_1.not)(valid), () => gen.break());
               }
@@ -7349,9 +7349,9 @@ var util;
   };
   util2.objectKeys = typeof Object.keys === "function" ? (obj) => Object.keys(obj) : (object4) => {
     const keys = [];
-    for (const key2 in object4) {
-      if (Object.prototype.hasOwnProperty.call(object4, key2)) {
-        keys.push(key2);
+    for (const key3 in object4) {
+      if (Object.prototype.hasOwnProperty.call(object4, key3)) {
+        keys.push(key3);
       }
     }
     return keys;
@@ -7751,10 +7751,10 @@ var ParseStatus = class _ParseStatus {
   static async mergeObjectAsync(status, pairs) {
     const syncPairs = [];
     for (const pair of pairs) {
-      const key2 = await pair.key;
+      const key3 = await pair.key;
       const value = await pair.value;
       syncPairs.push({
-        key: key2,
+        key: key3,
         value
       });
     }
@@ -7763,17 +7763,17 @@ var ParseStatus = class _ParseStatus {
   static mergeObjectSync(status, pairs) {
     const finalObject = {};
     for (const pair of pairs) {
-      const { key: key2, value } = pair;
-      if (key2.status === "aborted")
+      const { key: key3, value } = pair;
+      if (key3.status === "aborted")
         return INVALID;
       if (value.status === "aborted")
         return INVALID;
-      if (key2.status === "dirty")
+      if (key3.status === "dirty")
         status.dirty();
       if (value.status === "dirty")
         status.dirty();
-      if (key2.value !== "__proto__" && (typeof value.value !== "undefined" || pair.alwaysSet)) {
-        finalObject[key2.value] = value.value;
+      if (key3.value !== "__proto__" && (typeof value.value !== "undefined" || pair.alwaysSet)) {
+        finalObject[key3.value] = value.value;
       }
     }
     return { status: status.value, value: finalObject };
@@ -7798,12 +7798,12 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path15, key2) {
+  constructor(parent, value, path15, key3) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
     this._path = path15;
-    this._key = key2;
+    this._key = key3;
   }
   get path() {
     if (!this._cachedPath.length) {
@@ -9548,9 +9548,9 @@ ZodArray.create = (schema, params) => {
 function deepPartialify(schema) {
   if (schema instanceof ZodObject) {
     const newShape = {};
-    for (const key2 in schema.shape) {
-      const fieldSchema = schema.shape[key2];
-      newShape[key2] = ZodOptional.create(deepPartialify(fieldSchema));
+    for (const key3 in schema.shape) {
+      const fieldSchema = schema.shape[key3];
+      newShape[key3] = ZodOptional.create(deepPartialify(fieldSchema));
     }
     return new ZodObject({
       ...schema._def,
@@ -9601,29 +9601,29 @@ var ZodObject = class _ZodObject extends ZodType {
     const { shape, keys: shapeKeys } = this._getCached();
     const extraKeys = [];
     if (!(this._def.catchall instanceof ZodNever && this._def.unknownKeys === "strip")) {
-      for (const key2 in ctx.data) {
-        if (!shapeKeys.includes(key2)) {
-          extraKeys.push(key2);
+      for (const key3 in ctx.data) {
+        if (!shapeKeys.includes(key3)) {
+          extraKeys.push(key3);
         }
       }
     }
     const pairs = [];
-    for (const key2 of shapeKeys) {
-      const keyValidator = shape[key2];
-      const value = ctx.data[key2];
+    for (const key3 of shapeKeys) {
+      const keyValidator = shape[key3];
+      const value = ctx.data[key3];
       pairs.push({
-        key: { status: "valid", value: key2 },
-        value: keyValidator._parse(new ParseInputLazyPath(ctx, value, ctx.path, key2)),
-        alwaysSet: key2 in ctx.data
+        key: { status: "valid", value: key3 },
+        value: keyValidator._parse(new ParseInputLazyPath(ctx, value, ctx.path, key3)),
+        alwaysSet: key3 in ctx.data
       });
     }
     if (this._def.catchall instanceof ZodNever) {
       const unknownKeys = this._def.unknownKeys;
       if (unknownKeys === "passthrough") {
-        for (const key2 of extraKeys) {
+        for (const key3 of extraKeys) {
           pairs.push({
-            key: { status: "valid", value: key2 },
-            value: { status: "valid", value: ctx.data[key2] }
+            key: { status: "valid", value: key3 },
+            value: { status: "valid", value: ctx.data[key3] }
           });
         }
       } else if (unknownKeys === "strict") {
@@ -9640,15 +9640,15 @@ var ZodObject = class _ZodObject extends ZodType {
       }
     } else {
       const catchall = this._def.catchall;
-      for (const key2 of extraKeys) {
-        const value = ctx.data[key2];
+      for (const key3 of extraKeys) {
+        const value = ctx.data[key3];
         pairs.push({
-          key: { status: "valid", value: key2 },
+          key: { status: "valid", value: key3 },
           value: catchall._parse(
-            new ParseInputLazyPath(ctx, value, ctx.path, key2)
+            new ParseInputLazyPath(ctx, value, ctx.path, key3)
             //, ctx.child(key), value, getParsedType(value)
           ),
-          alwaysSet: key2 in ctx.data
+          alwaysSet: key3 in ctx.data
         });
       }
     }
@@ -9656,10 +9656,10 @@ var ZodObject = class _ZodObject extends ZodType {
       return Promise.resolve().then(async () => {
         const syncPairs = [];
         for (const pair of pairs) {
-          const key2 = await pair.key;
+          const key3 = await pair.key;
           const value = await pair.value;
           syncPairs.push({
-            key: key2,
+            key: key3,
             value,
             alwaysSet: pair.alwaysSet
           });
@@ -9784,8 +9784,8 @@ var ZodObject = class _ZodObject extends ZodType {
   //   }) as any;
   //   return merged;
   // }
-  setKey(key2, schema) {
-    return this.augment({ [key2]: schema });
+  setKey(key3, schema) {
+    return this.augment({ [key3]: schema });
   }
   // merge<Incoming extends AnyZodObject>(
   //   merging: Incoming
@@ -9816,9 +9816,9 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   pick(mask) {
     const shape = {};
-    for (const key2 of util.objectKeys(mask)) {
-      if (mask[key2] && this.shape[key2]) {
-        shape[key2] = this.shape[key2];
+    for (const key3 of util.objectKeys(mask)) {
+      if (mask[key3] && this.shape[key3]) {
+        shape[key3] = this.shape[key3];
       }
     }
     return new _ZodObject({
@@ -9828,9 +9828,9 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   omit(mask) {
     const shape = {};
-    for (const key2 of util.objectKeys(this.shape)) {
-      if (!mask[key2]) {
-        shape[key2] = this.shape[key2];
+    for (const key3 of util.objectKeys(this.shape)) {
+      if (!mask[key3]) {
+        shape[key3] = this.shape[key3];
       }
     }
     return new _ZodObject({
@@ -9846,12 +9846,12 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   partial(mask) {
     const newShape = {};
-    for (const key2 of util.objectKeys(this.shape)) {
-      const fieldSchema = this.shape[key2];
-      if (mask && !mask[key2]) {
-        newShape[key2] = fieldSchema;
+    for (const key3 of util.objectKeys(this.shape)) {
+      const fieldSchema = this.shape[key3];
+      if (mask && !mask[key3]) {
+        newShape[key3] = fieldSchema;
       } else {
-        newShape[key2] = fieldSchema.optional();
+        newShape[key3] = fieldSchema.optional();
       }
     }
     return new _ZodObject({
@@ -9861,16 +9861,16 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   required(mask) {
     const newShape = {};
-    for (const key2 of util.objectKeys(this.shape)) {
-      if (mask && !mask[key2]) {
-        newShape[key2] = this.shape[key2];
+    for (const key3 of util.objectKeys(this.shape)) {
+      if (mask && !mask[key3]) {
+        newShape[key3] = this.shape[key3];
       } else {
-        const fieldSchema = this.shape[key2];
+        const fieldSchema = this.shape[key3];
         let newField = fieldSchema;
         while (newField instanceof ZodOptional) {
           newField = newField._def.innerType;
         }
-        newShape[key2] = newField;
+        newShape[key3] = newField;
       }
     }
     return new _ZodObject({
@@ -10114,14 +10114,14 @@ function mergeValues(a, b) {
     return { valid: true, data: a };
   } else if (aType === ZodParsedType.object && bType === ZodParsedType.object) {
     const bKeys = util.objectKeys(b);
-    const sharedKeys = util.objectKeys(a).filter((key2) => bKeys.indexOf(key2) !== -1);
+    const sharedKeys = util.objectKeys(a).filter((key3) => bKeys.indexOf(key3) !== -1);
     const newObj = { ...a, ...b };
-    for (const key2 of sharedKeys) {
-      const sharedValue = mergeValues(a[key2], b[key2]);
+    for (const key3 of sharedKeys) {
+      const sharedValue = mergeValues(a[key3], b[key3]);
       if (!sharedValue.valid) {
         return { valid: false };
       }
-      newObj[key2] = sharedValue.data;
+      newObj[key3] = sharedValue.data;
     }
     return { valid: true, data: newObj };
   } else if (aType === ZodParsedType.array && bType === ZodParsedType.array) {
@@ -10285,11 +10285,11 @@ var ZodRecord = class _ZodRecord extends ZodType {
     const pairs = [];
     const keyType = this._def.keyType;
     const valueType = this._def.valueType;
-    for (const key2 in ctx.data) {
+    for (const key3 in ctx.data) {
       pairs.push({
-        key: keyType._parse(new ParseInputLazyPath(ctx, key2, ctx.path, key2)),
-        value: valueType._parse(new ParseInputLazyPath(ctx, ctx.data[key2], ctx.path, key2)),
-        alwaysSet: key2 in ctx.data
+        key: keyType._parse(new ParseInputLazyPath(ctx, key3, ctx.path, key3)),
+        value: valueType._parse(new ParseInputLazyPath(ctx, ctx.data[key3], ctx.path, key3)),
+        alwaysSet: key3 in ctx.data
       });
     }
     if (ctx.common.async) {
@@ -10337,9 +10337,9 @@ var ZodMap = class extends ZodType {
     }
     const keyType = this._def.keyType;
     const valueType = this._def.valueType;
-    const pairs = [...ctx.data.entries()].map(([key2, value], index) => {
+    const pairs = [...ctx.data.entries()].map(([key3, value], index) => {
       return {
-        key: keyType._parse(new ParseInputLazyPath(ctx, key2, ctx.path, [index, "key"])),
+        key: keyType._parse(new ParseInputLazyPath(ctx, key3, ctx.path, [index, "key"])),
         value: valueType._parse(new ParseInputLazyPath(ctx, value, ctx.path, [index, "value"]))
       };
     });
@@ -10347,30 +10347,30 @@ var ZodMap = class extends ZodType {
       const finalMap = /* @__PURE__ */ new Map();
       return Promise.resolve().then(async () => {
         for (const pair of pairs) {
-          const key2 = await pair.key;
+          const key3 = await pair.key;
           const value = await pair.value;
-          if (key2.status === "aborted" || value.status === "aborted") {
+          if (key3.status === "aborted" || value.status === "aborted") {
             return INVALID;
           }
-          if (key2.status === "dirty" || value.status === "dirty") {
+          if (key3.status === "dirty" || value.status === "dirty") {
             status.dirty();
           }
-          finalMap.set(key2.value, value.value);
+          finalMap.set(key3.value, value.value);
         }
         return { status: status.value, value: finalMap };
       });
     } else {
       const finalMap = /* @__PURE__ */ new Map();
       for (const pair of pairs) {
-        const key2 = pair.key;
+        const key3 = pair.key;
         const value = pair.value;
-        if (key2.status === "aborted" || value.status === "aborted") {
+        if (key3.status === "aborted" || value.status === "aborted") {
           return INVALID;
         }
-        if (key2.status === "dirty" || value.status === "dirty") {
+        if (key3.status === "dirty" || value.status === "dirty") {
           status.dirty();
         }
-        finalMap.set(key2.value, value.value);
+        finalMap.set(key3.value, value.value);
       }
       return { status: status.value, value: finalMap };
     }
@@ -11411,19 +11411,19 @@ function floatSafeRemainder2(val, step) {
   const stepInt = Number.parseInt(step.toFixed(decCount).replace(".", ""));
   return valInt % stepInt / 10 ** decCount;
 }
-function defineLazy(object4, key2, getter) {
+function defineLazy(object4, key3, getter) {
   const set = false;
-  Object.defineProperty(object4, key2, {
+  Object.defineProperty(object4, key3, {
     get() {
       if (!set) {
         const value = getter();
-        object4[key2] = value;
+        object4[key3] = value;
         return value;
       }
       throw new Error("cached value already set");
     },
     set(v) {
-      Object.defineProperty(object4, key2, {
+      Object.defineProperty(object4, key3, {
         value: v
         // configurable: true,
       });
@@ -11442,11 +11442,11 @@ function assignProp(target, prop, value) {
 function getElementAtPath(obj, path15) {
   if (!path15)
     return obj;
-  return path15.reduce((acc, key2) => acc?.[key2], obj);
+  return path15.reduce((acc, key3) => acc?.[key3], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
-  const promises = keys.map((key2) => promisesObj[key2]);
+  const promises = keys.map((key3) => promisesObj[key3]);
   return Promise.all(promises).then((results) => {
     const resolvedObj = {};
     for (let i = 0; i < keys.length; i++) {
@@ -11499,8 +11499,8 @@ function isPlainObject(o) {
 }
 function numKeys(data) {
   let keyCount = 0;
-  for (const key2 in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key2)) {
+  for (const key3 in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key3)) {
       keyCount++;
     }
   }
@@ -11636,13 +11636,13 @@ var BIGINT_FORMAT_RANGES = {
 function pick(schema, mask) {
   const newShape = {};
   const currDef = schema._zod.def;
-  for (const key2 in mask) {
-    if (!(key2 in currDef.shape)) {
-      throw new Error(`Unrecognized key: "${key2}"`);
+  for (const key3 in mask) {
+    if (!(key3 in currDef.shape)) {
+      throw new Error(`Unrecognized key: "${key3}"`);
     }
-    if (!mask[key2])
+    if (!mask[key3])
       continue;
-    newShape[key2] = currDef.shape[key2];
+    newShape[key3] = currDef.shape[key3];
   }
   return clone(schema, {
     ...schema._zod.def,
@@ -11653,13 +11653,13 @@ function pick(schema, mask) {
 function omit(schema, mask) {
   const newShape = { ...schema._zod.def.shape };
   const currDef = schema._zod.def;
-  for (const key2 in mask) {
-    if (!(key2 in currDef.shape)) {
-      throw new Error(`Unrecognized key: "${key2}"`);
+  for (const key3 in mask) {
+    if (!(key3 in currDef.shape)) {
+      throw new Error(`Unrecognized key: "${key3}"`);
     }
-    if (!mask[key2])
+    if (!mask[key3])
       continue;
-    delete newShape[key2];
+    delete newShape[key3];
   }
   return clone(schema, {
     ...schema._zod.def,
@@ -11700,23 +11700,23 @@ function partial(Class2, schema, mask) {
   const oldShape = schema._zod.def.shape;
   const shape = { ...oldShape };
   if (mask) {
-    for (const key2 in mask) {
-      if (!(key2 in oldShape)) {
-        throw new Error(`Unrecognized key: "${key2}"`);
+    for (const key3 in mask) {
+      if (!(key3 in oldShape)) {
+        throw new Error(`Unrecognized key: "${key3}"`);
       }
-      if (!mask[key2])
+      if (!mask[key3])
         continue;
-      shape[key2] = Class2 ? new Class2({
+      shape[key3] = Class2 ? new Class2({
         type: "optional",
-        innerType: oldShape[key2]
-      }) : oldShape[key2];
+        innerType: oldShape[key3]
+      }) : oldShape[key3];
     }
   } else {
-    for (const key2 in oldShape) {
-      shape[key2] = Class2 ? new Class2({
+    for (const key3 in oldShape) {
+      shape[key3] = Class2 ? new Class2({
         type: "optional",
-        innerType: oldShape[key2]
-      }) : oldShape[key2];
+        innerType: oldShape[key3]
+      }) : oldShape[key3];
     }
   }
   return clone(schema, {
@@ -11729,22 +11729,22 @@ function required(Class2, schema, mask) {
   const oldShape = schema._zod.def.shape;
   const shape = { ...oldShape };
   if (mask) {
-    for (const key2 in mask) {
-      if (!(key2 in shape)) {
-        throw new Error(`Unrecognized key: "${key2}"`);
+    for (const key3 in mask) {
+      if (!(key3 in shape)) {
+        throw new Error(`Unrecognized key: "${key3}"`);
       }
-      if (!mask[key2])
+      if (!mask[key3])
         continue;
-      shape[key2] = new Class2({
+      shape[key3] = new Class2({
         type: "nonoptional",
-        innerType: oldShape[key2]
+        innerType: oldShape[key3]
       });
     }
   } else {
-    for (const key2 in oldShape) {
-      shape[key2] = new Class2({
+    for (const key3 in oldShape) {
+      shape[key3] = new Class2({
         type: "nonoptional",
-        innerType: oldShape[key2]
+        innerType: oldShape[key3]
       });
     }
   }
@@ -12942,28 +12942,28 @@ var $ZodArray = /* @__PURE__ */ $constructor("$ZodArray", (inst, def) => {
     return payload;
   };
 });
-function handleObjectResult(result, final, key2) {
+function handleObjectResult(result, final, key3) {
   if (result.issues.length) {
-    final.issues.push(...prefixIssues(key2, result.issues));
+    final.issues.push(...prefixIssues(key3, result.issues));
   }
-  final.value[key2] = result.value;
+  final.value[key3] = result.value;
 }
-function handleOptionalObjectResult(result, final, key2, input) {
+function handleOptionalObjectResult(result, final, key3, input) {
   if (result.issues.length) {
-    if (input[key2] === void 0) {
-      if (key2 in input) {
-        final.value[key2] = void 0;
+    if (input[key3] === void 0) {
+      if (key3 in input) {
+        final.value[key3] = void 0;
       } else {
-        final.value[key2] = result.value;
+        final.value[key3] = result.value;
       }
     } else {
-      final.issues.push(...prefixIssues(key2, result.issues));
+      final.issues.push(...prefixIssues(key3, result.issues));
     }
   } else if (result.value === void 0) {
-    if (key2 in input)
-      final.value[key2] = void 0;
+    if (key3 in input)
+      final.value[key3] = void 0;
   } else {
-    final.value[key2] = result.value;
+    final.value[key3] = result.value;
   }
 }
 var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
@@ -12987,12 +12987,12 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
   defineLazy(inst._zod, "propValues", () => {
     const shape = def.shape;
     const propValues = {};
-    for (const key2 in shape) {
-      const field = shape[key2]._zod;
+    for (const key3 in shape) {
+      const field = shape[key3]._zod;
       if (field.values) {
-        propValues[key2] ?? (propValues[key2] = /* @__PURE__ */ new Set());
+        propValues[key3] ?? (propValues[key3] = /* @__PURE__ */ new Set());
         for (const v of field.values)
-          propValues[key2].add(v);
+          propValues[key3].add(v);
       }
     }
     return propValues;
@@ -13000,22 +13000,22 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
   const generateFastpass = (shape) => {
     const doc = new Doc(["shape", "payload", "ctx"]);
     const normalized = _normalized.value;
-    const parseStr = (key2) => {
-      const k = esc(key2);
+    const parseStr = (key3) => {
+      const k = esc(key3);
       return `shape[${k}]._zod.run({ value: input[${k}], issues: [] }, ctx)`;
     };
     doc.write(`const input = payload.value;`);
     const ids = /* @__PURE__ */ Object.create(null);
     let counter = 0;
-    for (const key2 of normalized.keys) {
-      ids[key2] = `key_${counter++}`;
+    for (const key3 of normalized.keys) {
+      ids[key3] = `key_${counter++}`;
     }
     doc.write(`const newResult = {}`);
-    for (const key2 of normalized.keys) {
-      if (normalized.optionalKeys.has(key2)) {
-        const id = ids[key2];
-        doc.write(`const ${id} = ${parseStr(key2)};`);
-        const k = esc(key2);
+    for (const key3 of normalized.keys) {
+      if (normalized.optionalKeys.has(key3)) {
+        const id = ids[key3];
+        doc.write(`const ${id} = ${parseStr(key3)};`);
+        const k = esc(key3);
         doc.write(`
         if (${id}.issues.length) {
           if (input[${k}] === undefined) {
@@ -13037,14 +13037,14 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
         }
         `);
       } else {
-        const id = ids[key2];
-        doc.write(`const ${id} = ${parseStr(key2)};`);
+        const id = ids[key3];
+        doc.write(`const ${id} = ${parseStr(key3)};`);
         doc.write(`
           if (${id}.issues.length) payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
             ...iss,
-            path: iss.path ? [${esc(key2)}, ...iss.path] : [${esc(key2)}]
+            path: iss.path ? [${esc(key3)}, ...iss.path] : [${esc(key3)}]
           })));`);
-        doc.write(`newResult[${esc(key2)}] = ${id}.value`);
+        doc.write(`newResult[${esc(key3)}] = ${id}.value`);
       }
     }
     doc.write(`payload.value = newResult;`);
@@ -13079,16 +13079,16 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
     } else {
       payload.value = {};
       const shape = value.shape;
-      for (const key2 of value.keys) {
-        const el = shape[key2];
-        const r = el._zod.run({ value: input[key2], issues: [] }, ctx);
+      for (const key3 of value.keys) {
+        const el = shape[key3];
+        const r = el._zod.run({ value: input[key3], issues: [] }, ctx);
         const isOptional = el._zod.optin === "optional" && el._zod.optout === "optional";
         if (r instanceof Promise) {
-          proms.push(r.then((r2) => isOptional ? handleOptionalObjectResult(r2, payload, key2, input) : handleObjectResult(r2, payload, key2)));
+          proms.push(r.then((r2) => isOptional ? handleOptionalObjectResult(r2, payload, key3, input) : handleObjectResult(r2, payload, key3)));
         } else if (isOptional) {
-          handleOptionalObjectResult(r, payload, key2, input);
+          handleOptionalObjectResult(r, payload, key3, input);
         } else {
-          handleObjectResult(r, payload, key2);
+          handleObjectResult(r, payload, key3);
         }
       }
     }
@@ -13099,18 +13099,18 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
     const keySet = value.keySet;
     const _catchall = catchall._zod;
     const t = _catchall.def.type;
-    for (const key2 of Object.keys(input)) {
-      if (keySet.has(key2))
+    for (const key3 of Object.keys(input)) {
+      if (keySet.has(key3))
         continue;
       if (t === "never") {
-        unrecognized.push(key2);
+        unrecognized.push(key3);
         continue;
       }
-      const r = _catchall.run({ value: input[key2], issues: [] }, ctx);
+      const r = _catchall.run({ value: input[key3], issues: [] }, ctx);
       if (r instanceof Promise) {
-        proms.push(r.then((r2) => handleObjectResult(r2, payload, key2)));
+        proms.push(r.then((r2) => handleObjectResult(r2, payload, key3)));
       } else {
-        handleObjectResult(r, payload, key2);
+        handleObjectResult(r, payload, key3);
       }
     }
     if (unrecognized.length) {
@@ -13272,17 +13272,17 @@ function mergeValues2(a, b) {
   }
   if (isPlainObject(a) && isPlainObject(b)) {
     const bKeys = Object.keys(b);
-    const sharedKeys = Object.keys(a).filter((key2) => bKeys.indexOf(key2) !== -1);
+    const sharedKeys = Object.keys(a).filter((key3) => bKeys.indexOf(key3) !== -1);
     const newObj = { ...a, ...b };
-    for (const key2 of sharedKeys) {
-      const sharedValue = mergeValues2(a[key2], b[key2]);
+    for (const key3 of sharedKeys) {
+      const sharedValue = mergeValues2(a[key3], b[key3]);
       if (!sharedValue.valid) {
         return {
           valid: false,
-          mergeErrorPath: [key2, ...sharedValue.mergeErrorPath]
+          mergeErrorPath: [key3, ...sharedValue.mergeErrorPath]
         };
       }
-      newObj[key2] = sharedValue.data;
+      newObj[key3] = sharedValue.data;
     }
     return { valid: true, data: newObj };
   }
@@ -13340,29 +13340,29 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
     if (def.keyType._zod.values) {
       const values = def.keyType._zod.values;
       payload.value = {};
-      for (const key2 of values) {
-        if (typeof key2 === "string" || typeof key2 === "number" || typeof key2 === "symbol") {
-          const result = def.valueType._zod.run({ value: input[key2], issues: [] }, ctx);
+      for (const key3 of values) {
+        if (typeof key3 === "string" || typeof key3 === "number" || typeof key3 === "symbol") {
+          const result = def.valueType._zod.run({ value: input[key3], issues: [] }, ctx);
           if (result instanceof Promise) {
             proms.push(result.then((result2) => {
               if (result2.issues.length) {
-                payload.issues.push(...prefixIssues(key2, result2.issues));
+                payload.issues.push(...prefixIssues(key3, result2.issues));
               }
-              payload.value[key2] = result2.value;
+              payload.value[key3] = result2.value;
             }));
           } else {
             if (result.issues.length) {
-              payload.issues.push(...prefixIssues(key2, result.issues));
+              payload.issues.push(...prefixIssues(key3, result.issues));
             }
-            payload.value[key2] = result.value;
+            payload.value[key3] = result.value;
           }
         }
       }
       let unrecognized;
-      for (const key2 in input) {
-        if (!values.has(key2)) {
+      for (const key3 in input) {
+        if (!values.has(key3)) {
           unrecognized = unrecognized ?? [];
-          unrecognized.push(key2);
+          unrecognized.push(key3);
         }
       }
       if (unrecognized && unrecognized.length > 0) {
@@ -13375,10 +13375,10 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
       }
     } else {
       payload.value = {};
-      for (const key2 of Reflect.ownKeys(input)) {
-        if (key2 === "__proto__")
+      for (const key3 of Reflect.ownKeys(input)) {
+        if (key3 === "__proto__")
           continue;
-        const keyResult = def.keyType._zod.run({ value: key2, issues: [] }, ctx);
+        const keyResult = def.keyType._zod.run({ value: key3, issues: [] }, ctx);
         if (keyResult instanceof Promise) {
           throw new Error("Async schemas not supported in object keys currently");
         }
@@ -13387,24 +13387,24 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
             origin: "record",
             code: "invalid_key",
             issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config())),
-            input: key2,
-            path: [key2],
+            input: key3,
+            path: [key3],
             inst
           });
           payload.value[keyResult.value] = keyResult.value;
           continue;
         }
-        const result = def.valueType._zod.run({ value: input[key2], issues: [] }, ctx);
+        const result = def.valueType._zod.run({ value: input[key3], issues: [] }, ctx);
         if (result instanceof Promise) {
           proms.push(result.then((result2) => {
             if (result2.issues.length) {
-              payload.issues.push(...prefixIssues(key2, result2.issues));
+              payload.issues.push(...prefixIssues(key3, result2.issues));
             }
             payload.value[keyResult.value] = result2.value;
           }));
         } else {
           if (result.issues.length) {
-            payload.issues.push(...prefixIssues(key2, result.issues));
+            payload.issues.push(...prefixIssues(key3, result.issues));
           }
           payload.value[keyResult.value] = result.value;
         }
@@ -14459,15 +14459,15 @@ var JSONSchemaGenerator = class {
             json.type = "object";
             json.properties = {};
             const shape = def.shape;
-            for (const key2 in shape) {
-              json.properties[key2] = this.process(shape[key2], {
+            for (const key3 in shape) {
+              json.properties[key3] = this.process(shape[key3], {
                 ...params,
-                path: [...params.path, "properties", key2]
+                path: [...params.path, "properties", key3]
               });
             }
             const allKeys = new Set(Object.keys(shape));
-            const requiredKeys = new Set([...allKeys].filter((key2) => {
-              const v = def.shape[key2]._zod;
+            const requiredKeys = new Set([...allKeys].filter((key3) => {
+              const v = def.shape[key3]._zod;
               if (this.io === "input") {
                 return v.optin === void 0;
               } else {
@@ -14801,8 +14801,8 @@ var JSONSchemaGenerator = class {
       if (defId)
         seen.defId = defId;
       const schema2 = seen.schema;
-      for (const key2 in schema2) {
-        delete schema2[key2];
+      for (const key3 in schema2) {
+        delete schema2[key3];
       }
       schema2.$ref = ref;
     };
@@ -14929,8 +14929,8 @@ function toJSONSchema(input, _params) {
       defs
     };
     for (const entry of input._idmap.entries()) {
-      const [key2, schema] = entry;
-      schemas[key2] = gen2.emit(schema, {
+      const [key3, schema] = entry;
+      schemas[key3] = gen2.emit(schema, {
         ..._params,
         external
       });
@@ -14977,8 +14977,8 @@ function isTransforming(_schema, _ctx) {
       return isTransforming(def.element, ctx);
     }
     case "object": {
-      for (const key2 in def.shape) {
-        if (isTransforming(def.shape[key2], ctx))
+      for (const key3 in def.shape) {
+        if (isTransforming(def.shape[key3], ctx))
           return true;
       }
       return false;
@@ -17540,19 +17540,19 @@ var getRefs = (options) => {
 };
 
 // ../../node_modules/zod-to-json-schema/dist/esm/errorMessages.js
-function addErrorMessage(res, key2, errorMessage, refs) {
+function addErrorMessage(res, key3, errorMessage, refs) {
   if (!refs?.errorMessages)
     return;
   if (errorMessage) {
     res.errorMessage = {
       ...res.errorMessage,
-      [key2]: errorMessage
+      [key3]: errorMessage
     };
   }
 }
-function setResponseValueAndErrors(res, key2, value, errorMessage, refs) {
-  res[key2] = value;
-  addErrorMessage(res, key2, errorMessage, refs);
+function setResponseValueAndErrors(res, key3, value, errorMessage, refs) {
+  res[key3] = value;
+  addErrorMessage(res, key3, errorMessage, refs);
 }
 
 // ../../node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
@@ -18144,11 +18144,11 @@ function parseRecordDef(def, refs) {
     return {
       type: "object",
       required: def.keyType._def.values,
-      properties: def.keyType._def.values.reduce((acc, key2) => ({
+      properties: def.keyType._def.values.reduce((acc, key3) => ({
         ...acc,
-        [key2]: parseDef(def.valueType._def, {
+        [key3]: parseDef(def.valueType._def, {
           ...refs,
-          currentPath: [...refs.currentPath, "properties", key2]
+          currentPath: [...refs.currentPath, "properties", key3]
         }) ?? parseAnyDef(refs)
       }), {}),
       additionalProperties: refs.rejectedAdditionalProperties
@@ -18215,10 +18215,10 @@ function parseMapDef(def, refs) {
 // ../../node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
 function parseNativeEnumDef(def) {
   const object4 = def.values;
-  const actualKeys = Object.keys(def.values).filter((key2) => {
-    return typeof object4[object4[key2]] !== "number";
+  const actualKeys = Object.keys(def.values).filter((key3) => {
+    return typeof object4[object4[key3]] !== "number";
   });
-  const actualValues = actualKeys.map((key2) => object4[key2]);
+  const actualValues = actualKeys.map((key3) => object4[key3]);
   const parsedTypes = Array.from(new Set(actualValues.map((values) => typeof values)));
   return {
     type: parsedTypes.length === 1 ? parsedTypes[0] === "string" ? "string" : "number" : ["string", "number"],
@@ -19749,8 +19749,8 @@ function isPlainObject2(value) {
 }
 function mergeCapabilities(base, additional) {
   const result = { ...base };
-  for (const key2 in additional) {
-    const k = key2;
+  for (const key3 in additional) {
+    const k = key3;
     const addValue = additional[k];
     if (addValue === void 0)
       continue;
@@ -21605,7 +21605,7 @@ import { createHash } from "node:crypto";
 function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value !== null && typeof value === "object") {
-    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical(item)}`).join(",")}}`;
+    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key3, item]) => `${JSON.stringify(key3)}:${canonical(item)}`).join(",")}}`;
   }
   return JSON.stringify(value);
 }
@@ -21642,10 +21642,10 @@ function nonEmptyString(value, location) {
     throw new Error(`${location} must be a non-empty string`);
   return value.trim();
 }
-function recordValue(record3, key2, index) {
+function recordValue(record3, key3, index) {
   return nonEmptyString(
-    record3[key2],
-    `${DECISION_RECORD_PATH}[${index}].${key2}`
+    record3[key3],
+    `${DECISION_RECORD_PATH}[${index}].${key3}`
   );
 }
 function parseArchitectureAcknowledgements(source) {
@@ -21664,7 +21664,7 @@ function parseRecord(item, index) {
     throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
   const record3 = item;
   const allowed = ["findingId", "fingerprint", "reason", "author", "time"];
-  const unexpected = Object.keys(record3).find((key2) => !allowed.includes(key2));
+  const unexpected = Object.keys(record3).find((key3) => !allowed.includes(key3));
   if (unexpected)
     throw new Error(
       `${DECISION_RECORD_PATH}[${index}].${unexpected} is not supported`
@@ -21916,6 +21916,8 @@ var DEFAULT_CONFIG = {
   genericBuckets: ["utils", "common", "helpers", "shared", "misc"],
   generatedPaths: [],
   testPaths: [],
+  lowLevelPathGroups: [],
+  fluentMarkers: ["builder", "fluent", "pipeline", "query"],
   history: { maxFirstParentCommits: 200 }
 };
 
@@ -21964,7 +21966,7 @@ function record2(value, location) {
   return value;
 }
 function keysOnly(value, allowed, location) {
-  const unsupported = Object.keys(value).find((key2) => !allowed.includes(key2));
+  const unsupported = Object.keys(value).find((key3) => !allowed.includes(key3));
   if (unsupported)
     throw new ConfigError(`${location}.${unsupported} is not supported`);
 }
@@ -22034,24 +22036,43 @@ var CONFIG_KEYS = [
   "genericBuckets",
   "generatedPaths",
   "testPaths",
+  "lowLevelPathGroups",
+  "fluentMarkers",
   "history"
 ];
 function optionalPaths(input) {
   return {
     generatedPaths: input.generatedPaths === void 0 ? [] : parseStrings(input.generatedPaths, [], "generatedPaths"),
-    testPaths: input.testPaths === void 0 ? [] : parseStrings(input.testPaths, [], "testPaths")
+    testPaths: input.testPaths === void 0 ? [] : parseStrings(input.testPaths, [], "testPaths"),
+    lowLevelPathGroups: input.lowLevelPathGroups === void 0 ? [] : parseStrings(input.lowLevelPathGroups, [], "lowLevelPathGroups"),
+    fluentMarkers: parseStrings(
+      input.fluentMarkers,
+      DEFAULT_CONFIG.fluentMarkers,
+      "fluentMarkers"
+    )
   };
 }
-function parseQualityConfig(source) {
+function validateLowLevelPathGroups(pathGroups, lowLevelPathGroups) {
+  if (lowLevelPathGroups.some((name) => !Object.hasOwn(pathGroups, name)))
+    throw new ConfigError(
+      "lowLevelPathGroups references an unknown path group"
+    );
+}
+function parseRoot(source) {
   let parsed;
   try {
     parsed = JSON.parse(source);
   } catch {
     throw new ConfigError("must contain valid JSON");
   }
-  const input = record2(parsed, "root");
+  return record2(parsed, "root");
+}
+function parseQualityConfig(source) {
+  const input = parseRoot(source);
   keysOnly(input, CONFIG_KEYS, "root");
   const pathGroups = parseGroups(input.pathGroups);
+  const optional2 = optionalPaths(input);
+  validateLowLevelPathGroups(pathGroups, optional2.lowLevelPathGroups);
   return {
     pathGroups,
     dependencyDirections: parseDirections(
@@ -22068,7 +22089,7 @@ function parseQualityConfig(source) {
       DEFAULT_CONFIG.genericBuckets,
       "genericBuckets"
     ),
-    ...optionalPaths(input),
+    ...optional2,
     history: parseHistory(input.history)
   };
 }
@@ -22408,6 +22429,19 @@ function normalizeFindings(findings) {
   return findings.map(({ id: _id, ...finding }) => createFinding(finding)).sort((left, right) => left.id.localeCompare(right.id));
 }
 
+// src/commit-gate/design-smells/review-path-findings.ts
+function reviewPathFindings(findings, reason) {
+  return findings.map(
+    (finding) => createFinding({
+      severity: "review",
+      affectedPaths: [finding.path],
+      before: {},
+      after: { ...finding },
+      reason: `${finding.kind}: ${reason(finding)}`
+    })
+  );
+}
+
 // src/commit-gate/decision-architecture-mappers.ts
 function architectureFinding(input) {
   return createFinding({
@@ -22455,14 +22489,15 @@ function dependencyFindings(findings) {
   );
 }
 function encapsulationFindings(findings) {
-  return findings.map(
-    (finding) => architectureFinding({
-      kind: finding.kind,
-      severity: "review",
-      affectedPaths: [finding.path],
-      evidence: finding,
-      reason: "public or compatibility surface changed"
-    })
+  return reviewPathFindings(
+    findings,
+    () => "public or compatibility surface changed"
+  );
+}
+function designFindings(findings) {
+  return reviewPathFindings(
+    findings,
+    (finding) => finding.kind === "configurable-data" ? "a configuration default is owned by a configured low-level module" : "a simple receiver chain crosses multiple collaborators"
   );
 }
 
@@ -22720,6 +22755,78 @@ function analyzeDependencies(input) {
   ]);
 }
 
+// src/commit-gate/design-smells/design-smells.ts
+function groupsFor(path15, config2) {
+  return config2.lowLevelPathGroups.filter(
+    (group) => config2.pathGroups[group]?.some(
+      (pattern) => matchesArchitecturePath(path15, pattern)
+    )
+  );
+}
+function configurationFindings(file, config2) {
+  const path15 = normalizeArchitecturePath(file.path);
+  return groupsFor(path15, config2).flatMap(
+    (group) => (file.configurationDefaults ?? []).map((defaultValue) => ({
+      kind: "configurable-data",
+      path: path15,
+      group,
+      ...defaultValue
+    }))
+  );
+}
+function markerMatch(value, markers) {
+  const normalized = value.toLowerCase();
+  return markers.some((marker) => normalized.includes(marker.toLowerCase()));
+}
+function navigationFindings(file, config2) {
+  const path15 = normalizeArchitecturePath(file.path);
+  return (file.transitiveNavigation ?? []).filter(
+    (chain) => !(markerMatch(chain.root, config2.fluentMarkers) || chain.hops.some((hop) => markerMatch(hop, config2.fluentMarkers)))
+  ).map((chain) => ({
+    kind: "transitive-navigation",
+    path: path15,
+    ...chain
+  }));
+}
+function key(finding) {
+  return JSON.stringify(finding);
+}
+function findingsFor(file, config2) {
+  return [
+    ...configurationFindings(file, config2),
+    ...navigationFindings(file, config2)
+  ];
+}
+function analyzeDesignSmells(input) {
+  const affected = new Set(input.affectedPaths.map(normalizeArchitecturePath));
+  const before = new Set(
+    input.beforeFiles.flatMap(
+      (file) => findingsFor(
+        { ...file, path: normalizeArchitecturePath(file.path) },
+        input.config
+      ).map(key)
+    )
+  );
+  return input.afterFiles.filter((file) => {
+    const path15 = normalizeArchitecturePath(file.path);
+    return affected.has(path15) && isProductionArchitecturePath(path15, input.config);
+  }).flatMap(
+    (file) => findingsFor(file, input.config).filter(
+      (finding) => !before.has(key(finding))
+    )
+  ).sort(
+    (left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))
+  );
+}
+function analyzeCurrentDesignSmells(files, config2) {
+  return analyzeDesignSmells({
+    beforeFiles: [],
+    afterFiles: files,
+    affectedPaths: files.map((file) => file.path),
+    config: config2
+  });
+}
+
 // src/commit-gate/encapsulation-callers.ts
 function observedCallers(symbol, files, config2) {
   const productionCallers = [];
@@ -22741,7 +22848,7 @@ function observedCallers(symbol, files, config2) {
 }
 
 // src/commit-gate/encapsulation-public.ts
-function key(type, member) {
+function key2(type, member) {
   return `${type.name}.${member.name}`;
 }
 function members(type) {
@@ -22768,7 +22875,7 @@ function testOnlyFinding(filePath, symbol, callers) {
 function memberFindings(input) {
   if (input.priorMembers.has(`${input.member.kind}\0${input.member.name}`))
     return [];
-  const symbol = key(input.type, input.member);
+  const symbol = key2(input.type, input.member);
   const callers = observedCallers(symbol, input.afterFiles, input.config);
   const finding = surfaceFinding(input.filePath, symbol, callers);
   if (callers.productionCallers.length === 0 && callers.testCallers.length > 0) {
@@ -22884,12 +22991,16 @@ function similarityStructural(input) {
     })
   );
 }
+function designStructural(input) {
+  return designFindings(analyzeDesignSmells(input));
+}
 function structuralFindings(input) {
   return [
     ...placementStructural(input),
     ...similarityStructural(input),
     ...dependencyStructural(input),
-    ...encapsulationStructural(input)
+    ...encapsulationStructural(input),
+    ...designStructural(input)
   ];
 }
 
@@ -23121,9 +23232,9 @@ function object3(value, location) {
   return value;
 }
 function onlyKeys(value, allowed, location) {
-  Object.keys(value).forEach((key2) => {
-    if (!allowed.includes(key2))
-      throw new Error(`${location}.${key2} is not supported`);
+  Object.keys(value).forEach((key3) => {
+    if (!allowed.includes(key3))
+      throw new Error(`${location}.${key3} is not supported`);
   });
 }
 function strings(value, location) {
@@ -23417,6 +23528,26 @@ function importsFor(source, lang) {
 }
 
 // skills/quality-refactor/scripts/lib/offsets.mjs
+function lineIndex(code) {
+  const starts = [0];
+  for (let i = 0; i < code.length; i += 1) {
+    if (code[i] === "\n") starts.push(i + 1);
+  }
+  return starts;
+}
+function lineAt(starts, offset) {
+  let lo = 0;
+  let hi = starts.length - 1;
+  while (lo < hi) {
+    const mid = lo + hi + 1 >> 1;
+    if (starts[mid] <= offset) {
+      lo = mid;
+      continue;
+    }
+    hi = mid - 1;
+  }
+  return lo + 1;
+}
 function matchBracket(code, open, pair) {
   const [left, right] = pair;
   let depth = 0;
@@ -23456,16 +23587,16 @@ function pythonTypes(source) {
       continue;
     }
     const end = pythonEnd(lines, index, indentation(match[1]));
-    const bodyStart = offset + lines[index].length + 1;
-    const bodyEnd = bodyStart + lines.slice(index + 1, end).join("\n").length;
+    const bodyStart2 = offset + lines[index].length + 1;
+    const bodyEnd2 = bodyStart2 + lines.slice(index + 1, end).join("\n").length;
     result.push({
       kind: "class",
       name: match[2],
       start: offset,
       body: {
-        start: bodyStart,
-        end: bodyEnd,
-        text: source.slice(bodyStart, bodyEnd)
+        start: bodyStart2,
+        end: bodyEnd2,
+        text: source.slice(bodyStart2, bodyEnd2)
       }
     });
     offset += lines[index].length + 1;
@@ -24181,6 +24312,363 @@ function typeFacts2(type, lang) {
   };
 }
 
+// skills/quality-refactor/scripts/lib/parse-body.mjs
+var CALL_OPERATORS = /\?\?|\?\.|&&|\|\||(?:^|[^=!<>])=(?:[^>=]|$)/;
+function isCallGap(gap) {
+  return CALL_OPERATORS.test(gap) || gap.trimEnd().endsWith("?");
+}
+function arrowBody(code, from) {
+  let i = from;
+  while (i < code.length && /\s/.test(code[i])) i += 1;
+  if (i >= code.length) return null;
+  return code[i] === "{" ? { offset: i, kind: "block" } : { offset: i, kind: "expression" };
+}
+function nextAngle(angle, ch) {
+  if (ch === "<") return angle + 1;
+  if (ch === ">" && angle > 0) return angle - 1;
+  return angle;
+}
+function classifyBodyChar(code, i, gap) {
+  if (code.startsWith("=>", i)) return arrowBody(code, i + 2);
+  if (code[i] === "{")
+    return isCallGap(gap) ? null : { offset: i, kind: "block" };
+  return ";)],".includes(code[i]) ? null : void 0;
+}
+function nestedBracket(ch, depth) {
+  return "([".includes(ch) || ")]".includes(ch) && depth > 0;
+}
+function bodyState({ code, i, state, gap }) {
+  const ch = code[i];
+  if (nestedBracket(ch, state.depth))
+    return { ...state, depth: nextParamDepth(state.depth, ch) };
+  const angle = nextAngle(state.angle, ch);
+  const outcome = angle === 0 && state.depth === 0 ? classifyBodyChar(code, i, gap) : void 0;
+  return { angle, depth: state.depth, outcome };
+}
+function nextParamDepth(depth, ch) {
+  if ("([{<".includes(ch)) return depth + 1;
+  if (")]}>".includes(ch)) return depth - 1;
+  return depth;
+}
+function bodyStart(code, afterParams) {
+  const limit = Math.min(code.length, afterParams + 300);
+  let state = { angle: 0, depth: 0 };
+  let gap = "";
+  for (let i = afterParams; i < limit; i += 1) {
+    const next = bodyState({ code, i, state, gap });
+    if (next.outcome !== void 0) return next.outcome;
+    state = { angle: next.angle, depth: next.depth };
+    gap += code[i];
+  }
+  return null;
+}
+
+// skills/quality-refactor/scripts/lib/parse-parameters.mjs
+var NOT_CALLABLE = /* @__PURE__ */ new Set([
+  "if",
+  "for",
+  "while",
+  "switch",
+  "catch",
+  "do",
+  "else",
+  "return",
+  "with",
+  "using",
+  "lock",
+  "fixed",
+  "unsafe",
+  "foreach",
+  "match",
+  "when",
+  "new",
+  "typeof",
+  "sizeof",
+  "await",
+  "yield",
+  "throw",
+  "assert",
+  "print",
+  "and",
+  "or",
+  "not",
+  "in",
+  "is",
+  "as"
+]);
+var RUST_SELF_RECEIVER = /^&?\s*(?:'[A-Za-z_]\w*\s+)?(?:mut\s+)?self$/;
+function nextParamDepth2(depth, ch) {
+  if ("([{<".includes(ch)) return depth + 1;
+  if (")]}>".includes(ch)) return depth - 1;
+  return depth;
+}
+function startsQuote(text2, index, ch) {
+  return ch !== "'" || !["&", ":", "<", ">"].includes(text2[index - 1]);
+}
+function nextQuoteState(state, ch) {
+  const escaped = state.escaped;
+  state.escaped = !escaped && ch === "\\";
+  if (!escaped && ch === state.quote) state.quote = void 0;
+}
+function appendUnquoted(state, ch, params) {
+  state.depth = nextParamDepth2(state.depth, ch);
+  if (ch === "," && state.depth === 0) {
+    params.push(state.current);
+    state.current = "";
+    return;
+  }
+  state.current += ch;
+}
+function splitTopLevel(text2) {
+  const params = [];
+  const state = { depth: 0, current: "" };
+  let quoteState = { quote: void 0, escaped: false };
+  for (let index = 0; index < text2.length; index += 1) {
+    const ch = text2[index];
+    if (quoteState.quote) {
+      state.current += ch;
+      nextQuoteState(quoteState, ch);
+      continue;
+    }
+    if (`"'\``.includes(ch) && startsQuote(text2, index, ch)) {
+      quoteState = { quote: ch, escaped: false };
+      state.current += ch;
+      continue;
+    }
+    appendUnquoted(state, ch, params);
+  }
+  params.push(state.current);
+  return params;
+}
+function isParameter(param) {
+  return param.length > 0 && param !== "this" && !RUST_SELF_RECEIVER.test(param);
+}
+function splitParams(text2) {
+  return splitTopLevel(text2).map((param) => param.trim()).filter(isParameter);
+}
+function isCallable(name) {
+  return !NOT_CALLABLE.has(name);
+}
+
+// skills/quality-refactor/scripts/lib/parse-expression-end.mjs
+var CLOSING_BRACKETS = ")]}";
+function expressionEndAt(ch, depth, index) {
+  if (depth === 0 && CLOSING_BRACKETS.includes(ch)) return index - 1;
+  if (depth === 0 && [",", ";"].includes(ch)) return index - 1;
+  return null;
+}
+function expressionDepth(depth, ch) {
+  if ("([{".includes(ch)) return depth + 1;
+  if (CLOSING_BRACKETS.includes(ch)) return depth - 1;
+  return depth;
+}
+function findExpressionEnd(code, from) {
+  let depth = 0;
+  for (let i = from; i < code.length; i += 1) {
+    const end = expressionEndAt(code[i], depth, i);
+    if (end !== null) return end;
+    depth = expressionDepth(depth, code[i]);
+  }
+  return code.length - 1;
+}
+
+// skills/quality-refactor/scripts/lib/parse-functions.mjs
+var HEADER_DIRECT = /([A-Za-z_$][\w$]*)\s*(?:<[^<>()]*>)?\s*\(/g;
+var HEADER_ASSIGNED = /([A-Za-z_$][\w$]*)\s*(?::[^=;{}()]*)?=\s*(?:async\s+)?(?:function\s*)?\(/g;
+var HEADER_RUST = /\bfn\s+([A-Za-z_]\w*)\s*(?:<[^<>()]*>)?\s*\(/g;
+var HEADER_GO = /\bfunc\s+(?:\([^()]*\)\s+)?([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*\(/g;
+function bodyEnd(code, body) {
+  return body.kind === "block" ? matchBracket(code, body.offset, "{}") : findExpressionEnd(code, body.offset);
+}
+function extractAt({ code, starts, name, openParen, headerStart }) {
+  if (!isCallable(name)) return null;
+  const closeParen = matchBracket(code, openParen, "()");
+  if (closeParen === -1) return null;
+  const body = bodyStart(code, closeParen + 1);
+  if (body === null) return null;
+  const end = bodyEnd(code, body);
+  if (end === -1) return null;
+  return {
+    name,
+    line: lineAt(starts, headerStart),
+    params: splitParams(code.slice(openParen + 1, closeParen)),
+    headerStart,
+    start: body.offset,
+    end,
+    body: code.slice(body.offset, end + 1)
+  };
+}
+function scanHeaders({ code, starts, pattern, found }) {
+  pattern.lastIndex = 0;
+  let match = pattern.exec(code);
+  while (match !== null) {
+    const openParen = match.index + match[0].length - 1;
+    const fn = extractAt({
+      code,
+      starts,
+      name: match[1],
+      openParen,
+      headerStart: match.index
+    });
+    if (fn !== null) {
+      found.set(fn.start, fn);
+      pattern.lastIndex = fn.start + 1;
+    }
+    match = pattern.exec(code);
+  }
+}
+function scanLanguage(code, starts, patterns) {
+  const found = /* @__PURE__ */ new Map();
+  for (const pattern of patterns) scanHeaders({ code, starts, pattern, found });
+  return [...found.values()].sort((left, right) => left.start - right.start);
+}
+function braceLanguageFunctions(code, starts) {
+  return scanLanguage(code, starts, [HEADER_ASSIGNED, HEADER_DIRECT]);
+}
+function rustFunctions(code, starts) {
+  return scanLanguage(code, starts, [HEADER_RUST]);
+}
+function goFunctions(code, starts) {
+  return scanLanguage(code, starts, [HEADER_GO]);
+}
+
+// skills/quality-refactor/scripts/lib/parse-python.mjs
+function indentOf(line) {
+  const match = /^[ \t]*/.exec(line);
+  return match[0].replace(/\t/g, "    ").length;
+}
+function bodyLastLine(lines, first, baseIndent) {
+  let last = first;
+  for (let j = first + 1; j < lines.length; j += 1) {
+    if (lines[j].trim() === "") continue;
+    if (indentOf(lines[j]) <= baseIndent) break;
+    last = j;
+  }
+  return last;
+}
+function pythonFunctions(code, starts) {
+  const lines = code.split("\n");
+  const found = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const match = /^\s*(?:async\s+)?def\s+([A-Za-z_]\w*)\s*\(/.exec(lines[i]);
+    if (!match) continue;
+    const baseIndent = indentOf(lines[i]);
+    const last = bodyLastLine(lines, i, baseIndent);
+    const openParen = code.indexOf("(", starts[i]);
+    const closeParen = matchBracket(code, openParen, "()");
+    const end = last + 1 < starts.length ? starts[last + 1] - 1 : code.length - 1;
+    found.push({
+      name: match[1],
+      line: i + 1,
+      params: splitParams(
+        closeParen === -1 ? "" : code.slice(openParen + 1, closeParen)
+      ),
+      headerStart: starts[i],
+      start: starts[i],
+      end,
+      body: code.slice(starts[i], end + 1),
+      indentBased: true,
+      baseIndent
+    });
+  }
+  return found;
+}
+
+// skills/quality-refactor/scripts/lib/parse.mjs
+function findFunctions(code, lang, starts) {
+  if (lang === "py") return pythonFunctions(code, starts);
+  if (lang === "rs") return rustFunctions(code, starts);
+  if (lang === "go") return goFunctions(code, starts);
+  return braceLanguageFunctions(code, starts);
+}
+
+// skills/quality-refactor/scripts/lib/design-smells/design-facts.mjs
+var CONFIGURATION_PARAMETER = /(?:config|settings?|options?|timeout|deadline|retry|backoff|limit|threshold|capacity|size|batch|page(?:Size)?|host|port|url|path|directory|file|format|mode|enabled|disabled|region|connection|pool|cache|buffer|delay|interval|parallel|concurrency|max|min)/i;
+function parameterText(source, fn) {
+  const open = source.indexOf("(", fn.headerStart);
+  if (open === -1) return [];
+  const close = matchBracket(source, open, "()");
+  return close === -1 ? [] : splitParams(source.slice(open + 1, close));
+}
+function defaultOffset(parameter) {
+  let depth = 0;
+  for (let index = 0; index < parameter.length; index += 1) {
+    const character = parameter[index];
+    if ("([{<".includes(character)) depth += 1;
+    else if (")]}>".includes(character)) depth -= 1;
+    else if (character === "=" && depth === 0 && parameter[index - 1] !== "=" && parameter[index - 1] !== "!" && parameter[index - 1] !== "<" && parameter[index - 1] !== ">" && parameter[index + 1] !== ">") {
+      return index;
+    }
+  }
+  return -1;
+}
+function parameterName(left, lang) {
+  const cleaned = left.replace(/\b(?:ref|out|in|params|mut)\b/g, "").trim();
+  if (lang === "py") return /^\*{0,2}([A-Za-z_]\w*)/.exec(cleaned)?.[1];
+  if (lang === "ts")
+    return /^\.\.\.?(?:\s*)?([A-Za-z_$][\w$]*)/.exec(cleaned)?.[1] ?? cleaned.split(":", 1)[0].trim().match(/[A-Za-z_$][\w$]*$/)?.[0];
+  return cleaned.match(/[A-Za-z_]\w*$/)?.[0];
+}
+function literalDefault(value) {
+  const trimmed = value.trim();
+  return /^(?:[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?[uUlLfFdDmM]*|true|false|null|undefined|none|nil)$/i.test(
+    trimmed
+  ) || /^(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')$/s.test(trimmed) ? trimmed : void 0;
+}
+function configurationDefaults(source, lang) {
+  if (lang === "rs") return [];
+  const searchable = strip(source, lang).code;
+  const functions = findFunctions(searchable, lang, lineIndex(searchable));
+  return functions.flatMap(
+    (fn) => parameterText(source, fn).flatMap((parameter) => {
+      const split = defaultOffset(parameter);
+      if (split === -1) return [];
+      const name = parameterName(parameter.slice(0, split), lang);
+      const value = literalDefault(parameter.slice(split + 1));
+      return name && value && CONFIGURATION_PARAMETER.test(name) ? [
+        {
+          method: fn.name,
+          parameter: name,
+          defaultValue: value,
+          line: fn.line
+        }
+      ] : [];
+    })
+  );
+}
+function transitiveNavigation(source, lang) {
+  const searchable = strip(source, lang).code;
+  const starts = lineIndex(searchable);
+  const functions = findFunctions(searchable, lang, starts);
+  const chainPattern = /\b(?:this|self)(?:\.|->)([A-Za-z_]\w*)((?:(?:\.|->)[A-Za-z_]\w*\(\)){2,})/g;
+  const seen = /* @__PURE__ */ new Set();
+  return functions.flatMap((fn) => {
+    const body = searchable.slice(fn.start, fn.end + 1);
+    return [...body.matchAll(chainPattern)].flatMap((match) => {
+      const hops = [...match[2].matchAll(/(?:\.|->)([A-Za-z_]\w*)\(\)/g)].map(
+        (hop) => hop[1]
+      );
+      const fact = {
+        method: fn.name,
+        root: match[1],
+        hops,
+        chain: match[0],
+        line: lineAt(starts, fn.start + match.index)
+      };
+      const identity = JSON.stringify(fact);
+      if (seen.has(identity)) return [];
+      seen.add(identity);
+      return [fact];
+    });
+  });
+}
+function designFacts(source, lang) {
+  return {
+    configurationDefaults: configurationDefaults(source, lang),
+    transitiveNavigation: transitiveNavigation(source, lang)
+  };
+}
+
 // skills/quality-refactor/scripts/lib/architecture-facts.mjs
 function referencesFor(source, types, imports) {
   const names = [...source.matchAll(/\b[A-Z][A-Za-z0-9_]*\b/g)].map(
@@ -24193,33 +24681,41 @@ function referencesFor(source, types, imports) {
     )
   );
 }
-function extractArchitectureFacts(file) {
-  const lang = languageFor(file.path);
-  if (!lang)
-    return {
-      facts: {
-        path: file.path,
-        language: null,
-        imports: [],
-        references: [],
-        types: []
-      },
-      errors: []
-    };
-  const declared = declaredTypes(file.content, lang);
-  if (declared.error) return { facts: null, errors: [declared.error] };
-  const types = declared.types.map((type) => typeFacts2(type, lang)).sort((left, right) => left.name.localeCompare(right.name));
-  const imports = importsFor(file.content, lang);
+function emptyFacts(path15) {
+  return {
+    facts: {
+      path: path15,
+      language: null,
+      imports: [],
+      references: [],
+      types: [],
+      configurationDefaults: [],
+      transitiveNavigation: []
+    },
+    errors: []
+  };
+}
+function factsFor(file, { lang, types, imports }) {
   return {
     facts: {
       path: file.path,
       language: lang,
       imports,
       references: referencesFor(file.content, types, imports),
-      types
+      types,
+      ...designFacts(file.content, lang)
     },
     errors: []
   };
+}
+function extractArchitectureFacts(file) {
+  const lang = languageFor(file.path);
+  if (!lang) return emptyFacts(file.path);
+  const declared = declaredTypes(file.content, lang);
+  if (declared.error) return { facts: null, errors: [declared.error] };
+  const types = declared.types.map((type) => typeFacts2(type, lang)).sort((left, right) => left.name.localeCompare(right.name));
+  const imports = importsFor(file.content, lang);
+  return factsFor(file, { lang, types, imports });
 }
 
 // src/commit-gate/facts.ts
@@ -24235,7 +24731,9 @@ function extractFactInventory(files, requiredPaths) {
         path: result.facts.path,
         imports: result.facts.imports,
         references: result.facts.references,
-        types: result.facts.types
+        types: result.facts.types,
+        configurationDefaults: result.facts.configurationDefaults,
+        transitiveNavigation: result.facts.transitiveNavigation
       }
     ] : [];
   });
@@ -24942,6 +25440,7 @@ function analyzeCurrentPlacement(files, config2) {
 function analyzeCurrentArchitecture(files, config2) {
   const paths = files.map((file) => file.path);
   const dependency = analyzeCurrentDependencies(files, config2);
+  const design = analyzeCurrentDesignSmells(files, config2);
   return {
     placement: placementFor(files, config2),
     similarity: analyzeSimilarity({
@@ -24951,7 +25450,13 @@ function analyzeCurrentArchitecture(files, config2) {
     }),
     dependencies: dependency.dependencies,
     cycles: dependency.cycles,
-    encapsulation: encapsulationFor(files, paths, config2)
+    encapsulation: encapsulationFor(files, paths, config2),
+    configurableData: design.filter(
+      (finding) => finding.kind === "configurable-data"
+    ),
+    transitiveNavigation: design.filter(
+      (finding) => finding.kind === "transitive-navigation"
+    )
   };
 }
 function placementFor(files, config2) {
@@ -25001,6 +25506,15 @@ function reportSummaries(files) {
 }
 
 // src/report-builder.ts
+var FILE_SELECTION = "supported handwritten source; generated, dependency, build, binary, unreadable, and symlinked files excluded";
+function scoring() {
+  return {
+    initial: 100,
+    errorDeduction: 5,
+    warningDeduction: 1,
+    minimum: 0
+  };
+}
 function compareFinding(left, right) {
   return left.line - right.line || left.rule.localeCompare(right.rule) || left.message.localeCompare(right.message);
 }
@@ -25030,15 +25544,10 @@ function buildQualityReport(scan, architecture) {
   const files = scoredFiles(scan, findingsByFile(scan));
   return {
     schemaVersion: 1,
-    scoring: {
-      initial: 100,
-      errorDeduction: 5,
-      warningDeduction: 1,
-      minimum: 0
-    },
+    scoring: scoring(),
     scanner: {
       profile: scan.profile,
-      fileSelection: "supported handwritten source; generated, dependency, build, binary, unreadable, and symlinked files excluded"
+      fileSelection: FILE_SELECTION
     },
     summaries: reportSummaries(files),
     files,

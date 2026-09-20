@@ -19,6 +19,8 @@ export function extractFactInventory(
             imports: result.facts.imports,
             references: result.facts.references,
             types: result.facts.types,
+            configurationDefaults: result.facts.configurationDefaults,
+            transitiveNavigation: result.facts.transitiveNavigation,
           },
         ]
       : [];

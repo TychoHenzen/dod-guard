@@ -17,6 +17,8 @@ const CONFIG_KEYS = [
   "genericBuckets",
   "generatedPaths",
   "testPaths",
+  "lowLevelPathGroups",
+  "fluentMarkers",
   "history",
 ];
 
@@ -30,19 +32,44 @@ function optionalPaths(input: Record<string, unknown>) {
       input.testPaths === undefined
         ? []
         : parseStrings(input.testPaths, [], "testPaths"),
+    lowLevelPathGroups:
+      input.lowLevelPathGroups === undefined
+        ? []
+        : parseStrings(input.lowLevelPathGroups, [], "lowLevelPathGroups"),
+    fluentMarkers: parseStrings(
+      input.fluentMarkers,
+      DEFAULT_CONFIG.fluentMarkers,
+      "fluentMarkers",
+    ),
   };
 }
 
-export function parseQualityConfig(source: string): QualityConfig {
+function validateLowLevelPathGroups(
+  pathGroups: Record<string, string[]>,
+  lowLevelPathGroups: string[],
+) {
+  if (lowLevelPathGroups.some((name) => !Object.hasOwn(pathGroups, name)))
+    throw new ConfigError(
+      "lowLevelPathGroups references an unknown path group",
+    );
+}
+
+function parseRoot(source: string): Record<string, unknown> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(source);
   } catch {
     throw new ConfigError("must contain valid JSON");
   }
-  const input = record(parsed, "root");
+  return record(parsed, "root");
+}
+
+export function parseQualityConfig(source: string): QualityConfig {
+  const input = parseRoot(source);
   keysOnly(input, CONFIG_KEYS, "root");
   const pathGroups = parseGroups(input.pathGroups);
+  const optional = optionalPaths(input);
+  validateLowLevelPathGroups(pathGroups, optional.lowLevelPathGroups);
   return {
     pathGroups,
     dependencyDirections: parseDirections(
@@ -59,7 +86,7 @@ export function parseQualityConfig(source: string): QualityConfig {
       DEFAULT_CONFIG.genericBuckets,
       "genericBuckets",
     ),
-    ...optionalPaths(input),
+    ...optional,
     history: parseHistory(input.history),
   };
 }

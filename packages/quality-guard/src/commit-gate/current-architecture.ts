@@ -2,6 +2,7 @@ import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import { analyzeSimilarity } from "./architecture-similarity.js";
 import type { QualityConfig } from "./config.js";
 import { analyzeCurrentDependencies } from "./dependency-current.js";
+import { analyzeCurrentDesignSmells } from "./design-smells/design-smells.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzeCurrentPlacement } from "./placement-current.js";
 
@@ -13,6 +14,7 @@ export function analyzeCurrentArchitecture(
 ) {
   const paths = files.map((file) => file.path);
   const dependency = analyzeCurrentDependencies(files, config);
+  const design = analyzeCurrentDesignSmells(files, config);
   return {
     placement: placementFor(files, config),
     similarity: analyzeSimilarity({
@@ -23,6 +25,12 @@ export function analyzeCurrentArchitecture(
     dependencies: dependency.dependencies,
     cycles: dependency.cycles,
     encapsulation: encapsulationFor(files, paths, config),
+    configurableData: design.filter(
+      (finding) => finding.kind === "configurable-data",
+    ),
+    transitiveNavigation: design.filter(
+      (finding) => finding.kind === "transitive-navigation",
+    ),
   };
 }
 

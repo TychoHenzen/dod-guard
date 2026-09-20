@@ -3,11 +3,13 @@ import { analyzeSimilarity } from "./architecture-similarity.js";
 import type { QualityConfig } from "./config.js";
 import {
   dependencyFindings,
+  designFindings,
   encapsulationFindings,
   placementFindings,
   similarityFindings,
 } from "./decision-architecture-mappers.js";
 import { analyzeDependencies } from "./dependency.js";
+import { analyzeDesignSmells } from "./design-smells/design-smells.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzePlacement } from "./placement.js";
 import type { DecisionResult } from "./types.js";
@@ -64,6 +66,9 @@ function similarityStructural(input: StructuralInput) {
     }),
   );
 }
+function designStructural(input: StructuralInput) {
+  return designFindings(analyzeDesignSmells(input));
+}
 export function structuralFindings(
   input: StructuralInput,
 ): DecisionResult["findings"] {
@@ -72,5 +77,6 @@ export function structuralFindings(
     ...similarityStructural(input),
     ...dependencyStructural(input),
     ...encapsulationStructural(input),
+    ...designStructural(input),
   ];
 }
