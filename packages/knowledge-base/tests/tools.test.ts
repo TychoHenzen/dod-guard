@@ -235,6 +235,27 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(errorHandling.entry.sources[0].label, /PDF pages 134-143/);
     assert.match(errorHandling.entry.content, /try-catch-finally/);
 
+    const unitTestsSummaries = JSON.parse(
+      text(
+        await client.callTool({
+          name: "knowledge_list_entries",
+          arguments: { chapter: "clean-code", section: "clean-code.unit-tests" },
+        }),
+      ),
+    );
+    assert.equal(unitTestsSummaries.entries[0].key, "clean-code.unit-tests");
+    assert.match(unitTestsSummaries.entries[0].summary, /tests|focused|reliable/);
+    assert.equal("content" in unitTestsSummaries.entries[0], false);
+
+    const unitTests = JSON.parse(
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.unit-tests" } })),
+    );
+    assert.equal(unitTests.guidance.kind, "reference_guidance");
+    assert.equal(unitTests.guidance.executable, false);
+    assert.match(unitTests.guidance.precedence, /Explicit task and project instructions take precedence/);
+    assert.match(unitTests.entry.sources[0].label, /PDF pages 152-164/);
+    assert.match(unitTests.entry.content, /F\.I\.R\.S\.T\./);
+
     const boundariesSummaries = JSON.parse(
       text(
         await client.callTool({
