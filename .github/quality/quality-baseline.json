@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "strict",
   "createdAt": "2026-09-19T18:19:12.786Z",
-  "total": 205,
+  "total": 206,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -1308,6 +1308,7 @@
     "packages/knowledge-base/src/schema.ts",
     "packages/knowledge-base/src/store.ts",
     "packages/knowledge-base/src/tools.ts",
+    "packages/knowledge-base/tests/schema-emergence.test.ts",
     "packages/knowledge-base/tests/schema.test.ts",
     "packages/knowledge-base/tests/store.test.ts",
     "packages/knowledge-base/tests/test-support.ts",
@@ -1722,6 +1723,7 @@
     "packages/quality-guard/src/commit-gate/cli-render.ts::flag-parameter": 1,
     "packages/code-explorer/scripts/reproduce-real-lsp-tracing.mjs::unused-local": 1,
     "packages/code-explorer/src/runtime-main.ts::unused-local": 1,
-    "packages/knowledge-base/src/index.ts::unused-local": 1
+    "packages/knowledge-base/src/index.ts::unused-local": 1,
+    "packages/knowledge-base/tests/schema-emergence.test.ts::complexity": 1
   }
 }

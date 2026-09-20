@@ -322,7 +322,8 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     const emergencePriorities = ["all of its tests", "duplication", "express its intent", "class and method counts"];
     assert.ok(
       emergencePriorities.every(
-        (priority, index) => index === 0 || emergenceContent.indexOf(priority) > emergenceContent.indexOf(emergencePriorities[index - 1]),
+        (priority, index) =>
+          index === 0 || emergenceContent.indexOf(priority) > emergenceContent.indexOf(emergencePriorities[index - 1]),
       ),
     );
     assert.match(emergenceContent, /testable boundary|testable/);

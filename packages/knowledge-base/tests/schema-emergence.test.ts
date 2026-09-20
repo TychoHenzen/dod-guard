@@ -4,10 +4,7 @@ import { parseKnowledgeDocument } from "../src/schema.js";
 import { exampleText } from "./test-support.js";
 
 test("preserves Chapter 12 source provenance and hierarchy", async () => {
-  const entry = parseKnowledgeDocument(
-    await exampleText("clean-code.emergence.md"),
-    "entries/clean-code.emergence.md",
-  );
+  const entry = parseKnowledgeDocument(await exampleText("clean-code.emergence.md"), "entries/clean-code.emergence.md");
 
   assert.equal(entry.key, "clean-code.emergence");
   assert.equal(entry.chapter, "clean-code");
@@ -20,7 +17,11 @@ test("preserves Chapter 12 source provenance and hierarchy", async () => {
   assert.match(entry.sources[0]?.label ?? "", /PDF pages 203-208/);
   const content = entry.content.toLowerCase();
   const priorities = ["all of its tests", "duplication", "express its intent", "class and method counts"];
-  assert.ok(priorities.every((priority, index) => index === 0 || content.indexOf(priority) > content.indexOf(priorities[index - 1])));
+  assert.ok(
+    priorities.every(
+      (priority, index) => index === 0 || content.indexOf(priority) > content.indexOf(priorities[index - 1]),
+    ),
+  );
   assert.match(content, /testable boundary|testable/);
   assert.match(content, /incrementally refactor|refactor the design/);
   assert.match(content, /reuse in the small|smallest useful boundary/);
