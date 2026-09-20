@@ -11828,5 +11828,159 @@
     "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
     "author": "Codex",
     "time": "2026-09-20T15:33:28.815Z"
+  },
+  {
+    "findingId": "0292a26174f66c0c4c1fcdc67bde7e954cdcf9273ca42879b31566d3f3890970",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.125Z"
+  },
+  {
+    "findingId": "02f1b753e61032e538d1cef29dd8a90c231b6eb723da75d426652f40099fc36d",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.131Z"
+  },
+  {
+    "findingId": "0715ced99faa4c13e9c9d57552ac937832775cc2c3914e421df3520df0acfd6f",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.137Z"
+  },
+  {
+    "findingId": "0e64bf2822c00b15437978a5383bc09615bb2a4dd555de8903c6e5ca03d70e52",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.142Z"
+  },
+  {
+    "findingId": "0f189e9ff0bef72091501cad877624d4dc4e61b45b18b1aad010fa947f5be777",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.147Z"
+  },
+  {
+    "findingId": "18cd8db2c53aa0a56070981df2153a551b3498a0d09903c21959e20c15c0bfc2",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.151Z"
+  },
+  {
+    "findingId": "31c1232186519878f73907ece3ee781b4b6f09f71cd1fba3202c117c3ece897c",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.156Z"
+  },
+  {
+    "findingId": "36a1f64d5b2cb4c30bd91bad3fb4e8b08955e5fcc106103b66b0b55debd4b36a",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.161Z"
+  },
+  {
+    "findingId": "393b278b64b7330f1042b4c0f010ea480d82b261ed061257a242a8ec35afc8df",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.166Z"
+  },
+  {
+    "findingId": "3aaa7bb20bc24c7d2f87e82ac0bcc7e918be63d04f880b6861883f0ffddf0613",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.175Z"
+  },
+  {
+    "findingId": "4ba7cb5a97ea8010b5070c589409ea21a1ea7883ed3146b1542985c5cc390e8c",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.179Z"
+  },
+  {
+    "findingId": "4c76852fb07bef745b4692d7f635c071871795555330cc0d29350890fabccfa4",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.183Z"
+  },
+  {
+    "findingId": "601b906216ace774206b18242bd21d5cd53165f3427d2dfb8536d5aa4fd2f7c0",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.189Z"
+  },
+  {
+    "findingId": "74165d455399a8e56231593b5638e9e5f5e05d4d06e8fe345e8b39efde626dff",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.195Z"
+  },
+  {
+    "findingId": "7587779f2b72a7df3bf0a51a126a16d915ca88fbf74fedfb092c4fc7b60411a8",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.201Z"
+  },
+  {
+    "findingId": "77be0670024a4b39f597c795a2d066950162ef6a580a49935a7f9d866b83183c",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.208Z"
+  },
+  {
+    "findingId": "89afaf6c804878fabf429cb9df9990a87c6c24095f5108066c5b9dcc8ac875f7",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.213Z"
+  },
+  {
+    "findingId": "b5def9577b0ad5a49e9da45f20ea1338716b6d3c24912334849ff1c06f9aba29",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.218Z"
+  },
+  {
+    "findingId": "ca22b445a376ebf4edfc3facf1735efc6584fa46e1afe0c74bc4b39b7e329686",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.223Z"
+  },
+  {
+    "findingId": "d18ac6f2fc131eb5acd3cb31e0dc756cfc77aa70d5a94539919c02bb9285ce18",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.227Z"
+  },
+  {
+    "findingId": "dea3a4f7068151d87fe1c6165995ce5ae2cc4f74604735b10ab84abaebc76646",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.232Z"
+  },
+  {
+    "findingId": "fd1da2d3e83e993f2bd5561ddf42881be8d00ca30d2e2aeec33e1fec455f5977",
+    "fingerprint": "215a759ea44e1e103f0a10f3fd464dbe551ba93a0d27a76049083f27bc9d0f56",
+    "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
+    "author": "Codex",
+    "time": "2026-09-20T15:48:31.239Z"
   }
 ]
