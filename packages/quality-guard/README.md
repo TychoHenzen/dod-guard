@@ -21,6 +21,62 @@ quality-guard check --staged --json
 for a repository and writes the JSON result to standard output. It is
 read-only with respect to the repository.
 
+Evaluate explicit Clean Code Chapter 17 test evidence with:
+
+```bash
+quality-guard test-quality --root=<repository> \
+  --evidence=.quality/test-quality.json
+```
+
+The evidence file is a language-neutral JSON manifest (`schemaVersion: 1`)
+with `sources`, `tests`, and optional `coverage`, `bugs`, `failures`, and
+`timing` sections. A source declares behavior and boundary IDs; a test declares
+the IDs it exercises, status, language, and optional duration. Coverage is
+per-source evidence from any provider, not a universal percentage threshold.
+Bug links, normalized failure signatures, skip reasons, boundary input/expected
+oracles, explicit uncovered behavior links, and test-class budgets make the
+remaining evidence explicit. Normalize
+provider output for C#,
+Python, TypeScript, and Rust in the same manifest; aliases such as `cs`, `py`,
+`ts`, and `rs` are accepted.
+
+Smallest useful manifest:
+
+```json
+{
+  "schemaVersion": 1,
+  "sources": [{
+    "path": "src/parser.py",
+    "language": "python",
+    "behaviors": [
+      {"id": "parser.normal", "kind": "behavior"},
+      {
+        "id": "parser.empty",
+        "kind": "boundary",
+        "boundary": {"input": "empty", "expected": "empty-result"}
+      }
+    ]
+  }],
+  "tests": [{
+    "id": "parser.empty.test",
+    "path": "tests/parser_test.py",
+    "language": "python",
+    "covers": ["parser.normal", "parser.empty"],
+    "status": "passed"
+  }]
+}
+```
+
+The report emits review-only T1-T9 findings with a remediation and evidence
+payload. T1 checks declared behavior coverage, T2 checks coverage evidence,
+T3 checks trivial documentary tests, T4 checks ambiguity skips, T5 checks
+boundaries, T6 checks linked bug regressions, T7 clusters repeated runtime
+failures, T8 correlates explicitly linked uncovered behavior regions with
+failures, and T9 compares measured durations with declared environment budgets.
+Missing evidence is reported as unavailable or invalid; it never becomes zero
+coverage or a commit gate failure. A missing default file is quiet and returns
+an empty unavailable report.
+
 Comment findings stay deliberately conservative: `comment-metadata` reports
 explicit metadata/history tags, `comment-placeholder` reports deterministic
 placeholder text, and `comment-missing-reference` checks only explicit
@@ -69,6 +125,8 @@ Codex discovers the plugin hook from `hooks/hooks.json`. After installation or a
 
 ## MCP tools
 
-The server exposes `quality_scan`, `quality_report`, `quality_gate`, `quality_skips`, and `quality_commit_gate`.
+The server exposes `quality_scan`, `quality_report`, `quality_gate`,
+`quality_skips`, `quality_commit_gate`, and `quality_test_quality`.
 `quality_report` scores every supported source file under the repository root and adds an unscored current-state
 architecture audit. Use `quality_commit_gate` when an MCP client needs the same staged decision as the command line.
+Use `quality_test_quality` when an MCP client has a test-evidence manifest.

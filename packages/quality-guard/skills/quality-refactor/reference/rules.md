@@ -582,3 +582,28 @@ context than the author did. Most are never resolved.
 **Fix:** do it now if it is small, file an issue and reference it by URL if it
 is not, or delete the marker if it no longer applies. A marker with a ticket
 link is legitimate; a bare `// TODO: handle this` is not.
+
+---
+
+## `test-quality` - explicit T1-T9 evidence
+
+`quality-guard test-quality` is a report-only evidence pass for Clean Code
+Chapter 17's T1-T9 test guidance. It does not infer test intent, domain
+boundaries, bug scope, runtime failure clusters, or acceptable timing from
+source syntax. A `.quality/test-quality.json` manifest must declare behavior and
+boundary IDs with input/expected oracles, active tests, optional coverage
+observations, explicit uncovered behavior links, bug links, failure signatures,
+and timing budgets before the related signal is meaningful.
+
+The pass reports missing behavior tests (T1), missing per-source coverage
+evidence (T2), missing trivial documentary tests (T3), ambiguity skips (T4),
+missing declared boundary tests (T5), missing tests for linked bug behavior
+(T6), repeated runtime failure clusters (T7), explicitly linked uncovered
+regions overlapping a failure (T8), and tests over an environment-specific
+budget (T9). Findings are
+review evidence with a remediation, never deterministic commit failures.
+
+Coverage is a gap signal. A percentage does not prove behavior quality, and a
+missing provider report is `unavailable`, not zero. The manifest normalizes
+C#, Python, TypeScript, and Rust language names so the metrics remain
+comparable without pretending their providers or test runners are identical.
