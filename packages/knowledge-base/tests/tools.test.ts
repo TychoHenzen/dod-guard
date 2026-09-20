@@ -390,7 +390,12 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.equal("content" in serialDateSummaries.entries[0], false);
 
     const serialDate = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.refactoring-serialdate" } })),
+      text(
+        await client.callTool({
+          name: "knowledge_get_entry",
+          arguments: { key: "clean-code.refactoring-serialdate" },
+        }),
+      ),
     );
     assert.equal(serialDate.guidance.kind, "reference_guidance");
     assert.equal(serialDate.guidance.executable, false);
