@@ -327,6 +327,24 @@ language-specific semantic evidence.
 
 ---
 
+## `naming-encoding` - member type/scope prefixes
+
+**Detects:** C#, TypeScript, Rust, and Python member declarations or `self`
+assignments whose name begins with the explicit `m_` or `f_` prefixes named by
+Clean Code's N6 guidance. This is review-level evidence, not a semantic naming
+verdict.
+
+**Why hard:** type and scope encodings make readers translate private shorthand
+that modern tools already expose. Remove the prefix and keep the name focused
+on intent.
+
+**When quiet:** local variables, arbitrary abbreviations, generated/interop
+paths, and project-specific naming conventions outside the two accepted prefixes
+are not reported. N1-N5 and N7 remain semantic guidance rather than generic
+findings.
+
+---
+
 ## `unnamed-tuple` - tuple types
 
 **Detects:** named and unnamed tuple types in supported type positions:

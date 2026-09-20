@@ -18,7 +18,14 @@ function typeSpans(code, types, lang) {
     if (span === null) continue;
     const fields = fieldsFor(span.body, lang);
     fieldsByType.set(type.name, fields);
-    spans.push({ name: type.name, open: span.open, close: span.close, fields });
+    spans.push({
+      name: type.name,
+      kind: type.kind,
+      open: span.open,
+      close: span.close,
+      fields,
+      body: span.body,
+    });
   }
   return { spans, fieldsByType };
 }
@@ -30,9 +37,11 @@ function implSpans(code, fieldsByType) {
     if (span === null) continue;
     spans.push({
       name: impl.typeName,
+      kind: "impl",
       open: span.open,
       close: span.close,
       fields: fieldsByType.get(impl.typeName) ?? null,
+      body: span.body,
     });
   }
   return spans;
