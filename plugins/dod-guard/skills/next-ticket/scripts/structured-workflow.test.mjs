@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -221,6 +221,40 @@ test("every GitHub-facing skill shares the request discipline", () => {
     assert.match(skill, /standards\/github-request-discipline\.md/);
   }
   assert.match(fixReview, /gh api "repos\/\{owner\}\/\{repo\}\/pulls\/\{number\}"/);
+});
+
+test("every skill with direct GitHub request instructions names the shared policy", async () => {
+  const skillRoot = path.join(root, "plugins/dod-guard/skills");
+  const entries = await readdir(skillRoot, { withFileTypes: true });
+  const documents = await Promise.all(
+    entries
+      .filter((entry) => entry.isDirectory())
+      .map(async (entry) => ({
+        name: entry.name,
+        text: await readFile(path.join(skillRoot, entry.name, "SKILL.md"), "utf8"),
+      })),
+  );
+  const directGithubSkills = documents.filter(({ text }) =>
+    /\bgh\s+(?:api|issue|project|pr|repo)\b|GitHub MCP (?:connector|issue|pull|repository)/i.test(text),
+  );
+
+  assert.deepEqual(
+    directGithubSkills.map(({ name }) => name).sort(),
+    [
+      "add-backlog-idea",
+      "complete-pr",
+      "fix-pr-review",
+      "next-ticket",
+      "publish",
+      "refine-backlog-item",
+      "review-pr",
+      "setup-repository",
+      "submit-draft-pr",
+    ],
+  );
+  for (const { text } of directGithubSkills) {
+    assert.match(text, /standards\/github-request-discipline\.md/);
+  }
 });
 
 test("delivery recovery resumes only from observed checkpoints", () => {
