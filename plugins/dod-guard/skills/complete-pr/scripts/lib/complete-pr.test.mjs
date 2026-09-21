@@ -7,6 +7,7 @@ import { GitHubClient, normalizePullRequest } from "./github-client.mjs";
 
 const pendingChecks = [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }];
 const passingChecks = [{ bucket: "pass", name: "build-test", state: "SUCCESS" }];
+const requiredCheckNames = ["build-test", "plugin-config", "static-analysis", "package-integrity"];
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
 
 function pull(overrides = {}) {
@@ -235,6 +236,29 @@ test("waits for required checks, confirms merge, and deletes the trusted remote 
   assert.equal(result.mergeCommitSha, "merge-1");
   assert.equal(result.branch, "deleted");
   assert.deepEqual(client.calls.filter(([name]) => name === "markReady"), [["markReady", 24]]);
+  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
+    ["deleteBranchRef", "codex/24-complete-pr"],
+  ]);
+});
+
+test("waits for all four repository required checks before trusted cleanup", async () => {
+  const requiredChecks = requiredCheckNames.map((name) => ({ bucket: "pending", name, state: "IN_PROGRESS" }));
+  const passingRequiredChecks = requiredCheckNames.map((name) => ({ bucket: "pass", name, state: "SUCCESS" }));
+  const client = new FixtureClient({
+    checks: [requiredChecks, passingRequiredChecks],
+    pulls: [
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+    ],
+  });
+
+  const result = await completePullRequest(client, immediateOptions);
+
+  assert.equal(result.mergeCommitSha, "merge-1");
+  assert.equal(result.branch, "deleted");
   assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
     ["deleteBranchRef", "codex/24-complete-pr"],
   ]);
