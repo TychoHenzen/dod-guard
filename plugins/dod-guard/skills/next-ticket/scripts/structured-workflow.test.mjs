@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,6 +34,10 @@ const githubSkills = [
   await read("plugins/dod-guard/skills/quick-pbi/SKILL.md"),
 ];
 const proof = await import("./structured-workflow-proof.mjs");
+const proofScript = path.join(
+  root,
+  "plugins/dod-guard/skills/next-ticket/scripts/structured-workflow-proof.mjs",
+);
 
 test("README and usage expose every structured stage contract", () => {
   const stages = [
@@ -124,6 +129,13 @@ test("structured handoffs are durable and convergence is evidence-based", () => 
   assert.match(standard, /one durable `## Implementation handoff` issue comment/);
   assert.match(nextTicket, /create or update one\s+parent-issue\s+comment headed `## Implementation handoff`/);
   assert.match(submit, /durable parent-issue `## Implementation\s+handoff` comment/);
+  assert.match(submit, /read the current remote head/);
+  assert.match(submit, /exact remote-head match/);
+  assert.match(submit, /remote branch SHA/);
+  assert.match(submit, /checked-out\s+`HEAD`/);
+  assert.match(submit, /handoff commit must be identical/);
+  assert.match(submit, /branch names must match/);
+  assert.match(submit, /treat the\s+handoff as stale/);
   assert.match(standard, /every acceptance\s+criterion has fresh evidence/);
 });
 
@@ -135,7 +147,14 @@ test("structured proof produces passing and actionable outcomes", () => {
     acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
     contradictions: [],
   });
-  assert.deepEqual(complete, { outcome: "verified", remainder: [] });
+  assert.equal(complete.outcome, "verified");
+  assert.deepEqual(complete.remainder, []);
+  assert.deepEqual(complete.sections, {
+    "Requirements and clarifications": [],
+    "Plan and tasks": [],
+    "Mandatory child categories": [],
+    "Acceptance and verification": [],
+  });
 
   const incomplete = proof.evaluateConvergence({
     records: { requirements: true, clarifications: true, "implementation-plan": true },
@@ -146,8 +165,17 @@ test("structured proof produces passing and actionable outcomes", () => {
   });
   assert.equal(incomplete.outcome, "actionable remainder");
   assert.ok(incomplete.remainder.length > 0);
-  assert.match(proof.renderConvergence(incomplete), /Remainder: /);
-  assert.doesNotMatch(proof.renderConvergence(incomplete), /Outcome: verified/);
+  const rendered = proof.renderConvergence(incomplete);
+  assert.match(rendered, /Plan and tasks: actionable/);
+  assert.match(rendered, /Mandatory child categories: actionable/);
+  assert.match(rendered, /Acceptance and verification: actionable/);
+  assert.match(rendered, /Next task: task-2; owner: wiring/);
+  assert.match(rendered, /Remainder: /);
+  assert.doesNotMatch(
+    rendered,
+    /^- (?:Requirements and clarifications|Plan and tasks|Mandatory child categories|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
+  );
+  assert.doesNotMatch(rendered, /Outcome: verified/);
 });
 
 test("ordinary fixes bypass structured records", () => {
@@ -155,6 +183,34 @@ test("ordinary fixes bypass structured records", () => {
     outcome: "ordinary",
     remainder: [],
   });
+});
+
+test("structured proof CLI separates known paths and rejects unknown scenarios", () => {
+  const run = (scenario) =>
+    spawnSync(process.execPath, [proofScript, scenario], { encoding: "utf8" });
+  const passing = run("passing");
+  assert.equal(passing.status, 0);
+  assert.match(passing.stdout, /Outcome: verified/);
+  assert.match(passing.stdout, /Requirements and clarifications: verified/);
+
+  const incomplete = run("incomplete");
+  assert.equal(incomplete.status, 0);
+  assert.match(incomplete.stdout, /Outcome: actionable remainder/);
+  assert.match(incomplete.stdout, /Next task: task-2; owner: wiring/);
+  assert.doesNotMatch(
+    incomplete.stdout,
+    /^- (?:Requirements and clarifications|Plan and tasks|Mandatory child categories|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
+  );
+
+  const ordinary = run("ordinary");
+  assert.equal(ordinary.status, 0);
+  assert.match(ordinary.stdout, /Outcome: ordinary/);
+  assert.doesNotMatch(ordinary.stdout, /Requirements and clarifications/);
+
+  const unknown = run("typo");
+  assert.notEqual(unknown.status, 0);
+  assert.match(unknown.stderr, /Unknown proof scenario/);
+  assert.doesNotMatch(unknown.stdout, /Outcome: verified/);
 });
 
 test("every GitHub-facing skill shares the request discipline", () => {

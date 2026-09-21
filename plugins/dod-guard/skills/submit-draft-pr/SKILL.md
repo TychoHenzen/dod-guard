@@ -58,7 +58,14 @@ code-backed sub-issue, map changed files and commits and require its pushed
 implementation. For an administrative sub-issue, map verified remote-state evidence
 instead of branch evidence. Require one durable parent-issue `## Implementation
 handoff` comment from `next-ticket`; consume its task, child, commit, check, and
-user-path mappings rather than reconstructing them from passing tests. If
+user-path mappings rather than reconstructing them from passing tests. Before
+consuming it, read the current remote head for the handoff branch with the
+GitHub branch metadata operation or `git ls-remote origin refs/heads/<branch>`
+and require an exact remote-head match: the remote branch SHA, checked-out
+`HEAD`, and handoff commit must be identical, and the branch names must match.
+If any value differs, treat the handoff as stale, stop, and rerun the
+implementation handoff after the branch state is stable; do not copy stale
+evidence into Convergence. If
 implementation is incomplete or contradicted, snapshot the
 issue body, task list, labels, links, Project item, and Status before writing an
 actionable remainder. Immediately before each remainder mutation, reread those
