@@ -488,8 +488,8 @@ reliable build entry point.
 **Fix:** add a root `build` script that owns the complete build. Cargo and one
 .NET project root already have `cargo build` and `dotnet build <project>`; a
 Python root needs a `[build-system]` declaration. Multiple root .NET projects
-need one selected solution. Unknown layouts are not reported because the scanner
-does not invent commands.
+need one selected solution. Unknown layouts produce explicit E1/E2 findings at
+the repository root; the scanner does not invent commands.
 
 ---
 
@@ -504,8 +504,8 @@ consistently.
 **Fix:** add a root `test` script that runs the complete suite. Cargo and one
 .NET project root already have `cargo test` and `dotnet test <project>`; a
 Python root needs `[tool.pytest]` configuration. Multiple root .NET projects
-need one selected solution. Unknown layouts are left explicit rather than
-guessed.
+need one selected solution. Unknown layouts produce explicit E1/E2 findings at
+the repository root rather than guessed commands.
 
 ---
 

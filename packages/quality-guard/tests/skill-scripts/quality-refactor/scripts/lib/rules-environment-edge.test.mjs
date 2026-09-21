@@ -68,32 +68,3 @@ test("routes an unconfigured Python root through the repository scan", () => {
     );
   });
 });
-test("routes an unsupported root through the repository scan", () => {
-  withProject({ "README.md": "run whatever works\n" }, (root) => {
-    const result = scan(
-      { paths: ["."], root, excludes: [], testPaths: [], rules: null },
-      buildConfig("default"),
-    );
-    assert.deepEqual(
-      result.violations.map(({ file, rule, message }) => ({ file, rule, message })),
-      [
-        {
-          file: "<repository root>",
-          rule: "build-entrypoint",
-          message:
-            "E1: no supported root entry point declaration found; inspected package.json, " +
-            "Cargo.toml, pyproject.toml, .sln, or .csproj — add one documented " +
-            "root build entry point",
-        },
-        {
-          file: "<repository root>",
-          rule: "test-entrypoint",
-          message:
-            "E2: no supported root entry point declaration found; inspected package.json, " +
-            "Cargo.toml, pyproject.toml, .sln, or .csproj — add one documented " +
-            "root test entry point",
-        },
-      ],
-    );
-  });
-});

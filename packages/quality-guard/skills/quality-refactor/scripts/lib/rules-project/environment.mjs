@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readText } from "../walk.mjs";
 
@@ -6,7 +6,6 @@ const BUILD_SYSTEM = /\[build-system\]/;
 const DOTNET_PROJECT = /\.csproj$/i;
 const DOTNET_SOLUTION = /\.sln$/i;
 const PYTEST_CONFIGURATION = /\[tool\.pytest(?:\.|\])/i;
-const ROOT_EVIDENCE = "<repository root>";
 const SUPPORTED_ROOT_EVIDENCE = "package.json, Cargo.toml, pyproject.toml, .sln, or .csproj";
 
 function read(root, name) {
@@ -23,9 +22,12 @@ function packageJson(root) {
   }
 }
 
-function dotnetFiles(root) {
+function rootFiles(root) {
   try {
-    return readdirSync(root).sort();
+    return readdirSync(root, { withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
+      .sort();
   } catch {
     return [];
   }
@@ -43,11 +45,11 @@ function nodeEntrypoints(root) {
 }
 
 function cargoEntrypoints(root) {
-  return existsSync(join(root, "Cargo.toml")) ? [{ file: "Cargo.toml", build: "cargo build", test: "cargo test" }] : [];
+  return rootFiles(root).includes("Cargo.toml") ? [{ file: "Cargo.toml", build: "cargo build", test: "cargo test" }] : [];
 }
 
 function dotnetEntrypoints(root) {
-  const files = dotnetFiles(root);
+  const files = rootFiles(root);
   const solutions = files.filter((name) => DOTNET_SOLUTION.test(name));
   if (solutions.length === 1) return [dotnetCommand(solutions[0])];
   if (solutions.length > 1) return [ambiguousDotnet(solutions[0], "solution", solutions)];
@@ -84,7 +86,7 @@ export function checkEnvironment(root, config) {
   if (manifests.length === 0) {
     const reason = `no supported root entry point declaration found; inspected ${SUPPORTED_ROOT_EVIDENCE}`;
     return [["build-entrypoint", "E1", "build"], ["test-entrypoint", "E2", "test"]].map(([rule, prefix, kind]) =>
-      finding({ file: ROOT_EVIDENCE, rule, severity: config.presence[rule], message: `${prefix}: ${reason} — add one documented root ${kind} entry point` }),
+      finding({ file: "<repository root>", rule, severity: config.presence[rule], message: `${prefix}: ${reason} — add one documented root ${kind} entry point` }),
     );
   }
   return manifests.flatMap((manifest) => {

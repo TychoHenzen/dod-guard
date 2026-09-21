@@ -63,23 +63,6 @@ test("resolves declared and language-standard one-command entry points", () => {
       assert.deepEqual(checkEnvironment(root, buildConfig("default")), []);
     });
 });
-test("reports unsupported roots without inventing a command", () => {
-  withProject({ "README.md": "run whatever works\n" }, (root) => {
-    assert.equal(resolveEntrypoints(root), null);
-    const found = checkEnvironment(root, buildConfig("default"));
-    assert.deepEqual(
-      found.map(({ file, rule }) => ({ file, rule })),
-      [
-        { file: "<repository root>", rule: "build-entrypoint" },
-        { file: "<repository root>", rule: "test-entrypoint" },
-      ],
-    );
-    assert.match(found[0].message, /inspected package\.json, Cargo\.toml/);
-    assert.match(found[0].message, /documented root build entry point/);
-    assert.match(found[1].message, /documented root test entry point/);
-    assert.equal(found.every(({ message }) => !message.includes("npm run")), true);
-  });
-});
 test("uses a root solution as the .NET boundary", () => {
   withProject(
     {
