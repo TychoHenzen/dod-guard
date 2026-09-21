@@ -33,7 +33,7 @@ export function runCommittedCommand(
     const result = runCommittedCheck(root, commit, options);
     return {
       exitCode: exitCodeFor(result),
-      output: renderDecision(result, true),
+      output: renderDecision(result, { json: true }),
     };
   } catch (error) {
     return usage(error instanceof Error ? error.message : String(error));
@@ -47,7 +47,7 @@ export function runStagedCommand(args: string[], root: string): CommandResult {
     const result = runStagedCheck(root, options);
     return {
       exitCode: exitCodeFor(result),
-      output: renderDecision(result, options.json),
+      output: renderDecision(result, { json: options.json }),
     };
   } catch (error) {
     return usage(error instanceof Error ? error.message : String(error));

@@ -2,7 +2,7 @@ import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import { analyzeSimilarity } from "./architecture-similarity.js";
 import type { QualityConfig } from "./config.js";
 import { analyzeCurrentDependencies } from "./dependency-current.js";
-import { analyzeCurrentDesignSmells } from "./design-smells/design-smells.js";
+import { analyzeCurrentDesignSmells } from "./design-smells/current-design-smells.js";
 import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzeCurrentPlacement } from "./placement-current.js";
 
