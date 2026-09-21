@@ -42,6 +42,20 @@ and pull request as the source of truth.
 | Implementation handoff | `next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
 | Convergence | `submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
+## Structured handoff contract
+
+A structured PBI is implementation-ready only when the issue contains the four
+named records and the four mandatory child categories exactly once. The branch
+does not replace those records: it supplies the implementation evidence that
+the records request.
+
+`next-ticket` writes one durable `## Implementation handoff` issue comment (or
+updates the existing one) after pushing the branch. That comment maps every
+ordered task and mandatory child to its commit or verified remote-state
+evidence, the checks that prove it, and the current user-path result. It is the
+handoff from refinement to draft-PR convergence; it is not a local planning
+file.
+
 ## Structured handoff records
 
 For a structured PBI, keep these records in the issue's `## Implementation
@@ -73,6 +87,15 @@ acceptance criteria, and verification evidence. The draft PR body records:
 - Acceptance and verification: each mapped to fresh evidence
 - Remainder: none, or the exact next task and owner
 ```
+
+Convergence is passing only when every named record exists, every task and
+mandatory child is mapped by the implementation handoff, every acceptance
+criterion has fresh evidence, and no item is contradicted or unresolved. A
+passing exercise therefore emits `Outcome: verified` and `Remainder: none`.
+If any check is missing or contradicted, emit `Outcome: actionable remainder`,
+name the next task and owner, and do not create or update the draft PR. The
+ordinary small-fix path bypasses these records and uses its direct issue,
+commit, test, and review evidence instead.
 
 An incomplete or contradicted result is not reported as complete. Before any
 remainder write, snapshot the issue body, task list, labels, links, Project item,

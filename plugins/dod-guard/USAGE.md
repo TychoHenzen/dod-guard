@@ -100,6 +100,13 @@ convergence check. The canonical records and handoffs are in
 | Implementation handoff | `/next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
 | Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
+On the structured path, `/next-ticket` leaves one durable `## Implementation
+handoff` comment on the parent issue, mapping every task and mandatory child to
+its commit or verified remote-state evidence, checks, and user-path result.
+`/submit-draft-pr` compares that handoff with the issue contract and copies the
+mapping into `## Convergence`; missing or contradicted evidence stays an
+actionable remainder. Small, clear fixes use the ordinary path instead.
+
 The structured path does not create a parallel local plan. It preserves stops
 for material ambiguity, credentials, destructive or authority-bound actions,
 unrelated work, provider or head mismatch, and missing high-risk evidence.

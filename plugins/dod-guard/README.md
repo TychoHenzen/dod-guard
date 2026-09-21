@@ -73,6 +73,13 @@ For feature work or material ambiguity, use the structured path in the
 | Implementation handoff | `/next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
 | Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
+For structured work, `/next-ticket` records one `## Implementation handoff`
+comment on the parent issue. It maps each ordered task and mandatory child to
+the pushed commit or verified remote-state evidence, fresh checks, and the
+current user-path result. `/submit-draft-pr` consumes that comment and records
+the same mapping in `## Convergence`; missing or contradicted evidence remains
+an actionable remainder. Small, clear fixes bypass these records.
+
 Use the ordinary path for a small, clear fix. Neither path bypasses stops for
 material ambiguity, credentials, destructive or authority-bound actions,
 unrelated work, provider or head mismatch, or missing high-risk evidence.

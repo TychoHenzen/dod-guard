@@ -32,6 +32,7 @@ const githubSkills = [
   await read("plugins/dod-guard/skills/publish/SKILL.md"),
   await read("plugins/dod-guard/skills/quick-pbi/SKILL.md"),
 ];
+const proof = await import("./structured-workflow-proof.mjs");
 
 test("README and usage expose every structured stage contract", () => {
   const stages = [
@@ -117,6 +118,43 @@ test("structured work retains safety stops and historical OpenSpec boundaries", 
   assert.match(standard, /PBI #59 owns forgiving defaults/);
   assert.match(usage, /OpenSpec is historical reference material only/);
   assert.match(usage, /not an active runtime or/);
+});
+
+test("structured handoffs are durable and convergence is evidence-based", () => {
+  assert.match(standard, /one durable `## Implementation handoff` issue comment/);
+  assert.match(nextTicket, /create or update one\s+parent-issue\s+comment headed `## Implementation handoff`/);
+  assert.match(submit, /durable parent-issue `## Implementation\s+handoff` comment/);
+  assert.match(standard, /every acceptance\s+criterion has fresh evidence/);
+});
+
+test("structured proof produces passing and actionable outcomes", () => {
+  const complete = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", child: "implementation", evidence: "commit abc123; test passed" }],
+    children: proof.REQUIRED_CHILD_CATEGORIES.map((category) => ({ category, evidence: "mapped" })),
+    acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
+    contradictions: [],
+  });
+  assert.deepEqual(complete, { outcome: "verified", remainder: [] });
+
+  const incomplete = proof.evaluateConvergence({
+    records: { requirements: true, clarifications: true, "implementation-plan": true },
+    tasks: [{ id: "task-2", child: "wiring", evidence: "" }],
+    children: [{ category: "implementation", evidence: "mapped" }],
+    acceptance: [{ id: "AC-2", evidence: "" }],
+    contradictions: ["user path not exercised"],
+  });
+  assert.equal(incomplete.outcome, "actionable remainder");
+  assert.ok(incomplete.remainder.length > 0);
+  assert.match(proof.renderConvergence(incomplete), /Remainder: /);
+  assert.doesNotMatch(proof.renderConvergence(incomplete), /Outcome: verified/);
+});
+
+test("ordinary fixes bypass structured records", () => {
+  assert.deepEqual(proof.evaluateConvergence({ path: "ordinary" }), {
+    outcome: "ordinary",
+    remainder: [],
+  });
 });
 
 test("every GitHub-facing skill shares the request discipline", () => {

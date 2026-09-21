@@ -260,6 +260,14 @@ belong to the issue.
 Create a concise commit that names the implemented outcome. Push the current
 branch to its existing upstream. Do not force-push or rewrite existing commits.
 
+After the verified implementation commit is pushed, create or update one
+parent-issue comment headed `## Implementation handoff` with one entry per
+ordered task and mandatory child category. Each entry names the commit or
+verified remote-state evidence, changed files or artifact, and the fresh check
+or user-path result. Include the current remainder explicitly; use `none` only
+when every task, acceptance criterion, and required user path is evidenced. Do
+not create a local planning file or a second issue as a substitute.
+
 ## Result
 
 Report the repository, linked project, selected issue, branch, commit, checks,

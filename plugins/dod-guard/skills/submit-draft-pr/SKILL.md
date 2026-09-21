@@ -56,7 +56,10 @@ end-to-end usability; refactoring and quality; and fixing and reliability, and
 map each category to the parent branch or verified remote-state evidence. For a
 code-backed sub-issue, map changed files and commits and require its pushed
 implementation. For an administrative sub-issue, map verified remote-state evidence
-instead of branch evidence. If implementation is incomplete or contradicted, snapshot the
+instead of branch evidence. Require one durable parent-issue `## Implementation
+handoff` comment from `next-ticket`; consume its task, child, commit, check, and
+user-path mappings rather than reconstructing them from passing tests. If
+implementation is incomplete or contradicted, snapshot the
 issue body, task list, labels, links, Project item, and Status before writing an
 actionable remainder. Immediately before each remainder mutation, reread those
 values and compare them with the latest snapshot. If any value changed, stop
