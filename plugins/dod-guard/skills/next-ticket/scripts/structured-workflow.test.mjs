@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -33,6 +33,8 @@ const githubSkills = [
   await read("plugins/dod-guard/skills/publish/SKILL.md"),
   await read("plugins/dod-guard/skills/quick-pbi/SKILL.md"),
 ];
+const directGithubRequestPattern =
+  /\bgh(?:\.exe)?\s+\S+|https?:\/\/api\.github\.com\b|\bmcp__github__[a-z][\w-]*|\bGitHub\s+(?:MCP|REST|API)\b/i;
 const proof = await import("./structured-workflow-proof.mjs");
 const proofScript = path.join(
   root,
@@ -221,6 +223,49 @@ test("every GitHub-facing skill shares the request discipline", () => {
     assert.match(skill, /standards\/github-request-discipline\.md/);
   }
   assert.match(fixReview, /gh api "repos\/\{owner\}\/\{repo\}\/pulls\/\{number\}"/);
+});
+
+test("every skill with direct GitHub request instructions names the shared policy", async () => {
+  const skillRoot = path.join(root, "plugins/dod-guard/skills");
+  const entries = await readdir(skillRoot, { withFileTypes: true });
+  const documents = await Promise.all(
+    entries
+      .filter((entry) => entry.isDirectory())
+      .map(async (entry) => ({
+        name: entry.name,
+        text: await readFile(path.join(skillRoot, entry.name, "SKILL.md"), "utf8"),
+      })),
+  );
+  const directGithubSkills = documents.filter(({ text }) => directGithubRequestPattern.test(text));
+
+  assert.deepEqual(
+    directGithubSkills.map(({ name }) => name).sort(),
+    [
+      "add-backlog-idea",
+      "complete-pr",
+      "fix-pr-review",
+      "next-ticket",
+      "publish",
+      "refine-backlog-item",
+      "review-pr",
+      "setup-repository",
+      "submit-draft-pr",
+    ],
+  );
+  for (const { text } of directGithubSkills) {
+    assert.match(text, /standards\/github-request-discipline\.md/);
+  }
+});
+
+test("direct GitHub request detection covers new request forms", () => {
+  for (const request of [
+    "gh auth status",
+    "gh run list",
+    "GET https://api.github.com/repos/TychoHenzen/dod-guard/issues",
+    "mcp__github__repository_read",
+  ]) {
+    assert.match(request, directGithubRequestPattern);
+  }
 });
 
 test("delivery recovery resumes only from observed checkpoints", () => {
