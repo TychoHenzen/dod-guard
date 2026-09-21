@@ -5,14 +5,14 @@ import { optionsFor } from "./index.test-support.js";
 import { BURST_FIXTURE } from "./output-burst-fixture.js";
 import { createReport } from "./testing/report-fixtures.js";
 
-async function runTableCli(isTty: boolean): Promise<string> {
+async function runTableCli(ttyMode: "tty" | "redirected"): Promise<string> {
   const stdout: string[] = [];
   await runFossilCli(
     ["node", "fossil", "analyze", "C:/repositories/table", "--format", "table"],
     {
       analyze: async () =>
         createReport(optionsFor("table"), { bursts: [BURST_FIXTURE] }),
-      isTty: () => isTty,
+      isTty: () => ttyMode === "tty",
       stdout: (message) => stdout.push(message),
     },
   );
@@ -20,8 +20,8 @@ async function runTableCli(isTty: boolean): Promise<string> {
 }
 
 test("uses the injected TTY capability for table styling", async () => {
-  const redirected = await runTableCli(false);
-  const terminal = await runTableCli(true);
+  const redirected = await runTableCli("redirected");
+  const terminal = await runTableCli("tty");
 
   assert.equal(redirected.includes("\u001b["), false);
   assert.equal(terminal.includes("\u001b["), true);

@@ -1,14 +1,14 @@
-function canConsumePathSegment(path, pathIndex, recursiveWildcard) {
+function canConsumePathSegment(path, pathIndex, wildcardMode) {
     if (pathIndex === 0)
         return false;
-    if (recursiveWildcard)
+    if (wildcardMode === "recursive")
         return true;
     return path[pathIndex - 1] !== "/";
 }
 function wildcardCell({ path, pathIndex, recursiveWildcard, previous, current, }) {
     if (previous[pathIndex])
         return true;
-    if (!canConsumePathSegment(path, pathIndex, recursiveWildcard))
+    if (!canConsumePathSegment(path, pathIndex, recursiveWildcard ? "recursive" : "segment"))
         return false;
     return Boolean(current[pathIndex - 1]);
 }

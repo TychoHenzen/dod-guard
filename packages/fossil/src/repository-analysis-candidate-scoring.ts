@@ -68,16 +68,9 @@ export function neighborPaths(
 export function selectedNeighbors(
   neighbors: ReadonlySet<string>,
   candidatePaths: ReadonlySet<string>,
-  selected: boolean,
+  selection: "candidate" | "live",
 ): string[] {
   return [...neighbors]
-    .filter((path) => candidatePaths.has(path) === selected)
+    .filter((path) => candidatePaths.has(path) === (selection === "candidate"))
     .sort();
-}
-
-export function referenceAvailability(
-  available: boolean,
-): "complete" | "unavailable" {
-  if (available) return "complete";
-  return "unavailable";
 }

@@ -7,21 +7,21 @@ export interface SyntaxState {
 function commentContinues(
   content: string,
   index: number,
-  lineComment: boolean,
+  commentKind: "line" | "block",
 ): boolean {
   if (index >= content.length) return false;
-  if (lineComment) return content[index] !== "\n";
+  if (commentKind === "line") return content[index] !== "\n";
   return !(content[index] === "*" && content[index + 1] === "/");
 }
 
 function commentEnd(
   content: string,
   start: number,
-  lineComment: boolean,
+  commentKind: "line" | "block",
 ): number {
   let index = start;
-  while (commentContinues(content, index, lineComment)) index += 1;
-  return lineComment ? index : Math.min(content.length, index + 2);
+  while (commentContinues(content, index, commentKind)) index += 1;
+  return commentKind === "line" ? index : Math.min(content.length, index + 2);
 }
 
 function maskComment({
@@ -65,8 +65,8 @@ export function consumeCommentStart(
   const character = content[index];
   const next = content[index + 1];
   if (character !== "/" || !(next === "/" || next === "*")) return undefined;
-  const lineComment = next === "/";
-  const end = commentEnd(content, index + 2, lineComment);
+  const commentKind = next === "/" ? "line" : "block";
+  const end = commentEnd(content, index + 2, commentKind);
   maskComment({ state, content, start: index, end });
   return end - 1;
 }

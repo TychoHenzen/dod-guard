@@ -1,15 +1,15 @@
-function commentContinues(content, index, lineComment) {
+function commentContinues(content, index, commentKind) {
     if (index >= content.length)
         return false;
-    if (lineComment)
+    if (commentKind === "line")
         return content[index] !== "\n";
     return !(content[index] === "*" && content[index + 1] === "/");
 }
-function commentEnd(content, start, lineComment) {
+function commentEnd(content, start, commentKind) {
     let index = start;
-    while (commentContinues(content, index, lineComment))
+    while (commentContinues(content, index, commentKind))
         index += 1;
-    return lineComment ? index : Math.min(content.length, index + 2);
+    return commentKind === "line" ? index : Math.min(content.length, index + 2);
 }
 function maskComment({ state, content, start, end, }) {
     for (let index = start; index < end; index += 1) {
@@ -36,8 +36,8 @@ export function consumeCommentStart(content, index, state) {
     const next = content[index + 1];
     if (character !== "/" || !(next === "/" || next === "*"))
         return undefined;
-    const lineComment = next === "/";
-    const end = commentEnd(content, index + 2, lineComment);
+    const commentKind = next === "/" ? "line" : "block";
+    const end = commentEnd(content, index + 2, commentKind);
     maskComment({ state, content, start: index, end });
     return end - 1;
 }

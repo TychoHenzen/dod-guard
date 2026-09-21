@@ -23,7 +23,7 @@ export function buildAnalysisReport(input: AnalysisReportInput): FossilReport {
     usage: reportUsage(historyStage, workspaceStage),
     completeness: reportCompleteness(
       warnings,
-      workspaceStage.references.graph.complete,
+      workspaceStage.references.graph.complete ? "complete" : "incomplete",
     ),
     statistics: reportStatistics(historyStage, reports, workspaceDebris),
     warnings,

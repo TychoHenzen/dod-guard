@@ -29,12 +29,12 @@ function hasConditionalFallback(input) {
         return true;
     return hasLeadingFallbackComment(input.view, input.matchIndex);
 }
-function hasFallbackElse(view, fallbackIf, elseStart) {
-    if (fallbackIf)
+function hasFallbackElse(view, fallbackPolicy, elseStart) {
+    if (fallbackPolicy === "if")
         return true;
     return hasLeadingFallbackComment(view, elseStart);
 }
-function elseBody(view, bodyClose, fallbackIf) {
+function elseBody(view, bodyClose, fallbackPolicy) {
     const elseStart = nextNonWhitespace(view.code, bodyClose + 1);
     if (view.code.slice(elseStart, elseStart + 4) !== "else")
         return undefined;
@@ -49,7 +49,7 @@ function elseBody(view, bodyClose, fallbackIf) {
     });
     if (elseBodyClose === undefined)
         return undefined;
-    if (!hasFallbackElse(view, fallbackIf, elseStart))
+    if (!hasFallbackElse(view, fallbackPolicy, elseStart))
         return undefined;
     return { start: elseBodyOpen, end: elseBodyClose };
 }
@@ -66,7 +66,7 @@ function conditionalRange(view, matchIndex) {
     const ranges = [];
     if (fallbackIf)
         ranges.push({ start: body.bodyOpen, end: body.bodyClose });
-    const fallbackElse = elseBody(view, body.bodyClose, fallbackIf);
+    const fallbackElse = elseBody(view, body.bodyClose, fallbackIf ? "if" : "comment");
     if (fallbackElse)
         ranges.push(fallbackElse);
     return ranges;

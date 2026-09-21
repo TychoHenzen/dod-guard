@@ -19,5 +19,4 @@ export declare function scoreSubscores(input: {
 };
 export declare function strongInboundCount(graph: ReferenceGraph, path: string, candidatePaths: ReadonlySet<string>): number;
 export declare function neighborPaths(graph: ReferenceGraph, path: string): ReadonlySet<string>;
-export declare function selectedNeighbors(neighbors: ReadonlySet<string>, candidatePaths: ReadonlySet<string>, selected: boolean): string[];
-export declare function referenceAvailability(available: boolean): "complete" | "unavailable";
+export declare function selectedNeighbors(neighbors: ReadonlySet<string>, candidatePaths: ReadonlySet<string>, selection: "candidate" | "live"): string[];

@@ -1,5 +1,5 @@
 import { createAdvisoryFossilFinding } from "./fossil-grader.js";
-import { neighborPaths, referenceAvailability, scoreSubscores, selectedNeighbors, strongInboundCount, } from "./repository-analysis-candidate-scoring.js";
+import { neighborPaths, scoreSubscores, selectedNeighbors, strongInboundCount, } from "./repository-analysis-candidate-scoring.js";
 function candidateDetails(input) {
     return {
         burstId: input.burst.id,
@@ -8,15 +8,17 @@ function candidateDetails(input) {
         score: input.score.score,
         scoreBasis: input.score.basis,
         subscores: input.subscores,
-        referenceAvailability: referenceAvailability(input.referenceAvailable),
+        referenceAvailability: input.referenceAvailable
+            ? "complete"
+            : "unavailable",
         ...candidateNeighborDetails(input),
     };
 }
 function candidateNeighborDetails(input) {
     return {
         strongInboundReferences: strongInboundCount(input.graph, input.candidate.path, input.candidatePaths),
-        candidateNeighbors: selectedNeighbors(input.neighbors, input.candidatePaths, true),
-        liveNeighbors: selectedNeighbors(input.neighbors, input.candidatePaths, false),
+        candidateNeighbors: selectedNeighbors(input.neighbors, input.candidatePaths, "candidate"),
+        liveNeighbors: selectedNeighbors(input.neighbors, input.candidatePaths, "live"),
     };
 }
 export function candidateFinding(input) {

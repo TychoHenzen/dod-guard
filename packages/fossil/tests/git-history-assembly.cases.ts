@@ -1,46 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { assembleClosedBursts } from "../src/git-analyzer.js";
+import { HOUR, burstGroup } from "./git-history-assembly.fixture.js";
 
 test("assembles final burst activity", () => {
-  const hour = 60 * 60 * 1_000;
-  const group = (name: string, start: number) => [
-    {
-      hash: `${name}-a`,
-      committerTimestampMs: start,
-      changes: [{ status: "added" as const, path: `${name}-a.ts` }],
-    },
-    {
-      hash: `${name}-b`,
-      committerTimestampMs: start + hour,
-      changes: [{ status: "added" as const, path: `${name}-b.ts` }],
-    },
-    {
-      hash: `${name}-c`,
-      committerTimestampMs: start + 2 * hour,
-      changes: [{ status: "added" as const, path: `${name}-c.ts` }],
-    },
-    {
-      hash: `${name}-d`,
-      committerTimestampMs: start + 3 * hour,
-      changes: [{ status: "modified" as const, path: `${name}-a.ts` }],
-    },
-    {
-      hash: `${name}-e`,
-      committerTimestampMs: start + 4 * hour,
-      changes: [{ status: "modified" as const, path: `${name}-b.ts` }],
-    },
-  ];
   const temporalCluster = [
-    ...group("first", 0),
-    ...group("second", 8 * hour),
-    ...group("third", 16 * hour),
+    ...burstGroup("first", 0),
+    ...burstGroup("second", 8 * HOUR),
+    ...burstGroup("third", 16 * HOUR),
   ];
   const fullHistory = [
     ...temporalCluster,
     {
       hash: "after-first",
-      committerTimestampMs: 30 * hour,
+      committerTimestampMs: 30 * HOUR,
       changes: [{ status: "modified" as const, path: "first-a.ts" }],
     },
   ];
@@ -64,7 +37,7 @@ test("assembles final burst activity", () => {
       {
         id: "burst-first-a-first-e",
         start: 0,
-        end: 4 * hour,
+        end: 4 * HOUR,
         commits: ["first-a", "first-b", "first-c", "first-d", "first-e"],
         files: [
           ["first-a.ts", 2, 1, true],
@@ -74,8 +47,8 @@ test("assembles final burst activity", () => {
       },
       {
         id: "burst-second-a-second-e",
-        start: 8 * hour,
-        end: 12 * hour,
+        start: 8 * HOUR,
+        end: 12 * HOUR,
         commits: ["second-a", "second-b", "second-c", "second-d", "second-e"],
         files: [
           ["second-a.ts", 2, 0, true],
@@ -85,8 +58,8 @@ test("assembles final burst activity", () => {
       },
       {
         id: "burst-third-a-third-e",
-        start: 16 * hour,
-        end: 20 * hour,
+        start: 16 * HOUR,
+        end: 20 * HOUR,
         commits: ["third-a", "third-b", "third-c", "third-d", "third-e"],
         files: [
           ["third-a.ts", 2, 0, true],

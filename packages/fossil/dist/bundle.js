@@ -3457,20 +3457,20 @@ function burstTableRows(bursts, mode = "normal") {
     ...findingTableRows(burst, mode)
   ]);
 }
-function styleBurstHeader(value, isTty) {
-  return isTty ? `\x1B[1m${value}\x1B[0m` : value;
+function styleBurstHeader(value, style) {
+  return style === "terminal" ? `\x1B[1m${value}\x1B[0m` : value;
 }
 function findingExplanationLine(row) {
   const timing = row.createdInBurst ? "created in burst" : "existed before burst";
   const reference = row.referenceAvailability === "unavailable" ? "reference evidence unavailable" : `references: ${row.strongInboundReferences} strong inbound, ${row.candidateNeighbors.length} candidate neighbors, ${row.liveNeighbors.length} live neighbors`;
   return `    ${timing}; ${row.burstCommits} burst commits, ${row.postBurstCommits} post-burst commits; ${reference}`;
 }
-function burstTableLine(row, isTty) {
+function burstTableLine(row, style) {
   switch (row.kind) {
     case "burst":
       return styleBurstHeader(
         `Burst ${terminalSafeText(row.id)}: ${row.startDate} to ${row.endDate}, ${row.commitCount} commits, ${row.fileCount} files`,
-        isTty
+        style
       );
     case "survivor":
       return `  survivor ${terminalSafeText(row.path)}`;
@@ -3481,7 +3481,7 @@ function burstTableLine(row, isTty) {
   }
 }
 function renderBurstTableRows(rows, { isTty }) {
-  return rows.map((row) => burstTableLine(row, isTty)).join("\n");
+  return rows.map((row) => burstTableLine(row, isTty ? "terminal" : "plain")).join("\n");
 }
 
 // src/fossil-report-output.ts
@@ -3668,7 +3668,7 @@ function collectStdoutChunk(state, rejectPromise, chunk) {
   }
   const text = state.stdoutDecoder.write(chunk);
   state.stdoutParts.push(text);
-  if (state.historyMode && state.statusCounter.add(text) > state.limits.maximumStatusRecords)
+  if (state.historyMode === "history" && state.statusCounter.add(text) > state.limits.maximumStatusRecords)
     rejectLimit(state, rejectPromise, "Git status record limit exceeded.");
 }
 function collectStderrChunk(state, rejectPromise, chunk) {
@@ -3691,7 +3691,7 @@ function finishCollection(state, resolvePromise, rejectPromise, exitCode) {
   const finalStderr = state.stderrDecoder.end();
   state.stdoutParts.push(finalStdout);
   state.stderrParts.push(finalStderr);
-  if (state.historyMode && state.statusCounter.add(finalStdout) > state.limits.maximumStatusRecords) {
+  if (state.historyMode === "history" && state.statusCounter.add(finalStdout) > state.limits.maximumStatusRecords) {
     rejectLimit(state, rejectPromise, "Git status record limit exceeded.");
     return;
   }
@@ -3786,7 +3786,8 @@ function collectBoundedGitOutput(child, {
       new Error("Git child must use piped stdout and stderr.")
     );
   return new Promise((resolvePromise, rejectPromise) => {
-    const state = createCollectorState(child, historyMode, limits);
+    const mode = historyMode ? "history" : "general";
+    const state = createCollectorState(child, mode, limits);
     stdout.on(
       "data",
       (chunk) => collectStdoutChunk(state, rejectPromise, chunk)
@@ -4712,14 +4713,14 @@ function reportUsage(historyStage, workspaceStage) {
     omittedReferencePaths: workspaceStage.references.graph.unavailablePaths.length
   };
 }
-function reportCompleteness(warnings, referenceComplete) {
+function reportCompleteness(warnings, referenceStatus) {
   return {
     historyComplete: !warnings.some(
       (warning) => ["empty_repository", "future_commit", "shallow_history"].includes(
         warning.code
       )
     ),
-    referenceAnalysisComplete: referenceComplete && !warnings.some((warning) => warning.code === "sparse_checkout"),
+    referenceAnalysisComplete: referenceStatus === "complete" && !warnings.some((warning) => warning.code === "sparse_checkout"),
     workspaceDebrisComplete: !warnings.some(
       (warning) => warning.code === "sparse_checkout"
     )
@@ -4752,7 +4753,7 @@ function buildAnalysisReport(input) {
     usage: reportUsage(historyStage, workspaceStage),
     completeness: reportCompleteness(
       warnings,
-      workspaceStage.references.graph.complete
+      workspaceStage.references.graph.complete ? "complete" : "incomplete"
     ),
     statistics: reportStatistics(historyStage, reports, workspaceDebris),
     warnings,
@@ -4970,15 +4971,15 @@ function csharpGuardRanges(view) {
 }
 
 // src/reference-analysis-syntax-handlers.ts
-function commentContinues(content, index, lineComment) {
+function commentContinues(content, index, commentKind) {
   if (index >= content.length) return false;
-  if (lineComment) return content[index] !== "\n";
+  if (commentKind === "line") return content[index] !== "\n";
   return !(content[index] === "*" && content[index + 1] === "/");
 }
-function commentEnd(content, start, lineComment) {
+function commentEnd(content, start, commentKind) {
   let index = start;
-  while (commentContinues(content, index, lineComment)) index += 1;
-  return lineComment ? index : Math.min(content.length, index + 2);
+  while (commentContinues(content, index, commentKind)) index += 1;
+  return commentKind === "line" ? index : Math.min(content.length, index + 2);
 }
 function maskComment({
   state,
@@ -5006,8 +5007,8 @@ function consumeCommentStart(content, index, state) {
   const character = content[index];
   const next = content[index + 1];
   if (character !== "/" || !(next === "/" || next === "*")) return void 0;
-  const lineComment = next === "/";
-  const end = commentEnd(content, index + 2, lineComment);
+  const commentKind = next === "/" ? "line" : "block";
+  const end = commentEnd(content, index + 2, commentKind);
   maskComment({ state, content, start: index, end });
   return end - 1;
 }
@@ -5110,11 +5111,11 @@ function hasConditionalFallback(input) {
     return true;
   return hasLeadingFallbackComment(input.view, input.matchIndex);
 }
-function hasFallbackElse(view, fallbackIf, elseStart) {
-  if (fallbackIf) return true;
+function hasFallbackElse(view, fallbackPolicy, elseStart) {
+  if (fallbackPolicy === "if") return true;
   return hasLeadingFallbackComment(view, elseStart);
 }
-function elseBody(view, bodyClose, fallbackIf) {
+function elseBody(view, bodyClose, fallbackPolicy) {
   const elseStart = nextNonWhitespace(view.code, bodyClose + 1);
   if (view.code.slice(elseStart, elseStart + 4) !== "else") return void 0;
   const elseBodyOpen = nextNonWhitespace(view.code, elseStart + 4);
@@ -5126,7 +5127,7 @@ function elseBody(view, bodyClose, fallbackIf) {
     closing: "}"
   });
   if (elseBodyClose === void 0) return void 0;
-  if (!hasFallbackElse(view, fallbackIf, elseStart)) return void 0;
+  if (!hasFallbackElse(view, fallbackPolicy, elseStart)) return void 0;
   return { start: elseBodyOpen, end: elseBodyClose };
 }
 function conditionalRange(view, matchIndex3) {
@@ -5140,7 +5141,11 @@ function conditionalRange(view, matchIndex3) {
   });
   const ranges = [];
   if (fallbackIf) ranges.push({ start: body.bodyOpen, end: body.bodyClose });
-  const fallbackElse = elseBody(view, body.bodyClose, fallbackIf);
+  const fallbackElse = elseBody(
+    view,
+    body.bodyClose,
+    fallbackIf ? "if" : "comment"
+  );
   if (fallbackElse) ranges.push(fallbackElse);
   return ranges;
 }
@@ -6083,12 +6088,8 @@ function neighborPaths(graph, path) {
   }
   return neighbors;
 }
-function selectedNeighbors(neighbors, candidatePaths, selected) {
-  return [...neighbors].filter((path) => candidatePaths.has(path) === selected).sort();
-}
-function referenceAvailability(available) {
-  if (available) return "complete";
-  return "unavailable";
+function selectedNeighbors(neighbors, candidatePaths, selection) {
+  return [...neighbors].filter((path) => candidatePaths.has(path) === (selection === "candidate")).sort();
 }
 
 // src/repository-analysis-candidate-finding.ts
@@ -6100,7 +6101,7 @@ function candidateDetails(input) {
     score: input.score.score,
     scoreBasis: input.score.basis,
     subscores: input.subscores,
-    referenceAvailability: referenceAvailability(input.referenceAvailable),
+    referenceAvailability: input.referenceAvailable ? "complete" : "unavailable",
     ...candidateNeighborDetails(input)
   };
 }
@@ -6114,12 +6115,12 @@ function candidateNeighborDetails(input) {
     candidateNeighbors: selectedNeighbors(
       input.neighbors,
       input.candidatePaths,
-      true
+      "candidate"
     ),
     liveNeighbors: selectedNeighbors(
       input.neighbors,
       input.candidatePaths,
-      false
+      "live"
     )
   };
 }
@@ -6347,9 +6348,9 @@ function isSensitiveWorkspacePath(path) {
 }
 
 // src/workspace-exclusion-cells.ts
-function canConsumePathSegment(path, pathIndex, recursiveWildcard) {
+function canConsumePathSegment(path, pathIndex, wildcardMode) {
   if (pathIndex === 0) return false;
-  if (recursiveWildcard) return true;
+  if (wildcardMode === "recursive") return true;
   return path[pathIndex - 1] !== "/";
 }
 function wildcardCell({
@@ -6360,7 +6361,12 @@ function wildcardCell({
   current
 }) {
   if (previous[pathIndex]) return true;
-  if (!canConsumePathSegment(path, pathIndex, recursiveWildcard)) return false;
+  if (!canConsumePathSegment(
+    path,
+    pathIndex,
+    recursiveWildcard ? "recursive" : "segment"
+  ))
+    return false;
   return Boolean(current[pathIndex - 1]);
 }
 function questionCell(path, pathIndex, previous) {

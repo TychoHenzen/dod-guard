@@ -41,8 +41,8 @@ export function burstTableRows(
     ]);
 }
 
-function styleBurstHeader(value: string, isTty: boolean): string {
-  return isTty ? `\u001b[1m${value}\u001b[0m` : value;
+function styleBurstHeader(value: string, style: "terminal" | "plain"): string {
+  return style === "terminal" ? `\u001b[1m${value}\u001b[0m` : value;
 }
 
 function findingExplanationLine(
@@ -64,13 +64,16 @@ function findingExplanationLine(
   );
 }
 
-function burstTableLine(row: BurstTableRow, isTty: boolean): string {
+function burstTableLine(
+  row: BurstTableRow,
+  style: "terminal" | "plain",
+): string {
   switch (row.kind) {
     case "burst":
       return styleBurstHeader(
         `Burst ${terminalSafeText(row.id)}: ${row.startDate} to ` +
           `${row.endDate}, ${row.commitCount} commits, ${row.fileCount} files`,
-        isTty,
+        style,
       );
     case "survivor":
       return `  survivor ${terminalSafeText(row.path)}`;
@@ -89,5 +92,7 @@ export function renderBurstTableRows(
   rows: readonly BurstTableRow[],
   { isTty }: BurstTableRenderOptions,
 ): string {
-  return rows.map((row) => burstTableLine(row, isTty)).join("\n");
+  return rows
+    .map((row) => burstTableLine(row, isTty ? "terminal" : "plain"))
+    .join("\n");
 }
