@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { readStableReferenceSourcesInternal } from "../src/reference-read-stable.js";
+import {
+  readStableReferenceSourcesInternal,
+} from "../src/reference-read-stable.js";
 
 test("warns when a stable read returns more bytes than allowed", () => {
   const result = readStableReferenceSourcesInternal({

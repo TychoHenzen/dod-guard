@@ -7,7 +7,7 @@ import type {
 
 export interface CollectorState {
   child: GitPipedChild;
-  historyMode: boolean;
+  historyMode: "history" | "general";
   limits: GitIngestionLimits;
   stdoutDecoder: StringDecoder;
   stderrDecoder: StringDecoder;
@@ -21,7 +21,7 @@ export interface CollectorState {
 
 export function createCollectorState(
   child: GitPipedChild,
-  historyMode: boolean,
+  historyMode: "history" | "general",
   limits: GitIngestionLimits,
 ): CollectorState {
   return {

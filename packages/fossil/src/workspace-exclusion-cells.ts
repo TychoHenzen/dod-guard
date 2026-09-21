@@ -1,10 +1,10 @@
 function canConsumePathSegment(
   path: string,
   pathIndex: number,
-  recursiveWildcard: boolean,
+  wildcardMode: "recursive" | "segment",
 ): boolean {
   if (pathIndex === 0) return false;
-  if (recursiveWildcard) return true;
+  if (wildcardMode === "recursive") return true;
   return path[pathIndex - 1] !== "/";
 }
 
@@ -22,7 +22,14 @@ function wildcardCell({
   current: readonly boolean[];
 }): boolean {
   if (previous[pathIndex]) return true;
-  if (!canConsumePathSegment(path, pathIndex, recursiveWildcard)) return false;
+  if (
+    !canConsumePathSegment(
+      path,
+      pathIndex,
+      recursiveWildcard ? "recursive" : "segment",
+    )
+  )
+    return false;
   return Boolean(current[pathIndex - 1]);
 }
 

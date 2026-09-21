@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readStableReferenceSources } from "../src/ref-analyzer.js";
-import { readStableReferenceSourcesInternal } from "../src/reference-read-stable.js";
+import {
+  readStableReferenceSourcesInternal,
+} from "../src/reference-read-stable.js";
 import { runStableRaceScenario } from "./ref-stable-races-fixture.js";
 
 const scenario = runStableRaceScenario();

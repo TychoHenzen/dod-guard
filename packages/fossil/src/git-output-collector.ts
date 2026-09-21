@@ -28,7 +28,8 @@ export function collectBoundedGitOutput(
       new Error("Git child must use piped stdout and stderr."),
     );
   return new Promise((resolvePromise, rejectPromise) => {
-    const state = createCollectorState(child, historyMode, limits);
+    const mode = historyMode ? "history" : "general";
+    const state = createCollectorState(child, mode, limits);
     stdout.on("data", (chunk) =>
       collectStdoutChunk(state, rejectPromise, chunk),
     );

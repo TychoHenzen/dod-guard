@@ -35,10 +35,10 @@ export function reportUsage(historyStage, workspaceStage) {
         omittedReferencePaths: workspaceStage.references.graph.unavailablePaths.length,
     };
 }
-export function reportCompleteness(warnings, referenceComplete) {
+export function reportCompleteness(warnings, referenceStatus) {
     return {
         historyComplete: !warnings.some((warning) => ["empty_repository", "future_commit", "shallow_history"].includes(warning.code)),
-        referenceAnalysisComplete: referenceComplete &&
+        referenceAnalysisComplete: referenceStatus === "complete" &&
             !warnings.some((warning) => warning.code === "sparse_checkout"),
         workspaceDebrisComplete: !warnings.some((warning) => warning.code === "sparse_checkout"),
     };

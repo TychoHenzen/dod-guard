@@ -46,17 +46,17 @@ function hasConditionalFallback(input: {
 
 function hasFallbackElse(
   view: SyntaxView,
-  fallbackIf: boolean,
+  fallbackPolicy: "if" | "comment",
   elseStart: number,
 ): boolean {
-  if (fallbackIf) return true;
+  if (fallbackPolicy === "if") return true;
   return hasLeadingFallbackComment(view, elseStart);
 }
 
 function elseBody(
   view: SyntaxView,
   bodyClose: number,
-  fallbackIf: boolean,
+  fallbackPolicy: "if" | "comment",
 ): ReferenceRange | undefined {
   const elseStart = nextNonWhitespace(view.code, bodyClose + 1);
   if (view.code.slice(elseStart, elseStart + 4) !== "else") return undefined;
@@ -69,7 +69,7 @@ function elseBody(
     closing: "}",
   });
   if (elseBodyClose === undefined) return undefined;
-  if (!hasFallbackElse(view, fallbackIf, elseStart)) return undefined;
+  if (!hasFallbackElse(view, fallbackPolicy, elseStart)) return undefined;
   return { start: elseBodyOpen, end: elseBodyClose };
 }
 
@@ -87,7 +87,11 @@ function conditionalRange(
   });
   const ranges: ReferenceRange[] = [];
   if (fallbackIf) ranges.push({ start: body.bodyOpen, end: body.bodyClose });
-  const fallbackElse = elseBody(view, body.bodyClose, fallbackIf);
+  const fallbackElse = elseBody(
+    view,
+    body.bodyClose,
+    fallbackIf ? "if" : "comment",
+  );
   if (fallbackElse) ranges.push(fallbackElse);
   return ranges;
 }

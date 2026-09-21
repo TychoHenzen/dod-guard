@@ -3,7 +3,7 @@ import { GitHistoryStatusCounter } from "./git-process-types/index.js";
 import type { GitIngestionLimits, GitPipedChild } from "./git-process-types/index.js";
 export interface CollectorState {
     child: GitPipedChild;
-    historyMode: boolean;
+    historyMode: "history" | "general";
     limits: GitIngestionLimits;
     stdoutDecoder: StringDecoder;
     stderrDecoder: StringDecoder;
@@ -14,4 +14,4 @@ export interface CollectorState {
     stderrBytes: number;
     settled: boolean;
 }
-export declare function createCollectorState(child: GitPipedChild, historyMode: boolean, limits: GitIngestionLimits): CollectorState;
+export declare function createCollectorState(child: GitPipedChild, historyMode: "history" | "general", limits: GitIngestionLimits): CollectorState;

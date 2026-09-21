@@ -36,14 +36,9 @@ export function neighborPaths(graph, path) {
     }
     return neighbors;
 }
-export function selectedNeighbors(neighbors, candidatePaths, selected) {
+export function selectedNeighbors(neighbors, candidatePaths, selection) {
     return [...neighbors]
-        .filter((path) => candidatePaths.has(path) === selected)
+        .filter((path) => candidatePaths.has(path) === (selection === "candidate"))
         .sort();
-}
-export function referenceAvailability(available) {
-    if (available)
-        return "complete";
-    return "unavailable";
 }
 //# sourceMappingURL=repository-analysis-candidate-scoring.js.map

@@ -11,7 +11,7 @@ export function buildAnalysisReport(input) {
         boundary: reportBoundary(historyStage.repositoryPath, historyStage.root),
         limits: reportLimits(),
         usage: reportUsage(historyStage, workspaceStage),
-        completeness: reportCompleteness(warnings, workspaceStage.references.graph.complete),
+        completeness: reportCompleteness(warnings, workspaceStage.references.graph.complete ? "complete" : "incomplete"),
         statistics: reportStatistics(historyStage, reports, workspaceDebris),
         warnings,
         bursts: reports,

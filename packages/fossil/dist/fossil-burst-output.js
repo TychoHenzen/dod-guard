@@ -22,8 +22,8 @@ export function burstTableRows(bursts, mode = "normal") {
         ...findingTableRows(burst, mode),
     ]);
 }
-function styleBurstHeader(value, isTty) {
-    return isTty ? `\u001b[1m${value}\u001b[0m` : value;
+function styleBurstHeader(value, style) {
+    return style === "terminal" ? `\u001b[1m${value}\u001b[0m` : value;
 }
 function findingExplanationLine(row) {
     const timing = row.createdInBurst
@@ -38,11 +38,11 @@ function findingExplanationLine(row) {
         `${row.burstCommits} burst commits, ${row.postBurstCommits} post-burst ` +
         `commits; ${reference}`);
 }
-function burstTableLine(row, isTty) {
+function burstTableLine(row, style) {
     switch (row.kind) {
         case "burst":
             return styleBurstHeader(`Burst ${terminalSafeText(row.id)}: ${row.startDate} to ` +
-                `${row.endDate}, ${row.commitCount} commits, ${row.fileCount} files`, isTty);
+                `${row.endDate}, ${row.commitCount} commits, ${row.fileCount} files`, style);
         case "survivor":
             return `  survivor ${terminalSafeText(row.path)}`;
         case "finding":
@@ -54,6 +54,8 @@ function burstTableLine(row, isTty) {
 }
 /** Renders burst rows with caller-owned TTY styling control. */
 export function renderBurstTableRows(rows, { isTty }) {
-    return rows.map((row) => burstTableLine(row, isTty)).join("\n");
+    return rows
+        .map((row) => burstTableLine(row, isTty ? "terminal" : "plain"))
+        .join("\n");
 }
 //# sourceMappingURL=fossil-burst-output.js.map

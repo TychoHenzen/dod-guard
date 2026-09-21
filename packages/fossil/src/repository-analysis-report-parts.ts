@@ -58,7 +58,7 @@ export function reportUsage(
 
 export function reportCompleteness(
   warnings: readonly AnalysisWarning[],
-  referenceComplete: boolean,
+  referenceStatus: "complete" | "incomplete",
 ): FossilReport["completeness"] {
   return {
     historyComplete: !warnings.some((warning) =>
@@ -67,7 +67,7 @@ export function reportCompleteness(
       ),
     ),
     referenceAnalysisComplete:
-      referenceComplete &&
+      referenceStatus === "complete" &&
       !warnings.some((warning) => warning.code === "sparse_checkout"),
     workspaceDebrisComplete: !warnings.some(
       (warning) => warning.code === "sparse_checkout",

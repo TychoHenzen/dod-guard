@@ -2,7 +2,6 @@ import { createAdvisoryFossilFinding } from "./fossil-grader.js";
 import type { Burst, BurstFileActivity, ReferenceGraph } from "./types.js";
 import {
   neighborPaths,
-  referenceAvailability,
   scoreSubscores,
   selectedNeighbors,
   strongInboundCount,
@@ -25,7 +24,9 @@ function candidateDetails(input: {
     score: input.score.score,
     scoreBasis: input.score.basis,
     subscores: input.subscores,
-    referenceAvailability: referenceAvailability(input.referenceAvailable),
+    referenceAvailability: input.referenceAvailable
+      ? ("complete" as const)
+      : ("unavailable" as const),
     ...candidateNeighborDetails(input),
   };
 }
@@ -45,12 +46,12 @@ function candidateNeighborDetails(input: {
     candidateNeighbors: selectedNeighbors(
       input.neighbors,
       input.candidatePaths,
-      true,
+      "candidate",
     ),
     liveNeighbors: selectedNeighbors(
       input.neighbors,
       input.candidatePaths,
-      false,
+      "live",
     ),
   };
 }
