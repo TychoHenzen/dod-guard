@@ -199,7 +199,9 @@ mutations. It probes the direct executable's version and help before launch;
 write-capable review launchers use `--approve-for-me`, while this advisor never
 uses approval flags. Missing commands, non-zero exits, timeouts, and malformed
 responses remain visible incomplete failures. The result reports the CLI
-version, model setting, and reasoning effort. The skill never edits files,
+version, model setting, reasoning effort, and complete process evidence; the
+CLI keeps advice on stdout and emits one JSON execution record on stderr. The
+skill never edits files,
 changes Git or GitHub state, or dispatches another advisor.
 
 Submit or refresh its draft pull request in a separate step:

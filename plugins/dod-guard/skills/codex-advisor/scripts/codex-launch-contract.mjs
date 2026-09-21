@@ -3,12 +3,15 @@ import process from "node:process";
 const CODEX_WRITE_APPROVAL_FLAG = "--approve-for-me";
 const CODEX_OBSOLETE_APPROVAL_FLAG = "--ask-for-approval";
 
-function validatePrefixArgs(prefixArgs) {
+function validatePrefixArgs(prefixArgs, mode) {
   if (!Array.isArray(prefixArgs) || prefixArgs.some((value) => typeof value !== "string")) {
     throw new TypeError("Codex launcher prefix arguments must be strings");
   }
   if (prefixArgs.includes(CODEX_OBSOLETE_APPROVAL_FLAG)) {
     throw new Error(`Codex launcher does not support ${CODEX_OBSOLETE_APPROVAL_FLAG}`);
+  }
+  if (mode === "read-only" && prefixArgs.includes(CODEX_WRITE_APPROVAL_FLAG)) {
+    throw new Error(`Codex launcher read-only mode rejects ${CODEX_WRITE_APPROVAL_FLAG}`);
   }
 }
 
@@ -27,7 +30,7 @@ export function resolveCodexExecutable(platform = process.platform) {
 
 export function buildCodexPreflightArgs({ mode = "read-only", prefixArgs = [] } = {}) {
   validateMode(mode);
-  validatePrefixArgs(prefixArgs);
+  validatePrefixArgs(prefixArgs, mode);
   return {
     version: [...prefixArgs, "--version"],
     help: [...prefixArgs, "exec", "--help"],
@@ -44,7 +47,7 @@ export function buildCodexExecArgs({
   workdir,
 } = {}) {
   validateMode(mode);
-  validatePrefixArgs(prefixArgs);
+  validatePrefixArgs(prefixArgs, mode);
   const args = [...prefixArgs, "exec"];
   if (mode === "write") {
     args.push(CODEX_WRITE_APPROVAL_FLAG);

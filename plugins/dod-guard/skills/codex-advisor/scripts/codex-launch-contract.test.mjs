@@ -37,3 +37,14 @@ test("rejects the obsolete approval option before a process can start", () => {
     /does not support --ask-for-approval/,
   );
 });
+
+test("rejects approval injection in read-only prefixes before a process can start", () => {
+  assert.throws(
+    () => buildCodexExecArgs({ mode: "read-only", prefixArgs: [CODEX_WRITE_APPROVAL_FLAG] }),
+    /read-only mode rejects --approve-for-me/,
+  );
+  assert.throws(
+    () => buildCodexPreflightArgs({ mode: "read-only", prefixArgs: [CODEX_WRITE_APPROVAL_FLAG] }),
+    /read-only mode rejects --approve-for-me/,
+  );
+});

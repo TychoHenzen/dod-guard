@@ -58,9 +58,11 @@ rules below are the exception only where they are more specific.
    Codex can print banners or hook diagnostics to stdout, so they are not the
    response. A failed capability probe or process launch returns incomplete
    execution evidence before any review state can be consumed. On exit code `0`,
-   the runner returns the executable and probe evidence, then reads the output
-   file, validates the schema response, and relays only its trimmed `advice`
-   value. Model,
+   the runner returns the executable, probe evidence, and a completed
+   reviewer-process execution record, then reads the output file, validates the
+   schema response, and relays only its trimmed `advice` value. The CLI emits
+   the execution record as one JSON line on stderr, separate from advice on
+   stdout. Model,
    reasoning, and prefix arguments must be single shell-safe values. The runner
    rejects shell metacharacters before starting the direct Windows executable.
 
