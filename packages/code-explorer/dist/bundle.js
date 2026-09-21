@@ -12678,6 +12678,8 @@ import { pathToFileURL } from "node:url";
 // src/semantic/python-mirror/python-mirror-validation.ts
 import { createHash } from "node:crypto";
 import { posix as posix3, win32 as win323 } from "node:path";
+
+// src/semantic/python-mirror/python-mirror-options.ts
 var prohibitedPythonConfigurationKeys = [
   "extends",
   "venvPath",
@@ -12691,6 +12693,8 @@ var prohibitedPythonConfigurationKeys = [
   "python.venvPath",
   "python.analysis.extraPaths"
 ];
+
+// src/semantic/python-mirror/python-mirror-validation.ts
 var PROHIBITED_KEYS = new Set(prohibitedPythonConfigurationKeys);
 function containsUnsafePythonConfiguration(value, key) {
   return unsafeConfigurationValue(value, key);
@@ -14863,7 +14867,7 @@ async function shutdownRuntime(input) {
     return;
   }
   const expectedEpoch = input.state.epoch;
-  input.state.beginStopping();
+  input.state.setState(input.state.state, "begin");
   if (input.state.state === "ready") {
     try {
       await sendRequest({
@@ -14908,7 +14912,7 @@ async function sendExit(input) {
 }
 function forceShutdown(input) {
   if (!input.state.stopped && input.state.current(input.expectedEpoch)) {
-    input.state.clearStopping();
+    input.state.setState(input.state.state, "clear");
     failWithRestart({
       state: input.state,
       expectedEpoch: input.expectedEpoch,
@@ -15618,17 +15622,13 @@ var DirectLspRuntimeStateCore = class extends DirectLspStateResources {
   invalidate() {
     this.#life.invalidate(() => this.rejectInflight("backend_crashed"));
   }
-  setState(state) {
+  setState(state, stopping) {
     this.#life.setState(state);
+    if (stopping === "begin") this.#life.beginStopping();
+    if (stopping === "clear") this.#life.clearStopping();
   }
   markStopped() {
     this.#life.markStopped();
-  }
-  beginStopping() {
-    this.#life.beginStopping();
-  }
-  clearStopping() {
-    this.#life.clearStopping();
   }
   setExitResolver(resolve5) {
     this.#life.setExitResolver(resolve5);

@@ -49,20 +49,14 @@ export class DirectLspRuntimeStateCore extends DirectLspStateResources {
     this.#life.invalidate(() => this.rejectInflight("backend_crashed"));
   }
 
-  setState(state: DirectLspStatus["state"]) {
+  setState(state: DirectLspStatus["state"], stopping?: "begin" | "clear") {
     this.#life.setState(state);
+    if (stopping === "begin") this.#life.beginStopping();
+    if (stopping === "clear") this.#life.clearStopping();
   }
 
   markStopped() {
     this.#life.markStopped();
-  }
-
-  beginStopping() {
-    this.#life.beginStopping();
-  }
-
-  clearStopping() {
-    this.#life.clearStopping();
   }
 
   setExitResolver(resolve?: () => void) {

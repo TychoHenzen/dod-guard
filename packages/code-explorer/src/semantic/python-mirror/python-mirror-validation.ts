@@ -1,20 +1,7 @@
 import { createHash } from "node:crypto";
 import { posix, win32 } from "node:path";
 import type { PythonMirrorInput } from "./python-mirror-input.js";
-
-const prohibitedPythonConfigurationKeys = [
-  "extends",
-  "venvPath",
-  "venv",
-  "extraPaths",
-  "typeshedPath",
-  "stubPath",
-  "executionEnvironments",
-  "pythonPath",
-  "python.pythonPath",
-  "python.venvPath",
-  "python.analysis.extraPaths",
-] as const;
+import { prohibitedPythonConfigurationKeys } from "./python-mirror-options.js";
 
 const PROHIBITED_KEYS = new Set<string>(prohibitedPythonConfigurationKeys);
 

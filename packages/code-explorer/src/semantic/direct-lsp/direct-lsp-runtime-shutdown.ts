@@ -16,7 +16,7 @@ export async function shutdownRuntime(input: {
     return;
   }
   const expectedEpoch = input.state.epoch;
-  input.state.beginStopping();
+  input.state.setState(input.state.state, "begin");
   if (input.state.state === "ready") {
     try {
       await sendRequest({
@@ -77,7 +77,7 @@ function forceShutdown(input: {
   onRestart?: RestartProcess;
 }): void {
   if (!input.state.stopped && input.state.current(input.expectedEpoch)) {
-    input.state.clearStopping();
+    input.state.setState(input.state.state, "clear");
     failWithRestart({
       state: input.state,
       expectedEpoch: input.expectedEpoch,
