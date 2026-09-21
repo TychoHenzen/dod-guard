@@ -48,9 +48,8 @@ export class DirectLspRuntimeRestarts {
     return this.#timeoutTimes.length;
   }
 
-  resetFailureHistory(wasUnavailable: boolean): boolean {
+  resetFailureHistory(): void {
     this.#crashTimes = [];
     this.#timeoutTimes = [];
-    return wasUnavailable;
   }
 }

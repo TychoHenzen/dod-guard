@@ -40,11 +40,11 @@ function protectedOptionalRead(
 
 function parseToolPyright(toml: string): Record<string, unknown> | undefined {
   const lines = toml.replace(/^\uFEFF/, "").split(/\r?\n/);
-  let active = false;
+  let section: "active" | "inactive" = "inactive";
   const result: Record<string, unknown> = {};
   for (const raw of lines) {
-    const parsed = parseToolLine(raw, active);
-    active = parsed.active;
+    const parsed = parseToolLine(raw, section);
+    section = parsed.section;
     if (parsed.invalid) return undefined;
     if (parsed.assignment)
       result[parsed.assignment[0]] = parseTomlValue(parsed.assignment[1]);
@@ -54,28 +54,28 @@ function parseToolPyright(toml: string): Record<string, unknown> | undefined {
 
 function parseToolLine(
   raw: string,
-  active: boolean,
+  section: "active" | "inactive",
 ): {
-  active: boolean;
+  section: "active" | "inactive";
   invalid: boolean;
   assignment?: [string, string];
 } {
   const line = raw.replace(/\s+#.*$/, "").trim();
-  if (!line) return { active, invalid: false };
+  if (!line) return { section, invalid: false };
   if (/^\[.*\]$/.test(line))
     return {
-      active: line === "[tool.pyright]",
+      section: line === "[tool.pyright]" ? "active" : "inactive",
       invalid: false,
     };
-  if (!active) return { active, invalid: false };
+  if (section === "inactive") return { section, invalid: false };
   const match = /^([A-Za-z0-9_.-]+)\s*=\s*(.+)$/.exec(line);
   return match
     ? {
-        active,
+        section,
         invalid: false,
         assignment: [match[1], match[2]],
       }
-    : { active, invalid: true };
+    : { section, invalid: true };
 }
 
 function parseTomlValue(value: string): unknown {

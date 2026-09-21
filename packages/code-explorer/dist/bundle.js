@@ -12678,7 +12678,7 @@ import { pathToFileURL } from "node:url";
 // src/semantic/python-mirror/python-mirror-validation.ts
 import { createHash } from "node:crypto";
 import { posix as posix3, win32 as win323 } from "node:path";
-var prohibitedPythonConfigurationKeys = Object.freeze([
+var prohibitedPythonConfigurationKeys = [
   "extends",
   "venvPath",
   "venv",
@@ -12690,7 +12690,7 @@ var prohibitedPythonConfigurationKeys = Object.freeze([
   "python.pythonPath",
   "python.venvPath",
   "python.analysis.extraPaths"
-]);
+];
 var PROHIBITED_KEYS = new Set(prohibitedPythonConfigurationKeys);
 function containsUnsafePythonConfiguration(value, key) {
   return unsafeConfigurationValue(value, key);
@@ -13111,32 +13111,32 @@ function protectedOptionalRead(root, path5) {
 }
 function parseToolPyright(toml) {
   const lines = toml.replace(/^\uFEFF/, "").split(/\r?\n/);
-  let active = false;
+  let section = "inactive";
   const result = {};
   for (const raw of lines) {
-    const parsed = parseToolLine(raw, active);
-    active = parsed.active;
+    const parsed = parseToolLine(raw, section);
+    section = parsed.section;
     if (parsed.invalid) return void 0;
     if (parsed.assignment)
       result[parsed.assignment[0]] = parseTomlValue(parsed.assignment[1]);
   }
   return result;
 }
-function parseToolLine(raw, active) {
+function parseToolLine(raw, section) {
   const line = raw.replace(/\s+#.*$/, "").trim();
-  if (!line) return { active, invalid: false };
+  if (!line) return { section, invalid: false };
   if (/^\[.*\]$/.test(line))
     return {
-      active: line === "[tool.pyright]",
+      section: line === "[tool.pyright]" ? "active" : "inactive",
       invalid: false
     };
-  if (!active) return { active, invalid: false };
+  if (section === "inactive") return { section, invalid: false };
   const match = /^([A-Za-z0-9_.-]+)\s*=\s*(.+)$/.exec(line);
   return match ? {
-    active,
+    section,
     invalid: false,
     assignment: [match[1], match[2]]
-  } : { active, invalid: true };
+  } : { section, invalid: true };
 }
 function parseTomlValue(value) {
   const trimmed = value.trim();
@@ -13860,18 +13860,19 @@ __export(direct_lsp_semantic_capabilities_exports, {
 });
 function relationCapabilitiesFromInitialize(status) {
   const capabilities = status.server_capabilities ?? {};
-  const supported = (name) => capabilities[name] !== void 0 && capabilities[name] !== false;
   return {
-    definition: capabilityState(supported("definitionProvider")),
-    references: capabilityState(supported("referencesProvider")),
-    type_definition: capabilityState(supported("typeDefinitionProvider")),
-    implementation: capabilityState(supported("implementationProvider")),
-    callers: capabilityState(supported("callHierarchyProvider")),
-    callees: capabilityState(supported("callHierarchyProvider"))
+    definition: capabilityState(capabilities, "definitionProvider"),
+    references: capabilityState(capabilities, "referencesProvider"),
+    type_definition: capabilityState(capabilities, "typeDefinitionProvider"),
+    implementation: capabilityState(capabilities, "implementationProvider"),
+    callers: capabilityState(capabilities, "callHierarchyProvider"),
+    callees: capabilityState(capabilities, "callHierarchyProvider")
   };
 }
-function capabilityState(supported) {
-  return { state: supported ? "ready" : "unavailable" };
+function capabilityState(capabilities, name) {
+  return {
+    state: capabilities[name] !== void 0 && capabilities[name] !== false ? "ready" : "unavailable"
+  };
 }
 
 // src/semantic/backend-result/backend-result-validator.ts
@@ -14862,7 +14863,7 @@ async function shutdownRuntime(input) {
     return;
   }
   const expectedEpoch = input.state.epoch;
-  input.state.setStopping(true);
+  input.state.beginStopping();
   if (input.state.state === "ready") {
     try {
       await sendRequest({
@@ -14907,7 +14908,7 @@ async function sendExit(input) {
 }
 function forceShutdown(input) {
   if (!input.state.stopped && input.state.current(input.expectedEpoch)) {
-    input.state.setStopping(false);
+    input.state.clearStopping();
     failWithRestart({
       state: input.state,
       expectedEpoch: input.expectedEpoch,
@@ -14968,9 +14969,9 @@ async function requestBackend2(input) {
     throw new DirectLspError(
       input.state.state === "unavailable" ? "backend_crashed" : "backend_failed"
     );
-  return requestWithRetry(input, false);
+  return requestWithRetry(input, "initial");
 }
-async function requestWithRetry(input, retried) {
+async function requestWithRetry(input, attempt) {
   try {
     return await sendRequest({
       ...input,
@@ -14979,8 +14980,8 @@ async function requestWithRetry(input, retried) {
   } catch (error2) {
     if (!(error2 instanceof DirectLspError) || error2.code !== "backend_content_modified")
       throw error2;
-    if (retried) throw new DirectLspError("backend_failed");
-    return requestWithRetry(input, true);
+    if (attempt === "retry") throw new DirectLspError("backend_failed");
+    return requestWithRetry(input, "retry");
   }
 }
 
@@ -15321,8 +15322,11 @@ var DirectLspRuntimeLifecycle = class {
   markStopped() {
     this.#stopped = true;
   }
-  setStopping(stopping) {
-    this.#stopping = stopping;
+  beginStopping() {
+    this.#stopping = true;
+  }
+  clearStopping() {
+    this.#stopping = false;
   }
   setExitResolver(resolve5) {
     this.#exitResolver = resolve5;
@@ -15385,10 +15389,9 @@ var DirectLspRuntimeRestarts = class {
     this.#timeoutTimes.push(this.scheduler.now());
     return this.#timeoutTimes.length;
   }
-  resetFailureHistory(wasUnavailable) {
+  resetFailureHistory() {
     this.#crashTimes = [];
     this.#timeoutTimes = [];
-    return wasUnavailable;
   }
 };
 
@@ -15575,8 +15578,8 @@ var DirectLspStateResources = class extends DirectLspStateStorage {
   recordTimeout() {
     return this.#restarts.recordTimeout();
   }
-  resetFailureHistoryState(wasUnavailable) {
-    return this.#restarts.resetFailureHistory(wasUnavailable);
+  resetFailureHistoryState() {
+    this.#restarts.resetFailureHistory();
   }
 };
 
@@ -15621,8 +15624,11 @@ var DirectLspRuntimeStateCore = class extends DirectLspStateResources {
   markStopped() {
     this.#life.markStopped();
   }
-  setStopping(stopping) {
-    this.#life.setStopping(stopping);
+  beginStopping() {
+    this.#life.beginStopping();
+  }
+  clearStopping() {
+    this.#life.clearStopping();
   }
   setExitResolver(resolve5) {
     this.#life.setExitResolver(resolve5);
@@ -15637,7 +15643,8 @@ var DirectLspRuntimeStateCore = class extends DirectLspStateResources {
     this.#life.killProcess();
   }
   resetFailureHistory() {
-    if (super.resetFailureHistoryState(this.state === "unavailable"))
+    super.resetFailureHistoryState();
+    if (this.state === "unavailable")
       this.setState("initializing");
   }
   current(epoch) {
@@ -15955,7 +15962,7 @@ async function refreshPython(input) {
   const refreshed = await input.manager.refresh();
   if (refreshed.status !== "ready")
     return handleUnavailable(input, refreshed.code);
-  ensurePythonInner(input, refreshed.mirror, refreshed.changed);
+  ensurePythonInner(input, refreshed.mirror, refreshed);
   await input.getInner()?.start?.();
   input.setState(input.getInner()?.readiness() ?? input.getState());
 }
@@ -15963,8 +15970,8 @@ function handleUnavailable(input, code) {
   input.setState({ state: "unavailable" });
   throw new Error(code);
 }
-function ensurePythonInner(input, mirror, changed) {
-  if (!input.getInner() || changed)
+function ensurePythonInner(input, mirror, refresh) {
+  if (!input.getInner() || refresh.changed)
     input.setInner(createPythonInner(input, mirror));
 }
 function createPythonInner(input, mirror) {

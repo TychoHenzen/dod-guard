@@ -57,8 +57,12 @@ export class DirectLspRuntimeStateCore extends DirectLspStateResources {
     this.#life.markStopped();
   }
 
-  setStopping(stopping: boolean) {
-    this.#life.setStopping(stopping);
+  beginStopping() {
+    this.#life.beginStopping();
+  }
+
+  clearStopping() {
+    this.#life.clearStopping();
   }
 
   setExitResolver(resolve?: () => void) {
@@ -78,7 +82,8 @@ export class DirectLspRuntimeStateCore extends DirectLspStateResources {
   }
 
   resetFailureHistory() {
-    if (super.resetFailureHistoryState(this.state === "unavailable"))
+    super.resetFailureHistoryState();
+    if (this.state === "unavailable")
       this.setState("initializing");
   }
 

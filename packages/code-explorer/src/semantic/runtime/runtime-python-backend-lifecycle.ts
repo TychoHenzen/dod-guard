@@ -13,7 +13,7 @@ async function refreshPython(input: PythonBuildInput): Promise<void> {
   const refreshed = await input.manager.refresh();
   if (refreshed.status !== "ready")
     return handleUnavailable(input, refreshed.code);
-  ensurePythonInner(input, refreshed.mirror, refreshed.changed);
+  ensurePythonInner(input, refreshed.mirror, refreshed);
   await input.getInner()?.start?.();
   input.setState(input.getInner()?.readiness() ?? input.getState());
 }
@@ -29,9 +29,9 @@ function handleUnavailable(
 function ensurePythonInner(
   input: PythonBuildInput,
   mirror: PythonMirror,
-  changed: boolean,
+  refresh: { changed: boolean },
 ): void {
-  if (!input.getInner() || changed)
+  if (!input.getInner() || refresh.changed)
     input.setInner(createPythonInner(input, mirror));
 }
 
