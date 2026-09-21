@@ -17,7 +17,7 @@ function commitGateResponse(input: {
         intent: input.intent ?? "change",
         target: input.target,
       }),
-      true,
+      { json: true },
     ),
   );
 }

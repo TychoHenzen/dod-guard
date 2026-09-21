@@ -18,9 +18,9 @@ var __export = (target, all) => {
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
-    for (let key3 of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key3) && key3 !== except)
-        __defProp(to, key3, { get: () => from[key3], enumerable: !(desc = __getOwnPropDesc(from, key3)) || desc.enumerable });
+    for (let key2 of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key2) && key2 !== except)
+        __defProp(to, key2, { get: () => from[key2], enumerable: !(desc = __getOwnPropDesc(from, key2)) || desc.enumerable });
   }
   return to;
 };
@@ -169,15 +169,15 @@ var require_code = __commonJS({
       return JSON.stringify(x).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
     }
     exports.safeStringify = safeStringify;
-    function getProperty(key3) {
-      return typeof key3 == "string" && exports.IDENTIFIER.test(key3) ? new _Code(`.${key3}`) : _`[${key3}]`;
+    function getProperty(key2) {
+      return typeof key2 == "string" && exports.IDENTIFIER.test(key2) ? new _Code(`.${key2}`) : _`[${key2}]`;
     }
     exports.getProperty = getProperty;
-    function getEsmExportName(key3) {
-      if (typeof key3 == "string" && exports.IDENTIFIER.test(key3)) {
-        return new _Code(`${key3}`);
+    function getEsmExportName(key2) {
+      if (typeof key2 == "string" && exports.IDENTIFIER.test(key2)) {
+        return new _Code(`${key2}`);
       }
-      throw new Error(`CodeGen: invalid export name: ${key3}, use explicit $id name mapping`);
+      throw new Error(`CodeGen: invalid export name: ${key2}, use explicit $id name mapping`);
     }
     exports.getEsmExportName = getEsmExportName;
     function regexpCode(rx) {
@@ -804,11 +804,11 @@ var require_codegen = __commonJS({
       // returns code for object literal for the passed argument list of key-value pairs
       object(...keyValues) {
         const code = ["{"];
-        for (const [key3, value] of keyValues) {
+        for (const [key2, value] of keyValues) {
           if (code.length > 1)
             code.push(",");
-          code.push(key3);
-          if (key3 !== value || this.opts.es5) {
+          code.push(key2);
+          if (key2 !== value || this.opts.es5) {
             code.push(":");
             (0, code_1.addCodeArg)(code, value);
           }
@@ -1083,17 +1083,17 @@ var require_util = __commonJS({
       if (typeof schema === "boolean")
         return;
       const rules = self.RULES.keywords;
-      for (const key3 in schema) {
-        if (!rules[key3])
-          checkStrictMode(it, `unknown keyword: "${key3}"`);
+      for (const key2 in schema) {
+        if (!rules[key2])
+          checkStrictMode(it, `unknown keyword: "${key2}"`);
       }
     }
     exports.checkUnknownRules = checkUnknownRules;
     function schemaHasRules(schema, rules) {
       if (typeof schema == "boolean")
         return !schema;
-      for (const key3 in schema)
-        if (rules[key3])
+      for (const key2 in schema)
+        if (rules[key2])
           return true;
       return false;
     }
@@ -1101,8 +1101,8 @@ var require_util = __commonJS({
     function schemaHasRulesButRef(schema, RULES) {
       if (typeof schema == "boolean")
         return !schema;
-      for (const key3 in schema)
-        if (key3 !== "$ref" && RULES.all[key3])
+      for (const key2 in schema)
+        if (key2 !== "$ref" && RULES.all[key2])
           return true;
       return false;
     }
@@ -1680,8 +1680,8 @@ var require_defaults = __commonJS({
     function assignDefaults(it, ty) {
       const { properties, items } = it.schema;
       if (ty === "object" && properties) {
-        for (const key3 in properties) {
-          assignDefault(it, key3, properties[key3].default);
+        for (const key2 in properties) {
+          assignDefault(it, key2, properties[key2].default);
         }
       } else if (ty === "array" && Array.isArray(items)) {
         items.forEach((sch, i) => assignDefault(it, i, sch.default));
@@ -2065,8 +2065,8 @@ var require_fast_deep_equal = __commonJS({
         for (i = length; i-- !== 0; )
           if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
         for (i = length; i-- !== 0; ) {
-          var key3 = keys[i];
-          if (!equal(a[key3], b[key3])) return false;
+          var key2 = keys[i];
+          if (!equal(a[key2], b[key2])) return false;
         }
         return true;
       }
@@ -2138,20 +2138,20 @@ var require_json_schema_traverse = __commonJS({
     function _traverse(opts, pre, post, schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex) {
       if (schema && typeof schema == "object" && !Array.isArray(schema)) {
         pre(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
-        for (var key3 in schema) {
-          var sch = schema[key3];
+        for (var key2 in schema) {
+          var sch = schema[key2];
           if (Array.isArray(sch)) {
-            if (key3 in traverse.arrayKeywords) {
+            if (key2 in traverse.arrayKeywords) {
               for (var i = 0; i < sch.length; i++)
-                _traverse(opts, pre, post, sch[i], jsonPtr + "/" + key3 + "/" + i, rootSchema, jsonPtr, key3, schema, i);
+                _traverse(opts, pre, post, sch[i], jsonPtr + "/" + key2 + "/" + i, rootSchema, jsonPtr, key2, schema, i);
             }
-          } else if (key3 in traverse.propsKeywords) {
+          } else if (key2 in traverse.propsKeywords) {
             if (sch && typeof sch == "object") {
               for (var prop in sch)
-                _traverse(opts, pre, post, sch[prop], jsonPtr + "/" + key3 + "/" + escapeJsonPtr(prop), rootSchema, jsonPtr, key3, schema, prop);
+                _traverse(opts, pre, post, sch[prop], jsonPtr + "/" + key2 + "/" + escapeJsonPtr(prop), rootSchema, jsonPtr, key2, schema, prop);
             }
-          } else if (key3 in traverse.keywords || opts.allKeys && !(key3 in traverse.skipKeywords)) {
-            _traverse(opts, pre, post, sch, jsonPtr + "/" + key3, rootSchema, jsonPtr, key3, schema);
+          } else if (key2 in traverse.keywords || opts.allKeys && !(key2 in traverse.skipKeywords)) {
+            _traverse(opts, pre, post, sch, jsonPtr + "/" + key2, rootSchema, jsonPtr, key2, schema);
           }
         }
         post(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
@@ -2208,10 +2208,10 @@ var require_resolve = __commonJS({
       "$dynamicAnchor"
     ]);
     function hasRef(schema) {
-      for (const key3 in schema) {
-        if (REF_KEYWORDS.has(key3))
+      for (const key2 in schema) {
+        if (REF_KEYWORDS.has(key2))
           return true;
-        const sch = schema[key3];
+        const sch = schema[key2];
         if (Array.isArray(sch) && sch.some(hasRef))
           return true;
         if (typeof sch == "object" && hasRef(sch))
@@ -2221,14 +2221,14 @@ var require_resolve = __commonJS({
     }
     function countKeys(schema) {
       let count = 0;
-      for (const key3 in schema) {
-        if (key3 === "$ref")
+      for (const key2 in schema) {
+        if (key2 === "$ref")
           return Infinity;
         count++;
-        if (SIMPLE_INLINED.has(key3))
+        if (SIMPLE_INLINED.has(key2))
           continue;
-        if (typeof schema[key3] == "object") {
-          (0, util_1.eachItem)(schema[key3], (sch) => count += countKeys(sch));
+        if (typeof schema[key2] == "object") {
+          (0, util_1.eachItem)(schema[key2], (sch) => count += countKeys(sch));
         }
         if (count === Infinity)
           return Infinity;
@@ -2417,8 +2417,8 @@ var require_validate = __commonJS({
     function schemaCxtHasRules({ schema, self }) {
       if (typeof schema == "boolean")
         return !schema;
-      for (const key3 in schema)
-        if (self.RULES.all[key3])
+      for (const key2 in schema)
+        if (self.RULES.all[key2])
           return true;
       return false;
     }
@@ -3262,8 +3262,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path16) {
-      let input = path16;
+    function removeDotSegments(path17) {
+      let input = path17;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3672,8 +3672,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path16 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path16 && path16 !== "/" ? path16 : void 0;
+        const path17 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path17 && path17 !== "/" ? path17 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -4456,7 +4456,7 @@ var require_core = __commonJS({
         }
       }
       // Adds schema to the instance
-      addSchema(schema, key3, _meta, _validateSchema = this.opts.validateSchema) {
+      addSchema(schema, key2, _meta, _validateSchema = this.opts.validateSchema) {
         if (Array.isArray(schema)) {
           for (const sch of schema)
             this.addSchema(sch, void 0, _meta, _validateSchema);
@@ -4470,15 +4470,15 @@ var require_core = __commonJS({
             throw new Error(`schema ${schemaId} must be string`);
           }
         }
-        key3 = (0, resolve_1.normalizeId)(key3 || id);
-        this._checkUnique(key3);
-        this.schemas[key3] = this._addSchema(schema, _meta, key3, _validateSchema, true);
+        key2 = (0, resolve_1.normalizeId)(key2 || id);
+        this._checkUnique(key2);
+        this.schemas[key2] = this._addSchema(schema, _meta, key2, _validateSchema, true);
         return this;
       }
       // Add schema that will be used to validate other schemas
       // options in META_IGNORE_OPTIONS are alway set to false
-      addMetaSchema(schema, key3, _validateSchema = this.opts.validateSchema) {
-        this.addSchema(schema, key3, true, _validateSchema);
+      addMetaSchema(schema, key2, _validateSchema = this.opts.validateSchema) {
+        this.addSchema(schema, key2, true, _validateSchema);
         return this;
       }
       //  Validate schema against its meta-schema
@@ -4634,14 +4634,14 @@ var require_core = __commonJS({
           let keywords = metaSchema;
           for (const seg of segments)
             keywords = keywords[seg];
-          for (const key3 in rules) {
-            const rule = rules[key3];
+          for (const key2 in rules) {
+            const rule = rules[key2];
             if (typeof rule != "object")
               continue;
             const { $data } = rule.definition;
-            const schema = keywords[key3];
+            const schema = keywords[key2];
             if ($data && schema)
-              keywords[key3] = schemaOrData(schema);
+              keywords[key2] = schemaOrData(schema);
           }
         }
         return metaSchema;
@@ -4714,10 +4714,10 @@ var require_core = __commonJS({
     Ajv2.MissingRefError = ref_error_1.default;
     exports.default = Ajv2;
     function checkOptions(checkOpts, options, msg, log = "error") {
-      for (const key3 in checkOpts) {
-        const opt = key3;
+      for (const key2 in checkOpts) {
+        const opt = key2;
         if (opt in options)
-          this.logger[log](`${msg}: option ${key3}. ${checkOpts[opt]}`);
+          this.logger[log](`${msg}: option ${key2}. ${checkOpts[opt]}`);
       }
     }
     function getSchEnv(keyRef) {
@@ -4731,8 +4731,8 @@ var require_core = __commonJS({
       if (Array.isArray(optsSchemas))
         this.addSchema(optsSchemas);
       else
-        for (const key3 in optsSchemas)
-          this.addSchema(optsSchemas[key3], key3);
+        for (const key2 in optsSchemas)
+          this.addSchema(optsSchemas[key2], key2);
     }
     function addInitialFormats() {
       for (const name in this.opts.formats) {
@@ -5780,11 +5780,11 @@ var require_dependencies = __commonJS({
     function splitDependencies({ schema }) {
       const propertyDeps = {};
       const schemaDeps = {};
-      for (const key3 in schema) {
-        if (key3 === "__proto__")
+      for (const key2 in schema) {
+        if (key2 === "__proto__")
           continue;
-        const deps = Array.isArray(schema[key3]) ? propertyDeps : schemaDeps;
-        deps[key3] = schema[key3];
+        const deps = Array.isArray(schema[key2]) ? propertyDeps : schemaDeps;
+        deps[key2] = schema[key2];
       }
       return [propertyDeps, schemaDeps];
     }
@@ -5861,13 +5861,13 @@ var require_propertyNames = __commonJS({
         if ((0, util_1.alwaysValidSchema)(it, schema))
           return;
         const valid = gen.name("valid");
-        gen.forIn("key", data, (key3) => {
-          cxt.setParams({ propertyName: key3 });
+        gen.forIn("key", data, (key2) => {
+          cxt.setParams({ propertyName: key2 });
           cxt.subschema({
             keyword: "propertyNames",
-            data: key3,
+            data: key2,
             dataTypes: ["string"],
-            propertyName: key3,
+            propertyName: key2,
             compositeRule: true
           }, valid);
           gen.if((0, codegen_1.not)(valid), () => {
@@ -5916,38 +5916,38 @@ var require_additionalProperties = __commonJS({
         checkAdditionalProperties();
         cxt.ok((0, codegen_1._)`${errsCount} === ${names_1.default.errors}`);
         function checkAdditionalProperties() {
-          gen.forIn("key", data, (key3) => {
+          gen.forIn("key", data, (key2) => {
             if (!props.length && !patProps.length)
-              additionalPropertyCode(key3);
+              additionalPropertyCode(key2);
             else
-              gen.if(isAdditional(key3), () => additionalPropertyCode(key3));
+              gen.if(isAdditional(key2), () => additionalPropertyCode(key2));
           });
         }
-        function isAdditional(key3) {
+        function isAdditional(key2) {
           let definedProp;
           if (props.length > 8) {
             const propsSchema = (0, util_1.schemaRefOrVal)(it, parentSchema.properties, "properties");
-            definedProp = (0, code_1.isOwnProperty)(gen, propsSchema, key3);
+            definedProp = (0, code_1.isOwnProperty)(gen, propsSchema, key2);
           } else if (props.length) {
-            definedProp = (0, codegen_1.or)(...props.map((p) => (0, codegen_1._)`${key3} === ${p}`));
+            definedProp = (0, codegen_1.or)(...props.map((p) => (0, codegen_1._)`${key2} === ${p}`));
           } else {
             definedProp = codegen_1.nil;
           }
           if (patProps.length) {
-            definedProp = (0, codegen_1.or)(definedProp, ...patProps.map((p) => (0, codegen_1._)`${(0, code_1.usePattern)(cxt, p)}.test(${key3})`));
+            definedProp = (0, codegen_1.or)(definedProp, ...patProps.map((p) => (0, codegen_1._)`${(0, code_1.usePattern)(cxt, p)}.test(${key2})`));
           }
           return (0, codegen_1.not)(definedProp);
         }
-        function deleteAdditional(key3) {
-          gen.code((0, codegen_1._)`delete ${data}[${key3}]`);
+        function deleteAdditional(key2) {
+          gen.code((0, codegen_1._)`delete ${data}[${key2}]`);
         }
-        function additionalPropertyCode(key3) {
+        function additionalPropertyCode(key2) {
           if (opts.removeAdditional === "all" || opts.removeAdditional && schema === false) {
-            deleteAdditional(key3);
+            deleteAdditional(key2);
             return;
           }
           if (schema === false) {
-            cxt.setParams({ additionalProperty: key3 });
+            cxt.setParams({ additionalProperty: key2 });
             cxt.error();
             if (!allErrors)
               gen.break();
@@ -5956,22 +5956,22 @@ var require_additionalProperties = __commonJS({
           if (typeof schema == "object" && !(0, util_1.alwaysValidSchema)(it, schema)) {
             const valid = gen.name("valid");
             if (opts.removeAdditional === "failing") {
-              applyAdditionalSchema(key3, valid, false);
+              applyAdditionalSchema(key2, valid, false);
               gen.if((0, codegen_1.not)(valid), () => {
                 cxt.reset();
-                deleteAdditional(key3);
+                deleteAdditional(key2);
               });
             } else {
-              applyAdditionalSchema(key3, valid);
+              applyAdditionalSchema(key2, valid);
               if (!allErrors)
                 gen.if((0, codegen_1.not)(valid), () => gen.break());
             }
           }
         }
-        function applyAdditionalSchema(key3, valid, errors) {
+        function applyAdditionalSchema(key2, valid, errors) {
           const subschema = {
             keyword: "additionalProperties",
-            dataProp: key3,
+            dataProp: key2,
             dataPropType: util_1.Type.Str
           };
           if (errors === false) {
@@ -6096,19 +6096,19 @@ var require_patternProperties = __commonJS({
           }
         }
         function validateProperties(pat) {
-          gen.forIn("key", data, (key3) => {
-            gen.if((0, codegen_1._)`${(0, code_1.usePattern)(cxt, pat)}.test(${key3})`, () => {
+          gen.forIn("key", data, (key2) => {
+            gen.if((0, codegen_1._)`${(0, code_1.usePattern)(cxt, pat)}.test(${key2})`, () => {
               const alwaysValid = alwaysValidPatterns.includes(pat);
               if (!alwaysValid) {
                 cxt.subschema({
                   keyword: "patternProperties",
                   schemaProp: pat,
-                  dataProp: key3,
+                  dataProp: key2,
                   dataPropType: util_2.Type.Str
                 }, valid);
               }
               if (it.opts.unevaluated && props !== true) {
-                gen.assign((0, codegen_1._)`${props}[${key3}]`, true);
+                gen.assign((0, codegen_1._)`${props}[${key2}]`, true);
               } else if (!alwaysValid && !it.allErrors) {
                 gen.if((0, codegen_1.not)(valid), () => gen.break());
               }
@@ -7200,7 +7200,7 @@ var require_dist = __commonJS({
 
 // src/index.ts
 import { readFileSync as readFileSync5, realpathSync } from "node:fs";
-import * as path15 from "node:path";
+import * as path16 from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
@@ -7349,9 +7349,9 @@ var util;
   };
   util2.objectKeys = typeof Object.keys === "function" ? (obj) => Object.keys(obj) : (object4) => {
     const keys = [];
-    for (const key3 in object4) {
-      if (Object.prototype.hasOwnProperty.call(object4, key3)) {
-        keys.push(key3);
+    for (const key2 in object4) {
+      if (Object.prototype.hasOwnProperty.call(object4, key2)) {
+        keys.push(key2);
       }
     }
     return keys;
@@ -7681,8 +7681,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path16, errorMaps, issueData } = params;
-  const fullPath = [...path16, ...issueData.path || []];
+  const { data, path: path17, errorMaps, issueData } = params;
+  const fullPath = [...path17, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7751,10 +7751,10 @@ var ParseStatus = class _ParseStatus {
   static async mergeObjectAsync(status, pairs) {
     const syncPairs = [];
     for (const pair of pairs) {
-      const key3 = await pair.key;
+      const key2 = await pair.key;
       const value = await pair.value;
       syncPairs.push({
-        key: key3,
+        key: key2,
         value
       });
     }
@@ -7763,17 +7763,17 @@ var ParseStatus = class _ParseStatus {
   static mergeObjectSync(status, pairs) {
     const finalObject = {};
     for (const pair of pairs) {
-      const { key: key3, value } = pair;
-      if (key3.status === "aborted")
+      const { key: key2, value } = pair;
+      if (key2.status === "aborted")
         return INVALID;
       if (value.status === "aborted")
         return INVALID;
-      if (key3.status === "dirty")
+      if (key2.status === "dirty")
         status.dirty();
       if (value.status === "dirty")
         status.dirty();
-      if (key3.value !== "__proto__" && (typeof value.value !== "undefined" || pair.alwaysSet)) {
-        finalObject[key3.value] = value.value;
+      if (key2.value !== "__proto__" && (typeof value.value !== "undefined" || pair.alwaysSet)) {
+        finalObject[key2.value] = value.value;
       }
     }
     return { status: status.value, value: finalObject };
@@ -7798,12 +7798,12 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path16, key3) {
+  constructor(parent, value, path17, key2) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path16;
-    this._key = key3;
+    this._path = path17;
+    this._key = key2;
   }
   get path() {
     if (!this._cachedPath.length) {
@@ -9548,9 +9548,9 @@ ZodArray.create = (schema, params) => {
 function deepPartialify(schema) {
   if (schema instanceof ZodObject) {
     const newShape = {};
-    for (const key3 in schema.shape) {
-      const fieldSchema = schema.shape[key3];
-      newShape[key3] = ZodOptional.create(deepPartialify(fieldSchema));
+    for (const key2 in schema.shape) {
+      const fieldSchema = schema.shape[key2];
+      newShape[key2] = ZodOptional.create(deepPartialify(fieldSchema));
     }
     return new ZodObject({
       ...schema._def,
@@ -9601,29 +9601,29 @@ var ZodObject = class _ZodObject extends ZodType {
     const { shape, keys: shapeKeys } = this._getCached();
     const extraKeys = [];
     if (!(this._def.catchall instanceof ZodNever && this._def.unknownKeys === "strip")) {
-      for (const key3 in ctx.data) {
-        if (!shapeKeys.includes(key3)) {
-          extraKeys.push(key3);
+      for (const key2 in ctx.data) {
+        if (!shapeKeys.includes(key2)) {
+          extraKeys.push(key2);
         }
       }
     }
     const pairs = [];
-    for (const key3 of shapeKeys) {
-      const keyValidator = shape[key3];
-      const value = ctx.data[key3];
+    for (const key2 of shapeKeys) {
+      const keyValidator = shape[key2];
+      const value = ctx.data[key2];
       pairs.push({
-        key: { status: "valid", value: key3 },
-        value: keyValidator._parse(new ParseInputLazyPath(ctx, value, ctx.path, key3)),
-        alwaysSet: key3 in ctx.data
+        key: { status: "valid", value: key2 },
+        value: keyValidator._parse(new ParseInputLazyPath(ctx, value, ctx.path, key2)),
+        alwaysSet: key2 in ctx.data
       });
     }
     if (this._def.catchall instanceof ZodNever) {
       const unknownKeys = this._def.unknownKeys;
       if (unknownKeys === "passthrough") {
-        for (const key3 of extraKeys) {
+        for (const key2 of extraKeys) {
           pairs.push({
-            key: { status: "valid", value: key3 },
-            value: { status: "valid", value: ctx.data[key3] }
+            key: { status: "valid", value: key2 },
+            value: { status: "valid", value: ctx.data[key2] }
           });
         }
       } else if (unknownKeys === "strict") {
@@ -9640,15 +9640,15 @@ var ZodObject = class _ZodObject extends ZodType {
       }
     } else {
       const catchall = this._def.catchall;
-      for (const key3 of extraKeys) {
-        const value = ctx.data[key3];
+      for (const key2 of extraKeys) {
+        const value = ctx.data[key2];
         pairs.push({
-          key: { status: "valid", value: key3 },
+          key: { status: "valid", value: key2 },
           value: catchall._parse(
-            new ParseInputLazyPath(ctx, value, ctx.path, key3)
+            new ParseInputLazyPath(ctx, value, ctx.path, key2)
             //, ctx.child(key), value, getParsedType(value)
           ),
-          alwaysSet: key3 in ctx.data
+          alwaysSet: key2 in ctx.data
         });
       }
     }
@@ -9656,10 +9656,10 @@ var ZodObject = class _ZodObject extends ZodType {
       return Promise.resolve().then(async () => {
         const syncPairs = [];
         for (const pair of pairs) {
-          const key3 = await pair.key;
+          const key2 = await pair.key;
           const value = await pair.value;
           syncPairs.push({
-            key: key3,
+            key: key2,
             value,
             alwaysSet: pair.alwaysSet
           });
@@ -9784,8 +9784,8 @@ var ZodObject = class _ZodObject extends ZodType {
   //   }) as any;
   //   return merged;
   // }
-  setKey(key3, schema) {
-    return this.augment({ [key3]: schema });
+  setKey(key2, schema) {
+    return this.augment({ [key2]: schema });
   }
   // merge<Incoming extends AnyZodObject>(
   //   merging: Incoming
@@ -9816,9 +9816,9 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   pick(mask) {
     const shape = {};
-    for (const key3 of util.objectKeys(mask)) {
-      if (mask[key3] && this.shape[key3]) {
-        shape[key3] = this.shape[key3];
+    for (const key2 of util.objectKeys(mask)) {
+      if (mask[key2] && this.shape[key2]) {
+        shape[key2] = this.shape[key2];
       }
     }
     return new _ZodObject({
@@ -9828,9 +9828,9 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   omit(mask) {
     const shape = {};
-    for (const key3 of util.objectKeys(this.shape)) {
-      if (!mask[key3]) {
-        shape[key3] = this.shape[key3];
+    for (const key2 of util.objectKeys(this.shape)) {
+      if (!mask[key2]) {
+        shape[key2] = this.shape[key2];
       }
     }
     return new _ZodObject({
@@ -9846,12 +9846,12 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   partial(mask) {
     const newShape = {};
-    for (const key3 of util.objectKeys(this.shape)) {
-      const fieldSchema = this.shape[key3];
-      if (mask && !mask[key3]) {
-        newShape[key3] = fieldSchema;
+    for (const key2 of util.objectKeys(this.shape)) {
+      const fieldSchema = this.shape[key2];
+      if (mask && !mask[key2]) {
+        newShape[key2] = fieldSchema;
       } else {
-        newShape[key3] = fieldSchema.optional();
+        newShape[key2] = fieldSchema.optional();
       }
     }
     return new _ZodObject({
@@ -9861,16 +9861,16 @@ var ZodObject = class _ZodObject extends ZodType {
   }
   required(mask) {
     const newShape = {};
-    for (const key3 of util.objectKeys(this.shape)) {
-      if (mask && !mask[key3]) {
-        newShape[key3] = this.shape[key3];
+    for (const key2 of util.objectKeys(this.shape)) {
+      if (mask && !mask[key2]) {
+        newShape[key2] = this.shape[key2];
       } else {
-        const fieldSchema = this.shape[key3];
+        const fieldSchema = this.shape[key2];
         let newField = fieldSchema;
         while (newField instanceof ZodOptional) {
           newField = newField._def.innerType;
         }
-        newShape[key3] = newField;
+        newShape[key2] = newField;
       }
     }
     return new _ZodObject({
@@ -10114,14 +10114,14 @@ function mergeValues(a, b) {
     return { valid: true, data: a };
   } else if (aType === ZodParsedType.object && bType === ZodParsedType.object) {
     const bKeys = util.objectKeys(b);
-    const sharedKeys = util.objectKeys(a).filter((key3) => bKeys.indexOf(key3) !== -1);
+    const sharedKeys = util.objectKeys(a).filter((key2) => bKeys.indexOf(key2) !== -1);
     const newObj = { ...a, ...b };
-    for (const key3 of sharedKeys) {
-      const sharedValue = mergeValues(a[key3], b[key3]);
+    for (const key2 of sharedKeys) {
+      const sharedValue = mergeValues(a[key2], b[key2]);
       if (!sharedValue.valid) {
         return { valid: false };
       }
-      newObj[key3] = sharedValue.data;
+      newObj[key2] = sharedValue.data;
     }
     return { valid: true, data: newObj };
   } else if (aType === ZodParsedType.array && bType === ZodParsedType.array) {
@@ -10285,11 +10285,11 @@ var ZodRecord = class _ZodRecord extends ZodType {
     const pairs = [];
     const keyType = this._def.keyType;
     const valueType = this._def.valueType;
-    for (const key3 in ctx.data) {
+    for (const key2 in ctx.data) {
       pairs.push({
-        key: keyType._parse(new ParseInputLazyPath(ctx, key3, ctx.path, key3)),
-        value: valueType._parse(new ParseInputLazyPath(ctx, ctx.data[key3], ctx.path, key3)),
-        alwaysSet: key3 in ctx.data
+        key: keyType._parse(new ParseInputLazyPath(ctx, key2, ctx.path, key2)),
+        value: valueType._parse(new ParseInputLazyPath(ctx, ctx.data[key2], ctx.path, key2)),
+        alwaysSet: key2 in ctx.data
       });
     }
     if (ctx.common.async) {
@@ -10337,9 +10337,9 @@ var ZodMap = class extends ZodType {
     }
     const keyType = this._def.keyType;
     const valueType = this._def.valueType;
-    const pairs = [...ctx.data.entries()].map(([key3, value], index) => {
+    const pairs = [...ctx.data.entries()].map(([key2, value], index) => {
       return {
-        key: keyType._parse(new ParseInputLazyPath(ctx, key3, ctx.path, [index, "key"])),
+        key: keyType._parse(new ParseInputLazyPath(ctx, key2, ctx.path, [index, "key"])),
         value: valueType._parse(new ParseInputLazyPath(ctx, value, ctx.path, [index, "value"]))
       };
     });
@@ -10347,30 +10347,30 @@ var ZodMap = class extends ZodType {
       const finalMap = /* @__PURE__ */ new Map();
       return Promise.resolve().then(async () => {
         for (const pair of pairs) {
-          const key3 = await pair.key;
+          const key2 = await pair.key;
           const value = await pair.value;
-          if (key3.status === "aborted" || value.status === "aborted") {
+          if (key2.status === "aborted" || value.status === "aborted") {
             return INVALID;
           }
-          if (key3.status === "dirty" || value.status === "dirty") {
+          if (key2.status === "dirty" || value.status === "dirty") {
             status.dirty();
           }
-          finalMap.set(key3.value, value.value);
+          finalMap.set(key2.value, value.value);
         }
         return { status: status.value, value: finalMap };
       });
     } else {
       const finalMap = /* @__PURE__ */ new Map();
       for (const pair of pairs) {
-        const key3 = pair.key;
+        const key2 = pair.key;
         const value = pair.value;
-        if (key3.status === "aborted" || value.status === "aborted") {
+        if (key2.status === "aborted" || value.status === "aborted") {
           return INVALID;
         }
-        if (key3.status === "dirty" || value.status === "dirty") {
+        if (key2.status === "dirty" || value.status === "dirty") {
           status.dirty();
         }
-        finalMap.set(key3.value, value.value);
+        finalMap.set(key2.value, value.value);
       }
       return { status: status.value, value: finalMap };
     }
@@ -11411,19 +11411,19 @@ function floatSafeRemainder2(val, step) {
   const stepInt = Number.parseInt(step.toFixed(decCount).replace(".", ""));
   return valInt % stepInt / 10 ** decCount;
 }
-function defineLazy(object4, key3, getter) {
+function defineLazy(object4, key2, getter) {
   const set = false;
-  Object.defineProperty(object4, key3, {
+  Object.defineProperty(object4, key2, {
     get() {
       if (!set) {
         const value = getter();
-        object4[key3] = value;
+        object4[key2] = value;
         return value;
       }
       throw new Error("cached value already set");
     },
     set(v) {
-      Object.defineProperty(object4, key3, {
+      Object.defineProperty(object4, key2, {
         value: v
         // configurable: true,
       });
@@ -11439,14 +11439,14 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path16) {
-  if (!path16)
+function getElementAtPath(obj, path17) {
+  if (!path17)
     return obj;
-  return path16.reduce((acc, key3) => acc?.[key3], obj);
+  return path17.reduce((acc, key2) => acc?.[key2], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
-  const promises = keys.map((key3) => promisesObj[key3]);
+  const promises = keys.map((key2) => promisesObj[key2]);
   return Promise.all(promises).then((results) => {
     const resolvedObj = {};
     for (let i = 0; i < keys.length; i++) {
@@ -11499,8 +11499,8 @@ function isPlainObject(o) {
 }
 function numKeys(data) {
   let keyCount = 0;
-  for (const key3 in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key3)) {
+  for (const key2 in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key2)) {
       keyCount++;
     }
   }
@@ -11636,13 +11636,13 @@ var BIGINT_FORMAT_RANGES = {
 function pick(schema, mask) {
   const newShape = {};
   const currDef = schema._zod.def;
-  for (const key3 in mask) {
-    if (!(key3 in currDef.shape)) {
-      throw new Error(`Unrecognized key: "${key3}"`);
+  for (const key2 in mask) {
+    if (!(key2 in currDef.shape)) {
+      throw new Error(`Unrecognized key: "${key2}"`);
     }
-    if (!mask[key3])
+    if (!mask[key2])
       continue;
-    newShape[key3] = currDef.shape[key3];
+    newShape[key2] = currDef.shape[key2];
   }
   return clone(schema, {
     ...schema._zod.def,
@@ -11653,13 +11653,13 @@ function pick(schema, mask) {
 function omit(schema, mask) {
   const newShape = { ...schema._zod.def.shape };
   const currDef = schema._zod.def;
-  for (const key3 in mask) {
-    if (!(key3 in currDef.shape)) {
-      throw new Error(`Unrecognized key: "${key3}"`);
+  for (const key2 in mask) {
+    if (!(key2 in currDef.shape)) {
+      throw new Error(`Unrecognized key: "${key2}"`);
     }
-    if (!mask[key3])
+    if (!mask[key2])
       continue;
-    delete newShape[key3];
+    delete newShape[key2];
   }
   return clone(schema, {
     ...schema._zod.def,
@@ -11700,23 +11700,23 @@ function partial(Class2, schema, mask) {
   const oldShape = schema._zod.def.shape;
   const shape = { ...oldShape };
   if (mask) {
-    for (const key3 in mask) {
-      if (!(key3 in oldShape)) {
-        throw new Error(`Unrecognized key: "${key3}"`);
+    for (const key2 in mask) {
+      if (!(key2 in oldShape)) {
+        throw new Error(`Unrecognized key: "${key2}"`);
       }
-      if (!mask[key3])
+      if (!mask[key2])
         continue;
-      shape[key3] = Class2 ? new Class2({
+      shape[key2] = Class2 ? new Class2({
         type: "optional",
-        innerType: oldShape[key3]
-      }) : oldShape[key3];
+        innerType: oldShape[key2]
+      }) : oldShape[key2];
     }
   } else {
-    for (const key3 in oldShape) {
-      shape[key3] = Class2 ? new Class2({
+    for (const key2 in oldShape) {
+      shape[key2] = Class2 ? new Class2({
         type: "optional",
-        innerType: oldShape[key3]
-      }) : oldShape[key3];
+        innerType: oldShape[key2]
+      }) : oldShape[key2];
     }
   }
   return clone(schema, {
@@ -11729,22 +11729,22 @@ function required(Class2, schema, mask) {
   const oldShape = schema._zod.def.shape;
   const shape = { ...oldShape };
   if (mask) {
-    for (const key3 in mask) {
-      if (!(key3 in shape)) {
-        throw new Error(`Unrecognized key: "${key3}"`);
+    for (const key2 in mask) {
+      if (!(key2 in shape)) {
+        throw new Error(`Unrecognized key: "${key2}"`);
       }
-      if (!mask[key3])
+      if (!mask[key2])
         continue;
-      shape[key3] = new Class2({
+      shape[key2] = new Class2({
         type: "nonoptional",
-        innerType: oldShape[key3]
+        innerType: oldShape[key2]
       });
     }
   } else {
-    for (const key3 in oldShape) {
-      shape[key3] = new Class2({
+    for (const key2 in oldShape) {
+      shape[key2] = new Class2({
         type: "nonoptional",
-        innerType: oldShape[key3]
+        innerType: oldShape[key2]
       });
     }
   }
@@ -11762,11 +11762,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path16, issues) {
+function prefixIssues(path17, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path16);
+    iss.path.unshift(path17);
     return iss;
   });
 }
@@ -12942,28 +12942,28 @@ var $ZodArray = /* @__PURE__ */ $constructor("$ZodArray", (inst, def) => {
     return payload;
   };
 });
-function handleObjectResult(result, final, key3) {
+function handleObjectResult(result, final, key2) {
   if (result.issues.length) {
-    final.issues.push(...prefixIssues(key3, result.issues));
+    final.issues.push(...prefixIssues(key2, result.issues));
   }
-  final.value[key3] = result.value;
+  final.value[key2] = result.value;
 }
-function handleOptionalObjectResult(result, final, key3, input) {
+function handleOptionalObjectResult(result, final, key2, input) {
   if (result.issues.length) {
-    if (input[key3] === void 0) {
-      if (key3 in input) {
-        final.value[key3] = void 0;
+    if (input[key2] === void 0) {
+      if (key2 in input) {
+        final.value[key2] = void 0;
       } else {
-        final.value[key3] = result.value;
+        final.value[key2] = result.value;
       }
     } else {
-      final.issues.push(...prefixIssues(key3, result.issues));
+      final.issues.push(...prefixIssues(key2, result.issues));
     }
   } else if (result.value === void 0) {
-    if (key3 in input)
-      final.value[key3] = void 0;
+    if (key2 in input)
+      final.value[key2] = void 0;
   } else {
-    final.value[key3] = result.value;
+    final.value[key2] = result.value;
   }
 }
 var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
@@ -12987,12 +12987,12 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
   defineLazy(inst._zod, "propValues", () => {
     const shape = def.shape;
     const propValues = {};
-    for (const key3 in shape) {
-      const field = shape[key3]._zod;
+    for (const key2 in shape) {
+      const field = shape[key2]._zod;
       if (field.values) {
-        propValues[key3] ?? (propValues[key3] = /* @__PURE__ */ new Set());
+        propValues[key2] ?? (propValues[key2] = /* @__PURE__ */ new Set());
         for (const v of field.values)
-          propValues[key3].add(v);
+          propValues[key2].add(v);
       }
     }
     return propValues;
@@ -13000,22 +13000,22 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
   const generateFastpass = (shape) => {
     const doc = new Doc(["shape", "payload", "ctx"]);
     const normalized = _normalized.value;
-    const parseStr = (key3) => {
-      const k = esc(key3);
+    const parseStr = (key2) => {
+      const k = esc(key2);
       return `shape[${k}]._zod.run({ value: input[${k}], issues: [] }, ctx)`;
     };
     doc.write(`const input = payload.value;`);
     const ids = /* @__PURE__ */ Object.create(null);
     let counter = 0;
-    for (const key3 of normalized.keys) {
-      ids[key3] = `key_${counter++}`;
+    for (const key2 of normalized.keys) {
+      ids[key2] = `key_${counter++}`;
     }
     doc.write(`const newResult = {}`);
-    for (const key3 of normalized.keys) {
-      if (normalized.optionalKeys.has(key3)) {
-        const id = ids[key3];
-        doc.write(`const ${id} = ${parseStr(key3)};`);
-        const k = esc(key3);
+    for (const key2 of normalized.keys) {
+      if (normalized.optionalKeys.has(key2)) {
+        const id = ids[key2];
+        doc.write(`const ${id} = ${parseStr(key2)};`);
+        const k = esc(key2);
         doc.write(`
         if (${id}.issues.length) {
           if (input[${k}] === undefined) {
@@ -13037,14 +13037,14 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
         }
         `);
       } else {
-        const id = ids[key3];
-        doc.write(`const ${id} = ${parseStr(key3)};`);
+        const id = ids[key2];
+        doc.write(`const ${id} = ${parseStr(key2)};`);
         doc.write(`
           if (${id}.issues.length) payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
             ...iss,
-            path: iss.path ? [${esc(key3)}, ...iss.path] : [${esc(key3)}]
+            path: iss.path ? [${esc(key2)}, ...iss.path] : [${esc(key2)}]
           })));`);
-        doc.write(`newResult[${esc(key3)}] = ${id}.value`);
+        doc.write(`newResult[${esc(key2)}] = ${id}.value`);
       }
     }
     doc.write(`payload.value = newResult;`);
@@ -13079,16 +13079,16 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
     } else {
       payload.value = {};
       const shape = value.shape;
-      for (const key3 of value.keys) {
-        const el = shape[key3];
-        const r = el._zod.run({ value: input[key3], issues: [] }, ctx);
+      for (const key2 of value.keys) {
+        const el = shape[key2];
+        const r = el._zod.run({ value: input[key2], issues: [] }, ctx);
         const isOptional = el._zod.optin === "optional" && el._zod.optout === "optional";
         if (r instanceof Promise) {
-          proms.push(r.then((r2) => isOptional ? handleOptionalObjectResult(r2, payload, key3, input) : handleObjectResult(r2, payload, key3)));
+          proms.push(r.then((r2) => isOptional ? handleOptionalObjectResult(r2, payload, key2, input) : handleObjectResult(r2, payload, key2)));
         } else if (isOptional) {
-          handleOptionalObjectResult(r, payload, key3, input);
+          handleOptionalObjectResult(r, payload, key2, input);
         } else {
-          handleObjectResult(r, payload, key3);
+          handleObjectResult(r, payload, key2);
         }
       }
     }
@@ -13099,18 +13099,18 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
     const keySet = value.keySet;
     const _catchall = catchall._zod;
     const t = _catchall.def.type;
-    for (const key3 of Object.keys(input)) {
-      if (keySet.has(key3))
+    for (const key2 of Object.keys(input)) {
+      if (keySet.has(key2))
         continue;
       if (t === "never") {
-        unrecognized.push(key3);
+        unrecognized.push(key2);
         continue;
       }
-      const r = _catchall.run({ value: input[key3], issues: [] }, ctx);
+      const r = _catchall.run({ value: input[key2], issues: [] }, ctx);
       if (r instanceof Promise) {
-        proms.push(r.then((r2) => handleObjectResult(r2, payload, key3)));
+        proms.push(r.then((r2) => handleObjectResult(r2, payload, key2)));
       } else {
-        handleObjectResult(r, payload, key3);
+        handleObjectResult(r, payload, key2);
       }
     }
     if (unrecognized.length) {
@@ -13272,17 +13272,17 @@ function mergeValues2(a, b) {
   }
   if (isPlainObject(a) && isPlainObject(b)) {
     const bKeys = Object.keys(b);
-    const sharedKeys = Object.keys(a).filter((key3) => bKeys.indexOf(key3) !== -1);
+    const sharedKeys = Object.keys(a).filter((key2) => bKeys.indexOf(key2) !== -1);
     const newObj = { ...a, ...b };
-    for (const key3 of sharedKeys) {
-      const sharedValue = mergeValues2(a[key3], b[key3]);
+    for (const key2 of sharedKeys) {
+      const sharedValue = mergeValues2(a[key2], b[key2]);
       if (!sharedValue.valid) {
         return {
           valid: false,
-          mergeErrorPath: [key3, ...sharedValue.mergeErrorPath]
+          mergeErrorPath: [key2, ...sharedValue.mergeErrorPath]
         };
       }
-      newObj[key3] = sharedValue.data;
+      newObj[key2] = sharedValue.data;
     }
     return { valid: true, data: newObj };
   }
@@ -13340,29 +13340,29 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
     if (def.keyType._zod.values) {
       const values = def.keyType._zod.values;
       payload.value = {};
-      for (const key3 of values) {
-        if (typeof key3 === "string" || typeof key3 === "number" || typeof key3 === "symbol") {
-          const result = def.valueType._zod.run({ value: input[key3], issues: [] }, ctx);
+      for (const key2 of values) {
+        if (typeof key2 === "string" || typeof key2 === "number" || typeof key2 === "symbol") {
+          const result = def.valueType._zod.run({ value: input[key2], issues: [] }, ctx);
           if (result instanceof Promise) {
             proms.push(result.then((result2) => {
               if (result2.issues.length) {
-                payload.issues.push(...prefixIssues(key3, result2.issues));
+                payload.issues.push(...prefixIssues(key2, result2.issues));
               }
-              payload.value[key3] = result2.value;
+              payload.value[key2] = result2.value;
             }));
           } else {
             if (result.issues.length) {
-              payload.issues.push(...prefixIssues(key3, result.issues));
+              payload.issues.push(...prefixIssues(key2, result.issues));
             }
-            payload.value[key3] = result.value;
+            payload.value[key2] = result.value;
           }
         }
       }
       let unrecognized;
-      for (const key3 in input) {
-        if (!values.has(key3)) {
+      for (const key2 in input) {
+        if (!values.has(key2)) {
           unrecognized = unrecognized ?? [];
-          unrecognized.push(key3);
+          unrecognized.push(key2);
         }
       }
       if (unrecognized && unrecognized.length > 0) {
@@ -13375,10 +13375,10 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
       }
     } else {
       payload.value = {};
-      for (const key3 of Reflect.ownKeys(input)) {
-        if (key3 === "__proto__")
+      for (const key2 of Reflect.ownKeys(input)) {
+        if (key2 === "__proto__")
           continue;
-        const keyResult = def.keyType._zod.run({ value: key3, issues: [] }, ctx);
+        const keyResult = def.keyType._zod.run({ value: key2, issues: [] }, ctx);
         if (keyResult instanceof Promise) {
           throw new Error("Async schemas not supported in object keys currently");
         }
@@ -13387,24 +13387,24 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
             origin: "record",
             code: "invalid_key",
             issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config())),
-            input: key3,
-            path: [key3],
+            input: key2,
+            path: [key2],
             inst
           });
           payload.value[keyResult.value] = keyResult.value;
           continue;
         }
-        const result = def.valueType._zod.run({ value: input[key3], issues: [] }, ctx);
+        const result = def.valueType._zod.run({ value: input[key2], issues: [] }, ctx);
         if (result instanceof Promise) {
           proms.push(result.then((result2) => {
             if (result2.issues.length) {
-              payload.issues.push(...prefixIssues(key3, result2.issues));
+              payload.issues.push(...prefixIssues(key2, result2.issues));
             }
             payload.value[keyResult.value] = result2.value;
           }));
         } else {
           if (result.issues.length) {
-            payload.issues.push(...prefixIssues(key3, result.issues));
+            payload.issues.push(...prefixIssues(key2, result.issues));
           }
           payload.value[keyResult.value] = result.value;
         }
@@ -14459,15 +14459,15 @@ var JSONSchemaGenerator = class {
             json.type = "object";
             json.properties = {};
             const shape = def.shape;
-            for (const key3 in shape) {
-              json.properties[key3] = this.process(shape[key3], {
+            for (const key2 in shape) {
+              json.properties[key2] = this.process(shape[key2], {
                 ...params,
-                path: [...params.path, "properties", key3]
+                path: [...params.path, "properties", key2]
               });
             }
             const allKeys = new Set(Object.keys(shape));
-            const requiredKeys = new Set([...allKeys].filter((key3) => {
-              const v = def.shape[key3]._zod;
+            const requiredKeys = new Set([...allKeys].filter((key2) => {
+              const v = def.shape[key2]._zod;
               if (this.io === "input") {
                 return v.optin === void 0;
               } else {
@@ -14801,8 +14801,8 @@ var JSONSchemaGenerator = class {
       if (defId)
         seen.defId = defId;
       const schema2 = seen.schema;
-      for (const key3 in schema2) {
-        delete schema2[key3];
+      for (const key2 in schema2) {
+        delete schema2[key2];
       }
       schema2.$ref = ref;
     };
@@ -14929,8 +14929,8 @@ function toJSONSchema(input, _params) {
       defs
     };
     for (const entry of input._idmap.entries()) {
-      const [key3, schema] = entry;
-      schemas[key3] = gen2.emit(schema, {
+      const [key2, schema] = entry;
+      schemas[key2] = gen2.emit(schema, {
         ..._params,
         external
       });
@@ -14977,8 +14977,8 @@ function isTransforming(_schema, _ctx) {
       return isTransforming(def.element, ctx);
     }
     case "object": {
-      for (const key3 in def.shape) {
-        if (isTransforming(def.shape[key3], ctx))
+      for (const key2 in def.shape) {
+        if (isTransforming(def.shape[key2], ctx))
           return true;
       }
       return false;
@@ -15177,11 +15177,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path16) {
-  if (path16.length === 0) {
+function getDotPath(path17) {
+  if (path17.length === 0) {
     return "object root";
   }
-  return path16.reduce((acc, seg, index) => {
+  return path17.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -17540,19 +17540,19 @@ var getRefs = (options) => {
 };
 
 // ../../node_modules/zod-to-json-schema/dist/esm/errorMessages.js
-function addErrorMessage(res, key3, errorMessage, refs) {
+function addErrorMessage(res, key2, errorMessage, refs) {
   if (!refs?.errorMessages)
     return;
   if (errorMessage) {
     res.errorMessage = {
       ...res.errorMessage,
-      [key3]: errorMessage
+      [key2]: errorMessage
     };
   }
 }
-function setResponseValueAndErrors(res, key3, value, errorMessage, refs) {
-  res[key3] = value;
-  addErrorMessage(res, key3, errorMessage, refs);
+function setResponseValueAndErrors(res, key2, value, errorMessage, refs) {
+  res[key2] = value;
+  addErrorMessage(res, key2, errorMessage, refs);
 }
 
 // ../../node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
@@ -18144,11 +18144,11 @@ function parseRecordDef(def, refs) {
     return {
       type: "object",
       required: def.keyType._def.values,
-      properties: def.keyType._def.values.reduce((acc, key3) => ({
+      properties: def.keyType._def.values.reduce((acc, key2) => ({
         ...acc,
-        [key3]: parseDef(def.valueType._def, {
+        [key2]: parseDef(def.valueType._def, {
           ...refs,
-          currentPath: [...refs.currentPath, "properties", key3]
+          currentPath: [...refs.currentPath, "properties", key2]
         }) ?? parseAnyDef(refs)
       }), {}),
       additionalProperties: refs.rejectedAdditionalProperties
@@ -18215,10 +18215,10 @@ function parseMapDef(def, refs) {
 // ../../node_modules/zod-to-json-schema/dist/esm/parsers/nativeEnum.js
 function parseNativeEnumDef(def) {
   const object4 = def.values;
-  const actualKeys = Object.keys(def.values).filter((key3) => {
-    return typeof object4[object4[key3]] !== "number";
+  const actualKeys = Object.keys(def.values).filter((key2) => {
+    return typeof object4[object4[key2]] !== "number";
   });
-  const actualValues = actualKeys.map((key3) => object4[key3]);
+  const actualValues = actualKeys.map((key2) => object4[key2]);
   const parsedTypes = Array.from(new Set(actualValues.map((values) => typeof values)));
   return {
     type: parsedTypes.length === 1 ? parsedTypes[0] === "string" ? "string" : "number" : ["string", "number"],
@@ -19749,8 +19749,8 @@ function isPlainObject2(value) {
 }
 function mergeCapabilities(base, additional) {
   const result = { ...base };
-  for (const key3 in additional) {
-    const k = key3;
+  for (const key2 in additional) {
+    const k = key2;
     const addValue = additional[k];
     if (addValue === void 0)
       continue;
@@ -21656,15 +21656,15 @@ function failureSource(evidence, failure) {
     return sourceForBehavior(evidence, failure.behaviorId) ?? ".";
   return ".";
 }
-function clusterFinding(key3, failures) {
+function clusterFinding(key2, failures) {
   const testIds = [...new Set(failures.map((failure) => failure.testId))];
   if (testIds.length < 2) return [];
-  const [path16, signature, inputClass] = key3.split("|");
+  const [path17, signature, inputClass] = key2.split("|");
   return [
     makeFinding({
       heuristic: "T7",
       rule: "failure-pattern",
-      path: path16 ?? ".",
+      path: path17 ?? ".",
       message: `${testIds.length} failures share ${signature} for ${inputClass}`,
       remediation: "Inspect the shared input and affected path before fixing tests one by one.",
       evidence: { testIds, signature, inputClass }
@@ -21672,8 +21672,8 @@ function clusterFinding(key3, failures) {
   ];
 }
 function addFailure(clusters, evidence, failure) {
-  const key3 = `${failureSource(evidence, failure)}|${failure.signature}|${failure.inputClass}`;
-  clusters.set(key3, [...clusters.get(key3) ?? [], failure]);
+  const key2 = `${failureSource(evidence, failure)}|${failure.signature}|${failure.inputClass}`;
+  clusters.set(key2, [...clusters.get(key2) ?? [], failure]);
 }
 function groupedFailures(evidence) {
   const clusters = /* @__PURE__ */ new Map();
@@ -21684,7 +21684,7 @@ function groupedFailures(evidence) {
 function failureClusters(evidence) {
   const clusters = groupedFailures(evidence);
   return [...clusters.entries()].flatMap(
-    ([key3, failures]) => clusterFinding(key3, failures)
+    ([key2, failures]) => clusterFinding(key2, failures)
   );
 }
 function coveragePatterns(evidence) {
@@ -21788,7 +21788,7 @@ var METRIC_KEYS = [
 function emptyMetrics() {
   return {
     languages: [],
-    totals: Object.fromEntries(METRIC_KEYS.map((key3) => [key3, 0])),
+    totals: Object.fromEntries(METRIC_KEYS.map((key2) => [key2, 0])),
     coverage: { observedSourceCount: 0, gaps: [], uncovered: {} },
     timing: {
       measuredTestCount: 0,
@@ -21862,9 +21862,9 @@ function languageMetrics(evidence) {
 }
 function sumMetrics(metrics) {
   return Object.fromEntries(
-    METRIC_KEYS.map((key3) => [
-      key3,
-      metrics.reduce((sum, item) => sum + item[key3], 0)
+    METRIC_KEYS.map((key2) => [
+      key2,
+      metrics.reduce((sum, item) => sum + item[key2], 0)
     ])
   );
 }
@@ -22421,7 +22421,7 @@ function parseCheckArguments(args) {
 // src/commit-gate/cli-command-acknowledge.ts
 import { execFileSync as execFileSync5 } from "node:child_process";
 import { mkdirSync, readFileSync as readFileSync2, writeFileSync } from "node:fs";
-import * as path11 from "node:path";
+import * as path12 from "node:path";
 
 // src/commit-gate/fingerprint.ts
 import { createHash } from "node:crypto";
@@ -22430,7 +22430,7 @@ import { createHash } from "node:crypto";
 function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value !== null && typeof value === "object") {
-    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key3, item]) => `${JSON.stringify(key3)}:${canonical(item)}`).join(",")}}`;
+    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key2, item]) => `${JSON.stringify(key2)}:${canonical(item)}`).join(",")}}`;
   }
   return JSON.stringify(value);
 }
@@ -22467,10 +22467,10 @@ function nonEmptyString(value, location) {
     throw new Error(`${location} must be a non-empty string`);
   return value.trim();
 }
-function recordValue(record3, key3, index) {
+function recordValue(record3, key2, index) {
   return nonEmptyString(
-    record3[key3],
-    `${DECISION_RECORD_PATH}[${index}].${key3}`
+    record3[key2],
+    `${DECISION_RECORD_PATH}[${index}].${key2}`
   );
 }
 function parseArchitectureAcknowledgements(source) {
@@ -22489,7 +22489,7 @@ function parseRecord(item, index) {
     throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
   const record3 = item;
   const allowed = ["findingId", "fingerprint", "reason", "author", "time"];
-  const unexpected = Object.keys(record3).find((key3) => !allowed.includes(key3));
+  const unexpected = Object.keys(record3).find((key2) => !allowed.includes(key2));
   if (unexpected)
     throw new Error(
       `${DECISION_RECORD_PATH}[${index}].${unexpected} is not supported`
@@ -22512,10 +22512,9 @@ function appendArchitectureAcknowledgement(source, record3) {
 import { execFileSync as execFileSync3 } from "node:child_process";
 
 // src/commit-gate/cli-tree-scanner.ts
-import { execFileSync as execFileSync2 } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync as rmSync2 } from "node:fs";
 import { tmpdir } from "node:os";
-import * as path4 from "node:path";
+import * as path5 from "node:path";
 
 // src/scanner.ts
 import { execFileSync } from "node:child_process";
@@ -22598,6 +22597,30 @@ function runScan(request, run = execFileSync) {
   }
 }
 
+// src/commit-gate/cli-tree-materialize.ts
+import { execFileSync as execFileSync2 } from "node:child_process";
+import { rmSync } from "node:fs";
+import * as path4 from "node:path";
+function materializeTree(root2, ref, target) {
+  if (ref === "index") {
+    execFileSync2(
+      "git",
+      ["checkout-index", "--all", `--prefix=${target}${path4.sep}`],
+      { cwd: root2, stdio: "ignore" }
+    );
+    return;
+  }
+  const indexPath = path4.join(target, "index");
+  const env = { ...process.env, GIT_INDEX_FILE: indexPath };
+  execFileSync2("git", ["read-tree", ref], { cwd: root2, env, stdio: "ignore" });
+  execFileSync2(
+    "git",
+    ["checkout-index", "--all", `--prefix=${target}${path4.sep}`],
+    { cwd: root2, env, stdio: "ignore" }
+  );
+  rmSync(indexPath, { force: true });
+}
+
 // src/commit-gate/cli-tree-scanner.ts
 var RATCHET_RULES = [
   "file-length",
@@ -22635,29 +22658,10 @@ function commitScanRequest(root2) {
     failOn: "regression"
   };
 }
-function materializeTree(root2, ref, target) {
-  if (ref === "index") {
-    execFileSync2(
-      "git",
-      ["checkout-index", "--all", `--prefix=${target}${path4.sep}`],
-      { cwd: root2, stdio: "ignore" }
-    );
-    return;
-  }
-  const indexPath = path4.join(target, "index");
-  const env = { ...process.env, GIT_INDEX_FILE: indexPath };
-  execFileSync2("git", ["read-tree", ref], { cwd: root2, env, stdio: "ignore" });
-  execFileSync2(
-    "git",
-    ["checkout-index", "--all", `--prefix=${target}${path4.sep}`],
-    { cwd: root2, env, stdio: "ignore" }
-  );
-  rmSync(indexPath, { force: true });
-}
 function scannerEvidence(root2, ref) {
   let stagedRoot;
   try {
-    stagedRoot = mkdtempSync(path4.join(tmpdir(), "quality-guard-index-"));
+    stagedRoot = mkdtempSync(path5.join(tmpdir(), "quality-guard-index-"));
     materializeTree(root2, ref, stagedRoot);
     const result = runScan(commitScanRequest(stagedRoot));
     if (result.exitCode === 0) return { findings: [] };
@@ -22678,7 +22682,7 @@ function scannerEvidence(root2, ref) {
       errors: [error2 instanceof Error ? error2.message : String(error2)]
     };
   } finally {
-    if (stagedRoot) rmSync(stagedRoot, { recursive: true, force: true });
+    if (stagedRoot) rmSync2(stagedRoot, { recursive: true, force: true });
   }
 }
 
@@ -22791,7 +22795,7 @@ function record2(value, location) {
   return value;
 }
 function keysOnly(value, allowed, location) {
-  const unsupported = Object.keys(value).find((key3) => !allowed.includes(key3));
+  const unsupported = Object.keys(value).find((key2) => !allowed.includes(key2));
   if (unsupported)
     throw new ConfigError(`${location}.${unsupported} is not supported`);
 }
@@ -22931,7 +22935,7 @@ function changedPaths(snapshot) {
     change.after?.path
   ]);
   return [
-    ...new Set(paths.filter((path16) => Boolean(path16)))
+    ...new Set(paths.filter((path17) => Boolean(path17)))
   ].sort((left, right) => left.localeCompare(right));
 }
 function changedSourcePaths(snapshot) {
@@ -22964,10 +22968,10 @@ function noDecision(summary) {
 }
 
 // src/commit-gate/architecture-similarity.ts
-import * as path6 from "node:path";
+import * as path7 from "node:path";
 
 // src/commit-gate/architecture-similarity-signature.ts
-import * as path5 from "node:path";
+import * as path6 from "node:path";
 
 // src/commit-gate/placement-paths.ts
 function normalizeArchitecturePath(filePath) {
@@ -23011,7 +23015,7 @@ function signatureFor(file) {
   const normalized = normalizeArchitecturePath(file.path);
   addTokens(
     signature,
-    path5.posix.basename(normalized, path5.posix.extname(normalized)),
+    path6.posix.basename(normalized, path6.posix.extname(normalized)),
     6
   );
   for (const type of file.types) {
@@ -23068,7 +23072,7 @@ function root(parent, index) {
   }
   return index;
 }
-function join3(parent, left, right) {
+function join4(parent, left, right) {
   const leftRoot = root(parent, left);
   const rightRoot = root(parent, right);
   if (leftRoot !== rightRoot) parent[rightRoot] = leftRoot;
@@ -23076,7 +23080,7 @@ function join3(parent, left, right) {
 function joinSimilar(parent, scores) {
   for (let left = 0; left < scores.length; left += 1)
     for (let right = left + 1; right < scores.length; right += 1)
-      if (scores[left][right] >= CLUSTER_SIMILARITY) join3(parent, left, right);
+      if (scores[left][right] >= CLUSTER_SIMILARITY) join4(parent, left, right);
 }
 function grouped(parent, count) {
   const groups = /* @__PURE__ */ new Map();
@@ -23200,7 +23204,7 @@ function affectedDirectories(input) {
     input.affectedPaths.filter(
       (filePath) => isProductionArchitecturePath(filePath, input.config)
     ).map(
-      (filePath) => path6.posix.dirname(normalizeArchitecturePath(filePath))
+      (filePath) => path7.posix.dirname(normalizeArchitecturePath(filePath))
     )
   );
 }
@@ -23209,7 +23213,7 @@ function filesByDirectory(input) {
   for (const file of input.afterFiles.filter(
     (candidate) => isEligible(candidate, input)
   )) {
-    const directory = path6.posix.dirname(normalizeArchitecturePath(file.path));
+    const directory = path7.posix.dirname(normalizeArchitecturePath(file.path));
     const files = directories.get(directory) ?? [];
     files.push(file);
     directories.set(directory, files);
@@ -23218,7 +23222,7 @@ function filesByDirectory(input) {
 }
 function isEligible(file, input) {
   const normalized = normalizeArchitecturePath(file.path);
-  return isProductionArchitecturePath(normalized, input.config) && input.affected.has(path6.posix.dirname(normalized));
+  return isProductionArchitecturePath(normalized, input.config) && input.affected.has(path7.posix.dirname(normalized));
 }
 function analyzeSimilarity(input) {
   const changes = changeSets(input);
@@ -23371,13 +23375,13 @@ function findCycles(graph2) {
 }
 
 // src/commit-gate/dependency-graph.ts
-import * as path9 from "node:path";
+import * as path10 from "node:path";
 
 // src/commit-gate/placement-analysis.ts
-import * as path8 from "node:path";
+import * as path9 from "node:path";
 
 // src/commit-gate/placement-findings.ts
-import * as path7 from "node:path";
+import * as path8 from "node:path";
 function addedTypes(file, previous) {
   return [...file.types].filter((name) => !previous.has(name)).sort((left, right) => left.localeCompare(right));
 }
@@ -23404,7 +23408,7 @@ function contextForFile(input) {
   const normalized = normalizeArchitecturePath(input.file.path);
   if (!(input.changed.has(normalized) && isProductionArchitecturePath(input.file.path, input.config)))
     return null;
-  const directory = path7.posix.dirname(normalized);
+  const directory = path8.posix.dirname(normalized);
   const { previous, current } = directoryTypes(
     input.before,
     input.after,
@@ -23419,7 +23423,7 @@ function findingsForFile(input) {
   return addedTypes(input.file, previous).flatMap(
     (name) => typeFinding(name, {
       generic: input.config.genericBuckets.includes(
-        path7.posix.basename(directory).toLowerCase()
+        path8.posix.basename(directory).toLowerCase()
       ),
       beforeCount: previous.size,
       afterCount: current.size,
@@ -23439,7 +23443,7 @@ function typeNames(files, config2) {
   return result;
 }
 function addTypes(result, file) {
-  const directory = path8.posix.dirname(normalizeArchitecturePath(file.path));
+  const directory = path9.posix.dirname(normalizeArchitecturePath(file.path));
   const names = result.get(directory) ?? /* @__PURE__ */ new Set();
   for (const name of file.types) names.add(name);
   result.set(directory, names);
@@ -23506,8 +23510,8 @@ function extensionless(filePath) {
 }
 function resolveDependency(from, dependency, paths) {
   const normalized = normalizeArchitecturePath(dependency);
-  const candidate = dependency.startsWith(".") ? path9.posix.normalize(
-    path9.posix.join(path9.posix.dirname(from), normalized)
+  const candidate = dependency.startsWith(".") ? path10.posix.normalize(
+    path10.posix.join(path10.posix.dirname(from), normalized)
   ) : normalized;
   if (paths.has(candidate)) return candidate;
   const target = extensionless(candidate);
@@ -23580,20 +23584,20 @@ function analyzeDependencies(input) {
   ]);
 }
 
-// src/commit-gate/design-smells/design-smells.ts
-function groupsFor(path16, config2) {
+// src/commit-gate/design-smells/findings.ts
+function groupsFor(path17, config2) {
   return config2.lowLevelPathGroups.filter(
     (group) => config2.pathGroups[group]?.some(
-      (pattern) => matchesArchitecturePath(path16, pattern)
+      (pattern) => matchesArchitecturePath(path17, pattern)
     )
   );
 }
 function configurationFindings(file, config2) {
-  const path16 = normalizeArchitecturePath(file.path);
-  return groupsFor(path16, config2).flatMap(
+  const path17 = normalizeArchitecturePath(file.path);
+  return groupsFor(path17, config2).flatMap(
     (group) => (file.configurationDefaults ?? []).map((defaultValue) => ({
       kind: "configurable-data",
-      path: path16,
+      path: path17,
       group,
       ...defaultValue
     }))
@@ -23604,17 +23608,14 @@ function markerMatch(value, markers) {
   return markers.some((marker) => normalized.includes(marker.toLowerCase()));
 }
 function navigationFindings(file, config2) {
-  const path16 = normalizeArchitecturePath(file.path);
+  const path17 = normalizeArchitecturePath(file.path);
   return (file.transitiveNavigation ?? []).filter(
     (chain) => !(markerMatch(chain.root, config2.fluentMarkers) || chain.hops.some((hop) => markerMatch(hop, config2.fluentMarkers)))
   ).map((chain) => ({
     kind: "transitive-navigation",
-    path: path16,
+    path: path17,
     ...chain
   }));
-}
-function key(finding) {
-  return JSON.stringify(finding);
 }
 function findingsFor2(file, config2) {
   return [
@@ -23622,6 +23623,11 @@ function findingsFor2(file, config2) {
     ...navigationFindings(file, config2)
   ];
 }
+function findingKey(finding) {
+  return JSON.stringify(finding);
+}
+
+// src/commit-gate/design-smells/design-smells.ts
 function analyzeDesignSmells(input) {
   const affected = new Set(input.affectedPaths.map(normalizeArchitecturePath));
   const before = new Set(
@@ -23629,27 +23635,19 @@ function analyzeDesignSmells(input) {
       (file) => findingsFor2(
         { ...file, path: normalizeArchitecturePath(file.path) },
         input.config
-      ).map(key)
+      ).map(findingKey)
     )
   );
   return input.afterFiles.filter((file) => {
-    const path16 = normalizeArchitecturePath(file.path);
-    return affected.has(path16) && isProductionArchitecturePath(path16, input.config);
+    const path17 = normalizeArchitecturePath(file.path);
+    return affected.has(path17) && isProductionArchitecturePath(path17, input.config);
   }).flatMap(
     (file) => findingsFor2(file, input.config).filter(
-      (finding) => !before.has(key(finding))
+      (finding) => !before.has(findingKey(finding))
     )
   ).sort(
     (left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))
   );
-}
-function analyzeCurrentDesignSmells(files, config2) {
-  return analyzeDesignSmells({
-    beforeFiles: [],
-    afterFiles: files,
-    affectedPaths: files.map((file) => file.path),
-    config: config2
-  });
 }
 
 // src/commit-gate/encapsulation-callers.ts
@@ -23673,7 +23671,7 @@ function observedCallers(symbol, files, config2) {
 }
 
 // src/commit-gate/encapsulation-public.ts
-function key2(type, member) {
+function key(type, member) {
   return `${type.name}.${member.name}`;
 }
 function members(type) {
@@ -23700,7 +23698,7 @@ function testOnlyFinding(filePath, symbol, callers) {
 function memberFindings(input) {
   if (input.priorMembers.has(`${input.member.kind}\0${input.member.name}`))
     return [];
-  const symbol = key2(input.type, input.member);
+  const symbol = key(input.type, input.member);
   const callers = observedCallers(symbol, input.afterFiles, input.config);
   const finding = surfaceFinding(input.filePath, symbol, callers);
   if (callers.productionCallers.length === 0 && callers.testCallers.length > 0) {
@@ -23716,7 +23714,7 @@ function publicFindings(input) {
 // src/commit-gate/encapsulation.ts
 function forwardingKeys(type) {
   return new Set(
-    type.forwardingPaths.map((path16) => `${path16.member}\0${path16.target}`)
+    type.forwardingPaths.map((path17) => `${path17.member}\0${path17.target}`)
   );
 }
 function forwardingFindings(type, previous, filePath) {
@@ -23857,11 +23855,11 @@ function collectFindings(input) {
 }
 
 // src/commit-gate/refactor-progress-counts.ts
-import * as path10 from "node:path";
+import * as path11 from "node:path";
 function directTypePressure(types, config2) {
   const counts = /* @__PURE__ */ new Map();
   for (const item of types) {
-    const directory = path10.posix.dirname(item.path);
+    const directory = path11.posix.dirname(item.path);
     counts.set(directory, (counts.get(directory) ?? 0) + 1);
   }
   return [...counts.values()].reduce(
@@ -24057,9 +24055,9 @@ function object3(value, location) {
   return value;
 }
 function onlyKeys(value, allowed, location) {
-  Object.keys(value).forEach((key3) => {
-    if (!allowed.includes(key3))
-      throw new Error(`${location}.${key3} is not supported`);
+  Object.keys(value).forEach((key2) => {
+    if (!allowed.includes(key2))
+      throw new Error(`${location}.${key2} is not supported`);
   });
 }
 function strings(value, location) {
@@ -25407,7 +25405,7 @@ function findFunctions(code, lang, starts) {
   return braceLanguageFunctions(code, starts);
 }
 
-// skills/quality-refactor/scripts/lib/design-smells/design-facts.mjs
+// skills/quality-refactor/scripts/lib/design-smells/configuration-facts.mjs
 var CONFIGURATION_PARAMETER = /(?:config|settings?|options?|timeout|deadline|retry|backoff|limit|threshold|capacity|size|batch|page(?:Size)?|host|port|url|path|directory|file|format|mode|enabled|disabled|region|connection|pool|cache|buffer|delay|interval|parallel|concurrency|max|min)/i;
 function parameterText(source, fn) {
   const open = source.indexOf("(", fn.headerStart);
@@ -25415,15 +25413,22 @@ function parameterText(source, fn) {
   const close = matchBracket(source, open, "()");
   return close === -1 ? [] : splitParams(source.slice(open + 1, close));
 }
+function isDefaultAssignment(parameter, index, depth) {
+  return [
+    parameter[index] === "=",
+    depth === 0,
+    !/[=!<>]/.test(parameter[index - 1] ?? ""),
+    parameter[index + 1] !== ">"
+  ].every(Boolean);
+}
 function defaultOffset(parameter) {
   let depth = 0;
   for (let index = 0; index < parameter.length; index += 1) {
     const character = parameter[index];
-    if ("([{<".includes(character)) depth += 1;
-    else if (")]}>".includes(character)) depth -= 1;
-    else if (character === "=" && depth === 0 && parameter[index - 1] !== "=" && parameter[index - 1] !== "!" && parameter[index - 1] !== "<" && parameter[index - 1] !== ">" && parameter[index + 1] !== ">") {
+    depth += Number("([{<".includes(character));
+    depth -= Number(")]}>".includes(character));
+    if (isDefaultAssignment(parameter, index, depth))
       return index;
-    }
   }
   return -1;
 }
@@ -25436,40 +25441,40 @@ function parameterName(left, lang) {
 }
 function literalDefault(value) {
   const trimmed = value.trim();
-  return /^(?:[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?[uUlLfFdDmM]*|true|false|null|undefined|none|nil)$/i.test(
-    trimmed
-  ) || /^(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')$/s.test(trimmed) ? trimmed : void 0;
+  const numberOrBoolean = /^(?:[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?[uUlLfFdDmM]*|true|false|null|undefined|none|nil)$/i;
+  const quoted = /^(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')$/s;
+  return numberOrBoolean.test(trimmed) || quoted.test(trimmed) ? trimmed : void 0;
+}
+function defaultFact(parameter, fn, lang) {
+  const split = defaultOffset(parameter);
+  if (split === -1) return [];
+  const name = parameterName(parameter.slice(0, split), lang);
+  if (!name || !CONFIGURATION_PARAMETER.test(name)) return [];
+  const value = literalDefault(parameter.slice(split + 1));
+  if (!value) return [];
+  return [{ method: fn.name, parameter: name, defaultValue: value, line: fn.line }];
 }
 function configurationDefaults(source, lang) {
   if (lang === "rs") return [];
   const searchable = strip(source, lang).code;
   const functions = findFunctions(searchable, lang, lineIndex(searchable));
   return functions.flatMap(
-    (fn) => parameterText(source, fn).flatMap((parameter) => {
-      const split = defaultOffset(parameter);
-      if (split === -1) return [];
-      const name = parameterName(parameter.slice(0, split), lang);
-      const value = literalDefault(parameter.slice(split + 1));
-      return name && value && CONFIGURATION_PARAMETER.test(name) ? [
-        {
-          method: fn.name,
-          parameter: name,
-          defaultValue: value,
-          line: fn.line
-        }
-      ] : [];
-    })
+    (fn) => parameterText(source, fn).flatMap(
+      (parameter) => defaultFact(parameter, fn, lang)
+    )
   );
 }
+
+// skills/quality-refactor/scripts/lib/design-smells/navigation-facts.mjs
+var CHAIN = /\b(?:this|self)(?:\.|->)([A-Za-z_]\w*)((?:(?:\.|->)[A-Za-z_]\w*\(\)){2,})/g;
 function transitiveNavigation(source, lang) {
   const searchable = strip(source, lang).code;
   const starts = lineIndex(searchable);
   const functions = findFunctions(searchable, lang, starts);
-  const chainPattern = /\b(?:this|self)(?:\.|->)([A-Za-z_]\w*)((?:(?:\.|->)[A-Za-z_]\w*\(\)){2,})/g;
   const seen = /* @__PURE__ */ new Set();
   return functions.flatMap((fn) => {
     const body = searchable.slice(fn.start, fn.end + 1);
-    return [...body.matchAll(chainPattern)].flatMap((match) => {
+    return [...body.matchAll(CHAIN)].flatMap((match) => {
       const hops = [...match[2].matchAll(/(?:\.|->)([A-Za-z_]\w*)\(\)/g)].map(
         (hop) => hop[1]
       );
@@ -25487,6 +25492,8 @@ function transitiveNavigation(source, lang) {
     });
   });
 }
+
+// skills/quality-refactor/scripts/lib/design-smells/design-facts.mjs
 function designFacts(source, lang) {
   return {
     configurationDefaults: configurationDefaults(source, lang),
@@ -25506,10 +25513,10 @@ function referencesFor(source, types, imports) {
     )
   );
 }
-function emptyFacts(path16) {
+function emptyFacts(path17) {
   return {
     facts: {
-      path: path16,
+      path: path17,
       language: null,
       imports: [],
       references: [],
@@ -25830,8 +25837,8 @@ function findAcknowledgement(decision, options) {
   return { fingerprint: decision.fingerprint };
 }
 function writeAcknowledgement(root2, options, fingerprint) {
-  const recordPath = path11.join(root2, DECISION_RECORD_PATH);
-  mkdirSync(path11.dirname(recordPath), { recursive: true });
+  const recordPath = path12.join(root2, DECISION_RECORD_PATH);
+  mkdirSync(path12.dirname(recordPath), { recursive: true });
   writeFileSync(
     recordPath,
     appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
@@ -25900,8 +25907,8 @@ function exitCodeFor(result) {
   if (result.verdict === "FAIL") return 1;
   return 2;
 }
-function renderDecision(result, json) {
-  if (json) return JSON.stringify(result, null, 2);
+function renderDecision(result, options) {
+  if (options.json) return JSON.stringify(result, null, 2);
   return decisionLines(result).join("\n");
 }
 
@@ -25929,7 +25936,7 @@ function runCommittedCommand(args, root2) {
     const result = runCommittedCheck(root2, commit, options);
     return {
       exitCode: exitCodeFor(result),
-      output: renderDecision(result, true)
+      output: renderDecision(result, { json: true })
     };
   } catch (error2) {
     return usage(error2 instanceof Error ? error2.message : String(error2));
@@ -25942,7 +25949,7 @@ function runStagedCommand(args, root2) {
     const result = runStagedCheck(root2, options);
     return {
       exitCode: exitCodeFor(result),
-      output: renderDecision(result, options.json)
+      output: renderDecision(result, { json: options.json })
     };
   } catch (error2) {
     return usage(error2 instanceof Error ? error2.message : String(error2));
@@ -25957,11 +25964,7 @@ function runCheckCommand(args, root2 = process.cwd()) {
   return runStagedCommand(args, root2);
 }
 
-// src/plaintext-readability.ts
-import { spawnSync } from "node:child_process";
-import { mkdtempSync as mkdtempSync2, rmSync as rmSync2 } from "node:fs";
-import { tmpdir as tmpdir2 } from "node:os";
-import { join as join5 } from "node:path";
+// src/plaintext-readability-types.ts
 var READABILITY_POLICY = {
   minimumWords: 20,
   threshold: 80,
@@ -25975,132 +25978,41 @@ var READABILITY_POLICY = {
     fleschKincaidGrade: 9
   }
 };
-var TEXTSTAT_TIMEOUT_MS = 2e3;
-var TEXTSTAT_PYTHON = [
-  "import json, sys, textstat",
-  "text = sys.stdin.read()",
-  "print(json.dumps({",
-  "  'measures': {",
-  "    'fleschReadingEase': textstat.flesch_reading_ease(text),",
-  "    'fleschKincaidGrade': textstat.flesch_kincaid_grade(text),",
-  "  }",
-  "}))"
-].join("\n");
-function textOf(value) {
-  return typeof value === "string" ? value : String(value ?? "");
+
+// src/plaintext-results.ts
+function failureValues(measures, score) {
+  return measures ? `Flesch Reading Ease ${measures.fleschReadingEase}; Flesch-Kincaid Grade ${measures.fleschKincaidGrade}; combined score ${score}; threshold ${READABILITY_POLICY.threshold}.` : "No readability measures were available.";
 }
-function commandArgs() {
-  const configured = process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
-  if (!configured) return ["-c", TEXTSTAT_PYTHON];
-  try {
-    const parsed = JSON.parse(configured);
-    if (!Array.isArray(parsed) || parsed.some((argument) => typeof argument !== "string")) {
-      return {
-        status: "unavailable",
-        reason: "QUALITY_GUARD_TEXTSTAT_ARGS must be a JSON array of strings"
-      };
-    }
-    return parsed;
-  } catch {
-    return {
-      status: "unavailable",
-      reason: "QUALITY_GUARD_TEXTSTAT_ARGS is not valid JSON"
-    };
-  }
+function failureConstraints(constraintFailures) {
+  return constraintFailures?.length ? ` Constraints failed: ${constraintFailures.join("; ")}.` : "";
 }
-function isolatedEnvironment(workdir) {
-  const names = process.platform === "win32" ? ["PATH", "Path", "PATHEXT", "SystemRoot", "WINDIR"] : ["PATH", "HOME", "LANG", "LC_ALL"];
-  const environment = {};
-  for (const name of names) {
-    if (process.env[name]) environment[name] = process.env[name];
-  }
-  if (process.platform === "win32") {
-    environment.TEMP = workdir;
-    environment.TMP = workdir;
-  } else {
-    environment.TMPDIR = workdir;
-  }
-  return environment;
+function messageFor(input) {
+  if (input.status !== "fail")
+    return `Readability check ${input.status}: ${input.reason}.`;
+  return `Readability check failed. ${failureValues(input.measures, input.score)}${failureConstraints(input.constraintFailures)} Context: ${JSON.stringify(input.context ?? "")}`;
 }
-function finiteMeasures(value) {
-  if (!value || typeof value !== "object") return void 0;
-  const candidate = value;
-  const fleschReadingEase = candidate.fleschReadingEase;
-  const fleschKincaidGrade = candidate.fleschKincaidGrade;
-  if (typeof fleschReadingEase !== "number") return void 0;
-  if (!Number.isFinite(fleschReadingEase)) return void 0;
-  if (typeof fleschKincaidGrade !== "number") return void 0;
-  if (!Number.isFinite(fleschKincaidGrade)) return void 0;
-  return { fleschReadingEase, fleschKincaidGrade };
+function baseResult(input) {
+  const extra = input.extra ?? {};
+  return {
+    status: input.status,
+    reason: input.reason,
+    message: messageFor({
+      status: input.status,
+      reason: input.reason,
+      measures: extra.measures,
+      score: extra.score,
+      constraintFailures: extra.constraintFailures,
+      context: extra.context
+    }),
+    wordCount: input.wordCount,
+    threshold: READABILITY_POLICY.threshold,
+    constraintFailures: [],
+    policy: READABILITY_POLICY,
+    ...extra
+  };
 }
-function providerResponse(stdout) {
-  let parsed;
-  try {
-    parsed = JSON.parse(stdout);
-  } catch {
-    return {
-      status: "unavailable",
-      reason: "textstat returned malformed JSON"
-    };
-  }
-  if (!parsed || typeof parsed !== "object") {
-    return {
-      status: "unavailable",
-      reason: "textstat returned a non-object response"
-    };
-  }
-  const object4 = parsed;
-  if (object4.languageSupported === false) {
-    return {
-      status: "unavailable",
-      reason: "textstat reported that the input language is unsupported"
-    };
-  }
-  const measures = finiteMeasures(object4.measures ?? object4);
-  if (!measures) {
-    return {
-      status: "unavailable",
-      reason: "textstat returned missing or non-finite measures"
-    };
-  }
-  return { status: "ok", measures };
-}
-function runTextstat(text3, options = {}) {
-  const args = options.args ?? commandArgs();
-  if (!Array.isArray(args)) return args;
-  const command = options.command ?? process.env.QUALITY_GUARD_TEXTSTAT_COMMAND ?? "python";
-  const spawn = options.spawn ?? spawnSync;
-  const useIsolation = options.command === void 0 && options.args === void 0 && !process.env.QUALITY_GUARD_TEXTSTAT_COMMAND && !process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
-  let workdir;
-  let result;
-  try {
-    if (useIsolation)
-      workdir = mkdtempSync2(join5(tmpdir2(), "quality-guard-textstat-"));
-    const spawnArgs = useIsolation ? ["-I", ...args] : args;
-    result = spawn(command, spawnArgs, {
-      encoding: "utf8",
-      input: text3,
-      timeout: TEXTSTAT_TIMEOUT_MS,
-      windowsHide: true,
-      ...workdir ? { cwd: workdir, env: isolatedEnvironment(workdir) } : {}
-    });
-  } catch (error2) {
-    return {
-      status: "unavailable",
-      reason: `textstat could not start: ${error2 instanceof Error ? error2.message : String(error2)}`
-    };
-  } finally {
-    if (workdir) rmSync2(workdir, { recursive: true, force: true });
-  }
-  if (result.error || result.status !== 0) {
-    const detail = textOf(result.stderr).trim() || result.error?.message;
-    return {
-      status: "unavailable",
-      reason: detail ? `textstat failed: ${detail.slice(0, 300)}` : `textstat exited with code ${result.status ?? "unknown"}`
-    };
-  }
-  return providerResponse(textOf(result.stdout));
-}
+
+// src/plaintext-normalization.ts
 function normalizePlaintext(text3) {
   return text3.normalize("NFKC").replace(/```[\s\S]*?```/gu, " ").replace(/`[^`]*`/gu, " ").replace(/!?\[([^\]]*)\]\([^)]*\)/gu, "$1").replace(/\[[0-9]+(?:\s*[,;-]\s*[0-9]+)*\]/gu, " ").replace(/https?:\/\/\S+/giu, " ").replace(/^\s{0,3}(?:#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s*)/gmu, "").replace(/\b[A-Za-z][A-Za-z0-9]*[_$][A-Za-z0-9_$]*\b/gu, " ").replace(/\b[A-Za-z_$][A-Za-z0-9_$]*(?:[./][A-Za-z0-9_$-]+)+\b/gu, " ").replace(/[ \t]+/gu, " ").replace(/\n{3,}/gu, "\n\n").trim();
 }
@@ -26113,10 +26025,59 @@ function sentenceDetails(text3) {
     text: sentence.trim()
   })).filter((sentence) => sentence.count > 0);
 }
+function longestSentence(text3) {
+  return sentenceDetails(text3).reduce(
+    (current, sentence) => sentence.count > current.count ? sentence : current,
+    { count: 0, text: "" }
+  );
+}
 function hasUnsupportedScript(text3) {
   const letters = text3.match(new RegExp("\\p{L}", "gu")) ?? [];
   return letters.some((letter) => !new RegExp("\\p{Script=Latin}", "u").test(letter));
 }
+function contextFor(text3) {
+  const context = text3.slice(0, 240);
+  return context.length === text3.length ? context : `${context}...`;
+}
+
+// src/plaintext-input.ts
+function prepareInput(text3) {
+  const normalized = normalizePlaintext(text3);
+  const wordCount = wordsIn(normalized).length;
+  if (wordCount === 0)
+    return {
+      normalized,
+      wordCount,
+      early: baseResult({
+        status: "skipped",
+        reason: "input is empty after normalization",
+        wordCount: 0
+      })
+    };
+  if (hasUnsupportedScript(normalized))
+    return {
+      normalized,
+      wordCount,
+      early: baseResult({
+        status: "unavailable",
+        reason: "input uses a language script outside the supported Latin policy",
+        wordCount
+      })
+    };
+  if (wordCount < READABILITY_POLICY.minimumWords)
+    return {
+      normalized,
+      wordCount,
+      early: baseResult({
+        status: "skipped",
+        reason: `input has ${wordCount} words and needs at least ${READABILITY_POLICY.minimumWords}`,
+        wordCount
+      })
+    };
+  return { normalized, wordCount };
+}
+
+// src/plaintext-scoring.ts
 function clamp(value) {
   return Math.min(100, Math.max(0, value));
 }
@@ -26134,89 +26095,236 @@ function scoreMeasures(measures) {
     easeScore * READABILITY_POLICY.weights.fleschReadingEase + gradeScore * READABILITY_POLICY.weights.fleschKincaidGrade
   );
 }
-function contextFor(text3) {
-  const context = text3.slice(0, 240);
-  return context.length === text3.length ? context : `${context}...`;
+function constraintFailuresFor(longestSentence2) {
+  if (longestSentence2 <= READABILITY_POLICY.maximumSentenceWords) return [];
+  return [
+    `a sentence has ${longestSentence2} words, over the ${READABILITY_POLICY.maximumSentenceWords}-word limit`
+  ];
 }
-function messageFor(status, reason, measures, score, constraintFailures = [], context) {
-  if (status !== "fail") return `Readability check ${status}: ${reason}.`;
-  const values = measures ? `Flesch Reading Ease ${measures.fleschReadingEase}; Flesch-Kincaid Grade ${measures.fleschKincaidGrade}; combined score ${score}; threshold ${READABILITY_POLICY.threshold}.` : "No readability measures were available.";
-  const constraints = constraintFailures.length ? ` Constraints failed: ${constraintFailures.join("; ")}.` : "";
-  return `Readability check failed. ${values}${constraints} Context: ${JSON.stringify(context ?? "")}`;
+function reasonFor(status, score) {
+  if (status === "pass") return "combined score and sentence-length policy passed";
+  if (score < READABILITY_POLICY.threshold)
+    return "combined score is below the threshold";
+  return "dyslexia-friendly sentence-length policy failed";
 }
-function baseResult(status, reason, wordCount, extra = {}) {
+
+// src/plaintext-textstat.ts
+import { spawnSync } from "node:child_process";
+
+// src/plaintext-textstat-process.ts
+import { mkdtempSync as mkdtempSync2, rmSync as rmSync3 } from "node:fs";
+import { tmpdir as tmpdir2 } from "node:os";
+import { join as join6 } from "node:path";
+
+// src/plaintext-textstat-provider.ts
+function finiteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+function finiteMeasures(value) {
+  if (!value || typeof value !== "object") return void 0;
+  const candidate = value;
+  if (!finiteNumber(candidate.fleschReadingEase) || !finiteNumber(candidate.fleschKincaidGrade))
+    return void 0;
   return {
-    status,
-    reason,
-    message: messageFor(
-      status,
-      reason,
-      extra.measures,
-      extra.score,
-      extra.constraintFailures,
-      extra.context
-    ),
-    wordCount,
-    threshold: READABILITY_POLICY.threshold,
-    constraintFailures: [],
-    policy: READABILITY_POLICY,
-    ...extra
+    fleschReadingEase: candidate.fleschReadingEase,
+    fleschKincaidGrade: candidate.fleschKincaidGrade
   };
 }
+function parseProviderJson(stdout) {
+  try {
+    const parsed = JSON.parse(stdout);
+    if (parsed && typeof parsed === "object") return parsed;
+    return "textstat returned a non-object response";
+  } catch {
+    return "textstat returned malformed JSON";
+  }
+}
+function unsupportedLanguage(value) {
+  return value.languageSupported === false ? {
+    status: "unavailable",
+    reason: "textstat reported that the input language is unsupported"
+  } : null;
+}
+function missingMeasures() {
+  return {
+    status: "unavailable",
+    reason: "textstat returned missing or non-finite measures"
+  };
+}
+function measuresResult(value) {
+  const measures = finiteMeasures(value.measures ?? value);
+  return measures ? { status: "ok", measures } : missingMeasures();
+}
+function providerResponse(stdout) {
+  const parsed = parseProviderJson(stdout);
+  if (typeof parsed === "string")
+    return { status: "unavailable", reason: parsed };
+  const languageFailure = unsupportedLanguage(parsed);
+  if (languageFailure) return languageFailure;
+  return measuresResult(parsed);
+}
+
+// src/plaintext-textstat-environment.ts
+function isolatedEnvironment(workdir) {
+  const names = process.platform === "win32" ? ["PATH", "Path", "PATHEXT", "SystemRoot", "WINDIR"] : ["PATH", "HOME", "LANG", "LC_ALL"];
+  const environment = {};
+  for (const name of names) {
+    if (process.env[name]) environment[name] = process.env[name];
+  }
+  if (process.platform === "win32") {
+    environment.TEMP = workdir;
+    environment.TMP = workdir;
+    return environment;
+  }
+  environment.TMPDIR = workdir;
+  return environment;
+}
+
+// src/plaintext-textstat-process.ts
+var TEXTSTAT_TIMEOUT_MS = 2e3;
+function textOf(value) {
+  return typeof value === "string" ? value : String(value ?? "");
+}
+function invoke(input, workdir) {
+  return input.spawn(input.command, input.args, {
+    encoding: "utf8",
+    input: input.text,
+    timeout: TEXTSTAT_TIMEOUT_MS,
+    windowsHide: true,
+    ...workdir ? { cwd: workdir, env: isolatedEnvironment(workdir) } : {}
+  });
+}
+function invokeIsolated(input) {
+  const workdir = mkdtempSync2(join6(tmpdir2(), "quality-guard-textstat-"));
+  try {
+    return invoke({ ...input, args: ["-I", ...input.args] }, workdir);
+  } catch (error2) {
+    return {
+      status: "unavailable",
+      reason: `textstat could not start: ${error2 instanceof Error ? error2.message : String(error2)}`
+    };
+  } finally {
+    rmSync3(workdir, { recursive: true, force: true });
+  }
+}
+function invokeTextstat(input) {
+  if (!input.isolated) return invoke(input);
+  return invokeIsolated(input);
+}
+function successResult(result) {
+  if (result.error || result.status !== 0) return null;
+  return providerResponse(textOf(result.stdout));
+}
+function failureResult(result) {
+  const detail = textOf(result.stderr).trim() || result.error?.message;
+  return {
+    status: "unavailable",
+    reason: detail ? `textstat failed: ${detail.slice(0, 300)}` : `textstat exited with code ${result.status ?? "unknown"}`
+  };
+}
+function processResult(result) {
+  return successResult(result) ?? failureResult(result);
+}
+function isUnavailable(value) {
+  return Boolean(value) && typeof value === "object" && value.status === "unavailable";
+}
+function executeTextstat(input) {
+  const result = invokeTextstat(input);
+  return isUnavailable(result) ? result : processResult(result);
+}
+
+// src/plaintext-textstat.ts
+var TEXTSTAT_PYTHON = [
+  "import json, sys, textstat",
+  "text = sys.stdin.read()",
+  "print(json.dumps({",
+  "  'measures': {",
+  "    'fleschReadingEase': textstat.flesch_reading_ease(text),",
+  "    'fleschKincaidGrade': textstat.flesch_kincaid_grade(text),",
+  "  }",
+  "}))"
+].join("\n");
+function configuredArgs() {
+  const configured = process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
+  if (!configured) return ["-c", TEXTSTAT_PYTHON];
+  try {
+    const parsed = JSON.parse(configured);
+    if (!Array.isArray(parsed) || parsed.some((argument) => typeof argument !== "string"))
+      return {
+        status: "unavailable",
+        reason: "QUALITY_GUARD_TEXTSTAT_ARGS must be a JSON array of strings"
+      };
+    return parsed;
+  } catch {
+    return {
+      status: "unavailable",
+      reason: "QUALITY_GUARD_TEXTSTAT_ARGS is not valid JSON"
+    };
+  }
+}
+function argsFor(options) {
+  return options.args === void 0 ? configuredArgs() : options.args;
+}
+function commandFor(options) {
+  return options.command ?? process.env.QUALITY_GUARD_TEXTSTAT_COMMAND ?? "python";
+}
+function shouldIsolate(options) {
+  return options.command === void 0 && options.args === void 0 && !process.env.QUALITY_GUARD_TEXTSTAT_COMMAND && !process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
+}
+function runTextstat(text3, options = {}) {
+  const args = argsFor(options);
+  if (!Array.isArray(args)) return args;
+  return executeTextstat({
+    text: text3,
+    command: commandFor(options),
+    args,
+    spawn: options.spawn ?? spawnSync,
+    isolated: shouldIsolate(options)
+  });
+}
+
+// src/plaintext-readability.ts
+function providerResult(text3, provider) {
+  try {
+    return provider(text3);
+  } catch (error2) {
+    return {
+      status: "unavailable",
+      reason: `textstat provider failed: ${error2 instanceof Error ? error2.message : String(error2)}`
+    };
+  }
+}
+function measuredResult(normalized, wordCount, measures) {
+  const score = scoreMeasures(measures);
+  const longest = longestSentence(normalized);
+  const constraintFailures = constraintFailuresFor(longest.count);
+  const status = score >= READABILITY_POLICY.threshold && constraintFailures.length === 0 ? "pass" : "fail";
+  return baseResult({
+    status,
+    reason: reasonFor(status, score),
+    wordCount,
+    extra: {
+      score,
+      measures,
+      constraintFailures,
+      context: status === "fail" ? contextFor(longest.text || normalized) : void 0
+    }
+  });
+}
 function unavailableReadabilityResult(reason) {
-  return baseResult("unavailable", reason, 0);
+  return baseResult({ status: "unavailable", reason, wordCount: 0 });
 }
 function checkPlaintextReadability(text3, provider = runTextstat) {
-  const normalized = normalizePlaintext(text3);
-  const wordCount = wordsIn(normalized).length;
-  if (wordCount === 0) {
-    return baseResult("skipped", "input is empty after normalization", 0);
-  }
-  if (hasUnsupportedScript(normalized)) {
-    return baseResult(
-      "unavailable",
-      "input uses a language script outside the supported Latin policy",
-      wordCount
-    );
-  }
-  if (wordCount < READABILITY_POLICY.minimumWords) {
-    return baseResult(
-      "skipped",
-      `input has ${wordCount} words and needs at least ${READABILITY_POLICY.minimumWords}`,
-      wordCount
-    );
-  }
-  let providerResult;
-  try {
-    providerResult = provider(normalized);
-  } catch (error2) {
-    return baseResult(
-      "unavailable",
-      `textstat provider failed: ${error2 instanceof Error ? error2.message : String(error2)}`,
-      wordCount
-    );
-  }
-  if (providerResult.status === "unavailable") {
-    return baseResult("unavailable", providerResult.reason, wordCount);
-  }
-  const measures = providerResult.measures;
-  const score = scoreMeasures(measures);
-  const longest = sentenceDetails(normalized).reduce(
-    (current, sentence) => sentence.count > current.count ? sentence : current,
-    { count: 0, text: "" }
-  );
-  const longestSentence = longest.count;
-  const constraintFailures = longestSentence > READABILITY_POLICY.maximumSentenceWords ? [
-    `a sentence has ${longestSentence} words, over the ${READABILITY_POLICY.maximumSentenceWords}-word limit`
-  ] : [];
-  const status = score >= READABILITY_POLICY.threshold && constraintFailures.length === 0 ? "pass" : "fail";
-  const reason = status === "pass" ? "combined score and sentence-length policy passed" : score < READABILITY_POLICY.threshold ? "combined score is below the threshold" : "dyslexia-friendly sentence-length policy failed";
-  return baseResult(status, reason, wordCount, {
-    score,
-    measures,
-    constraintFailures,
-    context: status === "fail" ? contextFor(longest.text || normalized) : void 0
-  });
+  const prepared = prepareInput(text3);
+  if (prepared.early) return prepared.early;
+  const result = providerResult(prepared.normalized, provider);
+  if (result.status === "unavailable")
+    return baseResult({
+      status: "unavailable",
+      reason: result.reason,
+      wordCount: prepared.wordCount
+    });
+  return measuredResult(prepared.normalized, prepared.wordCount, result.measures);
 }
 function readabilityExitCode(status) {
   return status === "fail" ? 2 : 0;
@@ -26224,7 +26332,7 @@ function readabilityExitCode(status) {
 
 // src/report.ts
 import { existsSync as existsSync2, readFileSync as readFileSync3 } from "node:fs";
-import * as path13 from "node:path";
+import * as path14 from "node:path";
 
 // src/commit-gate/dependency-current.ts
 function analyzeCurrentDependencies(files, config2) {
@@ -26240,17 +26348,27 @@ function analyzeCurrentDependencies(files, config2) {
   };
 }
 
+// src/commit-gate/design-smells/current-design-smells.ts
+function analyzeCurrentDesignSmells(files, config2) {
+  return analyzeDesignSmells({
+    beforeFiles: [],
+    afterFiles: files,
+    affectedPaths: files.map((file) => file.path),
+    config: config2
+  });
+}
+
 // src/commit-gate/placement-current.ts
-import * as path12 from "node:path";
+import * as path13 from "node:path";
 function analyzeCurrentPlacement(files, config2) {
   const directories = typeNames(files, config2);
   return [...directories.entries()].filter(
     ([directory, types]) => config2.genericBuckets.includes(
-      path12.posix.basename(directory).toLowerCase()
+      path13.posix.basename(directory).toLowerCase()
     ) || types.size > config2.directTypeLimit
   ).map(([directory, types]) => ({
     kind: config2.genericBuckets.includes(
-      path12.posix.basename(directory).toLowerCase()
+      path13.posix.basename(directory).toLowerCase()
     ) ? "generic-bucket" : "flat-accumulation",
     directory,
     typeCount: types.size,
@@ -26383,13 +26501,13 @@ function buildQualityReport(scan, architecture) {
 // src/report.ts
 var analyzeArchitecture = analyzeCurrentArchitecture;
 function architectureFor(root2, scan) {
-  const configPath = path13.join(root2, ".quality-guard.json");
+  const configPath = path14.join(root2, ".quality-guard.json");
   const config2 = parseQualityConfig(
     existsSync2(configPath) ? readFileSync3(configPath, "utf8") : "{}"
   );
   const sourceFiles = scan.files.map((file) => ({
     path: file.path,
-    content: readFileSync3(path13.join(root2, file.path), "utf8")
+    content: readFileSync3(path14.join(root2, file.path), "utf8")
   }));
   const inventory = extractFactInventory(
     sourceFiles,
@@ -26416,7 +26534,7 @@ function asReportScan(report) {
   return candidate;
 }
 function runQualityReport(request) {
-  const root2 = path13.resolve(request.root ?? process.cwd());
+  const root2 = path14.resolve(request.root ?? process.cwd());
   const scan = asReportScan(runScan({ ...request, root: root2, paths: ["."] }).report);
   return buildQualityReport(scan, architectureFor(root2, scan));
 }
@@ -26447,7 +26565,7 @@ function commitGateResponse(input) {
         intent: input.intent ?? "change",
         target: input.target
       }),
-      true
+      { json: true }
     )
   );
 }
@@ -26475,10 +26593,10 @@ function registerQualityCommitGate(server2) {
 
 // src/skips.ts
 import { existsSync as existsSync3, readFileSync as readFileSync4 } from "node:fs";
-import * as path14 from "node:path";
-var SKIP_LOG = path14.join(".github", "quality", "skip-log.json");
+import * as path15 from "node:path";
+var SKIP_LOG = path15.join(".github", "quality", "skip-log.json");
 function readSkipLog(root2) {
-  const target = path14.join(root2, SKIP_LOG);
+  const target = path15.join(root2, SKIP_LOG);
   if (!existsSync3(target)) return [];
   try {
     const parsed = JSON.parse(readFileSync4(target, "utf8"));
@@ -26669,9 +26787,9 @@ function registerQualityGuardTools(server2) {
 }
 
 // src/index.ts
-var _dirname = path15.dirname(fileURLToPath2(import.meta.url));
+var _dirname = path16.dirname(fileURLToPath2(import.meta.url));
 var _pkg = JSON.parse(
-  readFileSync5(path15.join(_dirname, "..", "package.json"), "utf-8")
+  readFileSync5(path16.join(_dirname, "..", "package.json"), "utf-8")
 );
 function createQualityGuardServer() {
   const server2 = new McpServer({

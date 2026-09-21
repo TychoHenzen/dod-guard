@@ -38,7 +38,10 @@ export function exitCodeFor(result: DecisionResult): number {
   return 2;
 }
 
-export function renderDecision(result: DecisionResult, json: boolean): string {
-  if (json) return JSON.stringify(result, null, 2);
+export function renderDecision(
+  result: DecisionResult,
+  options: { json: boolean },
+): string {
+  if (options.json) return JSON.stringify(result, null, 2);
   return decisionLines(result).join("\n");
 }

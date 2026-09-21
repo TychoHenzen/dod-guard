@@ -49,9 +49,9 @@ test("refactor intent without a target is a usage error", () => {
 
 test("review-required maps to blocking output", () => {
   assert.equal(exitCodeFor(review), 2);
-  assert.match(renderDecision(review, false), /^REVIEW_REQUIRED/m);
+  assert.match(renderDecision(review, { json: false }), /^REVIEW_REQUIRED/m);
   assert.equal(
-    JSON.parse(renderDecision(review, true)).verdict,
+    JSON.parse(renderDecision(review, { json: true })).verdict,
     "REVIEW_REQUIRED",
   );
 });

@@ -32,20 +32,49 @@ function command(value, name) {
   return typeof value === "string" && value.trim() !== "" ? name : null;
 }
 
-function rootEntrypoints(root) {
-  const found = [];
+function nodeEntrypoints(root) {
   const node = packageJson(root);
-  if (node !== null) {
-    const scripts = node.scripts ?? {};
-    found.push({ file: "package.json", build: command(scripts.build, "npm run build"), test: command(scripts.test, "npm test") });
-  }
-  if (existsSync(join(root, "Cargo.toml"))) found.push({ file: "Cargo.toml", build: "cargo build", test: "cargo test" });
+  if (node === null) return [];
+  const scripts = node.scripts ?? {};
+  return [{
+    file: "package.json",
+    build: command(scripts.build, "npm run build"),
+    test: command(scripts.test, "npm test"),
+  }];
+}
+
+function cargoEntrypoints(root) {
+  return existsSync(join(root, "Cargo.toml"))
+    ? [{ file: "Cargo.toml", build: "cargo build", test: "cargo test" }]
+    : [];
+}
+
+function dotnetEntrypoints(root) {
   const dotnet = dotnetProjects(root);
-  if (dotnet.length === 1) found.push({ file: dotnet[0], build: `dotnet build ${dotnet[0]}`, test: `dotnet test ${dotnet[0]}` });
-  else if (dotnet.length > 1) found.push({ file: dotnet[0], build: null, test: null, reason: `multiple root .NET project files (${dotnet.join(", ")})` });
+  if (dotnet.length === 1)
+    return [{ file: dotnet[0], build: `dotnet build ${dotnet[0]}`, test: `dotnet test ${dotnet[0]}` }];
+  if (dotnet.length > 1)
+    return [{ file: dotnet[0], build: null, test: null, reason: `multiple root .NET project files (${dotnet.join(", ")})` }];
+  return [];
+}
+
+function pythonEntrypoints(root) {
   const python = read(root, "pyproject.toml");
-  if (python !== null) found.push({ file: "pyproject.toml", build: BUILD_SYSTEM.test(python) ? "python -m build" : null, test: PYTEST_CONFIGURATION.test(python) ? "python -m pytest" : null });
-  return found;
+  if (python === null) return [];
+  return [{
+    file: "pyproject.toml",
+    build: BUILD_SYSTEM.test(python) ? "python -m build" : null,
+    test: PYTEST_CONFIGURATION.test(python) ? "python -m pytest" : null,
+  }];
+}
+
+function rootEntrypoints(root) {
+  return [
+    ...nodeEntrypoints(root),
+    ...cargoEntrypoints(root),
+    ...dotnetEntrypoints(root),
+    ...pythonEntrypoints(root),
+  ];
 }
 
 function finding(rule, severity, message) {

@@ -1,8 +1,8 @@
-import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { runScan, type ScanRequest } from "../scanner.js";
+import { materializeTree } from "./cli-tree-materialize.js";
 import type { Snapshot } from "./snapshot.js";
 import type { DecisionResult } from "./types.js";
 
@@ -44,26 +44,6 @@ function commitScanRequest(root: string): ScanRequest {
     baseline: ".github/quality/quality-baseline.json",
     failOn: "regression",
   };
-}
-
-function materializeTree(root: string, ref: string, target: string): void {
-  if (ref === "index") {
-    execFileSync(
-      "git",
-      ["checkout-index", "--all", `--prefix=${target}${path.sep}`],
-      { cwd: root, stdio: "ignore" },
-    );
-    return;
-  }
-  const indexPath = path.join(target, "index");
-  const env = { ...process.env, GIT_INDEX_FILE: indexPath };
-  execFileSync("git", ["read-tree", ref], { cwd: root, env, stdio: "ignore" });
-  execFileSync(
-    "git",
-    ["checkout-index", "--all", `--prefix=${target}${path.sep}`],
-    { cwd: root, env, stdio: "ignore" },
-  );
-  rmSync(indexPath, { force: true });
 }
 
 export function scannerEvidence(
