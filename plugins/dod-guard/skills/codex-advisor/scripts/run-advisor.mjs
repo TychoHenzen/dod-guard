@@ -3,6 +3,11 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  buildCodexExecArgs,
+  buildCodexPreflightArgs,
+  resolveCodexExecutable,
+} from "./codex-launch-contract.mjs";
 
 const defaultSchemaPath = fileURLToPath(new URL("../response-schema.json", import.meta.url));
 const MAX_OUTPUT_BYTES = 8 * 1024 * 1024;
@@ -86,14 +91,57 @@ function runProcess(executable, args, options, prompt, abortSignal) {
   });
 }
 
-function failure(message, processResult) {
+function processEvidence(executable, args, processResult) {
+  return {
+    command: [executable, ...args],
+    exitCode: processResult?.code ?? null,
+    signal: processResult?.signal ?? null,
+    stderr: processResult?.stderr ?? "",
+    stdout: processResult?.stdout ?? "",
+    startError: processResult?.startError?.message ?? null,
+    stdinError: processResult?.stdinError?.message ?? null,
+  };
+}
+
+function executionEvidence(executable, args, processResult, stage, prefixArgs = []) {
+  return {
+    status: "incomplete",
+    stage,
+    prefixArgs,
+    ...processEvidence(executable, args, processResult),
+  };
+}
+
+function completedExecutionEvidence(executable, args, processResult, prefixArgs) {
+  return {
+    status: "completed",
+    stage: "reviewer-process",
+    prefixArgs,
+    ...processEvidence(executable, args, processResult),
+  };
+}
+
+function failure(message, processResult, executable, args, stage, prefixArgs = []) {
   const details = processResult?.stderr?.trim();
   return {
     ok: false,
     error: details ? `${message}: ${details}` : message,
     stderr: processResult?.stderr ?? "",
     stdout: processResult?.stdout ?? "",
+    execution: executable && args && stage ? executionEvidence(executable, args, processResult, stage, prefixArgs) : undefined,
   };
+}
+
+function attemptedExecArgs({ mode = "read-only", prefixArgs, model, reasoningEffort }) {
+  const attemptedPrefix = Array.isArray(prefixArgs) ? prefixArgs : [];
+  const args = [...attemptedPrefix, "exec"];
+  if (mode === "write") args.push("--approve-for-me");
+  if (model !== undefined) args.push("--model", model);
+  args.push("-c", `model_reasoning_effort=${reasoningEffort}`);
+  if (mode === "read-only") {
+    args.push("-s", "read-only", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--ephemeral");
+  }
+  return args;
 }
 
 function optionError(name, value) {
@@ -124,7 +172,7 @@ function parseAdvice(raw) {
 
 export async function runAdvisor({
   prompt,
-  executable = process.platform === "win32" ? "codex.exe" : "codex",
+  executable = resolveCodexExecutable(),
   prefixArgs = [],
   model = "gpt-5.6-luna",
   reasoningEffort = "max",
@@ -133,37 +181,60 @@ export async function runAdvisor({
   signal,
   env = {},
 }) {
+  const attemptedArgs = attemptedExecArgs({ mode: "read-only", prefixArgs, model, reasoningEffort });
   const invalidOption = [
     ["model", model],
     ["reasoning effort", reasoningEffort],
-    ...prefixArgs.map((value, index) => [`prefix argument ${index + 1}`, value]),
+    ...(Array.isArray(prefixArgs) ? prefixArgs.map((value, index) => [`prefix argument ${index + 1}`, value]) : []),
   ].find(([name, value]) => value !== undefined && optionError(name, value));
-  if (invalidOption) return { ok: false, error: optionError(...invalidOption) };
+  if (invalidOption) {
+    return failure(
+      optionError(...invalidOption),
+      undefined,
+      executable,
+      attemptedArgs,
+      "launcher-contract",
+      prefixArgs,
+    );
+  }
 
   let workdir;
   try {
     workdir = await mkdtemp(join(tempRoot, "dod-guard-codex-advisor-"));
     const outputPath = join(workdir, "last-message.json");
-    const args = [
-      ...prefixArgs,
-      "exec",
-      ...(model === undefined ? [] : ["--model", model]),
-      "-c",
-      `model_reasoning_effort=${reasoningEffort}`,
-      "-s",
-      "read-only",
-      "--ignore-user-config",
-      "--ignore-rules",
-      "--skip-git-repo-check",
-      "--ephemeral",
-      "-C",
-      workdir,
-      "--output-schema",
+    const preflightArgs = buildCodexPreflightArgs({ mode: "read-only", prefixArgs });
+    const capability = {};
+    for (const [stage, preflight] of Object.entries(preflightArgs)) {
+      const result = await runProcess(
+        executable,
+        preflight,
+        { cwd: workdir, env: { ...process.env, ...env } },
+        "",
+        signal,
+      );
+      if (result.outputLimitExceeded) {
+        return failure(`Codex advisor ${stage} capability probe exceeded ${MAX_OUTPUT_BYTES} bytes`, result, executable, preflight, stage, prefixArgs);
+      }
+      if (result.startError) {
+        return failure(`Codex advisor executable is missing or cannot start (${result.startError.message})`, result, executable, preflight, stage, prefixArgs);
+      }
+      if (result.cancelled) {
+        return failure("Codex advisor capability probe cancelled by operator", result, executable, preflight, stage, prefixArgs);
+      }
+      if (result.code !== 0) {
+        return failure(`Codex advisor ${stage} capability probe exits non-zero with code ${result.code}`, result, executable, preflight, stage, prefixArgs);
+      }
+      capability[stage] = processEvidence(executable, preflight, result);
+    }
+    const args = buildCodexExecArgs({
+      mode: "read-only",
+      prefixArgs,
+      model,
+      reasoningEffort,
       schemaPath,
-      "--output-last-message",
       outputPath,
-      "-",
-    ];
+      workdir,
+    });
     const result = await runProcess(
       executable,
       args,
@@ -172,34 +243,49 @@ export async function runAdvisor({
       signal,
     );
     if (result.outputLimitExceeded) {
-      return failure(`Codex advisor output exceeded ${MAX_OUTPUT_BYTES} bytes`, result);
+      return failure(`Codex advisor output exceeded ${MAX_OUTPUT_BYTES} bytes`, result, executable, args, "reviewer-process", prefixArgs);
     }
     if (result.startError) {
-      return failure(`Codex advisor executable is missing or cannot start (${result.startError.message})`, result);
+      return failure(`Codex advisor executable is missing or cannot start (${result.startError.message})`, result, executable, args, "reviewer-launch", prefixArgs);
     }
     if (result.stdinError) {
-      return failure(`Codex advisor prompt could not be written (${result.stdinError.message})`, result);
+      return failure(`Codex advisor prompt could not be written (${result.stdinError.message})`, result, executable, args, "reviewer-launch", prefixArgs);
     }
     if (result.cancelled) {
-      return failure("Codex advisor cancelled by operator", result);
+      return failure("Codex advisor cancelled by operator", result, executable, args, "reviewer-process", prefixArgs);
     }
     if (result.code !== 0) {
-      return failure(`Codex advisor exits non-zero with code ${result.code}`, result);
+      return failure(`Codex advisor exits non-zero with code ${result.code}`, result, executable, args, "reviewer-process", prefixArgs);
     }
 
     let raw;
     try {
       raw = await readFile(outputPath, "utf8");
     } catch {
-      return failure("Codex advisor output file is missing or unreadable", result);
+      return failure("Codex advisor output file is missing or unreadable", result, executable, args, "reviewer-report", prefixArgs);
     }
     if (!raw.trim()) {
-      return failure("Codex advisor output file is empty", result);
+      return failure("Codex advisor output file is empty", result, executable, args, "reviewer-report", prefixArgs);
     }
     const parsed = parseAdvice(raw);
-    return parsed.error ? failure(parsed.error, result) : { ok: true, advice: parsed.advice };
+    if (parsed.error) {
+      return failure(parsed.error, result, executable, args, "reviewer-report", prefixArgs);
+    }
+    return {
+      ok: true,
+      advice: parsed.advice,
+      capability: { executable, probes: capability },
+      execution: completedExecutionEvidence(executable, args, result, prefixArgs),
+    };
   } catch (error) {
-    return failure(`Codex advisor could not start: ${error.message}`, { stderr: "", stdout: "" });
+    return failure(
+      `Codex advisor could not start: ${error.message}`,
+      undefined,
+      executable,
+      attemptedArgs,
+      "launcher-contract",
+      prefixArgs,
+    );
   } finally {
     if (workdir) await rm(workdir, { recursive: true, force: true }).catch(() => {});
   }
@@ -230,6 +316,9 @@ async function main() {
     model: optionValue("--model", "gpt-5.6-luna"),
     reasoningEffort: optionValue("--reasoning-effort", "max"),
   });
+  if (result.execution) {
+    process.stderr.write(`codex-advisor-execution ${JSON.stringify(result.execution)}\n`);
+  }
   if (!result.ok) {
     process.stderr.write(`${result.error}\n`);
     process.exitCode = 1;

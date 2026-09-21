@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { promisify } from "node:util";
 import { runAdvisor } from "./run-advisor.mjs";
+
+const execFileAsync = promisify(execFile);
 
 const skillDirectory = fileURLToPath(new URL("../", import.meta.url));
 const skill = await readFile(`${skillDirectory}SKILL.md`, "utf8");
@@ -20,7 +24,7 @@ async function createFixture() {
   await mkdir(runs);
   await writeFile(
     executable,
-    `import { writeFile } from "node:fs/promises";
+    `import { readFile, writeFile } from "node:fs/promises";
 const args = process.argv.slice(2);
 const input = await new Promise((resolve) => {
   let value = "";
@@ -28,7 +32,28 @@ const input = await new Promise((resolve) => {
   process.stdin.on("data", (chunk) => { value += chunk; });
   process.stdin.on("end", () => resolve(value));
 });
-await writeFile(process.env.ADVISOR_RECORD, JSON.stringify({ args, cwd: process.cwd(), input }));
+if (args[0] === "--version") {
+  process.stdout.write("codex-cli fixture");
+  process.exit(0);
+}
+if (args[0] === "exec" && args[1] === "--help") {
+  if (process.env.ADVISOR_MODE === "fail-once" && !(await readFile(process.env.ADVISOR_STATE, "utf8").catch(() => ""))) {
+    await writeFile(process.env.ADVISOR_STATE, "failed");
+    process.stderr.write("fixture launch failure");
+    process.exit(23);
+  }
+  if (process.env.ADVISOR_MODE === "unsupported-help") {
+    process.stderr.write("unexpected argument '--ask-for-approval'");
+    process.exit(2);
+  }
+  process.stdout.write("--approve-for-me");
+  process.exit(0);
+}
+const record = { args, cwd: process.cwd(), input };
+const previous = await readFile(process.env.ADVISOR_RECORD, "utf8").catch(() => "[]");
+const records = JSON.parse(previous);
+records.push(record);
+await writeFile(process.env.ADVISOR_RECORD, JSON.stringify(records));
 const outputIndex = args.indexOf("--output-last-message");
 const outputPath = outputIndex === -1 ? undefined : args[outputIndex + 1];
 switch (process.env.ADVISOR_MODE) {
@@ -65,7 +90,14 @@ switch (process.env.ADVISOR_MODE) {
 `,
   );
   await writeFile(commandExecutable, `@echo off\r\nnode "${executable}" %*\r\n`);
-  return { commandExecutable, env: { ADVISOR_RECORD: record }, executable, record, root, runs };
+  return {
+    commandExecutable,
+    env: { ADVISOR_RECORD: record, ADVISOR_STATE: join(root, "state.txt") },
+    executable,
+    record,
+    root,
+    runs,
+  };
 }
 
 async function runFixture(fixture, mode, options = {}) {
@@ -88,8 +120,20 @@ test("advisor runner uses an isolated Codex process", async () => {
       model: "gpt-test-model",
       reasoningEffort: "medium",
     });
-    assert.deepEqual(result, { ok: true, advice: "Use the smallest safe change." });
-    const record = JSON.parse(await readFile(fixture.record, "utf8"));
+    assert.equal(result.ok, true);
+    assert.equal(result.advice, "Use the smallest safe change.");
+    assert.equal(result.capability.executable, process.execPath);
+    assert.deepEqual(result.capability.probes.version.command, [process.execPath, fixture.executable, "--version"]);
+    assert.deepEqual(result.capability.probes.help.command, [process.execPath, fixture.executable, "exec", "--help"]);
+    assert.equal(result.execution.status, "completed");
+    assert.equal(result.execution.stage, "reviewer-process");
+    assert.equal(result.execution.exitCode, 0);
+    assert.equal(result.execution.signal, null);
+    assert.deepEqual(result.execution.command.slice(0, 2), [process.execPath, fixture.executable]);
+    assert.equal(result.execution.command.at(-1), "-");
+    const records = JSON.parse(await readFile(fixture.record, "utf8"));
+    assert.equal(records.length, 1);
+    const [record] = records;
     assert.equal(record.input, "Problem with\nmultiple lines.");
     assert.notEqual(record.cwd, process.cwd());
     assert.equal(record.args[0], "exec");
@@ -104,7 +148,31 @@ test("advisor runner uses an isolated Codex process", async () => {
     assert.ok(record.args.includes("--ephemeral"));
     assert.ok(record.args.includes("--output-schema"));
     assert.ok(record.args.includes("--output-last-message"));
+    assert.equal(record.args.includes("--approve-for-me"), false);
+    assert.equal(record.args.includes("--ask-for-approval"), false);
     assert.equal(record.args.at(-1), "-");
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("read-only prefix rejection preserves incomplete pre-launch evidence", async () => {
+  const fixture = await createFixture();
+  try {
+    const result = await runAdvisor({
+      executable: process.execPath,
+      prefixArgs: [fixture.executable, "--approve-for-me"],
+      prompt: "Problem",
+      tempRoot: fixture.runs,
+    });
+    assert.equal(result.ok, false);
+    assert.match(result.error, /read-only mode rejects --approve-for-me/);
+    assert.equal(result.execution.status, "incomplete");
+    assert.equal(result.execution.stage, "launcher-contract");
+    assert.equal(result.execution.exitCode, null);
+    assert.deepEqual(result.execution.prefixArgs, [fixture.executable, "--approve-for-me"]);
+    assert.deepEqual(result.execution.command.slice(0, 3), [process.execPath, fixture.executable, "--approve-for-me"]);
+    assert.deepEqual(await readdir(fixture.runs), []);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
@@ -114,6 +182,7 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
   const fixture = await createFixture();
   try {
     const cases = [
+      ["unsupported-help", /unexpected argument '--ask-for-approval'/],
       ["nonzero", /exits non-zero with code 7/],
       ["missing-output", /output file is missing or unreadable/],
       ["empty-output", /output file is empty/],
@@ -124,8 +193,14 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
     for (const [mode, expected, options] of cases) {
       const result = await runFixture(fixture, mode, options);
       assert.equal(result.ok, false);
+      assert.equal(result.execution.status, "incomplete");
+      assert.ok(result.execution.command.length > 0);
       assert.match(result.error, expected);
     }
+    const rejected = await runFixture(fixture, "unsupported-help");
+    assert.equal(rejected.execution.stage, "help");
+    assert.equal(rejected.execution.exitCode, 2);
+    assert.equal(rejected.execution.command.at(-1), "--help");
     const missing = await runAdvisor({
       executable: "codex-advisor-command-that-does-not-exist",
       prompt: "Problem",
@@ -133,10 +208,12 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
     });
     assert.equal(missing.ok, false);
     assert.match(missing.error, /missing or cannot start/);
+    assert.equal(missing.execution.status, "incomplete");
     assert.deepEqual(await readdir(fixture.runs), []);
 
     const slow = await runFixture(fixture, "slow");
-    assert.deepEqual(slow, { ok: true, advice: "Use the smallest safe change." });
+    assert.equal(slow.ok, true);
+    assert.equal(slow.advice, "Use the smallest safe change.");
     const largeOutput = await runFixture(fixture, "large-output");
     assert.equal(largeOutput.ok, false);
     assert.match(largeOutput.error, /output exceeded/);
@@ -158,6 +235,43 @@ test("advisor runner supports explicit cancellation before prompt submission", a
   }
 });
 
+test("repairs a failed launch and retries with complete evidence without changing checkout", async () => {
+  const fixture = await createFixture();
+  const checkoutState = async () => {
+    const [{ stdout: sha }, { stdout: status }] = await Promise.all([
+      execFileAsync("git", ["rev-parse", "HEAD"]),
+      execFileAsync("git", ["status", "--short"]),
+    ]);
+    return { sha: sha.trim(), status };
+  };
+  try {
+    const before = await checkoutState();
+    const failed = await runFixture(fixture, "fail-once");
+    assert.equal(failed.ok, false);
+    assert.equal(failed.execution.status, "incomplete");
+    assert.equal(failed.execution.stage, "help");
+    assert.equal(failed.execution.exitCode, 23);
+    assert.equal(failed.execution.stderr, "fixture launch failure");
+
+    const repaired = await runFixture(fixture, "valid");
+    assert.equal(repaired.ok, true);
+    assert.equal(repaired.execution.status, "completed");
+    assert.equal(repaired.execution.stage, "reviewer-process");
+    assert.equal(repaired.execution.exitCode, 0);
+    assert.equal(repaired.capability.probes.version.exitCode, 0);
+    assert.equal(repaired.capability.probes.version.stdout, "codex-cli fixture");
+    assert.equal(repaired.capability.probes.help.exitCode, 0);
+    assert.equal(repaired.capability.probes.help.stdout, "--approve-for-me");
+    assert.equal(repaired.execution.command[0], process.execPath);
+    assert.equal(repaired.execution.command[1], fixture.executable);
+
+    const after = await checkoutState();
+    assert.deepEqual(after, before);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test("advisor runner rejects shell metacharacters before a Windows executable starts", { skip: process.platform !== "win32" }, async () => {
   const fixture = await createFixture();
   const marker = join(fixture.root, "injected.txt");
@@ -169,10 +283,13 @@ test("advisor runner rejects shell metacharacters before a Windows executable st
       prompt: "Problem",
       tempRoot: fixture.runs,
     });
-    assert.deepEqual(result, {
-      ok: false,
-      error: "Codex advisor model contains unsupported shell characters",
-    });
+    assert.equal(result.ok, false);
+    assert.equal(result.error, "Codex advisor model contains unsupported shell characters");
+    assert.equal(result.execution.status, "incomplete");
+    assert.equal(result.execution.stage, "launcher-contract");
+    assert.equal(result.execution.exitCode, null);
+    assert.ok(result.execution.command.includes("--model"));
+    assert.ok(result.execution.command.some((value) => value.includes("safe&echo")));
     await assert.rejects(readFile(marker));
     assert.deepEqual(await readdir(fixture.runs), []);
   } finally {
@@ -214,8 +331,11 @@ test("advisor runner does not impose a wall-clock kill", () => {
 });
 
 test("advisor runner uses direct Windows executable invocation", () => {
-  assert.match(runner, /process\.platform === "win32" \? "codex\.exe"/);
+  assert.match(runner, /resolveCodexExecutable/);
   assert.match(runner, /shell: false/);
+  assert.match(runner, /buildCodexPreflightArgs/);
+  assert.match(runner, /buildCodexExecArgs/);
+  assert.match(runner, /codex-advisor-execution/);
 });
 
 test("advisor defaults to Luna max for confirmed blockers", () => {
