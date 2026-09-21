@@ -24,6 +24,14 @@ test("reports blank, unconfigured, and ambiguous supported root manifests", () =
       },
       expected: ["build-entrypoint", "test-entrypoint"],
     },
+    {
+      files: {
+        "first.sln": "Microsoft Visual Studio Solution File\n",
+        "second.sln": "Microsoft Visual Studio Solution File\n",
+        "app.csproj": "<Project />\n",
+      },
+      expected: ["build-entrypoint", "test-entrypoint"],
+    },
   ];
   for (const { files, expected } of cases)
     withProject(files, (root) =>
@@ -48,7 +56,6 @@ test("routes E1 and E2 findings through the repository scan", () => {
     );
   });
 });
-
 test("routes an unconfigured Python root through the repository scan", () => {
   withProject({ "pyproject.toml": '[project]\nname = "sample"\n' }, (root) => {
     const result = scan(

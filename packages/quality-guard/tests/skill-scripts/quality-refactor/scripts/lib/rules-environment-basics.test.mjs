@@ -63,9 +63,20 @@ test("resolves declared and language-standard one-command entry points", () => {
       assert.deepEqual(checkEnvironment(root, buildConfig("default")), []);
     });
 });
-
-test("leaves unsupported or undecidable layouts without an invented command", () => {
-  withProject({ "README.md": "run whatever works\n" }, (root) =>
-    assert.equal(resolveEntrypoints(root), null),
+test("uses a root solution as the .NET boundary", () => {
+  withProject(
+    {
+      "sample.sln": "Microsoft Visual Studio Solution File\n",
+      "app.csproj": "<Project />\n",
+      "test.csproj": "<Project />\n",
+    },
+    (root) => {
+      assert.deepEqual(resolveEntrypoints(root), {
+        file: "sample.sln",
+        build: "dotnet build sample.sln",
+        test: "dotnet test sample.sln",
+      });
+      assert.deepEqual(checkEnvironment(root, buildConfig("default")), []);
+    },
   );
 });
