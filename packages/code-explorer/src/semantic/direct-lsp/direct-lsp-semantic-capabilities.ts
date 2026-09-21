@@ -8,20 +8,26 @@ export function relationCapabilitiesFromInitialize(
   status: DirectLspStatus,
 ): RelationCapabilities {
   const capabilities = status.server_capabilities ?? {};
-  const supported = (name: string) =>
-    capabilities[name] !== undefined && capabilities[name] !== false;
   return {
-    definition: capabilityState(supported("definitionProvider")),
-    references: capabilityState(supported("referencesProvider")),
-    type_definition: capabilityState(supported("typeDefinitionProvider")),
-    implementation: capabilityState(supported("implementationProvider")),
-    callers: capabilityState(supported("callHierarchyProvider")),
-    callees: capabilityState(supported("callHierarchyProvider")),
+    definition: capabilityState(capabilities, "definitionProvider"),
+    references: capabilityState(capabilities, "referencesProvider"),
+    type_definition: capabilityState(capabilities, "typeDefinitionProvider"),
+    implementation: capabilityState(capabilities, "implementationProvider"),
+    callers: capabilityState(capabilities, "callHierarchyProvider"),
+    callees: capabilityState(capabilities, "callHierarchyProvider"),
   };
 }
 
-function capabilityState(supported: boolean): {
+function capabilityState(
+  capabilities: Record<string, unknown>,
+  name: string,
+): {
   state: "ready" | "unavailable";
 } {
-  return { state: supported ? "ready" : "unavailable" };
+  return {
+    state:
+      capabilities[name] !== undefined && capabilities[name] !== false
+        ? "ready"
+        : "unavailable",
+  };
 }

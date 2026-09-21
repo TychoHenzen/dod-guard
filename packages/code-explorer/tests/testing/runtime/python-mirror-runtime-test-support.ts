@@ -3,9 +3,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createNativeProjectRoot } from "../../../src/semantic/project-root/project-root.js";
+import { prohibitedPythonConfigurationKeys } from "../../../src/semantic/python-mirror/python-mirror-options.js";
 import { createNativePythonMirror } from "../../../src/semantic/python-mirror/python-mirror-runtime.js";
 
-export { prohibitedPythonConfigurationKeys as unsafePythonConfigurationKeys } from "../../../src/semantic/python-mirror/python-mirror-validation.js";
+export const unsafePythonConfigurationKeys = prohibitedPythonConfigurationKeys;
 
 export function project(files: Record<string, string>) {
   const root = mkdtempSync(join(tmpdir(), "code-explorer-python-test-"));

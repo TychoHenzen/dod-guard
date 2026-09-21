@@ -18,7 +18,7 @@ export async function requestBackend(input: {
         ? "backend_crashed"
         : "backend_failed",
     );
-  return requestWithRetry(input, false);
+  return requestWithRetry(input, "initial");
 }
 
 async function requestWithRetry(
@@ -28,7 +28,7 @@ async function requestWithRetry(
     params: unknown;
     onRestart?: RestartProcess;
   },
-  retried: boolean,
+  attempt: "initial" | "retry",
 ): Promise<unknown> {
   try {
     return await sendRequest({
@@ -41,7 +41,7 @@ async function requestWithRetry(
       error.code !== "backend_content_modified"
     )
       throw error;
-    if (retried) throw new DirectLspError("backend_failed");
-    return requestWithRetry(input, true);
+    if (attempt === "retry") throw new DirectLspError("backend_failed");
+    return requestWithRetry(input, "retry");
   }
 }

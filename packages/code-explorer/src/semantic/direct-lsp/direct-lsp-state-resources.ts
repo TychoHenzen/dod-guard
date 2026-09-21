@@ -48,7 +48,7 @@ export abstract class DirectLspStateResources extends DirectLspStateStorage {
     return this.#restarts.recordTimeout();
   }
 
-  resetFailureHistoryState(wasUnavailable: boolean): boolean {
-    return this.#restarts.resetFailureHistory(wasUnavailable);
+  resetFailureHistoryState(): void {
+    this.#restarts.resetFailureHistory();
   }
 }

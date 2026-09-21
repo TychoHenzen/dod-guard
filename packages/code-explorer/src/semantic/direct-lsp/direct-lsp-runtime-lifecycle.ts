@@ -53,8 +53,12 @@ export class DirectLspRuntimeLifecycle {
     this.#stopped = true;
   }
 
-  setStopping(stopping: boolean): void {
-    this.#stopping = stopping;
+  beginStopping(): void {
+    this.#stopping = true;
+  }
+
+  clearStopping(): void {
+    this.#stopping = false;
   }
 
   setExitResolver(resolve: (() => void) | undefined): void {
