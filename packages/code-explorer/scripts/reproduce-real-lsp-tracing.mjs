@@ -59,7 +59,7 @@ function tracedProcess(process_, temporaryRoot, spawnedProcesses) {
 }
 
 export function createTracingSpawn(temporaryRoot, spawnedProcesses) {
-  return function tracingSpawn(executable, arguments_, environment) {
+  return function (executable, arguments_, environment) {
     const process_ = spawnNativeLspProcess(executable, arguments_, environment);
     spawnedProcesses.add(process_);
     return tracedProcess(process_, temporaryRoot, spawnedProcesses);

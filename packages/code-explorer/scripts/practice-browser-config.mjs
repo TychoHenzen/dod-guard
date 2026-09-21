@@ -5,11 +5,11 @@ import { fileURLToPath } from "node:url";
 export const packageRoot = resolve(
   fileURLToPath(new URL("..", import.meta.url)),
 );
-export const languages = ["rust", "python", "csharp"];
+const languages = ["rust", "python", "csharp"];
 export const readinessTimeoutMs = 30_000;
 export const reconciliationTimeoutMs = 35_000;
 export const practiceTimeoutMs = 90_000;
-export const evidenceRoot = join(packageRoot, "practice", "evidence");
+const evidenceRoot = join(packageRoot, "practice", "evidence");
 
 export class PracticeFailure extends Error {
   constructor(code, exitCode = 1) {

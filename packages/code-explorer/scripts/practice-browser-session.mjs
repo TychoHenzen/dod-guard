@@ -3,7 +3,8 @@ import {
   PracticeFailure,
   readinessTimeoutMs,
 } from "./practice-browser-config.mjs";
-import { call, expectSuccess } from "./practice-browser-transport.mjs";
+import { successfulRequest } from "./practice-browser-requests.mjs";
+import { expectSuccess } from "./practice-browser-transport.mjs";
 
 function backendStateReady(candidate) {
   return ["ready", "degraded"].includes(candidate?.state);
@@ -45,10 +46,7 @@ export async function createSession(page, endpoint) {
 }
 
 export async function waitForBackend({
-  page,
-  endpoint,
-  session,
-  tab,
+  context,
   language,
   evidence,
 }) {
@@ -56,17 +54,12 @@ export async function waitForBackend({
   let selectedBackend;
   const readyDeadline = Date.now() + readinessTimeoutMs;
   do {
-    status = expectSuccess(
-      await call({
-        page,
-        endpoint,
-        session,
-        tab,
-        route: "/api/status",
-        body: { action: "status" },
-      }),
-      "status",
-    );
+    status = await successfulRequest({
+      context,
+      route: "/api/status",
+      body: { action: "status" },
+      operation: "status",
+    });
     selectedBackend = status.data?.backend_status?.backends?.find(
       (candidate) => candidate.language === language,
     );

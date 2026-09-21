@@ -1,7 +1,14 @@
 import { existsSync, rmSync } from "node:fs";
-import { spawn } from "node:child_process";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import { createLspFrameStream } from "./lsp-frame-stream.mjs";
+import {
+  isConfigurationRequest,
+  isInitializeResponse,
+  sendConfiguration,
+  sendInitialization,
+  sendMessage,
+} from "./run-python-safe-sentinel-protocol.mjs";
+import { createSentinelSession } from "./run-python-safe-sentinel-process.mjs";
 
 const [serverEntrypoint, fixture] = process.argv.slice(2);
 if (!(serverEntrypoint && fixture))
@@ -9,100 +16,31 @@ if (!(serverEntrypoint && fixture))
     "usage: run-python-safe-sentinel <pyright-server.js> <fixture>",
   );
 
-const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
-const { createNativeProjectRoot } = await import(
-  pathToFileURL(`${scriptDirectory}../dist/semantic/project-root.js`).href
+const { child, mirror, root, sentinel } = await createSentinelSession(
+  serverEntrypoint,
+  fixture,
 );
-const { createNativePythonMirror } = await import(
-  pathToFileURL(`${scriptDirectory}../dist/semantic/python-mirror-runtime.js`)
-    .href
-);
-const root = createNativeProjectRoot(fixture);
-const mirror = createNativePythonMirror(root);
-const sentinel = `${fixture}/SENTINEL_SIDE_EFFECT`;
 rmSync(sentinel, { force: true });
-const child = spawn(process.execPath, [serverEntrypoint, "--stdio"], {
-  cwd: mirror.root,
-  shell: false,
-  stdio: ["pipe", "pipe", "pipe"],
-  // Do not inherit a project interpreter, venv, external import path, or PATH.
-  env: {
-    PATH: "",
-    PYTHONPATH: "",
-    VIRTUAL_ENV: "",
-    CONDA_PREFIX: "",
-    CODE_EXPLORER_SENTINEL_PATH: sentinel,
-  },
-});
-
-function isConfigurationRequest(message) {
-  return (
-    message.method === "workspace/configuration" && message.id !== undefined
-  );
-}
-
-function isInitializeResponse(message, initialized_) {
-  return message.id === 1 && message.method === undefined && !initialized_;
-}
-
-function sendInitialization(child_, mirror_, root_) {
-  const uri = mirror_.uriFor("src/fixture.py");
-  const text = root_.protectedRead("src/fixture.py").bytes;
-  send(child_, { jsonrpc: "2.0", method: "initialized", params: {} });
-  send(child_, {
-    jsonrpc: "2.0",
-    method: "textDocument/didOpen",
-    params: { textDocument: { uri, languageId: "python", version: 1, text } },
-  });
-  send(child_, {
-    jsonrpc: "2.0",
-    id: 2,
-    method: "textDocument/definition",
-    params: { textDocument: { uri }, position: { line: 0, character: 7 } },
-  });
-}
-
-function sendConfiguration(child_, message) {
-  const items = message.params?.items ?? [];
-  send(child_, {
-    jsonrpc: "2.0",
-    id: message.id,
-    result: items.map((item) =>
-      [
-        "python.pythonPath",
-        "python.venvPath",
-        "python.analysis.extraPaths",
-      ].includes(item.section)
-        ? []
-        : null,
-    ),
-  });
-}
 
 let stderr = "";
 let initialized = false;
 let finished = false;
 let configurationReplies = 0;
-const send = (child_, message) => {
-  const body = JSON.stringify(message);
-  child_.stdin.write(
-    `Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`,
-  );
-};
+let timeout;
+const send = (message) => sendMessage(child, message);
 const finish = (result) => {
   if (finished) return;
   finished = true;
   clearTimeout(timeout);
   const disposeAndReport = () => {
     mirror.dispose();
-    const report = {
-      ...result,
-      side_effect_absent: !existsSync(sentinel),
-      configuration_replies: configurationReplies,
-      stderr,
-    };
     process.stdout.write(
-      `${JSON.stringify(report)}\n`,
+      `${JSON.stringify({
+        ...result,
+        side_effect_absent: !existsSync(sentinel),
+        configuration_replies: configurationReplies,
+        stderr,
+      })}\n`,
     );
   };
   if (child.exitCode !== null) {
@@ -112,7 +50,7 @@ const finish = (result) => {
   child.once("exit", disposeAndReport);
   child.kill();
 };
-const timeout = setTimeout(
+timeout = setTimeout(
   () => finish({ initialized, definition_responded: false, timeout: true }),
   30_000,
 );
@@ -139,7 +77,7 @@ const handleFrame = (message) => {
     });
 };
 child.stdout.on("data", createLspFrameStream(handleFrame));
-send(child, {
+send({
   jsonrpc: "2.0",
   id: 1,
   method: "initialize",
