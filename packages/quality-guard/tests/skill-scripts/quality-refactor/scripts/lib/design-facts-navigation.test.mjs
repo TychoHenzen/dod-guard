@@ -4,10 +4,22 @@ import { designFacts } from "../../../../../skills/quality-refactor/scripts/lib/
 
 test("finds explicit two-hop receiver chains across supported languages", () => {
   const fixtures = [
-    ["ts", "class Service { run() { return this.client.get().store().save(); } }"],
-    ["cs", "class Service { void Run() { return this.client.Get().Store().Save(); } }"],
-    ["py", "class Service:\n    def run(self):\n        return self.client.get().store().save()\n"],
-    ["rs", "struct Service { client: Client }\nimpl Service { fn run(&self) { self.client.get().store().save(); } }"],
+    [
+      "ts",
+      "class Service { run() { return this.client.get().store().save(); } }",
+    ],
+    [
+      "cs",
+      "class Service { void Run() { return this.client.Get().Store().Save(); } }",
+    ],
+    [
+      "py",
+      "class Service:\n    def run(self):\n        return self.client.get().store().save()\n",
+    ],
+    [
+      "rs",
+      "struct Service { client: Client }\nimpl Service { fn run(&self) { self.client.get().store().save(); } }",
+    ],
   ];
   for (const [lang, source] of fixtures) {
     const [fact] = designFacts(source, lang).transitiveNavigation;
@@ -15,7 +27,8 @@ test("finds explicit two-hop receiver chains across supported languages", () => 
       fact && { root: fact.root, hops: fact.hops },
       {
         root: "client",
-        hops: lang === "cs" ? ["Get", "Store", "Save"] : ["get", "store", "save"],
+        hops:
+          lang === "cs" ? ["Get", "Store", "Save"] : ["get", "store", "save"],
       },
       lang,
     );

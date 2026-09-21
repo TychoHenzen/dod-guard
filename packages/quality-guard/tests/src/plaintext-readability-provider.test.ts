@@ -14,6 +14,8 @@ test("reports an unsupported language and missing textstat as unavailable", () =
     reason: "textstat reported that the input language is unsupported",
   }));
   assert.equal(unsupported.status, "unavailable");
-  const missing = runTextstat(easyText, { command: "quality-guard-textstat-missing" });
+  const missing = runTextstat(easyText, {
+    command: "quality-guard-textstat-missing",
+  });
   assert.equal(missing.status, "unavailable");
 });

@@ -11,17 +11,20 @@ test("C# positional record tails preserve generic and default-value members", ()
       "public class Service { public void Run() { } }",
   });
   assert.deepEqual(result.errors, []);
-  assert.deepEqual(result.facts.types.map((type) => type.name), [
-    "Config",
-    "Service",
-    "User",
-  ]);
   assert.deepEqual(
-    result.facts.types.find((type) => type.name === "User")?.members.map((member) => member.name),
+    result.facts.types.map((type) => type.name),
+    ["Config", "Service", "User"],
+  );
+  assert.deepEqual(
+    result.facts.types
+      .find((type) => type.name === "User")
+      ?.members.map((member) => member.name),
     ["Map"],
   );
   assert.deepEqual(
-    result.facts.types.find((type) => type.name === "Config")?.members.map((member) => member.name),
+    result.facts.types
+      .find((type) => type.name === "Config")
+      ?.members.map((member) => member.name),
     ["Count", "Value"],
   );
   assert.deepEqual(

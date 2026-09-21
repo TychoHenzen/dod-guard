@@ -6,6 +6,15 @@ import {
 } from "../placement.js";
 import { findingKey, findingsFor } from "./findings.js";
 
+function isAffectedProductionFile(
+  file: ArchitectureFileFact,
+  affected: Set<string>,
+  config: QualityConfig,
+) {
+  const path = normalizeArchitecturePath(file.path);
+  return affected.has(path) && isProductionArchitecturePath(path, config);
+}
+
 export function analyzeDesignSmells(input: {
   beforeFiles: ArchitectureFileFact[];
   afterFiles: ArchitectureFileFact[];
@@ -22,10 +31,7 @@ export function analyzeDesignSmells(input: {
     ),
   );
   return input.afterFiles
-    .filter((file) => {
-      const path = normalizeArchitecturePath(file.path);
-      return affected.has(path) && isProductionArchitecturePath(path, input.config);
-    })
+    .filter((file) => isAffectedProductionFile(file, affected, input.config))
     .flatMap((file) =>
       findingsFor(file, input.config).filter(
         (finding) => !before.has(findingKey(finding)),

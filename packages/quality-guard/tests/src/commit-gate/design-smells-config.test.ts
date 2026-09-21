@@ -6,10 +6,12 @@ import { structuralFindings } from "../../../src/commit-gate/decision-findings-a
 import { analyzeDesignSmells } from "../../../src/commit-gate/design-smells/design-smells.js";
 
 test("reports only configured low-level configuration defaults", () => {
-  const config = parseQualityConfig(JSON.stringify({
-    pathGroups: { infrastructure: ["src/infra/**"] },
-    lowLevelPathGroups: ["infrastructure"],
-  }));
+  const config = parseQualityConfig(
+    JSON.stringify({
+      pathGroups: { infrastructure: ["src/infra/**"] },
+      lowLevelPathGroups: ["infrastructure"],
+    }),
+  );
   const files = [
     {
       path: "src/infra/Client.ts",
@@ -36,16 +38,21 @@ test("reports only configured low-level configuration defaults", () => {
     affectedPaths: ["src/infra/Client.ts", "src/app/Client.ts"],
     config,
   });
-  assert.deepEqual(result, [{
-    kind: "configurable-data",
-    path: "src/infra/Client.ts",
-    group: "infrastructure",
-    method: "run",
-    parameter: "timeout",
-    defaultValue: "30",
-    line: 2,
-  }]);
-  assert.equal(analyzeCurrentArchitecture(files, config).configurableData.length, 1);
+  assert.deepEqual(result, [
+    {
+      kind: "configurable-data",
+      path: "src/infra/Client.ts",
+      group: "infrastructure",
+      method: "run",
+      parameter: "timeout",
+      defaultValue: "30",
+      line: 2,
+    },
+  ]);
+  assert.equal(
+    analyzeCurrentArchitecture(files, config).configurableData.length,
+    1,
+  );
   const [finding] = structuralFindings({
     beforeFiles: [],
     afterFiles: files,

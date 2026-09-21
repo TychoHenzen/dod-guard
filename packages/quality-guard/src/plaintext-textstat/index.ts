@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { executeTextstat } from "./process.js";
 import type { TextstatResult } from "../plaintext-textstat-result.js";
+import { executeTextstat } from "./process.js";
 import type { Spawn } from "./spawn.js";
 
 const TEXTSTAT_PYTHON = [
@@ -41,10 +41,15 @@ function argsFor(options: { args?: string[] }): string[] | TextstatResult {
 }
 
 function commandFor(options: { command?: string }): string {
-  return options.command ?? process.env.QUALITY_GUARD_TEXTSTAT_COMMAND ?? "python";
+  return (
+    options.command ?? process.env.QUALITY_GUARD_TEXTSTAT_COMMAND ?? "python"
+  );
 }
 
-function shouldIsolate(options: { command?: string; args?: string[] }): boolean {
+function shouldIsolate(options: {
+  command?: string;
+  args?: string[];
+}): boolean {
   return (
     options.command === undefined &&
     options.args === undefined &&

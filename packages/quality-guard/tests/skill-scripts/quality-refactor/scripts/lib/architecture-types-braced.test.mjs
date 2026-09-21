@@ -17,7 +17,10 @@ test("C# positional record parsing preserves malformed and braced behavior", () 
     "cannot extract required architecture facts: Broken has no closed body",
   ]);
   assert.deepEqual(braced.errors, []);
-  assert.deepEqual(braced.facts.types.map((type) => type.name), ["Point", "User"]);
+  assert.deepEqual(
+    braced.facts.types.map((type) => type.name),
+    ["Point", "User"],
+  );
   assert.equal(
     braced.facts.types.find((type) => type.name === "Point")?.kind,
     "struct",

@@ -11,8 +11,10 @@ function finiteMeasures(value: unknown): TextstatMeasures | undefined {
   if (!value || typeof value !== "object") return undefined;
   const candidate = value as Record<string, unknown>;
   if (
-    !finiteNumber(candidate.fleschReadingEase) ||
-    !finiteNumber(candidate.fleschKincaidGrade)
+    !(
+      finiteNumber(candidate.fleschReadingEase) &&
+      finiteNumber(candidate.fleschKincaidGrade)
+    )
   )
     return undefined;
   return {

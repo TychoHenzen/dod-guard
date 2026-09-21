@@ -2,7 +2,11 @@ import { execFileSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import * as path from "node:path";
 
-export function materializeTree(root: string, ref: string, target: string): void {
+export function materializeTree(
+  root: string,
+  ref: string,
+  target: string,
+): void {
   if (ref === "index") {
     execFileSync(
       "git",

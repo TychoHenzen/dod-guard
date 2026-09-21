@@ -12,18 +12,25 @@ test("reports blank, unconfigured, and ambiguous supported root manifests", () =
       expected: ["build-entrypoint", "test-entrypoint"],
     },
     {
-      files: { "pyproject.toml": '[build-system]\nrequires = ["setuptools"]\n' },
+      files: {
+        "pyproject.toml": '[build-system]\nrequires = ["setuptools"]\n',
+      },
       expected: ["test-entrypoint"],
     },
     {
-      files: { "first.csproj": "<Project />\n", "second.csproj": "<Project />\n" },
+      files: {
+        "first.csproj": "<Project />\n",
+        "second.csproj": "<Project />\n",
+      },
       expected: ["build-entrypoint", "test-entrypoint"],
     },
   ];
   for (const { files, expected } of cases)
     withProject(files, (root) =>
       assert.deepEqual(
-        checkEnvironment(root, buildConfig("default")).map((violation) => violation.rule),
+        checkEnvironment(root, buildConfig("default")).map(
+          (violation) => violation.rule,
+        ),
         expected,
       ),
     );
@@ -35,7 +42,10 @@ test("routes E1 and E2 findings through the repository scan", () => {
       { paths: ["."], root, excludes: [], testPaths: [], rules: null },
       buildConfig("default"),
     );
-    assert.deepEqual(result.violations.map((violation) => violation.rule), ["build-entrypoint", "test-entrypoint"]);
+    assert.deepEqual(
+      result.violations.map((violation) => violation.rule),
+      ["build-entrypoint", "test-entrypoint"],
+    );
   });
 });
 
@@ -45,6 +55,9 @@ test("routes an unconfigured Python root through the repository scan", () => {
       { paths: ["."], root, excludes: [], testPaths: [], rules: null },
       buildConfig("default"),
     );
-    assert.deepEqual(result.violations.map((violation) => violation.rule), ["build-entrypoint", "test-entrypoint"]);
+    assert.deepEqual(
+      result.violations.map((violation) => violation.rule),
+      ["build-entrypoint", "test-entrypoint"],
+    );
   });
 });

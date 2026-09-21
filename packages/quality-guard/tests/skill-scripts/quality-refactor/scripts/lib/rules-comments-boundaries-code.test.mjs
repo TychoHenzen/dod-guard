@@ -9,9 +9,20 @@ test("keeps restatement findings covered across supported languages", () => {
     ["rs", "/// The user name.\npub user_name: String,"],
     ["ts", "// The user name.\nconst userName = value;"],
   ]) {
-    assert.equal(scan(language, code, "comment-restates-code").length, 1, language);
+    assert.equal(
+      scan(language, code, "comment-restates-code").length,
+      1,
+      language,
+    );
     assert.deepEqual(
-      scan(language, code.replace(/The user name\./, "The user name is normalized for the wire format."), "comment-restates-code"),
+      scan(
+        language,
+        code.replace(
+          /The user name\./,
+          "The user name is normalized for the wire format.",
+        ),
+        "comment-restates-code",
+      ),
       [],
     );
   }
@@ -24,9 +35,17 @@ test("keeps commented-out-code findings covered across supported languages", () 
     ["rs", "// return value;\npub fn value() -> i32 { 1 }"],
     ["ts", "// return value;\nexport function value() { return 1; }"],
   ]) {
-    assert.equal(scan(language, code, "commented-out-code").length, 1, language);
+    assert.equal(
+      scan(language, code, "commented-out-code").length,
+      1,
+      language,
+    );
     assert.deepEqual(
-      scan(language, code.replace("return value;", "the value is explained below"), "commented-out-code"),
+      scan(
+        language,
+        code.replace("return value;", "the value is explained below"),
+        "commented-out-code",
+      ),
       [],
     );
   }

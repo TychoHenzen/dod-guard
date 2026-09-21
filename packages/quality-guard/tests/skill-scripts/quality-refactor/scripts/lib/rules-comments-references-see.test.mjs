@@ -39,9 +39,17 @@ test("checks explicit symbols across supported languages", () => {
   ]) {
     const target = `src/target${extension}#Target`;
     const source = `${marker} @see ${target}\nexport const value = 1;\n`;
-    assert.deepEqual(run(source, { [`src/target${extension}`]: declaration }, extension), [], extension);
+    assert.deepEqual(
+      run(source, { [`src/target${extension}`]: declaration }, extension),
+      [],
+      extension,
+    );
     assert.equal(
-      run(source.replace("#Target", "#Missing"), { [`src/target${extension}`]: declaration }, extension).length,
+      run(
+        source.replace("#Target", "#Missing"),
+        { [`src/target${extension}`]: declaration },
+        extension,
+      ).length,
       1,
       extension,
     );

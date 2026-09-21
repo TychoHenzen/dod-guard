@@ -6,10 +6,16 @@ test("skips empty and short input without invoking textstat", () => {
   let called = false;
   const provider = () => {
     called = true;
-    return { status: "ok" as const, measures: { fleschReadingEase: 70, fleschKincaidGrade: 8 } };
+    return {
+      status: "ok" as const,
+      measures: { fleschReadingEase: 70, fleschKincaidGrade: 8 },
+    };
   };
   assert.equal(checkPlaintextReadability("", provider).status, "skipped");
-  assert.equal(checkPlaintextReadability("Only a few words.", provider).status, "skipped");
+  assert.equal(
+    checkPlaintextReadability("Only a few words.", provider).status,
+    "skipped",
+  );
   assert.equal(called, false);
 });
 
@@ -28,7 +34,10 @@ test("normalizes Markdown, code, identifiers, citations, and keeps non-ASCII pro
     ].join("\n"),
     (text) => {
       checked = text;
-      return { status: "ok", measures: { fleschReadingEase: 70, fleschKincaidGrade: 8 } };
+      return {
+        status: "ok",
+        measures: { fleschReadingEase: 70, fleschKincaidGrade: 8 },
+      };
     },
   );
   assert.equal(result.status, "pass");
@@ -38,11 +47,17 @@ test("normalizes Markdown, code, identifiers, citations, and keeps non-ASCII pro
 });
 
 test("keeps soft line breaks inside one sentence and reports its context", () => {
-  const longSentence = ["laterMarker", ...Array.from({ length: 25 }, () => "plain")].join(" ");
-  const result = checkPlaintextReadability(`Intro sentence.\n${longSentence}`, () => ({
-    status: "ok",
-    measures: { fleschReadingEase: 70, fleschKincaidGrade: 8 },
-  }));
+  const longSentence = [
+    "laterMarker",
+    ...Array.from({ length: 25 }, () => "plain"),
+  ].join(" ");
+  const result = checkPlaintextReadability(
+    `Intro sentence.\n${longSentence}`,
+    () => ({
+      status: "ok",
+      measures: { fleschReadingEase: 70, fleschKincaidGrade: 8 },
+    }),
+  );
   assert.equal(result.status, "fail");
   assert.match(result.constraintFailures[0], /26 words/);
   assert.match(result.context ?? "", /laterMarker/);

@@ -11,7 +11,10 @@ test("validates configured textstat arguments", () => {
   const response = textstatResponse();
   try {
     process.env.QUALITY_GUARD_TEXTSTAT_ARGS = "not json";
-    assert.equal(runTextstat(easyText, { spawn: () => response }).status, "unavailable");
+    assert.equal(
+      runTextstat(easyText, { spawn: () => response }).status,
+      "unavailable",
+    );
     process.env.QUALITY_GUARD_TEXTSTAT_ARGS = JSON.stringify(["-c", "ok"]);
     const configured = runTextstat(easyText, {
       spawn: (_command, args) => {
@@ -21,7 +24,10 @@ test("validates configured textstat arguments", () => {
     });
     assert.equal(configured.status, "ok");
     process.env.QUALITY_GUARD_TEXTSTAT_ARGS = JSON.stringify(["-c", 1]);
-    assert.equal(runTextstat(easyText, { spawn: () => response }).status, "unavailable");
+    assert.equal(
+      runTextstat(easyText, { spawn: () => response }).status,
+      "unavailable",
+    );
   } finally {
     if (previous === undefined) delete process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
     else process.env.QUALITY_GUARD_TEXTSTAT_ARGS = previous;

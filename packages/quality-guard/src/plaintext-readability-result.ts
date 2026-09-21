@@ -1,6 +1,6 @@
-import type { TextstatMeasures } from "./plaintext-textstat-measures.js";
-import { READABILITY_POLICY } from "./plaintext-readability-types.js";
 import type { ReadabilityStatus } from "./plaintext-readability-status.js";
+import { READABILITY_POLICY } from "./plaintext-readability-types.js";
+import type { TextstatMeasures } from "./plaintext-textstat-measures.js";
 
 export type ReadabilityResult = {
   status: ReadabilityStatus;

@@ -49,7 +49,8 @@ test("default textstat uses an isolated interpreter environment and cwd", () => 
       Object.defineProperty(process, "platform", { value: actualPlatform });
     }
   } finally {
-    if (command === undefined) delete process.env.QUALITY_GUARD_TEXTSTAT_COMMAND;
+    if (command === undefined)
+      delete process.env.QUALITY_GUARD_TEXTSTAT_COMMAND;
     else process.env.QUALITY_GUARD_TEXTSTAT_COMMAND = command;
     if (args === undefined) delete process.env.QUALITY_GUARD_TEXTSTAT_ARGS;
     else process.env.QUALITY_GUARD_TEXTSTAT_ARGS = args;

@@ -11,9 +11,17 @@ test("keeps unreadable see evidence unavailable", () => {
 
 test("does not treat target comments or strings as symbol evidence", () => {
   for (const [extension, marker, declaration] of [
-    [".cs", "//", '// Target\npublic class Other {}\nconst string Text = "Target";'],
+    [
+      ".cs",
+      "//",
+      '// Target\npublic class Other {}\nconst string Text = "Target";',
+    ],
     [".py", "#", '# Target\nclass Other:\n    pass\ntext = "Target"\n'],
-    [".rs", "///", '// Target\npub struct Other;\nconst TEXT: &str = "Target";'],
+    [
+      ".rs",
+      "///",
+      '// Target\npub struct Other;\nconst TEXT: &str = "Target";',
+    ],
     [".ts", "//", '// Target\nexport class Other {}\nconst text = "Target";'],
   ]) {
     const found = run(

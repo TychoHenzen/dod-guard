@@ -1,7 +1,5 @@
-import {
-  READABILITY_POLICY,
-} from "../plaintext-readability-types.js";
 import type { ReadabilityStatus } from "../plaintext-readability-status.js";
+import { READABILITY_POLICY } from "../plaintext-readability-types.js";
 import type { TextstatMeasures } from "../plaintext-textstat-measures.js";
 
 function clamp(value: number): number {
@@ -37,7 +35,8 @@ export function constraintFailuresFor(longestSentence: number): string[] {
 }
 
 export function reasonFor(status: ReadabilityStatus, score: number): string {
-  if (status === "pass") return "combined score and sentence-length policy passed";
+  if (status === "pass")
+    return "combined score and sentence-length policy passed";
   if (score < READABILITY_POLICY.threshold)
     return "combined score is below the threshold";
   return "dyslexia-friendly sentence-length policy failed";

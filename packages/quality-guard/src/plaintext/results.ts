@@ -1,15 +1,16 @@
-import {
-  READABILITY_POLICY,
-} from "../plaintext-readability-types.js";
 import type { ReadabilityResult } from "../plaintext-readability-result.js";
 import type { ReadabilityStatus } from "../plaintext-readability-status.js";
+import { READABILITY_POLICY } from "../plaintext-readability-types.js";
 import type { TextstatMeasures } from "../plaintext-textstat-measures.js";
 
-function failureValues(measures: TextstatMeasures | undefined, score: number | undefined): string {
+function failureValues(
+  measures: TextstatMeasures | undefined,
+  score: number | undefined,
+): string {
   return measures
     ? `Flesch Reading Ease ${measures.fleschReadingEase}; ` +
-      `Flesch-Kincaid Grade ${measures.fleschKincaidGrade}; ` +
-      `combined score ${score}; threshold ${READABILITY_POLICY.threshold}.`
+        `Flesch-Kincaid Grade ${measures.fleschKincaidGrade}; ` +
+        `combined score ${score}; threshold ${READABILITY_POLICY.threshold}.`
     : "No readability measures were available.";
 }
 

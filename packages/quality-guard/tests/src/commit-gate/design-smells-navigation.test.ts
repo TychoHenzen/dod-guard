@@ -7,44 +7,51 @@ import { analyzeDesignSmells } from "../../../src/commit-gate/design-smells/desi
 
 test("reports harmful-looking receiver chains but excludes fluent markers", () => {
   const config = parseQualityConfig("{}");
-  const files = [{
-    path: "src/Service.ts",
-    imports: [],
-    references: [],
-    types: [],
-    transitiveNavigation: [
-      {
-        method: "run",
-        root: "client",
-        hops: ["get", "store", "save"],
-        chain: "this.client.get().store().save()",
-        line: 2,
-      },
-      {
-        method: "build",
-        root: "builder",
-        hops: ["step", "next", "build"],
-        chain: "this.builder.step().next().build()",
-        line: 3,
-      },
-    ],
-  }];
+  const files = [
+    {
+      path: "src/Service.ts",
+      imports: [],
+      references: [],
+      types: [],
+      transitiveNavigation: [
+        {
+          method: "run",
+          root: "client",
+          hops: ["get", "store", "save"],
+          chain: "this.client.get().store().save()",
+          line: 2,
+        },
+        {
+          method: "build",
+          root: "builder",
+          hops: ["step", "next", "build"],
+          chain: "this.builder.step().next().build()",
+          line: 3,
+        },
+      ],
+    },
+  ];
   const result = analyzeDesignSmells({
     beforeFiles: [],
     afterFiles: files,
     affectedPaths: ["src/Service.ts"],
     config,
   });
-  assert.deepEqual(result, [{
-    kind: "transitive-navigation",
-    path: "src/Service.ts",
-    method: "run",
-    root: "client",
-    hops: ["get", "store", "save"],
-    chain: "this.client.get().store().save()",
-    line: 2,
-  }]);
-  assert.equal(analyzeCurrentArchitecture(files, config).transitiveNavigation.length, 1);
+  assert.deepEqual(result, [
+    {
+      kind: "transitive-navigation",
+      path: "src/Service.ts",
+      method: "run",
+      root: "client",
+      hops: ["get", "store", "save"],
+      chain: "this.client.get().store().save()",
+      line: 2,
+    },
+  ]);
+  assert.equal(
+    analyzeCurrentArchitecture(files, config).transitiveNavigation.length,
+    1,
+  );
   const [finding] = structuralFindings({
     beforeFiles: [],
     afterFiles: files,

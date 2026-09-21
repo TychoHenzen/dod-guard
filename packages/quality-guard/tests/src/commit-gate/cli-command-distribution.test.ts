@@ -10,10 +10,16 @@ test("ignores generated distribution JavaScript in the commit decision", () => {
   try {
     const distribution = path.join(root, "packages", "fixture", "dist");
     mkdirSync(distribution, { recursive: true });
-    writeFileSync(path.join(distribution, "bundle.js"), "export class BundledDependency {");
+    writeFileSync(
+      path.join(distribution, "bundle.js"),
+      "export class BundledDependency {",
+    );
     const result = runStagedCheck(root, { json: true, intent: "change" });
     assert.equal(result.verdict, "PASS");
-    assert.match(result.input.reason ?? "", /No source quality decision was required/);
+    assert.match(
+      result.input.reason ?? "",
+      /No source quality decision was required/,
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

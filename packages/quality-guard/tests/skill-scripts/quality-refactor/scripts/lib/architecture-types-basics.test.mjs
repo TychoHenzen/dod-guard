@@ -11,17 +11,20 @@ test("C# positional records preserve members and following methods", () => {
       "public class Service { public void Run() { } }",
   });
   assert.deepEqual(result.errors, []);
-  assert.deepEqual(result.facts.types.map((type) => type.name), [
-    "Point",
-    "Service",
-    "User",
-  ]);
   assert.deepEqual(
-    result.facts.types.find((type) => type.name === "User")?.members.map((member) => member.name),
+    result.facts.types.map((type) => type.name),
+    ["Point", "Service", "User"],
+  );
+  assert.deepEqual(
+    result.facts.types
+      .find((type) => type.name === "User")
+      ?.members.map((member) => member.name),
     ["Age", "Name"],
   );
   assert.deepEqual(
-    result.facts.types.find((type) => type.name === "Point")?.members.map((member) => member.name),
+    result.facts.types
+      .find((type) => type.name === "Point")
+      ?.members.map((member) => member.name),
     ["X", "Y"],
   );
   assert.deepEqual(

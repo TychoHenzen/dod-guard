@@ -13,13 +13,22 @@ test("finds configuration-looking defaults across supported languages", () => {
   ];
   for (const [path, source] of fixtures) {
     assert.deepEqual(
-      designFacts(source, path.split(".").at(-1) === "cs" ? "cs" : path.endsWith(".py") ? "py" : "ts").configurationDefaults,
-      [{
-        method: path.endsWith(".cs") ? "Run" : "run",
-        parameter: "timeout",
-        defaultValue: "30",
-        line: path.endsWith(".py") ? 2 : 1,
-      }],
+      designFacts(
+        source,
+        path.split(".").at(-1) === "cs"
+          ? "cs"
+          : path.endsWith(".py")
+            ? "py"
+            : "ts",
+      ).configurationDefaults,
+      [
+        {
+          method: path.endsWith(".cs") ? "Run" : "run",
+          parameter: "timeout",
+          defaultValue: "30",
+          line: path.endsWith(".py") ? 2 : 1,
+        },
+      ],
       path,
     );
   }
@@ -29,7 +38,14 @@ test("keeps commas inside quoted defaults", () => {
   assert.deepEqual(
     designFacts('class Service { run(url: string = "https://a,b") {} }', "ts")
       .configurationDefaults,
-    [{ method: "run", parameter: "url", defaultValue: '"https://a,b"', line: 1 }],
+    [
+      {
+        method: "run",
+        parameter: "url",
+        defaultValue: '"https://a,b"',
+        line: 1,
+      },
+    ],
   );
 });
 

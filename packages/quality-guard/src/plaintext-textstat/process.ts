@@ -3,8 +3,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { providerResponse } from "../plaintext-textstat-provider.js";
-import { isolatedEnvironment } from "./environment.js";
 import type { TextstatResult } from "../plaintext-textstat-result.js";
+import { isolatedEnvironment } from "./environment.js";
 import type { Spawn } from "./spawn.js";
 
 const TEXTSTAT_TIMEOUT_MS = 2_000;
@@ -12,13 +12,15 @@ const TEXTSTAT_TIMEOUT_MS = 2_000;
 function textOf(value: unknown): string {
   return typeof value === "string" ? value : String(value ?? "");
 }
-
-function invoke(input: {
-  text: string;
-  command: string;
-  args: string[];
-  spawn: Spawn;
-}, workdir?: string): SpawnSyncReturns<string> {
+function invoke(
+  input: {
+    text: string;
+    command: string;
+    args: string[];
+    spawn: Spawn;
+  },
+  workdir?: string,
+): SpawnSyncReturns<string> {
   return input.spawn(input.command, input.args, {
     encoding: "utf8",
     input: input.text,
@@ -27,7 +29,6 @@ function invoke(input: {
     ...(workdir ? { cwd: workdir, env: isolatedEnvironment(workdir) } : {}),
   });
 }
-
 function invokeIsolated(input: {
   text: string;
   command: string;
@@ -58,7 +59,9 @@ function invokeTextstat(input: {
   return invokeIsolated(input);
 }
 
-function successResult(result: SpawnSyncReturns<string>): TextstatResult | null {
+function successResult(
+  result: SpawnSyncReturns<string>,
+): TextstatResult | null {
   if (result.error || result.status !== 0) return null;
   return providerResponse(textOf(result.stdout));
 }
@@ -71,10 +74,6 @@ function failureResult(result: SpawnSyncReturns<string>): TextstatResult {
       ? `textstat failed: ${detail.slice(0, 300)}`
       : `textstat exited with code ${result.status ?? "unknown"}`,
   };
-}
-
-function processResult(result: SpawnSyncReturns<string>): TextstatResult {
-  return successResult(result) ?? failureResult(result);
 }
 
 function isUnavailable(value: unknown): value is TextstatResult {
@@ -93,5 +92,7 @@ export function executeTextstat(input: {
   isolated: boolean;
 }): TextstatResult {
   const result = invokeTextstat(input);
-  return isUnavailable(result) ? result : processResult(result);
+  return isUnavailable(result)
+    ? result
+    : (successResult(result) ?? failureResult(result));
 }

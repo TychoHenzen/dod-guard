@@ -11,13 +11,14 @@ test("C# positional record boundaries ignore comments and flexible whitespace", 
       "public class Service { public void Run() { } }",
   });
   assert.deepEqual(commented.errors, []);
-  assert.deepEqual(commented.facts.types.map((type) => type.name), [
-    "Service",
-    "User",
-    "UserLine",
-  ]);
   assert.deepEqual(
-    commented.facts.types.find((type) => type.name === "Service")?.members.map((member) => member.name),
+    commented.facts.types.map((type) => type.name),
+    ["Service", "User", "UserLine"],
+  );
+  assert.deepEqual(
+    commented.facts.types
+      .find((type) => type.name === "Service")
+      ?.members.map((member) => member.name),
     ["Run"],
   );
   for (const declaration of [
@@ -25,7 +26,10 @@ test("C# positional record boundaries ignore comments and flexible whitespace", 
     "public record  struct Point(int X, int Y);",
     "public record\nstruct Point(int X, int Y);",
   ]) {
-    const result = extractArchitectureFacts({ path: "whitespace.cs", content: declaration });
+    const result = extractArchitectureFacts({
+      path: "whitespace.cs",
+      content: declaration,
+    });
     assert.deepEqual(result.errors, [], declaration);
     assert.equal(result.facts.types[0]?.kind, "struct", declaration);
     assert.deepEqual(

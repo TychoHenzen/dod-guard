@@ -23628,6 +23628,10 @@ function findingKey(finding) {
 }
 
 // src/commit-gate/design-smells/design-smells.ts
+function isAffectedProductionFile(file, affected, config2) {
+  const path17 = normalizeArchitecturePath(file.path);
+  return affected.has(path17) && isProductionArchitecturePath(path17, config2);
+}
 function analyzeDesignSmells(input) {
   const affected = new Set(input.affectedPaths.map(normalizeArchitecturePath));
   const before = new Set(
@@ -23638,10 +23642,7 @@ function analyzeDesignSmells(input) {
       ).map(findingKey)
     )
   );
-  return input.afterFiles.filter((file) => {
-    const path17 = normalizeArchitecturePath(file.path);
-    return affected.has(path17) && isProductionArchitecturePath(path17, input.config);
-  }).flatMap(
+  return input.afterFiles.filter((file) => isAffectedProductionFile(file, affected, input.config)).flatMap(
     (file) => findingsFor2(file, input.config).filter(
       (finding) => !before.has(findingKey(finding))
     )
@@ -25979,6 +25980,34 @@ var READABILITY_POLICY = {
   }
 };
 
+// src/plaintext/normalization.ts
+function normalizePlaintext(text3) {
+  return text3.normalize("NFKC").replace(/```[\s\S]*?```/gu, " ").replace(/`[^`]*`/gu, " ").replace(/!?\[([^\]]*)\]\([^)]*\)/gu, "$1").replace(/\[[0-9]+(?:\s*[,;-]\s*[0-9]+)*\]/gu, " ").replace(/https?:\/\/\S+/giu, " ").replace(/^\s{0,3}(?:#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s*)/gmu, "").replace(/\b[A-Za-z][A-Za-z0-9]*[_$][A-Za-z0-9_$]*\b/gu, " ").replace(/\b[A-Za-z_$][A-Za-z0-9_$]*(?:[./][A-Za-z0-9_$-]+)+\b/gu, " ").replace(/[ \t]+/gu, " ").replace(/\n{3,}/gu, "\n\n").trim();
+}
+function wordsIn(text3) {
+  return text3.match(new RegExp("\\p{L}[\\p{L}\\p{M}'\u2019-]*", "gu")) ?? [];
+}
+function sentenceDetails(text3) {
+  return text3.split(/[.!?]+|(?:\r?\n){2,}/u).map((sentence) => ({
+    count: wordsIn(sentence).length,
+    text: sentence.trim()
+  })).filter((sentence) => sentence.count > 0);
+}
+function longestSentence(text3) {
+  return sentenceDetails(text3).reduce(
+    (current, sentence) => sentence.count > current.count ? sentence : current,
+    { count: 0, text: "" }
+  );
+}
+function hasUnsupportedScript(text3) {
+  const letters = text3.match(new RegExp("\\p{L}", "gu")) ?? [];
+  return letters.some((letter) => !new RegExp("\\p{Script=Latin}", "u").test(letter));
+}
+function contextFor(text3) {
+  const context = text3.slice(0, 240);
+  return context.length === text3.length ? context : `${context}...`;
+}
+
 // src/plaintext/results.ts
 function failureValues(measures, score) {
   return measures ? `Flesch Reading Ease ${measures.fleschReadingEase}; Flesch-Kincaid Grade ${measures.fleschKincaidGrade}; combined score ${score}; threshold ${READABILITY_POLICY.threshold}.` : "No readability measures were available.";
@@ -26010,34 +26039,6 @@ function baseResult(input) {
     policy: READABILITY_POLICY,
     ...extra
   };
-}
-
-// src/plaintext/normalization.ts
-function normalizePlaintext(text3) {
-  return text3.normalize("NFKC").replace(/```[\s\S]*?```/gu, " ").replace(/`[^`]*`/gu, " ").replace(/!?\[([^\]]*)\]\([^)]*\)/gu, "$1").replace(/\[[0-9]+(?:\s*[,;-]\s*[0-9]+)*\]/gu, " ").replace(/https?:\/\/\S+/giu, " ").replace(/^\s{0,3}(?:#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s*)/gmu, "").replace(/\b[A-Za-z][A-Za-z0-9]*[_$][A-Za-z0-9_$]*\b/gu, " ").replace(/\b[A-Za-z_$][A-Za-z0-9_$]*(?:[./][A-Za-z0-9_$-]+)+\b/gu, " ").replace(/[ \t]+/gu, " ").replace(/\n{3,}/gu, "\n\n").trim();
-}
-function wordsIn(text3) {
-  return text3.match(new RegExp("\\p{L}[\\p{L}\\p{M}'\u2019-]*", "gu")) ?? [];
-}
-function sentenceDetails(text3) {
-  return text3.split(/[.!?]+|(?:\r?\n){2,}/u).map((sentence) => ({
-    count: wordsIn(sentence).length,
-    text: sentence.trim()
-  })).filter((sentence) => sentence.count > 0);
-}
-function longestSentence(text3) {
-  return sentenceDetails(text3).reduce(
-    (current, sentence) => sentence.count > current.count ? sentence : current,
-    { count: 0, text: "" }
-  );
-}
-function hasUnsupportedScript(text3) {
-  const letters = text3.match(new RegExp("\\p{L}", "gu")) ?? [];
-  return letters.some((letter) => !new RegExp("\\p{Script=Latin}", "u").test(letter));
-}
-function contextFor(text3) {
-  const context = text3.slice(0, 240);
-  return context.length === text3.length ? context : `${context}...`;
 }
 
 // src/plaintext/input.ts
@@ -26102,7 +26103,8 @@ function constraintFailuresFor(longestSentence2) {
   ];
 }
 function reasonFor(status, score) {
-  if (status === "pass") return "combined score and sentence-length policy passed";
+  if (status === "pass")
+    return "combined score and sentence-length policy passed";
   if (score < READABILITY_POLICY.threshold)
     return "combined score is below the threshold";
   return "dyslexia-friendly sentence-length policy failed";
@@ -26123,7 +26125,7 @@ function finiteNumber(value) {
 function finiteMeasures(value) {
   if (!value || typeof value !== "object") return void 0;
   const candidate = value;
-  if (!finiteNumber(candidate.fleschReadingEase) || !finiteNumber(candidate.fleschKincaidGrade))
+  if (!(finiteNumber(candidate.fleschReadingEase) && finiteNumber(candidate.fleschKincaidGrade)))
     return void 0;
   return {
     fleschReadingEase: candidate.fleschReadingEase,
@@ -26222,15 +26224,12 @@ function failureResult(result) {
     reason: detail ? `textstat failed: ${detail.slice(0, 300)}` : `textstat exited with code ${result.status ?? "unknown"}`
   };
 }
-function processResult(result) {
-  return successResult(result) ?? failureResult(result);
-}
 function isUnavailable(value) {
   return Boolean(value) && typeof value === "object" && value.status === "unavailable";
 }
 function executeTextstat(input) {
   const result = invokeTextstat(input);
-  return isUnavailable(result) ? result : processResult(result);
+  return isUnavailable(result) ? result : successResult(result) ?? failureResult(result);
 }
 
 // src/plaintext-textstat/index.ts
@@ -26324,7 +26323,11 @@ function checkPlaintextReadability(text3, provider = runTextstat) {
       reason: result.reason,
       wordCount: prepared.wordCount
     });
-  return measuredResult(prepared.normalized, prepared.wordCount, result.measures);
+  return measuredResult(
+    prepared.normalized,
+    prepared.wordCount,
+    result.measures
+  );
 }
 function readabilityExitCode(status) {
   return status === "fail" ? 2 : 0;

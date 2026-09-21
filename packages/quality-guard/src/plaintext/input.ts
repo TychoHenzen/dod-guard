@@ -1,11 +1,11 @@
-import { READABILITY_POLICY } from "../plaintext-readability-types.js";
 import type { ReadabilityResult } from "../plaintext-readability-result.js";
-import { baseResult } from "./results.js";
+import { READABILITY_POLICY } from "../plaintext-readability-types.js";
 import {
   hasUnsupportedScript,
   normalizePlaintext,
   wordsIn,
 } from "./normalization.js";
+import { baseResult } from "./results.js";
 
 export function prepareInput(text: string): {
   normalized: string;
@@ -30,7 +30,8 @@ export function prepareInput(text: string): {
       wordCount,
       early: baseResult({
         status: "unavailable",
-        reason: "input uses a language script outside the supported Latin policy",
+        reason:
+          "input uses a language script outside the supported Latin policy",
         wordCount,
       }),
     };
