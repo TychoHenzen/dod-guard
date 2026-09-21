@@ -55,7 +55,11 @@ Run the complete lifecycle without intermediate confirmation:
 `/next-ticket`, `/submit-draft-pr`, `/review-pr`, `/fix-pr-review`, and
 `/complete-pr` in order. It asks only the batched clarification questions that
 refinement requires. It fixes every validated actionable review finding and
-repeats review before the guarded merge.
+uses that completed review's recommendation before the guarded merge; it does
+not invoke another reviewer after fixes. If the reviewer launcher or process
+fails before producing a terminal recommendation, it reconciles the ledger and
+remote review state, repairs the cause, and retries rather than treating the
+execution failure as a review result.
 
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:
