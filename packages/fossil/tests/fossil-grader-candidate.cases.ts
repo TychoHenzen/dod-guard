@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  candidateFinding,
-} from "../src/repository-analysis-candidate-finding.js";
-import {
-  strongInboundCount,
-} from "../src/repository-analysis-candidate-scoring.js";
+import { candidateFinding } from "../src/repository-analysis-candidate-finding.js";
+import { strongInboundCount } from "../src/repository-analysis-candidate-scoring.js";
 import type { Burst, ReferenceGraph } from "../src/types.js";
 import { activity, referenceEdge } from "./fossil-grader.test-support.js";
 

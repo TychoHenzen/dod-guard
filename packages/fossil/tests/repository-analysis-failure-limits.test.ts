@@ -5,12 +5,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { FossilAnalysisError } from "../src/analysis-error.js";
 import { analyzeRepositoryCore } from "../src/repository-analysis.js";
-import {
-  historyOutputForHead,
-} from "../src/repository-analysis-history-head.js";
-import {
-  sparseCheckoutOutput,
-} from "../src/repository-analysis-history-steps.js";
+import { historyOutputForHead } from "../src/repository-analysis-history-head.js";
+import { sparseCheckoutOutput } from "../src/repository-analysis-history-steps.js";
 import {
   analysisOptions,
   createRunGit,

@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  analyzeJavaScriptReferencesWithinBoundary,
-} from "../src/ref-analyzer.js";
+import { analyzeJavaScriptReferencesWithinBoundary } from "../src/ref-analyzer.js";
 
 test(
   "rejects lexical and canonical relative-import escapes without exposing " +
