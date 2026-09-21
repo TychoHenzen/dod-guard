@@ -20,7 +20,7 @@ async function createFixture() {
   await mkdir(runs);
   await writeFile(
     executable,
-    `import { writeFile } from "node:fs/promises";
+    `import { readFile, writeFile } from "node:fs/promises";
 const args = process.argv.slice(2);
 const input = await new Promise((resolve) => {
   let value = "";
@@ -28,7 +28,23 @@ const input = await new Promise((resolve) => {
   process.stdin.on("data", (chunk) => { value += chunk; });
   process.stdin.on("end", () => resolve(value));
 });
-await writeFile(process.env.ADVISOR_RECORD, JSON.stringify({ args, cwd: process.cwd(), input }));
+if (args[0] === "--version") {
+  process.stdout.write("codex-cli fixture");
+  process.exit(0);
+}
+if (args[0] === "exec" && args[1] === "--help") {
+  if (process.env.ADVISOR_MODE === "unsupported-help") {
+    process.stderr.write("unexpected argument '--ask-for-approval'");
+    process.exit(2);
+  }
+  process.stdout.write("--approve-for-me");
+  process.exit(0);
+}
+const record = { args, cwd: process.cwd(), input };
+const previous = await readFile(process.env.ADVISOR_RECORD, "utf8").catch(() => "[]");
+const records = JSON.parse(previous);
+records.push(record);
+await writeFile(process.env.ADVISOR_RECORD, JSON.stringify(records));
 const outputIndex = args.indexOf("--output-last-message");
 const outputPath = outputIndex === -1 ? undefined : args[outputIndex + 1];
 switch (process.env.ADVISOR_MODE) {
@@ -88,8 +104,14 @@ test("advisor runner uses an isolated Codex process", async () => {
       model: "gpt-test-model",
       reasoningEffort: "medium",
     });
-    assert.deepEqual(result, { ok: true, advice: "Use the smallest safe change." });
-    const record = JSON.parse(await readFile(fixture.record, "utf8"));
+    assert.equal(result.ok, true);
+    assert.equal(result.advice, "Use the smallest safe change.");
+    assert.equal(result.capability.executable, process.execPath);
+    assert.deepEqual(result.capability.probes.version.command, [process.execPath, fixture.executable, "--version"]);
+    assert.deepEqual(result.capability.probes.help.command, [process.execPath, fixture.executable, "exec", "--help"]);
+    const records = JSON.parse(await readFile(fixture.record, "utf8"));
+    assert.equal(records.length, 1);
+    const [record] = records;
     assert.equal(record.input, "Problem with\nmultiple lines.");
     assert.notEqual(record.cwd, process.cwd());
     assert.equal(record.args[0], "exec");
@@ -104,6 +126,8 @@ test("advisor runner uses an isolated Codex process", async () => {
     assert.ok(record.args.includes("--ephemeral"));
     assert.ok(record.args.includes("--output-schema"));
     assert.ok(record.args.includes("--output-last-message"));
+    assert.equal(record.args.includes("--approve-for-me"), false);
+    assert.equal(record.args.includes("--ask-for-approval"), false);
     assert.equal(record.args.at(-1), "-");
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
@@ -114,6 +138,7 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
   const fixture = await createFixture();
   try {
     const cases = [
+      ["unsupported-help", /unexpected argument '--ask-for-approval'/],
       ["nonzero", /exits non-zero with code 7/],
       ["missing-output", /output file is missing or unreadable/],
       ["empty-output", /output file is empty/],
@@ -124,8 +149,14 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
     for (const [mode, expected, options] of cases) {
       const result = await runFixture(fixture, mode, options);
       assert.equal(result.ok, false);
+      assert.equal(result.execution.status, "incomplete");
+      assert.ok(result.execution.command.length > 0);
       assert.match(result.error, expected);
     }
+    const rejected = await runFixture(fixture, "unsupported-help");
+    assert.equal(rejected.execution.stage, "help");
+    assert.equal(rejected.execution.exitCode, 2);
+    assert.equal(rejected.execution.command.at(-1), "--help");
     const missing = await runAdvisor({
       executable: "codex-advisor-command-that-does-not-exist",
       prompt: "Problem",
@@ -133,10 +164,12 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
     });
     assert.equal(missing.ok, false);
     assert.match(missing.error, /missing or cannot start/);
+    assert.equal(missing.execution.status, "incomplete");
     assert.deepEqual(await readdir(fixture.runs), []);
 
     const slow = await runFixture(fixture, "slow");
-    assert.deepEqual(slow, { ok: true, advice: "Use the smallest safe change." });
+    assert.equal(slow.ok, true);
+    assert.equal(slow.advice, "Use the smallest safe change.");
     const largeOutput = await runFixture(fixture, "large-output");
     assert.equal(largeOutput.ok, false);
     assert.match(largeOutput.error, /output exceeded/);
@@ -214,8 +247,10 @@ test("advisor runner does not impose a wall-clock kill", () => {
 });
 
 test("advisor runner uses direct Windows executable invocation", () => {
-  assert.match(runner, /process\.platform === "win32" \? "codex\.exe"/);
+  assert.match(runner, /resolveCodexExecutable/);
   assert.match(runner, /shell: false/);
+  assert.match(runner, /buildCodexPreflightArgs/);
+  assert.match(runner, /buildCodexExecArgs/);
 });
 
 test("advisor defaults to Luna max for confirmed blockers", () => {

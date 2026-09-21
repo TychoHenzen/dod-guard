@@ -26,7 +26,10 @@ rules below are the exception only where they are more specific.
 1. Resolve the current CLI with `codex.exe --version` and
    `codex.exe exec --help` on Windows, or `codex --version` and `codex exec
    --help` elsewhere. The Windows direct executable must be on `PATH`; do not
-   substitute the npm command shim. Current help does not enumerate reasoning values.
+   substitute the npm command shim. The runner performs both capability probes
+   before starting the advisor process. Current help does not enumerate reasoning values.
+   A write-capable nested review uses `--approve-for-me`; this read-only advisor
+   never sends an approval option, and `--ask-for-approval` is unsupported.
    Use `gpt-5.6-luna` with `max` effort by default and pass the selected value as
    `-c model_reasoning_effort=<value>`. If the CLI itself cannot start,
    report the availability failure and stop.
@@ -53,8 +56,11 @@ rules below are the exception only where they are more specific.
    bound; exceeding it fails the run without adding an elapsed-time kill.
    External cancellation remains an operator action.
    Codex can print banners or hook diagnostics to stdout, so they are not the
-   response. On exit code `0`, the runner reads the output file, validates the
-   schema response, and relays only its trimmed `advice` value. Model,
+   response. A failed capability probe or process launch returns incomplete
+   execution evidence before any review state can be consumed. On exit code `0`,
+   the runner returns the executable and probe evidence, then reads the output
+   file, validates the schema response, and relays only its trimmed `advice`
+   value. Model,
    reasoning, and prefix arguments must be single shell-safe values. The runner
    rejects shell metacharacters before starting the direct Windows executable.
 

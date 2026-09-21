@@ -62,6 +62,20 @@ test("defines the authoritative recommendation mapping and publication boundary"
   assert.match(skill, /recommendation as `reviewResult`, its head as `reviewedHead`, and\s+`reviewerStatus=completed` in the durable\s+ledger/);
 });
 
+test("keeps nested Codex launches on the supported command contract", () => {
+  for (const signal of [
+    /direct\s+`codex\.exe`\s+executable\s+on\s+Windows/i,
+    /probe\s+`--version`\s+and\s+`exec --help`\s+before\s+consuming\s+review\s+state/i,
+    /write-capable\s+execution\s+uses\s+the\s+supported\s+`--approve-for-me`/i,
+    /read-only\s+execution\s+sends\s+no\s+approval\s+option/i,
+    /Reject\s+obsolete\s+`--ask-for-approval`/i,
+    /launcher\s+or\s+process\s+failure\s+without\s+a\s+completed\s+recommendation\s+is\s+incomplete/i,
+    /Never\s+retry\s+a\s+completed\s+`APPROVE`,\s+`REQUEST_CHANGES`,\s+or\s+`BLOCK`\s+result/i,
+  ]) {
+    assert.match(reviewSkill, signal);
+  }
+});
+
 test("distinguishes incomplete execution from completed review evidence", () => {
   assert.match(
     skill,
