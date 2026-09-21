@@ -1,6 +1,6 @@
 import { push } from "./violations.mjs";
 import { commentBody } from "./rules-comments-text.mjs";
-import { checkCommentedOutCode } from "./rules-comments-code.mjs";
+import { checkCommentedOutCode } from "./rules-comments/code.mjs";
 
 const TODO_MARKER = /\b(TODO|FIXME|HACK|XXX)\b/;
 const ASSUMPTION_MARKER = /\bASSUMPTION\b/;

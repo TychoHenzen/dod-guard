@@ -1,9 +1,9 @@
 import {
   READABILITY_POLICY,
-} from "./plaintext-readability-types.js";
-import type { ReadabilityResult } from "./plaintext-readability-result.js";
-import type { ReadabilityStatus } from "./plaintext-readability-status.js";
-import type { TextstatMeasures } from "./plaintext-textstat-measures.js";
+} from "../plaintext-readability-types.js";
+import type { ReadabilityResult } from "../plaintext-readability-result.js";
+import type { ReadabilityStatus } from "../plaintext-readability-status.js";
+import type { TextstatMeasures } from "../plaintext-textstat-measures.js";
 
 function failureValues(measures: TextstatMeasures | undefined, score: number | undefined): string {
   return measures

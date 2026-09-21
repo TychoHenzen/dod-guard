@@ -1,8 +1,8 @@
 import {
   READABILITY_POLICY,
-} from "./plaintext-readability-types.js";
-import type { ReadabilityStatus } from "./plaintext-readability-status.js";
-import type { TextstatMeasures } from "./plaintext-textstat-measures.js";
+} from "../plaintext-readability-types.js";
+import type { ReadabilityStatus } from "../plaintext-readability-status.js";
+import type { TextstatMeasures } from "../plaintext-textstat-measures.js";
 
 function clamp(value: number): number {
   return Math.min(100, Math.max(0, value));

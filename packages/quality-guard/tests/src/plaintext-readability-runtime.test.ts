@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { test } from "node:test";
-import { runTextstat } from "../../src/plaintext-textstat.js";
+import { runTextstat } from "../../src/plaintext-textstat/index.js";
 import {
   easyText,
   textstatResponse,

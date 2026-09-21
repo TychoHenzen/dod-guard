@@ -1,5 +1,5 @@
-import { severityFor } from "./config.mjs";
-import { push } from "./violations.mjs";
+import { severityFor } from "../config.mjs";
+import { push } from "../violations.mjs";
 
 export function checkMetrics({ file, config, fn, metrics, out }) {
   const label = `${fn.name}()`;

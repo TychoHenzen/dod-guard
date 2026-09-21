@@ -1,11 +1,11 @@
-import { READABILITY_POLICY } from "./plaintext-readability-types.js";
-import type { ReadabilityResult } from "./plaintext-readability-result.js";
-import { baseResult } from "./plaintext-results.js";
+import { READABILITY_POLICY } from "../plaintext-readability-types.js";
+import type { ReadabilityResult } from "../plaintext-readability-result.js";
+import { baseResult } from "./results.js";
 import {
   hasUnsupportedScript,
   normalizePlaintext,
   wordsIn,
-} from "./plaintext-normalization.js";
+} from "./normalization.js";
 
 export function prepareInput(text: string): {
   normalized: string;

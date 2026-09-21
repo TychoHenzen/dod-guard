@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { runScan, type ScanRequest } from "../scanner.js";
-import { materializeTree } from "./cli-tree-materialize.js";
+import { materializeTree } from "./cli-tree/materialize.js";
 import type { Snapshot } from "./snapshot.js";
 import type { DecisionResult } from "./types.js";
 

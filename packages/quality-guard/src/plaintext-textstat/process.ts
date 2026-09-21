@@ -2,10 +2,10 @@ import { type SpawnSyncReturns } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { providerResponse } from "./plaintext-textstat-provider.js";
-import { isolatedEnvironment } from "./plaintext-textstat-environment.js";
-import type { TextstatResult } from "./plaintext-textstat-result.js";
-import type { Spawn } from "./plaintext-textstat-spawn.js";
+import { providerResponse } from "../plaintext-textstat-provider.js";
+import { isolatedEnvironment } from "./environment.js";
+import type { TextstatResult } from "../plaintext-textstat-result.js";
+import type { Spawn } from "./spawn.js";
 
 const TEXTSTAT_TIMEOUT_MS = 2_000;
 

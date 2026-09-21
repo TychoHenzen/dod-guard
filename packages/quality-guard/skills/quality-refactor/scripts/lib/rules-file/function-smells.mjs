@@ -1,4 +1,4 @@
-import { push } from "./violations.mjs";
+import { push } from "../violations.mjs";
 
 function outputParameter(lang, param) {
   const value = param.trim();

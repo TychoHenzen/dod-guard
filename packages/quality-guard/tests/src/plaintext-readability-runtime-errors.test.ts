@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { checkPlaintextReadability, readabilityExitCode } from "../../src/plaintext-readability.js";
-import { runTextstat } from "../../src/plaintext-textstat.js";
+import { runTextstat } from "../../src/plaintext-textstat/index.js";
 import { easyText } from "./plaintext-readability-test-support.js";
 
 test("reports textstat start failures and maps readability exit codes", () => {

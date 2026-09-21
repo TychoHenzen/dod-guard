@@ -25,6 +25,16 @@ test("accepts explicit configuration keys in supported languages", () => {
     assert.deepEqual(run(source, { "config.json": '{"present": true}\n' }, extension), []);
 });
 
+test("accepts non-JSON keys with surrounding whitespace", () => {
+  assert.deepEqual(
+    run(
+      "// @config settings.yaml:present\nexport const value = 1;\n",
+      { "settings.yaml": "\n  present: true\n" },
+    ),
+    [],
+  );
+});
+
 test("does not confuse a configuration value with a key", () => {
   const found = run(
     "// @config config.json:missing\nexport const value = 1;\n",

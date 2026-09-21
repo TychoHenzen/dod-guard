@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { runTextstat } from "../../src/plaintext-textstat.js";
+import { runTextstat } from "../../src/plaintext-textstat/index.js";
 import { easyText } from "./plaintext-readability-test-support.js";
 
 test("fails open for malformed, timed-out, and invalid providers", () => {

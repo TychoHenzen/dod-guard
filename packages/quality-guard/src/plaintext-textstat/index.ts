@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { executeTextstat } from "./plaintext-textstat-process.js";
-import type { TextstatResult } from "./plaintext-textstat-result.js";
-import type { Spawn } from "./plaintext-textstat-spawn.js";
+import { executeTextstat } from "./process.js";
+import type { TextstatResult } from "../plaintext-textstat-result.js";
+import type { Spawn } from "./spawn.js";
 
 const TEXTSTAT_PYTHON = [
   "import json, sys, textstat",

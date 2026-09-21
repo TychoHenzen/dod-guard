@@ -4,15 +4,15 @@ import {
 import type { ReadabilityResult } from "./plaintext-readability-result.js";
 import type { ReadabilityStatus } from "./plaintext-readability-status.js";
 import type { TextstatProvider } from "./plaintext-provider-types.js";
-import { prepareInput } from "./plaintext-input.js";
-import { contextFor, longestSentence } from "./plaintext-normalization.js";
-import { baseResult } from "./plaintext-results.js";
+import { prepareInput } from "./plaintext/input.js";
+import { contextFor, longestSentence } from "./plaintext/normalization.js";
+import { baseResult } from "./plaintext/results.js";
 import {
   constraintFailuresFor,
   reasonFor,
   scoreMeasures,
-} from "./plaintext-scoring.js";
-import { runTextstat } from "./plaintext-textstat.js";
+} from "./plaintext/scoring.js";
+import { runTextstat } from "./plaintext-textstat/index.js";
 import type { TextstatMeasures } from "./plaintext-textstat-measures.js";
 import type { TextstatResult } from "./plaintext-textstat-result.js";
 

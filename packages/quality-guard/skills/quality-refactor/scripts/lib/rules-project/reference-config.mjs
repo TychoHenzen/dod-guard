@@ -17,7 +17,7 @@ function configKeyPresent(source, key) {
     return hasKey(JSON.parse(source), key);
   } catch {
     return new RegExp(
-      `^\s*["']?${escaped(key)}["']?\s*(?:[:=]|$)`,
+      String.raw`^\s*["']?${escaped(key)}["']?\s*(?:[:=]|$)`,
       "m",
     ).test(source);
   }

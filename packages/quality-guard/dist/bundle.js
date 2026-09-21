@@ -22597,7 +22597,7 @@ function runScan(request, run = execFileSync) {
   }
 }
 
-// src/commit-gate/cli-tree-materialize.ts
+// src/commit-gate/cli-tree/materialize.ts
 import { execFileSync as execFileSync2 } from "node:child_process";
 import { rmSync } from "node:fs";
 import * as path4 from "node:path";
@@ -25979,7 +25979,7 @@ var READABILITY_POLICY = {
   }
 };
 
-// src/plaintext-results.ts
+// src/plaintext/results.ts
 function failureValues(measures, score) {
   return measures ? `Flesch Reading Ease ${measures.fleschReadingEase}; Flesch-Kincaid Grade ${measures.fleschKincaidGrade}; combined score ${score}; threshold ${READABILITY_POLICY.threshold}.` : "No readability measures were available.";
 }
@@ -26012,7 +26012,7 @@ function baseResult(input) {
   };
 }
 
-// src/plaintext-normalization.ts
+// src/plaintext/normalization.ts
 function normalizePlaintext(text3) {
   return text3.normalize("NFKC").replace(/```[\s\S]*?```/gu, " ").replace(/`[^`]*`/gu, " ").replace(/!?\[([^\]]*)\]\([^)]*\)/gu, "$1").replace(/\[[0-9]+(?:\s*[,;-]\s*[0-9]+)*\]/gu, " ").replace(/https?:\/\/\S+/giu, " ").replace(/^\s{0,3}(?:#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s*)/gmu, "").replace(/\b[A-Za-z][A-Za-z0-9]*[_$][A-Za-z0-9_$]*\b/gu, " ").replace(/\b[A-Za-z_$][A-Za-z0-9_$]*(?:[./][A-Za-z0-9_$-]+)+\b/gu, " ").replace(/[ \t]+/gu, " ").replace(/\n{3,}/gu, "\n\n").trim();
 }
@@ -26040,7 +26040,7 @@ function contextFor(text3) {
   return context.length === text3.length ? context : `${context}...`;
 }
 
-// src/plaintext-input.ts
+// src/plaintext/input.ts
 function prepareInput(text3) {
   const normalized = normalizePlaintext(text3);
   const wordCount = wordsIn(normalized).length;
@@ -26077,7 +26077,7 @@ function prepareInput(text3) {
   return { normalized, wordCount };
 }
 
-// src/plaintext-scoring.ts
+// src/plaintext/scoring.ts
 function clamp(value) {
   return Math.min(100, Math.max(0, value));
 }
@@ -26108,10 +26108,10 @@ function reasonFor(status, score) {
   return "dyslexia-friendly sentence-length policy failed";
 }
 
-// src/plaintext-textstat.ts
+// src/plaintext-textstat/index.ts
 import { spawnSync } from "node:child_process";
 
-// src/plaintext-textstat-process.ts
+// src/plaintext-textstat/process.ts
 import { mkdtempSync as mkdtempSync2, rmSync as rmSync3 } from "node:fs";
 import { tmpdir as tmpdir2 } from "node:os";
 import { join as join6 } from "node:path";
@@ -26164,7 +26164,7 @@ function providerResponse(stdout) {
   return measuresResult(parsed);
 }
 
-// src/plaintext-textstat-environment.ts
+// src/plaintext-textstat/environment.ts
 function isolatedEnvironment(workdir) {
   const names = process.platform === "win32" ? ["PATH", "Path", "PATHEXT", "SystemRoot", "WINDIR"] : ["PATH", "HOME", "LANG", "LC_ALL"];
   const environment = {};
@@ -26180,7 +26180,7 @@ function isolatedEnvironment(workdir) {
   return environment;
 }
 
-// src/plaintext-textstat-process.ts
+// src/plaintext-textstat/process.ts
 var TEXTSTAT_TIMEOUT_MS = 2e3;
 function textOf(value) {
   return typeof value === "string" ? value : String(value ?? "");
@@ -26233,7 +26233,7 @@ function executeTextstat(input) {
   return isUnavailable(result) ? result : processResult(result);
 }
 
-// src/plaintext-textstat.ts
+// src/plaintext-textstat/index.ts
 var TEXTSTAT_PYTHON = [
   "import json, sys, textstat",
   "text = sys.stdin.read()",

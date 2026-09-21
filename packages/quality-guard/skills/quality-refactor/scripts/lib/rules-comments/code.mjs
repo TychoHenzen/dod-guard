@@ -1,4 +1,4 @@
-import { push } from "./violations.mjs";
+import { push } from "../violations.mjs";
 
 const CODE_IN_COMMENT = new RegExp(
   "^[^\\w]*(if|for|while|return|const|let|var|function|def|" +
