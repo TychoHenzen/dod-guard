@@ -225,7 +225,7 @@ function sortedFiles(files, sort) {
 }
 
 function spawnLauncher({ dashboardHome, port }) {
-  const serve = join(repositoryRoot, "tools", "openspec-dashboard", "serve.mjs");
+  const serve = "tools/openspec-dashboard/serve.mjs";
   const windows = process.platform === "win32";
   return spawn(
     windows ? "cmd.exe" : process.execPath,
