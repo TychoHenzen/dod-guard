@@ -17,29 +17,30 @@ test("starts from the normal launcher and refreshes the displayed quality report
   const root = await mkdtemp(join(tmpdir(), "quality-dashboard-live-"));
   const dashboardHome = join(root, "dashboard-home");
   const project = join(root, "project");
-  await mkdir(join(project, "src", "nested"), { recursive: true });
-  await mkdir(join(project, ".quality"), { recursive: true });
-  await writeFile(join(project, "src", "quality-fixture.js"), "export function qualityFixture() { return 1; }\n");
-  await writeFile(join(project, "src", "clean.js"), "const result = 1; console.log(result);\n");
-  await writeFile(join(project, "src", "nested", "nested-fixture.js"), "const result = 1; console.log(result);\n");
-  await writeFile(join(project, ".quality", "quality-report.json"), JSON.stringify(staleReport()));
-  await mkdir(dashboardHome, { recursive: true });
-  await writeFile(join(dashboardHome, "projects.json"), JSON.stringify({
-    roots: [],
-    projects: [{ name: "live-quality", path: project.replaceAll("\\", "/") }],
-  }));
-
-  const launcherScript = await readFile(join(repositoryRoot, "quality-dashboard.cmd"), "utf8");
-  assert.match(launcherScript, /node tools\\openspec-dashboard\\serve\.mjs/u);
-  const child = spawnLauncher({ dashboardHome, port: await freePort() });
-  let stdout = "";
-  let stderr = "";
-  child.stdout.setEncoding("utf8");
-  child.stderr.setEncoding("utf8");
-  child.stdout.on("data", (chunk) => { stdout += chunk; });
-  child.stderr.on("data", (chunk) => { stderr += chunk; });
+  let child;
   let browser;
   try {
+    await mkdir(join(project, "src", "nested"), { recursive: true });
+    await mkdir(join(project, ".quality"), { recursive: true });
+    await writeFile(join(project, "src", "quality-fixture.js"), "export function qualityFixture() { return 1; }\n");
+    await writeFile(join(project, "src", "clean.js"), "const result = 1; console.log(result);\n");
+    await writeFile(join(project, "src", "nested", "nested-fixture.js"), "const result = 1; console.log(result);\n");
+    await writeFile(join(project, ".quality", "quality-report.json"), JSON.stringify(staleReport()));
+    await mkdir(dashboardHome, { recursive: true });
+    await writeFile(join(dashboardHome, "projects.json"), JSON.stringify({
+      roots: [],
+      projects: [{ name: "live-quality", path: project.replaceAll("\\", "/") }],
+    }));
+
+    const launcherScript = await readFile(join(repositoryRoot, "quality-dashboard.cmd"), "utf8");
+    assert.match(launcherScript, /node tools\\openspec-dashboard\\serve\.mjs/u);
+    child = spawnLauncher({ dashboardHome, port: await freePort() });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
     const dashboardUrl = await waitForDashboard(child, () => stdout, () => stderr);
     const dashboardOrigin = dashboardUrl.split("#", 1)[0];
     browser = await chromium.launch({ headless: true });
@@ -151,7 +152,7 @@ test("starts from the normal launcher and refreshes the displayed quality report
   } finally {
     await browser?.close().catch(() => undefined);
     try {
-      await stopLauncher(child, dashboardHome);
+      if (child) await stopLauncher(child, dashboardHome);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -227,7 +228,7 @@ function spawnLauncher({ dashboardHome, port }) {
   const serve = join(repositoryRoot, "tools", "openspec-dashboard", "serve.mjs");
   const windows = process.platform === "win32";
   return spawn(
-    windows ? process.env.ComSpec ?? "cmd.exe" : process.execPath,
+    windows ? "cmd.exe" : process.execPath,
     windows ? ["/d", "/s", "/c", "quality-dashboard.cmd"] : [serve],
     {
       cwd: repositoryRoot,
