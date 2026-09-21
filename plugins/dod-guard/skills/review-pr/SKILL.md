@@ -233,6 +233,16 @@ it changed.
 When there are no accepted findings, state that no actionable findings were
 found. Do not publish an empty GitHub review or Azure inline comment.
 
+The final report is the authoritative lifecycle result. Set its
+`Recommendation` from the accepted final findings: `BLOCK` when any finding is
+`BLOCKER`, `REQUEST_CHANGES` when any remaining finding is `MAJOR` or `MINOR`,
+and `APPROVE` when no accepted findings remain. A GitHub `COMMENT` review is
+only the publication transport; it is not the lifecycle recommendation. The
+report must also identify the reviewed head and whether the reviewer run
+reached a terminal state so callers can distinguish a completed recommendation
+from an incomplete launcher or process execution.
+
 Finally, confirm the checkout SHA and status match the values recorded before
-review. Report the provider, target, head SHA, PBI, reviewers completed,
-findings by severity, publication destination, and unchanged checkout.
+review. Report the provider, target, head SHA, PBI, `Recommendation`, terminal
+reviewer status, reviewers completed, findings by severity, publication
+destination, and unchanged checkout.
