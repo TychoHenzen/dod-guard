@@ -33,6 +33,8 @@ const githubSkills = [
   await read("plugins/dod-guard/skills/publish/SKILL.md"),
   await read("plugins/dod-guard/skills/quick-pbi/SKILL.md"),
 ];
+const directGithubRequestPattern =
+  /\bgh(?:\.exe)?\s+\S+|https?:\/\/api\.github\.com\b|\bmcp__github__[a-z][\w-]*|\bGitHub\s+(?:MCP|REST|API)\b/i;
 const proof = await import("./structured-workflow-proof.mjs");
 const proofScript = path.join(
   root,
@@ -234,9 +236,7 @@ test("every skill with direct GitHub request instructions names the shared polic
         text: await readFile(path.join(skillRoot, entry.name, "SKILL.md"), "utf8"),
       })),
   );
-  const directGithubSkills = documents.filter(({ text }) =>
-    /\bgh\s+(?:api|issue|project|pr|repo)\b|GitHub MCP (?:connector|issue|pull|repository)/i.test(text),
-  );
+  const directGithubSkills = documents.filter(({ text }) => directGithubRequestPattern.test(text));
 
   assert.deepEqual(
     directGithubSkills.map(({ name }) => name).sort(),
@@ -254,6 +254,17 @@ test("every skill with direct GitHub request instructions names the shared polic
   );
   for (const { text } of directGithubSkills) {
     assert.match(text, /standards\/github-request-discipline\.md/);
+  }
+});
+
+test("direct GitHub request detection covers new request forms", () => {
+  for (const request of [
+    "gh auth status",
+    "gh run list",
+    "GET https://api.github.com/repos/TychoHenzen/dod-guard/issues",
+    "mcp__github__repository_read",
+  ]) {
+    assert.match(request, directGithubRequestPattern);
   }
 });
 
