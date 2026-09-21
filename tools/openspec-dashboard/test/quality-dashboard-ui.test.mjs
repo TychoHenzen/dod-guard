@@ -231,7 +231,6 @@ function spawnLauncher({ dashboardHome, port }) {
     windows ? "cmd.exe" : process.execPath,
     windows ? ["/d", "/s", "/c", "quality-dashboard.cmd"] : [serve],
     {
-      cwd: repositoryRoot,
       env: {
         ...process.env,
         CODE_EXPLORER_JS: join(dashboardHome, "missing-code-explorer.js"),
