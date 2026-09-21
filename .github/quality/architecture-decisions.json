@@ -11996,5 +11996,12 @@
     "reason": "Reviewed #456 against current master 0ba816c3: the runtime directory intentionally separates adapter input, generic LSP lifecycle, and Python backend lifecycle responsibilities; runtime-python-backend-lifecycle.ts remains the owning seam for Python refresh without expanding the supported package API.",
     "author": "Codex",
     "time": "2026-09-21T05:06:55.000Z"
+  },
+  {
+    "findingId": "6f7945afd1221e31908c592f0ffc0a13992ce6cf829dea940d634699ae0d0168",
+    "fingerprint": "efdf76a2a885dd02f2a927e31f4ea12082afd9fcdc95a508ffb40730249087a",
+    "reason": "Reviewed #456 after the test-support import-order correction: the runtime directory intentionally separates adapter input, generic LSP lifecycle, and Python backend lifecycle responsibilities; runtime-python-backend-lifecycle.ts remains the owning seam for Python refresh without expanding the supported package API.",
+    "author": "Codex",
+    "time": "2026-09-21T05:17:55.000Z"
   }
 ]
