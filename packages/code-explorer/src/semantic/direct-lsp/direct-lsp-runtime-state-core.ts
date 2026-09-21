@@ -83,8 +83,7 @@ export class DirectLspRuntimeStateCore extends DirectLspStateResources {
 
   resetFailureHistory() {
     super.resetFailureHistoryState();
-    if (this.state === "unavailable")
-      this.setState("initializing");
+    if (this.state === "unavailable") this.setState("initializing");
   }
 
   current(epoch: number) {

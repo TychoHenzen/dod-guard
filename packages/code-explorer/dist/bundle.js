@@ -15644,8 +15644,7 @@ var DirectLspRuntimeStateCore = class extends DirectLspStateResources {
   }
   resetFailureHistory() {
     super.resetFailureHistoryState();
-    if (this.state === "unavailable")
-      this.setState("initializing");
+    if (this.state === "unavailable") this.setState("initializing");
   }
   current(epoch) {
     return this.#life.current(epoch);
