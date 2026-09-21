@@ -3,8 +3,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createNativeProjectRoot } from "../../../src/semantic/project-root/project-root.js";
-import { createNativePythonMirror } from "../../../src/semantic/python-mirror/python-mirror-runtime.js";
 import { prohibitedPythonConfigurationKeys } from "../../../src/semantic/python-mirror/python-mirror-options.js";
+import { createNativePythonMirror } from "../../../src/semantic/python-mirror/python-mirror-runtime.js";
 
 export const unsafePythonConfigurationKeys = prohibitedPythonConfigurationKeys;
 
