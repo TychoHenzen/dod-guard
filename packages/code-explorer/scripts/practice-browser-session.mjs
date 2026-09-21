@@ -4,6 +4,7 @@ import {
   readinessTimeoutMs,
 } from "./practice-browser-config.mjs";
 import { successfulRequest } from "./practice-browser-requests.mjs";
+import { expectSuccess } from "./practice-browser-transport.mjs";
 
 function backendStateReady(candidate) {
   return ["ready", "degraded"].includes(candidate?.state);

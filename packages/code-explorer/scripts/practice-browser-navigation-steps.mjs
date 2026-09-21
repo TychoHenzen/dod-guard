@@ -2,6 +2,7 @@ import {
   requestBody,
   successfulRequest,
 } from "./practice-browser-requests.mjs";
+import { PracticeFailure } from "./practice-browser-config.mjs";
 import { sameLocation } from "./practice-browser-transport.mjs";
 
 export function recordFocus(focusPayload, oracle, evidence) {
