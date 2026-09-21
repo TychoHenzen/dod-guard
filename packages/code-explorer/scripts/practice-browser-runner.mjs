@@ -17,16 +17,9 @@ import {
   createPracticeWorkspace,
   preparePracticeWorkspace,
 } from "./practice-browser-workspace.mjs";
-import { stopChild, waitForEndpoint } from "./practice-browser-transport.mjs";
+import { stopChild, waitForEndpoint } from "./practice-browser-process.mjs";
 
-async function runPracticeFlow({
-  language,
-  evidence,
-  fixture,
-  root,
-  resources,
-}) {
-  await preparePracticeWorkspace(language, fixture, root);
+async function startServer({ root, resources }) {
   resources.child = spawn(
     process.execPath,
     [
@@ -38,33 +31,37 @@ async function runPracticeFlow({
     ],
     { cwd: packageRoot, stdio: ["ignore", "pipe", "pipe"], windowsHide: true },
   );
-  const endpoint = await waitForEndpoint(resources.child);
+  return waitForEndpoint(resources.child);
+}
+
+async function openBrowser(endpoint, resources) {
   resources.browser = await chromium.launch({ headless: true });
   const page = await resources.browser.newPage();
   await page.goto(endpoint);
+  return page;
+}
+
+async function runPracticeFlow({
+  language,
+  evidence,
+  fixture,
+  root,
+  resources,
+}) {
+  await preparePracticeWorkspace(language, fixture, root);
+  const endpoint = await startServer({ root, resources });
+  const page = await openBrowser(endpoint, resources);
   const { tab, session, state } = await createSession(page, endpoint);
   evidence.operation_states.session = state;
-  const startGeneration = await waitForBackend({
-    page,
-    endpoint,
-    session,
-    tab,
-    language,
-    evidence,
-  });
+  const context = { page, endpoint, session, tab };
+  const startGeneration = await waitForBackend({ context, language, evidence });
   const navigation = await navigate({
-    page,
-    endpoint,
-    session,
-    tab,
+    context,
     oracle: resources.oracle,
     evidence,
   });
   await reconcile({
-    page,
-    endpoint,
-    session,
-    tab,
+    context,
     root,
     oracle: resources.oracle,
     evidence,

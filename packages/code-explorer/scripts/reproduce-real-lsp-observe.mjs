@@ -49,65 +49,40 @@ async function observe({
   }
 }
 
+function observationRequests(sources) {
+  return [
+    { name: "definition", operation: "definition", source: sources.helperCall },
+    {
+      name: "references",
+      operation: "references",
+      source: sources.helperDefinition,
+    },
+    { name: "callers", operation: "callers", source: sources.helperDefinition },
+    { name: "callees", operation: "callees", source: sources.callerDefinition },
+    {
+      name: "external_definition",
+      operation: "definition",
+      source: sources.externalCall,
+    },
+    {
+      name: "implementation",
+      operation: "implementation",
+      source: sources.helperDefinition,
+    },
+    {
+      name: "unavailable_relation",
+      operation: "implementation",
+      source: { id: `${sources.language}:missing-handle` },
+    },
+  ];
+}
+
 export async function collectObservations(backend, language, sources) {
   const observations = {};
-  await observe({
-    observations,
-    backend,
-    language,
-    name: "definition",
-    operation: "definition",
-    source: sources.helperCall,
-  });
-  if (language === "rust")
-    await new Promise((resolve_) => setTimeout(resolve_, 2_000));
-  await observe({
-    observations,
-    backend,
-    language,
-    name: "references",
-    operation: "references",
-    source: sources.helperDefinition,
-  });
-  await observe({
-    observations,
-    backend,
-    language,
-    name: "callers",
-    operation: "callers",
-    source: sources.helperDefinition,
-  });
-  await observe({
-    observations,
-    backend,
-    language,
-    name: "callees",
-    operation: "callees",
-    source: sources.callerDefinition,
-  });
-  await observe({
-    observations,
-    backend,
-    language,
-    name: "external_definition",
-    operation: "definition",
-    source: sources.externalCall,
-  });
-  await observe({
-    observations,
-    backend,
-    language,
-    name: "implementation",
-    operation: "implementation",
-    source: sources.helperDefinition,
-  });
-  await observe({
-    observations,
-    backend,
-    language,
-    name: "unavailable_relation",
-    operation: "implementation",
-    source: { id: `${language}:missing-handle` },
-  });
+  for (const request of observationRequests({ ...sources, language })) {
+    await observe({ observations, backend, language, ...request });
+    if (request.name === "definition" && language === "rust")
+      await new Promise((resolve_) => setTimeout(resolve_, 2_000));
+  }
   return observations;
 }
