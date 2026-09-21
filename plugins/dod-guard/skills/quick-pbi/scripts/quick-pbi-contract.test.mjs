@@ -25,12 +25,16 @@ test("quick-pbi covers the full delivery lifecycle without extra prompts", () =>
     /only allowed user interaction.*refine-backlog-item/s,
     /all currently\s+independent questions in one round/,
     /cannot be assigned.*stop.*do not\s+ask/s,
-    /reviewer-validation failure/,
-    /all four reviewers\s+are validated/,
-    /every unresolved finding/,
-    /repeat this\s+review-fix cycle until no actionable findings remain/,
+    /completed\s+`APPROVE`,\s+`REQUEST_CHANGES`,\s+or\s+`BLOCK` recommendation is a successful\s+review/s,
+    /consumes the one-review slot/,
+    /fails to start, times out, is interrupted/,
+    /retry until a completed\s+recommendation\s+exists/,
+    /every valid unresolved finding/,
+    /Do not invoke another\s+reviewer after those fixes/,
     /stop without rollback or duplicate issues/,
   ]) {
     assert.match(skill, signal);
   }
+  assert.doesNotMatch(skill, /Re-review the pushed head/);
+  assert.doesNotMatch(skill, /repeat this\s+review-fix cycle/);
 });

@@ -43,14 +43,18 @@ referenced skill from the active plugin root before invoking it.
    as the implementation handoff. Do not select another ticket.
 4. Invoke `/submit-draft-pr <issue-number>` and retain the returned pull
    request and head.
-5. Invoke `/review-pr <pull-request>` on that exact head. If it reports an
-   incomplete review, reviewer-validation failure, or missing reviewer
-   coverage, stop and report that gate. Proceed only when all four reviewers
-   are validated and no actionable findings remain. If it reports validated
-   actionable findings, invoke `/fix-pr-review <pull-request>
-   <finding-ids>` with every unresolved finding from that review. Do not ask
-   the user to select findings. Re-review the pushed head and repeat this
-   review-fix cycle until no actionable findings remain.
+5. Invoke `/review-pr <pull-request>` on that exact head. A completed
+   `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` recommendation is a successful
+   review and consumes the one-review slot, including when it contains
+   findings. If the reviewer process fails to start, times out, is interrupted,
+   or produces no completed recommendation, preserve the ledger and remote
+   review state, repair the cause, and retry until a completed recommendation
+   exists; do not repeat an unchanged failure blindly. For a completed result
+   with actionable findings, invoke `/fix-pr-review <pull-request>
+   <finding-ids>` with every valid unresolved finding, rerun the affected
+   checks, and respond to and resolve each finding. Do not invoke another
+   reviewer after those fixes; continue to `/complete-pr` when no actionable
+   findings remain.
 6. Invoke `/complete-pr <pull-request>` only after the final review is clean,
    all required checks pass, and the pull request head is unchanged. Its
    guarded merge is the acceptance boundary authorized by this skill.
