@@ -1,6 +1,6 @@
 {
   "name": "quality-guard",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "description": "Structural code quality gate with file-local write feedback, staged commit decisions, committed-tree CI replay, plaintext readability checks, and an MCP server. Ships 1 skill: /quality-refactor.",
   "type": "module",
   "imports": {
