@@ -11982,5 +11982,12 @@
     "reason": "Reviewed #250/#251 against the committed merge tree: these internal fact and configuration fields are intentionally consumed by extraction, design-smell analysis, report mapping, and focused tests; they do not add an external plugin API. The design-smell leaves are isolated under focused submodules.",
     "author": "Codex",
     "time": "2026-09-20T15:48:31.239Z"
+  },
+  {
+    "findingId": "6f7945afd1221e31908c592f0ffc0a13992ce6cf829dea940d634699ae0d0168",
+    "fingerprint": "5500d6ba582c1b975181b30c5a0297e77d21131d664954585920256947597fd8",
+    "reason": "Reviewed #456: the runtime directory intentionally separates adapter input, generic LSP lifecycle, and Python backend lifecycle responsibilities; runtime-python-backend-lifecycle.ts remains the owning seam for Python refresh without expanding the supported package API.",
+    "author": "Codex",
+    "time": "2026-09-21T04:47:00.000Z"
   }
 ]
