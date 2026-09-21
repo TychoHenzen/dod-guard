@@ -239,6 +239,11 @@ contains the shared standard. Keep these named records in
 `implementation-plan`, and `task-list`. Use the existing discovery markers as
 the evidence inside those records. The task list must identify dependencies and
 mark a task `independent` only when it can be committed and closed separately.
+Write each record as a distinct named subsection, keep the task order stable,
+and map every task to exactly one mandatory child category or explicitly mark
+it as a parent-level convergence task. The four child categories are checklist
+work on the parent's one branch and one pull request, not separate delivery
+units.
 Small, clear fixes may use the ordinary path and do not need these records.
 
 For re-refinement, read the existing discovery notes and compare them with the
