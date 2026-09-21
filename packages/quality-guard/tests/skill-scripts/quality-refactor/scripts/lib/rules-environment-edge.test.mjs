@@ -24,6 +24,14 @@ test("reports blank, unconfigured, and ambiguous supported root manifests", () =
       },
       expected: ["build-entrypoint", "test-entrypoint"],
     },
+    {
+      files: {
+        "first.sln": "Microsoft Visual Studio Solution File\n",
+        "second.sln": "Microsoft Visual Studio Solution File\n",
+        "app.csproj": "<Project />\n",
+      },
+      expected: ["build-entrypoint", "test-entrypoint"],
+    },
   ];
   for (const { files, expected } of cases)
     withProject(files, (root) =>
@@ -48,7 +56,6 @@ test("routes E1 and E2 findings through the repository scan", () => {
     );
   });
 });
-
 test("routes an unconfigured Python root through the repository scan", () => {
   withProject({ "pyproject.toml": '[project]\nname = "sample"\n' }, (root) => {
     const result = scan(
@@ -58,6 +65,35 @@ test("routes an unconfigured Python root through the repository scan", () => {
     assert.deepEqual(
       result.violations.map((violation) => violation.rule),
       ["build-entrypoint", "test-entrypoint"],
+    );
+  });
+});
+test("routes an unsupported root through the repository scan", () => {
+  withProject({ "README.md": "run whatever works\n" }, (root) => {
+    const result = scan(
+      { paths: ["."], root, excludes: [], testPaths: [], rules: null },
+      buildConfig("default"),
+    );
+    assert.deepEqual(
+      result.violations.map(({ file, rule, message }) => ({ file, rule, message })),
+      [
+        {
+          file: "<repository root>",
+          rule: "build-entrypoint",
+          message:
+            "E1: no supported root entry point declaration found; inspected package.json, " +
+            "Cargo.toml, pyproject.toml, .sln, or .csproj — add one documented " +
+            "root build entry point",
+        },
+        {
+          file: "<repository root>",
+          rule: "test-entrypoint",
+          message:
+            "E2: no supported root entry point declaration found; inspected package.json, " +
+            "Cargo.toml, pyproject.toml, .sln, or .csproj — add one documented " +
+            "root test entry point",
+        },
+      ],
     );
   });
 });
