@@ -79,5 +79,14 @@
     "reason": "Reviewed: targetSha binds the attestation to the immutable commit CI checked; validation also requires the note key and targetSha to match.",
     "author": "Codex",
     "time": "2026-09-22T09:24:19.285Z"
+  },
+  {
+    "findingId": "740e1d486d272b9c86832b82c55f755cc34246c5e6f966790cf5080e2295b404",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: the captured Git tree is the immutable content snapshot used for deterministic committed/staged provenance and avoids rereading mutable working files.",
+    "author": "Codex",
+    "time": "2026-09-22T09:27:32.262Z"
   }
 ]
