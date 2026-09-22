@@ -1,0 +1,11 @@
+[
+  {
+    "findingId": "0831dc548daebf7a3f8c8e1dd0660549db7e2afdd33996cee62a3055dc6f0218",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: #457 requires the immutable checked target SHA separately from the source-tree fingerprint. The committed replay tests the exact SHA so identical trees at different commits are not conflated.",
+    "author": "Codex",
+    "time": "2026-09-22T08:58:18.962Z"
+  }
+]
