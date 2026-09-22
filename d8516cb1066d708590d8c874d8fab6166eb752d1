@@ -151,5 +151,14 @@
     "reason": "baseSha records the exact first parent for a committed note; the writer verifies targetSha^ equals it and the decision core matches it to snapshot.baseIdentity. This is required internal provenance, not package-root API.",
     "author": "Codex",
     "time": "2026-09-22T15:19:00.476Z"
+  },
+  {
+    "findingId": "f410fad8d48e612631d4c23876374ff43d71e414b187570eeca4b7b24d3b9d29",
+    "fingerprint": "2e059d7a01b982be9d9228179199952ebad197ae0c54bce416f2654590c008c9",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "d8516cb1066d708590d8c874d8fab6166eb752d1",
+    "reason": "committedRef lets the CLI select an explicit immutable committed target and route acknowledgement to the Git notes path instead of the staged decision file. This is an internal CLI option, not a supported package-root type.",
+    "author": "Codex",
+    "time": "2026-09-22T15:22:34.801Z"
   }
 ]
