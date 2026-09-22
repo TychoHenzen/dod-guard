@@ -106,5 +106,14 @@
     "reason": "Reviewed: targetCommitSha is required by #457 to report the immutable checked commit separately from the source fingerprint; the replay regression asserts the exact SHA.",
     "author": "Codex",
     "time": "2026-09-22T09:34:01.346Z"
+  },
+  {
+    "findingId": "a4916f3b7aa3f8b1ca72be6371c54a0e40f632c18bdcb476d4e6dc55129b42e1",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: the fingerprint ties a note to the exact source decision that produced the finding, so unrelated snapshots cannot inherit the acknowledgement.",
+    "author": "Codex",
+    "time": "2026-09-22T09:37:14.953Z"
   }
 ]
