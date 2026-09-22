@@ -97,5 +97,14 @@
     "reason": "DecisionResult carries the resolved target commit in its input so committed JSON and renderers can identify exactly which immutable tree was checked. The package ships a CLI entry point, not this internal result field as package-root API.",
     "author": "Codex",
     "time": "2026-09-22T13:25:23.763Z"
+  },
+  {
+    "findingId": "8a2584434ba215bee7bc5692cfd9dc00a6431503a304aaa16bd0135bfb968e20",
+    "fingerprint": "e1574fed080815eb09abaffaa8382ad1ff1d50ea8fd21eaa016d60fa1b83e100",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "ff8546f4c35d8762cbcab2062c67d6958b651710",
+    "reason": "The 79-file count and similarity outliers are review cues, not universal Clean Code limits. The evidence helper sits with its CLI acknowledgement sibling, decision-core acknowledgements sit with the decision core, and the note writer is shared commit-gate persistence; no responsibility split or better cohesive placement is evidenced. Reorganizing only to improve this score would game the heuristic.",
+    "author": "Codex",
+    "time": "2026-09-22T13:28:48.488Z"
   }
 ]
