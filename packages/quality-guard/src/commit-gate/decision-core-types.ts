@@ -1,7 +1,8 @@
+import type { ArchitectureAcknowledgement } from "./acknowledgements.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import type { QualityConfig } from "./config.js";
-import type { ResponsibilityMap } from "./responsibility-map.js";
 import type { QualityDecisionAttestation } from "./quality-decision-notes.js";
+import type { ResponsibilityMap } from "./responsibility-map.js";
 import type { Snapshot } from "./snapshot.js";
 import type { DecisionResult } from "./types.js";
 
@@ -24,4 +25,3 @@ export interface DecisionCoreInput {
   attestations?: QualityDecisionAttestation[];
   refactorMap?: ResponsibilityMap;
 }
-import type { ArchitectureAcknowledgement } from "./acknowledgements.js";

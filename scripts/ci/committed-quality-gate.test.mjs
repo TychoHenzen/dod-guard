@@ -38,7 +38,8 @@ test("static analysis runs the strict structural ratchet without line-length", (
 test("static analysis fetches optional quality decision notes before committed replay", () => {
   const workflow = readFileSync(WORKFLOW, "utf8");
   const fetch = "git fetch origin refs/notes/quality-decisions:refs/notes/quality-decisions";
-  const gate = "QUALITY_GUARD_SKIP_STRUCTURAL=1 node packages/quality-guard/dist/bundle.js check --committed HEAD --json";
+  const gate =
+    "QUALITY_GUARD_SKIP_STRUCTURAL=1 node packages/quality-guard/dist/bundle.js check --committed HEAD --json";
 
   const fetchIndex = workflow.indexOf(fetch);
   const gateIndex = workflow.indexOf(gate);
