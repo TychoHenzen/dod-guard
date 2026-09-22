@@ -142,5 +142,14 @@
     "reason": "DecisionResult includes findingId in each stale-acknowledgement report so the renderer can identify which finding was bound to old provenance. This is an internal result field, not package-root API.",
     "author": "Codex",
     "time": "2026-09-22T15:15:27.153Z"
+  },
+  {
+    "findingId": "e65ef6f220941a4c68a6dc361dd03734cad0f32526d0c4349d9002031b2c5986",
+    "fingerprint": "2e059d7a01b982be9d9228179199952ebad197ae0c54bce416f2654590c008c9",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "d8516cb1066d708590d8c874d8fab6166eb752d1",
+    "reason": "baseSha records the exact first parent for a committed note; the writer verifies targetSha^ equals it and the decision core matches it to snapshot.baseIdentity. This is required internal provenance, not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T15:19:00.476Z"
   }
 ]
