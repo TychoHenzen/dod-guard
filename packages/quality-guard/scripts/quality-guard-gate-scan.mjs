@@ -18,7 +18,7 @@ export const FILE_RULES =
   "nesting-depth,types-per-file,else-branch,unnamed-tuple," +
   "unused-local,commented-out-code,todo-marker,stateless-method," +
   "comment-bloat,comment-restates-code,comment-metadata,comment-placeholder," +
-  "output-parameter,flag-parameter";
+  "output-parameter,flag-parameter,wildcard-import";
 const SCAN_TIMEOUT_MS = 20_000;
 
 export function baselinePath(repoRoot) {
