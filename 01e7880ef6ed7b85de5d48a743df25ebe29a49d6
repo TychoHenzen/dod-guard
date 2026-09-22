@@ -1,0 +1,11 @@
+[
+  {
+    "findingId": "22095cf6b49058d8c022009cabb33c9bc010eea1cb87e7d9a1cc366eaa640c9a",
+    "fingerprint": "43c08bc36d48e426fceb50ec9280e829ff61fcfa644721aec77f9af40d789d75",
+    "baseSha": "5454467bfde5f98805ede248c97f60eb8769bdfe",
+    "targetSha": "01e7880ef6ed7b85de5d48a743df25ebe29a49d6",
+    "reason": "Reviewed: these helpers own separate acknowledgement-command and decision responsibilities; extracting them clears strict structural regressions. The similarity heuristic selects an unrelated text neighbor, while the two helpers remain adjacent to their parents and tests cover both flows.",
+    "author": "Codex",
+    "time": "2026-09-22T08:41:25.823Z"
+  }
+]
