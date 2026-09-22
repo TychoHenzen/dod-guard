@@ -106,5 +106,14 @@
     "reason": "The 79-file count and similarity outliers are review cues, not universal Clean Code limits. The evidence helper sits with its CLI acknowledgement sibling, decision-core acknowledgements sit with the decision core, and the note writer is shared commit-gate persistence; no responsibility split or better cohesive placement is evidenced. Reorganizing only to improve this score would game the heuristic.",
     "author": "Codex",
     "time": "2026-09-22T16:57:52.311Z"
+  },
+  {
+    "findingId": "a4916f3b7aa3f8b1ca72be6371c54a0e40f632c18bdcb476d4e6dc55129b42e1",
+    "fingerprint": "e5a990a217583efbe8983e49442a3eb749f30147b7476831e2cec9d7b74d3373",
+    "baseSha": "aad9190783b3ca304af2628bbe5e59712ba39120",
+    "targetSha": "00be3c1f38f365ef30f15dbd1c5a9f57159fc82a",
+    "reason": "The note fingerprint must equal the current committed decision fingerprint, preventing reuse when the checked source snapshot changes. This is required internal attestation data, not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T17:01:09.240Z"
   }
 ]
