@@ -16,5 +16,14 @@
     "reason": "The durable committed-note schema requires an audit timestamp, and the CLI supplies it at write time for each attestation. This is an internal record field, not package-root API.",
     "author": "Codex",
     "time": "2026-09-22T12:56:13.964Z"
+  },
+  {
+    "findingId": "2f644640294d050f61b7298f74d2fb6a5a313d65144d977b1178d4c68e5084d6",
+    "fingerprint": "e1574fed080815eb09abaffaa8382ad1ff1d50ea8fd21eaa016d60fa1b83e100",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "ff8546f4c35d8762cbcab2062c67d6958b651710",
+    "reason": "The 12-type count is a structural cue, not a universal Clean Code target. QualityDecisionAttestation belongs with its parser and writer at the commit-gate note boundary; no responsibility split or more cohesive destination is evidenced. Moving it only to meet the count would game the metric.",
+    "author": "Codex",
+    "time": "2026-09-22T12:59:35.870Z"
   }
 ]
