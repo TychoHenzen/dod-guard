@@ -1,8 +1,8 @@
 # knowledge-base
 
-`knowledge-base` is a local MCP server for reusable reference knowledge. It
-stores Markdown documents under `~/.codex/knowledge-base` by default. Set
-`DOD_GUARD_KNOWLEDGE_BASE_DIR` to choose another root.
+`knowledge-base` serves a read-only Markdown corpus shipped in
+`knowledge/entries/`. The bundled server resolves it relative to
+`dist/bundle.js`; it does not use a home-directory root or environment override.
 
 ## Progressive retrieval
 
@@ -13,14 +13,14 @@ Use the tools in this order:
 3. `knowledge_list_entries` with chapter and section keys
 4. `knowledge_get_entry` with one entry key
 
-`knowledge_search` returns summaries and stable keys. It does not return full
-entry content. `knowledge_save` creates or refines one entry and records the
-previous content and metadata in its refinement history.
+`knowledge_search` returns summaries and stable keys, not full entry content.
+The MCP server exposes five read-only tools; author by editing the tracked
+Markdown files.
 
 ## Markdown schema
 
-Each file lives under `entries/` and uses a stable key as its filename, such as
-`entries/refactoring.move-method.md`:
+Each file lives under `knowledge/entries/` and uses a stable key as its
+filename, such as `knowledge/entries/refactoring.move-method.md`:
 
 ```markdown
 ---
@@ -36,8 +36,6 @@ sources:
     project: example-project
     language: TypeScript
     url: https://example.invalid/source
-related_keys: []
-history: []
 ---
 
 Full reference content goes here.
@@ -45,21 +43,18 @@ Full reference content goes here.
 
 Keys use lowercase letters, digits, dots, and hyphens. An entry key belongs to
 its chapter, and a section key belongs to its chapter. Related keys must exist.
-Malformed documents and duplicate keys stop index refresh before the previous
-derived index is replaced.
+Malformed documents, duplicate keys, and missing related keys fail corpus
+validation. The search index is rebuilt in memory.
 
-The repository includes examples for Clean Code, Refactoring, Design Patterns,
-and UX/UI Design. The examples use source metadata from more than one project
-and language.
+The shipped entries cover Clean Code, Refactoring, Design Patterns, and UX/UI
+Design, with source metadata from multiple projects and languages.
 
 ## Guidance boundary
 
 Retrieved content is returned as attributed `reference_guidance`. Explicit task
 and project instructions take precedence. Entry prose is never executed or
 promoted to policy. This package has no runtime dependency on `obsidian-rag`
-and does not read or write built-in memory.
+and does not read built-in memory.
 
-The first slice deliberately uses a local keyword index and rebuilds it from
-all Markdown entries on each request. It has no semantic embeddings or
-cross-process writer lock. Add those only when corpus size or concurrent
-writers make the measured limits relevant.
+The keyword index is rebuilt from all Markdown entries on each request. There
+are no semantic embeddings.

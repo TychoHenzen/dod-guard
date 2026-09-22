@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Tests are code and need the same care as production code. Give each test a clear structure, use data that exposes the behavior under examination, and remove setup that does not help a reader understand the result. A readable test is a small explanation of the contract, not a pile of incidental plumbing.

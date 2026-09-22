@@ -1,13 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { KnowledgeBase, SaveKnowledgeEntryInput } from "./store.js";
-
-const sourceSchema = z.object({
-  label: z.string().min(1),
-  url: z.string().url().optional(),
-  project: z.string().min(1).optional(),
-  language: z.string().min(1).optional(),
-});
+import type { KnowledgeBase } from "./store.js";
 
 const guidance = {
   kind: "reference_guidance",
@@ -106,47 +99,5 @@ export function registerKnowledgeTools(server: McpServer, knowledgeBase: Knowled
         entry: await knowledgeBase.get(key),
         related: await knowledgeBase.related(key),
       })),
-  );
-
-  server.tool(
-    "knowledge_save",
-    "Create or refine a Markdown knowledge entry. Refinement preserves the previous content and metadata in history.",
-    {
-      key: z.string().min(1).describe("Stable entry key"),
-      title: z.string().min(1).optional(),
-      chapter: z.string().min(1).optional(),
-      section: z.string().min(1).optional(),
-      summary: z.string().min(1).optional(),
-      content: z.string().min(1).optional(),
-      sources: z.array(sourceSchema).optional(),
-      related_keys: z.array(z.string().min(1)).optional(),
-      project: z.string().min(1).optional(),
-      language: z.string().min(1).optional(),
-      reason: z.string().min(1).optional(),
-    },
-    (input) =>
-      safe(async () => {
-        const saveInput: SaveKnowledgeEntryInput = {
-          key: input.key,
-          title: input.title,
-          chapter: input.chapter,
-          section: input.section,
-          summary: input.summary,
-          content: input.content,
-          sources: input.sources,
-          relatedKeys: input.related_keys,
-          project: input.project,
-          language: input.language,
-          reason: input.reason,
-        };
-        const entry = await knowledgeBase.save(saveInput);
-        return {
-          saved: {
-            key: entry.key,
-            path: entry.path,
-            historyEntries: entry.history.length,
-          },
-        };
-      }),
   );
 }

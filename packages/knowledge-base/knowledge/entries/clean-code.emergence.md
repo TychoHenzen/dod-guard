@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Use a small set of design priorities in order. First make the system pass all of its tests so behavior is verifiable; then remove duplication, make the code express its intent, and keep the number of classes and methods pragmatic. The later rules do not excuse skipping the earlier ones.

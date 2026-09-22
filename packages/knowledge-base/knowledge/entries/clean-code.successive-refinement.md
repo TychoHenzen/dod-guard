@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Treat a working first design as a starting point, not a permanent shape. Keep a fast, meaningful test suite around the behavior, then improve the design in small steps so every refinement has a clear safety check. The goal is not to predict every future requirement; it is to keep the code easy to change as understanding improves.

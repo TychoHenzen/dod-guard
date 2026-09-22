@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Use concurrency when it decouples what gets done from when it gets done and the system has a real throughput, latency, or waiting problem. It adds overhead and a different design strategy; it does not automatically make a program faster, and correctness becomes harder to reason about when execution can interleave.

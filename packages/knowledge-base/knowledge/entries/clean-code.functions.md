@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Functions are the first useful units of organization in a program, so a good one keeps its purpose visible. Keep a function small enough to understand, let it operate at one level of abstraction, and choose a name that explains the work rather than forcing the reader to reconstruct it from control flow.

@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Hide implementation details behind abstractions rather than exposing fields through public variables or automatic getters and setters. An abstraction lets callers work with the meaning of the data while leaving its representation and access policy changeable.

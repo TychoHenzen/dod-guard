@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Use tests as documentation by example. A good test suite states the behavior and edge cases of a module more clearly than a prose explanation, while coverage and repeated execution provide confidence that a cleanup has not changed the contract.

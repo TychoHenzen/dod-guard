@@ -28773,8 +28773,7 @@ var StdioServerTransport = class {
 };
 
 // src/store.ts
-import { randomUUID } from "node:crypto";
-import { mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
 // src/schema.ts
@@ -28828,24 +28827,6 @@ function sources(value, field, allowEmpty) {
   }
   return parsed;
 }
-function history(value, field) {
-  if (value === void 0) return [];
-  if (!Array.isArray(value)) throw new KnowledgeBaseError(`${field} must be an array`);
-  return value.map((item, index) => {
-    const entry = record2(item, `${field}[${index}]`);
-    return {
-      at: requiredText(entry.at, `${field}[${index}].at`),
-      reason: requiredText(entry.reason, `${field}[${index}].reason`),
-      title: requiredText(entry.title, `${field}[${index}].title`),
-      summary: requiredText(entry.summary, `${field}[${index}].summary`),
-      content: requiredText(entry.content, `${field}[${index}].content`),
-      sources: sources(entry.sources, `${field}[${index}].sources`, true),
-      relatedKeys: textList(entry.related_keys, `${field}[${index}].related_keys`),
-      project: optionalText(entry.project, `${field}[${index}].project`),
-      language: optionalText(entry.language, `${field}[${index}].language`)
-    };
-  });
-}
 function isStableKey(value) {
   return KEY_PATTERN.test(value);
 }
@@ -28875,14 +28856,6 @@ function validateKnowledgeEntry(entry, location = entry.path ?? entry.key) {
     if (!isStableKey(relatedKey)) {
       throw new KnowledgeBaseError(`${location}: related key ${relatedKey} is not stable`);
     }
-  }
-  for (const [index, item] of entry.history.entries()) {
-    requiredText(item.at, `${location}.history[${index}].at`);
-    requiredText(item.reason, `${location}.history[${index}].reason`);
-    requiredText(item.title, `${location}.history[${index}].title`);
-    requiredText(item.summary, `${location}.history[${index}].summary`);
-    requiredText(item.content, `${location}.history[${index}].content`);
-    sources(item.sources, `${location}.history[${index}].sources`, true);
   }
 }
 function validateUniqueEntries(entries) {
@@ -28928,7 +28901,6 @@ function parseKnowledgeDocument(raw, location) {
     content: parts.content,
     sources: sources(data.sources, `${location}.sources`, false),
     relatedKeys: textList(data.related_keys, `${location}.related_keys`),
-    history: history(data.history, `${location}.history`),
     project: optionalText(data.project, `${location}.project`),
     language: optionalText(data.language, `${location}.language`),
     path: location
@@ -28936,43 +28908,9 @@ function parseKnowledgeDocument(raw, location) {
   validateKnowledgeEntry(entry, location);
   return entry;
 }
-function serializableHistory(historyEntries) {
-  return historyEntries.map((entry) => ({
-    at: entry.at,
-    reason: entry.reason,
-    title: entry.title,
-    summary: entry.summary,
-    content: entry.content,
-    sources: entry.sources,
-    related_keys: entry.relatedKeys,
-    ...entry.project ? { project: entry.project } : {},
-    ...entry.language ? { language: entry.language } : {}
-  }));
-}
-function serializeKnowledgeDocument(entry) {
-  validateKnowledgeEntry(entry);
-  const frontmatter = {
-    key: entry.key,
-    title: entry.title,
-    chapter: entry.chapter,
-    section: entry.section,
-    summary: entry.summary,
-    ...entry.project ? { project: entry.project } : {},
-    ...entry.language ? { language: entry.language } : {},
-    sources: entry.sources,
-    related_keys: entry.relatedKeys,
-    history: serializableHistory(entry.history)
-  };
-  return `---
-${(0, import_yaml.stringify)(frontmatter, { lineWidth: 0 }).trimEnd()}
----
-${entry.content.trimEnd()}
-`;
-}
 
 // src/store.ts
 var ENTRIES_DIR = "entries";
-var INDEX_FILE = ".knowledge-index.json";
 var TOKEN_PATTERN = /[\p{L}\p{N}]+(?:[#+.-][\p{L}\p{N}]*)*/gu;
 async function markdownFiles(dir) {
   const files = [];
@@ -29043,24 +28981,6 @@ function tokens(value) {
 function scopeKey(value, field) {
   if (!isStableKey(value)) throw new KnowledgeBaseError(`${field} is not a stable hierarchy key`);
 }
-function snapshot(entry, at, reason) {
-  return {
-    at,
-    reason,
-    title: entry.title,
-    summary: entry.summary,
-    content: entry.content,
-    sources: entry.sources.map((source) => ({ ...source })),
-    relatedKeys: [...entry.relatedKeys],
-    project: entry.project,
-    language: entry.language
-  };
-}
-async function atomicWrite(path, content) {
-  const temporary = `${path}.${randomUUID()}.tmp`;
-  await writeFile(temporary, content, "utf8");
-  await rename(temporary, path);
-}
 var KnowledgeBase = class {
   rootDir;
   entriesDir;
@@ -29070,8 +28990,7 @@ var KnowledgeBase = class {
     this.entriesDir = join(this.rootDir, ENTRIES_DIR);
     this.now = now;
   }
-  async rebuildIndex() {
-    await mkdir(this.entriesDir, { recursive: true });
+  async buildIndex() {
     const files = await markdownFiles(this.entriesDir);
     const entries = [];
     for (const file of files.sort()) {
@@ -29091,19 +29010,17 @@ var KnowledgeBase = class {
       generatedAt: this.now(),
       entries: entries.map(indexed)
     };
-    await atomicWrite(join(this.rootDir, INDEX_FILE), `${JSON.stringify(index, null, 2)}
-`);
     return index;
   }
   async chapters() {
-    const index = await this.rebuildIndex();
+    const index = await this.buildIndex();
     const counts = /* @__PURE__ */ new Map();
     for (const entry of index.entries) counts.set(entry.chapter, (counts.get(entry.chapter) ?? 0) + 1);
     return [...counts.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([key, entryCount]) => ({ key, entryCount }));
   }
   async sections(chapter) {
     scopeKey(chapter, "chapter");
-    const index = await this.rebuildIndex();
+    const index = await this.buildIndex();
     const counts = /* @__PURE__ */ new Map();
     for (const entry of index.entries) {
       if (entry.chapter === chapter) counts.set(entry.section, (counts.get(entry.section) ?? 0) + 1);
@@ -29113,13 +29030,13 @@ var KnowledgeBase = class {
   async entries(chapter, section) {
     scopeKey(chapter, "chapter");
     scopeKey(section, "section");
-    const index = await this.rebuildIndex();
+    const index = await this.buildIndex();
     return index.entries.filter((entry) => entry.chapter === chapter && entry.section === section).map(indexedSummary);
   }
   async search(query, limit = 10) {
     const terms = tokens(query);
     if (terms.length === 0) return [];
-    const index = await this.rebuildIndex();
+    const index = await this.buildIndex();
     const normalizedQuery = query.trim().toLocaleLowerCase();
     return index.entries.map((entry) => {
       const matched = terms.filter((term) => entry.searchText.includes(term)).length;
@@ -29129,7 +29046,7 @@ var KnowledgeBase = class {
   }
   async get(key) {
     scopeKey(key, "key");
-    const index = await this.rebuildIndex();
+    const index = await this.buildIndex();
     const found = index.entries.find((entry2) => entry2.key === key);
     if (!found) throw new KnowledgeBaseError(`knowledge entry not found: ${key}`);
     const raw = await readFile(join(this.rootDir, found.path), "utf8");
@@ -29139,62 +29056,16 @@ var KnowledgeBase = class {
   }
   async related(key) {
     const entry = await this.get(key);
-    const index = await this.rebuildIndex();
+    const index = await this.buildIndex();
     return entry.relatedKeys.map((relatedKey) => {
       const found = index.entries.find((candidate) => candidate.key === relatedKey);
       if (!found) throw new KnowledgeBaseError(`${key}: related key ${relatedKey} does not exist`);
       return indexedSummary(found);
     });
   }
-  async save(input) {
-    scopeKey(input.key, "key");
-    await mkdir(this.entriesDir, { recursive: true });
-    const files = await markdownFiles(this.entriesDir);
-    const documents = await Promise.all(
-      files.sort().map(async (file) => {
-        const path2 = relative(this.rootDir, file).replace(/\\/gu, "/");
-        return parseKnowledgeDocument(await readFile(file, "utf8"), path2);
-      })
-    );
-    validateUniqueEntries(documents);
-    const existing = documents.find((entry2) => entry2.key === input.key);
-    const targetRelative = `entries/${input.key}.md`;
-    const targetEntry = documents.find((entry2) => entry2.path === targetRelative);
-    if (targetEntry && targetEntry.key !== input.key) {
-      throw new KnowledgeBaseError(`${targetRelative}: path already stores ${targetEntry.key}`);
-    }
-    const at = this.now();
-    const entry = {
-      key: input.key,
-      title: input.title ?? existing?.title ?? "",
-      chapter: input.chapter ?? existing?.chapter ?? "",
-      section: input.section ?? existing?.section ?? "",
-      summary: input.summary ?? existing?.summary ?? "",
-      content: input.content ?? existing?.content ?? "",
-      sources: input.sources ?? existing?.sources ?? [],
-      relatedKeys: input.relatedKeys ?? existing?.relatedKeys ?? [],
-      history: existing ? [...existing.history, snapshot(existing, at, input.reason ?? "refined entry")] : [],
-      project: input.project ?? existing?.project,
-      language: input.language ?? existing?.language,
-      path: targetRelative
-    };
-    validateKnowledgeEntry(entry);
-    validateUniqueEntries([...documents.filter((candidate) => candidate !== existing), entry]);
-    const path = join(this.entriesDir, `${input.key}.md`);
-    await atomicWrite(path, serializeKnowledgeDocument(entry));
-    if (existing?.path && existing.path !== targetRelative) await unlink(join(this.rootDir, existing.path));
-    await this.rebuildIndex();
-    return entry;
-  }
 };
 
 // src/tools.ts
-var sourceSchema = external_exports.object({
-  label: external_exports.string().min(1),
-  url: external_exports.string().url().optional(),
-  project: external_exports.string().min(1).optional(),
-  language: external_exports.string().min(1).optional()
-});
 var guidance = {
   kind: "reference_guidance",
   executable: false,
@@ -29279,46 +29150,6 @@ function registerKnowledgeTools(server2, knowledgeBase) {
       entry: await knowledgeBase.get(key),
       related: await knowledgeBase.related(key)
     }))
-  );
-  server2.tool(
-    "knowledge_save",
-    "Create or refine a Markdown knowledge entry. Refinement preserves the previous content and metadata in history.",
-    {
-      key: external_exports.string().min(1).describe("Stable entry key"),
-      title: external_exports.string().min(1).optional(),
-      chapter: external_exports.string().min(1).optional(),
-      section: external_exports.string().min(1).optional(),
-      summary: external_exports.string().min(1).optional(),
-      content: external_exports.string().min(1).optional(),
-      sources: external_exports.array(sourceSchema).optional(),
-      related_keys: external_exports.array(external_exports.string().min(1)).optional(),
-      project: external_exports.string().min(1).optional(),
-      language: external_exports.string().min(1).optional(),
-      reason: external_exports.string().min(1).optional()
-    },
-    (input) => safe(async () => {
-      const saveInput = {
-        key: input.key,
-        title: input.title,
-        chapter: input.chapter,
-        section: input.section,
-        summary: input.summary,
-        content: input.content,
-        sources: input.sources,
-        relatedKeys: input.related_keys,
-        project: input.project,
-        language: input.language,
-        reason: input.reason
-      };
-      const entry = await knowledgeBase.save(saveInput);
-      return {
-        saved: {
-          key: entry.key,
-          path: entry.path,
-          historyEntries: entry.history.length
-        }
-      };
-    })
   );
 }
 

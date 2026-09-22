@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Code is the executable detail of a requirement, so higher-level models do not remove the need to keep the implementation understandable. A growing mess makes even small changes expensive because each edit requires more local archaeology and creates more opportunities to break unrelated behavior.

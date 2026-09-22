@@ -1,4 +1,4 @@
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import { parse as parseYaml } from "yaml";
 
 export const KNOWLEDGE_INDEX_VERSION = 1 as const;
 
@@ -18,18 +18,6 @@ export interface SourceReference {
   language?: string;
 }
 
-export interface RefinementRecord {
-  at: string;
-  reason: string;
-  title: string;
-  summary: string;
-  content: string;
-  sources: SourceReference[];
-  relatedKeys: string[];
-  project?: string;
-  language?: string;
-}
-
 export interface KnowledgeEntry {
   key: string;
   title: string;
@@ -39,7 +27,6 @@ export interface KnowledgeEntry {
   content: string;
   sources: SourceReference[];
   relatedKeys: string[];
-  history: RefinementRecord[];
   project?: string;
   language?: string;
   path?: string;
@@ -113,25 +100,6 @@ function sources(value: unknown, field: string, allowEmpty: boolean): SourceRefe
   return parsed;
 }
 
-function history(value: unknown, field: string): RefinementRecord[] {
-  if (value === undefined) return [];
-  if (!Array.isArray(value)) throw new KnowledgeBaseError(`${field} must be an array`);
-  return value.map((item, index) => {
-    const entry = record(item, `${field}[${index}]`);
-    return {
-      at: requiredText(entry.at, `${field}[${index}].at`),
-      reason: requiredText(entry.reason, `${field}[${index}].reason`),
-      title: requiredText(entry.title, `${field}[${index}].title`),
-      summary: requiredText(entry.summary, `${field}[${index}].summary`),
-      content: requiredText(entry.content, `${field}[${index}].content`),
-      sources: sources(entry.sources, `${field}[${index}].sources`, true),
-      relatedKeys: textList(entry.related_keys, `${field}[${index}].related_keys`),
-      project: optionalText(entry.project, `${field}[${index}].project`),
-      language: optionalText(entry.language, `${field}[${index}].language`),
-    };
-  });
-}
-
 export function isStableKey(value: string): boolean {
   return KEY_PATTERN.test(value);
 }
@@ -162,14 +130,6 @@ export function validateKnowledgeEntry(entry: KnowledgeEntry, location = entry.p
     if (!isStableKey(relatedKey)) {
       throw new KnowledgeBaseError(`${location}: related key ${relatedKey} is not stable`);
     }
-  }
-  for (const [index, item] of entry.history.entries()) {
-    requiredText(item.at, `${location}.history[${index}].at`);
-    requiredText(item.reason, `${location}.history[${index}].reason`);
-    requiredText(item.title, `${location}.history[${index}].title`);
-    requiredText(item.summary, `${location}.history[${index}].summary`);
-    requiredText(item.content, `${location}.history[${index}].content`);
-    sources(item.sources, `${location}.history[${index}].sources`, true);
   }
 }
 
@@ -222,42 +182,10 @@ export function parseKnowledgeDocument(raw: string, location: string): Knowledge
     content: parts.content,
     sources: sources(data.sources, `${location}.sources`, false),
     relatedKeys: textList(data.related_keys, `${location}.related_keys`),
-    history: history(data.history, `${location}.history`),
     project: optionalText(data.project, `${location}.project`),
     language: optionalText(data.language, `${location}.language`),
     path: location,
   };
   validateKnowledgeEntry(entry, location);
   return entry;
-}
-
-function serializableHistory(historyEntries: RefinementRecord[]) {
-  return historyEntries.map((entry) => ({
-    at: entry.at,
-    reason: entry.reason,
-    title: entry.title,
-    summary: entry.summary,
-    content: entry.content,
-    sources: entry.sources,
-    related_keys: entry.relatedKeys,
-    ...(entry.project ? { project: entry.project } : {}),
-    ...(entry.language ? { language: entry.language } : {}),
-  }));
-}
-
-export function serializeKnowledgeDocument(entry: KnowledgeEntry): string {
-  validateKnowledgeEntry(entry);
-  const frontmatter = {
-    key: entry.key,
-    title: entry.title,
-    chapter: entry.chapter,
-    section: entry.section,
-    summary: entry.summary,
-    ...(entry.project ? { project: entry.project } : {}),
-    ...(entry.language ? { language: entry.language } : {}),
-    sources: entry.sources,
-    related_keys: entry.relatedKeys,
-    history: serializableHistory(entry.history),
-  };
-  return `---\n${stringifyYaml(frontmatter, { lineWidth: 0 }).trimEnd()}\n---\n${entry.content.trimEnd()}\n`;
 }

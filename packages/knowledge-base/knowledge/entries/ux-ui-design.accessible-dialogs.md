@@ -12,7 +12,6 @@ sources:
     language: Python
     url: https://github.com/TychoHenzen/BeeHAIve
 related_keys: []
-history: []
 ---
 
 A dialog should state its purpose, move focus into the controlled region, offer a predictable close path, and return focus to the triggering control. Test keyboard and recovery paths as part of the user flow.

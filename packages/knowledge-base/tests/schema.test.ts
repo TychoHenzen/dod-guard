@@ -3,12 +3,11 @@ import { test } from "node:test";
 import {
   KnowledgeBaseError,
   parseKnowledgeDocument,
-  serializeKnowledgeDocument,
   validateUniqueEntries,
 } from "../src/schema.js";
 import { exampleText } from "./test-support.js";
 
-test("parses and serializes a portable Markdown entry schema", async () => {
+test("parses a portable Markdown entry schema", async () => {
   const entry = parseKnowledgeDocument(
     await exampleText("refactoring.move-method.md"),
     "entries/refactoring.move-method.md",
@@ -19,10 +18,6 @@ test("parses and serializes a portable Markdown entry schema", async () => {
   assert.equal(entry.section, "refactoring.method-movement");
   assert.equal(entry.sources[0]?.project, "dod-guard");
   assert.equal(entry.sources[0]?.language, "TypeScript");
-  assert.deepEqual(entry.history, []);
-
-  const roundTrip = parseKnowledgeDocument(serializeKnowledgeDocument(entry), entry.path ?? "entry.md");
-  assert.deepEqual(roundTrip, entry);
 });
 
 test("preserves Chapter 1 source provenance and hierarchy", async () => {

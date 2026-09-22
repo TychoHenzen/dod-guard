@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Use exceptions to separate failure reporting from the ordinary result path. Return codes make every caller remember to check a second result channel, and an unchecked code can turn a local failure into a distant one. Keep the exception message and type useful to the caller that must decide whether to recover, translate, or stop.

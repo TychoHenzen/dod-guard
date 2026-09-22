@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Treat code review as professional learning rather than an attack. Start from the behavior the tests describe, make the failing or missing behavior work, and use the review to expose defects and unclear decisions without turning criticism into a judgment about the author.

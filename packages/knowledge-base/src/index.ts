@@ -54,7 +54,6 @@ export type {
   EntrySummary,
   KnowledgeEntry,
   KnowledgeIndex,
-  RefinementRecord,
   SourceReference,
 } from "./schema.js";
 export { KnowledgeBase } from "./store.js";

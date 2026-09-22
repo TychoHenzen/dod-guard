@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 A useful name answers why a value exists, what it represents, and how it is used. Prefer words that expose intent over abbreviations or encodings, and choose names that remain pronounceable and searchable so the team can discuss the code without translating private shorthand.

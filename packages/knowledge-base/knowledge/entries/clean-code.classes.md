@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Organize a class so a reader can find its state, public behavior, and private support without crossing unrelated concerns. Small size helps, but the more useful test is responsibility: a class should have one coherent reason to change and should not make callers understand a collection of unrelated mechanisms.

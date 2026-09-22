@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Comments are a fallback for intent that the code cannot make clear on its own, not a substitute for readable names, focused functions, or clean structure. Try to express the reason and behavior in code first; a comment that merely repeats the next statement adds maintenance cost and can drift away from what the program actually does.

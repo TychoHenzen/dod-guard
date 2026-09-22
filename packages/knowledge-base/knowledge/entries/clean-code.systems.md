@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Keep a system understandable at the system level by separating concerns and giving each domain a clear boundary. Like a city, a software system needs useful abstractions and modular responsibilities so one team or component can work without carrying every detail of the whole.

@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Treat a third-party library or another team's service as a boundary you do not control. Keep vendor types and assumptions out of the rest of the application by translating them at one owned adapter or wrapper. The application then depends on a small vocabulary that can stay stable while the external package changes.

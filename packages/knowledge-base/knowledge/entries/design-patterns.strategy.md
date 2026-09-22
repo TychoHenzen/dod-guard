@@ -12,7 +12,6 @@ sources:
     language: C#
     url: https://github.com/TychoHenzen/spatial-wires
 related_keys: []
-history: []
 ---
 
 Use Strategy when behavior varies independently from the object that coordinates it. Keep the contract narrow so callers do not depend on implementation details.

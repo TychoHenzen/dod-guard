@@ -11,7 +11,6 @@ sources:
     project: clean-code
     language: English
 related_keys: []
-history: []
 ---
 
 Formatting is communication, not decoration. Agree on simple team rules and apply them consistently so a reader can see the module's shape before studying its details. Keep files small enough to scan, put the headline concepts first, and let detail increase as the reader moves downward.

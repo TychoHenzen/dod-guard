@@ -20,7 +20,7 @@ async function connect(root: string) {
   return { client, server };
 }
 
-test("exposes progressive browse, search, full retrieval, and refinement tools", async () => {
+test("exposes the five read-only browse, search, and retrieval tools", async () => {
   const root = await exampleRoot();
   const { client, server } = await connect(root);
   try {
@@ -29,7 +29,6 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
       "knowledge_list_chapters",
       "knowledge_list_entries",
       "knowledge_list_sections",
-      "knowledge_save",
       "knowledge_search",
     ]);
 
@@ -452,37 +451,6 @@ test("exposes progressive browse, search, full retrieval, and refinement tools",
     assert.match(boundaries.entry.sources[0].label, /PDF pages 144-151/);
     assert.match(boundaries.entry.content, /adapter|wrapper/);
 
-    const saved = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_save",
-          arguments: {
-            key: "ux-ui-design.focus-order",
-            title: "Focus Order",
-            chapter: "ux-ui-design",
-            section: "ux-ui-design.accessibility",
-            summary: "Keep keyboard focus order predictable.",
-            content: "Check focus order with a keyboard.",
-            sources: [{ label: "test source", project: "BeeHAIve", language: "Python" }],
-          },
-        }),
-      ),
-    );
-    assert.equal(saved.saved.historyEntries, 0);
-
-    const refined = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_save",
-          arguments: {
-            key: "ux-ui-design.focus-order",
-            content: "Check focus order with keyboard and screen reader paths.",
-            reason: "added accessibility verification",
-          },
-        }),
-      ),
-    );
-    assert.equal(refined.saved.historyEntries, 1);
   } finally {
     await client.close();
     await server.close();
