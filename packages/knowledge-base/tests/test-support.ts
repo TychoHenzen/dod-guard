@@ -46,7 +46,7 @@ export const cleanCodeSectionKeys = [
 ];
 
 export async function exampleText(name: string): Promise<string> {
-  return readFile(join(packageRoot, "examples", "entries", name), "utf8");
+  return readFile(join(packageRoot, "knowledge", "entries", name), "utf8");
 }
 
 export async function exampleRoot(): Promise<string> {

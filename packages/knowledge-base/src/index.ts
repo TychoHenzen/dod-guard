@@ -1,5 +1,4 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -16,11 +15,11 @@ function packageInfo(): { name: string; version: string } {
   return JSON.parse(readFileSync(packagePath, "utf8")) as { name: string; version: string };
 }
 
-export function defaultKnowledgeBaseDir(): string {
-  return process.env.DOD_GUARD_KNOWLEDGE_BASE_DIR ?? join(homedir(), ".codex", "knowledge-base");
+function shippedKnowledgeBaseDir(): string {
+  return join(dirname(fileURLToPath(import.meta.url)), "..", "knowledge");
 }
 
-export function createKnowledgeBaseServer(rootDir = defaultKnowledgeBaseDir()): McpServer {
+export function createKnowledgeBaseServer(rootDir = shippedKnowledgeBaseDir()): McpServer {
   const pkg = packageInfo();
   const server = new McpServer({ name: pkg.name, version: pkg.version }, { capabilities: { tools: {} } });
   registerKnowledgeTools(server, new KnowledgeBase(rootDir));
