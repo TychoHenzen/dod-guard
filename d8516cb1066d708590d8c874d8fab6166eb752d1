@@ -61,5 +61,14 @@
     "reason": "The committed note requires a non-empty author for audit attribution, supplied by the acknowledgement CLI. This field belongs to the internal persisted-record schema and is not supported package-root API.",
     "author": "Codex",
     "time": "2026-09-22T14:44:07.089Z"
+  },
+  {
+    "findingId": "5a9b4e06aadf9258aab89809a58ce654ce5f7c0038a06c3681ac976d5c98d520",
+    "fingerprint": "2e059d7a01b982be9d9228179199952ebad197ae0c54bce416f2654590c008c9",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "d8516cb1066d708590d8c874d8fab6166eb752d1",
+    "reason": "targetSha binds the attestation to the immutable commit and note key; the writer verifies the resolved commit and reader verifies the note key matches it. This is an internal persistence field, not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T14:47:34.574Z"
   }
 ]
