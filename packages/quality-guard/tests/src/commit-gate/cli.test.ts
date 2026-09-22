@@ -90,3 +90,24 @@ test("acknowledge requires a finding, reason, and author", () => {
   ]);
   assert.equal("exitCode" in result && result.exitCode, 3);
 });
+
+test("parses an explicit committed acknowledgement ref", () => {
+  assert.deepEqual(
+    parseAcknowledgeArguments([
+      "acknowledge",
+      "--finding",
+      "finding",
+      "--reason",
+      "Reviewed",
+      "--author",
+      "A. Reviewer",
+      "--committed=HEAD",
+    ]),
+    {
+      findingId: "finding",
+      reason: "Reviewed",
+      author: "A. Reviewer",
+      committedRef: "HEAD",
+    },
+  );
+});

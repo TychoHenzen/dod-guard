@@ -1,6 +1,8 @@
 export interface Snapshot {
   baseIdentity: string;
   targetIdentity: string;
+  /** Present only when the snapshot comes from an immutable committed tree. */
+  targetCommitSha?: string;
   changes: Array<{
     kind: "add" | "delete" | "modify" | "rename";
     before?: { path: string; content: string };

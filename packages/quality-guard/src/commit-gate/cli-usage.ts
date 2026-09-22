@@ -13,7 +13,7 @@ export function usage(message?: string): CommandResult {
 export function acknowledgeUsage(message?: string): CommandResult {
   const usageText =
     "Usage: quality-guard acknowledge --finding <finding-id> " +
-    "--reason <reason> --author <author>";
+    "--reason <reason> --author <author> [--committed <ref>]";
   return {
     exitCode: 3,
     output: `${message ? `Usage error: ${message}\n` : ""}${usageText}`,

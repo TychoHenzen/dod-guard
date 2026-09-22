@@ -35,6 +35,21 @@ test("static analysis runs the strict structural ratchet without line-length", (
   assert.match(workflow, /QUALITY_GUARD_SKIP_STRUCTURAL=1 node .* check --committed HEAD --json/);
 });
 
+test("static analysis fetches optional quality decision notes before committed replay", () => {
+  const workflow = readFileSync(WORKFLOW, "utf8");
+  const fetch = "git fetch origin refs/notes/quality-decisions:refs/notes/quality-decisions";
+  const gate = "QUALITY_GUARD_SKIP_STRUCTURAL=1 node packages/quality-guard/dist/bundle.js check --committed HEAD --json";
+
+  const fetchIndex = workflow.indexOf(fetch);
+  const gateIndex = workflow.indexOf(gate);
+  assert.notEqual(fetchIndex, -1, "CI must fetch quality decision notes");
+  assert.notEqual(gateIndex, -1, "CI must run the committed quality gate");
+  assert.ok(fetchIndex < gateIndex);
+  assert.match(workflow, /couldn't find remote ref refs\/notes\/quality-decisions/);
+  assert.match(workflow, /No quality decision notes ref is published/);
+  assert.match(workflow, /cat quality-notes-fetch\.err\n\s+exit 1/);
+});
+
 test("static analysis pins actionlint and proves ShellCheck-backed rejection", () => {
   const workflow = readFileSync(WORKFLOW, "utf8");
   const actionlint = "go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12";

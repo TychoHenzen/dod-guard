@@ -10,9 +10,10 @@ import {
   acknowledgeUsage,
   parseAcknowledgeArguments,
 } from "./cli-arguments.js";
-import { runStagedCheck } from "./cli-decision.js";
+import { runCommittedCheck, runStagedCheck } from "./cli-decision.js";
 import type { CommandResult } from "./command-result.js";
 import { DECISION_RECORD_PATH } from "./fingerprint.js";
+import { writeQualityDecisionNote } from "./quality-decision-notes.js";
 
 function acknowledgementSource(recordPath: string): string {
   try {
@@ -75,6 +76,53 @@ function writeAcknowledgement(
   };
 }
 
+function committedAcknowledgement(
+  root: string,
+  options: AcknowledgeOptions & { committedRef: string },
+): CommandResult {
+  const targetSha = execFileSync("git", ["rev-parse", options.committedRef], {
+    cwd: root,
+    encoding: "utf8",
+  }).trim();
+  const decision = runCommittedCheck(root, targetSha, {
+    json: false,
+    intent: "change",
+  });
+  const finding = currentCommittedReviewFinding(decision, options.findingId);
+  if ("exitCode" in finding) return finding;
+  if (!decision.fingerprint || !decision.input.baseIdentity)
+    return acknowledgeUsage("no current committed source fingerprint is available");
+  writeQualityDecisionNote(root, {
+    findingId: finding.id,
+    fingerprint: decision.fingerprint,
+    baseSha: decision.input.baseIdentity,
+    targetSha,
+    reason: options.reason,
+    author: options.author,
+    time: new Date().toISOString(),
+  });
+  return {
+    exitCode: 0,
+    output:
+      `Attested review finding ${finding.id} for ${targetSha} in ` +
+      "refs/notes/quality-decisions; run `git push origin refs/notes/quality-decisions` before CI replay.",
+  };
+}
+
+export function currentCommittedReviewFinding(
+  decision: ReturnType<typeof runCommittedCheck>,
+  findingId: string,
+) {
+  const finding = decision.findings.find((item) => item.id === findingId);
+  if (!finding)
+    return acknowledgeUsage(`unknown or stale finding ${findingId}`);
+  if (finding.severity !== "review")
+    return acknowledgeUsage(
+      `finding ${findingId} is deterministic and cannot be acknowledged`,
+    );
+  return finding;
+}
+
 export function runAcknowledgeCommand(
   args: string[],
   root: string,
@@ -82,6 +130,11 @@ export function runAcknowledgeCommand(
   const options = parseAcknowledgeArguments(args);
   if ("exitCode" in options) return options;
   try {
+    if (options.committedRef)
+      return committedAcknowledgement(root, {
+        ...options,
+        committedRef: options.committedRef,
+      });
     const match = findAcknowledgement(
       runStagedCheck(root, { json: false, intent: "change" }),
       options,

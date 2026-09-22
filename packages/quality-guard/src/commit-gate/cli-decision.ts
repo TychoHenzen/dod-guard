@@ -14,6 +14,7 @@ import {
 } from "./cli-tree.js";
 import { parseQualityConfig } from "./config.js";
 import { decideQuality } from "./decision-core.js";
+import { readQualityDecisionNotes } from "./quality-decision-notes.js";
 import {
   readCommittedSnapshot,
   readStagedSnapshot,
@@ -48,7 +49,13 @@ function decisionWithSources(
     scanner: input.skipStructural
       ? { findings: [] }
       : scannerEvidence(input.root, input.targetRef),
-    acknowledgementRecords: acknowledgementRecords(input.root, input.targetRef),
+    pendingAcknowledgementRecords:
+      input.targetRef === "index"
+        ? acknowledgementRecords(input.root, input.targetRef)
+        : [],
+    attestations: snapshot.targetCommitSha
+      ? readQualityDecisionNotes(input.root, snapshot.targetCommitSha)
+      : [],
     refactorMap: refactorMapFor(input),
   });
 }

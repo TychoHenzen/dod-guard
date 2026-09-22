@@ -149,6 +149,18 @@ jobs:
               --write-baseline=.github/quality/quality-baseline.json
           fi
 
+      - name: Fetch quality decision notes
+        run: |
+          if ! git fetch origin refs/notes/quality-decisions:refs/notes/quality-decisions 2>quality-notes-fetch.err; then
+            if grep -q "couldn't find remote ref refs/notes/quality-decisions" quality-notes-fetch.err; then
+              echo "No quality decision notes ref is published for this repository."
+            else
+              cat quality-notes-fetch.err
+              exit 1
+            fi
+          fi
+          rm -f quality-notes-fetch.err
+
       # The PostToolUse hook is file-local feedback. This replays the one
       # authoritative decision against HEAD and its first parent, so a commit
       # that bypassed the local hook cannot bypass the release gate.

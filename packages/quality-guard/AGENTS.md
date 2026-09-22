@@ -83,12 +83,16 @@ This bypass is easy on purpose. It must never be silent.
 ## Commit decision and CI replay
 
 `quality-guard check --staged` is the commit decision. It compares the Git
-index with `HEAD` and returns `PASS`, `REVIEW_REQUIRED`, or `FAIL`. Review
-acknowledgements live in `.github/quality/architecture-decisions.json`; each
-record includes the staged fingerprint, so it expires after relevant source
-content changes.
+index with `HEAD` and returns `PASS`, `REVIEW_REQUIRED`, or `FAIL`. Staged
+acknowledgements live in `.github/quality/architecture-decisions.json` as
+pending intents. They can authorize the staged check, but never committed
+replay. After committing, create an exact-SHA attestation with
+`quality-guard acknowledge --finding <id> --reason <reason> --author <name> --committed HEAD`;
+it is stored in `refs/notes/quality-decisions`. Push that ref with
+`git push origin refs/notes/quality-decisions` so CI can verify it.
 
-The CI static-analysis job runs `quality-guard check --committed HEAD --skip-structural --json`
+The CI static-analysis job fetches the optional notes ref and runs
+`QUALITY_GUARD_SKIP_STRUCTURAL=1 quality-guard check --committed HEAD --json`
 after the structural ratchet. It uses the same decision core against `HEAD`
 and its first parent. A local Git hook may run the staged command for earlier
 feedback, but CI does not depend on that hook having run.

@@ -12,16 +12,20 @@ import type { Snapshot } from "./snapshot.js";
 import { type DecisionResult } from "./types.js";
 
 function acceptedFindings(input: DecisionCoreInput, fingerprint: string) {
-  const current = (input.acknowledgementRecords ?? []).filter((record) =>
-    matchesSnapshot(record, input.snapshot, fingerprint),
+  const pending = (input.pendingAcknowledgementRecords ?? []).filter((record) =>
+    matchesPendingIntent(record, input.snapshot, fingerprint),
+  );
+  const current = (input.attestations ?? []).filter((record) =>
+    matchesAttestation(record, input.snapshot, fingerprint),
   );
   return new Set([
     ...(input.acknowledgements ?? []),
+    ...pending.map((record) => record.findingId),
     ...current.map((record) => record.findingId),
   ]);
 }
-function matchesSnapshot(
-  record: NonNullable<DecisionCoreInput["acknowledgementRecords"]>[number],
+function matchesPendingIntent(
+  record: NonNullable<DecisionCoreInput["pendingAcknowledgementRecords"]>[number],
   snapshot: Snapshot,
   fingerprint: string,
 ) {
@@ -29,6 +33,17 @@ function matchesSnapshot(
     record.fingerprint === fingerprint &&
     record.baseIdentity === snapshot.baseIdentity &&
     record.targetIdentity === snapshot.targetIdentity
+  );
+}
+function matchesAttestation(
+  record: NonNullable<DecisionCoreInput["attestations"]>[number],
+  snapshot: Snapshot,
+  fingerprint: string,
+) {
+  return (
+    record.fingerprint === fingerprint &&
+    record.baseSha === snapshot.baseIdentity &&
+    record.targetSha === snapshot.targetCommitSha
   );
 }
 function progressFor(input: DecisionCoreInput) {
@@ -49,14 +64,23 @@ function staleAcknowledgements(
   input: DecisionCoreInput,
   fingerprint: string,
 ): NonNullable<DecisionResult["staleAcknowledgements"]> {
-  return (input.acknowledgementRecords ?? [])
-    .filter((record) => !matchesSnapshot(record, input.snapshot, fingerprint))
+  const pending = (input.pendingAcknowledgementRecords ?? [])
+    .filter((record) => !matchesPendingIntent(record, input.snapshot, fingerprint))
     .map(({ findingId, baseIdentity, targetIdentity }) => ({
       findingId,
       baseIdentity,
       targetIdentity,
+    }));
+  const attestations = (input.attestations ?? [])
+    .filter((record) => !matchesAttestation(record, input.snapshot, fingerprint))
+    .map(({ findingId, baseSha, targetSha }) => ({
+      findingId,
+      baseIdentity: baseSha,
+      targetIdentity: targetSha,
     }))
-    .sort((left, right) => left.findingId.localeCompare(right.findingId));
+  return [...pending, ...attestations].sort((left, right) =>
+    left.findingId.localeCompare(right.findingId),
+  );
 }
 function verdict(
   errors: string[],

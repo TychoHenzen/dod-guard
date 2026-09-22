@@ -3837,7 +3837,7 @@ var require_fast_uri = __commonJS({
         normalizeString(uri, options);
       } else if (typeof uri === "object") {
         uri = /** @type {T} */
-        parse3(serialize(uri, options), options);
+        parse4(serialize(uri, options), options);
       }
       return uri;
     }
@@ -3877,8 +3877,8 @@ var require_fast_uri = __commonJS({
     function resolveComponent(base, relative2, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
-        base = parse3(serialize(base, options), options);
-        relative2 = parse3(serialize(relative2, options), options);
+        base = parse4(serialize(base, options), options);
+        relative2 = parse4(serialize(relative2, options), options);
       }
       options = options || {};
       if (!options.tolerant && relative2.scheme) {
@@ -4176,7 +4176,7 @@ var require_fast_uri = __commonJS({
       }
       return { parsed, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme };
     }
-    function parse3(uri, opts) {
+    function parse4(uri, opts) {
       return parseWithStatus(uri, opts).parsed;
     }
     function normalizeString(uri, opts) {
@@ -4213,7 +4213,7 @@ var require_fast_uri = __commonJS({
       resolveComponent,
       equal,
       serialize,
-      parse: parse3
+      parse: parse4
     };
     module.exports = fastUri;
     module.exports.default = fastUri;
@@ -6627,8 +6627,8 @@ var require_discriminator = __commonJS({
           if (!tagRequired)
             throw new Error(`discriminator: "${tagName}" must be required`);
           return oneOfMapping;
-          function hasRequired({ required: required2 }) {
-            return Array.isArray(required2) && required2.includes(tagName);
+          function hasRequired({ required: required3 }) {
+            return Array.isArray(required3) && required3.includes(tagName);
           }
           function addMappings(sch, i) {
             if (sch.const) {
@@ -18402,7 +18402,7 @@ function parseObjectDef(def, refs) {
     type: "object",
     properties: {}
   };
-  const required2 = [];
+  const required3 = [];
   const shape = def.shape();
   for (const propName in shape) {
     let propDef = shape[propName];
@@ -18429,11 +18429,11 @@ function parseObjectDef(def, refs) {
     }
     result.properties[propName] = parsedDef;
     if (!propOptional) {
-      required2.push(propName);
+      required3.push(propName);
     }
   }
-  if (required2.length) {
-    result.required = required2;
+  if (required3.length) {
+    result.required = required3;
   }
   const additionalProperties = decideAdditionalProperties(def, refs);
   if (additionalProperties !== void 0) {
@@ -22272,7 +22272,7 @@ function usage(message) {
   };
 }
 function acknowledgeUsage(message) {
-  const usageText = "Usage: quality-guard acknowledge --finding <finding-id> --reason <reason> --author <author>";
+  const usageText = "Usage: quality-guard acknowledge --finding <finding-id> --reason <reason> --author <author> [--committed <ref>]";
   return {
     exitCode: 3,
     output: `${message ? `Usage error: ${message}
@@ -22282,7 +22282,7 @@ function acknowledgeUsage(message) {
 
 // src/commit-gate/cli-acknowledge-arguments.ts
 function optionName(arg) {
-  return ["--finding", "--reason", "--author"].find(
+  return ["--finding", "--reason", "--author", "--committed"].find(
     (flag2) => arg === flag2 || arg.startsWith(`${flag2}=`)
   );
 }
@@ -22300,6 +22300,7 @@ function applyAcknowledgement(name, value, state) {
   if (name === "--finding") state.findingId = value;
   if (name === "--reason") state.reason = value;
   if (name === "--author") state.author = value;
+  if (name === "--committed") state.committedRef = value;
 }
 function validAcknowledgement(state) {
   if (!state.findingId?.trim())
@@ -22308,6 +22309,8 @@ function validAcknowledgement(state) {
     return acknowledgeUsage("--reason requires a non-empty reason");
   if (!state.author?.trim())
     return acknowledgeUsage("--author requires a non-empty author");
+  if (state.committedRef !== void 0 && !state.committedRef.trim())
+    return acknowledgeUsage("--committed requires a Git ref");
   return void 0;
 }
 function parseAcknowledgeArguments(args) {
@@ -22325,7 +22328,8 @@ function parseAcknowledgeArguments(args) {
   return {
     findingId: state.findingId.trim(),
     reason: state.reason.trim(),
-    author: state.author.trim()
+    author: state.author.trim(),
+    ...state.committedRef ? { committedRef: state.committedRef.trim() } : {}
   };
 }
 
@@ -22419,7 +22423,7 @@ function parseCheckArguments(args) {
 }
 
 // src/commit-gate/cli-command-acknowledge.ts
-import { execFileSync as execFileSync5 } from "node:child_process";
+import { execFileSync as execFileSync6 } from "node:child_process";
 import { mkdirSync, readFileSync as readFileSync2, writeFileSync } from "node:fs";
 import * as path12 from "node:path";
 
@@ -24254,16 +24258,23 @@ function evaluateResponsibilityMap(map, input) {
 
 // src/commit-gate/decision-core.ts
 function acceptedFindings(input, fingerprint) {
-  const current = (input.acknowledgementRecords ?? []).filter(
-    (record3) => matchesSnapshot(record3, input.snapshot, fingerprint)
+  const pending = (input.pendingAcknowledgementRecords ?? []).filter(
+    (record3) => matchesPendingIntent(record3, input.snapshot, fingerprint)
+  );
+  const current = (input.attestations ?? []).filter(
+    (record3) => matchesAttestation(record3, input.snapshot, fingerprint)
   );
   return /* @__PURE__ */ new Set([
     ...input.acknowledgements ?? [],
+    ...pending.map((record3) => record3.findingId),
     ...current.map((record3) => record3.findingId)
   ]);
 }
-function matchesSnapshot(record3, snapshot, fingerprint) {
+function matchesPendingIntent(record3, snapshot, fingerprint) {
   return record3.fingerprint === fingerprint && record3.baseIdentity === snapshot.baseIdentity && record3.targetIdentity === snapshot.targetIdentity;
+}
+function matchesAttestation(record3, snapshot, fingerprint) {
+  return record3.fingerprint === fingerprint && record3.baseSha === snapshot.baseIdentity && record3.targetSha === snapshot.targetCommitSha;
 }
 function progressFor(input) {
   if (!input.refactorMap) return void 0;
@@ -24280,11 +24291,19 @@ function analysisErrors(input) {
   ].sort((left, right) => left.localeCompare(right));
 }
 function staleAcknowledgements(input, fingerprint) {
-  return (input.acknowledgementRecords ?? []).filter((record3) => !matchesSnapshot(record3, input.snapshot, fingerprint)).map(({ findingId, baseIdentity, targetIdentity }) => ({
+  const pending = (input.pendingAcknowledgementRecords ?? []).filter((record3) => !matchesPendingIntent(record3, input.snapshot, fingerprint)).map(({ findingId, baseIdentity, targetIdentity }) => ({
     findingId,
     baseIdentity,
     targetIdentity
-  })).sort((left, right) => left.findingId.localeCompare(right.findingId));
+  }));
+  const attestations = (input.attestations ?? []).filter((record3) => !matchesAttestation(record3, input.snapshot, fingerprint)).map(({ findingId, baseSha, targetSha }) => ({
+    findingId,
+    baseIdentity: baseSha,
+    targetIdentity: targetSha
+  }));
+  return [...pending, ...attestations].sort(
+    (left, right) => left.findingId.localeCompare(right.findingId)
+  );
 }
 function verdict(errors, findings, accepted) {
   if (errors.length > 0 || findings.some((finding) => finding.severity === "fail"))
@@ -25597,11 +25616,11 @@ function extractArchitectureFacts(file) {
 
 // src/commit-gate/facts.ts
 function extractFactInventory(files, requiredPaths) {
-  const required2 = new Set(requiredPaths);
+  const required3 = new Set(requiredPaths);
   const errors = [];
   const facts = files.flatMap((file) => {
     const result = extractArchitectureFacts(file);
-    if (required2.has(file.path))
+    if (required3.has(file.path))
       errors.push(...result.errors.map((error2) => `${file.path}: ${error2}`));
     return result.facts ? [
       {
@@ -25730,6 +25749,7 @@ function changeSnapshot(root2, source) {
   return {
     baseIdentity: git(root2, ["rev-parse", source.base]).trim(),
     targetIdentity: sourceSnapshotIdentity(changes),
+    targetCommitSha: source.targetCommitSha,
     changes
   };
 }
@@ -25752,6 +25772,7 @@ function readCommittedSnapshot(root2, commit = "HEAD") {
   return changeSnapshot(root2, {
     base: parent,
     target: commit,
+    targetCommitSha: git(root2, ["rev-parse", commit]).trim(),
     contentSpec: (filePath, after) => `${after ? commit : parent}:${filePath}`
   });
 }
@@ -25813,6 +25834,95 @@ function sourceInventories(input) {
   };
 }
 
+// src/commit-gate/quality-decision-notes.ts
+import { execFileSync as execFileSync5, spawnSync } from "node:child_process";
+var QUALITY_DECISION_NOTES_REF = "refs/notes/quality-decisions";
+var COMMIT_SHA = /^[0-9a-f]{40}$/i;
+function git2(root2, args) {
+  return execFileSync5("git", args, { cwd: root2, encoding: "utf8" }).trim();
+}
+function required2(value, location) {
+  if (typeof value !== "string" || !value.trim())
+    throw new Error(`${location} must be a non-empty string`);
+  return value.trim();
+}
+function commitSha(value, location) {
+  const sha = required2(value, location);
+  if (!COMMIT_SHA.test(sha)) throw new Error(`${location} must be a commit SHA`);
+  return sha;
+}
+function parseRecord2(item, index) {
+  if (item === null || typeof item !== "object" || Array.isArray(item))
+    throw new Error(`quality decision note[${index}] must be an object`);
+  const record3 = item;
+  const allowed = new Set(
+    "findingId fingerprint baseSha targetSha reason author time".split(" ")
+  );
+  const unexpected = Object.keys(record3).find((key2) => !allowed.has(key2));
+  if (unexpected)
+    throw new Error(`quality decision note[${index}].${unexpected} is not supported`);
+  return {
+    findingId: required2(record3.findingId, `quality decision note[${index}].findingId`),
+    fingerprint: required2(record3.fingerprint, `quality decision note[${index}].fingerprint`),
+    baseSha: commitSha(record3.baseSha, `quality decision note[${index}].baseSha`),
+    targetSha: commitSha(record3.targetSha, `quality decision note[${index}].targetSha`),
+    reason: required2(record3.reason, `quality decision note[${index}].reason`),
+    author: required2(record3.author, `quality decision note[${index}].author`),
+    time: required2(record3.time, `quality decision note[${index}].time`)
+  };
+}
+function parse3(source) {
+  let value;
+  try {
+    value = JSON.parse(source);
+  } catch {
+    throw new Error("quality decision note must contain valid JSON");
+  }
+  if (!Array.isArray(value)) throw new Error("quality decision note must contain an array");
+  return value.map(parseRecord2);
+}
+function validateTarget(root2, record3) {
+  const targetSha = git2(root2, ["rev-parse", record3.targetSha]);
+  const baseSha = git2(root2, ["rev-parse", `${record3.targetSha}^`]);
+  if (targetSha !== record3.targetSha)
+    throw new Error("quality decision attestation target does not resolve exactly");
+  if (baseSha !== record3.baseSha)
+    throw new Error("quality decision attestation base does not match the target parent");
+}
+function readQualityDecisionNotes(root2, targetSha) {
+  const result = spawnSync(
+    "git",
+    ["notes", `--ref=${QUALITY_DECISION_NOTES_REF}`, "show", targetSha],
+    { cwd: root2, encoding: "utf8" }
+  );
+  if (result.status !== 0) {
+    if (/failed to resolve|no note found/.test(result.stderr)) return [];
+    throw new Error(result.stderr.trim());
+  }
+  const records = parse3(result.stdout.trim());
+  if (records.some((record3) => record3.targetSha !== targetSha))
+    throw new Error("quality decision note target does not match its Git note key");
+  return records;
+}
+function writeQualityDecisionNote(root2, record3) {
+  validateTarget(root2, record3);
+  const records = [...readQualityDecisionNotes(root2, record3.targetSha), record3];
+  execFileSync5(
+    "git",
+    [
+      "notes",
+      `--ref=${QUALITY_DECISION_NOTES_REF}`,
+      "add",
+      "--force",
+      "--message",
+      `${JSON.stringify(records, null, 2)}
+`,
+      record3.targetSha
+    ],
+    { cwd: root2, stdio: "ignore" }
+  );
+}
+
 // src/commit-gate/cli-decision.ts
 function decisionWithSources(input, snapshot, changed) {
   const config2 = parseQualityConfig(
@@ -25826,7 +25936,8 @@ function decisionWithSources(input, snapshot, changed) {
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
     scanner: input.skipStructural ? { findings: [] } : scannerEvidence(input.root, input.targetRef),
-    acknowledgementRecords: acknowledgementRecords(input.root, input.targetRef),
+    pendingAcknowledgementRecords: input.targetRef === "index" ? acknowledgementRecords(input.root, input.targetRef) : [],
+    attestations: snapshot.targetCommitSha ? readQualityDecisionNotes(input.root, snapshot.targetCommitSha) : [],
     refactorMap: refactorMapFor(input)
   });
 }
@@ -25896,7 +26007,7 @@ function writeAcknowledgement(root2, options, match) {
     }),
     "utf8"
   );
-  execFileSync5("git", ["add", "--", DECISION_RECORD_PATH], {
+  execFileSync6("git", ["add", "--", DECISION_RECORD_PATH], {
     cwd: root2,
     stdio: "ignore"
   });
@@ -25905,10 +26016,52 @@ function writeAcknowledgement(root2, options, match) {
     output: `Acknowledged review finding ${options.findingId}`
   };
 }
+function committedAcknowledgement(root2, options) {
+  const targetSha = execFileSync6("git", ["rev-parse", options.committedRef], {
+    cwd: root2,
+    encoding: "utf8"
+  }).trim();
+  const decision = runCommittedCheck(root2, targetSha, {
+    json: false,
+    intent: "change"
+  });
+  const finding = currentCommittedReviewFinding(decision, options.findingId);
+  if ("exitCode" in finding) return finding;
+  if (!decision.fingerprint || !decision.input.baseIdentity)
+    return acknowledgeUsage("no current committed source fingerprint is available");
+  writeQualityDecisionNote(root2, {
+    findingId: finding.id,
+    fingerprint: decision.fingerprint,
+    baseSha: decision.input.baseIdentity,
+    targetSha,
+    reason: options.reason,
+    author: options.author,
+    time: (/* @__PURE__ */ new Date()).toISOString()
+  });
+  return {
+    exitCode: 0,
+    output: `Attested review finding ${finding.id} for ${targetSha} in refs/notes/quality-decisions; run \`git push origin refs/notes/quality-decisions\` before CI replay.`
+  };
+}
+function currentCommittedReviewFinding(decision, findingId) {
+  const finding = decision.findings.find((item) => item.id === findingId);
+  if (!finding)
+    return acknowledgeUsage(`unknown or stale finding ${findingId}`);
+  if (finding.severity !== "review")
+    return acknowledgeUsage(
+      `finding ${findingId} is deterministic and cannot be acknowledged`
+    );
+  return finding;
+}
 function runAcknowledgeCommand(args, root2) {
   const options = parseAcknowledgeArguments(args);
   if ("exitCode" in options) return options;
   try {
+    if (options.committedRef)
+      return committedAcknowledgement(root2, {
+        ...options,
+        committedRef: options.committedRef
+      });
     const match = findAcknowledgement(
       runStagedCheck(root2, { json: false, intent: "change" }),
       options
@@ -26221,7 +26374,7 @@ function reasonFor(status, score) {
 }
 
 // src/plaintext-textstat/index.ts
-import { spawnSync } from "node:child_process";
+import { spawnSync as spawnSync2 } from "node:child_process";
 
 // src/plaintext-textstat/process.ts
 import { mkdtempSync as mkdtempSync2, rmSync as rmSync3 } from "node:fs";
@@ -26387,7 +26540,7 @@ function runTextstat(text3, options = {}) {
     text: text3,
     command: commandFor(options),
     args,
-    spawn: options.spawn ?? spawnSync,
+    spawn: options.spawn ?? spawnSync2,
     isolated: shouldIsolate(options)
   });
 }

@@ -51,6 +51,7 @@ export function changeSnapshot(
   source: {
     base: string;
     target: string;
+    targetCommitSha?: string;
     contentSpec(path: string, after: boolean): string;
   },
 ): Snapshot {
@@ -64,6 +65,7 @@ export function changeSnapshot(
   return {
     baseIdentity: (git(root, ["rev-parse", source.base]) as string).trim(),
     targetIdentity: sourceSnapshotIdentity(changes),
+    targetCommitSha: source.targetCommitSha,
     changes,
   };
 }

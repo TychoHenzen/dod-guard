@@ -7,8 +7,8 @@ import { runAcknowledgeCommand } from "../../../src/commit-gate/cli-command-ackn
 import { runStagedCheck } from "../../../src/commit-gate/cli-decision.js";
 import { runScan } from "../../../src/scanner.js";
 
-export function git(root: string, args: string[]): void {
-  execFileSync("git", args, { cwd: root, stdio: "ignore" });
+export function git(root: string, args: string[]): string {
+  return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 }
 
 export function fixture(): string {

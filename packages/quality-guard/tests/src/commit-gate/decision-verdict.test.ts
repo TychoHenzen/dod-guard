@@ -37,16 +37,16 @@ test("accepted review evidence passes deterministic checks", () => {
   assert.equal(result.errors.length, 0);
 });
 
-test("matching acknowledgement records pass", () => {
+test("matching exact-commit attestations pass", () => {
   const review = growthFinding();
   const result = decideQuality({
     ...growthDecisionInput(),
-    acknowledgementRecords: [
+    attestations: [
       {
         findingId: review.id,
         fingerprint: fingerprintSnapshot(snapshot, parseQualityConfig("{}")),
-        baseIdentity: snapshot.baseIdentity,
-        targetIdentity: snapshot.targetIdentity,
+        baseSha: snapshot.baseIdentity,
+        targetSha: snapshot.targetCommitSha ?? "",
         reason: "Reviewed",
         author: "A. Reviewer",
         time: "2026-08-31T00:00:00.000Z",
@@ -57,14 +57,16 @@ test("matching acknowledgement records pass", () => {
   assert.deepEqual(result.staleAcknowledgements, []);
 });
 
-test("treats a legacy acknowledgement as stale provenance", () => {
+test("treats a mismatched attestation as stale provenance", () => {
   const review = growthFinding();
   const result = decideQuality({
     ...growthDecisionInput(),
-    acknowledgementRecords: [
+    attestations: [
       {
         findingId: review.id,
         fingerprint: fingerprintSnapshot(snapshot, parseQualityConfig("{}")),
+        baseSha: "old-base",
+        targetSha: "old-target",
         reason: "Reviewed",
         author: "A. Reviewer",
         time: "2026-08-31T00:00:00.000Z",
@@ -75,8 +77,8 @@ test("treats a legacy acknowledgement as stale provenance", () => {
   assert.deepEqual(result.staleAcknowledgements, [
     {
       findingId: review.id,
-      baseIdentity: undefined,
-      targetIdentity: undefined,
+      baseIdentity: "old-base",
+      targetIdentity: "old-target",
     },
   ]);
 });

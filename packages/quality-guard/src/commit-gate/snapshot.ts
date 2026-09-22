@@ -26,6 +26,7 @@ export function readCommittedSnapshot(root: string, commit = "HEAD"): Snapshot {
   return changeSnapshot(root, {
     base: parent,
     target: commit,
+    targetCommitSha: (git(root, ["rev-parse", commit]) as string).trim(),
     contentSpec: (filePath, after) => `${after ? commit : parent}:${filePath}`,
   });
 }
