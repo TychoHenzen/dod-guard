@@ -7,5 +7,14 @@
     "reason": "A committed Snapshot must retain the exact resolved target SHA so CI and note lookup use the immutable commit rather than a moving ref. This is an internal module field; the package entry point ships the CLI bundle.",
     "author": "Codex",
     "time": "2026-09-22T12:52:44.779Z"
+  },
+  {
+    "findingId": "1768482a11740e63e35efc5ad62804284bc02354ab2b7f6f1a396ff74a796891",
+    "fingerprint": "e1574fed080815eb09abaffaa8382ad1ff1d50ea8fd21eaa016d60fa1b83e100",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "ff8546f4c35d8762cbcab2062c67d6958b651710",
+    "reason": "The durable committed-note schema requires an audit timestamp, and the CLI supplies it at write time for each attestation. This is an internal record field, not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T12:56:13.964Z"
   }
 ]
