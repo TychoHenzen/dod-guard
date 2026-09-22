@@ -1,5 +1,11 @@
 import { DECISION_RECORD_PATH } from "./fingerprint.js";
 
+const ALLOWED_FIELDS = new Set(
+  "findingId fingerprint baseIdentity targetIdentity reason author time".split(
+    " ",
+  ),
+);
+
 export interface ArchitectureAcknowledgement {
   findingId: string;
   fingerprint: string;
@@ -27,8 +33,6 @@ function recordValue(
   );
 }
 
-/** Parses the append-only record with an intentionally closed seven-field
- * schema. */
 export function parseArchitectureAcknowledgements(
   source: string,
 ): ArchitectureAcknowledgement[] {
@@ -50,38 +54,36 @@ function parseRecord(
   if (item === null || typeof item !== "object" || Array.isArray(item))
     throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
   const record = item as Record<string, unknown>;
-  const allowed = [
-    "findingId",
-    "fingerprint",
-    "baseIdentity",
-    "targetIdentity",
-    "reason",
-    "author",
-    "time",
-  ];
-  const unexpected = Object.keys(record).find((key) => !allowed.includes(key));
+  validateRecordFields(record, index);
+  return {
+    findingId: recordValue(record, "findingId", index),
+    fingerprint: recordValue(record, "fingerprint", index),
+    ...provenance(record, index),
+    reason: recordValue(record, "reason", index),
+    author: recordValue(record, "author", index),
+    time: recordValue(record, "time", index),
+  };
+}
+
+function validateRecordFields(record: Record<string, unknown>, index: number) {
+  const unexpected = Object.keys(record).find(
+    (key) => !ALLOWED_FIELDS.has(key),
+  );
   if (unexpected)
     throw new Error(
       `${DECISION_RECORD_PATH}[${index}].${unexpected} is not supported`,
     );
-  const hasBaseIdentity = "baseIdentity" in record;
-  const hasTargetIdentity = "targetIdentity" in record;
-  if (hasBaseIdentity !== hasTargetIdentity)
+  if ("baseIdentity" in record !== "targetIdentity" in record)
     throw new Error(
       `${DECISION_RECORD_PATH}[${index}] must record both baseIdentity and targetIdentity`,
     );
+}
+
+function provenance(record: Record<string, unknown>, index: number) {
+  if (!("baseIdentity" in record)) return {};
   return {
-    findingId: recordValue(record, "findingId", index),
-    fingerprint: recordValue(record, "fingerprint", index),
-    ...(hasBaseIdentity
-      ? {
-          baseIdentity: recordValue(record, "baseIdentity", index),
-          targetIdentity: recordValue(record, "targetIdentity", index),
-        }
-      : {}),
-    reason: recordValue(record, "reason", index),
-    author: recordValue(record, "author", index),
-    time: recordValue(record, "time", index),
+    baseIdentity: recordValue(record, "baseIdentity", index),
+    targetIdentity: recordValue(record, "targetIdentity", index),
   };
 }
 

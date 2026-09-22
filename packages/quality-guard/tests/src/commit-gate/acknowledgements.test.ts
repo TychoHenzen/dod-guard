@@ -5,27 +5,19 @@ import {
   parseArchitectureAcknowledgements,
 } from "../../../src/commit-gate/acknowledgements.js";
 
+const trackedRecord = {
+  findingId: "finding",
+  fingerprint: "fingerprint",
+  baseIdentity: "base",
+  targetIdentity: "target",
+  reason: "Reviewed with the team",
+  author: "A. Reviewer",
+  time: "2026-08-31T00:00:00.000Z",
+};
+
 test("stores tracked acknowledgement fields", () => {
-  const output = appendArchitectureAcknowledgement("[]", {
-    findingId: "finding",
-    fingerprint: "fingerprint",
-    baseIdentity: "base",
-    targetIdentity: "target",
-    reason: "Reviewed with the team",
-    author: "A. Reviewer",
-    time: "2026-08-31T00:00:00.000Z",
-  });
-  assert.deepEqual(parseArchitectureAcknowledgements(output), [
-    {
-      findingId: "finding",
-      fingerprint: "fingerprint",
-      baseIdentity: "base",
-      targetIdentity: "target",
-      reason: "Reviewed with the team",
-      author: "A. Reviewer",
-      time: "2026-08-31T00:00:00.000Z",
-    },
-  ]);
+  const output = appendArchitectureAcknowledgement("[]", trackedRecord);
+  assert.deepEqual(parseArchitectureAcknowledgements(output), [trackedRecord]);
 });
 
 test("keeps legacy acknowledgement records parseable but rejects partial provenance", () => {

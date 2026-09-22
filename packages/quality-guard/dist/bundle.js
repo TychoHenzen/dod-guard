@@ -22424,7 +22424,7 @@ import { mkdirSync, readFileSync as readFileSync2, writeFileSync } from "node:fs
 import * as path12 from "node:path";
 
 // src/commit-gate/fingerprint.ts
-import { createHash } from "node:crypto";
+import { createHash as createHash2 } from "node:crypto";
 
 // src/commit-gate/canonical.ts
 function canonical(value) {
@@ -22435,12 +22435,35 @@ function canonical(value) {
   return JSON.stringify(value);
 }
 
-// src/commit-gate/fingerprint.ts
+// src/commit-gate/source-snapshot.ts
+import { createHash } from "node:crypto";
 var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
 var SOURCE_PATH = /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
+function sourceSnapshotIdentity(changes) {
+  return createHash("sha256").update(canonical(sourceChanges(changes))).digest("hex");
+}
+function sourceChanges(changes) {
+  return changes.filter(isEligibleSourceChange).map(fingerprintChange).sort(compareChanges);
+}
+function isEligibleSourceChange(change) {
+  return change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH && (isSourceFile(change.before) || isSourceFile(change.after));
+}
+function isSourceFile(file) {
+  return file !== void 0 && SOURCE_PATH.test(file.path);
+}
+function fingerprintChange(change) {
+  return { kind: change.kind, before: change.before, after: change.after };
+}
+function compareChanges(left, right) {
+  const leftPath = left.after?.path ?? left.before?.path ?? "";
+  const rightPath = right.after?.path ?? right.before?.path ?? "";
+  return leftPath.localeCompare(rightPath);
+}
+
+// src/commit-gate/fingerprint.ts
 function fingerprintSnapshot(snapshot, config2) {
   const changes = sourceChanges(snapshot.changes);
-  return createHash("sha256").update(
+  return createHash2("sha256").update(
     canonical({
       baseIdentity: snapshot.baseIdentity,
       targetIdentity: snapshot.targetIdentity,
@@ -22449,32 +22472,13 @@ function fingerprintSnapshot(snapshot, config2) {
     })
   ).digest("hex");
 }
-function sourceSnapshotIdentity(changes) {
-  return createHash("sha256").update(canonical(sourceChanges(changes))).digest("hex");
-}
-function sourceChanges(changes) {
-  return changes.filter(isDecisionChange).filter(isSourceChange).map(fingerprintChange).sort(compareChanges);
-}
-function isDecisionChange(change) {
-  return change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH;
-}
-function isSourceChange(change) {
-  return isSourceFile(change.before) || isSourceFile(change.after);
-}
-function isSourceFile(file) {
-  return file !== void 0 && SOURCE_PATH.test(file.path);
-}
-function fingerprintChange(change) {
-  return { kind: change.kind, before: change.before, after: change.after };
-}
-function changePath(change) {
-  return change.after?.path ?? change.before?.path ?? "";
-}
-function compareChanges(left, right) {
-  return changePath(left).localeCompare(changePath(right));
-}
 
 // src/commit-gate/acknowledgements.ts
+var ALLOWED_FIELDS = new Set(
+  "findingId fingerprint baseIdentity targetIdentity reason author time".split(
+    " "
+  )
+);
 function nonEmptyString(value, location) {
   if (typeof value !== "string" || !value.trim())
     throw new Error(`${location} must be a non-empty string`);
@@ -22501,36 +22505,34 @@ function parseRecord(item, index) {
   if (item === null || typeof item !== "object" || Array.isArray(item))
     throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
   const record3 = item;
-  const allowed = [
-    "findingId",
-    "fingerprint",
-    "baseIdentity",
-    "targetIdentity",
-    "reason",
-    "author",
-    "time"
-  ];
-  const unexpected = Object.keys(record3).find((key2) => !allowed.includes(key2));
+  validateRecordFields(record3, index);
+  return {
+    findingId: recordValue(record3, "findingId", index),
+    fingerprint: recordValue(record3, "fingerprint", index),
+    ...provenance(record3, index),
+    reason: recordValue(record3, "reason", index),
+    author: recordValue(record3, "author", index),
+    time: recordValue(record3, "time", index)
+  };
+}
+function validateRecordFields(record3, index) {
+  const unexpected = Object.keys(record3).find(
+    (key2) => !ALLOWED_FIELDS.has(key2)
+  );
   if (unexpected)
     throw new Error(
       `${DECISION_RECORD_PATH}[${index}].${unexpected} is not supported`
     );
-  const hasBaseIdentity = "baseIdentity" in record3;
-  const hasTargetIdentity = "targetIdentity" in record3;
-  if (hasBaseIdentity !== hasTargetIdentity)
+  if ("baseIdentity" in record3 !== "targetIdentity" in record3)
     throw new Error(
       `${DECISION_RECORD_PATH}[${index}] must record both baseIdentity and targetIdentity`
     );
+}
+function provenance(record3, index) {
+  if (!("baseIdentity" in record3)) return {};
   return {
-    findingId: recordValue(record3, "findingId", index),
-    fingerprint: recordValue(record3, "fingerprint", index),
-    ...hasBaseIdentity ? {
-      baseIdentity: recordValue(record3, "baseIdentity", index),
-      targetIdentity: recordValue(record3, "targetIdentity", index)
-    } : {},
-    reason: recordValue(record3, "reason", index),
-    author: recordValue(record3, "author", index),
-    time: recordValue(record3, "time", index)
+    baseIdentity: recordValue(record3, "baseIdentity", index),
+    targetIdentity: recordValue(record3, "targetIdentity", index)
   };
 }
 function appendArchitectureAcknowledgement(source, record3) {
@@ -23274,7 +23276,7 @@ function analyzeSimilarity(input) {
 }
 
 // src/commit-gate/types.ts
-import { createHash as createHash2 } from "node:crypto";
+import { createHash as createHash3 } from "node:crypto";
 function createFinding(input) {
   const affectedPaths2 = [...new Set(input.affectedPaths)].sort(
     (left, right) => left.localeCompare(right)
@@ -23283,7 +23285,7 @@ function createFinding(input) {
   return {
     ...input,
     affectedPaths: affectedPaths2,
-    id: createHash2("sha256").update(identity).digest("hex")
+    id: createHash3("sha256").update(identity).digest("hex")
   };
 }
 function normalizeFindings(findings) {
@@ -24250,12 +24252,15 @@ function evaluateResponsibilityMap(map, input) {
 // src/commit-gate/decision-core.ts
 function acceptedFindings(input, fingerprint) {
   const current = (input.acknowledgementRecords ?? []).filter(
-    (record3) => record3.fingerprint === fingerprint && record3.baseIdentity === input.snapshot.baseIdentity && record3.targetIdentity === input.snapshot.targetIdentity
+    (record3) => matchesSnapshot(record3, input.snapshot, fingerprint)
   );
   return /* @__PURE__ */ new Set([
     ...input.acknowledgements ?? [],
     ...current.map((record3) => record3.findingId)
   ]);
+}
+function matchesSnapshot(record3, snapshot, fingerprint) {
+  return record3.fingerprint === fingerprint && record3.baseIdentity === snapshot.baseIdentity && record3.targetIdentity === snapshot.targetIdentity;
 }
 function progressFor(input) {
   if (!input.refactorMap) return void 0;
@@ -24272,9 +24277,7 @@ function analysisErrors(input) {
   ].sort((left, right) => left.localeCompare(right));
 }
 function staleAcknowledgements(input, fingerprint) {
-  return (input.acknowledgementRecords ?? []).filter(
-    (record3) => record3.fingerprint !== fingerprint || record3.baseIdentity !== input.snapshot.baseIdentity || record3.targetIdentity !== input.snapshot.targetIdentity
-  ).map(({ findingId, baseIdentity, targetIdentity }) => ({
+  return (input.acknowledgementRecords ?? []).filter((record3) => !matchesSnapshot(record3, input.snapshot, fingerprint)).map(({ findingId, baseIdentity, targetIdentity }) => ({
     findingId,
     baseIdentity,
     targetIdentity
@@ -25694,7 +25697,7 @@ function git(root2, args, encoding = "utf8") {
 function objectContent(root2, spec) {
   return git(root2, ["show", spec]);
 }
-function changePath2(change) {
+function changePath(change) {
   return change.after?.path ?? change.before?.path ?? "";
 }
 function changesFrom(root2, values, contentSpec) {
@@ -25710,7 +25713,7 @@ function changesFrom(root2, values, contentSpec) {
     index = result.next;
   }
   return changes.sort(
-    (left, right) => changePath2(left).localeCompare(changePath2(right))
+    (left, right) => changePath(left).localeCompare(changePath(right))
   );
 }
 function changeSnapshot(root2, source) {
@@ -25864,12 +25867,10 @@ function findAcknowledgement(decision, options) {
   );
   if (!finding)
     return acknowledgeUsage(`unknown or stale finding ${options.findingId}`);
-  if (finding.severity !== "review") {
-    const reason = "cannot be acknowledged";
+  if (finding.severity !== "review")
     return acknowledgeUsage(
-      `finding ${options.findingId} is deterministic and ${reason}`
+      `finding ${options.findingId} is deterministic and cannot be acknowledged`
     );
-  }
   if (!decision.fingerprint)
     return acknowledgeUsage(
       "no current staged source fingerprint is available"
@@ -25880,16 +25881,14 @@ function findAcknowledgement(decision, options) {
     targetIdentity: decision.input.targetIdentity
   };
 }
-function writeAcknowledgement(root2, options, fingerprint, baseIdentity, targetIdentity) {
+function writeAcknowledgement(root2, options, match) {
   const recordPath = path12.join(root2, DECISION_RECORD_PATH);
   mkdirSync(path12.dirname(recordPath), { recursive: true });
   writeFileSync(
     recordPath,
     appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
       ...options,
-      fingerprint,
-      baseIdentity,
-      targetIdentity,
+      ...match,
       time: (/* @__PURE__ */ new Date()).toISOString()
     }),
     "utf8"
@@ -25912,13 +25911,7 @@ function runAcknowledgeCommand(args, root2) {
       options
     );
     if ("exitCode" in match) return match;
-    return writeAcknowledgement(
-      root2,
-      options,
-      match.fingerprint,
-      match.baseIdentity,
-      match.targetIdentity
-    );
+    return writeAcknowledgement(root2, options, match);
   } catch (error2) {
     return acknowledgeUsage(
       error2 instanceof Error ? error2.message : String(error2)
@@ -25990,30 +25983,32 @@ function decisionLines(result) {
   const lines = [result.verdict];
   if (result.input.reason) lines.push(result.input.reason);
   lines.push(...result.errors.map((error2) => `ERROR: ${error2}`));
-  lines.push(
-    ...result.findings.map(
-      (finding) => `${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`
-    )
-  );
+  lines.push(...findingLines(result));
   lines.push(...scannerLines(result));
-  lines.push(
-    ...(result.staleAcknowledgements ?? []).map(
-      (record3) => [
-        "STALE: acknowledgement for",
-        record3.findingId,
-        "is bound to base",
-        record3.baseIdentity ?? "unknown",
-        "and target",
-        record3.targetIdentity ?? "unknown",
-        "; current snapshot is base",
-        result.input.baseIdentity,
-        "and target",
-        result.input.targetIdentity
-      ].join(" ")
-    )
-  );
+  lines.push(...staleLines(result));
   lines.push(...refactorLines(result));
   return lines;
+}
+function findingLines(result) {
+  return result.findings.map(
+    (finding) => `${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`
+  );
+}
+function staleLines(result) {
+  return (result.staleAcknowledgements ?? []).map(
+    (record3) => [
+      "STALE: acknowledgement for",
+      record3.findingId,
+      "is bound to base",
+      record3.baseIdentity ?? "unknown",
+      "and target",
+      record3.targetIdentity ?? "unknown",
+      "; current snapshot is base",
+      result.input.baseIdentity,
+      "and target",
+      result.input.targetIdentity
+    ].join(" ")
+  );
 }
 function exitCodeFor(result) {
   if (result.verdict === "PASS") return 0;

@@ -12,16 +12,24 @@ import type { Snapshot } from "./snapshot.js";
 import { type DecisionResult } from "./types.js";
 
 function acceptedFindings(input: DecisionCoreInput, fingerprint: string) {
-  const current = (input.acknowledgementRecords ?? []).filter(
-    (record) =>
-      record.fingerprint === fingerprint &&
-      record.baseIdentity === input.snapshot.baseIdentity &&
-      record.targetIdentity === input.snapshot.targetIdentity,
+  const current = (input.acknowledgementRecords ?? []).filter((record) =>
+    matchesSnapshot(record, input.snapshot, fingerprint),
   );
   return new Set([
     ...(input.acknowledgements ?? []),
     ...current.map((record) => record.findingId),
   ]);
+}
+function matchesSnapshot(
+  record: NonNullable<DecisionCoreInput["acknowledgementRecords"]>[number],
+  snapshot: Snapshot,
+  fingerprint: string,
+) {
+  return (
+    record.fingerprint === fingerprint &&
+    record.baseIdentity === snapshot.baseIdentity &&
+    record.targetIdentity === snapshot.targetIdentity
+  );
 }
 function progressFor(input: DecisionCoreInput) {
   if (!input.refactorMap) return undefined;
@@ -42,12 +50,7 @@ function staleAcknowledgements(
   fingerprint: string,
 ): NonNullable<DecisionResult["staleAcknowledgements"]> {
   return (input.acknowledgementRecords ?? [])
-    .filter(
-      (record) =>
-        record.fingerprint !== fingerprint ||
-        record.baseIdentity !== input.snapshot.baseIdentity ||
-        record.targetIdentity !== input.snapshot.targetIdentity,
-    )
+    .filter((record) => !matchesSnapshot(record, input.snapshot, fingerprint))
     .map(({ findingId, baseIdentity, targetIdentity }) => ({
       findingId,
       baseIdentity,

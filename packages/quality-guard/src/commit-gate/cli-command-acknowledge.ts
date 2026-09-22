@@ -2,7 +2,10 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import type { AcknowledgeOptions } from "./acknowledge-options.js";
-import { appendArchitectureAcknowledgement } from "./acknowledgements.js";
+import {
+  type ArchitectureAcknowledgement,
+  appendArchitectureAcknowledgement,
+} from "./acknowledgements.js";
 import {
   acknowledgeUsage,
   parseAcknowledgeArguments,
@@ -28,12 +31,10 @@ function findAcknowledgement(
   );
   if (!finding)
     return acknowledgeUsage(`unknown or stale finding ${options.findingId}`);
-  if (finding.severity !== "review") {
-    const reason = "cannot be acknowledged";
+  if (finding.severity !== "review")
     return acknowledgeUsage(
-      `finding ${options.findingId} is deterministic and ${reason}`,
+      `finding ${options.findingId} is deterministic and cannot be acknowledged`,
     );
-  }
   if (!decision.fingerprint)
     return acknowledgeUsage(
       "no current staged source fingerprint is available",
@@ -48,9 +49,10 @@ function findAcknowledgement(
 function writeAcknowledgement(
   root: string,
   options: AcknowledgeOptions,
-  fingerprint: string,
-  baseIdentity: string,
-  targetIdentity: string,
+  match: Pick<
+    ArchitectureAcknowledgement,
+    "fingerprint" | "baseIdentity" | "targetIdentity"
+  >,
 ): CommandResult {
   const recordPath = path.join(root, DECISION_RECORD_PATH);
   mkdirSync(path.dirname(recordPath), { recursive: true });
@@ -58,9 +60,7 @@ function writeAcknowledgement(
     recordPath,
     appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
       ...options,
-      fingerprint,
-      baseIdentity,
-      targetIdentity,
+      ...match,
       time: new Date().toISOString(),
     }),
     "utf8",
@@ -87,13 +87,7 @@ export function runAcknowledgeCommand(
       options,
     );
     if ("exitCode" in match) return match;
-    return writeAcknowledgement(
-      root,
-      options,
-      match.fingerprint,
-      match.baseIdentity,
-      match.targetIdentity,
-    );
+    return writeAcknowledgement(root, options, match);
   } catch (error) {
     return acknowledgeUsage(
       error instanceof Error ? error.message : String(error),
