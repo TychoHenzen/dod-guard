@@ -2,10 +2,10 @@
   "note": "Coverage each package holds today. A drop below its own number fails CI.",
   "packages": {
     "quality-guard": {
-      "statements": 94.15,
-      "branches": 89.05,
-      "functions": 94.59,
-      "lines": 94.15
+      "statements": 95.15,
+      "branches": 89.19,
+      "functions": 95.68,
+      "lines": 95.15
     },
     "fossil": {
       "statements": 98.44,
