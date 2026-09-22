@@ -4,7 +4,24 @@
  * Append one violation. A `null` severity means the rule is switched off in
  * this profile, so the finding is dropped here rather than at every call site.
  */
-export function push({ out, file, line, rule, severity, message, metric }) {
+export function push({
+  out,
+  file,
+  line,
+  rule,
+  severity,
+  message,
+  metric,
+  suggestion,
+}) {
   if (severity === null) return;
-  out.push({ file: file.rel, line, rule, severity, message, metric });
+  out.push({
+    file: file.rel,
+    line,
+    rule,
+    severity,
+    message,
+    metric,
+    ...(suggestion === undefined ? {} : { suggestion }),
+  });
 }

@@ -22645,6 +22645,7 @@ var RATCHET_RULES = [
   "comment-missing-reference",
   "output-parameter",
   "flag-parameter",
+  "wildcard-import",
   "naming-encoding",
   "assumption-marker"
 ];
@@ -25875,7 +25876,60 @@ function runAcknowledgeCommand(args, root2) {
   }
 }
 
-// src/commit-gate/cli-render.ts
+// src/commit-gate/render/scanner.ts
+function isRecord(value) {
+  return typeof value === "object" && value !== null;
+}
+function isScannerViolation(value) {
+  if (!isRecord(value)) return false;
+  const strings2 = [value.file, value.rule, value.severity, value.message];
+  return strings2.every((field) => typeof field === "string") && typeof value.line === "number" && (value.suggestion === void 0 || typeof value.suggestion === "string");
+}
+function reportFor(value) {
+  if (!(isRecord(value) && Array.isArray(value.violations))) return void 0;
+  const comparison = value.comparison;
+  if (!(isRecord(comparison) && Array.isArray(comparison.regressions)))
+    return void 0;
+  return {
+    violations: value.violations,
+    regressions: comparison.regressions
+  };
+}
+function regressionKey(value) {
+  if (!isRecord(value)) return void 0;
+  if (typeof value.file !== "string" || typeof value.rule !== "string")
+    return void 0;
+  return `${value.file}\0${value.rule}`;
+}
+function violationLines(value, regressed) {
+  if (!isScannerViolation(value)) return [];
+  if (!regressed.has(`${value.file}\0${value.rule}`)) return [];
+  const lines = [
+    `SCANNER: ${value.severity.toUpperCase()} ${value.file}:${value.line} ${value.rule}: ${value.message}`
+  ];
+  if (value.suggestion) lines.push(`  Suggestion: ${value.suggestion}`);
+  return lines;
+}
+function scannerLinesFor(value) {
+  const report = reportFor(value);
+  if (!report) return [];
+  const regressed = new Set(
+    report.regressions.flatMap((regression) => {
+      const key2 = regressionKey(regression);
+      return key2 === void 0 ? [] : [key2];
+    })
+  );
+  return report.violations.flatMap(
+    (violation) => violationLines(violation, regressed)
+  );
+}
+function scannerLines(result) {
+  return result.findings.flatMap(
+    (finding) => scannerLinesFor(finding.after.report)
+  );
+}
+
+// src/commit-gate/render/decision.ts
 function refactorLines(result) {
   if (!result.refactorProgress) return [];
   return Object.entries(result.refactorProgress.indicators).map(
@@ -25891,6 +25945,7 @@ function decisionLines(result) {
       (finding) => `${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`
     )
   );
+  lines.push(...scannerLines(result));
   lines.push(
     ...(result.staleAcknowledgements ?? []).map(
       (findingId) => [

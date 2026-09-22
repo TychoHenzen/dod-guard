@@ -23,6 +23,7 @@ function checkWildcardImports({ files, scans, config }) {
         message:
           `${match.target} wildcard import obscures its imported API; ` +
           "import explicit names instead",
+        suggestion: `Import explicit names from ${match.target}.`,
         metric: 1,
       });
   }

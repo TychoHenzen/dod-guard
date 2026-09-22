@@ -31,6 +31,7 @@ const RATCHET_RULES = [
   "comment-missing-reference",
   "output-parameter",
   "flag-parameter",
+  "wildcard-import",
   "naming-encoding",
   "assumption-marker",
 ];

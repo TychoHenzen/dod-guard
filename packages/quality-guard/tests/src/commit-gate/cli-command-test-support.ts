@@ -9,7 +9,7 @@ function git(root: string, args: string[]): void {
   execFileSync("git", args, { cwd: root, stdio: "ignore" });
 }
 
-export function parityFixture(): string {
+export function parityFixture(extraFiles: Record<string, string> = {}): string {
   const root = mkdtempSync(path.join(tmpdir(), "quality-guard-parity-"));
   git(root, ["init"]);
   git(root, ["config", "user.email", "test@example.invalid"]);
@@ -21,6 +21,11 @@ export function parityFixture(): string {
     'export class Existing { private value = "short"; ' +
       "public added(): string { return this.value; } }\n",
   );
+  for (const [relativePath, source] of Object.entries(extraFiles)) {
+    const filePath = path.join(root, relativePath);
+    mkdirSync(path.dirname(filePath), { recursive: true });
+    writeFileSync(filePath, source);
+  }
   const baseline = runScan({
     paths: ["packages"],
     root,

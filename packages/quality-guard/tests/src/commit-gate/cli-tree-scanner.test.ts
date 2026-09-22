@@ -7,19 +7,22 @@ import { scannerEvidence } from "../../../src/commit-gate/cli-tree-scanner.js";
 
 test("failed tree materialization removes its temp tree", () => {
   const root = mkdtempSync(path.join(tmpdir(), "quality-guard-materialize-"));
-  const tempPrefix = "quality-guard-index-";
-  const before = readdirSync(tmpdir()).filter((name) =>
-    name.startsWith(tempPrefix),
+  const tempVariables = ["TMPDIR", "TMP", "TEMP"] as const;
+  const previousTempValues = new Map(
+    tempVariables.map((name) => [name, process.env[name]]),
   );
+  for (const name of tempVariables) process.env[name] = root;
   try {
     const result = scannerEvidence(root, "missing-ref");
     assert.deepEqual(result.findings, []);
     assert.equal(result.errors?.length, 1);
-    assert.deepEqual(
-      readdirSync(tmpdir()).filter((name) => name.startsWith(tempPrefix)),
-      before,
-    );
+    assert.deepEqual(readdirSync(root), []);
   } finally {
+    for (const name of tempVariables) {
+      const previousValue = previousTempValues.get(name);
+      if (previousValue === undefined) delete process.env[name];
+      else process.env[name] = previousValue;
+    }
     rmSync(root, { recursive: true, force: true });
   }
 });
