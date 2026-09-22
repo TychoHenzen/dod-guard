@@ -24,9 +24,9 @@ function isScannerViolation(value: unknown): value is ScannerViolation {
 }
 
 function reportFor(value: unknown) {
-  if (!isRecord(value) || !Array.isArray(value.violations)) return undefined;
+  if (!(isRecord(value) && Array.isArray(value.violations))) return undefined;
   const comparison = value.comparison;
-  if (!isRecord(comparison) || !Array.isArray(comparison.regressions))
+  if (!(isRecord(comparison) && Array.isArray(comparison.regressions)))
     return undefined;
   return {
     violations: value.violations as unknown[],
@@ -41,10 +41,7 @@ function regressionKey(value: unknown): string | undefined {
   return `${value.file}\0${value.rule}`;
 }
 
-function violationLines(
-  value: unknown,
-  regressed: Set<string>,
-): string[] {
+function violationLines(value: unknown, regressed: Set<string>): string[] {
   if (!isScannerViolation(value)) return [];
   if (!regressed.has(`${value.file}\0${value.rule}`)) return [];
   const lines = [

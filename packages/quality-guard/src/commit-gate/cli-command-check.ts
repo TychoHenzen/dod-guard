@@ -1,7 +1,7 @@
 import { parseCheckArguments, usage } from "./cli-arguments.js";
 import { runCommittedCheck, runStagedCheck } from "./cli-decision.js";
-import { exitCodeFor, renderDecision } from "./render/decision.js";
 import type { CommandResult } from "./command-result.js";
+import { exitCodeFor, renderDecision } from "./render/decision.js";
 
 function isCommandResult(
   value: string | CommandResult,

@@ -25886,9 +25886,9 @@ function isScannerViolation(value) {
   return strings2.every((field) => typeof field === "string") && typeof value.line === "number" && (value.suggestion === void 0 || typeof value.suggestion === "string");
 }
 function reportFor(value) {
-  if (!isRecord(value) || !Array.isArray(value.violations)) return void 0;
+  if (!(isRecord(value) && Array.isArray(value.violations))) return void 0;
   const comparison = value.comparison;
-  if (!isRecord(comparison) || !Array.isArray(comparison.regressions))
+  if (!(isRecord(comparison) && Array.isArray(comparison.regressions)))
     return void 0;
   return {
     violations: value.violations,
