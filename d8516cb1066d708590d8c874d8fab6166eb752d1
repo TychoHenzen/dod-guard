@@ -52,5 +52,14 @@
     "reason": "Each committed note must identify the specific finding it attests; the decision core uses findingId to accept only the matching current review finding. This is an internal persisted-record field, not package-root API.",
     "author": "Codex",
     "time": "2026-09-22T14:40:33.343Z"
+  },
+  {
+    "findingId": "51ba61572b243e850cb8608bf112747ef780d74468cdf4662ac556ce878a9b62",
+    "fingerprint": "2e059d7a01b982be9d9228179199952ebad197ae0c54bce416f2654590c008c9",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "d8516cb1066d708590d8c874d8fab6166eb752d1",
+    "reason": "The committed note requires a non-empty author for audit attribution, supplied by the acknowledgement CLI. This field belongs to the internal persisted-record schema and is not supported package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T14:44:07.089Z"
   }
 ]
