@@ -283,6 +283,14 @@ Codex: codex plugin marketplace upgrade dod-guard-monorepo
 Codex: codex plugin add dod-guard@dod-guard-monorepo
 ```
 
+For a maintenance-only release, the skill snapshots the complete `master`
+protection, validates the exact
+`branches/master/protection/enforce_admins` endpoint and HTTP response before
+the temporary admin toggle, and restores and compares the complete snapshot in
+its cleanup path. An endpoint, response, or readback mismatch stops before the
+push; a failed restoration gets one bounded retry and then reports the exact
+remaining difference.
+
 Confirm `codex plugin list` reports the released version. Do not copy files
 into either client cache manually.
 

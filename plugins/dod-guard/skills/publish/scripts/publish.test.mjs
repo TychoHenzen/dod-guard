@@ -52,18 +52,269 @@ test("maintenance releases skip PBI and PR while restoring protection", async ()
   assert.match(skill, /--force-with-lease=refs\/heads\/master:<saved-sha>/);
   assert.match(skill, /lease rejects any intervening update/);
   assert.match(skill, /Never use an\s+unpinned force push/);
-  assert.match(skill, /temporarily disable only\s+admin enforcement with\s+`gh api -X DELETE/);
-  assert.match(skill, /branches\/master\/protection\/enforce_admins --silent/);
-  assert.match(skill, /`--silent` avoids JSON parsing it/);
-  assert.match(skill, /Read protection back even if the command reports an error[\s\S]+Proceed only\s+when `enforce_admins\.enabled` is false and every other saved setting is\s+unchanged/);
+  assert.match(skill, /If the\s+saved `enforce_admins\.enabled` is true, invoke only the validated admin\s+endpoint with/);
+  assert.match(skill, /admin_endpoint= repos\/\{owner\}\/\{repo\}\/branches\/master\/protection\/enforce_admins/);
+  assert.match(skill, /do not\s+parse the deliberately empty body as JSON/);
+  assert.match(skill, /Read the admin endpoint back\s+even when the command errors or returns an unexpected status[\s\S]+Require HTTP\s+`200`, a valid response object, and `enabled=false`/);
   assert.match(skill, /A force-push\s+allowance alone does not bypass the PR or check rules/);
-  assert.match(skill, /In a `finally` step, restore[\s\S]+full\s+saved protection with/);
-  assert.match(skill, /gh api -X POST repos\/{owner\}\/\{repo\}\/branches\/master\/protection\/enforce_admins --silent/);
-  assert.match(skill, /retry `POST` once and read\s+it back again/);
-  assert.match(skill, /Other users remain\s+subject to the\s+branch\s+rules/);
+  assert.match(skill, /In a `finally` step, restore the saved\s+admin state[\s\S]+complete\s+protection object back/);
+  assert.match(skill, /gh api --method POST <admin_endpoint> --include --silent/);
+  assert.match(skill, /retry that exact\s+`POST`\s+once and read both resources again/);
+  assert.match(skill, /Other users\s+remain subject to the branch rules/);
   assert.match(skill, /`\/commit`'s staging and commit-message steps only/);
   assert.match(skill, /Do not run its\s+ordinary push, sync, or pull-and-merge retry/);
   assert.doesNotMatch(skill, /If branch protection requires a pull request, stop/);
   assert.match(defaults, /The explicit `\/publish` maintenance-only route may[\s\S]+temporarily disable only admin enforcement/);
   assert.match(skill, /After a direct maintenance push or a merged functional release has green CI/);
+});
+
+test("maintenance protection mutation authorizes one exact endpoint and response", async () => {
+  const skill = await readFile(skillPath, "utf8");
+
+  assert.match(skill, /Before any protection mutation, construct and validate these exact values/);
+  assert.match(skill, /admin_endpoint= repos\/\{owner\}\/\{repo\}\/branches\/master\/protection\/enforce_admins/);
+  assert.match(skill, /admin_method= DELETE/);
+  assert.match(skill, /Require the admin endpoint to equal the literal[\s\S]+`DELETE`/);
+  assert.match(skill, /never\s+send `DELETE`, `POST`, or `PUT` to it/);
+  assert.match(skill, /--method DELETE <admin_endpoint> --include --silent/);
+  assert.match(skill, /require HTTP `204`/);
+  assert.match(skill, /Require HTTP\s+`200`, a valid response object, and `enabled=false`/);
+  assert.match(skill, /invalid path, method, status, body, or\s+readback stops before the push/);
+});
+
+test("maintenance protection restoration compares the complete snapshot and bounds retry", async () => {
+  const skill = await readFile(skillPath, "utf8");
+
+  assert.match(skill, /parsed protection object as the immutable restore snapshot/);
+  assert.match(skill, /compare JSON\s+semantically by object keys and array values/);
+  assert.match(skill, /complete\s+protection field differs from the saved snapshot, retry that exact `POST`\s+once/);
+  assert.match(skill, /Do not retry an unknown mutation before\s+its readback/);
+  assert.match(skill, /second readback still differs, stop and report the\s+exact remaining difference/);
+  assert.match(skill, /If admin\s+enforcement was initially disabled, do not call `POST`/);
+});
+
+const protectionEndpoint = "repos/{owner}/{repo}/branches/master/protection";
+const adminEndpoint = `${protectionEndpoint}/enforce_admins`;
+
+function canonicalJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonicalJson(value[key])]),
+    );
+  }
+  return value;
+}
+
+function sameProtection(left, right) {
+  return JSON.stringify(canonicalJson(left)) === JSON.stringify(canonicalJson(right));
+}
+
+function withoutAdminField(protection) {
+  return Object.fromEntries(
+    Object.entries(protection ?? {}).filter(([key]) => key !== "enforce_admins"),
+  );
+}
+
+function evaluateProtectionDecision({
+  endpoint,
+  method,
+  deleteResponse,
+  adminReadback,
+  protectionReadback,
+  savedProtection,
+}) {
+  if (endpoint !== adminEndpoint || method !== "DELETE") {
+    return { proceed: false, reason: "request" };
+  }
+  if (deleteResponse?.status !== 204 || deleteResponse.body !== "") {
+    return { proceed: false, reason: "delete-response" };
+  }
+  if (
+    adminReadback?.status !== 200 ||
+    !adminReadback.body ||
+    adminReadback.body.enabled !== false
+  ) {
+    return { proceed: false, reason: "admin-readback" };
+  }
+  if (
+    protectionReadback?.status !== 200 ||
+    !sameProtection(
+      withoutAdminField(savedProtection),
+      withoutAdminField(protectionReadback.body),
+    )
+  ) {
+    return { proceed: false, reason: "protection-readback" };
+  }
+  return { proceed: true, reason: "authorized" };
+}
+
+function runMaintenancePath(input) {
+  if (input.classification !== "maintenance-only") {
+    return { proceed: false, reason: "classification" };
+  }
+  return evaluateProtectionDecision(input);
+}
+
+function restoreProtection(savedProtection, readProtection, restore) {
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const response = restore();
+    if (
+      response?.status === 200 &&
+      response.body?.enabled === true &&
+      sameProtection(savedProtection, readProtection())
+    ) {
+      return attempt;
+    }
+  }
+  return null;
+}
+
+function createProtectionFixture() {
+  return {
+    allow_deletions: { enabled: false },
+    enforce_admins: { enabled: true },
+    required_status_checks: { strict: true, contexts: ["build-test"] },
+  };
+}
+
+test("maintenance fixture reaches the push boundary only after classification and protection proof", async () => {
+  const usage = await readFile(usagePath, "utf8");
+  const savedProtection = createProtectionFixture();
+  const protectionReadback = {
+    ...savedProtection,
+    enforce_admins: { enabled: false },
+  };
+  const validInput = {
+    classification: "maintenance-only",
+    endpoint: adminEndpoint,
+    method: "DELETE",
+    deleteResponse: { status: 204, body: "" },
+    adminReadback: { status: 200, body: { enabled: false } },
+    protectionReadback: { status: 200, body: protectionReadback },
+    savedProtection,
+  };
+
+  assert.deepEqual(runMaintenancePath(validInput), {
+    proceed: true,
+    reason: "authorized",
+  });
+  assert.match(usage, /For a maintenance-only release, the skill snapshots the complete\s+`master`\s+protection/);
+  assert.match(usage, /`branches\/master\/protection\/enforce_admins` endpoint and HTTP response/);
+  assert.match(usage, /An endpoint, response, or readback mismatch stops before the\s+push/);
+  assert.match(usage, /failed restoration gets one bounded retry/);
+  assert.equal(
+    runMaintenancePath({ ...validInput, classification: "functional" }).proceed,
+    false,
+  );
+});
+
+test("maintenance fixture rejects endpoint and method drift before mutation", () => {
+  const savedProtection = createProtectionFixture();
+  const validInput = {
+    classification: "maintenance-only",
+    endpoint: adminEndpoint,
+    method: "DELETE",
+    deleteResponse: { status: 204, body: "" },
+    adminReadback: { status: 200, body: { enabled: false } },
+    protectionReadback: {
+      status: 200,
+      body: { ...savedProtection, enforce_admins: { enabled: false } },
+    },
+    savedProtection,
+  };
+
+  for (const invalidRequest of [
+    { endpoint: protectionEndpoint, method: "DELETE" },
+    { endpoint: adminEndpoint, method: "POST" },
+  ]) {
+    const outcome = runMaintenancePath({ ...validInput, ...invalidRequest });
+    assert.deepEqual(outcome, { proceed: false, reason: "request" });
+  }
+});
+
+test("maintenance fixture fails closed for empty, failed, malformed, or stale readbacks", () => {
+  const savedProtection = createProtectionFixture();
+  const validInput = {
+    classification: "maintenance-only",
+    endpoint: adminEndpoint,
+    method: "DELETE",
+    deleteResponse: { status: 204, body: "" },
+    adminReadback: { status: 200, body: { enabled: false } },
+    protectionReadback: {
+      status: 200,
+      body: { ...savedProtection, enforce_admins: { enabled: false } },
+    },
+    savedProtection,
+  };
+  const invalidResponses = [
+    { deleteResponse: undefined },
+    { deleteResponse: { status: 500, body: "failure" } },
+    { deleteResponse: { status: 204, body: "malformed" } },
+    { adminReadback: { status: 200, body: { enabled: true } } },
+    {
+      protectionReadback: {
+        status: 200,
+        body: {
+          ...savedProtection,
+          enforce_admins: { enabled: false },
+          required_status_checks: { strict: false, contexts: [] },
+        },
+      },
+    },
+  ];
+
+  for (const invalidResponse of invalidResponses) {
+    const outcome = runMaintenancePath({ ...validInput, ...invalidResponse });
+    assert.equal(outcome.proceed, false);
+  }
+});
+
+test("protection fixture retries one restore and stops on a second full-state mismatch", () => {
+  const savedProtection = createProtectionFixture();
+  let currentProtection = {
+    allow_deletions: { enabled: false },
+    enforce_admins: { enabled: false },
+    required_status_checks: { strict: true, contexts: ["build-test"] },
+  };
+  let restoreCalls = 0;
+
+  const attempts = restoreProtection(
+    savedProtection,
+    () => currentProtection,
+    () => {
+      restoreCalls += 1;
+      if (restoreCalls === 2) currentProtection = savedProtection;
+      return { status: 200, body: { enabled: true } };
+    },
+  );
+
+  assert.equal(attempts, 2);
+  assert.equal(restoreCalls, 2);
+  assert.equal(
+    restoreProtection(
+      savedProtection,
+      () => currentProtection,
+      () => ({ status: 200, body: { enabled: true } }),
+    ),
+    1,
+  );
+  assert.equal(
+    restoreProtection(
+      savedProtection,
+      () => ({ ...currentProtection, enforce_admins: { enabled: false } }),
+      () => ({ status: 200, body: { enabled: true } }),
+    ),
+    null,
+  );
+  assert.equal(
+    restoreProtection(
+      savedProtection,
+      () => currentProtection,
+      () => ({ status: 500, body: {} }),
+    ),
+    null,
+  );
 });
