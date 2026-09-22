@@ -97,5 +97,14 @@
     "reason": "Reviewed: pending acknowledgement records are required inputs to the staged decision so the core can validate them against the current base and target rather than silently trusting them.",
     "author": "Codex",
     "time": "2026-09-22T09:30:46.839Z"
+  },
+  {
+    "findingId": "889edc9ade968182595f077882fd142f4fdd7ca2c89d6c5118e2120e86ed3f4f",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: targetCommitSha is required by #457 to report the immutable checked commit separately from the source fingerprint; the replay regression asserts the exact SHA.",
+    "author": "Codex",
+    "time": "2026-09-22T09:34:01.346Z"
   }
 ]
