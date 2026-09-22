@@ -2,14 +2,25 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import type { AcknowledgeOptions } from "./acknowledge-options.js";
-import { appendArchitectureAcknowledgement } from "./acknowledgements.js";
+import {
+  type ArchitectureAcknowledgement,
+  appendArchitectureAcknowledgement,
+} from "./acknowledgements.js";
 import {
   acknowledgeUsage,
   parseAcknowledgeArguments,
 } from "./cli-arguments.js";
+import {
+  findStagedAcknowledgement,
+  runCommittedAcknowledgement,
+} from "./cli-command-acknowledge-evidence.js";
 import { runStagedCheck } from "./cli-decision.js";
 import type { CommandResult } from "./command-result.js";
 import { DECISION_RECORD_PATH } from "./fingerprint.js";
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 function acknowledgementSource(recordPath: string): string {
   try {
@@ -19,32 +30,13 @@ function acknowledgementSource(recordPath: string): string {
   }
 }
 
-function findAcknowledgement(
-  decision: ReturnType<typeof runStagedCheck>,
-  options: AcknowledgeOptions,
-) {
-  const finding = decision.findings.find(
-    (item) => item.id === options.findingId,
-  );
-  if (!finding)
-    return acknowledgeUsage(`unknown or stale finding ${options.findingId}`);
-  if (finding.severity !== "review") {
-    const reason = "cannot be acknowledged";
-    return acknowledgeUsage(
-      `finding ${options.findingId} is deterministic and ${reason}`,
-    );
-  }
-  if (!decision.fingerprint)
-    return acknowledgeUsage(
-      "no current staged source fingerprint is available",
-    );
-  return { fingerprint: decision.fingerprint };
-}
-
 function writeAcknowledgement(
   root: string,
   options: AcknowledgeOptions,
-  fingerprint: string,
+  match: Pick<
+    ArchitectureAcknowledgement,
+    "fingerprint" | "baseIdentity" | "targetIdentity"
+  >,
 ): CommandResult {
   const recordPath = path.join(root, DECISION_RECORD_PATH);
   mkdirSync(path.dirname(recordPath), { recursive: true });
@@ -52,7 +44,7 @@ function writeAcknowledgement(
     recordPath,
     appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
       ...options,
-      fingerprint,
+      ...match,
       time: new Date().toISOString(),
     }),
     "utf8",
@@ -74,15 +66,18 @@ export function runAcknowledgeCommand(
   const options = parseAcknowledgeArguments(args);
   if ("exitCode" in options) return options;
   try {
-    const match = findAcknowledgement(
+    if (options.committedRef)
+      return runCommittedAcknowledgement(root, {
+        ...options,
+        committedRef: options.committedRef,
+      });
+    const match = findStagedAcknowledgement(
       runStagedCheck(root, { json: false, intent: "change" }),
       options,
     );
     if ("exitCode" in match) return match;
-    return writeAcknowledgement(root, options, match.fingerprint);
+    return writeAcknowledgement(root, options, match);
   } catch (error) {
-    return acknowledgeUsage(
-      error instanceof Error ? error.message : String(error),
-    );
+    return acknowledgeUsage(errorMessage(error));
   }
 }

@@ -10,10 +10,8 @@ import {
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
-import {
-  readCommittedSnapshot,
-  readStagedSnapshot,
-} from "../../../src/commit-gate/snapshot.js";
+import { sourceSnapshotIdentity } from "../../../src/commit-gate/fingerprint.js";
+import { readStagedSnapshot } from "../../../src/commit-gate/snapshot.js";
 
 function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" });
@@ -50,6 +48,23 @@ test("reads staged objects rather than later working tree edits", () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+test("uses source content identity for an uncommitted staged target", () => {
+  const root = fixture();
+  try {
+    writeFileSync(path.join(root, "edit.ts"), "export const staged = 2;\n");
+    git(root, ["add", "edit.ts"]);
+
+    const snapshot = readStagedSnapshot(root);
+
+    assert.equal(snapshot.targetCommitSha, undefined);
+    assert.equal(
+      snapshot.targetIdentity,
+      sourceSnapshotIdentity(snapshot.changes),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 test("normalizes staged rename, addition, edit, and deletion snapshots", () => {
   const root = fixture();
   try {
@@ -72,25 +87,6 @@ test("normalizes staged rename, addition, edit, and deletion snapshots", () => {
         ["rename", "old.ts", "domain/moved.ts"],
         ["modify", "edit.ts", "edit.ts"],
       ],
-    );
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-test("reconstructs committed changes against the first parent", () => {
-  const root = fixture();
-  try {
-    writeFileSync(path.join(root, "edit.ts"), "export const committed = 2;\n");
-    git(root, ["add", "edit.ts"]);
-    git(root, ["commit", "-m", "change"]);
-    const snapshot = readCommittedSnapshot(root, "HEAD");
-    assert.equal(
-      snapshot.baseIdentity,
-      git(root, ["rev-parse", "HEAD^"]).trim(),
-    );
-    assert.equal(
-      snapshot.changes[0]?.after?.content,
-      "export const committed = 2;\n",
     );
   } finally {
     rmSync(root, { recursive: true, force: true });

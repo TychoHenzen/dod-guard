@@ -28,6 +28,16 @@ const review: DecisionResult = {
   },
 };
 
+const acknowledgeArguments = [
+  "acknowledge",
+  "--finding",
+  "finding",
+  "--reason",
+  "Reviewed",
+  "--author",
+  "A. Reviewer",
+];
+
 test("parses the ordinary staged command with change intent", () => {
   assert.deepEqual(parseCheckArguments(["check", "--staged"]), {
     json: false,
@@ -66,27 +76,24 @@ test("unsupported intent is a usage error", () => {
   assert.match("output" in result ? result.output : "", /Usage/);
 });
 
-test("acknowledge requires a finding, reason, and author", () => {
-  assert.deepEqual(
-    parseAcknowledgeArguments([
-      "acknowledge",
-      "--finding",
-      "finding",
-      "--reason",
-      "Reviewed",
-      "--author",
-      "A. Reviewer",
-    ]),
-    { findingId: "finding", reason: "Reviewed", author: "A. Reviewer" },
-  );
-  const result = parseAcknowledgeArguments([
-    "acknowledge",
-    "--finding",
-    "finding",
-    "--reason",
-    "",
-    "--author",
-    "A. Reviewer",
-  ]);
+test("parses required and committed acknowledgement arguments", () => {
+  assert.deepEqual(parseAcknowledgeArguments(acknowledgeArguments), {
+    findingId: "finding",
+    reason: "Reviewed",
+    author: "A. Reviewer",
+  });
+  const missingReason = [...acknowledgeArguments];
+  missingReason[4] = "";
+  const result = parseAcknowledgeArguments(missingReason);
   assert.equal("exitCode" in result && result.exitCode, 3);
+
+  assert.deepEqual(
+    parseAcknowledgeArguments([...acknowledgeArguments, "--committed=HEAD"]),
+    {
+      findingId: "finding",
+      reason: "Reviewed",
+      author: "A. Reviewer",
+      committedRef: "HEAD",
+    },
+  );
 });

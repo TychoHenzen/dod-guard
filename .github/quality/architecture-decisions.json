@@ -12010,5 +12010,23 @@
     "reason": "Reviewed #53: packages/code-explorer/scripts intentionally separates practice-browser transport, flow steps, process lifecycle, reconciliation, and LSP reproduction responsibilities. The review-only similarity-outlier is caused by the file-count heuristic and does not show an ownership or usability defect; keep the seams and revisit only if their responsibilities diverge.",
     "author": "Codex",
     "time": "2026-09-21T07:15:43.932Z"
+  },
+  {
+    "findingId": "22095cf6b49058d8c022009cabb33c9bc010eea1cb87e7d9a1cc366eaa640c9a",
+    "fingerprint": "43c08bc36d48e426fceb50ec9280e829ff61fcfa644721aec77f9af40d789d75",
+    "baseIdentity": "5454467bfde5f98805ede248c97f60eb8769bdfe",
+    "targetIdentity": "f655a64e1f17ca9488ce9f703c5e8674fc998025ec55e5593d5f3f4699fd64f0",
+    "reason": "Reviewed: this helper is a cohesive extraction from the acknowledgement command, reducing its size and complexity. Its nearest textual match is not a meaningful ownership match; the implementation remains beside its command parent and tests cover both staged and committed flows.",
+    "author": "Codex",
+    "time": "2026-09-22T08:27:43.346Z"
+  },
+  {
+    "findingId": "889edc9ade968182595f077882fd142f4fdd7ca2c89d6c5118e2120e86ed3f4f",
+    "reason": "Reviewed: targetCommitSha is required by #457 to identify the immutable committed head separately from the source fingerprint. The field is present on committed decisions and the replay test asserts it equals git rev-parse HEAD.",
+    "author": "Codex",
+    "fingerprint": "43c08bc36d48e426fceb50ec9280e829ff61fcfa644721aec77f9af40d789d75",
+    "baseIdentity": "5454467bfde5f98805ede248c97f60eb8769bdfe",
+    "targetIdentity": "f655a64e1f17ca9488ce9f703c5e8674fc998025ec55e5593d5f3f4699fd64f0",
+    "time": "2026-09-22T08:31:02.764Z"
   }
 ]

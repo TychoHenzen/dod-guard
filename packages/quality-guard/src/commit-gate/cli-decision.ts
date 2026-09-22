@@ -4,6 +4,7 @@ import {
   affectedPaths,
   noSourceDecision,
   refactorMapFor,
+  type SnapshotInput,
   sourceInventories,
 } from "./cli-decision-input.js";
 import {
@@ -14,21 +15,13 @@ import {
 } from "./cli-tree.js";
 import { parseQualityConfig } from "./config.js";
 import { decideQuality } from "./decision-core.js";
+import { readQualityDecisionNotes } from "./quality-decision-notes.js";
 import {
   readCommittedSnapshot,
   readStagedSnapshot,
   type Snapshot,
 } from "./snapshot.js";
 import type { DecisionResult } from "./types.js";
-
-type SnapshotInput = {
-  root: string;
-  snapshot: Snapshot;
-  baseRef: string;
-  targetRef: string;
-  options: CheckOptions;
-  skipStructural?: boolean;
-};
 
 function decisionWithSources(
   input: SnapshotInput,
@@ -48,7 +41,13 @@ function decisionWithSources(
     scanner: input.skipStructural
       ? { findings: [] }
       : scannerEvidence(input.root, input.targetRef),
-    acknowledgementRecords: acknowledgementRecords(input.root, input.targetRef),
+    pendingAcknowledgementRecords:
+      input.targetRef === "index"
+        ? acknowledgementRecords(input.root, input.targetRef)
+        : [],
+    attestations: snapshot.targetCommitSha
+      ? readQualityDecisionNotes(input.root, snapshot.targetCommitSha)
+      : [],
     refactorMap: refactorMapFor(input),
   });
 }
@@ -76,14 +75,21 @@ export function runStagedCheck(
 export function runCommittedCheck(
   root: string,
   commit: string,
-  options: CheckOptions,
+  options: CheckOptions & {
+    snapshotReader?: (
+      root: string,
+      commit: string,
+    ) => ReturnType<typeof readCommittedSnapshot>;
+  },
 ): DecisionResult {
+  const { snapshotReader = readCommittedSnapshot, ...checkOptions } = options;
+  const snapshot = snapshotReader(root, commit);
   return decisionForSnapshot({
     root,
-    snapshot: readCommittedSnapshot(root, commit),
-    baseRef: `${commit}^`,
-    targetRef: commit,
-    options,
+    snapshot,
+    baseRef: snapshot.baseIdentity,
+    targetRef: snapshot.targetCommitSha,
+    options: checkOptions,
     skipStructural: process.env.QUALITY_GUARD_SKIP_STRUCTURAL === "1",
   });
 }

@@ -1,12 +1,7 @@
 import type { Snapshot } from "./snapshot.js";
+import { isSourcePath } from "./snapshot-types.js";
 import type { DecisionResult } from "./types.js";
 
-const SOURCE_PATH = new RegExp(
-  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` +
-    String.raw`cc|cpp|` +
-    String.raw`cxx|h|hpp)$`,
-  "i",
-);
 const QUALITY_CONFIGURATION_PATH = ".quality-guard.json";
 
 function changedPaths(snapshot: Snapshot): string[] {
@@ -20,15 +15,13 @@ function changedPaths(snapshot: Snapshot): string[] {
 }
 
 export function changedSourcePaths(snapshot: Snapshot): string[] {
-  return changedPaths(snapshot).filter((filePath) =>
-    SOURCE_PATH.test(filePath),
-  );
+  return changedPaths(snapshot).filter(isSourcePath);
 }
 
 export function requiresSourceDecision(snapshot: Snapshot): boolean {
   return changedPaths(snapshot).some(
     (filePath) =>
-      SOURCE_PATH.test(filePath) || filePath === QUALITY_CONFIGURATION_PATH,
+      isSourcePath(filePath) || filePath === QUALITY_CONFIGURATION_PATH,
   );
 }
 
@@ -36,6 +29,7 @@ export function summaryFor(snapshot: Snapshot, changedSourcePaths: string[]) {
   return {
     baseIdentity: snapshot.baseIdentity,
     targetIdentity: snapshot.targetIdentity,
+    targetCommitSha: snapshot.targetCommitSha,
     changedSourcePaths,
   };
 }

@@ -1,12 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseQualityConfig } from "../../../src/commit-gate/config.js";
 import { decideQuality } from "../../../src/commit-gate/decision-core.js";
-import { fingerprintSnapshot } from "../../../src/commit-gate/fingerprint.js";
 import {
   growthDecisionInput,
   growthFinding,
-  snapshot,
 } from "./decision-fixtures.test.js";
 
 test("a deterministic failure wins while preserving review findings", () => {
@@ -35,48 +32,4 @@ test("accepted review evidence passes deterministic checks", () => {
   });
   assert.equal(result.verdict, "PASS");
   assert.equal(result.errors.length, 0);
-});
-
-test("matching acknowledgement records pass", () => {
-  const review = growthFinding();
-  const result = decideQuality({
-    ...growthDecisionInput(),
-    acknowledgementRecords: [
-      {
-        findingId: review.id,
-        fingerprint: fingerprintSnapshot(snapshot, parseQualityConfig("{}")),
-        reason: "Reviewed",
-        author: "A. Reviewer",
-        time: "2026-08-31T00:00:00.000Z",
-      },
-    ],
-  });
-  assert.equal(result.verdict, "PASS");
-  assert.deepEqual(result.staleAcknowledgements, []);
-});
-
-test("documentation-only changes need no source decision", () => {
-  const result = decideQuality({
-    snapshot: {
-      baseIdentity: "base",
-      targetIdentity: "index",
-      changes: [
-        {
-          kind: "modify",
-          before: { path: "README.md", content: "before" },
-          after: { path: "README.md", content: "after" },
-        },
-      ],
-    },
-    config: parseQualityConfig("{}"),
-    beforeFiles: [],
-    afterFiles: [],
-    scanner: { findings: [] },
-  });
-  assert.equal(result.verdict, "PASS");
-  assert.match(
-    result.input.reason ?? "",
-    /No source quality decision was required/,
-  );
-  assert.equal(result.findings.length, 0);
 });

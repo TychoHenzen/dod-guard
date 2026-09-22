@@ -1,4 +1,8 @@
 import {
+  acceptedFindings,
+  staleAcknowledgements,
+} from "./decision-core-acknowledgements.js";
+import {
   changedSourcePaths,
   noDecision,
   requiresSourceDecision,
@@ -8,18 +12,8 @@ import type { DecisionCoreInput } from "./decision-core-types.js";
 import { collectFindings } from "./decision-findings.js";
 import { DECISION_RECORD_PATH, fingerprintSnapshot } from "./fingerprint.js";
 import { evaluateResponsibilityMap } from "./responsibility-map.js";
-import type { Snapshot } from "./snapshot.js";
 import { type DecisionResult } from "./types.js";
 
-function acceptedFindings(input: DecisionCoreInput, fingerprint: string) {
-  const current = (input.acknowledgementRecords ?? []).filter(
-    (record) => record.fingerprint === fingerprint,
-  );
-  return new Set([
-    ...(input.acknowledgements ?? []),
-    ...current.map((record) => record.findingId),
-  ]);
-}
 function progressFor(input: DecisionCoreInput) {
   if (!input.refactorMap) return undefined;
   return evaluateResponsibilityMap(input.refactorMap, {
@@ -33,15 +27,6 @@ function analysisErrors(input: DecisionCoreInput): string[] {
     ...(input.scanner.errors ?? []),
     ...(input.analysisErrors ?? []),
   ].sort((left, right) => left.localeCompare(right));
-}
-function staleAcknowledgements(
-  input: DecisionCoreInput,
-  fingerprint: string,
-): string[] {
-  return (input.acknowledgementRecords ?? [])
-    .filter((record) => record.fingerprint !== fingerprint)
-    .map((record) => record.findingId)
-    .sort();
 }
 function verdict(
   errors: string[],
@@ -77,7 +62,7 @@ export function decideQuality(input: DecisionCoreInput): DecisionResult {
     findings,
     errors,
     input: summary,
-    staleAcknowledgements: staleAcknowledgements(input, fingerprint),
+    staleAcknowledgements: staleAcknowledgements(input, fingerprint, findings),
     refactorProgress,
   };
 }

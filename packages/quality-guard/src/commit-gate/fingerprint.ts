@@ -1,26 +1,41 @@
 import { createHash } from "node:crypto";
 import { canonical } from "./canonical.js";
 import type { QualityConfig } from "./config.js";
-import type { Snapshot } from "./snapshot.js";
+import { isSourcePath, type Snapshot } from "./snapshot-types.js";
 
 export const DECISION_RECORD_PATH =
   ".github/quality/architecture-decisions.json";
-const SOURCE_PATH =
-  /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
 
 /** Hashes every staged source input except the acknowledgement file itself. */
 export function fingerprintSnapshot(
   snapshot: Snapshot,
   config: QualityConfig,
 ): string {
-  const changes = snapshot.changes
+  const changes = sourceChanges(snapshot.changes);
+  return createHash("sha256")
+    .update(
+      canonical({
+        baseIdentity: snapshot.baseIdentity,
+        targetIdentity: snapshot.targetIdentity,
+        changes,
+        config,
+      }),
+    )
+    .digest("hex");
+}
+
+export function sourceSnapshotIdentity(changes: Snapshot["changes"]): string {
+  return createHash("sha256")
+    .update(canonical(sourceChanges(changes)))
+    .digest("hex");
+}
+
+function sourceChanges(changes: Snapshot["changes"]) {
+  return changes
     .filter(isDecisionChange)
     .filter(isSourceChange)
     .map(fingerprintChange)
     .sort(compareChanges);
-  return createHash("sha256")
-    .update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config }))
-    .digest("hex");
 }
 
 function isDecisionChange(change: Snapshot["changes"][number]): boolean {
@@ -37,7 +52,7 @@ function isSourceChange(change: Snapshot["changes"][number]): boolean {
 function isSourceFile(
   file: { path: string; content: string } | undefined,
 ): boolean {
-  return file !== undefined && SOURCE_PATH.test(file.path);
+  return file !== undefined && isSourcePath(file.path);
 }
 
 function fingerprintChange(change: Snapshot["changes"][number]) {

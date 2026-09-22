@@ -14,24 +14,35 @@ function decisionLines(result: DecisionResult): string[] {
   const lines: string[] = [result.verdict];
   if (result.input.reason) lines.push(result.input.reason);
   lines.push(...result.errors.map((error) => `ERROR: ${error}`));
-  lines.push(
-    ...result.findings.map(
-      (finding) =>
-        `${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`,
-    ),
-  );
+  lines.push(...findingLines(result));
   lines.push(...scannerLines(result));
-  lines.push(
-    ...(result.staleAcknowledgements ?? []).map((findingId) =>
-      [
-        "STALE: acknowledgement for",
-        findingId,
-        "does not match the current staged fingerprint",
-      ].join(" "),
-    ),
-  );
+  lines.push(...staleLines(result));
   lines.push(...refactorLines(result));
   return lines;
+}
+
+function findingLines(result: DecisionResult): string[] {
+  return result.findings.map(
+    (finding) =>
+      `${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`,
+  );
+}
+
+function staleLines(result: DecisionResult): string[] {
+  return (result.staleAcknowledgements ?? []).map((record) =>
+    [
+      "STALE: acknowledgement for",
+      record.findingId,
+      "is bound to base",
+      record.baseIdentity ?? "unknown",
+      "and target",
+      record.targetIdentity ?? "unknown",
+      "; current snapshot is base",
+      result.input.baseIdentity,
+      "and target",
+      result.input.targetIdentity,
+    ].join(" "),
+  );
 }
 
 export function exitCodeFor(result: DecisionResult): number {

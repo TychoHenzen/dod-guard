@@ -1,80 +1,77 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
-import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
 import { runAcknowledgeCommand } from "../../../src/commit-gate/cli-command-acknowledge.js";
+import { findStagedAcknowledgement } from "../../../src/commit-gate/cli-command-acknowledge-evidence.js";
 import { runStagedCheck } from "../../../src/commit-gate/cli-decision.js";
-import { runScan } from "../../../src/scanner.js";
+import { readQualityDecisionNotes } from "../../../src/commit-gate/quality-decision-notes.js";
+import {
+  acknowledge,
+  failingDecision,
+  git,
+  stagedReview,
+  withFixture,
+} from "./acknowledgement-test-support.js";
 
-function git(root: string, args: string[]): void {
-  execFileSync("git", args, { cwd: root, stdio: "ignore" });
-}
-
-function fixture(): string {
-  const root = fs.mkdtempSync(
-    path.join(tmpdir(), "quality-guard-acknowledge-"),
-  );
-  git(root, ["init"]);
-  git(root, ["config", "user.email", "test@example.invalid"]);
-  git(root, ["config", "user.name", "Test"]);
-  fs.mkdirSync(path.join(root, ".github", "quality"), { recursive: true });
-  fs.mkdirSync(path.join(root, "packages", "fixture", "src"), {
-    recursive: true,
-  });
-  fs.writeFileSync(
-    path.join(root, "packages", "fixture", "src", "source.ts"),
-    "export class Existing {}\n",
-  );
-  const baseline = runScan({
-    paths: ["packages"],
-    root,
-    excludes: ["/dist/", "node_modules"],
-    writeBaseline: ".github/quality/quality-baseline.json",
-  });
-  assert.equal(baseline.exitCode, 0);
-  git(root, ["add", "."]);
-  git(root, ["commit", "-m", "base"]);
-  return root;
-}
-
-test("reports invalid acknowledgement command arguments", () => {
-  const result = runAcknowledgeCommand(["acknowledge"], process.cwd());
-  assert.equal(result.exitCode, 3);
-  assert.match(result.output, /--finding requires/);
-});
-
-test("writes an acknowledgement for a staged review finding", () => {
-  const root = fixture();
-  try {
-    fs.writeFileSync(
-      path.join(root, ".quality-guard.json"),
-      '{"genericBuckets":["src"]}\n',
+test(
+  "writes an exact-head note for a current committed review finding",
+  withFixture((root) => {
+    const { finding } = stagedReview(root);
+    git(root, ["commit", "-m", "review finding"]);
+    const result = acknowledge(root, finding.id, {
+      reason: "reviewed",
+      committedRef: "HEAD",
+    });
+    const targetSha = git(root, ["rev-parse", "HEAD"]);
+    assert.equal(result.exitCode, 0);
+    assert.match(result.output, /refs\/notes\/quality-decisions/);
+    assert.match(
+      result.output,
+      /git push origin refs\/notes\/quality-decisions/,
     );
-    fs.writeFileSync(
-      path.join(root, "packages", "fixture", "src", "Added.ts"),
-      "export class Added {}\n",
-    );
-    git(root, ["add", ".quality-guard.json", "packages/fixture/src/Added.ts"]);
-    const decision = runStagedCheck(root, { json: false, intent: "change" });
-    const finding = decision.findings.find(
-      (item) => item.severity === "review",
-    );
-    assert.ok(finding);
+    const [record] = readQualityDecisionNotes(root, targetSha);
+    assert.equal(record?.findingId, finding.id);
+    assert.match(record?.fingerprint ?? "", /^[0-9a-f]{64}$/);
+    assert.equal(record?.baseSha, git(root, ["rev-parse", "HEAD^"]));
+    assert.equal(record?.targetSha, targetSha);
+    assert.equal(record?.reason, "reviewed");
+    assert.equal(record?.author, "tester");
+  }),
+);
 
-    const result = runAcknowledgeCommand(
-      [
-        "acknowledge",
-        "--finding",
-        finding.id,
-        "--reason",
-        "accepted test finding",
-        "--author",
-        "tester",
-      ],
-      root,
+test(
+  "rejects incomplete, unknown, and deterministic acknowledgement requests",
+  withFixture((root) => {
+    const invalid = runAcknowledgeCommand(["acknowledge"], root);
+    assert.equal(invalid.exitCode, 3);
+    assert.match(invalid.output, /--finding requires/);
+    const { decision, finding } = stagedReview(root);
+    git(root, ["commit", "-m", "review finding"]);
+    const result = acknowledge(root, `${finding.id}-stale`, {
+      reason: "reviewed",
+      committedRef: "HEAD",
+    });
+    assert.equal(result.exitCode, 3);
+    assert.match(result.output, /unknown or stale/);
+    const deterministic = findStagedAcknowledgement(failingDecision(decision), {
+      findingId: finding.id,
+      reason: "reviewed",
+      author: "tester",
+    });
+    assert.equal("exitCode" in deterministic && deterministic.exitCode, 3);
+    assert.match(
+      "output" in deterministic ? deterministic.output : "",
+      /deterministic and cannot be acknowledged/,
     );
+  }),
+);
+
+test(
+  "writes an acknowledgement for a staged review finding",
+  withFixture((root) => {
+    const { decision, finding } = stagedReview(root);
+    const result = acknowledge(root, finding.id);
     assert.equal(result.exitCode, 0);
     assert.match(result.output, new RegExp(finding.id));
     assert.match(
@@ -84,7 +81,17 @@ test("writes an acknowledgement for a staged review finding", () => {
       ),
       new RegExp(finding.id),
     );
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
+    const acknowledgement = JSON.parse(
+      fs.readFileSync(
+        path.join(root, ".github", "quality", "architecture-decisions.json"),
+        "utf8",
+      ),
+    )[0];
+    assert.equal(acknowledgement.baseIdentity, decision.input.baseIdentity);
+    assert.equal(acknowledgement.targetIdentity, decision.input.targetIdentity);
+    assert.equal(
+      runStagedCheck(root, { json: false, intent: "change" }).verdict,
+      "PASS",
+    );
+  }),
+);

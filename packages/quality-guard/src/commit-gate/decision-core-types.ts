@@ -1,6 +1,7 @@
 import type { ArchitectureAcknowledgement } from "./acknowledgements.js";
 import type { ArchitectureFileFact } from "./architecture-file-fact.js";
 import type { QualityConfig } from "./config.js";
+import type { QualityDecisionAttestation } from "./quality-decision-notes.js";
 import type { ResponsibilityMap } from "./responsibility-map.js";
 import type { Snapshot } from "./snapshot.js";
 import type { DecisionResult } from "./types.js";
@@ -20,6 +21,7 @@ export interface DecisionCoreInput {
     Omit<DecisionResult["findings"][number], "id">
   >;
   acknowledgements?: string[];
-  acknowledgementRecords?: ArchitectureAcknowledgement[];
+  pendingAcknowledgementRecords?: ArchitectureAcknowledgement[];
+  attestations?: QualityDecisionAttestation[];
   refactorMap?: ResponsibilityMap;
 }

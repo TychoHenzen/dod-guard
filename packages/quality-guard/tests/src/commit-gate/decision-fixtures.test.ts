@@ -5,6 +5,7 @@ import { createFinding } from "../../../src/commit-gate/types.js";
 export const snapshot: Snapshot = {
   baseIdentity: "base",
   targetIdentity: "index",
+  targetCommitSha: "target-commit",
   changes: [
     {
       kind: "modify",
