@@ -1,6 +1,6 @@
 import { execFileSync, spawnSync } from "node:child_process";
 
-export const QUALITY_DECISION_NOTES_REF = "refs/notes/quality-decisions";
+const QUALITY_DECISION_NOTES_REF = "refs/notes/quality-decisions";
 
 const COMMIT_SHA = /^[0-9a-f]{40}$/i;
 
