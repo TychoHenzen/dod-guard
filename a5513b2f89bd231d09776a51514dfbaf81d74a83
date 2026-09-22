@@ -7,5 +7,14 @@
     "reason": "Reviewed: #457 requires the immutable checked target SHA separately from the source-tree fingerprint. The committed replay tests the exact SHA so identical trees at different commits are not conflated.",
     "author": "Codex",
     "time": "2026-09-22T08:58:18.962Z"
+  },
+  {
+    "findingId": "132fbdfd9a2865647271bd79deee404d36fcdc44d66c0c5a6ceb8a5910251982",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: the flagged helpers isolate acknowledgement evidence, decision acknowledgements, and Git-note persistence. Their nearest textual matches are not ownership matches; focused tests cover staged and committed paths.",
+    "author": "Codex",
+    "time": "2026-09-22T09:01:30.070Z"
   }
 ]
