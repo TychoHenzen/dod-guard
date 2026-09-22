@@ -8,16 +8,16 @@
       "lines": 95.15
     },
     "fossil": {
-      "statements": 98.47,
-      "branches": 86.84,
+      "statements": 98.44,
+      "branches": 86.9,
       "functions": 99.76,
-      "lines": 98.47
+      "lines": 98.44
     },
     "knowledge-base": {
-      "statements": 93.74,
-      "branches": 79.25,
+      "statements": 93.94,
+      "branches": 77.4,
       "functions": 95.45,
-      "lines": 93.74
+      "lines": 93.94
     }
   }
 }
