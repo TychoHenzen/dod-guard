@@ -174,9 +174,43 @@ function restoreProtection(savedProtection, readProtection, restore) {
 
 function createProtectionFixture() {
   return {
+    url: "https://api.github.com/repos/{owner}/{repo}/branches/master/protection",
+    required_status_checks: {
+      url: "https://api.github.com/repos/{owner}/{repo}/branches/master/protection/required_status_checks",
+      strict: true,
+      contexts: [
+        "build-test",
+        "plugin-config",
+        "static-analysis",
+        "package-integrity",
+      ],
+      contexts_url: "https://api.github.com/repos/{owner}/{repo}/branches/master/protection/required_status_checks/contexts",
+      checks: [
+        { context: "build-test", app_id: 15368 },
+        { context: "plugin-config", app_id: 15368 },
+        { context: "static-analysis", app_id: 15368 },
+        { context: "package-integrity", app_id: 15368 },
+      ],
+    },
+    required_pull_request_reviews: {
+      url: "https://api.github.com/repos/{owner}/{repo}/branches/master/protection/required_pull_request_reviews",
+      dismiss_stale_reviews: false,
+      require_code_owner_reviews: false,
+      require_last_push_approval: false,
+      required_approving_review_count: 0,
+    },
+    required_signatures: {
+      url: "https://api.github.com/repos/{owner}/{repo}/branches/master/protection/required_signatures",
+      enabled: false,
+    },
     allow_deletions: { enabled: false },
     enforce_admins: { enabled: true },
-    required_status_checks: { strict: true, contexts: ["build-test"] },
+    required_linear_history: { enabled: false },
+    allow_force_pushes: { enabled: true },
+    block_creations: { enabled: false },
+    required_conversation_resolution: { enabled: true },
+    lock_branch: { enabled: false },
+    allow_fork_syncing: { enabled: false },
   };
 }
 
@@ -275,9 +309,8 @@ test("maintenance fixture fails closed for empty, failed, malformed, or stale re
 test("protection fixture retries one restore and stops on a second full-state mismatch", () => {
   const savedProtection = createProtectionFixture();
   let currentProtection = {
-    allow_deletions: { enabled: false },
+    ...savedProtection,
     enforce_admins: { enabled: false },
-    required_status_checks: { strict: true, contexts: ["build-test"] },
   };
   let restoreCalls = 0;
 
