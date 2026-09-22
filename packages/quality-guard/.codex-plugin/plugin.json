@@ -1,6 +1,6 @@
 {
   "name": "quality-guard",
-  "version": "0.5.13",
+  "version": "0.5.14",
   "description": "Structural code quality analysis, plaintext readability checks, commit decisions, and guided refactoring.",
   "author": {
     "name": "tychohenzen",
