@@ -16,5 +16,14 @@
     "reason": "Reviewed: the flagged helpers isolate acknowledgement evidence, decision acknowledgements, and Git-note persistence. Their nearest textual matches are not ownership matches; focused tests cover staged and committed paths.",
     "author": "Codex",
     "time": "2026-09-22T09:01:30.070Z"
+  },
+  {
+    "findingId": "1768482a11740e63e35efc5ad62804284bc02354ab2b7f6f1a396ff74a796891",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: the timestamp records when an exact-snapshot attestation was written. It is audit metadata and does not change whether a finding is accepted.",
+    "author": "Codex",
+    "time": "2026-09-22T09:04:44.225Z"
   }
 ]
