@@ -124,5 +124,14 @@
     "reason": "The committed note stores a non-empty reviewer reason as the evidence for accepting this specific finding. This is part of the internal persisted audit schema, not package-root API.",
     "author": "Codex",
     "time": "2026-09-22T17:05:16.707Z"
+  },
+  {
+    "findingId": "c7097f712ddb17e5247f08e288f9982fee4c14f37a2acd2a84b90c320601ddda",
+    "fingerprint": "e5a990a217583efbe8983e49442a3eb749f30147b7476831e2cec9d7b74d3373",
+    "baseSha": "aad9190783b3ca304af2628bbe5e59712ba39120",
+    "targetSha": "00be3c1f38f365ef30f15dbd1c5a9f57159fc82a",
+    "reason": "Staged acknowledgements need baseIdentity paired with targetIdentity so a changed base invalidates old intent; the parser rejects partial provenance and decision logic compares both. This is an internal module contract, not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T17:08:29.845Z"
   }
 ]
