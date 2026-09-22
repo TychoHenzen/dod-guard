@@ -1,8 +1,9 @@
 # knowledge-base
 
-`knowledge-base` serves a read-only Markdown corpus shipped in
-`knowledge/entries/`. The bundled server resolves it relative to
-`dist/bundle.js`; it does not use a home-directory root or environment override.
+`knowledge-base` serves the read-only Markdown corpus shipped in
+`knowledge/entries/`. This is the only corpus. The bundled server resolves it
+relative to `dist/bundle.js`; it does not use a home-directory root or an
+environment-variable override.
 
 ## Progressive retrieval
 
@@ -14,8 +15,8 @@ Use the tools in this order:
 4. `knowledge_get_entry` with one entry key
 
 `knowledge_search` returns summaries and stable keys, not full entry content.
-The MCP server exposes five read-only tools; author by editing the tracked
-Markdown files.
+The MCP server exposes five read-only tools and has no save tool. Author
+knowledge by editing the tracked Markdown files.
 
 ## Markdown schema
 
@@ -48,6 +49,13 @@ validation. The search index is rebuilt in memory.
 
 The shipped entries cover Clean Code, Refactoring, Design Patterns, and UX/UI
 Design, with source metadata from multiple projects and languages.
+
+## Delivery
+
+After merging corpus changes, follow the repository's `/publish` release
+workflow. In Claude Code, run `/plugin update` and start a new session to load
+the updated plugin; existing sessions may need a restart. The Codex MCP pool
+serves the same bundled corpus at `/servers/knowledge-base/mcp`.
 
 ## Guidance boundary
 

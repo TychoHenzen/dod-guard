@@ -1,7 +1,7 @@
 {
   "name": "knowledge-base",
-  "version": "0.1.1",
-  "description": "Persistent Markdown-backed progressive knowledge retrieval for agents.",
+  "version": "0.1.2",
+  "description": "Read-only retrieval from the repository-authored Markdown corpus shipped with this plugin. Browse chapters, sections, and source-linked entries.",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/TychoHenzen"
@@ -18,8 +18,8 @@
   },
   "interface": {
     "displayName": "knowledge-base",
-    "shortDescription": "Browse persistent Markdown knowledge in stages.",
-    "longDescription": "Stores source-linked Markdown entries, indexes keys and text, and returns chapter, section, summary, and full-content views separately.",
+    "shortDescription": "Browse the shipped read-only Markdown corpus in stages.",
+    "longDescription": "Reads the tracked Markdown corpus shipped with the plugin and returns chapter, section, summary, and full-content views separately. Author updates by editing and publishing the tracked entries.",
     "developerName": "tychohenzen",
     "category": "Developer Tools",
     "capabilities": ["MCP tools", "Progressive retrieval"],

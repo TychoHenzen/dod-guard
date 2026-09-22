@@ -27,7 +27,7 @@
     },
     {
       "name": "knowledge-base",
-      "description": "Persistent Markdown-backed knowledge retrieval for agents. Browse chapters, sections, and entry summaries before requesting full source-linked content.",
+      "description": "Read-only retrieval from the repository-authored Markdown corpus shipped with this plugin. Browse chapters, sections, and source-linked entries.",
       "source": "./packages/knowledge-base",
       "category": "productivity"
     },
