@@ -28959,21 +28959,8 @@ function searchText(entry) {
 function indexed(entry) {
   return { ...summary(entry), searchText: searchText(entry) };
 }
-function indexedSummary(entry) {
-  return {
-    key: entry.key,
-    title: entry.title,
-    chapter: entry.chapter,
-    section: entry.section,
-    summary: entry.summary,
-    sources: entry.sources,
-    project: entry.project,
-    language: entry.language,
-    path: entry.path
-  };
-}
 function summaryWithScore(entry) {
-  return { ...indexedSummary(entry), score: entry.score };
+  return { ...summary(entry), score: entry.score };
 }
 function tokens(value) {
   return value.toLocaleLowerCase().match(TOKEN_PATTERN) ?? [];
@@ -29031,7 +29018,7 @@ var KnowledgeBase = class {
     scopeKey(chapter, "chapter");
     scopeKey(section, "section");
     const index = await this.buildIndex();
-    return index.entries.filter((entry) => entry.chapter === chapter && entry.section === section).map(indexedSummary);
+    return index.entries.filter((entry) => entry.chapter === chapter && entry.section === section).map(summary);
   }
   async search(query, limit = 10) {
     const terms = tokens(query);
@@ -29060,7 +29047,7 @@ var KnowledgeBase = class {
     return entry.relatedKeys.map((relatedKey) => {
       const found = index.entries.find((candidate) => candidate.key === relatedKey);
       if (!found) throw new KnowledgeBaseError(`${key}: related key ${relatedKey} does not exist`);
-      return indexedSummary(found);
+      return summary(found);
     });
   }
 };

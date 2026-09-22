@@ -104,7 +104,7 @@ export function isStableKey(value: string): boolean {
   return KEY_PATTERN.test(value);
 }
 
-export function validateKnowledgeEntry(entry: KnowledgeEntry, location = entry.path ?? entry.key): void {
+function validateKnowledgeEntry(entry: KnowledgeEntry, location = entry.path ?? entry.key): void {
   for (const [field, value] of [
     ["key", entry.key],
     ["chapter", entry.chapter],

@@ -15,12 +15,12 @@ import {
 const ENTRIES_DIR = "entries";
 const TOKEN_PATTERN = /[\p{L}\p{N}]+(?:[#+.-][\p{L}\p{N}]*)*/gu;
 
-export interface ChapterSummary {
+interface ChapterSummary {
   key: string;
   entryCount: number;
 }
 
-export interface SectionSummary {
+interface SectionSummary {
   key: string;
   chapter: string;
   entryCount: number;
@@ -43,7 +43,7 @@ async function markdownFiles(dir: string): Promise<string[]> {
   return files;
 }
 
-function summary(entry: KnowledgeEntry): EntrySummary {
+function summary(entry: KnowledgeEntry | IndexedEntry): EntrySummary {
   if (!entry.path) throw new KnowledgeBaseError(`entry ${entry.key} has no stored path`);
   return {
     key: entry.key,
@@ -80,22 +80,8 @@ function indexed(entry: KnowledgeEntry): IndexedEntry {
   return { ...summary(entry), searchText: searchText(entry) };
 }
 
-function indexedSummary(entry: IndexedEntry): EntrySummary {
-  return {
-    key: entry.key,
-    title: entry.title,
-    chapter: entry.chapter,
-    section: entry.section,
-    summary: entry.summary,
-    sources: entry.sources,
-    project: entry.project,
-    language: entry.language,
-    path: entry.path,
-  };
-}
-
 function summaryWithScore(entry: IndexedEntry & { score: number }): EntrySummary & { score: number } {
-  return { ...indexedSummary(entry), score: entry.score };
+  return { ...summary(entry), score: entry.score };
 }
 
 function tokens(value: string): string[] {
@@ -166,7 +152,7 @@ export class KnowledgeBase {
     scopeKey(chapter, "chapter");
     scopeKey(section, "section");
     const index = await this.buildIndex();
-    return index.entries.filter((entry) => entry.chapter === chapter && entry.section === section).map(indexedSummary);
+    return index.entries.filter((entry) => entry.chapter === chapter && entry.section === section).map(summary);
   }
 
   async search(query: string, limit = 10): Promise<Array<EntrySummary & { score: number }>> {
@@ -203,7 +189,7 @@ export class KnowledgeBase {
     return entry.relatedKeys.map((relatedKey) => {
       const found = index.entries.find((candidate) => candidate.key === relatedKey);
       if (!found) throw new KnowledgeBaseError(`${key}: related key ${relatedKey} does not exist`);
-      return indexedSummary(found);
+      return summary(found);
     });
   }
 }
