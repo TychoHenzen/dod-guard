@@ -89,7 +89,10 @@ maintenance content remains `maintenance-only`; any other manifest change is
      `repos/{owner}/{repo}/branches/master/protection/enforce_admins`. Treat the
      parsed protection object as the immutable restore snapshot; compare JSON
      semantically by object keys and array values, not by formatting or a
-     hand-picked subset of fields.
+     hand-picked subset of fields. Require both initial reads to return HTTP
+     `200` with non-empty objects, require the broad response to contain an
+     `enforce_admins.enabled` boolean and the admin response to contain an
+     `enabled` boolean, and require those values to agree before any mutation.
    - Before any protection mutation, construct and validate these exact values:
      `protection_endpoint= repos/{owner}/{repo}/branches/master/protection`,
      `admin_endpoint= repos/{owner}/{repo}/branches/master/protection/enforce_admins`,
@@ -101,23 +104,27 @@ maintenance content remains `maintenance-only`; any other manifest change is
    - A force-push allowance alone does not bypass the PR or check rules. If the
      saved `enforce_admins.enabled` is true, invoke only the validated admin
      endpoint with `gh api --method DELETE <admin_endpoint> --include --silent`.
-     Capture the exit code and response headers; require HTTP `204`, and do not
-     parse the deliberately empty body as JSON. Read the admin endpoint back
-     even when the command errors or returns an unexpected status. Require HTTP
-     `200`, a valid response object, and `enabled=false`; require every other
-     field in the full protection readback to equal the saved snapshot before
-     the release can proceed. An invalid path, method, status, body, or
-     readback stops before the push and reports the exact evidence.
+     Enter the cleanup scope and mark restoration required before invoking this
+     DELETE. Capture the exit code and response headers; require HTTP `204`, and
+     do not parse the deliberately empty body as JSON. Read the admin endpoint
+     back even when the command errors or returns an unexpected status. Require
+     HTTP `200`, a valid response object, and `enabled=false`; require the full
+     protection readback to contain a valid `enforce_admins` object and every
+     other field to equal the saved snapshot before the release can proceed. An
+     invalid path, method, status, body, or readback stops before the push and
+     reports the exact evidence; every exit after an attempted DELETE, including
+     a failed pre-push readback, runs the cleanup scope below.
    - Use `/commit`'s staging and commit-message steps only. Do not run its
      ordinary push, sync, or pull-and-merge retry. Push only with the saved-SHA
-     `--force-with-lease` command above. In a `finally` step, restore the saved
-     admin state even if commit or push fails: if it was initially enabled,
-     invoke only the same validated endpoint with
-     `gh api --method POST <admin_endpoint> --include --silent`, require HTTP
-     `200` and `enabled=true`, then read the admin endpoint and complete
-     protection object back. If any response, admin state, or complete
-     protection field differs from the saved snapshot, retry that exact `POST`
-     once and read both resources again. Do not retry an unknown mutation before
+      `--force-with-lease` command above. In a `finally` step for that cleanup
+      scope, restore the saved admin state even if commit, push, or pre-push
+      validation fails: if it was initially enabled, invoke only the same
+      validated endpoint with `gh api --method POST <admin_endpoint> --include
+      --silent`, require HTTP `200`, and do not use its suppressed body as a
+      success predicate. Read the admin endpoint and complete protection object
+      back after every POST attempt. If any response, admin state, or complete
+      protection field differs from the saved snapshot, retry that exact `POST`
+      once and read both resources again. Do not retry an unknown mutation before
      its readback. If the second readback still differs, stop and report the
      exact remaining difference; never claim release completion. If admin
      enforcement was initially disabled, do not call `POST`; prove it remains

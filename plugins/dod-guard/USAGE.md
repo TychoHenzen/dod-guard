@@ -291,6 +291,11 @@ its cleanup path. An endpoint, response, or readback mismatch stops before the
 push; a failed restoration gets one bounded retry and then reports the exact
 remaining difference.
 
+A successful maintenance result reports the published SHA, the lease SHA, full
+protection restoration equality, the restore retry count, required-check status,
+and client-refresh status. Missing cleanup or any required evidence is a
+failure, not a successful release.
+
 Confirm `codex plugin list` reports the released version. Do not copy files
 into either client cache manually.
 

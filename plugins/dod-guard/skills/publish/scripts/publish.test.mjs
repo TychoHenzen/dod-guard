@@ -44,6 +44,7 @@ test("maintenance releases skip PBI and PR while restoring protection", async ()
     new URL("../../../standards/working-defaults.md", import.meta.url),
     "utf8",
   );
+  const usage = await readFile(usagePath, "utf8");
 
   assert.match(skill, /paired version-only bump made solely to invalidate the cache for\s+maintenance content remains `maintenance-only`/);
   assert.match(skill, /For a `maintenance-only` release:[\s\S]+Do not require or create a PBI, feature branch, or pull request/);
@@ -52,13 +53,18 @@ test("maintenance releases skip PBI and PR while restoring protection", async ()
   assert.match(skill, /--force-with-lease=refs\/heads\/master:<saved-sha>/);
   assert.match(skill, /lease rejects any intervening update/);
   assert.match(skill, /Never use an\s+unpinned force push/);
+  assert.match(skill, /Require both initial reads to return HTTP\s+`200` with non-empty objects/);
   assert.match(skill, /If the\s+saved `enforce_admins\.enabled` is true, invoke only the validated admin\s+endpoint with/);
   assert.match(skill, /admin_endpoint= repos\/\{owner\}\/\{repo\}\/branches\/master\/protection\/enforce_admins/);
   assert.match(skill, /do not\s+parse the deliberately empty body as JSON/);
-  assert.match(skill, /Read the admin endpoint back\s+even when the command errors or returns an unexpected status[\s\S]+Require HTTP\s+`200`, a valid response object, and `enabled=false`/);
+  assert.match(skill, /Read the admin endpoint\s+back\s+even when the command errors or returns an unexpected status[\s\S]+Require\s+HTTP\s+`200`, a valid response object, and `enabled=false`/);
   assert.match(skill, /A force-push\s+allowance alone does not bypass the PR or check rules/);
-  assert.match(skill, /In a `finally` step, restore the saved\s+admin state[\s\S]+complete\s+protection object back/);
-  assert.match(skill, /gh api --method POST <admin_endpoint> --include --silent/);
+  assert.match(skill, /Enter the cleanup scope and mark restoration required before invoking this\s+DELETE/);
+  assert.match(skill, /every exit after an attempted DELETE, including\s+a failed pre-push readback, runs the cleanup scope/);
+  assert.match(skill, /In a `finally` step[\s\S]+restore the saved\s+admin state[\s\S]+complete\s+protection object\s+back/);
+  assert.match(skill, /gh api --method POST <admin_endpoint>\s+--include\s+--silent/);
+  assert.match(skill, /do not use its suppressed body as a\s+success predicate/);
+  assert.match(skill, /Read the admin endpoint and complete protection object\s+back after every POST attempt/);
   assert.match(skill, /retry that exact\s+`POST`\s+once and read both resources again/);
   assert.match(skill, /Other users\s+remain subject to the branch rules/);
   assert.match(skill, /`\/commit`'s staging and commit-message steps only/);
@@ -66,6 +72,8 @@ test("maintenance releases skip PBI and PR while restoring protection", async ()
   assert.doesNotMatch(skill, /If branch protection requires a pull request, stop/);
   assert.match(defaults, /The explicit `\/publish` maintenance-only route may[\s\S]+temporarily disable only admin enforcement/);
   assert.match(skill, /After a direct maintenance push or a merged functional release has green CI/);
+  assert.match(usage, /A successful maintenance result reports the published SHA, the lease SHA, full\s+protection restoration equality, the restore retry count, required-check status,\s+and client-refresh status/);
+  assert.match(usage, /Missing cleanup or any required evidence is a\s+failure, not a successful release/);
 });
 
 test("maintenance protection mutation authorizes one exact endpoint and response", async () => {
@@ -78,7 +86,7 @@ test("maintenance protection mutation authorizes one exact endpoint and response
   assert.match(skill, /never\s+send `DELETE`, `POST`, or `PUT` to it/);
   assert.match(skill, /--method DELETE <admin_endpoint> --include --silent/);
   assert.match(skill, /require HTTP `204`/);
-  assert.match(skill, /Require HTTP\s+`200`, a valid response object, and `enabled=false`/);
+  assert.match(skill, /Require\s+HTTP\s+`200`, a valid response object, and `enabled=false`/);
   assert.match(skill, /invalid path, method, status, body, or\s+readback stops before the push/);
 });
 
@@ -113,8 +121,21 @@ function sameProtection(left, right) {
 }
 
 function withoutAdminField(protection) {
+  if (!protection?.enforce_admins || typeof protection.enforce_admins.enabled !== "boolean") {
+    return null;
+  }
   return Object.fromEntries(
     Object.entries(protection ?? {}).filter(([key]) => key !== "enforce_admins"),
+  );
+}
+
+function sameProtectionWithoutAdmin(left, right) {
+  const comparableLeft = withoutAdminField(left);
+  const comparableRight = withoutAdminField(right);
+  return (
+    comparableLeft !== null &&
+    comparableRight !== null &&
+    sameProtection(comparableLeft, comparableRight)
   );
 }
 
@@ -122,10 +143,24 @@ function evaluateProtectionDecision({
   endpoint,
   method,
   deleteResponse,
+  initialAdminReadback,
+  initialProtectionReadback,
   adminReadback,
   protectionReadback,
   savedProtection,
 }) {
+  if (
+    initialProtectionReadback?.status !== 200 ||
+    !initialProtectionReadback.body ||
+    Object.keys(initialProtectionReadback.body).length === 0 ||
+    typeof initialProtectionReadback.body.enforce_admins?.enabled !== "boolean" ||
+    initialAdminReadback?.status !== 200 ||
+    !initialAdminReadback.body ||
+    typeof initialAdminReadback.body.enabled !== "boolean" ||
+    initialProtectionReadback.body.enforce_admins.enabled !== initialAdminReadback.body.enabled
+  ) {
+    return { proceed: false, reason: "initial-readback" };
+  }
   if (endpoint !== adminEndpoint || method !== "DELETE") {
     return { proceed: false, reason: "request" };
   }
@@ -141,10 +176,7 @@ function evaluateProtectionDecision({
   }
   if (
     protectionReadback?.status !== 200 ||
-    !sameProtection(
-      withoutAdminField(savedProtection),
-      withoutAdminField(protectionReadback.body),
-    )
+    !sameProtectionWithoutAdmin(savedProtection, protectionReadback.body)
   ) {
     return { proceed: false, reason: "protection-readback" };
   }
@@ -158,13 +190,16 @@ function runMaintenancePath(input) {
   return evaluateProtectionDecision(input);
 }
 
-function restoreProtection(savedProtection, readProtection, restore) {
+function restoreProtection(savedProtection, readState, restore) {
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     const response = restore();
+    const state = readState();
     if (
       response?.status === 200 &&
-      response.body?.enabled === true &&
-      sameProtection(savedProtection, readProtection())
+      state?.admin?.status === 200 &&
+      state.admin.body?.enabled === true &&
+      state?.protection?.status === 200 &&
+      sameProtection(savedProtection, state.protection.body)
     ) {
       return attempt;
     }
@@ -226,6 +261,8 @@ test("maintenance fixture reaches the push boundary only after classification an
     endpoint: adminEndpoint,
     method: "DELETE",
     deleteResponse: { status: 204, body: "" },
+    initialAdminReadback: { status: 200, body: { enabled: true } },
+    initialProtectionReadback: { status: 200, body: savedProtection },
     adminReadback: { status: 200, body: { enabled: false } },
     protectionReadback: { status: 200, body: protectionReadback },
     savedProtection,
@@ -252,6 +289,8 @@ test("maintenance fixture rejects endpoint and method drift before mutation", ()
     endpoint: adminEndpoint,
     method: "DELETE",
     deleteResponse: { status: 204, body: "" },
+    initialAdminReadback: { status: 200, body: { enabled: true } },
+    initialProtectionReadback: { status: 200, body: savedProtection },
     adminReadback: { status: 200, body: { enabled: false } },
     protectionReadback: {
       status: 200,
@@ -276,6 +315,8 @@ test("maintenance fixture fails closed for empty, failed, malformed, or stale re
     endpoint: adminEndpoint,
     method: "DELETE",
     deleteResponse: { status: 204, body: "" },
+    initialAdminReadback: { status: 200, body: { enabled: true } },
+    initialProtectionReadback: { status: 200, body: savedProtection },
     adminReadback: { status: 200, body: { enabled: false } },
     protectionReadback: {
       status: 200,
@@ -284,6 +325,14 @@ test("maintenance fixture fails closed for empty, failed, malformed, or stale re
     savedProtection,
   };
   const invalidResponses = [
+    { initialProtectionReadback: { status: 500, body: {} } },
+    { initialAdminReadback: { status: 200, body: { enabled: false } } },
+    {
+      initialProtectionReadback: {
+        status: 200,
+        body: { ...savedProtection, enforce_admins: undefined },
+      },
+    },
     { deleteResponse: undefined },
     { deleteResponse: { status: 500, body: "failure" } },
     { deleteResponse: { status: 204, body: "malformed" } },
@@ -316,7 +365,13 @@ test("protection fixture retries one restore and stops on a second full-state mi
 
   const attempts = restoreProtection(
     savedProtection,
-    () => currentProtection,
+    () => ({
+      admin: {
+        status: 200,
+        body: { enabled: currentProtection.enforce_admins.enabled },
+      },
+      protection: { status: 200, body: currentProtection },
+    }),
     () => {
       restoreCalls += 1;
       if (restoreCalls === 2) currentProtection = savedProtection;
@@ -329,7 +384,13 @@ test("protection fixture retries one restore and stops on a second full-state mi
   assert.equal(
     restoreProtection(
       savedProtection,
-      () => currentProtection,
+      () => ({
+        admin: {
+          status: 200,
+          body: { enabled: currentProtection.enforce_admins.enabled },
+        },
+        protection: { status: 200, body: currentProtection },
+      }),
       () => ({ status: 200, body: { enabled: true } }),
     ),
     1,
@@ -337,17 +398,34 @@ test("protection fixture retries one restore and stops on a second full-state mi
   assert.equal(
     restoreProtection(
       savedProtection,
-      () => ({ ...currentProtection, enforce_admins: { enabled: false } }),
+      () => ({
+        admin: { status: 200, body: { enabled: false } },
+        protection: {
+          status: 200,
+          body: { ...currentProtection, enforce_admins: { enabled: false } },
+        },
+      }),
       () => ({ status: 200, body: { enabled: true } }),
     ),
     null,
   );
+  const failedRestoreEvents = [];
   assert.equal(
     restoreProtection(
       savedProtection,
-      () => currentProtection,
-      () => ({ status: 500, body: {} }),
+      () => {
+        failedRestoreEvents.push("read");
+        return {
+          admin: { status: 200, body: { enabled: true } },
+          protection: { status: 200, body: currentProtection },
+        };
+      },
+      () => {
+        failedRestoreEvents.push("restore");
+        return { status: 500, body: {} };
+      },
     ),
     null,
   );
+  assert.deepEqual(failedRestoreEvents, ["restore", "read", "restore", "read"]);
 });
