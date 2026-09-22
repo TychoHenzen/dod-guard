@@ -34,5 +34,14 @@
     "reason": "DecisionCoreInput must carry committed note records so the decision core can compare each finding against the computed fingerprint, base, and target. This is an internal call contract; the package root exposes the CLI, not this field.",
     "author": "Codex",
     "time": "2026-09-22T14:33:01.514Z"
+  },
+  {
+    "findingId": "42126b3d153ee66fa04ba31e2939f12ecf4e1f83e1fb5cd153d157cc5f420061",
+    "fingerprint": "2e059d7a01b982be9d9228179199952ebad197ae0c54bce416f2654590c008c9",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "d8516cb1066d708590d8c874d8fab6166eb752d1",
+    "reason": "Staged acknowledgements need targetIdentity to bind the recorded intent to the exact staged snapshot; the parser requires target and base provenance together. This is an internal module contract, not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T14:36:50.703Z"
   }
 ]
