@@ -22424,7 +22424,7 @@ import { mkdirSync, readFileSync as readFileSync2, writeFileSync } from "node:fs
 import * as path12 from "node:path";
 
 // src/commit-gate/fingerprint.ts
-import { createHash as createHash2 } from "node:crypto";
+import { createHash } from "node:crypto";
 
 // src/commit-gate/canonical.ts
 function canonical(value) {
@@ -22435,35 +22435,12 @@ function canonical(value) {
   return JSON.stringify(value);
 }
 
-// src/commit-gate/source-snapshot.ts
-import { createHash } from "node:crypto";
+// src/commit-gate/fingerprint.ts
 var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
 var SOURCE_PATH = /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
-function sourceSnapshotIdentity(changes) {
-  return createHash("sha256").update(canonical(sourceChanges(changes))).digest("hex");
-}
-function sourceChanges(changes) {
-  return changes.filter(isEligibleSourceChange).map(fingerprintChange).sort(compareChanges);
-}
-function isEligibleSourceChange(change) {
-  return change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH && (isSourceFile(change.before) || isSourceFile(change.after));
-}
-function isSourceFile(file) {
-  return file !== void 0 && SOURCE_PATH.test(file.path);
-}
-function fingerprintChange(change) {
-  return { kind: change.kind, before: change.before, after: change.after };
-}
-function compareChanges(left, right) {
-  const leftPath = left.after?.path ?? left.before?.path ?? "";
-  const rightPath = right.after?.path ?? right.before?.path ?? "";
-  return leftPath.localeCompare(rightPath);
-}
-
-// src/commit-gate/fingerprint.ts
 function fingerprintSnapshot(snapshot, config2) {
   const changes = sourceChanges(snapshot.changes);
-  return createHash2("sha256").update(
+  return createHash("sha256").update(
     canonical({
       baseIdentity: snapshot.baseIdentity,
       targetIdentity: snapshot.targetIdentity,
@@ -22471,6 +22448,30 @@ function fingerprintSnapshot(snapshot, config2) {
       config: config2
     })
   ).digest("hex");
+}
+function sourceSnapshotIdentity(changes) {
+  return createHash("sha256").update(canonical(sourceChanges(changes))).digest("hex");
+}
+function sourceChanges(changes) {
+  return changes.filter(isDecisionChange).filter(isSourceChange).map(fingerprintChange).sort(compareChanges);
+}
+function isDecisionChange(change) {
+  return change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH;
+}
+function isSourceChange(change) {
+  return isSourceFile(change.before) || isSourceFile(change.after);
+}
+function isSourceFile(file) {
+  return file !== void 0 && SOURCE_PATH.test(file.path);
+}
+function fingerprintChange(change) {
+  return { kind: change.kind, before: change.before, after: change.after };
+}
+function changePath(change) {
+  return change.after?.path ?? change.before?.path ?? "";
+}
+function compareChanges(left, right) {
+  return changePath(left).localeCompare(changePath(right));
 }
 
 // src/commit-gate/acknowledgements.ts
@@ -23276,7 +23277,7 @@ function analyzeSimilarity(input) {
 }
 
 // src/commit-gate/types.ts
-import { createHash as createHash3 } from "node:crypto";
+import { createHash as createHash2 } from "node:crypto";
 function createFinding(input) {
   const affectedPaths2 = [...new Set(input.affectedPaths)].sort(
     (left, right) => left.localeCompare(right)
@@ -23285,7 +23286,7 @@ function createFinding(input) {
   return {
     ...input,
     affectedPaths: affectedPaths2,
-    id: createHash3("sha256").update(identity).digest("hex")
+    id: createHash2("sha256").update(identity).digest("hex")
   };
 }
 function normalizeFindings(findings) {
@@ -25697,7 +25698,7 @@ function git(root2, args, encoding = "utf8") {
 function objectContent(root2, spec) {
   return git(root2, ["show", spec]);
 }
-function changePath(change) {
+function changePath2(change) {
   return change.after?.path ?? change.before?.path ?? "";
 }
 function changesFrom(root2, values, contentSpec) {
@@ -25713,7 +25714,7 @@ function changesFrom(root2, values, contentSpec) {
     index = result.next;
   }
   return changes.sort(
-    (left, right) => changePath(left).localeCompare(changePath(right))
+    (left, right) => changePath2(left).localeCompare(changePath2(right))
   );
 }
 function changeSnapshot(root2, source) {
