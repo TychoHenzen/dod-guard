@@ -1,4 +1,5 @@
 import type { DecisionResult } from "./types.js";
+import { scannerLines } from "./cli-render-scanner.js";
 
 function refactorLines(result: DecisionResult): string[] {
   if (!result.refactorProgress) return [];
@@ -19,6 +20,7 @@ function decisionLines(result: DecisionResult): string[] {
         `${finding.severity.toUpperCase()}: ${finding.reason} (${finding.id})`,
     ),
   );
+  lines.push(...scannerLines(result));
   lines.push(
     ...(result.staleAcknowledgements ?? []).map((findingId) =>
       [

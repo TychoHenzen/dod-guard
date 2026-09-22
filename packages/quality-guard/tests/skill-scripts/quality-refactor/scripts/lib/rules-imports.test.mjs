@@ -68,6 +68,7 @@ test("reports only Python and Rust wildcard imports", () => {
       severity: "warn",
       message:
         "package wildcard import obscures its imported API; import explicit names instead",
+      suggestion: "Import explicit names from package.",
       metric: 1,
     },
     {
@@ -77,6 +78,7 @@ test("reports only Python and Rust wildcard imports", () => {
       severity: "warn",
       message:
         "crate::items wildcard import obscures its imported API; import explicit names instead",
+      suggestion: "Import explicit names from crate::items.",
       metric: 1,
     },
   ]);

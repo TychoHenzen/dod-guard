@@ -4,6 +4,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { test } from "node:test";
 import {
+  runCheckCommand,
   runCommittedCheck,
   runStagedCheck,
 } from "../../../src/commit-gate/cli.js";
@@ -50,6 +51,11 @@ test("enforces wildcard imports and stays quiet after staged recovery", () => {
   try {
     writeFileSync(path.join(root, python), "from package import *\n");
     git(root, ["add", python]);
+    const staged = runCheckCommand(["check", "--staged"], root);
+    assert.equal(staged.exitCode, 1);
+    assert.match(staged.output, /packages\/fixture\/src\/wildcard\.py:1/);
+    assert.match(staged.output, /wildcard-import/);
+    assert.match(staged.output, /Import explicit names from package\./);
     assert.equal(
       hasRatchetRegression(runStagedCheck(root, checkOptions)),
       true,
