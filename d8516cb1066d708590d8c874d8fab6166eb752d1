@@ -79,5 +79,14 @@
     "reason": "False positive: Snapshot has no tree member. The word tree occurs only in the JSDoc comment at snapshot-types.ts:4 describing committed snapshots; existing issue #527 tracks stripping comments before member extraction. Accepting this finding only for target d8516cb1066d708590d8c874d8fab6166eb752d1.",
     "author": "Codex",
     "time": "2026-09-22T14:51:18.351Z"
+  },
+  {
+    "findingId": "87a0a9e0069f5ff3a3376c0d1cc58646d047c5beacbf9b980748bfc34d56f163",
+    "fingerprint": "2e059d7a01b982be9d9228179199952ebad197ae0c54bce416f2654590c008c9",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "d8516cb1066d708590d8c874d8fab6166eb752d1",
+    "reason": "The decision core needs staged acknowledgement records to compare finding ID, fingerprint, baseIdentity, and targetIdentity against the current snapshot before accepting them. This is an internal input contract, not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T14:54:41.165Z"
   }
 ]
