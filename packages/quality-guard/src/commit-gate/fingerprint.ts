@@ -13,14 +13,31 @@ export function fingerprintSnapshot(
   snapshot: Snapshot,
   config: QualityConfig,
 ): string {
-  const changes = snapshot.changes
+  const changes = sourceChanges(snapshot.changes);
+  return createHash("sha256")
+    .update(
+      canonical({
+        baseIdentity: snapshot.baseIdentity,
+        targetIdentity: snapshot.targetIdentity,
+        changes,
+        config,
+      }),
+    )
+    .digest("hex");
+}
+
+export function sourceSnapshotIdentity(changes: Snapshot["changes"]): string {
+  return createHash("sha256")
+    .update(canonical(sourceChanges(changes)))
+    .digest("hex");
+}
+
+function sourceChanges(changes: Snapshot["changes"]) {
+  return changes
     .filter(isDecisionChange)
     .filter(isSourceChange)
     .map(fingerprintChange)
     .sort(compareChanges);
-  return createHash("sha256")
-    .update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config }))
-    .digest("hex");
 }
 
 function isDecisionChange(change: Snapshot["changes"][number]): boolean {

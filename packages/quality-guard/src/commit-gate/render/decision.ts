@@ -22,11 +22,18 @@ function decisionLines(result: DecisionResult): string[] {
   );
   lines.push(...scannerLines(result));
   lines.push(
-    ...(result.staleAcknowledgements ?? []).map((findingId) =>
+    ...(result.staleAcknowledgements ?? []).map((record) =>
       [
         "STALE: acknowledgement for",
-        findingId,
-        "does not match the current staged fingerprint",
+        record.findingId,
+        "is bound to base",
+        record.baseIdentity ?? "unknown",
+        "and target",
+        record.targetIdentity ?? "unknown",
+        "; current snapshot is base",
+        result.input.baseIdentity,
+        "and target",
+        result.input.targetIdentity,
       ].join(" "),
     ),
   );

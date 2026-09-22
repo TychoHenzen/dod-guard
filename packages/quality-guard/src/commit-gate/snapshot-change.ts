@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { sourceSnapshotIdentity } from "./fingerprint.js";
 import { changeAt } from "./snapshot-change-entries.js";
 import type { Snapshot } from "./snapshot-types.js";
 
@@ -59,10 +60,11 @@ export function changeSnapshot(
     "buffer",
   ) as Buffer;
   const values = output.toString("utf8").split("\0").filter(Boolean);
+  const changes = changesFrom(root, values, source.contentSpec);
   return {
     baseIdentity: (git(root, ["rev-parse", source.base]) as string).trim(),
-    targetIdentity: (git(root, ["rev-parse", source.target]) as string).trim(),
-    changes: changesFrom(root, values, source.contentSpec),
+    targetIdentity: sourceSnapshotIdentity(changes),
+    changes,
   };
 }
 

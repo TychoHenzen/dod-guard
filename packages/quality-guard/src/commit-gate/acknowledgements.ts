@@ -3,6 +3,8 @@ import { DECISION_RECORD_PATH } from "./fingerprint.js";
 export interface ArchitectureAcknowledgement {
   findingId: string;
   fingerprint: string;
+  baseIdentity?: string;
+  targetIdentity?: string;
   reason: string;
   author: string;
   time: string;
@@ -25,7 +27,7 @@ function recordValue(
   );
 }
 
-/** Parses the append-only record with an intentionally closed five-field
+/** Parses the append-only record with an intentionally closed seven-field
  * schema. */
 export function parseArchitectureAcknowledgements(
   source: string,
@@ -48,15 +50,35 @@ function parseRecord(
   if (item === null || typeof item !== "object" || Array.isArray(item))
     throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
   const record = item as Record<string, unknown>;
-  const allowed = ["findingId", "fingerprint", "reason", "author", "time"];
+  const allowed = [
+    "findingId",
+    "fingerprint",
+    "baseIdentity",
+    "targetIdentity",
+    "reason",
+    "author",
+    "time",
+  ];
   const unexpected = Object.keys(record).find((key) => !allowed.includes(key));
   if (unexpected)
     throw new Error(
       `${DECISION_RECORD_PATH}[${index}].${unexpected} is not supported`,
     );
+  const hasBaseIdentity = "baseIdentity" in record;
+  const hasTargetIdentity = "targetIdentity" in record;
+  if (hasBaseIdentity !== hasTargetIdentity)
+    throw new Error(
+      `${DECISION_RECORD_PATH}[${index}] must record both baseIdentity and targetIdentity`,
+    );
   return {
     findingId: recordValue(record, "findingId", index),
     fingerprint: recordValue(record, "fingerprint", index),
+    ...(hasBaseIdentity
+      ? {
+          baseIdentity: recordValue(record, "baseIdentity", index),
+          targetIdentity: recordValue(record, "targetIdentity", index),
+        }
+      : {}),
     reason: recordValue(record, "reason", index),
     author: recordValue(record, "author", index),
     time: recordValue(record, "time", index),

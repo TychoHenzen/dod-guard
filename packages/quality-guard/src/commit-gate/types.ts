@@ -21,7 +21,11 @@ export interface DecisionResult {
     /** Present when the staged input requires no source-quality decision. */
     reason?: string;
   };
-  staleAcknowledgements?: string[];
+  staleAcknowledgements?: Array<{
+    findingId: string;
+    baseIdentity?: string;
+    targetIdentity?: string;
+  }>;
   refactorProgress?: RefactorProgress;
 }
 

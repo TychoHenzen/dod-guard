@@ -22439,8 +22439,21 @@ function canonical(value) {
 var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
 var SOURCE_PATH = /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
 function fingerprintSnapshot(snapshot, config2) {
-  const changes = snapshot.changes.filter(isDecisionChange).filter(isSourceChange).map(fingerprintChange).sort(compareChanges);
-  return createHash("sha256").update(canonical({ baseIdentity: snapshot.baseIdentity, changes, config: config2 })).digest("hex");
+  const changes = sourceChanges(snapshot.changes);
+  return createHash("sha256").update(
+    canonical({
+      baseIdentity: snapshot.baseIdentity,
+      targetIdentity: snapshot.targetIdentity,
+      changes,
+      config: config2
+    })
+  ).digest("hex");
+}
+function sourceSnapshotIdentity(changes) {
+  return createHash("sha256").update(canonical(sourceChanges(changes))).digest("hex");
+}
+function sourceChanges(changes) {
+  return changes.filter(isDecisionChange).filter(isSourceChange).map(fingerprintChange).sort(compareChanges);
 }
 function isDecisionChange(change) {
   return change.before?.path !== DECISION_RECORD_PATH && change.after?.path !== DECISION_RECORD_PATH;
@@ -22488,15 +22501,33 @@ function parseRecord(item, index) {
   if (item === null || typeof item !== "object" || Array.isArray(item))
     throw new Error(`${DECISION_RECORD_PATH}[${index}] must be an object`);
   const record3 = item;
-  const allowed = ["findingId", "fingerprint", "reason", "author", "time"];
+  const allowed = [
+    "findingId",
+    "fingerprint",
+    "baseIdentity",
+    "targetIdentity",
+    "reason",
+    "author",
+    "time"
+  ];
   const unexpected = Object.keys(record3).find((key2) => !allowed.includes(key2));
   if (unexpected)
     throw new Error(
       `${DECISION_RECORD_PATH}[${index}].${unexpected} is not supported`
     );
+  const hasBaseIdentity = "baseIdentity" in record3;
+  const hasTargetIdentity = "targetIdentity" in record3;
+  if (hasBaseIdentity !== hasTargetIdentity)
+    throw new Error(
+      `${DECISION_RECORD_PATH}[${index}] must record both baseIdentity and targetIdentity`
+    );
   return {
     findingId: recordValue(record3, "findingId", index),
     fingerprint: recordValue(record3, "fingerprint", index),
+    ...hasBaseIdentity ? {
+      baseIdentity: recordValue(record3, "baseIdentity", index),
+      targetIdentity: recordValue(record3, "targetIdentity", index)
+    } : {},
     reason: recordValue(record3, "reason", index),
     author: recordValue(record3, "author", index),
     time: recordValue(record3, "time", index)
@@ -24219,7 +24250,7 @@ function evaluateResponsibilityMap(map, input) {
 // src/commit-gate/decision-core.ts
 function acceptedFindings(input, fingerprint) {
   const current = (input.acknowledgementRecords ?? []).filter(
-    (record3) => record3.fingerprint === fingerprint
+    (record3) => record3.fingerprint === fingerprint && record3.baseIdentity === input.snapshot.baseIdentity && record3.targetIdentity === input.snapshot.targetIdentity
   );
   return /* @__PURE__ */ new Set([
     ...input.acknowledgements ?? [],
@@ -24241,7 +24272,13 @@ function analysisErrors(input) {
   ].sort((left, right) => left.localeCompare(right));
 }
 function staleAcknowledgements(input, fingerprint) {
-  return (input.acknowledgementRecords ?? []).filter((record3) => record3.fingerprint !== fingerprint).map((record3) => record3.findingId).sort();
+  return (input.acknowledgementRecords ?? []).filter(
+    (record3) => record3.fingerprint !== fingerprint || record3.baseIdentity !== input.snapshot.baseIdentity || record3.targetIdentity !== input.snapshot.targetIdentity
+  ).map(({ findingId, baseIdentity, targetIdentity }) => ({
+    findingId,
+    baseIdentity,
+    targetIdentity
+  })).sort((left, right) => left.findingId.localeCompare(right.findingId));
 }
 function verdict(errors, findings, accepted) {
   if (errors.length > 0 || findings.some((finding) => finding.severity === "fail"))
@@ -25683,10 +25720,11 @@ function changeSnapshot(root2, source) {
     "buffer"
   );
   const values = output.toString("utf8").split("\0").filter(Boolean);
+  const changes = changesFrom(root2, values, source.contentSpec);
   return {
     baseIdentity: git(root2, ["rev-parse", source.base]).trim(),
-    targetIdentity: git(root2, ["rev-parse", source.target]).trim(),
-    changes: changesFrom(root2, values, source.contentSpec)
+    targetIdentity: sourceSnapshotIdentity(changes),
+    changes
   };
 }
 
@@ -25836,9 +25874,13 @@ function findAcknowledgement(decision, options) {
     return acknowledgeUsage(
       "no current staged source fingerprint is available"
     );
-  return { fingerprint: decision.fingerprint };
+  return {
+    fingerprint: decision.fingerprint,
+    baseIdentity: decision.input.baseIdentity,
+    targetIdentity: decision.input.targetIdentity
+  };
 }
-function writeAcknowledgement(root2, options, fingerprint) {
+function writeAcknowledgement(root2, options, fingerprint, baseIdentity, targetIdentity) {
   const recordPath = path12.join(root2, DECISION_RECORD_PATH);
   mkdirSync(path12.dirname(recordPath), { recursive: true });
   writeFileSync(
@@ -25846,6 +25888,8 @@ function writeAcknowledgement(root2, options, fingerprint) {
     appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
       ...options,
       fingerprint,
+      baseIdentity,
+      targetIdentity,
       time: (/* @__PURE__ */ new Date()).toISOString()
     }),
     "utf8"
@@ -25868,7 +25912,13 @@ function runAcknowledgeCommand(args, root2) {
       options
     );
     if ("exitCode" in match) return match;
-    return writeAcknowledgement(root2, options, match.fingerprint);
+    return writeAcknowledgement(
+      root2,
+      options,
+      match.fingerprint,
+      match.baseIdentity,
+      match.targetIdentity
+    );
   } catch (error2) {
     return acknowledgeUsage(
       error2 instanceof Error ? error2.message : String(error2)
@@ -25948,10 +25998,17 @@ function decisionLines(result) {
   lines.push(...scannerLines(result));
   lines.push(
     ...(result.staleAcknowledgements ?? []).map(
-      (findingId) => [
+      (record3) => [
         "STALE: acknowledgement for",
-        findingId,
-        "does not match the current staged fingerprint"
+        record3.findingId,
+        "is bound to base",
+        record3.baseIdentity ?? "unknown",
+        "and target",
+        record3.targetIdentity ?? "unknown",
+        "; current snapshot is base",
+        result.input.baseIdentity,
+        "and target",
+        result.input.targetIdentity
       ].join(" ")
     )
   );

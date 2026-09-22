@@ -45,6 +45,8 @@ test("matching acknowledgement records pass", () => {
       {
         findingId: review.id,
         fingerprint: fingerprintSnapshot(snapshot, parseQualityConfig("{}")),
+        baseIdentity: snapshot.baseIdentity,
+        targetIdentity: snapshot.targetIdentity,
         reason: "Reviewed",
         author: "A. Reviewer",
         time: "2026-08-31T00:00:00.000Z",
@@ -53,6 +55,30 @@ test("matching acknowledgement records pass", () => {
   });
   assert.equal(result.verdict, "PASS");
   assert.deepEqual(result.staleAcknowledgements, []);
+});
+
+test("treats a legacy acknowledgement as stale provenance", () => {
+  const review = growthFinding();
+  const result = decideQuality({
+    ...growthDecisionInput(),
+    acknowledgementRecords: [
+      {
+        findingId: review.id,
+        fingerprint: fingerprintSnapshot(snapshot, parseQualityConfig("{}")),
+        reason: "Reviewed",
+        author: "A. Reviewer",
+        time: "2026-08-31T00:00:00.000Z",
+      },
+    ],
+  });
+  assert.equal(result.verdict, "REVIEW_REQUIRED");
+  assert.deepEqual(result.staleAcknowledgements, [
+    {
+      findingId: review.id,
+      baseIdentity: undefined,
+      targetIdentity: undefined,
+    },
+  ]);
 });
 
 test("documentation-only changes need no source decision", () => {

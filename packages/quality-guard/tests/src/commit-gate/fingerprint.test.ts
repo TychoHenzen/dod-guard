@@ -41,8 +41,22 @@ test("fingerprints source content but ignores documentation content", () => {
     },
     config,
   );
+  const changedTarget = fingerprintSnapshot(
+    {
+      baseIdentity: "base",
+      targetIdentity: "different-target",
+      changes: [
+        {
+          kind: "add",
+          after: { path: "src/a.ts", content: "export const value = 1;" },
+        },
+      ],
+    },
+    config,
+  );
 
   assert.notEqual(source, changedSource);
+  assert.notEqual(source, changedTarget);
   assert.equal(documentationOnly.length, 64);
   assert.equal(source.length, 64);
 });

@@ -13,7 +13,10 @@ import { type DecisionResult } from "./types.js";
 
 function acceptedFindings(input: DecisionCoreInput, fingerprint: string) {
   const current = (input.acknowledgementRecords ?? []).filter(
-    (record) => record.fingerprint === fingerprint,
+    (record) =>
+      record.fingerprint === fingerprint &&
+      record.baseIdentity === input.snapshot.baseIdentity &&
+      record.targetIdentity === input.snapshot.targetIdentity,
   );
   return new Set([
     ...(input.acknowledgements ?? []),
@@ -37,11 +40,20 @@ function analysisErrors(input: DecisionCoreInput): string[] {
 function staleAcknowledgements(
   input: DecisionCoreInput,
   fingerprint: string,
-): string[] {
+): NonNullable<DecisionResult["staleAcknowledgements"]> {
   return (input.acknowledgementRecords ?? [])
-    .filter((record) => record.fingerprint !== fingerprint)
-    .map((record) => record.findingId)
-    .sort();
+    .filter(
+      (record) =>
+        record.fingerprint !== fingerprint ||
+        record.baseIdentity !== input.snapshot.baseIdentity ||
+        record.targetIdentity !== input.snapshot.targetIdentity,
+    )
+    .map(({ findingId, baseIdentity, targetIdentity }) => ({
+      findingId,
+      baseIdentity,
+      targetIdentity,
+    }))
+    .sort((left, right) => left.findingId.localeCompare(right.findingId));
 }
 function verdict(
   errors: string[],

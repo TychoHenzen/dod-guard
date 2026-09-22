@@ -38,13 +38,19 @@ function findAcknowledgement(
     return acknowledgeUsage(
       "no current staged source fingerprint is available",
     );
-  return { fingerprint: decision.fingerprint };
+  return {
+    fingerprint: decision.fingerprint,
+    baseIdentity: decision.input.baseIdentity,
+    targetIdentity: decision.input.targetIdentity,
+  };
 }
 
 function writeAcknowledgement(
   root: string,
   options: AcknowledgeOptions,
   fingerprint: string,
+  baseIdentity: string,
+  targetIdentity: string,
 ): CommandResult {
   const recordPath = path.join(root, DECISION_RECORD_PATH);
   mkdirSync(path.dirname(recordPath), { recursive: true });
@@ -53,6 +59,8 @@ function writeAcknowledgement(
     appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
       ...options,
       fingerprint,
+      baseIdentity,
+      targetIdentity,
       time: new Date().toISOString(),
     }),
     "utf8",
@@ -79,7 +87,13 @@ export function runAcknowledgeCommand(
       options,
     );
     if ("exitCode" in match) return match;
-    return writeAcknowledgement(root, options, match.fingerprint);
+    return writeAcknowledgement(
+      root,
+      options,
+      match.fingerprint,
+      match.baseIdentity,
+      match.targetIdentity,
+    );
   } catch (error) {
     return acknowledgeUsage(
       error instanceof Error ? error.message : String(error),

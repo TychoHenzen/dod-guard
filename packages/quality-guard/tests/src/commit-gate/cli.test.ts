@@ -56,6 +56,24 @@ test("review-required maps to blocking output", () => {
   );
 });
 
+test("renders stale acknowledgement snapshot provenance", () => {
+  const output = renderDecision(
+    {
+      ...review,
+      staleAcknowledgements: [
+        {
+          findingId: "finding",
+          baseIdentity: "old-base",
+          targetIdentity: "old-head",
+        },
+      ],
+    },
+    { json: false },
+  );
+  assert.match(output, /old-base/);
+  assert.match(output, /current snapshot is base base and target index/);
+});
+
 test("unsupported intent is a usage error", () => {
   const result = parseCheckArguments([
     "check",

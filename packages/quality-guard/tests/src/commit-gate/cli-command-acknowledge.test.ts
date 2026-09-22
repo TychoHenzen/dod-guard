@@ -5,7 +5,10 @@ import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
 import { runAcknowledgeCommand } from "../../../src/commit-gate/cli-command-acknowledge.js";
-import { runStagedCheck } from "../../../src/commit-gate/cli-decision.js";
+import {
+  runCommittedCheck,
+  runStagedCheck,
+} from "../../../src/commit-gate/cli-decision.js";
 import { runScan } from "../../../src/scanner.js";
 
 function git(root: string, args: string[]): void {
@@ -84,6 +87,57 @@ test("writes an acknowledgement for a staged review finding", () => {
       ),
       new RegExp(finding.id),
     );
+    const acknowledgement = JSON.parse(
+      fs.readFileSync(
+        path.join(root, ".github", "quality", "architecture-decisions.json"),
+        "utf8",
+      ),
+    )[0];
+    assert.equal(acknowledgement.baseIdentity, decision.input.baseIdentity);
+    assert.equal(acknowledgement.targetIdentity, decision.input.targetIdentity);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("replays an acknowledged staged source snapshot after commit", () => {
+  const root = fixture();
+  try {
+    fs.writeFileSync(
+      path.join(root, ".quality-guard.json"),
+      '{"genericBuckets":["src"]}\n',
+    );
+    fs.writeFileSync(
+      path.join(root, "packages", "fixture", "src", "Added.ts"),
+      "export class Added {}\n",
+    );
+    git(root, ["add", ".quality-guard.json", "packages/fixture/src/Added.ts"]);
+    const staged = runStagedCheck(root, { json: false, intent: "change" });
+    const finding = staged.findings.find((item) => item.severity === "review");
+    assert.ok(finding);
+    assert.equal(
+      runAcknowledgeCommand(
+        [
+          "acknowledge",
+          "--finding",
+          finding.id,
+          "--reason",
+          "accepted test finding",
+          "--author",
+          "tester",
+        ],
+        root,
+      ).exitCode,
+      0,
+    );
+    git(root, ["commit", "-m", "acknowledge"]);
+    const committed = runCommittedCheck(root, "HEAD", {
+      json: false,
+      intent: "change",
+    });
+    assert.equal(committed.verdict, "PASS");
+    assert.equal(committed.input.baseIdentity, staged.input.baseIdentity);
+    assert.equal(committed.input.targetIdentity, staged.input.targetIdentity);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
