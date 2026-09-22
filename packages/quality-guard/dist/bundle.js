@@ -22435,9 +22435,17 @@ function canonical(value) {
   return JSON.stringify(value);
 }
 
+// src/commit-gate/snapshot-types.ts
+var SOURCE_PATH = new RegExp(
+  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
+  "i"
+);
+function isSourcePath(filePath) {
+  return SOURCE_PATH.test(filePath);
+}
+
 // src/commit-gate/fingerprint.ts
 var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
-var SOURCE_PATH = /\.(?:ts|tsx|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|cc|cpp|cxx|h|hpp)$/i;
 function fingerprintSnapshot(snapshot, config2) {
   const changes = sourceChanges(snapshot.changes);
   return createHash("sha256").update(
@@ -22462,7 +22470,7 @@ function isSourceChange(change) {
   return isSourceFile(change.before) || isSourceFile(change.after);
 }
 function isSourceFile(file) {
-  return file !== void 0 && SOURCE_PATH.test(file.path);
+  return file !== void 0 && isSourcePath(file.path);
 }
 function fingerprintChange(change) {
   return { kind: change.kind, before: change.before, after: change.after };
@@ -22959,10 +22967,6 @@ function parseQualityConfig(source) {
 }
 
 // src/commit-gate/decision-core-summary.ts
-var SOURCE_PATH2 = new RegExp(
-  String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
-  "i"
-);
 var QUALITY_CONFIGURATION_PATH = ".quality-guard.json";
 function changedPaths(snapshot) {
   const paths = snapshot.changes.flatMap((change) => [
@@ -22974,13 +22978,11 @@ function changedPaths(snapshot) {
   ].sort((left, right) => left.localeCompare(right));
 }
 function changedSourcePaths(snapshot) {
-  return changedPaths(snapshot).filter(
-    (filePath) => SOURCE_PATH2.test(filePath)
-  );
+  return changedPaths(snapshot).filter(isSourcePath);
 }
 function requiresSourceDecision(snapshot) {
   return changedPaths(snapshot).some(
-    (filePath) => SOURCE_PATH2.test(filePath) || filePath === QUALITY_CONFIGURATION_PATH
+    (filePath) => isSourcePath(filePath) || filePath === QUALITY_CONFIGURATION_PATH
   );
 }
 function summaryFor(snapshot, changedSourcePaths2) {
@@ -25733,7 +25735,7 @@ function changeSnapshot(root2, source) {
 }
 
 // src/commit-gate/snapshot.ts
-var SOURCE_PATH3 = new RegExp(
+var SOURCE_PATH2 = new RegExp(
   String.raw`\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|cs|rs|py|go|java|kt|kts|c|` + String.raw`cc|cpp|` + String.raw`cxx|h|hpp)$`,
   "i"
 );
@@ -25756,7 +25758,7 @@ function readCommittedSnapshot(root2, commit = "HEAD") {
 function sourcePaths(root2, ref) {
   const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", ref];
   return git(root2, args, "buffer").toString("utf8").split("\0").filter(
-    (filePath) => SOURCE_PATH3.test(filePath) && !DISTRIBUTION_PATH.test(filePath)
+    (filePath) => SOURCE_PATH2.test(filePath) && !DISTRIBUTION_PATH.test(filePath)
   ).sort((left, right) => left.localeCompare(right));
 }
 function readSourceInventory(root2, ref) {
