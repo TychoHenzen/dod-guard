@@ -1,5 +1,5 @@
-import type { DecisionResult } from "./types.js";
-import { scannerLines } from "./cli-render-scanner.js";
+import type { DecisionResult } from "../types.js";
+import { scannerLines } from "./scanner.js";
 
 function refactorLines(result: DecisionResult): string[] {
   if (!result.refactorProgress) return [];

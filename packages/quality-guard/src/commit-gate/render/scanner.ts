@@ -1,4 +1,4 @@
-import type { DecisionResult } from "./types.js";
+import type { DecisionResult } from "../types.js";
 
 type ScannerViolation = {
   file: string;

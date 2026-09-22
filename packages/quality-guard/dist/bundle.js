@@ -25876,7 +25876,7 @@ function runAcknowledgeCommand(args, root2) {
   }
 }
 
-// src/commit-gate/cli-render-scanner.ts
+// src/commit-gate/render/scanner.ts
 function isRecord(value) {
   return typeof value === "object" && value !== null;
 }
@@ -25929,7 +25929,7 @@ function scannerLines(result) {
   );
 }
 
-// src/commit-gate/cli-render.ts
+// src/commit-gate/render/decision.ts
 function refactorLines(result) {
   if (!result.refactorProgress) return [];
   return Object.entries(result.refactorProgress.indicators).map(
