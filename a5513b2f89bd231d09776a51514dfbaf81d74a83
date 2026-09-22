@@ -52,5 +52,14 @@
     "reason": "Reviewed: staged acknowledgements bind targetIdentity to the exact checked source snapshot; this prevents reuse when the eligible source changes.",
     "author": "Codex",
     "time": "2026-09-22T09:14:32.607Z"
+  },
+  {
+    "findingId": "4f5f9988febb40d7e8ef47053fa852cae1c5411ce0a100377c5d392e513f25ab",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: findingId identifies which review-level finding the exact-SHA note addresses; without it the attestation could not be matched safely.",
+    "author": "Codex",
+    "time": "2026-09-22T09:17:51.537Z"
   }
 ]
