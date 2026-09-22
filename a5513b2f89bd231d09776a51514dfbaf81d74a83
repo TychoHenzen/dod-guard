@@ -43,5 +43,14 @@
     "reason": "Reviewed: committed decision evaluation needs attestations as explicit input to match exact target notes and preserve fail-closed acceptance. This is an internal commit-gate boundary, not package API.",
     "author": "Codex",
     "time": "2026-09-22T09:11:13.453Z"
+  },
+  {
+    "findingId": "42126b3d153ee66fa04ba31e2939f12ecf4e1f83e1fb5cd153d157cc5f420061",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: staged acknowledgements bind targetIdentity to the exact checked source snapshot; this prevents reuse when the eligible source changes.",
+    "author": "Codex",
+    "time": "2026-09-22T09:14:32.607Z"
   }
 ]
