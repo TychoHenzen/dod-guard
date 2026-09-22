@@ -133,5 +133,14 @@
     "reason": "Staged acknowledgements need baseIdentity paired with targetIdentity so a changed base invalidates old intent; the parser rejects partial provenance and decision logic compares both. This is an internal module contract, not package-root API.",
     "author": "Codex",
     "time": "2026-09-22T17:08:29.845Z"
+  },
+  {
+    "findingId": "e51c287ec82c8a6e5dcffd7e5949c7de634f9e3ae19855fa96331ce3271f9f8e",
+    "fingerprint": "e5a990a217583efbe8983e49442a3eb749f30147b7476831e2cec9d7b74d3373",
+    "baseSha": "aad9190783b3ca304af2628bbe5e59712ba39120",
+    "targetSha": "00be3c1f38f365ef30f15dbd1c5a9f57159fc82a",
+    "reason": "DecisionResult includes findingId in each stale-acknowledgement report so the renderer can identify which finding was bound to old provenance. This is an internal result field, not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T17:11:41.597Z"
   }
 ]
