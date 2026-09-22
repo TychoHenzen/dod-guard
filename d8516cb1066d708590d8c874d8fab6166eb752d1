@@ -88,5 +88,14 @@
     "reason": "The decision core needs staged acknowledgement records to compare finding ID, fingerprint, baseIdentity, and targetIdentity against the current snapshot before accepting them. This is an internal input contract, not package-root API.",
     "author": "Codex",
     "time": "2026-09-22T14:54:41.165Z"
+  },
+  {
+    "findingId": "889edc9ade968182595f077882fd142f4fdd7ca2c89d6c5118e2120e86ed3f4f",
+    "fingerprint": "2e059d7a01b982be9d9228179199952ebad197ae0c54bce416f2654590c008c9",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "d8516cb1066d708590d8c874d8fab6166eb752d1",
+    "reason": "DecisionResult carries the resolved target commit in its input so committed JSON and renderers can identify exactly which immutable tree was checked. The package ships a CLI entry point, not this internal result field as package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T14:58:07.044Z"
   }
 ]
