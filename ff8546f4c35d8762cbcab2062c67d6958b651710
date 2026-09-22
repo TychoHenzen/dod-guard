@@ -70,5 +70,14 @@
     "reason": "targetSha binds the attestation to the immutable commit and note key; the writer verifies the resolved commit and reader verifies the note key matches it. This is an internal persistence field, not package-root API.",
     "author": "Codex",
     "time": "2026-09-22T13:15:17.568Z"
+  },
+  {
+    "findingId": "740e1d486d272b9c86832b82c55f755cc34246c5e6f966790cf5080e2295b404",
+    "fingerprint": "e1574fed080815eb09abaffaa8382ad1ff1d50ea8fd21eaa016d60fa1b83e100",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "ff8546f4c35d8762cbcab2062c67d6958b651710",
+    "reason": "False positive: Snapshot has no tree member. The word tree occurs only in the JSDoc comment at snapshot-types.ts:4 describing committed snapshots; existing issue #527 tracks stripping comments before member extraction. Accepting this finding only for this exact target.",
+    "author": "Codex",
+    "time": "2026-09-22T13:18:28.646Z"
   }
 ]
