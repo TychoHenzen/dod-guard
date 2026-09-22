@@ -70,5 +70,14 @@
     "reason": "Reviewed: author records attribution for an explicit quality decision in the note. It is audit metadata, not an authorization bypass.",
     "author": "Codex",
     "time": "2026-09-22T09:21:05.009Z"
+  },
+  {
+    "findingId": "5a9b4e06aadf9258aab89809a58ce654ce5f7c0038a06c3681ac976d5c98d520",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: targetSha binds the attestation to the immutable commit CI checked; validation also requires the note key and targetSha to match.",
+    "author": "Codex",
+    "time": "2026-09-22T09:24:19.285Z"
   }
 ]
