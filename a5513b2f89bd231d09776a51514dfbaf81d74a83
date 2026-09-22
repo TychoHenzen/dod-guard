@@ -115,5 +115,14 @@
     "reason": "Reviewed: the fingerprint ties a note to the exact source decision that produced the finding, so unrelated snapshots cannot inherit the acknowledgement.",
     "author": "Codex",
     "time": "2026-09-22T09:37:14.953Z"
+  },
+  {
+    "findingId": "be3eb17e6cf7ce4bd6816eb535d5482e10016e50e84463ca41a83d6ada5ed7ba",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: reason preserves why the exact finding was accepted; CI does not treat an absent or mismatched finding as accepted.",
+    "author": "Codex",
+    "time": "2026-09-22T09:40:30.127Z"
   }
 ]
