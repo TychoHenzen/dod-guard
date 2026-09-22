@@ -43,5 +43,14 @@
     "reason": "Staged acknowledgements need targetIdentity to bind the recorded intent to the exact staged snapshot; the parser requires target and base provenance together. This is an internal module contract, not package-root API.",
     "author": "Codex",
     "time": "2026-09-22T13:05:59.752Z"
+  },
+  {
+    "findingId": "4f5f9988febb40d7e8ef47053fa852cae1c5411ce0a100377c5d392e513f25ab",
+    "fingerprint": "e1574fed080815eb09abaffaa8382ad1ff1d50ea8fd21eaa016d60fa1b83e100",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "ff8546f4c35d8762cbcab2062c67d6958b651710",
+    "reason": "Each committed note must identify the specific finding it attests; the decision core uses findingId to accept only the matching current review finding. This is an internal persisted-record field, not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-22T13:09:03.368Z"
   }
 ]
