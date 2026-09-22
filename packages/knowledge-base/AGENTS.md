@@ -4,7 +4,7 @@
 
 `knowledge-base` is an MCP server for reusable, language-independent reference
 knowledge. Markdown files in `knowledge/entries/` ship with the package.
-`.knowledge-index.json` is a derived key and text index.
+The key and text index is built in memory from these files; the server does not write a sidecar index.
 
 ## Storage boundary
 

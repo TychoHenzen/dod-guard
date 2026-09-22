@@ -1,15 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  KnowledgeBaseError,
-  parseKnowledgeDocument,
-  validateUniqueEntries,
-} from "../src/schema.js";
-import { exampleText } from "./test-support.js";
+import { KnowledgeBaseError, parseKnowledgeDocument, validateUniqueEntries } from "../src/schema.js";
+import { shippedEntryText } from "./test-support.js";
 
 test("parses a portable Markdown entry schema", async () => {
   const entry = parseKnowledgeDocument(
-    await exampleText("refactoring.move-method.md"),
+    await shippedEntryText("refactoring.move-method.md"),
     "entries/refactoring.move-method.md",
   );
 
@@ -22,7 +18,7 @@ test("parses a portable Markdown entry schema", async () => {
 
 test("preserves Chapter 1 source provenance and hierarchy", async () => {
   const entry = parseKnowledgeDocument(
-    await exampleText("clean-code.clean-code.md"),
+    await shippedEntryText("clean-code.clean-code.md"),
     "entries/clean-code.clean-code.md",
   );
 
@@ -36,7 +32,7 @@ test("preserves Chapter 1 source provenance and hierarchy", async () => {
 
 test("preserves Chapter 2 source provenance and hierarchy", async () => {
   const entry = parseKnowledgeDocument(
-    await exampleText("clean-code.meaningful-names.md"),
+    await shippedEntryText("clean-code.meaningful-names.md"),
     "entries/clean-code.meaningful-names.md",
   );
 
@@ -49,7 +45,10 @@ test("preserves Chapter 2 source provenance and hierarchy", async () => {
 });
 
 test("preserves Chapter 3 source provenance and hierarchy", async () => {
-  const entry = parseKnowledgeDocument(await exampleText("clean-code.functions.md"), "entries/clean-code.functions.md");
+  const entry = parseKnowledgeDocument(
+    await shippedEntryText("clean-code.functions.md"),
+    "entries/clean-code.functions.md",
+  );
 
   assert.equal(entry.key, "clean-code.functions");
   assert.equal(entry.chapter, "clean-code");
@@ -69,7 +68,7 @@ test("rejects malformed and duplicate hierarchy keys", async () => {
     (error: unknown) => error instanceof KnowledgeBaseError && /stable hierarchy key/.test(error.message),
   );
 
-  const entry = parseKnowledgeDocument(await exampleText("design-patterns.strategy.md"), "entries/strategy.md");
+  const entry = parseKnowledgeDocument(await shippedEntryText("design-patterns.strategy.md"), "entries/strategy.md");
   assert.throws(
     () => validateUniqueEntries([entry, { ...entry, path: "entries/copy.md" }]),
     (error: unknown) => error instanceof KnowledgeBaseError && /duplicate hierarchy key/.test(error.message),
@@ -77,7 +76,10 @@ test("rejects malformed and duplicate hierarchy keys", async () => {
 });
 
 test("rejects a broken related key before it can be indexed", async () => {
-  const entry = parseKnowledgeDocument(await exampleText("ux-ui-design.accessible-dialogs.md"), "entries/dialog.md");
+  const entry = parseKnowledgeDocument(
+    await shippedEntryText("ux-ui-design.accessible-dialogs.md"),
+    "entries/dialog.md",
+  );
   assert.throws(
     () => validateUniqueEntries([{ ...entry, relatedKeys: ["missing.entry"] }]),
     (error: unknown) =>

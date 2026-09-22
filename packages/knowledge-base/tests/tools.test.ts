@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createKnowledgeBaseServer } from "../src/index.js";
-import { cleanCodeSectionKeys, exampleRoot, packageRoot, removeRoot } from "./test-support.js";
+import { cleanCodeSectionKeys, packageRoot, shippedKnowledgeRoot } from "./test-support.js";
 
 function text(result: unknown): string {
   const content = (result as { content?: Array<{ type: string; text?: string }> }).content;
@@ -21,8 +21,7 @@ async function connect(root: string) {
 }
 
 test("exposes the five read-only browse, search, and retrieval tools", async () => {
-  const root = await exampleRoot();
-  const { client, server } = await connect(root);
+  const { client, server } = await connect(shippedKnowledgeRoot);
   try {
     assert.deepEqual((await client.listTools()).tools.map((tool) => tool.name).sort(), [
       "knowledge_get_entry",
@@ -450,11 +449,9 @@ test("exposes the five read-only browse, search, and retrieval tools", async () 
     assert.match(boundaries.guidance.precedence, /Explicit task and project instructions take precedence/);
     assert.match(boundaries.entry.sources[0].label, /PDF pages 144-151/);
     assert.match(boundaries.entry.content, /adapter|wrapper/);
-
   } finally {
     await client.close();
     await server.close();
-    await removeRoot(root);
   }
 });
 

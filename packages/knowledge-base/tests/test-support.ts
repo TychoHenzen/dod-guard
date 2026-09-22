@@ -1,30 +1,10 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const exampleNames = [
-  "clean-code.clean-code.md",
-  "clean-code.boundaries.md",
-  "clean-code.classes.md",
-  "clean-code.meaningful-names.md",
-  "clean-code.functions.md",
-  "clean-code.comments.md",
-  "clean-code.formatting.md",
-  "clean-code.objects-data-structures.md",
-  "clean-code.error-handling.md",
-  "clean-code.unit-tests.md",
-  "clean-code.systems.md",
-  "clean-code.emergence.md",
-  "clean-code.concurrency.md",
-  "clean-code.junit-internals.md",
-  "clean-code.refactoring-serialdate.md",
-  "clean-code.successive-refinement.md",
-  "refactoring.move-method.md",
-  "design-patterns.strategy.md",
-  "ux-ui-design.accessible-dialogs.md",
-];
+export const shippedKnowledgeRoot = join(packageRoot, "knowledge");
 
 export const cleanCodeSectionKeys = [
   "clean-code.boundaries",
@@ -45,15 +25,13 @@ export const cleanCodeSectionKeys = [
   "clean-code.unit-tests",
 ];
 
-export async function exampleText(name: string): Promise<string> {
-  return readFile(join(packageRoot, "knowledge", "entries", name), "utf8");
+export async function shippedEntryText(name: string): Promise<string> {
+  return readFile(join(shippedKnowledgeRoot, "entries", name), "utf8");
 }
 
-export async function exampleRoot(): Promise<string> {
+export async function copyShippedKnowledgeRoot(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "knowledge-base-test-"));
-  const entries = join(root, "entries");
-  await mkdir(entries, { recursive: true });
-  for (const name of exampleNames) await writeFile(join(entries, name), await exampleText(name), "utf8");
+  await cp(shippedKnowledgeRoot, root, { recursive: true });
   return root;
 }
 

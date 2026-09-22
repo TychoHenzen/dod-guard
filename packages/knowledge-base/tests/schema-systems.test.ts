@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseKnowledgeDocument } from "../src/schema.js";
-import { exampleText } from "./test-support.js";
+import { shippedEntryText } from "./test-support.js";
 
 test("preserves Chapter 11 source provenance and hierarchy", async () => {
-  const entry = parseKnowledgeDocument(await exampleText("clean-code.systems.md"), "entries/clean-code.systems.md");
+  const entry = parseKnowledgeDocument(
+    await shippedEntryText("clean-code.systems.md"),
+    "entries/clean-code.systems.md",
+  );
 
   assert.equal(entry.key, "clean-code.systems");
   assert.equal(entry.chapter, "clean-code");

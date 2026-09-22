@@ -16,6 +16,7 @@
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -60,7 +61,9 @@ function attachStdout(child, state) {
 }
 
 async function handshake(bundle, pkgName, expectedVersion, cwd = ROOT) {
-  const child = spawn(process.execPath, [bundle], { cwd, stdio: ["pipe", "pipe", "pipe"] });
+  const env = { ...process.env };
+  delete env.DOD_GUARD_KNOWLEDGE_BASE_DIR;
+  const child = spawn(process.execPath, [bundle], { cwd, env, stdio: ["pipe", "pipe", "pipe"] });
   const state = { waiters: new Map(), junk: [] };
   let stderr = "";
   child.stderr.on("data", (chunk) => {
@@ -113,8 +116,26 @@ async function handshake(bundle, pkgName, expectedVersion, cwd = ROOT) {
       if (listed.error) throw new Error(`tools/list failed: ${JSON.stringify(listed.error)}`);
       tools = listed.result?.tools ?? [];
     }
+    let chapters = [];
+    if (pkgName === "knowledge-base") {
+      send(child, {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: { name: "knowledge_list_chapters", arguments: {} },
+      });
+      const listed = await Promise.race([awaitResponse(state, 3), died, timeout]);
+      if (listed.error || listed.result?.isError) throw new Error("knowledge_list_chapters failed");
+      const chapterText = listed.result?.content?.find((item) => item.type === "text")?.text;
+      if (!chapterText) throw new Error("knowledge_list_chapters returned no text");
+      const payload = JSON.parse(chapterText);
+      chapters = Array.isArray(payload.chapters) ? payload.chapters.map((chapter) => chapter.key) : [];
+      if (chapters.length === 0) throw new Error("knowledge-base bundle listed no shipped chapters");
+      if (!chapters.includes("clean-code"))
+        throw new Error("knowledge-base bundle did not list the clean-code chapter");
+    }
     if (state.junk.length > 0) throw new Error(`non-JSON output on stdout corrupts the MCP stream: ${state.junk[0]}`);
-    return { serverName, version: init.result?.serverInfo?.version, tools: tools.map((t) => t.name) };
+    return { serverName, version: init.result?.serverInfo?.version, tools: tools.map((t) => t.name), chapters };
   } finally {
     child.kill();
   }
@@ -134,7 +155,7 @@ async function main(argv) {
   const expectedVersion = JSON.parse(readFileSync(join(ROOT, "packages", pkgName, "package.json"), "utf8")).version;
   let directResult;
   try {
-    directResult = await handshake(bundle, pkgName, expectedVersion);
+    directResult = await handshake(bundle, pkgName, expectedVersion, pkgName === "knowledge-base" ? tmpdir() : ROOT);
     process.stdout.write(
       `smoke OK — ${directResult.serverName} v${directResult.version} answered initialize and listed ${directResult.tools.length} tools\n`,
     );
@@ -196,7 +217,6 @@ async function main(argv) {
       "knowledge_list_entries",
       "knowledge_search",
       "knowledge_get_entry",
-      "knowledge_save",
     ];
     if (JSON.stringify(directResult.tools) !== JSON.stringify(expectedTools)) {
       process.stdout.write(
@@ -204,7 +224,8 @@ async function main(argv) {
       );
       return 1;
     }
-    process.stdout.write("  knowledge-base tool contract OK: six MCP tools listed\n");
+    process.stdout.write("  knowledge-base tool contract OK: five read-only MCP tools listed\n");
+    process.stdout.write(`  shipped chapters: ${directResult.chapters.join(", ")}\n`);
   }
 
   return 0;
