@@ -61,5 +61,14 @@
     "reason": "Reviewed: findingId identifies which review-level finding the exact-SHA note addresses; without it the attestation could not be matched safely.",
     "author": "Codex",
     "time": "2026-09-22T09:17:51.537Z"
+  },
+  {
+    "findingId": "51ba61572b243e850cb8608bf112747ef780d74468cdf4662ac556ce878a9b62",
+    "fingerprint": "1aca9f0016c73e505efe77386d7aa6b0497abd5c5662d2a5a9b9912459ee17fe",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "a5513b2f89bd231d09776a51514dfbaf81d74a83",
+    "reason": "Reviewed: author records attribution for an explicit quality decision in the note. It is audit metadata, not an authorization bypass.",
+    "author": "Codex",
+    "time": "2026-09-22T09:21:05.009Z"
   }
 ]
