@@ -25,5 +25,14 @@
     "reason": "The 12-type count is a structural cue, not a universal Clean Code target. QualityDecisionAttestation belongs with its parser and writer at the commit-gate note boundary; no responsibility split or more cohesive destination is evidenced. Moving it only to meet the count would game the metric.",
     "author": "Codex",
     "time": "2026-09-22T14:29:09.458Z"
+  },
+  {
+    "findingId": "365993a407cb71bfa7b3e551e66f8b3c234cabad746dac7f0b3869d5ff3650bb",
+    "fingerprint": "2e059d7a01b982be9d9228179199952ebad197ae0c54bce416f2654590c008c9",
+    "baseSha": "f1753fbe2d48fc526135cc7afab2e92d0c875303",
+    "targetSha": "d8516cb1066d708590d8c874d8fab6166eb752d1",
+    "reason": "DecisionCoreInput must carry committed note records so the decision core can compare each finding against the computed fingerprint, base, and target. This is an internal call contract; the package root exposes the CLI, not this field.",
+    "author": "Codex",
+    "time": "2026-09-22T14:33:01.514Z"
   }
 ]
