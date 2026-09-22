@@ -9,6 +9,15 @@ import { parseResponsibilityMap } from "./responsibility-map.js";
 import { readSourceInventory, type Snapshot } from "./snapshot.js";
 import type { DecisionResult } from "./types.js";
 
+export type SnapshotInput = {
+  root: string;
+  snapshot: Snapshot;
+  baseRef: string;
+  targetRef: string;
+  options: CheckOptions;
+  skipStructural?: boolean;
+};
+
 export function affectedPaths(snapshot: Snapshot): string[] {
   return snapshot.changes
     .flatMap((change) => [change.before?.path, change.after?.path])

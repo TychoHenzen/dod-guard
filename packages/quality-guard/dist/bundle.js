@@ -22429,7 +22429,7 @@ function parseCheckArguments(args) {
 }
 
 // src/commit-gate/cli-command-acknowledge.ts
-import { execFileSync as execFileSync7 } from "node:child_process";
+import { execFileSync as execFileSync6 } from "node:child_process";
 import { mkdirSync, readFileSync as readFileSync2, writeFileSync } from "node:fs";
 import * as path12 from "node:path";
 
@@ -22559,9 +22559,6 @@ function appendArchitectureAcknowledgement(source, record3) {
   return `${JSON.stringify(records, null, 2)}
 `;
 }
-
-// src/commit-gate/cli-command-acknowledge-evidence.ts
-import { execFileSync as execFileSync6 } from "node:child_process";
 
 // src/commit-gate/cli-tree.ts
 import { execFileSync as execFileSync3 } from "node:child_process";
@@ -25738,20 +25735,20 @@ function git(root2, args, encoding = "utf8") {
     maxBuffer: GIT_OUTPUT_MAX_BUFFER
   });
 }
-function objectContent(root2, spec) {
-  return git(root2, ["show", spec]);
+function objectContent(root2, spec, runGit = git) {
+  return runGit(root2, ["show", spec]);
 }
 function changePath2(change) {
   return change.after?.path ?? change.before?.path ?? "";
 }
-function changesFrom(root2, values, contentSpec) {
+function changesFrom(values, contentSpec, readContent) {
   const changes = [];
   for (let index = 0; index < values.length; index += 1) {
     const result = changeAt({
       values,
       index,
       contentSpec,
-      readContent: (spec) => objectContent(root2, spec)
+      readContent
     });
     if (result.change) changes.push(result.change);
     index = result.next;
@@ -25760,18 +25757,31 @@ function changesFrom(root2, values, contentSpec) {
     (left, right) => changePath2(left).localeCompare(changePath2(right))
   );
 }
-function changeSnapshot(root2, source) {
-  const output = git(
+function verifiedTargetCommitSha(input) {
+  const expectedSha = input.source.targetCommitSha;
+  if (expectedSha === void 0) return void 0;
+  const actualSha = input.runGit(input.root, ["rev-parse", input.source.target]).trim();
+  if (actualSha !== expectedSha)
+    throw new Error("quality snapshot target does not resolve to its commit");
+  return actualSha;
+}
+function changeSnapshot(root2, source, runGit = git) {
+  const output = runGit(
     root2,
     ["diff", "--name-status", "-z", "-M", source.base, source.target],
     "buffer"
   );
   const values = output.toString("utf8").split("\0").filter(Boolean);
-  const changes = changesFrom(root2, values, source.contentSpec);
+  const changes = changesFrom(
+    values,
+    source.contentSpec,
+    (spec) => objectContent(root2, spec, runGit)
+  );
+  const targetCommitSha = verifiedTargetCommitSha({ root: root2, source, runGit });
   return {
-    baseIdentity: git(root2, ["rev-parse", source.base]).trim(),
-    targetIdentity: sourceSnapshotIdentity(changes),
-    targetCommitSha: source.targetCommitSha,
+    baseIdentity: runGit(root2, ["rev-parse", source.base]).trim(),
+    targetIdentity: targetCommitSha ?? sourceSnapshotIdentity(changes),
+    targetCommitSha,
     changes
   };
 }
@@ -25789,14 +25799,20 @@ function readStagedSnapshot(root2) {
     contentSpec: (filePath, after) => after ? `:${filePath}` : `HEAD:${filePath}`
   });
 }
-function readCommittedSnapshot(root2, commit = "HEAD") {
-  const parent = git(root2, ["rev-parse", `${commit}^`]).trim();
-  return changeSnapshot(root2, {
-    base: parent,
-    target: commit,
-    targetCommitSha: git(root2, ["rev-parse", commit]).trim(),
-    contentSpec: (filePath, after) => `${after ? commit : parent}:${filePath}`
-  });
+function readCommittedSnapshot(root2, commit = "HEAD", runGit = git) {
+  const targetCommitSha = runGit(root2, ["rev-parse", commit]).trim();
+  const parent = runGit(root2, ["rev-parse", `${targetCommitSha}^`]).trim();
+  const snapshot = changeSnapshot(
+    root2,
+    {
+      base: parent,
+      target: targetCommitSha,
+      targetCommitSha,
+      contentSpec: (filePath, after) => `${after ? targetCommitSha : parent}:${filePath}`
+    },
+    runGit
+  );
+  return { ...snapshot, targetCommitSha };
 }
 function sourcePaths(root2, ref) {
   const args = ref === "index" ? ["ls-files", "-z"] : ["ls-tree", "-r", "-z", "--name-only", ref];
@@ -25870,7 +25886,8 @@ function required2(value, location) {
 }
 function commitSha(value, location) {
   const sha = required2(value, location);
-  if (!COMMIT_SHA.test(sha)) throw new Error(`${location} must be a commit SHA`);
+  if (!COMMIT_SHA.test(sha))
+    throw new Error(`${location} must be a commit SHA`);
   return sha;
 }
 function parseRecord2(item, index) {
@@ -25882,12 +25899,26 @@ function parseRecord2(item, index) {
   );
   const unexpected = Object.keys(record3).find((key2) => !allowed.has(key2));
   if (unexpected)
-    throw new Error(`quality decision note[${index}].${unexpected} is not supported`);
+    throw new Error(
+      `quality decision note[${index}].${unexpected} is not supported`
+    );
   return {
-    findingId: required2(record3.findingId, `quality decision note[${index}].findingId`),
-    fingerprint: required2(record3.fingerprint, `quality decision note[${index}].fingerprint`),
-    baseSha: commitSha(record3.baseSha, `quality decision note[${index}].baseSha`),
-    targetSha: commitSha(record3.targetSha, `quality decision note[${index}].targetSha`),
+    findingId: required2(
+      record3.findingId,
+      `quality decision note[${index}].findingId`
+    ),
+    fingerprint: required2(
+      record3.fingerprint,
+      `quality decision note[${index}].fingerprint`
+    ),
+    baseSha: commitSha(
+      record3.baseSha,
+      `quality decision note[${index}].baseSha`
+    ),
+    targetSha: commitSha(
+      record3.targetSha,
+      `quality decision note[${index}].targetSha`
+    ),
     reason: required2(record3.reason, `quality decision note[${index}].reason`),
     author: required2(record3.author, `quality decision note[${index}].author`),
     time: required2(record3.time, `quality decision note[${index}].time`)
@@ -25900,16 +25931,21 @@ function parse3(source) {
   } catch {
     throw new Error("quality decision note must contain valid JSON");
   }
-  if (!Array.isArray(value)) throw new Error("quality decision note must contain an array");
+  if (!Array.isArray(value))
+    throw new Error("quality decision note must contain an array");
   return value.map(parseRecord2);
 }
 function validateTarget(root2, record3) {
   const targetSha = git2(root2, ["rev-parse", record3.targetSha]);
   const baseSha = git2(root2, ["rev-parse", `${record3.targetSha}^`]);
   if (targetSha !== record3.targetSha)
-    throw new Error("quality decision attestation target does not resolve exactly");
+    throw new Error(
+      "quality decision attestation target does not resolve exactly"
+    );
   if (baseSha !== record3.baseSha)
-    throw new Error("quality decision attestation base does not match the target parent");
+    throw new Error(
+      "quality decision attestation base does not match the target parent"
+    );
 }
 function readQualityDecisionNotes(root2, targetSha) {
   const result = spawnSync(
@@ -25923,7 +25959,9 @@ function readQualityDecisionNotes(root2, targetSha) {
   }
   const records = parse3(result.stdout.trim());
   if (records.some((record3) => record3.targetSha !== targetSha))
-    throw new Error("quality decision note target does not match its Git note key");
+    throw new Error(
+      "quality decision note target does not match its Git note key"
+    );
   return records;
 }
 function writeQualityDecisionNote(root2, record3) {
@@ -25936,12 +25974,11 @@ function writeQualityDecisionNote(root2, record3) {
       `--ref=${QUALITY_DECISION_NOTES_REF}`,
       "add",
       "--force",
-      "--message",
-      `${JSON.stringify(records, null, 2)}
-`,
+      "--file=-",
       record3.targetSha
     ],
-    { cwd: root2, stdio: "ignore" }
+    { cwd: root2, input: `${JSON.stringify(records, null, 2)}
+` }
   );
 }
 
@@ -25979,12 +26016,14 @@ function runStagedCheck(root2, options) {
   });
 }
 function runCommittedCheck(root2, commit, options) {
+  const { snapshotReader = readCommittedSnapshot, ...checkOptions } = options;
+  const snapshot = snapshotReader(root2, commit);
   return decisionForSnapshot({
     root: root2,
-    snapshot: readCommittedSnapshot(root2, commit),
-    baseRef: `${commit}^`,
-    targetRef: commit,
-    options,
+    snapshot,
+    baseRef: snapshot.baseIdentity,
+    targetRef: snapshot.targetCommitSha,
+    options: checkOptions,
     skipStructural: process.env.QUALITY_GUARD_SKIP_STRUCTURAL === "1"
   });
 }
@@ -26014,16 +26053,16 @@ function findStagedAcknowledgement(decision, options) {
   };
 }
 function committedDecision(root2, committedRef2) {
-  const targetSha = execFileSync6("git", ["rev-parse", committedRef2], {
-    cwd: root2,
-    encoding: "utf8"
-  }).trim();
+  const decision = runCommittedCheck(root2, committedRef2, {
+    json: false,
+    intent: "change"
+  });
+  const targetSha = decision.input.targetCommitSha;
+  if (!targetSha)
+    throw new Error("committed snapshot did not resolve to a commit SHA");
   return {
     targetSha,
-    decision: runCommittedCheck(root2, targetSha, {
-      json: false,
-      intent: "change"
-    })
+    decision
   };
 }
 function runCommittedAcknowledgement(root2, options) {
@@ -26072,7 +26111,7 @@ function writeAcknowledgement(root2, options, match) {
     }),
     "utf8"
   );
-  execFileSync7("git", ["add", "--", DECISION_RECORD_PATH], {
+  execFileSync6("git", ["add", "--", DECISION_RECORD_PATH], {
     cwd: root2,
     stdio: "ignore"
   });

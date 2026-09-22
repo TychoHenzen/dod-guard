@@ -17,8 +17,12 @@ function git(
   });
 }
 
-function objectContent(root: string, spec: string): string {
-  return git(root, ["show", spec]) as string;
+function objectContent(
+  root: string,
+  spec: string,
+  runGit: typeof git = git,
+): string {
+  return runGit(root, ["show", spec]) as string;
 }
 
 function changePath(change: Snapshot["changes"][number]): string {
@@ -26,9 +30,9 @@ function changePath(change: Snapshot["changes"][number]): string {
 }
 
 function changesFrom(
-  root: string,
   values: string[],
   contentSpec: (filePath: string, after: boolean) => string,
+  readContent: (spec: string) => string,
 ): Snapshot["changes"] {
   const changes: Snapshot["changes"] = [];
   for (let index = 0; index < values.length; index += 1) {
@@ -36,7 +40,7 @@ function changesFrom(
       values,
       index,
       contentSpec,
-      readContent: (spec) => objectContent(root, spec),
+      readContent,
     });
     if (result.change) changes.push(result.change);
     index = result.next;
@@ -44,6 +48,21 @@ function changesFrom(
   return changes.sort((left, right) =>
     changePath(left).localeCompare(changePath(right)),
   );
+}
+
+function verifiedTargetCommitSha(input: {
+  root: string;
+  source: { target: string; targetCommitSha?: string };
+  runGit: typeof git;
+}): string | undefined {
+  const expectedSha = input.source.targetCommitSha;
+  if (expectedSha === undefined) return undefined;
+  const actualSha = (
+    input.runGit(input.root, ["rev-parse", input.source.target]) as string
+  ).trim();
+  if (actualSha !== expectedSha)
+    throw new Error("quality snapshot target does not resolve to its commit");
+  return actualSha;
 }
 
 export function changeSnapshot(
@@ -54,18 +73,22 @@ export function changeSnapshot(
     targetCommitSha?: string;
     contentSpec(path: string, after: boolean): string;
   },
+  runGit: typeof git = git,
 ): Snapshot {
-  const output = git(
+  const output = runGit(
     root,
     ["diff", "--name-status", "-z", "-M", source.base, source.target],
     "buffer",
   ) as Buffer;
   const values = output.toString("utf8").split("\0").filter(Boolean);
-  const changes = changesFrom(root, values, source.contentSpec);
+  const changes = changesFrom(values, source.contentSpec, (spec) =>
+    objectContent(root, spec, runGit),
+  );
+  const targetCommitSha = verifiedTargetCommitSha({ root, source, runGit });
   return {
-    baseIdentity: (git(root, ["rev-parse", source.base]) as string).trim(),
-    targetIdentity: sourceSnapshotIdentity(changes),
-    targetCommitSha: source.targetCommitSha,
+    baseIdentity: (runGit(root, ["rev-parse", source.base]) as string).trim(),
+    targetIdentity: targetCommitSha ?? sourceSnapshotIdentity(changes),
+    targetCommitSha,
     changes,
   };
 }

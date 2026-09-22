@@ -21,14 +21,29 @@ export function readStagedSnapshot(root: string): Snapshot {
   });
 }
 
-export function readCommittedSnapshot(root: string, commit = "HEAD"): Snapshot {
-  const parent = (git(root, ["rev-parse", `${commit}^`]) as string).trim();
-  return changeSnapshot(root, {
-    base: parent,
-    target: commit,
-    targetCommitSha: (git(root, ["rev-parse", commit]) as string).trim(),
-    contentSpec: (filePath, after) => `${after ? commit : parent}:${filePath}`,
-  });
+export function readCommittedSnapshot(
+  root: string,
+  commit = "HEAD",
+  runGit: typeof git = git,
+): Snapshot & { targetCommitSha: string } {
+  const targetCommitSha = (
+    runGit(root, ["rev-parse", commit]) as string
+  ).trim();
+  const parent = (
+    runGit(root, ["rev-parse", `${targetCommitSha}^`]) as string
+  ).trim();
+  const snapshot = changeSnapshot(
+    root,
+    {
+      base: parent,
+      target: targetCommitSha,
+      targetCommitSha,
+      contentSpec: (filePath, after) =>
+        `${after ? targetCommitSha : parent}:${filePath}`,
+    },
+    runGit,
+  );
+  return { ...snapshot, targetCommitSha };
 }
 
 function sourcePaths(root: string, ref: string | "index"): string[] {

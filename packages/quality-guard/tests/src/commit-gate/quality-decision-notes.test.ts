@@ -22,14 +22,20 @@ function attestation(root: string, targetSha: string) {
 test("does not reuse an exact-target decision note for a distinct commit", () => {
   const root = fixture();
   try {
-    fs.writeFileSync(`${root}/packages/fixture/src/same.ts`, "export const same = 1;\n");
+    fs.writeFileSync(
+      `${root}/packages/fixture/src/same.ts`,
+      "export const same = 1;\n",
+    );
     git(root, ["add", "."]);
     git(root, ["commit", "-m", "first identical source change"]);
     const first = git(root, ["rev-parse", "HEAD"]);
     writeQualityDecisionNote(root, attestation(root, first));
 
     git(root, ["checkout", "-b", "duplicate", "HEAD^"]);
-    fs.writeFileSync(`${root}/packages/fixture/src/same.ts`, "export const same = 1;\n");
+    fs.writeFileSync(
+      `${root}/packages/fixture/src/same.ts`,
+      "export const same = 1;\n",
+    );
     git(root, ["add", "."]);
     git(root, ["commit", "-m", "second identical source change"]);
     const second = git(root, ["rev-parse", "HEAD"]);
@@ -44,7 +50,10 @@ test("does not reuse an exact-target decision note for a distinct commit", () =>
 test("rejects an attestation whose recorded base is not the target parent", () => {
   const root = fixture();
   try {
-    fs.writeFileSync(`${root}/packages/fixture/src/change.ts`, "export const change = 1;\n");
+    fs.writeFileSync(
+      `${root}/packages/fixture/src/change.ts`,
+      "export const change = 1;\n",
+    );
     git(root, ["add", "."]);
     git(root, ["commit", "-m", "source change"]);
     const targetSha = git(root, ["rev-parse", "HEAD"]);
@@ -55,6 +64,42 @@ test("rejects an attestation whose recorded base is not the target parent", () =
           baseSha: targetSha,
         }),
       /base does not match/,
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("preserves large exact-target note collections", () => {
+  const root = fixture();
+  try {
+    fs.writeFileSync(
+      `${root}/packages/fixture/src/change.ts`,
+      "export const change = 1;\n",
+    );
+    git(root, ["add", "."]);
+    git(root, ["commit", "-m", "source change"]);
+    const targetSha = git(root, ["rev-parse", "HEAD"]);
+    const findingCount = 18;
+    const reasonPaddingLength = 350;
+    const findingIds = Array.from(
+      { length: findingCount },
+      (_, index) => `finding-${index}`,
+    );
+
+    for (const findingId of findingIds) {
+      writeQualityDecisionNote(root, {
+        ...attestation(root, targetSha),
+        findingId,
+        reason: `reviewed ${"x".repeat(reasonPaddingLength)}`,
+      });
+    }
+
+    assert.deepEqual(
+      readQualityDecisionNotes(root, targetSha).map(
+        (record) => record.findingId,
+      ),
+      findingIds,
     );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

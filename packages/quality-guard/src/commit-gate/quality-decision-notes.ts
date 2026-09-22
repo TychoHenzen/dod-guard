@@ -26,7 +26,8 @@ function required(value: unknown, location: string): string {
 
 function commitSha(value: unknown, location: string): string {
   const sha = required(value, location);
-  if (!COMMIT_SHA.test(sha)) throw new Error(`${location} must be a commit SHA`);
+  if (!COMMIT_SHA.test(sha))
+    throw new Error(`${location} must be a commit SHA`);
   return sha;
 }
 
@@ -39,12 +40,26 @@ function parseRecord(item: unknown, index: number): QualityDecisionAttestation {
   );
   const unexpected = Object.keys(record).find((key) => !allowed.has(key));
   if (unexpected)
-    throw new Error(`quality decision note[${index}].${unexpected} is not supported`);
+    throw new Error(
+      `quality decision note[${index}].${unexpected} is not supported`,
+    );
   return {
-    findingId: required(record.findingId, `quality decision note[${index}].findingId`),
-    fingerprint: required(record.fingerprint, `quality decision note[${index}].fingerprint`),
-    baseSha: commitSha(record.baseSha, `quality decision note[${index}].baseSha`),
-    targetSha: commitSha(record.targetSha, `quality decision note[${index}].targetSha`),
+    findingId: required(
+      record.findingId,
+      `quality decision note[${index}].findingId`,
+    ),
+    fingerprint: required(
+      record.fingerprint,
+      `quality decision note[${index}].fingerprint`,
+    ),
+    baseSha: commitSha(
+      record.baseSha,
+      `quality decision note[${index}].baseSha`,
+    ),
+    targetSha: commitSha(
+      record.targetSha,
+      `quality decision note[${index}].targetSha`,
+    ),
     reason: required(record.reason, `quality decision note[${index}].reason`),
     author: required(record.author, `quality decision note[${index}].author`),
     time: required(record.time, `quality decision note[${index}].time`),
@@ -58,7 +73,8 @@ function parse(source: string): QualityDecisionAttestation[] {
   } catch {
     throw new Error("quality decision note must contain valid JSON");
   }
-  if (!Array.isArray(value)) throw new Error("quality decision note must contain an array");
+  if (!Array.isArray(value))
+    throw new Error("quality decision note must contain an array");
   return value.map(parseRecord);
 }
 
@@ -66,9 +82,13 @@ function validateTarget(root: string, record: QualityDecisionAttestation) {
   const targetSha = git(root, ["rev-parse", record.targetSha]);
   const baseSha = git(root, ["rev-parse", `${record.targetSha}^`]);
   if (targetSha !== record.targetSha)
-    throw new Error("quality decision attestation target does not resolve exactly");
+    throw new Error(
+      "quality decision attestation target does not resolve exactly",
+    );
   if (baseSha !== record.baseSha)
-    throw new Error("quality decision attestation base does not match the target parent");
+    throw new Error(
+      "quality decision attestation base does not match the target parent",
+    );
 }
 
 export function readQualityDecisionNotes(
@@ -86,7 +106,9 @@ export function readQualityDecisionNotes(
   }
   const records = parse(result.stdout.trim());
   if (records.some((record) => record.targetSha !== targetSha))
-    throw new Error("quality decision note target does not match its Git note key");
+    throw new Error(
+      "quality decision note target does not match its Git note key",
+    );
   return records;
 }
 
@@ -103,10 +125,9 @@ export function writeQualityDecisionNote(
       `--ref=${QUALITY_DECISION_NOTES_REF}`,
       "add",
       "--force",
-      "--message",
-      `${JSON.stringify(records, null, 2)}\n`,
+      "--file=-",
       record.targetSha,
     ],
-    { cwd: root, stdio: "ignore" },
+    { cwd: root, input: `${JSON.stringify(records, null, 2)}\n` },
   );
 }

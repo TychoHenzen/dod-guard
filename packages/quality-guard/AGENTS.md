@@ -97,7 +97,12 @@ after the structural ratchet. It uses the same decision core against `HEAD`
 and its first parent. A local Git hook may run the staged command for earlier
 feedback, but CI does not depend on that hook having run.
 
-Committed decision JSON reports the immutable checked target as `input.targetCommitSha`, separate from `targetIdentity`, which is the source fingerprint.
+Staged decision JSON uses a content-derived `input.targetIdentity` because the
+index has no immutable commit SHA; pending acknowledgements authorize staged
+checks only. Committed decisions resolve the checked target and use its exact
+SHA for both `input.targetIdentity` and `input.targetCommitSha`. Committed
+replay requires an exact-SHA note attestation rather than reusing a staged
+pending acknowledgement.
 
 CI runs the structural ratchet before the committed decision and passes
 `--skip-structural` to the latter. This avoids scanning the same committed tree

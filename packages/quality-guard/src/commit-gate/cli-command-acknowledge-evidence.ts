@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import type { AcknowledgeOptions } from "./acknowledge-options.js";
 import { runCommittedCheck } from "./cli-decision.js";
 import { acknowledgeUsage } from "./cli-usage.js";
@@ -38,16 +37,16 @@ export function findStagedAcknowledgement(
 }
 
 function committedDecision(root: string, committedRef: string) {
-  const targetSha = execFileSync("git", ["rev-parse", committedRef], {
-    cwd: root,
-    encoding: "utf8",
-  }).trim();
+  const decision = runCommittedCheck(root, committedRef, {
+    json: false,
+    intent: "change",
+  });
+  const targetSha = decision.input.targetCommitSha;
+  if (!targetSha)
+    throw new Error("committed snapshot did not resolve to a commit SHA");
   return {
     targetSha,
-    decision: runCommittedCheck(root, targetSha, {
-      json: false,
-      intent: "change",
-    }),
+    decision,
   };
 }
 
