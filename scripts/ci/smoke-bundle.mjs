@@ -15,8 +15,9 @@
 
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -169,7 +170,7 @@ async function main(argv) {
   if (existsSync(symlink)) {
     try {
       await handshake(symlink, pkgName, expectedVersion);
-      process.stdout.write(`  symlink path OK\n`);
+      process.stdout.write("  symlink path OK\n");
     } catch (err) {
       process.stdout.write(`smoke FAILED for ${pkgName} via symlink path\n  ${err.message}\n`);
       return 1;
