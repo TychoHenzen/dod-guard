@@ -7694,15 +7694,15 @@ var makeIssue = (params) => {
       message: issueData.message
     };
   }
-  let errorMessage = "";
+  let errorMessage2 = "";
   const maps = errorMaps.filter((m) => !!m).slice().reverse();
   for (const map of maps) {
-    errorMessage = map(fullIssue, { data, defaultError: errorMessage }).message;
+    errorMessage2 = map(fullIssue, { data, defaultError: errorMessage2 }).message;
   }
   return {
     ...issueData,
     path: fullPath,
-    message: errorMessage
+    message: errorMessage2
   };
 };
 var EMPTY_PATH = [];
@@ -17540,19 +17540,19 @@ var getRefs = (options) => {
 };
 
 // ../../node_modules/zod-to-json-schema/dist/esm/errorMessages.js
-function addErrorMessage(res, key2, errorMessage, refs) {
+function addErrorMessage(res, key2, errorMessage2, refs) {
   if (!refs?.errorMessages)
     return;
-  if (errorMessage) {
+  if (errorMessage2) {
     res.errorMessage = {
       ...res.errorMessage,
-      [key2]: errorMessage
+      [key2]: errorMessage2
     };
   }
 }
-function setResponseValueAndErrors(res, key2, value, errorMessage, refs) {
+function setResponseValueAndErrors(res, key2, value, errorMessage2, refs) {
   res[key2] = value;
-  addErrorMessage(res, key2, errorMessage, refs);
+  addErrorMessage(res, key2, errorMessage2, refs);
 }
 
 // ../../node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
@@ -18863,8 +18863,8 @@ var Protocol = class {
                   if (queuedMessage.type === "response") {
                     resolver(message);
                   } else {
-                    const errorMessage = message;
-                    const error2 = new McpError(errorMessage.error.code, errorMessage.error.message, errorMessage.error.data);
+                    const errorMessage2 = message;
+                    const error2 = new McpError(errorMessage2.error.code, errorMessage2.error.message, errorMessage2.error.data);
                     resolver(error2);
                   }
                 } else {
@@ -20155,23 +20155,23 @@ var Server = class extends Protocol {
       const wrappedHandler = async (request, extra) => {
         const validatedRequest = safeParse2(CallToolRequestSchema, request);
         if (!validatedRequest.success) {
-          const errorMessage = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage}`);
+          const errorMessage2 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage2}`);
         }
         const { params } = validatedRequest.data;
         const result = await Promise.resolve(handler(request, extra));
         if (params.task) {
           const taskValidationResult = safeParse2(CreateTaskResultSchema, result);
           if (!taskValidationResult.success) {
-            const errorMessage = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
-            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage}`);
+            const errorMessage2 = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
+            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage2}`);
           }
           return taskValidationResult.data;
         }
         const validationResult = safeParse2(CallToolResultSchema, result);
         if (!validationResult.success) {
-          const errorMessage = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call result: ${errorMessage}`);
+          const errorMessage2 = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call result: ${errorMessage2}`);
         }
         return validationResult.data;
       };
@@ -20665,12 +20665,12 @@ var McpServer = class {
    * @param errorMessage - The error message.
    * @returns The tool error result.
    */
-  createToolError(errorMessage) {
+  createToolError(errorMessage2) {
     return {
       content: [
         {
           type: "text",
-          text: errorMessage
+          text: errorMessage2
         }
       ],
       isError: true
@@ -20688,8 +20688,8 @@ var McpServer = class {
     const parseResult = await safeParseAsync2(schemaToParse, args);
     if (!parseResult.success) {
       const error2 = "error" in parseResult ? parseResult.error : "Unknown error";
-      const errorMessage = getParseErrorMessage(error2);
-      throw new McpError(ErrorCode.InvalidParams, `Input validation error: Invalid arguments for tool ${toolName}: ${errorMessage}`);
+      const errorMessage2 = getParseErrorMessage(error2);
+      throw new McpError(ErrorCode.InvalidParams, `Input validation error: Invalid arguments for tool ${toolName}: ${errorMessage2}`);
     }
     return parseResult.data;
   }
@@ -20713,8 +20713,8 @@ var McpServer = class {
     const parseResult = await safeParseAsync2(outputObj, result.structuredContent);
     if (!parseResult.success) {
       const error2 = "error" in parseResult ? parseResult.error : "Unknown error";
-      const errorMessage = getParseErrorMessage(error2);
-      throw new McpError(ErrorCode.InvalidParams, `Output validation error: Invalid structured content for tool ${toolName}: ${errorMessage}`);
+      const errorMessage2 = getParseErrorMessage(error2);
+      throw new McpError(ErrorCode.InvalidParams, `Output validation error: Invalid structured content for tool ${toolName}: ${errorMessage2}`);
     }
   }
   /**
@@ -20926,8 +20926,8 @@ var McpServer = class {
         const parseResult = await safeParseAsync2(argsObj, request.params.arguments);
         if (!parseResult.success) {
           const error2 = "error" in parseResult ? parseResult.error : "Unknown error";
-          const errorMessage = getParseErrorMessage(error2);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request.params.name}: ${errorMessage}`);
+          const errorMessage2 = getParseErrorMessage(error2);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request.params.name}: ${errorMessage2}`);
         }
         const args = parseResult.data;
         const cb = prompt.callback;
@@ -22303,15 +22303,26 @@ function applyAcknowledgement(name, value, state) {
   if (name === "--committed") state.committedRef = value;
 }
 function validAcknowledgement(state) {
-  if (!state.findingId?.trim())
-    return acknowledgeUsage("--finding requires a finding identifier");
-  if (!state.reason?.trim())
-    return acknowledgeUsage("--reason requires a non-empty reason");
-  if (!state.author?.trim())
-    return acknowledgeUsage("--author requires a non-empty author");
+  const missing = [
+    {
+      value: state.findingId,
+      message: "--finding requires a finding identifier"
+    },
+    { value: state.reason, message: "--reason requires a non-empty reason" },
+    { value: state.author, message: "--author requires a non-empty author" }
+  ].find(({ value }) => !value?.trim());
+  if (missing) return acknowledgeUsage(missing.message);
   if (state.committedRef !== void 0 && !state.committedRef.trim())
     return acknowledgeUsage("--committed requires a Git ref");
   return void 0;
+}
+function acknowledgementOptions(state) {
+  return {
+    findingId: state.findingId.trim(),
+    reason: state.reason.trim(),
+    author: state.author.trim(),
+    ...state.committedRef ? { committedRef: state.committedRef.trim() } : {}
+  };
 }
 function parseAcknowledgeArguments(args) {
   if (args[0] !== "acknowledge") return acknowledgeUsage();
@@ -22325,12 +22336,7 @@ function parseAcknowledgeArguments(args) {
   }
   const error2 = validAcknowledgement(state);
   if (error2) return error2;
-  return {
-    findingId: state.findingId.trim(),
-    reason: state.reason.trim(),
-    author: state.author.trim(),
-    ...state.committedRef ? { committedRef: state.committedRef.trim() } : {}
-  };
+  return acknowledgementOptions(state);
 }
 
 // src/commit-gate/cli-check-arguments.ts
@@ -22423,7 +22429,7 @@ function parseCheckArguments(args) {
 }
 
 // src/commit-gate/cli-command-acknowledge.ts
-import { execFileSync as execFileSync6 } from "node:child_process";
+import { execFileSync as execFileSync7 } from "node:child_process";
 import { mkdirSync, readFileSync as readFileSync2, writeFileSync } from "node:fs";
 import * as path12 from "node:path";
 
@@ -22553,6 +22559,9 @@ function appendArchitectureAcknowledgement(source, record3) {
   return `${JSON.stringify(records, null, 2)}
 `;
 }
+
+// src/commit-gate/cli-command-acknowledge-evidence.ts
+import { execFileSync as execFileSync6 } from "node:child_process";
 
 // src/commit-gate/cli-tree.ts
 import { execFileSync as execFileSync3 } from "node:child_process";
@@ -22970,6 +22979,52 @@ function parseQualityConfig(source) {
   };
 }
 
+// src/commit-gate/decision-core-acknowledgements.ts
+function matchesPendingIntent(record3, snapshot, fingerprint) {
+  return record3.fingerprint === fingerprint && record3.baseIdentity === snapshot.baseIdentity && record3.targetIdentity === snapshot.targetIdentity;
+}
+function matchesAttestation(record3, snapshot, fingerprint) {
+  return record3.fingerprint === fingerprint && record3.baseSha === snapshot.baseIdentity && record3.targetSha === snapshot.targetCommitSha;
+}
+function acceptedFindings(input, fingerprint) {
+  const {
+    pendingAcknowledgementRecords = [],
+    attestations = [],
+    acknowledgements = []
+  } = input;
+  const pending = pendingAcknowledgementRecords.filter(
+    (record3) => matchesPendingIntent(record3, input.snapshot, fingerprint)
+  );
+  const current = attestations.filter(
+    (record3) => matchesAttestation(record3, input.snapshot, fingerprint)
+  );
+  return /* @__PURE__ */ new Set([
+    ...acknowledgements,
+    ...pending.map((record3) => record3.findingId),
+    ...current.map((record3) => record3.findingId)
+  ]);
+}
+function staleAcknowledgements(input, fingerprint, findings) {
+  const currentFindingIds = new Set(findings.map(({ id }) => id));
+  const pending = (input.pendingAcknowledgementRecords ?? []).filter(
+    (record3) => currentFindingIds.has(record3.findingId) && !matchesPendingIntent(record3, input.snapshot, fingerprint)
+  ).map(({ findingId, baseIdentity, targetIdentity }) => ({
+    findingId,
+    baseIdentity,
+    targetIdentity
+  }));
+  const attestations = (input.attestations ?? []).filter(
+    (record3) => currentFindingIds.has(record3.findingId) && !matchesAttestation(record3, input.snapshot, fingerprint)
+  ).map(({ findingId, baseSha, targetSha }) => ({
+    findingId,
+    baseIdentity: baseSha,
+    targetIdentity: targetSha
+  }));
+  return [...pending, ...attestations].sort(
+    (left, right) => left.findingId.localeCompare(right.findingId)
+  );
+}
+
 // src/commit-gate/decision-core-summary.ts
 var QUALITY_CONFIGURATION_PATH = ".quality-guard.json";
 function changedPaths(snapshot) {
@@ -22993,6 +23048,7 @@ function summaryFor(snapshot, changedSourcePaths2) {
   return {
     baseIdentity: snapshot.baseIdentity,
     targetIdentity: snapshot.targetIdentity,
+    targetCommitSha: snapshot.targetCommitSha,
     changedSourcePaths: changedSourcePaths2
   };
 }
@@ -24257,25 +24313,6 @@ function evaluateResponsibilityMap(map, input) {
 }
 
 // src/commit-gate/decision-core.ts
-function acceptedFindings(input, fingerprint) {
-  const pending = (input.pendingAcknowledgementRecords ?? []).filter(
-    (record3) => matchesPendingIntent(record3, input.snapshot, fingerprint)
-  );
-  const current = (input.attestations ?? []).filter(
-    (record3) => matchesAttestation(record3, input.snapshot, fingerprint)
-  );
-  return /* @__PURE__ */ new Set([
-    ...input.acknowledgements ?? [],
-    ...pending.map((record3) => record3.findingId),
-    ...current.map((record3) => record3.findingId)
-  ]);
-}
-function matchesPendingIntent(record3, snapshot, fingerprint) {
-  return record3.fingerprint === fingerprint && record3.baseIdentity === snapshot.baseIdentity && record3.targetIdentity === snapshot.targetIdentity;
-}
-function matchesAttestation(record3, snapshot, fingerprint) {
-  return record3.fingerprint === fingerprint && record3.baseSha === snapshot.baseIdentity && record3.targetSha === snapshot.targetCommitSha;
-}
 function progressFor(input) {
   if (!input.refactorMap) return void 0;
   return evaluateResponsibilityMap(input.refactorMap, {
@@ -24289,21 +24326,6 @@ function analysisErrors(input) {
     ...input.scanner.errors ?? [],
     ...input.analysisErrors ?? []
   ].sort((left, right) => left.localeCompare(right));
-}
-function staleAcknowledgements(input, fingerprint) {
-  const pending = (input.pendingAcknowledgementRecords ?? []).filter((record3) => !matchesPendingIntent(record3, input.snapshot, fingerprint)).map(({ findingId, baseIdentity, targetIdentity }) => ({
-    findingId,
-    baseIdentity,
-    targetIdentity
-  }));
-  const attestations = (input.attestations ?? []).filter((record3) => !matchesAttestation(record3, input.snapshot, fingerprint)).map(({ findingId, baseSha, targetSha }) => ({
-    findingId,
-    baseIdentity: baseSha,
-    targetIdentity: targetSha
-  }));
-  return [...pending, ...attestations].sort(
-    (left, right) => left.findingId.localeCompare(right.findingId)
-  );
 }
 function verdict(errors, findings, accepted) {
   if (errors.length > 0 || findings.some((finding) => finding.severity === "fail"))
@@ -24330,7 +24352,7 @@ function decideQuality(input) {
     findings,
     errors,
     input: summary,
-    staleAcknowledgements: staleAcknowledgements(input, fingerprint),
+    staleAcknowledgements: staleAcknowledgements(input, fingerprint, findings),
     refactorProgress
   };
 }
@@ -25967,24 +25989,20 @@ function runCommittedCheck(root2, commit, options) {
   });
 }
 
-// src/commit-gate/cli-command-acknowledge.ts
-function acknowledgementSource(recordPath) {
-  try {
-    return readFileSync2(recordPath, "utf8");
-  } catch {
-    return "[]";
-  }
-}
-function findAcknowledgement(decision, options) {
-  const finding = decision.findings.find(
-    (item) => item.id === options.findingId
-  );
+// src/commit-gate/cli-command-acknowledge-evidence.ts
+function currentReviewFinding(findings, findingId) {
+  const finding = findings.find((item) => item.id === findingId);
   if (!finding)
-    return acknowledgeUsage(`unknown or stale finding ${options.findingId}`);
+    return acknowledgeUsage(`unknown or stale finding ${findingId}`);
   if (finding.severity !== "review")
     return acknowledgeUsage(
-      `finding ${options.findingId} is deterministic and cannot be acknowledged`
+      `finding ${findingId} is deterministic and cannot be acknowledged`
     );
+  return finding;
+}
+function findStagedAcknowledgement(decision, options) {
+  const finding = currentReviewFinding(decision.findings, options.findingId);
+  if ("exitCode" in finding) return finding;
   if (!decision.fingerprint)
     return acknowledgeUsage(
       "no current staged source fingerprint is available"
@@ -25995,40 +26013,27 @@ function findAcknowledgement(decision, options) {
     targetIdentity: decision.input.targetIdentity
   };
 }
-function writeAcknowledgement(root2, options, match) {
-  const recordPath = path12.join(root2, DECISION_RECORD_PATH);
-  mkdirSync(path12.dirname(recordPath), { recursive: true });
-  writeFileSync(
-    recordPath,
-    appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
-      ...options,
-      ...match,
-      time: (/* @__PURE__ */ new Date()).toISOString()
-    }),
-    "utf8"
-  );
-  execFileSync6("git", ["add", "--", DECISION_RECORD_PATH], {
-    cwd: root2,
-    stdio: "ignore"
-  });
-  return {
-    exitCode: 0,
-    output: `Acknowledged review finding ${options.findingId}`
-  };
-}
-function committedAcknowledgement(root2, options) {
-  const targetSha = execFileSync6("git", ["rev-parse", options.committedRef], {
+function committedDecision(root2, committedRef2) {
+  const targetSha = execFileSync6("git", ["rev-parse", committedRef2], {
     cwd: root2,
     encoding: "utf8"
   }).trim();
-  const decision = runCommittedCheck(root2, targetSha, {
-    json: false,
-    intent: "change"
-  });
-  const finding = currentCommittedReviewFinding(decision, options.findingId);
+  return {
+    targetSha,
+    decision: runCommittedCheck(root2, targetSha, {
+      json: false,
+      intent: "change"
+    })
+  };
+}
+function runCommittedAcknowledgement(root2, options) {
+  const { targetSha, decision } = committedDecision(root2, options.committedRef);
+  const finding = currentReviewFinding(decision.findings, options.findingId);
   if ("exitCode" in finding) return finding;
-  if (!decision.fingerprint || !decision.input.baseIdentity)
-    return acknowledgeUsage("no current committed source fingerprint is available");
+  if (!(decision.fingerprint && decision.input.baseIdentity))
+    return acknowledgeUsage(
+      "no current committed source fingerprint is available"
+    );
   writeQualityDecisionNote(root2, {
     findingId: finding.id,
     fingerprint: decision.fingerprint,
@@ -26043,35 +26048,56 @@ function committedAcknowledgement(root2, options) {
     output: `Attested review finding ${finding.id} for ${targetSha} in refs/notes/quality-decisions; run \`git push origin refs/notes/quality-decisions\` before CI replay.`
   };
 }
-function currentCommittedReviewFinding(decision, findingId) {
-  const finding = decision.findings.find((item) => item.id === findingId);
-  if (!finding)
-    return acknowledgeUsage(`unknown or stale finding ${findingId}`);
-  if (finding.severity !== "review")
-    return acknowledgeUsage(
-      `finding ${findingId} is deterministic and cannot be acknowledged`
-    );
-  return finding;
+
+// src/commit-gate/cli-command-acknowledge.ts
+function errorMessage(error2) {
+  return error2 instanceof Error ? error2.message : String(error2);
+}
+function acknowledgementSource(recordPath) {
+  try {
+    return readFileSync2(recordPath, "utf8");
+  } catch {
+    return "[]";
+  }
+}
+function writeAcknowledgement(root2, options, match) {
+  const recordPath = path12.join(root2, DECISION_RECORD_PATH);
+  mkdirSync(path12.dirname(recordPath), { recursive: true });
+  writeFileSync(
+    recordPath,
+    appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
+      ...options,
+      ...match,
+      time: (/* @__PURE__ */ new Date()).toISOString()
+    }),
+    "utf8"
+  );
+  execFileSync7("git", ["add", "--", DECISION_RECORD_PATH], {
+    cwd: root2,
+    stdio: "ignore"
+  });
+  return {
+    exitCode: 0,
+    output: `Acknowledged review finding ${options.findingId}`
+  };
 }
 function runAcknowledgeCommand(args, root2) {
   const options = parseAcknowledgeArguments(args);
   if ("exitCode" in options) return options;
   try {
     if (options.committedRef)
-      return committedAcknowledgement(root2, {
+      return runCommittedAcknowledgement(root2, {
         ...options,
         committedRef: options.committedRef
       });
-    const match = findAcknowledgement(
+    const match = findStagedAcknowledgement(
       runStagedCheck(root2, { json: false, intent: "change" }),
       options
     );
     if ("exitCode" in match) return match;
     return writeAcknowledgement(root2, options, match);
   } catch (error2) {
-    return acknowledgeUsage(
-      error2 instanceof Error ? error2.message : String(error2)
-    );
+    return acknowledgeUsage(errorMessage(error2));
   }
 }
 

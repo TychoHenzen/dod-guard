@@ -54,17 +54,41 @@ export function stagedReview(root: string) {
   return { decision, finding };
 }
 
-export function acknowledge(root: string, findingId: string) {
-  return runAcknowledgeCommand(
-    [
-      "acknowledge",
-      "--finding",
-      findingId,
-      "--reason",
-      "accepted test finding",
-      "--author",
-      "tester",
-    ],
-    root,
-  );
+export function failingDecision(decision: ReturnType<typeof runStagedCheck>) {
+  return {
+    ...decision,
+    findings: decision.findings.map((item) => ({
+      ...item,
+      severity: "fail" as const,
+    })),
+  };
+}
+
+export function acknowledge(
+  root: string,
+  findingId: string,
+  options: { reason?: string; committedRef?: string } = {},
+) {
+  const args = [
+    "acknowledge",
+    "--finding",
+    findingId,
+    "--reason",
+    options.reason ?? "accepted test finding",
+    "--author",
+    "tester",
+  ];
+  if (options.committedRef) args.push("--committed", options.committedRef);
+  return runAcknowledgeCommand(args, root);
+}
+
+export function withFixture(action: (root: string) => void): () => void {
+  return () => {
+    const root = fixture();
+    try {
+      action(root);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  };
 }

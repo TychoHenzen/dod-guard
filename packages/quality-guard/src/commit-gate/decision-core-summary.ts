@@ -1,6 +1,6 @@
 import type { Snapshot } from "./snapshot.js";
-import type { DecisionResult } from "./types.js";
 import { isSourcePath } from "./snapshot-types.js";
+import type { DecisionResult } from "./types.js";
 
 const QUALITY_CONFIGURATION_PATH = ".quality-guard.json";
 
@@ -29,6 +29,7 @@ export function summaryFor(snapshot: Snapshot, changedSourcePaths: string[]) {
   return {
     baseIdentity: snapshot.baseIdentity,
     targetIdentity: snapshot.targetIdentity,
+    targetCommitSha: snapshot.targetCommitSha,
     changedSourcePaths,
   };
 }

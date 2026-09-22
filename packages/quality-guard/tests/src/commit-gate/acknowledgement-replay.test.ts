@@ -18,7 +18,10 @@ test("requires an exact-commit note after a staged acknowledgement intent", () =
   try {
     const { decision: staged, finding } = stagedReview(root);
     assert.equal(acknowledge(root, finding.id).exitCode, 0);
-    assert.equal(runStagedCheck(root, { json: false, intent: "change" }).verdict, "PASS");
+    assert.equal(
+      runStagedCheck(root, { json: false, intent: "change" }).verdict,
+      "PASS",
+    );
     git(root, ["commit", "-m", "acknowledge"]);
     const beforeAttestation = runCommittedCheck(root, "HEAD", {
       json: false,
@@ -40,6 +43,10 @@ test("requires an exact-commit note after a staged acknowledgement intent", () =
     });
     assert.equal(committed.verdict, "PASS");
     assert.equal(committed.input.baseIdentity, staged.input.baseIdentity);
+    assert.equal(
+      committed.input.targetCommitSha,
+      git(root, ["rev-parse", "HEAD"]),
+    );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

@@ -17,6 +17,7 @@ export interface DecisionResult {
   input: {
     baseIdentity: string;
     targetIdentity: string;
+    targetCommitSha?: string;
     changedSourcePaths: string[];
     /** Present when the staged input requires no source-quality decision. */
     reason?: string;

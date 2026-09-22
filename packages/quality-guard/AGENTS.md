@@ -97,6 +97,8 @@ after the structural ratchet. It uses the same decision core against `HEAD`
 and its first parent. A local Git hook may run the staged command for earlier
 feedback, but CI does not depend on that hook having run.
 
+Committed decision JSON reports the immutable checked target as `input.targetCommitSha`, separate from `targetIdentity`, which is the source fingerprint.
+
 CI runs the structural ratchet before the committed decision and passes
 `--skip-structural` to the latter. This avoids scanning the same committed tree
 twice while retaining the committed architecture and Git-tree checks. The
