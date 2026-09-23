@@ -70,5 +70,14 @@
     "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
     "author": "Codex",
     "time": "2026-09-23T11:55:40.107Z"
+  },
+  {
+    "findingId": "e2d9d974041ea5c64cfb4b68088bf6275d2f9f5d4724f66da96df5c405f760ef",
+    "fingerprint": "77f490bc37aad9ced6ddd8b9aae3d0f8f1d4042a454d1cc814b86d23b0db3ef6",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "16548ee834fe6e7ee1b87684a1d521f3034c6217",
+    "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
+    "author": "Codex",
+    "time": "2026-09-23T11:58:40.730Z"
   }
 ]
