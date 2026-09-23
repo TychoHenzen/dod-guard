@@ -29130,7 +29130,7 @@ function registerKnowledgeTools(server2, knowledgeBase) {
   );
   server2.tool(
     "knowledge_get_entry",
-    "Return one complete knowledge entry after a stable key has been selected, including provenance and history.",
+    "Return one complete knowledge entry after a stable key has been selected, including content, provenance, and related entries.",
     { key: external_exports.string().min(1).describe("Stable entry key") },
     ({ key }) => safe(async () => ({
       scope: { key },

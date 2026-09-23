@@ -62,8 +62,7 @@ function attachStdout(child, state) {
 }
 
 async function handshake(bundle, pkgName, expectedVersion, cwd = ROOT) {
-  const env = { ...process.env };
-  delete env.DOD_GUARD_KNOWLEDGE_BASE_DIR;
+  const env = pkgName === "knowledge-base" ? {} : process.env;
   const child = spawn(process.execPath, [bundle], { cwd, env, stdio: ["pipe", "pipe", "pipe"] });
   const state = { waiters: new Map(), junk: [] };
   let stderr = "";
