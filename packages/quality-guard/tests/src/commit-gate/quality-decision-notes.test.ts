@@ -10,7 +10,7 @@ import { fixture, git } from "./acknowledgement-test-support.js";
 function attestation(root: string, targetSha: string) {
   return {
     findingId: "finding",
-    fingerprint: "fingerprint",
+    fingerprint: "c".repeat(64),
     baseSha: git(root, ["rev-parse", `${targetSha}^`]),
     targetSha,
     reason: "reviewed",
@@ -65,6 +65,30 @@ test("rejects an attestation whose recorded base is not the target parent", () =
         }),
       /base does not match/,
     );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects malformed fingerprints before writing a committed note", () => {
+  const root = fixture();
+  try {
+    fs.writeFileSync(
+      `${root}/packages/fixture/src/change.ts`,
+      "export const change = 1;\n",
+    );
+    git(root, ["add", "."]);
+    git(root, ["commit", "-m", "source change"]);
+    const targetSha = git(root, ["rev-parse", "HEAD"]);
+    assert.throws(
+      () =>
+        writeQualityDecisionNote(root, {
+          ...attestation(root, targetSha),
+          fingerprint: "bad",
+        }),
+      /quality decision note\[0\]\.fingerprint must be a 64-character lowercase hexadecimal SHA-256 fingerprint/,
+    );
+    assert.deepEqual(readQualityDecisionNotes(root, targetSha), []);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
