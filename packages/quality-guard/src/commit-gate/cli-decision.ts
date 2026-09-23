@@ -27,12 +27,12 @@ function decisionWithSources(
   input: SnapshotInput,
   snapshot: Snapshot,
   changed: string[],
+  trackedAcknowledgements: ReturnType<typeof acknowledgementRecords>,
 ): DecisionResult {
   const config = parseQualityConfig(
     snapshotConfig(input.root, input.targetRef),
   );
   const { before, after } = sourceInventories({ ...input, changed });
-  const trackedAcknowledgements = acknowledgementRecords(input);
   return decideQuality({
     snapshot,
     config,
@@ -54,8 +54,14 @@ function decisionWithSources(
 function decisionForSnapshot(input: SnapshotInput): DecisionResult {
   const snapshot = withoutDistributionChanges(input.snapshot);
   const changed = affectedPaths(snapshot);
+  const trackedAcknowledgements = acknowledgementRecords(input);
   if (!changed.some(sourceChange)) return noSourceDecision(snapshot);
-  return decisionWithSources(input, snapshot, changed);
+  return decisionWithSources(
+    input,
+    snapshot,
+    changed,
+    trackedAcknowledgements,
+  );
 }
 
 export function runStagedCheck(
