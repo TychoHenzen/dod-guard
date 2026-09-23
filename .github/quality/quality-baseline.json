@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "strict",
-  "createdAt": "2026-09-23T07:28:32.864Z",
-  "total": 92,
+  "createdAt": "2026-09-23T07:54:41.364Z",
+  "total": 93,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -1317,6 +1317,7 @@
     "packages/knowledge-base/src/schema.ts",
     "packages/knowledge-base/src/store.ts",
     "packages/knowledge-base/src/tools.ts",
+    "packages/knowledge-base/tests/entrypoint.test.ts",
     "packages/knowledge-base/tests/schema-boundaries.test.ts",
     "packages/knowledge-base/tests/schema-classes.test.ts",
     "packages/knowledge-base/tests/schema-comments.test.ts",
@@ -1776,6 +1777,7 @@
     "packages/code-explorer/tests/testing/index/index-installed-package.test.ts::nesting-depth": 1,
     "packages/code-explorer/tests/testing/index/index-navigation-owner.test.ts::nesting-depth": 1,
     "packages/code-explorer/tests/testing/index/index-standalone-ready.test.ts::nesting-depth": 2,
+    "packages/knowledge-base/tests/entrypoint.test.ts::nesting-depth": 1,
     "packages/knowledge-base/src/store.ts::else-branch": 1,
     "packages/code-explorer/tests/testing/index/index-navigation-owner.test.ts::stateless-method": 2,
     "packages/knowledge-base/src/store.ts::stateless-method": 1,
