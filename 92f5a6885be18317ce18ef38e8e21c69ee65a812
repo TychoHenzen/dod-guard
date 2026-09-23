@@ -1,0 +1,83 @@
+[
+  {
+    "findingId": "0e210271bdee94a723a17383fc0f40a68ca37100bda0c149c6a8eef8cfcc37c5",
+    "fingerprint": "87c95f750e3ac0d7dd95a7f9d001cb2456f59f399c4284c30a15a21d67473612",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "92f5a6885be18317ce18ef38e8e21c69ee65a812",
+    "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
+    "author": "Codex",
+    "time": "2026-09-23T12:07:38.1359129Z"
+  },
+  {
+    "findingId": "137c2435088b5df829b178d14d711bb0438c536bc2cabf4873f71e84468a8537",
+    "fingerprint": "87c95f750e3ac0d7dd95a7f9d001cb2456f59f399c4284c30a15a21d67473612",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "92f5a6885be18317ce18ef38e8e21c69ee65a812",
+    "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
+    "author": "Codex",
+    "time": "2026-09-23T12:07:38.1359129Z"
+  },
+  {
+    "findingId": "1e089d0144c931a662c9c8ac7984c083c3e03a7f419c8209b16275288a89fbdf",
+    "fingerprint": "87c95f750e3ac0d7dd95a7f9d001cb2456f59f399c4284c30a15a21d67473612",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "92f5a6885be18317ce18ef38e8e21c69ee65a812",
+    "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
+    "author": "Codex",
+    "time": "2026-09-23T12:07:38.1359129Z"
+  },
+  {
+    "findingId": "3f6bec37219eeed470e41ed2bc7369513db9b6a161f343ff204cca136c88a586",
+    "fingerprint": "87c95f750e3ac0d7dd95a7f9d001cb2456f59f399c4284c30a15a21d67473612",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "92f5a6885be18317ce18ef38e8e21c69ee65a812",
+    "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
+    "author": "Codex",
+    "time": "2026-09-23T12:07:38.1359129Z"
+  },
+  {
+    "findingId": "6d2b751a375f6e2ad6700626d37edb84a999ed600756b3b476343ff8a8d765aa",
+    "fingerprint": "87c95f750e3ac0d7dd95a7f9d001cb2456f59f399c4284c30a15a21d67473612",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "92f5a6885be18317ce18ef38e8e21c69ee65a812",
+    "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
+    "author": "Codex",
+    "time": "2026-09-23T12:07:38.1359129Z"
+  },
+  {
+    "findingId": "8d34619d29c204d910e2cd5b14770214abdd9e91777d7d3b9d6e5745d6f3bcec",
+    "fingerprint": "87c95f750e3ac0d7dd95a7f9d001cb2456f59f399c4284c30a15a21d67473612",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "92f5a6885be18317ce18ef38e8e21c69ee65a812",
+    "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
+    "author": "Codex",
+    "time": "2026-09-23T12:07:38.1359129Z"
+  },
+  {
+    "findingId": "93f08d9d68566298247b3be87688c29a041533a6317fc78d96820963b32691ec",
+    "fingerprint": "87c95f750e3ac0d7dd95a7f9d001cb2456f59f399c4284c30a15a21d67473612",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "92f5a6885be18317ce18ef38e8e21c69ee65a812",
+    "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
+    "author": "Codex",
+    "time": "2026-09-23T12:07:38.1359129Z"
+  },
+  {
+    "findingId": "c827b2830f1ab49c34c519bbe59290a2d38530e829dda0d1b74933a81822f284",
+    "fingerprint": "87c95f750e3ac0d7dd95a7f9d001cb2456f59f399c4284c30a15a21d67473612",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "92f5a6885be18317ce18ef38e8e21c69ee65a812",
+    "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
+    "author": "Codex",
+    "time": "2026-09-23T12:07:38.1359129Z"
+  },
+  {
+    "findingId": "e2d9d974041ea5c64cfb4b68088bf6275d2f9f5d4724f66da96df5c405f760ef",
+    "fingerprint": "87c95f750e3ac0d7dd95a7f9d001cb2456f59f399c4284c30a15a21d67473612",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "92f5a6885be18317ce18ef38e8e21c69ee65a812",
+    "reason": "Reviewed PR #578: GitHubClient members are intentional internal complete-pr adapter seams, consumed by the recovery path in this PR; they do not expand a shipped plugin or external protocol surface.",
+    "author": "Codex",
+    "time": "2026-09-23T12:07:38.1359129Z"
+  }
+]
