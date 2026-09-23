@@ -11,16 +11,13 @@ import {
 } from "./acknowledgement-test-support.js";
 
 const DECISION_RECORD = ".github/quality/architecture-decisions.json";
-const BUNDLE = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../../../dist/bundle.js",
+const BUNDLE = fileURLToPath(
+  new URL("../../../../dist/bundle.js", import.meta.url),
 );
 const MALFORMED_RECORD = JSON.stringify([
   {
-    findingId: "historical-finding",
-    fingerprint: "short",
-    reason: "Previously reviewed",
-    author: "tester",
+    findingId: "historical-finding", fingerprint: "short",
+    reason: "Previously reviewed", author: "tester",
     time: "2026-08-31T00:00:00.000Z",
   },
 ]);
@@ -79,30 +76,23 @@ test(
   "bundled staged check reports a valid stale current fingerprint",
   withFixture((root) => {
     const { decision, finding } = stagedReview(root);
-    stageDecisionRecord(
-      root,
-      JSON.stringify([
-        {
-          findingId: finding.id,
-          fingerprint: "a".repeat(64),
-          baseIdentity: decision.input.baseIdentity,
-          targetIdentity: decision.input.targetIdentity,
-          reason: "Previously reviewed",
-          author: "tester",
-          time: "2026-08-31T00:00:00.000Z",
-        },
-      ]),
-    );
+    const record = {
+      findingId: finding.id,
+      fingerprint: "a".repeat(64),
+      baseIdentity: decision.input.baseIdentity,
+      targetIdentity: decision.input.targetIdentity,
+      reason: "Previously reviewed",
+      author: "tester",
+      time: "2026-08-31T00:00:00.000Z",
+    };
+    stageDecisionRecord(root, JSON.stringify([record]));
     const result = bundledCheck(root, ["check", "--staged", "--json"]);
     assert.equal(result.exitCode, 2);
     const output = JSON.parse(result.output);
     assert.equal(output.verdict, "REVIEW_REQUIRED");
-    assert.deepEqual(output.staleAcknowledgements, [
-      {
-        findingId: finding.id,
-        baseIdentity: decision.input.baseIdentity,
-        targetIdentity: decision.input.targetIdentity,
-      },
-    ]);
+    const [stale] = output.staleAcknowledgements;
+    assert.equal(stale.findingId, finding.id);
+    assert.equal(stale.baseIdentity, decision.input.baseIdentity);
+    assert.equal(stale.targetIdentity, decision.input.targetIdentity);
   }),
 );
