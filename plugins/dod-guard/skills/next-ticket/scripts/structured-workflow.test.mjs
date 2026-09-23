@@ -110,6 +110,17 @@ test("structured parents require one evidenced child in every delivery category"
   assert.match(submit, /Mandatory child categories: each mapped to the same parent branch/);
 });
 
+test("draft submission runs the repository preflight before PR writes", () => {
+  const preflight = submit.indexOf("npm run preflight:static-analysis");
+  const createOrUpdate = submit.indexOf("## Create or update the draft");
+
+  assert.notEqual(preflight, -1);
+  assert.ok(preflight < createOrUpdate);
+  assert.match(submit, /even when other required checks have fresh\s+evidence/);
+  assert.match(submit, /A failure or unavailable command blocks PR writes/);
+  assert.match(submit, /Inspect every\s+reported path/);
+});
+
 test("structured work retains safety stops and historical OpenSpec boundaries", () => {
   for (const marker of [
     /credentials/,
