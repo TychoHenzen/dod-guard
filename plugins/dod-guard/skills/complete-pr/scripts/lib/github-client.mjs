@@ -5,6 +5,14 @@ import { normalizeRequiredChecks } from "./check-normalization.mjs";
 const GH_CHECKS_PENDING_EXIT = 8;
 const HTTP_NOT_FOUND = /HTTP 404/;
 
+class GitHubResponseError extends Error {
+  constructor(endpoint, field) {
+    super(`GitHub response for ${endpoint} must include an array ${field}.`);
+    this.name = "GitHubResponseError";
+    this.code = "github_response_shape";
+  }
+}
+
 function runGh(args, acceptedExitCodes = [0]) {
   const result = spawnSync("gh", args, { encoding: "utf8", windowsHide: true });
   if (result.error) {
@@ -29,6 +37,19 @@ function ghJson(args, acceptedExitCodes = [0], commandRunner = runGh) {
 function ghJsonPages(endpoint, field, commandRunner) {
   const pages = ghJsonPagesData(endpoint, commandRunner);
   return pages.flatMap((page) => (Array.isArray(page?.[field]) ? page[field] : []));
+}
+
+function ghJsonPagesRequired(endpoint, field, commandRunner) {
+  const pages = ghJsonPagesData(endpoint, commandRunner);
+  if (pages.length === 0) {
+    throw new GitHubResponseError(endpoint, field);
+  }
+  return pages.flatMap((page) => {
+    if (!page || typeof page !== "object" || !Array.isArray(page[field])) {
+      throw new GitHubResponseError(endpoint, field);
+    }
+    return page[field];
+  });
 }
 
 function ghJsonPagesData(endpoint, commandRunner) {
@@ -173,7 +194,7 @@ export class GitHubClient {
     const workflowRunsPath =
       `repos/${this.repository}/actions/` + "workflows/ci.yml/runs";
     const query = `?head_sha=${encodeURIComponent(headSha)}&per_page=100`;
-    return ghJsonPages(
+    return ghJsonPagesRequired(
       `${workflowRunsPath}${query}`,
       "workflow_runs",
       this.#commandRunner,
