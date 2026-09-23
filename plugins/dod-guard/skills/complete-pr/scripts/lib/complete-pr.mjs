@@ -57,6 +57,14 @@ function requireDefaultBase(pullRequest, defaultBranch) {
   }
 }
 
+function createCiRecovery(options) {
+  return {
+    dispatchedHeads: new Set(),
+    pollLimit: options.ciRunPollLimit,
+    pollMs: options.pollMs,
+  };
+}
+
 function requireCiWorkflowRun(runs, headSha) {
   if (!Array.isArray(runs)) {
     stop(
@@ -507,11 +515,7 @@ async function completePullRequest(client, overrides = {}) {
   const repository = await client.getRepository();
   let pullRequest = await client.getPullRequest();
   validateInitialState(repository, pullRequest);
-  const ciRecovery = {
-    dispatchedHeads: new Set(),
-    pollLimit: options.ciRunPollLimit,
-    pollMs: options.pollMs,
-  };
+  const ciRecovery = createCiRecovery(options);
 
   const acceptedHead = pullRequest.headSha;
   const pullNumber = pullRequest.number;
