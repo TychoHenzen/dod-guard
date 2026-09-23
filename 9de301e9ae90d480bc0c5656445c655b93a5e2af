@@ -1,0 +1,11 @@
+[
+  {
+    "findingId": "0e210271bdee94a723a17383fc0f40a68ca37100bda0c149c6a8eef8cfcc37c5",
+    "fingerprint": "bccbce910bce8be7c0ce744d30791fed121389726c4efd8376fc51de21d22222",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "9de301e9ae90d480bc0c5656445c655b93a5e2af",
+    "reason": "Reviewed #578: the GitHubClient public surface is intentional for PBI #459 exact-head CI recovery; the merged implementation and its tests cover the recovery contract, and the public-surface heuristic cannot infer those plugin callers.",
+    "author": "Codex",
+    "time": "2026-09-23T12:43:39.794Z"
+  }
+]
