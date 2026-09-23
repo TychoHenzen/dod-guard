@@ -35,6 +35,14 @@ test("goal-sdlc retains every delivery stage and queue boundary", async () => {
   }
   assert.match(skill, /Process exactly one parent PBI\/delivery unit at a time/);
   assert.match(skill, /Do not mark the goal complete after one PBI/);
+  assert.match(
+    skill,
+    /target project: the single open GitHub Project explicitly linked to the current repository/,
+  );
+  assert.doesNotMatch(
+    skill,
+    /target project: https?:\/\//,
+  );
 });
 
 test("goal-sdlc keeps built-in goal ownership and delegated execution explicit", async () => {
@@ -63,7 +71,7 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
     "all finding comments were marked as resolved",
     "Retry the same exact transient failure at most once",
     "Preserve the checkpoint on failure or interruption; repair the same step",
-    "Invoke `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` for the guarded",
+    "Then use:",
     "Do not write parent, child, branch, or worktree state from this queue skill.",
     "Read back all parent and child statuses after the completion owner returns.",
     "this queue skill never sweeps unrelated refs",
@@ -74,5 +82,17 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   assert.doesNotMatch(
     skill,
     /delete both the local and the remote copy of both the merged branch as well as/,
+  );
+  assert.match(
+    skill,
+    /Do not invoke `\[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)` again after\s+merge; the preceding invocation owns the guarded\s+merge, branch cleanup, and\s+Project finalization pass\./,
+  );
+  assert.match(
+    skill,
+    /Then use:\s+&#x20; \[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)/,
+  );
+  assert.doesNotMatch(
+    skill,
+    /After merge:\s+- Invoke `\[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)` for the guarded/,
   );
 });

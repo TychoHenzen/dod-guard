@@ -68,7 +68,7 @@ relevant skills:
 
 [$dod-guard:complete-pr](../complete-pr/SKILL.md)
 
-target project: https://github.com/users/TychoHenzen/projects/2
+target project: the single open GitHub Project explicitly linked to the current repository
 target repo: based on what is in the current working directory
 
 CHECKOUT AND EXECUTION POLICY
@@ -502,8 +502,9 @@ Only complete the PR when:
 
 After merge:
 
-- Invoke `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` for the guarded
-  merge, branch cleanup, and Project finalization pass.
+- Do not invoke `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` again after
+  merge; the preceding invocation owns the guarded merge, branch cleanup, and
+  Project finalization pass.
 
 - Do not write parent, child, branch, or worktree state from this queue skill.
 
