@@ -53,12 +53,22 @@ node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number
 The helper records the accepted head SHA first. If the pull request is a draft,
 it marks it ready. If it is already ready, it preserves that state. It then:
 
+- checks for a `.github/workflows/ci.yml` run on the accepted head SHA; if none
+  exists, it verifies that the same-repository branch still points to that SHA,
+  dispatches the existing workflow once, and waits a bounded time for an
+  exact-head run;
+- reads back after an ambiguous dispatch instead of blindly retrying, waits for
+  queued or in-progress CI to pass before enabling auto-merge, and stops on a fork,
+  branch drift, stale or duplicate run, wrong workflow, failed or cancelled
+  run, unsupported state, dispatch error, or missing-run timeout;
 - enables repository auto-merge when needed;
 - enables merge-commit auto-merge with `--match-head-commit`;
 - waits for every required check and stops on failure or cancellation;
 - if the normal required-check query is empty, reads branch protection and
   verifies check runs and commit statuses from the exact pull-request head,
   including any expected GitHub App provider;
+- requires those exact-SHA required checks and provider evidence after `ci.yml`
+  completes; a successful workflow run alone is not acceptance;
 - treats `success`, `neutral`, and `skipped` as passing, keeps pending results
   pending, and fails closed for missing, stale, duplicate, mismatched, or
   unsupported evidence;

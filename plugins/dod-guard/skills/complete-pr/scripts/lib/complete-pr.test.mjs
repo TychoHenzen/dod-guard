@@ -8,6 +8,8 @@ import { GitHubClient, normalizePullRequest } from "./github-client.mjs";
 const pendingChecks = [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }];
 const passingChecks = [{ bucket: "pass", name: "build-test", state: "SUCCESS" }];
 const requiredCheckNames = ["build-test", "plugin-config", "static-analysis", "package-integrity"];
+const headShaField = "head_sha";
+const workflowRunsField = "workflow_runs";
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
 
 function pull(overrides = {}) {
@@ -28,6 +30,17 @@ function pull(overrides = {}) {
   };
 }
 
+function workflowRun(headSha, overrides = {}) {
+  return {
+    conclusion: "success",
+    [headShaField]: headSha,
+    name: "CI",
+    path: ".github/workflows/ci.yml@refs/heads/codex/24-complete-pr",
+    status: "completed",
+    ...overrides,
+  };
+}
+
 function nextValue(values) {
   if (values.length > 1) {
     return values.shift();
@@ -37,7 +50,8 @@ function nextValue(values) {
 
 class FixtureClient {
   constructor(options = {}) {
-    this.repository = {
+    this.repository = options.clientRepository ?? "owner/repo";
+    this.repositoryDetails = {
       autoMergeAllowed: false,
       canPush: true,
       defaultBranch: "master",
@@ -50,12 +64,14 @@ class FixtureClient {
     this.issues = [...(options.issues ?? [[{ number: 24, state: "CLOSED", url: "issue" }]])];
     this.projectStatuses = [...(options.projectStatuses ?? [["Done"]])];
     this.refs = [...(options.refs ?? [{ sha: "head-1" }, null])];
+    this.workflowRuns = options.workflowRuns ?? null;
+    this.workflowDispatchError = options.workflowDispatchError;
     this.enableRepositoryError = options.enableRepositoryError;
     this.calls = [];
   }
 
   getRepository() {
-    return this.repository;
+    return this.repositoryDetails;
   }
 
   getPullRequest() {
@@ -80,7 +96,24 @@ class FixtureClient {
   }
 
   getRequiredChecks() {
+    this.calls.push(["getRequiredChecks"]);
     return nextValue(this.checks);
+  }
+
+  getCiWorkflowRuns(headSha) {
+    this.calls.push(["getCiWorkflowRuns", headSha]);
+    if (!this.workflowRuns) {
+      return [workflowRun(headSha)];
+    }
+    const runs = nextValue(this.workflowRuns);
+    return typeof runs === "function" ? runs(headSha) : runs;
+  }
+
+  dispatchCiWorkflow(branchName) {
+    this.calls.push(["dispatch", branchName]);
+    if (this.workflowDispatchError) {
+      throw this.workflowDispatchError;
+    }
   }
 
   updateBranch(number, headSha) {
@@ -99,7 +132,8 @@ class FixtureClient {
     return nextValue(this.projectStatuses);
   }
 
-  getBranchRef() {
+  getBranchRef(branchName) {
+    this.calls.push(["getBranchRef", branchName]);
     return nextValue(this.refs);
   }
 
@@ -123,7 +157,13 @@ function createFixtureLocalGit(result = { branch: "deleted", remainingWorktrees:
   };
 }
 
-const immediateOptions = { issuePollLimit: 2, pollLimit: 8, pollMs: 0, updatePollLimit: 2 };
+const immediateOptions = {
+  ciRunPollLimit: 2,
+  issuePollLimit: 2,
+  pollLimit: 8,
+  pollMs: 0,
+  updatePollLimit: 2,
+};
 
 test("normalizes the narrow REST pull request payload used by the completion loop", () => {
   assert.deepEqual(
@@ -171,6 +211,91 @@ test("reads linked Project statuses through the GitHub client adapter", () => {
   assert.deepEqual(client.getIssueProjectStatuses(24), ["Done"]);
   assert.deepEqual(calls, [["issue", "view", "24", "--repo", "owner/repo", "--json", "projectItems"]]);
 });
+
+test("lists ci.yml workflow runs for the trusted head SHA", () => {
+  const calls = [];
+  const run = workflowRun("head-1");
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    calls.push(args);
+    return {
+      status: 0,
+      stderr: "",
+      stdout: JSON.stringify({ [workflowRunsField]: [run] }),
+    };
+  });
+
+  assert.deepEqual(client.getCiWorkflowRuns("head-1"), [run]);
+  assert.deepEqual(calls, [[
+    "api",
+    "--paginate",
+    "--slurp",
+    "repos/owner/repo/actions/workflows/ci.yml/runs?" +
+      "head_sha=head-1&per_page=100",
+  ]]);
+});
+
+test(
+  "dispatches ci.yml through workflow_dispatch at the checked branch",
+  () => {
+  const calls = [];
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    calls.push(args);
+    return { status: 0, stderr: "", stdout: "" };
+  });
+
+  client.dispatchCiWorkflow("codex/24-complete-pr");
+
+  assert.deepEqual(calls, [[
+    "api",
+    "--method",
+    "POST",
+    "repos/owner/repo/actions/workflows/ci.yml/dispatches",
+    "-f",
+    "ref=codex/24-complete-pr",
+  ]]);
+  },
+);
+
+test(
+  "recovers missing ci.yml and completes after exact-head checks pass",
+  async () => {
+    const client = new FixtureClient({
+      clientRepository: "owner/repo",
+      workflowRuns: [[], [workflowRun("head-1")]],
+      checks: [passingChecks],
+      refs: [{ sha: "head-1" }, { sha: "head-1" }, null],
+      pulls: [
+        pull(),
+        pull({ isDraft: false }),
+        pull({ isDraft: false }),
+        pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+      ],
+    });
+
+    const result = await completePullRequest(client, immediateOptions);
+
+    assert.equal(client.repository, "owner/repo");
+    assert.deepEqual(
+      client.calls.filter(([name]) => name === "dispatch"),
+      [["dispatch", "codex/24-complete-pr"]],
+    );
+    assert.deepEqual(
+      client.calls.filter(([name]) => name === "getCiWorkflowRuns"),
+      [
+        ["getCiWorkflowRuns", "head-1"],
+        ["getCiWorkflowRuns", "head-1"],
+        ["getCiWorkflowRuns", "head-1"],
+        ["getCiWorkflowRuns", "head-1"],
+      ],
+    );
+    assert.deepEqual(client.calls.filter(([name]) => name === "getRequiredChecks"), [
+      ["getRequiredChecks"],
+    ]);
+    assert.equal(result.acceptedHead, "head-1");
+    assert.equal(result.mergeCommitSha, "merge-1");
+    assert.equal(result.branch, "deleted");
+  },
+);
 
 test("recovers an already-merged pull request through guarded remote and local cleanup", async () => {
   const localGit = createFixtureLocalGit();
