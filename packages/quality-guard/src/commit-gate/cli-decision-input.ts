@@ -34,9 +34,16 @@ export function noSourceDecision(snapshot: Snapshot): DecisionResult {
   });
 }
 
-export function acknowledgementRecords(root: string, ref: string) {
+export function acknowledgementRecords(
+  input: Pick<SnapshotInput, "root" | "targetRef">,
+) {
   return acknowledgements.parseArchitectureAcknowledgements(
-    treeFile({ root, ref, filePath: DECISION_RECORD_PATH, fallback: "[]" }),
+    treeFile({
+      root: input.root,
+      ref: input.targetRef,
+      filePath: DECISION_RECORD_PATH,
+      fallback: "[]",
+    }),
   );
 }
 

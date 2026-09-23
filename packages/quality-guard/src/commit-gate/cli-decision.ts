@@ -32,6 +32,7 @@ function decisionWithSources(
     snapshotConfig(input.root, input.targetRef),
   );
   const { before, after } = sourceInventories({ ...input, changed });
+  const trackedAcknowledgements = acknowledgementRecords(input);
   return decideQuality({
     snapshot,
     config,
@@ -43,7 +44,7 @@ function decisionWithSources(
       : scannerEvidence(input.root, input.targetRef),
     pendingAcknowledgementRecords:
       input.targetRef === "index"
-        ? acknowledgementRecords(input.root, input.targetRef)
+        ? trackedAcknowledgements
         : [],
     attestations: snapshot.targetCommitSha
       ? readQualityDecisionNotes(input.root, snapshot.targetCommitSha)
