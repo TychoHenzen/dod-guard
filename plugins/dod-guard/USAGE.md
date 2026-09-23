@@ -274,6 +274,21 @@ pass, use:
 /dod-guard:publish
 ```
 
+Use the installed `/dod-guard:publish` entry point; without pins, it verifies
+and uses the active client's registered installation. If a run needs an exact
+pin, pass `version=<exact-version>` and/or
+`path=<absolute-path-to-skills/publish/SKILL.md>` with the invocation. The path
+pin is the skill file, not its plugin root. For example:
+
+```text
+/dod-guard:publish version=5.4.55 path="<absolute-plugin-root>/skills/publish/SKILL.md"
+```
+
+Each supplied pin must match the active registration and installed manifest
+exactly. On mismatch, publish stops before release mutations and reports the
+requested and detected values instead of silently selecting another copy. No
+cache path needs guessing for an unpinned run.
+
 It delegates draft pull-request creation to `/submit-draft-pr`. After a human
 merges it and the published commit has green CI, refresh both clients:
 

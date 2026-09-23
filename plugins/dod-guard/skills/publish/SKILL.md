@@ -31,6 +31,66 @@ the bump. A paired version-only bump made solely to invalidate the cache for
 maintenance content remains `maintenance-only`; any other manifest change is
 `functional`.
 
+## Installation identity preflight
+
+Before any other release step, resolve `<skill-dir>` from this loaded skill:
+`${CLAUDE_PLUGIN_ROOT}/skills/publish` in Claude Code, or the directory
+containing this loaded `SKILL.md` in Codex. Confirm
+`<skill-dir>/scripts/preflight-installation.mjs` exists. Never locate the helper
+from the repository checkout or from a guessed cache directory.
+
+Treat any caller-supplied version or path as an exact pin. A path pin is the
+absolute path to `skills/publish/SKILL.md`, not the plugin root. Pass only pins
+that the caller supplied; omit the corresponding flag otherwise:
+
+Run the client inventory command first and check its exit status before passing
+captured JSON to Node. A direct pipeline can hide a failed inventory command.
+Use the snippet for the active shell, set the client to codex or claude, and
+append only exact pins supplied by the caller to the helper command:
+
+PowerShell:
+
+```powershell
+$client = 'codex' # use 'claude' in Claude Code
+$inventory = & $client plugin list --json
+$clientStatus = $LASTEXITCODE
+if ($clientStatus -ne 0) { throw "$client plugin list failed with exit code $clientStatus" }
+$inventory | node "<skill-dir>/scripts/preflight-installation.mjs" $client
+if ($LASTEXITCODE -ne 0) { throw "Installation preflight failed; stop before release mutations" }
+```
+
+POSIX shell:
+
+```sh
+client=codex # use claude in Claude Code
+inventory=$("$client" plugin list --json)
+client_status=$?
+if [ "$client_status" -ne 0 ]; then
+  printf '%s plugin list failed with exit code %s\n' "$client" "$client_status" >&2
+  exit "$client_status"
+fi
+printf '%s\n' "$inventory" | node "<skill-dir>/scripts/preflight-installation.mjs" "$client"
+preflight_status=$?
+if [ "$preflight_status" -ne 0 ]; then
+  exit "$preflight_status"
+fi
+```
+
+The helper accepts the inventory on stdin and returns JSON. For Codex, it
+requires the unique enabled `dod-guard@dod-guard-monorepo` record, its exact
+`dod-guard-monorepo` marketplace name and Git source, `source.path`, and the
+`.codex-plugin/plugin.json` identity/version. For Claude Code, it requires the
+unique enabled `dod-guard@dod-guard` record, `installPath`, and the
+`.claude-plugin/plugin.json` identity/version. Both paths must resolve to this
+loaded installation and contain `skills/publish/SKILL.md`.
+
+If the helper exits non-zero, report its requested and observed values, exact
+mismatch, and safe next step, then stop. Do not run the procedure or any Git,
+GitHub, protection, version-bump, or client-cache mutation. On success, use the
+returned `pluginRoot` for every later `<plugin-root>` path and bind this run to
+the returned version and `skillPath`. Never scan caches, choose a newest path,
+or fall back to another marketplace, client installation, or checkout.
+
 ## Procedure
 
 1. Inspect `git status --short`, the current branch, and the GitHub MCP
