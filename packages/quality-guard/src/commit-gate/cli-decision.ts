@@ -27,8 +27,8 @@ function decisionWithSources(
   input: SnapshotInput,
   snapshot: Snapshot,
   changed: string[],
-  trackedAcknowledgements: ReturnType<typeof acknowledgementRecords>,
 ): DecisionResult {
+  const trackedAcknowledgements = acknowledgementRecords(input);
   const config = parseQualityConfig(
     snapshotConfig(input.root, input.targetRef),
   );
@@ -54,9 +54,9 @@ function decisionWithSources(
 function decisionForSnapshot(input: SnapshotInput): DecisionResult {
   const snapshot = withoutDistributionChanges(input.snapshot);
   const changed = affectedPaths(snapshot);
-  const trackedAcknowledgements = acknowledgementRecords(input);
+  acknowledgementRecords(input);
   if (!changed.some(sourceChange)) return noSourceDecision(snapshot);
-  return decisionWithSources(input, snapshot, changed, trackedAcknowledgements);
+  return decisionWithSources(input, snapshot, changed);
 }
 
 export function runStagedCheck(

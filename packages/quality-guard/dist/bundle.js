@@ -26001,7 +26001,8 @@ function writeQualityDecisionNote(root2, record3) {
 }
 
 // src/commit-gate/cli-decision.ts
-function decisionWithSources(input, snapshot, changed, trackedAcknowledgements) {
+function decisionWithSources(input, snapshot, changed) {
+  const trackedAcknowledgements = acknowledgementRecords(input);
   const config2 = parseQualityConfig(
     snapshotConfig(input.root, input.targetRef)
   );
@@ -26021,9 +26022,9 @@ function decisionWithSources(input, snapshot, changed, trackedAcknowledgements) 
 function decisionForSnapshot(input) {
   const snapshot = withoutDistributionChanges(input.snapshot);
   const changed = affectedPaths(snapshot);
-  const trackedAcknowledgements = acknowledgementRecords(input);
+  acknowledgementRecords(input);
   if (!changed.some(sourceChange)) return noSourceDecision(snapshot);
-  return decisionWithSources(input, snapshot, changed, trackedAcknowledgements);
+  return decisionWithSources(input, snapshot, changed);
 }
 function runStagedCheck(root2, options) {
   return decisionForSnapshot({
