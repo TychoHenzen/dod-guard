@@ -501,13 +501,16 @@ Only complete the PR when:
 
 After merge:
 
-- Mark every mandatory child Project item complete.
+- Invoke `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` for the guarded
+  merge, branch cleanup, and Project finalization pass.
 
-- Mark the parent Project item complete in the same finalization pass.
+- Do not write parent, child, branch, or worktree state from this queue skill.
 
-- Read back all parent and child statuses.
+- Read back all parent and child statuses after the completion owner returns.
 
-- Repair any parent left Backlog, Todo, or In Progress before selecting the next delivery unit.
+- If a parent or child is still Backlog, Todo, or In Progress, preserve the
+  checkpoint and return to the completion owner before selecting the next
+  delivery unit.
 
 
 
@@ -630,7 +633,9 @@ You may cut speculative polish, unrelated cleanup, and unnecessary abstractions.
 After every successful merge:
 
 * continue in the current checkout; never create or manage Git worktrees
-* delete both the local and the remote copy of both the merged branch as well as pro-actively finding and deleting both locally and remotely any other stale branches that have been merged back and can therefore safely be deleted,
+* let `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` delete the local and
+  remote copy of the exact merged branch after its head and merge state are
+  verified; this queue skill never sweeps unrelated refs
 
 - If the merge changed queue state, refresh the affected items and select the next eligible delivery unit once. Otherwise select from the current snapshot.
 

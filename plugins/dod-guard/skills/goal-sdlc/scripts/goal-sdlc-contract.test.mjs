@@ -56,8 +56,16 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
     "all finding comments were marked as resolved",
     "Retry the same exact transient failure at most once",
     "Preserve the checkpoint on failure or interruption; repair the same step",
+    "Invoke `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` for the guarded",
+    "Do not write parent, child, branch, or worktree state from this queue skill.",
+    "Read back all parent and child statuses after the completion owner returns.",
+    "this queue skill never sweeps unrelated refs",
     "Project Done",
   ]) {
     assert.ok(skill.includes(marker), `missing reliability marker: ${marker}`);
   }
+  assert.doesNotMatch(
+    skill,
+    /delete both the local and the remote copy of both the merged branch as well as/,
+  );
 });
