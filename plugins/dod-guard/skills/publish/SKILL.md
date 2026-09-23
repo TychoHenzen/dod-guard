@@ -43,9 +43,37 @@ Treat any caller-supplied version or path as an exact pin. A path pin is the
 absolute path to `skills/publish/SKILL.md`, not the plugin root. Pass only pins
 that the caller supplied; omit the corresponding flag otherwise:
 
-```text
-codex plugin list --json | node "<skill-dir>/scripts/preflight-installation.mjs" codex [--version <exact-version>] [--skill-path <absolute-skill-path>]
-claude plugin list --json | node "<skill-dir>/scripts/preflight-installation.mjs" claude [--version <exact-version>] [--skill-path <absolute-skill-path>]
+Run the client inventory command first and check its exit status before passing
+captured JSON to Node. A direct pipeline can hide a failed inventory command.
+Use the snippet for the active shell, set the client to codex or claude, and
+append only exact pins supplied by the caller to the helper command:
+
+PowerShell:
+
+```powershell
+$client = 'codex' # use 'claude' in Claude Code
+$inventory = & $client plugin list --json
+$clientStatus = $LASTEXITCODE
+if ($clientStatus -ne 0) { throw "$client plugin list failed with exit code $clientStatus" }
+$inventory | node "<skill-dir>/scripts/preflight-installation.mjs" $client
+if ($LASTEXITCODE -ne 0) { throw "Installation preflight failed; stop before release mutations" }
+```
+
+POSIX shell:
+
+```sh
+client=codex # use claude in Claude Code
+inventory=$("$client" plugin list --json)
+client_status=$?
+if [ "$client_status" -ne 0 ]; then
+  printf '%s plugin list failed with exit code %s\n' "$client" "$client_status" >&2
+  exit "$client_status"
+fi
+printf '%s\n' "$inventory" | node "<skill-dir>/scripts/preflight-installation.mjs" "$client"
+preflight_status=$?
+if [ "$preflight_status" -ne 0 ]; then
+  exit "$preflight_status"
+fi
 ```
 
 The helper accepts the inventory on stdin and returns JSON. For Codex, it

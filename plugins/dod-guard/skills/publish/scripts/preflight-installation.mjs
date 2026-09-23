@@ -1,5 +1,5 @@
 import process from "node:process";
-import { readFile, realpath } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 import { dirname, isAbsolute, normalize, parse, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,7 +34,7 @@ function failure(client, requested, reason, observed = {}) {
     client,
     requested,
     observed: {
-      registry: "unavailable",
+      registry: "parsed",
       pluginIdentity: "unavailable",
       version: "unavailable",
       pluginRoot: "unavailable",
@@ -103,7 +103,9 @@ async function readRegistry(client, requested) {
     for await (const chunk of process.stdin) chunks.push(chunk);
     registry = JSON.parse(Buffer.concat(chunks).toString("utf8"));
   } catch (error) {
-    return failure(client, requested, `Registry input is missing or malformed: ${error.message}`);
+    return failure(client, requested, `Registry input is missing or malformed: ${error.message}`, {
+      registry: "unavailable",
+    });
   }
   const entries = client === "codex" ? registry?.installed : registry;
   if (!Array.isArray(entries)) {
@@ -184,18 +186,28 @@ async function resolvePluginRoot(client, requested, installation) {
 }
 
 async function readManifest(client, requested, installation, pluginRoot) {
-  let manifestPath;
-  if (client === "codex") manifestPath = resolve(pluginRoot, ".codex-plugin/plugin.json");
-  else manifestPath = resolve(pluginRoot, ".claude-plugin/plugin.json");
+  const manifestPath = resolve(pluginRoot, client === "codex" ? ".codex-plugin/plugin.json" : ".claude-plugin/plugin.json");
+  let resolvedManifestPath;
   let manifest;
   try {
-    manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    resolvedManifestPath = normalize(await realpath(manifestPath));
+    if (!isInside(pluginRoot, resolvedManifestPath)) {
+      return failure(client, requested, "Installed plugin manifest path resolves outside the registered plugin root.", {
+        pluginIdentity: installation.identity,
+        version: installation.version,
+        pluginRoot,
+        manifestPath: resolvedManifestPath,
+      });
+    }
+    const manifestFile = await stat(resolvedManifestPath);
+    if (!manifestFile.isFile()) throw new Error("manifest path is not a regular file");
+    manifest = JSON.parse(await readFile(resolvedManifestPath, "utf8"));
   } catch (error) {
     return failure(client, requested, `Installed plugin manifest could not be read as valid JSON: ${error.message}`, {
       pluginIdentity: installation.identity,
       version: installation.version,
       pluginRoot,
-      manifestPath,
+      manifestPath: resolvedManifestPath ?? manifestPath,
     });
   }
   if (manifest?.name !== "dod-guard" || manifest?.version !== installation.version) {
@@ -204,7 +216,7 @@ async function readManifest(client, requested, installation, pluginRoot) {
       version: installation.version,
       manifestName: manifest?.name ?? "unavailable",
       manifestVersion: manifest?.version ?? "unavailable",
-      manifestPath,
+      manifestPath: resolvedManifestPath,
     });
   }
   return { manifest };
@@ -225,6 +237,18 @@ async function resolveSkillPath(client, requested, installation, manifest) {
   }
   if (!isInside(installation.pluginRoot, skillPath)) {
     return failure(client, requested, "The publish skill path resolves outside the registered plugin root.", {
+      pluginIdentity: installation.identity,
+      version: installation.version,
+      pluginRoot: installation.pluginRoot,
+      skillPath,
+    });
+  }
+  try {
+    const skillFile = await stat(skillPath);
+    if (!skillFile.isFile()) throw new Error("skill path is not a regular file");
+    await readFile(skillPath, "utf8");
+  } catch (error) {
+    return failure(client, requested, `The registered installation's publish skill is not a readable regular file: ${error.message}`, {
       pluginIdentity: installation.identity,
       version: installation.version,
       pluginRoot: installation.pluginRoot,
@@ -253,7 +277,7 @@ async function resolveSkillPath(client, requested, installation, manifest) {
 
 async function preflight(args) {
   const { client, requested } = args;
-  if (args.error) return failure(client, requested, args.error);
+  if (args.error) return failure(client, requested, args.error, { registry: "unavailable" });
   const entries = await readRegistry(client, requested);
   if (!Array.isArray(entries)) return entries;
   const installation = selectRegistration(client, requested, entries);

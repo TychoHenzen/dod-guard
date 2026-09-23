@@ -48,8 +48,12 @@ test("publish resolves the exact active installation before release work", async
   const preflight = skill.slice(preflightStart, procedureStart);
 
   assert.ok(preflightStart >= 0 && procedureStart > preflightStart);
-  assert.match(preflight, /codex plugin list --json \| node/);
-  assert.match(preflight, /claude plugin list --json \| node/);
+  assert.doesNotMatch(preflight, /(?:codex|claude) plugin list --json\s*\|/);
+  assert.match(preflight, /\$inventory = & \$client plugin list --json/);
+  assert.match(preflight, /\$clientStatus = \$LASTEXITCODE/);
+  assert.match(preflight, /inventory=\$\("\$client" plugin list --json\)/);
+  assert.match(preflight, /client_status=\$\?/);
+  assert.match(preflight, /before passing\s+captured JSON to Node/);
   assert.match(preflight, /preflight-installation\.mjs/);
   assert.match(preflight, /unique enabled `dod-guard@dod-guard-monorepo` record/);
   assert.match(preflight, /unique enabled `dod-guard@dod-guard` record/);

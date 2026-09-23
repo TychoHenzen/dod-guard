@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { copyFile, mkdtemp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -204,6 +204,44 @@ test("rejects malformed or contradictory manifests and missing publish skills", 
   }
 });
 
+test("rejects manifests that resolve outside the registered installation", async (t) => {
+  for (const client of ["codex", "claude"]) {
+    const fixture = await createInstall(t, client);
+    const externalDirectory = join(fixture.pluginRoot, "..", "external-manifest");
+    const manifestDirectory = join(fixture.pluginRoot, client === "codex" ? ".codex-plugin" : ".claude-plugin");
+    await mkdir(externalDirectory);
+    await writeFile(join(externalDirectory, "plugin.json"), JSON.stringify({ name: "dod-guard", version: "5.4.56" }));
+    await rm(manifestDirectory, { recursive: true });
+    await symlink(externalDirectory, manifestDirectory, "junction");
+
+    const result = runPreflight(fixture, client, registryFor(client, fixture.pluginRoot));
+    assertRejected(result, /manifest path resolves outside the registered plugin root/);
+  }
+});
+
+test("rejects a publish skill path that is not a readable regular file", async (t) => {
+  for (const client of ["codex", "claude"]) {
+    const fixture = await createInstall(t, client);
+    await rm(fixture.skillFile);
+    await mkdir(fixture.skillFile);
+
+    const result = runPreflight(fixture, client, registryFor(client, fixture.pluginRoot));
+    assertRejected(result, /not a readable regular file/);
+  }
+});
+
+test("rejects an unreadable publish skill on POSIX", async (t) => {
+  if (process.platform === "win32" || (typeof process.getuid === "function" && process.getuid() === 0)) {
+    t.skip("POSIX permission bits are not enforced for this test process");
+    return;
+  }
+
+  const fixture = await createInstall(t, "claude");
+  await chmod(fixture.skillFile, 0);
+  const result = runPreflight(fixture, "claude", registryFor("claude", fixture.pluginRoot));
+  assertRejected(result, /not a readable regular file/);
+});
+
 test("reports stale pins and malformed inventories without changing the installation", async (t) => {
   for (const client of ["codex", "claude"]) {
     const fixture = await createInstall(t, client);
@@ -214,6 +252,7 @@ test("reports stale pins and malformed inventories without changing the installa
     const staleVersion = runPreflight(fixture, client, registry, ["--version", "5.4.55"]);
     assertRejected(staleVersion, /requested version does not exactly match/);
     assert.equal(staleVersion.response.requested.version, "5.4.55");
+    assert.equal(staleVersion.response.observed.registry, "parsed");
 
     const stalePath = runPreflight(fixture, client, registry, [
       "--skill-path",
@@ -224,6 +263,7 @@ test("reports stale pins and malformed inventories without changing the installa
 
     const malformed = runPreflight(fixture, client, null, [], "{");
     assertRejected(malformed, /Registry input is missing or malformed/);
+    assert.equal(malformed.response.observed.registry, "unavailable");
     assert.equal(malformed.response.observed.pluginIdentity, "unavailable");
     assertRejected(runPreflight(fixture, client, null, [], "{}"), /expected .* plugin list/);
     assert.equal(await readFile(fixture.manifestPath, "utf8"), manifestBefore);
