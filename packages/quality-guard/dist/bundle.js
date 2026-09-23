@@ -26023,12 +26023,7 @@ function decisionForSnapshot(input) {
   const changed = affectedPaths(snapshot);
   const trackedAcknowledgements = acknowledgementRecords(input);
   if (!changed.some(sourceChange)) return noSourceDecision(snapshot);
-  return decisionWithSources(
-    input,
-    snapshot,
-    changed,
-    trackedAcknowledgements
-  );
+  return decisionWithSources(input, snapshot, changed, trackedAcknowledgements);
 }
 function runStagedCheck(root2, options) {
   return decisionForSnapshot({
