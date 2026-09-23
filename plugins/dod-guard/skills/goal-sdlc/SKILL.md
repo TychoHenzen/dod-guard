@@ -32,6 +32,19 @@ A delegated subagent may own PR review when the applicable review contract
 permits it. The main thread still owns sequencing, evidence verification,
 mutation decisions, and the built-in goal's stop condition.
 
+## Contract ownership
+
+- Built-in `/goal` owns goal persistence, continuation, and the final stop
+  decision.
+- `$dod-guard:next-ticket` owns one PBI's implementation branch, evidence, and
+  pushed handoff.
+- `$dod-guard:submit-draft-pr` owns PR creation and convergence before review.
+- `$dod-guard:review-pr`, `$dod-guard:fix-pr-review`, and
+  `$dod-guard:complete-pr` own their review, remediation, and guarded merge
+  gates.
+- This skill owns only the queue-level orchestration and bounded delegation
+  between those existing owners.
+
 Referenced `dod-guard` skills resolve by name under the active plugin root, not
 by cached absolute or versioned paths. The no-worktree rule below is strict:
 never create, use, register, switch to, prune, remove, or clean up a Git
