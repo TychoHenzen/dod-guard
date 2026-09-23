@@ -5,11 +5,7 @@ import {
   readQualityDecisionNotes,
   writeQualityDecisionNote,
 } from "../../../src/commit-gate/quality-decision-notes.js";
-import {
-  fixture,
-  git,
-  withFixture,
-} from "./acknowledgement-test-support.js";
+import { fixture, git, withFixture } from "./acknowledgement-test-support.js";
 
 const MALFORMED_FINGERPRINT_ERROR = new RegExp(
   "quality decision note\\[0\\]\\.fingerprint must be a " +

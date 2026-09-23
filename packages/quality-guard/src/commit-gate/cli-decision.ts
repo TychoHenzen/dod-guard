@@ -43,9 +43,7 @@ function decisionWithSources(
       ? { findings: [] }
       : scannerEvidence(input.root, input.targetRef),
     pendingAcknowledgementRecords:
-      input.targetRef === "index"
-        ? trackedAcknowledgements
-        : [],
+      input.targetRef === "index" ? trackedAcknowledgements : [],
     attestations: snapshot.targetCommitSha
       ? readQualityDecisionNotes(input.root, snapshot.targetCommitSha)
       : [],

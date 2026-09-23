@@ -22456,6 +22456,14 @@ function isSourcePath(filePath) {
 
 // src/commit-gate/fingerprint.ts
 var DECISION_RECORD_PATH = ".github/quality/architecture-decisions.json";
+var CANONICAL_FINGERPRINT = /^[0-9a-f]{64}$/;
+function canonicalFingerprint(value, location) {
+  if (typeof value !== "string" || !CANONICAL_FINGERPRINT.test(value))
+    throw new Error(
+      `${location} must be a 64-character lowercase hexadecimal SHA-256 fingerprint`
+    );
+  return value;
+}
 function fingerprintSnapshot(snapshot, config2) {
   const changes = sourceChanges(snapshot.changes);
   return createHash("sha256").update(
@@ -22527,7 +22535,10 @@ function parseRecord(item, index) {
   validateRecordFields(record3, index);
   return {
     findingId: recordValue(record3, "findingId", index),
-    fingerprint: recordValue(record3, "fingerprint", index),
+    fingerprint: canonicalFingerprint(
+      record3.fingerprint,
+      `${DECISION_RECORD_PATH}[${index}].fingerprint`
+    ),
     ...provenance(record3, index),
     reason: recordValue(record3, "reason", index),
     author: recordValue(record3, "author", index),
@@ -22555,7 +22566,8 @@ function provenance(record3, index) {
   };
 }
 function appendArchitectureAcknowledgement(source, record3) {
-  const records = [...parseArchitectureAcknowledgements(source), record3];
+  const records = parseArchitectureAcknowledgements(source);
+  records.push(parseRecord(record3, records.length));
   return `${JSON.stringify(records, null, 2)}
 `;
 }
@@ -25843,9 +25855,14 @@ function noSourceDecision(snapshot) {
     scanner: { findings: [] }
   });
 }
-function acknowledgementRecords(root2, ref) {
+function acknowledgementRecords(input) {
   return parseArchitectureAcknowledgements(
-    treeFile({ root: root2, ref, filePath: DECISION_RECORD_PATH, fallback: "[]" })
+    treeFile({
+      root: input.root,
+      ref: input.targetRef,
+      filePath: DECISION_RECORD_PATH,
+      fallback: "[]"
+    })
   );
 }
 function refactorMapFor(input) {
@@ -25907,7 +25924,7 @@ function parseRecord2(item, index) {
       record3.findingId,
       `quality decision note[${index}].findingId`
     ),
-    fingerprint: required2(
+    fingerprint: canonicalFingerprint(
       record3.fingerprint,
       `quality decision note[${index}].fingerprint`
     ),
@@ -25966,7 +25983,8 @@ function readQualityDecisionNotes(root2, targetSha) {
 }
 function writeQualityDecisionNote(root2, record3) {
   validateTarget(root2, record3);
-  const records = [...readQualityDecisionNotes(root2, record3.targetSha), record3];
+  const records = readQualityDecisionNotes(root2, record3.targetSha);
+  records.push(parseRecord2(record3, records.length));
   execFileSync5(
     "git",
     [
@@ -25988,6 +26006,7 @@ function decisionWithSources(input, snapshot, changed) {
     snapshotConfig(input.root, input.targetRef)
   );
   const { before, after } = sourceInventories({ ...input, changed });
+  const trackedAcknowledgements = acknowledgementRecords(input);
   return decideQuality({
     snapshot,
     config: config2,
@@ -25995,7 +26014,7 @@ function decisionWithSources(input, snapshot, changed) {
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
     scanner: input.skipStructural ? { findings: [] } : scannerEvidence(input.root, input.targetRef),
-    pendingAcknowledgementRecords: input.targetRef === "index" ? acknowledgementRecords(input.root, input.targetRef) : [],
+    pendingAcknowledgementRecords: input.targetRef === "index" ? trackedAcknowledgements : [],
     attestations: snapshot.targetCommitSha ? readQualityDecisionNotes(input.root, snapshot.targetCommitSha) : [],
     refactorMap: refactorMapFor(input)
   });
