@@ -26002,19 +26002,15 @@ function writeQualityDecisionNote(root2, record3) {
 
 // src/commit-gate/cli-decision.ts
 function decisionWithSources(input, snapshot, changed) {
-  const trackedAcknowledgements = acknowledgementRecords(input);
-  const config2 = parseQualityConfig(
-    snapshotConfig(input.root, input.targetRef)
-  );
   const { before, after } = sourceInventories({ ...input, changed });
   return decideQuality({
     snapshot,
-    config: config2,
+    config: parseQualityConfig(snapshotConfig(input.root, input.targetRef)),
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
     scanner: input.skipStructural ? { findings: [] } : scannerEvidence(input.root, input.targetRef),
-    pendingAcknowledgementRecords: input.targetRef === "index" ? trackedAcknowledgements : [],
+    pendingAcknowledgementRecords: input.targetRef === "index" ? input.trackedAcknowledgements : [],
     attestations: snapshot.targetCommitSha ? readQualityDecisionNotes(input.root, snapshot.targetCommitSha) : [],
     refactorMap: refactorMapFor(input)
   });
@@ -26022,9 +26018,13 @@ function decisionWithSources(input, snapshot, changed) {
 function decisionForSnapshot(input) {
   const snapshot = withoutDistributionChanges(input.snapshot);
   const changed = affectedPaths(snapshot);
-  acknowledgementRecords(input);
+  const trackedAcknowledgements = acknowledgementRecords(input);
   if (!changed.some(sourceChange)) return noSourceDecision(snapshot);
-  return decisionWithSources(input, snapshot, changed);
+  return decisionWithSources(
+    { ...input, trackedAcknowledgements },
+    snapshot,
+    changed
+  );
 }
 function runStagedCheck(root2, options) {
   return decisionForSnapshot({
