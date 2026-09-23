@@ -24,11 +24,6 @@ on:
     branches: [master]
   workflow_dispatch:
 
-env:
-  # Biome owns line width (120); ratcheting it here would fight the formatter.
-  QUALITY_RULES: file-length,function-length,complexity,param-count,nesting-depth,types-per-file,duplicate-block,else-branch,unnamed-tuple,dead-export,unused-local,test-only-export,commented-out-code,todo-marker,stateless-method,comment-bloat,comment-restates-code,comment-metadata,comment-placeholder,comment-missing-reference,output-parameter,flag-parameter,wildcard-import,naming-encoding,assumption-marker
-  QUALITY_SCAN: packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs
-
 permissions:
   contents: read
 
@@ -112,132 +107,8 @@ jobs:
       - name: Lockfile is in sync
         run: git diff --exit-code -- package-lock.json
 
-      - run: npm run build
-
-      # Rebuild every tracked workspace bundle before the drift check.
-      - run: npm run bundle
-
-      # Reproduce formatting locally. The drift check below rejects any fix the
-      # feature branch did not commit.
-      - name: Reproduce Biome formatting
-        run: npx @biomejs/biome format --write --no-errors-on-unmatched
-
-      # ── Ratchets: record the outcome, tighten on improvement, fail at the end ──
-
-      - name: Committed-tree quality decision tests
-        run: node --test scripts/ci/committed-quality-gate.test.mjs
-
-      - name: Quality ratchet (structure)
-        id: quality
-        continue-on-error: true
-        run: |
-          node "$QUALITY_SCAN" packages \
-            --exclude=/dist/ --exclude=/dist-test/ --exclude=node_modules \
-            --profile=strict \
-            --rules="$QUALITY_RULES" \
-            --baseline=.github/quality/quality-baseline.json \
-            --fail-on=regression | tee quality-report.txt
-          exit "${PIPESTATUS[0]}"
-      - name: Tighten quality baseline
-        if: steps.quality.outcome == 'success'
-        run: |
-          if ! grep -q "Improvements: 0 " quality-report.txt; then
-            node "$QUALITY_SCAN" packages \
-              --exclude=/dist/ --exclude=/dist-test/ --exclude=node_modules \
-              --profile=strict \
-              --rules="$QUALITY_RULES" \
-              --write-baseline=.github/quality/quality-baseline.json
-          fi
-
-      - name: Fetch quality decision notes
-        run: |
-          if ! git fetch origin refs/notes/quality-decisions:refs/notes/quality-decisions 2>quality-notes-fetch.err; then
-            if grep -q "couldn't find remote ref refs/notes/quality-decisions" quality-notes-fetch.err; then
-              echo "No quality decision notes ref is published for this repository."
-            else
-              cat quality-notes-fetch.err
-              exit 1
-            fi
-          fi
-          rm -f quality-notes-fetch.err
-
-      # The PostToolUse hook is file-local feedback. This replays the one
-      # authoritative decision against HEAD and its first parent, so a commit
-      # that bypassed the local hook cannot bypass the release gate.
-      - name: Committed-tree quality decision
-        run: QUALITY_GUARD_SKIP_STRUCTURAL=1 node packages/quality-guard/dist/bundle.js check --committed HEAD --json
-
-      - name: Test presence ratchet
-        id: tests-present
-        continue-on-error: true
-        run: |
-          node scripts/ci/check-tests-present.mjs | tee tests-present.txt
-          exit "${PIPESTATUS[0]}"
-      - name: Tighten test presence baseline
-        if: steps.tests-present.outcome == 'success'
-        run: |
-          if grep -q "fixed:" tests-present.txt; then
-            node scripts/ci/check-tests-present.mjs --write-baseline || true
-          fi
-
-      # A consumed .quality-skip is a deliberate bypass of the quality gate.
-      # It must not reach a release without a human signing it off.
-      - name: Unacknowledged quality-gate waivers
-        run: node packages/quality-guard/scripts/check-skips.mjs .
-
-      - name: Advisory ratchet (production dependencies)
-        id: audit
-        continue-on-error: true
-        run: |
-          node scripts/ci/check-audit.mjs | tee audit-report.txt
-          exit "${PIPESTATUS[0]}"
-      - name: Tighten audit baseline
-        if: steps.audit.outcome == 'success'
-        run: |
-          if grep -q "fixed:" audit-report.txt; then
-            node scripts/ci/check-audit.mjs --write-baseline || true
-          fi
-
-      - name: Coverage ratchet (per package)
-        id: coverage
-        continue-on-error: true
-        run: |
-          node scripts/ci/check-coverage.mjs | tee coverage-report.txt
-          exit "${PIPESTATUS[0]}"
-      - name: Tighten coverage baseline
-        if: steps.coverage.outcome == 'success'
-        run: |
-          if grep -qE "improved:|adopted:" coverage-report.txt; then
-            node scripts/ci/check-coverage.mjs --write-baseline || true
-          fi
-
-      # Strict check: must be clean after autofix.
-      - name: Biome strict check
-        run: npx @biomejs/biome check --max-diagnostics=200 --no-errors-on-unmatched
-
-      # Ratchets run with continue-on-error so baselines still get pushed; enforce here.
-      - name: Enforce ratchet outcomes
-        run: |
-          FAILED=""
-          if [ "${{ steps.quality.outcome }}" = "failure" ]; then FAILED="$FAILED structural-quality"; fi
-          if [ "${{ steps.tests-present.outcome }}" = "failure" ]; then FAILED="$FAILED test-presence"; fi
-          if [ "${{ steps.audit.outcome }}" = "failure" ]; then FAILED="$FAILED advisories"; fi
-          if [ "${{ steps.coverage.outcome }}" = "failure" ]; then FAILED="$FAILED coverage"; fi
-          if [ -n "$FAILED" ]; then
-            echo "RATCHET FAILED for:$FAILED — see the step logs above"
-            exit 1
-          fi
-          echo "All ratchets held."
-
-      - name: Tracked generated files are current
-        run: |
-          rm -f quality-report.txt tests-present.txt audit-report.txt coverage-report.txt
-          if ! git diff --exit-code --quiet; then
-            echo "Generated files, formatting, or ratchet baselines are stale."
-            echo "Regenerate them on the feature branch and commit the result."
-            git diff --stat
-            exit 1
-          fi
+      - name: Run static-analysis preflight
+        run: npm run preflight:static-analysis
 
   package-integrity:
     needs: build-test
