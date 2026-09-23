@@ -28,9 +28,10 @@ The main thread is the high-level orchestrator. For every real work step:
 4. Preserve the checkpoint on failure or interruption; repair the same step or
    record an external blocker before selecting another parent.
 
-A delegated subagent may own PR review when the applicable review contract
-permits it. The main thread still owns sequencing, evidence verification,
-mutation decisions, and the built-in goal's stop condition.
+The shipped `[$dod-guard:review-pr](../review-pr/SKILL.md)` skill owns the
+single PR review for this plugin. A delegated subagent may invoke that owner,
+but the main thread still owns sequencing, evidence verification, mutation
+decisions, and the built-in goal's stop condition.
 
 ## Contract ownership
 
@@ -416,7 +417,7 @@ The resulting PR must be published/non-draft (`draft=false`). If the skill creat
 
 Review policy:
 
-&#x20; [$review-pr-branch]
+&#x20; [$dod-guard:review-pr](../review-pr/SKILL.md)
 
 
 
@@ -426,7 +427,7 @@ Before review:
 
 - Read the durable review ledger at `<directory containing Automation.md>/.beehaiive/review-checkpoints.json`. Key entries by repository and PR number.
 
-- If a ledger entry exists with a completed review result or a reviewed head, do not invoke `review-pr-branch` or `review-pr` again. A new context, subagent, timeout, or interrupted reviewer is not a completed review or a new review slot; an incomplete execution follows the recovery rules below.
+- If a ledger entry exists with a completed review result or a reviewed head, do not invoke `review-pr` again. A new context, subagent, timeout, or interrupted reviewer is not a completed review or a new review slot; an incomplete execution follows the recovery rules below.
 
 - If no entry exists, persist `reviewAttempted=true`, the PR number, the current head SHA, and the attempt time before invoking the reviewer. If that write fails, do not invoke the reviewer.
 

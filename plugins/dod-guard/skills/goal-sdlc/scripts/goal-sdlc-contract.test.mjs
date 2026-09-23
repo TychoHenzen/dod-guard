@@ -45,6 +45,13 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.match(skill, /main thread is the high-level orchestrator/);
   assert.match(skill, /never create, use, register, switch to, prune, remove, or clean up a Git\s+worktree/);
   assert.match(skill, /\[\$dod-guard:next-ticket\]\(\.\.\/next-ticket\/SKILL\.md\)/);
+  assert.ok(
+    skill.includes(
+      "The shipped `[$dod-guard:review-pr](../review-pr/SKILL.md)` skill owns the\n" +
+        "single PR review for this plugin.",
+    ),
+  );
+  assert.doesNotMatch(skill, /review-pr-branch/);
   assert.doesNotMatch(skill, /5\.4\.5|plugins[\\/]cache[\\/]dod-guard-monorepo/);
 });
 
