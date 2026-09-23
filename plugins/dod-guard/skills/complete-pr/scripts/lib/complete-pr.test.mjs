@@ -236,17 +236,19 @@ test("lists ci.yml workflow runs for the trusted head SHA", () => {
 });
 
 test("rejects malformed ci.yml workflow responses", () => {
-  const client = new GitHubClient("owner/repo", 24, () => ({
-    status: 0,
-    stderr: "",
-    stdout: JSON.stringify({}),
-  }));
+  for (const response of [{}, []]) {
+    const client = new GitHubClient("owner/repo", 24, () => ({
+      status: 0,
+      stderr: "",
+      stdout: JSON.stringify(response),
+    }));
 
-  assert.throws(() => client.getCiWorkflowRuns("head-1"), {
-    code: "github_response_shape",
-    name: "CompletionError",
-    message: workflowRunsPattern,
-  });
+    assert.throws(() => client.getCiWorkflowRuns("head-1"), {
+      code: "github_response_shape",
+      name: "CompletionError",
+      message: workflowRunsPattern,
+    });
+  }
 });
 
 test(
