@@ -1,9 +1,17 @@
 // biome-ignore lint/correctness/noNodejsModules: This adapter invokes the local GitHub CLI from Node.
 import { spawnSync } from "node:child_process";
 import { normalizeRequiredChecks } from "./check-normalization.mjs";
+import { CompletionError } from "./completion-error.mjs";
 
 const GH_CHECKS_PENDING_EXIT = 8;
 const HTTP_NOT_FOUND = /HTTP 404/;
+
+function githubResponseError(endpoint, field) {
+  return new CompletionError(
+    "github_response_shape",
+    `GitHub response for ${endpoint} must include an array ${field}.`,
+  );
+}
 
 function runGh(args, acceptedExitCodes = [0]) {
   const result = spawnSync("gh", args, { encoding: "utf8", windowsHide: true });
@@ -29,6 +37,19 @@ function ghJson(args, acceptedExitCodes = [0], commandRunner = runGh) {
 function ghJsonPages(endpoint, field, commandRunner) {
   const pages = ghJsonPagesData(endpoint, commandRunner);
   return pages.flatMap((page) => (Array.isArray(page?.[field]) ? page[field] : []));
+}
+
+function ghJsonPagesRequired(endpoint, field, commandRunner) {
+  const pages = ghJsonPagesData(endpoint, commandRunner);
+  if (pages.length === 0) {
+    throw githubResponseError(endpoint, field);
+  }
+  return pages.flatMap((page) => {
+    if (!page || typeof page !== "object" || !Array.isArray(page[field])) {
+      throw githubResponseError(endpoint, field);
+    }
+    return page[field];
+  });
 }
 
 function ghJsonPagesData(endpoint, commandRunner) {
@@ -167,6 +188,28 @@ export class GitHubClient {
       pullRequest ?? this.getPullRequest(pullNumber),
       this.#commandRunner,
     );
+  }
+
+  getCiWorkflowRuns(headSha) {
+    const workflowRunsPath =
+      `repos/${this.repository}/actions/` + "workflows/ci.yml/runs";
+    const query = `?head_sha=${encodeURIComponent(headSha)}&per_page=100`;
+    return ghJsonPagesRequired(
+      `${workflowRunsPath}${query}`,
+      "workflow_runs",
+      this.#commandRunner,
+    );
+  }
+
+  dispatchCiWorkflow(branchName) {
+    this.#commandRunner([
+      "api",
+      "--method",
+      "POST",
+      `repos/${this.repository}/actions/workflows/ci.yml/dispatches`,
+      "-f",
+      `ref=${branchName}`,
+    ]);
   }
 
   updateBranch(pullNumber, expectedHead) {

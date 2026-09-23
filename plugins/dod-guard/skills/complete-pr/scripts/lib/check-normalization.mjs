@@ -150,6 +150,8 @@ function fallbackCheck(definition, checkRuns, statuses, headSha) {
   return summarizeResults(definition.name, results);
 }
 
-export function normalizeRequiredChecks(protection, checkRuns, statuses, headSha) {
+function normalizeRequiredChecks(protection, checkRuns, statuses, headSha) {
   return requiredCheckDefinitions(protection).map((definition) => fallbackCheck(definition, checkRuns, statuses, headSha));
 }
+
+export { normalizeCheckRun, normalizeRequiredChecks };
