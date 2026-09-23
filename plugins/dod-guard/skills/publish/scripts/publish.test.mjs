@@ -38,6 +38,33 @@ test("publish scans pending content before commit", async () => {
   assert.match(skill, /Never print matched values/);
 });
 
+test("publish resolves the exact active installation before release work", async () => {
+  const [skill, usage] = await Promise.all([
+    readFile(skillPath, "utf8"),
+    readFile(usagePath, "utf8"),
+  ]);
+  const preflightStart = skill.indexOf("## Installation identity preflight");
+  const procedureStart = skill.indexOf("## Procedure");
+  const preflight = skill.slice(preflightStart, procedureStart);
+
+  assert.ok(preflightStart >= 0 && procedureStart > preflightStart);
+  assert.match(preflight, /codex plugin list --json \| node/);
+  assert.match(preflight, /claude plugin list --json \| node/);
+  assert.match(preflight, /preflight-installation\.mjs/);
+  assert.match(preflight, /unique enabled `dod-guard@dod-guard-monorepo` record/);
+  assert.match(preflight, /unique enabled `dod-guard@dod-guard` record/);
+  assert.match(preflight, /source\.path/);
+  assert.match(preflight, /installPath/);
+  assert.match(preflight, /\.codex-plugin\/plugin\.json/);
+  assert.match(preflight, /\.claude-plugin\/plugin\.json/);
+  assert.match(preflight, /absolute path to `skills\/publish\/SKILL\.md`/);
+  assert.match(preflight, /If the helper exits non-zero[\s\S]+then stop/);
+  assert.match(preflight, /use the\s+returned `pluginRoot` for every later `<plugin-root>` path/);
+  assert.ok(usage.includes("Use the installed `/dod-guard:publish` entry point"));
+  assert.ok(usage.includes("version=<exact-version>"));
+  assert.ok(usage.includes("path=<absolute-path-to-skills/publish/SKILL.md>"));
+});
+
 test("maintenance releases skip PBI and PR while restoring protection", async () => {
   const skill = await readFile(skillPath, "utf8");
   const defaults = await readFile(
@@ -249,14 +276,9 @@ function createProtectionFixture() {
   };
 }
 
-test("maintenance fixture reaches the push boundary only after classification and protection proof", async () => {
-  const usage = await readFile(usagePath, "utf8");
+function createValidMaintenanceInput() {
   const savedProtection = createProtectionFixture();
-  const protectionReadback = {
-    ...savedProtection,
-    enforce_admins: { enabled: false },
-  };
-  const validInput = {
+  return {
     classification: "maintenance-only",
     endpoint: adminEndpoint,
     method: "DELETE",
@@ -264,9 +286,17 @@ test("maintenance fixture reaches the push boundary only after classification an
     initialAdminReadback: { status: 200, body: { enabled: true } },
     initialProtectionReadback: { status: 200, body: savedProtection },
     adminReadback: { status: 200, body: { enabled: false } },
-    protectionReadback: { status: 200, body: protectionReadback },
+    protectionReadback: {
+      status: 200,
+      body: { ...savedProtection, enforce_admins: { enabled: false } },
+    },
     savedProtection,
   };
+}
+
+test("maintenance fixture reaches the push boundary only after classification and protection proof", async () => {
+  const usage = await readFile(usagePath, "utf8");
+  const validInput = createValidMaintenanceInput();
 
   assert.deepEqual(runMaintenancePath(validInput), {
     proceed: true,
@@ -283,21 +313,7 @@ test("maintenance fixture reaches the push boundary only after classification an
 });
 
 test("maintenance fixture rejects endpoint and method drift before mutation", () => {
-  const savedProtection = createProtectionFixture();
-  const validInput = {
-    classification: "maintenance-only",
-    endpoint: adminEndpoint,
-    method: "DELETE",
-    deleteResponse: { status: 204, body: "" },
-    initialAdminReadback: { status: 200, body: { enabled: true } },
-    initialProtectionReadback: { status: 200, body: savedProtection },
-    adminReadback: { status: 200, body: { enabled: false } },
-    protectionReadback: {
-      status: 200,
-      body: { ...savedProtection, enforce_admins: { enabled: false } },
-    },
-    savedProtection,
-  };
+  const validInput = createValidMaintenanceInput();
 
   for (const invalidRequest of [
     { endpoint: protectionEndpoint, method: "DELETE" },
@@ -309,21 +325,8 @@ test("maintenance fixture rejects endpoint and method drift before mutation", ()
 });
 
 test("maintenance fixture fails closed for empty, failed, malformed, or stale readbacks", () => {
-  const savedProtection = createProtectionFixture();
-  const validInput = {
-    classification: "maintenance-only",
-    endpoint: adminEndpoint,
-    method: "DELETE",
-    deleteResponse: { status: 204, body: "" },
-    initialAdminReadback: { status: 200, body: { enabled: true } },
-    initialProtectionReadback: { status: 200, body: savedProtection },
-    adminReadback: { status: 200, body: { enabled: false } },
-    protectionReadback: {
-      status: 200,
-      body: { ...savedProtection, enforce_admins: { enabled: false } },
-    },
-    savedProtection,
-  };
+  const validInput = createValidMaintenanceInput();
+  const savedProtection = validInput.savedProtection;
   const invalidResponses = [
     { initialProtectionReadback: { status: 500, body: {} } },
     { initialAdminReadback: { status: 200, body: { enabled: false } } },
