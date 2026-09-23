@@ -10,6 +10,7 @@ const passingChecks = [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]
 const requiredCheckNames = ["build-test", "plugin-config", "static-analysis", "package-integrity"];
 const headShaField = "head_sha";
 const workflowRunsField = "workflow_runs";
+const workflowRunsPattern = /workflow_runs/;
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
 
 function pull(overrides = {}) {
@@ -243,8 +244,8 @@ test("rejects malformed ci.yml workflow responses", () => {
 
   assert.throws(() => client.getCiWorkflowRuns("head-1"), {
     code: "github_response_shape",
-    name: "GitHubResponseError",
-    message: /workflow_runs/,
+    name: "CompletionError",
+    message: workflowRunsPattern,
   });
 });
 

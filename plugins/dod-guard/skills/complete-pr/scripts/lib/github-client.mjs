@@ -1,16 +1,16 @@
 // biome-ignore lint/correctness/noNodejsModules: This adapter invokes the local GitHub CLI from Node.
 import { spawnSync } from "node:child_process";
 import { normalizeRequiredChecks } from "./check-normalization.mjs";
+import { CompletionError } from "./completion-error.mjs";
 
 const GH_CHECKS_PENDING_EXIT = 8;
 const HTTP_NOT_FOUND = /HTTP 404/;
 
-class GitHubResponseError extends Error {
-  constructor(endpoint, field) {
-    super(`GitHub response for ${endpoint} must include an array ${field}.`);
-    this.name = "GitHubResponseError";
-    this.code = "github_response_shape";
-  }
+function githubResponseError(endpoint, field) {
+  return new CompletionError(
+    "github_response_shape",
+    `GitHub response for ${endpoint} must include an array ${field}.`,
+  );
 }
 
 function runGh(args, acceptedExitCodes = [0]) {
@@ -42,11 +42,11 @@ function ghJsonPages(endpoint, field, commandRunner) {
 function ghJsonPagesRequired(endpoint, field, commandRunner) {
   const pages = ghJsonPagesData(endpoint, commandRunner);
   if (pages.length === 0) {
-    throw new GitHubResponseError(endpoint, field);
+    throw githubResponseError(endpoint, field);
   }
   return pages.flatMap((page) => {
     if (!page || typeof page !== "object" || !Array.isArray(page[field])) {
-      throw new GitHubResponseError(endpoint, field);
+      throw githubResponseError(endpoint, field);
     }
     return page[field];
   });
