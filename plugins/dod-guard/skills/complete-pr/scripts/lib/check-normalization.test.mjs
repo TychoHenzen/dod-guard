@@ -2,8 +2,49 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { normalizeRequiredChecks } from "./check-normalization.mjs";
+import {
+  normalizeCheckRun,
+  normalizeRequiredChecks,
+} from "./check-normalization.mjs";
 import { GitHubClient } from "./github-client.mjs";
+
+const headShaField = "head_sha";
+
+test(
+  "normalizes workflow run status with the same exact-head check rules",
+  () => {
+  const queuedRun = {
+    conclusion: null,
+    [headShaField]: "head-1",
+    name: "ci.yml",
+    status: "queued",
+  };
+  const failedRun = {
+    conclusion: "failure",
+    [headShaField]: "head-1",
+    name: "ci.yml",
+    status: "completed",
+  };
+  const staleRun = {
+    conclusion: "success",
+    [headShaField]: "old-head",
+    name: "ci.yml",
+    status: "completed",
+  };
+  assert.deepEqual(
+    normalizeCheckRun(queuedRun, "head-1"),
+    { bucket: "pending", name: "ci.yml", state: "QUEUED" },
+  );
+  assert.deepEqual(
+    normalizeCheckRun(failedRun, "head-1"),
+    { bucket: "fail", name: "ci.yml", state: "FAILURE" },
+  );
+  assert.deepEqual(
+    normalizeCheckRun(staleRun, "head-1"),
+    { bucket: "unknown", name: "ci.yml", state: "STALE_HEAD" },
+  );
+  },
+);
 
 test("normalizes exact-head provider checks and GitHub's passing conclusions", () => {
   assert.deepEqual(

@@ -169,6 +169,28 @@ export class GitHubClient {
     );
   }
 
+  getCiWorkflowRuns(headSha) {
+    const workflowRunsPath =
+      `repos/${this.repository}/actions/` + "workflows/ci.yml/runs";
+    const query = `?head_sha=${encodeURIComponent(headSha)}&per_page=100`;
+    return ghJsonPages(
+      `${workflowRunsPath}${query}`,
+      "workflow_runs",
+      this.#commandRunner,
+    );
+  }
+
+  dispatchCiWorkflow(branchName) {
+    this.#commandRunner([
+      "api",
+      "--method",
+      "POST",
+      `repos/${this.repository}/actions/workflows/ci.yml/dispatches`,
+      "-f",
+      `ref=${branchName}`,
+    ]);
+  }
+
   updateBranch(pullNumber, expectedHead) {
     this.#commandRunner([
       "api",
