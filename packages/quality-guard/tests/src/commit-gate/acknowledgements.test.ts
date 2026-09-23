@@ -5,14 +5,29 @@ import {
   parseArchitectureAcknowledgements,
 } from "../../../src/commit-gate/acknowledgements.js";
 
+const VALID_FINGERPRINT = "a".repeat(64);
+const LEGACY_FINGERPRINT = "b".repeat(64);
+const SHORT_FINGERPRINT = "a".repeat(63);
+const LONG_FINGERPRINT = "a".repeat(65);
+const MALFORMED_FINGERPRINT_ERROR = new RegExp(
+  "architecture-decisions\\.json\\[0\\]\\.fingerprint must be a " +
+    "64-character lowercase hexadecimal SHA-256 fingerprint",
+);
 const trackedRecord = {
   findingId: "finding",
-  fingerprint: "a".repeat(64),
+  fingerprint: VALID_FINGERPRINT,
   baseIdentity: "base",
   targetIdentity: "target",
   reason: "Reviewed with the team",
   author: "A. Reviewer",
   time: "2026-08-31T00:00:00.000Z",
+};
+const legacyRecord = {
+  findingId: "a",
+  fingerprint: LEGACY_FINGERPRINT,
+  reason: "c",
+  author: "d",
+  time: "e",
 };
 
 test("stores tracked acknowledgement fields", () => {
@@ -22,24 +37,12 @@ test("stores tracked acknowledgement fields", () => {
 
 test("keeps legacy acknowledgement records parseable but rejects partial provenance", () => {
   assert.deepEqual(
-    parseArchitectureAcknowledgements(
-      `[{"findingId":"a","fingerprint":"${"b".repeat(64)}","reason":"c","author":"d","time":"e"}]`,
-    ),
-    [
-      {
-        findingId: "a",
-        fingerprint: "b".repeat(64),
-        reason: "c",
-        author: "d",
-        time: "e",
-      },
-    ],
+    parseArchitectureAcknowledgements(JSON.stringify([legacyRecord])),
+    [legacyRecord],
   );
+  const partialRecord = { ...legacyRecord, baseIdentity: "base" };
   assert.throws(
-    () =>
-      parseArchitectureAcknowledgements(
-        `[{"findingId":"a","fingerprint":"${"b".repeat(64)}","baseIdentity":"base","reason":"c","author":"d","time":"e"}]`,
-      ),
+    () => parseArchitectureAcknowledgements(JSON.stringify([partialRecord])),
     /both baseIdentity and targetIdentity/,
   );
 });
@@ -61,10 +64,10 @@ test("rejects decision records with unsupported or missing fields", () => {
 
 test("rejects malformed fingerprint shapes with their record path", () => {
   for (const fingerprint of [
-    "a".repeat(63),
-    "a".repeat(65),
-    "g".repeat(64),
-    "A".repeat(64),
+    SHORT_FINGERPRINT,
+    LONG_FINGERPRINT,
+    VALID_FINGERPRINT.replaceAll("a", "g"),
+    VALID_FINGERPRINT.toUpperCase(),
   ]) {
     assert.throws(
       () =>
@@ -76,7 +79,7 @@ test("rejects malformed fingerprint shapes with their record path", () => {
             },
           ]),
         ),
-      /architecture-decisions\.json\[0\]\.fingerprint must be a 64-character lowercase hexadecimal SHA-256 fingerprint/,
+      MALFORMED_FINGERPRINT_ERROR,
     );
   }
 });

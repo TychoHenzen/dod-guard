@@ -11,7 +11,8 @@ const CANONICAL_FINGERPRINT = /^[0-9a-f]{64}$/;
 export function canonicalFingerprint(value: unknown, location: string): string {
   if (typeof value !== "string" || !CANONICAL_FINGERPRINT.test(value))
     throw new Error(
-      `${location} must be a 64-character lowercase hexadecimal SHA-256 fingerprint`,
+      `${location} must be a 64-character lowercase hexadecimal ` +
+        "SHA-256 fingerprint",
     );
   return value;
 }

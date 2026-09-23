@@ -1,14 +1,10 @@
-import {
-  canonicalFingerprint,
-  DECISION_RECORD_PATH,
-} from "./fingerprint.js";
+import { canonicalFingerprint, DECISION_RECORD_PATH } from "./fingerprint.js";
 
 const ALLOWED_FIELDS = new Set(
   "findingId fingerprint baseIdentity targetIdentity reason author time".split(
     " ",
   ),
 );
-
 export interface ArchitectureAcknowledgement {
   findingId: string;
   fingerprint: string;
