@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
-import { fileURLToPath } from "node:url";
 import * as path from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   git,
   stagedReview,
@@ -16,8 +16,10 @@ const BUNDLE = fileURLToPath(
 );
 const MALFORMED_RECORD = JSON.stringify([
   {
-    findingId: "historical-finding", fingerprint: "short",
-    reason: "Previously reviewed", author: "tester",
+    findingId: "historical-finding",
+    fingerprint: "short",
+    reason: "Previously reviewed",
+    author: "tester",
     time: "2026-08-31T00:00:00.000Z",
   },
 ]);
@@ -55,9 +57,7 @@ test(
   "bundled staged check rejects a malformed record without source changes",
   withFixture((root) => {
     stageDecisionRecord(root, MALFORMED_RECORD);
-    assertMalformedRecord(
-      bundledCheck(root, ["check", "--staged", "--json"]),
-    );
+    assertMalformedRecord(bundledCheck(root, ["check", "--staged", "--json"]));
   }),
 );
 
