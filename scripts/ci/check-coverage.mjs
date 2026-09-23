@@ -25,6 +25,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const C8_CLI = join(ROOT, "node_modules", "c8", "bin", "c8.js");
 const BASELINE = join(ROOT, ".github", "quality", "coverage-baseline.json");
 const PACKAGES = ["quality-guard", "fossil", "knowledge-base"];
 const TEST_PROJECT_PACKAGES = new Set(["quality-guard", "fossil", "knowledge-base"]);
@@ -41,7 +42,6 @@ function c8Args(pkg, reportDir) {
   const testDist = TEST_PROJECT_PACKAGES.has(pkg) ? `packages/${pkg}/dist-test` : dist;
   const coverageDist = TEST_PROJECT_PACKAGES.has(pkg) ? `${testDist}/src` : dist;
   return [
-    "c8",
     `--include=${coverageDist}/**/*.js`,
     `--exclude=${testDist}/**/*.test.js`,
     `--exclude=${coverageDist}/types.js`,
@@ -62,10 +62,10 @@ function c8Args(pkg, reportDir) {
 /** Run one package's suite under c8 and read the totals it wrote. */
 function measure(pkg, reportDir) {
   try {
-    execFileSync("npx", c8Args(pkg, reportDir), {
+    execFileSync(process.execPath, [C8_CLI, ...c8Args(pkg, reportDir)], {
       cwd: ROOT,
       encoding: "utf8",
-      shell: process.platform === "win32",
+      shell: false,
       stdio: ["ignore", "pipe", "pipe"],
       // Default 1MB is too small for a full suite's TAP output on a real
       // failure - a truncated buffer would report ENOBUFS instead of the
