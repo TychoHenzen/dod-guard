@@ -429,7 +429,291 @@ test("stops on missing fallback evidence without merge or branch cleanup", async
     message: /MISSING/,
   });
   assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.equal(client.calls.some(([name]) => name === "dispatch"), false);
 });
+
+test(
+  "dispatches missing ci.yml once after verifying the same-repository " +
+    "branch head",
+  async () => {
+  const client = new FixtureClient({
+    workflowRuns: [[], [workflowRun("head-1")]],
+    checks: [[{ bucket: "unknown", name: "build-test", state: "MISSING" }]],
+    pulls: [
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+    ],
+  });
+
+  await assert.rejects(
+    completePullRequest(client, { ...immediateOptions, ciRunPollLimit: 1 }),
+    { code: "unknown_check_state" },
+  );
+
+  const dispatches = client.calls.filter(([name]) => name === "dispatch");
+  assert.deepEqual(dispatches, [["dispatch", "codex/24-complete-pr"]]);
+  const branchRefIndex = client.calls.findIndex(
+    ([name]) => name === "getBranchRef",
+  );
+  const dispatchIndex = client.calls.findIndex(([name]) => name === "dispatch");
+  assert.ok(branchRefIndex >= 0);
+  assert.ok(branchRefIndex < dispatchIndex);
+  const dispatchCall = client.calls.findIndex(([name]) => name === "dispatch");
+  const requiredChecksCall = client.calls.findIndex(
+    ([name]) => name === "getRequiredChecks",
+  );
+  assert.ok(dispatchCall < requiredChecksCall);
+  },
+);
+
+test(
+  "leaves a pending ci.yml run pending instead of accepting missing job checks",
+  async () => {
+  const client = new FixtureClient({
+    workflowRuns: [
+      [workflowRun("head-1", { conclusion: null, status: "queued" })],
+      [workflowRun("head-1", { conclusion: null, status: "in_progress" })],
+      [workflowRun("head-1", { conclusion: null, status: "in_progress" })],
+      [workflowRun("head-1")],
+    ],
+    checks: [[{ bucket: "unknown", name: "build-test", state: "MISSING" }]],
+    pulls: [
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+    ],
+  });
+
+  await assert.rejects(
+    completePullRequest(client, { ...immediateOptions, ciRunPollLimit: 4 }),
+    { code: "unknown_check_state" },
+  );
+
+  const requiredChecksCalls = client.calls.filter(
+    ([name]) => name === "getRequiredChecks",
+  );
+  assert.equal(requiredChecksCalls.length, 1);
+  assert.equal(client.calls.filter(([name]) => name === "wait").length, 3);
+  assert.equal(client.calls.some(([name]) => name === "dispatch"), false);
+  const autoMergeIndex = client.calls.findIndex(
+    ([name]) => name === "enableRepositoryAutoMerge",
+  );
+  const workflowReads = client.calls
+    .slice(0, autoMergeIndex)
+    .filter(([name]) => name === "getCiWorkflowRuns");
+  assert.equal(workflowReads.length, 4);
+  },
+);
+
+test(
+  "does not enable auto-merge when an exact-head ci.yml run stays pending",
+  async () => {
+  const client = new FixtureClient({
+    workflowRuns: [[
+      workflowRun("head-1", { conclusion: null, status: "in_progress" }),
+    ]],
+    pulls: [pull(), pull({ isDraft: false })],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), {
+    code: "ci_workflow_run_timeout",
+    message: /remained pending/,
+  });
+
+  const workflowReads = client.calls.filter(
+    ([name]) => name === "getCiWorkflowRuns",
+  );
+  assert.equal(workflowReads.length, 2);
+  assert.equal(client.calls.filter(([name]) => name === "wait").length, 1);
+  assert.equal(
+    client.calls.some(([name]) => name === "enableRepositoryAutoMerge"),
+    false,
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "enablePullRequestAutoMerge"),
+    false,
+  );
+  assert.equal(
+    client.calls.some(([name]) => name === "getRequiredChecks"),
+    false,
+  );
+  },
+);
+
+test(
+  "fails before auto-merge when no exact-head ci.yml run appears " +
+    "after dispatch",
+  async () => {
+  const client = new FixtureClient({
+    workflowRuns: [[], []],
+    pulls: [pull(), pull({ isDraft: false })],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), {
+    code: "ci_workflow_run_timeout",
+    message: /head-1/,
+  });
+  assert.deepEqual(client.calls.filter(([name]) => name === "dispatch"), [
+    ["dispatch", "codex/24-complete-pr"],
+  ]);
+  assert.equal(
+    client.calls.some(([name]) => name === "enablePullRequestAutoMerge"),
+    false,
+  );
+  },
+);
+
+test(
+  "does not dispatch for a forked PR or a branch that moved from the " +
+    "trusted head",
+  async () => {
+  const forked = new FixtureClient({
+    pulls: [pull({ headRepository: "fork/repo", isCrossRepository: true })],
+  });
+  await assert.rejects(
+    completePullRequest(forked, immediateOptions),
+    { code: "cross_repository_head" },
+  );
+  assert.equal(forked.calls.some(([name]) => name === "dispatch"), false);
+
+  const moved = new FixtureClient({
+    workflowRuns: [[]],
+    refs: [{ sha: "new-head" }],
+    pulls: [pull(), pull({ isDraft: false })],
+  });
+  await assert.rejects(completePullRequest(moved, immediateOptions), {
+    code: "ci_branch_head_mismatch",
+    message: /head-1.*new-head/,
+  });
+  assert.equal(moved.calls.some(([name]) => name === "dispatch"), false);
+  assert.equal(
+    moved.calls.some(([name]) => name === "enablePullRequestAutoMerge"),
+    false,
+  );
+
+  const missingBranch = new FixtureClient({
+    workflowRuns: [[]],
+    refs: [null],
+    pulls: [pull(), pull({ isDraft: false })],
+  });
+  await assert.rejects(
+    completePullRequest(missingBranch, immediateOptions),
+    { code: "ci_branch_not_found" },
+  );
+  assert.equal(
+    missingBranch.calls.some(([name]) => name === "dispatch"),
+    false,
+  );
+  },
+);
+
+test(
+  "fails closed for duplicate, stale, wrong-workflow, failed, cancelled, " +
+    "and unsupported ci.yml runs",
+  async () => {
+  const cases = [
+    {
+      code: "duplicate_ci_workflow_run",
+      runs: [workflowRun("head-1"), workflowRun("head-1")],
+    },
+    { code: "stale_ci_workflow_run", runs: [workflowRun("old-head")] },
+    {
+      code: "unrelated_ci_workflow_run",
+      runs: [
+        workflowRun("head-1", {
+          path: ".github/workflows/other.yml@refs/heads/main",
+        }),
+      ],
+    },
+    {
+      code: "ci_workflow_failed",
+      runs: [workflowRun("head-1", { conclusion: "failure" })],
+    },
+    {
+      code: "ci_workflow_failed",
+      runs: [workflowRun("head-1", { conclusion: "cancelled" })],
+    },
+    {
+      code: "unknown_ci_workflow_state",
+      runs: [workflowRun("head-1", { status: "unexpected" })],
+    },
+    { code: "unknown_ci_workflow_state", runs: [null] },
+  ];
+
+  for (const { code, runs } of cases) {
+    const client = new FixtureClient({
+      workflowRuns: [runs],
+      pulls: [pull(), pull({ isDraft: false })],
+    });
+
+    await assert.rejects(
+      completePullRequest(client, immediateOptions),
+      { code },
+    );
+    assert.equal(
+      client.calls.some(([name]) => name === "enablePullRequestAutoMerge"),
+      false,
+    );
+  }
+  },
+);
+
+test(
+  "reads back after an ambiguous dispatch and never dispatches twice",
+  async () => {
+  const client = new FixtureClient({
+    workflowRuns: [
+      [],
+      [workflowRun("head-1", { conclusion: null, status: "in_progress" })],
+      [workflowRun("head-1")],
+    ],
+    workflowDispatchError: new Error("connection reset"),
+    checks: [[{ bucket: "unknown", name: "build-test", state: "MISSING" }]],
+    pulls: [
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+    ],
+  });
+
+  await assert.rejects(
+    completePullRequest(client, immediateOptions),
+    { code: "unknown_check_state" },
+  );
+  assert.deepEqual(client.calls.filter(([name]) => name === "dispatch"), [
+    ["dispatch", "codex/24-complete-pr"],
+  ]);
+  assert.equal(client.calls.filter(([name]) => name === "wait").length, 1);
+  },
+);
+
+test(
+  "stops after a rejected dispatch and exact-head readback finds no run",
+  async () => {
+  const client = new FixtureClient({
+    workflowRuns: [[], []],
+    workflowDispatchError: new Error(
+      "HTTP 403: Actions write permission is required",
+    ),
+    pulls: [pull(), pull({ isDraft: false })],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), {
+    code: "ci_workflow_dispatch_failed",
+    message: /HTTP 403.*no exact-head run/,
+  });
+  assert.equal(client.calls.filter(([name]) => name === "dispatch").length, 1);
+  assert.equal(
+    client.calls.some(([name]) => name === "enablePullRequestAutoMerge"),
+    false,
+  );
+  },
+);
 
 test("rejects a pull request whose base changes before fallback verification", async () => {
   const client = new FixtureClient({
