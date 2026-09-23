@@ -1,5 +1,6 @@
 import process from "node:process";
-import { readFile, realpath, stat } from "node:fs/promises";
+import { constants } from "node:fs";
+import { open, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, normalize, parse, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -94,6 +95,16 @@ function normalizedPath(value) {
 function isInside(parent, child) {
   const remainder = relative(parent, child);
   return remainder === "" || (remainder !== ".." && !remainder.startsWith(`..${sep}`) && !isAbsolute(remainder));
+}
+
+async function readRegularFile(path) {
+  const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  try {
+    if (!(await file.stat()).isFile()) throw new Error("path is not a regular file");
+    return await file.readFile("utf8");
+  } finally {
+    await file.close();
+  }
 }
 
 async function readRegistry(client, requested) {
@@ -199,9 +210,7 @@ async function readManifest(client, requested, installation, pluginRoot) {
         manifestPath: resolvedManifestPath,
       });
     }
-    const manifestFile = await stat(resolvedManifestPath);
-    if (!manifestFile.isFile()) throw new Error("manifest path is not a regular file");
-    manifest = JSON.parse(await readFile(resolvedManifestPath, "utf8"));
+    manifest = JSON.parse(await readRegularFile(resolvedManifestPath));
   } catch (error) {
     return failure(client, requested, `Installed plugin manifest could not be read as valid JSON: ${error.message}`, {
       pluginIdentity: installation.identity,
@@ -244,9 +253,7 @@ async function resolveSkillPath(client, requested, installation, manifest) {
     });
   }
   try {
-    const skillFile = await stat(skillPath);
-    if (!skillFile.isFile()) throw new Error("skill path is not a regular file");
-    await readFile(skillPath, "utf8");
+    await readRegularFile(skillPath);
   } catch (error) {
     return failure(client, requested, `The registered installation's publish skill is not a readable regular file: ${error.message}`, {
       pluginIdentity: installation.identity,
