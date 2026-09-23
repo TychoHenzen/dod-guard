@@ -7,5 +7,77 @@
     "reason": "Reviewed #578: the GitHubClient public surface is intentional for PBI #459 exact-head CI recovery; the merged implementation and its tests cover the recovery contract, and the public-surface heuristic cannot infer those plugin callers.",
     "author": "Codex",
     "time": "2026-09-23T12:43:39.794Z"
+  },
+  {
+    "findingId": "137c2435088b5df829b178d14d711bb0438c536bc2cabf4873f71e84468a8537",
+    "fingerprint": "bccbce910bce8be7c0ce744d30791fed121389726c4efd8376fc51de21d22222",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "9de301e9ae90d480bc0c5656445c655b93a5e2af",
+    "reason": "Reviewed #578: the GitHubClient public surface is intentional for PBI #459 exact-head CI recovery; the merged implementation and its tests cover the recovery contract, and the public-surface heuristic cannot infer those plugin callers.",
+    "author": "Codex",
+    "time": "2026-09-23T12:44:10.703Z"
+  },
+  {
+    "findingId": "1e089d0144c931a662c9c8ac7984c083c3e03a7f419c8209b16275288a89fbdf",
+    "fingerprint": "bccbce910bce8be7c0ce744d30791fed121389726c4efd8376fc51de21d22222",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "9de301e9ae90d480bc0c5656445c655b93a5e2af",
+    "reason": "Reviewed #578: the GitHubClient public surface is intentional for PBI #459 exact-head CI recovery; the merged implementation and its tests cover the recovery contract, and the public-surface heuristic cannot infer those plugin callers.",
+    "author": "Codex",
+    "time": "2026-09-23T12:44:10.704Z"
+  },
+  {
+    "findingId": "3f6bec37219eeed470e41ed2bc7369513db9b6a161f343ff204cca136c88a586",
+    "fingerprint": "bccbce910bce8be7c0ce744d30791fed121389726c4efd8376fc51de21d22222",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "9de301e9ae90d480bc0c5656445c655b93a5e2af",
+    "reason": "Reviewed #578: the GitHubClient public surface is intentional for PBI #459 exact-head CI recovery; the merged implementation and its tests cover the recovery contract, and the public-surface heuristic cannot infer those plugin callers.",
+    "author": "Codex",
+    "time": "2026-09-23T12:44:10.704Z"
+  },
+  {
+    "findingId": "6d2b751a375f6e2ad6700626d37edb84a999ed600756b3b476343ff8a8d765aa",
+    "fingerprint": "bccbce910bce8be7c0ce744d30791fed121389726c4efd8376fc51de21d22222",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "9de301e9ae90d480bc0c5656445c655b93a5e2af",
+    "reason": "Reviewed #578: the GitHubClient public surface is intentional for PBI #459 exact-head CI recovery; the merged implementation and its tests cover the recovery contract, and the public-surface heuristic cannot infer those plugin callers.",
+    "author": "Codex",
+    "time": "2026-09-23T12:44:10.704Z"
+  },
+  {
+    "findingId": "8d34619d29c204d910e2cd5b14770214abdd9e91777d7d3b9d6e5745d6f3bcec",
+    "fingerprint": "bccbce910bce8be7c0ce744d30791fed121389726c4efd8376fc51de21d22222",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "9de301e9ae90d480bc0c5656445c655b93a5e2af",
+    "reason": "Reviewed #578: the GitHubClient public surface is intentional for PBI #459 exact-head CI recovery; the merged implementation and its tests cover the recovery contract, and the public-surface heuristic cannot infer those plugin callers.",
+    "author": "Codex",
+    "time": "2026-09-23T12:44:10.704Z"
+  },
+  {
+    "findingId": "93f08d9d68566298247b3be87688c29a041533a6317fc78d96820963b32691ec",
+    "fingerprint": "bccbce910bce8be7c0ce744d30791fed121389726c4efd8376fc51de21d22222",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "9de301e9ae90d480bc0c5656445c655b93a5e2af",
+    "reason": "Reviewed #578: the GitHubClient public surface is intentional for PBI #459 exact-head CI recovery; the merged implementation and its tests cover the recovery contract, and the public-surface heuristic cannot infer those plugin callers.",
+    "author": "Codex",
+    "time": "2026-09-23T12:44:10.704Z"
+  },
+  {
+    "findingId": "c827b2830f1ab49c34c519bbe59290a2d38530e829dda0d1b74933a81822f284",
+    "fingerprint": "bccbce910bce8be7c0ce744d30791fed121389726c4efd8376fc51de21d22222",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "9de301e9ae90d480bc0c5656445c655b93a5e2af",
+    "reason": "Reviewed #578: the GitHubClient public surface is intentional for PBI #459 exact-head CI recovery; the merged implementation and its tests cover the recovery contract, and the public-surface heuristic cannot infer those plugin callers.",
+    "author": "Codex",
+    "time": "2026-09-23T12:44:10.704Z"
+  },
+  {
+    "findingId": "e2d9d974041ea5c64cfb4b68088bf6275d2f9f5d4724f66da96df5c405f760ef",
+    "fingerprint": "bccbce910bce8be7c0ce744d30791fed121389726c4efd8376fc51de21d22222",
+    "baseSha": "2bd2d8dca341d3bb884d39c1275689188bd73b4b",
+    "targetSha": "9de301e9ae90d480bc0c5656445c655b93a5e2af",
+    "reason": "Reviewed #578: the GitHubClient public surface is intentional for PBI #459 exact-head CI recovery; the merged implementation and its tests cover the recovery contract, and the public-surface heuristic cannot infer those plugin callers.",
+    "author": "Codex",
+    "time": "2026-09-23T12:44:10.704Z"
   }
 ]
