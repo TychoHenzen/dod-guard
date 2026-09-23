@@ -7,48 +7,45 @@ import { test } from "node:test";
 
 const BUNDLE = resolve("packages/quality-guard/dist/bundle.js");
 const WORKFLOW = resolve(".github/workflows/ci.yml");
+const PREFLIGHT = resolve("scripts/ci/preflight-static-analysis.mjs");
 const CODEQL_WORKFLOW = resolve(".github/workflows/codeql.yml");
 const CODEQL_CONFIG = resolve(".github/codeql/codeql-config.yml");
 
-test("CI Biome commands use the configured maintained-file coverage", () => {
+test("CI uses the repository preflight for maintained-file Biome checks", () => {
   const workflow = readFileSync(WORKFLOW, "utf8");
-  const commands = workflow.match(/run: npx @biomejs\/biome (?:check|format)[^\n]+/g) ?? [];
+  const preflight = readFileSync(PREFLIGHT, "utf8");
 
-  assert.equal(commands.length, 2);
-  for (const command of commands) {
-    assert.doesNotMatch(command, /packages\/\*\/src|scripts\/ci/);
-  }
-  assert.match(commands[0], /biome format --write/);
-  assert.match(commands[1], /biome check --max-diagnostics/);
+  assert.match(workflow, /name: Run static-analysis preflight\s+run: npm run preflight:static-analysis/);
+  assert.match(preflight, /"format", "--write", "--no-errors-on-unmatched"/);
+  assert.match(preflight, /"check", "--max-diagnostics=200", "--no-errors-on-unmatched"/);
 });
 
 test("static analysis runs the strict structural ratchet without line-length", () => {
-  const workflow = readFileSync(WORKFLOW, "utf8");
-  const rules = workflow.match(/^\s*QUALITY_RULES:\s*(.+)$/m)?.[1].split(",");
-  const strictScans = workflow.match(/--profile=strict/g) ?? [];
+  const preflight = readFileSync(PREFLIGHT, "utf8");
+  const ruleSource = preflight.split("const QUALITY_RULES = [")[1]?.split('].join(",");')[0];
+  const rules = ruleSource?.match(/"[^"]+"/g)?.map((rule) => rule.slice(1, -1));
+  const strictScans = preflight.match(/--profile=strict/g) ?? [];
 
-  assert.ok(rules, "QUALITY_RULES must remain declared in the workflow");
+  assert.ok(rules, "QUALITY_RULES must remain declared in the preflight");
   assert.equal(rules.includes("line-length"), false, "Biome owns line length");
   assert.equal(strictScans.length, 2, "the ratchet and baseline regeneration must both use the strict profile");
-  assert.match(workflow, /--baseline=\.github\/quality\/quality-baseline\.json \\\n\s*--fail-on=regression/);
-  assert.match(workflow, /--write-baseline=\.github\/quality\/quality-baseline\.json/);
-  assert.match(workflow, /QUALITY_GUARD_SKIP_STRUCTURAL=1 node .* check --committed HEAD --json/);
+  assert.match(preflight, /--baseline=\.github\/quality\/quality-baseline\.json/);
+  assert.match(preflight, /--fail-on=regression/);
+  assert.match(preflight, /--write-baseline=\.github\/quality\/quality-baseline\.json/);
+  assert.match(preflight, /QUALITY_GUARD_SKIP_STRUCTURAL: "1"/);
 });
 
 test("static analysis fetches optional quality decision notes before committed replay", () => {
-  const workflow = readFileSync(WORKFLOW, "utf8");
-  const fetch = "git fetch origin refs/notes/quality-decisions:refs/notes/quality-decisions";
-  const gate =
-    "QUALITY_GUARD_SKIP_STRUCTURAL=1 node packages/quality-guard/dist/bundle.js check --committed HEAD --json";
-
-  const fetchIndex = workflow.indexOf(fetch);
-  const gateIndex = workflow.indexOf(gate);
-  assert.notEqual(fetchIndex, -1, "CI must fetch quality decision notes");
-  assert.notEqual(gateIndex, -1, "CI must run the committed quality gate");
+  const preflight = readFileSync(PREFLIGHT, "utf8");
+  const fetchIndex = preflight.indexOf(
+    '["fetch", "origin", "refs/notes/quality-decisions:refs/notes/quality-decisions"]',
+  );
+  const gateIndex = preflight.indexOf('"Committed-tree quality decision"');
+  assert.notEqual(fetchIndex, -1, "preflight must fetch quality decision notes");
+  assert.notEqual(gateIndex, -1, "preflight must run the committed quality gate");
   assert.ok(fetchIndex < gateIndex);
-  assert.match(workflow, /couldn't find remote ref refs\/notes\/quality-decisions/);
-  assert.match(workflow, /No quality decision notes ref is published/);
-  assert.match(workflow, /cat quality-notes-fetch\.err\n\s+exit 1/);
+  assert.match(preflight, /couldn't find remote ref refs\/notes\/quality-decisions/);
+  assert.match(preflight, /No quality decision notes ref is published/);
 });
 
 test("static analysis pins actionlint and proves ShellCheck-backed rejection", () => {

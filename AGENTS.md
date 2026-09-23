@@ -22,6 +22,7 @@ Run from the monorepo root:
 ```text
 npm run clean
 npm run build
+npm run preflight:static-analysis
 npm test
 npm run bundle
 node scripts/ci/validate-plugins.mjs
@@ -30,6 +31,12 @@ npx @biomejs/biome check packages/*/src/ scripts/ci/ --no-errors-on-unmatched
 
 Tracked bundles live at `packages/*/dist/bundle.js`. Regenerate and commit them
 on the feature branch. CI reproduces generated files and fails on drift.
+
+`npm run preflight:static-analysis` reproduces the static-analysis generation,
+ratchets, formatting, and strict Biome check. It requires a clean checkout and
+leaves changes unstaged. If it reports changed paths, review each one, keep
+only intended generated changes, commit and push them on the same branch, then
+rerun the preflight on the new head.
 
 ## GitHub delivery
 

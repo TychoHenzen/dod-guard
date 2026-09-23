@@ -17,6 +17,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { npmCommand } from "./npm-command.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const BASELINE = join(ROOT, ".github", "quality", "audit-baseline.json");
@@ -24,13 +25,14 @@ const BLOCKING = new Set(["high", "critical"]);
 
 function runAudit(omitDev) {
   const args = ["audit", "--json", ...(omitDev ? ["--omit=dev"] : [])];
+  const command = npmCommand(args);
   try {
     // npm audit exits non-zero when vulnerabilities exist; the JSON is still on stdout.
     return JSON.parse(
-      execFileSync("npm", args, {
+      execFileSync(command.command, command.args, {
         cwd: ROOT,
         encoding: "utf8",
-        shell: process.platform === "win32",
+        shell: command.shell,
         stdio: ["ignore", "pipe", "pipe"],
       }),
     );

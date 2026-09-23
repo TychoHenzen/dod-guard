@@ -38,6 +38,14 @@ Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`
    checks before creating or updating the draft. Stop on a failed or unavailable
    check.
 
+If the target checkout's root `package.json` defines `preflight:static-analysis`,
+always run `npm run preflight:static-analysis` after verifying the exact pushed
+head and before any PR create/update, even when other required checks have fresh
+evidence. A failure or unavailable command blocks PR writes. Inspect every
+reported path; commit and push only intended changes on the same branch, reread
+the new head, and rerun the preflight. Do not stage or commit its outputs
+automatically.
+
 Run the repository's required pre-PR checks when fresh evidence is unavailable.
 Stop on a failed or unavailable required check.
 
