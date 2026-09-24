@@ -15,8 +15,8 @@
 
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
@@ -62,7 +62,8 @@ function attachStdout(child, state) {
 }
 
 async function handshake(bundle, pkgName, expectedVersion, cwd = ROOT) {
-  const env = pkgName === "knowledge-base" ? {} : process.env;
+  const env = { ...process.env };
+  delete env.DOD_GUARD_KNOWLEDGE_BASE_DIR;
   const child = spawn(process.execPath, [bundle], { cwd, env, stdio: ["pipe", "pipe", "pipe"] });
   const state = { waiters: new Map(), junk: [] };
   let stderr = "";
@@ -130,7 +131,9 @@ async function handshake(bundle, pkgName, expectedVersion, cwd = ROOT) {
       if (!chapterText) throw new Error("knowledge_list_chapters returned no text");
       const payload = JSON.parse(chapterText);
       chapters = Array.isArray(payload.chapters) ? payload.chapters.map((chapter) => chapter.key) : [];
-      if (chapters.length !== 0) throw new Error("knowledge-base bundle listed chapters without a configured corpus");
+      if (chapters.length === 0) throw new Error("knowledge-base bundle listed no shipped chapters");
+      if (!chapters.includes("clean-code"))
+        throw new Error("knowledge-base bundle did not list the clean-code chapter");
     }
     if (state.junk.length > 0) throw new Error(`non-JSON output on stdout corrupts the MCP stream: ${state.junk[0]}`);
     return { serverName, version: init.result?.serverInfo?.version, tools: tools.map((t) => t.name), chapters };
@@ -223,7 +226,7 @@ async function main(argv) {
       return 1;
     }
     process.stdout.write("  knowledge-base tool contract OK: five read-only MCP tools listed\n");
-    process.stdout.write(`  configured chapters: ${directResult.chapters.join(", ") || "(none)"}\n`);
+    process.stdout.write(`  shipped chapters: ${directResult.chapters.join(", ")}\n`);
   }
 
   return 0;

@@ -1,68 +1,42 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import process from "node:process";
 import { fileURLToPath } from "node:url";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+export const shippedKnowledgeRoot = join(packageRoot, "knowledge");
 
-const fixtureEntries: Record<string, string> = {
-  "guide.alpha.md": `---
-key: guide.alpha
-title: Alpha Guide
-chapter: guide
-section: guide.basics
-summary: A short synthetic alpha reference.
-project: fixture-project
-language: TypeScript
-sources:
-  - label: synthetic fixture
-    project: fixture-project
-    language: TypeScript
-related_keys:
-  - guide.beta
----
+export const cleanCodeSectionKeys = [
+  "clean-code.boundaries",
+  "clean-code.classes",
+  "clean-code.comments",
+  "clean-code.concurrency",
+  "clean-code.emergence",
+  "clean-code.error-handling",
+  "clean-code.formatting",
+  "clean-code.foundation",
+  "clean-code.functions",
+  "clean-code.junit-internals",
+  "clean-code.meaningful-names",
+  "clean-code.objects-data-structures",
+  "clean-code.refactoring-serialdate",
+  "clean-code.successive-refinement",
+  "clean-code.systems",
+  "clean-code.unit-tests",
+];
 
-Alpha fixture content.
-`,
-  "guide.beta.md": `---
-key: guide.beta
-title: Beta Guide
-chapter: guide
-section: guide.basics
-summary: A short synthetic beta reference.
-sources:
-  - label: synthetic fixture
----
+export async function shippedEntryText(name: string): Promise<string> {
+  return readFile(join(shippedKnowledgeRoot, "entries", name), "utf8");
+}
 
-Beta fixture content.
-`,
-  "patterns.choice.md": `---
-key: patterns.choice
-title: Choice Pattern
-chapter: patterns
-section: patterns.selection
-summary: A short synthetic choice reference.
-language: Rust
-sources:
-  - label: synthetic fixture
-    language: Rust
----
-
-Choice fixture content.
-`,
-};
-
-export async function createKnowledgeRoot(): Promise<string> {
+export async function copyShippedKnowledgeRoot(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "knowledge-base-test-"));
-  const entriesDir = join(root, "entries");
-  await mkdir(entriesDir, { recursive: true });
-  await Promise.all(
-    Object.entries(fixtureEntries).map(([name, content]) => writeFile(join(entriesDir, name), content, "utf8")),
-  );
+  await cp(shippedKnowledgeRoot, root, { recursive: true });
   return root;
 }
+
+export const createKnowledgeRoot = copyShippedKnowledgeRoot;
 
 export async function removeRoot(root: string): Promise<void> {
   await rm(root, { recursive: true, force: true });
@@ -79,11 +53,6 @@ export async function callKnowledgeTool<T>(
   arguments_: Record<string, unknown> = {},
 ): Promise<T> {
   return JSON.parse(toolText(await client.callTool({ name, arguments: arguments_ }))) as T;
-}
-
-export function restoreKnowledgeBaseRoot(previousRoot: string | undefined): void {
-  delete process.env.DOD_GUARD_KNOWLEDGE_BASE_DIR;
-  if (previousRoot !== undefined) process.env.DOD_GUARD_KNOWLEDGE_BASE_DIR = previousRoot;
 }
 
 export { packageRoot };
