@@ -82,7 +82,10 @@ test("exposes browse, search, and retrieval tools for synthetic entries", async 
     assert.match(full.guidance.precedence, /Explicit task and project instructions take precedence/);
     assert.equal(full.entry.sources[0]?.label, "synthetic fixture");
     assert.equal(full.entry.content, "Alpha fixture content.");
-    assert.deepEqual(full.related.map((entry) => entry.key), ["guide.beta"]);
+    assert.deepEqual(
+      full.related.map((entry) => entry.key),
+      ["guide.beta"],
+    );
   } finally {
     await client.close();
     await server.close();

@@ -14,14 +14,20 @@ test("indexes, searches, and reads synthetic entries", async () => {
       (await base.chapters()).map((item) => item.key),
       ["guide", "patterns"],
     );
-    assert.deepEqual((await base.sections("guide")).map((item) => item.key), ["guide.basics"]);
+    assert.deepEqual(
+      (await base.sections("guide")).map((item) => item.key),
+      ["guide.basics"],
+    );
     assert.equal((await base.entries("guide", "guide.basics")).length, 2);
     assert.equal((await base.entries("guide", "guide.basics"))[0]?.path, "entries/guide.alpha.md");
     assert.equal("content" in ((await base.entries("guide", "guide.basics"))[0] ?? {}), false);
     assert.equal((await base.search("choice pattern", 5))[0]?.key, "patterns.choice");
     assert.equal((await base.get("patterns.choice")).language, "Rust");
     assert.equal((await base.get("guide.alpha")).content, "Alpha fixture content.");
-    assert.deepEqual((await base.related("guide.alpha")).map((entry) => entry.key), ["guide.beta"]);
+    assert.deepEqual(
+      (await base.related("guide.alpha")).map((entry) => entry.key),
+      ["guide.beta"],
+    );
     assert.equal(existsSync(join(root, ".knowledge-index.json")), false);
   } finally {
     await removeRoot(root);
