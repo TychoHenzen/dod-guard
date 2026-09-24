@@ -79,7 +79,7 @@ test("keeps the package independent from retired storage and executable policy",
     description?: string;
     dependencies?: Record<string, string>;
   };
-  assert.match(packageJson.description ?? "", /locally configured Markdown knowledge base/);
+  assert.match(packageJson.description ?? "", /repository-authored Markdown corpus shipped/);
   assert.equal(packageJson.dependencies?.["obsidian-rag"], undefined);
   const source = ["schema.ts", "store.ts", "tools.ts", "index.ts"]
     .map((file) => readFileSync(`${packageRoot}/src/${file}`, "utf8"))

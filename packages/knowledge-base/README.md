@@ -1,17 +1,10 @@
 # knowledge-base
 
-`knowledge-base` serves read-only Markdown entries from a local root configured
-with `DOD_GUARD_KNOWLEDGE_BASE_DIR`. The package does not track or ship a
-corpus. When the variable is unset, the server keeps the existing
-empty/missing-root behavior.
-
-For this machine, configure the private vault in PowerShell:
-
-```powershell
-$env:DOD_GUARD_KNOWLEDGE_BASE_DIR = 'C:\Obsidian\Knowledgebase'
-```
-
-The root contains an `entries/` directory. The server never writes to it.
+`knowledge-base` serves the read-only Markdown corpus tracked in
+`knowledge/entries/` and shipped with this plugin. The corpus contains 19
+entries across Clean Code, Refactoring, Design Patterns, and UX/UI Design.
+The bundled server resolves the corpus relative to `dist/bundle.js`; it does
+not read a home-directory root or an environment-variable override.
 
 ## Progressive retrieval
 
@@ -24,12 +17,12 @@ Use the tools in this order:
 
 `knowledge_search` returns summaries and stable keys, not full entry content.
 The MCP server exposes five read-only tools and has no save tool. Author
-knowledge by editing Markdown entries in the configured local root.
+knowledge by editing the tracked Markdown entries.
 
 ## Markdown schema
 
-Each file lives under the configured root's `entries/` directory and uses a
-stable key as its filename, such as `entries/example.topic.md`:
+Each file lives under `knowledge/entries/` and uses a stable key as its
+filename, such as `knowledge/entries/example.topic.md`:
 
 ```markdown
 ---
@@ -57,8 +50,12 @@ validation. The search index is rebuilt in memory.
 
 ## Delivery
 
-This package contains no knowledge content to publish. Changes to local vault
-entries stay outside the repository.
+The Clean Code entries remain subject to the repository's open source/storage
+review; do not publish the corpus until that review is resolved. After an
+approved corpus change is merged, follow the repository's `/publish` workflow,
+then run `/plugin update` in Claude Code and start a new session. Existing
+sessions may need a restart. The Codex MCP pool serves the same published
+bundle at `/servers/knowledge-base/mcp`.
 
 ## Guidance boundary
 
