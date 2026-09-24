@@ -1,9 +1,17 @@
 # knowledge-base
 
-`knowledge-base` serves the read-only Markdown corpus shipped in
-`knowledge/entries/`. This is the only corpus. The bundled server resolves it
-relative to `dist/bundle.js`; it does not use a home-directory root or an
-environment-variable override.
+`knowledge-base` serves read-only Markdown entries from a local root configured
+with `DOD_GUARD_KNOWLEDGE_BASE_DIR`. The package does not track or ship a
+corpus. When the variable is unset, the server keeps the existing
+empty/missing-root behavior.
+
+For this machine, configure the private vault in PowerShell:
+
+```powershell
+$env:DOD_GUARD_KNOWLEDGE_BASE_DIR = 'C:\Obsidian\Knowledgebase'
+```
+
+The root contains an `entries/` directory. The server never writes to it.
 
 ## Progressive retrieval
 
@@ -16,20 +24,20 @@ Use the tools in this order:
 
 `knowledge_search` returns summaries and stable keys, not full entry content.
 The MCP server exposes five read-only tools and has no save tool. Author
-knowledge by editing the tracked Markdown files.
+knowledge by editing Markdown entries in the configured local root.
 
 ## Markdown schema
 
-Each file lives under `knowledge/entries/` and uses a stable key as its
-filename, such as `knowledge/entries/refactoring.move-method.md`:
+Each file lives under the configured root's `entries/` directory and uses a
+stable key as its filename, such as `entries/example.topic.md`:
 
 ```markdown
 ---
-key: refactoring.move-method
-title: Move Method
-chapter: refactoring
-section: refactoring.method-movement
-summary: Move behavior to the type that owns the data it uses most.
+key: example.topic
+title: Example Topic
+chapter: example
+section: example.basics
+summary: A short synthetic example.
 project: example-project
 language: TypeScript
 sources:
@@ -47,15 +55,10 @@ its chapter, and a section key belongs to its chapter. Related keys must exist.
 Malformed documents, duplicate keys, and missing related keys fail corpus
 validation. The search index is rebuilt in memory.
 
-The shipped entries cover Clean Code, Refactoring, Design Patterns, and UX/UI
-Design, with source metadata from multiple projects and languages.
-
 ## Delivery
 
-After merging corpus changes, follow the repository's `/publish` release
-workflow. In Claude Code, run `/plugin update` and start a new session to load
-the updated plugin; existing sessions may need a restart. The Codex MCP pool
-serves the same bundled corpus at `/servers/knowledge-base/mcp`.
+This package contains no knowledge content to publish. Changes to local vault
+entries stay outside the repository.
 
 ## Guidance boundary
 

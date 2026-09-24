@@ -29148,10 +29148,13 @@ function packageInfo() {
   if (!packagePath) throw new Error("knowledge-base package.json is missing");
   return JSON.parse(readFileSync(packagePath, "utf8"));
 }
-function shippedKnowledgeBaseDir() {
+function defaultKnowledgeBaseDir() {
   return join2(dirname(fileURLToPath(import.meta.url)), "..", "knowledge");
 }
-function createKnowledgeBaseServer(rootDir = shippedKnowledgeBaseDir()) {
+function configuredKnowledgeBaseDir() {
+  return process2.env.DOD_GUARD_KNOWLEDGE_BASE_DIR?.trim() || defaultKnowledgeBaseDir();
+}
+function createKnowledgeBaseServer(rootDir = configuredKnowledgeBaseDir()) {
   const pkg = packageInfo();
   const server2 = new McpServer({ name: pkg.name, version: pkg.version }, { capabilities: { tools: {} } });
   registerKnowledgeTools(server2, new KnowledgeBase(rootDir));

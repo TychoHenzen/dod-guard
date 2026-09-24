@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createKnowledgeBaseServer } from "../src/index.js";
-import { cleanCodeSectionKeys, packageRoot, shippedKnowledgeRoot } from "./test-support.js";
+import { createKnowledgeRoot, packageRoot, removeRoot } from "./test-support.js";
 
 function text(result: unknown): string {
   const content = (result as { content?: Array<{ type: string; text?: string }> }).content;
@@ -20,8 +20,9 @@ async function connect(root: string) {
   return { client, server };
 }
 
-test("exposes the five read-only browse, search, and retrieval tools", async () => {
-  const { client, server } = await connect(shippedKnowledgeRoot);
+test("exposes browse, search, and retrieval tools for synthetic entries", async () => {
+  const root = await createKnowledgeRoot();
+  const { client, server } = await connect(root);
   try {
     assert.deepEqual((await client.listTools()).tools.map((tool) => tool.name).sort(), [
       "knowledge_get_entry",
@@ -31,434 +32,70 @@ test("exposes the five read-only browse, search, and retrieval tools", async () 
       "knowledge_search",
     ]);
 
-    const chapters = JSON.parse(text(await client.callTool({ name: "knowledge_list_chapters", arguments: {} })));
+    const chapters = JSON.parse(text(await client.callTool({ name: "knowledge_list_chapters", arguments: {} }))) as {
+      chapters: Array<{ key: string }>;
+      next: string;
+    };
     assert.deepEqual(
-      chapters.chapters.map((item: { key: string }) => item.key),
-      ["clean-code", "design-patterns", "refactoring", "ux-ui-design"],
+      chapters.chapters.map((item) => item.key),
+      ["guide", "patterns"],
     );
     assert.equal(chapters.next, "knowledge_list_sections");
-    assert.doesNotMatch(JSON.stringify(chapters), /Move behavior/);
 
     const sections = JSON.parse(
-      text(await client.callTool({ name: "knowledge_list_sections", arguments: { chapter: "refactoring" } })),
-    );
+      text(await client.callTool({ name: "knowledge_list_sections", arguments: { chapter: "guide" } })),
+    ) as { sections: Array<{ key: string }> };
     assert.deepEqual(
-      sections.sections.map((item: { key: string }) => item.key),
-      ["refactoring.method-movement"],
+      sections.sections.map((item) => item.key),
+      ["guide.basics"],
     );
-
-    const cleanCodeSections = JSON.parse(
-      text(await client.callTool({ name: "knowledge_list_sections", arguments: { chapter: "clean-code" } })),
-    );
-    assert.deepEqual(
-      cleanCodeSections.sections.map((item: { key: string }) => item.key),
-      cleanCodeSectionKeys,
-    );
-
-    const cleanCodeSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.foundation" },
-        }),
-      ),
-    );
-    assert.equal(cleanCodeSummaries.entries[0].key, "clean-code.clean-code");
-    assert.equal("content" in cleanCodeSummaries.entries[0], false);
 
     const summaries = JSON.parse(
       text(
         await client.callTool({
           name: "knowledge_list_entries",
-          arguments: { chapter: "refactoring", section: "refactoring.method-movement" },
+          arguments: { chapter: "guide", section: "guide.basics" },
         }),
       ),
+    ) as { entries: Array<{ key: string; content?: string }> };
+    assert.deepEqual(
+      summaries.entries.map((entry) => entry.key),
+      ["guide.alpha", "guide.beta"],
     );
-    assert.equal(summaries.entries[0].key, "refactoring.move-method");
     assert.equal("content" in summaries.entries[0], false);
 
     const search = JSON.parse(
-      text(await client.callTool({ name: "knowledge_search", arguments: { query: "C# strategy" } })),
-    );
-    assert.equal(search.entries[0].key, "design-patterns.strategy");
+      text(await client.callTool({ name: "knowledge_search", arguments: { query: "choice pattern" } })),
+    ) as { entries: Array<{ key: string; content?: string }> };
+    assert.equal(search.entries[0]?.key, "patterns.choice");
     assert.equal("content" in search.entries[0], false);
 
     const full = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "design-patterns.strategy" } })),
-    );
+      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "guide.alpha" } })),
+    ) as {
+      guidance: { kind: string; executable: boolean; precedence: string };
+      entry: { content: string; sources: Array<{ label: string }> };
+      related: Array<{ key: string }>;
+    };
     assert.equal(full.guidance.kind, "reference_guidance");
     assert.equal(full.guidance.executable, false);
     assert.match(full.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.equal(full.entry.sources[0].project, "spatial-wires");
-    assert.match(full.entry.content, /Strategy/);
-
-    const cleanCode = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.clean-code" } })),
-    );
-    assert.equal(cleanCode.guidance.kind, "reference_guidance");
-    assert.equal(cleanCode.guidance.executable, false);
-    assert.match(cleanCode.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(cleanCode.entry.sources[0].label, /PDF pages 33-47/);
-    assert.match(cleanCode.entry.content, /Boy Scout rule/);
-
-    const meaningfulNamesSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.meaningful-names" },
-        }),
-      ),
-    );
-    assert.equal(meaningfulNamesSummaries.entries[0].key, "clean-code.meaningful-names");
-    assert.match(meaningfulNamesSummaries.entries[0].summary, /intent|context|concept/);
-    assert.equal("content" in meaningfulNamesSummaries.entries[0], false);
-
-    const meaningfulNames = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.meaningful-names" } })),
-    );
-    assert.equal(meaningfulNames.guidance.kind, "reference_guidance");
-    assert.equal(meaningfulNames.guidance.executable, false);
-    assert.match(meaningfulNames.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(meaningfulNames.entry.sources[0].label, /PDF pages 48-61/);
-    assert.match(meaningfulNames.entry.content, /pronounceable/);
-
-    const functionsSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.functions" },
-        }),
-      ),
-    );
-    assert.equal(functionsSummaries.entries[0].key, "clean-code.functions");
-    assert.match(functionsSummaries.entries[0].summary, /small|focused|story/);
-    assert.equal("content" in functionsSummaries.entries[0], false);
-
-    const functions = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.functions" } })),
-    );
-    assert.equal(functions.guidance.kind, "reference_guidance");
-    assert.equal(functions.guidance.executable, false);
-    assert.match(functions.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(functions.entry.sources[0].label, /PDF pages 62-83/);
-    assert.match(functions.entry.content, /side effects/);
-
-    const commentsSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.comments" },
-        }),
-      ),
-    );
-    assert.equal(commentsSummaries.entries[0].key, "clean-code.comments");
-    assert.match(commentsSummaries.entries[0].summary, /expressive|accurate|purposeful/);
-    assert.equal("content" in commentsSummaries.entries[0], false);
-
-    const comments = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.comments" } })),
-    );
-    assert.equal(comments.guidance.kind, "reference_guidance");
-    assert.equal(comments.guidance.executable, false);
-    assert.match(comments.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(comments.entry.sources[0].label, /PDF pages 84-105/);
-    assert.match(comments.entry.content, /commented-out code/);
-    assert.match(comments.entry.content, /Javadocs for public APIs/);
-
-    const formattingSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.formatting" },
-        }),
-      ),
-    );
-    assert.equal(formattingSummaries.entries[0].key, "clean-code.formatting");
-    assert.match(formattingSummaries.entries[0].summary, /readable|structure|spacing/);
-    assert.equal("content" in formattingSummaries.entries[0], false);
-
-    const formatting = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.formatting" } })),
-    );
-    assert.equal(formatting.guidance.kind, "reference_guidance");
-    assert.equal(formatting.guidance.executable, false);
-    assert.match(formatting.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(formatting.entry.sources[0].label, /PDF pages 106-123/);
-    assert.match(formatting.entry.content, /Indentation/);
-
-    const objectsDataSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.objects-data-structures" },
-        }),
-      ),
-    );
-    assert.equal(objectsDataSummaries.entries[0].key, "clean-code.objects-data-structures");
-    assert.match(objectsDataSummaries.entries[0].summary, /objects|data structures|behavior/);
-    assert.equal("content" in objectsDataSummaries.entries[0], false);
-
-    const objectsData = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_get_entry",
-          arguments: { key: "clean-code.objects-data-structures" },
-        }),
-      ),
-    );
-    assert.equal(objectsData.guidance.kind, "reference_guidance");
-    assert.equal(objectsData.guidance.executable, false);
-    assert.match(objectsData.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(objectsData.entry.sources[0].label, /PDF pages 124-132/);
-    assert.match(objectsData.entry.content, /Law of Demeter/);
-
-    const errorHandlingSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.error-handling" },
-        }),
-      ),
-    );
-    assert.equal(errorHandlingSummaries.entries[0].key, "clean-code.error-handling");
-    assert.match(errorHandlingSummaries.entries[0].summary, /exceptions|normal flow/);
-    assert.equal("content" in errorHandlingSummaries.entries[0], false);
-
-    const errorHandling = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.error-handling" } })),
-    );
-    assert.equal(errorHandling.guidance.kind, "reference_guidance");
-    assert.equal(errorHandling.guidance.executable, false);
-    assert.match(errorHandling.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(errorHandling.entry.sources[0].label, /PDF pages 134-143/);
-    assert.match(errorHandling.entry.content, /try-catch-finally/);
-
-    const unitTestsSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.unit-tests" },
-        }),
-      ),
-    );
-    assert.equal(unitTestsSummaries.entries[0].key, "clean-code.unit-tests");
-    assert.match(unitTestsSummaries.entries[0].summary, /tests|focused|reliable/);
-    assert.equal("content" in unitTestsSummaries.entries[0], false);
-
-    const unitTests = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.unit-tests" } })),
-    );
-    assert.equal(unitTests.guidance.kind, "reference_guidance");
-    assert.equal(unitTests.guidance.executable, false);
-    assert.match(unitTests.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(unitTests.entry.sources[0].label, /PDF pages 152-164/);
-    assert.match(unitTests.entry.content, /F\.I\.R\.S\.T\./);
-
-    const classesSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.classes" },
-        }),
-      ),
-    );
-    assert.equal(classesSummaries.entries[0].key, "clean-code.classes");
-    assert.match(classesSummaries.entries[0].summary, /classes|cohesive|change/);
-    assert.equal("content" in classesSummaries.entries[0], false);
-
-    const classes = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.classes" } })),
-    );
-    assert.equal(classes.guidance.kind, "reference_guidance");
-    assert.equal(classes.guidance.executable, false);
-    assert.match(classes.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(classes.entry.sources[0].label, /PDF pages 166-182/);
-    assert.match(classes.entry.content, /single coherent reason|one coherent reason/);
-
-    const systemsSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.systems" },
-        }),
-      ),
-    );
-    assert.equal(systemsSummaries.entries[0].key, "clean-code.systems");
-    assert.match(systemsSummaries.entries[0].summary, /system|dependencies|decisions/);
-    assert.equal("content" in systemsSummaries.entries[0], false);
-
-    const systems = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.systems" } })),
-    );
-    assert.equal(systems.guidance.kind, "reference_guidance");
-    assert.equal(systems.guidance.executable, false);
-    assert.match(systems.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(systems.entry.sources[0].label, /PDF pages 184-201/);
-    assert.match(systems.entry.content, /construction from use|construction.*use/);
-    assert.match(systems.entry.content, /test-drive the system architecture/i);
-
-    const emergenceSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.emergence" },
-        }),
-      ),
-    );
-    assert.equal(emergenceSummaries.entries[0].key, "clean-code.emergence");
-    assert.match(emergenceSummaries.entries[0].summary, /tests|duplication|intent/);
-    assert.equal("content" in emergenceSummaries.entries[0], false);
-
-    const emergence = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.emergence" } })),
-    );
-    assert.equal(emergence.guidance.kind, "reference_guidance");
-    assert.equal(emergence.guidance.executable, false);
-    assert.match(emergence.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(emergence.entry.sources[0].label, /PDF pages 203-208/);
-    const emergenceContent = emergence.entry.content.toLowerCase();
-    const emergencePriorities = ["all of its tests", "duplication", "express its intent", "class and method counts"];
-    assert.ok(
-      emergencePriorities.every(
-        (priority, index) =>
-          index === 0 || emergenceContent.indexOf(priority) > emergenceContent.indexOf(emergencePriorities[index - 1]),
-      ),
-    );
-    assert.match(emergenceContent, /testable boundary|testable/);
-    assert.match(emergenceContent, /incrementally refactor|refactor the design/);
-    assert.match(emergenceContent, /reuse in the small|smallest useful boundary/);
-    assert.match(emergenceContent, /good names|expressive.*tests/);
-    assert.match(emergenceContent, /dogma|dogmatic/);
-
-    const concurrencySummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.concurrency" },
-        }),
-      ),
-    );
-    assert.equal(concurrencySummaries.entries[0].key, "clean-code.concurrency");
-    assert.match(concurrencySummaries.entries[0].summary, /concurrency|shared|test/);
-    assert.equal("content" in concurrencySummaries.entries[0], false);
-
-    const concurrency = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.concurrency" } })),
-    );
-    assert.equal(concurrency.guidance.kind, "reference_guidance");
-    assert.equal(concurrency.guidance.executable, false);
-    assert.match(concurrency.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(concurrency.entry.sources[0].label, /PDF pages 209-222/);
-    assert.match(concurrency.entry.content, /shared data/);
-    assert.match(concurrency.entry.content, /shutdown/);
-    assert.match(concurrency.entry.content, /pluggable and tunable/);
-
-    const junitSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.junit-internals" },
-        }),
-      ),
-    );
-    assert.equal(junitSummaries.entries[0].key, "clean-code.junit-internals");
-    assert.match(junitSummaries.entries[0].summary, /tests|refactor|implementation/);
-    assert.equal("content" in junitSummaries.entries[0], false);
-
-    const junitInternals = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.junit-internals" } })),
-    );
-    assert.equal(junitInternals.guidance.kind, "reference_guidance");
-    assert.equal(junitInternals.guidance.executable, false);
-    assert.match(junitInternals.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(junitInternals.entry.sources[0].label, /PDF pages 283-298/);
-    assert.match(junitInternals.entry.content, /tests as documentation|test suite/);
-    assert.match(junitInternals.entry.content, /Delete dead conditionals|dead conditionals/);
-
-    const serialDateSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.refactoring-serialdate" },
-        }),
-      ),
-    );
-    assert.equal(serialDateSummaries.entries[0].key, "clean-code.refactoring-serialdate");
-    assert.match(serialDateSummaries.entries[0].summary, /tests|refactor|clear/);
-    assert.equal("content" in serialDateSummaries.entries[0], false);
-
-    const serialDate = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_get_entry",
-          arguments: { key: "clean-code.refactoring-serialdate" },
-        }),
-      ),
-    );
-    assert.equal(serialDate.guidance.kind, "reference_guidance");
-    assert.equal(serialDate.guidance.executable, false);
-    assert.match(serialDate.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(serialDate.entry.sources[0].label, /PDF pages 299-316/);
-    assert.match(serialDate.entry.content, /green|tests/);
-    assert.match(serialDate.entry.content, /flag arguments|named types/);
-
-    const refinementSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.successive-refinement" },
-        }),
-      ),
-    );
-    assert.equal(refinementSummaries.entries[0].key, "clean-code.successive-refinement");
-    assert.match(refinementSummaries.entries[0].summary, /working|refine|tests/);
-    assert.equal("content" in refinementSummaries.entries[0], false);
-
-    const refinement = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_get_entry",
-          arguments: { key: "clean-code.successive-refinement" },
-        }),
-      ),
-    );
-    assert.equal(refinement.guidance.kind, "reference_guidance");
-    assert.equal(refinement.guidance.executable, false);
-    assert.match(refinement.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(refinement.entry.sources[0].label, /PDF pages 225-282/);
-    assert.match(refinement.entry.content, /small steps|small extractions/);
-    assert.match(refinement.entry.content, /deleting|deletion/i);
-
-    const boundariesSummaries = JSON.parse(
-      text(
-        await client.callTool({
-          name: "knowledge_list_entries",
-          arguments: { chapter: "clean-code", section: "clean-code.boundaries" },
-        }),
-      ),
-    );
-    assert.equal(boundariesSummaries.entries[0].key, "clean-code.boundaries");
-    assert.match(boundariesSummaries.entries[0].summary, /external|boundary|tests/);
-    assert.equal("content" in boundariesSummaries.entries[0], false);
-
-    const boundaries = JSON.parse(
-      text(await client.callTool({ name: "knowledge_get_entry", arguments: { key: "clean-code.boundaries" } })),
-    );
-    assert.equal(boundaries.guidance.kind, "reference_guidance");
-    assert.equal(boundaries.guidance.executable, false);
-    assert.match(boundaries.guidance.precedence, /Explicit task and project instructions take precedence/);
-    assert.match(boundaries.entry.sources[0].label, /PDF pages 144-151/);
-    assert.match(boundaries.entry.content, /adapter|wrapper/);
+    assert.equal(full.entry.sources[0]?.label, "synthetic fixture");
+    assert.equal(full.entry.content, "Alpha fixture content.");
+    assert.deepEqual(full.related.map((entry) => entry.key), ["guide.beta"]);
   } finally {
     await client.close();
     await server.close();
+    await removeRoot(root);
   }
 });
 
 test("keeps the package independent from retired storage and executable policy", () => {
   const packageJson = JSON.parse(readFileSync(`${packageRoot}/package.json`, "utf8")) as {
+    description?: string;
     dependencies?: Record<string, string>;
   };
+  assert.match(packageJson.description ?? "", /locally configured Markdown knowledge base/);
   assert.equal(packageJson.dependencies?.["obsidian-rag"], undefined);
   const source = ["schema.ts", "store.ts", "tools.ts", "index.ts"]
     .map((file) => readFileSync(`${packageRoot}/src/${file}`, "utf8"))

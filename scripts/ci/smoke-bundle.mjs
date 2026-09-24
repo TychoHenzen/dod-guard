@@ -130,9 +130,7 @@ async function handshake(bundle, pkgName, expectedVersion, cwd = ROOT) {
       if (!chapterText) throw new Error("knowledge_list_chapters returned no text");
       const payload = JSON.parse(chapterText);
       chapters = Array.isArray(payload.chapters) ? payload.chapters.map((chapter) => chapter.key) : [];
-      if (chapters.length === 0) throw new Error("knowledge-base bundle listed no shipped chapters");
-      if (!chapters.includes("clean-code"))
-        throw new Error("knowledge-base bundle did not list the clean-code chapter");
+      if (chapters.length !== 0) throw new Error("knowledge-base bundle listed chapters without a configured corpus");
     }
     if (state.junk.length > 0) throw new Error(`non-JSON output on stdout corrupts the MCP stream: ${state.junk[0]}`);
     return { serverName, version: init.result?.serverInfo?.version, tools: tools.map((t) => t.name), chapters };
@@ -225,7 +223,7 @@ async function main(argv) {
       return 1;
     }
     process.stdout.write("  knowledge-base tool contract OK: five read-only MCP tools listed\n");
-    process.stdout.write(`  shipped chapters: ${directResult.chapters.join(", ")}\n`);
+    process.stdout.write(`  configured chapters: ${directResult.chapters.join(", ") || "(none)"}\n`);
   }
 
   return 0;
