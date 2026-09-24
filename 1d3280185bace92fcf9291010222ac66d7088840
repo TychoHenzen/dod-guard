@@ -43,5 +43,14 @@
     "reason": "Reviewed as inherited merge findings: these symbols were introduced by PR #611 (merge a4a85500) in complete-pr helper files, and neither file is in the #541 branch diff against origin/master. The #541 merge commit compares its tree with its pre-merge first parent, so master-only symbols appear in this integration delta. PR #611 required CI, including static-analysis, passed on head 8301632e. No upstream source API is changed here; this disposition is bound only to the current target SHA and fingerprint.",
     "author": "Codex (Quality Guard reviewer)",
     "time": "2026-09-24T08:18:43.827Z"
+  },
+  {
+    "findingId": "536ab9b5284cf2526b8a67754a0a5bb374d4641880e62440f97a47f5e7def8e4",
+    "fingerprint": "9ec50fa6636c686509e20a8a2121002b2227fb6474772cc2c8f14bb66b9f18b5",
+    "baseSha": "47646263db3f951baf54fdaa5a58ae2b64aaeb40",
+    "targetSha": "1d3280185bace92fcf9291010222ac66d7088840",
+    "reason": "Reviewed as inherited merge findings: these symbols were introduced by PR #611 (merge a4a85500) in complete-pr helper files, and neither file is in the #541 branch diff against origin/master. The #541 merge commit compares its tree with its pre-merge first parent, so master-only symbols appear in this integration delta. PR #611 required CI, including static-analysis, passed on head 8301632e. No upstream source API is changed here; this disposition is bound only to the current target SHA and fingerprint.",
+    "author": "Codex (Quality Guard reviewer)",
+    "time": "2026-09-24T08:22:31.782Z"
   }
 ]
