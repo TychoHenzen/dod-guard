@@ -15,15 +15,11 @@ function packageInfo(): { name: string; version: string } {
   return JSON.parse(readFileSync(packagePath, "utf8")) as { name: string; version: string };
 }
 
-function defaultKnowledgeBaseDir(): string {
+function shippedKnowledgeBaseDir(): string {
   return join(dirname(fileURLToPath(import.meta.url)), "..", "knowledge");
 }
 
-function configuredKnowledgeBaseDir(): string {
-  return process.env.DOD_GUARD_KNOWLEDGE_BASE_DIR?.trim() || defaultKnowledgeBaseDir();
-}
-
-export function createKnowledgeBaseServer(rootDir = configuredKnowledgeBaseDir()): McpServer {
+export function createKnowledgeBaseServer(rootDir = shippedKnowledgeBaseDir()): McpServer {
   const pkg = packageInfo();
   const server = new McpServer({ name: pkg.name, version: pkg.version }, { capabilities: { tools: {} } });
   registerKnowledgeTools(server, new KnowledgeBase(rootDir));
