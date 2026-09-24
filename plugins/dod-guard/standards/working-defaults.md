@@ -36,10 +36,12 @@ destructive action.
   retaining classified in-scope changes. When it cannot—because it is locked,
   unavailable, or holds an active or unsafe user-owned branch—create one
   isolated worktree and record the reason, affected checkout, and recovery path.
-  The maintenance-only `/publish` contract remains the only release exception:
-  its exact-`origin/master` worktree protects the source checkout. Never reset,
-  stash, overwrite, move, or silently include user-owned changes to make the
-  main checkout available.
+  The maintenance-only `/publish` route stays in the existing primary checkout
+  and never runs a Git worktree command. Classify every pending path first and
+  continue only when all paths are clearly release-scoped. Stop and preserve
+  the complete tree if unrelated or indistinguishable work exists, or if Git
+  cannot retain the release paths during the same-checkout transition. Never
+  reset, stash, overwrite, move, or silently include user-owned changes.
 - When a clear contract and a test disagree, update the stale expectation and
   rerun it. Fix the implementation when it violates the contract. Never
   weaken or delete a test only to make it pass.

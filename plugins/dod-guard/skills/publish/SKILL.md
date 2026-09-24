@@ -93,13 +93,15 @@ or fall back to another marketplace, client installation, or checkout.
 
 ## Procedure
 
-1. Inspect `git status --short`, the current branch, and the GitHub MCP
-   repository metadata operation. If MCP is unavailable, use `gh repo view`. A
-   dirty workspace can be the release input. List and classify every pending
-   path first. Include every ordinary path only when it is clearly part of the
-   authorized release. Preserve and report credential-like files, destructive
-   intent, unrelated or indistinguishable work, and stop before `/commit`
-   rather than silently filtering it.
+1. Inspect `git status --short --branch --untracked-files=all`, the current
+   branch, and the GitHub MCP repository metadata operation. If MCP is
+   unavailable, use `gh repo view`. Classify every staged, unstaged, tracked,
+   and untracked path before branch or ref movement. Continue only when each
+   pending path is clearly part of the authorized release. If any path is
+   credential-like, destructive, unrelated, or indistinguishable, report the
+   exact paths and stop before changing the checkout or refs. Never silently
+   filter a mixed tree, stash, reset, overwrite, move, or include unrelated
+   user-owned changes.
 2. Before `/commit`, run the existing repository inspector against the complete
    pending tree:
    `node <plugin-root>/skills/setup-repository/scripts/inspect-repository.mjs <repository-root>`.
@@ -132,17 +134,33 @@ or fall back to another marketplace, client installation, or checkout.
    inspector, and rerun the affected gates before committing.
 7. For a `maintenance-only` release:
    - Do not require or create a PBI, feature branch, or pull request.
-   - Push from a separate worktree based on the exact latest `origin/master`.
-     If needed, create that worktree and carry over only the classified release
-     changes. Leave the source worktree untouched and rerun the inspector and
-     gates in the release worktree.
-   - Save the exact `origin/master` SHA and require the release commit's parent
-     to equal it. Require `allow_force_pushes.enabled` to be true. Push only with
+   - Use only the current primary checkout. Do not run any Git worktree
+     command. Confirm the checkout is primary by resolving
+     `git rev-parse --path-format=absolute --git-dir` and
+     `git rev-parse --path-format=absolute --git-common-dir` and comparing the
+     resulting paths with host path semantics. If either value is unavailable
+     or the paths differ, stop before any branch/ref, release, protection, or
+     cache mutation.
+   - After the pending paths are classified and the release is confirmed
+     `maintenance-only`, record the starting branch (if attached) and `HEAD`,
+     fetch `origin master`, and save the exact `origin/master` SHA. Use
+     `git switch --detach <saved-sha>` in this same checkout. Continue only if
+     Git retains every classified release path without conflict; if it refuses
+     the switch, verify and report the unchanged starting state, then stop.
+     Never create another checkout, stash, or reset to carry release paths.
+     Verify `HEAD` equals the saved SHA and the starting branch reference is
+     unchanged, then rerun the repository inspector and release gates against
+     this exact base.
+   - Require the release commit's parent to equal the saved SHA and
+     `allow_force_pushes.enabled` to be true. Stage only the classified release
+     paths; never use blanket staging. Push only with
      `git push --force-with-lease=refs/heads/master:<saved-sha> origin HEAD:refs/heads/master`.
      This remains a fast-forward, and the lease rejects any intervening update.
      If master advances, restore protection, stop `/commit`'s pull-and-merge
-     retry, rebuild from the new head, and rerun all gates. Never use an
-     unpinned force push or create a PR as fallback.
+     retry, preserve the exact release checkpoint, and stop. A later run must
+     classify the pending release paths again and rebuild from the newly saved
+     head before rerunning all gates. Never use an unpinned force push or create
+     a PR as fallback.
    - Read and save the complete protection with
      `gh api --method GET repos/{owner}/{repo}/branches/master/protection` and
      read the admin state separately from
