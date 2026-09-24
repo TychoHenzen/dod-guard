@@ -22,6 +22,7 @@ test("indexes, searches, and reads synthetic entries", async () => {
     assert.equal((await base.entries("guide", "guide.basics"))[0]?.path, "entries/guide.alpha.md");
     assert.equal("content" in ((await base.entries("guide", "guide.basics"))[0] ?? {}), false);
     assert.equal((await base.search("choice pattern", 5))[0]?.key, "patterns.choice");
+    assert.deepEqual(await base.search(""), []);
     assert.equal((await base.get("patterns.choice")).language, "Rust");
     assert.equal((await base.get("guide.alpha")).content, "Alpha fixture content.");
     assert.deepEqual(

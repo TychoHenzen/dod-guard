@@ -1,7 +1,9 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -64,6 +66,24 @@ export async function createKnowledgeRoot(): Promise<string> {
 
 export async function removeRoot(root: string): Promise<void> {
   await rm(root, { recursive: true, force: true });
+}
+
+export function toolText(result: unknown): string {
+  const content = (result as { content?: Array<{ type: string; text?: string }> }).content;
+  return content?.[0]?.type === "text" ? (content[0].text ?? "") : "";
+}
+
+export async function callKnowledgeTool<T>(
+  client: Client,
+  name: string,
+  arguments_: Record<string, unknown> = {},
+): Promise<T> {
+  return JSON.parse(toolText(await client.callTool({ name, arguments: arguments_ }))) as T;
+}
+
+export function restoreKnowledgeBaseRoot(previousRoot: string | undefined): void {
+  delete process.env.DOD_GUARD_KNOWLEDGE_BASE_DIR;
+  if (previousRoot !== undefined) process.env.DOD_GUARD_KNOWLEDGE_BASE_DIR = previousRoot;
 }
 
 export { packageRoot };
