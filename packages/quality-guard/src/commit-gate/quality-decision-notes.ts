@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
+import { canonicalFingerprint } from "./fingerprint.js";
 
 const QUALITY_DECISION_NOTES_REF = "refs/notes/quality-decisions";
 
@@ -48,7 +49,7 @@ function parseRecord(item: unknown, index: number): QualityDecisionAttestation {
       record.findingId,
       `quality decision note[${index}].findingId`,
     ),
-    fingerprint: required(
+    fingerprint: canonicalFingerprint(
       record.fingerprint,
       `quality decision note[${index}].fingerprint`,
     ),
@@ -117,7 +118,8 @@ export function writeQualityDecisionNote(
   record: QualityDecisionAttestation,
 ) {
   validateTarget(root, record);
-  const records = [...readQualityDecisionNotes(root, record.targetSha), record];
+  const records = readQualityDecisionNotes(root, record.targetSha);
+  records.push(parseRecord(record, records.length));
   execFileSync(
     "git",
     [

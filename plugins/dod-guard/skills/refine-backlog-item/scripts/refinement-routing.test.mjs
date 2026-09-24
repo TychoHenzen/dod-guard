@@ -4,6 +4,21 @@ import { test } from "node:test";
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const fixtures = await readFile(new URL("../fixtures.md", import.meta.url), "utf8");
+const githubDiscipline = await readFile(
+  new URL("../../../standards/github-request-discipline.md", import.meta.url),
+  "utf8",
+);
+
+test("requires explicit Project item types and safe recovery", () => {
+  assert.match(
+    githubDiscipline,
+    /For every `add_project_item` operation, set `item_type` explicitly:\s+`issue` for issue items and `pull_request` for pull requests\./,
+  );
+  assert.match(
+    githubDiscipline,
+    /If the\s+operation returns `missing required parameter: item_type`, read back\s+the\s+Project before retrying once with the matching type\. Do not retry if the item\s+already exists\./,
+  );
+});
 
 test("routes discovery after repository and issue research", () => {
   assert.match(skill, /After that repository and issue research, state a discovery triage/);

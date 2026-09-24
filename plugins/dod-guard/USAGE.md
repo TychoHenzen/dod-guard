@@ -274,6 +274,21 @@ pass, use:
 /dod-guard:publish
 ```
 
+Use the installed `/dod-guard:publish` entry point; without pins, it verifies
+and uses the active client's registered installation. If a run needs an exact
+pin, pass `version=<exact-version>` and/or
+`path=<absolute-path-to-skills/publish/SKILL.md>` with the invocation. The path
+pin is the skill file, not its plugin root. For example:
+
+```text
+/dod-guard:publish version=5.4.55 path="<absolute-plugin-root>/skills/publish/SKILL.md"
+```
+
+Each supplied pin must match the active registration and installed manifest
+exactly. On mismatch, publish stops before release mutations and reports the
+requested and detected values instead of silently selecting another copy. No
+cache path needs guessing for an unpinned run.
+
 It delegates draft pull-request creation to `/submit-draft-pr`. After a human
 merges it and the published commit has green CI, refresh both clients:
 
@@ -290,6 +305,15 @@ the temporary admin toggle, and restores and compares the complete snapshot in
 its cleanup path. An endpoint, response, or readback mismatch stops before the
 push; a failed restoration gets one bounded retry and then reports the exact
 remaining difference.
+
+Maintenance publishing stays in the existing primary checkout and does not
+run Git worktree commands. The skill verifies the checkout identity with Git
+metadata, classifies every pending path, and continues only when all paths are
+clearly part of the authorized release. Unrelated, ambiguous, credential-like,
+or destructive paths stop the run before checkout/ref movement; the skill does
+not stash, reset, overwrite, move, or silently filter user-owned changes. If
+Git cannot retain the release paths during the same-checkout transition, it
+stops and preserves the starting state.
 
 A successful maintenance result reports the published SHA, the lease SHA, full
 protection restoration equality, the restore retry count, required-check status,

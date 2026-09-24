@@ -27,9 +27,9 @@ const exceptionRules = new Map([
     /unrelated dirty changes/i,
   ]],
   ["publish", [
-    /credential-like files/i,
-    /unrelated or indistinguishable work/i,
-    /stop before `\/commit`/i,
+    /credential-like(?: files)?/i,
+    /unrelated,?\s+or indistinguishable/i,
+    /Stop when `credentialFindings` is non-empty/i,
   ]],
   ["skill-migrate", [
     /only step that blocks on user input/i,
@@ -42,7 +42,7 @@ const exceptionRules = new Map([
 ]);
 
 test("every shipped skill applies the shared working defaults", () => {
-  assert.equal(skillNames.length, 21);
+  assert.equal(skillNames.length, 22);
   for (const [name, skill] of skills) {
     assert.match(skill, /standards\/working-defaults\.md/, name);
   }
@@ -65,7 +65,7 @@ test("policy fixtures cover decisive choices, dirty state, stale tests, and safe
   }
 });
 
-test("delivery skills inspect dirty worktrees before their mutations", () => {
+test("delivery skills inspect pending state before their mutations", () => {
   for (const name of [
     "complete-pr",
     "fix-pr-review",
@@ -75,7 +75,7 @@ test("delivery skills inspect dirty worktrees before their mutations", () => {
     "setup-repository",
     "submit-draft-pr",
   ]) {
-    assert.match(skills.get(name), /dirty/i, name);
+    assert.match(skills.get(name), /dirty|pending/i, name);
   }
   for (const name of ["complete-pr", "fix-pr-review", "next-ticket", "submit-draft-pr"]) {
     assert.match(skills.get(name), /`\/commit`/, name);
@@ -87,7 +87,7 @@ test("branching and local mutation exceptions are explicit", () => {
   assert.match(defaults, /Before selecting a delivery checkout, run `git worktree list --porcelain`/);
   assert.match(defaults, /first worktree as the main checkout/);
   assert.match(defaults, /isolated worktree and record the reason, affected checkout, and recovery path/);
-  assert.match(defaults, /maintenance-only\s+`\/publish` contract remains the only release exception/);
+  assert.match(defaults, /maintenance-only\s+`\/publish` route stays in the existing primary checkout/);
   assert.match(skills.get("next-ticket"), /Do not commit them on the current or default branch/);
   assert.match(skills.get("next-ticket"), /main checkout as the source of truth for ordinary ticket\s+work/);
   assert.match(skills.get("next-ticket"), /Before selection, run `git worktree list --porcelain`/);
@@ -97,8 +97,8 @@ test("branching and local mutation exceptions are explicit", () => {
 });
 
 test("main checkout exceptions preserve user work and release isolation", () => {
-  assert.match(defaults, /Never reset,\s+stash, overwrite, move, or silently include user-owned changes/);
-  assert.match(defaults, /its exact-`origin\/master` worktree protects the source checkout/);
+  assert.match(defaults, /Never\s+reset,\s+stash, overwrite, move, or silently include user-owned changes/);
+  assert.match(defaults, /maintenance-only\s+`\/publish` route stays in the existing primary checkout[\s\S]*Stop and preserve/);
   assert.match(skills.get("next-ticket"), /locked, unavailable, active, or unsafe user-owned main checkout/);
   assert.match(skills.get("next-ticket"), /Never reset, stash, overwrite,\s+move, or silently include user-owned changes/);
 });

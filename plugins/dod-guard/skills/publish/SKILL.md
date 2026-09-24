@@ -31,15 +31,77 @@ the bump. A paired version-only bump made solely to invalidate the cache for
 maintenance content remains `maintenance-only`; any other manifest change is
 `functional`.
 
+## Installation identity preflight
+
+Before any other release step, resolve `<skill-dir>` from this loaded skill:
+`${CLAUDE_PLUGIN_ROOT}/skills/publish` in Claude Code, or the directory
+containing this loaded `SKILL.md` in Codex. Confirm
+`<skill-dir>/scripts/preflight-installation.mjs` exists. Never locate the helper
+from the repository checkout or from a guessed cache directory.
+
+Treat any caller-supplied version or path as an exact pin. A path pin is the
+absolute path to `skills/publish/SKILL.md`, not the plugin root. Pass only pins
+that the caller supplied; omit the corresponding flag otherwise:
+
+Run the client inventory command first and check its exit status before passing
+captured JSON to Node. A direct pipeline can hide a failed inventory command.
+Use the snippet for the active shell, set the client to codex or claude, and
+append only exact pins supplied by the caller to the helper command:
+
+PowerShell:
+
+```powershell
+$client = 'codex' # use 'claude' in Claude Code
+$inventory = & $client plugin list --json
+$clientStatus = $LASTEXITCODE
+if ($clientStatus -ne 0) { throw "$client plugin list failed with exit code $clientStatus" }
+$inventory | node "<skill-dir>/scripts/preflight-installation.mjs" $client
+if ($LASTEXITCODE -ne 0) { throw "Installation preflight failed; stop before release mutations" }
+```
+
+POSIX shell:
+
+```sh
+client=codex # use claude in Claude Code
+inventory=$("$client" plugin list --json)
+client_status=$?
+if [ "$client_status" -ne 0 ]; then
+  printf '%s plugin list failed with exit code %s\n' "$client" "$client_status" >&2
+  exit "$client_status"
+fi
+printf '%s\n' "$inventory" | node "<skill-dir>/scripts/preflight-installation.mjs" "$client"
+preflight_status=$?
+if [ "$preflight_status" -ne 0 ]; then
+  exit "$preflight_status"
+fi
+```
+
+The helper accepts the inventory on stdin and returns JSON. For Codex, it
+requires the unique enabled `dod-guard@dod-guard-monorepo` record, its exact
+`dod-guard-monorepo` marketplace name and Git source, `source.path`, and the
+`.codex-plugin/plugin.json` identity/version. For Claude Code, it requires the
+unique enabled `dod-guard@dod-guard` record, `installPath`, and the
+`.claude-plugin/plugin.json` identity/version. Both paths must resolve to this
+loaded installation and contain `skills/publish/SKILL.md`.
+
+If the helper exits non-zero, report its requested and observed values, exact
+mismatch, and safe next step, then stop. Do not run the procedure or any Git,
+GitHub, protection, version-bump, or client-cache mutation. On success, use the
+returned `pluginRoot` for every later `<plugin-root>` path and bind this run to
+the returned version and `skillPath`. Never scan caches, choose a newest path,
+or fall back to another marketplace, client installation, or checkout.
+
 ## Procedure
 
-1. Inspect `git status --short`, the current branch, and the GitHub MCP
-   repository metadata operation. If MCP is unavailable, use `gh repo view`. A
-   dirty workspace can be the release input. List and classify every pending
-   path first. Include every ordinary path only when it is clearly part of the
-   authorized release. Preserve and report credential-like files, destructive
-   intent, unrelated or indistinguishable work, and stop before `/commit`
-   rather than silently filtering it.
+1. Inspect `git status --short --branch --untracked-files=all`, the current
+   branch, and the GitHub MCP repository metadata operation. If MCP is
+   unavailable, use `gh repo view`. Classify every staged, unstaged, tracked,
+   and untracked path before branch or ref movement. Continue only when each
+   pending path is clearly part of the authorized release. If any path is
+   credential-like, destructive, unrelated, or indistinguishable, report the
+   exact paths and stop before changing the checkout or refs. Never silently
+   filter a mixed tree, stash, reset, overwrite, move, or include unrelated
+   user-owned changes.
 2. Before `/commit`, run the existing repository inspector against the complete
    pending tree:
    `node <plugin-root>/skills/setup-repository/scripts/inspect-repository.mjs <repository-root>`.
@@ -72,17 +134,33 @@ maintenance content remains `maintenance-only`; any other manifest change is
    inspector, and rerun the affected gates before committing.
 7. For a `maintenance-only` release:
    - Do not require or create a PBI, feature branch, or pull request.
-   - Push from a separate worktree based on the exact latest `origin/master`.
-     If needed, create that worktree and carry over only the classified release
-     changes. Leave the source worktree untouched and rerun the inspector and
-     gates in the release worktree.
-   - Save the exact `origin/master` SHA and require the release commit's parent
-     to equal it. Require `allow_force_pushes.enabled` to be true. Push only with
+   - Use only the current primary checkout. Do not run any Git worktree
+     command. Confirm the checkout is primary by resolving
+     `git rev-parse --path-format=absolute --git-dir` and
+     `git rev-parse --path-format=absolute --git-common-dir` and comparing the
+     resulting paths with host path semantics. If either value is unavailable
+     or the paths differ, stop before any branch/ref, release, protection, or
+     cache mutation.
+   - After the pending paths are classified and the release is confirmed
+     `maintenance-only`, record the starting branch (if attached) and `HEAD`,
+     fetch `origin master`, and save the exact `origin/master` SHA. Use
+     `git switch --detach <saved-sha>` in this same checkout. Continue only if
+     Git retains every classified release path without conflict; if it refuses
+     the switch, verify and report the unchanged starting state, then stop.
+     Never create another checkout, stash, or reset to carry release paths.
+     Verify `HEAD` equals the saved SHA and the starting branch reference is
+     unchanged, then rerun the repository inspector and release gates against
+     this exact base.
+   - Require the release commit's parent to equal the saved SHA and
+     `allow_force_pushes.enabled` to be true. Stage only the classified release
+     paths; never use blanket staging. Push only with
      `git push --force-with-lease=refs/heads/master:<saved-sha> origin HEAD:refs/heads/master`.
      This remains a fast-forward, and the lease rejects any intervening update.
      If master advances, restore protection, stop `/commit`'s pull-and-merge
-     retry, rebuild from the new head, and rerun all gates. Never use an
-     unpinned force push or create a PR as fallback.
+     retry, preserve the exact release checkpoint, and stop. A later run must
+     classify the pending release paths again and rebuild from the newly saved
+     head before rerunning all gates. Never use an unpinned force push or create
+     a PR as fallback.
    - Read and save the complete protection with
      `gh api --method GET repos/{owner}/{repo}/branches/master/protection` and
      read the admin state separately from

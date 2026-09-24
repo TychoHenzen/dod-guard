@@ -1,3 +1,4 @@
+import type { ArchitectureAcknowledgement } from "./acknowledgements.js";
 import type { CheckOptions } from "./check-options.js";
 import {
   acknowledgementRecords,
@@ -24,17 +25,16 @@ import {
 import type { DecisionResult } from "./types.js";
 
 function decisionWithSources(
-  input: SnapshotInput,
+  input: SnapshotInput & {
+    trackedAcknowledgements: ArchitectureAcknowledgement[];
+  },
   snapshot: Snapshot,
   changed: string[],
 ): DecisionResult {
-  const config = parseQualityConfig(
-    snapshotConfig(input.root, input.targetRef),
-  );
   const { before, after } = sourceInventories({ ...input, changed });
   return decideQuality({
     snapshot,
-    config,
+    config: parseQualityConfig(snapshotConfig(input.root, input.targetRef)),
     beforeFiles: before.files,
     afterFiles: after.files,
     analysisErrors: [...before.errors, ...after.errors],
@@ -42,9 +42,7 @@ function decisionWithSources(
       ? { findings: [] }
       : scannerEvidence(input.root, input.targetRef),
     pendingAcknowledgementRecords:
-      input.targetRef === "index"
-        ? acknowledgementRecords(input.root, input.targetRef)
-        : [],
+      input.targetRef === "index" ? input.trackedAcknowledgements : [],
     attestations: snapshot.targetCommitSha
       ? readQualityDecisionNotes(input.root, snapshot.targetCommitSha)
       : [],
@@ -55,8 +53,13 @@ function decisionWithSources(
 function decisionForSnapshot(input: SnapshotInput): DecisionResult {
   const snapshot = withoutDistributionChanges(input.snapshot);
   const changed = affectedPaths(snapshot);
+  const trackedAcknowledgements = acknowledgementRecords(input);
   if (!changed.some(sourceChange)) return noSourceDecision(snapshot);
-  return decisionWithSources(input, snapshot, changed);
+  return decisionWithSources(
+    { ...input, trackedAcknowledgements },
+    snapshot,
+    changed,
+  );
 }
 
 export function runStagedCheck(

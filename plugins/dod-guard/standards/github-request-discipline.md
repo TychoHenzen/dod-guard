@@ -30,6 +30,11 @@ uses narrow operations, reuses a run snapshot, and avoids duplicate calls.
 - Prefer typed connector mutations. Otherwise use REST `gh api` for REST-capable
   writes.
 - Perform one mutation per actual state change. Reuse ids from the snapshot.
+- For every `add_project_item` operation, set `item_type` explicitly:
+  `issue` for issue items and `pull_request` for pull requests. If the
+  operation returns `missing required parameter: item_type`, read back the
+  Project before retrying once with the matching type. Do not retry if the item
+  already exists.
 - Re-read only the mutated resource for safety. Do not rebuild the whole
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.

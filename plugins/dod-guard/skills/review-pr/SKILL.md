@@ -62,15 +62,37 @@ Build one JSON context with these fields:
   "repositoryInstructions": [],
   "workItem": {},
   "reviewRequirements": [],
-  "finalFileAccess": "exact read-only command or snapshot path"
+  "finalFileAccess": "path to the pinned source snapshot manifest"
 }
 ```
 
 For every mode, record the checkout SHA and `git status --short` before review.
 Resolve changed files with the merge-base diff. Save `--unified=0` output for
 final-line validation. Load root and applicable nested repository instructions
-from the target revision. Record an exact read-only way for reviewers to open
-each changed file at `headSha`.
+from the target revision. Before dispatch, write a JSON input containing the
+full `headSha`, the repository root, and every changed file plus applicable
+instruction file. Use a repository-relative path for Git-backed files; for a
+fork, provide the file's base64 content fetched from the GitHub Contents API at
+that exact SHA. Capture the files with:
+
+```text
+node "<skill-dir>/scripts/review-support.mjs" snapshot-files --input "<snapshot-input.json>"
+```
+
+On Windows, assign the script and input paths to PowerShell variables and call
+`& node $scriptPath snapshot-files --input $inputPath`; do not build command
+text with `Invoke-Expression`, `-Command`, or string interpolation. The helper
+passes Git arguments directly, writes numbered snapshots outside the checkout,
+and emits a manifest mapping each repository path to its snapshot path and
+SHA-256. Put the manifest path in `finalFileAccess`; reviewers open the listed
+snapshots with their file-reading tools instead of reconstructing shell reads.
+Keep the diff and snapshot files until publication, then remove them.
+Do not assume `pdftotext` or another local PDF utility is installed, and do not
+read PDF bytes as plain text. If a PDF is explicitly required, use a
+host-supported document reader and pass its extracted UTF-8 evidence in the
+redacted review context. If that reader is unavailable, preserve the exact
+failure and report the missing evidence; do not guess or fabricate a review
+result.
 
 ### Nested Codex launch contract
 
@@ -100,9 +122,11 @@ SHA, and head repository. Fetch changed files and patches only when reviewers
 need them. Use the connector's issue operation for closing issues. Use the
 connector's issue hierarchy or repository-resource operation for linked issue
 hierarchy. If neither exposes it, use the narrow REST sub-issues endpoint. Use
-GraphQL only when neither connector nor REST operation exists. Read
-same-repository files with `git show <headSha>:<path>`. Read fork files through
-the GitHub Contents API at the exact SHA.
+GraphQL only when neither connector nor REST operation exists. Use the snapshot
+helper for same-repository files at `headSha`. Read fork files through the
+GitHub Contents API at the exact SHA and pass their base64 contents to the
+helper. Never ask nested reviewers to resolve a mutable branch or build their
+own source-read command.
 
 For a provider-neutral numeric PR ID, first resolve the repository's actual
 provider from its remote and metadata. Then use that provider's PR API. Do not

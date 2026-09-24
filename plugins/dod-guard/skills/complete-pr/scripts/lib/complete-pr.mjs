@@ -1,6 +1,8 @@
 import { CompletionError, stop } from "./completion-error.mjs";
+import { normalizeCheckRun } from "./check-normalization.mjs";
 import { cleanupTrustedBranch } from "./trusted-cleanup.mjs";
 
+const CI_WORKFLOW_PATH = ".github/workflows/ci.yml@";
 const FAILED_CHECK_BUCKETS = new Set(["cancel", "fail"]);
 const PASSING_CHECK_BUCKETS = new Set(["pass", "skipping"]);
 
@@ -53,6 +55,274 @@ function requireDefaultBase(pullRequest, defaultBranch) {
   if (pullRequest.baseBranch !== defaultBranch) {
     stop("wrong_base_branch", `The pull request must target ${defaultBranch}.`);
   }
+}
+
+function createCiRecovery(options) {
+  return {
+    dispatchedHeads: new Set(),
+    pollLimit: options.ciRunPollLimit,
+    pollMs: options.pollMs,
+  };
+}
+
+function requireCiWorkflowRun(runs, headSha) {
+  if (!Array.isArray(runs)) {
+    stop(
+      "unknown_ci_workflow_state",
+      `GitHub returned an invalid run list for ${headSha}.`,
+    );
+  }
+  if (runs.length > 1) {
+    stop(
+      "duplicate_ci_workflow_run",
+      `Found multiple ci.yml runs for ${headSha}.`,
+    );
+  }
+  if (runs.length === 0) {
+    return null;
+  }
+
+  return requireExactCiWorkflowRun(runs[0], headSha);
+}
+
+function requireExactCiWorkflowRun(run, headSha) {
+  if (!run || typeof run !== "object") {
+    stop(
+      "unknown_ci_workflow_state",
+      `GitHub returned an invalid ci.yml run for ${headSha}.`,
+    );
+  }
+  requireMatchingCiHead(run, headSha);
+  requireCiWorkflowPath(run);
+
+  return run;
+}
+
+function requireMatchingCiHead(run, headSha) {
+  if (run.head_sha !== headSha) {
+    const reportedHead = run.head_sha ?? "<missing>";
+    stop(
+      "stale_ci_workflow_run",
+      `The ci.yml run reports ${reportedHead}, not trusted head ${headSha}.`,
+    );
+  }
+}
+
+function requireCiWorkflowPath(run) {
+  if (
+    typeof run.path !== "string" ||
+    !run.path.startsWith(CI_WORKFLOW_PATH)
+  ) {
+    const workflowPath = run.path ?? "workflow path missing";
+    stop(
+      "unrelated_ci_workflow_run",
+      `The exact-head Actions run is not ci.yml (${workflowPath}).`,
+    );
+  }
+}
+
+function normalizeCiWorkflowState(run, headSha) {
+  return requireCiWorkflowState(
+    normalizeCheckRun({ ...run, name: "ci.yml" }, headSha),
+  );
+}
+
+function requireCiWorkflowState(check) {
+  if (check.bucket === "pending") {
+    return "pending";
+  }
+  if (check.bucket === "fail") {
+    stop(
+      "ci_workflow_failed",
+      `The exact-head ci.yml run completed with ${check.state}.`,
+    );
+  }
+  if (check.bucket === "pass") {
+    return "pass";
+  }
+  const state = ciWorkflowStateLabel(check);
+  stop(
+    "unknown_ci_workflow_state",
+    `The exact-head ci.yml run has unsupported state ${state}.`,
+  );
+}
+
+function ciWorkflowStateLabel(check) {
+  return check.state ?? "<missing>";
+}
+
+async function readCiWorkflowState(client, headSha) {
+  const run = requireCiWorkflowRun(
+    await client.getCiWorkflowRuns(headSha),
+    headSha,
+  );
+  return run ? normalizeCiWorkflowState(run, headSha) : null;
+}
+
+function requireTrustedCiHead(repository, pullRequest) {
+  const {
+    headBranch,
+    headRepository,
+    headSha,
+    isCrossRepository,
+  } = pullRequest;
+  if (!headSha || !headBranch) {
+    stop(
+      "missing_pull_request_head",
+      "The pull request has no trusted head SHA " +
+        "or branch ref for ci.yml recovery.",
+    );
+  }
+  if (isCrossRepository || headRepository !== repository) {
+    stop(
+      "cross_repository_head",
+      "The pull request head must belong to the current repository " +
+        "for ci.yml recovery.",
+    );
+  }
+}
+
+async function requireUnchangedCiBranch(client, headBranch, headSha) {
+  const branchRef = await client.getBranchRef(headBranch);
+  if (!branchRef) {
+    stop(
+      "ci_branch_not_found",
+      `Cannot dispatch ci.yml because branch ${headBranch} no longer exists.`,
+    );
+  }
+  if (branchRef.sha !== headSha) {
+    stop(
+      "ci_branch_head_mismatch",
+      `The trusted head ${headSha} no longer matches branch ${headBranch} at ${
+        branchRef.sha
+      }.`,
+    );
+  }
+}
+
+function handleCiDispatchReadError(readError, dispatchError, headSha) {
+  if (readError instanceof CompletionError || !dispatchError) {
+    throw readError;
+  }
+  const dispatchMessage =
+    dispatchError instanceof Error
+      ? dispatchError.message
+      : String(dispatchError);
+  const readMessage =
+    readError instanceof Error
+      ? readError.message
+      : String(readError);
+  const message = [
+    `Dispatch failed (${dispatchMessage});`,
+    `readback failed (${readMessage}) for ${headSha}.`,
+  ].join(" ");
+  stop(
+    "ci_workflow_dispatch_ambiguous",
+    message,
+  );
+}
+
+async function readCiDispatchResult(client, headSha, dispatchError) {
+  let state;
+  try {
+    state = await readCiWorkflowState(client, headSha);
+  } catch (readError) {
+    return handleCiDispatchReadError(readError, dispatchError, headSha);
+  }
+  if (dispatchError && !state) {
+    const dispatchMessage =
+      dispatchError instanceof Error
+        ? dispatchError.message
+        : String(dispatchError);
+    const message = [
+      `Dispatch failed (${dispatchMessage});`,
+      "no exact-head run was found.",
+    ].join(" ");
+    stop("ci_workflow_dispatch_failed", message);
+  }
+  return state;
+}
+
+async function dispatchMissingCiWorkflow(client, pullRequest, recovery) {
+  const { headBranch, headSha } = pullRequest;
+  if (recovery.dispatchedHeads.has(headSha)) {
+    return null;
+  }
+
+  await requireUnchangedCiBranch(client, headBranch, headSha);
+  recovery.dispatchedHeads.add(headSha);
+  let dispatchError;
+  try {
+    await client.dispatchCiWorkflow(headBranch);
+  } catch (error) {
+    dispatchError = error;
+  }
+  return readCiDispatchResult(client, headSha, dispatchError);
+}
+
+async function ensureCiWorkflowRun(client, pullRequest, recovery) {
+  requireTrustedCiHead(client.repository, pullRequest);
+  const { headSha } = pullRequest;
+  let sawPendingRun = false;
+  for (let attempt = 0; attempt < recovery.pollLimit; attempt += 1) {
+    const observedState = await readOrDispatchCiWorkflow(
+      client,
+      pullRequest,
+      recovery,
+      headSha,
+    );
+    if (observedState === "pass") {
+      return observedState;
+    }
+    sawPendingRun = sawPendingCiWorkflow(sawPendingRun, observedState);
+    await waitForCiWorkflowAttempt(client, attempt, recovery);
+  }
+
+  requireCiWorkflowTimeout(headSha, sawPendingRun);
+}
+
+async function readOrDispatchCiWorkflow(
+  client,
+  pullRequest,
+  recovery,
+  headSha,
+) {
+  const state = await readCiWorkflowState(client, headSha);
+  if (state) {
+    return state;
+  }
+  return dispatchMissingCiWorkflow(client, pullRequest, recovery);
+}
+
+function sawPendingCiWorkflow(sawPendingRun, observedState) {
+  return sawPendingRun || observedState === "pending";
+}
+
+async function waitForCiWorkflowAttempt(client, attempt, recovery) {
+  if (attempt + 1 < recovery.pollLimit) {
+    await client.wait(recovery.pollMs);
+  }
+}
+
+function requireCiWorkflowTimeout(headSha, sawPendingRun) {
+  if (sawPendingRun) {
+    const message = [
+      `Exact-head ci.yml remained pending for ${headSha}`,
+      "after the bounded wait.",
+    ].join(" ");
+    stop(
+      "ci_workflow_run_timeout",
+      message,
+    );
+  }
+  const message = [
+    `No exact-head ci.yml run appeared for ${headSha}`,
+    "after the bounded wait.",
+  ].join(" ");
+  stop(
+    "ci_workflow_run_timeout",
+    message,
+  );
 }
 
 async function waitForGuardedUpdate(client, update) {
@@ -165,13 +435,20 @@ async function recoverMergedPullRequest(client, overrides = {}) {
 }
 
 async function waitForMerge(client, completion) {
-  const { acceptedHead, defaultBranch, options, pullNumber } = completion;
+  const {
+    acceptedHead,
+    ciRecovery,
+    defaultBranch,
+    options,
+    pullNumber,
+  } = completion;
   let trustedHead = acceptedHead;
   for (let attempt = 0; attempt < options.pollLimit; attempt += 1) {
     // biome-ignore lint/performance/noAwaitInLoops: Merge completion requires ordered polling and guarded mutations.
     let pullRequest = await client.getPullRequest(pullNumber);
     requireTrustedHead(pullRequest, trustedHead);
     requireDefaultBase(pullRequest, defaultBranch);
+    await ensureCiWorkflowRun(client, pullRequest, ciRecovery);
     const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(pullNumber, pullRequest));
 
     if (pullRequest.state === "MERGED") {
@@ -216,6 +493,7 @@ async function waitForMerge(client, completion) {
         pullNumber,
       });
       trustedHead = pullRequest.headSha;
+      await ensureCiWorkflowRun(client, pullRequest, ciRecovery);
       await client.enablePullRequestAutoMerge(pullNumber, trustedHead);
     } else {
       await client.wait(options.pollMs);
@@ -227,6 +505,7 @@ async function waitForMerge(client, completion) {
 
 async function completePullRequest(client, overrides = {}) {
   const options = {
+    ciRunPollLimit: 12,
     issuePollLimit: 6,
     pollLimit: 180,
     pollMs: 10_000,
@@ -236,6 +515,7 @@ async function completePullRequest(client, overrides = {}) {
   const repository = await client.getRepository();
   let pullRequest = await client.getPullRequest();
   validateInitialState(repository, pullRequest);
+  const ciRecovery = createCiRecovery(options);
 
   const acceptedHead = pullRequest.headSha;
   const pullNumber = pullRequest.number;
@@ -253,14 +533,22 @@ async function completePullRequest(client, overrides = {}) {
   }
 
   requireDefaultBase(pullRequest, repository.defaultBranch);
+  await ensureCiWorkflowRun(client, pullRequest, ciRecovery);
   if (!repository.autoMergeAllowed) {
     await client.enableRepositoryAutoMerge();
   }
   pullRequest = await client.getPullRequest(pullNumber);
   requireTrustedHead(pullRequest, acceptedHead);
   requireDefaultBase(pullRequest, repository.defaultBranch);
+  await ensureCiWorkflowRun(client, pullRequest, ciRecovery);
   await client.enablePullRequestAutoMerge(pullNumber, acceptedHead);
-  return waitForMerge(client, { acceptedHead, defaultBranch: repository.defaultBranch, options, pullNumber });
+  return waitForMerge(client, {
+    acceptedHead,
+    ciRecovery,
+    defaultBranch: repository.defaultBranch,
+    options,
+    pullNumber,
+  });
 }
 
 export { CompletionError, completePullRequest, recoverMergedPullRequest };

@@ -21,7 +21,7 @@ Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`
 
 ## Resolve the pull request
 
-1. Confirm the current directory is inside a Git worktree and inspect
+1. Confirm the current directory is inside a Git checkout and inspect
    `git status --short`. A dirty tree is not automatically a failure. Classify
    pending paths without mutation and preserve ordinary changes that are clearly
    part of the accepted PBI. Stop for secrets, destructive intent, unrelated or
@@ -53,12 +53,22 @@ node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number
 The helper records the accepted head SHA first. If the pull request is a draft,
 it marks it ready. If it is already ready, it preserves that state. It then:
 
+- checks for a `.github/workflows/ci.yml` run on the accepted head SHA; if none
+  exists, it verifies that the same-repository branch still points to that SHA,
+  dispatches the existing workflow once, and waits a bounded time for an
+  exact-head run;
+- reads back after an ambiguous dispatch instead of blindly retrying, waits for
+  queued or in-progress CI to pass before enabling auto-merge, and stops on a fork,
+  branch drift, stale or duplicate run, wrong workflow, failed or cancelled
+  run, unsupported state, dispatch error, or missing-run timeout;
 - enables repository auto-merge when needed;
 - enables merge-commit auto-merge with `--match-head-commit`;
 - waits for every required check and stops on failure or cancellation;
 - if the normal required-check query is empty, reads branch protection and
   verifies check runs and commit statuses from the exact pull-request head,
   including any expected GitHub App provider;
+- requires those exact-SHA required checks and provider evidence after `ci.yml`
+  completes; a successful workflow run alone is not acceptance;
 - treats `success`, `neutral`, and `skipped` as passing, keeps pending results
   pending, and fails closed for missing, stale, duplicate, mismatched, or
   unsupported evidence;
@@ -70,9 +80,10 @@ it marks it ready. If it is already ready, it preserves that state. It then:
 - confirms the merge commit and linked closing issue state;
 - verifies the same-repository remote branch still points to the merged head,
   deletes it, and confirms it is absent;
-- removes clean local worktrees for that exact branch, switches a clean current
-  checkout to the default branch when possible, deletes the local branch, and
-  reports any dirty, locked, current, or otherwise refused local state.
+- cleans the local branch only through the current checkout. If the target
+  branch is current, it switches that checkout to the default branch only when
+  clean and fast-forwardable; it preserves dirty or refused state and never
+  inspects or changes another checkout;
 
 If a prior run already merged the pull request but stopped before branch
 cleanup, use the explicit recovery mode after checking the live state:
@@ -85,9 +96,9 @@ node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number
 Recovery accepts only an already-merged pull request with complete required
 checks, closed linked issues, and `Done` Project status. It deletes the remote
 head only when that branch still points to the merged head, then confirms the
-ref is absent. It uses the same exact-branch local cleanup and reports every
-preserved worktree or local ref. The dry run performs these checks without
-deleting a remote ref, local ref, or worktree.
+ref is absent. It uses the same exact-branch local cleanup and reports any
+preserved current-checkout state or local ref. The dry run performs these
+checks without deleting a remote ref or local ref, or switching branches.
 
 Never use `--admin`, force-push, weaken repository protections, or delete a ref
 whose SHA differs from the merged pull request head.

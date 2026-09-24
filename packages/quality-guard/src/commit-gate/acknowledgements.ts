@@ -1,11 +1,10 @@
-import { DECISION_RECORD_PATH } from "./fingerprint.js";
+import { canonicalFingerprint, DECISION_RECORD_PATH } from "./fingerprint.js";
 
 const ALLOWED_FIELDS = new Set(
   "findingId fingerprint baseIdentity targetIdentity reason author time".split(
     " ",
   ),
 );
-
 export interface ArchitectureAcknowledgement {
   findingId: string;
   fingerprint: string;
@@ -57,7 +56,10 @@ function parseRecord(
   validateRecordFields(record, index);
   return {
     findingId: recordValue(record, "findingId", index),
-    fingerprint: recordValue(record, "fingerprint", index),
+    fingerprint: canonicalFingerprint(
+      record.fingerprint,
+      `${DECISION_RECORD_PATH}[${index}].fingerprint`,
+    ),
     ...provenance(record, index),
     reason: recordValue(record, "reason", index),
     author: recordValue(record, "author", index),
@@ -91,6 +93,7 @@ export function appendArchitectureAcknowledgement(
   source: string,
   record: ArchitectureAcknowledgement,
 ): string {
-  const records = [...parseArchitectureAcknowledgements(source), record];
+  const records = parseArchitectureAcknowledgements(source);
+  records.push(parseRecord(record, records.length));
   return `${JSON.stringify(records, null, 2)}\n`;
 }
