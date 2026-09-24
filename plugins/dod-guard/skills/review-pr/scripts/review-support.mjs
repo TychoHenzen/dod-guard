@@ -12,6 +12,7 @@ import {
   validateFindingLines,
   writeAzureReport,
 } from "./lib/review-support.mjs";
+import { createReviewEvidenceSnapshot } from "./lib/review-evidence-snapshot.mjs";
 import { validateReviewContext, validateReviewerResult } from "./lib/review-validation.mjs";
 
 function argumentsByName(argumentValues) {
@@ -58,6 +59,8 @@ if (command === "normalize-target") {
   const findings = dedupeFindings(readJson(args.findings));
   writeAzureReport(args.output, readJson(args.context), findings);
   emit({ findings: findings.length, output: args.output });
+} else if (command === "snapshot-files") {
+  emit(createReviewEvidenceSnapshot(readJson(args.input)));
 } else {
   throw new Error(`Unknown command: ${command ?? ""}`);
 }
