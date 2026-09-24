@@ -306,6 +306,15 @@ its cleanup path. An endpoint, response, or readback mismatch stops before the
 push; a failed restoration gets one bounded retry and then reports the exact
 remaining difference.
 
+Maintenance publishing stays in the existing primary checkout and does not
+run Git worktree commands. The skill verifies the checkout identity with Git
+metadata, classifies every pending path, and continues only when all paths are
+clearly part of the authorized release. Unrelated, ambiguous, credential-like,
+or destructive paths stop the run before checkout/ref movement; the skill does
+not stash, reset, overwrite, move, or silently filter user-owned changes. If
+Git cannot retain the release paths during the same-checkout transition, it
+stops and preserves the starting state.
+
 A successful maintenance result reports the published SHA, the lease SHA, full
 protection restoration equality, the restore retry count, required-check status,
 and client-refresh status. Missing cleanup or any required evidence is a
