@@ -168,7 +168,7 @@ test("maintenance releases classify pending paths before a primary-checkout tran
   assert.match(maintenance, /starting branch reference is\s+unchanged, then rerun the repository inspector and release gates against\s+this exact base/);
   assert.match(maintenance, /Stage only the classified release\s+paths; never use blanket staging/);
   assert.match(maintenance, /release commit's parent to equal the saved SHA/);
-  assert.doesNotMatch(maintenance, /separate worktree|create that worktree|`git worktree (?:add|list|remove|prune)/);
+  assert.doesNotMatch(maintenance, /separate worktree|create that worktree|git worktree\b/);
   assert.match(defaults, /maintenance-only `\/publish` route stays in the existing primary checkout\s+and never runs a Git worktree command/);
   assert.doesNotMatch(defaults, /exact-`origin\/master` worktree/);
   assert.match(usage, /Maintenance publishing stays in the existing primary checkout and does not\s+run Git worktree commands/);
