@@ -21,7 +21,7 @@ Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`
 
 ## Resolve the pull request
 
-1. Confirm the current directory is inside a Git worktree and inspect
+1. Confirm the current directory is inside a Git checkout and inspect
    `git status --short`. A dirty tree is not automatically a failure. Classify
    pending paths without mutation and preserve ordinary changes that are clearly
    part of the accepted PBI. Stop for secrets, destructive intent, unrelated or
@@ -80,9 +80,10 @@ it marks it ready. If it is already ready, it preserves that state. It then:
 - confirms the merge commit and linked closing issue state;
 - verifies the same-repository remote branch still points to the merged head,
   deletes it, and confirms it is absent;
-- removes clean local worktrees for that exact branch, switches a clean current
-  checkout to the default branch when possible, deletes the local branch, and
-  reports any dirty, locked, current, or otherwise refused local state.
+- cleans the local branch only through the current checkout. If the target
+  branch is current, it switches that checkout to the default branch only when
+  clean and fast-forwardable; it preserves dirty or refused state and never
+  inspects or changes another checkout;
 
 If a prior run already merged the pull request but stopped before branch
 cleanup, use the explicit recovery mode after checking the live state:
@@ -95,9 +96,9 @@ node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number
 Recovery accepts only an already-merged pull request with complete required
 checks, closed linked issues, and `Done` Project status. It deletes the remote
 head only when that branch still points to the merged head, then confirms the
-ref is absent. It uses the same exact-branch local cleanup and reports every
-preserved worktree or local ref. The dry run performs these checks without
-deleting a remote ref, local ref, or worktree.
+ref is absent. It uses the same exact-branch local cleanup and reports any
+preserved current-checkout state or local ref. The dry run performs these
+checks without deleting a remote ref or local ref, or switching branches.
 
 Never use `--admin`, force-push, weaken repository protections, or delete a ref
 whose SHA differs from the merged pull request head.

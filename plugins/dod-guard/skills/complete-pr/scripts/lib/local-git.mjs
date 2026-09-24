@@ -1,9 +1,6 @@
 // biome-ignore lint/correctness/noNodejsModules: This adapter invokes the local Git CLI from Node.
 import { spawnSync } from "node:child_process";
 
-const RECORD_SEPARATOR = /\r?\n\r?\n/;
-const LINE_SEPARATOR = /\r?\n/;
-
 function runGit(args, acceptedExitCodes = [0]) {
   const result = spawnSync("git", args, { encoding: "utf8", windowsHide: true });
   if (result.error) {
@@ -14,26 +11,6 @@ function runGit(args, acceptedExitCodes = [0]) {
     throw new Error(detail);
   }
   return result;
-}
-
-export function parseWorktrees(output) {
-  return output
-    .trim()
-    .split(RECORD_SEPARATOR)
-    .filter(Boolean)
-    .map((record) => {
-      const values = Object.fromEntries(
-        record.split(LINE_SEPARATOR).map((line) => {
-          const separator = line.indexOf(" ");
-          return [line.slice(0, separator), line.slice(separator + 1)];
-        }),
-      );
-      return {
-        branch: values.branch?.replace("refs/heads/", "") ?? null,
-        locked: Object.hasOwn(values, "locked"),
-        path: values.worktree,
-      };
-    });
 }
 
 export class LocalGit {
@@ -56,56 +33,40 @@ export class LocalGit {
     }
   }
 
-  #cleanupCurrentWorktree(worktree, defaultBranch, dryRun) {
-    if (dryRun) {
-      return { path: worktree.path, result: "would_switch_to_default" };
-    }
-    const failure = this.#tryRun(["fetch", "--no-tags", "origin", defaultBranch])
-      ?? this.#tryRun(["switch", defaultBranch])
-      ?? this.#tryRun(["merge", "--ff-only", `origin/${defaultBranch}`]);
-    if (failure) {
-      return { path: worktree.path, result: "switch_refused" };
-    }
-    return { path: worktree.path, result: "switched_to_default" };
+  #currentCheckoutIsDirty() {
+    const root = this.#run(["rev-parse", "--show-toplevel"]).stdout.trim();
+    return this.#run(["-C", root, "status", "--porcelain"]).stdout.trim().length > 0;
   }
 
-  #cleanupOtherWorktree(worktree, dryRun) {
-    if (dryRun) {
-      return { path: worktree.path, result: "would_remove" };
+  #moveCurrentCheckoutToDefault(branchName, defaultBranch) {
+    if (this.#tryRun(["fetch", "--no-tags", "origin", defaultBranch])) {
+      return { branch: "switch_refused", currentCheckout: "unchanged" };
     }
-    if (this.#tryRun(["worktree", "remove", "--", worktree.path])) {
-      return { path: worktree.path, result: "remove_refused" };
+    const fastForward = this.#run(["merge-base", "--is-ancestor", defaultBranch, `origin/${defaultBranch}`], [0, 1]);
+    if (fastForward.status !== 0) {
+      return { branch: "switch_refused", currentCheckout: "unchanged" };
     }
-    return { path: worktree.path, result: "removed" };
+    if (this.#tryRun(["switch", defaultBranch])) {
+      return { branch: "switch_refused", currentCheckout: "unchanged" };
+    }
+    if (!this.#tryRun(["merge", "--ff-only", `origin/${defaultBranch}`])) {
+      return { branch: null, currentCheckout: "switched_to_default" };
+    }
+    const restoreFailure = this.#tryRun(["switch", branchName]);
+    let currentCheckout = "unchanged";
+    if (restoreFailure) {
+      currentCheckout = "switched_to_default";
+    }
+    return { branch: "switch_refused", currentCheckout };
   }
 
-  #cleanupWorktree(worktree, currentBranch, defaultBranch, dryRun) {
-    if (worktree.locked) {
-      return { path: worktree.path, result: "locked" };
-    }
-    if (this.worktreeIsDirty(worktree.path)) {
-      return { path: worktree.path, result: "dirty" };
-    }
-    if (worktree.branch === currentBranch) {
-      return this.#cleanupCurrentWorktree(worktree, defaultBranch, dryRun);
-    }
-    return this.#cleanupOtherWorktree(worktree, dryRun);
-  }
-
-  #branchResult(branchName, dryRun, worktrees, remainingWorktrees) {
-    if (!this.hasLocalBranch(branchName)) {
-      return "already_absent";
-    }
-    const preservesBranch = worktrees.some((worktree) => !worktree.result.startsWith("would_"));
-    if (remainingWorktrees.length > 0 && (!dryRun || preservesBranch)) {
-      return "retained_by_worktree";
-    }
-    if (dryRun) {
-      return "would_delete";
-    }
-    const failed = this.#tryRun(["branch", "-d", "--", branchName]) || this.hasLocalBranch(branchName);
-    if (failed) {
+  #deleteBranch(branchName) {
+    const failure = this.#tryRun(["branch", "-d", "--", branchName]);
+    if (this.hasLocalBranch(branchName)) {
       return "delete_refused";
+    }
+    if (failure) {
+      return "already_absent";
     }
     return "deleted";
   }
@@ -118,20 +79,35 @@ export class LocalGit {
     return this.#run(["show-ref", "--verify", "--quiet", `refs/heads/${branchName}`], [0, 1]).status === 0;
   }
 
-  listWorktrees() {
-    return parseWorktrees(this.#run(["worktree", "list", "--porcelain"]).stdout);
-  }
-
-  worktreeIsDirty(path) {
-    return this.#run(["-C", path, "status", "--porcelain"]).stdout.trim().length > 0;
-  }
-
   cleanupBranch(branchName, defaultBranch, { dryRun = false } = {}) {
     const currentBranch = this.currentBranch();
-    const targeted = this.listWorktrees().filter((worktree) => worktree.branch === branchName);
-    const worktrees = targeted.map((worktree) => this.#cleanupWorktree(worktree, currentBranch, defaultBranch, dryRun));
-    const remainingWorktrees = this.listWorktrees().filter((worktree) => worktree.branch === branchName);
-    const branch = this.#branchResult(branchName, dryRun, worktrees, remainingWorktrees);
-    return { branch, remainingWorktrees, worktrees };
+    if (!this.hasLocalBranch(branchName)) {
+      return { branch: "already_absent", currentCheckout: "unchanged" };
+    }
+    if (branchName === defaultBranch) {
+      return { branch: "delete_refused", currentCheckout: "unchanged" };
+    }
+
+    let currentCheckout = "unchanged";
+    if (currentBranch === branchName) {
+      if (this.#currentCheckoutIsDirty()) {
+        return { branch: "retained_dirty", currentCheckout };
+      }
+      if (dryRun) {
+        return { branch: "would_delete", currentCheckout: "would_switch_to_default" };
+      }
+      const { branch: movedBranch, currentCheckout: movedCheckout } = this.#moveCurrentCheckoutToDefault(
+        branchName,
+        defaultBranch,
+      );
+      if (movedBranch) {
+        return { branch: movedBranch, currentCheckout: movedCheckout };
+      }
+      currentCheckout = movedCheckout;
+    } else if (dryRun) {
+      return { branch: "would_delete", currentCheckout };
+    }
+
+    return { branch: this.#deleteBranch(branchName), currentCheckout };
   }
 }

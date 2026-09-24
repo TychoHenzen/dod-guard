@@ -147,7 +147,7 @@ class FixtureClient {
   }
 }
 
-function createFixtureLocalGit(result = { branch: "deleted", remainingWorktrees: [], worktrees: [] }) {
+function createFixtureLocalGit(result = { branch: "deleted", currentCheckout: "switched_to_default" }) {
   const calls = [];
   return {
     calls,
@@ -325,12 +325,17 @@ test("recovers an already-merged pull request through guarded remote and local c
 
   assert.equal(result.branch, "deleted");
   assert.equal(result.local.branch, "deleted");
+  assert.equal(result.local.currentCheckout, "switched_to_default");
   assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
   assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [["deleteBranchRef", "codex/24-complete-pr"]]);
+  assert.deepEqual(client.calls.filter(([name]) => name === "getBranchRef"), [
+    ["getBranchRef", "codex/24-complete-pr"],
+    ["getBranchRef", "codex/24-complete-pr"],
+  ]);
 });
 
 test("dry-runs merged pull-request recovery without cleanup mutation", async () => {
-  const localGit = createFixtureLocalGit({ branch: "would_delete", remainingWorktrees: [], worktrees: [] });
+  const localGit = createFixtureLocalGit({ branch: "would_delete", currentCheckout: "would_switch_to_default" });
   const client = new FixtureClient({
     pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
     refs: [{ sha: "head-1" }],
@@ -340,8 +345,26 @@ test("dry-runs merged pull-request recovery without cleanup mutation", async () 
 
   assert.equal(result.branch, "would_delete");
   assert.equal(result.local.branch, "would_delete");
+  assert.equal(result.local.currentCheckout, "would_switch_to_default");
   assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: true }]]);
   assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+});
+
+test("stops before local cleanup when trusted remote deletion is not confirmed", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [{ sha: "head-1" }, { sha: "head-1" }],
+  });
+
+  await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), {
+    code: "branch_delete_unconfirmed",
+  });
+
+  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
+    ["deleteBranchRef", "codex/24-complete-pr"],
+  ]);
+  assert.equal(localGit.calls.length, 0);
 });
 
 test("refuses merged recovery when a linked issue is not Done in its Project", async () => {
@@ -357,6 +380,7 @@ test("refuses merged recovery when a linked issue is not Done in its Project", a
 });
 
 test("waits for required checks, confirms merge, and deletes the trusted remote branch", async () => {
+  const localGit = createFixtureLocalGit();
   const mergedState = normalizePullRequest(
     { state: "closed", merged_at: "2026-09-12T13:47:19Z" },
     "owner/repo",
@@ -372,11 +396,13 @@ test("waits for required checks, confirms merge, and deletes the trusted remote 
     ],
   });
 
-  const result = await completePullRequest(client, immediateOptions);
+  const result = await completePullRequest(client, { ...immediateOptions, localGit });
 
   assert.equal(result.acceptedHead, "head-1");
   assert.equal(result.mergeCommitSha, "merge-1");
   assert.equal(result.branch, "deleted");
+  assert.deepEqual(result.local, { branch: "deleted", currentCheckout: "switched_to_default" });
+  assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
   assert.deepEqual(client.calls.filter(([name]) => name === "markReady"), [["markReady", 24]]);
   assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
     ["deleteBranchRef", "codex/24-complete-pr"],
@@ -897,6 +923,7 @@ test("surfaces repository permission failures before enabling pull request auto-
 });
 
 test("refuses to delete a remote branch whose ref changed after merge", async () => {
+  const localGit = createFixtureLocalGit();
   const client = new FixtureClient({
     pulls: [
       pull(),
@@ -907,8 +934,9 @@ test("refuses to delete a remote branch whose ref changed after merge", async ()
     refs: [{ sha: "unexpected" }],
   });
 
-  await assert.rejects(completePullRequest(client, immediateOptions), { code: "branch_ref_changed" });
+  await assert.rejects(completePullRequest(client, { ...immediateOptions, localGit }), { code: "branch_ref_changed" });
   assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.equal(localGit.calls.length, 0);
 });
 
 test("rejects an update commit that is not the observed head and base merge", async () => {
