@@ -2,13 +2,10 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { LocalGit, parseWorktrees } from "./local-git.mjs";
+import { LocalGit } from "./local-git.mjs";
 
 const TARGET_BRANCH = "codex/24-complete-pr";
 const CURRENT_ROOT = "C:/repo";
-const FEATURE_ROOT = "C:/repo-feature";
-const ROOT_WORKTREE = "worktree C:/repo\nHEAD base\nbranch refs/heads/master\n";
-const INITIAL_WORKTREES = `${ROOT_WORKTREE}\nworktree C:/repo-feature\nHEAD feature\nbranch refs/heads/${TARGET_BRANCH}\n`;
 
 function command(args) {
   return args.join("\u0000");
@@ -36,86 +33,134 @@ function createGitFixture(entries) {
     calls,
     runner(args) {
       calls.push(args);
-      return takeResponse(responses, command(args));
+      const response = takeResponse(responses, command(args));
+      if (response instanceof Error) {
+        throw response;
+      }
+      return response;
     },
   };
 }
 
-function baseEntries(worktreeResults, currentBranch = "master") {
-  return [
-    [["branch", "--show-current"], [result(`${currentBranch}\n`)]],
-    [["worktree", "list", "--porcelain"], worktreeResults],
-    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result()]],
-  ];
+function hasWorktreeCommand(calls) {
+  return calls.some((args) => args.includes("worktree"));
 }
 
-test("parses worktree records without inferring unrelated branches", () => {
-  assert.deepEqual(parseWorktrees(INITIAL_WORKTREES), [
-    { branch: "master", locked: false, path: CURRENT_ROOT },
-    { branch: TARGET_BRANCH, locked: false, path: FEATURE_ROOT },
+test("moves a clean current checkout before deleting the merged local branch", () => {
+  const fixture = createGitFixture([
+    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
+    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result(), result("", 1)]],
+    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
+    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result()]],
+    [["fetch", "--no-tags", "origin", "master"], [result()]],
+    [["merge-base", "--is-ancestor", "master", "origin/master"], [result()]],
+    [["switch", "master"], [result()]],
+    [["merge", "--ff-only", "origin/master"], [result()]],
+    [["branch", "-d", "--", TARGET_BRANCH], [result()]],
   ]);
+  const git = new LocalGit(fixture.runner);
+
+  const cleanup = git.cleanupBranch(TARGET_BRANCH, "master");
+
+  assert.deepEqual(cleanup, { branch: "deleted", currentCheckout: "switched_to_default" });
+  assert.equal(hasWorktreeCommand(fixture.calls), false);
 });
 
-test("dry run reports a removable exact-branch worktree without mutating Git", () => {
+test("preserves the current branch and dirty files", () => {
   const fixture = createGitFixture([
-    ...baseEntries([result(INITIAL_WORKTREES)]),
-    [["-C", FEATURE_ROOT, "status", "--porcelain"], [result()]],
+    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
+    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result()]],
+    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
+    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result(" M user-work.txt\n")]],
+  ]);
+  const git = new LocalGit(fixture.runner);
+
+  const cleanup = git.cleanupBranch(TARGET_BRANCH, "master");
+
+  assert.deepEqual(cleanup, { branch: "retained_dirty", currentCheckout: "unchanged" });
+  assert.equal(hasWorktreeCommand(fixture.calls), false);
+  assert.equal(fixture.calls.some((args) => args[0] === "switch" || (args[0] === "branch" && args[1] === "-d")), false);
+});
+
+test("retains a local branch when Git refuses deletion", () => {
+  const fixture = createGitFixture([
+    [["branch", "--show-current"], [result("master\n")]],
+    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result(), result()]],
+    [["branch", "-d", "--", TARGET_BRANCH], [new Error("branch is checked out elsewhere")]],
+  ]);
+  const git = new LocalGit(fixture.runner);
+
+  const cleanup = git.cleanupBranch(TARGET_BRANCH, "master");
+
+  assert.deepEqual(cleanup, { branch: "delete_refused", currentCheckout: "unchanged" });
+  assert.equal(hasWorktreeCommand(fixture.calls), false);
+});
+
+test("dry run describes current-checkout cleanup without mutating Git", () => {
+  const fixture = createGitFixture([
+    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
+    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result()]],
+    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
+    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result()]],
   ]);
   const git = new LocalGit(fixture.runner);
 
   const cleanup = git.cleanupBranch(TARGET_BRANCH, "master", { dryRun: true });
 
-  assert.equal(cleanup.branch, "would_delete");
-  assert.deepEqual(cleanup.worktrees, [{ path: FEATURE_ROOT, result: "would_remove" }]);
-  assert.equal(fixture.calls.some((args) => (args[0] === "branch" && args[1] === "-d") || (args[0] === "worktree" && args[1] === "remove")), false);
+  assert.deepEqual(cleanup, { branch: "would_delete", currentCheckout: "would_switch_to_default" });
+  assert.equal(hasWorktreeCommand(fixture.calls), false);
+  assert.equal(fixture.calls.some((args) => ["fetch", "switch", "merge"].includes(args[0]) || (args[0] === "branch" && args[1] === "-d")), false);
 });
 
-test("removes a clean non-current worktree and confirms local branch deletion", () => {
+test("does not delete a missing local branch", () => {
   const fixture = createGitFixture([
-    ...baseEntries([result(INITIAL_WORKTREES), result(ROOT_WORKTREE)]),
-    [["-C", FEATURE_ROOT, "status", "--porcelain"], [result()]],
-    [["worktree", "remove", "--", FEATURE_ROOT], [result()]],
-    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result(), result("", 1)]],
-    [["branch", "-d", "--", TARGET_BRANCH], [result()]],
+    [["branch", "--show-current"], [result("master\n")]],
+    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result("", 1)]],
   ]);
   const git = new LocalGit(fixture.runner);
 
   const cleanup = git.cleanupBranch(TARGET_BRANCH, "master");
 
-  assert.equal(cleanup.branch, "deleted");
-  assert.deepEqual(cleanup.remainingWorktrees, []);
-  assert.deepEqual(cleanup.worktrees, [{ path: FEATURE_ROOT, result: "removed" }]);
+  assert.deepEqual(cleanup, { branch: "already_absent", currentCheckout: "unchanged" });
+  assert.equal(hasWorktreeCommand(fixture.calls), false);
 });
 
-test("identifies the current worktree by branch despite a Windows path alias", () => {
-  const currentFeature = `worktree C:/Users/siriu/mcp-servers/dod-guard-142-recovery\nHEAD feature\nbranch refs/heads/${TARGET_BRANCH}\n`;
+test("preserves the local branch when the default branch cannot fast-forward", () => {
   const fixture = createGitFixture([
-    ...baseEntries([result(currentFeature), result(ROOT_WORKTREE)], TARGET_BRANCH),
-    [["-C", "C:/Users/siriu/mcp-servers/dod-guard-142-recovery", "status", "--porcelain"], [result()]],
+    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
+    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result()]],
+    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
+    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result()]],
     [["fetch", "--no-tags", "origin", "master"], [result()]],
-    [["switch", "master"], [result()]],
-    [["merge", "--ff-only", "origin/master"], [result()]],
-    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result(), result("", 1)]],
-    [["branch", "-d", "--", TARGET_BRANCH], [result()]],
+    [["merge-base", "--is-ancestor", "master", "origin/master"], [result("", 1)]],
   ]);
   const git = new LocalGit(fixture.runner);
 
   const cleanup = git.cleanupBranch(TARGET_BRANCH, "master");
 
-  assert.equal(cleanup.branch, "deleted");
-  assert.deepEqual(cleanup.worktrees, [{ path: "C:/Users/siriu/mcp-servers/dod-guard-142-recovery", result: "switched_to_default" }]);
+  assert.deepEqual(cleanup, { branch: "switch_refused", currentCheckout: "unchanged" });
+  assert.equal(hasWorktreeCommand(fixture.calls), false);
+  assert.equal(fixture.calls.some((args) => args[0] === "switch"), false);
+  assert.equal(fixture.calls.some((args) => args[0] === "branch" && args[1] === "-d"), false);
 });
 
-test("preserves a dirty exact-branch worktree and its local ref", () => {
+test("restores the feature checkout if fast-forward fails after the switch", () => {
   const fixture = createGitFixture([
-    ...baseEntries([result(INITIAL_WORKTREES)]),
-    [["-C", FEATURE_ROOT, "status", "--porcelain"], [result(" M user-work.txt\n")]],
+    [["branch", "--show-current"], [result(`${TARGET_BRANCH}\n`)]],
+    [["show-ref", "--verify", "--quiet", `refs/heads/${TARGET_BRANCH}`], [result()]],
+    [["rev-parse", "--show-toplevel"], [result(`${CURRENT_ROOT}\n`)]],
+    [["-C", CURRENT_ROOT, "status", "--porcelain"], [result()]],
+    [["fetch", "--no-tags", "origin", "master"], [result()]],
+    [["merge-base", "--is-ancestor", "master", "origin/master"], [result()]],
+    [["switch", "master"], [result()]],
+    [["merge", "--ff-only", "origin/master"], [new Error("not a fast-forward")]],
+    [["switch", TARGET_BRANCH], [result()]],
   ]);
   const git = new LocalGit(fixture.runner);
 
   const cleanup = git.cleanupBranch(TARGET_BRANCH, "master");
 
-  assert.equal(cleanup.branch, "retained_by_worktree");
-  assert.deepEqual(cleanup.worktrees, [{ path: FEATURE_ROOT, result: "dirty" }]);
-  assert.equal(fixture.calls.some((args) => (args[0] === "branch" && args[1] === "-d") || (args[0] === "worktree" && args[1] === "remove")), false);
+  assert.deepEqual(cleanup, { branch: "switch_refused", currentCheckout: "unchanged" });
+  assert.equal(hasWorktreeCommand(fixture.calls), false);
+  assert.equal(fixture.calls.some((args) => args[0] === "branch" && args[1] === "-d"), false);
 });
