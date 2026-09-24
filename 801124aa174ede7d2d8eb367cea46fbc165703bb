@@ -1,0 +1,11 @@
+[
+  {
+    "findingId": "31d08156dd18eeca6a5b03c6034691592db4dd5ce46c4107cbc838bac0fd9c2b",
+    "fingerprint": "4fde7e464bd1016d8c8c11aca91102a9c7bd05c3a7ec0c585de853278b517583",
+    "baseSha": "51466752171b2da00f257e21bf62ac70ea940c9e",
+    "targetSha": "801124aa174ede7d2d8eb367cea46fbc165703bb",
+    "reason": "One required PR review approved #533 at source head 8301632e5bcb025670c7c6644410cd039b799345. The identifiers are local cleanup mechanics; currentCheckout is the intentional result field replacing removed worktree lists. The cleanup preserves dirty/refused state, preflights fast-forwardability, restores the feature branch on merge refusal, and is covered by focused local and orchestration tests.",
+    "author": "Codex",
+    "time": "2026-09-24T03:12:13.875Z"
+  }
+]
