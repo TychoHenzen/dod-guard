@@ -34,5 +34,14 @@
     "reason": "One required PR review approved #533 at source head 8301632e5bcb025670c7c6644410cd039b799345. The identifiers are local cleanup mechanics; currentCheckout is the intentional result field replacing removed worktree lists. The cleanup preserves dirty/refused state, preflights fast-forwardability, restores the feature branch on merge refusal, and is covered by focused local and orchestration tests.",
     "author": "Codex",
     "time": "2026-09-24T03:21:26.572Z"
+  },
+  {
+    "findingId": "a5ee277d6091716281b1d7d47c12cd9da159d829e63a492ef3e87cd695fb8df4",
+    "fingerprint": "4fde7e464bd1016d8c8c11aca91102a9c7bd05c3a7ec0c585de853278b517583",
+    "baseSha": "51466752171b2da00f257e21bf62ac70ea940c9e",
+    "targetSha": "801124aa174ede7d2d8eb367cea46fbc165703bb",
+    "reason": "One required PR review approved #533 at source head 8301632e5bcb025670c7c6644410cd039b799345. The identifiers are local cleanup mechanics; currentCheckout is the intentional result field replacing removed worktree lists. The cleanup preserves dirty/refused state, preflights fast-forwardability, restores the feature branch on merge refusal, and is covered by focused local and orchestration tests.",
+    "author": "Codex",
+    "time": "2026-09-24T03:24:31.434Z"
   }
 ]
