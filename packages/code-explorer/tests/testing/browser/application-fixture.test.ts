@@ -46,14 +46,11 @@ export async function startPackagedBrowserFixture() {
     await server.close();
     throw error;
   }
-  const pages = new Set<Page>();
   let closed = false;
   const newPage = async () => {
     const page = await browser.newPage({ baseURL: endpoint });
     page.setDefaultTimeout(PACKAGED_BROWSER_TIMEOUT_MS);
     page.setDefaultNavigationTimeout(PACKAGED_BROWSER_TIMEOUT_MS);
-    pages.add(page);
-    page.once("close", () => pages.delete(page));
     return page;
   };
   return {
@@ -66,13 +63,9 @@ export async function startPackagedBrowserFixture() {
       if (closed) return;
       closed = true;
       try {
-        await Promise.all([...pages].map((page) => page.close()));
+        await browser.close();
       } finally {
-        try {
-          await browser.close();
-        } finally {
-          await server.close();
-        }
+        await server.close();
       }
     },
   };
