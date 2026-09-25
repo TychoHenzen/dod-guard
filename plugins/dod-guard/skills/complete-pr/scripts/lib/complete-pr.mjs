@@ -2,7 +2,7 @@ import { CompletionError, stop } from "./completion-error.mjs";
 import { normalizeCheckRun } from "./check-normalization.mjs";
 import { cleanupTrustedBranch } from "./trusted-cleanup.mjs";
 
-const CI_WORKFLOW_PATH = ".github/workflows/ci.yml@";
+const CI_WORKFLOW_PATH = ".github/workflows/ci.yml";
 const FAILED_CHECK_BUCKETS = new Set(["cancel", "fail"]);
 const PASSING_CHECK_BUCKETS = new Set(["pass", "skipping"]);
 
@@ -111,7 +111,8 @@ function requireMatchingCiHead(run, headSha) {
 function requireCiWorkflowPath(run) {
   if (
     typeof run.path !== "string" ||
-    !run.path.startsWith(CI_WORKFLOW_PATH)
+    (run.path !== CI_WORKFLOW_PATH &&
+      !run.path.startsWith(`${CI_WORKFLOW_PATH}@`))
   ) {
     const workflowPath = run.path ?? "workflow path missing";
     stop(

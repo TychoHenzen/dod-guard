@@ -278,7 +278,7 @@ test(
   async () => {
     const client = new FixtureClient({
       clientRepository: "owner/repo",
-      workflowRuns: [[], [workflowRun("head-1")]],
+      workflowRuns: [[], [workflowRun("head-1", { path: ".github/workflows/ci.yml" })]],
       checks: [passingChecks],
       refs: [{ sha: "head-1" }, { sha: "head-1" }, null],
       pulls: [
@@ -671,6 +671,10 @@ test(
           path: ".github/workflows/other.yml@refs/heads/main",
         }),
       ],
+    },
+    {
+      code: "unrelated_ci_workflow_run",
+      runs: [workflowRun("head-1", { path: ".github/workflows/ci.yml.bak" })],
     },
     {
       code: "ci_workflow_failed",
