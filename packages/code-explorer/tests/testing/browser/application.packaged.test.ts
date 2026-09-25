@@ -8,7 +8,10 @@ import {
   type PackagedBrowserFixture,
   startPackagedBrowserFixture,
 } from "./application-fixture.test.js";
-import { waitForPackagedLocator } from "./packaged/test-timeouts.js";
+import {
+  PACKAGED_BROWSER_TIMEOUT_MS,
+  waitForPackagedLocator,
+} from "./packaged/test-timeouts.js";
 
 let fixture: PackagedBrowserFixture;
 
@@ -99,4 +102,24 @@ describe("packaged browser", () => {
       assert.equal(pageErrors.length, 0);
     },
   );
+
+  it("lets browser-owned shutdown bypass a stuck page close", async () => {
+    const page = await fixture.newPage();
+    let releasePageClose: (() => void) | undefined;
+    page.close = () =>
+      new Promise<void>((resolve) => {
+        releasePageClose = resolve;
+      });
+    const closePromise = fixture.close();
+    const timedOut = await new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => resolve(true), PACKAGED_BROWSER_TIMEOUT_MS);
+      void closePromise.then(() => {
+        clearTimeout(timer);
+        resolve(false);
+      });
+    });
+    releasePageClose?.();
+    await closePromise;
+    assert.equal(timedOut, false);
+  });
 });
