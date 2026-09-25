@@ -12,6 +12,46 @@ const { StdioClientTransport } = stdio;
 const entryPoint = fileURLToPath(
   new URL("../../../src/index.js", import.meta.url),
 );
+const backendStatusTimeoutMs = 30_000;
+const backendStatusPollMs = 50;
+
+type InstalledBackend = {
+  language: string;
+  state: string;
+  failure_code?: string;
+};
+
+type InstalledStatusResponse = {
+  data: { backend_status: { backends: InstalledBackend[] } };
+};
+
+async function waitForInstalledBackends(client: Client) {
+  const deadline = Date.now() + backendStatusTimeoutMs;
+  let backends: InstalledBackend[] = [];
+  for (;;) {
+    const response = (await client.callTool({
+      name: "code_status",
+      arguments: { action: "status" },
+    })) as { content: Array<{ text: string }> };
+    const envelope = JSON.parse(
+      response.content[0]?.text ?? "",
+    ) as InstalledStatusResponse;
+    backends = envelope.data.backend_status.backends;
+    if (
+      backends.length === 3 &&
+      backends.every(({ state }) => state !== "initializing")
+    )
+      return backends;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0)
+      throw new Error(
+        `installed_backend_status_timeout:${JSON.stringify(backends)}`,
+      );
+    await new Promise((resolve_) =>
+      setTimeout(resolve_, Math.min(backendStatusPollMs, remaining)),
+    );
+  }
+}
 
 it(
   "keeps the production bundle free of spike and rejected-dependency " +
@@ -66,43 +106,21 @@ it(
     });
     try {
       await client.connect(transport);
-      let backends: Array<{
-        language: string;
-        state: string;
-        failure_code?: string;
-      }> = [];
-      for (let attempt = 0; attempt < 100; attempt += 1) {
-        const response = (await client.callTool({
-          name: "code_status",
-          arguments: { action: "status" },
-        })) as { content: Array<{ text: string }> };
-        const envelope = JSON.parse(response.content[0]?.text ?? "") as {
-          data: {
-            backend_status: {
-              backends: Array<{
-                language: string;
-                state: string;
-                failure_code?: string;
-              }>;
-            };
-          };
-        };
-        backends = envelope.data.backend_status.backends;
-        if (backends.every(({ state }) => state !== "initializing")) break;
-        await new Promise((resolve_) => setTimeout(resolve_, 20));
-      }
+      const backends = await waitForInstalledBackends(client);
       assert.deepEqual(
         backends.map(({ language }) => language),
         ["rust", "python", "csharp"],
       );
-      assert.ok(backends.every(({ state }) => state !== "initializing"));
       const csharp = backends.find(({ language }) => language === "csharp");
       assert.ok(csharp?.state === "ready" || csharp?.state === "unavailable");
       if (csharp?.state === "unavailable")
         assert.equal(csharp.failure_code, "backend_unavailable");
     } finally {
-      await client.close();
-      await removeTemporaryTree(temporary);
+      try {
+        await client.close();
+      } finally {
+        await removeTemporaryTree(temporary);
+      }
     }
   },
 );
