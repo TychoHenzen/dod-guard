@@ -148,12 +148,15 @@ test("rejects absent, ambiguous, disabled, wrong-marketplace, and wrong-path reg
         ),
         reason: /expected plugin and marketplace identity/,
       },
-      {
+    ];
+
+    if (client === "claude") {
+      cases.push({
         name: "registration path differs from loaded skill",
         registry: registryFor(client, join(fixture.pluginRoot, "..")),
         reason: /loaded publish skill is not from the registered/,
-      },
-    ];
+      });
+    }
 
     for (const item of cases) {
       const result = runPreflight(fixture, client, item.registry);
@@ -172,6 +175,20 @@ test("rejects absent, ambiguous, disabled, wrong-marketplace, and wrong-path reg
       }
     }
   }
+});
+
+test("Codex accepts a marketplace source path separate from the loaded plugin root", async (t) => {
+  const fixture = await createInstall(t, "codex");
+  const marketplaceRoot = join(fixture.pluginRoot, "..", "marketplace");
+  await mkdir(marketplaceRoot);
+
+  const result = runPreflight(fixture, "codex", registryFor("codex", marketplaceRoot));
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.response.ok, true);
+  assert.equal(result.response.version, "5.4.56");
+  assert.equal(result.response.pluginRoot, await realpath(fixture.pluginRoot));
+  assert.equal(result.response.skillPath, await realpath(fixture.skillFile));
 });
 
 test("rejects malformed or contradictory manifests and missing publish skills", async (t) => {
