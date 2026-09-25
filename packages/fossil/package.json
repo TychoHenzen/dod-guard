@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "build:test": "tsc -p tsconfig.test.json",
+    "build:test": "node ../../scripts/ci/clean-test-project.mjs && tsc -p tsconfig.test.json",
     "test": "tsc && npm run build:test && node --test \"dist-test/tests/**/*.test.js\"",
     "bundle": "node esbuild.config.mjs",
     "start": "node dist/bundle.js",
