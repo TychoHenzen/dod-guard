@@ -7,25 +7,6 @@ import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const shippedKnowledgeRoot = join(packageRoot, "knowledge");
 
-export const cleanCodeSectionKeys = [
-  "clean-code.boundaries",
-  "clean-code.classes",
-  "clean-code.comments",
-  "clean-code.concurrency",
-  "clean-code.emergence",
-  "clean-code.error-handling",
-  "clean-code.formatting",
-  "clean-code.foundation",
-  "clean-code.functions",
-  "clean-code.junit-internals",
-  "clean-code.meaningful-names",
-  "clean-code.objects-data-structures",
-  "clean-code.refactoring-serialdate",
-  "clean-code.successive-refinement",
-  "clean-code.systems",
-  "clean-code.unit-tests",
-];
-
 export async function shippedEntryText(name: string): Promise<string> {
   return readFile(join(shippedKnowledgeRoot, "entries", name), "utf8");
 }

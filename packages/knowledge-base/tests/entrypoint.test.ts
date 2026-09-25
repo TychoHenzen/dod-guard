@@ -39,7 +39,10 @@ test("loads the shipped corpus from an unrelated working directory", async () =>
     assert.equal(tools.length, 5);
     assert.ok(tools.some((tool) => tool.name === "knowledge_list_chapters"));
     const chapters = await callKnowledgeTool<{ chapters: Array<{ key: string }> }>(client, "knowledge_list_chapters");
-    assert.ok(chapters.chapters.some((chapter) => chapter.key === "clean-code"));
+    assert.deepEqual(
+      chapters.chapters.map((chapter) => chapter.key),
+      ["design-patterns", "refactoring", "ux-ui-design"],
+    );
   } finally {
     await client.close();
   }

@@ -18,36 +18,6 @@ test("parses a shipped Markdown entry", async () => {
   assert.equal(entry.sources[0]?.language, "TypeScript");
 });
 
-test("preserves shipped Clean Code provenance and hierarchy", async () => {
-  const entry = parseKnowledgeDocument(
-    await shippedEntryText("clean-code.clean-code.md"),
-    "entries/clean-code.clean-code.md",
-  );
-
-  assert.equal(entry.key, "clean-code.clean-code");
-  assert.equal(entry.chapter, "clean-code");
-  assert.equal(entry.section, "clean-code.foundation");
-  assert.match(entry.sources[0]?.label ?? "", /printed pages 1-16/);
-  assert.match(entry.sources[0]?.label ?? "", /PDF pages 33-47/);
-  assert.match(entry.content, /executable detail of a requirement/);
-});
-
-test("preserves shipped Chapter 2 and Chapter 3 provenance", async () => {
-  const names = ["clean-code.meaningful-names.md", "clean-code.functions.md"];
-  const entries = await Promise.all(
-    names.map(async (name) => parseKnowledgeDocument(await shippedEntryText(name), `entries/${name}`)),
-  );
-
-  assert.equal(entries[0]?.key, "clean-code.meaningful-names");
-  assert.equal(entries[0]?.section, "clean-code.meaningful-names");
-  assert.match(entries[0]?.sources[0]?.label ?? "", /PDF pages 48-61/);
-  assert.match(entries[0]?.content ?? "", /expose intent/);
-  assert.equal(entries[1]?.key, "clean-code.functions");
-  assert.equal(entries[1]?.section, "clean-code.functions");
-  assert.match(entries[1]?.sources[0]?.label ?? "", /PDF pages 62-83/);
-  assert.match(entries[1]?.content ?? "", /one level of abstraction/);
-});
-
 test("rejects malformed and duplicate hierarchy keys in a temporary corpus", async () => {
   const root = await copyShippedKnowledgeRoot();
   try {

@@ -1,8 +1,10 @@
 # knowledge-base
 
 `knowledge-base` serves the read-only Markdown corpus tracked in
-`knowledge/entries/` and shipped with this plugin. The corpus contains 19
-entries across Clean Code, Refactoring, Design Patterns, and UX/UI Design.
+`knowledge/entries/` and shipped with this plugin. The shipped corpus contains
+3 entries across Refactoring, Design Patterns, and UX/UI Design. Clean Code
+notes are retained under `docs/knowledge-base/clean-code/entries/` outside the
+package and are not served.
 The bundled server resolves the corpus relative to `dist/bundle.js`; it does
 not read a home-directory root or an environment-variable override.
 
@@ -50,9 +52,10 @@ validation. The search index is rebuilt in memory.
 
 ## Delivery
 
-The Clean Code entries remain subject to the repository's open source/storage
-review; do not publish the corpus until that review is resolved. After an
-approved corpus change is merged, follow the repository's `/publish` workflow,
+The retained Clean Code notes remain subject to the repository's open
+source/storage review; do not move them into the shipped corpus until that
+review is resolved. After an approved corpus change is merged, follow the
+repository's `/publish` workflow,
 then run `/plugin update` in Claude Code and start a new session. Existing
 sessions may need a restart. The Codex MCP pool serves the same published
 bundle at `/servers/knowledge-base/mcp`.

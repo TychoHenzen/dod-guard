@@ -132,8 +132,9 @@ async function handshake(bundle, pkgName, expectedVersion, cwd = ROOT) {
       const payload = JSON.parse(chapterText);
       chapters = Array.isArray(payload.chapters) ? payload.chapters.map((chapter) => chapter.key) : [];
       if (chapters.length === 0) throw new Error("knowledge-base bundle listed no shipped chapters");
-      if (!chapters.includes("clean-code"))
-        throw new Error("knowledge-base bundle did not list the clean-code chapter");
+      const expectedChapters = ["design-patterns", "refactoring", "ux-ui-design"];
+      if (JSON.stringify(chapters) !== JSON.stringify(expectedChapters))
+        throw new Error(`knowledge-base bundle listed unexpected chapters: ${JSON.stringify(chapters)}`);
     }
     if (state.junk.length > 0) throw new Error(`non-JSON output on stdout corrupts the MCP stream: ${state.junk[0]}`);
     return { serverName, version: init.result?.serverInfo?.version, tools: tools.map((t) => t.name), chapters };

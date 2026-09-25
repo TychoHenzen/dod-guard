@@ -3,9 +3,11 @@
 ## Purpose
 
 `knowledge-base` is an MCP server for reusable, language-independent reference
-knowledge. The only corpus is the tracked Markdown in `knowledge/entries/`,
-shipped with the package. The current corpus contains 19 entries. The key and
-text index is built in memory; the server does not write a sidecar index.
+knowledge. The shipped corpus is the tracked Markdown in `knowledge/entries/`.
+The current shipped corpus contains 3 entries. Clean Code notes are retained
+under `docs/knowledge-base/clean-code/entries/` for review and are not served.
+The key and text index is built in memory; the server does not write a sidecar
+index.
 
 ## Storage boundary
 
@@ -21,9 +23,10 @@ take precedence, and entry content is never executed.
 
 ## Publishing boundary
 
-The Clean Code entries remain subject to the repository's open source/storage
-review. Do not treat this file or package metadata as publication approval;
-follow the delivery steps in `README.md` only after that review is resolved.
+The retained Clean Code notes remain subject to the repository's open
+source/storage review. Do not treat this file or package metadata as
+publication approval; follow the delivery steps in `README.md` only after that
+review is resolved.
 
 ## Build and test
 
