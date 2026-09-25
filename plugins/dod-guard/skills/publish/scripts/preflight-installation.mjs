@@ -171,20 +171,31 @@ function selectRegistration(client, requested, entries) {
 
 async function resolvePluginRoot(client, requested, installation) {
   let loadedRoot;
-  let registeredRoot;
   try {
-    [loadedRoot, registeredRoot] = await Promise.all([
-      realpath(pluginRootFromScript),
-      realpath(installation.registeredRoot),
-    ]);
+    loadedRoot = await realpath(pluginRootFromScript);
   } catch (error) {
-    return failure(client, requested, `The loaded or registered plugin path is unavailable: ${error.message}`, {
+    return failure(client, requested, `The loaded plugin path is unavailable: ${error.message}`, {
       pluginIdentity: installation.identity,
       version: installation.version,
       pluginRoot: pluginRootFromScript,
       registeredRoot: installation.registeredRoot,
     });
   }
+
+  if (client === "codex") return normalize(loadedRoot);
+
+  let registeredRoot;
+  try {
+    registeredRoot = await realpath(installation.registeredRoot);
+  } catch (error) {
+    return failure(client, requested, `The registered plugin path is unavailable: ${error.message}`, {
+      pluginIdentity: installation.identity,
+      version: installation.version,
+      pluginRoot: normalize(loadedRoot),
+      registeredRoot: installation.registeredRoot,
+    });
+  }
+
   if (normalizedPath(loadedRoot) !== normalizedPath(registeredRoot)) {
     return failure(client, requested, "The loaded publish skill is not from the registered dod-guard installation.", {
       pluginIdentity: installation.identity,

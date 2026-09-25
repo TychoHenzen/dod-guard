@@ -81,8 +81,12 @@ requires the unique enabled `dod-guard@dod-guard-monorepo` record, its exact
 `dod-guard-monorepo` marketplace name and Git source, `source.path`, and the
 `.codex-plugin/plugin.json` identity/version. For Claude Code, it requires the
 unique enabled `dod-guard@dod-guard` record, `installPath`, and the
-`.claude-plugin/plugin.json` identity/version. Both paths must resolve to this
-loaded installation and contain `skills/publish/SKILL.md`.
+`.claude-plugin/plugin.json` identity/version. Codex uses the loaded helper's
+plugin root for its manifest and `skills/publish/SKILL.md` checks; its
+`source.path` is marketplace registration evidence and may differ from that
+loaded cache root. Claude Code's `installPath` must resolve to the loaded
+installation, and every loaded publish skill must be a readable file inside
+its loaded plugin root.
 
 If the helper exits non-zero, report its requested and observed values, exact
 mismatch, and safe next step, then stop. Do not run the procedure or any Git,
