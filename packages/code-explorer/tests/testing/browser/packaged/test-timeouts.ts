@@ -8,10 +8,7 @@ interface PackagedFixtureDiagnostics {
   process: string;
 }
 
-const diagnosticsByPage = new WeakMap<
-  Page,
-  () => PackagedFixtureDiagnostics
->();
+const diagnosticsByPage = new WeakMap<Page, () => PackagedFixtureDiagnostics>();
 
 export function registerPackagedFixtureDiagnostics(
   page: Page,

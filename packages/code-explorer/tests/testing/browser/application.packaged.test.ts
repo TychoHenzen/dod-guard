@@ -4,11 +4,11 @@ import {
   assertRefreshFailure,
   assertSymbolSearch,
 } from "./application-actions.test.js";
-import { assertBrowserOwnedShutdown } from "./application-shutdown.test.js";
 import {
   type PackagedBrowserFixture,
   startPackagedBrowserFixture,
 } from "./application-fixture.test.js";
+import { assertBrowserOwnedShutdown } from "./application-shutdown.test.js";
 import { waitForPackagedLocator } from "./packaged/test-timeouts.js";
 
 let fixture: PackagedBrowserFixture;
