@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,6 +14,16 @@ export async function shippedEntryText(name: string): Promise<string> {
 export async function copyShippedKnowledgeRoot(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "knowledge-base-test-"));
   await cp(shippedKnowledgeRoot, root, { recursive: true });
+  return root;
+}
+
+export async function createSyntheticKnowledgeRoot(entries: Record<string, string>): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), "knowledge-base-synthetic-"));
+  for (const [name, content] of Object.entries(entries)) {
+    const path = join(root, "entries", name);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, content, "utf8");
+  }
   return root;
 }
 

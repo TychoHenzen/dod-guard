@@ -16,6 +16,7 @@ import {
 } from "./test-support.js";
 
 const entryPoint = join(packageRoot, "dist", "bundle.js");
+const sourceEntryPoint = join(packageRoot, "dist-test", "src", "index.js");
 const coverageDirectory = process.env.NODE_V8_COVERAGE;
 const coverageEnvironment: Record<string, string> = coverageDirectory ? { NODE_V8_COVERAGE: coverageDirectory } : {};
 
@@ -43,6 +44,23 @@ test("loads the shipped corpus from an unrelated working directory", async () =>
       chapters.chapters.map((chapter) => chapter.key),
       ["design-patterns", "refactoring", "ux-ui-design"],
     );
+  } finally {
+    await client.close();
+  }
+});
+
+test("runs the compiled source entrypoint without a shipped corpus copy", async () => {
+  const client = new Client({ name: "knowledge-base-source-entrypoint-test", version: "1.0.0" });
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [sourceEntryPoint],
+    cwd: tmpdir(),
+    env: coverageEnvironment,
+  });
+  try {
+    await client.connect(transport);
+    const chapters = await callKnowledgeTool<{ chapters: unknown[] }>(client, "knowledge_list_chapters");
+    assert.deepEqual(chapters.chapters, []);
   } finally {
     await client.close();
   }
