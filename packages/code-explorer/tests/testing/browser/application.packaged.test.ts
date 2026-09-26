@@ -112,7 +112,10 @@ describe("packaged browser", () => {
       });
     const closePromise = fixture.close();
     const timedOut = await new Promise<boolean>((resolve) => {
-      const timer = setTimeout(() => resolve(true), PACKAGED_BROWSER_TIMEOUT_MS);
+      const timer = setTimeout(
+        () => resolve(true),
+        PACKAGED_BROWSER_TIMEOUT_MS,
+      );
       void closePromise.then(() => {
         clearTimeout(timer);
         resolve(false);

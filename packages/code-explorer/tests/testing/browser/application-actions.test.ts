@@ -14,9 +14,7 @@ export async function assertSymbolSearch(
   await assertInitialShell(page);
   await page.locator('[data-operation="search"]').fill("main");
   await waitForPackagedLocator(
-    page.locator(
-      '[data-discovery="results"] [data-symbol-id="symbol-main"]',
-    ),
+    page.locator('[data-discovery="results"] [data-symbol-id="symbol-main"]'),
     "symbol search result",
   );
   await page.locator('[data-symbol-id="symbol-main"]').click();
