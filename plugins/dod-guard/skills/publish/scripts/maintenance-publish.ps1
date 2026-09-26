@@ -1,5 +1,3 @@
-Set-StrictMode -Version Latest
-
 function ConvertTo-MaintenanceCanonicalValue {
     param([AllowNull()][object]$Value)
 
@@ -62,10 +60,131 @@ function Remove-MaintenanceAdminField {
 function Get-MaintenanceResponseStatus {
     param([AllowNull()][object]$Response)
 
-    if ($null -eq $Response -or $null -eq $Response.PSObject.Properties["Status"]) {
+    $status = Get-MaintenancePropertyValue $Response "Status"
+    if ($status -isnot [int] -and $status -isnot [long]) {
         return $null
     }
-    return [int]$Response.Status
+    return [int]$status
+}
+
+function Get-MaintenancePropertyValue {
+    param(
+        [AllowNull()][object]$Object,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+
+    if ($null -eq $Object) {
+        return $null
+    }
+    $property = $Object.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $null
+    }
+    return $property.Value
+}
+
+function Get-MaintenanceBooleanProperty {
+    param(
+        [AllowNull()][object]$Object,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+
+    $value = Get-MaintenancePropertyValue $Object $Name
+    if ($value -isnot [bool]) {
+        return $null
+    }
+    return $value
+}
+
+function Test-MaintenanceResponseBoolean {
+    param(
+        [AllowNull()][object]$Response,
+        [Parameter(Mandatory = $true)][bool]$Expected
+    )
+
+    if ((Get-MaintenanceResponseStatus $Response) -ne 200) {
+        return $false
+    }
+    $body = Get-MaintenancePropertyValue $Response "Body"
+    $value = Get-MaintenanceBooleanProperty $body "enabled"
+    return $null -ne $value -and $value -eq $Expected
+}
+
+function Test-MaintenanceProtectionResponse {
+    param([AllowNull()][object]$Response)
+
+    if ((Get-MaintenanceResponseStatus $Response) -ne 200) {
+        return $false
+    }
+    $body = Get-MaintenancePropertyValue $Response "Body"
+    return $null -ne $body -and @($body.PSObject.Properties).Count -gt 0
+}
+
+function Test-MaintenanceProtectionAdminState {
+    param(
+        [AllowNull()][object]$Response,
+        [Parameter(Mandatory = $true)][bool]$Expected
+    )
+
+    $body = Get-MaintenancePropertyValue $Response "Body"
+    $enforceAdmins = Get-MaintenancePropertyValue $body "enforce_admins"
+    $value = Get-MaintenanceBooleanProperty $enforceAdmins "enabled"
+    return $null -ne $value -and $value -eq $Expected
+}
+
+function Test-MaintenanceProtectionWithoutAdmin {
+    param(
+        [AllowNull()][object]$Expected,
+        [AllowNull()][object]$Observed
+    )
+
+    if (
+        $null -eq (Get-MaintenancePropertyValue $Expected "enforce_admins") -or
+        $null -eq (Get-MaintenancePropertyValue $Observed "enforce_admins")
+    ) {
+        return $false
+    }
+    return Test-MaintenanceEqual (Remove-MaintenanceAdminField $Expected) (Remove-MaintenanceAdminField $Observed)
+}
+
+function Test-MaintenanceEmptyResponseBody {
+    param([AllowNull()][object]$Response)
+
+    $body = Get-MaintenancePropertyValue $Response "Body"
+    return $null -eq $body -or ($body -is [string] -and [string]::IsNullOrWhiteSpace($body))
+}
+
+function Get-MaintenanceRestoreDifference {
+    param(
+        [AllowNull()][object]$SavedProtection,
+        [AllowNull()][object]$RestoredProtection,
+        [AllowNull()][object]$RestoredAdmin,
+        [AllowNull()][object]$RestoreResponse,
+        [AllowNull()][object]$RestoreError
+    )
+
+    $differences = @()
+    if ($null -ne $RestoreError) {
+        $differences += "restore request error: $($RestoreError.Message)"
+    } elseif ((Get-MaintenanceResponseStatus $RestoreResponse) -ne 200) {
+        $differences += "restore response status: $((Get-MaintenanceResponseStatus $RestoreResponse))"
+    }
+
+    if (-not (Test-MaintenanceResponseBoolean $RestoredAdmin $true)) {
+        $differences += "admin readback: expected status=200 and enabled=true, actual=$((Get-MaintenancePropertyValue $RestoredAdmin 'Body') | ConvertTo-Json -Compress)"
+    }
+    if (-not (Test-MaintenanceProtectionResponse ([pscustomobject]@{ Status = 200; Body = $RestoredProtection }))) {
+        $differences += "protection readback: expected a non-empty object, actual=$($RestoredProtection | ConvertTo-Json -Depth 100 -Compress)"
+    } elseif (-not (Test-MaintenanceEqual $SavedProtection $RestoredProtection)) {
+        $expectedJson = ConvertTo-MaintenanceCanonicalValue $SavedProtection | ConvertTo-Json -Depth 100 -Compress
+        $actualJson = ConvertTo-MaintenanceCanonicalValue $RestoredProtection | ConvertTo-Json -Depth 100 -Compress
+        $differences += "protection snapshot: expected=$expectedJson; actual=$actualJson"
+    }
+
+    if ($differences.Count -eq 0) {
+        return "restoration readback did not match the saved snapshot"
+    }
+    return $differences -join "; "
 }
 
 function Get-MaintenanceState {
@@ -123,7 +242,12 @@ function Invoke-MaintenanceAction {
         [Parameter(Mandatory = $true)][string]$Name
     )
 
+    $global:LASTEXITCODE = 0
     $output = @(& $Action)
+    $exitCode = $global:LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "$Name failed with exit code $exitCode"
+    }
     if ($output.Count -eq 0) {
         return
     }
@@ -213,6 +337,7 @@ function Invoke-MaintenancePublish {
     $savedProtection = $null
     $initialAdminEnabled = $false
     $releaseError = $null
+    $releaseSha = $null
 
     try {
         $gitDirectory = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "--path-format=absolute", "--git-dir")
@@ -229,25 +354,32 @@ function Invoke-MaintenancePublish {
         $initialState = Get-MaintenanceState $InvokeGhApi $protectionEndpoint $adminEndpoint
         $initialProtectionResponse = $initialState.Protection
         $initialAdminResponse = $initialState.Admin
+        $initialProtectionBody = Get-MaintenancePropertyValue $initialProtectionResponse "Body"
+        $initialAdminBody = Get-MaintenancePropertyValue $initialAdminResponse "Body"
+        $initialProtectionAdmin = Get-MaintenancePropertyValue $initialProtectionBody "enforce_admins"
+        $initialProtectionAdminEnabled = Get-MaintenanceBooleanProperty $initialProtectionAdmin "enabled"
+        $initialAdminEnabledValue = Get-MaintenanceBooleanProperty $initialAdminBody "enabled"
+        $allowForcePushes = Get-MaintenancePropertyValue $initialProtectionBody "allow_force_pushes"
+        $allowForcePushesEnabled = Get-MaintenanceBooleanProperty $allowForcePushes "enabled"
         if (
             (Get-MaintenanceResponseStatus $initialProtectionResponse) -ne 200 -or
-            $null -eq $initialProtectionResponse.Body -or
-            @($initialProtectionResponse.Body.PSObject.Properties).Count -eq 0 -or
-            $null -eq $initialProtectionResponse.Body.PSObject.Properties["enforce_admins"] -or
-            $initialProtectionResponse.Body.enforce_admins.enabled -isnot [bool] -or
+            $null -eq $initialProtectionBody -or
+            @($initialProtectionBody.PSObject.Properties).Count -eq 0 -or
             (Get-MaintenanceResponseStatus $initialAdminResponse) -ne 200 -or
-            $null -eq $initialAdminResponse.Body -or
-            $initialAdminResponse.Body.enabled -isnot [bool] -or
-            $initialProtectionResponse.Body.enforce_admins.enabled -ne $initialAdminResponse.Body.enabled
+            $null -eq $initialAdminBody -or
+            @($initialAdminBody.PSObject.Properties).Count -eq 0 -or
+            $null -eq $initialProtectionAdminEnabled -or
+            $null -eq $initialAdminEnabledValue -or
+            $initialProtectionAdminEnabled -ne $initialAdminEnabledValue
         ) {
             throw "initial protection readback is invalid"
         }
-        if ($initialProtectionResponse.Body.allow_force_pushes.enabled -ne $true) {
+        if ($allowForcePushesEnabled -ne $true) {
             throw "allow_force_pushes.enabled must be true"
         }
 
-        $savedProtection = $initialProtectionResponse.Body
-        $initialAdminEnabled = [bool]$initialAdminResponse.Body.enabled
+        $savedProtection = $initialProtectionBody
+        $initialAdminEnabled = $initialAdminEnabledValue
         if ($initialAdminEnabled) {
             $result.Stage = "disable-admin"
             $deleteResponse = $null
@@ -272,15 +404,18 @@ function Invoke-MaintenancePublish {
             if ($null -ne $disabledReadbackError) {
                 throw $disabledReadbackError
             }
-            if ((Get-MaintenanceResponseStatus $deleteResponse) -ne 204) {
+            if (
+                (Get-MaintenanceResponseStatus $deleteResponse) -ne 204 -or
+                -not (Test-MaintenanceEmptyResponseBody $deleteResponse)
+            ) {
                 throw "admin disable must return HTTP 204"
             }
 
             if (
-                (Get-MaintenanceResponseStatus $disabledState.Admin) -ne 200 -or
-                $disabledState.Admin.Body.enabled -ne $false -or
-                (Get-MaintenanceResponseStatus $disabledState.Protection) -ne 200 -or
-                -not (Test-MaintenanceEqual (Remove-MaintenanceAdminField $savedProtection) (Remove-MaintenanceAdminField $disabledState.Protection.Body))
+                -not (Test-MaintenanceResponseBoolean $disabledState.Admin $false) -or
+                -not (Test-MaintenanceProtectionResponse $disabledState.Protection) -or
+                -not (Test-MaintenanceProtectionAdminState $disabledState.Protection $false) -or
+                -not (Test-MaintenanceProtectionWithoutAdmin $savedProtection (Get-MaintenancePropertyValue $disabledState.Protection "Body"))
             ) {
                 throw "admin disable readback is invalid"
             }
@@ -292,9 +427,18 @@ function Invoke-MaintenancePublish {
         if ($parentSha -ne $SavedSha) {
             throw "release commit parent $parentSha does not equal saved master SHA $SavedSha"
         }
+        $releaseSha = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD")
 
         $result.Stage = "pre-push"
         Invoke-MaintenanceAction $PrePushAction "pre-push validation"
+        $headAfterPrePush = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD")
+        $parentAfterPrePush = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD^")
+        if ($headAfterPrePush -ne $releaseSha) {
+            throw "HEAD changed during pre-push validation from $releaseSha to $headAfterPrePush"
+        }
+        if ($parentAfterPrePush -ne $SavedSha) {
+            throw "release commit parent changed during pre-push validation from $SavedSha to $parentAfterPrePush"
+        }
         $result.Stage = "push"
         [void](Invoke-MaintenanceGit $InvokeGit @("push", $lease, "origin", "HEAD:refs/heads/master"))
         $result.ReleaseSha = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD")
@@ -334,27 +478,30 @@ function Invoke-MaintenancePublish {
                     if (
                         $null -eq $restoreError -and
                         (Get-MaintenanceResponseStatus $restoreResponse) -eq 200 -and
-                        (Get-MaintenanceResponseStatus $restoredState.Admin) -eq 200 -and
-                        $restoredState.Admin.Body.enabled -eq $true -and
-                        (Get-MaintenanceResponseStatus $restoredState.Protection) -eq 200 -and
-                        (Test-MaintenanceEqual $savedProtection $restoredState.Protection.Body)
+                        (Test-MaintenanceResponseBoolean $restoredState.Admin $true) -and
+                        (Test-MaintenanceProtectionResponse $restoredState.Protection) -and
+                        (Test-MaintenanceProtectionAdminState $restoredState.Protection $true) -and
+                        (Test-MaintenanceEqual $savedProtection (Get-MaintenancePropertyValue $restoredState.Protection "Body"))
                     ) {
                         $result.Restored = $true
                         break
                     }
 
-                    if ($null -ne $restoreError) {
-                        $result.Error = $restoreError.Message
-                    }
+                    $result.Error = Get-MaintenanceRestoreDifference `
+                        $savedProtection `
+                        (Get-MaintenancePropertyValue $restoredState.Protection "Body") `
+                        $restoredState.Admin `
+                        $restoreResponse `
+                        $restoreError
                 }
             } else {
                 try {
                     $unchangedState = Get-MaintenanceState $InvokeGhApi $protectionEndpoint $adminEndpoint
                     $result.Restored =
-                        (Get-MaintenanceResponseStatus $unchangedState.Admin) -eq 200 -and
-                        $unchangedState.Admin.Body.enabled -eq $false -and
-                        (Get-MaintenanceResponseStatus $unchangedState.Protection) -eq 200 -and
-                        (Test-MaintenanceEqual $savedProtection $unchangedState.Protection.Body)
+                        (Test-MaintenanceResponseBoolean $unchangedState.Admin $false) -and
+                        (Test-MaintenanceProtectionResponse $unchangedState.Protection) -and
+                        (Test-MaintenanceProtectionAdminState $unchangedState.Protection $false) -and
+                        (Test-MaintenanceEqual $savedProtection (Get-MaintenancePropertyValue $unchangedState.Protection "Body"))
                 } catch {
                     $result.Error = $_.Exception.Message
                 }

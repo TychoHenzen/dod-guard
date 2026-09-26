@@ -319,8 +319,8 @@ test("maintenance protection mutation authorizes one exact endpoint and response
   assert.match(wrapper, /\$adminEndpoint = "\$protectionEndpoint\/enforce_admins"/);
   assert.match(wrapper, /\$adminMethod = "DELETE"/);
   assert.match(wrapper, /Get-MaintenanceResponseStatus \$deleteResponse\) -ne 204/);
-  assert.match(wrapper, /Get-MaintenanceResponseStatus \$disabledState\.Admin\) -ne 200/);
-  assert.match(wrapper, /Remove-MaintenanceAdminField \$savedProtection/);
+  assert.match(wrapper, /Test-MaintenanceResponseBoolean \$disabledState\.Admin \$false/);
+  assert.match(wrapper, /Test-MaintenanceProtectionWithoutAdmin \$savedProtection/);
 });
 
 test("maintenance protection restoration compares the complete snapshot and bounds retry", async () => {
@@ -336,7 +336,7 @@ test("maintenance protection restoration compares the complete snapshot and boun
   assert.match(skill, /If the second readback\s+still differs, it stops and\s+reports the exact remaining difference/);
   assert.match(skill, /If\s+admin enforcement was initially\s+disabled, it does not call POST/);
   assert.match(wrapper, /for \(\$attempt = 1; \$attempt -le 2; \$attempt\+\+\)/);
-  assert.match(wrapper, /Test-MaintenanceEqual \$savedProtection \$restoredState\.Protection\.Body/);
+  assert.match(wrapper, /Test-MaintenanceEqual \$savedProtection \(Get-MaintenancePropertyValue \$restoredState\.Protection "Body"\)/);
 });
 
 const protectionEndpoint = "repos/{owner}/{repo}/branches/master/protection";
@@ -663,6 +663,8 @@ function maintenanceWrapperHarness(failureStage = "") {
 $ErrorActionPreference = 'Stop'
 . $env:DOD_GUARD_MAINTENANCE_WRAPPER
 $savedSha = '0123456789abcdef0123456789abcdef01234567'
+$protectionEndpoint = 'repos/TychoHenzen/dod-guard/branches/master/protection'
+$adminEndpoint = $protectionEndpoint + '/enforce_admins'
 $events = New-Object System.Collections.ArrayList
 $fixtureProtection = [pscustomobject]@{
   url = 'https://api.github.com/repos/{owner}/{repo}/branches/master/protection'
@@ -670,15 +672,15 @@ $fixtureProtection = [pscustomobject]@{
   enforce_admins = [pscustomobject]@{ enabled = $true }
   required_status_checks = [pscustomobject]@{ strict = $true; contexts = @('build-test') }
 }
-$state = @{ ProtectionReads = 0; AdminReads = 0; RestoreCalls = 0; GhCalls = 0 }
+$state = @{ ProtectionReads = 0; AdminReads = 0; RestoreCalls = 0; GhCalls = 0; HeadSha = $savedSha; ParentSha = $savedSha; ReleaseSha = 'fedcba9876543210fedcba9876543210fedcba98' }
 $invokeGit = {
   param([string[]]$Arguments)
   [void]$events.Add(('git ' + ($Arguments -join ' ')))
   if ($Arguments[0] -eq 'rev-parse' -and $Arguments[1] -eq '--path-format=absolute') { return 'C:\repo\.git' }
-  if ($Arguments[0] -eq 'rev-parse' -and $Arguments[1] -eq 'HEAD') { return $savedSha }
+  if ($Arguments[0] -eq 'rev-parse' -and $Arguments[1] -eq 'HEAD') { return $state.HeadSha }
   if ($Arguments[0] -eq 'rev-parse' -and $Arguments[1] -eq 'HEAD^') {
     if ($env:DOD_GUARD_FAILURE_STAGE -eq 'commit') { throw 'commit failed' }
-    return $savedSha
+    return $state.ParentSha
   }
   if ($Arguments[0] -eq 'push' -and $env:DOD_GUARD_FAILURE_STAGE -eq 'push') { throw 'push failed' }
   if ($Arguments[0] -eq 'push') { return '' }
@@ -689,6 +691,7 @@ $invokeGhApi = {
   [void]$events.Add(($Method + ' ' + $Endpoint))
   if ($Method -eq 'DELETE') {
     if ($env:DOD_GUARD_FAILURE_STAGE -eq 'delete') { throw 'delete failed' }
+    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'delete-body') { return [pscustomobject]@{ Status = 204; Body = [pscustomobject]@{ unexpected = $true } } }
     return [pscustomobject]@{ Status = 204; Body = $null }
   }
   if ($Method -eq 'POST') {
@@ -699,6 +702,22 @@ $invokeGhApi = {
   if ($Endpoint -like '*/protection') {
     $state.ProtectionReads++
     if ($env:DOD_GUARD_FAILURE_STAGE -eq 'restore-protection-read' -and $state.RestoreCalls -eq 1 -and $state.ProtectionReads -eq 3) { throw 'restore protection read failed' }
+    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'malformed-restore' -and $state.RestoreCalls -ge 1) { return [pscustomobject]@{ Status = 200; Body = [pscustomobject]@{ broken = $true } } }
+    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'restore-mismatch' -and $state.RestoreCalls -ge 1) {
+      $mismatchedProtection = $fixtureProtection | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+      $mismatchedProtection.allow_force_pushes.enabled = $false
+      return [pscustomobject]@{ Status = 200; Body = $mismatchedProtection }
+    }
+    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'allow-force-string' -and $state.ProtectionReads -eq 1) {
+      $invalidProtection = $fixtureProtection | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+      $invalidProtection.allow_force_pushes.enabled = 'true'
+      return [pscustomobject]@{ Status = 200; Body = $invalidProtection }
+    }
+    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'initial-disabled' -and $state.ProtectionReads -eq 1) {
+      $disabledProtection = $fixtureProtection | ConvertTo-Json -Depth 20 | ConvertFrom-Json
+      $disabledProtection.enforce_admins.enabled = $false
+      return [pscustomobject]@{ Status = 200; Body = $disabledProtection }
+    }
     if ($state.RestoreCalls -eq 0 -and $state.ProtectionReads -gt 1) {
       return [pscustomobject]@{ Status = 200; Body = [pscustomobject]@{ url = $fixtureProtection.url; allow_force_pushes = [pscustomobject]@{ enabled = $true }; enforce_admins = [pscustomobject]@{ enabled = $false }; required_status_checks = $fixtureProtection.required_status_checks } }
     }
@@ -706,6 +725,7 @@ $invokeGhApi = {
     return [pscustomobject]@{ Status = 200; Body = $fixtureProtection }
   }
   $state.AdminReads++
+  if ($env:DOD_GUARD_FAILURE_STAGE -eq 'initial-disabled' -and $state.AdminReads -eq 1) { return [pscustomobject]@{ Status = 200; Body = [pscustomobject]@{ enabled = $false } } }
   if ($state.RestoreCalls -eq 0 -and $state.AdminReads -gt 1) {
     return [pscustomobject]@{ Status = 200; Body = [pscustomobject]@{ enabled = $false } }
   }
@@ -718,7 +738,23 @@ if ($env:DOD_GUARD_USE_DEFAULT_GH -eq 'true') {
     if ($Arguments -contains '--silent') { throw 'gh body was suppressed' }
     $global:LASTEXITCODE = 0
     $state.GhCalls = [int]$state.GhCalls + 1
-    if ($state.GhCalls -in @(1, 4, 7)) {
+    $expectedMethod = 'GET'
+    $expectedEndpoint = $protectionEndpoint
+    if ($state.GhCalls -eq 3) {
+      $expectedMethod = 'DELETE'
+      $expectedEndpoint = $adminEndpoint
+    } elseif ($state.GhCalls -ge 6 -and (($state.GhCalls - 6) % 3 -eq 0)) {
+      $expectedMethod = 'POST'
+      $expectedEndpoint = $adminEndpoint
+    } elseif (($state.GhCalls - 2) % 3 -eq 0) {
+      $expectedEndpoint = $adminEndpoint
+    } elseif (($state.GhCalls - 1) % 3 -ne 0) {
+      throw ('unexpected gh call ' + $state.GhCalls)
+    }
+    if ($Arguments.Count -ne 5 -or $Arguments[0] -ne 'api' -or $Arguments[1] -ne '--method' -or $Arguments[2] -ne $expectedMethod -or $Arguments[3] -ne $expectedEndpoint -or $Arguments[4] -ne '--include') {
+      throw ('unexpected gh arguments: ' + ($Arguments -join ' '))
+    }
+    if (($state.GhCalls - 1) % 3 -eq 0) {
       $enabled = $state.GhCalls -ne 4
       $body = [pscustomobject]@{
         url = $fixtureProtection.url
@@ -732,7 +768,7 @@ if ($env:DOD_GUARD_USE_DEFAULT_GH -eq 'true') {
       Write-Output $body
       return
     }
-    if ($state.GhCalls -in @(2, 5, 8)) {
+    if (($state.GhCalls - 2) % 3 -eq 0) {
       $enabled = $state.GhCalls -ne 5
       Write-Output 'HTTP/2.0 200 OK'
       Write-Output 'Content-Type: application/json'
@@ -745,7 +781,7 @@ if ($env:DOD_GUARD_USE_DEFAULT_GH -eq 'true') {
       Write-Output ''
       return
     }
-    if ($state.GhCalls -eq 6) {
+    if ($state.GhCalls -ge 6 -and (($state.GhCalls - 6) % 3 -eq 0)) {
       Write-Output 'HTTP/2.0 200 OK'
       Write-Output ''
       return
@@ -757,10 +793,15 @@ if ($env:DOD_GUARD_USE_DEFAULT_GH -eq 'true') {
 $commitAction = {
   [void]$events.Add('commit')
   if ($env:DOD_GUARD_FAILURE_STAGE -eq 'commit') { throw 'commit failed' }
+  if ($env:DOD_GUARD_FAILURE_STAGE -eq 'native') { cmd.exe /c exit 7 }
+  $state.HeadSha = $state.ReleaseSha
+  $state.ParentSha = $savedSha
 }
 $prePushAction = {
   [void]$events.Add('pre-push')
   if ($env:DOD_GUARD_FAILURE_STAGE -eq 'pre-push') { throw 'pre-push failed' }
+  if ($env:DOD_GUARD_FAILURE_STAGE -eq 'head') { $state.HeadSha = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }
+  if ($env:DOD_GUARD_FAILURE_STAGE -eq 'parent') { $state.ParentSha = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }
 }
 $result = Invoke-MaintenancePublish -Owner 'TychoHenzen' -Repo 'dod-guard' -SavedSha $savedSha -CommitAction $commitAction -PrePushAction $prePushAction -InvokeGit $invokeGit -InvokeGhApi $invokeGhApi
 [pscustomobject]@{ Result = $result; Events = @($events) } | ConvertTo-Json -Depth 20 -Compress
@@ -813,6 +854,49 @@ test("maintenance wrapper restores protection after commit, pre-push, and push f
     assert.equal(outcome.Result.RestoreAttempts, 1, failureStage);
     assert.ok(outcome.Events.includes("POST repos/TychoHenzen/dod-guard/branches/master/protection/enforce_admins"), failureStage);
   }
+});
+
+test("maintenance wrapper checks native action status and post-hook Git identity", { skip: process.platform !== "win32" }, () => {
+  for (const failureStage of ["native", "head", "parent"]) {
+    const outcome = runMaintenanceWrapper(failureStage);
+    assert.equal(outcome.Result.Success, false, failureStage);
+    assert.equal(outcome.Result.Restored, true, failureStage);
+    assert.match(outcome.Result.Error, failureStage === "native" ? /exit code 7/ : /changed during pre-push validation/, failureStage);
+  }
+});
+
+test("maintenance wrapper rejects malformed protected responses with evidence", { skip: process.platform !== "win32" }, () => {
+  const deleteBody = runMaintenanceWrapper("delete-body");
+  assert.equal(deleteBody.Result.Success, false);
+  assert.equal(deleteBody.Result.Restored, true);
+
+  const malformed = runMaintenanceWrapper("malformed-restore");
+  assert.equal(malformed.Result.Success, false);
+  assert.equal(malformed.Result.Restored, false);
+  assert.match(malformed.Result.Error, /protection snapshot/);
+  assert.match(malformed.Result.Error, /broken/);
+
+  const mismatch = runMaintenanceWrapper("restore-mismatch");
+  assert.equal(mismatch.Result.Success, false);
+  assert.equal(mismatch.Result.Restored, false);
+  assert.match(mismatch.Result.Error, /allow_force_pushes/);
+});
+
+test("maintenance wrapper preserves an initially disabled admin state", { skip: process.platform !== "win32" }, () => {
+  const outcome = runMaintenanceWrapper("initial-disabled");
+  assert.equal(outcome.Result.Success, true);
+  assert.equal(outcome.Result.Restored, true);
+  assert.equal(outcome.Result.RestoreAttempts, 0);
+  assert.equal(outcome.Events.some((event) => event.startsWith("DELETE ") || event.startsWith("POST ")), false);
+});
+
+test("maintenance wrapper does not leak strict mode when dot-sourced", { skip: process.platform !== "win32" }, () => {
+  const result = runPowerShell(
+    "$ErrorActionPreference = 'Stop'; . $env:DOD_GUARD_MAINTENANCE_WRAPPER; $undefinedMaintenanceVariable; Write-Output 'ok'",
+    { DOD_GUARD_MAINTENANCE_WRAPPER: maintenanceWrapperPath },
+  );
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /ok/);
 });
 
 test("maintenance wrapper reads after a thrown admin disable before cleanup", { skip: process.platform !== "win32" }, () => {
