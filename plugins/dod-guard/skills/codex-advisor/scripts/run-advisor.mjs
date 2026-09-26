@@ -28,7 +28,7 @@ function cancelProcessTree(child) {
   }
 }
 
-function runProcess(executable, args, options, prompt, abortSignal) {
+function runProcess(executable, args, options, prompt, abortSignal, spawnImpl = spawn) {
   return new Promise((resolveResult) => {
     let startError;
     let stdout = "";
@@ -36,14 +36,29 @@ function runProcess(executable, args, options, prompt, abortSignal) {
     let outputLimitExceeded = false;
     let cancelled = false;
     let stdinError;
-    const child = spawn(executable, args, {
-      cwd: options.cwd,
-      env: options.env,
-      shell: false,
-      stdio: ["pipe", "pipe", "pipe"],
-      windowsHide: true,
-      detached: process.platform !== "win32",
-    });
+    let child;
+    try {
+      child = spawnImpl(executable, args, {
+        cwd: options.cwd,
+        env: options.env,
+        shell: false,
+        stdio: ["pipe", "pipe", "pipe"],
+        windowsHide: true,
+        detached: process.platform !== "win32",
+      });
+    } catch (error) {
+      resolveResult({
+        code: null,
+        signal: null,
+        startError: error,
+        stdinError: null,
+        stderr: "",
+        stdout: "",
+        outputLimitExceeded: false,
+        cancelled: false,
+      });
+      return;
+    }
     const cancel = () => {
       cancelled = true;
       cancelProcessTree(child);
@@ -94,6 +109,7 @@ function runProcess(executable, args, options, prompt, abortSignal) {
 function processEvidence(executable, args, processResult) {
   return {
     command: [executable, ...args],
+    shell: false,
     exitCode: processResult?.code ?? null,
     signal: processResult?.signal ?? null,
     stderr: processResult?.stderr ?? "",
@@ -167,7 +183,7 @@ function parseAdvice(raw) {
   if (typeof response.advice !== "string" || !/\S/.test(response.advice)) {
     return { error: "Codex advisor output does not contain non-whitespace advice" };
   }
-  return { advice: response.advice.trim() };
+  return { value: { advice: response.advice.trim() } };
 }
 
 export async function runAdvisor({
@@ -180,6 +196,8 @@ export async function runAdvisor({
   tempRoot = tmpdir(),
   signal,
   env = {},
+  parseResponse = parseAdvice,
+  spawnImpl = spawn,
 }) {
   const attemptedArgs = attemptedExecArgs({ mode: "read-only", prefixArgs, model, reasoningEffort });
   const invalidOption = [
@@ -211,6 +229,7 @@ export async function runAdvisor({
         { cwd: workdir, env: { ...process.env, ...env } },
         "",
         signal,
+        spawnImpl,
       );
       if (result.outputLimitExceeded) {
         return failure(`Codex advisor ${stage} capability probe exceeded ${MAX_OUTPUT_BYTES} bytes`, result, executable, preflight, stage, prefixArgs);
@@ -241,6 +260,7 @@ export async function runAdvisor({
       { cwd: workdir, env: { ...process.env, ...env } },
       prompt,
       signal,
+      spawnImpl,
     );
     if (result.outputLimitExceeded) {
       return failure(`Codex advisor output exceeded ${MAX_OUTPUT_BYTES} bytes`, result, executable, args, "reviewer-process", prefixArgs);
@@ -267,13 +287,18 @@ export async function runAdvisor({
     if (!raw.trim()) {
       return failure("Codex advisor output file is empty", result, executable, args, "reviewer-report", prefixArgs);
     }
-    const parsed = parseAdvice(raw);
+    let parsed;
+    try {
+      parsed = parseResponse(raw);
+    } catch (error) {
+      return failure(`Codex advisor output could not be parsed (${error.message})`, result, executable, args, "reviewer-report", prefixArgs);
+    }
     if (parsed.error) {
       return failure(parsed.error, result, executable, args, "reviewer-report", prefixArgs);
     }
     return {
       ok: true,
-      advice: parsed.advice,
+      ...(parsed.value ?? {}),
       capability: { executable, probes: capability },
       execution: completedExecutionEvidence(executable, args, result, prefixArgs),
     };
