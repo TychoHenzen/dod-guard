@@ -83,13 +83,19 @@ test("serves an explicit synthetic root through every browse and retrieval tool"
         "knowledge_list_sections",
         { chapter: "synthetic" },
       );
-      assert.deepEqual(sections.sections.map((section) => section.key), ["synthetic.topic"]);
+      assert.deepEqual(
+        sections.sections.map((section) => section.key),
+        ["synthetic.topic"],
+      );
       const entries = await callKnowledgeTool<{ entries: Array<{ key: string; content?: string }> }>(
         client,
         "knowledge_list_entries",
         { chapter: "synthetic", section: "synthetic.topic" },
       );
-      assert.deepEqual(entries.entries.map((entry) => entry.key), ["synthetic.first", "synthetic.second"]);
+      assert.deepEqual(
+        entries.entries.map((entry) => entry.key),
+        ["synthetic.first", "synthetic.second"],
+      );
       assert.equal("content" in entries.entries[0], false);
       const emptySearch = await callKnowledgeTool<{ entries: unknown[] }>(client, "knowledge_search", {
         query: "   ",
@@ -100,7 +106,10 @@ test("serves an explicit synthetic root through every browse and retrieval tool"
         related: Array<{ key: string }>;
       }>(client, "knowledge_get_entry", { key: "synthetic.first" });
       assert.equal(full.entry.content, "Synthetic full content.");
-      assert.deepEqual(full.related.map((entry) => entry.key), ["synthetic.second"]);
+      assert.deepEqual(
+        full.related.map((entry) => entry.key),
+        ["synthetic.second"],
+      );
 
       const invalidSection = await client.callTool({
         name: "knowledge_list_sections",

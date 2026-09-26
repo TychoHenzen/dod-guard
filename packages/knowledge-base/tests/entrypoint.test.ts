@@ -7,13 +7,7 @@ import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { withKnowledgeBaseClient } from "./mcp-test-support.js";
-import {
-  callKnowledgeTool,
-  createKnowledgeRoot,
-  packageRoot,
-  removeRoot,
-  toolText,
-} from "./test-support.js";
+import { callKnowledgeTool, createKnowledgeRoot, packageRoot, removeRoot, toolText } from "./test-support.js";
 
 const entryPoint = join(packageRoot, "dist", "bundle.js");
 const sourceEntryPoint = join(packageRoot, "dist-test", "src", "index.js");

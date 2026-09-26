@@ -68,7 +68,10 @@ test("rejects a broken related key in a temporary corpus", async () => {
   const root = await copyShippedKnowledgeRoot();
   try {
     const entryPath = join(root, "entries", "ux-ui-design.accessible-dialogs.md");
-    const entryText = (await readFile(entryPath, "utf8")).replace("related_keys: []", "related_keys:\n  - missing.entry");
+    const entryText = (await readFile(entryPath, "utf8")).replace(
+      "related_keys: []",
+      "related_keys:\n  - missing.entry",
+    );
     await writeFile(entryPath, entryText, "utf8");
     const entry = parseKnowledgeDocument(
       await readFile(entryPath, "utf8"),
@@ -86,15 +89,17 @@ test("rejects a broken related key in a temporary corpus", async () => {
 
 test("parses synthetic metadata and exercises schema validation failures", () => {
   const entry = parseKnowledgeDocument(
-    document([
-      "key: synthetic.entry",
-      "title: Synthetic entry",
-      "chapter: synthetic",
-      "section: synthetic",
-      "summary: Synthetic summary",
-      "sources:",
-      "  - label: fixture",
-    ].join("\n")),
+    document(
+      [
+        "key: synthetic.entry",
+        "title: Synthetic entry",
+        "chapter: synthetic",
+        "section: synthetic",
+        "summary: Synthetic summary",
+        "sources:",
+        "  - label: fixture",
+      ].join("\n"),
+    ),
     "entries/synthetic.md",
   );
   assert.deepEqual(entry.relatedKeys, []);
@@ -111,18 +116,54 @@ test("parses synthetic metadata and exercises schema validation failures", () =>
     () => parseKnowledgeDocument("---\nkey: synthetic.entry", "entries/synthetic.md"),
     /front matter is not closed/,
   );
-  assertParseError("key: synthetic.entry\ntitle: \nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture", /title must be a non-empty string/);
-  assertParseError("key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources: fixture", /sources must be an array/);
-  assertParseError("key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources: []", /sources must contain at least one source/);
-  assertParseError("key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture\n    project: \"\"", /project must be a non-empty string/);
-  assertParseError("key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - fixture", /sources\[0\] must be an object/);
-  assertParseError("key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - project: fixture", /sources\[0\]\.label must be a non-empty string/);
-  assertParseError("key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture\nrelated_keys: fixture", /related_keys must be an array/);
-  assertParseError("key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture\nrelated_keys:\n  - 12", /related_keys\[0\] must be a non-empty string/);
-  assertParseError("key: other.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture", /key must belong to chapter synthetic/);
-  assertParseError("key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: other.section\nsummary: ok\nsources:\n  - label: fixture", /section must belong to chapter synthetic/);
-  assertParseError("key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture\nrelated_keys:\n  - bad key", /related key bad key is not stable/);
-  assertParseError("key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture\nrelated_keys:\n  - synthetic.other\n  - synthetic.other", /related_keys contains duplicates/);
+  assertParseError(
+    "key: synthetic.entry\ntitle: \nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture",
+    /title must be a non-empty string/,
+  );
+  assertParseError(
+    "key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources: fixture",
+    /sources must be an array/,
+  );
+  assertParseError(
+    "key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources: []",
+    /sources must contain at least one source/,
+  );
+  assertParseError(
+    'key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture\n    project: ""',
+    /project must be a non-empty string/,
+  );
+  assertParseError(
+    "key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - fixture",
+    /sources\[0\] must be an object/,
+  );
+  assertParseError(
+    "key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - project: fixture",
+    /sources\[0\]\.label must be a non-empty string/,
+  );
+  assertParseError(
+    "key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture\nrelated_keys: fixture",
+    /related_keys must be an array/,
+  );
+  assertParseError(
+    "key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture\nrelated_keys:\n  - 12",
+    /related_keys\[0\] must be a non-empty string/,
+  );
+  assertParseError(
+    "key: other.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture",
+    /key must belong to chapter synthetic/,
+  );
+  assertParseError(
+    "key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: other.section\nsummary: ok\nsources:\n  - label: fixture",
+    /section must belong to chapter synthetic/,
+  );
+  assertParseError(
+    "key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture\nrelated_keys:\n  - bad key",
+    /related key bad key is not stable/,
+  );
+  assertParseError(
+    "key: synthetic.entry\ntitle: ok\nchapter: synthetic\nsection: synthetic\nsummary: ok\nsources:\n  - label: fixture\nrelated_keys:\n  - synthetic.other\n  - synthetic.other",
+    /related_keys contains duplicates/,
+  );
 });
 
 test("validates an entry without a stored path", () => {
