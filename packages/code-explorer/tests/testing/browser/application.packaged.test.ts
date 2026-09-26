@@ -9,9 +9,7 @@ import {
   assertBrowserOwnedShutdown,
   startPackagedBrowserFixture,
 } from "./application-fixture.test.js";
-import {
-  waitForPackagedLocator,
-} from "./packaged/test-timeouts.js";
+import { waitForPackagedLocator } from "./packaged/test-timeouts.js";
 
 let fixture: PackagedBrowserFixture;
 

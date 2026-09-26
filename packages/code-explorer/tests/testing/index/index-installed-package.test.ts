@@ -29,9 +29,9 @@ async function waitForInstalledBackends(client: Client) {
       name: "code_status",
       arguments: { action: "status" },
     })) as { content: Array<{ text: string }> };
-    const envelope = JSON.parse(
-      response.content[0]?.text ?? "",
-    ) as { data: { backend_status: { backends: InstalledBackend[] } } };
+    const envelope = JSON.parse(response.content[0]?.text ?? "") as {
+      data: { backend_status: { backends: InstalledBackend[] } };
+    };
     backends = envelope.data.backend_status.backends;
     if (
       backends.length === 3 &&
