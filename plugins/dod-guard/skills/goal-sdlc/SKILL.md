@@ -191,6 +191,14 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
 &#x20;   parent/child issues with their linked pull requests before deciding
 &#x20;   eligibility;
 
+&#x20; - treat every reconciliation input as an explicit live observation. An
+&#x20;   omitted, unknown, stale, filtered, or provider-unavailable value is not
+&#x20;   `true`; classify the missing evidence as `hold` and report its exact
+&#x20;   field. Record provider availability, acceptance evidence, active
+&#x20;   checkpoints, child grouping, head/base/trust/merge evidence,
+&#x20;   head-to-PR relationship, required checks, linked issue/child closure,
+&#x20;   and Project status separately;
+
 &#x20; - classify a record with no merged delivery and no active checkpoint as
 &#x20;   eligible for the normal `Todo`/`Backlog` selection rules;
 
@@ -212,10 +220,10 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
 &#x20;   branch name, stale comment, or filtered query alone is not completion or
 &#x20;   absence evidence.
 
-- Keep this reconciliation read-only. The queue skill does not close, reopen,
-  relabel, move, merge, publish, delete branches, or mark records `Done`;
-  those mutations remain with the owning lifecycle skill after its evidence
-  gates pass.
+- Keep this reconciliation read-only and make zero mutation calls. The queue
+  skill does not close, reopen, relabel, move, merge, publish, delete branches,
+  or mark records `Done`; those mutations remain with the owning lifecycle skill
+  after its evidence gates pass.
 
 - If the repository or linked Project cannot be identified safely, use available repository evidence to resolve it. Ask the user only if no safe target can be determined.
 

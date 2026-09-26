@@ -16,75 +16,219 @@ async function readSkill() {
 
 function classifyDeliveryRecord({
   mergedDelivery,
-  sameRepositoryHead = true,
-  defaultBase = true,
-  trustedMerge = true,
-  requiredChecks = true,
-  linkedIssuesClosed = true,
-  projectDone = true,
-  activeCheckpoint = false,
+  sameRepositoryHead,
+  defaultBase,
+  trustedHead,
+  mergeCommit,
+  requiredChecks,
+  linkedIssuesClosed,
+  childrenClosed,
+  projectDone,
+  activeCheckpoint,
+  providerAvailable,
+  acceptanceVerified,
+  headRelationshipValid,
+  groupedChild,
 }) {
-  if (activeCheckpoint) {
+  if (activeCheckpoint === true) {
     return { kind: "active", eligible: false };
   }
-  if (!mergedDelivery) {
-    return { kind: "eligible", eligible: true };
-  }
+
   const missing = [
-    [sameRepositoryHead, "same-repository head"],
-    [defaultBase, "default base"],
-    [trustedMerge, "trusted merge"],
-    [requiredChecks, "required checks"],
-    [linkedIssuesClosed, "closed linked issues"],
-    [projectDone, "Done Project statuses"],
+    [groupedChild === false, "grouped parent reconciliation"],
   ]
-    .filter(([present]) => !present)
+    .filter(([present]) => present !== true)
     .map(([, evidence]) => evidence);
+
+  if (mergedDelivery === true) {
+    missing.push(
+      ...[
+        [providerAvailable, "provider evidence"],
+        [acceptanceVerified, "acceptance evidence"],
+        [sameRepositoryHead, "same-repository head"],
+        [defaultBase, "default base"],
+        [trustedHead, "trusted head"],
+        [mergeCommit, "merge commit"],
+        [requiredChecks, "required checks"],
+        [linkedIssuesClosed, "closed linked issues"],
+        [childrenClosed, "closed linked children"],
+        [projectDone, "Done Project statuses"],
+        [headRelationshipValid, "head/PR relationship"],
+      ]
+        .filter(([present]) => present !== true)
+        .map(([, evidence]) => evidence),
+    );
+  }
+
   if (missing.length > 0) {
     return { kind: "hold", eligible: false, missing };
   }
-  return { kind: "complete", eligible: false, handoff: "complete-pr" };
+
+  if (mergedDelivery === false) {
+    return { kind: "eligible", eligible: true };
+  }
+
+  if (mergedDelivery === true) {
+    return { kind: "complete", eligible: false, handoff: "complete-pr" };
+  }
+
+  return { kind: "hold", eligible: false, missing: ["delivery state"] };
 }
+
+const completeDeliveryEvidence = {
+  mergedDelivery: true,
+  activeCheckpoint: false,
+  providerAvailable: true,
+  acceptanceVerified: true,
+  groupedChild: false,
+  sameRepositoryHead: true,
+  defaultBase: true,
+  trustedHead: true,
+  mergeCommit: true,
+  requiredChecks: true,
+  linkedIssuesClosed: true,
+  childrenClosed: true,
+  projectDone: true,
+  headRelationshipValid: true,
+};
 
 const reconciliationFixtures = [
   {
     name: "#31 external acceptance hold",
     input: {
-      mergedDelivery: true,
+      ...completeDeliveryEvidence,
+      providerAvailable: false,
+      acceptanceVerified: false,
       linkedIssuesClosed: false,
       projectDone: false,
     },
     expected: {
       kind: "hold",
       eligible: false,
-      missing: ["closed linked issues", "Done Project statuses"],
+      missing: [
+        "provider evidence",
+        "acceptance evidence",
+        "closed linked issues",
+        "Done Project statuses",
+      ],
     },
   },
   {
     name: "#33/#34 grouped verification hold",
     input: {
-      mergedDelivery: true,
+      ...completeDeliveryEvidence,
       requiredChecks: false,
       linkedIssuesClosed: false,
+      childrenClosed: false,
       projectDone: false,
     },
     expected: {
       kind: "hold",
       eligible: false,
-      missing: ["required checks", "closed linked issues", "Done Project statuses"],
+      missing: [
+        "required checks",
+        "closed linked issues",
+        "closed linked children",
+        "Done Project statuses",
+      ],
     },
   },
   {
     name: "#444/#536-#539 complete delivery",
-    input: { mergedDelivery: true },
+    input: completeDeliveryEvidence,
     expected: { kind: "complete", eligible: false, handoff: "complete-pr" },
   },
   {
     name: "normal todo record",
-    input: { mergedDelivery: false },
+    input: { ...completeDeliveryEvidence, mergedDelivery: false },
     expected: { kind: "eligible", eligible: true },
   },
+  {
+    name: "missing evidence is not completion",
+    input: { mergedDelivery: true },
+    expected: {
+      kind: "hold",
+      eligible: false,
+      missing: [
+        "grouped parent reconciliation",
+        "provider evidence",
+        "acceptance evidence",
+        "same-repository head",
+        "default base",
+        "trusted head",
+        "merge commit",
+        "required checks",
+        "closed linked issues",
+        "closed linked children",
+        "Done Project statuses",
+        "head/PR relationship",
+      ],
+    },
+  },
+  {
+    name: "active checkpoint",
+    input: { ...completeDeliveryEvidence, mergedDelivery: false, activeCheckpoint: true },
+    expected: { kind: "active", eligible: false },
+  },
+  {
+    name: "provider limitation",
+    input: { ...completeDeliveryEvidence, providerAvailable: false },
+    expected: {
+      kind: "hold",
+      eligible: false,
+      missing: ["provider evidence"],
+    },
+  },
+  {
+    name: "unresolved acceptance",
+    input: { ...completeDeliveryEvidence, acceptanceVerified: false },
+    expected: {
+      kind: "hold",
+      eligible: false,
+      missing: ["acceptance evidence"],
+    },
+  },
+  {
+    name: "head mismatch",
+    input: { ...completeDeliveryEvidence, sameRepositoryHead: false },
+    expected: {
+      kind: "hold",
+      eligible: false,
+      missing: ["same-repository head"],
+    },
+  },
+  {
+    name: "head relationship mismatch",
+    input: { ...completeDeliveryEvidence, headRelationshipValid: false },
+    expected: {
+      kind: "hold",
+      eligible: false,
+      missing: ["head/PR relationship"],
+    },
+  },
+  {
+    name: "stale grouped child",
+    input: { ...completeDeliveryEvidence, groupedChild: true },
+    expected: {
+      kind: "hold",
+      eligible: false,
+      missing: ["grouped parent reconciliation"],
+    },
+  },
 ];
+
+function reconcileQueue(records, provider) {
+  const decisions = records.map(({ id, input }) => ({
+    id,
+    decision: classifyDeliveryRecord(provider.read(input)),
+  }));
+  return {
+    decisions,
+    candidates: decisions
+      .filter(({ decision }) => decision.eligible)
+      .map(({ id }) => id),
+  };
+}
 
 test("goal-sdlc retains every delivery stage and queue boundary", async () => {
   const skill = await readSkill();
@@ -107,6 +251,12 @@ test("goal-sdlc retains every delivery stage and queue boundary", async () => {
   }
   assert.match(skill, /Reconcile the current repository's Project items before selecting a parent/);
   assert.match(skill, /paginate every Project page, filter to the target repository/);
+  assert.match(skill, /treat every reconciliation input as an explicit live observation/);
+  assert.match(
+    skill,
+    /omitted, unknown, stale, filtered, or provider-unavailable value is not/,
+  );
+  assert.match(skill, /classify the missing evidence as `hold`/);
   assert.match(skill, /Process exactly one parent PBI\/delivery unit at a time/);
   assert.match(skill, /Do not mark the goal complete after one PBI/);
   assert.match(
@@ -134,10 +284,41 @@ test("reconciliation excludes stale merged records and recognizes complete group
     "exclude it from queue candidates and hand any cleanup to",
     "queue candidates, report the exact missing evidence",
     "Keep this reconciliation read-only",
+    "make zero mutation calls",
     "do not select a held or complete child as an independent parent",
   ]) {
     assert.ok(skill.includes(marker), `missing reconciliation marker: ${marker}`);
   }
+});
+
+test("mixed queue keeps only an explicit normal Todo and stays read-only", async () => {
+  const mutationCalls = [];
+  const provider = {
+    read: (input) => input,
+    mutate: (...args) => mutationCalls.push(args),
+  };
+  const reconciliation = reconcileQueue(
+    [
+      { id: "#31", input: reconciliationFixtures[0].input },
+      { id: "#444", input: reconciliationFixtures[2].input },
+      { id: "#517", input: reconciliationFixtures[3].input },
+      { id: "#536", input: reconciliationFixtures.at(-1).input },
+    ],
+    provider,
+  );
+
+  assert.deepEqual(reconciliation.candidates, ["#517"]);
+  assert.deepEqual(mutationCalls, []);
+  assert.equal(typeof provider.mutate, "function");
+  assert.deepEqual(
+    reconciliation.decisions.map(({ id, decision }) => [id, decision.kind]),
+    [
+      ["#31", "hold"],
+      ["#444", "complete"],
+      ["#517", "eligible"],
+      ["#536", "hold"],
+    ],
+  );
 });
 
 test("goal-sdlc keeps built-in goal ownership and delegated execution explicit", async () => {
