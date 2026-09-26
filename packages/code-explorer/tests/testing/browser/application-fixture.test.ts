@@ -1,16 +1,12 @@
-import assert from "node:assert/strict";
 import path from "node:path";
-import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { type Browser, chromium, type Page } from "@playwright/test";
 import { BrowserHttpRouter } from "../../../src/browser-server/http-router.js";
 import type { CoreCall } from "./application-core.test.js";
 import { createFixtureBehavior } from "./application-fixture-behavior.test.js";
+import { registerFixtureDiagnostics } from "./fixture-diagnostics.test.js";
 import { startFixtureServer } from "./packaged/http-server.test.js";
-import {
-  PACKAGED_BROWSER_TIMEOUT_MS,
-  registerPackagedFixtureDiagnostics,
-} from "./packaged/test-timeouts.js";
+import { PACKAGED_BROWSER_TIMEOUT_MS } from "./packaged/test-timeouts.js";
 
 export type PackagedBrowserFixture = {
   browser: Browser;
@@ -56,10 +52,7 @@ export async function startPackagedBrowserFixture() {
     const page = await browser.newPage({ baseURL: endpoint });
     page.setDefaultTimeout(PACKAGED_BROWSER_TIMEOUT_MS);
     page.setDefaultNavigationTimeout(PACKAGED_BROWSER_TIMEOUT_MS);
-    registerPackagedFixtureDiagnostics(page, () => ({
-      server: server.diagnostics(),
-      process: `pid=${process.pid}; browser_connected=${browser.isConnected()}; pages=${browser.contexts().reduce((count, context) => count + context.pages().length, 0)}; core_calls=${coreCalls.length}`,
-    }));
+    registerFixtureDiagnostics(page, server, browser, coreCalls);
     return page;
   };
   return {
@@ -78,26 +71,4 @@ export async function startPackagedBrowserFixture() {
       }
     },
   };
-}
-
-export async function assertBrowserOwnedShutdown(
-  fixture: PackagedBrowserFixture,
-): Promise<void> {
-  const page = await fixture.newPage();
-  let releasePageClose: (() => void) | undefined;
-  page.close = () =>
-    new Promise<void>((resolve) => {
-      releasePageClose = resolve;
-    });
-  const closePromise = fixture.close();
-  const timedOut = await new Promise<boolean>((resolve) => {
-    const timer = setTimeout(() => resolve(true), PACKAGED_BROWSER_TIMEOUT_MS);
-    void closePromise.then(() => {
-      clearTimeout(timer);
-      resolve(false);
-    });
-  });
-  releasePageClose?.();
-  await closePromise;
-  assert.equal(timedOut, false);
 }
