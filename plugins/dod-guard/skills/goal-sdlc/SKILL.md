@@ -147,6 +147,10 @@ Do not repeat identical issue, Project, PBI, pull-request, or queue reads inside
 
 Pass the snapshot into each skill handoff. A skill may read a field it was not given, or an invalidated field, but it must not rerun discovery solely because the lifecycle phase changed.
 
+Before broad delegation, run a short external-prerequisite preflight for the selected delivery unit: source/provenance rights, publish or cache policy, credentials, remote permissions, and provider capabilities required by the next mutation. Resolve facts already established by repository or provider state without asking the user. If a prerequisite is genuinely missing, do not fan out dependent subagents; preserve the checkpoint, record the exact missing prerequisite, and isolate only that parent while the queue continues.
+
+For a confirmed prerequisite, checkout, or provider blocker, record one blocker owner and one bounded next recovery action in the handoff snapshot. Do not dispatch duplicate subagents or repeat an unchanged audit; add another independent advisor only after the first recovery path produces new evidence.
+
 
 
 Context compaction is not state invalidation. When a continuation rereads this workflow file, restore the latest handoff snapshot first. Do not rerun repository, Project, issue, PBI, pull-request, or queue discovery unless the snapshot is missing or invalidated.
@@ -224,6 +228,8 @@ C. If the selected parent is genuinely blocked after recovery:
 - If another eligible parent can progress, serialize the next parent and return to the blocked checkpoint later.
 
 - A blocked parent is not permission to stop the entire goal.
+
+- Do not wait for a user response before making unrelated progress. Revisit the isolated parent only after a distinct recovery action or changed state/evidence.
 
 
 
@@ -375,6 +381,8 @@ During basic implementation:
 
 - Use only small targeted checks needed to prevent obvious dead ends.
 
+- Before committing or pushing, run one focused acceptance check for every derived or rounded threshold/persisted baseline at the precision used by the real comparison. This supplements, rather than replaces, the complete relevant suite.
+
 - Build the wiring while implementing - logging and general observability are always valuable, but defer comprehensive validation until the required workstreams are substantially complete.
 
 
@@ -394,6 +402,8 @@ At the end of basic work:
 6\. If the confirmation suite still fails, repeat the focused-fix loop and another complete confirmation run.
 
 7\. Do not rerun unchanged full suites merely for reassurance.
+
+- If the complete suite is resource-limited, run its equivalent partitions sequentially or with reduced parallelism before escalating; keep the environment limitation distinct from a code or quality failure.
 
 
 
@@ -548,13 +558,15 @@ Incomplete review executions are exempt from that cap: after each repaired cause
 
 
 
-For every confirmed blocker that survives local triage, use:
+For every confirmed blocker that survives local triage, use the advisor skill below before asking the user or declaring the workflow blocked:
 
 &#x20; [$dod-guard:codex-advisor](../codex-advisor/SKILL.md)
 
 
 
 Use `gpt-5.6-luna` with `max` reasoning. Include repository, parent/child PBI, stage, branch, current and reviewed SHAs, exact error, attempts, constraints, and recovery options. The advisor is advice-only; implement and verify the chosen solution locally.
+
+Do not ask the user to choose a workaround, authorize routine work, or confirm whether to continue until the advisor has supplied its recommendation and the safe local recovery path has been tried. A user question is a last resort for a missing external decision or authorization, not a substitute for blocker triage.
 
 
 
@@ -566,9 +578,15 @@ Do not hand routine problems back to the user:
 
 - Implement fixes for tool, test, wiring, or repository problems instead of merely reporting them.
 
+- Treat the active workflow request as authorization for routine lifecycle actions already required by this skill, including reads, local edits, targeted checks, commits, pushes, queue/status repair, and bounded recovery. Do not ask permission for these; execute and verify them.
+
+- A provider or tool approval prompt for an action already authorized here is not a new workflow decision: use the configured write route once, then classify any platform refusal as a capability or authorization blocker and continue with another eligible parent instead of repeatedly asking.
+
 - Ask the user only for an irreversible/destructive action, missing credential or authorization, genuinely incompatible requirements, or a decision no repository evidence can resolve.
 
 - If the current parent is blocked but another parent can progress, mark the PBI as blocked, document *why* it is blocked (what is the issue, what solutions did you try, what is the problem that needs solving to unblock), preserve the work so far, then pick a new item from the queue.
+
+- Before marking a parent blocked, refresh its parent/child items, PR, branch, and external blocker once. If remote state changed, invalidate the snapshot and resume; do not carry forward a stale blocked report.
 
 - If all remaining work is externally blocked, preserve durable checkpoints and exact evidence; do not claim completion or fabricate progress.
 
@@ -649,4 +667,4 @@ After every successful merge:
 
 
 
-Mark the goal complete only when no eligible work remains or the user explicitly ends it. Mark it blocked only after the same external blocker remains unresolved across three evidence-backed attempts/goal turns. Never use “two active PBIs” as a reason to stop. never stop when todo is empty but the backlog is not.
+Mark the goal complete only when no eligible work remains or the user explicitly ends it. Before marking the goal blocked, refresh every remaining parent/child/PR state and the external blocker once. Mark it blocked only after the same external blocker remains unresolved across three evidence-backed attempts/goal turns. Never use “two active PBIs” as a reason to stop. never stop when todo is empty but the backlog is not.
