@@ -74,7 +74,11 @@ test("documents narrow GitHub readback and guarded thread resolution", () => {
 
   assert.match(readbackSection, /reviewThreads\(first:100\)/);
   assert.match(readbackSection, /Do not request the unsupported\s+`PullRequestReviewComment\.inReplyTo` field/);
-  assert.ok(updateSection.indexOf("Read back the exact review thread") < updateSection.indexOf("resolveReviewThread"));
+  const readbackOffset = updateSection.indexOf("Read back the exact review thread");
+  const resolutionOffset = updateSection.indexOf("resolveReviewThread");
+  assert.notEqual(readbackOffset, -1);
+  assert.notEqual(resolutionOffset, -1);
+  assert.ok(readbackOffset < resolutionOffset);
   assert.match(updateSection, /If a write fails or is ambiguous, read back before\s+retrying; never issue a blind duplicate reply/);
   assert.match(updateSection, /Leave every other thread\s+unchanged/);
 });
