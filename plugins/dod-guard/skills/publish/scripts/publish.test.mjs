@@ -4,9 +4,11 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 const skillPath = new URL("../SKILL.md", import.meta.url);
 const usagePath = new URL("../../../USAGE.md", import.meta.url);
+const maintenanceWrapperPath = fileURLToPath(new URL("./maintenance-publish.ps1", import.meta.url));
 
 function git(cwd, args) {
   return spawnSync("git", args, {
@@ -68,7 +70,7 @@ test("publish skill classifies the complete tree before PBI routing", async () =
 test("publish scans pending content before commit", async () => {
   const skill = await readFile(skillPath, "utf8");
   const scan = skill.indexOf("inspect-repository.mjs");
-  const commit = skill.indexOf("Use `/commit`'s staging and commit-message steps only");
+  const commit = skill.indexOf("Use the checked-in `<skill-dir>/scripts/maintenance-publish.ps1` helper");
 
   assert.ok(scan >= 0 && scan < commit);
   assert.match(skill, /Stop when `credentialFindings` is non-empty/);
@@ -122,21 +124,22 @@ test("maintenance releases skip PBI and PR while restoring protection", async ()
   assert.match(skill, /lease rejects any intervening update/);
   assert.match(skill, /Never use an\s+unpinned force push/);
   assert.match(skill, /Require both initial reads to return HTTP\s+`200` with non-empty objects/);
-  assert.match(skill, /If the\s+saved `enforce_admins\.enabled` is true, invoke only the validated admin\s+endpoint with/);
+  assert.match(skill, /If the\s+saved `enforce_admins\.enabled` is true, the helper invokes only the\s+validated admin endpoint with/);
   assert.match(skill, /admin_endpoint= repos\/\{owner\}\/\{repo\}\/branches\/master\/protection\/enforce_admins/);
-  assert.match(skill, /do not\s+parse the deliberately empty body as JSON/);
-  assert.match(skill, /Read the admin endpoint\s+back\s+even when the command errors or returns an unexpected status[\s\S]+Require\s+HTTP\s+`200`, a valid response object, and `enabled=false`/);
+  assert.match(skill, /does not\s+parse the deliberately empty body as\s+JSON/);
+  assert.match(skill, /reads the admin endpoint and complete protection object back even\s+when the command errors or returns an unexpected status; HTTP `200`,\s+`enabled=false`/);
   assert.match(skill, /A force-push\s+allowance alone does not bypass the PR or check rules/);
-  assert.match(skill, /Enter the cleanup scope and mark restoration required before invoking this\s+DELETE/);
-  assert.match(skill, /every exit after an attempted DELETE, including\s+a failed pre-push readback, runs the cleanup scope/);
-  assert.match(skill, /In a `finally` step[\s\S]+restore the saved\s+admin state[\s\S]+complete\s+protection object\s+back/);
-  assert.match(skill, /gh api --method POST <admin_endpoint>\s+--include\s+--silent/);
-  assert.match(skill, /do not use its suppressed body as a\s+success predicate/);
-  assert.match(skill, /Read the admin endpoint and complete protection object\s+back after every POST attempt/);
-  assert.match(skill, /retry that exact\s+`POST`\s+once and read both resources again/);
+  assert.match(skill, /It marks restoration required before invoking DELETE/);
+  assert.match(skill, /every exit after an\s+attempted DELETE, including commit, push, or pre-push validation failure,\s+restores the saved admin state/);
+  assert.match(skill, /The helper owns the cleanup `finally` scope[\s\S]+restores the saved admin state/);
+  assert.match(skill, /gh api --method POST <admin_endpoint>\s+--include/);
+  assert.match(skill, /requires HTTP `200`/);
+  assert.match(skill, /reads the admin endpoint and\s+complete protection object back after every POST attempt/);
+  assert.match(skill, /retries that exact POST once and reads both resources again/);
+  assert.match(skill, /If either\s+read throws,\s+it stops without a second POST/);
   assert.match(skill, /Other users\s+remain subject to the branch rules/);
-  assert.match(skill, /`\/commit`'s staging and commit-message steps only/);
-  assert.match(skill, /Do not run its\s+ordinary push, sync, or pull-and-merge retry/);
+  assert.match(skill, /existing `\/commit` staging\/commit-message and pre-push actions/);
+  assert.match(skill, /It never invokes a Git worktree\s+command/);
   assert.doesNotMatch(skill, /If branch protection requires a pull request, stop/);
   assert.match(defaults, /The explicit `\/publish` maintenance-only route may[\s\S]+temporarily disable only admin enforcement/);
   assert.match(skill, /After a direct maintenance push or a merged functional release has green CI/);
@@ -306,28 +309,34 @@ test("saved force-with-lease rejects a remote master advance and retains the rel
 });
 
 test("maintenance protection mutation authorizes one exact endpoint and response", async () => {
-  const skill = await readFile(skillPath, "utf8");
+  const [skill, wrapper] = await Promise.all([
+    readFile(skillPath, "utf8"),
+    readFile(maintenanceWrapperPath, "utf8"),
+  ]);
 
-  assert.match(skill, /Before any protection mutation, construct and validate these exact values/);
-  assert.match(skill, /admin_endpoint= repos\/\{owner\}\/\{repo\}\/branches\/master\/protection\/enforce_admins/);
-  assert.match(skill, /admin_method= DELETE/);
-  assert.match(skill, /Require the admin endpoint to equal the literal[\s\S]+`DELETE`/);
-  assert.match(skill, /never\s+send `DELETE`, `POST`, or `PUT` to it/);
-  assert.match(skill, /--method DELETE <admin_endpoint> --include --silent/);
-  assert.match(skill, /require HTTP `204`/);
-  assert.match(skill, /Require\s+HTTP\s+`200`, a valid response object, and `enabled=false`/);
-  assert.match(skill, /invalid path, method, status, body, or\s+readback stops before the push/);
+  assert.match(skill, /Use the checked-in `<skill-dir>\/scripts\/maintenance-publish\.ps1` helper/);
+  assert.match(wrapper, /\$protectionEndpoint = "repos\/\$Owner\/\$Repo\/branches\/master\/protection"/);
+  assert.match(wrapper, /\$adminEndpoint = "\$protectionEndpoint\/enforce_admins"/);
+  assert.match(wrapper, /\$adminMethod = "DELETE"/);
+  assert.match(wrapper, /Get-MaintenanceResponseStatus \$deleteResponse\) -ne 204/);
+  assert.match(wrapper, /Get-MaintenanceResponseStatus \$disabledState\.Admin\) -ne 200/);
+  assert.match(wrapper, /Remove-MaintenanceAdminField \$savedProtection/);
 });
 
 test("maintenance protection restoration compares the complete snapshot and bounds retry", async () => {
-  const skill = await readFile(skillPath, "utf8");
+  const [skill, wrapper] = await Promise.all([
+    readFile(skillPath, "utf8"),
+    readFile(maintenanceWrapperPath, "utf8"),
+  ]);
 
   assert.match(skill, /parsed protection object as the immutable restore snapshot/);
   assert.match(skill, /compare JSON\s+semantically by object keys and array values/);
-  assert.match(skill, /complete\s+protection field differs from the saved snapshot, retry that exact `POST`\s+once/);
-  assert.match(skill, /Do not retry an unknown mutation before\s+its readback/);
-  assert.match(skill, /second readback still differs, stop and report the\s+exact remaining difference/);
-  assert.match(skill, /If admin\s+enforcement was initially disabled, do not call `POST`/);
+  assert.match(skill, /If any response,\s+admin state, or protection field differs from the saved snapshot, it\s+retries that exact POST once/);
+  assert.match(skill, /It never\s+retries an unknown mutation before its\s+complete readback/);
+  assert.match(skill, /If the second readback\s+still differs, it stops and\s+reports the exact remaining difference/);
+  assert.match(skill, /If\s+admin enforcement was initially\s+disabled, it does not call POST/);
+  assert.match(wrapper, /for \(\$attempt = 1; \$attempt -le 2; \$attempt\+\+\)/);
+  assert.match(wrapper, /Test-MaintenanceEqual \$savedProtection \$restoredState\.Protection\.Body/);
 });
 
 const protectionEndpoint = "repos/{owner}/{repo}/branches/master/protection";
@@ -633,4 +642,222 @@ test("protection fixture retries one restore and stops on a second full-state mi
     null,
   );
   assert.deepEqual(failedRestoreEvents, ["restore", "read", "restore", "read"]);
+});
+
+function runPowerShell(command, environment = {}) {
+  const result = spawnSync(
+    "powershell.exe",
+    ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command],
+    {
+      encoding: "utf8",
+      env: { ...process.env, ...environment },
+      windowsHide: true,
+    },
+  );
+  assert.equal(result.error, undefined, result.error?.message);
+  return result;
+}
+
+function maintenanceWrapperHarness(failureStage = "") {
+  return `
+$ErrorActionPreference = 'Stop'
+. $env:DOD_GUARD_MAINTENANCE_WRAPPER
+$savedSha = '0123456789abcdef0123456789abcdef01234567'
+$events = New-Object System.Collections.ArrayList
+$fixtureProtection = [pscustomobject]@{
+  url = 'https://api.github.com/repos/{owner}/{repo}/branches/master/protection'
+  allow_force_pushes = [pscustomobject]@{ enabled = $true }
+  enforce_admins = [pscustomobject]@{ enabled = $true }
+  required_status_checks = [pscustomobject]@{ strict = $true; contexts = @('build-test') }
+}
+$state = @{ ProtectionReads = 0; AdminReads = 0; RestoreCalls = 0; GhCalls = 0 }
+$invokeGit = {
+  param([string[]]$Arguments)
+  [void]$events.Add(('git ' + ($Arguments -join ' ')))
+  if ($Arguments[0] -eq 'rev-parse' -and $Arguments[1] -eq '--path-format=absolute') { return 'C:\repo\.git' }
+  if ($Arguments[0] -eq 'rev-parse' -and $Arguments[1] -eq 'HEAD') { return $savedSha }
+  if ($Arguments[0] -eq 'rev-parse' -and $Arguments[1] -eq 'HEAD^') {
+    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'commit') { throw 'commit failed' }
+    return $savedSha
+  }
+  if ($Arguments[0] -eq 'push' -and $env:DOD_GUARD_FAILURE_STAGE -eq 'push') { throw 'push failed' }
+  if ($Arguments[0] -eq 'push') { return '' }
+  throw ('unexpected git command: ' + ($Arguments -join ' '))
+}
+$invokeGhApi = {
+  param([string]$Method, [string]$Endpoint)
+  [void]$events.Add(($Method + ' ' + $Endpoint))
+  if ($Method -eq 'DELETE') {
+    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'delete') { throw 'delete failed' }
+    return [pscustomobject]@{ Status = 204; Body = $null }
+  }
+  if ($Method -eq 'POST') {
+    $state.RestoreCalls++
+    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'post' -and $state.RestoreCalls -eq 1) { throw 'post failed' }
+    return [pscustomobject]@{ Status = 200; Body = $null }
+  }
+  if ($Endpoint -like '*/protection') {
+    $state.ProtectionReads++
+    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'restore-protection-read' -and $state.RestoreCalls -eq 1 -and $state.ProtectionReads -eq 3) { throw 'restore protection read failed' }
+    if ($state.RestoreCalls -eq 0 -and $state.ProtectionReads -gt 1) {
+      return [pscustomobject]@{ Status = 200; Body = [pscustomobject]@{ url = $fixtureProtection.url; allow_force_pushes = [pscustomobject]@{ enabled = $true }; enforce_admins = [pscustomobject]@{ enabled = $false }; required_status_checks = $fixtureProtection.required_status_checks } }
+    }
+    [void]$events.Add(('protection-body=' + ($fixtureProtection | ConvertTo-Json -Compress)))
+    return [pscustomobject]@{ Status = 200; Body = $fixtureProtection }
+  }
+  $state.AdminReads++
+  if ($state.RestoreCalls -eq 0 -and $state.AdminReads -gt 1) {
+    return [pscustomobject]@{ Status = 200; Body = [pscustomobject]@{ enabled = $false } }
+  }
+  [void]$events.Add('admin-body-enabled=' + ([string]$true))
+  return [pscustomobject]@{ Status = 200; Body = [pscustomobject]@{ enabled = $true } }
+}
+if ($env:DOD_GUARD_USE_DEFAULT_GH -eq 'true') {
+  function global:gh {
+    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
+    if ($Arguments -contains '--silent') { throw 'gh body was suppressed' }
+    $global:LASTEXITCODE = 0
+    $state.GhCalls = [int]$state.GhCalls + 1
+    if ($state.GhCalls -in @(1, 4, 7)) {
+      $enabled = $state.GhCalls -ne 4
+      $body = [pscustomobject]@{
+        url = $fixtureProtection.url
+        allow_force_pushes = [pscustomobject]@{ enabled = $true }
+        enforce_admins = [pscustomobject]@{ enabled = $enabled }
+        required_status_checks = $fixtureProtection.required_status_checks
+      } | ConvertTo-Json -Compress
+      Write-Output 'HTTP/2.0 200 OK'
+      Write-Output 'Content-Type: application/json'
+      Write-Output ''
+      Write-Output $body
+      return
+    }
+    if ($state.GhCalls -in @(2, 5, 8)) {
+      $enabled = $state.GhCalls -ne 5
+      Write-Output 'HTTP/2.0 200 OK'
+      Write-Output 'Content-Type: application/json'
+      Write-Output ''
+      Write-Output (([pscustomobject]@{ enabled = $enabled }) | ConvertTo-Json -Compress)
+      return
+    }
+    if ($state.GhCalls -eq 3) {
+      Write-Output 'HTTP/2.0 204 No Content'
+      Write-Output ''
+      return
+    }
+    if ($state.GhCalls -eq 6) {
+      Write-Output 'HTTP/2.0 200 OK'
+      Write-Output ''
+      return
+    }
+    throw ('unexpected gh call ' + $state.GhCalls)
+  }
+  $invokeGhApi = $null
+}
+$commitAction = {
+  [void]$events.Add('commit')
+  if ($env:DOD_GUARD_FAILURE_STAGE -eq 'commit') { throw 'commit failed' }
+}
+$prePushAction = {
+  [void]$events.Add('pre-push')
+  if ($env:DOD_GUARD_FAILURE_STAGE -eq 'pre-push') { throw 'pre-push failed' }
+}
+$result = Invoke-MaintenancePublish -Owner 'TychoHenzen' -Repo 'dod-guard' -SavedSha $savedSha -CommitAction $commitAction -PrePushAction $prePushAction -InvokeGit $invokeGit -InvokeGhApi $invokeGhApi
+[pscustomobject]@{ Result = $result; Events = @($events) } | ConvertTo-Json -Depth 20 -Compress
+`;
+}
+
+function runMaintenanceWrapper(failureStage = "", useDefaultGhApi = false) {
+  const result = runPowerShell(maintenanceWrapperHarness(failureStage), {
+    DOD_GUARD_MAINTENANCE_WRAPPER: maintenanceWrapperPath,
+    DOD_GUARD_FAILURE_STAGE: failureStage,
+    DOD_GUARD_USE_DEFAULT_GH: String(useDefaultGhApi),
+  });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  const lines = result.stdout.trim().split(/\r?\n/);
+  return JSON.parse(lines.at(-1));
+}
+
+const realProtectionEndpoint = "repos/TychoHenzen/dod-guard/branches/master/protection";
+const realAdminEndpoint = `${realProtectionEndpoint}/enforce_admins`;
+
+test("maintenance wrapper parses and owns the exact protected push boundary", { skip: process.platform !== "win32" }, () => {
+  const parse = runPowerShell(
+    "$tokens = $null; $errors = $null; [System.Management.Automation.Language.Parser]::ParseFile($env:DOD_GUARD_MAINTENANCE_WRAPPER, [ref]$tokens, [ref]$errors) | Out-Null; if ($errors.Count -gt 0) { $errors | ForEach-Object { $_.Message }; exit 1 }",
+    { DOD_GUARD_MAINTENANCE_WRAPPER: maintenanceWrapperPath },
+  );
+  assert.equal(parse.status, 0, `${parse.stdout}\n${parse.stderr}`);
+
+  const outcome = runMaintenanceWrapper();
+  assert.equal(outcome.Result.Success, true);
+  assert.equal(outcome.Result.Restored, true);
+  assert.equal(outcome.Result.RestoreAttempts, 1);
+  assert.ok(outcome.Events.includes("DELETE repos/TychoHenzen/dod-guard/branches/master/protection/enforce_admins"));
+  assert.ok(outcome.Events.includes("POST repos/TychoHenzen/dod-guard/branches/master/protection/enforce_admins"));
+  assert.ok(outcome.Events.includes("git push --force-with-lease=refs/heads/master:0123456789abcdef0123456789abcdef01234567 origin HEAD:refs/heads/master"));
+  assert.equal(outcome.Events.some((event) => event.includes("worktree")), false);
+});
+
+test("maintenance wrapper parses gh reason phrases and preserves response bodies", { skip: process.platform !== "win32" }, () => {
+  const outcome = runMaintenanceWrapper("", true);
+  assert.equal(outcome.Result.Success, true);
+  assert.equal(outcome.Result.Restored, true);
+  assert.equal(outcome.Result.RestoreAttempts, 1);
+});
+
+test("maintenance wrapper restores protection after commit, pre-push, and push failures", { skip: process.platform !== "win32" }, () => {
+  for (const failureStage of ["commit", "pre-push", "push"]) {
+    const outcome = runMaintenanceWrapper(failureStage);
+    assert.equal(outcome.Result.Success, false, failureStage);
+    assert.equal(outcome.Result.Restored, true, failureStage);
+    assert.equal(outcome.Result.RestoreAttempts, 1, failureStage);
+    assert.ok(outcome.Events.includes("POST repos/TychoHenzen/dod-guard/branches/master/protection/enforce_admins"), failureStage);
+  }
+});
+
+test("maintenance wrapper reads after a thrown admin disable before cleanup", { skip: process.platform !== "win32" }, () => {
+  const outcome = runMaintenanceWrapper("delete");
+  assert.equal(outcome.Result.Success, false);
+  assert.equal(outcome.Result.Restored, true);
+  assert.equal(outcome.Result.RestoreAttempts, 1);
+
+  const deleteIndex = outcome.Events.indexOf(`DELETE ${realAdminEndpoint}`);
+  const restoreIndex = outcome.Events.indexOf(`POST ${realAdminEndpoint}`);
+  assert.ok(deleteIndex >= 0);
+  assert.ok(restoreIndex > deleteIndex);
+  assert.deepEqual(
+    outcome.Events.slice(deleteIndex + 1, restoreIndex).filter((event) => event.startsWith("GET ")),
+    [`GET ${realProtectionEndpoint}`, `GET ${realAdminEndpoint}`],
+  );
+});
+
+test("maintenance wrapper reads after a thrown restore before retrying", { skip: process.platform !== "win32" }, () => {
+  const outcome = runMaintenanceWrapper("post");
+  assert.equal(outcome.Result.Success, true);
+  assert.equal(outcome.Result.Restored, true);
+  assert.equal(outcome.Result.RestoreAttempts, 2);
+
+  const firstRestoreIndex = outcome.Events.indexOf(`POST ${realAdminEndpoint}`);
+  const secondRestoreIndex = outcome.Events.indexOf(`POST ${realAdminEndpoint}`, firstRestoreIndex + 1);
+  assert.ok(firstRestoreIndex >= 0);
+  assert.ok(secondRestoreIndex > firstRestoreIndex);
+  assert.deepEqual(
+    outcome.Events.slice(firstRestoreIndex + 1, secondRestoreIndex).filter((event) => event.startsWith("GET ")),
+    [`GET ${realProtectionEndpoint}`, `GET ${realAdminEndpoint}`],
+  );
+});
+
+test("maintenance wrapper reads admin state after a failed protection read and does not blindly retry", { skip: process.platform !== "win32" }, () => {
+  const outcome = runMaintenanceWrapper("restore-protection-read");
+  assert.equal(outcome.Result.Success, false);
+  assert.equal(outcome.Result.Restored, false);
+  assert.equal(outcome.Result.RestoreAttempts, 1);
+
+  const firstRestoreIndex = outcome.Events.indexOf(`POST ${realAdminEndpoint}`);
+  assert.ok(firstRestoreIndex >= 0);
+  assert.equal(outcome.Events.indexOf(`POST ${realAdminEndpoint}`, firstRestoreIndex + 1), -1);
+  assert.deepEqual(
+    outcome.Events.slice(firstRestoreIndex + 1).filter((event) => event.startsWith("GET ")),
+    [`GET ${realProtectionEndpoint}`, `GET ${realAdminEndpoint}`],
+  );
 });
