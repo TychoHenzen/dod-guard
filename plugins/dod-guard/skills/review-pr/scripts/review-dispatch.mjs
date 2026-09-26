@@ -64,10 +64,21 @@ function parseReviewerResponse(raw) {
 }
 
 function reviewRecord(reviewer, result) {
+  let payload = null;
+  let error = null;
+  if (result.ok) {
+    payload = {
+      reviewer: result.reviewer,
+      coverage: result.coverage,
+      findings: result.findings,
+    };
+  } else {
+    ({ error } = result);
+  }
   return {
     reviewer,
-    result: result.ok ? result.result : null,
-    error: result.ok ? null : result.error,
+    result: payload,
+    error,
     capability: result.capability ?? null,
     execution: result.execution,
   };

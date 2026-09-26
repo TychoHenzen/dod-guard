@@ -28,7 +28,32 @@
     },
     "findings": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "required": [
+          "severity",
+          "file",
+          "line",
+          "problem",
+          "impact",
+          "requirement",
+          "correction",
+          "rootCause",
+          "evidence"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "severity": { "enum": ["BLOCKER", "MAJOR", "MINOR"] },
+          "file": { "type": "string", "minLength": 1 },
+          "line": { "type": "integer", "minimum": 1 },
+          "problem": { "type": "string", "minLength": 1 },
+          "impact": { "type": "string", "minLength": 1 },
+          "requirement": { "type": "string", "minLength": 1 },
+          "correction": { "type": "string", "minLength": 1 },
+          "rootCause": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "string", "minLength": 1 }
+        }
+      }
     }
   }
 }
