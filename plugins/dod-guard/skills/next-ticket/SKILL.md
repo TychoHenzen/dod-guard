@@ -122,7 +122,8 @@ Resolve every value before changing local or remote state:
    exactly one case-insensitive `Todo` option and one case-insensitive
    `In Progress` option.
 6. Confirm the selected PBI currently has Status `Todo`. Resolve its project
-   item id, the project id, the Status field id, and the In Progress option id.
+   item node id, the numeric project number, the global ProjectV2 node id, the
+   Status field node id, and the In Progress option id.
 
 Stop before any mutation if a value is missing or ambiguous. Never hardcode a
 project, field, option, repository, default branch, or user id from an earlier
@@ -143,8 +144,18 @@ Perform these actions in order:
 2. Push it with upstream tracking to the branch of the same name on `origin`.
 3. Assign the issue with the GitHub MCP assignee operation. If MCP is
    unavailable, use `gh issue edit` with `--add-assignee @me`.
-4. Set the issue's project Status to `In Progress` with
-   `gh project item-edit` and the ids resolved above.
+4. Set the issue's project Status to `In Progress` with the shared status-write
+   runner, passing the project owner, numeric project number, Status field node
+   id, In Progress option id, expected status name, and the selected item node
+   id in that order:
+
+   ```text
+   node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <in-progress-option-id> "In Progress" <item-node-id>
+   ```
+
+   The runner resolves the global ProjectV2 node ID from the live project view,
+   never passes the numeric project number as `--project-id`, and reads the
+   item back before the ticket-start sequence can continue.
 
 Do not create or switch to an existing branch. Report the exact completed
 actions if a later mutation fails. Keep the successfully created branch and
