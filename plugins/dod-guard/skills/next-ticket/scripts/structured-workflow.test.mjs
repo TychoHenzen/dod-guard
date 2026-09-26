@@ -30,7 +30,7 @@ const githubSkills = [
   setup,
   await read("plugins/dod-guard/skills/review-pr/SKILL.md"),
   fixReview,
-  await read("plugins/dod-guard/skills/complete-pr/SKILL.md"),
+  completePr,
   await read("plugins/dod-guard/skills/publish/SKILL.md"),
   await read("plugins/dod-guard/skills/quick-pbi/SKILL.md"),
 ];

@@ -51,6 +51,16 @@ test("resolves one global ProjectV2 ID and writes children before the parent wit
 
   assert.equal(result.projectId, PROJECT_ID);
   assert.deepEqual(result.mutations, ITEM_IDS.map((itemId) => ({ itemId, status: "Done" })));
+  assert.deepEqual(calls.map((args) => args[1]), [
+    "view",
+    "item-edit",
+    "item-list",
+    "item-edit",
+    "item-list",
+    "item-edit",
+    "item-list",
+  ]);
+  assert.equal(calls.filter((args) => args[1] === "view").length, 1);
   assert.deepEqual(calls.filter((args) => args[1] === "item-edit").map((args) => args[3]), ITEM_IDS);
   assert.equal(calls.filter((args) => args[1] === "item-list").length, ITEM_IDS.length);
   for (const args of calls.filter((entry) => entry[1] === "item-edit")) {
@@ -62,6 +72,43 @@ test("resolves one global ProjectV2 ID and writes children before the parent wit
     }));
   }
   assert.equal(calls.some((args) => args[0] === "git" || args.includes("worktree")), false);
+});
+
+test("expands readback until a target beyond the first page is present", () => {
+  const targetItemId = "PVTI_far-away";
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    if (args[1] === "view") {
+      return { status: 0, stderr: "", stdout: JSON.stringify({ id: PROJECT_ID }) };
+    }
+    if (args[1] === "item-edit") {
+      return { status: 0, stderr: "", stdout: "" };
+    }
+    if (args[1] === "item-list") {
+      const limit = Number(args.at(-1));
+      const items = limit >= 2000
+        ? [...Array.from({ length: 1000 }, (_, index) => ({ id: `PVTI_item-${index}`, status: "Done" })), { id: targetItemId, status: "Done" }]
+        : Array.from({ length: 1000 }, (_, index) => ({ id: `PVTI_item-${index}`, status: "Done" }));
+      return { status: 0, stderr: "", stdout: JSON.stringify({ items }) };
+    }
+    throw new Error(`Unexpected command: ${args.join(" ")}`);
+  };
+
+  writeProjectStatuses({
+    owner: "TychoHenzen",
+    projectNumber: 2,
+    statusFieldId: "PVTSSF_status-field",
+    statusOptionId: "98236657",
+    expectedStatus: "Done",
+    itemIds: [targetItemId],
+    commandRunner: runner,
+  });
+
+  assert.deepEqual(
+    calls.filter((args) => args[1] === "item-list").map((args) => args.at(-1)),
+    ["1000", "2000"],
+  );
 });
 
 test("rejects a numeric Project number as the GraphQL Project ID before any write", () => {
@@ -77,6 +124,21 @@ test("rejects a numeric Project number as the GraphQL Project ID before any writ
     commandRunner: runner,
   }), NUMERIC_PROJECT_ID_ERROR);
   assert.equal(calls.some((args) => args[1] === "item-edit"), false);
+});
+
+test("rejects duplicate item IDs before resolving or writing", () => {
+  const { calls, runner } = createRunner();
+
+  assert.throws(() => writeProjectStatuses({
+    owner: "TychoHenzen",
+    projectNumber: 2,
+    statusFieldId: "PVTSSF_status",
+    statusOptionId: "98236657",
+    expectedStatus: "Done",
+    itemIds: [ITEM_IDS[0], ITEM_IDS[0], ITEM_IDS[2]],
+    commandRunner: runner,
+  }), /unique item IDs/);
+  assert.equal(calls.length, 0);
 });
 
 test("stops after a failed item readback and does not write the next item", () => {

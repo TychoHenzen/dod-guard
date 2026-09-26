@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import process from "node:process";
 
 const PROJECT_NODE_ID = /^PVT_[A-Za-z0-9]+$/;
-const PROJECT_ITEM_LIMIT = "1000";
+const PROJECT_ITEM_PAGE_SIZE = 1000;
 
 function runGh(args) {
   const result = spawnSync("gh", args, { encoding: "utf8", windowsHide: true });
@@ -52,7 +52,7 @@ function buildProjectViewCommand(owner, projectNumber) {
   return ["project", "view", String(projectNumber), "--owner", owner, "--format", "json"];
 }
 
-function buildProjectItemListCommand(owner, projectNumber) {
+function buildProjectItemListCommand(owner, projectNumber, limit = PROJECT_ITEM_PAGE_SIZE) {
   return [
     "project",
     "item-list",
@@ -62,7 +62,7 @@ function buildProjectItemListCommand(owner, projectNumber) {
     "--format",
     "json",
     "--limit",
-    PROJECT_ITEM_LIMIT,
+    String(limit),
   ];
 }
 
@@ -95,6 +95,26 @@ function readProjectItemStatus(item, itemId) {
   return status;
 }
 
+function readProjectItems({ owner, projectNumber, targetItemIds, commandRunner }) {
+  const targetIds = new Set(targetItemIds);
+  let limit = PROJECT_ITEM_PAGE_SIZE;
+
+  while (true) {
+    const items = parseJson(
+      commandRunner(buildProjectItemListCommand(owner, projectNumber, limit)),
+      "Project item readback",
+    );
+    if (!Array.isArray(items?.items)) {
+      throw new Error("Project item readback must include an items array.");
+    }
+    const returnedIds = new Set(items.items.map((item) => item?.id));
+    if ([...targetIds].every((itemId) => returnedIds.has(itemId)) || items.items.length < limit) {
+      return items;
+    }
+    limit += PROJECT_ITEM_PAGE_SIZE;
+  }
+}
+
 function writeProjectStatuses({
   owner,
   projectNumber,
@@ -114,6 +134,9 @@ function writeProjectStatuses({
   if (!Array.isArray(itemIds) || itemIds.length === 0 || itemIds.some((itemId) => typeof itemId !== "string" || itemId.length === 0)) {
     throw new Error("itemIds must contain at least one non-empty item ID.");
   }
+  if (new Set(itemIds).size !== itemIds.length) {
+    throw new Error("itemIds must contain unique item IDs.");
+  }
 
   const project = parseJson(
     commandRunner(buildProjectViewCommand(owner, projectNumber)),
@@ -126,13 +149,12 @@ function writeProjectStatuses({
     commandRunner(
       buildProjectItemEditCommand({ itemId, projectId, statusFieldId, statusOptionId }),
     );
-    const items = parseJson(
-      commandRunner(buildProjectItemListCommand(owner, projectNumber)),
-      "Project item readback",
-    );
-    if (!Array.isArray(items?.items)) {
-      throw new Error("Project item readback must include an items array.");
-    }
+    const items = readProjectItems({
+      owner,
+      projectNumber,
+      targetItemIds: itemIds,
+      commandRunner,
+    });
     const item = items.items.find((candidate) => candidate?.id === itemId);
     if (!item) {
       throw new Error(`Project item ${itemId} was missing from readback.`);
@@ -148,7 +170,7 @@ function writeProjectStatuses({
 }
 
 function usage() {
-  return "Usage: node project-status.mjs <owner> <project-number> <status-field-id> <status-option-id> <expected-status> <item-id>...";
+  return "Usage: node project-status.mjs <owner> <project-number> <status-field-node-id> <status-option-id> <expected-status> <item-id>...";
 }
 
 let entrypoint = "";
