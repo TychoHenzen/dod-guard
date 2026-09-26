@@ -64,7 +64,8 @@ For GitHub, use the GitHub MCP review-thread operation when available. It
 returns the thread identifiers and resolution metadata needed below. If MCP is
 unavailable, query `reviewThreads(first:100)` through GraphQL. Include each
 thread's `id`, `isResolved`, `isOutdated`, `path`, `line`, and root comment
-`databaseId`, `url`, `body`, and `commit.oid`. Save the response outside the
+`databaseId`, `url`, `body`, and `commit.oid`. Do not request the unsupported
+`PullRequestReviewComment.inReplyTo` field. Save the response outside the
 repository, then run:
 
 ```text
@@ -149,9 +150,18 @@ Re-read the provider head and require it to equal the pushed commit.
 
 - GitHub: use the connector's reply and exact-thread resolution operations when
   available. Otherwise reply through
-  `POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies`. Include the
-  commit SHA and verification command. Then resolve its exact review thread
-  with GraphQL `resolveReviewThread`. Leave every other thread unchanged.
+  `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments` with a JSON body
+  containing `body`, `commit_id`, and `in_reply_to` set to the selected root
+  comment's database ID. Include the commit SHA and verification command. Do
+  not use the legacy `POST
+  /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies` endpoint. For a
+  new inline review comment, use the same endpoint with `body`, `commit_id`,
+  `path`, and the diff `position`; do not send `line` or `subject_type` in that
+  request. Read back the exact review thread and verify the reply belongs to
+  the selected root comment and pushed head before resolving it with GraphQL
+  `resolveReviewThread`. If a write fails or is ambiguous, read back before
+  retrying; never issue a blind duplicate reply. Leave every other thread
+  unchanged.
 - Local Git: report the fixed inline finding IDs with commit and check evidence.
   No external comment state exists to mutate.
 - Azure: run `update-azure-report` with a JSON resolution map. It changes only
