@@ -18,6 +18,7 @@ const usage = await read("plugins/dod-guard/USAGE.md");
 const addBacklog = await read("plugins/dod-guard/skills/add-backlog-idea/SKILL.md");
 const refine = await read("plugins/dod-guard/skills/refine-backlog-item/SKILL.md");
 const nextTicket = await read("plugins/dod-guard/skills/next-ticket/SKILL.md");
+const completePr = await read("plugins/dod-guard/skills/complete-pr/SKILL.md");
 const submit = await read("plugins/dod-guard/skills/submit-draft-pr/SKILL.md");
 const setup = await read("plugins/dod-guard/skills/setup-repository/SKILL.md");
 const fixReview = await read("plugins/dod-guard/skills/fix-pr-review/SKILL.md");
@@ -29,7 +30,7 @@ const githubSkills = [
   setup,
   await read("plugins/dod-guard/skills/review-pr/SKILL.md"),
   fixReview,
-  await read("plugins/dod-guard/skills/complete-pr/SKILL.md"),
+  completePr,
   await read("plugins/dod-guard/skills/publish/SKILL.md"),
   await read("plugins/dod-guard/skills/quick-pbi/SKILL.md"),
 ];
@@ -286,4 +287,12 @@ test("delivery recovery resumes only from observed checkpoints", () => {
   assert.match(nextTicket, /never create a second branch, repeat an assignment, or\s+repeat a status mutation before its readback/);
   assert.match(submit, /read back\s+the branch's open pull request and its head before retrying/);
   assert.match(submit, /Do not create a second PR or alter a PR whose\s+head no longer matches the verified branch/);
+});
+
+test("ticket-start and completion status writes share the global ProjectV2 runner", () => {
+  assert.match(nextTicket, /project-status\.mjs <owner> <project-number> <status-field-node-id> <in-progress-option-id> "In Progress" <item-node-id>/);
+  assert.match(nextTicket, /never passes the numeric project number as `--project-id`/);
+  assert.match(nextTicket, /reads the\s+item back before the ticket-start sequence can continue/);
+  assert.match(completePr, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done/);
+  assert.match(completePr, /child item IDs first and the parent item ID last/);
 });
