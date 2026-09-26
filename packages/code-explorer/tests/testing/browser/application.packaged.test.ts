@@ -5,8 +5,8 @@ import {
   assertSymbolSearch,
 } from "./application-actions.test.js";
 import {
-  type PackagedBrowserFixture,
   assertBrowserOwnedShutdown,
+  type PackagedBrowserFixture,
   startPackagedBrowserFixture,
 } from "./application-fixture.test.js";
 import { waitForPackagedLocator } from "./packaged/test-timeouts.js";

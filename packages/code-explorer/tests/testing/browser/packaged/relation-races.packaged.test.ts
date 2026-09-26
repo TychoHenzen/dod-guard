@@ -2,8 +2,10 @@ import { after, before, describe, it } from "node:test";
 import type { Page } from "@playwright/test";
 import type { PackagedBrowserFixture } from "../application-fixture.test.js";
 import { startPackagedBrowserFixture } from "../application-fixture.test.js";
-import { waitForPackagedLocator } from "./test-timeouts.js";
-import { waitForPackagedResponse } from "./test-timeouts.js";
+import {
+  waitForPackagedLocator,
+  waitForPackagedResponse,
+} from "./test-timeouts.js";
 
 let fixture: PackagedBrowserFixture;
 
