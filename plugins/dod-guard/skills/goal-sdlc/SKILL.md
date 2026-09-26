@@ -185,6 +185,38 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
 
 &#x20; - a branch or checkpoint showing implementation already underway.
 
+- Reconcile the current repository's Project items before selecting a parent:
+
+&#x20; - paginate every Project page, filter to the target repository, and group
+&#x20;   parent/child issues with their linked pull requests before deciding
+&#x20;   eligibility;
+
+&#x20; - classify a record with no merged delivery and no active checkpoint as
+&#x20;   eligible for the normal `Todo`/`Backlog` selection rules;
+
+&#x20; - classify a merged delivery as `complete` only when the existing
+&#x20;   `complete-pr` recovery evidence is present: same-repository head,
+&#x20;   default base, trusted head and merge commit, complete required checks,
+&#x20;   closed linked issues, and `Done` Project statuses for the grouped record;
+&#x20;   exclude it from queue candidates and hand any cleanup to
+&#x20;   `complete-pr` rather than mutating it here;
+
+&#x20; - classify a merged delivery with any missing check, open issue or child,
+&#x20;   non-`Done` Project status, unresolved acceptance evidence, provider
+&#x20;   limitation, or head/relationship mismatch as `hold`; exclude it from
+&#x20;   queue candidates, report the exact missing evidence, and preserve its
+&#x20;   live issue and Project state;
+
+&#x20; - do not select a held or complete child as an independent parent while
+&#x20;   its grouped parent record is being reconciled. A merged PR, title,
+&#x20;   branch name, stale comment, or filtered query alone is not completion or
+&#x20;   absence evidence.
+
+- Keep this reconciliation read-only. The queue skill does not close, reopen,
+  relabel, move, merge, publish, delete branches, or mark records `Done`;
+  those mutations remain with the owning lifecycle skill after its evidence
+  gates pass.
+
 - If the repository or linked Project cannot be identified safely, use available repository evidence to resolve it. Ask the user only if no safe target can be determined.
 
 
