@@ -204,8 +204,9 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
 
 &#x20; - classify a merged delivery as `complete` only when the existing
 &#x20;   `complete-pr` recovery evidence is present: same-repository head,
-&#x20;   default base, trusted head and merge commit, complete required checks,
-&#x20;   closed linked issues, and `Done` Project statuses for the grouped record;
+&#x20;   default base, active checkpoint explicitly observed as `false`, trusted
+&#x20;   head and merge commit, complete required checks, closed linked issues, and
+&#x20;   `Done` Project statuses for the grouped record;
 &#x20;   exclude it from queue candidates and hand any cleanup to
 &#x20;   `complete-pr` rather than mutating it here;
 

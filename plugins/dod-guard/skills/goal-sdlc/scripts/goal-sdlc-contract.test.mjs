@@ -41,6 +41,9 @@ function classifyDeliveryRecord({
     .map(([, evidence]) => evidence);
 
   if (mergedDelivery === true) {
+    if (activeCheckpoint !== false) {
+      missing.push("active checkpoint");
+    }
     missing.push(
       ...[
         [providerAvailable, "provider evidence"],
@@ -92,6 +95,12 @@ const completeDeliveryEvidence = {
   headRelationshipValid: true,
 };
 
+const completeEvidenceWithoutActiveCheckpoint = Object.fromEntries(
+  Object.entries(completeDeliveryEvidence).filter(
+    ([evidence]) => evidence !== "activeCheckpoint",
+  ),
+);
+
 const reconciliationFixtures = [
   {
     name: "#31 external acceptance hold",
@@ -139,6 +148,15 @@ const reconciliationFixtures = [
     expected: { kind: "complete", eligible: false, handoff: "complete-pr" },
   },
   {
+    name: "missing active checkpoint",
+    input: completeEvidenceWithoutActiveCheckpoint,
+    expected: {
+      kind: "hold",
+      eligible: false,
+      missing: ["active checkpoint"],
+    },
+  },
+  {
     name: "normal todo record",
     input: { ...completeDeliveryEvidence, mergedDelivery: false },
     expected: { kind: "eligible", eligible: true },
@@ -151,6 +169,7 @@ const reconciliationFixtures = [
       eligible: false,
       missing: [
         "grouped parent reconciliation",
+        "active checkpoint",
         "provider evidence",
         "acceptance evidence",
         "same-repository head",
@@ -280,6 +299,7 @@ test("reconciliation excludes stale merged records and recognizes complete group
   }
   for (const marker of [
     "classify a merged delivery as `complete` only when the existing",
+    "active checkpoint explicitly observed as `false`",
     "classify a merged delivery with any missing check, open issue or child",
     "exclude it from queue candidates and hand any cleanup to",
     "queue candidates, report the exact missing evidence",
@@ -301,7 +321,7 @@ test("mixed queue keeps only an explicit normal Todo and stays read-only", async
     [
       { id: "#31", input: reconciliationFixtures[0].input },
       { id: "#444", input: reconciliationFixtures[2].input },
-      { id: "#517", input: reconciliationFixtures[3].input },
+      { id: "#517", input: reconciliationFixtures[4].input },
       { id: "#536", input: reconciliationFixtures.at(-1).input },
     ],
     provider,
