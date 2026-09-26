@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Browser, type Page, chromium } from "@playwright/test";
+import { type Browser, chromium, type Page } from "@playwright/test";
 import { BrowserHttpRouter } from "../../../src/browser-server/http-router.js";
 import type { CoreCall } from "./application-core.test.js";
 import { createFixtureBehavior } from "./application-fixture-behavior.test.js";
