@@ -1,15 +1,15 @@
-import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 import {
   assertFileSearch,
+  assertRefreshFailure,
   assertSymbolSearch,
 } from "./application-actions.test.js";
 import {
   type PackagedBrowserFixture,
+  assertBrowserOwnedShutdown,
   startPackagedBrowserFixture,
 } from "./application-fixture.test.js";
 import {
-  PACKAGED_BROWSER_TIMEOUT_MS,
   waitForPackagedLocator,
 } from "./packaged/test-timeouts.js";
 
@@ -88,41 +88,11 @@ describe("packaged browser", () => {
     "renders a refresh failure " + "without an unhandled page error",
     async () => {
       const page = await fixture.newPage();
-      const pageErrors: Error[] = [];
-      page.on("pageerror", (error) => pageErrors.push(error));
-      await page.goto("/");
-      fixture.failNextRefresh();
-      await page.getByRole("button", { name: "Refresh", exact: true }).click();
-      await waitForPackagedLocator(
-        page.locator('[data-area="status"]').getByText("refresh_failed", {
-          exact: true,
-        }),
-        "refresh failure",
-      );
-      assert.equal(pageErrors.length, 0);
+      await assertRefreshFailure(page, fixture);
     },
   );
 
   it("lets browser-owned shutdown bypass a stuck page close", async () => {
-    const page = await fixture.newPage();
-    let releasePageClose: (() => void) | undefined;
-    page.close = () =>
-      new Promise<void>((resolve) => {
-        releasePageClose = resolve;
-      });
-    const closePromise = fixture.close();
-    const timedOut = await new Promise<boolean>((resolve) => {
-      const timer = setTimeout(
-        () => resolve(true),
-        PACKAGED_BROWSER_TIMEOUT_MS,
-      );
-      void closePromise.then(() => {
-        clearTimeout(timer);
-        resolve(false);
-      });
-    });
-    releasePageClose?.();
-    await closePromise;
-    assert.equal(timedOut, false);
+    await assertBrowserOwnedShutdown(fixture);
   });
 });

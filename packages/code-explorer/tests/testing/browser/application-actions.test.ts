@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import type { Page } from "@playwright/test";
 import type { CoreCall } from "./application-core.test.js";
+import type { PackagedBrowserFixture } from "./application-fixture.test.js";
 import { assertCoreCalls } from "./packaged/core-calls.test.js";
 import {
   waitForPackagedLocator,
@@ -45,6 +46,24 @@ export async function assertFileSearch(page: Page): Promise<void> {
     (await page.locator(".focused-source").textContent()) ?? "",
     /export const client/,
   );
+}
+
+export async function assertRefreshFailure(
+  page: Page,
+  fixture: PackagedBrowserFixture,
+): Promise<void> {
+  const pageErrors: Error[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error));
+  await page.goto("/");
+  fixture.failNextRefresh();
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await waitForPackagedLocator(
+    page.locator('[data-area="status"]').getByText("refresh_failed", {
+      exact: true,
+    }),
+    "refresh failure",
+  );
+  assert.equal(pageErrors.length, 0);
 }
 
 async function assertInitialShell(page: Page): Promise<void> {

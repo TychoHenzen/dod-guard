@@ -1,12 +1,9 @@
 import { after, before, describe, it } from "node:test";
-import {
-  type PackagedBrowserFixture,
-  startPackagedBrowserFixture,
-} from "../application-fixture.test.js";
-import {
-  waitForPackagedLocator,
-  waitForPackagedResponse,
-} from "./test-timeouts.js";
+import type { Page } from "@playwright/test";
+import type { PackagedBrowserFixture } from "../application-fixture.test.js";
+import { startPackagedBrowserFixture } from "../application-fixture.test.js";
+import { waitForPackagedLocator } from "./test-timeouts.js";
+import { waitForPackagedResponse } from "./test-timeouts.js";
 
 let fixture: PackagedBrowserFixture;
 
@@ -18,14 +15,35 @@ after(async () => {
   await fixture.close();
 });
 
+async function openMainSource(page: Page): Promise<void> {
+  await page.goto("/");
+  await page.getByRole("button", { name: "main", exact: true }).click();
+  await page.locator('mark[data-handle="handle-main"]').click();
+}
+
+function relationHeading(page: Page) {
+  return page.getByRole("heading", {
+    name: "Relations: references",
+    exact: true,
+  });
+}
+
+function waitForDefinition(page: Page, description: string) {
+  return waitForPackagedResponse(
+    page,
+    (response) =>
+      response.url().endsWith("/api/follow") &&
+      response.request().postDataJSON().relation === "definition",
+    description,
+  );
+}
+
 describe("packaged browser response ordering", () => {
   it(
     "keeps the newest relation when " + "an older request finishes late",
     async () => {
       const page = await fixture.newPage();
-      await page.goto("/");
-      await page.getByRole("button", { name: "main", exact: true }).click();
-      await page.locator('mark[data-handle="handle-main"]').click();
+      await openMainSource(page);
       const releaseDefinition = fixture.holdNextRelation("definition");
       await page
         .getByRole("button", { name: "definition", exact: true })
@@ -33,36 +51,17 @@ describe("packaged browser response ordering", () => {
       await page
         .getByRole("button", { name: "references", exact: true })
         .click();
-      await waitForPackagedLocator(
-        page.getByRole("heading", {
-          name: "Relations: references",
-          exact: true,
-        }),
-        "newest relation",
-      );
-      const definition = waitForPackagedResponse(
-        page,
-        (response) =>
-          response.url().endsWith("/api/follow") &&
-          response.request().postDataJSON().relation === "definition",
-        "older relation",
-      );
+      const heading = relationHeading(page);
+      await waitForPackagedLocator(heading, "newest relation");
+      const definition = waitForDefinition(page, "older relation");
       releaseDefinition();
       await definition;
-      await waitForPackagedLocator(
-        page.getByRole("heading", {
-          name: "Relations: references",
-          exact: true,
-        }),
-        "completed relation",
-      );
+      await waitForPackagedLocator(heading, "completed relation");
     },
   );
   it("discards an old relation after focus changes", async () => {
     const page = await fixture.newPage();
-    await page.goto("/");
-    await page.getByRole("button", { name: "main", exact: true }).click();
-    await page.locator('mark[data-handle="handle-main"]').click();
+    await openMainSource(page);
     const releaseDefinition = fixture.holdNextRelation("definition");
     await page.getByRole("button", { name: "definition", exact: true }).click();
     await page.locator('[data-operation="search"]').fill("client");
@@ -71,13 +70,7 @@ describe("packaged browser response ordering", () => {
       page.locator('.focused-source[data-view-id="view-client"]'),
       "focus after stale relation",
     );
-    const definition = waitForPackagedResponse(
-      page,
-      (response) =>
-        response.url().endsWith("/api/follow") &&
-        response.request().postDataJSON().relation === "definition",
-      "stale relation",
-    );
+    const definition = waitForDefinition(page, "stale relation");
     releaseDefinition();
     await definition;
     const relations = page.locator('[data-pane="relations"]');

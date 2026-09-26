@@ -1,12 +1,8 @@
 import { after, before, describe, it } from "node:test";
-import {
-  type PackagedBrowserFixture,
-  startPackagedBrowserFixture,
-} from "../application-fixture.test.js";
-import {
-  waitForPackagedLocator,
-  waitForPackagedResponse,
-} from "./test-timeouts.js";
+import type { PackagedBrowserFixture } from "../application-fixture.test.js";
+import { startPackagedBrowserFixture } from "../application-fixture.test.js";
+import { waitForPackagedLocator } from "./test-timeouts.js";
+import { waitForPackagedResponse } from "./test-timeouts.js";
 
 let fixture: PackagedBrowserFixture;
 

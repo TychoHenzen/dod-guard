@@ -21,10 +21,6 @@ type InstalledBackend = {
   failure_code?: string;
 };
 
-type InstalledStatusResponse = {
-  data: { backend_status: { backends: InstalledBackend[] } };
-};
-
 async function waitForInstalledBackends(client: Client) {
   const deadline = Date.now() + backendStatusTimeoutMs;
   let backends: InstalledBackend[] = [];
@@ -35,7 +31,7 @@ async function waitForInstalledBackends(client: Client) {
     })) as { content: Array<{ text: string }> };
     const envelope = JSON.parse(
       response.content[0]?.text ?? "",
-    ) as InstalledStatusResponse;
+    ) as { data: { backend_status: { backends: InstalledBackend[] } } };
     backends = envelope.data.backend_status.backends;
     if (
       backends.length === 3 &&

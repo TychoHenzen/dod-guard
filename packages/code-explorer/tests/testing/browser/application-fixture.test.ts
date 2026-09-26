@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Browser, chromium, type Page } from "@playwright/test";
@@ -69,4 +70,29 @@ export async function startPackagedBrowserFixture() {
       }
     },
   };
+}
+
+export async function assertBrowserOwnedShutdown(
+  fixture: PackagedBrowserFixture,
+): Promise<void> {
+  const page = await fixture.newPage();
+  let releasePageClose: (() => void) | undefined;
+  page.close = () =>
+    new Promise<void>((resolve) => {
+      releasePageClose = resolve;
+    });
+  const closePromise = fixture.close();
+  const timedOut = await new Promise<boolean>((resolve) => {
+    const timer = setTimeout(
+      () => resolve(true),
+      PACKAGED_BROWSER_TIMEOUT_MS,
+    );
+    void closePromise.then(() => {
+      clearTimeout(timer);
+      resolve(false);
+    });
+  });
+  releasePageClose?.();
+  await closePromise;
+  assert.equal(timedOut, false);
 }
