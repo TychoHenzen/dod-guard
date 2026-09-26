@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 import {
   assertFileSearch,
@@ -12,6 +13,12 @@ import {
 import { waitForPackagedLocator } from "./packaged/test-timeouts.js";
 
 let fixture: PackagedBrowserFixture;
+const timeoutPrefix =
+  /packaged_browser_timeout:forced timeout page_url="http:\/\/127\.0\.0\.1:\d+\/"/;
+const visibleStatus = /visible_status_text="[^"]+"/;
+const fixtureServer = /fixture_server="listening=true; requests=\d+; last_request=/;
+const fixtureProcess =
+  /fixture_process="pid=\d+; browser_connected=true; pages=\d+; core_calls=\d+"/;
 
 before(async () => {
   fixture = await startPackagedBrowserFixture();
@@ -89,6 +96,25 @@ describe("packaged browser", () => {
       await assertRefreshFailure(page, fixture);
     },
   );
+
+  it("reports bounded diagnostics when a locator times out", async () => {
+    const page = await fixture.newPage();
+    await page.goto("/");
+    await assert.rejects(
+      waitForPackagedLocator(
+        page.locator('[data-forced-timeout="never"]'),
+        "forced timeout",
+        1,
+      ),
+      (error: unknown) => {
+        assert.match(String(error), timeoutPrefix);
+        assert.match(String(error), visibleStatus);
+        assert.match(String(error), fixtureServer);
+        assert.match(String(error), fixtureProcess);
+        return true;
+      },
+    );
+  });
 
   it("lets browser-owned shutdown bypass a stuck page close", async () => {
     await assertBrowserOwnedShutdown(fixture);
