@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PROJECT_FIELDS, readQueueSnapshot, selectQueueItem } from "./queue-readback.mjs";
+import {
+  PROJECT_FIELDS,
+  defaultQueueDecision,
+  readQueueSnapshot,
+  selectQueueItem,
+} from "./queue-readback.mjs";
 
-function projectItem({ id, repository, number, status, parentIssue, linkedPullRequests = [] }) {
+function projectItem({ id, repository, number, status, parentIssue, linkedPullRequests = [], state }) {
   return {
     id,
-    content: { number, repository },
+    content: { number, repository, ...(state ? { state } : {}) },
     fields: [
       { name: "Status", value: { name: status } },
       { name: "Repository", value: repository },
@@ -194,4 +199,377 @@ test("selects the normal Todo parent after excluding merged delivery groups", as
   assert.equal(selected.rootIssueNumber, 517);
   assert.deepEqual(selected.records.map(({ issueNumber }) => issueNumber), [517]);
   assert.equal(selectQueueItem({ ...snapshot, records: snapshot.records.filter(({ issueNumber }) => issueNumber !== 517) }).rootIssueNumber, 31);
+});
+
+test("deduplicates identical pages but holds conflicting duplicate and status-drift records", async () => {
+  const parent = projectItem({
+    id: "parent",
+    repository: "TychoHenzen/dod-guard",
+    number: 100,
+    status: "Todo",
+  });
+  const child = projectItem({
+    id: "child",
+    repository: "TychoHenzen/dod-guard",
+    number: 101,
+    status: "Backlog",
+    parentIssue: { number: 100 },
+  });
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      calls: 0,
+      async listProjectItems() {
+        this.calls += 1;
+        return this.calls === 1
+          ? { items: [parent, child], pageInfo: { hasNextPage: true, nextCursor: "next" } }
+          : { items: [parent, child], pageInfo: { hasNextPage: false } };
+      },
+      async readIssue({ issueNumber }) {
+        return {
+          number: issueNumber,
+          state: "open",
+          parent: issueNumber === 101 ? { number: 100 } : null,
+          children: issueNumber === 100 ? [{ number: 101 }] : [],
+        };
+      },
+      async readPullRequest() {
+        throw new Error("unexpected PR read");
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+
+  assert.deepEqual(snapshot.items.map((item) => item.content.number), [100, 101]);
+  assert.equal(snapshot.evidence.duplicates.length, 2);
+  assert.deepEqual(snapshot.evidence.duplicateConflicts, []);
+  assert.equal(snapshot.records[0].projectStatus, "Todo");
+  assert.equal(snapshot.records[1].projectStatus, "Backlog");
+  assert.equal(selectQueueItem(snapshot), null);
+
+  const conflicting = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        return {
+          items: [parent, { ...parent, fields: parent.fields.map((field) => field.name === "Status" ? { ...field, value: { name: "Backlog" } } : field) }],
+          pageInfo: { hasNextPage: false },
+        };
+      },
+      async readIssue() {
+        return { state: "open", children: [] };
+      },
+      async readPullRequest() {
+        throw new Error("unexpected PR read");
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+  assert.equal(conflicting.evidence.duplicateConflicts.length, 1);
+  assert.equal(selectQueueItem(conflicting), null);
+});
+
+test("records missing Project fields and orphan relationships as holds", async () => {
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        return {
+          items: [
+            {
+              id: "missing-status",
+              content: { number: 200, repository: "TychoHenzen/dod-guard" },
+              fields: [{ name: "Repository", value: "TychoHenzen/dod-guard" }],
+            },
+            projectItem({
+              id: "orphan",
+              repository: "TychoHenzen/dod-guard",
+              number: 201,
+              status: "Todo",
+              parentIssue: { number: 999 },
+            }),
+          ],
+          pageInfo: { hasNextPage: false },
+        };
+      },
+      async readIssue({ issueNumber }) {
+        return {
+          number: issueNumber,
+          state: "open",
+          parent: issueNumber === 201 ? { number: 999 } : null,
+          children: [],
+        };
+      },
+      async readPullRequest() {
+        throw new Error("unexpected PR read");
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+
+  assert.ok(snapshot.records[0].missingEvidence.includes("Status"));
+  assert.ok(snapshot.records[1].missingEvidence.includes("parent issue #999 Project item"));
+  assert.ok(snapshot.missingEvidence.includes("parent issue #999 Project item"));
+  assert.equal(selectQueueItem(snapshot), null);
+});
+
+test("holds an incomplete or looping Project page with exact pagination evidence", async () => {
+  let calls = 0;
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        calls += 1;
+        return {
+          items: calls === 1
+            ? [projectItem({ id: "page", repository: "TychoHenzen/dod-guard", number: 250, status: "Todo" })]
+            : [],
+          pageInfo: { hasNextPage: true, nextCursor: "same-cursor" },
+        };
+      },
+      async readIssue() {
+        return { number: 250, state: "open", children: [] };
+      },
+      async readPullRequest() {
+        throw new Error("must not read PR");
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+
+  assert.equal(calls, 2);
+  assert.equal(snapshot.readFailures[0].operation, "listProjectItems");
+  assert.match(snapshot.readFailures[0].message, /stable cursor/);
+  assert.deepEqual(snapshot.readFailures[0].missingEvidence, [
+    "complete Project item pagination",
+    "stable Project page cursor",
+  ]);
+  assert.equal(selectQueueItem(snapshot), null);
+});
+
+test("holds stale issue and pull-request relationships instead of selecting them", async () => {
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        return {
+          items: [projectItem({
+            id: "stale",
+            repository: "TychoHenzen/dod-guard",
+            number: 300,
+            status: "Todo",
+            state: "open",
+            linkedPullRequests: [{
+              number: 30,
+              repository: "TychoHenzen/dod-guard",
+              state: "closed",
+              mergedAt: "2026-09-27T00:00:00Z",
+              headSha: "old-head",
+              baseRef: "master",
+            }],
+          })],
+          pageInfo: { hasNextPage: false },
+        };
+      },
+      async readIssue() {
+        return { number: 300, state: "closed", children: [] };
+      },
+      async readPullRequest() {
+        return {
+          number: 30,
+          repository: "TychoHenzen/dod-guard",
+          state: "open",
+          head: { repository: "TychoHenzen/dod-guard", ref: "codex/300", sha: "new-head" },
+          base: { ref: "master", sha: "base" },
+        };
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+
+  assert.deepEqual(snapshot.evidence.staleRelationships, [
+    { kind: "issue", issueNumber: 300, mismatches: ["issue state changed during read"] },
+    {
+      kind: "pull_request",
+      number: 30,
+      repository: "TychoHenzen/dod-guard",
+      mismatches: ["state changed during read", "merge timestamp changed during read", "head SHA changed during read"],
+    },
+  ]);
+  assert.equal(selectQueueItem(snapshot), null);
+});
+
+test("retries one transient read, never retries rate limits or entitlement failures, and records exact errors", async () => {
+  let projectReads = 0;
+  const transient = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        projectReads += 1;
+        if (projectReads === 1) throw Object.assign(new Error("temporary upstream failure"), { status: 503 });
+        return {
+          items: [projectItem({ id: "transient", repository: "TychoHenzen/dod-guard", number: 400, status: "Todo" })],
+          pageInfo: { hasNextPage: false },
+        };
+      },
+      async readIssue() {
+        return { number: 400, state: "open", children: [] };
+      },
+      async readPullRequest() {
+        throw new Error("unexpected PR read");
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+  assert.equal(projectReads, 2);
+  assert.equal(transient.readFailures.length, 0);
+  assert.equal(transient.evidence.retries[0].status, 503);
+  assert.equal(selectQueueItem(transient).rootIssueNumber, 400);
+
+  let rateLimitReads = 0;
+  const rateLimited = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        rateLimitReads += 1;
+        throw Object.assign(new Error("API rate limit exceeded"), { status: 429, retryAfterMs: 60_000 });
+      },
+      async readIssue() {
+        throw new Error("must not read issue after page failure");
+      },
+      async readPullRequest() {
+        throw new Error("must not read PR after page failure");
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+  assert.equal(rateLimitReads, 1);
+  assert.deepEqual(rateLimited.readFailures[0], {
+    operation: "listProjectItems",
+    request: {
+      project: { owner: "TychoHenzen", number: 2, id: null },
+      query: "is:issue",
+      fields: PROJECT_FIELDS,
+      perPage: 100,
+    },
+    attempt: 1,
+    attempts: 1,
+    category: "rate_limit",
+    code: null,
+    status: 429,
+    message: "API rate limit exceeded",
+    retryable: false,
+    retryAfterMs: 60_000,
+    missingEvidence: ["complete Project item pages"],
+  });
+  assert.equal(selectQueueItem(rateLimited), null);
+
+  let entitlementReads = 0;
+  const denied = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        return {
+          items: [projectItem({ id: "denied", repository: "TychoHenzen/dod-guard", number: 401, status: "Todo" })],
+          pageInfo: { hasNextPage: false },
+        };
+      },
+      async readIssue() {
+        entitlementReads += 1;
+        throw Object.assign(new Error("forbidden entitlement"), { status: 403 });
+      },
+      async readPullRequest() {
+        throw new Error("must not read PR after issue denial");
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+  assert.equal(entitlementReads, 1);
+  assert.equal(denied.readFailures[0].operation, "readIssue");
+  assert.equal(denied.readFailures[0].category, "entitlement");
+  assert.deepEqual(denied.records[0].missingEvidence, ["issue #401"]);
+  assert.equal(selectQueueItem(denied), null);
+});
+
+test("holds a timed-out pull request after the single bounded retry", async () => {
+  let pullReads = 0;
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        return {
+          items: [projectItem({
+            id: "timeout",
+            repository: "TychoHenzen/dod-guard",
+            number: 402,
+            status: "Todo",
+            linkedPullRequests: [{ number: 4020, repository: "TychoHenzen/dod-guard" }],
+          })],
+          pageInfo: { hasNextPage: false },
+        };
+      },
+      async readIssue() {
+        return { number: 402, state: "open", children: [] };
+      },
+      async readPullRequest() {
+        pullReads += 1;
+        throw Object.assign(new Error("provider timed out"), { code: "ETIMEDOUT" });
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+
+  assert.equal(pullReads, 2);
+  assert.equal(snapshot.readFailures[0].operation, "readPullRequest");
+  assert.equal(snapshot.readFailures[0].category, "timeout");
+  assert.equal(snapshot.readFailures[0].attempts, 2);
+  assert.equal(snapshot.records[0].missingEvidence[0], "pull request TychoHenzen/dod-guard#4020");
+  assert.equal(selectQueueItem(snapshot), null);
+});
+
+test("excludes a fully verified merged record without mutating it", async () => {
+  const mutations = [];
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        return {
+          items: [projectItem({
+            id: "complete",
+            repository: "TychoHenzen/dod-guard",
+            number: 500,
+            status: "Done",
+            linkedPullRequests: [{ number: 5000, repository: "TychoHenzen/dod-guard" }],
+          })],
+          pageInfo: { hasNextPage: false },
+        };
+      },
+      async readIssue() {
+        return { number: 500, state: "closed", children: [], activeCheckpoint: false };
+      },
+      async readPullRequest() {
+        return {
+          number: 5000,
+          repository: "TychoHenzen/dod-guard",
+          state: "closed",
+          mergedAt: "2026-09-27T00:00:00Z",
+          trustedHead: true,
+          head: { repository: "TychoHenzen/dod-guard", ref: "codex/500", sha: "head-500" },
+          base: { ref: "master", sha: "base-500" },
+          mergeCommit: { oid: "merge-500" },
+          requiredChecks: [{ name: "build-test", bucket: "pass" }],
+        };
+      },
+      mutate(...args) {
+        mutations.push(args);
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+    defaultBranch: "master",
+  });
+
+  const decision = defaultQueueDecision(snapshot.records.map((record) => ({ ...record, orphan: false })), snapshot);
+  assert.deepEqual(decision, { kind: "complete", eligible: false, status: "Done", reasons: [] });
+  assert.equal(selectQueueItem(snapshot), null);
+  assert.deepEqual(mutations, []);
 });
