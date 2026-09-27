@@ -104,6 +104,14 @@ CHECKOUT AND EXECUTION POLICY
 
 
 
+- Treat a dirty current checkout as evidence that a task is probably already in progress, not as a reason to stop or declare the queue empty. Match the changed paths, branch, checkpoint, issue, child PBIs, and PR before choosing a new unit; when they match, preserve the edits and resume that task from its latest safe checkpoint.
+
+
+
+- If dirty work or an in-progress branch cannot be matched to an existing PBI, create one through `[$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md)` from the observed scope and evidence before continuing. Do not discard, reset, stash, overwrite, or silently absorb those edits into an unrelated PBI; refine the new PBI and resume the same work after it is tracked.
+
+
+
 Do not stop after merging one PBI. Continue processing eligible work until the queue is empty, the user explicitly stops the goal, or every remaining item is blocked by an external condition with no safe workaround.
 
 
@@ -202,6 +210,8 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
 
 - Preserve unrelated user work. Never reset, stash, overwrite, or include it.
 
+- Treat a dirty tree as probable in-progress work. Continue it when repository evidence identifies its PBI or checkpoint; otherwise create and track the matching PBI before selecting unrelated work.
+
 - Read existing child PBIs and PRs before creating anything only when they are absent from the snapshot or the snapshot was invalidated.
 
 - Repair recoverable orphan states before selecting new work:
@@ -268,7 +278,7 @@ D. If no parent is active:
 
 - After refinement, verify the parent and required children are in Todo, then continue implementation.
 
-- If no eligible work exists, finish the loop with a queue-empty result.
+- If no eligible work exists, finish the loop with a queue-empty result only after checking for dirty or in-progress work and creating a matching PBI when none exists.
 
 
 

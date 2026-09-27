@@ -120,3 +120,12 @@ test("goal-sdlc makes blocked stops brief and plain-language", async () => {
   }
   assert.match(skill, /Do not narrate checkpoint, snapshot, delegation, queue, or audit mechanics/);
 });
+
+test("goal-sdlc resumes dirty work and tracks an unmatched task", async () => {
+  const skill = await readSkill();
+  assert.match(skill, /dirty current checkout as evidence that a task is probably already in progress/);
+  assert.match(skill, /preserve the edits and resume that task from its latest safe checkpoint/);
+  assert.match(skill, /If dirty work or an in-progress branch cannot be matched to an existing PBI, create one/);
+  assert.match(skill, /Do not discard, reset, stash, overwrite, or silently absorb those edits/);
+  assert.match(skill, /queue-empty result only after checking for dirty or in-progress work/);
+});
