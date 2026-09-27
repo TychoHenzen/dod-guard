@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { cleanTestProject } from "./clean-test-project.mjs";
 
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const packageNames = ["quality-guard", "code-explorer", "fossil", "knowledge-base"];
@@ -45,4 +47,40 @@ test("build:test removes stale output in every test workspace", () => {
       rmSync(stalePath, { force: true });
     }
   }
+});
+
+test("cleanup is idempotent and preserves production, source, and unrelated output", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "clean-test-project-"));
+  const productionPath = path.join(root, "dist", "production.js");
+  const sourcePath = path.join(root, "tests", "source.test.ts");
+  const unrelatedPath = path.join(root, "other", "output.txt");
+  mkdirSync(path.dirname(productionPath), { recursive: true });
+  mkdirSync(path.dirname(sourcePath), { recursive: true });
+  mkdirSync(path.dirname(unrelatedPath), { recursive: true });
+  writeFileSync(productionPath, "production\n");
+  writeFileSync(sourcePath, "source\n");
+  writeFileSync(unrelatedPath, "unrelated\n");
+  mkdirSync(path.join(root, "dist-test"), { recursive: true });
+  writeFileSync(path.join(root, "dist-test", "stale.test.js"), "stale\n");
+
+  try {
+    await cleanTestProject(root);
+    await cleanTestProject(root);
+    assert.equal(existsSync(path.join(root, "dist-test")), false);
+    assert.equal(readFileSync(productionPath, "utf8"), "production\n");
+    assert.equal(readFileSync(sourcePath, "utf8"), "source\n");
+    assert.equal(readFileSync(unrelatedPath, "utf8"), "unrelated\n");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("cleanup propagates filesystem failures", async () => {
+  const failure = new Error("cleanup failed");
+  await assert.rejects(
+    cleanTestProject("C:\\fixture", () => {
+      throw failure;
+    }),
+    failure,
+  );
 });

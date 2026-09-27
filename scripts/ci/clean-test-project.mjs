@@ -1,4 +1,11 @@
 import { rm } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-await rm(path.join(process.cwd(), "dist-test"), { recursive: true, force: true });
+export async function cleanTestProject(root = process.cwd(), remove = rm) {
+  await remove(path.join(root, "dist-test"), { recursive: true, force: true });
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await cleanTestProject();
+}
