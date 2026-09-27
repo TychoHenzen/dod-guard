@@ -101,6 +101,9 @@ test("resolves and pins the exact Codex and Claude installations", async (t) => 
     assert.equal(unpinned.response.version, "5.4.56");
     assert.equal(unpinned.response.pluginRoot, await realpath(fixture.pluginRoot));
     assert.equal(unpinned.response.skillPath, await realpath(fixture.skillFile));
+    assert.deepEqual(unpinned.response.pluginIdentity, unpinned.response.identity);
+    if (client === "codex") assert.equal(unpinned.response.pluginIdentity.pluginId, "dod-guard@dod-guard-monorepo");
+    else assert.equal(unpinned.response.pluginIdentity.id, "dod-guard@dod-guard");
 
     const pinned = runPreflight(fixture, client, registry, [
       "--version",

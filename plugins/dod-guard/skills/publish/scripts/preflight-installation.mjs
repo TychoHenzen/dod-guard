@@ -307,7 +307,16 @@ async function preflight(args) {
   if (manifest.ok === false) return manifest;
   const skill = await resolveSkillPath(client, requested, installation, manifest.manifest);
   if (skill.ok === false) return skill;
-  return { ok: true, client, version: installation.version, pluginRoot, ...skill, identity: installation.identity, requested };
+  return {
+    ok: true,
+    client,
+    version: installation.version,
+    pluginRoot,
+    ...skill,
+    pluginIdentity: installation.identity,
+    identity: installation.identity,
+    requested,
+  };
 }
 
 function writeResult(result) {
