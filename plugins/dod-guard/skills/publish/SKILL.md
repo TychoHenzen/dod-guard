@@ -175,43 +175,44 @@ or fall back to another marketplace, client installation, or checkout.
      `200` with non-empty objects, require the broad response to contain an
      `enforce_admins.enabled` boolean and the admin response to contain an
      `enabled` boolean, and require those values to agree before any mutation.
-   - Before any protection mutation, construct and validate these exact values:
+   - Use the checked-in `<skill-dir>/scripts/maintenance-publish.ps1` helper as
+     the only maintenance mutation boundary. Dot-source it and invoke
+     `Invoke-MaintenancePublish` with the owner, repository, saved SHA, and the
+     existing `/commit` staging/commit-message and pre-push actions. The helper
+     constructs and validates these exact values:
      `protection_endpoint= repos/{owner}/{repo}/branches/master/protection`,
      `admin_endpoint= repos/{owner}/{repo}/branches/master/protection/enforce_admins`,
-     and `admin_method= DELETE`. Require the admin endpoint to equal the literal
-     `/branches/master/protection/enforce_admins` path and the method to equal
-     `DELETE`; stop before the request if either check fails. The broad
-     `/branches/master/protection` endpoint is read-only in this flow: never
-     send `DELETE`, `POST`, or `PUT` to it.
+     `admin_method= DELETE`, and
+     `--force-with-lease=refs/heads/master:<saved-sha> origin HEAD:refs/heads/master`.
+     It rejects a non-primary checkout, a head or commit-parent mismatch, an
+     invalid endpoint or method, an unavailable `allow_force_pushes.enabled`,
+     and any unpinned force-push alternative. It never invokes a Git worktree
+     command.
    - A force-push allowance alone does not bypass the PR or check rules. If the
-     saved `enforce_admins.enabled` is true, invoke only the validated admin
-     endpoint with `gh api --method DELETE <admin_endpoint> --include --silent`.
-     Enter the cleanup scope and mark restoration required before invoking this
-     DELETE. Capture the exit code and response headers; require HTTP `204`, and
-     do not parse the deliberately empty body as JSON. Read the admin endpoint
-     back even when the command errors or returns an unexpected status. Require
-     HTTP `200`, a valid response object, and `enabled=false`; require the full
-     protection readback to contain a valid `enforce_admins` object and every
-     other field to equal the saved snapshot before the release can proceed. An
-     invalid path, method, status, body, or readback stops before the push and
-     reports the exact evidence; every exit after an attempted DELETE, including
-     a failed pre-push readback, runs the cleanup scope below.
-   - Use `/commit`'s staging and commit-message steps only. Do not run its
-     ordinary push, sync, or pull-and-merge retry. Push only with the saved-SHA
-      `--force-with-lease` command above. In a `finally` step for that cleanup
-      scope, restore the saved admin state even if commit, push, or pre-push
-      validation fails: if it was initially enabled, invoke only the same
-      validated endpoint with `gh api --method POST <admin_endpoint> --include
-      --silent`, require HTTP `200`, and do not use its suppressed body as a
-      success predicate. Read the admin endpoint and complete protection object
-      back after every POST attempt. If any response, admin state, or complete
-      protection field differs from the saved snapshot, retry that exact `POST`
-      once and read both resources again. Do not retry an unknown mutation before
-     its readback. If the second readback still differs, stop and report the
-     exact remaining difference; never claim release completion. If admin
-     enforcement was initially disabled, do not call `POST`; prove it remains
-     disabled and the complete protection snapshot is unchanged. Other users
-     remain subject to the branch rules throughout.
+     saved `enforce_admins.enabled` is true, the helper invokes only the
+      validated admin endpoint with `gh api --method DELETE <admin_endpoint>
+      --include`. It marks restoration required before invoking DELETE,
+     requires HTTP `204`, and does not parse the deliberately empty body as
+     JSON. It reads the admin endpoint and complete protection object back even
+     when the command errors or returns an unexpected status; HTTP `200`,
+     `enabled=false`, and equality of every non-admin protection field are
+     required before the release can proceed. An invalid response or readback
+     stops before the push.
+   - The helper owns the cleanup `finally` scope, so every exit after an
+     attempted DELETE, including commit, push, or pre-push validation failure,
+     restores the saved admin state. If it was initially enabled, it invokes
+      only the same validated endpoint with `gh api --method POST <admin_endpoint>
+      --include`, requires HTTP `200`, and reads the admin endpoint and
+      complete protection object back after every POST attempt. If any response,
+      admin state, or protection field differs from the saved snapshot, it
+      retries that exact POST once and reads both resources again. If either
+      read throws, it stops without a second POST because the mutation is not
+      safely decidable. It never retries an unknown mutation before its
+      complete readback. If the second readback still differs, it stops and
+      reports the exact remaining difference. If admin enforcement was initially
+      disabled, it does not call POST; it proves it remains disabled and the
+      complete protection snapshot is unchanged.
+     Other users remain subject to the branch rules throughout.
 8. For a `functional` release, invoke `/submit-draft-pr` with the parent PBI
    number after `/commit` has pushed the issue branch. Do not create or update
    the pull request yourself. Never approve, mark ready, merge, or close it.

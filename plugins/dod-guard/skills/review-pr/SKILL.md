@@ -79,13 +79,13 @@ that exact SHA. Capture the files with:
 node "<skill-dir>/scripts/review-support.mjs" snapshot-files --input "<snapshot-input.json>"
 ```
 
-On Windows, assign the script and input paths to PowerShell variables and call
-`& node $scriptPath snapshot-files --input $inputPath`; do not build command
-text with `Invoke-Expression`, `-Command`, or string interpolation. The helper
-passes Git arguments directly, writes numbered snapshots outside the checkout,
-and emits a manifest mapping each repository path to its snapshot path and
-SHA-256. Put the manifest path in `finalFileAccess`; reviewers open the listed
-snapshots with their file-reading tools instead of reconstructing shell reads.
+On Windows, invoke the helper through Node's direct argument-array boundary with
+`shell:false`; do not launch PowerShell, `cmd.exe`, or a generated script to
+wrap this call. The helper passes Git arguments directly, writes numbered
+snapshots outside the checkout, and emits a manifest mapping each repository
+path to its snapshot path and SHA-256. Put the manifest path in
+`finalFileAccess`; reviewers open the listed snapshots with their file-reading
+tools instead of reconstructing shell reads.
 Keep the diff and snapshot files until publication, then remove them.
 Do not assume `pdftotext` or another local PDF utility is installed, and do not
 read PDF bytes as plain text. If a PDF is explicitly required, use a
@@ -106,6 +106,14 @@ incomplete evidence: preserve the exact command, exit evidence, ledger attempt,
 and remote review state, repair the cause, then retry until a terminal
 recommendation exists. Never retry a completed `APPROVE`, `REQUEST_CHANGES`, or
 `BLOCK` result.
+
+The shipped `scripts/review-dispatch.mjs` helper is the reviewer launch
+boundary. It reuses the direct Codex argument builder, passes prompts through
+stdin, uses `spawn(executable, args, { shell: false })`, and records the exact
+executable, argument array, exit, signal, and error evidence. On Windows it
+starts at most one reviewer at a time. Never replace it with an active-client
+fan-out, `powershell.exe`, `pwsh`, `cmd.exe`, `run-reviewer.ps1`, or another
+generated reviewer wrapper.
 
 ### Git and GitHub
 
@@ -166,25 +174,33 @@ strings. Run `validate-context` on the redacted file. Stop if validation fails.
 
 ## Dispatch four independent reviewers
 
-Use the active client's subagent facility. Start exactly one fresh instance of
-each agent. Use the available concurrency, then start any remaining reviewer
-when a slot frees:
+Write one dispatch input for `scripts/review-dispatch.mjs` and start exactly
+one fresh instance of each agent through that helper. The helper serializes
+Windows starts, so the maximum Windows reviewer concurrency is `1`; do not use
+the active client's available concurrency or create temporary reviewer shells.
+Invoke it as a direct Node process with the input path as an argument:
+
+```text
+node "<skill-dir>/scripts/review-dispatch.mjs" --input "<dispatch-input.json>"
+```
+
+The four required identities are:
 
 1. `review-pr-feature`
 2. `review-pr-design`
 3. `review-pr-reliability`
 4. `review-pr-hygiene`
 
-Reviewers are expected to finish at different times. This is intentional:
-safety and reliability checks often need more evidence than a UI wiring check.
-Wait for every reviewer to finish and do not send progress, reminder, or rush
-messages to a reviewer that is still working.
+The input contains the exact shipped agent definition, reviewer name, and the
+same redacted context for each reviewer. Record the helper's returned reviewer
+identity, execution evidence, and result before moving to the next entry. Wait
+for every reviewer to finish; do not send progress, reminder, or rush messages
+to a reviewer that is still working.
 
-When Codex does not expose those names as callable agent types, read the shipped
-agent definition and start one fresh default subagent with that exact definition
-and reviewer name in its prompt. Record the returned agent ID, reviewer name,
-and redacted context path before continuing. Do not substitute an improvised
-summary of the agent definition.
+If a direct Codex executable cannot start, preserve the helper's incomplete
+execution evidence and repair the cause before retrying. On recovery, invoke
+the helper only with reviewers whose prior execution was incomplete; never
+retry a reviewer with a completed recommendation.
 
 Give every reviewer the same redacted context and no other reviewer's output.
 Each reviewer returns one JSON object with `reviewer`, `coverage`, and

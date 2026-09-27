@@ -206,6 +206,8 @@ function main() {
 
     runNpm("Build workspaces", ["run", "build"]);
     runNpm("Bundle workspaces", ["run", "bundle"]);
+    runNpm("Build test workspaces", ["run", "build:test", "--workspaces"]);
+    runNpm("Prepare test workspaces", ["run", "prepare:test", "--workspaces", "--if-present"]);
     runNpm("Reproduce Biome formatting", ["exec", "--", "biome", "format", "--write", "--no-errors-on-unmatched"]);
     run(
       process.execPath,
