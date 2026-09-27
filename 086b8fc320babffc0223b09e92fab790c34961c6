@@ -1,0 +1,11 @@
+[
+  {
+    "findingId": "6b9966df39ef93364d2441e353f35d167bfb01c7315aefdd821184b18b15aab9",
+    "fingerprint": "25091dc0f62dd37df76b5ade113b71297344e59d8a2ad967e493d54af171f34a",
+    "baseSha": "ec493bce251317341f13afb20de052ea5ab7c440",
+    "targetSha": "086b8fc320babffc0223b09e92fab790c34961c6",
+    "reason": "Reviewed PR #633 merge target 086b8fc320babffc0223b09e92fab790c34961c6: clean-test-project.mjs is an intentional single-purpose package test-build cleanup helper invoked only by build:test to remove stale dist-test; the sibling browser, LSP, and practice scripts have different lifecycle ownership, so this similarity-outlier is a lexical review cue rather than misplaced production responsibility. This attestation is limited to the exact target and computed fingerprint.",
+    "author": "Codex (Quality Guard reviewer)",
+    "time": "2026-09-27T01:26:30.725Z"
+  }
+]
