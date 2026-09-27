@@ -50,6 +50,9 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.match(skill, /supporting skill for built-in `\/goal` runs/);
   assert.match(skill, /does not implement,\nreplace, or claim the built-in `\/goal` command/);
   assert.match(skill, /Dispatch at least one fresh subagent/);
+  assert.match(skill, /Context-heavy execution belongs in the bounded subagent/);
+  assert.match(skill, /\[HH:MM\]/);
+  assert.match(skill, /PBIs completed: N/);
   assert.match(skill, /main thread is the high-level orchestrator/);
   assert.match(skill, /never create, use, register, switch to, prune, remove, or clean up a Git\s+worktree/);
   assert.match(skill, /\[\$dod-guard:next-ticket\]\(\.\.\/next-ticket\/SKILL\.md\)/);
@@ -76,6 +79,9 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
     "Read back all parent and child statuses after the completion owner returns.",
     "this queue skill never sweeps unrelated refs",
     "Project Done",
+    "newly added test or fixture is included by the configured test glob",
+    "producer's required working directory",
+    "one wait owner",
   ]) {
     assert.ok(skill.includes(marker), `missing reliability marker: ${marker}`);
   }
