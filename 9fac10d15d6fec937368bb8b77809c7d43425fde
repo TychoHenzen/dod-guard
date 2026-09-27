@@ -7,5 +7,14 @@
     "reason": "QueueReadError.name is intentional internal error classification used by queue readback; it is not package-root API.",
     "author": "Codex",
     "time": "2026-09-27T13:21:27.044Z"
+  },
+  {
+    "findingId": "5e22815d54e879d6995be311cb744707fc5a14079bffcc8d99e613155d73ae62",
+    "fingerprint": "f8ecf336de375e1db53ac3d69fcd7997f15ddec54e15bcd5dd320b0697d8706e",
+    "baseSha": "281a838b13ea6fc81ac361b70586cfb134c55d0e",
+    "targetSha": "9fac10d15d6fec937368bb8b77809c7d43425fde",
+    "reason": "QueueReadError.details preserves structured provider failure context for fail-closed queue holds; it is internal to queue readback, not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-27T13:24:47.913Z"
   }
 ]
