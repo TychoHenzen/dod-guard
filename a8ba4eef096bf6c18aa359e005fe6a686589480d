@@ -1,0 +1,29 @@
+[
+  {
+    "findingId": "249aec2a03882420ff64c4c636eacbedf4307dc9c434b2a4287622946497ffb8",
+    "fingerprint": "e99d31f5217eda0400ee0e9a5caea9f75ef617fed3de5216b51fdace18583217",
+    "baseSha": "5a13574eaebd1c51d5438a1db682e597f908388e",
+    "targetSha": "a8ba4eef096bf6c18aa359e005fe6a686589480d",
+    "reason": "Reviewed deliberate public-surface growth for QueueReadError.name in the exact PR merge target; this named error remains part of the provider-failure hold contract and acceptance tests.",
+    "author": "Codex",
+    "time": "2026-09-27T12:14:41.793Z"
+  },
+  {
+    "findingId": "5e22815d54e879d6995be311cb744707fc5a14079bffcc8d99e613155d73ae62",
+    "fingerprint": "e99d31f5217eda0400ee0e9a5caea9f75ef617fed3de5216b51fdace18583217",
+    "baseSha": "5a13574eaebd1c51d5438a1db682e597f908388e",
+    "targetSha": "a8ba4eef096bf6c18aa359e005fe6a686589480d",
+    "reason": "Reviewed deliberate public-surface growth for QueueReadError.details in the exact PR merge target; structured provider-failure evidence remains required by the provider-failure hold contract and acceptance tests.",
+    "author": "Codex",
+    "time": "2026-09-27T12:14:41.793Z"
+  },
+  {
+    "findingId": "a55f7343601a120f7c3bbd4cbc8600f8ac7b295f470acbffce9b321cf16a93f1",
+    "fingerprint": "e99d31f5217eda0400ee0e9a5caea9f75ef617fed3de5216b51fdace18583217",
+    "baseSha": "5a13574eaebd1c51d5438a1db682e597f908388e",
+    "targetSha": "a8ba4eef096bf6c18aa359e005fe6a686589480d",
+    "reason": "Reviewed deliberate public-surface growth for the QueueReadError constructor in the exact PR merge target; cause-preserving construction remains required by the provider-failure hold contract and acceptance tests.",
+    "author": "Codex",
+    "time": "2026-09-27T12:14:41.793Z"
+  }
+]
