@@ -220,6 +220,21 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
 &#x20;   parent/child issues with their linked pull requests before deciding
 &#x20;   eligibility;
 
+&#x20; - run the read-only adapter at `scripts/lib/queue-readback.mjs` (or the
+&#x20;   equivalent provider implementation under the active plugin root) before
+&#x20;   either `Todo` or `Backlog` selection branch. Request the same `Status`,
+&#x20;   `Linked pull requests`, `Repository`, and `Parent issue` fields on every
+&#x20;   Project page, follow each `pageInfo.nextCursor` until
+&#x20;   `pageInfo.hasNextPage` is false, and filter every returned item by exact
+&#x20;   repository identity before grouping it;
+
+&#x20; - read the current issue, parent, and child relationship for each filtered
+&#x20;   item, then read every linked pull request and retain its state, merge
+&#x20;   commit, base ref/SHA, head repository/ref/SHA, and required-check fields
+&#x20;   alongside the Project status. Pass this snapshot to reconciliation and
+&#x20;   queue selection; do not infer missing fields from titles, stale comments,
+&#x20;   or a filtered query;
+
 &#x20; - normalize each issue group into one delivery record before classification:
 &#x20;   a real parent owns its observed children, a child points to its parent, a
 &#x20;   parent with no children owns a single-item record, an orphaned child has a
