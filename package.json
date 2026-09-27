@@ -10,8 +10,9 @@
     "clean": "node -e \"const fs=require('fs');for(const p of fs.readdirSync('packages'))for(const d of ['dist','dist-test'])fs.rmSync('packages/'+p+'/'+d,{recursive:true,force:true})\"",
     "build": "npm run build --workspaces",
     "preflight:static-analysis": "node scripts/ci/preflight-static-analysis.mjs",
-    "test": "npm run test --workspaces && npm run test:dod-guard-skills && npm run test:separation",
+    "test": "npm run test --workspaces && npm run test:dod-guard-skills && npm run test:separation && npm run test:dist-test-cleanup",
     "test:separation": "node --test scripts/ci/check-production-test-separation.test.mjs && node scripts/ci/check-production-test-separation.mjs",
+    "test:dist-test-cleanup": "node --test scripts/ci/clean-test-project.test.mjs",
     "test:dod-guard-skills": "node --test \"plugins/dod-guard/skills/*/scripts/*.test.mjs\" && node --test \"plugins/dod-guard/skills/*/scripts/lib/*.test.mjs\"",
     "test:quality-dashboard": "node --test tools/openspec-dashboard/test/all.test.mjs",
     "bundle": "npm run bundle --workspaces"

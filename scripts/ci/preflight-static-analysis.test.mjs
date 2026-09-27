@@ -34,6 +34,8 @@ test("preflight is CI's single source for generated checks, policy, and Biome fl
   for (const fragment of [
     '["run", "build"]',
     '["run", "bundle"]',
+    '["run", "build:test", "--workspaces"]',
+    '["run", "prepare:test", "--workspaces", "--if-present"]',
     '"format", "--write", "--no-errors-on-unmatched"',
     '"check", "--max-diagnostics=200", "--no-errors-on-unmatched"',
     '"--profile=strict"',
