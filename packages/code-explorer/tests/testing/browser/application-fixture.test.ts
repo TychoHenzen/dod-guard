@@ -1,13 +1,16 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Browser, chromium } from "@playwright/test";
+import { type Browser, chromium, type Page } from "@playwright/test";
 import { BrowserHttpRouter } from "../../../src/browser-server/http-router.js";
 import type { CoreCall } from "./application-core.test.js";
 import { createFixtureBehavior } from "./application-fixture-behavior.test.js";
+import { registerFixtureDiagnostics } from "./fixture-diagnostics.test.js";
 import { startFixtureServer } from "./packaged/http-server.test.js";
+import { PACKAGED_BROWSER_TIMEOUT_MS } from "./packaged/test-timeouts.js";
 
 export type PackagedBrowserFixture = {
   browser: Browser;
+  newPage: () => Promise<Page>;
   endpoint: string;
   coreCalls: CoreCall[];
   failNextFocus: () => void;
@@ -37,15 +40,35 @@ export async function startPackagedBrowserFixture() {
     ),
     call: behavior.call,
   });
-  const browser = await chromium.launch({ headless: true });
+  let browser: Browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+  } catch (error) {
+    await server.close();
+    throw error;
+  }
+  let closed = false;
+  const newPage = async () => {
+    const page = await browser.newPage({ baseURL: endpoint });
+    page.setDefaultTimeout(PACKAGED_BROWSER_TIMEOUT_MS);
+    page.setDefaultNavigationTimeout(PACKAGED_BROWSER_TIMEOUT_MS);
+    registerFixtureDiagnostics(page, server, browser, coreCalls);
+    return page;
+  };
   return {
     browser,
+    newPage,
     endpoint,
     coreCalls,
     ...behavior,
     close: async () => {
-      await browser.close();
-      await server.close();
+      if (closed) return;
+      closed = true;
+      try {
+        await browser.close();
+      } finally {
+        await server.close();
+      }
     },
   };
 }
