@@ -12,6 +12,7 @@ export type PackagedBrowserFixture = {
   browser: Browser;
   newPage: () => Promise<Page>;
   endpoint: string;
+  serverDiagnostics: () => string;
   coreCalls: CoreCall[];
   failNextFocus: () => void;
   failNextRefresh: () => void;
@@ -59,6 +60,7 @@ export async function startPackagedBrowserFixture() {
     browser,
     newPage,
     endpoint,
+    serverDiagnostics: server.diagnostics,
     coreCalls,
     ...behavior,
     close: async () => {
