@@ -697,6 +697,20 @@ Do not hand routine problems back to the user:
 
 
 
+Blocked-state user-facing response:
+
+- When safe progress must stop because the goal or every eligible delivery unit is blocked, replace progress narration with one brief user-facing message. Do not narrate checkpoint, snapshot, delegation, queue, or audit mechanics.
+
+- Assume the user has zero prior context. Start with `Blocked:` and explain in plain English what was being attempted (repository, PBI number, title, and one-sentence purpose), what is blocking it, the concrete evidence, what recovery was tried, and the one decision or action needed to continue.
+
+- Use one short paragraph or at most five bullets. Translate workflow jargon such as “authoritative baseline,” “dirty-path disposition,” “state reconciliation,” and “goal pass” instead of exposing it.
+
+- If another eligible delivery unit can proceed, keep working and do not send a blocked-stop message. If the user must decide something, ask one concrete question with the safe options and their consequences.
+
+- Keep any required `[HH:MM]` or `PBIs completed: N` telemetry compact; it must not become a second status narrative.
+
+
+
 8\. Quality Guard and cache changes
 
 
