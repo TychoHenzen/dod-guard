@@ -1,0 +1,11 @@
+[
+  {
+    "findingId": "249aec2a03882420ff64c4c636eacbedf4307dc9c434b2a4287622946497ffb8",
+    "fingerprint": "09f83c6bb25fd567d21db5a9b90f269ff4cba7cef9df76da69006f83816ec49b",
+    "baseSha": "05128abe69b6e48a427ff6913e294dd65025987a",
+    "targetSha": "2081b5f3e62de66d79c3785aeb35c717d175b01a",
+    "reason": "QueueReadError.name is intentional internal error classification used by queue readback; it is not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-27T14:02:08.484Z"
+  }
+]
