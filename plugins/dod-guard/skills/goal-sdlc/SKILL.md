@@ -71,6 +71,13 @@ by cached absolute or versioned paths. The no-worktree rule below is strict:
 never create, use, register, switch to, prune, remove, or clean up a Git
 worktree.
 
+Do not infer workflow authority from files merely present in the repository.
+Read a project-local process document only when the user explicitly names it or
+an active skill requires a specific artifact from it; otherwise use this skill,
+the active lifecycle skills, and scoped `AGENTS.md` instructions only. If a
+requested cached or versioned skill path is missing, resolve the skill by name
+under the active plugin root instead of substituting a local process document.
+
 ## Source Workflow
 
 Operate as a continuous delivery worker for the current repository and its linked GitHub Project.
@@ -478,7 +485,7 @@ Before review:
 
 - Inspect the PR history and checkpoint.
 
-- Read the durable review ledger at `<directory containing Automation.md>/.beehaiive/review-checkpoints.json`. Key entries by repository and PR number.
+- Read the durable review ledger at `<repository root>/.beehaiive/review-checkpoints.json`. Key entries by repository and PR number.
 
 - If a ledger entry exists with a completed review result or a reviewed head, do not invoke `review-pr` again. A new context, subagent, timeout, or interrupted reviewer is not a completed review or a new review slot; an incomplete execution follows the recovery rules below.
 
