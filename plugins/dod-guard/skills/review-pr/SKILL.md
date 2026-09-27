@@ -102,8 +102,8 @@ and `exec --help` before consuming review state. Write-capable execution uses
 the supported `--approve-for-me` option; read-only execution sends no approval
 option. Reject obsolete `--ask-for-approval` arguments before the process
 starts. A launcher or process failure without a completed recommendation is
-incomplete evidence: preserve the exact command, exit evidence, ledger attempt,
-and remote review state, repair the cause, then retry until a terminal
+incomplete evidence: preserve the exact command, exit evidence, and remote
+review state, repair the cause, then retry until a terminal
 recommendation exists. Never retry a completed `APPROVE`, `REQUEST_CHANGES`, or
 `BLOCK` result.
 

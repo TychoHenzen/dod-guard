@@ -41,6 +41,18 @@ Use subagents only for bounded work that benefits from independent context or
 real parallelism. Do not delegate workflow rereads, compaction recovery, or
 unchanged-state checks; reuse the handoff snapshot instead.
 
+Subagents are the only delegation mechanism for real work. Do not use
+user-visible Codex tasks or threads as workers, and do not satisfy this
+contract with `create_thread`, `fork_thread`, `send_message_to_thread`, or a
+`codex://threads/...` task; those create peer tasks, not subagents.
+
+Keep each subagent short-lived and scoped to one bounded responsibility. Reuse
+the same subagent only while its cumulative context remains below approximately
+100,000 tokens and the responsibility is unchanged. If its context is already
+over that boundary, or the next call would cross it, terminate the subagent
+before sending another call and start a fresh one with only the compact
+checkpoint, changed paths, exact commands and results, and remaining work.
+
 Run telemetry is part of every handoff. Prefix progress and status messages
 with the local 24-hour `[HH:MM]` timestamp. Carry a `PBIs completed: N` counter
 in the goal snapshot, initialize it from the latest surviving handoff or zero,
