@@ -69,7 +69,8 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
 test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   const skill = await readSkill();
   for (const marker of [
-    "reviewAttempted=true",
+    "remote PR review state",
+    "Do not create or consult a local review ledger",
     "current head",
     "all finding comments were marked as resolved",
     "Retry the same exact transient failure at most once",
@@ -119,4 +120,21 @@ test("goal-sdlc makes blocked stops brief and plain-language", async () => {
     assert.ok(skill.includes(marker), `missing blocked-response marker: ${marker}`);
   }
   assert.match(skill, /Do not narrate checkpoint, snapshot, delegation, queue, or audit mechanics/);
+});
+
+test("goal-sdlc does not promote arbitrary project documents to workflow authority", async () => {
+  const skill = await readSkill();
+  assert.match(skill, /Do not infer workflow authority from files merely present in the repository/);
+  assert.match(skill, /Read a project-local process document only when the user explicitly names it/);
+  assert.match(skill, /resolve the skill by name\s+under the active plugin root instead of substituting a local process document/);
+  assert.doesNotMatch(skill, /Automation\.md|review-checkpoints|\.beehaiive/);
+});
+
+test("goal-sdlc resumes dirty work and tracks an unmatched task", async () => {
+  const skill = await readSkill();
+  assert.match(skill, /dirty current checkout as evidence that a task is probably already in progress/);
+  assert.match(skill, /preserve the edits and resume that task from its latest safe checkpoint/);
+  assert.match(skill, /If dirty work or an in-progress branch cannot be matched to an existing PBI, create one/);
+  assert.match(skill, /Do not discard, reset, stash, overwrite, or silently absorb those edits/);
+  assert.match(skill, /queue-empty result only after checking for dirty or in-progress work/);
 });
