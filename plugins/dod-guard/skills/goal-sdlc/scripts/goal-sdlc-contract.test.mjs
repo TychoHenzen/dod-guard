@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { defaultQueueDecision, readQueueSnapshot } from "./lib/queue-readback.mjs";
 
 const skillPath = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -158,6 +159,48 @@ function classifyDeliveryRecord(input) {
   }
 
   return { kind: "hold", eligible: false, missing: ["delivery state"] };
+}
+
+function adapterProjectItem({ number, status, parentIssue, linkedPullRequests = [] }) {
+  return {
+    id: `adapter-${number}`,
+    content: { number, repository: "TychoHenzen/dod-guard", state: "closed" },
+    fields: [
+      { name: "Status", value: { name: status } },
+      { name: "Repository", value: "TychoHenzen/dod-guard" },
+      { name: "Parent issue", value: parentIssue },
+      { name: "Linked pull requests", value: linkedPullRequests },
+    ],
+  };
+}
+
+function adapterProvider() {
+  const mutations = [];
+  const items = [
+    adapterProjectItem({ number: 444, status: "Done", parentIssue: null, linkedPullRequests: [{ number: 540, repository: "TychoHenzen/dod-guard" }] }),
+    adapterProjectItem({ number: 536, status: "Done", parentIssue: { number: 444 } }),
+  ];
+  const issues = new Map([
+    [444, { number: 444, state: "closed", children: [{ number: 536, state: "closed" }], activeCheckpoint: false }],
+    [536, { number: 536, state: "closed", parent: { number: 444 }, children: [], activeCheckpoint: false }],
+  ]);
+  return {
+    mutations,
+    listProjectItems: () => ({ items, pageInfo: { hasNextPage: false } }),
+    readIssue: ({ issueNumber }) => issues.get(issueNumber),
+    readPullRequest: () => ({
+        number: 540,
+        repository: "TychoHenzen/dod-guard",
+        state: "closed",
+        mergedAt: "2026-09-27T00:00:00Z",
+        trustedHead: true,
+        head: { repository: "TychoHenzen/dod-guard", ref: "codex/444", sha: "head-444" },
+        base: { ref: "master", sha: "base-444" },
+        mergeCommit: { oid: "merge-444" },
+        requiredChecks: [{ name: "build-test", bucket: "pass" }],
+      }),
+    mutate: (...args) => mutations.push(args),
+  };
 }
 
 const completeDeliveryEvidence = {
@@ -383,6 +426,26 @@ const reconciliationFixtures = [
     expected: { kind: "eligible", eligible: true },
   },
 ];
+
+test("contract control fixture uses the queue readback adapter", async () => {
+  const provider = adapterProvider();
+  const snapshot = await readQueueSnapshot({
+    provider,
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+    defaultBranch: "master",
+  });
+
+  assert.deepEqual(snapshot.records.map(({ issueNumber }) => issueNumber), [444, 536]);
+  assert.equal(snapshot.pullRequests[0].mergeCommitSha, "merge-444");
+  assert.deepEqual(defaultQueueDecision(snapshot.records, snapshot), {
+    kind: "complete",
+    eligible: false,
+    status: "Done",
+    reasons: [],
+  });
+  assert.deepEqual(provider.mutations, []);
+});
 
 function reconcileQueue(records, provider) {
   const groups = new Map();

@@ -32,9 +32,16 @@ function fieldPresent(item, name) {
   return Array.isArray(item?.fields) && item.fields.some((field) => field?.name === name);
 }
 
+function firstDefined(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null) return value;
+  }
+  return null;
+}
+
 function repositoryName(value) {
   if (typeof value === "string") return value;
-  return value?.nameWithOwner ?? value?.full_name ?? value?.name ?? null;
+  return firstDefined(value?.nameWithOwner, value?.full_name, value?.name);
 }
 
 function sameRepository(left, right) {
@@ -81,19 +88,41 @@ function linkedPullRequestsValue(item) {
   return item?.linkedPullRequests ?? fieldValue(item, "Linked pull requests") ?? item?.content?.linked_pull_requests;
 }
 
+function normalizedPullRequest(pullRequest) {
+  const head = firstDefined(pullRequest?.head, {});
+  const base = firstDefined(pullRequest?.base, {});
+  const mergeCommit = firstDefined(pullRequest?.mergeCommit, pullRequest?.merge_commit);
+  return {
+    ...pullRequest,
+    repository: repositoryName(pullRequest?.repository),
+    state: firstDefined(pullRequest?.state),
+    mergedAt: firstDefined(pullRequest?.mergedAt, pullRequest?.merged_at),
+    headRepository: repositoryName(firstDefined(head.repository, pullRequest?.headRepository)),
+    headRef: firstDefined(head.ref, pullRequest?.headRef),
+    headSha: firstDefined(head.sha, pullRequest?.headSha, pullRequest?.head_sha),
+    baseRef: firstDefined(base.ref, pullRequest?.baseRef, pullRequest?.base_ref),
+    baseSha: firstDefined(base.sha, pullRequest?.baseSha, pullRequest?.base_sha),
+    mergeCommitSha: firstDefined(mergeCommit?.oid, mergeCommit?.sha, pullRequest?.mergeCommitSha),
+    requiredChecks: firstDefined(pullRequest?.requiredChecks),
+  };
+}
+
 function linkedPullRequests(item) {
   const value = linkedPullRequestsValue(item);
   if (!Array.isArray(value)) return [];
   return value
-    .map((pullRequest) => ({
-      ...pullRequest,
-      number: issueNumber(pullRequest),
-      repository: repositoryName(pullRequest?.repository) ?? null,
-      state: pullRequest?.state ?? null,
-      mergedAt: pullRequest?.mergedAt ?? pullRequest?.merged_at ?? null,
-      headSha: pullRequest?.headSha ?? pullRequest?.head_sha ?? pullRequest?.head?.sha ?? null,
-      baseRef: pullRequest?.baseRef ?? pullRequest?.base_ref ?? pullRequest?.base?.ref ?? null,
-    }))
+    .map((pullRequest) => {
+      const normalized = normalizedPullRequest(pullRequest);
+      return {
+        ...pullRequest,
+        number: issueNumber(pullRequest),
+        repository: firstDefined(normalized.repository),
+        state: normalized.state,
+        mergedAt: normalized.mergedAt,
+        headSha: normalized.headSha,
+        baseRef: normalized.baseRef,
+      };
+    })
     .filter(({ number }) => number !== null);
 }
 
@@ -103,22 +132,11 @@ function projectStatus(item) {
 }
 
 function pullRequestFields(reference, pullRequest) {
-  const head = pullRequest?.head ?? {};
-  const base = pullRequest?.base ?? {};
-  const mergeCommit = pullRequest?.mergeCommit ?? pullRequest?.merge_commit;
+  const normalized = normalizedPullRequest(pullRequest);
   return {
-    ...pullRequest,
+    ...normalized,
     number: reference.number,
-    repository: repositoryName(pullRequest?.repository) ?? reference.repository,
-    state: pullRequest?.state ?? null,
-    mergedAt: pullRequest?.mergedAt ?? pullRequest?.merged_at ?? null,
-    headRepository: repositoryName(head.repository ?? pullRequest?.headRepository),
-    headRef: head.ref ?? pullRequest?.headRef ?? null,
-    headSha: head.sha ?? pullRequest?.headSha ?? pullRequest?.head_sha ?? null,
-    baseRef: base.ref ?? pullRequest?.baseRef ?? null,
-    baseSha: base.sha ?? pullRequest?.baseSha ?? pullRequest?.base_sha ?? null,
-    mergeCommitSha: mergeCommit?.oid ?? mergeCommit?.sha ?? pullRequest?.mergeCommitSha ?? null,
-    requiredChecks: pullRequest?.requiredChecks ?? null,
+    repository: firstDefined(normalized.repository, reference.repository),
   };
 }
 
@@ -365,13 +383,6 @@ async function readProjectItemsDetailed(provider, { project, repository, query =
   }
 }
 
-async function readProjectItems(provider, options = {}) {
-  requireProvider(provider);
-  const evidence = { readAttempts: [], readFailures: [], retries: [], duplicates: [], duplicateConflicts: [] };
-  const result = await readProjectItemsDetailed(provider, options, evidence);
-  return result.items;
-}
-
 function issueState(issue) {
   return typeof issue?.state === "string" ? issue.state.toUpperCase() : null;
 }
@@ -386,6 +397,11 @@ function activeCheckpoint(issue) {
 
 function pullRequestKey(repository, number) {
   return `${(repository ?? "").toLowerCase()}#${number}`;
+}
+
+function pullRequestRepository(reference, repository) {
+  if (reference.repository) return reference.repository;
+  return repository;
 }
 
 function compareProjectRelationship(item, issue) {
@@ -425,11 +441,8 @@ function addMissing(target, values) {
   }
 }
 
-async function readQueueSnapshot({ provider, project, repository, query, defaultBranch, retryDelayMs = 0 }) {
-  requireProvider(provider);
-  const repositoryNameValue = repositoryName(repository);
-  const resolvedDefaultBranch = defaultBranch ?? repository?.defaultBranch ?? project?.defaultBranch ?? null;
-  const evidence = {
+function createEvidence() {
+  return {
     providerAvailable: true,
     readAttempts: [],
     readFailures: [],
@@ -440,19 +453,43 @@ async function readQueueSnapshot({ provider, project, repository, query, default
     invalidItems: [],
     missingEvidence: [],
   };
-  if (!repositoryNameValue) evidence.missingEvidence.push("target repository identity");
-  const projectResult = await readProjectItemsDetailed(
-    provider,
-    { project, repository: repositoryNameValue, query, retryDelayMs },
-    evidence,
-  );
-  evidence.invalidItems.push(...projectResult.invalidItems);
-  if (projectResult.error && projectResult.error.details) addMissing(evidence.missingEvidence, projectResult.error.details.missingEvidence);
+}
 
-  const items = projectResult.items;
-  const itemsByNumber = new Map(
-    items.map((item) => [itemIssueNumber(item), item]).filter(([number]) => number !== null),
-  );
+function missingReadback(evidence, { operation, request, message, missingEvidence }) {
+  const details = failureDetails(operation, request, new Error(message), 1, 1, missingEvidence);
+  evidence.readAttempts.push(details);
+  evidence.readFailures.push(details);
+  return details;
+}
+
+async function readRelationship({ provider, operation, request, missingEvidence, missingMessage, evidence }) {
+  try {
+    const value = await readProvider(provider, operation, request, evidence, missingEvidence);
+    if (value && typeof value === "object") return { value, failure: null };
+  } catch (error) {
+    return { value: null, failure: error.details ?? { operation, request } };
+  }
+  return {
+    value: null,
+    failure: missingReadback(evidence, { operation, request, message: missingMessage, missingEvidence }),
+  };
+}
+
+async function readIssueRecord({ provider, repository, issueNumberValue, evidence }) {
+  const request = { repository, issueNumber: issueNumberValue };
+  const result = await readRelationship({
+    provider,
+    operation: "readIssue",
+    request,
+    missingEvidence: [`issue #${issueNumberValue}`],
+    missingMessage: `Issue readback was missing #${issueNumberValue}.`,
+    evidence,
+  });
+  return { issue: result.value, failure: result.failure };
+}
+
+async function readIssueRelationships({ provider, items, repository, evidence }) {
+  const itemsByNumber = new Map(items.map((item) => [itemIssueNumber(item), item]).filter(([number]) => number !== null));
   const issues = new Map();
   const issueFailures = new Map();
   const pendingIssues = items.map(itemIssueNumber).filter((number) => number !== null);
@@ -460,81 +497,54 @@ async function readQueueSnapshot({ provider, project, repository, query, default
   while (pendingIssues.length > 0) {
     const issueNumberValue = pendingIssues.shift();
     if (issues.has(issueNumberValue) || issueFailures.has(issueNumberValue)) continue;
-    const request = { repository: repositoryNameValue, issueNumber: issueNumberValue };
-    let issue;
-    try {
-      issue = await readProvider(provider, "readIssue", request, evidence, [`issue #${issueNumberValue}`]);
-    } catch (error) {
-      issueFailures.set(issueNumberValue, error.details ?? { operation: "readIssue", request });
-      continue;
-    }
-    if (!issue || typeof issue !== "object") {
-      const details = failureDetails(
-        "readIssue",
-        request,
-        new Error(`Issue readback was missing #${issueNumberValue}.`),
-        1,
-        1,
-        [`issue #${issueNumberValue}`],
-      );
-      evidence.readAttempts.push(details);
-      evidence.readFailures.push(details);
-      issueFailures.set(issueNumberValue, details);
+    const { issue, failure } = await readIssueRecord({ provider, repository, issueNumberValue, evidence });
+    if (failure) {
+      issueFailures.set(issueNumberValue, failure);
       continue;
     }
     issues.set(issueNumberValue, issue);
-    const related = [parentIssue(null, issue), ...childIssues(issue)]
-      .map(issueNumber)
-      .filter((number) => number !== null && !issues.has(number) && !issueFailures.has(number));
-    pendingIssues.push(...related);
-
+    pendingIssues.push(...[parentIssue(null, issue), ...childIssues(issue)].map(issueNumber).filter((number) => number !== null && !issues.has(number) && !issueFailures.has(number)));
     for (const item of items.filter((candidate) => itemIssueNumber(candidate) === issueNumberValue)) {
       const mismatches = compareProjectRelationship(item, issue);
       if (mismatches.length > 0) {
-        evidence.staleRelationships.push({
-          kind: "issue",
-          issueNumber: issueNumberValue,
-          mismatches,
-        });
+        evidence.staleRelationships.push({ kind: "issue", issueNumber: issueNumberValue, mismatches });
       }
     }
   }
+  return { itemsByNumber, issues, issueFailures };
+}
 
-  const pullRequests = new Map();
-  const pullRequestFailures = new Map();
-  const pullRequestReferences = new Map();
+function pullRequestReferences(items, repository) {
+  const references = new Map();
   for (const item of items) {
     for (const reference of linkedPullRequests(item)) {
-      const key = pullRequestKey(reference.repository ?? repositoryNameValue, reference.number);
-      pullRequestReferences.set(key, reference);
+      const key = pullRequestKey(reference.repository ?? repository, reference.number);
+      references.set(key, reference);
     }
   }
-  for (const [key, reference] of pullRequestReferences) {
-    const request = {
-      repository: reference.repository ?? repositoryNameValue,
-      pullNumber: reference.number,
-    };
-    let pullRequest;
-    try {
-      pullRequest = await readProvider(provider, "readPullRequest", request, evidence, [
-        `pull request ${request.repository}#${request.pullNumber}`,
-      ]);
-    } catch (error) {
-      pullRequestFailures.set(key, error.details ?? { operation: "readPullRequest", request });
-      continue;
-    }
-    if (!pullRequest || typeof pullRequest !== "object") {
-      const details = failureDetails(
-        "readPullRequest",
-        request,
-        new Error(`Pull request readback was missing #${reference.number}.`),
-        1,
-        1,
-        [`pull request ${request.repository}#${request.pullNumber}`],
-      );
-      evidence.readAttempts.push(details);
-      evidence.readFailures.push(details);
-      pullRequestFailures.set(key, details);
+  return references;
+}
+
+async function readPullRequestRecord({ provider, repository, reference, evidence }) {
+  const request = { repository: reference.repository ?? repository, pullNumber: reference.number };
+  const result = await readRelationship({
+    provider,
+    operation: "readPullRequest",
+    request,
+    missingEvidence: [`pull request ${request.repository}#${request.pullNumber}`],
+    missingMessage: `Pull request readback was missing #${reference.number}.`,
+    evidence,
+  });
+  return { pullRequest: result.value, failure: result.failure, request };
+}
+
+async function readPullRequestRelationships({ provider, items, repository, evidence }) {
+  const pullRequests = new Map();
+  const pullRequestFailures = new Map();
+  for (const [key, reference] of pullRequestReferences(items, repository)) {
+    const { pullRequest, failure, request } = await readPullRequestRecord({ provider, repository, reference, evidence });
+    if (failure) {
+      pullRequestFailures.set(key, failure);
       continue;
     }
     const normalized = pullRequestFields(reference, pullRequest);
@@ -549,68 +559,132 @@ async function readQueueSnapshot({ provider, project, repository, query, default
       });
     }
   }
+  return { pullRequests, pullRequestFailures };
+}
 
-  const records = items.map((item) => {
-    const number = itemIssueNumber(item);
-    const issue = issues.get(number) ?? null;
-    const parent = parentIssue(item, issue);
-    const parentIssueNumber = issueNumber(parent);
-    const missing = [];
-    const itemInvalid = evidence.invalidItems.find(({ item: summary }) => summary.key === itemKey(item));
-    addMissing(missing, itemInvalid?.missingEvidence ?? []);
-    if (number === null) missing.push("issue number");
-    if (projectStatus(item) === null) missing.push(`Project item #${number ?? "?"} Status`);
-    if (issueFailures.has(number)) addMissing(missing, issueFailures.get(number).missingEvidence ?? [`issue #${number}`]);
-    if (issue === null && !issueFailures.has(number)) missing.push(`issue #${number}`);
-    if (parentIssueNumber !== null && !itemsByNumber.has(parentIssueNumber)) {
-      missing.push(`parent issue #${parentIssueNumber} Project item`);
-    }
-    if (issue) {
-      if (issue.number === undefined) missing.push(`issue #${number} number`);
-      if (issueState(issue) === null) missing.push(`issue #${number} state`);
-      if (!childIssuesObserved(issue)) missing.push(`issue #${number} child relationship`);
-      if (!parentIssueObserved(item, issue)) missing.push(`issue #${number} parent relationship`);
-      const observedParentNumber = issueNumber(issue.parent ?? issue.parentIssue);
-      if (parentIssueNumber !== null && observedParentNumber !== null && parentIssueNumber !== observedParentNumber) {
-        missing.push(`parent relationship for issue #${number}`);
-      }
-      const unobservedChildren = childIssues(issue)
-        .map(issueNumber)
-        .filter((childNumber) => childNumber !== null && !itemsByNumber.has(childNumber));
-      addMissing(missing, unobservedChildren.map((childNumber) => `child issue #${childNumber} Project item`));
-    }
-    const pulls = [];
-    const pullFailures = [];
-    for (const reference of linkedPullRequests(item)) {
-      const key = pullRequestKey(reference.repository ?? repositoryNameValue, reference.number);
-      const pullRequest = pullRequests.get(key);
-      if (pullRequest) pulls.push(pullRequest);
-      if (pullRequestFailures.has(key)) {
-        const failure = pullRequestFailures.get(key);
-        pullFailures.push(failure);
-        addMissing(missing, failure.missingEvidence ?? [`pull request ${key}`]);
-      }
-    }
-    const staleRelationships = evidence.staleRelationships.filter((entry) => {
-      if (entry.kind === "issue") return entry.issueNumber === number;
-      return linkedPullRequests(item).some((reference) => reference.number === entry.number);
-    });
-    if (staleRelationships.length > 0) missing.push("relationship/head evidence changed during read");
-    return {
-      issueNumber: number,
-      parentIssue: parent,
-      parentIssueNumber,
-      childIssues: childIssues(issue),
-      projectStatus: projectStatus(item),
-      issue,
-      pullRequests: pulls,
-      pullRequestFailures: pullFailures,
-      staleRelationships,
-      missingEvidence: [...new Set(missing)],
-      projectItem: item,
-    };
+function itemEvidenceMissing(item, number) {
+  return [
+    ...(number === null ? ["issue number"] : []),
+    ...(projectStatus(item) === null ? [`Project item #${number ?? "?"} Status`] : []),
+  ];
+}
+
+function issueFailureEvidenceMissing(number, issueFailures) {
+  const failure = issueFailures.get(number);
+  return failure ? failure.missingEvidence ?? [`issue #${number}`] : [];
+}
+
+function missingIssueEvidence(number, issue, issueFailures) {
+  return issue === null && !issueFailures.has(number) ? [`issue #${number}`] : [];
+}
+
+function issueFieldEvidenceMissing(number, issue) {
+  if (!issue) return [];
+  return [
+    ...(issue.number === undefined ? [`issue #${number} number`] : []),
+    ...(issueState(issue) === null ? [`issue #${number} state`] : []),
+  ];
+}
+
+function issueRelationshipEvidenceMissing(item, number, issue) {
+  if (!issue) return [];
+  return [
+    ...(!childIssuesObserved(issue) ? [`issue #${number} child relationship`] : []),
+    ...(!parentIssueObserved(item, issue) ? [`issue #${number} parent relationship`] : []),
+  ];
+}
+
+function parentRelationshipEvidenceMissing(number, issue, parentIssueNumber) {
+  if (!issue) return [];
+  if (parentIssueNumber === null) return [];
+  const observedParentNumber = issueNumber(parentIssue(null, issue));
+  if (observedParentNumber === null) return [];
+  if (parentIssueNumber === observedParentNumber) return [];
+  return [`parent relationship for issue #${number}`];
+}
+
+function parentItemEvidenceMissing(parentIssueNumber, itemsByNumber) {
+  if (parentIssueNumber === null || itemsByNumber.has(parentIssueNumber)) return [];
+  return [`parent issue #${parentIssueNumber} Project item`];
+}
+
+function unobservedChildEvidence(issue, itemsByNumber) {
+  return childIssues(issue)
+    .map(issueNumber)
+    .filter((childNumber) => childNumber !== null && !itemsByNumber.has(childNumber))
+    .map((childNumber) => `child issue #${childNumber} Project item`);
+}
+
+function recordIssueEvidence(item, { itemsByNumber, issues, issueFailures, evidence }) {
+  const number = itemIssueNumber(item);
+  const issue = issues.get(number) ?? null;
+  const parent = parentIssue(item, issue);
+  const parentIssueNumber = issueNumber(parent);
+  const itemInvalid = evidence.invalidItems.find(({ item: summary }) => summary.key === itemKey(item));
+  const missing = [
+    ...(itemInvalid?.missingEvidence ?? []),
+    ...itemEvidenceMissing(item, number),
+    ...issueFailureEvidenceMissing(number, issueFailures),
+    ...missingIssueEvidence(number, issue, issueFailures),
+    ...parentItemEvidenceMissing(parentIssueNumber, itemsByNumber),
+    ...issueFieldEvidenceMissing(number, issue),
+    ...issueRelationshipEvidenceMissing(item, number, issue),
+    ...parentRelationshipEvidenceMissing(number, issue, parentIssueNumber),
+    ...unobservedChildEvidence(issue, itemsByNumber),
+  ];
+  return { number, issue, parent, parentIssueNumber, missing };
+}
+
+function pullRequestEvidence(reference, { repository, pullRequests, pullRequestFailures }) {
+  const key = pullRequestKey(pullRequestRepository(reference, repository), reference.number);
+  const failure = pullRequestFailures.get(key);
+  const missing = failure?.missingEvidence;
+  if (missing) return { pullRequest: pullRequests.get(key), failure, missing };
+  return { pullRequest: pullRequests.get(key), failure, missing: failure ? [`pull request ${key}`] : [] };
+}
+
+function recordPullRequestEvidence(item, context) {
+  const pulls = [];
+  const failures = [];
+  const missing = [];
+  for (const reference of linkedPullRequests(item)) {
+    const evidence = pullRequestEvidence(reference, context);
+    if (evidence.pullRequest) pulls.push(evidence.pullRequest);
+    if (evidence.failure) failures.push(evidence.failure);
+    addMissing(missing, evidence.missing);
+  }
+  return { pulls, failures, missing };
+}
+
+function buildRecord(item, context) {
+  const issueEvidence = recordIssueEvidence(item, context);
+  const pullRequestEvidence = recordPullRequestEvidence(item, context);
+  const staleRelationships = context.evidence.staleRelationships.filter((entry) => {
+    if (entry.kind === "issue") return entry.issueNumber === issueEvidence.number;
+    return linkedPullRequests(item).some((reference) => reference.number === entry.number);
   });
+  const missing = [...issueEvidence.missing, ...pullRequestEvidence.missing];
+  if (staleRelationships.length > 0) missing.push("relationship/head evidence changed during read");
+  return {
+    issueNumber: issueEvidence.number,
+    parentIssue: issueEvidence.parent,
+    parentIssueNumber: issueEvidence.parentIssueNumber,
+    childIssues: childIssues(issueEvidence.issue),
+    projectStatus: projectStatus(item),
+    issue: issueEvidence.issue,
+    pullRequests: pullRequestEvidence.pulls,
+    pullRequestFailures: pullRequestEvidence.failures,
+    staleRelationships,
+    missingEvidence: [...new Set(missing)],
+    projectItem: item,
+  };
+}
 
+function buildRecords(items, context) {
+  return items.map((item) => buildRecord(item, context));
+}
+
+function finalizeEvidence(evidence, records) {
   evidence.providerAvailable = evidence.readFailures.length === 0;
   evidence.missingEvidence = [
     ...new Set([
@@ -620,18 +694,23 @@ async function readQueueSnapshot({ provider, project, repository, query, default
       ...evidence.duplicateConflicts.map(({ key }) => `conflicting duplicate Project item ${key}`),
     ]),
   ];
-  return {
-    project,
-    repository: repositoryNameValue,
-    defaultBranch: resolvedDefaultBranch,
-    items,
-    records,
-    issues: [...issues.values()],
-    pullRequests: [...pullRequests.values()],
-    evidence,
-    readFailures: evidence.readFailures,
-    missingEvidence: evidence.missingEvidence,
-  };
+}
+
+async function readQueueSnapshot({ provider, project, repository, query, defaultBranch, retryDelayMs = 0 }) {
+  requireProvider(provider);
+  const repositoryNameValue = repositoryName(repository);
+  const resolvedDefaultBranch = defaultBranch ?? repository?.defaultBranch ?? project?.defaultBranch ?? null;
+  const evidence = createEvidence();
+  if (!repositoryNameValue) evidence.missingEvidence.push("target repository identity");
+  const projectResult = await readProjectItemsDetailed(provider, { project, repository: repositoryNameValue, query, retryDelayMs }, evidence);
+  evidence.invalidItems.push(...projectResult.invalidItems);
+  if (projectResult.error?.details) addMissing(evidence.missingEvidence, projectResult.error.details.missingEvidence);
+  const items = projectResult.items;
+  const issueRead = await readIssueRelationships({ provider, items, repository: repositoryNameValue, evidence });
+  const pullRequestRead = await readPullRequestRelationships({ provider, items, repository: repositoryNameValue, evidence });
+  const records = buildRecords(items, { ...issueRead, ...pullRequestRead, repository: repositoryNameValue, evidence });
+  finalizeEvidence(evidence, records);
+  return { project, repository: repositoryNameValue, defaultBranch: resolvedDefaultBranch, items, records, issues: [...issueRead.issues.values()], pullRequests: [...pullRequestRead.pullRequests.values()], evidence, readFailures: evidence.readFailures, missingEvidence: evidence.missingEvidence };
 }
 
 function normalizedStatus(status) {
@@ -766,7 +845,6 @@ function selectQueueItem(snapshot, classify = defaultQueueDecision) {
 export {
   PROJECT_FIELDS,
   defaultQueueDecision,
-  readProjectItems,
   readQueueSnapshot,
   selectQueueItem,
 };
