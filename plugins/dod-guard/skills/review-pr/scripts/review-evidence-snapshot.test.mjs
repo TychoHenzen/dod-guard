@@ -111,7 +111,8 @@ async function runReadOnlySnapshotReview(fixture, snapshot) {
 
 test("review skill hands nested reviewers pinned snapshots and explicit document failures", () => {
   assert.ok(reviewSkill.includes("snapshot-files --input"));
-  assert.ok(reviewSkill.includes("PowerShell variables"));
+  assert.ok(reviewSkill.includes("shell:false"));
+  assert.ok(reviewSkill.includes("Never replace it with an active-client\nfan-out"));
   assert.ok(reviewSkill.includes("Do not assume `pdftotext`"));
   assert.ok(reviewSkill.includes("preserve the exact\nfailure and report the missing evidence"));
   assert.ok(reviewSkill.includes("Never ask nested reviewers to resolve a mutable branch"));

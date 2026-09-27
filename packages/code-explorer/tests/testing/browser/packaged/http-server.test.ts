@@ -4,9 +4,13 @@ import type { BrowserHttpRouter } from "../../../../src/browser-server/http-rout
 import * as http from "../../../../src/browser-server/native-port-http.js";
 
 export async function startFixtureServer(router: () => BrowserHttpRouter) {
-  const server = createServer((request, response) =>
-    http.serverRequestHandler(router(), { open: true })(request, response),
-  );
+  let requestCount = 0;
+  let lastRequest = "none";
+  const server = createServer((request, response) => {
+    requestCount += 1;
+    lastRequest = `${request.method ?? "GET"} ${request.url ?? "/"}`;
+    http.serverRequestHandler(router(), { open: true })(request, response);
+  });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   assert.equal(typeof address, "object");
@@ -15,5 +19,7 @@ export async function startFixtureServer(router: () => BrowserHttpRouter) {
     new Promise<void>((resolve) => {
       server.close(() => resolve());
     });
-  return { endpoint, close };
+  const diagnostics = () =>
+    `listening=${server.listening}; requests=${requestCount}; last_request=${lastRequest}`;
+  return { endpoint, close, diagnostics };
 }
