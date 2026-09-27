@@ -37,6 +37,10 @@ thread supplies the snapshot, owns sequencing and external mutations, reads
 back their results, and runs the named proof; it must not redo unchanged
 context work just to reconstruct a handoff.
 
+Use subagents only for bounded work that benefits from independent context or
+real parallelism. Do not delegate workflow rereads, compaction recovery, or
+unchanged-state checks; reuse the handoff snapshot instead.
+
 Run telemetry is part of every handoff. Prefix progress and status messages
 with the local 24-hour `[HH:MM]` timestamp. Carry a `PBIs completed: N` counter
 in the goal snapshot, initialize it from the latest surviving handoff or zero,
@@ -286,6 +290,10 @@ Use the snapshot's existing children first. Read missing children only when the 
 
 Every refined parent must have at least these four independently actionable child PBIs, linked back to the parent:
 
+Create a separate child only for a functional slice that can be independently
+delivered and verified; keep atomic implementation steps as a checklist, not
+tickets.
+
 
 
 A. Implementation
@@ -323,6 +331,8 @@ C. Refactoring and quality
 - Reduce code or complexity where safe and improve real Quality Guard metrics.
 
 - Keep cleanup bounded to the selected feature and directly adjacent code.
+
+- When adjacent cleanup is relevant, keep it bounded and record why no cleanup is safe when applicable.
 
 - The child must either make a justified cleanup or record evidence that no safe cleanup exists.
 
