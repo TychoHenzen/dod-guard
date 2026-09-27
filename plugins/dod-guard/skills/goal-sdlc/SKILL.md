@@ -28,6 +28,26 @@ The main thread is the high-level orchestrator. For every real work step:
 4. Preserve the checkpoint on failure or interruption; repair the same step or
    record an external blocker before selecting another parent.
 
+Context-heavy execution belongs in the bounded subagent, not in the main
+thread's working context. Put repository discovery, large source or history
+reads, implementation, review preparation, and noisy test output in the
+subagent brief. Return a compact handoff containing changed paths, commands,
+results, and exact evidence instead of pasting the full context back. The main
+thread supplies the snapshot, owns sequencing and external mutations, reads
+back their results, and runs the named proof; it must not redo unchanged
+context work just to reconstruct a handoff.
+
+Use subagents only for bounded work that benefits from independent context or
+real parallelism. Do not delegate workflow rereads, compaction recovery, or
+unchanged-state checks; reuse the handoff snapshot instead.
+
+Run telemetry is part of every handoff. Prefix progress and status messages
+with the local 24-hour `[HH:MM]` timestamp. Carry a `PBIs completed: N` counter
+in the goal snapshot, initialize it from the latest surviving handoff or zero,
+and increment it only after one parent PBI is merged and its final Project
+status is read back. Do not count a child, a draft PR, or implementation-
+complete work as a completed PBI.
+
 The shipped `[$dod-guard:review-pr](../review-pr/SKILL.md)` skill owns the
 single PR review for this plugin. A delegated subagent may invoke that owner,
 but the main thread still owns sequencing, evidence verification, mutation
@@ -54,6 +74,11 @@ worktree.
 ## Source Workflow
 
 Operate as a continuous delivery worker for the current repository and its linked GitHub Project.
+
+Resolve every referenced `dod-guard` skill by name under the active plugin root
+once at goal start. Never copy a cached absolute path or plugin version into a
+handoff, ledger, issue, or progress message; relative links in this skill are
+the stable source references.
 
 relevant skills:
 [$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md)
@@ -265,6 +290,10 @@ Use the snapshot's existing children first. Read missing children only when the 
 
 Every refined parent must have at least these four independently actionable child PBIs, linked back to the parent:
 
+Create a separate child only for a functional slice that can be independently
+delivered and verified; keep atomic implementation steps as a checklist, not
+tickets.
+
 
 
 A. Implementation
@@ -302,6 +331,8 @@ C. Refactoring and quality
 - Reduce code or complexity where safe and improve real Quality Guard metrics.
 
 - Keep cleanup bounded to the selected feature and directly adjacent code.
+
+- When adjacent cleanup is relevant, keep it bounded and record why no cleanup is safe when applicable.
 
 - The child must either make a justified cleanup or record evidence that no safe cleanup exists.
 
@@ -397,13 +428,15 @@ At the end of basic work:
 
 4\. Fix every failure in the selected paths and required gates.
 
-5\. Run the complete relevant suite once more.
+5\. If step 1 found failures and they were repaired, run the complete relevant suite once more.
 
 6\. If the confirmation suite still fails, repeat the focused-fix loop and another complete confirmation run.
 
 7\. Do not rerun unchanged full suites merely for reassurance.
 
 - If the complete suite is resource-limited, run its equivalent partitions sequentially or with reduced parallelism before escalating; keep the environment limitation distinct from a code or quality failure.
+
+- Before claiming the complete suite is green, verify every newly added test or fixture is included by the configured test glob. For generated-artifact drift, record the producer's required working directory and compare exact hashes from that invocation before dispatching another audit; treat a root-cwd mismatch as an environment or procedure issue, not a code failure.
 
 
 
@@ -556,6 +589,13 @@ Retry the same exact transient failure at most once for ordinary actions. Never 
 
 Incomplete review executions are exempt from that cap: after each repaired cause, retry until a completed reviewer recommendation exists; never repeat an unchanged failure blindly.
 
+When a provider returns a rate-limit error or reset time, record the operation,
+reset time, and owning checkpoint; assign one wait owner and suppress duplicate
+probes or mutations until the reset. Continue unrelated eligible queue work,
+then retry the blocked operation once after the reset and read back remote state.
+Classify another refusal as an external blocker instead of repeating the same
+probe or asking the user to authorize routine work again.
+
 
 
 For every confirmed blocker that survives local triage, use the advisor skill below before asking the user or declaring the workflow blocked:
@@ -656,6 +696,9 @@ After every successful merge:
 * let `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` delete the local and
   remote copy of the exact merged branch after its head and merge state are
   verified; this queue skill never sweeps unrelated refs
+* increment `PBIs completed: N` only after the parent and child Project
+  statuses are read back, and include the updated count in the next `[HH:MM]`
+  progress message
 
 - If the merge changed queue state, refresh the affected items and select the next eligible delivery unit once. Otherwise select from the current snapshot.
 
