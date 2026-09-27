@@ -323,6 +323,27 @@ failure, not a successful release.
 Confirm `codex plugin list` reports the released version. Do not copy files
 into either client cache manually.
 
+On Windows PowerShell, after both client refreshes, run the checked-in
+read-only evidence boundary with the exact release values:
+
+```powershell
+. "<skill-dir>/scripts/release-verification.ps1"
+$verification = Invoke-ReleaseVerification `
+  -Owner '<owner>' `
+  -Repo '<repo>' `
+  -PublishedSha '<published-sha>' `
+  -ExpectedParentSha '<expected-parent-sha>' `
+  -ExpectedVersion '<released-version>'
+$verification | ConvertTo-Json -Depth 20
+if (-not $verification.Success) { throw "Release verification failed at $($verification.Stage)" }
+```
+
+This read-only helper verifies the current and remote Git heads, complete
+branch protection and `enforce_admins` readbacks, all required checks on the
+published SHA, and the refreshed Codex and Claude registrations. It captures
+each command exit status before parsing output and reports a failed stage
+instead of presenting partial evidence as a successful release.
+
 This repository does not publish npm packages or tags.
 
 ## Quality dashboard

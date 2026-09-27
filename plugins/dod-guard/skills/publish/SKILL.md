@@ -230,6 +230,28 @@ or fall back to another marketplace, client installation, or checkout.
 
    Confirm `codex plugin list` reports the released version. Do not copy files
    into either client cache manually.
+11. On Windows PowerShell, after both client refreshes, use the checked-in
+    `<skill-dir>/scripts/release-verification.ps1` read-only boundary. Bind it to
+    the exact published SHA, its expected parent SHA, and the released version:
+
+    ```powershell
+    . "<skill-dir>/scripts/release-verification.ps1"
+    $verification = Invoke-ReleaseVerification `
+      -Owner '<owner>' `
+      -Repo '<repo>' `
+      -PublishedSha '<published-sha>' `
+      -ExpectedParentSha '<expected-parent-sha>' `
+      -ExpectedVersion '<released-version>'
+    $verification | ConvertTo-Json -Depth 20
+    if (-not $verification.Success) { throw "Release verification failed at $($verification.Stage)" }
+    ```
+
+    The helper checks the current and remote Git heads, complete branch
+    protection and `enforce_admins` readbacks, all required checks on the exact
+    published SHA, and both refreshed client registrations. It records every
+    command exit status before parsing output and fails closed on missing,
+    malformed, stale, or mismatched evidence. It never publishes, mutates
+    protection, changes a checkout, or copies client files.
 
 ## Boundaries
 

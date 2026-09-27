@@ -22,6 +22,11 @@ test("severityFor handles null and missing thresholds", () => {
 
 test("default profile keeps thresholds and presence severities distinct", () => {
   const config = buildConfig("default");
+  assert.deepEqual(config.thresholds["file-length"], { warn: 100, error: 300 });
+  assert.deepEqual(config.thresholds["types-per-file"], {
+    warn: null,
+    error: 1,
+  });
   assert.deepEqual(config.thresholds.complexity, { warn: 5, error: 10 });
   assert.equal(config.presence["dead-export"], "error");
   assert.equal(config.presence["else-branch"], "warn");
