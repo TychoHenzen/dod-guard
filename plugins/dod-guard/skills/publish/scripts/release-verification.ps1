@@ -207,6 +207,9 @@ function Test-ReleaseVerificationChecks {
         if ($matchingHead.Count -eq 0) {
             throw "required check $requiredCheck is on a different head"
         }
+        if ($matchingHead.Count -ne 1) {
+            throw "required check $requiredCheck has ambiguous duplicate runs"
+        }
 
         $successful = @(
             foreach ($checkRun in $matchingHead) {

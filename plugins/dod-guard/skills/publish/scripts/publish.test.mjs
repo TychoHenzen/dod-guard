@@ -852,6 +852,13 @@ $checkRuns = @(
   }
 )
 if ($env:DOD_GUARD_FAILURE_STAGE -eq 'checks') { $checkRuns = @($checkRuns | Select-Object -First 3) }
+if ($env:DOD_GUARD_FAILURE_STAGE -eq 'duplicate-check') {
+  $checkRuns = @(
+    [pscustomobject]@{ name = 'build-test'; head_sha = $publishedSha; status = 'completed'; conclusion = 'success' }
+    [pscustomobject]@{ name = 'build-test'; head_sha = $publishedSha; status = 'completed'; conclusion = 'failure' }
+    $checkRuns | Where-Object { $_.name -ne 'build-test' }
+  )
+}
 $codexRegistry = @{ installed = @([pscustomobject]@{ pluginId = 'dod-guard@dod-guard-monorepo'; name = 'dod-guard'; marketplaceName = 'dod-guard-monorepo'; version = $version; enabled = $true; installed = $true }) } | ConvertTo-Json -Depth 10 -Compress
 $claudeRegistry = @([pscustomobject]@{ id = 'dod-guard@dod-guard'; version = $version; enabled = $true }) | ConvertTo-Json -Depth 10 -Compress
 $invokeCommand = {
@@ -978,6 +985,7 @@ test("release verification fails closed before parsing incomplete or mismatched 
     ["remote", /remote master/, "git-remote", 0],
     ["malformed", /protection returned malformed JSON/, "protection", 0],
     ["checks", /required check package-integrity is missing/, "required-checks", 0],
+    ["duplicate-check", /required check build-test has ambiguous duplicate runs/, "required-checks", 0],
     ["version", /codex registration version/, "codex-preflight", 0],
     ["identity", /Codex registration identity/, "codex-preflight", 0],
     ["preflight-malformed", /codex installation preflight returned malformed JSON/, "codex-preflight", 0],
