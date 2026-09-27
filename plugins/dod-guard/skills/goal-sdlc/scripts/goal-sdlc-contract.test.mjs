@@ -725,3 +725,21 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
     /After merge:\s+- Invoke `\[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)` for the guarded/,
   );
 });
+
+test("goal-sdlc makes blocked stops brief and plain-language", async () => {
+  const skill = await readSkill();
+  for (const marker of [
+    "Blocked-state user-facing response:",
+    "one brief user-facing message",
+    "Assume the user has zero prior context",
+    "Start with `Blocked:`",
+    "one-sentence purpose",
+    "at most five bullets",
+    "Translate workflow jargon",
+    "If another eligible delivery unit can proceed",
+    "one concrete question",
+  ]) {
+    assert.ok(skill.includes(marker), `missing blocked-response marker: ${marker}`);
+  }
+  assert.match(skill, /Do not narrate checkpoint, snapshot, delegation, queue, or audit mechanics/);
+});
