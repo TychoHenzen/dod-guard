@@ -25,6 +25,20 @@ uses narrow operations, reuses a run snapshot, and avoids duplicate calls.
    The current connector has no typed Project v2 operation, so GraphQL is the
    fallback for this boundary.
 
+## ProjectV2 status writes
+
+- A numeric Project number is valid for list and view commands, but it is not a
+  GraphQL ProjectV2 node ID. Before any `gh project item-edit` mutation, resolve
+  the number with `gh project view <number> --owner <owner> --format json` and
+  use its top-level `id` value, which must begin with `PVT_`, as `--project-id`.
+- Use the global item and Status-field node IDs from the same live Project
+  snapshot, and use the scalar single-select option ID for the requested value.
+- Run status mutations sequentially. For a structured parent, write every child
+  before the parent, then read each item from `gh project item-list` before the
+  next mutation. A missing or unexpected readback stops the sequence.
+- The shared `skills/complete-pr/scripts/project-status.mjs` runner performs
+  this resolution and readback without invoking Git or inspecting worktrees.
+
 ## Write plan
 
 - Prefer typed connector mutations. Otherwise use REST `gh api` for REST-capable

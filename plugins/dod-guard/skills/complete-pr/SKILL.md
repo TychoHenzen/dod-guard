@@ -109,17 +109,22 @@ Only after the helper returns a verified merge result, read the linked parent
 PBI, its linked child issues, and their one shared Project. For a structured
 parent, require exactly one child for implementation; wiring and end-to-end
 usability; refactoring and quality; and fixing and reliability. Resolve the
-shared Project, item, Status-field, and `Done` option IDs once, then use
-`gh project item-edit --id <item-id> --project-id <project-id> --field-id
-<status-field-id> --single-select-option-id <done-option-id>` for every status
-mutation. Set every mandatory child Project item to `Done`, then set the parent
-item to `Done`; after each mutation, read that item back from the shared Project
-before continuing. For every code-backed child, verify its pushed commit is
-included in the verified merge. Close a still-open code-backed child only after
-that verification. If a parent or child is still Backlog, Todo, or In Progress
-after the pass, repair that item and read it back before reporting completion.
-Never finalize a parent or child before the helper's merge result, and never
-alter unrelated Project items.
+shared Project number, global ProjectV2 node ID, item node IDs, Status-field
+node ID, and `Done` option ID once. Use the shared status-write runner with the
+child item IDs first and the parent item ID last:
+
+```text
+node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> ... <parent-item-id>
+```
+
+The runner resolves the global ProjectV2 node ID from the live project view,
+passes that value—not the numeric project number—to `--project-id`, and reads
+each item back from the shared Project before continuing. For every code-backed
+child, verify its pushed commit is included in the verified merge. Close a
+still-open code-backed child only after that verification. If a parent or child
+is still Backlog, Todo, or In Progress after the pass, repair that item and
+read it back before reporting completion. Never finalize a parent or child
+before the helper's merge result, and never alter unrelated Project items.
 
 ## Result
 

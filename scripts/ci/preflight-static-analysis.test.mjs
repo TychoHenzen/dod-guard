@@ -34,6 +34,8 @@ test("preflight is CI's single source for generated checks, policy, and Biome fl
   for (const fragment of [
     '["run", "build"]',
     '["run", "bundle"]',
+    '["run", "build:test", "--workspaces"]',
+    '["run", "prepare:test", "--workspaces", "--if-present"]',
     '"format", "--write", "--no-errors-on-unmatched"',
     '"check", "--max-diagnostics=200", "--no-errors-on-unmatched"',
     '"--profile=strict"',
@@ -133,7 +135,29 @@ function fixture() {
   );
   write(root, "scripts/ci/check-tests-present.mjs", 'process.stdout.write("test presence OK\\n");\n');
   write(root, "scripts/ci/check-audit.mjs", 'process.stdout.write("audit OK\\n");\n');
-  write(root, "scripts/ci/check-coverage.mjs", 'process.stdout.write("coverage OK\\n");\n');
+  write(
+    root,
+    "scripts/ci/check-coverage.mjs",
+    [
+      'const writing = process.argv.includes("--write-baseline");',
+      'const refreshing = ["coverage-refresh", "coverage-writer-failure"].includes(process.env.PREFLIGHT_SCENARIO);',
+      'if (!refreshing) process.stdout.write("coverage OK\\n");',
+      "if (refreshing && !writing) {",
+      '  process.stdout.write("coverage check-only\\n");',
+      '  process.stdout.write("quality-guard    stat 95.52%  bran 89.08%  func 95.9%  line 95.52%\\n");',
+      '  process.stdout.write("fossil           stat 98.47%  bran 86.84%  func 99.76% line 98.47%\\n");',
+      '  process.stdout.write("knowledge-base   stat 94.92%  bran 80.85%  func 100%   line 94.92%\\n");',
+      '  process.stdout.write("adopted: new-package at 91% statements\\n");',
+      "}",
+      "if (refreshing && writing) {",
+      '  process.stdout.write("coverage baseline writer invoked\\n");',
+      '  if (process.env.PREFLIGHT_SCENARIO === "coverage-writer-failure") {',
+      '    process.stderr.write("baseline write refused: fixture\\n");',
+      "    process.exitCode = 1;",
+      "  }",
+      "}",
+    ].join("\n"),
+  );
   write(root, "packages/quality-guard/dist/bundle.js", "");
   write(root, "packages/quality-guard/scripts/check-skips.mjs", "");
   write(
@@ -194,6 +218,39 @@ test("preflight preserves Biome diagnostics and returns failure", () => {
     const result = runPreflight(root, "biome");
     assert.equal(result.status, 1);
     assert.match(`${result.stdout}${result.stderr}`, BIOME_DIAGNOSTIC);
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test("preflight refreshes package coverage through its guarded writer", () => {
+  const { parent, root } = fixture();
+  try {
+    const result = runPreflight(root, "coverage-refresh");
+    const output = `${result.stdout}${result.stderr}`;
+
+    assert.equal(result.status, 0, output);
+    assert.match(output, /coverage check-only/);
+    assert.match(output, /quality-guard\s+stat 95\.52%/);
+    assert.match(output, /fossil\s+stat 98\.47%/);
+    assert.match(output, /knowledge-base\s+stat 94\.92%/);
+    assert.match(output, /adopted: new-package at 91% statements/);
+    assert.ok(output.indexOf("coverage check-only") < output.indexOf("coverage baseline writer invoked"));
+    assert.equal((output.match(/coverage baseline writer invoked/g) ?? []).length, 1);
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test("preflight propagates a refused coverage baseline write", () => {
+  const { parent, root } = fixture();
+  try {
+    const result = runPreflight(root, "coverage-writer-failure");
+    const output = `${result.stdout}${result.stderr}`;
+
+    assert.equal(result.status, 1, output);
+    assert.match(output, /baseline write refused: fixture/);
+    assert.match(output, /Tighten coverage baseline exited with status 1/);
   } finally {
     rmSync(parent, { recursive: true, force: true });
   }

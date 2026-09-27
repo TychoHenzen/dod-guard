@@ -168,9 +168,7 @@ function runCoverageRatchet(failures) {
   const coverage = runNode("Coverage ratchet", "scripts/ci/check-coverage.mjs", [], { allowFailure: true });
   if (coverage.status !== 0) failures.push("coverage");
   else if (/improved:|adopted:/.test(coverage.stdout)) {
-    runNode("Tighten coverage baseline", "scripts/ci/check-coverage.mjs", ["--write-baseline"], {
-      allowFailure: true,
-    });
+    runNode("Tighten coverage baseline", "scripts/ci/check-coverage.mjs", ["--write-baseline"]);
   }
 }
 
@@ -206,6 +204,8 @@ function main() {
 
     runNpm("Build workspaces", ["run", "build"]);
     runNpm("Bundle workspaces", ["run", "bundle"]);
+    runNpm("Build test workspaces", ["run", "build:test", "--workspaces"]);
+    runNpm("Prepare test workspaces", ["run", "prepare:test", "--workspaces", "--if-present"]);
     runNpm("Reproduce Biome formatting", ["exec", "--", "biome", "format", "--write", "--no-errors-on-unmatched"]);
     run(
       process.execPath,
