@@ -19,9 +19,9 @@
 //   3  usage error
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
@@ -113,6 +113,9 @@ function validateMetricSet(metrics, source) {
     if (typeof metrics[metric] !== "number" || !Number.isFinite(metrics[metric])) {
       throw new Error(`${source}.${metric} must be a finite number`);
     }
+    if (metrics[metric] < 0 || metrics[metric] > 100) {
+      throw new Error(`${source}.${metric} must be between 0 and 100`);
+    }
   }
   return metrics;
 }
@@ -121,6 +124,9 @@ function validatePackages(packages, source) {
   if (!isRecord(packages)) {
     throw new Error(`${source} must be an object`);
   }
+  if (Object.keys(packages).length === 0) {
+    throw new Error(`${source} must contain at least one package`);
+  }
   for (const [pkg, metrics] of Object.entries(packages)) {
     validateMetricSet(metrics, `${source}.${pkg}`);
   }
@@ -128,17 +134,31 @@ function validatePackages(packages, source) {
 }
 
 function readBaseline(path = BASELINE) {
-  if (!existsSync(path)) return {};
-  const document = JSON.parse(readFileSync(path, "utf8"));
+  if (!existsSync(path)) {
+    throw new Error(`${path} is missing; restore the stored coverage baseline before rerunning`);
+  }
+  let document;
+  try {
+    document = JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    throw new Error(`${path} must contain valid JSON: ${error.message}`, { cause: error });
+  }
   if (!(isRecord(document) && Object.hasOwn(document, "packages"))) {
     throw new Error(`${path} must contain a packages object`);
   }
   return validatePackages(document.packages, `${path}.packages`);
 }
 
-function writeBaseline(packages, path = BASELINE) {
+function writeBaseline(packages, path = BASELINE, fs = {}) {
   validatePackages(packages, "baseline packages");
-  writeFileSync(path, `${JSON.stringify({ note: NOTE, packages }, null, 2)}\n`);
+  const temporaryDirectory = (fs.mkdtempSync ?? mkdtempSync)(join(dirname(path), `.${basename(path)}-`));
+  const temporaryPath = join(temporaryDirectory, basename(path));
+  try {
+    (fs.writeFileSync ?? writeFileSync)(temporaryPath, `${JSON.stringify({ note: NOTE, packages }, null, 2)}\n`);
+    (fs.renameSync ?? renameSync)(temporaryPath, path);
+  } finally {
+    (fs.rmSync ?? rmSync)(temporaryDirectory, { recursive: true, force: true });
+  }
 }
 
 function parseArgs(argv) {
@@ -302,14 +322,29 @@ function main(argv, dependencies = {}) {
   const measureCoverage = dependencies.measure ?? measureAll;
   const baselinePath = dependencies.baselinePath ?? BASELINE;
   const readEvidence = dependencies.readEvidence ?? readReviewedDecreaseEvidence;
-  const current = measureCoverage();
+  let baseline;
+  try {
+    baseline = readBaseline(baselinePath);
+  } catch (error) {
+    stderr.write(`${options.writeBaseline ? "baseline write refused" : "coverage check refused"}: ${error.message}\n`);
+    return 1;
+  }
+
+  let current;
+  try {
+    current = measureCoverage();
+    validatePackages(current, "current coverage");
+  } catch (error) {
+    stderr.write(`${options.writeBaseline ? "baseline write refused" : "coverage check refused"}: ${error.message}\n`);
+    return 1;
+  }
   if (options.writeBaseline) {
     try {
       let reviewedDecreaseEvidence = null;
       if (options.reviewedDecreasePath) {
         reviewedDecreaseEvidence = readEvidence(options.reviewedDecreasePath);
       }
-      const result = mergeBaseline(current, readBaseline(baselinePath), reviewedDecreaseEvidence);
+      const result = mergeBaseline(current, baseline, reviewedDecreaseEvidence);
       for (const drop of result.drops) {
         const action = result.approved.has(`${drop.package}:${drop.metric}`) ? "reviewed decrease" : "preserved";
         stdout.write(`  ${action}: ${drop.package} ${drop.metric} ${drop.from}% to ${drop.to}%\n`);
@@ -325,7 +360,7 @@ function main(argv, dependencies = {}) {
 
   for (const [pkg, now] of Object.entries(current)) stdout.write(`${reportLine(pkg, now)}\n`);
 
-  const { drops, gains, adopted } = compare(current, readBaseline(baselinePath));
+  const { drops, gains, adopted } = compare(current, baseline);
   for (const line of [...adopted, ...gains]) stdout.write(`${line}\n`);
 
   if (drops.length === 0) {
@@ -348,5 +383,6 @@ export {
   parseArgs,
   readReviewedDecreaseEvidence,
   validateReviewedDecreaseEvidence,
+  readBaseline,
   writeBaseline,
 };
