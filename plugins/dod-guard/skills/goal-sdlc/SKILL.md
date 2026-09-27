@@ -483,13 +483,13 @@ Review policy:
 
 Before review:
 
-- Inspect the PR history and checkpoint.
+- Inspect the PR history, current remote PR review state, checks, and immutable head SHA.
 
-- Read the durable review ledger at `<repository root>/.beehaiive/review-checkpoints.json`. Key entries by repository and PR number.
+- Git history and the remote GitHub Project, PBI, pull request, reviews, comments, and checks are the durable administration record. Do not create or consult a local review ledger or any other untracked administration file.
 
-- If a ledger entry exists with a completed review result or a reviewed head, do not invoke `review-pr` again. A new context, subagent, timeout, or interrupted reviewer is not a completed review or a new review slot; an incomplete execution follows the recovery rules below.
+- If the remote PR has a completed review recommendation for the current head, do not invoke `review-pr` again. A new context, subagent, timeout, or interrupted reviewer without a remote recommendation is not a completed review or a new review slot; an incomplete execution follows the recovery rules below.
 
-- If no entry exists, persist `reviewAttempted=true`, the PR number, the current head SHA, and the attempt time before invoking the reviewer. If that write fails, do not invoke the reviewer.
+- If no completed recommendation exists for the current head, invoke `review-pr` once. Do not start it until the PR, PBI, and current head have been read from their remote Git/GitHub sources.
 
 - Record the reviewed head SHA.
 
@@ -500,7 +500,7 @@ Review outcome semantics:
 
 - A completed reviewer run with a recommendation of `APPROVE`, `REQUEST_CHANGES`, or `BLOCK`, including any findings, is a successful review and consumes the one-review slot. A completed `BLOCK` or `REQUEST_CHANGES` result is not a failed reviewer execution.
 
-- A launcher or process failure before a report, timeout, interruption, or other execution failure that produces no completed recommendation is an incomplete review and does not consume the one-review slot; it is not a completed `BLOCK` or `REQUEST_CHANGES` result. Preserve `reviewAttempted=true`, record the failed attempt and evidence in the durable ledger, read back the remote PR and review state, and do not rerun blindly. After the cause is repaired, recover or retry that incomplete execution until a completed reviewer recommendation exists; recovery attempts do not count as a second review. Do not repeat an unchanged failure blindly, and stop for explicit user cancellation or an external blocker.
+- A launcher or process failure before a report, timeout, interruption, or other execution failure that produces no remote recommendation is an incomplete review and does not consume the one-review slot; it is not a completed `BLOCK` or `REQUEST_CHANGES` result. Preserve the exact failure evidence in the current handoff, read back the remote PR and review state, and do not rerun blindly. After the cause is repaired, recover or retry that incomplete execution until a completed reviewer recommendation exists; recovery attempts do not count as a second review. Do not repeat an unchanged failure blindly, and stop for explicit user cancellation or an external blocker.
 
 
 
@@ -508,7 +508,7 @@ If the review errors:
 
 - Read back PR and review state before doing anything else.
 
-- Preserve `reviewAttempted=true` in the durable ledger and mark the outcome as incomplete or failed, with the execution evidence.
+- Preserve the exact execution evidence in the review handoff and confirm that no completed recommendation appeared on the remote PR.
 
 - Use available findings, targeted checks, and advisor guidance to repair the cause before recovery or retry. Do not rerun the reviewer blindly or treat a failed execution as a completed `BLOCK` or `REQUEST_CHANGES` result; continue only when each failure has a repaired cause.
 
@@ -516,7 +516,7 @@ If the review errors:
 
 **REVIEWS CAN TAKE A VERY LONG TIME**
 
-Do not kill a running reviewer merely because it is quiet. If it exits, times out, or is interrupted, preserve the ledger entry and treat the review as incomplete. After repairing the cause, recover or retry until a completed recommendation exists; do not start a replacement reviewer blindly, retry a completed review, or continue after explicit user cancellation or an external blocker.
+Do not kill a running reviewer merely because it is quiet. If it exits, times out, or is interrupted, preserve the execution evidence and treat the review as incomplete until the remote PR has a completed recommendation. After repairing the cause, recover or retry until a completed recommendation exists; do not start a replacement reviewer blindly, retry a completed review, or continue after explicit user cancellation or an external blocker.
 
 
 After review:

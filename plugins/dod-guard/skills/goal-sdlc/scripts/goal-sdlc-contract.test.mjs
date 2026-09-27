@@ -69,7 +69,8 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
 test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   const skill = await readSkill();
   for (const marker of [
-    "reviewAttempted=true",
+    "remote PR review state",
+    "Do not create or consult a local review ledger",
     "current head",
     "all finding comments were marked as resolved",
     "Retry the same exact transient failure at most once",
@@ -126,7 +127,7 @@ test("goal-sdlc does not promote arbitrary project documents to workflow authori
   assert.match(skill, /Do not infer workflow authority from files merely present in the repository/);
   assert.match(skill, /Read a project-local process document only when the user explicitly names it/);
   assert.match(skill, /resolve the skill by name\s+under the active plugin root instead of substituting a local process document/);
-  assert.doesNotMatch(skill, /Automation\.md/);
+  assert.doesNotMatch(skill, /Automation\.md|review-checkpoints|\.beehaiive/);
 });
 
 test("goal-sdlc resumes dirty work and tracks an unmatched task", async () => {
