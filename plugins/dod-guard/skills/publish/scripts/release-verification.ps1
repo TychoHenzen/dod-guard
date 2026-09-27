@@ -310,8 +310,7 @@ function Invoke-ReleaseVerification {
         [Parameter(Mandatory = $true)][ValidatePattern("^[0-9a-fA-F]{40}$")][string]$PublishedSha,
         [Parameter(Mandatory = $true)][ValidatePattern("^[0-9a-fA-F]{40}$")][string]$ExpectedParentSha,
         [Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()][string]$ExpectedVersion,
-        [scriptblock]$InvokeCommand,
-        [string[]]$RequiredChecks = @("build-test", "plugin-config", "static-analysis", "package-integrity")
+        [scriptblock]$InvokeCommand
     )
 
     if ($null -eq $InvokeCommand) {
@@ -323,6 +322,7 @@ function Invoke-ReleaseVerification {
 
     $PublishedSha = $PublishedSha.ToLowerInvariant()
     $ExpectedParentSha = $ExpectedParentSha.ToLowerInvariant()
+    $RequiredChecks = @("build-test", "plugin-config", "static-analysis", "package-integrity")
     $evidence = [ordered]@{
         Success = $false
         Stage = "git-head"
