@@ -2,6 +2,18 @@ import assert from "node:assert/strict";
 import type { PackagedBrowserFixture } from "./application-fixture.test.js";
 import { PACKAGED_BROWSER_TIMEOUT_MS } from "./packaged/test-timeouts.js";
 
+function assertFixtureCleanup(
+  fixture: PackagedBrowserFixture,
+  browserCloseCalls: number,
+): void {
+  assert.equal(browserCloseCalls, 1);
+  assert.equal(fixture.browser.isConnected(), false);
+  assert.match(
+    fixture.serverDiagnostics(),
+    /listening=false; .*close_calls=1$/,
+  );
+}
+
 export async function assertBrowserOwnedShutdown(
   fixture: PackagedBrowserFixture,
 ): Promise<void> {
@@ -29,10 +41,5 @@ export async function assertBrowserOwnedShutdown(
   await closePromise;
   await fixture.close();
   assert.equal(timedOut, false);
-  assert.equal(browserCloseCalls, 1);
-  assert.equal(fixture.browser.isConnected(), false);
-  assert.match(
-    fixture.serverDiagnostics(),
-    /listening=false; .*close_calls=1$/,
-  );
+  assertFixtureCleanup(fixture, browserCloseCalls);
 }
