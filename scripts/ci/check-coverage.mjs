@@ -260,7 +260,7 @@ function mergeBaseline(current, baseline, reviewedDecreaseEvidence = null) {
 
   let approved = new Set();
   if (drops.length > 0) {
-    if (!reviewedDecreaseEvidence && !hasImprovement) {
+    if (!(reviewedDecreaseEvidence || hasImprovement)) {
       const names = drops.map((drop) => `${drop.package}.${drop.metric}`).join(", ");
       throw new Error(
         `unreviewed baseline decrease for ${names}; supply --allow-reviewed-decrease=<tracked evidence path>`,
@@ -381,8 +381,8 @@ export {
   main,
   mergeBaseline,
   parseArgs,
+  readBaseline,
   readReviewedDecreaseEvidence,
   validateReviewedDecreaseEvidence,
-  readBaseline,
   writeBaseline,
 };
