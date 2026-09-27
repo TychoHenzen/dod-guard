@@ -49,18 +49,18 @@ referenced skill from the active plugin root before invoking it.
    findings. `/review-pr` is the authoritative producer: its terminal report
    maps accepted `BLOCKER` findings to `BLOCK`, other accepted findings to
    `REQUEST_CHANGES`, and no accepted findings to `APPROVE`; a GitHub
-   `COMMENT` review is only publication transport. Record that report's
-   recommendation as `reviewResult`, its head as `reviewedHead`, and
-   `reviewerStatus=completed` in the durable ledger. A launcher or process
+   `COMMENT` review is only publication transport. Read that report's
+   recommendation and reviewed head back from the remote PR; no local ledger
+   is needed. A launcher or process
    failure is incomplete only when it produces no
    terminal report with a recommendation; validation, coverage, findings, and
    required-check results in an existing report are completed review evidence,
    not an incomplete execution. For an incomplete execution, record the exact
-   failure class and evidence, read back the ledger and remote review state,
+   failure class and evidence, read back the remote review state,
    repair the cause, verify the repair, and retry until a completed
    recommendation exists; do not repeat an unchanged failure blindly. For a
    timeout or interruption, first confirm the prior reviewer has stopped, then
-   reconcile the ledger and remote PR state and consume any late report before
+   reconcile the remote PR state and consume any late report before
    retrying. If the cause cannot be repaired, preserve the checkpoint and stop
    with a durable blocker. For a completed result with actionable findings,
    invoke `/fix-pr-review <pull-request> <finding-ids>` with every valid

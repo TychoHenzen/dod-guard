@@ -59,7 +59,8 @@ test("defines the authoritative recommendation mapping and publication boundary"
     skill,
     /authoritative producer[\s\S]*accepted `BLOCKER` findings to `BLOCK`[\s\S]*other accepted findings to[\s\S]*`REQUEST_CHANGES`[\s\S]*no accepted findings to `APPROVE`/,
   );
-  assert.match(skill, /recommendation as `reviewResult`, its head as `reviewedHead`, and\s+`reviewerStatus=completed` in the durable\s+ledger/);
+  assert.match(skill, /Read that report's\s+recommendation and reviewed head back from the remote PR; no local ledger\s+is needed/);
+  assert.doesNotMatch(skill, /durable ledger|read back the ledger|reconcile the ledger/);
 });
 
 test("keeps nested Codex launches on the supported command contract", () => {
@@ -84,7 +85,7 @@ test("distinguishes incomplete execution from completed review evidence", () => 
   assert.doesNotMatch(skill, /validation or coverage failure.*incomplete execution/i);
   assertInOrder(skill, [
     /record the exact\s+failure class and evidence/,
-    /read back the ledger and remote review state/,
+    /read back the remote review state/,
     /repair the cause/,
     /verify the repair/,
     /retry until a completed/,
@@ -95,7 +96,7 @@ test("reconciles timed-out reviewers and resolves findings without a second revi
   assertInOrder(skill, [
     /timeout or interruption/,
     /confirm the prior reviewer has stopped/,
-    /reconcile the ledger and remote PR state/,
+    /reconcile the remote PR state/,
     /consume any late report/,
     /retrying/,
   ]);
