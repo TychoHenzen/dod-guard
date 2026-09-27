@@ -51,6 +51,13 @@ const current = {
   },
 };
 
+const allDroppedCurrent = Object.fromEntries(
+  Object.entries(baseline).map(([pkg, metrics]) => [
+    pkg,
+    Object.fromEntries(Object.entries(metrics).map(([metric, value]) => [metric, value - 0.01])),
+  ]),
+);
+
 const improvedCurrent = {
   ...current,
   "quality-guard": { ...current["quality-guard"], branches: baseline["quality-guard"].branches },
@@ -68,7 +75,20 @@ function withTemporaryBaseline(callback) {
 }
 
 test("rejects an unreviewed decrease before producing a baseline", () => {
-  assert.throws(() => mergeBaseline(current, baseline), UNREVIEWED_DECREASE_ERROR);
+  assert.throws(() => mergeBaseline(allDroppedCurrent, baseline), UNREVIEWED_DECREASE_ERROR);
+});
+
+test("adopts mixed improvements while preserving lower floors without evidence", () => {
+  const result = mergeBaseline(current, baseline);
+
+  assert.deepEqual(result.packages["quality-guard"], {
+    statements: 95.52,
+    branches: 89.08,
+    functions: 95.9,
+    lines: 95.52,
+  });
+  assert.deepEqual(result.drops, [{ package: "quality-guard", metric: "branches", from: 89.08, to: 89.03 }]);
+  assert.equal(result.approved.size, 0);
 });
 
 test("adopts improvements while preserving every existing floor", () => {
@@ -143,13 +163,32 @@ test("rejects incomplete or stale reviewed-decrease evidence before a write", ()
 test("CLI write path refuses an unreviewed decrease and preserves the file", () => {
   withTemporaryBaseline((path, before) => {
     const exitCode = main(["--write-baseline"], {
-      measure: () => current,
+      measure: () => allDroppedCurrent,
       baselinePath: path,
       stderr: { write() {} },
     });
 
     assert.equal(exitCode, 1);
     assert.deepEqual(readFileSync(path), before);
+  });
+});
+
+test("CLI write path persists mixed improvements and preserves lower floors", () => {
+  withTemporaryBaseline((path) => {
+    const exitCode = main(["--write-baseline"], {
+      measure: () => current,
+      baselinePath: path,
+      stdout: { write: () => undefined },
+      stderr: { write: () => undefined },
+    });
+
+    assert.equal(exitCode, 0);
+    assert.deepEqual(JSON.parse(readFileSync(path, "utf8")).packages["quality-guard"], {
+      statements: 95.52,
+      branches: 89.08,
+      functions: 95.9,
+      lines: 95.52,
+    });
   });
 });
 

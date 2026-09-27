@@ -217,14 +217,17 @@ function mergeBaseline(current, baseline, reviewedDecreaseEvidence = null) {
   validatePackages(baseline, "stored baseline");
   const packages = Object.fromEntries(Object.entries(baseline).map(([pkg, metrics]) => [pkg, { ...metrics }]));
   const drops = [];
+  let hasImprovement = false;
 
   for (const [pkg, now] of Object.entries(current)) {
     const before = baseline[pkg];
     if (!before) {
+      hasImprovement = true;
       packages[pkg] = Object.fromEntries(METRICS.map((metric) => [metric, now[metric]]));
     } else {
       packages[pkg] = Object.fromEntries(
         METRICS.map((metric) => {
+          if (now[metric] > before[metric]) hasImprovement = true;
           if (now[metric] < before[metric]) {
             drops.push({ package: pkg, metric, from: before[metric], to: now[metric] });
             return [metric, before[metric]];
@@ -237,13 +240,13 @@ function mergeBaseline(current, baseline, reviewedDecreaseEvidence = null) {
 
   let approved = new Set();
   if (drops.length > 0) {
-    if (!reviewedDecreaseEvidence) {
+    if (!reviewedDecreaseEvidence && !hasImprovement) {
       const names = drops.map((drop) => `${drop.package}.${drop.metric}`).join(", ");
       throw new Error(
         `unreviewed baseline decrease for ${names}; supply --allow-reviewed-decrease=<tracked evidence path>`,
       );
     }
-    approved = validateReviewedDecreaseEvidence(reviewedDecreaseEvidence, drops);
+    if (reviewedDecreaseEvidence) approved = validateReviewedDecreaseEvidence(reviewedDecreaseEvidence, drops);
   } else if (reviewedDecreaseEvidence) {
     approved = validateReviewedDecreaseEvidence(reviewedDecreaseEvidence, drops);
   }
