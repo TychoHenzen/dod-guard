@@ -66,6 +66,23 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.doesNotMatch(skill, /5\.4\.5|plugins[\\/]cache[\\/]dod-guard-monorepo/);
 });
 
+test("goal-sdlc keeps real work in short-lived subagents", async () => {
+  const skill = await readSkill();
+  for (const marker of [
+    "Subagents are the only delegation mechanism for real work",
+    "Do not use\nuser-visible Codex tasks or threads as workers",
+    "create_thread",
+    "fork_thread",
+    "send_message_to_thread",
+    "codex://threads/...",
+    "100,000 tokens",
+    "terminate the subagent",
+    "start a fresh one",
+  ]) {
+    assert.ok(skill.includes(marker), `missing subagent lifecycle marker: ${marker}`);
+  }
+});
+
 test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   const skill = await readSkill();
   for (const marker of [
