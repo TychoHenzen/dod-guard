@@ -189,7 +189,10 @@ search. Beyond that the file is a directory that forgot to become one.
 **Fix:** the split has to follow a real seam - *Extract Class*, *Extract
 Function* into a new module, or *Split Phase* when the file does two things in
 sequence. If no seam exists, a long cohesive file is better than two files that
-must always change together. Say so and leave it.
+must always change together. Do not introduce partial classes solely to satisfy
+numeric file or line limits. A partial class is appropriate only for a strong,
+documented domain, framework, or ownership reason; otherwise say so and leave a
+cohesive class alone.
 
 ---
 
