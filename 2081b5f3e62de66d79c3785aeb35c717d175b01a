@@ -16,5 +16,14 @@
     "reason": "QueueReadError.details preserves structured provider failure context for fail-closed queue holds; it is internal to queue readback, not package-root API.",
     "author": "Codex",
     "time": "2026-09-27T14:05:28.749Z"
+  },
+  {
+    "findingId": "a55f7343601a120f7c3bbd4cbc8600f8ac7b295f470acbffce9b321cf16a93f1",
+    "fingerprint": "09f83c6bb25fd567d21db5a9b90f269ff4cba7cef9df76da69006f83816ec49b",
+    "baseSha": "05128abe69b6e48a427ff6913e294dd65025987a",
+    "targetSha": "2081b5f3e62de66d79c3785aeb35c717d175b01a",
+    "reason": "QueueReadError constructor carries the message, details, and cause required by internal queue-readback failures; it is not package-root API.",
+    "author": "Codex",
+    "time": "2026-09-27T14:08:59.728Z"
   }
 ]
