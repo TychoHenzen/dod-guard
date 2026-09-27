@@ -14,31 +14,113 @@ async function readSkill() {
   return readFile(skillPath, "utf8");
 }
 
-function classifyDeliveryRecord({
-  mergedDelivery,
-  sameRepositoryHead,
-  defaultBase,
-  trustedHead,
-  mergeCommit,
-  requiredChecks,
-  linkedIssuesClosed,
-  childrenClosed,
-  projectDone,
-  activeCheckpoint,
-  providerAvailable,
-  acceptanceVerified,
-  headRelationshipValid,
-  groupedChild,
-}) {
+function sortIssueNumbers(values) {
+  return [...new Set(values.filter((value) => value !== null && value !== undefined))].sort(
+    (left, right) => String(left).localeCompare(String(right), undefined, { numeric: true }),
+  );
+}
+
+function normalizeDeliveryRecord(input) {
+  const inputs = Array.isArray(input) ? input : [input];
+  const entries = inputs.map((raw) => ({
+    raw,
+    issueNumber: raw.issueNumber ?? null,
+    parentIssueNumber: raw.parentIssueNumber ?? null,
+    childIssueNumbers: sortIssueNumbers(raw.childIssueNumbers ?? []),
+    observedIssueNumbers: sortIssueNumbers(raw.observedIssueNumbers ?? []),
+  }));
+  const rootEntry = entries.find(({ parentIssueNumber }) => parentIssueNumber === null) ?? entries[0];
+  const rootIssueNumber = rootEntry?.parentIssueNumber ?? rootEntry?.issueNumber ?? null;
+  const issueNumbers = sortIssueNumbers(entries.map(({ issueNumber }) => issueNumber));
+  const childIssueNumbers = sortIssueNumbers([
+    ...entries.flatMap(({ childIssueNumbers: declaredChildren }) => declaredChildren),
+    ...issueNumbers.filter((issueNumber) => issueNumber !== rootIssueNumber),
+  ]);
+  const observedIssueNumbers = sortIssueNumbers([
+    ...entries.flatMap(({ observedIssueNumbers: observed }) => observed),
+    ...issueNumbers,
+  ]);
+  const hasParentRelation = entries.some(({ parentIssueNumber }) => parentIssueNumber !== null);
+  const hasParentEntry = entries.some(
+    ({ issueNumber, parentIssueNumber }) =>
+      parentIssueNumber === null && issueNumber === rootIssueNumber,
+  );
+  const parentObserved =
+    rootIssueNumber === null ||
+    observedIssueNumbers.includes(rootIssueNumber) ||
+    entries.some(({ raw }) => raw.parentPresent === true);
+  const orphanedChild =
+    hasParentRelation &&
+    entries.some(({ raw }) => raw.parentPresent === false || !parentObserved);
+  let relationship = "parent-no-children";
+  if (orphanedChild) {
+    relationship = "orphaned-child";
+  } else if (hasParentEntry) {
+    relationship = childIssueNumbers.length > 0 ? "parent" : "parent-no-children";
+  } else if (hasParentRelation) {
+    relationship = "child";
+  } else if (childIssueNumbers.length > 0) {
+    relationship = "parent";
+  }
+  const projectStatuses = entries
+    .flatMap(({ raw }) => [
+      ...(Array.isArray(raw.projectStatuses) ? raw.projectStatuses : []),
+      ...(typeof raw.projectStatus === "string" ? [raw.projectStatus] : []),
+      ...(Array.isArray(raw.childProjectStatuses) ? raw.childProjectStatuses : []),
+    ])
+    .filter((status) => typeof status === "string" && status.length > 0);
+
+  return {
+    representative: rootEntry?.raw ?? {},
+    rootIssueNumber,
+    relationship,
+    memberIssueNumbers: sortIssueNumbers([rootIssueNumber, ...childIssueNumbers]),
+    childIssueNumbers,
+    observedIssueNumbers,
+    projectStatuses,
+    childrenReconciled: childIssueNumbers.every((issueNumber) =>
+      observedIssueNumbers.includes(issueNumber),
+    ),
+    orphanedChild,
+    statusDrift: new Set(projectStatuses).size > 1,
+  };
+}
+
+function classifyDeliveryRecord(input) {
+  const record = normalizeDeliveryRecord(input);
+  const {
+    mergedDelivery,
+    sameRepositoryHead,
+    defaultBase,
+    trustedHead,
+    mergeCommit,
+    requiredChecks,
+    linkedIssuesClosed,
+    childrenClosed,
+    projectDone,
+    activeCheckpoint,
+    providerAvailable,
+    acceptanceVerified,
+    headRelationshipValid,
+  } = record.representative;
+
   if (activeCheckpoint === true) {
     return { kind: "active", eligible: false };
   }
 
-  const missing = [
-    [groupedChild === false, "grouped parent reconciliation"],
-  ]
-    .filter(([present]) => present !== true)
-    .map(([, evidence]) => evidence);
+  const missing = [];
+  if (record.relationship === "child") {
+    missing.push("grouped parent reconciliation");
+  }
+  if (record.relationship === "orphaned-child") {
+    missing.push("parent relationship");
+  }
+  if (record.relationship === "parent" && !record.childrenReconciled) {
+    missing.push("grouped child records");
+  }
+  if (record.statusDrift) {
+    missing.push("aligned Project statuses");
+  }
 
   if (mergedDelivery === true) {
     if (activeCheckpoint !== false) {
@@ -83,7 +165,6 @@ const completeDeliveryEvidence = {
   activeCheckpoint: false,
   providerAvailable: true,
   acceptanceVerified: true,
-  groupedChild: false,
   sameRepositoryHead: true,
   defaultBase: true,
   trustedHead: true,
@@ -95,8 +176,16 @@ const completeDeliveryEvidence = {
   headRelationshipValid: true,
 };
 
+const completeRecordEvidence = {
+  ...completeDeliveryEvidence,
+  issueNumber: 444,
+  childIssueNumbers: [536, 537, 538, 539],
+  observedIssueNumbers: [444, 536, 537, 538, 539],
+  projectStatuses: ["Done", "Done", "Done", "Done", "Done"],
+};
+
 const completeEvidenceWithoutActiveCheckpoint = Object.fromEntries(
-  Object.entries(completeDeliveryEvidence).filter(
+  Object.entries(completeRecordEvidence).filter(
     ([evidence]) => evidence !== "activeCheckpoint",
   ),
 );
@@ -144,7 +233,7 @@ const reconciliationFixtures = [
   },
   {
     name: "#444/#536-#539 complete delivery",
-    input: completeDeliveryEvidence,
+    input: completeRecordEvidence,
     expected: { kind: "complete", eligible: false, handoff: "complete-pr" },
   },
   {
@@ -158,12 +247,24 @@ const reconciliationFixtures = [
   },
   {
     name: "normal todo record",
-    input: { ...completeDeliveryEvidence, mergedDelivery: false },
+    input: {
+      ...completeDeliveryEvidence,
+      issueNumber: 517,
+      childIssueNumbers: [],
+      observedIssueNumbers: [517],
+      projectStatuses: ["Todo"],
+      mergedDelivery: false,
+    },
     expected: { kind: "eligible", eligible: true },
   },
   {
     name: "missing evidence is not completion",
-    input: { mergedDelivery: true },
+    input: {
+      mergedDelivery: true,
+      issueNumber: 536,
+      parentIssueNumber: 444,
+      parentPresent: true,
+    },
     expected: {
       kind: "hold",
       eligible: false,
@@ -227,19 +328,78 @@ const reconciliationFixtures = [
   },
   {
     name: "stale grouped child",
-    input: { ...completeDeliveryEvidence, groupedChild: true },
+    input: {
+      ...completeRecordEvidence,
+      issueNumber: 536,
+      parentIssueNumber: 444,
+      parentPresent: true,
+      childIssueNumbers: [],
+      observedIssueNumbers: [536],
+    },
     expected: {
       kind: "hold",
       eligible: false,
       missing: ["grouped parent reconciliation"],
     },
   },
+  {
+    name: "orphaned child",
+    input: {
+      ...completeRecordEvidence,
+      issueNumber: 537,
+      parentIssueNumber: 444,
+      parentPresent: false,
+      childIssueNumbers: [],
+      observedIssueNumbers: [537],
+    },
+    expected: {
+      kind: "hold",
+      eligible: false,
+      missing: ["parent relationship"],
+    },
+  },
+  {
+    name: "status drift",
+    input: {
+      ...completeRecordEvidence,
+      projectStatuses: ["Done", "In Progress"],
+    },
+    expected: {
+      kind: "hold",
+      eligible: false,
+      missing: ["aligned Project statuses"],
+    },
+  },
+  {
+    name: "no-child parent",
+    input: {
+      ...completeDeliveryEvidence,
+      issueNumber: 31,
+      childIssueNumbers: [],
+      observedIssueNumbers: [31],
+      projectStatuses: ["Backlog"],
+      mergedDelivery: false,
+    },
+    expected: { kind: "eligible", eligible: true },
+  },
 ];
 
 function reconcileQueue(records, provider) {
-  const decisions = records.map(({ id, input }) => ({
+  const groups = new Map();
+  for (const entry of records) {
+    const input = provider.read(entry.input);
+    const normalized = normalizeDeliveryRecord(input);
+    const groupKey = normalized.rootIssueNumber ?? entry.id;
+    const group = groups.get(groupKey) ?? { id: entry.id, inputs: [] };
+    group.inputs.push(input);
+    if (["parent", "parent-no-children"].includes(normalized.relationship)) {
+      group.id = entry.id;
+    }
+    groups.set(groupKey, group);
+  }
+  const decisions = [...groups.values()].map(({ id, inputs }) => ({
     id,
-    decision: classifyDeliveryRecord(provider.read(input)),
+    decision: classifyDeliveryRecord(inputs),
   }));
   return {
     decisions,
@@ -248,6 +408,104 @@ function reconcileQueue(records, provider) {
       .map(({ id }) => id),
   };
 }
+
+test("normalizes parent, child, no-child, orphan, and status-drift ancestry", () => {
+  const fixtures = [
+    {
+      name: "real parent",
+      input: {
+        issueNumber: 444,
+        childIssueNumbers: [536, 537],
+        observedIssueNumbers: [444, 536, 537],
+      },
+      expected: {
+        rootIssueNumber: 444,
+        relationship: "parent",
+        memberIssueNumbers: [444, 536, 537],
+        orphanedChild: false,
+        statusDrift: false,
+        childrenReconciled: true,
+      },
+    },
+    {
+      name: "child",
+      input: {
+        issueNumber: 536,
+        parentIssueNumber: 444,
+        parentPresent: true,
+      },
+      expected: {
+        rootIssueNumber: 444,
+        relationship: "child",
+        memberIssueNumbers: [444, 536],
+        orphanedChild: false,
+        statusDrift: false,
+        childrenReconciled: true,
+      },
+    },
+    {
+      name: "no-child parent",
+      input: { issueNumber: 31, observedIssueNumbers: [31] },
+      expected: {
+        rootIssueNumber: 31,
+        relationship: "parent-no-children",
+        memberIssueNumbers: [31],
+        orphanedChild: false,
+        statusDrift: false,
+        childrenReconciled: true,
+      },
+    },
+    {
+      name: "orphaned child",
+      input: {
+        issueNumber: 537,
+        parentIssueNumber: 444,
+        parentPresent: false,
+      },
+      expected: {
+        rootIssueNumber: 444,
+        relationship: "orphaned-child",
+        memberIssueNumbers: [444, 537],
+        orphanedChild: true,
+        statusDrift: false,
+        childrenReconciled: true,
+      },
+    },
+    {
+      name: "status drift",
+      input: {
+        issueNumber: 444,
+        childIssueNumbers: [536],
+        observedIssueNumbers: [444, 536],
+        projectStatuses: ["Done", "Backlog"],
+      },
+      expected: {
+        rootIssueNumber: 444,
+        relationship: "parent",
+        memberIssueNumbers: [444, 536],
+        orphanedChild: false,
+        statusDrift: true,
+        childrenReconciled: true,
+      },
+    },
+  ];
+
+  for (const fixture of fixtures) {
+    const record = normalizeDeliveryRecord(fixture.input);
+    assert.deepEqual(
+      {
+        rootIssueNumber: record.rootIssueNumber,
+        relationship: record.relationship,
+        memberIssueNumbers: record.memberIssueNumbers,
+        orphanedChild: record.orphanedChild,
+        statusDrift: record.statusDrift,
+        childrenReconciled: record.childrenReconciled,
+      },
+      fixture.expected,
+      fixture.name,
+    );
+  }
+});
 
 test("goal-sdlc retains every delivery stage and queue boundary", async () => {
   const skill = await readSkill();
@@ -300,6 +558,10 @@ test("reconciliation excludes stale merged records and recognizes complete group
   for (const marker of [
     "classify a merged delivery as `complete` only when the existing",
     "active checkpoint explicitly observed as `false`",
+    "normalize each issue group into one delivery record",
+    "an orphaned child has",
+    "status drift records the parent/child",
+    "never select a child record",
     "classify a merged delivery with any missing check, open issue or child",
     "exclude it from queue candidates and hand any cleanup to",
     "queue candidates, report the exact missing evidence",
@@ -322,7 +584,10 @@ test("mixed queue keeps only an explicit normal Todo and stays read-only", async
       { id: "#31", input: reconciliationFixtures[0].input },
       { id: "#444", input: reconciliationFixtures[2].input },
       { id: "#517", input: reconciliationFixtures[4].input },
-      { id: "#536", input: reconciliationFixtures.at(-1).input },
+      {
+        id: "#536",
+        input: reconciliationFixtures.find(({ name }) => name === "stale grouped child").input,
+      },
     ],
     provider,
   );
@@ -336,7 +601,6 @@ test("mixed queue keeps only an explicit normal Todo and stays read-only", async
       ["#31", "hold"],
       ["#444", "complete"],
       ["#517", "eligible"],
-      ["#536", "hold"],
     ],
   );
 });

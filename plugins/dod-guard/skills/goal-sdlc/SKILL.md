@@ -220,6 +220,14 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
 &#x20;   parent/child issues with their linked pull requests before deciding
 &#x20;   eligibility;
 
+&#x20; - normalize each issue group into one delivery record before classification:
+&#x20;   a real parent owns its observed children, a child points to its parent, a
+&#x20;   parent with no children owns a single-item record, an orphaned child has a
+&#x20;   missing or unobserved parent, and status drift records the parent/child
+&#x20;   Project statuses separately rather than collapsing them into a boolean;
+&#x20;   group by the observed root issue and never select a child record as an
+&#x20;   independent parent;
+
 &#x20; - treat every reconciliation input as an explicit live observation. An
 &#x20;   omitted, unknown, stale, filtered, or provider-unavailable value is not
 &#x20;   `true`; classify the missing evidence as `hold` and report its exact
@@ -243,7 +251,8 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
 &#x20;   non-`Done` Project status, unresolved acceptance evidence, provider
 &#x20;   limitation, or head/relationship mismatch as `hold`; exclude it from
 &#x20;   queue candidates, report the exact missing evidence, and preserve its
-&#x20;   live issue and Project state;
+&#x20;   live issue and Project state; an orphaned child or parent/child status
+&#x20;   drift is also an explicit hold, never a fresh queue candidate;
 
 &#x20; - do not select a held or complete child as an independent parent while
 &#x20;   its grouped parent record is being reconciled. A merged PR, title,
