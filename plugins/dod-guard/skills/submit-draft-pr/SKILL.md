@@ -74,22 +74,15 @@ and require an exact remote-head match: the remote branch SHA, checked-out
 If any value differs, treat the handoff as stale, stop, and rerun the
 implementation handoff after the branch state is stable; do not copy stale
 evidence into Convergence. If
-implementation is incomplete or contradicted, snapshot the
-issue body, task list, labels, links, Project item, and Status before writing an
-actionable remainder. Immediately before each remainder mutation, reread those
-values and compare them with the latest snapshot. If any value changed, stop
-and report the drift without writing. After each successful mutation, read back
-the changed state and replace the snapshot before the next mutation. Stop
-without creating or updating the draft PR. Do not call passing tests convergence
-by themselves. When all records agree, include this section in the draft PR body:
+implementation is incomplete or contradicted, write the actionable remainder to
+the issue and stop without creating or updating the draft PR. Do not call
+passing tests convergence by themselves. When all records agree, link the
+handoff instead of restating its mapping. Include this section in the draft PR
+body:
 
 ```text
 ## Convergence
-- Outcome: verified
-- Requirements and clarifications: verified
-- Plan and tasks: mapped to applicable branch or verified remote-state evidence
-- Mandatory child categories: each mapped to the same parent branch or verified remote-state evidence
-- Acceptance and verification: mapped to fresh evidence
+- Handoff: <link to the ## Implementation handoff comment> (head <sha>)
 - Remainder: none
 ```
 
