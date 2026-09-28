@@ -202,11 +202,19 @@ code the PBI does not need.
 
 ## Dispatch unit reviewers
 
-Write one dispatch input for `scripts/review-dispatch.mjs` with one entry per
-(reviewer, unit) pair: the PR-level feature pass plus each unit's angles. Each
-entry has `reviewer`, `unit`, and a `prompt` holding the exact shipped agent
-definition, the unit id and its files, and the same redacted context. Invoke
-the helper as a direct Node process:
+Build the dispatch input from the redacted context and the planned units:
+
+```text
+node "<skill-dir>/scripts/review-support.mjs" build-dispatch-input --context "<redacted-context.json>" --units "<units.json>" --executable "<direct codex path>"
+```
+
+It writes one entry per (reviewer, unit) pair, the PR-level feature pass first.
+Each prompt holds the exact shipped agent definition, the unit's scope and
+requirements, the unit's final file contents from the pinned snapshot, and its
+diff. Nested reviewers may be unable to run shell reads on the host, so the
+prompt carries the evidence instead of paths. Pass `--executable` when
+`codex.exe` is not on `PATH` (for example an npm install, whose `codex.cmd`
+shim the helper rejects). Invoke the dispatcher as a direct Node process:
 
 ```text
 node "<skill-dir>/scripts/review-dispatch.mjs" --input "<dispatch-input.json>"

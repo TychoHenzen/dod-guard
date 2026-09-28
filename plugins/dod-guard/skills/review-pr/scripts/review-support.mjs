@@ -13,7 +13,8 @@ import {
   writeAzureReport,
 } from "./lib/review-support.mjs";
 import { createReviewEvidenceSnapshot } from "./lib/review-evidence-snapshot.mjs";
-import { planReviewUnits } from "./lib/review-units.mjs";
+import { buildDispatchInput } from "./lib/review-prompts.mjs";
+import { REVIEWERS, planReviewUnits } from "./lib/review-units.mjs";
 import { validateReviewContext, validateReviewerResult } from "./lib/review-validation.mjs";
 
 function argumentsByName(argumentValues) {
@@ -37,6 +38,19 @@ function requireSameHead(reviewed, current) {
   if (!reviewed || reviewed !== current) {
     throw new Error(`Pull request head moved from ${reviewed ?? "<missing>"} to ${current ?? "<missing>"}; do not publish.`);
   }
+}
+
+function readDispatchInput(context, units, executable) {
+  const manifest = readJson(context.finalFileAccess);
+  const contents = new Map(manifest.files.map(({ path, snapshotPath }) => [path, readFileSync(snapshotPath, "utf8")]));
+  const agents = Object.fromEntries(
+    REVIEWERS.map((name) => [name, readFileSync(new URL(`../../../agents/${name}.md`, import.meta.url), "utf8")]),
+  );
+  const input = buildDispatchInput({ context, units, contents, diff: readFileSync(context.diffFile, "utf8"), agents });
+  if (!executable) {
+    return input;
+  }
+  return { executable, ...input };
 }
 
 function emit(value) {
@@ -70,6 +84,8 @@ if (command === "normalize-target") {
 } else if (command === "plan-review-units") {
   const input = readJson(args.input);
   emit(planReviewUnits(input.changedFiles, input.allFiles));
+} else if (command === "build-dispatch-input") {
+  emit(readDispatchInput(readJson(args.context), readJson(args.units), args.executable));
 } else if (command === "check-head") {
   requireSameHead(args.reviewed, args.current);
   emit({ headSha: args.current, unchanged: true });

@@ -1,11 +1,5 @@
-import { PULL_REQUEST_UNIT } from "./review-units.mjs";
+import { PULL_REQUEST_UNIT, REVIEWERS } from "./review-units.mjs";
 
-const REVIEWERS = Object.freeze([
-  "review-pr-feature",
-  "review-pr-design",
-  "review-pr-reliability",
-  "review-pr-hygiene",
-]);
 const FINDING_FIELDS = Object.freeze([
   "correction",
   "evidence",

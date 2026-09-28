@@ -10,13 +10,8 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveCodexExecutable } from "../../codex-advisor/scripts/codex-launch-contract.mjs";
 import { runAdvisor } from "../../codex-advisor/scripts/run-advisor.mjs";
+import { REVIEWERS } from "./lib/review-units.mjs";
 
-const REVIEWERS = Object.freeze([
-  "review-pr-feature",
-  "review-pr-design",
-  "review-pr-reliability",
-  "review-pr-hygiene",
-]);
 const WINDOWS_REVIEWER_CONCURRENCY = 1;
 const DEFAULT_MODEL = "gpt-5.6-luna";
 const DEFAULT_REASONING_EFFORT = "medium";
@@ -177,4 +172,4 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import
   });
 }
 
-export { REVIEWERS, WINDOWS_REVIEWER_CONCURRENCY, dispatchReviewers, incompleteEntries };
+export { WINDOWS_REVIEWER_CONCURRENCY, dispatchReviewers, incompleteEntries };

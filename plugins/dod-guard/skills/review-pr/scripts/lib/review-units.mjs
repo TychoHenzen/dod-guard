@@ -1,7 +1,8 @@
 const PULL_REQUEST_UNIT = "pull-request";
 const MAX_UNIT_FILES = 8;
 const OWNER_MARKERS = new Set(["SKILL.md", "package.json"]);
-const ANGLE_ORDER = ["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"];
+// The four shipped reviewer agents, in the order angles are listed and dispatched.
+const REVIEWERS = Object.freeze(["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"]);
 const TEST_FILE = /(?:^|\/)(?:tests?|__tests__)\/|\.test\.[cm]?[jt]sx?$/;
 const CODE_FILE = /\.(?:[cm]?[jt]sx?|py|rs|cs|go|ps1|sh)$/;
 const CONFIG_FILE = /(?:^|\/)\.github\/|\.(?:json|ya?ml|toml)$/;
@@ -47,7 +48,7 @@ function owningDirectory(path, owners) {
 
 function anglesFor(files) {
   const angles = new Set(files.flatMap((path) => ANGLES_BY_KIND[fileKind(path)]));
-  return ANGLE_ORDER.filter((angle) => angles.has(angle));
+  return REVIEWERS.filter((angle) => angles.has(angle));
 }
 
 function unitId(owner, part, parts) {
@@ -75,4 +76,4 @@ function planReviewUnits(changedFiles, allFiles) {
   return units;
 }
 
-export { MAX_UNIT_FILES, PULL_REQUEST_UNIT, fileKind, planReviewUnits };
+export { MAX_UNIT_FILES, PULL_REQUEST_UNIT, REVIEWERS, fileKind, planReviewUnits };
