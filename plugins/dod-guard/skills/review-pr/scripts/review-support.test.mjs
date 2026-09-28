@@ -145,9 +145,17 @@ test("requires feature coverage for every review requirement", () => {
         { reviewer: "review-pr-feature", coverage: [{ requirement: "Something else", status: "VERIFIED", evidence: "src/a.js:1" }], findings: [] },
         "review-pr-feature",
         completeContext().reviewRequirements,
+        "pull-request",
       ),
     OMITTED_REQUIREMENTS_ERROR,
   );
+});
+
+test("a unit-scoped feature review does not have to cover every requirement", () => {
+  const result = { reviewer: "review-pr-feature", coverage: [{ requirement: "Tests prove the parser", status: "VERIFIED", evidence: "src/a.test.js:4" }], findings: [] };
+
+  assert.equal(validateReviewerResult(result, "review-pr-feature", completeContext().reviewRequirements, "src"), result);
+  assert.throws(() => validateReviewerResult(result, "review-pr-feature", completeContext().reviewRequirements), /has no review unit/);
 });
 
 test("rejects malformed severities before finding publication", () => {
@@ -161,6 +169,7 @@ test("rejects malformed severities before finding publication", () => {
         },
         "review-pr-reliability",
         completeContext().reviewRequirements,
+        "src",
       ),
     INVALID_SEVERITY_ERROR,
   );
@@ -188,6 +197,7 @@ test("accepts the documented pull-request location for missing behavior", () => 
     },
     "review-pr-design",
     completeContext().reviewRequirements,
+    "src",
   );
   assert.equal(result.findings[0].location, "pull-request");
 });

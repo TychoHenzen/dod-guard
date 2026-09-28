@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: Review a Git branch or GitHub pull request with four independent reviewers and inline findings, or review an Azure DevOps pull request into one Markdown report. Loads the linked PBI and subtasks before judging the implementation.
+description: Review a Git branch or GitHub pull request with adaptive per-unit reviewers and inline findings, or review an Azure DevOps pull request into one Markdown report. Loads the linked PBI and subtasks before judging the implementation.
 argument-hint: "[current branch, Git ref, PR URL or ID, or ado:<id>] [Azure report path]"
 ---
 
@@ -172,38 +172,67 @@ provider normalization command. Populate `reviewRequirements` with every
 acceptance criterion and linked subtask requirement as separate verbatim
 strings. Run `validate-context` on the redacted file. Stop if validation fails.
 
-## Dispatch four independent reviewers
+## Plan review units
 
-Write one dispatch input for `scripts/review-dispatch.mjs` and start exactly
-one fresh instance of each agent through that helper. The helper serializes
-Windows starts, so the maximum Windows reviewer concurrency is `1`; do not use
-the active client's available concurrency or create temporary reviewer shells.
-Invoke it as a direct Node process with the input path as an argument:
+Split the change into review units instead of giving every reviewer the whole
+pull request. Write `{ "changedFiles": [...], "allFiles": [...] }`, where
+`allFiles` is `git ls-tree -r --name-only <headSha>`, and run:
+
+```text
+node "<skill-dir>/scripts/review-support.mjs" plan-review-units --input "<units-input.json>"
+```
+
+Each unit holds the changed files under one owning directory (the nearest
+ancestor with a `SKILL.md` or `package.json`, otherwise the file's own
+directory), at most 8 files, and 1-4 angles chosen by the kinds of file in it:
+
+| File kind | Angles |
+|---|---|
+| Production code | `review-pr-design`, `review-pr-reliability`, `review-pr-hygiene` |
+| Tests | `review-pr-feature`, `review-pr-hygiene` |
+| Skill and doc prose | `review-pr-hygiene` |
+| CI, config, manifests | `review-pr-reliability` |
+
+Add one PR-level feature pass on every review: `review-pr-feature` with unit
+`pull-request` and every changed file in scope. It maps every
+`reviewRequirements` string to final code and proves that new behavior is
+reachable from the user interface the PBI expects. A disconnected CLI, helper,
+or internal test does not count as reachable. It also rejects unwired code and
+code the PBI does not need.
+
+## Dispatch unit reviewers
+
+Build the dispatch input from the redacted context and the planned units:
+
+```text
+node "<skill-dir>/scripts/review-support.mjs" build-dispatch-input --context "<redacted-context.json>" --units "<units.json>" --executable "<direct codex path>"
+```
+
+It writes one entry per (reviewer, unit) pair, the PR-level feature pass first.
+Each prompt holds the exact shipped agent definition, the unit's scope and
+requirements, the unit's final file contents from the pinned snapshot, and its
+diff. Nested reviewers may be unable to run shell reads on the host, so the
+prompt carries the evidence instead of paths. Pass `--executable` when
+`codex.exe` is not on `PATH` (for example an npm install, whose `codex.cmd`
+shim the helper rejects). Invoke the dispatcher as a direct Node process:
 
 ```text
 node "<skill-dir>/scripts/review-dispatch.mjs" --input "<dispatch-input.json>"
 ```
 
-The four required identities are:
-
-1. `review-pr-feature`
-2. `review-pr-design`
-3. `review-pr-reliability`
-4. `review-pr-hygiene`
-
-The input contains the exact shipped agent definition, reviewer name, and the
-same redacted context for each reviewer. Record the helper's returned reviewer
-identity, execution evidence, and result before moving to the next entry. Wait
-for every reviewer to finish; do not send progress, reminder, or rush messages
-to a reviewer that is still working.
+The helper runs `gpt-5.6-luna` at `medium` effort and starts one reviewer at a
+time on Windows; do not use the active client's concurrency or create
+temporary reviewer shells. Record each returned reviewer, unit, execution
+evidence, and result. Wait for every reviewer to finish; do not send progress,
+reminder, or rush messages to a reviewer that is still working.
 
 If a direct Codex executable cannot start, preserve the helper's incomplete
-execution evidence and repair the cause before retrying. On recovery, invoke
-the helper only with reviewers whose prior execution was incomplete; never
-retry a reviewer with a completed recommendation.
+execution evidence and repair the cause. Then rerun with
+`--retry-incomplete "<previous-result.json>"`, which starts only the pairs
+whose earlier execution did not complete. Never rerun a completed pair.
 
-Give every reviewer the same redacted context and no other reviewer's output.
-Each reviewer returns one JSON object with `reviewer`, `coverage`, and
+Give every reviewer the redacted context for its unit and no other reviewer's
+output. Each reviewer returns one JSON object with `reviewer`, `coverage`, and
 `findings`. Coverage records use this schema:
 
 ```json
@@ -214,8 +243,8 @@ Each reviewer returns one JSON object with `reviewer`, `coverage`, and
 }
 ```
 
-The feature reviewer must cover every string in `reviewRequirements`. The
-other reviewers must record the assigned concerns they checked. Every finding
+The PR-level feature pass must cover every string in `reviewRequirements`.
+Unit reviewers record the concerns they checked in their unit. Every finding
 must have exactly these fields:
 
 ```json
@@ -237,23 +266,22 @@ or inaccessible core behavior. `MAJOR` means incorrect or incomplete behavior,
 missing effective proof, a race, or a design defect needing rework. `MINOR`
 means a concrete non-blocking maintainability defect.
 
-Run `validate-review-result` for each reviewer before using its findings. If a
-reviewer finishes with malformed output or incomplete feature coverage, keep
-the other reviewers running until they finish. Then send one bounded correction
-request to the completed reviewer asking for the same review in the exact JSON
-schema and, for the feature reviewer, every `reviewRequirements` string
-verbatim. Revalidate the corrected result. Do not interrupt or rush a reviewer
-that is still working.
+Run `validate-review-result --unit <unit>` for each result before using its
+findings. If a reviewer finishes with malformed output or incomplete feature
+coverage, let the other reviewers finish. Then send one bounded correction
+request to that reviewer asking for the same review in the exact JSON schema
+and, for the PR-level feature pass, every `reviewRequirements` string verbatim.
+Revalidate the corrected result.
 
-If the corrected result still fails validation, exclude only that reviewer's
+If the corrected result still fails validation, exclude only that result's
 unvalidated findings, record the validation failure, and continue with the
-remaining validated reviewers. Do not cancel the whole review, invent missing
+remaining validated results. Do not cancel the whole review, invent missing
 coverage, translate severities, repair output manually, or silently discard a
-validation failure. Report the failed reviewer and its validation error.
+validation failure. Report the failed reviewer, unit, and validation error.
 
 ## Validate and deduplicate
 
-After all four result envelopes pass validation, combine their `findings`.
+After every result envelope passes validation, combine their `findings`.
 Reject unsupported findings. Re-open the cited file at `headSha`
 and verify the evidence. A finding must cite a changed final-state line. Only a
 GitHub missing-functionality finding with no honest code owner may use
@@ -267,8 +295,9 @@ already-published root cause.
 
 ## Publish findings
 
-Before publication, confirm the provider head still equals `headSha`. Stop if
-it changed.
+Before publication, read the provider's current head and run
+`node "<skill-dir>/scripts/review-support.mjs" check-head --reviewed <headSha> --current <current head>`.
+It fails when the head moved; stop and do not publish.
 
 - Local Git: emit each accepted finding through the active client's inline
   code-comment artifact. Number the accepted findings `LOCAL-1`, `LOCAL-2`,

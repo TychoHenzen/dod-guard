@@ -16,11 +16,12 @@ definitions. It has no package workspace, MCP server, or bundle.
   Research precedes priority, Fibonacci effort, and standard classification.
   Verify repository labels and their evidence before Todo; split Effort 13 epics.
 - Use one `codex/<issue>-<slug>` branch and one draft pull request per issue.
-- Use `/next-ticket` to execute a ready PBI. The completion reviewer
-  challenges the final implementation before commit and push. Resolve or reject
-  every challenge with evidence. Use `/submit-draft-pr` after verification.
-- Use `/review-pr` for four-angle Git or GitHub inline review and Azure DevOps
-  Markdown review reports. It never changes the reviewed branch.
+- Use `/next-ticket` to execute a ready PBI. It maps every acceptance
+  criterion to fresh evidence before commit and push. Use `/submit-draft-pr`
+  after verification.
+- Use `/review-pr` as the one independent review: per-unit angles at medium
+  effort plus a PR-level feature pass, as Git or GitHub inline review or an
+  Azure DevOps Markdown report. It never changes the reviewed branch.
 - Use `/fix-pr-review` to revalidate and fix selected review findings. It
   updates provider state only after verified commits are pushed.
 - Use `/complete-pr` as the final acceptance gate after implementation, review,
