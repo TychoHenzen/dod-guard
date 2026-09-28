@@ -163,3 +163,88 @@ test("classifies a bare 403 as permission and an explicit MCP marker as rate lim
   assert.equal(classifyTransportFailure(Object.assign(new Error("forbidden"), { status: 403 }), "mcp").category, FAILURE_CATEGORIES.PERMISSION);
   assert.equal(classifyTransportFailure(Object.assign(new Error("API rate limit exceeded"), { status: 403 }), "mcp").category, FAILURE_CATEGORIES.MCP_RATE_LIMIT);
 });
+
+test("retains Retry-After and reset evidence without exposing credentials", () => {
+  const failure = classifyTransportFailure(Object.assign(new Error("forbidden token=secret"), {
+    status: 403,
+    headers: {
+      "Retry-After": "5",
+      "X-RateLimit-Reset": "1700000000",
+      Authorization: "Bearer secret",
+    },
+  }), "mcp");
+
+  assert.equal(failure.category, FAILURE_CATEGORIES.MCP_RATE_LIMIT);
+  assert.equal(failure.retryAfterMs, 5_000);
+  assert.equal(failure.rateLimitResetAt, 1_700_000_000);
+  assert.doesNotMatch(failure.message, /secret/);
+  assert.equal(Object.hasOwn(failure, "headers"), false);
+});
+
+test("stops on authentication, permission, timeout, and ambiguous primary failures", async () => {
+  const failures = [
+    { error: Object.assign(new Error("unauthorized token=secret"), { status: 401 }), category: FAILURE_CATEGORIES.AUTHENTICATION },
+    { error: Object.assign(new Error("forbidden"), { status: 403 }), category: FAILURE_CATEGORIES.PERMISSION },
+    { error: Object.assign(new Error("request timed out"), { code: "ETIMEDOUT" }), category: FAILURE_CATEGORIES.TIMEOUT },
+    { error: Object.assign(new Error("provider gave no usable result"), { code: "EUNKNOWN" }), category: FAILURE_CATEGORIES.PROVIDER },
+  ];
+
+  for (const { error, category } of failures) {
+    let restCalls = 0;
+    await assert.rejects(
+      runTransport({
+        operation: "issue",
+        request: { repository: "owner/repo", issueNumber: 7 },
+        primary: async () => { throw error; },
+        rest: async () => { restCalls += 1; },
+      }),
+      (stop) => stop instanceof TransportStopError &&
+        stop.details.category === category &&
+        stop.cause === error,
+    );
+    assert.equal(restCalls, 0);
+  }
+});
+
+test("stops once on REST authentication, quota, timeout, and ambiguous failures", async () => {
+  const failures = [
+    Object.assign(new Error("unauthorized"), { status: 401 }),
+    Object.assign(new Error("forbidden"), { status: 403 }),
+    Object.assign(new Error("API rate limit exceeded"), { status: 429, headers: { "Retry-After": "30" } }),
+    Object.assign(new Error("REST request timed out"), { code: "ETIMEDOUT" }),
+    Object.assign(new Error("ambiguous provider response"), { code: "EUNKNOWN" }),
+  ];
+
+  for (const restError of failures) {
+    let restCalls = 0;
+    await assert.rejects(
+      runTransport({
+        operation: "issue",
+        request: { repository: "owner/repo", issueNumber: 7 },
+        primary: async () => { throw Object.assign(new Error("MCP rate limit"), { category: "mcp_rate_limit" }); },
+        rest: async () => {
+          restCalls += 1;
+          throw restError;
+        },
+      }),
+      (stop) => stop instanceof TransportStopError &&
+        stop.details.restFailure !== undefined &&
+        stop.cause === restError,
+    );
+    assert.equal(restCalls, 1);
+  }
+});
+
+test("classifies an HTTP error result as a REST failure", async () => {
+  await assert.rejects(
+    runTransport({
+      operation: "issue",
+      request: { repository: "owner/repo", issueNumber: 7 },
+      primary: async () => { throw Object.assign(new Error("MCP rate limit"), { category: "mcp_rate_limit" }); },
+      rest: async () => ({ status: 429, headers: { "X-RateLimit-Reset": "1700000000" } }),
+    }),
+    (stop) => stop instanceof TransportStopError &&
+      stop.details.category === FAILURE_CATEGORIES.REST_RATE_LIMIT &&
+      stop.details.restFailure.rateLimitResetAt === 1_700_000_000,
+  );
+});

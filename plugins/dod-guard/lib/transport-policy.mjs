@@ -5,6 +5,7 @@ const FAILURE_CATEGORIES = Object.freeze({
   PERMISSION: "permission",
   MALFORMED: "malformed",
   TIMEOUT: "timeout",
+  TRANSIENT: "transient",
   UNSUPPORTED: "unsupported",
   REST_RATE_LIMIT: "rest_rate_limit",
   PROVIDER: "provider",
@@ -29,6 +30,14 @@ const RATE_LIMIT_MARKER = /rate[\s-]?limit|secondary[\s-]?limit|too many request
 const AUTHENTICATION_MARKER = /authentication|unauthori[sz]ed|invalid token|missing credentials|\b401\b/i;
 const TIMEOUT_MARKER = /timed? ?out|timeout|\b408\b/i;
 const TRANSPORT_UNAVAILABLE_MARKER = /(?:mcp|connector|transport)(?: is| was)? unavailable/i;
+const TRANSIENT_ERROR_CODES = new Set([
+  "econnreset",
+  "eai_again",
+  "etimedout",
+  "timeout",
+  "timeout_error",
+  "temporarily_unavailable",
+]);
 const SENSITIVE_KEY = /authorization|credential|password|secret|token|api[\s_-]?key|pat/i;
 
 function errorMessage(error) {
@@ -67,6 +76,47 @@ function statusValue(error) {
   return Number.isInteger(number) ? number : null;
 }
 
+function headerValue(error, name) {
+  const containers = [error?.headers, error?.response?.headers, error?.response?.data?.headers];
+  const expected = name.toLowerCase();
+  for (const headers of containers) {
+    if (!headers) continue;
+    if (typeof headers.get === "function") {
+      const value = headers.get(name);
+      if (value !== null && value !== undefined) return String(value);
+    }
+    if (typeof headers !== "object") continue;
+    const key = Object.keys(headers).find((candidate) => candidate.toLowerCase() === expected);
+    if (key) return String(headers[key]);
+  }
+  return null;
+}
+
+function nonNegativeNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+export function retryAfterMs(error) {
+  const direct = nonNegativeNumber(error?.retryAfterMs ?? error?.retry_after_ms);
+  if (direct !== null) return direct;
+  const header = headerValue(error, "retry-after");
+  if (header === null) return null;
+  const seconds = nonNegativeNumber(header);
+  if (seconds !== null) return seconds * 1_000;
+  const date = Date.parse(header);
+  return Number.isFinite(date) ? Math.max(0, date - Date.now()) : null;
+}
+
+export function rateLimitResetAt(error) {
+  const direct = nonNegativeNumber(
+    error?.rateLimitResetAt ?? error?.rate_limit_reset_at ?? error?.resetAt ?? error?.reset_at,
+  );
+  if (direct !== null) return direct;
+  return nonNegativeNumber(headerValue(error, "x-ratelimit-reset"));
+}
+
 function codeValue(error) {
   const code = error?.code ?? error?.response?.data?.code;
   return typeof code === "string" ? code.toLowerCase() : null;
@@ -94,6 +144,7 @@ function categoryFromExplicitValue(category, transport) {
   if (["permission", "forbidden", "entitlement", "authorization"].includes(category)) return FAILURE_CATEGORIES.PERMISSION;
   if (["invalid", "malformed", "validation", "response_shape"].includes(category)) return FAILURE_CATEGORIES.MALFORMED;
   if (["timeout", "timed_out"].includes(category)) return FAILURE_CATEGORIES.TIMEOUT;
+  if (["transient", "temporary", "temporarily_unavailable"].includes(category)) return FAILURE_CATEGORIES.TRANSIENT;
   if (["unsupported", "not_supported", "capability_gap"].includes(category)) return FAILURE_CATEGORIES.UNSUPPORTED;
   if (["transport_unavailable", "mcp_unavailable", "connector_unavailable"].includes(category)) {
     return FAILURE_CATEGORIES.TRANSPORT_UNAVAILABLE;
@@ -106,31 +157,41 @@ export function classifyTransportFailure(error, source = "mcp") {
   const status = statusValue(error);
   const code = codeValue(error);
   const message = errorMessage(error);
+  const retryAfter = retryAfterMs(error);
+  const resetAt = rateLimitResetAt(error);
+  const rateLimitHeader = (status === null || status === 403 || status === 429) && (
+    headerValue(error, "x-ratelimit-reset") !== null ||
+    headerValue(error, "x-ratelimit-remaining") === "0" || retryAfter !== null || resetAt !== null
+  );
   const explicit = categoryFromExplicitValue(explicitCategory(error), transport);
-  if (explicit) return { transport, category: explicit, status, code, message: redactedText(message) };
+  let category = explicit;
 
   if (status === 401 || AUTHENTICATION_MARKER.test(message) || code === "unauthorized") {
-    return { transport, category: FAILURE_CATEGORIES.AUTHENTICATION, status, code, message: redactedText(message) };
+    category = FAILURE_CATEGORIES.AUTHENTICATION;
+  } else if (!category && (TRANSPORT_UNAVAILABLE_MARKER.test(message) || code === "transport_unavailable")) {
+    category = FAILURE_CATEGORIES.TRANSPORT_UNAVAILABLE;
+  } else if (!category && (RATE_LIMIT_MARKER.test(message) || status === 429 ||
+    code === "rate_limit" || code === "secondary_rate_limit" || rateLimitHeader)) {
+    category = transport === "mcp" ? FAILURE_CATEGORIES.MCP_RATE_LIMIT : FAILURE_CATEGORIES.REST_RATE_LIMIT;
+  } else if (!category && (status === 403 || /forbidden|permission|entitlement/i.test(message))) {
+    category = FAILURE_CATEGORIES.PERMISSION;
+  } else if (!category && (TIMEOUT_MARKER.test(message) || code === "timeout" || code === "etimedout")) {
+    category = FAILURE_CATEGORIES.TIMEOUT;
+  } else if (!category && (TRANSIENT_ERROR_CODES.has(code) || [408, 500, 502, 503, 504].includes(status))) {
+    category = FAILURE_CATEGORIES.TRANSIENT;
   }
-  if (TRANSPORT_UNAVAILABLE_MARKER.test(message) || code === "transport_unavailable") {
-    return { transport, category: FAILURE_CATEGORIES.TRANSPORT_UNAVAILABLE, status, code, message: redactedText(message) };
-  }
-  if (RATE_LIMIT_MARKER.test(message) || status === 429 || code === "rate_limit" || code === "secondary_rate_limit") {
-    return {
-      transport,
-      category: transport === "mcp" ? FAILURE_CATEGORIES.MCP_RATE_LIMIT : FAILURE_CATEGORIES.REST_RATE_LIMIT,
-      status,
-      code,
-      message: redactedText(message),
-    };
-  }
-  if (status === 403 || /forbidden|permission|entitlement/i.test(message)) {
-    return { transport, category: FAILURE_CATEGORIES.PERMISSION, status, code, message: redactedText(message) };
-  }
-  if (TIMEOUT_MARKER.test(message) || code === "timeout" || code === "etimedout") {
-    return { transport, category: FAILURE_CATEGORIES.TIMEOUT, status, code, message: redactedText(message) };
-  }
-  return { transport, category: FAILURE_CATEGORIES.PROVIDER, status, code, message: redactedText(message) };
+
+  const resolvedCategory = category ?? FAILURE_CATEGORIES.PROVIDER;
+  return {
+    transport,
+    category: resolvedCategory,
+    status,
+    code,
+    message: redactedText(message),
+    retryAfterMs: retryAfter,
+    rateLimitResetAt: resetAt,
+    retryable: [FAILURE_CATEGORIES.TIMEOUT, FAILURE_CATEGORIES.TRANSIENT].includes(resolvedCategory),
+  };
 }
 
 function resultFailure(result) {
@@ -138,6 +199,7 @@ function resultFailure(result) {
   if (result.isError === true) return result.error ?? result;
   if (result.ok === false) return result.error ?? result;
   if (result.error) return result.error;
+  if (statusValue(result) !== null && statusValue(result) >= 400) return result;
   return null;
 }
 
@@ -155,8 +217,8 @@ function evidenceEntry(operation, request, endpoint, failure) {
 }
 
 export class TransportStopError extends Error {
-  constructor(details) {
-    super(`GitHub ${details.operation} stopped after ${details.category}.`);
+  constructor(details, cause) {
+    super(`GitHub ${details.operation} stopped after ${details.category}.`, cause === undefined ? undefined : { cause });
     this.name = "TransportStopError";
     this.code = "transport_stop";
     this.details = details;
@@ -193,7 +255,7 @@ export async function runTransport({
         endpoint,
         request: safeRequest(request),
         primaryFailure,
-      });
+      }, error);
     }
 
     try {
@@ -216,7 +278,7 @@ export async function runTransport({
         request: safeRequest(request),
         primaryFailure,
         restFailure,
-      });
+      }, restError);
     }
   }
 }

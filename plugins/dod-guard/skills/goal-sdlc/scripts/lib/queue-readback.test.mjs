@@ -464,6 +464,32 @@ test("retries one transient read, never retries rate limits or entitlement failu
   });
   assert.equal(selectQueueItem(rateLimited), null);
 
+  let markedRateLimitReads = 0;
+  const markedRateLimited = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        markedRateLimitReads += 1;
+        throw Object.assign(new Error("forbidden token=secret"), {
+          status: 403,
+          headers: { "X-RateLimit-Reset": "1700000000" },
+        });
+      },
+      async readIssue() {
+        throw new Error("must not read issue after marked rate limit");
+      },
+      async readPullRequest() {
+        throw new Error("must not read PR after marked rate limit");
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+  assert.equal(markedRateLimitReads, 1);
+  assert.equal(markedRateLimited.readFailures[0].category, "rate_limit");
+  assert.equal(markedRateLimited.readFailures[0].rateLimitResetAt, 1_700_000_000);
+  assert.doesNotMatch(markedRateLimited.readFailures[0].message, /secret/);
+  assert.equal(selectQueueItem(markedRateLimited), null);
+
   let entitlementReads = 0;
   const denied = await readQueueSnapshot({
     provider: {

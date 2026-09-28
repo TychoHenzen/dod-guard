@@ -1,3 +1,8 @@
+import {
+  FAILURE_CATEGORIES,
+  classifyTransportFailure,
+} from "../../../../lib/transport-policy.mjs";
+
 const PROJECT_FIELDS = Object.freeze([
   "Status",
   "Linked pull requests",
@@ -6,15 +11,6 @@ const PROJECT_FIELDS = Object.freeze([
 ]);
 const PROJECT_PAGE_SIZE = 100;
 const PASSING_CHECK_BUCKETS = new Set(["pass", "skipping"]);
-const RETRYABLE_STATUS_CODES = new Set([408, 500, 502, 503, 504]);
-const RETRYABLE_ERROR_CODES = new Set([
-  "econnreset",
-  "eai_again",
-  "etimedout",
-  "timeout",
-  "timeout_error",
-  "temporarily_unavailable",
-]);
 
 class QueueReadError extends Error {
   constructor(details, cause) {
@@ -148,43 +144,12 @@ function requireProvider(provider) {
   }
 }
 
-function errorStatus(error) {
-  const status = error?.status ?? error?.statusCode ?? error?.response?.status;
-  return Number.isInteger(Number(status)) ? Number(status) : null;
-}
-
-function errorCode(error) {
-  const code = error?.code ?? error?.response?.data?.code;
-  return typeof code === "string" ? code.toLowerCase() : null;
-}
-
-function errorMessage(error) {
-  if (error instanceof Error) return error.message;
-  if (typeof error?.message === "string") return error.message;
-  if (error && typeof error === "object") return JSON.stringify(error);
-  return String(error);
-}
-
-function errorCategory(error) {
-  const status = errorStatus(error);
-  const code = errorCode(error);
-  const message = errorMessage(error).toLowerCase();
-  if (status === 401 || status === 403 || /forbidden|entitlement|unauthori[sz]ed|\b401\b|\b403\b/.test(message)) return "entitlement";
-  if (status === 429 || /rate.?limit|secondary.?limit|too many requests|\b429\b/.test(message)) return "rate_limit";
-  if (status === 408 || RETRYABLE_ERROR_CODES.has(code) || /timed? ?out|timeout|\b408\b/.test(message)) return "timeout";
-  if (RETRYABLE_STATUS_CODES.has(status) || RETRYABLE_ERROR_CODES.has(code)) return "transient";
+function errorCategory(category) {
+  if ([FAILURE_CATEGORIES.AUTHENTICATION, FAILURE_CATEGORIES.PERMISSION].includes(category)) return "entitlement";
+  if ([FAILURE_CATEGORIES.MCP_RATE_LIMIT, FAILURE_CATEGORIES.REST_RATE_LIMIT].includes(category)) return "rate_limit";
+  if (category === FAILURE_CATEGORIES.TIMEOUT) return "timeout";
+  if (category === FAILURE_CATEGORIES.TRANSIENT) return "transient";
   return "provider";
-}
-
-function retryableError(error) {
-  const category = errorCategory(error);
-  return category === "timeout" || category === "transient";
-}
-
-function retryAfterMs(error) {
-  const value = error?.retryAfterMs ?? error?.retry_after_ms ?? error?.response?.headers?.["retry-after"];
-  const number = Number(value);
-  return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
 function safeRequest(request) {
@@ -201,18 +166,19 @@ function safeRequest(request) {
 }
 
 function failureDetails(operation, request, error, attempt, attempts, missingEvidence) {
-  const category = errorCategory(error);
+  const classified = classifyTransportFailure(error);
   return {
     operation,
     request: safeRequest(request),
     attempt,
     attempts,
-    category,
-    code: errorCode(error),
-    status: errorStatus(error),
-    message: errorMessage(error),
-    retryable: retryableError(error),
-    retryAfterMs: retryAfterMs(error),
+    category: errorCategory(classified.category),
+    code: classified.code,
+    status: classified.status,
+    message: classified.message,
+    retryable: classified.retryable,
+    retryAfterMs: classified.retryAfterMs,
+    ...(classified.rateLimitResetAt === null ? {} : { rateLimitResetAt: classified.rateLimitResetAt }),
     missingEvidence: [...new Set(missingEvidence)],
   };
 }
