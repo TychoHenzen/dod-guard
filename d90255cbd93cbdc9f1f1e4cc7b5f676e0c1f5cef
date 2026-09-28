@@ -16,5 +16,14 @@
     "reason": "Reviewed PR #670 against committed target d90255cbd93cbdc9f1f1e4cc7b5f676e0c1f5cef: these public GitHubClient members are the intentional REST lifecycle seam consumed by complete-pr orchestration and contract tests; the review-only findings are accepted for this exact target/base and scanner fingerprint.",
     "author": "Codex",
     "time": "2026-09-28T05:32:27.155Z"
+  },
+  {
+    "findingId": "5655364ee4a370e0fdd4257926e6e87c862f761f6e23993048e2f8ac15f808a8",
+    "fingerprint": "bc40932d37568becd8f7a42f0c8c5103f8e61582516d3df2550320d2612e8ba7",
+    "baseSha": "0fe216be8468d1d165a32713bab10c74995cb395",
+    "targetSha": "d90255cbd93cbdc9f1f1e4cc7b5f676e0c1f5cef",
+    "reason": "Reviewed PR #670 against committed target d90255cbd93cbdc9f1f1e4cc7b5f676e0c1f5cef: these public GitHubClient members are the intentional REST lifecycle seam consumed by complete-pr orchestration and contract tests; the review-only findings are accepted for this exact target/base and scanner fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-28T05:32:27.359Z"
   }
 ]
