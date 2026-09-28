@@ -118,7 +118,8 @@ export function createPluginChecks(report, isTracked) {
     if (!plugin) return;
     checkEncoding(file, plugin);
     if (plugin.name !== pkg.name) report(file, `name "${plugin.name}" does not match package "${pkg.name}"`);
-    if (typeof plugin.description !== "string" || !plugin.description.trim()) report(file, "description missing or empty");
+    if (typeof plugin.description !== "string" || !plugin.description.trim())
+      report(file, "description missing or empty");
     else checkSkillMentions(file, plugin.description, pkg, "plugin description");
     // plugin.json may omit version, but must never contradict package.json.
     if (plugin.version !== undefined && plugin.version !== manifest.version) {
@@ -226,11 +227,11 @@ export function createPluginChecks(report, isTracked) {
     const codex = existsSync(codexFile) ? readJson(codexFile) : null;
     if (!existsSync(codexFile)) report(codexFile, "missing — the Codex manifest is part of the shared plugin metadata");
 
-    if (claude)
-      checkSkillMentions(claudeFile, claude.description ?? "", pkg, "Claude plugin description");
+    if (claude) checkSkillMentions(claudeFile, claude.description ?? "", pkg, "Claude plugin description");
     if (codex) {
       if (codex.name !== pkg.name) report(codexFile, `name "${codex.name}" does not match directory "${pkg.name}"`);
-      if (typeof codex.description !== "string" || !codex.description.trim()) report(codexFile, "description missing or empty");
+      if (typeof codex.description !== "string" || !codex.description.trim())
+        report(codexFile, "description missing or empty");
       else checkSkillMentions(codexFile, codex.description, pkg, "Codex plugin description");
       if (claude?.version !== undefined && codex.version !== claude.version) {
         report(codexFile, `version "${codex.version}" disagrees with Claude manifest "${claude.version}"`);
@@ -244,7 +245,8 @@ export function createPluginChecks(report, isTracked) {
     const adapter = readJson(packageFile);
     if (!adapter) return;
     checkEncoding(packageFile, adapter);
-    if (typeof adapter.description !== "string" || !adapter.description.trim()) report(packageFile, "description missing or empty");
+    if (typeof adapter.description !== "string" || !adapter.description.trim())
+      report(packageFile, "description missing or empty");
     else checkSkillMentions(packageFile, adapter.description, pkg, "OpenCode package description");
 
     const expectedName = claude?.author?.name ? `@${claude.author.name}/${pkg.name}-opencode` : null;
@@ -259,19 +261,27 @@ export function createPluginChecks(report, isTracked) {
     if (adapter.exports?.["."] !== "./index.js")
       report(packageFile, `exports["."] must be "./index.js", got ${JSON.stringify(adapter.exports?.["."])}`);
     if (adapter.dependencies?.["@opencode/plugin"] !== "2.0.18")
-      report(packageFile, `dependencies["@opencode/plugin"] must be "2.0.18", got ${JSON.stringify(adapter.dependencies?.["@opencode/plugin"])}`);
+      report(
+        packageFile,
+        `dependencies["@opencode/plugin"] must be "2.0.18", got ${JSON.stringify(adapter.dependencies?.["@opencode/plugin"])}`,
+      );
 
     const files = adapter.files;
-    if (!Array.isArray(files)) report(packageFile, "files must list the OpenCode entrypoint and shared inventory directories");
+    if (!Array.isArray(files))
+      report(packageFile, "files must list the OpenCode entrypoint and shared inventory directories");
     else {
       for (const required of ["index.js", "skills", "agents"])
-        if (!files.includes(required)) report(packageFile, `files must include "${required}" for the shared OpenCode inventory`);
+        if (!files.includes(required))
+          report(packageFile, `files must include "${required}" for the shared OpenCode inventory`);
     }
 
     const entrypoint = join(pkg.dir, "index.js");
-    if (!existsSync(entrypoint)) report(entrypoint, "missing — package exports point at the OpenCode adapter entrypoint");
-    else if (isTracked && !isTracked(entrypoint)) report(entrypoint, "not tracked by git — the OpenCode adapter entrypoint would not ship");
-    if (isTracked && !isTracked(packageFile)) report(packageFile, "not tracked by git — the OpenCode package metadata would not ship");
+    if (!existsSync(entrypoint))
+      report(entrypoint, "missing — package exports point at the OpenCode adapter entrypoint");
+    else if (isTracked && !isTracked(entrypoint))
+      report(entrypoint, "not tracked by git — the OpenCode adapter entrypoint would not ship");
+    if (isTracked && !isTracked(packageFile))
+      report(packageFile, "not tracked by git — the OpenCode package metadata would not ship");
     if (existsSync(codexFile) && isTracked && !isTracked(codexFile))
       report(codexFile, "not tracked by git — the Codex manifest would not ship");
   }

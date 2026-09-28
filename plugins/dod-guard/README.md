@@ -36,12 +36,14 @@ that command). Run `opencode reload` after config edits, and
 `opencode service restart` if an unchanged local path still has stale content.
 
 If loading fails, confirm the entry points to the adapter directory (not a
-copied skill cache), rerun `opencode debug config`, inspect
-`opencode plugin check`, and restart the service after correcting the path. A
-missing or malformed adapter entry must be corrected before retrying; OpenCode
-should show no active dod-guard registration until then. The adapter reads the
-checkout's existing skills and agents directly, so Claude and Codex paths remain
-untouched.
+copied skill cache), rerun `opencode debug config`, and inspect
+`opencode plugin check`. If `opencode.json` is missing, create it with the
+plugin entry shown above; if it is malformed, replace it with valid JSON and
+the same entry. Run `opencode reload --server <url>` after either repair, or
+restart the service when no server URL is available. OpenCode should show no
+active dod-guard registration until the configuration is valid. The adapter
+reads the checkout's existing skills and agents directly, so Claude and Codex
+paths remain untouched.
 
 ### Disposable discovery proof
 

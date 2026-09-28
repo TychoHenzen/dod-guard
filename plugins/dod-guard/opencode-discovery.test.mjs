@@ -61,7 +61,7 @@ function assertSupportedOpenCode() {
   assert.match(version.stdout, /^opencode v2\.0\.18\s*$/);
 }
 
-function createFixture(plugins) {
+function createFixture(plugins, configContents = JSON.stringify({ $schema: "https://opencode.ai/config.json", plugins }, null, 2)) {
   const fixture = mkdtempSync(join(tmpdir(), "dod-guard-opencode-"));
   const project = join(fixture, "project");
   const configHome = join(fixture, "config");
@@ -73,7 +73,7 @@ function createFixture(plugins) {
   for (const directory of [project, configHome, home, dataHome, cacheHome, stateHome]) {
     mkdirSync(directory, { recursive: true });
   }
-  writeFileSync(config, JSON.stringify({ $schema: "https://opencode.ai/config.json", plugins }, null, 2));
+  if (configContents !== null) writeFileSync(config, configContents);
   return {
     fixture,
     project,
@@ -92,6 +92,18 @@ function createFixture(plugins) {
       OPENCODE_SERVER_PASSWORD: "test",
     },
   };
+}
+
+async function assertNoDodGuardRegistration(baseUrl, headers, label) {
+  let absentChecks = 0;
+  await waitFor(`${label} plugin state`, async () => {
+    const result = await request(baseUrl, headers, "/api/plugin");
+    assert.equal(result.response.status, 200, JSON.stringify(result.body));
+    const plugins = result.body.data ?? [];
+    assert.equal(plugins.some((plugin) => plugin.id === "dod-guard"), false, JSON.stringify(plugins));
+    absentChecks += 1;
+    return absentChecks >= 3 ? true : false;
+  });
 }
 
 async function startServer(fixture) {
@@ -189,12 +201,69 @@ test("loads dod-guard through a disposable OpenCode v2.0.18 project", async () =
     const messagesResult = await request(baseUrl, headers, `/api/session/${sessionId}/message`);
     assert.equal(messagesResult.response.status, 200, JSON.stringify(messagesResult.body));
     assert.ok(messagesResult.body.data.some((message) => message.type === "skill" && message.skill === "next-ticket"));
+
+    const promptText = "Use the next-ticket skill with the review-pr-feature agent.";
+    const promptResult = await request(baseUrl, headers, `/api/session/${sessionId}/prompt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: promptText,
+        skills: [{ id: "next-ticket" }],
+        agents: [{ name: "review-pr-feature" }],
+        resume: false,
+      }),
+    });
+    assert.equal(promptResult.response.status, 200, JSON.stringify(promptResult.body));
+    assert.equal(promptResult.body.data.type, "user", JSON.stringify(promptResult.body));
+    assert.equal(promptResult.body.data.payload.text, promptText);
+    assert.deepEqual(promptResult.body.data.payload.skills.map((skill) => skill.id), ["next-ticket"]);
+    assert.deepEqual(promptResult.body.data.payload.agents.map((agent) => agent.name), ["review-pr-feature"]);
   } finally {
     if (server) await stop(server);
     rmSync(fixture.fixture, { recursive: true, force: true });
     assert.equal(existsSync(fixture.fixture), false);
   }
 });
+
+for (const [label, invalidConfig] of [
+  ["missing", null],
+  ["malformed", '{"$schema":"https://opencode.ai/config.json", "plugins": ['],
+]) {
+  test(`recovers from ${label} opencode.json through the bundled reload command`, async () => {
+    assertSupportedOpenCode();
+    const fixture = createFixture([], invalidConfig);
+    let server;
+
+    try {
+      const connection = await startServer(fixture);
+      ({ server } = connection);
+      const { baseUrl, headers } = connection;
+
+      await assertNoDodGuardRegistration(baseUrl, headers, label);
+      writeFileSync(
+        fixture.config,
+        JSON.stringify({ $schema: "https://opencode.ai/config.json", plugins: [ROOT] }, null, 2),
+      );
+      const reload = spawnSync(OPENCODE, ["reload", "--server", baseUrl], {
+        cwd: fixture.project,
+        env: fixture.environment,
+        encoding: "utf8",
+      });
+      assert.equal(reload.status, 0, `${reload.stderr}\n${reload.stdout}`);
+
+      const plugin = await waitFor("recovered dod-guard plugin", async () => {
+        const result = await request(baseUrl, headers, "/api/plugin");
+        const active = result.body.data?.find((entry) => entry.id === "dod-guard");
+        return active?.state.status === "active" ? active : false;
+      });
+      assert.equal(plugin.source.type, "local", JSON.stringify(plugin));
+    } finally {
+      if (server) await stop(server);
+      rmSync(fixture.fixture, { recursive: true, force: true });
+      assert.equal(existsSync(fixture.fixture), false);
+    }
+  });
+}
 
 test("keeps an installed adapter idempotent across duplicate load, reload, and replacement", async () => {
   assertSupportedOpenCode();
