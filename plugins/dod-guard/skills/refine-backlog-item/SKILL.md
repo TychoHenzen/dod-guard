@@ -9,22 +9,18 @@ Turn one existing backlog issue into an implementation-ready parent PBI. Its
 repository is the issue's target repository. Do not create a branch, assign the
 PBI, change it to In Progress, implement code, or open a pull request.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
-
-Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+Read and apply `standards/working-defaults.md` and
+`standards/github-request-discipline.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Preconditions
 
-1. Resolve the repository with the GitHub MCP repository operation. If MCP is
-   unavailable, use `gh repo view --json nameWithOwner,defaultBranchRef,url`.
-2. Resolve exactly one open Project explicitly linked to that repository.
-3. Verify the specified issue belongs to the repository, appears in that
+1. Resolve the repository, its linked Project, and the `Backlog` and `Todo`
+   statuses as described under "Resolve the repository and Project" in
+   `standards/github-request-discipline.md`.
+2. Verify the specified issue belongs to the repository, appears in that
    Project, and has Status `Backlog`.
-4. Resolve exactly one `Status` field with one case-insensitive `Todo` option.
-5. Query all live labels in the target repository, including descriptions:
+3. Query all live labels in the target repository, including descriptions:
 
    Use the GitHub MCP repository-resource operation with the labels endpoint.
    If MCP is unavailable, use:

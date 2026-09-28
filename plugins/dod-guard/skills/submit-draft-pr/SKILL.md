@@ -9,20 +9,17 @@ Create or update the one draft pull request for a pushed parent-PBI branch. Do
 not change implementation scope, approve, mark ready, merge, close the PR, or
 close the parent issue.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
-
-Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+Read and apply `standards/working-defaults.md` and
+`standards/github-request-discipline.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Preconditions
 
-1. Resolve the repository and default branch with the GitHub MCP repository
-   metadata operation. If MCP is unavailable, use
-   `gh repo view --json nameWithOwner,defaultBranchRef,url`.
-2. Verify the supplied parent issue belongs to that repository, is in its one
-   open linked Project, and has Status `In Progress`.
+1. Resolve the repository, its default branch, its linked Project, and the
+   `In Progress` status as described under "Resolve the repository and
+   Project" in `standards/github-request-discipline.md`.
+2. Verify the supplied parent issue belongs to that repository, is in that
+   Project, and has Status `In Progress`.
 3. Inspect `git status --short` and classify pending paths. A dirty worktree is
    not a blocker by itself. Keep clearly in-scope ordinary changes uncommitted
    until the branch, PBI, and acceptance evidence are verified. Stop for

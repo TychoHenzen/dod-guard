@@ -18,18 +18,14 @@ After selection, create the PBI's feature branch, assign the issue, move it
 to In Progress, implement it, verify it, review completion, commit it, and push
 the branch.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
-
-Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+Read and apply `standards/working-defaults.md` and
+`standards/github-request-discipline.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Preconditions
 
 1. Confirm the current directory is inside a Git worktree.
-2. Run `gh auth status`. Stop if the active token lacks `repo` or `project`.
-3. Read `git status --short --branch` and classify every pending path. A dirty
+2. Read `git status --short --branch` and classify every pending path. A dirty
    worktree is not a blocker by itself. If ordinary pending changes clearly
    belong to the requested work, keep them uncommitted until the ticket branch
    exists, then carry them through the normal `/commit` path on that branch.
@@ -37,38 +33,12 @@ Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`
    Preserve and report secrets, destructive intent, unrelated changes, or work
    that cannot be separated safely.
 
-## Resolve the repository
+## Resolve the repository and Project
 
-When the GitHub MCP connector is unavailable, run:
-
-```text
-gh repo view --json nameWithOwner,defaultBranchRef,url
-```
-
-With MCP, use its narrow repository metadata operation and retain the returned
-repository snapshot for the rest of the workflow.
-
-Use `nameWithOwner` as the repository identity. Do not derive identity by
-parsing an `origin` URL when `gh repo view` succeeds. Stop if the repository
-has no GitHub remote or no default branch.
-
-## Resolve the linked project
-
-Query the repository's linked Project through the typed connector or the REST
-ProjectsV2 endpoints. Request each project's `id`, `number`, `title`, `closed`,
-and owner login.
-
-Keep only open projects. The repository must have exactly one open linked
-project:
-
-- No match: stop and explain that an administrator must link a GitHub Project
-  to this repository.
-- More than one match: stop and list each owner, number, and title. Do not pick
-  one by name.
-- One match: report its owner, number, and title, then use it for ticket lookup.
-
-This explicit repository link is the only supported repository-to-project
-mapping. It works for personal and organization projects.
+Resolve the repository, its linked Project, and the `Todo` and `In Progress`
+statuses as described under "Resolve the repository and Project" in
+`standards/github-request-discipline.md`. Report the Project's owner, number,
+and title, then use it for ticket lookup.
 
 ## Select a ticket
 
@@ -119,10 +89,7 @@ Resolve every value before changing local or remote state:
 3. Form the branch name `codex/<issue-number>-<slug>`. Keep the complete name
    under 64 characters by shortening only the slug.
 4. Confirm that the branch name exists neither locally nor on `origin`.
-5. Read the linked project's fields and find exactly one `Status` field with
-   exactly one case-insensitive `Todo` option and one case-insensitive
-   `In Progress` option.
-6. Confirm the selected PBI currently has Status `Todo`. Resolve its project
+5. Confirm the selected PBI currently has Status `Todo`. Resolve its project
    item id, the numeric project number, the live Status field id, and the In
    Progress option id.
 

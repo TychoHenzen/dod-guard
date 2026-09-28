@@ -10,12 +10,9 @@ Fix selected findings produced by `/dod-guard:review-pr`. Revalidate each
 finding against the current head before editing. Keep stale, unsupported, and
 unresolved findings visible.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
-
-Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+Read and apply `standards/working-defaults.md` and
+`standards/github-request-discipline.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Scope
 

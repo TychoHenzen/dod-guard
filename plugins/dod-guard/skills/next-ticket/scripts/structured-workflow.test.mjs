@@ -261,7 +261,6 @@ test("every skill with direct GitHub request instructions names the shared polic
       "refine-backlog-item",
       "review-pr",
       "setup-repository",
-      "submit-draft-pr",
     ],
   );
   for (const { text } of directGithubSkills) {
