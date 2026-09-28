@@ -3,9 +3,11 @@ const MAX_UNIT_FILES = 8;
 const OWNER_MARKERS = new Set(["SKILL.md", "package.json"]);
 // The four shipped reviewer agents, in the order angles are listed and dispatched.
 const REVIEWERS = Object.freeze(["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"]);
-const TEST_FILE = /(?:^|\/)(?:tests?|__tests__)\/|\.test\.[cm]?[jt]sx?$/;
+const TEST_DIRECTORY = /(?:^|\/)(?:tests?|__tests__)\//;
+const TEST_SUFFIX = /\.test\.[cm]?[jt]sx?$/;
 const CODE_FILE = /\.(?:[cm]?[jt]sx?|py|rs|cs|go|ps1|sh)$/;
-const CONFIG_FILE = /(?:^|\/)\.github\/|\.(?:json|ya?ml|toml)$/;
+const CONFIG_DIRECTORY = /(?:^|\/)\.github\//;
+const CONFIG_SUFFIX = /\.(?:json|ya?ml|toml)$/;
 
 // Tests prove behavior (feature) and must stay readable; code carries design and
 // failure risk; prose and config each have one concern worth a reviewer's time.
@@ -25,9 +27,9 @@ function directoryOf(path) {
 }
 
 function fileKind(path) {
-  if (TEST_FILE.test(path)) { return "test"; }
+  if (TEST_DIRECTORY.test(path) || TEST_SUFFIX.test(path)) { return "test"; }
   if (CODE_FILE.test(path)) { return "code"; }
-  if (CONFIG_FILE.test(path)) { return "config"; }
+  if (CONFIG_DIRECTORY.test(path) || CONFIG_SUFFIX.test(path)) { return "config"; }
   return "prose";
 }
 
