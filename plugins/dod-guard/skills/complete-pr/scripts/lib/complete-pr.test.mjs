@@ -231,6 +231,40 @@ test("reads linked Project statuses through REST without GraphQL", () => {
   assert.equal(calls.some((args) => args.includes("graphql") || args.includes("issue")), false);
 });
 
+test("maps linked closing issues from paginated REST pull data without GraphQL", () => {
+  const calls = [];
+  const responses = new Map([
+    ["repos/owner/repo/pulls/24", JSON.stringify({ body: "Closes #24" })],
+    ["repos/owner/repo/pulls/24/commits?per_page=100", JSON.stringify([[{
+      commit: { message: "Fixes other/repo#7" },
+    }]])],
+    ["repos/owner/repo/issues/24", JSON.stringify({ state: "closed", html_url: "https://github.com/owner/repo/issues/24" })],
+    ["repos/other/repo/issues/7", JSON.stringify({ state: "closed", html_url: "https://github.com/other/repo/issues/7" })],
+  ]);
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    calls.push(args);
+    assert.equal(args[0], "api");
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
+    const stdout = responses.get(endpoint);
+    if (!stdout) {
+      throw new Error(`Unexpected command: ${args.join(" ")}`);
+    }
+    return { status: 0, stderr: "", stdout };
+  });
+
+  assert.deepEqual(client.getLinkedIssues(24), [
+    { number: 24, state: "CLOSED", url: "https://github.com/owner/repo/issues/24" },
+    { number: 7, state: "CLOSED", url: "https://github.com/other/repo/issues/7" },
+  ]);
+  assert.deepEqual(calls, [
+    ["api", "repos/owner/repo/pulls/24"],
+    ["api", "--paginate", "--slurp", "repos/owner/repo/pulls/24/commits?per_page=100"],
+    ["api", "repos/owner/repo/issues/24"],
+    ["api", "repos/other/repo/issues/7"],
+  ]);
+  assert.equal(calls.some((args) => args.includes("graphql") || args.includes("pr")), false);
+});
+
 test("lists ci.yml workflow runs for the trusted head SHA", () => {
   const calls = [];
   const run = workflowRun("head-1");
@@ -827,17 +861,25 @@ test("stops before auto-merge when marking a draft ready fails", async () => {
   assert.equal(client.calls.some(([name]) => name === "enablePullRequestAutoMerge"), false);
 });
 
-test("marks a draft pull request ready through GitHub CLI", () => {
+test("marks a draft pull request ready through REST", () => {
   const calls = [];
   const client = new GitHubClient("owner/repo", 24, (args) => calls.push(args));
 
   client.markReady(24);
 
-  assert.deepEqual(calls, [["pr", "ready", "24", "--repo", "owner/repo"]]);
+  assert.deepEqual(calls, [[
+    "api",
+    "--method",
+    "PATCH",
+    "repos/owner/repo/pulls/24",
+    "-F",
+    "draft=false",
+  ]]);
+  assert.equal(calls.some((args) => args.includes("graphql") || args.includes("pr")), false);
 });
 
-test("surfaces failures from the GitHub ready command", () => {
-  const failure = new Error("gh pr ready failed");
+test("surfaces failures from the REST ready request", () => {
+  const failure = new Error("REST draft update failed");
   const client = new GitHubClient("owner/repo", 24, () => {
     throw failure;
   });

@@ -5,6 +5,7 @@ import { CompletionError } from "./completion-error.mjs";
 
 const GH_CHECKS_PENDING_EXIT = 8;
 const HTTP_NOT_FOUND = /HTTP 404/;
+const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
 
 function githubResponseError(endpoint, field) {
   return new CompletionError(
@@ -59,7 +60,7 @@ function ghJsonPagesData(endpoint, commandRunner) {
 
 function ghJsonArrayPages(endpoint, commandRunner) {
   const pages = ghJsonPagesData(endpoint, commandRunner);
-  if (pages.length === 0 || pages.some((page) => !Array.isArray(page))) {
+  if (pages.some((page) => !Array.isArray(page))) {
     throw githubResponseError(endpoint, "an array response");
   }
   return pages.flat();
@@ -92,6 +93,19 @@ function encodeBranch(branchName) {
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
+}
+
+function closingIssueReferences(text, defaultRepository) {
+  const references = new Map();
+  for (const match of String(text ?? "").matchAll(CLOSING_REFERENCE)) {
+    const repository = match.groups.repository ?? defaultRepository;
+    const number = Number(match.groups.number);
+    const key = `${repository}#${number}`;
+    if (!references.has(key)) {
+      references.set(key, { repository, number });
+    }
+  }
+  return [...references.values()];
 }
 
 function listOwnedProjects(owner, commandRunner) {
@@ -253,7 +267,14 @@ export class GitHubClient {
   }
 
   markReady(pullNumber) {
-    this.#commandRunner(["pr", "ready", String(pullNumber), "--repo", this.repository]);
+    this.#commandRunner([
+      "api",
+      "--method",
+      "PATCH",
+      `repos/${this.repository}/pulls/${pullNumber}`,
+      "-F",
+      "draft=false",
+    ]);
   }
 
   enableRepositoryAutoMerge() {
@@ -339,26 +360,26 @@ export class GitHubClient {
   }
 
   getLinkedIssues(pullNumber) {
-    const { data } = ghJson([
-      "pr",
-      "view",
-      String(pullNumber),
-      "--repo",
-      this.repository,
-      "--json",
-      "closingIssuesReferences",
-    ], [0], this.#commandRunner);
-    return data.closingIssuesReferences.map((issue) => {
-      const issueRepository = `${issue.repository.owner.login}/${issue.repository.name}`;
+    const pullEndpoint = `repos/${this.repository}/pulls/${pullNumber}`;
+    const { data: pull } = ghJson(["api", pullEndpoint], [0], this.#commandRunner);
+    const references = closingIssueReferences(pull?.body, this.repository);
+    for (const commit of ghJsonArrayPages(`${pullEndpoint}/commits?per_page=100`, this.#commandRunner)) {
+      for (const reference of closingIssueReferences(commit?.commit?.message, this.repository)) {
+        if (!references.some((candidate) => candidate.repository === reference.repository && candidate.number === reference.number)) {
+          references.push(reference);
+        }
+      }
+    }
+    return references.map(({ repository: issueRepository, number }) => {
       const { data: currentIssue } = ghJson(
-        ["api", `repos/${issueRepository}/issues/${issue.number}`],
+        ["api", `repos/${issueRepository}/issues/${number}`],
         [0],
         this.#commandRunner,
       );
       return {
-        number: issue.number,
+        number,
         state: currentIssue.state.toUpperCase(),
-        url: issue.url,
+        url: currentIssue.html_url ?? currentIssue.url,
       };
     });
   }
