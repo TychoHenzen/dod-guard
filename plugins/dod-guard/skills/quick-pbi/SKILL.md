@@ -48,7 +48,7 @@ referenced skill from the active plugin root before invoking it.
    same issue. Do not ask questions in any other stage. If a material answer
    remains unavailable, leave the issue in its actual state and stop.
 3. Invoke `/next-ticket <issue-number>` after refinement moves the issue to
-   `Todo`. Use its pushed branch, commit, completion-review result, and checks
+   `Todo`. Use its pushed branch, commit, and checks
    as the implementation handoff. Do not select another ticket.
 4. Invoke `/submit-draft-pr <issue-number>` and retain the returned pull
    request and head.

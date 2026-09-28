@@ -19,23 +19,47 @@ const REVIEWERS = Object.freeze([
 ]);
 const WINDOWS_REVIEWER_CONCURRENCY = 1;
 const DEFAULT_MODEL = "gpt-5.6-luna";
-const DEFAULT_REASONING_EFFORT = "max";
+const DEFAULT_REASONING_EFFORT = "medium";
 const DEFAULT_SCHEMA_PATH = fileURLToPath(new URL("../response-schema.json", import.meta.url));
 const WINDOWS_WRAPPER_PATTERN = /(?:powershell|pwsh|(?:^|[\\/])cmd(?:\.exe)?$|\.ps1(?:$|[?#]))/u;
+
+function entryKey({ reviewer, unit }) {
+  return `${reviewer}\u0000${unit}`;
+}
+
+// A retry reruns only the (reviewer, unit) pairs whose earlier execution did not
+// complete, so a completed recommendation is never produced twice.
+function incompleteEntries(reviewers, previous) {
+  const completed = new Set(
+    (previous?.reviews ?? []).filter(({ execution }) => execution?.status === "completed").map(entryKey),
+  );
+  return reviewers.filter((entry) => !completed.has(entryKey(entry)));
+}
+
+function nonEmptyText(value) {
+  return typeof value === "string" && value.length > 0;
+}
+
+function requireEntry(entry) {
+  if (!REVIEWERS.includes(entry?.reviewer)) {
+    throw new Error(`Reviewer dispatch received an unknown reviewer: ${entry?.reviewer ?? ""}`);
+  }
+  if (!nonEmptyText(entry.unit)) {
+    throw new TypeError("Reviewer dispatch requires a review unit for every reviewer.");
+  }
+  if (!nonEmptyText(entry.prompt)) {
+    throw new TypeError("Reviewer dispatch requires a non-empty prompt for every reviewer.");
+  }
+}
 
 function requireReviewers(reviewers) {
   if (!Array.isArray(reviewers) || reviewers.length === 0) {
     throw new TypeError("Reviewer dispatch requires at least one reviewer.");
   }
-  const names = reviewers.map((entry) => entry?.reviewer);
-  if (names.some((name) => !REVIEWERS.includes(name))) {
-    throw new Error(`Reviewer dispatch received an unknown reviewer: ${names.find((name) => !REVIEWERS.includes(name)) ?? ""}`);
-  }
-  if (new Set(names).size !== names.length) {
-    throw new Error("Reviewer dispatch cannot start the same reviewer twice.");
-  }
-  if (reviewers.some((entry) => typeof entry.prompt !== "string" || entry.prompt.length === 0)) {
-    throw new TypeError("Reviewer dispatch requires a non-empty prompt for every reviewer.");
+  reviewers.forEach(requireEntry);
+  const pairs = reviewers.map(entryKey);
+  if (new Set(pairs).size !== pairs.length) {
+    throw new Error("Reviewer dispatch cannot start the same reviewer twice for one unit.");
   }
 }
 
@@ -63,7 +87,7 @@ function parseReviewerResponse(raw) {
   return { value: response };
 }
 
-function reviewRecord(reviewer, result) {
+function reviewRecord({ reviewer, unit }, result) {
   let payload = null;
   let error = null;
   if (result.ok) {
@@ -77,6 +101,7 @@ function reviewRecord(reviewer, result) {
   }
   return {
     reviewer,
+    unit,
     result: payload,
     error,
     capability: result.capability ?? null,
@@ -84,7 +109,7 @@ function reviewRecord(reviewer, result) {
   };
 }
 
-export async function dispatchReviewers({
+async function dispatchReviewers({
   reviewers,
   executable = resolveCodexExecutable(),
   prefixArgs = [],
@@ -101,6 +126,7 @@ export async function dispatchReviewers({
   rejectWindowsWrappers({ executable, prefixArgs, platform });
   const results = [];
   for (const entry of reviewers) {
+    // biome-ignore lint/performance/noAwaitInLoops: Windows reviewers must start one at a time (WINDOWS_REVIEWER_CONCURRENCY).
     const result = await runAdvisor({
       prompt: entry.prompt,
       executable,
@@ -114,7 +140,7 @@ export async function dispatchReviewers({
       parseResponse: parseReviewerResponse,
       spawnImpl,
     });
-    results.push(reviewRecord(entry.reviewer, result));
+    results.push(reviewRecord(entry, result));
   }
   return {
     terminal: results.every(({ execution }) => execution?.status === "completed"),
@@ -123,11 +149,12 @@ export async function dispatchReviewers({
   };
 }
 
-export { REVIEWERS, WINDOWS_REVIEWER_CONCURRENCY };
-
 function argumentValue(name) {
   const index = process.argv.indexOf(name);
-  return index === -1 ? undefined : process.argv[index + 1];
+  if (index === -1) {
+    return;
+  }
+  return process.argv[index + 1];
 }
 
 async function main() {
@@ -136,6 +163,10 @@ async function main() {
     throw new Error("Reviewer dispatch requires --input <path>.");
   }
   const input = JSON.parse(await readFile(inputPath, "utf8"));
+  const previousPath = argumentValue("--retry-incomplete");
+  if (previousPath) {
+    input.reviewers = incompleteEntries(input.reviewers, JSON.parse(await readFile(previousPath, "utf8")));
+  }
   process.stdout.write(`${JSON.stringify(await dispatchReviewers(input), null, 2)}\n`);
 }
 
@@ -145,3 +176,5 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import
     process.exitCode = 1;
   });
 }
+
+export { REVIEWERS, WINDOWS_REVIEWER_CONCURRENCY, dispatchReviewers, incompleteEntries };

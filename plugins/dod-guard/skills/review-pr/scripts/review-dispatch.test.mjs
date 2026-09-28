@@ -48,7 +48,7 @@ await writeFile(outputPath, JSON.stringify({ reviewer: input.reviewer, coverage:
   return { executable, record, root, state };
 }
 
-const prompts = REVIEWERS.map((reviewer) => ({ reviewer, prompt: JSON.stringify({ reviewer }) }));
+const prompts = REVIEWERS.map((reviewer) => ({ reviewer, unit: "pull-request", prompt: JSON.stringify({ reviewer }) }));
 
 test("requires every reviewer finding field in the response schema", async () => {
   const schema = JSON.parse(await readFile(REVIEW_SCHEMA_PATH, "utf8"));
@@ -170,6 +170,7 @@ test("serializes Windows reviewers through a direct executable boundary", async 
     const records = JSON.parse(await readFile(fixture.record, "utf8"));
     assert.deepEqual(records.map(({ reviewer }) => reviewer), REVIEWERS);
     assert.equal(records.some(({ args }) => args.some((value) => WRAPPER_PATTERN.test(value))), false);
+    assert.equal(records.every(({ args }) => args.includes("model_reasoning_effort=medium")), true);
     assert.equal(launches.every(({ options }) => options.shell === false), true);
     assert.equal(launches.every(({ executable, args }) => executable === process.execPath && args[0] === fixture.executable), true);
   } finally {
