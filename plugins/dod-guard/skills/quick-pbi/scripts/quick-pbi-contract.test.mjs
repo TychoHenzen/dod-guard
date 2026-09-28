@@ -43,6 +43,10 @@ test("quick-pbi covers the full delivery lifecycle without extra prompts", () =>
     /every valid\s+unresolved finding/,
     /Do not invoke another\s+reviewer after those fixes/,
     /stop without rollback or duplicate issues/,
+    /concrete feature request authorizes the routine lifecycle/,
+    /one associated parent PBI/,
+    /one branch, its\s+commit series, and one draft PR/,
+    /Do not pause for ceremonial confirmation/,
   ]) {
     assert.match(skill, signal);
   }
