@@ -76,9 +76,10 @@ For feature work or material ambiguity, use the structured path in the
 For structured work, `/next-ticket` records one `## Implementation handoff`
 comment on the parent issue. It maps each ordered task and mandatory child to
 the pushed commit or verified remote-state evidence, fresh checks, and the
-current user-path result. `/submit-draft-pr` consumes that comment and records
-the same mapping in `## Convergence`; missing or contradicted evidence remains
-an actionable remainder. Small, clear fixes bypass these records.
+current user-path result. `/submit-draft-pr` checks that comment against the
+issue contract and links it from `## Convergence` instead of restating it;
+missing or contradicted evidence remains an actionable remainder. Small, clear
+fixes bypass these records.
 
 Use the ordinary path for a small, clear fix. Neither path bypasses stops for
 material ambiguity, credentials, destructive or authority-bound actions,
