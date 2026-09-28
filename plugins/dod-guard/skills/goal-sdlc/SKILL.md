@@ -360,6 +360,8 @@ D. If no parent is active:
 
 &#x20; [$dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md) with the added instructions listed under Refinement contract
 
+- A `Friction log YYYY-MM-DD` issue dated today or later is not eligible yet, because it is still collecting entries. A log from an earlier day is ordinary Backlog work.
+
 - After refinement, verify the parent and required children are in Todo, then continue implementation.
 
 - If no eligible work exists, finish the loop with a queue-empty result only after checking for dirty or in-progress work and creating a matching PBI when none exists.
@@ -675,9 +677,15 @@ For every failed, timed-out, or ambiguous action:
 
 7\. Resume the original checkpoint or rotate to another eligible parent if this one is externally blocked.
 
-- Self-improvement rule: every encountered issue, execution failure, tooling or runtime defect, workflow friction, or recovery-worthy discrepancy triggers a follow-up check for an existing dod-guard PBI covering the durable fix. Deduplicate against existing issues and PBIs; if no matching PBI exists, create one through `add-backlog-idea` with the durable fix and exact incident/recovery evidence, even when the immediate incident is recovered.
+- Daily friction log: record every encountered issue, execution failure, tooling or runtime defect, workflow friction, or recovery-worthy discrepancy in one PBI per day, titled `Friction log YYYY-MM-DD` with today's local date. Do not create a separate backlog issue per incident. Record it even when the immediate incident is recovered.
 
-- Preserve the current delivery unit and keep implementation out of the incident workaround. The workaround restores safe progress; the durable fix remains separately queued through the backlog workflow.
+  - Dedupe in this order. If today's log already has an entry for the same friction, add the new occurrence to that entry. Otherwise, if one bounded search finds an open non-log PBI that already owns the durable fix, add the incident evidence to that PBI as a comment. Otherwise append a new entry to today's log.
+  - Find today's log with one search for an open issue in the target repository titled exactly `Friction log YYYY-MM-DD`. Create it only when none exists, through `add-backlog-idea` as exactly one feature with that exact title. The queue recognizes the log by that title, so a reworded title would get refined the same day. Keep entries under a `## Entries` heading in the body.
+  - Later entries edit the same issue body: re-read it, append under `## Entries`, write, and read it back.
+  - Each entry is a `###` section with a short title and these fields: what happened (exact error, tool, stage, PBI, and SHA); the workaround used; the durable fix (owning files and the change); and how to verify the fix.
+  - The queue holds today's log while it collects entries. After the day ends, the log is ordinary Backlog work: refine it and implement its entries like any other PBI.
+
+- Preserve the current delivery unit and keep implementation out of the incident workaround. The workaround restores safe progress; the durable fix waits in the friction log.
 
 
 
@@ -775,11 +783,7 @@ If a cached skill or script must be edited:
 
 - Record the exact cache path and behavior change.
 
-- Use:
-
-&#x20; [$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md)
-
-&#x20; to track the long-term dod-guard repository fix.
+- Record the long-term dod-guard repository fix as an entry in today's friction log, as described under the daily friction log rule.
 
 - A cache-only fix is not proof that the tracked plugin is fixed.
 

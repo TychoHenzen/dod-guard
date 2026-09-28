@@ -794,3 +794,17 @@ test("goal-sdlc resumes dirty work and tracks an unmatched task", async () => {
   assert.match(skill, /Do not discard, reset, stash, overwrite, or silently absorb those edits/);
   assert.match(skill, /queue-empty result only after checking for dirty or in-progress work/);
 });
+
+test("goal-sdlc records friction in one daily log instead of one issue per incident", async () => {
+  const skill = await readSkill();
+  assert.match(skill, /one PBI per day, titled `Friction log YYYY-MM-DD`/);
+  assert.match(skill, /Do not create a separate backlog issue per incident/);
+  assert.match(
+    skill,
+    /today's log already has an entry for the same friction[\s\S]*open non-log PBI that already owns the durable fix[\s\S]*Otherwise append a new entry/,
+  );
+  assert.match(skill, /what happened \(exact error, tool, stage, PBI, and SHA\); the workaround used; the durable fix/);
+  assert.match(skill, /long-term dod-guard repository fix as an entry in today's friction log/);
+  assert.doesNotMatch(skill, /if no matching PBI exists, create one through `add-backlog-idea`/);
+  assert.doesNotMatch(skill, /to track the long-term dod-guard repository fix/);
+});
