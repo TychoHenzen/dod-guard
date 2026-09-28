@@ -12,12 +12,9 @@ and cleanup conditions. Do not infer that the gate is satisfied from review
 comments, passing checks, or an earlier command; this invocation performs the
 final guarded verification.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
-
-Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+Read and apply `standards/working-defaults.md` and
+`standards/github-request-discipline.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Resolve the pull request
 

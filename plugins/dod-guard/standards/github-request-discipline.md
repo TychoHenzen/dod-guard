@@ -7,6 +7,29 @@ same request shape.
 MCP does not create a new GitHub quota. It reduces waste only when the skill
 uses narrow operations, reuses a run snapshot, and avoids duplicate calls.
 
+## Resolve the repository and Project
+
+Every GitHub-facing skill resolves these values once, keeps them in the run
+snapshot, and never reuses a repository, Project, field, option, or user id
+from an earlier run.
+
+1. Repository: use the GitHub MCP repository metadata operation. If MCP is
+   unavailable, run `gh repo view --json nameWithOwner,defaultBranchRef,url`.
+   Use `nameWithOwner` as the identity; do not parse the `origin` URL. Stop if
+   there is no GitHub remote or no default branch.
+2. Access: verify the connected identity can read and write the repository and
+   its Project. Without MCP, run `gh auth status` and require the `repo` and
+   `project` scopes. Stop if access is missing.
+3. Project: read the repository's linked Projects once through the typed
+   connector or the REST ProjectsV2 endpoints and keep only open ones. Exactly
+   one must remain. With none, stop and explain that an administrator must link
+   a Project to the repository. With more than one, stop and list each owner,
+   number, and title; never pick one by name. This explicit link is the only
+   supported repository-to-Project mapping, for personal and organization
+   Projects alike.
+4. Status: find exactly one `Status` field and, case-insensitively, exactly one
+   option for each status the skill needs. Stop if any is absent or ambiguous.
+
 ## Read plan
 
 1. Resolve the repository once. Retain its `nameWithOwner`, default branch,
