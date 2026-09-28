@@ -7,6 +7,36 @@ same request shape.
 MCP does not create a new GitHub quota. It reduces waste only when the skill
 uses narrow operations, reuses a run snapshot, and avoids duplicate calls.
 
+## Transport decision
+
+Every GitHub operation has one primary connector/MCP attempt. A healthy result
+stays on MCP; do not call REST in parallel or as a speculative duplicate. The
+only alternate-transport decisions are:
+
+- An explicit MCP rate-limit result (`transport: mcp`, `category: rate_limit`)
+  or a supported MCP transport-unavailable result selects the same authenticated
+  REST operation once. Pass the original repository, Project, issue, pull
+  request, field, option, item, branch, and pagination identity unchanged.
+- Record the redacted primary failure and named REST endpoint. Do not retry the
+  exhausted MCP operation, add a routine GraphQL request, or infer a resource
+  from a title or stale snapshot.
+- Authentication, permission, malformed, timeout, unsupported, and provider
+  failures stop. A REST rate limit also stops; it never selects GraphQL or a
+  second REST mutation. A bare 401/403 is not a rate limit.
+- If no equivalent REST operation exists, stop with the redacted primary
+  evidence. The selected review-thread GraphQL exception remains capability-
+  gated by an explicit REST/connector 404/405 and is never a quota fallback.
+
+The executable boundary is `<plugin-root>/lib/transport-policy.mjs`: call the
+primary once, provide one named REST handler only for a supported operation, and
+let `TransportStopError` carry the redacted stop evidence. The REST equivalents
+used by the affected workflows are repository metadata (`GET /repos/{repository}`),
+issue (`GET/PATCH /repos/{repository}/issues/{issueNumber}`), pull request
+(`GET /repos/{repository}/pulls/{pullNumber}`), review comments, Project and
+Project-item endpoints, branch refs, checks/workflow runs, labels, contents, and
+branch protection. Writes still use the read-before-write and readback rules
+below.
+
 ## Read plan
 
 1. Resolve the repository once. Retain its `nameWithOwner`, default branch,
