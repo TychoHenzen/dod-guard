@@ -79,9 +79,7 @@ decisions, and the built-in goal's stop condition.
   between those existing owners.
 
 Referenced `dod-guard` skills resolve by name under the active plugin root, not
-by cached absolute or versioned paths. The no-worktree rule below is strict:
-never create, use, register, switch to, prune, remove, or clean up a Git
-worktree.
+by cached absolute or versioned paths.
 
 Do not infer workflow authority from files merely present in the repository.
 Read a project-local process document only when the user explicitly names it or
@@ -94,23 +92,15 @@ under the active plugin root instead of substituting a local process document.
 
 Operate as a continuous delivery worker for the current repository and its linked GitHub Project.
 
-Resolve every referenced `dod-guard` skill by name under the active plugin root
-once at goal start. Never copy a cached absolute path or plugin version into a
-handoff, ledger, issue, or progress message; relative links in this skill are
-the stable source references.
-
-relevant skills:
-[$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md)
-
-[$dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md)
-
-[$dod-guard:next-ticket](../next-ticket/SKILL.md)
-
-[$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md)
-
-[$dod-guard:review-pr](../review-pr/SKILL.md)
-
-[$dod-guard:complete-pr](../complete-pr/SKILL.md)
+Never copy a cached absolute path or plugin version into a handoff, ledger,
+issue, or progress message; the relative links in this skill are the stable
+source references:
+[$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md),
+[$dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md),
+[$dod-guard:next-ticket](../next-ticket/SKILL.md),
+[$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md),
+[$dod-guard:review-pr](../review-pr/SKILL.md), and
+[$dod-guard:complete-pr](../complete-pr/SKILL.md).
 
 target project: the single open GitHub Project explicitly linked to the current repository
 target repo: based on what is in the current working directory
@@ -128,9 +118,7 @@ Assume the primary model is `gpt-5.6-luna` with `max` reasoning, this is also th
 
 Hard invariants:
 
-- Work on exactly one parent delivery unit at a time and finish it before selecting another.
-- All work is sequential; do not mutate, implement, review, or deliver multiple parent PBIs in parallel.
-- Use the current repository checkout only; never create or use a Git worktree.
+- The checkout and execution policy above holds throughout: one parent at a time, sequentially, in the current checkout.
 - Each refined parent has one non-duplicated set of mandatory child PBIs.
 - All child implementation happens on one branch and one PR.
 - Do not create or publish a PR until every mandatory child is implementation-complete.
@@ -176,7 +164,7 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
 - Identify the target repository, remote, linked Project, current checkout/branch, tech stack, PBI statuses, parent/child links, PRs, branch SHAs, checks, permissions, and unrelated changes.
 - Treat live remote state as authoritative over stale notes.
 - Preserve unrelated user work. Never reset, stash, overwrite, or include it.
-- Treat a dirty tree as probable in-progress work. Continue it when repository evidence identifies its PBI or checkpoint; otherwise create and track the matching PBI before selecting unrelated work.
+- Apply the dirty-checkout rules from the checkout and execution policy before selecting unrelated work.
 - Read existing child PBIs and PRs before creating anything only when they are absent from the snapshot or the snapshot was invalidated.
 - Repair recoverable orphan states before selecting new work:
 
@@ -307,7 +295,7 @@ tickets.
 - Implement the requested behavior using existing repository patterns.
 - Include precise acceptance criteria and verification.
 
-* the refinement should perform functional decomposition to split the implementation into atomic steps and create one subtask with minimal details for each
+- The refinement performs functional decomposition to split the implementation into atomic steps and creates one subtask with minimal details for each.
 
 #### B. Wiring and end-to-end usability
 
@@ -341,7 +329,7 @@ After refinement:
 - Verify every mandatory child exists, is linked, and is Todo.
 - If the parent remains Backlog, repair the status and read it back before implementation.
 - Do not create additional children during implementation unless a genuinely independent acceptance requirement appears; update an existing child whenever possible.
-- If the refinement skill cannot satisfy this contract, repair the skill minimally in the plugin cache and assign the long-term change via a new PBI assigned to the dod-guard repo instead of proceeding with an incomplete plan.
+- If the refinement skill cannot satisfy this contract, repair the skill minimally in the plugin cache and record the long-term dod-guard change in today's friction log instead of proceeding with an incomplete plan.
 
 ### 4. Implementation and branch rules
 
@@ -353,10 +341,7 @@ For an already-started parent, resume its existing checkpoint and skip completed
 
 - Implement every mandatory child in the current checkout on one branch.
 - Keep implementation, UI wiring, E2E work, refactoring, and fixes in that branch and checkout.
-- Do not create or publish a PR until every mandatory child is implementation-complete.
-
-* make one or more new commits for each subtask.
-
+- Make one or more new commits for each subtask.
 - Do not create a second branch or PR for the same parent delivery unit.
 - Keep the diff bounded by the acceptance criteria.
 - Prefer existing helpers, dependencies, patterns, and deletion.
@@ -413,12 +398,6 @@ Review outcome semantics:
 - A completed reviewer run with a recommendation of `APPROVE`, `REQUEST_CHANGES`, or `BLOCK`, including any findings, is a successful review and consumes the one-review slot. A completed `BLOCK` or `REQUEST_CHANGES` result is not a failed reviewer execution.
 - A launcher or process failure before a report, timeout, interruption, or other execution failure that produces no remote recommendation is an incomplete review and does not consume the one-review slot; it is not a completed `BLOCK` or `REQUEST_CHANGES` result. Preserve the exact failure evidence in the current handoff, read back the remote PR and review state, and do not rerun blindly. After the cause is repaired, recover or retry that incomplete execution until a completed reviewer recommendation exists; recovery attempts do not count as a second review. Do not repeat an unchanged failure blindly, and stop for explicit user cancellation or an external blocker.
 
-If the review errors:
-
-- Read back PR and review state before doing anything else.
-- Preserve the exact execution evidence in the review handoff and confirm that no completed recommendation appeared on the remote PR.
-- Use available findings, targeted checks, and advisor guidance to repair the cause before recovery or retry. Do not rerun the reviewer blindly or treat a failed execution as a completed `BLOCK` or `REQUEST_CHANGES` result; continue only when each failure has a repaired cause.
-
 Before `complete-pr`, compare the completed reviewer handoff with the remote provider review state. If the recommendation is missing remotely, publish the saved recommendation and evidence once, then read back exactly one review at the recorded reviewed head. A GitHub `COMMENT` is publication transport, not a second review; never rerun a completed review solely because publication was missing.
 
 **REVIEWS CAN TAKE A VERY LONG TIME**
@@ -466,15 +445,13 @@ After merge:
 
 ### 7. Blocker triage and proactive recovery
 
-For every failed, timed-out, or ambiguous action:
+For every failed, timed-out, or ambiguous action, follow the failure-recovery
+rule in `standards/working-defaults.md`: preserve the checkpoint in the current
+checkout, record the exact error with its stage, PBI, and SHA, read back remote
+state, classify the failure, apply the smallest repair with its narrow proof,
+and resume. Rotate to another eligible parent when this one is externally
+blocked.
 
-1. Preserve the current checkout and branch; do not create a worktree.
-2. Capture the exact error, tool, stage, PBI, and SHA.
-3. Read back remote state because the mutation may have succeeded.
-4. Classify the failure: transient/provider, stale state/race, code/test/quality, merge conflict, authorization/policy, or skill/runtime.
-5. Choose the smallest safe recovery that will solve the problem.
-6. Run the narrowest proof that recovery worked.
-7. Resume the original checkpoint or rotate to another eligible parent if this one is externally blocked.
 - Daily friction log: record every encountered issue, execution failure, tooling or runtime defect, workflow friction, or recovery-worthy discrepancy in one PBI per day, titled `Friction log YYYY-MM-DD` with today's local date. Do not create a separate backlog issue per incident. Record it even when the immediate incident is recovered.
 
   - Dedupe in this order. If today's log already has an entry for the same friction, add the new occurrence to that entry. Otherwise, if one bounded search finds an open non-log PBI that already owns the durable fix, add the incident evidence to that PBI as a comment. Otherwise append a new entry to today's log.
@@ -485,9 +462,7 @@ For every failed, timed-out, or ambiguous action:
 
 - Preserve the current delivery unit and keep implementation out of the incident workaround. The workaround restores safe progress; the durable fix waits in the friction log.
 
-Retry the same exact transient failure at most once for ordinary actions. Never loop blindly.
-
-Incomplete review executions are exempt from that cap: after each repaired cause, retry until a completed reviewer recommendation exists; never repeat an unchanged failure blindly.
+Incomplete review executions are exempt from the single-retry cap in `standards/working-defaults.md`: after each repaired cause, retry until a completed reviewer recommendation exists; never repeat an unchanged failure blindly.
 
 When a provider returns a rate-limit error or reset time, record the operation,
 reset time, and owning checkpoint; assign one wait owner and suppress duplicate
@@ -503,11 +478,7 @@ readback, then recompute and attest the exact target once. Continue unrelated
 queue work while reconciliation is blocked; do not stack parallel ref updates or
 repeat attestations against moving refs.
 
-For every confirmed blocker that survives local triage, use the advisor skill below before asking the user or declaring the workflow blocked:
-
-  [$dod-guard:codex-advisor](../codex-advisor/SKILL.md)
-
-Use `gpt-5.6-luna` with `max` reasoning. Include repository, parent/child PBI, stage, branch, current and reviewed SHAs, exact error, attempts, constraints, and recovery options. The advisor is advice-only; implement and verify the chosen solution locally.
+For every confirmed blocker that survives local triage, run the advisor that `standards/working-defaults.md` requires, [$dod-guard:codex-advisor](../codex-advisor/SKILL.md), before asking the user or declaring the workflow blocked. Include repository, parent/child PBI, stage, branch, current and reviewed SHAs, exact error, attempts, constraints, and recovery options. The advisor is advice-only; implement and verify the chosen solution locally.
 
 Do not ask the user to choose a workaround, authorize routine work, or confirm whether to continue until the advisor has supplied its recommendation and the safe local recovery path has been tried. A user question is a last resort for a missing external decision or authorization, not a substitute for blocker triage.
 
@@ -563,7 +534,6 @@ You may cut speculative polish, unrelated cleanup, and unnecessary abstractions.
 
 After every successful merge:
 
-* continue in the current checkout; never create or manage Git worktrees
 * let `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` delete the local and
   remote copy of the exact merged branch after its head and merge state are
   verified; this queue skill never sweeps unrelated refs
@@ -576,7 +546,6 @@ After every successful merge:
   one total from another
 
 - If the merge changed queue state, refresh the affected items and select the next eligible delivery unit once. Otherwise select from the current snapshot.
-- Select the next eligible delivery unit.
 - Continue the same goal loop.
 - Do not mark the goal complete after one PBI.
 

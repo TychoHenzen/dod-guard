@@ -677,7 +677,7 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.match(skill, /\[HH:MM\]/);
   assert.match(skill, /PBIs completed: N/);
   assert.match(skill, /main thread is the high-level orchestrator/);
-  assert.match(skill, /never create, use, register, switch to, prune, remove, or clean up a Git\s+worktree/);
+  assert.match(skill, /Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up/);
   assert.match(skill, /\[\$dod-guard:next-ticket\]\(\.\.\/next-ticket\/SKILL\.md\)/);
   assert.ok(
     skill.includes(
@@ -713,7 +713,7 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
     "Do not create or consult a local review ledger",
     "current head",
     "all finding comments were marked as resolved",
-    "Retry the same exact transient failure at most once",
+    "exempt from the single-retry cap in `standards/working-defaults.md`",
     "Preserve the checkpoint on failure or interruption; repair the same step",
     "Then use:",
     "Do not write parent, child, branch, or worktree state from this queue skill.",
