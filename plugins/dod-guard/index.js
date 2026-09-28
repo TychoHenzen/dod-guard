@@ -4,11 +4,19 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
+const configuredContexts = new WeakSet();
 
 function readMarkdown(file) {
-  const source = readFileSync(file, "utf8");
+  let source;
+  try {
+    source = readFileSync(file, "utf8");
+  } catch (error) {
+    throw new Error(`Unable to load dod-guard OpenCode content ${file}: ${error.message}`, { cause: error });
+  }
   const match = FRONTMATTER.exec(source);
-  if (!match) throw new Error(`Missing frontmatter: ${file}`);
+  if (!match) {
+    throw new Error(`Invalid dod-guard OpenCode content ${file}: missing frontmatter`);
+  }
 
   const fields = {};
   let block;
@@ -20,6 +28,11 @@ function readMarkdown(file) {
       if (block) continue;
     }
     if (block && /^\s+/.test(line)) fields[block].push(line.trim());
+  }
+
+  const description = Array.isArray(fields.description) ? fields.description.join(" ") : fields.description;
+  if (!fields.name || !description?.trim()) {
+    throw new Error(`Invalid dod-guard OpenCode content ${file}: name and description are required`);
   }
 
   return { fields, content: source.slice(match[0].length).trimStart() };
@@ -63,6 +76,16 @@ function loadAgents() {
 const plugin = {
   id: "dod-guard",
   async setup(ctx) {
+    if (
+      !ctx ||
+      typeof ctx !== "object" ||
+      typeof ctx.skill?.transform !== "function" ||
+      typeof ctx.agent?.transform !== "function"
+    ) {
+      throw new Error("dod-guard OpenCode adapter requires skill.transform and agent.transform");
+    }
+    if (configuredContexts.has(ctx)) return;
+
     const skills = loadSkills();
     const agents = loadAgents();
 
@@ -80,6 +103,7 @@ const plugin = {
         });
       }
     });
+    configuredContexts.add(ctx);
   },
 };
 

@@ -46,10 +46,7 @@ function collect(pkg, isTracked) {
 
 function collectOpenCode(root, isTracked = alwaysTracked) {
   const violations = [];
-  const { checkOpenCodeAdapter } = createPluginChecks(
-    (file, message) => violations.push({ file, message }),
-    isTracked,
-  );
+  const { checkOpenCodeAdapter } = createPluginChecks((file, message) => violations.push({ file, message }), isTracked);
   checkOpenCodeAdapter(buildOpenCodePlugin(root));
   return violations;
 }
@@ -129,17 +126,32 @@ describe("validate-plugins: OpenCode adapter metadata", () => {
   it("fails when the OpenCode package metadata is missing or malformed", () => {
     const missingRoot = fixture(goodOpenCodeTree);
     rmSync(join(missingRoot, "plugins", PKG_NAME, "package.json"));
-    match(collectOpenCode(missingRoot).map((violation) => violation.message).join("\n"), /package metadata is required/);
+    match(
+      collectOpenCode(missingRoot)
+        .map((violation) => violation.message)
+        .join("\n"),
+      /package metadata is required/,
+    );
 
     const malformedRoot = fixture(goodOpenCodeTree);
     write(malformedRoot, `plugins/${PKG_NAME}/package.json`, "{\n");
-    match(collectOpenCode(malformedRoot).map((violation) => violation.message).join("\n"), /not valid JSON/);
+    match(
+      collectOpenCode(malformedRoot)
+        .map((violation) => violation.message)
+        .join("\n"),
+      /not valid JSON/,
+    );
   });
 
   it("fails when the entrypoint is missing or untracked", () => {
     const missingRoot = fixture(goodOpenCodeTree);
     rmSync(join(missingRoot, "plugins", PKG_NAME, "index.js"));
-    match(collectOpenCode(missingRoot).map((violation) => violation.message).join("\n"), /entrypoint/);
+    match(
+      collectOpenCode(missingRoot)
+        .map((violation) => violation.message)
+        .join("\n"),
+      /entrypoint/,
+    );
 
     const untrackedRoot = fixture(goodOpenCodeTree);
     const entrypoint = join(untrackedRoot, "plugins", PKG_NAME, "index.js");
@@ -153,6 +165,37 @@ describe("validate-plugins: OpenCode adapter metadata", () => {
     const packageJson = JSON.parse(readFileSync(packageFile, "utf8"));
     packageJson.files = ["index.js", "skills"];
     write(root, `plugins/${PKG_NAME}/package.json`, JSON.stringify(packageJson));
-    match(collectOpenCode(root).map((violation) => violation.message).join("\n"), /files must include "agents"/);
+    match(
+      collectOpenCode(root)
+        .map((violation) => violation.message)
+        .join("\n"),
+      /files must include "agents"/,
+    );
+  });
+
+  it("fails when the OpenCode package contract is incompatible", () => {
+    const dependencyRoot = fixture(goodOpenCodeTree);
+    const dependencyFile = join(dependencyRoot, "plugins", PKG_NAME, "package.json");
+    const dependencyJson = JSON.parse(readFileSync(dependencyFile, "utf8"));
+    dependencyJson.dependencies["@opencode/plugin"] = "2.0.17";
+    write(dependencyRoot, `plugins/${PKG_NAME}/package.json`, JSON.stringify(dependencyJson));
+    match(
+      collectOpenCode(dependencyRoot)
+        .map((violation) => violation.message)
+        .join("\n"),
+      /dependencies.*@opencode\/plugin.*2\.0\.18/,
+    );
+
+    const versionRoot = fixture(goodOpenCodeTree);
+    const versionFile = join(versionRoot, "plugins", PKG_NAME, "package.json");
+    const versionJson = JSON.parse(readFileSync(versionFile, "utf8"));
+    versionJson.version = "1.0.1";
+    write(versionRoot, `plugins/${PKG_NAME}/package.json`, JSON.stringify(versionJson));
+    match(
+      collectOpenCode(versionRoot)
+        .map((violation) => violation.message)
+        .join("\n"),
+      /version "1\.0\.1" disagrees with plugin metadata "1\.0\.0"/,
+    );
   });
 });

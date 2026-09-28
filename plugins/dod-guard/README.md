@@ -5,7 +5,7 @@ maintenance.
 
 ## OpenCode
 
-OpenCode v2.0.18 can load the adapter directly from this directory:
+The adapter supports OpenCode v2.0.18 and can load directly from this directory:
 
 ```json
 {
@@ -31,14 +31,17 @@ For a local checkout, add the plugin directory to the project `opencode.json`:
 Start OpenCode from that project, then verify the resolved config and active
 plugin with `opencode debug config` and `opencode plugin list`. Upgrade a local
 install with `git pull` in the checkout; package installs can use
-`opencode plugin update`. Run `opencode reload` after config edits, and
+`opencode plugin update` (local paths and exact revisions are not updated by
+that command). Run `opencode reload` after config edits, and
 `opencode service restart` if an unchanged local path still has stale content.
 
 If loading fails, confirm the entry points to the adapter directory (not a
 copied skill cache), rerun `opencode debug config`, inspect
-`opencode plugin check`, and restart the service after correcting the path. The
-adapter reads the checkout's existing skills and agents directly, so Claude and
-Codex paths remain untouched.
+`opencode plugin check`, and restart the service after correcting the path. A
+missing or malformed adapter entry must be corrected before retrying; OpenCode
+should show no active dod-guard registration until then. The adapter reads the
+checkout's existing skills and agents directly, so Claude and Codex paths remain
+untouched.
 
 ### Disposable discovery proof
 
