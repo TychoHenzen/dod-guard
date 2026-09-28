@@ -202,15 +202,33 @@ test("normalizes closed REST pull requests only when merged_at is populated", ()
   assert.equal(normalizePullRequest({ state: "closed", merged_at: null }, "owner/repo").state, "CLOSED");
 });
 
-test("reads linked Project statuses through the GitHub client adapter", () => {
+test("reads linked Project statuses through REST without GraphQL", () => {
   const calls = [];
+  const responses = new Map([
+    ["users/owner/projectsV2?per_page=100", "[[{\"number\":2,\"state\":\"open\"}]]"],
+    ["users/owner/projectsV2/2/items?per_page=100", "{\"id\":1701,\"node_id\":\"PVTI_item\",\"content\":{\"number\":24,\"repository\":{\"full_name\":\"owner/repo\"}}}"],
+    ["users/owner/projectsV2/2/fields?per_page=100", "[[{\"id\":407,\"name\":\"Status\",\"data_type\":\"single_select\"}]]"],
+    ["users/owner/projectsV2/2/items/1701?fields=407", "{\"fields\":[{\"id\":407,\"name\":\"Status\",\"value\":{\"id\":\"done\",\"name\":{\"raw\":\"Done\"}}}]}"],
+  ]);
   const client = new GitHubClient("owner/repo", 24, (args) => {
     calls.push(args);
-    return { status: 0, stderr: "", stdout: '{"projectItems":[{"status":{"name":"Done"}},{"status":{}}]}' };
+    assert.equal(args[0], "api");
+    const endpoint = args.find((value) => typeof value === "string" && (value.startsWith("users/") || value.startsWith("orgs/")));
+    const stdout = responses.get(endpoint);
+    if (!stdout) {
+      throw new Error(`Unexpected command: ${args.join(" ")}`);
+    }
+    return { status: 0, stderr: "", stdout };
   });
 
   assert.deepEqual(client.getIssueProjectStatuses(24), ["Done"]);
-  assert.deepEqual(calls, [["issue", "view", "24", "--repo", "owner/repo", "--json", "projectItems"]]);
+  assert.deepEqual(calls, [
+    ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"],
+    ["api", "--paginate", "--jq", ".[] | {id, content: {number: .content.number, repository: {full_name: .content.repository.full_name}, repository_url: .content.repository_url}}", "users/owner/projectsV2/2/items?per_page=100"],
+    ["api", "--paginate", "--slurp", "users/owner/projectsV2/2/fields?per_page=100"],
+    ["api", "--jq", "{fields}", "users/owner/projectsV2/2/items/1701?fields=407"],
+  ]);
+  assert.equal(calls.some((args) => args.includes("graphql") || args.includes("issue")), false);
 });
 
 test("lists ci.yml workflow runs for the trusted head SHA", () => {

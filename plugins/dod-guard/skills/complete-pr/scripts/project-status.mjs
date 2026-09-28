@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import process from "node:process";
 
 const PROJECT_NODE_ID = /^PVT_[A-Za-z0-9]+$/;
-const PROJECT_ITEM_PAGE_SIZE = 1000;
+const PROJECT_PAGE_SIZE = 100;
 
 function runGh(args) {
   const result = spawnSync("gh", args, { encoding: "utf8", windowsHide: true });
@@ -41,7 +41,7 @@ function parseJson(result, operation) {
 }
 
 function resolveProjectNodeId(project) {
-  const projectId = project?.id;
+  const projectId = project?.node_id ?? project?.id;
   if (!PROJECT_NODE_ID.test(projectId ?? "")) {
     throw new Error("Project view must return a global ProjectV2 node ID beginning with PVT_.");
   }
@@ -49,69 +49,111 @@ function resolveProjectNodeId(project) {
 }
 
 function buildProjectViewCommand(owner, projectNumber) {
-  return ["project", "view", String(projectNumber), "--owner", owner, "--format", "json"];
+  return ["api", `users/${owner}/projectsV2/${projectNumber}`];
 }
 
-function buildProjectItemListCommand(owner, projectNumber, limit = PROJECT_ITEM_PAGE_SIZE) {
+function buildProjectFieldsCommand(owner, projectNumber) {
   return [
-    "project",
-    "item-list",
-    String(projectNumber),
-    "--owner",
-    owner,
-    "--format",
-    "json",
-    "--limit",
-    String(limit),
+    "api",
+    "--paginate",
+    "--slurp",
+    `users/${owner}/projectsV2/${projectNumber}/fields?per_page=${PROJECT_PAGE_SIZE}`,
   ];
 }
 
-function buildProjectItemEditCommand({ itemId, projectId, statusFieldId, statusOptionId }) {
+function buildProjectItemListCommand(owner, projectNumber, statusFieldId, page = 1) {
+  const fields = statusFieldId === undefined ? "" : `&fields=${statusFieldId}`;
   return [
-    "project",
-    "item-edit",
-    "--id",
-    itemId,
-    "--project-id",
-    projectId,
-    "--field-id",
-    statusFieldId,
-    "--single-select-option-id",
-    statusOptionId,
+    "api",
+    "--jq",
+    "[.[] | {id, node_id, fields}]",
+    `users/${owner}/projectsV2/${projectNumber}/items?per_page=${PROJECT_PAGE_SIZE}&page=${page}${fields}`,
   ];
 }
 
-function readProjectItemStatus(item, itemId) {
-  const { status: itemStatus } = item ?? {};
-  let status;
-  if (typeof itemStatus === "string") {
-    status = itemStatus;
-  } else {
-    status = itemStatus?.name;
+function buildProjectItemEditCommand({ owner, projectNumber, itemId, statusFieldId, statusOptionId }) {
+  return [
+    "api",
+    "--method",
+    "PATCH",
+    `users/${owner}/projectsV2/${projectNumber}/items/${itemId}`,
+    "-F",
+    `fields[][id]=${statusFieldId}`,
+    "-f",
+    `fields[][value]=${statusOptionId}`,
+  ];
+}
+
+function parseArrayResponse(result, operation) {
+  const data = parseJson(result, operation);
+  if (!Array.isArray(data)) {
+    throw new Error(`${operation} must return an array.`);
   }
+  const pages = data.length === 0 || Array.isArray(data[0]) ? data : [data];
+  if (pages.some((page) => !Array.isArray(page))) {
+    throw new Error(`${operation} must return arrays of values.`);
+  }
+  return pages.flat();
+}
+
+function resolveStatusField(fields, statusFieldId) {
+  const matches = fields.filter((field) =>
+    String(field?.node_id ?? "") === statusFieldId || String(field?.id ?? "") === statusFieldId,
+  );
+  if (matches.length !== 1) {
+    throw new Error(`Status field ${statusFieldId} must resolve to exactly one REST field.`);
+  }
+  const [field] = matches;
+  if (field.data_type !== "single_select" || !Array.isArray(field.options)) {
+    throw new Error(`Status field ${statusFieldId} must be a single-select field with options.`);
+  }
+  return field;
+}
+
+function resolveStatusOption(statusField, statusOptionId, expectedStatus) {
+  const option = statusField.options.find((candidate) => String(candidate?.id ?? "") === statusOptionId);
+  const optionName = option?.name?.raw ?? option?.name?.html ?? option?.name;
+  if (!option || optionName !== expectedStatus) {
+    throw new Error(`Status option ${statusOptionId} must map to ${expectedStatus}.`);
+  }
+  return option;
+}
+
+function findProjectItem(items, itemId) {
+  const matches = items.filter((item) =>
+    String(item?.node_id ?? "") === itemId || String(item?.id ?? "") === itemId,
+  );
+  if (matches.length !== 1) {
+    return null;
+  }
+  return matches[0];
+}
+
+function readProjectItemStatus(item, itemId, statusFieldId) {
+  const statusField = item?.fields?.find((field) =>
+    String(field?.id ?? "") === String(statusFieldId) || field?.name === "Status",
+  );
+  const value = statusField?.value;
+  const status = value?.name?.raw ?? value?.name?.html ?? value?.name ?? value;
   if (typeof status !== "string" || status.length === 0) {
     throw new Error(`Project item ${itemId} readback did not include a status.`);
   }
   return status;
 }
 
-function readProjectItems({ owner, projectNumber, targetItemIds, commandRunner }) {
+function readProjectItems({ owner, projectNumber, statusFieldId, targetItemIds, commandRunner }) {
+  const items = [];
   const targetIds = new Set(targetItemIds);
-  let limit = PROJECT_ITEM_PAGE_SIZE;
-
-  while (true) {
-    const items = parseJson(
-      commandRunner(buildProjectItemListCommand(owner, projectNumber, limit)),
+  for (let page = 1; ; page += 1) {
+    const pageItems = parseArrayResponse(
+      commandRunner(buildProjectItemListCommand(owner, projectNumber, statusFieldId, page)),
       "Project item readback",
     );
-    if (!Array.isArray(items?.items)) {
-      throw new Error("Project item readback must include an items array.");
+    items.push(...pageItems);
+    const foundTargets = [...targetIds].every((itemId) => findProjectItem(items, itemId));
+    if (foundTargets || pageItems.length < PROJECT_PAGE_SIZE) {
+      return { items };
     }
-    const returnedIds = new Set(items.items.map((item) => item?.id));
-    if ([...targetIds].every((itemId) => returnedIds.has(itemId)) || items.items.length < limit) {
-      return items;
-    }
-    limit += PROJECT_ITEM_PAGE_SIZE;
   }
 }
 
@@ -143,23 +185,54 @@ function writeProjectStatuses({
     "Project view",
   );
   const projectId = resolveProjectNodeId(project);
+  const statusField = resolveStatusField(
+    parseArrayResponse(
+      commandRunner(buildProjectFieldsCommand(owner, projectNumber)),
+      "Project fields",
+    ),
+    statusFieldId,
+  );
+  resolveStatusOption(statusField, statusOptionId, expectedStatus);
+  const restStatusFieldId = String(statusField.id);
+  const initialItems = readProjectItems({
+    owner,
+    projectNumber,
+    statusFieldId: restStatusFieldId,
+    targetItemIds: itemIds,
+    commandRunner,
+  });
+  const restItemIds = new Map();
+  for (const itemId of itemIds) {
+    const item = findProjectItem(initialItems.items, itemId);
+    if (!item || item.id === undefined || item.id === null) {
+      throw new Error(`Project item ${itemId} was missing from readback.`);
+    }
+    restItemIds.set(itemId, String(item.id));
+  }
   const mutations = [];
 
   for (const itemId of itemIds) {
     commandRunner(
-      buildProjectItemEditCommand({ itemId, projectId, statusFieldId, statusOptionId }),
+      buildProjectItemEditCommand({
+        owner,
+        projectNumber,
+        itemId: restItemIds.get(itemId),
+        statusFieldId: restStatusFieldId,
+        statusOptionId,
+      }),
     );
     const items = readProjectItems({
       owner,
       projectNumber,
+      statusFieldId: restStatusFieldId,
       targetItemIds: itemIds,
       commandRunner,
     });
-    const item = items.items.find((candidate) => candidate?.id === itemId);
+    const item = findProjectItem(items.items, itemId);
     if (!item) {
       throw new Error(`Project item ${itemId} was missing from readback.`);
     }
-    const status = readProjectItemStatus(item, itemId);
+    const status = readProjectItemStatus(item, itemId, restStatusFieldId);
     if (status !== expectedStatus) {
       throw new Error(`Project item ${itemId} read back ${status}, expected ${expectedStatus}.`);
     }
@@ -203,6 +276,7 @@ if (entrypoint === modulePath) {
 
 export {
   buildProjectItemEditCommand,
+  buildProjectFieldsCommand,
   buildProjectItemListCommand,
   buildProjectViewCommand,
   resolveProjectNodeId,

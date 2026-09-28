@@ -57,11 +57,121 @@ function ghJsonPagesData(endpoint, commandRunner) {
   return Array.isArray(data) ? data : [data];
 }
 
+function ghJsonArrayPages(endpoint, commandRunner) {
+  const pages = ghJsonPagesData(endpoint, commandRunner);
+  if (pages.length === 0 || pages.some((page) => !Array.isArray(page))) {
+    throw githubResponseError(endpoint, "an array response");
+  }
+  return pages.flat();
+}
+
+function ghJsonFilteredArray(endpoint, filter, commandRunner) {
+  const result = commandRunner(["api", "--paginate", "--jq", filter, endpoint]);
+  if (result.status !== 0) {
+    throw new Error(result.stderr.trim() || `${endpoint} did not complete successfully.`);
+  }
+  const output = result.stdout.trim();
+  if (output.length === 0) {
+    return [];
+  }
+  try {
+    return output.split(/\r?\n/).map((line) => JSON.parse(line));
+  } catch (error) {
+    throw new Error(`${endpoint} returned invalid JSON.`, { cause: error });
+  }
+}
+
+function projectStatusName(item) {
+  const statusField = item?.fields?.find((field) => field?.name === "Status" || field?.data_type === "single_select");
+  const value = statusField?.value;
+  return value?.name?.raw ?? value?.name?.html ?? value?.name ?? (typeof value === "string" ? value : null);
+}
+
 function encodeBranch(branchName) {
   return branchName
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
+}
+
+function listOwnedProjects(owner, commandRunner) {
+  const userEndpoint = `users/${owner}/projectsV2?per_page=100`;
+  const userResponse = ghJson(
+    ["api", "--paginate", "--slurp", userEndpoint],
+    [0, 1],
+    commandRunner,
+  );
+  if (userResponse.result.status === 0) {
+    const pages = userResponse.data;
+    if (!Array.isArray(pages) || pages.some((page) => !Array.isArray(page))) {
+      throw githubResponseError(userEndpoint, "an array response");
+    }
+    return { basePath: `users/${owner}`, projects: pages.flat() };
+  }
+  if (!HTTP_NOT_FOUND.test(userResponse.result.stderr)) {
+    throw new Error(userResponse.result.stderr.trim() || "Failed to list user-owned Projects.");
+  }
+  const orgEndpoint = `orgs/${owner}/projectsV2?per_page=100`;
+  return {
+    basePath: `orgs/${owner}`,
+    projects: ghJsonArrayPages(orgEndpoint, commandRunner),
+  };
+}
+
+function projectItemMatchesRepository(item, repository, issueNumber) {
+  const content = item?.content;
+  const itemRepository = content?.repository?.full_name ?? content?.repository?.fullName;
+  const itemRepositoryUrl = content?.repository_url;
+  return content?.number === issueNumber &&
+    (itemRepository === repository || itemRepositoryUrl === `https://api.github.com/repos/${repository}`);
+}
+
+function readIssueProjectStatuses(repository, issueNumber, commandRunner) {
+  const separator = repository.indexOf("/");
+  if (separator <= 0 || separator === repository.length - 1) {
+    throw new Error("Repository must be in owner/name form.");
+  }
+  const owner = repository.slice(0, separator);
+  const { basePath, projects } = listOwnedProjects(owner, commandRunner);
+  const statuses = [];
+
+  for (const project of projects) {
+    if (project?.number === undefined || project?.number === null) {
+      throw githubResponseError(`${basePath}/projectsV2`, "projects with a number");
+    }
+    const projectPath = `${basePath}/projectsV2/${project.number}`;
+    const itemsEndpoint = `${projectPath}/items?per_page=100`;
+    const matchingItems = ghJsonFilteredArray(
+      itemsEndpoint,
+      ".[] | {id, content: {number: .content.number, repository: {full_name: .content.repository.full_name}, repository_url: .content.repository_url}}",
+      commandRunner,
+    )
+      .filter((item) => projectItemMatchesRepository(item, repository, issueNumber));
+    if (matchingItems.length === 0) {
+      continue;
+    }
+
+    const fieldsEndpoint = `${projectPath}/fields?per_page=100`;
+    const statusFields = ghJsonArrayPages(fieldsEndpoint, commandRunner)
+      .filter((field) => field?.name?.toLowerCase() === "status");
+    if (statusFields.length !== 1 || statusFields[0].id === undefined || statusFields[0].id === null) {
+      throw githubResponseError(fieldsEndpoint, "exactly one Status field");
+    }
+    const statusFieldId = statusFields[0].id;
+    for (const item of matchingItems) {
+      if (item?.id === undefined || item?.id === null) {
+        throw githubResponseError(itemsEndpoint, "items with numeric IDs");
+      }
+      const itemEndpoint = `${projectPath}/items/${item.id}?fields=${statusFieldId}`;
+      const { data } = ghJson(["api", "--jq", "{fields}", itemEndpoint], [0], commandRunner);
+      const status = projectStatusName(data);
+      if (typeof status === "string") {
+        statuses.push(status);
+      }
+    }
+  }
+
+  return statuses;
 }
 
 export function normalizePullRequest(data, repository) {
@@ -254,18 +364,7 @@ export class GitHubClient {
   }
 
   getIssueProjectStatuses(issueNumber) {
-    const { data } = ghJson([
-      "issue",
-      "view",
-      String(issueNumber),
-      "--repo",
-      this.repository,
-      "--json",
-      "projectItems",
-    ], [0], this.#commandRunner);
-    return (data.projectItems ?? [])
-      .map((item) => item.status?.name)
-      .filter((status) => typeof status === "string");
+    return readIssueProjectStatuses(this.repository, issueNumber, this.#commandRunner);
   }
 
   getBranchRef(branchName) {
