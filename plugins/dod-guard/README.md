@@ -85,11 +85,11 @@ and standard labels before moving a coherent,
 independently deliverable PBI to Todo. Material unresolved requirements keep
 the issue in Backlog. Epics stay there until split into independently
 deliverable PBIs. `/next-ticket`
-implements that PBI and runs the completion review before committing
-and pushing implementation changes. Every challenge needs an evidenced
-disposition. `/submit-draft-pr` submits its verified draft
-pull request. `/review-pr` checks the final branch or pull request with four
-independent reviewers. After review, `/complete-pr` treats its invocation as
+implements that PBI, maps every acceptance criterion to fresh evidence, and
+commits and pushes. `/submit-draft-pr` submits its verified draft pull
+request. `/review-pr` is the one independent review: it splits the change
+into units, reviews each at medium effort with 1-4 angles chosen by the kind
+of code, and runs one PR-level feature pass. After review, `/complete-pr` treats its invocation as
 acceptance of the current head and completes the guarded merge.
 `/fix-pr-review` revalidates and fixes selected review findings before that
 acceptance. Each delivery skill resolves the current repository and requires
@@ -131,9 +131,10 @@ For feature work or material ambiguity, use the structured path in the
 For structured work, `/next-ticket` records one `## Implementation handoff`
 comment on the parent issue. It maps each ordered task and mandatory child to
 the pushed commit or verified remote-state evidence, fresh checks, and the
-current user-path result. `/submit-draft-pr` consumes that comment and records
-the same mapping in `## Convergence`; missing or contradicted evidence remains
-an actionable remainder. Small, clear fixes bypass these records.
+current user-path result. `/submit-draft-pr` checks that comment against the
+issue contract and links it from `## Convergence` instead of restating it;
+missing or contradicted evidence remains an actionable remainder. Small, clear
+fixes bypass these records.
 
 Use the ordinary path for a small, clear fix. Neither path bypasses stops for
 material ambiguity, credentials, destructive or authority-bound actions,
@@ -151,7 +152,7 @@ GitHub-backed skills share the request policy in
 | `/add-backlog-idea` | Capture each independently deliverable feature as a Backlog issue. |
 | `/quick-pbi` | Run backlog capture through guarded merge without extra prompts outside refinement. |
 | `/refine-backlog-item` | Deliberatively refine a Backlog issue, moving it to Todo only when its PBI is coherent and independently deliverable. |
-| `/next-ticket` | Execute a Todo PBI through independent completion review and verified, pushed commits. |
+| `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
 | `/learn-repository` | Learn one repository concept at a time from current source evidence. |
 | `/teach-back` | Explain a repository concept while a curious student tests the explanation. |
 | `/step-by-step` | Run one explicit ordered plan through fresh bounded subagents. |

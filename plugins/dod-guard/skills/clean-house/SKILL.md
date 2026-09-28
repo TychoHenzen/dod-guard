@@ -22,10 +22,10 @@ deprecated export there may have consumers you cannot see. Skip a pair
 that turns out to be a facade over an implementation. That is one design,
 not two.
 
-## Shared working defaults
+Read and apply `standards/working-defaults.md` from the plugin root. Stricter
+boundaries in this skill win.
 
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
+## Local deletion exception
 
 This skill has a local deletion exception. Inspect `git status --short` before
 the archaeology stages, report every pending path, and preserve or stop for

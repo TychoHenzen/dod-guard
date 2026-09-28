@@ -8,12 +8,9 @@ description: Release changed dod-guard marketplace plugins through a functional 
 Use this skill only when the user explicitly asks to publish or release a
 completed change in this monorepo.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
-
-Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+Read and apply `standards/working-defaults.md` and
+`standards/github-request-discipline.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Release model
 

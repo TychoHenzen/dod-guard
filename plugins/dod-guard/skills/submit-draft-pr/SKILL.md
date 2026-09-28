@@ -9,20 +9,17 @@ Create or update the one draft pull request for a pushed parent-PBI branch. Do
 not change implementation scope, approve, mark ready, merge, close the PR, or
 close the parent issue.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
-
-Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+Read and apply `standards/working-defaults.md` and
+`standards/github-request-discipline.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Preconditions
 
-1. Resolve the repository and default branch with the GitHub MCP repository
-   metadata operation. If MCP is unavailable, use
-   `gh repo view --json nameWithOwner,defaultBranchRef,url`.
-2. Verify the supplied parent issue belongs to that repository, is in its one
-   open linked Project, and has Status `In Progress`.
+1. Resolve the repository, its default branch, its linked Project, and the
+   `In Progress` status as described under "Resolve the repository and
+   Project" in `standards/github-request-discipline.md`.
+2. Verify the supplied parent issue belongs to that repository, is in that
+   Project, and has Status `In Progress`.
 3. Inspect `git status --short` and classify pending paths. A dirty worktree is
    not a blocker by itself. Keep clearly in-scope ordinary changes uncommitted
    until the branch, PBI, and acceptance evidence are verified. Stop for
@@ -74,22 +71,15 @@ and require an exact remote-head match: the remote branch SHA, checked-out
 If any value differs, treat the handoff as stale, stop, and rerun the
 implementation handoff after the branch state is stable; do not copy stale
 evidence into Convergence. If
-implementation is incomplete or contradicted, snapshot the
-issue body, task list, labels, links, Project item, and Status before writing an
-actionable remainder. Immediately before each remainder mutation, reread those
-values and compare them with the latest snapshot. If any value changed, stop
-and report the drift without writing. After each successful mutation, read back
-the changed state and replace the snapshot before the next mutation. Stop
-without creating or updating the draft PR. Do not call passing tests convergence
-by themselves. When all records agree, include this section in the draft PR body:
+implementation is incomplete or contradicted, write the actionable remainder to
+the issue and stop without creating or updating the draft PR. Do not call
+passing tests convergence by themselves. When all records agree, link the
+handoff instead of restating its mapping. Include this section in the draft PR
+body:
 
 ```text
 ## Convergence
-- Outcome: verified
-- Requirements and clarifications: verified
-- Plan and tasks: mapped to applicable branch or verified remote-state evidence
-- Mandatory child categories: each mapped to the same parent branch or verified remote-state evidence
-- Acceptance and verification: mapped to fresh evidence
+- Handoff: <link to the ## Implementation handoff comment> (head <sha>)
 - Remainder: none
 ```
 

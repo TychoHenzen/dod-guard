@@ -573,18 +573,18 @@ test("normalizes parent, child, no-child, orphan, and status-drift ancestry", ()
 test("goal-sdlc retains every delivery stage and queue boundary", async () => {
   const skill = await readSkill();
   for (const marker of [
-    "CHECKOUT AND EXECUTION POLICY",
-    "CONTINUOUS QUEUE LOOP",
-    "STATE SNAPSHOT AND READ DISCIPLINE",
-    "1\\. Reconcile live state",
-    "2\\. Choose one current delivery unit",
-    "3\\. Refinement contract",
-    "4\\. Implementation and branch rules",
-    "5\\. Goal-directed validation cadence",
-    "6\\. PR, review, remediation, and completion",
-    "7\\. Blocker triage and proactive recovery",
-    "8\\. Quality Guard and cache changes",
-    "9\\. Common-sense completion and continuation",
+    "### Checkout and execution policy",
+    "### Continuous queue loop",
+    "### State snapshot and read discipline",
+    "### 1. Reconcile live state",
+    "### 2. Choose one current delivery unit",
+    "### 3. Refinement contract",
+    "### 4. Implementation and branch rules",
+    "### 5. Goal-directed validation cadence",
+    "### 6. PR, review, remediation, and completion",
+    "### 7. Blocker triage and proactive recovery",
+    "### 8. Quality Guard and cache changes",
+    "### 9. Common-sense completion and continuation",
     "After every successful merge:",
   ]) {
     assert.ok(skill.includes(marker), `missing workflow marker: ${marker}`);
@@ -677,7 +677,7 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.match(skill, /\[HH:MM\]/);
   assert.match(skill, /PBIs completed: N/);
   assert.match(skill, /main thread is the high-level orchestrator/);
-  assert.match(skill, /never create, use, register, switch to, prune, remove, or clean up a Git\s+worktree/);
+  assert.match(skill, /Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up/);
   assert.match(skill, /\[\$dod-guard:next-ticket\]\(\.\.\/next-ticket\/SKILL\.md\)/);
   assert.ok(
     skill.includes(
@@ -713,7 +713,7 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
     "Do not create or consult a local review ledger",
     "current head",
     "all finding comments were marked as resolved",
-    "Retry the same exact transient failure at most once",
+    "exempt from the single-retry cap in `standards/working-defaults.md`",
     "Preserve the checkpoint on failure or interruption; repair the same step",
     "Then use:",
     "Do not write parent, child, branch, or worktree state from this queue skill.",
@@ -736,12 +736,28 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   );
   assert.match(
     skill,
-    /Then use:\s+&#x20; \[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)/,
+    /Then use:\s+\[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)/,
   );
   assert.doesNotMatch(
     skill,
     /After merge:\s+- Invoke `\[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)` for the guarded/,
   );
+});
+
+test("goal-sdlc publishes one completed review and reconciles moving refs", async () => {
+  const skill = await readSkill();
+  for (const marker of [
+    "publish the saved recommendation and evidence once",
+    "A GitHub `COMMENT` is publication transport, not a second review",
+    "one ref-reconciliation owner",
+    "Invalidate evidence tied to the old refs",
+    "recompute and attest the exact target once",
+    "fully paginate the",
+    "count parent PBIs and child PBIs separately",
+    "never infer either count by incrementing a prior snapshot",
+  ]) {
+    assert.ok(skill.includes(marker), `missing workflow safeguard: ${marker}`);
+  }
 });
 
 test("goal-sdlc makes blocked stops brief and plain-language", async () => {
@@ -777,4 +793,18 @@ test("goal-sdlc resumes dirty work and tracks an unmatched task", async () => {
   assert.match(skill, /If dirty work or an in-progress branch cannot be matched to an existing PBI, create one/);
   assert.match(skill, /Do not discard, reset, stash, overwrite, or silently absorb those edits/);
   assert.match(skill, /queue-empty result only after checking for dirty or in-progress work/);
+});
+
+test("goal-sdlc records friction in one daily log instead of one issue per incident", async () => {
+  const skill = await readSkill();
+  assert.match(skill, /one PBI per day, titled `Friction log YYYY-MM-DD`/);
+  assert.match(skill, /Do not create a separate backlog issue per incident/);
+  assert.match(
+    skill,
+    /today's log already has an entry for the same friction[\s\S]*open non-log PBI that already owns the durable fix[\s\S]*Otherwise append a new entry/,
+  );
+  assert.match(skill, /what happened \(exact error, tool, stage, PBI, and SHA\); the workaround used; the durable fix/);
+  assert.match(skill, /long-term dod-guard repository fix as an entry in today's friction log/);
+  assert.doesNotMatch(skill, /if no matching PBI exists, create one through `add-backlog-idea`/);
+  assert.doesNotMatch(skill, /to track the long-term dod-guard repository fix/);
 });

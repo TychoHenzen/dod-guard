@@ -14,7 +14,9 @@ handoff to `/refine-backlog-item`. Do not derive, resolve, or organize new
 requirements, decisions, plans, or tasks during capture; retain any supplied
 decision verbatim as `## Context` for later refinement.
 
-Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+Read and apply `standards/working-defaults.md` and
+`standards/github-request-discipline.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Split the request
 
@@ -34,11 +36,6 @@ ask the user where it belongs. Do not silently omit, collapse, or paraphrase a
 concrete detail into a vague outcome. A request with one feature must remain one
 feature.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
-
 ## Resolve the destination
 
 1. If the user supplied a target repository, use it. Otherwise use the GitHub
@@ -51,17 +48,10 @@ safety or authority boundaries below remain stricter.
    `gh repo list <login> --limit 100 --json nameWithOwner,description,url`.
    Show the available repositories as a numbered list and ask the user to
    choose one. Do not create anything until they choose.
-3. Verify the connected GitHub MCP identity and required repository and Project
-   access. If MCP is unavailable, run `gh auth status`. Stop if access is
-   missing.
-4. Resolve the selected target with the GitHub MCP repository operation, or
-   `gh repo view <target> --json nameWithOwner,defaultBranchRef,url` when it
-   was supplied or chosen from the list.
-5. Query that repository's linked Project through the typed connector or the
-   REST ProjectsV2 endpoints once. Keep only open projects. Stop unless exactly
-   one open Project is explicitly linked to the repository.
-6. Resolve exactly one `Status` field and one case-insensitive `Backlog` option
-   once. Stop if either is absent or ambiguous.
+3. For the selected target, resolve access, the linked Project, and its
+   `Backlog` status as described under "Resolve the repository and Project" in
+   `standards/github-request-discipline.md`. For a supplied or chosen target,
+   pass it to `gh repo view <target>`.
 
 ## Create the idea
 
