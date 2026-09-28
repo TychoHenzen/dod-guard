@@ -3,6 +3,20 @@
 A code-free plugin for GitHub issue delivery and focused repository
 maintenance.
 
+## OpenCode
+
+OpenCode v2.0.18 can load the adapter directly from this directory:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["./plugins/dod-guard"]
+}
+```
+
+The adapter registers the existing `skills/` and `agents/` Markdown files at
+load time. It does not copy or maintain a second source tree.
+
 Every skill applies the shared working defaults in
 `standards/working-defaults.md`: clear low-risk choices proceed, ordinary
 dirty worktree changes use the normal commit path, stale tests follow the
