@@ -143,16 +143,11 @@ and work that cannot be separated safely remain stop conditions.
 2. Creates and pushes `codex/<issue>-<slug>` from the current default branch.
 3. Assigns the issue and moves it to `In Progress`.
 4. Implements and verifies the acceptance criteria.
-5. Runs the completion review, then commits and pushes.
+5. Maps every acceptance criterion to fresh evidence, then commits and pushes.
 
-The reviewer receives the PBI, linked sub-issues, repository instructions, final
-diff and files, and verification evidence. The coordinator checks every challenge
-and records it as `resolved`, `invalid`, or `irrelevant` with evidence. Valid gaps
-block commit and implementation push until repaired and its affected checks are
-rerun; do not invoke another completion review.
-The initial branch-only push remains permitted. An unavailable or failed review
-also blocks completion. The result reports every disposition before stopping
-with the verified branch pushed. This review edits no files or remote comments.
+An unmet criterion or failed check blocks the implementation commit and push.
+The initial branch-only push remains permitted. `/review-pr` is the one
+independent review of the pushed work.
 
 ## Execute an explicit plan
 
