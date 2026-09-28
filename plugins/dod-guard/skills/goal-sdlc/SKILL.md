@@ -79,9 +79,7 @@ decisions, and the built-in goal's stop condition.
   between those existing owners.
 
 Referenced `dod-guard` skills resolve by name under the active plugin root, not
-by cached absolute or versioned paths. The no-worktree rule below is strict:
-never create, use, register, switch to, prune, remove, or clean up a Git
-worktree.
+by cached absolute or versioned paths.
 
 Do not infer workflow authority from files merely present in the repository.
 Read a project-local process document only when the user explicitly names it or
@@ -94,108 +92,58 @@ under the active plugin root instead of substituting a local process document.
 
 Operate as a continuous delivery worker for the current repository and its linked GitHub Project.
 
-Resolve every referenced `dod-guard` skill by name under the active plugin root
-once at goal start. Never copy a cached absolute path or plugin version into a
-handoff, ledger, issue, or progress message; relative links in this skill are
-the stable source references.
-
-relevant skills:
-[$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md)
-
-[$dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md)
-
-[$dod-guard:next-ticket](../next-ticket/SKILL.md)
-
-[$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md)
-
-[$dod-guard:review-pr](../review-pr/SKILL.md)
-
-[$dod-guard:complete-pr](../complete-pr/SKILL.md)
+Never copy a cached absolute path or plugin version into a handoff, ledger,
+issue, or progress message; the relative links in this skill are the stable
+source references:
+[$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md),
+[$dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md),
+[$dod-guard:next-ticket](../next-ticket/SKILL.md),
+[$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md),
+[$dod-guard:review-pr](../review-pr/SKILL.md), and
+[$dod-guard:complete-pr](../complete-pr/SKILL.md).
 
 target project: the single open GitHub Project explicitly linked to the current repository
 target repo: based on what is in the current working directory
 
-CHECKOUT AND EXECUTION POLICY
+### Checkout and execution policy
 
 - Work only in the current repository checkout. Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up. If a skill or tool requires a worktree, do not use it; choose a same-checkout path or record the incompatibility as a blocker.
-
 - Process exactly one parent PBI/delivery unit at a time, sequentially. Finish and verify it before selecting the next. Do not implement, mutate, review, or deliver multiple PBIs in parallel.
-
-
-
 - Treat a dirty current checkout as evidence that a task is probably already in progress, not as a reason to stop or declare the queue empty. Match the changed paths, branch, checkpoint, issue, child PBIs, and PR before choosing a new unit; when they match, preserve the edits and resume that task from its latest safe checkpoint.
-
-
-
 - If dirty work or an in-progress branch cannot be matched to an existing PBI, create one through `[$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md)` from the observed scope and evidence before continuing. Do not discard, reset, stash, overwrite, or silently absorb those edits into an unrelated PBI; refine the new PBI and resume the same work after it is tracked.
-
-
 
 Do not stop after merging one PBI. Continue processing eligible work until the queue is empty, the user explicitly stops the goal, or every remaining item is blocked by an external condition with no safe workaround.
 
-
-
 Assume the primary model is `gpt-5.6-luna` with `max` reasoning, this is also the model to be used for all subagents. Luna must follow the explicit state machine below; do not infer a shorter or different workflow.
-
-
 
 Hard invariants:
 
-- Work on exactly one parent delivery unit at a time and finish it before selecting another.
-
-- All work is sequential; do not mutate, implement, review, or deliver multiple parent PBIs in parallel.
-
-- Use the current repository checkout only; never create or use a Git worktree.
-
+- The checkout and execution policy above holds throughout: one parent at a time, sequentially, in the current checkout.
 - Each refined parent has one non-duplicated set of mandatory child PBIs.
-
 - All child implementation happens on one branch and one PR.
-
 - Do not create or publish a PR until every mandatory child is implementation-complete.
-
 - Follow the single review policy in section 6 for each delivery unit.
-
 - After merge, mark every child and its parent complete and read the statuses back.
-
 - Do not routinely ask the user to resolve problems. Make conservative, reversible, repository-consistent choices and continue.
-
-
 
 Definitions:
 
 - `implementation-complete`: all mandatory child work is implemented and verified enough to enter the PR lifecycle.
-
 - `Project Done`: the parent and all children are marked complete after the PR is merged and final remote checks pass.
-
 - The parent is implementation-complete when all mandatory children are implementation-complete, but Project Done is finalized with the children after merge.
-
 - “Pre-existing” is not a deferral reason for a failure in a touched path, required suite, user-facing flow, or required gate.
 
-
-
-CONTINUOUS QUEUE LOOP
-
-
+### Continuous queue loop
 
 Repeat this loop after every completed delivery unit:
 
-
-
-STATE SNAPSHOT AND READ DISCIPLINE
-
-
+### State snapshot and read discipline
 
 Resolve the repository, linked Project, queue, selected parent and children, pull requests, branch heads, checks, permissions, and unrelated work once at goal start. Carry that read-only snapshot through the delivery loop.
 
-
-
 Reuse snapshot data until it is invalidated. Invalidate it only after a mutation, a known remote change, a failed or timed-out operation, a user steering message, or a phase boundary that changes the relevant state.
 
-
-
 Do not repeat identical issue, Project, PBI, pull-request, or queue reads inside one phase. If a helper needs data already in the snapshot, pass it through instead of querying the provider again. Batch only missing reads.
-
-
 
 Pass the snapshot into each skill handoff. A skill may read a field it was not given, or an invalidated field, but it must not rerun discovery solely because the lifecycle phase changed.
 
@@ -203,105 +151,90 @@ Before broad delegation, run a short external-prerequisite preflight for the sel
 
 For a confirmed prerequisite, checkout, or provider blocker, record one blocker owner and one bounded next recovery action in the handoff snapshot. Do not dispatch duplicate subagents or repeat an unchanged audit; add another independent advisor only after the first recovery path produces new evidence.
 
-
-
 Context compaction is not state invalidation. When a continuation rereads this workflow file, restore the latest handoff snapshot first. Do not rerun repository, Project, issue, PBI, pull-request, or queue discovery unless the snapshot is missing or invalidated.
-
-
 
 Each handoff snapshot must record the snapshot time, selected parent, child and pull-request IDs, relevant branch heads, Project statuses, and the reason for the next refresh. If no snapshot survives compaction, read only the current delivery unit and rebuild the snapshot once.
 
-
-
 After a merge, refresh the changed pull request, linked issue, parent and child items, and the next queue selection. Do not reread the entire Project or every PBI unless the snapshot was invalidated.
 
-
-
-1\. Reconcile live state when no valid snapshot exists
-
-
+### 1. Reconcile live state when no valid snapshot exists
 
 Before mutating anything, use the current snapshot. If it is invalid or missing:
 
 - Identify the target repository, remote, linked Project, current checkout/branch, tech stack, PBI statuses, parent/child links, PRs, branch SHAs, checks, permissions, and unrelated changes.
-
 - Treat live remote state as authoritative over stale notes.
-
 - Preserve unrelated user work. Never reset, stash, overwrite, or include it.
-
-- Treat a dirty tree as probable in-progress work. Continue it when repository evidence identifies its PBI or checkpoint; otherwise create and track the matching PBI before selecting unrelated work.
-
+- Apply the dirty-checkout rules from the checkout and execution policy before selecting unrelated work.
 - Read existing child PBIs and PRs before creating anything only when they are absent from the snapshot or the snapshot was invalidated.
-
 - Repair recoverable orphan states before selecting new work:
 
-&#x20; - parent left in Backlog while children or a PR are advanced;
+  - parent left in Backlog while children or a PR are advanced;
 
-&#x20; - completed children with an incomplete parent;
+  - completed children with an incomplete parent;
 
-&#x20; - an existing PR for the current parent;
+  - an existing PR for the current parent;
 
-&#x20; - a branch or checkpoint showing implementation already underway.
+  - a branch or checkpoint showing implementation already underway.
 
 - Reconcile the current repository's Project items before selecting a parent:
 
-&#x20; - paginate every Project page, filter to the target repository, and group
-&#x20;   parent/child issues with their linked pull requests before deciding
-&#x20;   eligibility;
+  - paginate every Project page, filter to the target repository, and group
+    parent/child issues with their linked pull requests before deciding
+    eligibility;
 
-&#x20; - run the read-only adapter at `scripts/lib/queue-readback.mjs` (or the
-&#x20;   equivalent provider implementation under the active plugin root) before
-&#x20;   either `Todo` or `Backlog` selection branch. Request the same `Status`,
-&#x20;   `Linked pull requests`, `Repository`, and `Parent issue` fields on every
-&#x20;   Project page, follow each `pageInfo.nextCursor` until
-&#x20;   `pageInfo.hasNextPage` is false, and filter every returned item by exact
-&#x20;   repository identity before grouping it;
+  - run the read-only adapter at `scripts/lib/queue-readback.mjs` (or the
+    equivalent provider implementation under the active plugin root) before
+    either `Todo` or `Backlog` selection branch. Request the same `Status`,
+    `Linked pull requests`, `Repository`, and `Parent issue` fields on every
+    Project page, follow each `pageInfo.nextCursor` until
+    `pageInfo.hasNextPage` is false, and filter every returned item by exact
+    repository identity before grouping it;
 
-&#x20; - read the current issue, parent, and child relationship for each filtered
-&#x20;   item, then read every linked pull request and retain its state, merge
-&#x20;   commit, base ref/SHA, head repository/ref/SHA, and required-check fields
-&#x20;   alongside the Project status. Pass this snapshot to reconciliation and
-&#x20;   queue selection; do not infer missing fields from titles, stale comments,
-&#x20;   or a filtered query;
+  - read the current issue, parent, and child relationship for each filtered
+    item, then read every linked pull request and retain its state, merge
+    commit, base ref/SHA, head repository/ref/SHA, and required-check fields
+    alongside the Project status. Pass this snapshot to reconciliation and
+    queue selection; do not infer missing fields from titles, stale comments,
+    or a filtered query;
 
-&#x20; - normalize each issue group into one delivery record before classification:
-&#x20;   a real parent owns its observed children, a child points to its parent, a
-&#x20;   parent with no children owns a single-item record, an orphaned child has a
-&#x20;   missing or unobserved parent, and status drift records the parent/child
-&#x20;   Project statuses separately rather than collapsing them into a boolean;
-&#x20;   group by the observed root issue and never select a child record as an
-&#x20;   independent parent;
+  - normalize each issue group into one delivery record before classification:
+    a real parent owns its observed children, a child points to its parent, a
+    parent with no children owns a single-item record, an orphaned child has a
+    missing or unobserved parent, and status drift records the parent/child
+    Project statuses separately rather than collapsing them into a boolean;
+    group by the observed root issue and never select a child record as an
+    independent parent;
 
-&#x20; - treat every reconciliation input as an explicit live observation. An
-&#x20;   omitted, unknown, stale, filtered, or provider-unavailable value is not
-&#x20;   `true`; classify the missing evidence as `hold` and report its exact
-&#x20;   field. Record provider availability, acceptance evidence, active
-&#x20;   checkpoints, child grouping, head/base/trust/merge evidence,
-&#x20;   head-to-PR relationship, required checks, linked issue/child closure,
-&#x20;   and Project status separately;
+  - treat every reconciliation input as an explicit live observation. An
+    omitted, unknown, stale, filtered, or provider-unavailable value is not
+    `true`; classify the missing evidence as `hold` and report its exact
+    field. Record provider availability, acceptance evidence, active
+    checkpoints, child grouping, head/base/trust/merge evidence,
+    head-to-PR relationship, required checks, linked issue/child closure,
+    and Project status separately;
 
-&#x20; - classify a record with no merged delivery and no active checkpoint as
-&#x20;   eligible for the normal `Todo`/`Backlog` selection rules;
+  - classify a record with no merged delivery and no active checkpoint as
+    eligible for the normal `Todo`/`Backlog` selection rules;
 
-&#x20; - classify a merged delivery as `complete` only when the existing
-&#x20;   `complete-pr` recovery evidence is present: same-repository head,
-&#x20;   default base, active checkpoint explicitly observed as `false`, trusted
-&#x20;   head and merge commit, complete required checks, closed linked issues, and
-&#x20;   `Done` Project statuses for the grouped record;
-&#x20;   exclude it from queue candidates and hand any cleanup to
-&#x20;   `complete-pr` rather than mutating it here;
+  - classify a merged delivery as `complete` only when the existing
+    `complete-pr` recovery evidence is present: same-repository head,
+    default base, active checkpoint explicitly observed as `false`, trusted
+    head and merge commit, complete required checks, closed linked issues, and
+    `Done` Project statuses for the grouped record;
+    exclude it from queue candidates and hand any cleanup to
+    `complete-pr` rather than mutating it here;
 
-&#x20; - classify a merged delivery with any missing check, open issue or child,
-&#x20;   non-`Done` Project status, unresolved acceptance evidence, provider
-&#x20;   limitation, or head/relationship mismatch as `hold`; exclude it from
-&#x20;   queue candidates, report the exact missing evidence, and preserve its
-&#x20;   live issue and Project state; an orphaned child or parent/child status
-&#x20;   drift is also an explicit hold, never a fresh queue candidate;
+  - classify a merged delivery with any missing check, open issue or child,
+    non-`Done` Project status, unresolved acceptance evidence, provider
+    limitation, or head/relationship mismatch as `hold`; exclude it from
+    queue candidates, report the exact missing evidence, and preserve its
+    live issue and Project state; an orphaned child or parent/child status
+    drift is also an explicit hold, never a fresh queue candidate;
 
-&#x20; - do not select a held or complete child as an independent parent while
-&#x20;   its grouped parent record is being reconciled. A merged PR, title,
-&#x20;   branch name, stale comment, or filtered query alone is not completion or
-&#x20;   absence evidence.
+  - do not select a held or complete child as an independent parent while
+    its grouped parent record is being reconciled. A merged PR, title,
+    branch name, stale comment, or filtered query alone is not completion or
+    absence evidence.
 
 - Keep this reconciliation read-only and make zero mutation calls. The queue
   skill does not close, reopen, relabel, move, merge, publish, delete branches,
@@ -310,79 +243,46 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
 
 - If the repository or linked Project cannot be identified safely, use available repository evidence to resolve it. Ask the user only if no safe target can be determined.
 
-
-
-2\. Choose one current delivery unit
-
-
+### 2. Choose one current delivery unit
 
 Use this precedence:
 
-
-
 A. If active PBIs belong to the same parent, group them into one delivery unit.
-
-
 
 B. If multiple parent PBIs are already In Progress due to existing state, select one deterministically and leave the others untouched:
 
 - Prefer the parent with an existing PR furthest through the lifecycle.
-
 - Otherwise prefer the parent associated with the current checkout or branch.
-
 - Otherwise use Project priority/order, then oldest creation time as a deterministic tie-breaker.
-
 - Record the selected parent and leave the other parent checkpoints untouched.
-
 - Complete and verify the selected parent before returning to the next queued parent.
-
-
 
 C. If the selected parent is genuinely blocked after recovery:
 
 - Preserve its branch, checkpoint, evidence, and current checkout.
-
 - Do not abandon or reset it, and do not create a worktree to unblock it.
-
 - If another eligible parent can progress, serialize the next parent and return to the blocked checkpoint later.
-
 - A blocked parent is not permission to stop the entire goal.
-
 - Do not wait for a user response before making unrelated progress. Revisit the isolated parent only after a distinct recovery action or changed state/evidence.
-
-
 
 D. If no parent is active:
 
 - Choose one eligible parent from Todo using current Project priority/order.
-
 - If Todo is empty, choose one eligible Backlog parent and use:
 
-&#x20; [$dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md) with the added instructions listed under Refinement contract
+  [$dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md) with the added instructions listed under Refinement contract
 
 - A `Friction log YYYY-MM-DD` issue dated today or later is not eligible yet, because it is still collecting entries. A log from an earlier day is ordinary Backlog work.
-
 - After refinement, verify the parent and required children are in Todo, then continue implementation.
-
 - If no eligible work exists, finish the loop with a queue-empty result only after checking for dirty or in-progress work and creating a matching PBI when none exists.
-
-
 
 Never select a new unrelated parent while the current parent can still be advanced.
 
-
-
-3\. Refinement contract
-
-
+### 3. Refinement contract
 
 Refinement happens once per parent delivery unit.
 
-
-
 Use the snapshot's existing children first. Read missing children only when the snapshot is invalidated. Create missing children, but never duplicate children or recreate a completed refinement set.
-
-
 
 Every refined parent must have at least these four independently actionable child PBIs, linked back to the parent:
 
@@ -390,256 +290,146 @@ Create a separate child only for a functional slice that can be independently
 delivered and verified; keep atomic implementation steps as a checklist, not
 tickets.
 
-
-
-A. Implementation
+#### A. Implementation
 
 - Implement the requested behavior using existing repository patterns.
-
 - Include precise acceptance criteria and verification.
 
-* the refinement should perform functional decomposition to split the implementation into atomic steps and create one subtask with minimal details for each
+- The refinement performs functional decomposition to split the implementation into atomic steps and creates one subtask with minimal details for each.
 
-
-
-B. Wiring and end-to-end usability
+#### B. Wiring and end-to-end usability
 
 - Trace the real user path through the existing UI or supported user-facing surface.
-
 - Create missing entry points, configuration, controls, feedback, error states, and recovery paths.
-
 - Verify the feature is discoverable, invokable, understandable, and usable.
-
 - Exercise the path end to end.
-
 - If live UI automation is unavailable, use the closest available integration path and document the missing evidence; do not silently mark the child complete.
 
-
-
-C. Refactoring and quality
+#### C. Refactoring and quality
 
 - Inspect both new code and nearby code.
-
 - Remove accidental complexity, duplication, dead code, unnecessary abstractions, and spaghetti control flow.
-
 - Prefer deletion and reuse.
-
 - Reduce code or complexity where safe and improve real Quality Guard metrics.
-
 - Keep cleanup bounded to the selected feature and directly adjacent code.
-
 - When adjacent cleanup is relevant, keep it bounded and record why no cleanup is safe when applicable.
-
 - The child must either make a justified cleanup or record evidence that no safe cleanup exists.
 
-
-
-D. Fixing and reliability
+#### D. Fixing and reliability
 
 - Fix errors found in the touched paths, required suites, integration path, lint/type checks, or Quality Guard.
-
 - Do not label relevant failures “pre-existing” to defer them.
-
 - Truly unrelated failures require evidence and a recovery decision, not silent dismissal.
 
-
-
 Each child must contain minimal parent context, scope, acceptance criteria, and verification instructions.
-
-
 
 After refinement:
 
 - Verify the parent is Todo.
-
 - Verify every mandatory child exists, is linked, and is Todo.
-
 - If the parent remains Backlog, repair the status and read it back before implementation.
-
 - Do not create additional children during implementation unless a genuinely independent acceptance requirement appears; update an existing child whenever possible.
+- If the refinement skill cannot satisfy this contract, repair the skill minimally in the plugin cache and record the long-term dod-guard change in today's friction log instead of proceeding with an incomplete plan.
 
-- If the refinement skill cannot satisfy this contract, repair the skill minimally in the plugin cache and assign the long-term change via a new PBI assigned to the dod-guard repo instead of proceeding with an incomplete plan.
-
-
-
-4\. Implementation and branch rules
-
-
+### 4. Implementation and branch rules
 
 For a newly selected Todo parent, use:
 
-&#x20; [$dod-guard:next-ticket](../next-ticket/SKILL.md)
-
-
+  [$dod-guard:next-ticket](../next-ticket/SKILL.md)
 
 For an already-started parent, resume its existing checkpoint and skip completed work.
 
-
-
 - Implement every mandatory child in the current checkout on one branch.
-
 - Keep implementation, UI wiring, E2E work, refactoring, and fixes in that branch and checkout.
-
-- Do not create or publish a PR until every mandatory child is implementation-complete.
-
-* make one or more new commits for each subtask.
-
+- Make one or more new commits for each subtask.
 - Do not create a second branch or PR for the same parent delivery unit.
-
 - Keep the diff bounded by the acceptance criteria.
-
 - Prefer existing helpers, dependencies, patterns, and deletion.
-
 - Do not generate speculative architecture, backwards-compatibility shims, boilerplate, unrelated noise, or huge amounts of code without a demonstrated requirement, every line of code written has an associated maintenance cost that must be considered.
-
 - If the diff grows beyond the acceptance boundary, stop and prune it before continuing.
 
-
-
-5\. Goal-directed validation cadence
-
-
+### 5. Goal-directed validation cadence
 
 Do not spam the full linter, full test suite, or every gate after every edit, not every subtask needs to 100% pass.
-
-
 
 During basic implementation:
 
 - Use only small targeted checks needed to prevent obvious dead ends.
-
 - Before committing or pushing, run one focused acceptance check for every derived or rounded threshold/persisted baseline at the precision used by the real comparison. This supplements, rather than replaces, the complete relevant suite.
-
 - Build the wiring while implementing - logging and general observability are always valuable, but defer comprehensive validation until the required workstreams are substantially complete.
-
-
 
 At the end of basic work:
 
-1\. Run the complete relevant suite once: tests, lint/type checks, integration/E2E checks, and Quality Guard where applicable.
-
-2\. Group failures by tool and root cause.
-
-3\. While repairing a failure, run that failing tool or the narrowest relevant target only.
-
-4\. Fix every failure in the selected paths and required gates.
-
-5\. If step 1 found failures and they were repaired, run the complete relevant suite once more.
-
-6\. If the confirmation suite still fails, repeat the focused-fix loop and another complete confirmation run.
-
-7\. Do not rerun unchanged full suites merely for reassurance.
-
+1. Run the complete relevant suite once: tests, lint/type checks, integration/E2E checks, and Quality Guard where applicable.
+2. Group failures by tool and root cause.
+3. While repairing a failure, run that failing tool or the narrowest relevant target only.
+4. Fix every failure in the selected paths and required gates.
+5. If step 1 found failures and they were repaired, run the complete relevant suite once more.
+6. If the confirmation suite still fails, repeat the focused-fix loop and another complete confirmation run.
+7. Do not rerun unchanged full suites merely for reassurance.
 - If the complete suite is resource-limited, run its equivalent partitions sequentially or with reduced parallelism before escalating; keep the environment limitation distinct from a code or quality failure.
-
 - Before claiming the complete suite is green, verify every newly added test or fixture is included by the configured test glob. For generated-artifact drift, record the producer's required working directory and compare exact hashes from that invocation before dispatching another audit; treat a root-cwd mismatch as an environment or procedure issue, not a code failure.
-
-
 
 A child is not implementation-complete merely because code compiles. Record acceptance evidence for every child.
 
-
-
-6\. PR, review, remediation, and completion
-
-
+### 6. PR, review, remediation, and completion
 
 When all mandatory children are implementation-complete, use:
 
-&#x20; [$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md)
-
-
+  [$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md)
 
 The resulting PR must be published/non-draft (`draft=false`). If the skill creates a draft, publish it using the supported repository operation and verify the remote state.
 
-
-
 Review policy:
 
-&#x20; [$dod-guard:review-pr](../review-pr/SKILL.md)
-
-
+  [$dod-guard:review-pr](../review-pr/SKILL.md)
 
 Before review:
 
 - Inspect the PR history, current remote PR review state, checks, and immutable head SHA.
-
 - Git history and the remote GitHub Project, PBI, pull request, reviews, comments, and checks are the durable administration record. Do not create or consult a local review ledger or any other untracked administration file.
-
 - If the remote PR has a completed review recommendation for the current head, do not invoke `review-pr` again. A new context, subagent, timeout, or interrupted reviewer without a remote recommendation is not a completed review or a new review slot; an incomplete execution follows the recovery rules below.
-
 - If no completed recommendation exists for the current head, invoke `review-pr` once. Do not start it until the PR, PBI, and current head have been read from their remote Git/GitHub sources.
-
 - Record the reviewed head SHA.
-
 - One invocation of this skill is the complete PR review; do not separately rerun its internal review work.
-
 
 Review outcome semantics:
 
 - A completed reviewer run with a recommendation of `APPROVE`, `REQUEST_CHANGES`, or `BLOCK`, including any findings, is a successful review and consumes the one-review slot. A completed `BLOCK` or `REQUEST_CHANGES` result is not a failed reviewer execution.
-
 - A launcher or process failure before a report, timeout, interruption, or other execution failure that produces no remote recommendation is an incomplete review and does not consume the one-review slot; it is not a completed `BLOCK` or `REQUEST_CHANGES` result. Preserve the exact failure evidence in the current handoff, read back the remote PR and review state, and do not rerun blindly. After the cause is repaired, recover or retry that incomplete execution until a completed reviewer recommendation exists; recovery attempts do not count as a second review. Do not repeat an unchanged failure blindly, and stop for explicit user cancellation or an external blocker.
 
-
-
-If the review errors:
-
-- Read back PR and review state before doing anything else.
-
-- Preserve the exact execution evidence in the review handoff and confirm that no completed recommendation appeared on the remote PR.
-
-- Use available findings, targeted checks, and advisor guidance to repair the cause before recovery or retry. Do not rerun the reviewer blindly or treat a failed execution as a completed `BLOCK` or `REQUEST_CHANGES` result; continue only when each failure has a repaired cause.
-
 Before `complete-pr`, compare the completed reviewer handoff with the remote provider review state. If the recommendation is missing remotely, publish the saved recommendation and evidence once, then read back exactly one review at the recorded reviewed head. A GitHub `COMMENT` is publication transport, not a second review; never rerun a completed review solely because publication was missing.
-
-
 
 **REVIEWS CAN TAKE A VERY LONG TIME**
 
 Do not kill a running reviewer merely because it is quiet. If it exits, times out, or is interrupted, preserve the execution evidence and treat the review as incomplete until the remote PR has a completed recommendation. After repairing the cause, recover or retry until a completed recommendation exists; do not start a replacement reviewer blindly, retry a completed review, or continue after explicit user cancellation or an external blocker.
 
-
 After review:
 - Make sure every finding made by each reviewer has a comment in the PR corresponding to the line in which the issue was found
 
-
-
 Fix every valid finding with:
 
-&#x20; [$dod-guard:fix-pr-review](../fix-pr-review/SKILL.md)
-
-
+  [$dod-guard:fix-pr-review](../fix-pr-review/SKILL.md)
 
 After fixes:
 
 - Run focused checks for repaired areas.
-
 - Run the complete relevant suite once.
-
 - Verify the new head SHA.
 - Verify that all finding comments have a response explaining how the issue was fixed any why that fixes the issue
 - Verify that all finding comments were marked as resolved.
 
 Then use:
 
-&#x20; [$dod-guard:complete-pr](../complete-pr/SKILL.md)
-
-
+  [$dod-guard:complete-pr](../complete-pr/SKILL.md)
 
 Only complete the PR when:
 
 - It is published and mergeable.
-
 - The current head, not only the reviewed head, passes required checks.
-
 - All child acceptance criteria are satisfied.
-
 - No relevant failure is deferred as “pre-existing” (no part of the application is allowed to be broken on development - development must *ALWAYS* be 100% ready to deploy to production and be 100% usable by real end-users).
-
 - The PR is merged and the merge state is read back.
-
-
 
 After merge:
 
@@ -648,34 +438,19 @@ After merge:
   Project finalization pass.
 
 - Do not write parent, child, branch, or worktree state from this queue skill.
-
 - Read back all parent and child statuses after the completion owner returns.
-
 - If a parent or child is still Backlog, Todo, or In Progress, preserve the
   checkpoint and return to the completion owner before selecting the next
   delivery unit.
 
+### 7. Blocker triage and proactive recovery
 
-
-7\. Blocker triage and proactive recovery
-
-
-
-For every failed, timed-out, or ambiguous action:
-
-1\. Preserve the current checkout and branch; do not create a worktree.
-
-2\. Capture the exact error, tool, stage, PBI, and SHA.
-
-3\. Read back remote state because the mutation may have succeeded.
-
-4\. Classify the failure: transient/provider, stale state/race, code/test/quality, merge conflict, authorization/policy, or skill/runtime.
-
-5\. Choose the smallest safe recovery that will solve the problem.
-
-6\. Run the narrowest proof that recovery worked.
-
-7\. Resume the original checkpoint or rotate to another eligible parent if this one is externally blocked.
+For every failed, timed-out, or ambiguous action, follow the failure-recovery
+rule in `standards/working-defaults.md`: preserve the checkpoint in the current
+checkout, record the exact error with its stage, PBI, and SHA, read back remote
+state, classify the failure, apply the smallest repair with its narrow proof,
+and resume. Rotate to another eligible parent when this one is externally
+blocked.
 
 - Daily friction log: record every encountered issue, execution failure, tooling or runtime defect, workflow friction, or recovery-worthy discrepancy in one PBI per day, titled `Friction log YYYY-MM-DD` with today's local date. Do not create a separate backlog issue per incident. Record it even when the immediate incident is recovered.
 
@@ -687,11 +462,7 @@ For every failed, timed-out, or ambiguous action:
 
 - Preserve the current delivery unit and keep implementation out of the incident workaround. The workaround restores safe progress; the durable fix waits in the friction log.
 
-
-
-Retry the same exact transient failure at most once for ordinary actions. Never loop blindly.
-
-Incomplete review executions are exempt from that cap: after each repaired cause, retry until a completed reviewer recommendation exists; never repeat an unchanged failure blindly.
+Incomplete review executions are exempt from the single-retry cap in `standards/working-defaults.md`: after each repaired cause, retry until a completed reviewer recommendation exists; never repeat an unchanged failure blindly.
 
 When a provider returns a rate-limit error or reset time, record the operation,
 reset time, and owning checkpoint; assign one wait owner and suppress duplicate
@@ -707,113 +478,62 @@ readback, then recompute and attest the exact target once. Continue unrelated
 queue work while reconciliation is blocked; do not stack parallel ref updates or
 repeat attestations against moving refs.
 
-
-
-For every confirmed blocker that survives local triage, use the advisor skill below before asking the user or declaring the workflow blocked:
-
-&#x20; [$dod-guard:codex-advisor](../codex-advisor/SKILL.md)
-
-
-
-Use `gpt-5.6-luna` with `max` reasoning. Include repository, parent/child PBI, stage, branch, current and reviewed SHAs, exact error, attempts, constraints, and recovery options. The advisor is advice-only; implement and verify the chosen solution locally.
+For every confirmed blocker that survives local triage, run the advisor that `standards/working-defaults.md` requires, [$dod-guard:codex-advisor](../codex-advisor/SKILL.md), before asking the user or declaring the workflow blocked. Include repository, parent/child PBI, stage, branch, current and reviewed SHAs, exact error, attempts, constraints, and recovery options. The advisor is advice-only; implement and verify the chosen solution locally.
 
 Do not ask the user to choose a workaround, authorize routine work, or confirm whether to continue until the advisor has supplied its recommendation and the safe local recovery path has been tried. A user question is a last resort for a missing external decision or authorization, not a substitute for blocker triage.
-
-
 
 Do not hand routine problems back to the user:
 
 - Infer missing details from the PBI, repository conventions, and existing behavior.
-
 - Choose a conservative, reversible implementation when alternatives are compatible.
-
 - Implement fixes for tool, test, wiring, or repository problems instead of merely reporting them.
-
 - Treat the active workflow request as authorization for routine lifecycle actions already required by this skill, including reads, local edits, targeted checks, commits, pushes, queue/status repair, and bounded recovery. Do not ask permission for these; execute and verify them.
-
 - A provider or tool approval prompt for an action already authorized here is not a new workflow decision: use the configured write route once, then classify any platform refusal as a capability or authorization blocker and continue with another eligible parent instead of repeatedly asking.
-
 - Ask the user only for an irreversible/destructive action, missing credential or authorization, genuinely incompatible requirements, or a decision no repository evidence can resolve.
-
 - If the current parent is blocked but another parent can progress, mark the PBI as blocked, document *why* it is blocked (what is the issue, what solutions did you try, what is the problem that needs solving to unblock), preserve the work so far, then pick a new item from the queue.
-
 - Before marking a parent blocked, refresh its parent/child items, PR, branch, and external blocker once. If remote state changed, invalidate the snapshot and resume; do not carry forward a stale blocked report.
-
 - If all remaining work is externally blocked, preserve durable checkpoints and exact evidence; do not claim completion or fabricate progress.
-
-
 
 Blocked-state user-facing response:
 
 - When safe progress must stop because the goal or every eligible delivery unit is blocked, replace progress narration with one brief user-facing message. Do not narrate checkpoint, snapshot, delegation, queue, or audit mechanics.
-
 - Assume the user has zero prior context. Start with `Blocked:` and explain in plain English what was being attempted (repository, PBI number, title, and one-sentence purpose), what is blocking it, the concrete evidence, what recovery was tried, and the one decision or action needed to continue.
-
 - Use one short paragraph or at most five bullets. Translate workflow jargon such as “authoritative baseline,” “dirty-path disposition,” “state reconciliation,” and “goal pass” instead of exposing it.
-
 - If another eligible delivery unit can proceed, keep working and do not send a blocked-stop message. If the user must decide something, ask one concrete question with the safe options and their consequences.
-
 - Keep any required `[HH:MM]` or `PBIs completed: N` telemetry compact; it must not become a second status narrative.
 
-
-
-8\. Quality Guard and cache changes
-
-
+### 8. Quality Guard and cache changes
 
 If Quality Guard fails:
 
 - Separate actual defects from stale or invalid baseline data.
-
 - Fix actual findings.
-
 - Re-baseline only through the supported mechanism, recording old/new fingerprints and the reason.
-
 - Never suppress findings or alter code merely to game the metric.
-
-
 
 If a cached skill or script must be edited:
 
 - Compare it with tracked source first.
-
 - Make the smallest reversible change.
-
 - Validate it.
-
 - Record the exact cache path and behavior change.
-
 - Record the long-term dod-guard repository fix as an entry in today's friction log, as described under the daily friction log rule.
-
 - A cache-only fix is not proof that the tracked plugin is fixed.
 
-
-
-9\. Common-sense completion and continuation
-
-
+### 9. Common-sense completion and continuation
 
 Never cut:
 
 - Security or validation.
-
 - Accessibility basics.
-
 - Data-integrity safeguards.
-
 - Required acceptance criteria.
-
 - Required tests, checks, UI wiring, or Quality Guard evidence.
-
-
 
 You may cut speculative polish, unrelated cleanup, and unnecessary abstractions. Document each deliberate shortcut, its known ceiling, impact, and follow-up.
 
-
-
 After every successful merge:
 
-* continue in the current checkout; never create or manage Git worktrees
 * let `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` delete the local and
   remote copy of the exact merged branch after its head and merge state are
   verified; this queue skill never sweeps unrelated refs
@@ -826,13 +546,7 @@ After every successful merge:
   one total from another
 
 - If the merge changed queue state, refresh the affected items and select the next eligible delivery unit once. Otherwise select from the current snapshot.
-
-- Select the next eligible delivery unit.
-
 - Continue the same goal loop.
-
 - Do not mark the goal complete after one PBI.
-
-
 
 Mark the goal complete only when no eligible work remains or the user explicitly ends it. Before marking the goal blocked, refresh every remaining parent/child/PR state and the external blocker once. Mark it blocked only after the same external blocker remains unresolved across three evidence-backed attempts/goal turns. Never use “two active PBIs” as a reason to stop. never stop when todo is empty but the backlog is not.
