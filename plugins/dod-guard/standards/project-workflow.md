@@ -77,32 +77,23 @@ files, commits, and checks. It does not create a parallel local plan.
 
 Before a structured PBI gets a draft PR, `submit-draft-pr` compares the
 implementation with the outcome, requirements, clarifications, plan, tasks,
-acceptance criteria, and verification evidence. The draft PR body records:
+acceptance criteria, and verification evidence in the `## Implementation
+handoff` comment. That comment is the one evidence record. The draft PR body
+links it instead of restating it:
 
 ```text
 ## Convergence
-- Outcome: verified or actionable remainder
-- Requirements and clarifications: verified or named remainder
-- Plan and tasks: each mapped to applicable branch or verified remote-state evidence
-- Acceptance and verification: each mapped to fresh evidence
-- Remainder: none, or the exact next task and owner
+- Handoff: <link to the ## Implementation handoff comment> (head <sha>)
+- Remainder: none
 ```
 
 Convergence is passing only when every named record exists, every task and
 mandatory child is mapped by the implementation handoff, every acceptance
-criterion has fresh evidence, and no item is contradicted or unresolved. A
-passing exercise therefore emits `Outcome: verified` and `Remainder: none`.
-If any check is missing or contradicted, emit `Outcome: actionable remainder`,
-name the next task and owner, and do not create or update the draft PR. The
+criterion has fresh evidence, and no item is contradicted or unresolved.
+
+An incomplete or contradicted result is not reported as complete. Write the
+actionable remainder, with the next task and owner, to the PBI and stop before
+creating or updating the draft PR. After a failed or ambiguous write, read back
+that resource before retrying, as the shared GitHub standard requires. The
 ordinary small-fix path bypasses these records and uses its direct issue,
 commit, test, and review evidence instead.
-
-An incomplete or contradicted result is not reported as complete. Before any
-remainder write, snapshot the issue body, task list, labels, links, Project item,
-and Status. Immediately before each remainder mutation, reread those values and
-compare them with the latest snapshot. If any value changed, stop and report the
-drift without writing. After each successful mutation, read back the changed
-state and replace the snapshot before the next mutation. Leave the PBI or its
-task list with an actionable remainder and stop before creating or updating the
-draft PR. Small fixes use the ordinary verification path and do not require
-these records.

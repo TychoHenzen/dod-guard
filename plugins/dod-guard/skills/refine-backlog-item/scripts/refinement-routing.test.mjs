@@ -29,13 +29,10 @@ test("routes discovery after repository and issue research", () => {
   assert.match(skill, /new\s+evidence exposes a missing user constraint or external fact/);
 });
 
-test("revalidates mutation state before issue writes and Todo", () => {
-  assert.match(
-    skill,
-    /Before each issue write, including a body, label, or\s+linked-sub-issue mutation, re-read those values and compare them with the\s+latest mutation snapshot/,
-  );
-  assert.match(skill, /If any value changed, stop without writing and\s+report the mismatch/);
-  assert.match(skill, /Immediately before moving to `Todo`, repeat the same comparison/);
+test("reads back only after a failed write, and once before Todo", () => {
+  assert.doesNotMatch(skill, /mutation snapshot/);
+  assert.match(skill, /After a failed, timed-out, or ambiguous write, follow the shared GitHub\s+standard/);
+  assert.match(skill, /Read back the issue body, labels, linked sub-issues, and Project status from\s+GitHub/);
 });
 
 test("paginates the complete live label inventory", () => {
