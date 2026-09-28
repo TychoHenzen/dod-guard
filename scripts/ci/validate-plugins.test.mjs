@@ -5,11 +5,18 @@
 // rule would pass vacuously without ever being tested.
 
 import { deepStrictEqual, match, strictEqual } from "node:assert";
-import { rmSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { cliWorkspaceTree, invalidPluginWorkspaceTree } from "./fixtures/cli-workspace.mjs";
-import { buildPkg, goodTree, PKG_NAME, write } from "./fixtures/plugin-tracked.mjs";
+import {
+  buildOpenCodePlugin,
+  buildPkg,
+  goodOpenCodeTree,
+  goodTree,
+  PKG_NAME,
+  write,
+} from "./fixtures/plugin-tracked.mjs";
 import { createPluginChecks } from "./lib/plugin-checks.mjs";
 import { discoverPluginWorkspaces } from "./lib/workspace-discovery.mjs";
 
@@ -34,6 +41,16 @@ function collect(pkg, isTracked) {
   const violations = [];
   const { checkPackage } = createPluginChecks((file, message) => violations.push({ file, message }), isTracked);
   checkPackage(pkg, [pkg]);
+  return violations;
+}
+
+function collectOpenCode(root, isTracked = alwaysTracked) {
+  const violations = [];
+  const { checkOpenCodeAdapter } = createPluginChecks(
+    (file, message) => violations.push({ file, message }),
+    isTracked,
+  );
+  checkOpenCodeAdapter(buildOpenCodePlugin(root));
   return violations;
 }
 
@@ -100,5 +117,42 @@ describe("validate-plugins: workspace discovery", () => {
     const violations = collect(packages[0], alwaysTracked);
     match(violations.map((violation) => violation.message).join("\n"), /Claude Code cannot start the MCP server/);
     match(violations.map((violation) => violation.message).join("\n"), /dist\/bundle\.js missing/);
+  });
+});
+
+describe("validate-plugins: OpenCode adapter metadata", () => {
+  it("accepts a tracked adapter that shares the Claude/Codex inventory", () => {
+    const root = fixture(goodOpenCodeTree);
+    deepStrictEqual(collectOpenCode(root), []);
+  });
+
+  it("fails when the OpenCode package metadata is missing or malformed", () => {
+    const missingRoot = fixture(goodOpenCodeTree);
+    rmSync(join(missingRoot, "plugins", PKG_NAME, "package.json"));
+    match(collectOpenCode(missingRoot).map((violation) => violation.message).join("\n"), /package metadata is required/);
+
+    const malformedRoot = fixture(goodOpenCodeTree);
+    write(malformedRoot, `plugins/${PKG_NAME}/package.json`, "{\n");
+    match(collectOpenCode(malformedRoot).map((violation) => violation.message).join("\n"), /not valid JSON/);
+  });
+
+  it("fails when the entrypoint is missing or untracked", () => {
+    const missingRoot = fixture(goodOpenCodeTree);
+    rmSync(join(missingRoot, "plugins", PKG_NAME, "index.js"));
+    match(collectOpenCode(missingRoot).map((violation) => violation.message).join("\n"), /entrypoint/);
+
+    const untrackedRoot = fixture(goodOpenCodeTree);
+    const entrypoint = join(untrackedRoot, "plugins", PKG_NAME, "index.js");
+    const violations = collectOpenCode(untrackedRoot, (file) => file !== entrypoint);
+    match(violations.map((violation) => violation.message).join("\n"), /entrypoint would not ship/);
+  });
+
+  it("fails when package files omit a shared inventory directory", () => {
+    const root = fixture(goodOpenCodeTree);
+    const packageFile = join(root, "plugins", PKG_NAME, "package.json");
+    const packageJson = JSON.parse(readFileSync(packageFile, "utf8"));
+    packageJson.files = ["index.js", "skills"];
+    write(root, `plugins/${PKG_NAME}/package.json`, JSON.stringify(packageJson));
+    match(collectOpenCode(root).map((violation) => violation.message).join("\n"), /files must include "agents"/);
   });
 });

@@ -24,11 +24,11 @@ function badCodePoint(text) {
 }
 
 export function createPluginChecks(report, isTracked) {
-  function readJson(file) {
+  function readJson(file, reportErrors = true) {
     try {
       return JSON.parse(readFileSync(file, "utf8"));
     } catch (err) {
-      report(file, `not valid JSON: ${err.message}`);
+      if (reportErrors) report(file, `not valid JSON: ${err.message}`);
       return null;
     }
   }
@@ -41,7 +41,12 @@ export function createPluginChecks(report, isTracked) {
   }
 
   /** Every "/slug" in a description must name a skill the plugin actually ships. */
-  function checkSkillMentions(file, description, skills, label) {
+  function checkSkillMentions(file, description, pkg, label) {
+    if (typeof description !== "string") {
+      report(file, `${label} must be a string`);
+      return;
+    }
+    const { skills, agents } = pkg;
     const mentioned = [...description.matchAll(/(?:^|\s|\()\/([a-z][a-z0-9-]{2,})/g)].map((m) => m[1]);
     for (const slug of new Set(mentioned)) {
       if (!skills.includes(slug))
@@ -52,12 +57,16 @@ export function createPluginChecks(report, isTracked) {
     if (claim && Number(claim[1]) !== skills.length) {
       report(file, `${label} claims ${claim[1]} skills but ${skills.length} ship`);
     }
+    const agentClaim = /(\d+)\s+agents?\b/i.exec(description);
+    if (agentClaim && Number(agentClaim[1]) !== agents.length) {
+      report(file, `${label} claims ${agentClaim[1]} agents but ${agents.length} ship`);
+    }
   }
 
   function checkManifest(pkg, manifest) {
     const file = join(pkg.dir, "package.json");
     // npm shows this description too, so its skill count drifts the same way a manifest's does.
-    checkSkillMentions(file, manifest.description ?? "", pkg.skills, "package.json description");
+    checkSkillMentions(file, manifest.description ?? "", pkg, "package.json description");
     if (manifest.name !== pkg.name) report(file, `name "${manifest.name}" does not match directory "${pkg.name}"`);
     if (manifest.main !== "dist/bundle.js")
       report(file, `main must be dist/bundle.js, got ${JSON.stringify(manifest.main)}`);
@@ -109,8 +118,8 @@ export function createPluginChecks(report, isTracked) {
     if (!plugin) return;
     checkEncoding(file, plugin);
     if (plugin.name !== pkg.name) report(file, `name "${plugin.name}" does not match package "${pkg.name}"`);
-    if (!plugin.description?.trim()) report(file, "description missing or empty");
-    else checkSkillMentions(file, plugin.description, pkg.skills, "plugin description");
+    if (typeof plugin.description !== "string" || !plugin.description.trim()) report(file, "description missing or empty");
+    else checkSkillMentions(file, plugin.description, pkg, "plugin description");
     // plugin.json may omit version, but must never contradict package.json.
     if (plugin.version !== undefined && plugin.version !== manifest.version) {
       report(file, `version "${plugin.version}" disagrees with package.json "${manifest.version}"`);
@@ -186,7 +195,7 @@ export function createPluginChecks(report, isTracked) {
         report(file, `plugin "${entry.name}" points at source declaring name "${declared.name}"`);
       const pkg = packages.find((p) => p.name === entry.name);
       if (pkg && entry.description)
-        checkSkillMentions(file, entry.description, pkg.skills, `plugin "${entry.name}" description`);
+        checkSkillMentions(file, entry.description, pkg, `plugin "${entry.name}" description`);
     }
     if (!expectAll) return;
     for (const pkg of packages) {
@@ -204,6 +213,67 @@ export function createPluginChecks(report, isTracked) {
     if (isTracked && !isTracked(bundle)) {
       report(bundle, "dist/bundle.js not tracked by git - /plugin installs from the repo, so this file would not ship");
     }
+  }
+
+  function checkOpenCodeAdapter(pkg) {
+    const packageFile = join(pkg.dir, "package.json");
+    const codexDirectory = join(pkg.dir, ".codex-plugin");
+    if (!(existsSync(codexDirectory) || existsSync(packageFile))) return;
+
+    const claudeFile = join(pkg.dir, ".claude-plugin", "plugin.json");
+    const codexFile = join(codexDirectory, "plugin.json");
+    const claude = readJson(claudeFile, false);
+    const codex = existsSync(codexFile) ? readJson(codexFile) : null;
+    if (!existsSync(codexFile)) report(codexFile, "missing — the Codex manifest is part of the shared plugin metadata");
+
+    if (claude)
+      checkSkillMentions(claudeFile, claude.description ?? "", pkg, "Claude plugin description");
+    if (codex) {
+      if (codex.name !== pkg.name) report(codexFile, `name "${codex.name}" does not match directory "${pkg.name}"`);
+      if (typeof codex.description !== "string" || !codex.description.trim()) report(codexFile, "description missing or empty");
+      else checkSkillMentions(codexFile, codex.description, pkg, "Codex plugin description");
+      if (claude?.version !== undefined && codex.version !== claude.version) {
+        report(codexFile, `version "${codex.version}" disagrees with Claude manifest "${claude.version}"`);
+      }
+    }
+
+    if (!existsSync(packageFile)) {
+      report(packageFile, "missing — the OpenCode adapter package metadata is required");
+      return;
+    }
+    const adapter = readJson(packageFile);
+    if (!adapter) return;
+    checkEncoding(packageFile, adapter);
+    if (typeof adapter.description !== "string" || !adapter.description.trim()) report(packageFile, "description missing or empty");
+    else checkSkillMentions(packageFile, adapter.description, pkg, "OpenCode package description");
+
+    const expectedName = claude?.author?.name ? `@${claude.author.name}/${pkg.name}-opencode` : null;
+    if (expectedName && adapter.name !== expectedName)
+      report(packageFile, `name "${adapter.name}" does not match expected OpenCode package "${expectedName}"`);
+    const expectedVersion = claude?.version ?? codex?.version;
+    if (expectedVersion !== undefined && adapter.version !== expectedVersion)
+      report(packageFile, `version "${adapter.version}" disagrees with plugin metadata "${expectedVersion}"`);
+    if (!/^\d+\.\d+\.\d+$/.test(adapter.version ?? ""))
+      report(packageFile, `version must be x.y.z, got ${JSON.stringify(adapter.version)}`);
+    if (adapter.type !== "module") report(packageFile, `type must be "module", got ${JSON.stringify(adapter.type)}`);
+    if (adapter.exports?.["."] !== "./index.js")
+      report(packageFile, `exports["."] must be "./index.js", got ${JSON.stringify(adapter.exports?.["."])}`);
+    if (adapter.dependencies?.["@opencode/plugin"] !== "2.0.18")
+      report(packageFile, `dependencies["@opencode/plugin"] must be "2.0.18", got ${JSON.stringify(adapter.dependencies?.["@opencode/plugin"])}`);
+
+    const files = adapter.files;
+    if (!Array.isArray(files)) report(packageFile, "files must list the OpenCode entrypoint and shared inventory directories");
+    else {
+      for (const required of ["index.js", "skills", "agents"])
+        if (!files.includes(required)) report(packageFile, `files must include "${required}" for the shared OpenCode inventory`);
+    }
+
+    const entrypoint = join(pkg.dir, "index.js");
+    if (!existsSync(entrypoint)) report(entrypoint, "missing — package exports point at the OpenCode adapter entrypoint");
+    else if (isTracked && !isTracked(entrypoint)) report(entrypoint, "not tracked by git — the OpenCode adapter entrypoint would not ship");
+    if (isTracked && !isTracked(packageFile)) report(packageFile, "not tracked by git — the OpenCode package metadata would not ship");
+    if (existsSync(codexFile) && isTracked && !isTracked(codexFile))
+      report(codexFile, "not tracked by git — the Codex manifest would not ship");
   }
 
   /** Run every per-package check for one plugin. */
@@ -224,5 +294,5 @@ export function createPluginChecks(report, isTracked) {
     }
   }
 
-  return { checkPackage, checkMarketplace };
+  return { checkPackage, checkMarketplace, checkOpenCodeAdapter };
 }

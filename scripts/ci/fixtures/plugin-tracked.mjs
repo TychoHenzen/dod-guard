@@ -100,3 +100,72 @@ export function buildPkg(root) {
     hookScript: join(dir, "scripts", "hook.mjs"),
   };
 }
+
+export function goodOpenCodeTree() {
+  const root = mkdtempSync(join(tmpdir(), "plugin-opencode-"));
+  write(
+    root,
+    `plugins/${PKG_NAME}/.claude-plugin/plugin.json`,
+    JSON.stringify(
+      {
+        name: PKG_NAME,
+        version: "1.0.0",
+        description: "A sample plugin. Ships 1 skill and 1 agent.",
+        author: { name: "tychohenzen" },
+      },
+      null,
+      2,
+    ),
+  );
+  write(
+    root,
+    `plugins/${PKG_NAME}/.codex-plugin/plugin.json`,
+    JSON.stringify(
+      {
+        name: PKG_NAME,
+        version: "1.0.0",
+        description: "A sample plugin. Ships 1 skill and 1 agent.",
+      },
+      null,
+      2,
+    ),
+  );
+  write(
+    root,
+    `plugins/${PKG_NAME}/package.json`,
+    JSON.stringify(
+      {
+        name: `@tychohenzen/${PKG_NAME}-opencode`,
+        version: "1.0.0",
+        description: "OpenCode adapter for the sample plugin.",
+        type: "module",
+        exports: { ".": "./index.js" },
+        files: ["index.js", "skills", "agents"],
+        dependencies: { "@opencode/plugin": "2.0.18" },
+      },
+      null,
+      2,
+    ),
+  );
+  write(root, `plugins/${PKG_NAME}/index.js`, "export default { id: \"sample-plugin\" };\n");
+  write(
+    root,
+    `plugins/${PKG_NAME}/skills/sample-skill/SKILL.md`,
+    "---\nname: sample-skill\ndescription: Sample skill.\n---\n\nBody.\n",
+  );
+  write(
+    root,
+    `plugins/${PKG_NAME}/agents/sample-agent.md`,
+    "---\nname: sample-agent\ndescription: Sample agent.\n---\n\nBody.\n",
+  );
+  return root;
+}
+
+export function buildOpenCodePlugin(root) {
+  return {
+    name: PKG_NAME,
+    dir: join(root, "plugins", PKG_NAME),
+    skills: ["sample-skill"],
+    agents: ["sample-agent.md"],
+  };
+}
