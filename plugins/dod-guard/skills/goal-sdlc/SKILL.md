@@ -589,6 +589,8 @@ If the review errors:
 
 - Use available findings, targeted checks, and advisor guidance to repair the cause before recovery or retry. Do not rerun the reviewer blindly or treat a failed execution as a completed `BLOCK` or `REQUEST_CHANGES` result; continue only when each failure has a repaired cause.
 
+Before `complete-pr`, compare the completed reviewer handoff with the remote provider review state. If the recommendation is missing remotely, publish the saved recommendation and evidence once, then read back exactly one review at the recorded reviewed head. A GitHub `COMMENT` is publication transport, not a second review; never rerun a completed review solely because publication was missing.
+
 
 
 **REVIEWS CAN TAKE A VERY LONG TIME**
@@ -689,6 +691,13 @@ probes or mutations until the reset. Continue unrelated eligible queue work,
 then retry the blocked operation once after the reset and read back remote state.
 Classify another refusal as an external blocker instead of repeating the same
 probe or asking the user to authorize routine work again.
+
+When a pending review or gate observes a changed branch head or base ref, assign
+one ref-reconciliation owner. Invalidate evidence tied to the old refs, suppress
+duplicate attestations while refs move, perform one branch update and remote
+readback, then recompute and attest the exact target once. Continue unrelated
+queue work while reconciliation is blocked; do not stack parallel ref updates or
+repeat attestations against moving refs.
 
 
 
@@ -807,6 +816,10 @@ After every successful merge:
 * increment `PBIs completed: N` only after the parent and child Project
   statuses are read back, and include the updated count in the next `[HH:MM]`
   progress message
+* before reporting throughput or selecting the next item, fully paginate the
+  authoritative Project items and count parent PBIs and child PBIs separately;
+  never infer either count by incrementing a prior snapshot or by subtracting
+  one total from another
 
 - If the merge changed queue state, refresh the affected items and select the next eligible delivery unit once. Otherwise select from the current snapshot.
 

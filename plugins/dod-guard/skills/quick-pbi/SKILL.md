@@ -25,6 +25,15 @@ referenced skill from the active plugin root before invoking it.
   cannot be resolved, stop and report the exact blocker instead of asking the
   user to choose a fallback.
 - Never invent a requirement or silently continue past a failed gate.
+- A concrete feature request authorizes the routine lifecycle without a second
+  planning or permission round: create or reuse one associated parent PBI,
+  move it to `In Progress`, and carry that feature through one branch, its
+  commit series, and one draft PR. Create child PBIs only for genuinely
+  independent deliverables; keep atomic steps in the parent checklist.
+- Do not pause for ceremonial confirmation before issue, Project, branch,
+  commit, push, or draft-PR actions already covered by this skill. Ask only the
+  batched refinement questions for material constraints, or a real external
+  blocker that repository evidence cannot resolve.
 
 ## Run the lifecycle
 

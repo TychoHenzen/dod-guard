@@ -744,6 +744,22 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   );
 });
 
+test("goal-sdlc publishes one completed review and reconciles moving refs", async () => {
+  const skill = await readSkill();
+  for (const marker of [
+    "publish the saved recommendation and evidence once",
+    "A GitHub `COMMENT` is publication transport, not a second review",
+    "one ref-reconciliation owner",
+    "Invalidate evidence tied to the old refs",
+    "recompute and attest the exact target once",
+    "fully paginate the",
+    "count parent PBIs and child PBIs separately",
+    "never infer either count by incrementing a prior snapshot",
+  ]) {
+    assert.ok(skill.includes(marker), `missing workflow safeguard: ${marker}`);
+  }
+});
+
 test("goal-sdlc makes blocked stops brief and plain-language", async () => {
   const skill = await readSkill();
   for (const marker of [
