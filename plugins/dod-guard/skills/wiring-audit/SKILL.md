@@ -8,9 +8,8 @@ description: Audit whether a feature can be found, invoked, used, and understood
 Check whether the feature reaches its intended user. This is a completeness
 audit, not an implementation task or a visual design review.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root.
+Read and apply `standards/working-defaults.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Establish the boundary
 
