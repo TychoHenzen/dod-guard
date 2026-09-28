@@ -6,6 +6,7 @@ import {
   readQueueSnapshot,
   selectQueueItem,
 } from "./queue-readback.mjs";
+import { localDate } from "./friction-log.mjs";
 
 function projectItem({ id, repository, number, status, parentIssue, linkedPullRequests = [], state }) {
   return {
@@ -572,4 +573,35 @@ test("excludes a fully verified merged record without mutating it", async () => 
   assert.deepEqual(decision, { kind: "complete", eligible: false, status: "Done", reasons: [] });
   assert.equal(selectQueueItem(snapshot), null);
   assert.deepEqual(mutations, []);
+});
+
+test("holds the current day's friction log and queues earlier logs as Backlog work", () => {
+  const record = (title) => [
+    { issueNumber: 700, parentIssueNumber: null, projectStatus: "Backlog", issue: { number: 700, state: "open", title }, pullRequests: [] },
+  ];
+  const context = { today: "2026-09-28" };
+
+  assert.deepEqual(defaultQueueDecision(record("Friction log 2026-09-28"), context), {
+    kind: "hold",
+    eligible: false,
+    reasons: ["friction log still collecting entries"],
+  });
+  assert.equal(defaultQueueDecision(record("Friction log 2026-09-27"), context).eligible, true);
+  assert.equal(defaultQueueDecision(record("Friction log 2026-09-28 follow-up"), context).eligible, true);
+});
+
+test("friction-log dates use the local calendar day and the queue defaults to today", () => {
+  assert.equal(localDate(new Date(2026, 8, 5, 23, 59)), "2026-09-05");
+  assert.equal(localDate(new Date(2026, 0, 1, 0, 0)), "2026-01-01");
+
+  const todayLog = {
+    issueNumber: 701,
+    parentIssueNumber: null,
+    projectStatus: "Backlog",
+    issue: { number: 701, state: "open", title: `Friction log ${localDate(new Date())}` },
+    pullRequests: [],
+  };
+  const ordinary = { ...todayLog, issueNumber: 702, issue: { number: 702, state: "open", title: "Ordinary backlog work" } };
+  assert.equal(selectQueueItem({ records: [todayLog, ordinary] }).rootIssueNumber, 702);
+  assert.equal(selectQueueItem({ records: [todayLog] }), null);
 });

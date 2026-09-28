@@ -1,3 +1,5 @@
+import { collectingFrictionLog } from "./friction-log.mjs";
+
 const PROJECT_FIELDS = Object.freeze([
   "Status",
   "Linked pull requests",
@@ -805,6 +807,9 @@ function defaultQueueDecision(records, context = {}) {
   }
 
   if (reasons.length > 0) return { kind: "hold", eligible: false, reasons: [...new Set(reasons)] };
+  if (collectingFrictionLog(records, context.today)) {
+    return { kind: "hold", eligible: false, reasons: ["friction log still collecting entries"] };
+  }
   if (uniqueStatuses.length !== 1 || !["Todo", "Backlog"].includes(uniqueStatuses[0])) {
     return { kind: "hold", eligible: false, reasons: ["Project status is not a queue status"] };
   }
