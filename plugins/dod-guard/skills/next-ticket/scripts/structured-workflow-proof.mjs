@@ -17,6 +17,11 @@ export const REQUIRED_CHILD_CATEGORIES = [
 
 export const PROOF_SCENARIOS = ["passing", "incomplete", "ordinary"];
 
+const PROOF_HANDOFF = {
+  url: "https://github.com/owner/repo/issues/1#issuecomment-1",
+  headSha: "abc1234",
+};
+
 export function evaluateConvergence({
   path: deliveryPath = "structured",
   records = {},
@@ -86,10 +91,17 @@ export function evaluateConvergence({
   };
 }
 
-export function renderConvergence(result) {
+// The handoff comment already maps every task and criterion; the PR only points at it.
+function renderVerifiedConvergence({ url, headSha } = {}) {
+  if (!url || !headSha) throw new Error("A verified convergence needs the handoff URL and head SHA.");
+  return ["## Convergence", `- Handoff: ${url} (head ${headSha})`, "- Remainder: none"].join("\n");
+}
+
+export function renderConvergence(result, handoff) {
   if (result.outcome === "ordinary") {
     return ["## Convergence", "- Outcome: ordinary", "- Remainder: none"].join("\n");
   }
+  if (result.outcome === "verified") return renderVerifiedConvergence(handoff);
 
   const sections = result.sections ?? {};
   const sectionStatus = (name) => {
@@ -137,7 +149,7 @@ export function scenarioResult(scenario = "passing") {
 
 export function runProof(scenario = "passing") {
   const result = scenarioResult(scenario);
-  process.stdout.write(`${renderConvergence(result)}\n`);
+  process.stdout.write(`${renderConvergence(result, PROOF_HANDOFF)}\n`);
   return result;
 }
 
