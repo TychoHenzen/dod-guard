@@ -57,8 +57,9 @@ safety or authority boundaries below remain stricter.
 4. Resolve the selected target with the GitHub MCP repository operation, or
    `gh repo view <target> --json nameWithOwner,defaultBranchRef,url` when it
    was supplied or chosen from the list.
-5. Query that repository's `projectsV2` connection once. Keep only open projects.
-   Stop unless exactly one open Project is explicitly linked to the repository.
+5. Query that repository's linked Project through the typed connector or the
+   REST ProjectsV2 endpoints once. Keep only open projects. Stop unless exactly
+   one open Project is explicitly linked to the repository.
 6. Resolve exactly one `Status` field and one case-insensitive `Backlog` option
    once. Stop if either is absent or ambiguous.
 

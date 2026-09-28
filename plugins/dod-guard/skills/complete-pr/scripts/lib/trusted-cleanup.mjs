@@ -16,11 +16,26 @@ async function deleteTrustedBranch(client, branchName, trustedHead) {
   if (branch === null) {
     return "already_absent";
   }
-  await client.deleteBranchRef(branchName);
-  if ((await client.getBranchRef(branchName)) !== null) {
-    stop("branch_delete_unconfirmed", `Remote branch ${branchName} still exists after deletion.`);
+  let deleteError;
+  try {
+    await client.deleteBranchRef(branchName);
+  } catch (error) {
+    deleteError = error;
   }
-  return "deleted";
+  const remaining = await client.getBranchRef(branchName);
+  if (remaining === null) {
+    return "deleted";
+  }
+  if (remaining.sha !== trustedHead) {
+    stop(
+      "branch_ref_changed",
+      `Remote branch ${branchName} points to ${remaining.sha}, not merged head ${trustedHead}; it was not deleted.`,
+    );
+  }
+  if (deleteError) {
+    throw deleteError;
+  }
+  stop("branch_delete_unconfirmed", `Remote branch ${branchName} still exists after deletion.`);
 }
 
 async function cleanupTrustedBranch(client, cleanup) {

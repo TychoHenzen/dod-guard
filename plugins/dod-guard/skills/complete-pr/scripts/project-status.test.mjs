@@ -8,137 +8,155 @@ import {
 } from "./project-status.mjs";
 
 const PROJECT_ID = "PVT_projectnode";
+const STATUS_FIELD_NODE_ID = "PVTSSF_status-field";
+const STATUS_FIELD_ID = 407767889;
+const STATUS_OPTION_ID = "98236657";
 const ITEM_IDS = ["PVTI_child-one", "PVTI_child-two", "PVTI_parent"];
+const ITEM_NUMERIC_IDS = new Map(ITEM_IDS.map((itemId, index) => [itemId, 256202820 + index]));
 const NUMERIC_PROJECT_ID_ERROR = /global ProjectV2 node ID/;
+const STATUS_FIELD_ERROR = /exactly one REST field/;
 const READBACK_ERROR = /PVTI_child-two.*read back Todo/;
 
-function createRunner({ projectId = PROJECT_ID, statuses = new Map(ITEM_IDS.map((itemId) => [itemId, "Done"])) } = {}) {
+function projectFields() {
+  return [{
+    id: STATUS_FIELD_ID,
+    node_id: STATUS_FIELD_NODE_ID,
+    name: "Status",
+    data_type: "single_select",
+    options: [
+      { id: "30a230f4", name: { raw: "Backlog" } },
+      { id: "f75ad846", name: { raw: "Todo" } },
+      { id: "47fc9ee4", name: { raw: "In Progress" } },
+      { id: STATUS_OPTION_ID, name: { raw: "Done" } },
+    ],
+  }];
+}
+
+function projectItems(statuses) {
+  return [...statuses].map(([nodeId, status]) => ({
+    id: ITEM_NUMERIC_IDS.get(nodeId),
+    node_id: nodeId,
+    fields: [{
+      id: STATUS_FIELD_ID,
+      name: "Status",
+      data_type: "single_select",
+      value: { id: STATUS_OPTION_ID, name: { raw: status } },
+    }],
+  }));
+}
+
+function createRunner({ projectId = PROJECT_ID, statuses = new Map(ITEM_IDS.map((itemId) => [itemId, "Done"])), splitItems = false, fields = projectFields() } = {}) {
   const calls = [];
   const runner = (args) => {
     calls.push(args);
-    if (args[1] === "view") {
-      return { status: 0, stderr: "", stdout: JSON.stringify({ id: projectId }) };
+    assert.equal(args[0], "api");
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
+    if (endpoint === "users/TychoHenzen/projectsV2/2") {
+      return { status: 0, stderr: "", stdout: JSON.stringify({ node_id: projectId }) };
     }
-    if (args[1] === "item-edit") {
-      return { status: 0, stderr: "", stdout: "" };
+    if (endpoint === "users/TychoHenzen/projectsV2/2/fields?per_page=100") {
+      return { status: 0, stderr: "", stdout: JSON.stringify([fields]) };
     }
-    if (args[1] === "item-list") {
-      return {
-        status: 0,
-        stderr: "",
-        stdout: JSON.stringify({
-          items: [...statuses].map(([id, status]) => ({ id, status })),
-        }),
-      };
+    if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items?") === true) {
+      const items = projectItems(statuses);
+      const pages = splitItems ? [items.slice(0, 1), items.slice(1)] : [items];
+      return { status: 0, stderr: "", stdout: JSON.stringify(pages) };
+    }
+    if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items/") === true) {
+      return { status: 200, stderr: "", stdout: "" };
     }
     throw new Error(`Unexpected command: ${args.join(" ")}`);
   };
   return { calls, runner };
 }
 
-test("resolves one global ProjectV2 ID and writes children before the parent with readback", () => {
-  const { calls, runner } = createRunner();
-
-  const result = writeProjectStatuses({
+function writeOptions(overrides = {}) {
+  return {
     owner: "TychoHenzen",
     projectNumber: 2,
-    statusFieldId: "PVTSSF_status-field",
-    statusOptionId: "98236657",
+    statusFieldId: STATUS_FIELD_NODE_ID,
+    statusOptionId: STATUS_OPTION_ID,
     expectedStatus: "Done",
     itemIds: ITEM_IDS,
-    commandRunner: runner,
-  });
+    ...overrides,
+  };
+}
+
+test("writes REST single-select updates in child-before-parent order with readback", () => {
+  const { calls, runner } = createRunner({ splitItems: true });
+
+  const result = writeProjectStatuses({ ...writeOptions(), commandRunner: runner });
 
   assert.equal(result.projectId, PROJECT_ID);
   assert.deepEqual(result.mutations, ITEM_IDS.map((itemId) => ({ itemId, status: "Done" })));
-  assert.deepEqual(calls.map((args) => args[1]), [
-    "view",
-    "item-edit",
-    "item-list",
-    "item-edit",
-    "item-list",
-    "item-edit",
-    "item-list",
-  ]);
-  assert.equal(calls.filter((args) => args[1] === "view").length, 1);
-  assert.deepEqual(calls.filter((args) => args[1] === "item-edit").map((args) => args[3]), ITEM_IDS);
-  assert.equal(calls.filter((args) => args[1] === "item-list").length, ITEM_IDS.length);
-  for (const args of calls.filter((entry) => entry[1] === "item-edit")) {
-    assert.deepEqual(args, buildProjectItemEditCommand({
-      itemId: args[3],
-      projectId: PROJECT_ID,
-      statusFieldId: "PVTSSF_status-field",
-      statusOptionId: "98236657",
-    }));
-  }
-  assert.equal(calls.some((args) => args[0] === "git" || args.includes("worktree")), false);
-});
-
-test("expands readback until a target beyond the first page is present", () => {
-  const targetItemId = "PVTI_far-away";
-  const calls = [];
-  const runner = (args) => {
-    calls.push(args);
-    if (args[1] === "view") {
-      return { status: 0, stderr: "", stdout: JSON.stringify({ id: PROJECT_ID }) };
-    }
-    if (args[1] === "item-edit") {
-      return { status: 0, stderr: "", stdout: "" };
-    }
-    if (args[1] === "item-list") {
-      const limit = Number(args.at(-1));
-      const items = limit >= 2000
-        ? [...Array.from({ length: 1000 }, (_, index) => ({ id: `PVTI_item-${index}`, status: "Done" })), { id: targetItemId, status: "Done" }]
-        : Array.from({ length: 1000 }, (_, index) => ({ id: `PVTI_item-${index}`, status: "Done" }));
-      return { status: 0, stderr: "", stdout: JSON.stringify({ items }) };
-    }
-    throw new Error(`Unexpected command: ${args.join(" ")}`);
-  };
-
-  writeProjectStatuses({
+  assert.deepEqual(
+    calls.filter((args) => args.includes("PATCH")).map((args) => args[3].split("/").at(-1)),
+    [...ITEM_NUMERIC_IDS.values()].map(String),
+  );
+  assert.deepEqual(calls.filter((args) => args.includes("PATCH"))[0], buildProjectItemEditCommand({
     owner: "TychoHenzen",
     projectNumber: 2,
-    statusFieldId: "PVTSSF_status-field",
-    statusOptionId: "98236657",
-    expectedStatus: "Done",
-    itemIds: [targetItemId],
-    commandRunner: runner,
-  });
-
-  assert.deepEqual(
-    calls.filter((args) => args[1] === "item-list").map((args) => args.at(-1)),
-    ["1000", "2000"],
-  );
+    itemId: String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0])),
+    statusFieldId: String(STATUS_FIELD_ID),
+    statusOptionId: STATUS_OPTION_ID,
+  }));
+  assert.equal(calls.filter((args) => args.some((value) => String(value).includes("/items?"))).length, ITEM_IDS.length + 1);
+  assert.equal(calls.every((args) => args[0] === "api"), true);
+  assert.equal(calls.some((args) => args.some((value) => /graphql|project( |$)|item-edit|item-list|issue view/i.test(String(value)))), false);
 });
 
-test("rejects a numeric Project number as the GraphQL Project ID before any write", () => {
+test("maps REST field and option IDs before issuing a PATCH", () => {
+  const { calls, runner } = createRunner();
+
+  writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0]] }), commandRunner: runner });
+
+  const patch = calls.find((args) => args.includes("PATCH"));
+  assert.deepEqual(patch, buildProjectItemEditCommand({
+    owner: "TychoHenzen",
+    projectNumber: 2,
+    itemId: String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0])),
+    statusFieldId: String(STATUS_FIELD_ID),
+    statusOptionId: STATUS_OPTION_ID,
+  }));
+});
+
+test("rejects a numeric project response before any status write", () => {
   const { calls, runner } = createRunner({ projectId: "2" });
 
-  assert.throws(() => writeProjectStatuses({
-    owner: "TychoHenzen",
-    projectNumber: 2,
-    statusFieldId: "PVTSSF_status",
-    statusOptionId: "f75ad846",
-    expectedStatus: "Todo",
-    itemIds: ["PVTI_parent"],
-    commandRunner: runner,
-  }), NUMERIC_PROJECT_ID_ERROR);
-  assert.equal(calls.some((args) => args[1] === "item-edit"), false);
+  assert.throws(() => writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0]] }), commandRunner: runner }), NUMERIC_PROJECT_ID_ERROR);
+  assert.equal(calls.some((args) => args.includes("PATCH")), false);
 });
 
 test("rejects duplicate item IDs before resolving or writing", () => {
   const { calls, runner } = createRunner();
 
   assert.throws(() => writeProjectStatuses({
-    owner: "TychoHenzen",
-    projectNumber: 2,
-    statusFieldId: "PVTSSF_status",
-    statusOptionId: "98236657",
-    expectedStatus: "Done",
-    itemIds: [ITEM_IDS[0], ITEM_IDS[0], ITEM_IDS[2]],
+    ...writeOptions({ itemIds: [ITEM_IDS[0], ITEM_IDS[0], ITEM_IDS[2]] }),
     commandRunner: runner,
   }), /unique item IDs/);
   assert.equal(calls.length, 0);
+});
+
+test("rejects a missing or mismatched status option before any status write", () => {
+  const { calls, runner } = createRunner();
+
+  assert.throws(() => writeProjectStatuses({
+    ...writeOptions({ statusOptionId: "missing-option", itemIds: [ITEM_IDS[0]] }),
+    commandRunner: runner,
+  }), /must map to Done/);
+  assert.equal(calls.some((args) => args.includes("PATCH")), false);
+});
+
+test("rejects missing or ambiguous REST status fields before any status write", () => {
+  for (const fields of [[], [...projectFields(), ...projectFields()]]) {
+    const { calls, runner } = createRunner({ fields });
+
+    assert.throws(() => writeProjectStatuses({
+      ...writeOptions({ itemIds: [ITEM_IDS[0]] }),
+      commandRunner: runner,
+    }), STATUS_FIELD_ERROR);
+    assert.equal(calls.some((args) => args.includes("PATCH")), false);
+  }
 });
 
 test("stops after a failed item readback and does not write the next item", () => {
@@ -149,15 +167,10 @@ test("stops after a failed item readback and does not write the next item", () =
   ]);
   const { calls, runner } = createRunner({ statuses });
 
-  assert.throws(() => writeProjectStatuses({
-    owner: "TychoHenzen",
-    projectNumber: 2,
-    statusFieldId: "PVTSSF_status",
-    statusOptionId: "98236657",
-    expectedStatus: "Done",
-    itemIds: ITEM_IDS,
-    commandRunner: runner,
-  }), READBACK_ERROR);
-  assert.deepEqual(calls.filter((args) => args[1] === "item-edit").map((args) => args[3]), ITEM_IDS.slice(0, 2));
-  assert.equal(calls.filter((args) => args[1] === "item-list").length, 2);
+  assert.throws(() => writeProjectStatuses({ ...writeOptions(), commandRunner: runner }), READBACK_ERROR);
+  assert.deepEqual(
+    calls.filter((args) => args.includes("PATCH")).map((args) => args[3].split("/").at(-1)),
+    ITEM_IDS.slice(0, 2).map((itemId) => String(ITEM_NUMERIC_IDS.get(itemId))),
+  );
+  assert.equal(calls.filter((args) => args.some((value) => String(value).includes("/items?"))).length, 3);
 });

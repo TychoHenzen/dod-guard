@@ -5,11 +5,19 @@ import { CompletionError } from "./completion-error.mjs";
 
 const GH_CHECKS_PENDING_EXIT = 8;
 const HTTP_NOT_FOUND = /HTTP 404/;
+const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
 
 function githubResponseError(endpoint, field) {
   return new CompletionError(
     "github_response_shape",
     `GitHub response for ${endpoint} must include an array ${field}.`,
+  );
+}
+
+function githubResponseContractError(endpoint, detail) {
+  return new CompletionError(
+    "github_response_shape",
+    `GitHub response for ${endpoint} must include ${detail}.`,
   );
 }
 
@@ -57,11 +65,199 @@ function ghJsonPagesData(endpoint, commandRunner) {
   return Array.isArray(data) ? data : [data];
 }
 
+function ghJsonArrayPages(endpoint, commandRunner) {
+  const pages = ghJsonPagesData(endpoint, commandRunner);
+  if (pages.some((page) => !Array.isArray(page))) {
+    throw githubResponseError(endpoint, "an array response");
+  }
+  return pages.flat();
+}
+
+function ghJsonFilteredArray(endpoint, filter, commandRunner) {
+  const result = commandRunner(["api", "--paginate", "--jq", filter, endpoint]);
+  if (result.status !== 0) {
+    throw new Error(result.stderr.trim() || `${endpoint} did not complete successfully.`);
+  }
+  const output = result.stdout.trim();
+  if (output.length === 0) {
+    return [];
+  }
+  try {
+    return output.split(/\r?\n/).map((line) => JSON.parse(line));
+  } catch (error) {
+    throw new Error(`${endpoint} returned invalid JSON.`, { cause: error });
+  }
+}
+
+function projectStatusName(item, statusFieldId, endpoint) {
+  if (!Array.isArray(item?.fields) || item.fields.length !== 1) {
+    throw githubResponseContractError(endpoint, "exactly one Status field/value");
+  }
+  const [statusField] = item.fields;
+  if (String(statusField?.id ?? "") !== String(statusFieldId) ||
+      typeof statusField?.name !== "string" || statusField.name.toLowerCase() !== "status") {
+    throw githubResponseContractError(endpoint, "exactly one Status field/value");
+  }
+
+  const value = statusField.value;
+  const names = [];
+  if (typeof value === "string") {
+    names.push(value);
+  } else if (value?.name && typeof value.name === "object") {
+    for (const key of ["raw", "html"]) {
+      if (key in value.name) {
+        names.push(value.name[key]);
+      }
+    }
+  } else if (value && typeof value.name === "string") {
+    names.push(value.name);
+  }
+
+  if (names.length === 0 || names.some((name) => typeof name !== "string" || name.trim().length === 0)) {
+    throw githubResponseContractError(endpoint, "exactly one non-blank Status field/value");
+  }
+  if (new Set(names).size !== 1) {
+    throw githubResponseContractError(endpoint, "one non-contradictory Status field/value");
+  }
+  return names[0];
+}
+
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function readMergeAfterFailure(client, pullNumber, expectedHead, error) {
+  let pullRequest;
+  try {
+    pullRequest = client.getPullRequest(pullNumber);
+  } catch (readError) {
+    throw new CompletionError(
+      "merge_ambiguous",
+      `Merge failed (${errorMessage(error)}); pull request readback failed (${errorMessage(readError)}).`,
+      { cause: readError },
+    );
+  }
+  if (pullRequest.state === "MERGED") {
+    if (pullRequest.headSha !== expectedHead) {
+      throw new CompletionError(
+        "unexpected_head_change",
+        `Pull request head changed from ${expectedHead} to ${pullRequest.headSha}.`,
+        { cause: error },
+      );
+    }
+    return { merged: true, sha: pullRequest.mergeCommitSha };
+  }
+  throw error;
+}
+
 function encodeBranch(branchName) {
   return branchName
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
+}
+
+function closingIssueReferences(text, defaultRepository) {
+  const references = new Map();
+  for (const match of String(text ?? "").matchAll(CLOSING_REFERENCE)) {
+    const repository = match.groups.repository ?? defaultRepository;
+    const number = Number(match.groups.number);
+    const key = `${repository}#${number}`;
+    if (!references.has(key)) {
+      references.set(key, { repository, number });
+    }
+  }
+  return [...references.values()];
+}
+
+function listOwnedProjects(owner, commandRunner) {
+  const userEndpoint = `users/${owner}/projectsV2?per_page=100`;
+  const userResponse = ghJson(
+    ["api", "--paginate", "--slurp", userEndpoint],
+    [0, 1],
+    commandRunner,
+  );
+  if (userResponse.result.status === 0) {
+    const pages = userResponse.data;
+    if (!Array.isArray(pages) || pages.some((page) => !Array.isArray(page))) {
+      throw githubResponseError(userEndpoint, "an array response");
+    }
+    return { basePath: `users/${owner}`, projects: pages.flat() };
+  }
+  if (!HTTP_NOT_FOUND.test(userResponse.result.stderr)) {
+    throw new Error(userResponse.result.stderr.trim() || "Failed to list user-owned Projects.");
+  }
+  const orgEndpoint = `orgs/${owner}/projectsV2?per_page=100`;
+  return {
+    basePath: `orgs/${owner}`,
+    projects: ghJsonArrayPages(orgEndpoint, commandRunner),
+  };
+}
+
+function projectItemMatchesRepository(item, repository, issueNumber) {
+  const content = item?.content;
+  const itemRepository = content?.repository?.full_name ?? content?.repository?.fullName;
+  const itemRepositoryUrl = content?.repository_url;
+  return content?.number === issueNumber &&
+    (itemRepository === repository || itemRepositoryUrl === `https://api.github.com/repos/${repository}`);
+}
+
+function readIssueProjectStatuses(repository, issueNumber, commandRunner) {
+  const separator = repository.indexOf("/");
+  if (separator <= 0 || separator === repository.length - 1) {
+    throw new Error("Repository must be in owner/name form.");
+  }
+  const owner = repository.slice(0, separator);
+  const { basePath, projects } = listOwnedProjects(owner, commandRunner);
+  const linkedProjects = [];
+
+  for (const project of projects) {
+    if (project?.number === undefined || project?.number === null) {
+      throw githubResponseError(`${basePath}/projectsV2`, "projects with a number");
+    }
+    if (typeof project?.state !== "string" || project.state.trim().length === 0) {
+      throw githubResponseContractError(`${basePath}/projectsV2`, "projects with an explicit state");
+    }
+    if (project.state.trim().toLowerCase() !== "open") {
+      continue;
+    }
+    const projectPath = `${basePath}/projectsV2/${project.number}`;
+    const itemsEndpoint = `${projectPath}/items?per_page=100`;
+    const matchingItems = ghJsonFilteredArray(
+      itemsEndpoint,
+      ".[] | {id, content: {number: .content.number, repository: {full_name: .content.repository.full_name}, repository_url: .content.repository_url}}",
+      commandRunner,
+    )
+      .filter((item) => projectItemMatchesRepository(item, repository, issueNumber));
+    if (matchingItems.length === 0) {
+      continue;
+    }
+    if (matchingItems.length !== 1) {
+      throw githubResponseContractError(itemsEndpoint, "exactly one matching issue item");
+    }
+    linkedProjects.push({ project, item: matchingItems[0] });
+  }
+
+  if (linkedProjects.length !== 1) {
+    throw githubResponseContractError(`${basePath}/projectsV2`, "exactly one open linked Project");
+  }
+
+  const { project, item } = linkedProjects[0];
+  const projectPath = `${basePath}/projectsV2/${project.number}`;
+  const fieldsEndpoint = `${projectPath}/fields?per_page=100`;
+  const statusFields = ghJsonArrayPages(fieldsEndpoint, commandRunner)
+    .filter((field) => typeof field?.name === "string" && field.name.toLowerCase() === "status");
+  if (statusFields.length !== 1 || statusFields[0].id === undefined || statusFields[0].id === null) {
+    throw githubResponseError(fieldsEndpoint, "exactly one Status field");
+  }
+  const statusFieldId = statusFields[0].id;
+  if (item?.id === undefined || item?.id === null || String(item.id).trim().length === 0) {
+    throw githubResponseError(`${projectPath}/items?per_page=100`, "items with IDs");
+  }
+
+  const itemEndpoint = `${projectPath}/items/${item.id}?fields=${statusFieldId}`;
+  const { data } = ghJson(["api", "--jq", "{fields}", itemEndpoint], [0], commandRunner);
+  return [projectStatusName(data, statusFieldId, itemEndpoint)];
 }
 
 export function normalizePullRequest(data, repository) {
@@ -143,25 +339,42 @@ export class GitHubClient {
   }
 
   markReady(pullNumber) {
-    this.#commandRunner(["pr", "ready", String(pullNumber), "--repo", this.repository]);
+    this.#commandRunner([
+      "api",
+      "--method",
+      "PATCH",
+      `repos/${this.repository}/pulls/${pullNumber}`,
+      "-F",
+      "draft=false",
+    ]);
   }
 
   enableRepositoryAutoMerge() {
     this.#commandRunner(["api", "--method", "PATCH", `repos/${this.repository}`, "-F", "allow_auto_merge=true"]);
   }
 
-  enablePullRequestAutoMerge(pullNumber, expectedHead) {
-    this.#commandRunner([
-      "pr",
-      "merge",
-      String(pullNumber),
-      "--repo",
-      this.repository,
-      "--auto",
-      "--merge",
-      "--match-head-commit",
-      expectedHead,
-    ]);
+  mergePullRequest(pullNumber, expectedHead) {
+    let data;
+    try {
+      ({ data } = ghJson([
+        "api",
+        "--method",
+        "PUT",
+        `repos/${this.repository}/pulls/${pullNumber}/merge`,
+        "-f",
+        `sha=${expectedHead}`,
+        "-f",
+        "merge_method=merge",
+      ], [0], this.#commandRunner));
+    } catch (error) {
+      return readMergeAfterFailure(this, pullNumber, expectedHead, error);
+    }
+
+    if (data?.merged !== true) {
+      const message = data?.message ?? `Pull request #${pullNumber} was not merged.`;
+      throw new CompletionError("merge_failed", message);
+    }
+    return data;
   }
 
   getRequiredChecks(pullNumber, pullRequest) {
@@ -229,43 +442,32 @@ export class GitHubClient {
   }
 
   getLinkedIssues(pullNumber) {
-    const { data } = ghJson([
-      "pr",
-      "view",
-      String(pullNumber),
-      "--repo",
-      this.repository,
-      "--json",
-      "closingIssuesReferences",
-    ], [0], this.#commandRunner);
-    return data.closingIssuesReferences.map((issue) => {
-      const issueRepository = `${issue.repository.owner.login}/${issue.repository.name}`;
+    const pullEndpoint = `repos/${this.repository}/pulls/${pullNumber}`;
+    const { data: pull } = ghJson(["api", pullEndpoint], [0], this.#commandRunner);
+    const references = closingIssueReferences(pull?.body, this.repository);
+    for (const commit of ghJsonArrayPages(`${pullEndpoint}/commits?per_page=100`, this.#commandRunner)) {
+      for (const reference of closingIssueReferences(commit?.commit?.message, this.repository)) {
+        if (!references.some((candidate) => candidate.repository === reference.repository && candidate.number === reference.number)) {
+          references.push(reference);
+        }
+      }
+    }
+    return references.map(({ repository: issueRepository, number }) => {
       const { data: currentIssue } = ghJson(
-        ["api", `repos/${issueRepository}/issues/${issue.number}`],
+        ["api", `repos/${issueRepository}/issues/${number}`],
         [0],
         this.#commandRunner,
       );
       return {
-        number: issue.number,
+        number,
         state: currentIssue.state.toUpperCase(),
-        url: issue.url,
+        url: currentIssue.html_url ?? currentIssue.url,
       };
     });
   }
 
   getIssueProjectStatuses(issueNumber) {
-    const { data } = ghJson([
-      "issue",
-      "view",
-      String(issueNumber),
-      "--repo",
-      this.repository,
-      "--json",
-      "projectItems",
-    ], [0], this.#commandRunner);
-    return (data.projectItems ?? [])
-      .map((item) => item.status?.name)
-      .filter((status) => typeof status === "string");
+    return readIssueProjectStatuses(this.repository, issueNumber, this.#commandRunner);
   }
 
   getBranchRef(branchName) {

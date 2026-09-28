@@ -291,7 +291,7 @@ test("delivery recovery resumes only from observed checkpoints", () => {
 
 test("ticket-start and completion status writes share the global ProjectV2 runner", () => {
   assert.match(nextTicket, /project-status\.mjs <owner> <project-number> <status-field-node-id> <in-progress-option-id> "In Progress" <item-node-id>/);
-  assert.match(nextTicket, /never passes the numeric project number as `--project-id`/);
+  assert.match(nextTicket, /uses the numeric project number as the REST path identifier/);
   assert.match(nextTicket, /reads the\s+item back before the ticket-start sequence can continue/);
   assert.match(completePr, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done/);
   assert.match(completePr, /child item IDs first and the parent item ID last/);

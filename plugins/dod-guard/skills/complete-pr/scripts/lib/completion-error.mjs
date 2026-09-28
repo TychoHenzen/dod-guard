@@ -1,6 +1,6 @@
 class CompletionError extends Error {
-  constructor(code, message) {
-    super(message);
+  constructor(code, message, options) {
+    super(message, options);
     this.name = "CompletionError";
     this.code = code;
   }

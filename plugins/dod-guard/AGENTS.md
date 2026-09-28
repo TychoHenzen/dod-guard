@@ -24,7 +24,7 @@ definitions. It has no package workspace, MCP server, or bundle.
 - Use `/fix-pr-review` to revalidate and fix selected review findings. It
   updates provider state only after verified commits are pushed.
 - Use `/complete-pr` as the final acceptance gate after implementation, review,
-  remediation, and current-head checks. It owns guarded ready, auto-merge,
+  remediation, and current-head checks. It owns guarded ready, REST merge,
   issue confirmation, and remote branch deletion; it verifies completion rather
   than waiting for a separate human-approval step.
 - Use `/publish` for a completed marketplace release. Functional releases
@@ -44,7 +44,8 @@ planning system or let structured work bypass the safety and authority stops.
 All GitHub-facing skills also follow
 `standards/github-request-discipline.md`. Resolve shared metadata once, reuse
 the run snapshot, prefer narrow GitHub MCP operations or REST endpoints, and
-reserve GraphQL for Project v2 or relationships without a REST equivalent.
+reserve GraphQL only for a relationship or mutation without a connector or
+REST equivalent.
 
 ## Validation
 

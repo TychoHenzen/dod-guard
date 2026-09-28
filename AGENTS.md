@@ -51,7 +51,7 @@ parent issue and Project item In Progress until a human merges the pull request.
 Agents may create and update the pull request. Before merging, they must invoke
 `/complete-pr` as the final acceptance gate: verify the current head, linked
 child acceptance, review remediation, required checks, and cleanup conditions.
-That command owns the guarded ready, auto-merge, issue confirmation, and branch
+That command owns the guarded ready, REST merge, issue confirmation, and branch
 deletion flow; it is a verification gate, not a separate human-approval stop.
 
 Functional changes to `master` require a pull request and these current checks.

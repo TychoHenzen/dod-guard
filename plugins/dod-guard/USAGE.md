@@ -260,7 +260,7 @@ After review, explicitly accept and complete the current pull request:
 
 `complete-pr` accepts either a draft or ready pull request. It records the
 accepted head first and marks a draft ready only when needed. It then enables
-guarded auto-merge, updates a stale base only from the accepted head, waits for
+guarded REST merge, updates a stale base only from the accepted head, waits for
 required checks, confirms the merge and linked issue state, and deletes the
 unchanged remote head branch. Conflicts, failed checks, permission errors,
 unexpected pushes, and changed branch refs stop the command.

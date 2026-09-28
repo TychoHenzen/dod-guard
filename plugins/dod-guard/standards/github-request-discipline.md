@@ -20,22 +20,21 @@ uses narrow operations, reuses a run snapshot, and avoids duplicate calls.
    patch, comments, or full pull request only when the current stage needs it.
 4. Use one bounded search or list request for candidates. Do not repeat the
    same search with different field selections.
-5. For Project v2, use one snapshot query for the linked Project, its fields and
-   options, and the item data required by the current stage. Reuse every id.
-   The current connector has no typed Project v2 operation, so GraphQL is the
-   fallback for this boundary.
+5. For Project v2, use one snapshot operation for the linked Project, its fields
+   and options, and the item data required by the current stage. Prefer the
+   typed connector; otherwise use the REST ProjectsV2 endpoints. Reuse every
+   live id.
 
 ## ProjectV2 status writes
 
-- A numeric Project number is valid for list and view commands, but it is not a
-  GraphQL ProjectV2 node ID. Before any `gh project item-edit` mutation, resolve
-  the number with `gh project view <number> --owner <owner> --format json` and
-  use its top-level `id` value, which must begin with `PVT_`, as `--project-id`.
-- Use the global item and Status-field node IDs from the same live Project
-  snapshot, and use the scalar single-select option ID for the requested value.
+- A numeric Project number is the REST path identifier. Resolve the live
+  Project, Status field, item ids, and scalar single-select option ids from the
+  same REST snapshot before writing.
+- Use the global item and Status-field ids from that snapshot, and use the
+  scalar single-select option id for the requested value.
 - Run status mutations sequentially. For a structured parent, write every child
-  before the parent, then read each item from `gh project item-list` before the
-  next mutation. A missing or unexpected readback stops the sequence.
+  before the parent, then read each item from the REST Project items endpoint
+  before the next mutation. A missing or unexpected readback stops the sequence.
 - The shared `skills/complete-pr/scripts/project-status.mjs` runner performs
   this resolution and readback without invoking Git or inspecting worktrees.
 
@@ -63,6 +62,8 @@ uses narrow operations, reuses a run snapshot, and avoids duplicate calls.
 ## CLI fallback
 
 Scripts that cannot call MCP use narrow `gh api` REST endpoints. Keep GraphQL
-for Project v2 and relationships that have no REST endpoint. Do not use
-`gh pr view --json` for repeated metadata reads when the REST endpoint provides
-the required fields.
+only for a capability with no connector or REST equivalent. The remaining
+documented exception is review-thread resolution after connector/REST review
+comment operations have been attempted and the selected thread has been read
+back. Do not use `gh pr view --json` for repeated metadata reads when the REST
+endpoint provides the required fields.
