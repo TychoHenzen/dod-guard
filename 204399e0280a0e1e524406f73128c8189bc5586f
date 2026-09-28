@@ -52,5 +52,14 @@
     "reason": "Reviewed PR #670 against synthetic merge 204399e0280a0e1e524406f73128c8189bc5586f: these public GitHubClient members are the intentional REST lifecycle seam consumed by complete-pr orchestration and contract tests; the review-only findings are accepted for this exact target/base and scanner fingerprint.",
     "author": "Codex",
     "time": "2026-09-28T04:32:46.179Z"
+  },
+  {
+    "findingId": "c65851fce92a97ce081a3e6ca5609eff3f17967d09e6b5069b149a91fe51291a",
+    "fingerprint": "be1edc0158864041ea609ab68330481d8325a5e7ed73e3af0634265916b86972",
+    "baseSha": "0fe216be8468d1d165a32713bab10c74995cb395",
+    "targetSha": "204399e0280a0e1e524406f73128c8189bc5586f",
+    "reason": "Reviewed PR #670 against synthetic merge 204399e0280a0e1e524406f73128c8189bc5586f: these public GitHubClient members are the intentional REST lifecycle seam consumed by complete-pr orchestration and contract tests; the review-only findings are accepted for this exact target/base and scanner fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-28T04:32:46.179Z"
   }
 ]
