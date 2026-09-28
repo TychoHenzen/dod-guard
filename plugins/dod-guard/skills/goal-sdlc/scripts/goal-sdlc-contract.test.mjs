@@ -573,18 +573,18 @@ test("normalizes parent, child, no-child, orphan, and status-drift ancestry", ()
 test("goal-sdlc retains every delivery stage and queue boundary", async () => {
   const skill = await readSkill();
   for (const marker of [
-    "CHECKOUT AND EXECUTION POLICY",
-    "CONTINUOUS QUEUE LOOP",
-    "STATE SNAPSHOT AND READ DISCIPLINE",
-    "1\\. Reconcile live state",
-    "2\\. Choose one current delivery unit",
-    "3\\. Refinement contract",
-    "4\\. Implementation and branch rules",
-    "5\\. Goal-directed validation cadence",
-    "6\\. PR, review, remediation, and completion",
-    "7\\. Blocker triage and proactive recovery",
-    "8\\. Quality Guard and cache changes",
-    "9\\. Common-sense completion and continuation",
+    "### Checkout and execution policy",
+    "### Continuous queue loop",
+    "### State snapshot and read discipline",
+    "### 1. Reconcile live state",
+    "### 2. Choose one current delivery unit",
+    "### 3. Refinement contract",
+    "### 4. Implementation and branch rules",
+    "### 5. Goal-directed validation cadence",
+    "### 6. PR, review, remediation, and completion",
+    "### 7. Blocker triage and proactive recovery",
+    "### 8. Quality Guard and cache changes",
+    "### 9. Common-sense completion and continuation",
     "After every successful merge:",
   ]) {
     assert.ok(skill.includes(marker), `missing workflow marker: ${marker}`);
@@ -736,7 +736,7 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   );
   assert.match(
     skill,
-    /Then use:\s+&#x20; \[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)/,
+    /Then use:\s+\[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)/,
   );
   assert.doesNotMatch(
     skill,
