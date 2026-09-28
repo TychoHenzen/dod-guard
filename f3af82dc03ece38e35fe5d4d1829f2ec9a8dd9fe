@@ -1,0 +1,38 @@
+[
+  {
+    "findingId": "4b12a62bfd90d43260d07773dd38bb8b57cd9debe642276a35bbed55a5bd39f6",
+    "fingerprint": "161ca4d584d408ec4ea8a0d2f87f99935dacf6e169cac913254baea6941fb71c",
+    "baseSha": "9d944eea02a85cba1b54d32493c50da9de7cc972",
+    "targetSha": "f3af82dc03ece38e35fe5d4d1829f2ec9a8dd9fe",
+    "reason": "Reviewed PR #685 against committed target f3af82dc03ece38e35fe5d4d1829f2ec9a8dd9fe: these public GitHubClient members are the intentional REST lifecycle seam consumed by complete-pr orchestration and contract tests; the review-only findings are accepted for this exact target/base and scanner fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-28T23:16:13.253Z"
+  },
+  {
+    "findingId": "52441850731dcb47f259f0decab2a2301d960d57bc85685ee87cfb3d6288070d",
+    "fingerprint": "161ca4d584d408ec4ea8a0d2f87f99935dacf6e169cac913254baea6941fb71c",
+    "baseSha": "9d944eea02a85cba1b54d32493c50da9de7cc972",
+    "targetSha": "f3af82dc03ece38e35fe5d4d1829f2ec9a8dd9fe",
+    "reason": "Reviewed PR #685 against committed target f3af82dc03ece38e35fe5d4d1829f2ec9a8dd9fe: these public GitHubClient members are the intentional REST lifecycle seam consumed by complete-pr orchestration and contract tests; the review-only findings are accepted for this exact target/base and scanner fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-28T23:16:13.253Z"
+  },
+  {
+    "findingId": "76451e5c0ff872883a12530f8e0c60734142238b593ebda226115de4102ecb43",
+    "fingerprint": "161ca4d584d408ec4ea8a0d2f87f99935dacf6e169cac913254baea6941fb71c",
+    "baseSha": "9d944eea02a85cba1b54d32493c50da9de7cc972",
+    "targetSha": "f3af82dc03ece38e35fe5d4d1829f2ec9a8dd9fe",
+    "reason": "Reviewed PR #685 against committed target f3af82dc03ece38e35fe5d4d1829f2ec9a8dd9fe: these public GitHubClient members are the intentional REST lifecycle seam consumed by complete-pr orchestration and contract tests; the review-only findings are accepted for this exact target/base and scanner fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-28T23:16:13.253Z"
+  },
+  {
+    "findingId": "c1a9d5f3de4b030c97230efa1ea0f49486b947ee31f89b0d107ff6b558fb722f",
+    "fingerprint": "161ca4d584d408ec4ea8a0d2f87f99935dacf6e169cac913254baea6941fb71c",
+    "baseSha": "9d944eea02a85cba1b54d32493c50da9de7cc972",
+    "targetSha": "f3af82dc03ece38e35fe5d4d1829f2ec9a8dd9fe",
+    "reason": "Reviewed PR #685 against committed target f3af82dc03ece38e35fe5d4d1829f2ec9a8dd9fe: these public GitHubClient members are the intentional REST lifecycle seam consumed by complete-pr orchestration and contract tests; the review-only findings are accepted for this exact target/base and scanner fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-28T23:16:13.253Z"
+  }
+]
