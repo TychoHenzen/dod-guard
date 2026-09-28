@@ -17,6 +17,42 @@ OpenCode v2.0.18 can load the adapter directly from this directory:
 The adapter registers the existing `skills/` and `agents/` Markdown files at
 load time. It does not copy or maintain a second source tree.
 
+### Install and reload
+
+For a local checkout, add the plugin directory to the project `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["/absolute/path/to/dod-guard/plugins/dod-guard"]
+}
+```
+
+Start OpenCode from that project, then verify the resolved config and active
+plugin with `opencode debug config` and `opencode plugin list`. Upgrade a local
+install with `git pull` in the checkout; package installs can use
+`opencode plugin update`. Run `opencode reload` after config edits, and
+`opencode service restart` if an unchanged local path still has stale content.
+
+If loading fails, confirm the entry points to the adapter directory (not a
+copied skill cache), rerun `opencode debug config`, inspect
+`opencode plugin check`, and restart the service after correcting the path. The
+adapter reads the checkout's existing skills and agents directly, so Claude and
+Codex paths remain untouched.
+
+### Disposable discovery proof
+
+Run the Windows runtime check with the pinned OpenCode CLI:
+
+```text
+node --test plugins/dod-guard/opencode-discovery.test.mjs
+```
+
+The test creates a temporary project and isolated config/data directories,
+checks `opencode v2.0.18`, verifies plugin list/check output, activates the
+`next-ticket` skill, and confirms the `review-pr-feature` agent. It removes the
+fixture afterward and does not edit `PATH` or the user's OpenCode config.
+
 Every skill applies the shared working defaults in
 `standards/working-defaults.md`: clear low-risk choices proceed, ordinary
 dirty worktree changes use the normal commit path, stale tests follow the
