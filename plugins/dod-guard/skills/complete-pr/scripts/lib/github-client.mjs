@@ -14,6 +14,13 @@ function githubResponseError(endpoint, field) {
   );
 }
 
+function githubResponseContractError(endpoint, detail) {
+  return new CompletionError(
+    "github_response_shape",
+    `GitHub response for ${endpoint} must include ${detail}.`,
+  );
+}
+
 function runGh(args, acceptedExitCodes = [0]) {
   const result = spawnSync("gh", args, { encoding: "utf8", windowsHide: true });
   if (result.error) {
@@ -82,10 +89,37 @@ function ghJsonFilteredArray(endpoint, filter, commandRunner) {
   }
 }
 
-function projectStatusName(item) {
-  const statusField = item?.fields?.find((field) => field?.name === "Status" || field?.data_type === "single_select");
-  const value = statusField?.value;
-  return value?.name?.raw ?? value?.name?.html ?? value?.name ?? (typeof value === "string" ? value : null);
+function projectStatusName(item, statusFieldId, endpoint) {
+  if (!Array.isArray(item?.fields) || item.fields.length !== 1) {
+    throw githubResponseContractError(endpoint, "exactly one Status field/value");
+  }
+  const [statusField] = item.fields;
+  if (String(statusField?.id ?? "") !== String(statusFieldId) ||
+      typeof statusField?.name !== "string" || statusField.name.toLowerCase() !== "status") {
+    throw githubResponseContractError(endpoint, "exactly one Status field/value");
+  }
+
+  const value = statusField.value;
+  const names = [];
+  if (typeof value === "string") {
+    names.push(value);
+  } else if (value?.name && typeof value.name === "object") {
+    for (const key of ["raw", "html"]) {
+      if (key in value.name) {
+        names.push(value.name[key]);
+      }
+    }
+  } else if (value && typeof value.name === "string") {
+    names.push(value.name);
+  }
+
+  if (names.length === 0 || names.some((name) => typeof name !== "string" || name.trim().length === 0)) {
+    throw githubResponseContractError(endpoint, "exactly one non-blank Status field/value");
+  }
+  if (new Set(names).size !== 1) {
+    throw githubResponseContractError(endpoint, "one non-contradictory Status field/value");
+  }
+  return names[0];
 }
 
 function errorMessage(error) {
@@ -175,11 +209,17 @@ function readIssueProjectStatuses(repository, issueNumber, commandRunner) {
   }
   const owner = repository.slice(0, separator);
   const { basePath, projects } = listOwnedProjects(owner, commandRunner);
-  const statuses = [];
+  const linkedProjects = [];
 
   for (const project of projects) {
     if (project?.number === undefined || project?.number === null) {
       throw githubResponseError(`${basePath}/projectsV2`, "projects with a number");
+    }
+    if (typeof project?.state !== "string" || project.state.trim().length === 0) {
+      throw githubResponseContractError(`${basePath}/projectsV2`, "projects with an explicit state");
+    }
+    if (project.state.trim().toLowerCase() !== "open") {
+      continue;
     }
     const projectPath = `${basePath}/projectsV2/${project.number}`;
     const itemsEndpoint = `${projectPath}/items?per_page=100`;
@@ -192,28 +232,32 @@ function readIssueProjectStatuses(repository, issueNumber, commandRunner) {
     if (matchingItems.length === 0) {
       continue;
     }
-
-    const fieldsEndpoint = `${projectPath}/fields?per_page=100`;
-    const statusFields = ghJsonArrayPages(fieldsEndpoint, commandRunner)
-      .filter((field) => field?.name?.toLowerCase() === "status");
-    if (statusFields.length !== 1 || statusFields[0].id === undefined || statusFields[0].id === null) {
-      throw githubResponseError(fieldsEndpoint, "exactly one Status field");
+    if (matchingItems.length !== 1) {
+      throw githubResponseContractError(itemsEndpoint, "exactly one matching issue item");
     }
-    const statusFieldId = statusFields[0].id;
-    for (const item of matchingItems) {
-      if (item?.id === undefined || item?.id === null) {
-        throw githubResponseError(itemsEndpoint, "items with numeric IDs");
-      }
-      const itemEndpoint = `${projectPath}/items/${item.id}?fields=${statusFieldId}`;
-      const { data } = ghJson(["api", "--jq", "{fields}", itemEndpoint], [0], commandRunner);
-      const status = projectStatusName(data);
-      if (typeof status === "string") {
-        statuses.push(status);
-      }
-    }
+    linkedProjects.push({ project, item: matchingItems[0] });
   }
 
-  return statuses;
+  if (linkedProjects.length !== 1) {
+    throw githubResponseContractError(`${basePath}/projectsV2`, "exactly one open linked Project");
+  }
+
+  const { project, item } = linkedProjects[0];
+  const projectPath = `${basePath}/projectsV2/${project.number}`;
+  const fieldsEndpoint = `${projectPath}/fields?per_page=100`;
+  const statusFields = ghJsonArrayPages(fieldsEndpoint, commandRunner)
+    .filter((field) => typeof field?.name === "string" && field.name.toLowerCase() === "status");
+  if (statusFields.length !== 1 || statusFields[0].id === undefined || statusFields[0].id === null) {
+    throw githubResponseError(fieldsEndpoint, "exactly one Status field");
+  }
+  const statusFieldId = statusFields[0].id;
+  if (item?.id === undefined || item?.id === null || String(item.id).trim().length === 0) {
+    throw githubResponseError(`${projectPath}/items?per_page=100`, "items with IDs");
+  }
+
+  const itemEndpoint = `${projectPath}/items/${item.id}?fields=${statusFieldId}`;
+  const { data } = ghJson(["api", "--jq", "{fields}", itemEndpoint], [0], commandRunner);
+  return [projectStatusName(data, statusFieldId, itemEndpoint)];
 }
 
 export function normalizePullRequest(data, repository) {

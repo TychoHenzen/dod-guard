@@ -391,7 +391,7 @@ async function confirmDoneProjects(client, issues) {
   const projectStatuses = await Promise.all(issues.map((issue) => client.getIssueProjectStatuses(issue.number)));
   for (let index = 0; index < issues.length; index += 1) {
     const statuses = projectStatuses[index];
-    if (!statuses.includes("Done")) {
+    if (!Array.isArray(statuses) || statuses.length !== 1 || statuses[0] !== "Done") {
       stop("project_not_done", `Linked issue #${issues[index].number} is not in a Done project status.`);
     }
   }

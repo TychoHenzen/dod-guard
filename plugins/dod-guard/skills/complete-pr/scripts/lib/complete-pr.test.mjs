@@ -12,6 +12,71 @@ const headShaField = "head_sha";
 const workflowRunsField = "workflow_runs";
 const workflowRunsPattern = /workflow_runs/;
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
+const PROJECT_STATUS_FIELD_ID = 407;
+
+function linkedProjectItem(id) {
+  return {
+    id,
+    content: { number: 24, repository: { full_name: "owner/repo" } },
+  };
+}
+
+function projectStatusResponse(status) {
+  return {
+    fields: [{
+      id: PROJECT_STATUS_FIELD_ID,
+      name: "Status",
+      value: { name: { raw: status } },
+    }],
+  };
+}
+
+function createProjectStatusReader({
+  projects = [{ number: 2, state: "open" }],
+  itemsByProject = new Map([["2", [linkedProjectItem(1701)]]]),
+  fieldsByProject = new Map([["2", [{ id: PROJECT_STATUS_FIELD_ID, name: "Status" }]]]),
+  itemResponses = new Map([["2/1701", projectStatusResponse("Done")]]),
+  rateLimitedProjects = new Set(),
+} = {}) {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    assert.equal(args[0], "api");
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
+    if (endpoint === "users/owner/projectsV2?per_page=100") {
+      return { status: 0, stderr: "", stdout: JSON.stringify([projects]) };
+    }
+
+    const fieldsMatch = endpoint?.match(/^users\/owner\/projectsV2\/(\d+)\/fields\?/);
+    if (fieldsMatch) {
+      return { status: 0, stderr: "", stdout: JSON.stringify([fieldsByProject.get(fieldsMatch[1]) ?? []]) };
+    }
+
+    const itemListMatch = endpoint?.match(/^users\/owner\/projectsV2\/(\d+)\/items\?/);
+    if (itemListMatch) {
+      if (rateLimitedProjects.has(itemListMatch[1])) {
+        return { status: 1, stderr: "HTTP 403: API rate limit exceeded", stdout: "" };
+      }
+      return {
+        status: 0,
+        stderr: "",
+        stdout: (itemsByProject.get(itemListMatch[1]) ?? []).map((item) => JSON.stringify(item)).join("\n"),
+      };
+    }
+
+    const itemMatch = endpoint?.match(/^users\/owner\/projectsV2\/(\d+)\/items\/(\d+)\?/);
+    if (itemMatch) {
+      const response = itemResponses.get(`${itemMatch[1]}/${itemMatch[2]}`);
+      if (!response) {
+        throw new Error(`Unexpected item endpoint: ${endpoint}`);
+      }
+      return { status: 0, stderr: "", stdout: JSON.stringify(response) };
+    }
+
+    throw new Error(`Unexpected command: ${args.join(" ")}`);
+  };
+  return { calls, reader: new GitHubClient("owner/repo", 24, runner) };
+}
 
 function pull(overrides = {}) {
   return {
@@ -69,6 +134,7 @@ class FixtureClient {
     this.workflowDispatchError = options.workflowDispatchError;
     this.enableRepositoryError = options.enableRepositoryError;
     this.deleteBranchError = options.deleteBranchError;
+    this.projectStatusReader = options.projectStatusReader;
     this.calls = [];
   }
 
@@ -130,7 +196,10 @@ class FixtureClient {
     return nextValue(this.issues);
   }
 
-  getIssueProjectStatuses() {
+  getIssueProjectStatuses(issueNumber) {
+    if (this.projectStatusReader) {
+      return this.projectStatusReader(issueNumber);
+    }
     return nextValue(this.projectStatuses);
   }
 
@@ -233,6 +302,62 @@ test("reads linked Project statuses through REST without GraphQL", () => {
     ["api", "--jq", "{fields}", "users/owner/projectsV2/2/items/1701?fields=407"],
   ]);
   assert.equal(calls.some((args) => args.includes("graphql") || args.includes("issue")), false);
+});
+
+test("rejects two open linked Projects even when their statuses disagree", () => {
+  const { reader, calls } = createProjectStatusReader({
+    projects: [
+      { number: 2, state: "open" },
+      { number: 3, state: "open" },
+    ],
+    itemsByProject: new Map([
+      ["2", [linkedProjectItem(1701)]],
+      ["3", [linkedProjectItem(1702)]],
+    ]),
+    fieldsByProject: new Map([
+      ["2", [{ id: PROJECT_STATUS_FIELD_ID, name: "Status" }]],
+      ["3", [{ id: PROJECT_STATUS_FIELD_ID, name: "Status" }]],
+    ]),
+    itemResponses: new Map([
+      ["2/1701", projectStatusResponse("Done")],
+      ["3/1702", projectStatusResponse("In Progress")],
+    ]),
+  });
+
+  assert.throws(() => reader.getIssueProjectStatuses(24), /exactly one open linked Project/);
+  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
+});
+
+test("rejects duplicate matching issue items before status readback", () => {
+  const { reader, calls } = createProjectStatusReader({
+    itemsByProject: new Map([["2", [linkedProjectItem(1701), linkedProjectItem(1702)]]]),
+  });
+
+  assert.throws(() => reader.getIssueProjectStatuses(24), /exactly one matching issue item/);
+  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
+});
+
+test("rejects missing, blank, and contradictory Status values", () => {
+  const responses = [
+    { fields: [] },
+    { fields: [{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: "   " } } }] },
+    { fields: [{
+      id: PROJECT_STATUS_FIELD_ID,
+      name: "Status",
+      value: { name: { raw: "Done", html: "In Progress" } },
+    }] },
+  ];
+
+  for (const itemResponse of responses) {
+    const { reader } = createProjectStatusReader({ itemResponses: new Map([["2/1701", itemResponse]]) });
+    assert.throws(() => reader.getIssueProjectStatuses(24), /Status field\/value/);
+  }
+});
+
+test("stops on a Project item rate-limit response", () => {
+  const { reader } = createProjectStatusReader({ rateLimitedProjects: new Set(["2"]) });
+
+  assert.throws(() => reader.getIssueProjectStatuses(24), /rate limit/i);
 });
 
 test("maps linked closing issues from paginated REST pull data without GraphQL", () => {
@@ -470,6 +595,23 @@ test("refuses merged recovery when a linked issue is not Done in its Project", a
   await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), { code: "project_not_done" });
   assert.equal(localGit.calls.length, 0);
   assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+});
+
+test("does not authorize cleanup unless the sole Project status is Done", async () => {
+  for (const statuses of [["Done", "In Progress"], ["Done", "Done"], [], [" "]]) {
+    const localGit = createFixtureLocalGit();
+    const client = new FixtureClient({
+      projectStatuses: [statuses],
+      pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    });
+
+    await assert.rejects(
+      recoverMergedPullRequest(client, { ...immediateOptions, localGit }),
+      { code: "project_not_done" },
+    );
+    assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+    assert.equal(localGit.calls.length, 0);
+  }
 });
 
 test("waits for required checks, confirms merge, and deletes the trusted remote branch", async () => {
