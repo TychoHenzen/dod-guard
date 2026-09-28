@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import net from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,19 +11,6 @@ const OPENCODE = "C:\\Users\\siriu\\AppData\\Local\\Programs\\@opencodedesktop\\
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-
-async function freePort() {
-  const server = net.createServer();
-  await new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", resolve);
-  });
-  const port = server.address().port;
-  await new Promise((resolve, reject) => {
-    server.close((error) => (error ? reject(error) : resolve()));
-  });
-  return port;
 }
 
 async function request(baseUrl, headers, path, options = {}) {
@@ -107,21 +93,29 @@ async function assertNoDodGuardRegistration(baseUrl, headers, label) {
 }
 
 async function startServer(fixture) {
-  const port = await freePort();
-  const server = spawn(OPENCODE, ["serve", "--hostname", "127.0.0.1", "--port", String(port)], {
+  const server = spawn(OPENCODE, ["serve", "--hostname", "127.0.0.1", "--port", "0"], {
     cwd: fixture.project,
     env: fixture.environment,
     stdio: ["ignore", "pipe", "pipe"],
   });
+  let stdout = "";
   let stderr = "";
+  server.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
   server.stderr.on("data", (chunk) => {
     stderr += chunk;
   });
   const headers = {
     Authorization: `Basic ${Buffer.from("opencode:test").toString("base64")}`,
   };
-  const baseUrl = `http://127.0.0.1:${port}`;
+  let baseUrl;
   try {
+    const port = await waitFor("OpenCode server port", () => {
+      if (server.exitCode !== null) throw new Error(`OpenCode exited before serving:\n${stderr}`);
+      return Number(stdout.match(/server listening on http:\/\/127\.0\.0\.1:(\d+)/)?.[1]) || false;
+    });
+    baseUrl = `http://127.0.0.1:${port}`;
     await waitFor("OpenCode server", async () => {
       if (server.exitCode !== null) throw new Error(`OpenCode exited before serving:\n${stderr}`);
       try {
