@@ -54,6 +54,12 @@ function redactSecrets(value) {
 }
 
 function reviewThreadNodes(payload) {
+  if (Array.isArray(payload)) {
+    return payload.flatMap(reviewThreadNodes);
+  }
+  if (Array.isArray(payload?.pages)) {
+    return payload.pages.flatMap(reviewThreadNodes);
+  }
   return payload.data?.repository?.pullRequest?.reviewThreads?.nodes ?? payload.reviewThreads?.nodes ?? payload.reviewThreads ?? [];
 }
 
@@ -91,6 +97,12 @@ function normalizeGitHubReviewThreads(payload, selected = []) {
   const missing = [...requested].filter((id) => !found.has(id));
   if (missing.length > 0) {
     throw new Error(`Selected GitHub finding not found: ${missing.join(", ")}`);
+  }
+  const duplicateIds = chosen
+    .map((finding) => finding.id)
+    .filter((id, index, ids) => ids.indexOf(id) !== index);
+  if (duplicateIds.length > 0) {
+    throw new Error(`Ambiguous GitHub finding: ${[...new Set(duplicateIds)].join(", ")}`);
   }
   return chosen;
 }

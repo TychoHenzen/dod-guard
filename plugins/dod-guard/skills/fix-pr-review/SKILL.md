@@ -60,13 +60,25 @@ Accept one of these sources:
   entries and require the report's recorded head to match the checked-out
   branch history.
 
-For GitHub, use the GitHub MCP review-thread operation when available. It
-returns the thread identifiers and resolution metadata needed below. If MCP is
-unavailable, query `reviewThreads(first:100)` through GraphQL. Include each
-thread's `id`, `isResolved`, `isOutdated`, `path`, `line`, and root comment
-`databaseId`, `url`, `body`, and `commit.oid`. Do not request the unsupported
-`PullRequestReviewComment.inReplyTo` field. Save the response outside the
-repository, then run:
+For GitHub review-thread metadata, try the typed connector first. If its
+thread operation is unavailable, use the REST review-comment endpoints before
+considering GraphQL: list
+`GET /repos/{owner}/{repo}/pulls/{pull_number}/comments?per_page=100&page=N`
+and follow pagination until every selected root comment is present. Keep the
+request log and provider response status. A missing connector operation or an
+explicit unsupported REST response (404/405) is a capability gap; an
+authentication failure, rate limit (403/429), timeout, malformed response, or
+other provider error is not permission to try GraphQL. Stop with the exact
+redacted status, endpoint, and reset or retry-after evidence.
+
+If neither connector nor REST can provide the selected thread metadata, the
+explicit fallback may issue one narrow GraphQL `node(id: $threadId)` query for
+the selected thread only. Request only `id`, `isResolved`, `isOutdated`,
+`path`, `line`, and the root comment's `databaseId`, `url`, `body`, and
+`commit.oid`; never query the pull request's complete `reviewThreads` list.
+Do not request the unsupported `PullRequestReviewComment.inReplyTo` field. The
+selected thread ID must already be known, and credentials or provider context
+must be redacted before saving the response outside the repository. Then run:
 
 ```text
 node "<skill-dir>/scripts/fix-support.mjs" normalize-github-comments --input "<response.json>" --selected "<comma-separated GH IDs>"
@@ -158,10 +170,19 @@ Re-read the provider head and require it to equal the pushed commit.
   new inline review comment, use the same endpoint with `body`, `commit_id`,
   `path`, and the diff `position`; do not send `line` or `subject_type` in that
   request. Read back the exact review thread and verify the reply belongs to
-  the selected root comment and pushed head before resolving it with GraphQL
-  `resolveReviewThread`. If a write fails or is ambiguous, read back before
-  retrying; never issue a blind duplicate reply. Leave every other thread
-  unchanged.
+  the selected root comment and pushed head before resolving it. If REST cannot
+  resolve a thread and the connector has no exact resolver, the explicit
+  exception may issue exactly one GraphQL
+  `resolveReviewThread(input: {threadId: $threadId})` mutation for that
+  selected thread. Read back that same thread and commit after the mutation
+  (through the connector, or with one more narrow `node(id: $threadId)` query)
+  before reporting success. The fallback budget is one selected-thread query,
+  at most one resolution mutation, and one selected-thread readback; do not
+  batch unrelated threads or ProjectV2 data. If a write fails or is ambiguous,
+  read back before retrying; never issue a blind duplicate reply. A rate limit,
+  authentication error, malformed response, missing thread, mismatched head,
+  or unresolved readback stops the workflow with actionable evidence and no
+  resolution claim. Leave every other thread unchanged.
 - Local Git: report the fixed inline finding IDs with commit and check evidence.
   No external comment state exists to mutate.
 - Azure: run `update-azure-report` with a JSON resolution map. It changes only

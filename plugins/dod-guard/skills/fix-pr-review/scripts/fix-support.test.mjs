@@ -69,22 +69,59 @@ test("documents supported GitHub review-comment request shapes", () => {
 });
 
 test("documents narrow GitHub readback and guarded thread resolution", () => {
-  const readbackSection = skill.slice(skill.indexOf("For GitHub, use the GitHub MCP review-thread operation"), skill.indexOf("For Azure, run:"));
+  const readbackSection = skill.slice(skill.indexOf("For GitHub review-thread metadata"), skill.indexOf("For Azure, run:"));
   const updateSection = skill.slice(skill.indexOf("## Update proven findings"));
 
-  assert.match(readbackSection, /reviewThreads\(first:100\)/);
+  assert.match(readbackSection, /REST review-comment endpoints/);
+  assert.match(readbackSection, /pulls\/\{pull_number\}\/comments\?per_page=100&page=N/);
+  assert.match(readbackSection, /pagination until every selected root comment is present/);
+  assert.match(readbackSection, /node\(id: \$threadId\)/);
+  assert.doesNotMatch(readbackSection, /reviewThreads\(first:100\)/);
+  assert.match(readbackSection, /authentication failure, rate limit \(403\/429\)/);
   assert.match(readbackSection, /Do not request the unsupported\s+`PullRequestReviewComment\.inReplyTo` field/);
   const readbackOffset = updateSection.indexOf("Read back the exact review thread");
   const resolutionOffset = updateSection.indexOf("resolveReviewThread");
   assert.notEqual(readbackOffset, -1);
   assert.notEqual(resolutionOffset, -1);
   assert.ok(readbackOffset < resolutionOffset);
-  assert.match(updateSection, /If a write fails or is ambiguous, read back before\s+retrying; never issue a blind duplicate reply/);
+  assert.match(updateSection, /exactly one GraphQL/);
+  assert.match(updateSection, /one selected-thread query,\s+at most one resolution mutation, and one selected-thread readback/);
+  assert.match(updateSection, /mismatched head/);
+  assert.match(updateSection, /If a write fails or is ambiguous,\s+read back before\s+retrying; never issue a blind duplicate reply/);
   assert.match(updateSection, /Leave every other thread\s+unchanged/);
+});
+
+test("does not widen the exception to routine GraphQL provider data", () => {
+  const githubSection = skill.slice(skill.indexOf("For GitHub review-thread metadata"), skill.indexOf("For Azure, run:"));
+
+  assert.match(githubSection, /selected thread only/);
+  assert.doesNotMatch(githubSection, /projectsV2|ProjectV2|reviewThreads\(first:100\)/i);
+});
+
+test("normalizes selected findings across paginated thread responses", () => {
+  const payload = {
+    pages: [
+      { reviewThreads: { nodes: [{ comments: [{ body: "Other", databaseId: 40 }], id: "PRRT_0", line: 10, path: "src/other.js" }] } },
+      { reviewThreads: { nodes: [{ comments: [{ body: "Selected", commit: { oid: "abc123" }, databaseId: 41, url: "https://example.test/41" }], id: "PRRT_1", line: 20, path: "src/review.js" }] } },
+    ],
+  };
+
+  assert.equal(normalizeGitHubReviewThreads(payload, ["GH-41"])[0].threadId, "PRRT_1");
 });
 
 test("rejects a selected GitHub finding that is absent", () => {
   assert.throws(() => normalizeGitHubReviewThreads({ reviewThreads: [] }, ["GH-99"]), MISSING_GITHUB_FINDING);
+});
+
+test("rejects an ambiguous selected GitHub finding", () => {
+  const payload = {
+    reviewThreads: [
+      { comments: [{ databaseId: 41 }], id: "PRRT_1", line: 20, path: "src/review.js" },
+      { comments: [{ databaseId: 41 }], id: "PRRT_2", line: 21, path: "src/review.js" },
+    ],
+  };
+
+  assert.throws(() => normalizeGitHubReviewThreads(payload, ["GH-41"]), /Ambiguous GitHub finding: GH-41/);
 });
 
 test("marks outdated GitHub findings stale before implementation", () => {
