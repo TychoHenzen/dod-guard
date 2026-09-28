@@ -54,8 +54,9 @@ has no GitHub remote or no default branch.
 
 ## Resolve the linked project
 
-Query the repository's `projectsV2` GraphQL connection. Request each project's
-`id`, `number`, `title`, `closed`, and owner login.
+Query the repository's linked Project through the typed connector or the REST
+ProjectsV2 endpoints. Request each project's `id`, `number`, `title`, `closed`,
+and owner login.
 
 Keep only open projects. The repository must have exactly one open linked
 project:
@@ -122,8 +123,8 @@ Resolve every value before changing local or remote state:
    exactly one case-insensitive `Todo` option and one case-insensitive
    `In Progress` option.
 6. Confirm the selected PBI currently has Status `Todo`. Resolve its project
-   item node id, the numeric project number, the global ProjectV2 node id, the
-   Status field node id, and the In Progress option id.
+   item id, the numeric project number, the live Status field id, and the In
+   Progress option id.
 
 Stop before any mutation if a value is missing or ambiguous. Never hardcode a
 project, field, option, repository, default branch, or user id from an earlier
@@ -153,8 +154,8 @@ Perform these actions in order:
    node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <in-progress-option-id> "In Progress" <item-node-id>
    ```
 
-   The runner resolves the global ProjectV2 node ID from the live project view,
-   never passes the numeric project number as `--project-id`, and reads the
+   The runner resolves the live REST field and item ids from the linked Project,
+   uses the numeric project number as the REST path identifier, and reads the
    item back before the ticket-start sequence can continue.
 
 Do not create or switch to an existing branch. Report the exact completed

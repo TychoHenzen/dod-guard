@@ -68,6 +68,7 @@ class FixtureClient {
     this.workflowRuns = options.workflowRuns ?? null;
     this.workflowDispatchError = options.workflowDispatchError;
     this.enableRepositoryError = options.enableRepositoryError;
+    this.deleteBranchError = options.deleteBranchError;
     this.calls = [];
   }
 
@@ -92,8 +93,8 @@ class FixtureClient {
     }
   }
 
-  enablePullRequestAutoMerge(number, headSha) {
-    this.calls.push(["enablePullRequestAutoMerge", number, headSha]);
+  mergePullRequest(number, headSha) {
+    this.calls.push(["mergePullRequest", number, headSha]);
   }
 
   getRequiredChecks() {
@@ -140,6 +141,9 @@ class FixtureClient {
 
   deleteBranchRef(branchName) {
     this.calls.push(["deleteBranchRef", branchName]);
+    if (this.deleteBranchError) {
+      throw this.deleteBranchError;
+    }
   }
 
   wait() {
@@ -419,6 +423,43 @@ test("stops before local cleanup when trusted remote deletion is not confirmed",
   assert.equal(localGit.calls.length, 0);
 });
 
+test("treats an ambiguous remote branch deletion as successful after absent readback", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    deleteBranchError: new Error("connection reset"),
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [{ sha: "head-1" }, null],
+  });
+
+  const result = await recoverMergedPullRequest(client, { ...immediateOptions, localGit });
+
+  assert.equal(result.branch, "deleted");
+  assert.deepEqual(client.calls.filter(([name]) => name === "getBranchRef"), [
+    ["getBranchRef", "codex/24-complete-pr"],
+    ["getBranchRef", "codex/24-complete-pr"],
+  ]);
+  assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
+});
+
+test("preserves a remote branch when deletion fails and readback still finds the trusted ref", async () => {
+  const localGit = createFixtureLocalGit();
+  const failure = new Error("remote branch delete failed");
+  const client = new FixtureClient({
+    deleteBranchError: failure,
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [{ sha: "head-1" }, { sha: "head-1" }],
+  });
+
+  await assert.rejects(
+    recoverMergedPullRequest(client, { ...immediateOptions, localGit }),
+    failure,
+  );
+  assert.equal(localGit.calls.length, 0);
+  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [
+    ["deleteBranchRef", "codex/24-complete-pr"],
+  ]);
+});
+
 test("refuses merged recovery when a linked issue is not Done in its Project", async () => {
   const localGit = createFixtureLocalGit();
   const client = new FixtureClient({
@@ -605,7 +646,7 @@ test(
 );
 
 test(
-  "does not enable auto-merge when an exact-head ci.yml run stays pending",
+  "does not merge when an exact-head ci.yml run stays pending",
   async () => {
   const client = new FixtureClient({
     workflowRuns: [[
@@ -629,7 +670,7 @@ test(
     false,
   );
   assert.equal(
-    client.calls.some(([name]) => name === "enablePullRequestAutoMerge"),
+    client.calls.some(([name]) => name === "mergePullRequest"),
     false,
   );
   assert.equal(
@@ -640,7 +681,7 @@ test(
 );
 
 test(
-  "fails before auto-merge when no exact-head ci.yml run appears " +
+  "fails before REST merge when no exact-head ci.yml run appears " +
     "after dispatch",
   async () => {
   const client = new FixtureClient({
@@ -656,7 +697,7 @@ test(
     ["dispatch", "codex/24-complete-pr"],
   ]);
   assert.equal(
-    client.calls.some(([name]) => name === "enablePullRequestAutoMerge"),
+    client.calls.some(([name]) => name === "mergePullRequest"),
     false,
   );
   },
@@ -686,7 +727,7 @@ test(
   });
   assert.equal(moved.calls.some(([name]) => name === "dispatch"), false);
   assert.equal(
-    moved.calls.some(([name]) => name === "enablePullRequestAutoMerge"),
+    moved.calls.some(([name]) => name === "mergePullRequest"),
     false,
   );
 
@@ -754,7 +795,7 @@ test(
       { code },
     );
     assert.equal(
-      client.calls.some(([name]) => name === "enablePullRequestAutoMerge"),
+      client.calls.some(([name]) => name === "mergePullRequest"),
       false,
     );
   }
@@ -808,7 +849,7 @@ test(
   });
   assert.equal(client.calls.filter(([name]) => name === "dispatch").length, 1);
   assert.equal(
-    client.calls.some(([name]) => name === "enablePullRequestAutoMerge"),
+    client.calls.some(([name]) => name === "mergePullRequest"),
     false,
   );
   },
@@ -824,7 +865,7 @@ test("rejects a pull request whose base changes before fallback verification", a
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "wrong_base_branch" });
   assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
-  assert.equal(client.calls.some(([name]) => name === "enablePullRequestAutoMerge"), false);
+  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
   assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
 });
 
@@ -842,15 +883,15 @@ test("does not run cleanup for a closed pull request without merged_at", async (
   assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
 });
 
-test("stops before auto-merge when the ready transition leaves a draft", async () => {
+test("stops before REST merge when the ready transition leaves a draft", async () => {
   const client = new FixtureClient({ pulls: [pull(), pull()] });
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "ready_transition_failed" });
   assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
-  assert.equal(client.calls.some(([name]) => name === "enablePullRequestAutoMerge"), false);
+  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
 });
 
-test("stops before auto-merge when marking a draft ready fails", async () => {
+test("stops before REST merge when marking a draft ready fails", async () => {
   const client = new FixtureClient({ pulls: [pull()] });
   client.markReady = () => {
     throw new Error("gh pr ready failed");
@@ -858,7 +899,7 @@ test("stops before auto-merge when marking a draft ready fails", async () => {
 
   await assert.rejects(completePullRequest(client, immediateOptions), { message: "gh pr ready failed" });
   assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
-  assert.equal(client.calls.some(([name]) => name === "enablePullRequestAutoMerge"), false);
+  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
 });
 
 test("marks a draft pull request ready through REST", () => {
@@ -887,6 +928,79 @@ test("surfaces failures from the REST ready request", () => {
   assert.throws(() => client.markReady(24), failure);
 });
 
+test("merges a pull request through REST with the expected head SHA", () => {
+  const calls = [];
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    calls.push(args);
+    return {
+      status: 0,
+      stderr: "",
+      stdout: JSON.stringify({ merged: true, sha: "merge-1", message: "Pull Request successfully merged" }),
+    };
+  });
+
+  assert.deepEqual(client.mergePullRequest(24, "head-1"), {
+    merged: true,
+    sha: "merge-1",
+    message: "Pull Request successfully merged",
+  });
+  assert.deepEqual(calls, [[
+    "api",
+    "--method",
+    "PUT",
+    "repos/owner/repo/pulls/24/merge",
+    "-f",
+    "sha=head-1",
+    "-f",
+    "merge_method=merge",
+  ]]);
+});
+
+test("preserves a failed REST merge after an open pull-request readback", () => {
+  const failure = new Error("HTTP 409: Pull Request is not mergeable");
+  const calls = [];
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    calls.push(args);
+    if (args.some((value) => String(value).endsWith("/merge"))) {
+      throw failure;
+    }
+    return {
+      status: 0,
+      stderr: "",
+      stdout: JSON.stringify({ state: "open", head: { sha: "head-1", repo: { full_name: "owner/repo" } } }),
+    };
+  });
+
+  assert.throws(() => client.mergePullRequest(24, "head-1"), failure);
+  assert.deepEqual(calls.map((args) => args.at(-1)), [
+    "merge_method=merge",
+    "repos/owner/repo/pulls/24",
+  ]);
+});
+
+test("accepts an ambiguous REST merge once the exact head reads back merged", () => {
+  const calls = [];
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    calls.push(args);
+    if (args.some((value) => String(value).endsWith("/merge"))) {
+      throw new Error("connection reset");
+    }
+    return {
+      status: 0,
+      stderr: "",
+      stdout: JSON.stringify({
+        state: "closed",
+        merged_at: "2026-09-28T01:00:00Z",
+        head: { sha: "head-1", repo: { full_name: "owner/repo" } },
+        merge_commit_sha: "merge-1",
+      }),
+    };
+  });
+
+  assert.deepEqual(client.mergePullRequest(24, "head-1"), { merged: true, sha: "merge-1" });
+  assert.equal(calls.length, 2);
+});
+
 test("accepts an already-ready pull request without marking it ready again", async () => {
   const client = new FixtureClient({
     pulls: [
@@ -902,7 +1016,7 @@ test("accepts an already-ready pull request without marking it ready again", asy
   assert.equal(client.calls.some(([name]) => name === "markReady"), false);
 });
 
-test("accepts repeated guarded base updates and pins auto-merge to each trusted head", async () => {
+test("accepts repeated guarded base updates and merges the final trusted head", async () => {
   const client = new FixtureClient({
     checks: [pendingChecks, pendingChecks, passingChecks],
     commits: {
@@ -917,6 +1031,7 @@ test("accepts repeated guarded base updates and pins auto-merge to each trusted 
       pull({ baseSha: "base-1", headSha: "head-2", isDraft: false }),
       pull({ baseSha: "base-2", headSha: "head-2", isDraft: false, mergeState: "BEHIND" }),
       pull({ baseSha: "base-2", headSha: "head-3", isDraft: false }),
+      pull({ baseSha: "base-2", headSha: "head-3", isDraft: false }),
       pull({ headSha: "head-3", isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
     ],
     refs: [{ sha: "head-3" }, null],
@@ -929,10 +1044,8 @@ test("accepts repeated guarded base updates and pins auto-merge to each trusted 
     ["updateBranch", 24, "head-1"],
     ["updateBranch", 24, "head-2"],
   ]);
-  assert.deepEqual(client.calls.filter(([name]) => name === "enablePullRequestAutoMerge"), [
-    ["enablePullRequestAutoMerge", 24, "head-1"],
-    ["enablePullRequestAutoMerge", 24, "head-2"],
-    ["enablePullRequestAutoMerge", 24, "head-3"],
+  assert.deepEqual(client.calls.filter(([name]) => name === "mergePullRequest"), [
+    ["mergePullRequest", 24, "head-3"],
   ]);
 });
 
@@ -970,7 +1083,7 @@ test("stops when the head changes outside a guarded base update", async () => {
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "unexpected_head_change" });
   assert.equal(client.calls.some(([name]) => name === "enableRepositoryAutoMerge"), false);
-  assert.equal(client.calls.some(([name]) => name === "enablePullRequestAutoMerge"), false);
+  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
 });
 
 test("surfaces repository permission failures before enabling pull request auto-merge", async () => {
@@ -983,7 +1096,7 @@ test("surfaces repository permission failures before enabling pull request auto-
     completePullRequest(client, immediateOptions),
     PERMISSION_ERROR,
   );
-  assert.equal(client.calls.some(([name]) => name === "enablePullRequestAutoMerge"), false);
+  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
 });
 
 test("refuses to delete a remote branch whose ref changed after merge", async () => {

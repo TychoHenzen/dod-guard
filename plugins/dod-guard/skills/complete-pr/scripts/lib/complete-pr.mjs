@@ -494,8 +494,8 @@ async function waitForMerge(client, completion) {
         pullNumber,
       });
       trustedHead = pullRequest.headSha;
-      await ensureCiWorkflowRun(client, pullRequest, ciRecovery);
-      await client.enablePullRequestAutoMerge(pullNumber, trustedHead);
+    } else if (checksPassed) {
+      await client.mergePullRequest(pullNumber, trustedHead);
     } else {
       await client.wait(options.pollMs);
     }
@@ -542,7 +542,6 @@ async function completePullRequest(client, overrides = {}) {
   requireTrustedHead(pullRequest, acceptedHead);
   requireDefaultBase(pullRequest, repository.defaultBranch);
   await ensureCiWorkflowRun(client, pullRequest, ciRecovery);
-  await client.enablePullRequestAutoMerge(pullNumber, acceptedHead);
   return waitForMerge(client, {
     acceptedHead,
     ciRecovery,

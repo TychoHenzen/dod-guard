@@ -163,9 +163,10 @@ one.
 
 ## 5. Resolve one linked GitHub Project and common labels
 
-Query the repository's `projectsV2` connection. Request project id, number, title, closed state,
-owner login, fields, and single-select options. Keep only open projects explicitly linked to this
-repository.
+Query the repository's linked Project through the typed connector or the REST
+ProjectsV2 endpoints. Request project id, number, title, closed state, owner
+login, fields, and single-select options. Keep only open projects explicitly
+linked to this repository.
 
 - More than one open linked Project: stop and list each owner, number, and title.
 - One open linked Project: preserve it and merge the required status options.
@@ -177,9 +178,10 @@ each of `Backlog`, `Todo`, `In Progress`, and `Done`.
 
 For a new empty Project, replace its unused default Status field when necessary and create one
 single-select Status field with all four options. For an existing Project, never delete a populated
-field. Use the current `updateProjectV2Field` GraphQL mutation to preserve every existing option id,
-name, color, and description while adding or renaming only what is required. Stop if duplicate
-statuses cannot be merged without changing item meaning.
+field. Use the supported REST ProjectsV2 field update or typed connector
+operation to preserve every existing option id, name, color, and description
+while adding or renaming only what is required. Stop if duplicate statuses
+cannot be merged without changing item meaning.
 
 Re-query through the repository link. A Project found only by owner or title is not proof that it is
 linked.

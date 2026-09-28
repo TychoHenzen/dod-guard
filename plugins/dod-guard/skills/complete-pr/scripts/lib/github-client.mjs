@@ -88,6 +88,34 @@ function projectStatusName(item) {
   return value?.name?.raw ?? value?.name?.html ?? value?.name ?? (typeof value === "string" ? value : null);
 }
 
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function readMergeAfterFailure(client, pullNumber, expectedHead, error) {
+  let pullRequest;
+  try {
+    pullRequest = client.getPullRequest(pullNumber);
+  } catch (readError) {
+    throw new CompletionError(
+      "merge_ambiguous",
+      `Merge failed (${errorMessage(error)}); pull request readback failed (${errorMessage(readError)}).`,
+      { cause: readError },
+    );
+  }
+  if (pullRequest.state === "MERGED") {
+    if (pullRequest.headSha !== expectedHead) {
+      throw new CompletionError(
+        "unexpected_head_change",
+        `Pull request head changed from ${expectedHead} to ${pullRequest.headSha}.`,
+        { cause: error },
+      );
+    }
+    return { merged: true, sha: pullRequest.mergeCommitSha };
+  }
+  throw error;
+}
+
 function encodeBranch(branchName) {
   return branchName
     .split("/")
@@ -281,18 +309,28 @@ export class GitHubClient {
     this.#commandRunner(["api", "--method", "PATCH", `repos/${this.repository}`, "-F", "allow_auto_merge=true"]);
   }
 
-  enablePullRequestAutoMerge(pullNumber, expectedHead) {
-    this.#commandRunner([
-      "pr",
-      "merge",
-      String(pullNumber),
-      "--repo",
-      this.repository,
-      "--auto",
-      "--merge",
-      "--match-head-commit",
-      expectedHead,
-    ]);
+  mergePullRequest(pullNumber, expectedHead) {
+    let data;
+    try {
+      ({ data } = ghJson([
+        "api",
+        "--method",
+        "PUT",
+        `repos/${this.repository}/pulls/${pullNumber}/merge`,
+        "-f",
+        `sha=${expectedHead}`,
+        "-f",
+        "merge_method=merge",
+      ], [0], this.#commandRunner));
+    } catch (error) {
+      return readMergeAfterFailure(this, pullNumber, expectedHead, error);
+    }
+
+    if (data?.merged !== true) {
+      const message = data?.message ?? `Pull request #${pullNumber} was not merged.`;
+      throw new CompletionError("merge_failed", message);
+    }
+    return data;
   }
 
   getRequiredChecks(pullNumber, pullRequest) {

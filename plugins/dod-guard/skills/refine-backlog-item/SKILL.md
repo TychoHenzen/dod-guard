@@ -274,7 +274,8 @@ GitHub. Confirm all required sections and evidence exist, sub-issues are
 linked, the PBI is still in Backlog, exactly one label from each scale remains,
 and at least one standard
 label applies. Confirm unknown priority explains missing evidence and effort
-is below 13 before moving that PBI to `Todo` with `gh project item-edit`.
+is below 13 before moving that PBI to `Todo` with the shared REST Project status
+writer.
 For a structured PBI, also confirm the named `requirements`, `clarifications`,
 `implementation-plan`, and `task-list` records are present and coherent; the
 four mandatory child categories are linked exactly once; and every child is

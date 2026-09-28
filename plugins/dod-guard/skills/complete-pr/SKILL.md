@@ -1,6 +1,6 @@
 ---
 name: complete-pr
-description: Complete a verified open pull request through guarded auto-merge, required checks, linked-issue confirmation, and remote branch deletion.
+description: Complete a verified open pull request through guarded REST merge, required checks, linked-issue confirmation, and remote branch deletion.
 ---
 
 # Complete PR
@@ -58,12 +58,12 @@ it marks it ready. If it is already ready, it preserves that state. It then:
   dispatches the existing workflow once, and waits a bounded time for an
   exact-head run;
 - reads back after an ambiguous dispatch instead of blindly retrying, waits for
-  queued or in-progress CI to pass before enabling auto-merge, and stops on a fork,
+  queued or in-progress CI to pass before attempting the merge, and stops on a fork,
   branch drift, stale or duplicate run, wrong workflow, failed or cancelled
   run, unsupported state, dispatch error, or missing-run timeout;
 - enables repository auto-merge when needed;
-- enables merge-commit auto-merge with `--match-head-commit`;
-- waits for every required check and stops on failure or cancellation;
+- merges through the REST pull-request endpoint with the expected head SHA;
+- waits for every required check before merging and stops on failure or cancellation;
 - if the normal required-check query is empty, reads branch protection and
   verifies check runs and commit statuses from the exact pull-request head,
   including any expected GitHub App provider;
@@ -109,18 +109,16 @@ Only after the helper returns a verified merge result, read the linked parent
 PBI, its linked child issues, and their one shared Project. For a structured
 parent, require exactly one child for implementation; wiring and end-to-end
 usability; refactoring and quality; and fixing and reliability. Resolve the
-shared Project number, global ProjectV2 node ID, item node IDs, Status-field
-node ID, and `Done` option ID once. Use the shared status-write runner with the
-child item IDs first and the parent item ID last:
+shared Project number, REST item IDs, Status-field ID, and `Done` option ID once.
+Use the shared status-write runner with the child item IDs first and the parent item ID last:
 
 ```text
 node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> ... <parent-item-id>
 ```
 
-The runner resolves the global ProjectV2 node ID from the live project view,
-passes that value—not the numeric project number—to `--project-id`, and reads
-each item back from the shared Project before continuing. For every code-backed
-child, verify its pushed commit is included in the verified merge. Close a
+The runner resolves the live REST field and item IDs and reads each item back
+from the shared Project before continuing. For every code-backed child, verify
+its pushed commit is included in the verified merge. Close a
 still-open code-backed child only after that verification. If a parent or child
 is still Backlog, Todo, or In Progress after the pass, repair that item and
 read it back before reporting completion. Never finalize a parent or child

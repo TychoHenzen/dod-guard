@@ -103,7 +103,7 @@ GitHub-backed skills share the request policy in
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
 | `/review-pr` | Review Git or GitHub inline with four agents, or produce one Azure DevOps report. |
 | `/fix-pr-review` | Revalidate and fix selected GitHub, local Git, or Azure review findings. |
-| `/complete-pr` | Complete an explicitly accepted draft through guarded auto-merge and branch deletion. |
+| `/complete-pr` | Complete an explicitly accepted draft through guarded REST merge and branch deletion. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
 | `/codex-advisor` | Get a bounded advice-only second opinion from a separate Codex process. |
