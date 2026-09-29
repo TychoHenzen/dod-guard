@@ -80,7 +80,7 @@ test("reports existing history and every configured remote without changing eith
   await writeFile(path.join(root, "README.md"), "fixture\n");
   await git(root, "add", "README.md");
   await git(root, "commit", "-m", "initial");
-  await git(root, "remote", "add", "origin", "https://github.com/example/existing.git");
+  await git(root, "remote", "add", "origin", "https://user:secret-token@example.invalid/existing.git");
 
   const report = await inspectRepository(root);
 
@@ -89,6 +89,7 @@ test("reports existing history and every configured remote without changing eith
   assert.equal(report.git.branch, "main");
   assert.ok(report.git.remotes.some((remote) => remote.name === "origin" && remote.direction === "fetch"));
   assert.ok(report.git.remotes.some((remote) => remote.name === "origin" && remote.direction === "push"));
+  assert.ok(report.git.remotes.every((remote) => !JSON.stringify(remote).includes("secret-token")));
 });
 
 test("keeps ignore rules, workflows, instructions, and tool configuration visible as merge inputs", async (t) => {
@@ -204,6 +205,30 @@ test("summary CLI stays bounded while the default and snapshot modes remain deta
   const snapshot = JSON.parse((await runInspector("--github-snapshot", snapshotPath)).stdout);
   assert.equal(snapshot.readyForProtection, true);
   assert.deepEqual(snapshot.requiredChecks, ["test"]);
+});
+
+test("keeps summary output bounded as the inventory grows", async (t) => {
+  const root = await fixture(t, "summary-bound");
+  await Promise.all(Array.from({ length: 400 }, (_, index) =>
+    writeFile(path.join(root, `file-${index}.ts`), "export {}\n")));
+
+  const output = await runInspector("--summary", root);
+  const summary = JSON.parse(output.stdout);
+
+  assert.equal(summary.counts.files, 400);
+  assert.ok(output.stdout.length < 500);
+});
+
+test("rejects malformed roots without echoing the supplied path", async (t) => {
+  const root = await fixture(t, "malformed-root");
+  const missing = path.join(root, "missing-secret-token");
+
+  await assert.rejects(inspectRepository(missing), (error) => {
+    assert.equal(error.message, "Project root is not a directory");
+    assert.doesNotMatch(error.message, /missing-secret-token/);
+    return true;
+  });
+  await assert.rejects(inspectRepository(undefined), /Project root must be a non-empty path/);
 });
 
 test("rejects malformed summary arguments", async () => {

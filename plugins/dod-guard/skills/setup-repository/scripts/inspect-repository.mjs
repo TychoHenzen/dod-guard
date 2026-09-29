@@ -132,6 +132,13 @@ function relative(root, file) {
   return value.length === 0 ? "." : value.split(path.sep).join("/");
 }
 
+function redactRemote(value) {
+  return value.replace(
+    /(\b[a-z][a-z\d+.-]*:\/\/)[^/\s@]+@/iu,
+    "$1[REDACTED]@",
+  );
+}
+
 async function collectFiles(root, current = root) {
   const entries = await readdir(current, { withFileTypes: true });
   const groups = await Promise.all(entries.sort((a, b) => a.name.localeCompare(b.name)).map(async (entry) => {
@@ -182,7 +189,9 @@ async function inspectGit(root) {
       .filter(Boolean)
       .map((line) => {
         const match = line.match(/^(\S+)\s+(\S+)\s+\((fetch|push)\)$/);
-        return match ? { name: match[1], url: match[2], direction: match[3] } : { raw: line };
+        return match
+          ? { name: match[1], url: redactRemote(match[2]), direction: match[3] }
+          : { raw: redactRemote(line) };
       }),
   };
 }
@@ -237,9 +246,18 @@ function isManifest(file) {
 }
 
 export async function inspectRepository(rootPath) {
+  if (typeof rootPath !== "string" || rootPath.length === 0) {
+    throw new Error("Project root must be a non-empty path");
+  }
+
   const root = path.resolve(rootPath);
-  const rootStats = await stat(root);
-  if (!rootStats.isDirectory()) throw new Error(`Project root is not a directory: ${root}`);
+  let rootStats;
+  try {
+    rootStats = await stat(root);
+  } catch {
+    throw new Error("Project root is not a directory");
+  }
+  if (!rootStats.isDirectory()) throw new Error("Project root is not a directory");
 
   const files = await collectFiles(root);
   const relativeFiles = files.map((file) => relative(root, file));
