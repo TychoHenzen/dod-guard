@@ -1,7 +1,7 @@
 {
   "name": "dod-guard",
   "version": "5.4.59",
-  "description": "GitHub repository setup, deliberative backlog refinement, quick PBI delivery, ordered step execution, issue delivery with researched priority and effort, independent completion review, user-facing wiring and usability/accessibility reviews, repository learning and teach-back, four-agent PR review and finding fixes for GitHub, Git, and Azure DevOps, guarded completion, maintenance, and marketplace release. Ships 22 skills and 6 agents.",
+  "description": "GitHub repository setup, deliberative backlog refinement, quick PBI delivery, ordered step execution, issue delivery with researched priority and effort, user-facing wiring and usability/accessibility reviews, repository learning and teach-back, adaptive PR review and finding fixes for GitHub, Git, and Azure DevOps, guarded completion, maintenance, and marketplace release. Ships 23 skills and 6 agents.",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"
@@ -12,7 +12,7 @@
   "interface": {
     "displayName": "dod-guard",
     "shortDescription": "Repository setup, deliberative backlog refinement, issue delivery, PR review fixes and completion, maintenance, and release.",
-    "longDescription": "Provides protected repository setup, deliberative backlog refinement with recorded discovery evidence, issue delivery with researched priority, Fibonacci effort and classification labels, independent completion review, four-agent pull-request review, selected finding fixes for GitHub, Git, and Azure DevOps, guarded completion, migration, repository maintenance, and marketplace release workflows.",
+    "longDescription": "Provides protected repository setup, deliberative backlog refinement with recorded discovery evidence, issue delivery with researched priority, Fibonacci effort and classification labels, adaptive pull-request review, selected finding fixes for GitHub, Git, and Azure DevOps, guarded completion, migration, repository maintenance, and marketplace release workflows.",
     "developerName": "tychohenzen",
     "category": "Developer Tools",
     "capabilities": ["Skills"],

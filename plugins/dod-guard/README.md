@@ -3,6 +3,65 @@
 A code-free plugin for GitHub issue delivery and focused repository
 maintenance.
 
+## OpenCode
+
+The adapter supports OpenCode v2.0.18 and can load directly from this directory:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["./plugins/dod-guard"]
+}
+```
+
+The adapter registers the existing `skills/` and `agents/` Markdown files at
+load time. It does not copy or maintain a second source tree.
+
+### Install and reload
+
+For a local checkout, add the plugin directory to the project `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["/absolute/path/to/dod-guard/plugins/dod-guard"]
+}
+```
+
+Start OpenCode from that project, then verify the resolved config and active
+plugin with `opencode debug config` and `opencode plugin list`. Upgrade a local
+install with `git pull` in the checkout; package installs can use
+`opencode plugin update` (local paths and exact revisions are not updated by
+that command). Run `opencode reload` after config edits, and
+`opencode service restart` if an unchanged local path still has stale content.
+
+If loading fails, confirm the entry points to the adapter directory (not a
+copied skill cache), rerun `opencode debug config`, and inspect
+`opencode plugin check`. If `opencode.json` is missing, create it with the
+plugin entry shown above; if it is malformed, replace it with valid JSON and
+the same entry. Run `opencode reload --server <url>` after either repair, or
+restart the service when no server URL is available. OpenCode should show no
+active dod-guard registration until the configuration is valid. The adapter
+reads the checkout's existing skills and agents directly, so Claude and Codex
+paths remain untouched.
+
+### Disposable discovery proof
+
+Run the runtime check with OpenCode v2.0.18 available on `PATH`:
+
+```text
+node --test plugins/dod-guard/opencode-discovery.test.mjs
+```
+
+Set `OPENCODE_BIN` to the executable path when OpenCode is installed outside
+`PATH`. The test reports the install or configuration fix when the executable
+is missing.
+
+The test creates a temporary project and isolated config/data directories,
+checks `opencode v2.0.18`, verifies plugin list/check output, activates the
+`next-ticket` skill, and confirms the `review-pr-feature` agent. It removes the
+fixture afterward and does not edit `PATH` or the user's OpenCode config.
+
 Every skill applies the shared working defaults in
 `standards/working-defaults.md`: clear low-risk choices proceed, ordinary
 dirty worktree changes use the normal commit path, stale tests follow the
@@ -30,11 +89,11 @@ and standard labels before moving a coherent,
 independently deliverable PBI to Todo. Material unresolved requirements keep
 the issue in Backlog. Epics stay there until split into independently
 deliverable PBIs. `/next-ticket`
-implements that PBI and runs the completion review before committing
-and pushing implementation changes. Every challenge needs an evidenced
-disposition. `/submit-draft-pr` submits its verified draft
-pull request. `/review-pr` checks the final branch or pull request with four
-independent reviewers. After review, `/complete-pr` treats its invocation as
+implements that PBI, maps every acceptance criterion to fresh evidence, and
+commits and pushes. `/submit-draft-pr` submits its verified draft pull
+request. `/review-pr` is the one independent review: it splits the change
+into units, reviews each at medium effort with 1-4 angles chosen by the kind
+of code, and runs one PR-level feature pass. After review, `/complete-pr` treats its invocation as
 acceptance of the current head and completes the guarded merge.
 `/fix-pr-review` revalidates and fixes selected review findings before that
 acceptance. Each delivery skill resolves the current repository and requires
@@ -76,9 +135,10 @@ For feature work or material ambiguity, use the structured path in the
 For structured work, `/next-ticket` records one `## Implementation handoff`
 comment on the parent issue. It maps each ordered task and mandatory child to
 the pushed commit or verified remote-state evidence, fresh checks, and the
-current user-path result. `/submit-draft-pr` consumes that comment and records
-the same mapping in `## Convergence`; missing or contradicted evidence remains
-an actionable remainder. Small, clear fixes bypass these records.
+current user-path result. `/submit-draft-pr` checks that comment against the
+issue contract and links it from `## Convergence` instead of restating it;
+missing or contradicted evidence remains an actionable remainder. Small, clear
+fixes bypass these records.
 
 Use the ordinary path for a small, clear fix. Neither path bypasses stops for
 material ambiguity, credentials, destructive or authority-bound actions,
@@ -96,7 +156,7 @@ GitHub-backed skills share the request policy in
 | `/add-backlog-idea` | Capture each independently deliverable feature as a Backlog issue. |
 | `/quick-pbi` | Run backlog capture through guarded merge without extra prompts outside refinement. |
 | `/refine-backlog-item` | Deliberatively refine a Backlog issue, moving it to Todo only when its PBI is coherent and independently deliverable. |
-| `/next-ticket` | Execute a Todo PBI through independent completion review and verified, pushed commits. |
+| `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
 | `/learn-repository` | Learn one repository concept at a time from current source evidence. |
 | `/teach-back` | Explain a repository concept while a curious student tests the explanation. |
 | `/step-by-step` | Run one explicit ordered plan through fresh bounded subagents. |

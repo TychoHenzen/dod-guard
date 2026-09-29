@@ -1,0 +1,17 @@
+{
+  "name": "@tychohenzen/dod-guard-opencode",
+  "version": "5.4.59",
+  "description": "OpenCode adapter for the dod-guard skills and agents.",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "skills",
+    "agents"
+  ],
+  "dependencies": {
+    "@opencode/plugin": "2.0.18"
+  }
+}

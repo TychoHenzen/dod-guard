@@ -1,9 +1,5 @@
-const REVIEWERS = Object.freeze([
-  "review-pr-feature",
-  "review-pr-design",
-  "review-pr-reliability",
-  "review-pr-hygiene",
-]);
+import { PULL_REQUEST_UNIT, REVIEWERS } from "./review-units.mjs";
+
 const FINDING_FIELDS = Object.freeze([
   "correction",
   "evidence",
@@ -69,8 +65,9 @@ function validateFindingShape(finding) {
   }
 }
 
-function validateReviewerResult(result, reviewer, reviewRequirements) {
+function validateReviewerResult(result, reviewer, reviewRequirements, unit) {
   requireValue(REVIEWERS.includes(reviewer), `Unknown reviewer ${reviewer}.`);
+  requireValue(typeof unit === "string" && unit.length > 0, `${reviewer} result has no review unit.`);
   requireValue(result && typeof result === "object" && !Array.isArray(result), `${reviewer} returned no review envelope.`);
   requireValue(result.reviewer === reviewer, `${reviewer} returned the wrong reviewer identity.`);
   requireValue(Array.isArray(result.coverage) && result.coverage.length > 0, `${reviewer} returned no coverage evidence.`);
@@ -81,7 +78,8 @@ function validateReviewerResult(result, reviewer, reviewRequirements) {
       `${reviewer} returned malformed coverage evidence.`,
     );
   }
-  if (reviewer === "review-pr-feature") {
+  // Only the PR-level feature pass sees the whole change, so only it can prove every criterion.
+  if (reviewer === "review-pr-feature" && unit === PULL_REQUEST_UNIT) {
     const covered = new Set(result.coverage.map(({ requirement }) => requirement));
     const missing = reviewRequirements.filter((requirement) => !covered.has(requirement));
     requireValue(missing.length === 0, `Feature review omitted requirements: ${missing.join(" | ")}`);

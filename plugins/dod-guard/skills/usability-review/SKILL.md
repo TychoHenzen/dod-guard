@@ -9,9 +9,8 @@ Review whether a user can understand and complete the intended task. This is
 a practical, evidence-aware review, not a visual design system or a formal
 accessibility conformance audit.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root.
+Read and apply `standards/working-defaults.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Establish the task
 

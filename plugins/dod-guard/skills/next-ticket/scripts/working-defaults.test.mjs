@@ -42,9 +42,27 @@ const exceptionRules = new Map([
 ]);
 
 test("every shipped skill applies the shared working defaults", () => {
-  assert.equal(skillNames.length, 22);
+  assert.equal(skillNames.length, 23);
   for (const [name, skill] of skills) {
     assert.match(skill, /standards\/working-defaults\.md/, name);
+  }
+});
+
+test("skills load the shared standards in one line instead of a preamble section", () => {
+  const githubFacing = new Set([
+    "add-backlog-idea", "blind-rewrite", "complete-pr", "fix-pr-review", "goal-sdlc", "next-ticket",
+    "publish", "quick-pbi", "refine-backlog-item", "review-pr", "setup-repository", "submit-draft-pr",
+  ]);
+  for (const [name, skill] of skills) {
+    assert.doesNotMatch(skill, /^## Shared working defaults$|Before GitHub calls, read/m, name);
+    if (githubFacing.has(name)) assert.match(skill, /standards\/github-request-discipline\.md/, name);
+  }
+});
+
+test("delivery skills defer repository and Project resolution to the GitHub standard", () => {
+  for (const name of ["add-backlog-idea", "refine-backlog-item", "next-ticket", "submit-draft-pr"]) {
+    assert.match(skills.get(name), /"Resolve the repository and\s+Project" in\s+`standards\/github-request-discipline\.md`/, name);
+    assert.doesNotMatch(skills.get(name), /Do not pick\s+one by name|administrator must link/, name);
   }
 });
 

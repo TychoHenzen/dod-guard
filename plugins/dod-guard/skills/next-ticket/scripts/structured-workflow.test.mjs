@@ -96,9 +96,9 @@ test("convergence blocks incomplete work and leaves the small-fix bypass", () =>
   );
   assert.match(submit, /Small, clear fixes use the ordinary path/);
   assert.match(submit, /## Convergence/);
-  assert.match(standard, /Before any\s+remainder write,\s+snapshot the issue body/);
-  assert.match(submit, /snapshot the\s+issue body, task list, labels, links, Project item, and Status/);
-  assert.match(submit, /After each successful mutation, read back\s+the changed state/);
+  assert.doesNotMatch(standard, /snapshot the issue body/);
+  assert.doesNotMatch(submit, /snapshot the\s+issue body/);
+  assert.match(standard, /After a failed or ambiguous write, read back\s+that resource before retrying/);
 });
 
 test("structured parents require one evidenced child in every delivery category", () => {
@@ -108,7 +108,8 @@ test("structured parents require one evidenced child in every delivery category"
   assert.match(nextTicket, /pushed\s+implementation evidence before a commit or PR handoff, not before execution/);
   assert.match(nextTicket, /map\s+every mandatory child to its owning task, changed files or verified remote\s+state, commit, and fresh verification/);
   assert.match(submit, /exactly one actionable child for implementation; wiring and\s+end-to-end usability; refactoring and quality; and fixing and reliability/);
-  assert.match(submit, /Mandatory child categories: each mapped to the same parent branch/);
+  assert.match(submit, /- Handoff: <link to the ## Implementation handoff comment> \(head <sha>\)/);
+  assert.doesNotMatch(submit, /Mandatory child categories: each mapped/);
 });
 
 test("draft submission runs the repository preflight before PR writes", () => {
@@ -204,8 +205,7 @@ test("structured proof CLI separates known paths and rejects unknown scenarios",
     spawnSync(process.execPath, [proofScript, scenario], { encoding: "utf8" });
   const passing = run("passing");
   assert.equal(passing.status, 0);
-  assert.match(passing.stdout, /Outcome: verified/);
-  assert.match(passing.stdout, /Requirements and clarifications: verified/);
+  assert.match(passing.stdout, /^## Convergence\n- Handoff: \S+#issuecomment-1 \(head abc1234\)\n- Remainder: none\n$/);
 
   const incomplete = run("incomplete");
   assert.equal(incomplete.status, 0);
@@ -261,7 +261,6 @@ test("every skill with direct GitHub request instructions names the shared polic
       "refine-backlog-item",
       "review-pr",
       "setup-repository",
-      "submit-draft-pr",
     ],
   );
   for (const { text } of directGithubSkills) {

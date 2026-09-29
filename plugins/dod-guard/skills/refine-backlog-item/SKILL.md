@@ -9,22 +9,18 @@ Turn one existing backlog issue into an implementation-ready parent PBI. Its
 repository is the issue's target repository. Do not create a branch, assign the
 PBI, change it to In Progress, implement code, or open a pull request.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
-
-Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
+Read and apply `standards/working-defaults.md` and
+`standards/github-request-discipline.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Preconditions
 
-1. Resolve the repository with the GitHub MCP repository operation. If MCP is
-   unavailable, use `gh repo view --json nameWithOwner,defaultBranchRef,url`.
-2. Resolve exactly one open Project explicitly linked to that repository.
-3. Verify the specified issue belongs to the repository, appears in that
+1. Resolve the repository, its linked Project, and the `Backlog` and `Todo`
+   statuses as described under "Resolve the repository and Project" in
+   `standards/github-request-discipline.md`.
+2. Verify the specified issue belongs to the repository, appears in that
    Project, and has Status `Backlog`.
-4. Resolve exactly one `Status` field with one case-insensitive `Todo` option.
-5. Query all live labels in the target repository, including descriptions:
+3. Query all live labels in the target repository, including descriptions:
 
    Use the GitHub MCP repository-resource operation with the labels endpoint.
    If MCP is unavailable, use:
@@ -152,16 +148,8 @@ that supports the classification. Do not create missing standard labels.
 
 ## Refine the PBI
 
-After discovery is complete, save a mutation snapshot of the issue body,
-labels, state, repository membership, Project item, Project membership, and
-current Status. Before each issue write, including a body, label, or
-linked-sub-issue mutation, re-read those values and compare them with the
-latest mutation snapshot. If any value changed, stop without writing and
-report the mismatch. After each successful write, read back the affected
-issue and Project item and replace the snapshot before the next write.
-Immediately before moving to `Todo`, repeat the same comparison and require
-the issue to remain in the repository, the Project item to remain present with
-Status `Backlog`, and the body and labels to match the current refinement.
+After a failed, timed-out, or ambiguous write, follow the shared GitHub
+standard: read back that resource before retrying or issuing another write.
 
 Update the parent issue with these sections:
 
@@ -254,8 +242,7 @@ assumptions. Do not create duplicate linked sub-issues or scale labels.
 
 ## Apply labels and verify before Todo
 
-Immediately before the label edit, run the mutation snapshot check above.
-Re-read the issue's current labels as part of that check. Add the chosen priority,
+Read the issue's current labels, then add the chosen priority,
 effort, and standard labels with the GitHub MCP issue update operation. If MCP is
 unavailable, use `gh issue edit {issue-number} --repo {owner}/{repo}`.
 Remove every other current priority or effort label, including stale scale

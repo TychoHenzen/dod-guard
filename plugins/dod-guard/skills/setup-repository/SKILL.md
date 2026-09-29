@@ -18,16 +18,13 @@ principles source described in `standards/project-workflow.md`. Preserve both
 `AGENTS.md` and `CLAUDE.md` when they contain unique guidance. Do not add a
 second constitution or planning system.
 
-Before GitHub calls, read `<plugin-root>/standards/github-request-discipline.md`.
-
 This invocation authorizes the setup changes described below. Ask only when required repository
 identity is missing or existing state has incompatible meanings. Never replace working state merely
 to make setup uniform.
 
-## Shared working defaults
-
-Read and apply `standards/working-defaults.md` from the plugin root. Local
-safety or authority boundaries below remain stricter.
+Read and apply `standards/working-defaults.md` and
+`standards/github-request-discipline.md` from the plugin root. Stricter
+boundaries in this skill win.
 
 ## Boundaries
 
