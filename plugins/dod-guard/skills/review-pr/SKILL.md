@@ -209,9 +209,10 @@ It writes one entry per (reviewer, unit) pair, the PR-level feature pass first.
 Each prompt holds the exact shipped agent definition, the unit's scope and
 requirements, the unit's final file contents from the pinned snapshot, and its
 diff. Nested reviewers may be unable to run shell reads on the host, so the
-prompt carries the evidence instead of paths. Pass `--executable` when
-`codex.exe` is not on `PATH` (for example an npm install, whose `codex.cmd`
-shim the helper rejects). Invoke the dispatcher as a direct Node process:
+prompt carries the evidence instead of paths. The dispatcher resolves a native
+`codex.exe` from `PATH` and follows an npm `codex.cmd` shim to that binary when
+needed. Pass `--executable` only when the installed native binary is not
+discoverable. Invoke the dispatcher as a direct Node process:
 
 ```text
 node "<skill-dir>/scripts/review-dispatch.mjs" --input "<dispatch-input.json>"

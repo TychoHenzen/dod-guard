@@ -25,9 +25,10 @@ rules below are the exception only where they are more specific.
 
 1. Resolve the current CLI with `codex.exe --version` and
    `codex.exe exec --help` on Windows, or `codex --version` and `codex exec
-   --help` elsewhere. The Windows direct executable must be on `PATH`; do not
-   substitute the npm command shim. The runner performs both capability probes
-   before starting the advisor process. Current help does not enumerate reasoning values.
+   --help` elsewhere. On Windows, the runner follows an npm `codex.cmd` shim
+   to its installed native executable when needed; it never launches the shim.
+   The runner performs both capability probes before starting the advisor
+   process. Current help does not enumerate reasoning values.
    A write-capable nested review uses `--approve-for-me`; this read-only advisor
    never sends an approval option, and `--ask-for-approval` is unsupported.
    Use `gpt-5.6-luna` with `max` effort by default and pass the selected value as

@@ -106,7 +106,7 @@ function reviewRecord({ reviewer, unit }, result) {
 
 async function dispatchReviewers({
   reviewers,
-  executable = resolveCodexExecutable(),
+  executable,
   prefixArgs = [],
   model = DEFAULT_MODEL,
   reasoningEffort = DEFAULT_REASONING_EFFORT,
@@ -117,6 +117,7 @@ async function dispatchReviewers({
   platform = process.platform,
   spawnImpl,
 } = {}) {
+  executable = executable ?? resolveCodexExecutable(platform, { ...process.env, ...env });
   requireReviewers(reviewers);
   rejectWindowsWrappers({ executable, prefixArgs, platform });
   const results = [];
