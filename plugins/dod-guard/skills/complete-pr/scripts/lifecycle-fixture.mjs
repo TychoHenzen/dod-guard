@@ -46,7 +46,12 @@ function formValues(args, prefix) {
   return args.filter((value) => typeof value === "string" && value.startsWith(prefix)).map((value) => value.slice(prefix.length));
 }
 
-export function createRecordingTransport({ missingProjectItem, contradictoryStatus = false } = {}) {
+export function createRecordingTransport({
+  missingProjectItem,
+  contradictoryStatus = false,
+  autoAddProjectItems = false,
+  ambiguousStatusWrite,
+} = {}) {
   const calls = [];
   const issues = new Map();
   const projectItems = new Map();
@@ -90,6 +95,11 @@ export function createRecordingTransport({ missingProjectItem, contradictoryStat
     };
   }
 
+  function createProjectItem(issue) {
+    const nodeId = ITEM_NODE_BY_ISSUE.get(issue.number);
+    return { id: ITEM_NUMERIC_IDS.get(nodeId), nodeId, issueNumber: issue.number, status: "Backlog" };
+  }
+
   function visibleProjectItems() {
     return [...projectItems.values()].filter((item) => item.issueNumber !== missingProjectItem);
   }
@@ -131,6 +141,7 @@ export function createRecordingTransport({ missingProjectItem, contradictoryStat
         children: [],
       };
       issues.set(number, issue);
+      if (autoAddProjectItems) projectItems.set(number, createProjectItem(issue));
       return commandResult(issueRecord(number));
     }
     if (endpoint?.startsWith(`${issuesEndpoint}/`) === true) {
@@ -199,8 +210,8 @@ export function createRecordingTransport({ missingProjectItem, contradictoryStat
       const issueId = Number(formValues(args, "content_id=")[0]);
       const issue = [...issues.values()].find((candidate) => candidate.id === issueId);
       if (!issue) throw new Error(`Unknown project item issue ${issueId}.`);
-      const nodeId = ITEM_NODE_BY_ISSUE.get(issue.number);
-      const item = { id: ITEM_NUMERIC_IDS.get(nodeId), nodeId, issueNumber: issue.number, status: "Backlog" };
+      if (projectItems.has(issue.number)) throw new Error("Content already exists in this project.");
+      const item = createProjectItem(issue);
       projectItems.set(issue.number, item);
       return commandResult(projectItem(item));
     }
@@ -233,6 +244,7 @@ export function createRecordingTransport({ missingProjectItem, contradictoryStat
       if (!item || !option) throw new Error(`Unknown project status mutation ${restItemId}.`);
       item.status = option.name;
       transitions.push({ itemId: item.nodeId, status: item.status });
+      if (ambiguousStatusWrite === option.name) throw new Error(`Ambiguous status write for ${item.nodeId}.`);
       return commandResult(projectItem(item));
     }
     throw new Error(`Unexpected command: ${args.join(" ")}`);

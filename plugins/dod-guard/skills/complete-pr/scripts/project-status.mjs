@@ -204,6 +204,14 @@ function readProjectItems({ owner, projectNumber, statusFieldId, targetItemIds, 
   return { items: validateProjectItems(items) };
 }
 
+function runStatusMutation(commandRunner, command) {
+  const result = commandRunner(command);
+  if (result?.status !== undefined && result.status !== 0) {
+    throw new Error(result.stderr?.trim() || result.stdout?.trim() || `Project status mutation exited with ${result.status}.`);
+  }
+  return result;
+}
+
 function writeProjectStatuses({
   owner,
   projectNumber,
@@ -249,6 +257,7 @@ function writeProjectStatuses({
     commandRunner,
   });
   const restItemIds = new Map();
+  const initialStatuses = new Map();
   for (const itemId of itemIds) {
     const item = findProjectItem(initialItems.items, itemId);
     if (!item || item.id === undefined || item.id === null) {
@@ -259,19 +268,31 @@ function writeProjectStatuses({
       throw new Error(`Project item ${itemId} readback must preserve the same numeric and global IDs.`);
     }
     restItemIds.set(itemId, identity.id);
+    initialStatuses.set(itemId, readProjectItemStatus(item, itemId, restStatusFieldId));
   }
   const mutations = [];
 
   for (const itemId of itemIds) {
-    commandRunner(
-      buildProjectItemEditCommand({
-        owner,
-        projectNumber,
-        itemId: restItemIds.get(itemId),
-        statusFieldId: restStatusFieldId,
-        statusOptionId,
-      }),
-    );
+    if (initialStatuses.get(itemId) === expectedStatus) {
+      mutations.push({ itemId, status: expectedStatus });
+      continue;
+    }
+
+    let mutationError;
+    try {
+      runStatusMutation(
+        commandRunner,
+        buildProjectItemEditCommand({
+          owner,
+          projectNumber,
+          itemId: restItemIds.get(itemId),
+          statusFieldId: restStatusFieldId,
+          statusOptionId,
+        }),
+      );
+    } catch (error) {
+      mutationError = error;
+    }
     const items = readProjectItems({
       owner,
       projectNumber,
@@ -289,6 +310,12 @@ function writeProjectStatuses({
     }
     const status = readProjectItemStatus(item, itemId, restStatusFieldId);
     if (status !== expectedStatus) {
+      if (mutationError) {
+        throw new Error(
+          `Project item ${itemId} status mutation failed (${mutationError.message}); read back ${status}, expected ${expectedStatus}.`,
+          { cause: mutationError },
+        );
+      }
       throw new Error(`Project item ${itemId} read back ${status}, expected ${expectedStatus}.`);
     }
     mutations.push({ itemId, status });

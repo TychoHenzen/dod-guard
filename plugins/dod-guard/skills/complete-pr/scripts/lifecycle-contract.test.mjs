@@ -30,6 +30,21 @@ function readProjectMembership(transport) {
   return result.stdout.trim() === "" ? [] : result.stdout.trim().split(/\r?\n/).map((line) => JSON.parse(line));
 }
 
+function ensureProjectMembership(transport, issue) {
+  const existing = readProjectMembership(transport).some(({ content }) => content.number === issue.number);
+  if (existing) return;
+  runRest(transport, [
+    "api",
+    "--method",
+    "POST",
+    `users/${OWNER}/projectsV2/${PROJECT_NUMBER}/items`,
+    "-F",
+    `content_id=${issue.id}`,
+    "-f",
+    "content_type=Issue",
+  ]);
+}
+
 function assertIssueReadbacks(transport, expectedLabels, expectedState = "open") {
   for (const number of ISSUE_NUMBERS) {
     const issue = runRest(transport, ["api", `repos/${REPOSITORY}/issues/${number}`]);
@@ -91,22 +106,14 @@ function runDisposableLifecycle(options = {}) {
   assert.deepEqual(hierarchy.map(({ number }) => number), CHILD_NUMBERS);
 
   for (const issue of createdIssues) {
-    runRest(transport, [
-      "api",
-      "--method",
-      "POST",
-      `users/${OWNER}/projectsV2/${PROJECT_NUMBER}/items`,
-      "-F",
-      `content_id=${issue.id}`,
-      "-f",
-      "content_type=Issue",
-    ]);
+    ensureProjectMembership(transport, issue);
   }
   const projectMembership = readProjectMembership(transport).map(({ content }) => content.number).sort((a, b) => a - b);
   assert.equal(projectMembership.length, ISSUE_NUMBERS.length, "Project membership readback was incomplete.");
   assert.deepEqual(projectMembership, ISSUE_NUMBERS.slice().sort((a, b) => a - b));
   assertIssueReadbacks(transport, new Map(ISSUE_NUMBERS.map((number) => [number, []])));
   assertStatuses(client, "Backlog");
+  if (options.alreadyAppliedStatus) writeStatus(transport, client, options.alreadyAppliedStatus);
 
   for (const number of ISSUE_NUMBERS) {
     runRest(transport, [
@@ -159,6 +166,25 @@ test("proves the disposable PBI lifecycle with recording REST readbacks", () => 
     ...Array(ITEM_NODE_IDS.length).fill("Done"),
   ]);
   assert.deepEqual(transport.transitions.slice(0, ITEM_NODE_IDS.length).map(({ itemId }) => itemId), ITEM_NODE_IDS);
+});
+
+test("reuses automatically-created Project items and skips an already-applied status", () => {
+  const transport = runDisposableLifecycle({ autoAddProjectItems: true, alreadyAppliedStatus: "Backlog" });
+  const projectItemCreates = transport.calls.filter((args) =>
+    args.includes("--method") && args.includes("POST") && args.some((value) => String(value).includes("/projectsV2/2/items")),
+  );
+
+  assert.equal(projectItemCreates.length, 0);
+  assert.equal(transport.transitions.some(({ status }) => status === "Backlog"), false);
+});
+
+test("recovers an ambiguous status write from the authoritative readback once", () => {
+  const transport = runDisposableLifecycle({ ambiguousStatusWrite: "Todo" });
+  assert.deepEqual(transport.transitions.filter(({ status }) => status === "Todo"), ITEM_NODE_IDS.map((itemId) => ({
+    itemId,
+    status: "Todo",
+  })));
+  assert.equal(transport.calls.filter((args) => args.includes("PATCH") && args.some((value) => String(value).includes("/items/"))).length, ITEM_NODE_IDS.length * 3);
 });
 
 test("fails closed on missing, contradictory, and forbidden lifecycle evidence", () => {

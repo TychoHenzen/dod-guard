@@ -72,7 +72,13 @@ below.
 
 - Prefer typed connector mutations. Otherwise use REST `gh api` for REST-capable
   writes.
-- Perform one mutation per actual state change. Reuse ids from the snapshot.
+- Read the target immediately before each write. If the desired state is already
+  present, record the no-op and issue no mutation; otherwise issue exactly one
+  mutation for that state change and preserve the live ids from the read.
+- For create-like writes, read the exact resource or Project membership first.
+  Create only when it is absent. If a create fails or is ambiguous, read back
+  before any retry; an existing resource is success, an unresolved readback
+  stops, and no duplicate create is allowed.
 - For every `add_project_item` operation, set `item_type` explicitly:
   `issue` for issue items and `pull_request` for pull requests. If the
   operation returns `missing required parameter: item_type`, read back the
@@ -82,7 +88,9 @@ below.
   repository, issue, or Project hierarchy after every write.
 - Keep GitHub writes sequential. Bound read concurrency.
 - After a failed, timed-out, or ambiguous write, read back that resource before
-  retrying or issuing another mutation. Resume only from the observed state;
+  retrying or issuing another mutation. A desired readback confirms success;
+  an absent or different readback permits at most the one planned mutation and
+  then stops if its result remains unresolved. Resume only from observed state;
   retry one identical transient provider failure at most once.
 - On primary exhaustion, stop and report the reset time. On a secondary limit,
   honor `Retry-After` or the reset time, then use exponential backoff.

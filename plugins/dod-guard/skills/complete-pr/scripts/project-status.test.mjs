@@ -45,7 +45,7 @@ function projectItems(statuses) {
   }));
 }
 
-function createRunner({ projectId = PROJECT_ID, statuses = new Map(ITEM_IDS.map((itemId) => [itemId, "Done"])), splitItems = false, fields = projectFields() } = {}) {
+function createRunner({ projectId = PROJECT_ID, statuses = new Map(ITEM_IDS.map((itemId) => [itemId, "Backlog"])), splitItems = false, fields = projectFields() } = {}) {
   const calls = [];
   const runner = (args) => {
     calls.push(args);
@@ -61,6 +61,13 @@ function createRunner({ projectId = PROJECT_ID, statuses = new Map(ITEM_IDS.map(
       const items = projectItems(statuses);
       const pages = splitItems ? [items.slice(0, 1), items.slice(1)] : [items];
       return { status: 0, stderr: "", stdout: JSON.stringify(pages) };
+    }
+    if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items/") === true && args.includes("PATCH")) {
+      const itemId = [...ITEM_NUMERIC_IDS.entries()].find(([, numericId]) => endpoint.endsWith(String(numericId)))?.[0];
+      const statusOptionId = args.find((value) => String(value).startsWith("fields[][value]="))?.split("=", 2)[1];
+      const status = projectFields()[0].options.find((option) => option.id === statusOptionId)?.name.raw;
+      statuses.set(itemId, status);
+      return { status: 0, stderr: "", stdout: "" };
     }
     if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items/") === true) {
       return { status: 200, stderr: "", stdout: "" };
@@ -134,9 +141,74 @@ test("consumes every Link-paginated item page before resolving target IDs", () =
   writeProjectStatuses({ ...writeOptions({ itemIds: ITEM_IDS.slice(0, 2) }), commandRunner: runner });
 
   const itemReads = calls.filter((args) => args.some((value) => String(value).includes("/items?")));
-  assert.equal(itemReads.length, 3);
+  assert.equal(itemReads.length, 1);
   assert.equal(itemReads.every((args) => args.includes("--paginate") && args.includes("--slurp")), true);
   assert.equal(itemReads.every((args) => !args.some((value) => /[?&]page=/.test(String(value)))), true);
+});
+
+test("does not PATCH a Project item already at the requested status", () => {
+  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Done"]]) });
+
+  const result = writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0]] }), commandRunner: runner });
+
+  assert.deepEqual(result.mutations, [{ itemId: ITEM_IDS[0], status: "Done" }]);
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 0);
+  assert.equal(calls.filter((args) => args.some((value) => String(value).includes("/items?"))).length, 1);
+});
+
+test("reads back after an ambiguous status write and never retries it", () => {
+  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+  const ambiguousRunner = (args) => {
+    if (args.includes("PATCH")) {
+      runner(args);
+      throw new Error("status write timed out");
+    }
+    return runner(args);
+  };
+
+  const result = writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0]] }), commandRunner: ambiguousRunner });
+
+  assert.deepEqual(result.mutations, [{ itemId: ITEM_IDS[0], status: "Done" }]);
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
+});
+
+test("stops after an ambiguous status write lacks the desired readback", () => {
+  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+  const failedRunner = (args) => {
+    if (args.includes("PATCH")) {
+      calls.push([...args]);
+      throw new Error("status write timed out");
+    }
+    return runner(args);
+  };
+
+  assert.throws(
+    () => writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0]] }), commandRunner: failedRunner }),
+    /status mutation failed.*read back Backlog, expected Done/,
+  );
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
+});
+
+test("rejects malformed or partial initial readbacks before any PATCH", () => {
+  for (const replacement of [
+    JSON.stringify({ items: [] }),
+    JSON.stringify([[]]),
+    JSON.stringify([[{ id: ITEM_NUMERIC_IDS.get(ITEM_IDS[0]), node_id: ITEM_IDS[0] }]]),
+  ]) {
+    const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+    const malformedRunner = (args) => {
+      const result = runner(args);
+      const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
+      if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items?")) return { ...result, stdout: replacement };
+      return result;
+    };
+
+    assert.throws(
+      () => writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0]] }), commandRunner: malformedRunner }),
+      /Project item readback|Status field\/value|missing from readback/,
+    );
+    assert.equal(calls.some((args) => args.includes("PATCH")), false);
+  }
 });
 
 test("rejects duplicate or missing Project item identities before any PATCH", () => {
@@ -163,7 +235,7 @@ test("rejects duplicate or missing Project item identities before any PATCH", ()
 });
 
 test("stops when a Project item readback changes the resolved REST item ID", () => {
-  const { calls, runner } = createRunner();
+  const { calls, runner } = createRunner({ statuses: new Map(ITEM_IDS.map((itemId) => [itemId, "Backlog"])) });
   let itemReadCount = 0;
   const staleRunner = (args) => {
     const result = runner(args);
@@ -244,11 +316,18 @@ test("stops after a failed item readback and does not write the next item", () =
     [ITEM_IDS[2], "Done"],
   ]);
   const { calls, runner } = createRunner({ statuses });
+  const failedRunner = (args) => {
+    const result = runner(args);
+    if (args.includes("PATCH") && args.some((value) => String(value).endsWith(String(ITEM_NUMERIC_IDS.get(ITEM_IDS[1]))))) {
+      statuses.set(ITEM_IDS[1], "Todo");
+    }
+    return result;
+  };
 
-  assert.throws(() => writeProjectStatuses({ ...writeOptions(), commandRunner: runner }), READBACK_ERROR);
+  assert.throws(() => writeProjectStatuses({ ...writeOptions(), commandRunner: failedRunner }), READBACK_ERROR);
   assert.deepEqual(
     calls.filter((args) => args.includes("PATCH")).map((args) => args[3].split("/").at(-1)),
-    ITEM_IDS.slice(0, 2).map((itemId) => String(ITEM_NUMERIC_IDS.get(itemId))),
+    [String(ITEM_NUMERIC_IDS.get(ITEM_IDS[1]))],
   );
-  assert.equal(calls.filter((args) => args.some((value) => String(value).includes("/items?"))).length, 3);
+  assert.equal(calls.filter((args) => args.some((value) => String(value).includes("/items?"))).length, 2);
 });
