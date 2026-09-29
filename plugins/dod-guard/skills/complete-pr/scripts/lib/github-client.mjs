@@ -6,6 +6,13 @@ import { CompletionError } from "./completion-error.mjs";
 const GH_CHECKS_PENDING_EXIT = 8;
 const HTTP_NOT_FOUND = /HTTP 404/;
 const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
+const READY_MUTATION = [
+  "mutation($pullRequestId: ID!) {",
+  "markPullRequestReadyForReview(input: { pullRequestId: $pullRequestId }) {",
+  "pullRequest { isDraft }",
+  "}",
+  "}",
+].join(" ");
 
 function githubResponseError(endpoint, field) {
   return new CompletionError(
@@ -339,14 +346,26 @@ export class GitHubClient {
   }
 
   markReady(pullNumber) {
-    this.#commandRunner([
+    const pullEndpoint = `repos/${this.repository}/pulls/${pullNumber}`;
+    const { data: pullRequest } = ghJson(["api", pullEndpoint], [0], this.#commandRunner);
+    if (typeof pullRequest?.node_id !== "string" || pullRequest.node_id.trim().length === 0) {
+      throw githubResponseContractError(pullEndpoint, "a pull request node ID");
+    }
+
+    const { data } = ghJson([
       "api",
-      "--method",
-      "PATCH",
-      `repos/${this.repository}/pulls/${pullNumber}`,
+      "graphql",
+      "-f",
+      `query=${READY_MUTATION}`,
       "-F",
-      "draft=false",
-    ]);
+      `pullRequestId=${pullRequest.node_id}`,
+    ], [0], this.#commandRunner);
+    if (data?.data?.markPullRequestReadyForReview?.pullRequest?.isDraft !== false) {
+      throw new CompletionError(
+        "ready_transition_failed",
+        `Pull request #${pullNumber} remained a draft after the ready transition.`,
+      );
+    }
   }
 
   enableRepositoryAutoMerge() {

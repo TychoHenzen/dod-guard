@@ -52,7 +52,7 @@ function emitResult(scanned) {
   return 1;
 }
 
-function main() {
+async function main() {
   const packages = discoverPluginWorkspaces(PACKAGES_DIR);
   const standalone = loadStandalonePlugins(ROOT);
   if (packages.length === 0) {
@@ -61,11 +61,12 @@ function main() {
   }
 
   const isTracked = createTrackedPredicate(ROOT, report);
-  const { checkPackage, checkMarketplace } = createPluginChecks(report, isTracked);
+  const { checkPackage, checkMarketplace, checkOpenCodeAdapter } = createPluginChecks(report, isTracked);
   for (const pkg of packages) checkPackage(pkg, packages);
   checkMarketplace(join(ROOT, ".claude-plugin", "marketplace.json"), packages, true);
 
   const standaloneCounts = checkStandalonePlugins(standalone, report);
+  for (const plugin of standalone) await checkOpenCodeAdapter(plugin);
   const jsonCount = checkJsonSyntax(ROOT, report);
   checkOrphanPluginContent(ROOT, report);
   const contentCount = checkShippedContent(ROOT, report);
@@ -82,4 +83,4 @@ function main() {
   );
 }
 
-process.exitCode = main();
+process.exitCode = await main();

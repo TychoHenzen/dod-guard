@@ -1044,27 +1044,50 @@ test("stops before REST merge when marking a draft ready fails", async () => {
   assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
 });
 
-test("marks a draft pull request ready through REST", () => {
+test("marks a draft pull request ready through GraphQL and verifies draft state", () => {
   const calls = [];
-  const client = new GitHubClient("owner/repo", 24, (args) => calls.push(args));
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    calls.push(args);
+    if (args.includes("graphql")) {
+      return {
+        status: 0,
+        stderr: "",
+        stdout: JSON.stringify({
+          data: { markPullRequestReadyForReview: { pullRequest: { isDraft: false } } },
+        }),
+      };
+    }
+    return { status: 0, stderr: "", stdout: JSON.stringify({ node_id: "PR_kw123" }) };
+  });
 
   client.markReady(24);
 
-  assert.deepEqual(calls, [[
-    "api",
-    "--method",
-    "PATCH",
-    "repos/owner/repo/pulls/24",
-    "-F",
-    "draft=false",
-  ]]);
-  assert.equal(calls.some((args) => args.includes("graphql") || args.includes("pr")), false);
+  assert.deepEqual(calls[0], ["api", "repos/owner/repo/pulls/24"]);
+  assert.equal(calls[1][0], "api");
+  assert.equal(calls[1][1], "graphql");
+  assert.match(calls[1][3], /markPullRequestReadyForReview/);
+  assert.match(calls[1][3], /isDraft/);
+  assert.deepEqual(calls[1].slice(-2), ["-F", "pullRequestId=PR_kw123"]);
+
+  const draftClient = new GitHubClient("owner/repo", 24, (args) => ({
+    status: 0,
+    stderr: "",
+    stdout: args.includes("graphql")
+      ? JSON.stringify({
+        data: { markPullRequestReadyForReview: { pullRequest: { isDraft: true } } },
+      })
+      : JSON.stringify({ node_id: "PR_kw123" }),
+  }));
+  assert.throws(() => draftClient.markReady(24), { code: "ready_transition_failed" });
 });
 
-test("surfaces failures from the REST ready request", () => {
-  const failure = new Error("REST draft update failed");
-  const client = new GitHubClient("owner/repo", 24, () => {
-    throw failure;
+test("surfaces failures from the GraphQL ready request", () => {
+  const failure = new Error("GraphQL ready mutation failed");
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    if (args.includes("graphql")) {
+      throw failure;
+    }
+    return { status: 0, stderr: "", stdout: JSON.stringify({ node_id: "PR_kw123" }) };
   });
 
   assert.throws(() => client.markReady(24), failure);
