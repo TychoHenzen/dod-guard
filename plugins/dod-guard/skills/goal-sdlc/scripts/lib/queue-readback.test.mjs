@@ -10,6 +10,7 @@ import {
 function projectItem({ id, repository, number, status, parentIssue, linkedPullRequests = [], state }) {
   return {
     id,
+    node_id: `PVTI_${id}`,
     content: { number, repository, ...(state ? { state } : {}) },
     fields: [
       { name: "Status", value: { name: status } },
@@ -105,16 +106,26 @@ test("reads every Project page, filters the repository, and preserves PR head ev
 
   const snapshot = await readQueueSnapshot({
     provider,
-    project: { owner: "TychoHenzen", number: 2 },
+    project: { owner: "TychoHenzen", number: 2, id: "PVT_live-project" },
     repository: "TychoHenzen/dod-guard",
   });
 
   assert.deepEqual(calls.map(({ after }) => after), [undefined, "page-2"]);
+  assert.deepEqual(calls.map(({ project }) => project), [
+    { owner: "TychoHenzen", number: 2, id: "PVT_live-project" },
+    { owner: "TychoHenzen", number: 2, id: "PVT_live-project" },
+  ]);
   assert.deepEqual(calls.map(({ fields, query, perPage }) => ({ fields, query, perPage })), [
     { fields: PROJECT_FIELDS, query: "is:issue", perPage: 100 },
     { fields: PROJECT_FIELDS, query: "is:issue", perPage: 100 },
   ]);
   assert.deepEqual(snapshot.items.map(({ content }) => content.number), [444, 536, 517, 31]);
+  assert.deepEqual(snapshot.items.map(({ id, node_id }) => ({ id, node_id })), [
+    { id: "444", node_id: "PVTI_444" },
+    { id: "536", node_id: "PVTI_536" },
+    { id: "517", node_id: "PVTI_517" },
+    { id: "31", node_id: "PVTI_31" },
+  ]);
   assert.equal(snapshot.records.find(({ issueNumber }) => issueNumber === 536).parentIssueNumber, 444);
   assert.deepEqual(snapshot.records.find(({ issueNumber }) => issueNumber === 444).childIssues, [
     { number: 536, state: "closed" },

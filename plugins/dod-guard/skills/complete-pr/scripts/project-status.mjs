@@ -61,13 +61,13 @@ function buildProjectFieldsCommand(owner, projectNumber) {
   ];
 }
 
-function buildProjectItemListCommand(owner, projectNumber, statusFieldId, page = 1) {
+function buildProjectItemListCommand(owner, projectNumber, statusFieldId) {
   const fields = statusFieldId === undefined ? "" : `&fields=${statusFieldId}`;
   return [
     "api",
-    "--jq",
-    "[.[] | {id, node_id, fields}]",
-    `users/${owner}/projectsV2/${projectNumber}/items?per_page=${PROJECT_PAGE_SIZE}&page=${page}${fields}`,
+    "--paginate",
+    "--slurp",
+    `users/${owner}/projectsV2/${projectNumber}/items?per_page=${PROJECT_PAGE_SIZE}${fields}`,
   ];
 }
 
@@ -112,8 +112,16 @@ function resolveStatusField(fields, statusFieldId) {
 
 function resolveStatusOption(statusField, statusOptionId, expectedStatus) {
   const option = statusField.options.find((candidate) => String(candidate?.id ?? "") === statusOptionId);
-  const optionName = option?.name?.raw ?? option?.name?.html ?? option?.name;
-  if (!option || optionName !== expectedStatus) {
+  const names = [];
+  if (typeof option?.name === "string") {
+    names.push(option.name);
+  } else if (option?.name && typeof option.name === "object") {
+    for (const key of ["raw", "html"]) {
+      if (key in option.name) names.push(option.name[key]);
+    }
+  }
+  if (!option || names.length === 0 || names.some((name) => typeof name !== "string" || name.trim().length === 0) ||
+      new Set(names).size !== 1 || names[0] !== expectedStatus) {
     throw new Error(`Status option ${statusOptionId} must map to ${expectedStatus}.`);
   }
   return option;
@@ -129,32 +137,71 @@ function findProjectItem(items, itemId) {
   return matches[0];
 }
 
+function projectItemIdentity(item) {
+  const id = item?.id;
+  const nodeId = item?.node_id ?? item?.nodeId;
+  if (id === undefined || id === null || String(id).trim().length === 0 ||
+      nodeId === undefined || nodeId === null || String(nodeId).trim().length === 0) {
+    throw new Error("Project item readback must include stable numeric and global IDs.");
+  }
+  return { id: String(id), nodeId: String(nodeId) };
+}
+
+function validateProjectItems(items) {
+  const seenIds = new Set();
+  const seenNodeIds = new Set();
+  const seenMembership = new Set();
+  for (const item of items) {
+    const { id, nodeId } = projectItemIdentity(item);
+    if (seenIds.has(id) || seenNodeIds.has(nodeId)) {
+      throw new Error(`Project item ${nodeId} appeared more than once in readback.`);
+    }
+    seenIds.add(id);
+    seenNodeIds.add(nodeId);
+    const repository = item?.content?.repository?.full_name ?? item?.content?.repository?.fullName;
+    const number = item?.content?.number;
+    if (repository && number !== undefined && number !== null) {
+      const membership = `${repository.toLowerCase()}#${number}`;
+      if (seenMembership.has(membership)) {
+        throw new Error(`Project membership ${membership} appeared more than once in readback.`);
+      }
+      seenMembership.add(membership);
+    }
+  }
+  return items;
+}
+
 function readProjectItemStatus(item, itemId, statusFieldId) {
-  const statusField = item?.fields?.find((field) =>
+  const statusFields = (Array.isArray(item?.fields) ? item.fields : []).filter((field) =>
     String(field?.id ?? "") === String(statusFieldId) || field?.name === "Status",
   );
-  const value = statusField?.value;
-  const status = value?.name?.raw ?? value?.name?.html ?? value?.name ?? value;
-  if (typeof status !== "string" || status.length === 0) {
-    throw new Error(`Project item ${itemId} readback did not include a status.`);
+  if (statusFields.length !== 1) {
+    throw new Error(`Project item ${itemId} readback did not include exactly one Status field/value.`);
   }
-  return status;
+  const value = statusFields[0].value;
+  const names = [];
+  if (typeof value === "string") {
+    names.push(value);
+  } else if (value?.name && typeof value.name === "object") {
+    for (const key of ["raw", "html"]) {
+      if (key in value.name) names.push(value.name[key]);
+    }
+  } else if (value && typeof value.name === "string") {
+    names.push(value.name);
+  }
+  if (names.length === 0 || names.some((name) => typeof name !== "string" || name.trim().length === 0) ||
+      new Set(names).size !== 1) {
+    throw new Error(`Project item ${itemId} readback did not include one non-contradictory Status field/value.`);
+  }
+  return names[0];
 }
 
 function readProjectItems({ owner, projectNumber, statusFieldId, targetItemIds, commandRunner }) {
-  const items = [];
-  const targetIds = new Set(targetItemIds);
-  for (let page = 1; ; page += 1) {
-    const pageItems = parseArrayResponse(
-      commandRunner(buildProjectItemListCommand(owner, projectNumber, statusFieldId, page)),
-      "Project item readback",
-    );
-    items.push(...pageItems);
-    const foundTargets = [...targetIds].every((itemId) => findProjectItem(items, itemId));
-    if (foundTargets || pageItems.length < PROJECT_PAGE_SIZE) {
-      return { items };
-    }
-  }
+  const items = parseArrayResponse(
+    commandRunner(buildProjectItemListCommand(owner, projectNumber, statusFieldId)),
+    "Project item readback",
+  );
+  return { items: validateProjectItems(items) };
 }
 
 function writeProjectStatuses({
@@ -207,7 +254,11 @@ function writeProjectStatuses({
     if (!item || item.id === undefined || item.id === null) {
       throw new Error(`Project item ${itemId} was missing from readback.`);
     }
-    restItemIds.set(itemId, String(item.id));
+    const identity = projectItemIdentity(item);
+    if (identity.nodeId !== itemId) {
+      throw new Error(`Project item ${itemId} readback must preserve the same numeric and global IDs.`);
+    }
+    restItemIds.set(itemId, identity.id);
   }
   const mutations = [];
 
@@ -231,6 +282,10 @@ function writeProjectStatuses({
     const item = findProjectItem(items.items, itemId);
     if (!item) {
       throw new Error(`Project item ${itemId} was missing from readback.`);
+    }
+    const identity = projectItemIdentity(item);
+    if (identity.id !== restItemIds.get(itemId) || identity.nodeId !== itemId) {
+      throw new Error(`Project item ${itemId} readback must preserve the same numeric and global IDs.`);
     }
     const status = readProjectItemStatus(item, itemId, restStatusFieldId);
     if (status !== expectedStatus) {

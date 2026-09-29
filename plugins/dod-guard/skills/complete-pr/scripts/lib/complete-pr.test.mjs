@@ -14,15 +14,21 @@ const workflowRunsPattern = /workflow_runs/;
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
 const PROJECT_STATUS_FIELD_ID = 407;
 
-function linkedProjectItem(id) {
+function linkedProjectItem(id, number = 24, repository = "owner/repo") {
   return {
     id,
-    content: { number: 24, repository: { full_name: "owner/repo" } },
+    node_id: `PVTI_item-${id}`,
+    content: {
+      number,
+      repository: { full_name: repository },
+      repository_url: `https://api.github.com/repos/${repository}`,
+    },
   };
 }
 
-function projectStatusResponse(status) {
+function projectStatusResponse(status, id = 1701, number = 24, repository = "owner/repo") {
   return {
+    ...linkedProjectItem(id, number, repository),
     fields: [{
       id: PROJECT_STATUS_FIELD_ID,
       name: "Status",
@@ -36,6 +42,7 @@ function createProjectStatusReader({
   itemsByProject = new Map([["2", [linkedProjectItem(1701)]]]),
   fieldsByProject = new Map([["2", [{ id: PROJECT_STATUS_FIELD_ID, name: "Status" }]]]),
   itemResponses = new Map([["2/1701", projectStatusResponse("Done")]]),
+  itemPagesByProject = new Map(),
   rateLimitedProjects = new Set(),
 } = {}) {
   const calls = [];
@@ -57,10 +64,11 @@ function createProjectStatusReader({
       if (rateLimitedProjects.has(itemListMatch[1])) {
         return { status: 1, stderr: "HTTP 403: API rate limit exceeded", stdout: "" };
       }
+      const pages = itemPagesByProject.get(itemListMatch[1]);
       return {
         status: 0,
         stderr: "",
-        stdout: (itemsByProject.get(itemListMatch[1]) ?? []).map((item) => JSON.stringify(item)).join("\n"),
+        stdout: JSON.stringify(pages ?? [itemsByProject.get(itemListMatch[1]) ?? []]),
       };
     }
 
@@ -279,9 +287,9 @@ test("reads linked Project statuses through REST without GraphQL", () => {
   const calls = [];
   const responses = new Map([
     ["users/owner/projectsV2?per_page=100", "[[{\"number\":2,\"state\":\"open\"}]]"],
-    ["users/owner/projectsV2/2/items?per_page=100", "{\"id\":1701,\"node_id\":\"PVTI_item\",\"content\":{\"number\":24,\"repository\":{\"full_name\":\"owner/repo\"}}}"],
+    ["users/owner/projectsV2/2/items?per_page=100", "[[{\"id\":1701,\"node_id\":\"PVTI_item-1701\",\"content\":{\"number\":24,\"repository\":{\"full_name\":\"owner/repo\"},\"repository_url\":\"https://api.github.com/repos/owner/repo\"}}]]"],
     ["users/owner/projectsV2/2/fields?per_page=100", "[[{\"id\":407,\"name\":\"Status\",\"data_type\":\"single_select\"}]]"],
-    ["users/owner/projectsV2/2/items/1701?fields=407", "{\"fields\":[{\"id\":407,\"name\":\"Status\",\"value\":{\"id\":\"done\",\"name\":{\"raw\":\"Done\"}}}]}"],
+    ["users/owner/projectsV2/2/items/1701?fields=407", "{\"id\":1701,\"node_id\":\"PVTI_item-1701\",\"content\":{\"number\":24,\"repository\":{\"full_name\":\"owner/repo\"},\"repository_url\":\"https://api.github.com/repos/owner/repo\"},\"fields\":[{\"id\":407,\"name\":\"Status\",\"value\":{\"id\":\"done\",\"name\":{\"raw\":\"Done\"}}}]}"],
   ]);
   const client = new GitHubClient("owner/repo", 24, (args) => {
     calls.push(args);
@@ -297,11 +305,40 @@ test("reads linked Project statuses through REST without GraphQL", () => {
   assert.deepEqual(client.getIssueProjectStatuses(24), ["Done"]);
   assert.deepEqual(calls, [
     ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"],
-    ["api", "--paginate", "--jq", ".[] | {id, content: {number: .content.number, repository: {full_name: .content.repository.full_name}, repository_url: .content.repository_url}}", "users/owner/projectsV2/2/items?per_page=100"],
+    ["api", "--paginate", "--slurp", "users/owner/projectsV2/2/items?per_page=100"],
     ["api", "--paginate", "--slurp", "users/owner/projectsV2/2/fields?per_page=100"],
-    ["api", "--jq", "{fields}", "users/owner/projectsV2/2/items/1701?fields=407"],
+    ["api", "users/owner/projectsV2/2/items/1701?fields=407"],
   ]);
   assert.equal(calls.some((args) => args.includes("graphql") || args.includes("issue")), false);
+});
+
+test("follows every Link-paginated Project item page without changing live IDs", () => {
+  const firstPage = [linkedProjectItem(1700, 23)];
+  const secondPage = [linkedProjectItem(1701)];
+  const { reader, calls } = createProjectStatusReader({
+    itemPagesByProject: new Map([["2", [firstPage, secondPage]]]),
+  });
+
+  assert.deepEqual(reader.getIssueProjectStatuses(24), ["Done"]);
+  const itemCall = calls.find((args) => args.some((value) => String(value).includes("/items?")));
+  assert.ok(itemCall.includes("--paginate"));
+  assert.ok(itemCall.includes("--slurp"));
+  assert.equal(itemCall.some((value) => /[?&]page=/.test(String(value))), false);
+  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields=407"))), true);
+});
+
+test("rejects contradictory membership identity and stale item readback", () => {
+  const contradictory = linkedProjectItem(1701);
+  contradictory.content.repository_url = "https://api.github.com/repos/other/repo";
+  const { reader: contradictoryReader } = createProjectStatusReader({
+    itemPagesByProject: new Map([["2", [[contradictory]]]]),
+  });
+  assert.throws(() => contradictoryReader.getIssueProjectStatuses(24), /non-contradictory repository identity/);
+
+  const { reader: staleReader } = createProjectStatusReader({
+    itemResponses: new Map([["2/1701", projectStatusResponse("Done", 1702)]]),
+  });
+  assert.throws(() => staleReader.getIssueProjectStatuses(24), /same Project item IDs/);
 });
 
 test("rejects two open linked Projects even when their statuses disagree", () => {
@@ -349,7 +386,10 @@ test("rejects missing, blank, and contradictory Status values", () => {
   ];
 
   for (const itemResponse of responses) {
-    const { reader } = createProjectStatusReader({ itemResponses: new Map([["2/1701", itemResponse]]) });
+    const { reader } = createProjectStatusReader({ itemResponses: new Map([["2/1701", {
+      ...linkedProjectItem(1701),
+      ...itemResponse,
+    }]]) });
     assert.throws(() => reader.getIssueProjectStatuses(24), /Status field\/value/);
   }
 });

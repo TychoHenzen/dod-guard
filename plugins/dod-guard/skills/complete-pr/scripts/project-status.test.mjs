@@ -103,6 +103,84 @@ test("writes REST single-select updates in child-before-parent order with readba
   assert.equal(calls.filter((args) => args.some((value) => String(value).includes("/items?"))).length, ITEM_IDS.length + 1);
   assert.equal(calls.every((args) => args[0] === "api"), true);
   assert.equal(calls.some((args) => args.some((value) => /graphql|project( |$)|item-edit|item-list|issue view/i.test(String(value)))), false);
+  const itemReads = calls.filter((args) => args.some((value) => String(value).includes("/items?")));
+  assert.equal(itemReads.every((args) => args.includes("--paginate") && args.includes("--slurp")), true);
+  assert.equal(itemReads.every((args) => !args.some((value) => /[?&]page=/.test(String(value)))), true);
+});
+
+test("consumes every Link-paginated item page before resolving target IDs", () => {
+  const calls = [];
+  const firstPage = projectItems(new Map([[ITEM_IDS[0], "Done"]]));
+  const secondPage = projectItems(new Map([[ITEM_IDS[1], "Done"], [ITEM_IDS[2], "Done"]]));
+  const runner = (args) => {
+    calls.push(args);
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
+    if (endpoint === "users/TychoHenzen/projectsV2/2") {
+      return { status: 0, stderr: "", stdout: JSON.stringify({ node_id: PROJECT_ID }) };
+    }
+    if (endpoint === "users/TychoHenzen/projectsV2/2/fields?per_page=100") {
+      return { status: 0, stderr: "", stdout: JSON.stringify([projectFields()]) };
+    }
+    if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items?")) {
+      return { status: 0, stderr: "", stdout: JSON.stringify([firstPage, secondPage]) };
+    }
+    if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items/")) {
+      const itemId = endpoint.includes(String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]))) ? ITEM_IDS[0] : ITEM_IDS[1];
+      return { status: 0, stderr: "", stdout: JSON.stringify(projectItems(new Map([[itemId, "Done"]]))[0]) };
+    }
+    throw new Error(`Unexpected command: ${args.join(" ")}`);
+  };
+
+  writeProjectStatuses({ ...writeOptions({ itemIds: ITEM_IDS.slice(0, 2) }), commandRunner: runner });
+
+  const itemReads = calls.filter((args) => args.some((value) => String(value).includes("/items?")));
+  assert.equal(itemReads.length, 3);
+  assert.equal(itemReads.every((args) => args.includes("--paginate") && args.includes("--slurp")), true);
+  assert.equal(itemReads.every((args) => !args.some((value) => /[?&]page=/.test(String(value)))), true);
+});
+
+test("rejects duplicate or missing Project item identities before any PATCH", () => {
+  for (const items of [
+    [projectItems(new Map([[ITEM_IDS[0], "Done"]]))[0], projectItems(new Map([[ITEM_IDS[0], "Done"]]))[0]],
+    [projectItems(new Map([[ITEM_IDS[0], "Done"]]))[0]],
+  ]) {
+    const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Done"]]), splitItems: false });
+    const originalRunner = runner;
+    const recordingRunner = (args) => {
+      const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
+      if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items?")) {
+        const base = originalRunner(args);
+        return { ...base, stdout: JSON.stringify([items]) };
+      }
+      return originalRunner(args);
+    };
+    assert.throws(
+      () => writeProjectStatuses({ ...writeOptions({ itemIds: [ITEM_IDS[0], ITEM_IDS[1]] }), commandRunner: recordingRunner }),
+      /Project item|missing from readback|appeared more than once/,
+    );
+    assert.equal(calls.some((args) => args.includes("PATCH")), false);
+  }
+});
+
+test("stops when a Project item readback changes the resolved REST item ID", () => {
+  const { calls, runner } = createRunner();
+  let itemReadCount = 0;
+  const staleRunner = (args) => {
+    const result = runner(args);
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
+    if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items?") && itemReadCount++ > 0) {
+      const [page] = JSON.parse(result.stdout);
+      page[0].id += 1_000;
+      return { ...result, stdout: JSON.stringify([page]) };
+    }
+    return result;
+  };
+
+  assert.throws(
+    () => writeProjectStatuses({ ...writeOptions({ itemIds: ITEM_IDS.slice(0, 2) }), commandRunner: staleRunner }),
+    /same numeric and global IDs/,
+  );
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
 });
 
 test("maps REST field and option IDs before issuing a PATCH", () => {

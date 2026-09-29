@@ -207,7 +207,13 @@ export function createRecordingTransport({ missingProjectItem, contradictoryStat
     if (endpoint?.startsWith(`${projectItemsEndpoint}?per_page=100&page=`) === true) {
       return commandResult([visibleProjectItems().map((item) => projectItem(item))]);
     }
+    if (endpoint?.startsWith(`${projectItemsEndpoint}?per_page=100&fields=`) === true) {
+      return commandResult([visibleProjectItems().map((item) => projectItem(item))]);
+    }
     if (endpoint === `${projectItemsEndpoint}?per_page=100`) {
+      if (args.includes("--slurp")) {
+        return commandResult([visibleProjectItems().map((item) => projectItem(item, contradictoryStatus))]);
+      }
       return {
         status: 0,
         stderr: "",
@@ -218,7 +224,7 @@ export function createRecordingTransport({ missingProjectItem, contradictoryStat
       const restItemId = endpoint.slice(`${projectItemsEndpoint}/`.length).split("?", 1)[0];
       const item = [...projectItems.values()].find((candidate) => String(candidate.id) === restItemId);
       if (!item) throw new Error(`Unknown project item readback ${restItemId}.`);
-      return commandResult({ fields: [itemStatus(item, contradictoryStatus)] });
+      return commandResult(projectItem(item, contradictoryStatus));
     }
     if (endpoint?.startsWith(`${projectItemsEndpoint}/`) === true && method === "PATCH") {
       const restItemId = endpoint.slice(`${projectItemsEndpoint}/`.length);
