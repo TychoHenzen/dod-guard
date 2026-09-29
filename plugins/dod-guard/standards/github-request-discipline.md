@@ -13,7 +13,8 @@ Every GitHub operation has one primary connector/MCP attempt. A healthy result
 stays on MCP; do not call REST in parallel or as a speculative duplicate. The
 only alternate-transport decisions are:
 
-- An explicit MCP rate-limit result (`transport: mcp`, `category: rate_limit`)
+- An explicit MCP rate-limit result (`transport: mcp`, `category: mcp_rate_limit`;
+  generic `rate_limit` input is normalized to this transport-specific category)
   or a supported MCP transport-unavailable result selects the same authenticated
   REST operation once. Pass the original repository, Project, issue, pull
   request, field, option, item, branch, and pagination identity unchanged.
@@ -24,8 +25,13 @@ only alternate-transport decisions are:
   failures stop. A REST rate limit also stops; it never selects GraphQL or a
   second REST mutation. A bare 401/403 is not a rate limit.
 - If no equivalent REST operation exists, stop with the redacted primary
-  evidence. The selected review-thread GraphQL exception remains capability-
-  gated by an explicit REST/connector 404/405 and is never a quota fallback.
+  evidence unless the operation is a documented capability-only GraphQL
+  exception: draft-to-ready (`markPullRequestReadyForReview`, because REST has
+  no supported draft field) or a selected review-thread operation. Draft-to-ready
+  must verify `isDraft: false`; selected review-thread operations require an
+  explicit REST/connector 404/405 and selected-thread readback. Both exceptions
+  preserve redacted transport evidence, stop on failure or ambiguity, and never
+  serve as quota fallbacks.
 
 The executable boundary is `<plugin-root>/lib/transport-policy.mjs`: call the
 primary once, provide one named REST handler only for a supported operation, and
@@ -123,8 +129,11 @@ from an earlier run.
 ## CLI fallback
 
 Scripts that cannot call MCP use narrow `gh api` REST endpoints. Keep GraphQL
-only for a capability with no connector or REST equivalent. The remaining
-documented exception is review-thread resolution after connector/REST review
-comment operations have been attempted and the selected thread has been read
-back. Do not use `gh pr view --json` for repeated metadata reads when the REST
-endpoint provides the required fields.
+only for a capability with no connector or REST equivalent, limited to the
+documented exceptions: draft-to-ready via
+`markPullRequestReadyForReview` when REST has no supported draft field, and
+selected review-thread operations after connector/REST review-comment
+operations have been attempted and the selected thread has been read back. Do
+not use either exception for rate limits or other transport stops, and do not
+use `gh pr view --json` for repeated metadata reads when the REST endpoint
+provides the required fields.
