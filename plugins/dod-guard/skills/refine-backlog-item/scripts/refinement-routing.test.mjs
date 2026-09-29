@@ -18,6 +18,9 @@ test("requires explicit Project item types and safe recovery", () => {
     githubDiscipline,
     /If the\s+operation returns `missing required parameter: item_type`, read back\s+the\s+Project before retrying once with the matching type\. Do not retry if the item\s+already exists\./,
   );
+  assert.match(githubDiscipline, /If the desired state is already\s+present, record the no-op and issue no mutation/);
+  assert.match(githubDiscipline, /For create-like writes, read the exact resource or Project membership first/);
+  assert.match(githubDiscipline, /A desired readback confirms success/);
 });
 
 test("routes discovery after repository and issue research", () => {

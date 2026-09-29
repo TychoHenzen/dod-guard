@@ -11,6 +11,7 @@ import { localDate } from "./friction-log.mjs";
 function projectItem({ id, repository, number, status, parentIssue, linkedPullRequests = [], state }) {
   return {
     id,
+    node_id: `PVTI_${id}`,
     content: { number, repository, ...(state ? { state } : {}) },
     fields: [
       { name: "Status", value: { name: status } },
@@ -106,16 +107,26 @@ test("reads every Project page, filters the repository, and preserves PR head ev
 
   const snapshot = await readQueueSnapshot({
     provider,
-    project: { owner: "TychoHenzen", number: 2 },
+    project: { owner: "TychoHenzen", number: 2, id: "PVT_live-project" },
     repository: "TychoHenzen/dod-guard",
   });
 
   assert.deepEqual(calls.map(({ after }) => after), [undefined, "page-2"]);
+  assert.deepEqual(calls.map(({ project }) => project), [
+    { owner: "TychoHenzen", number: 2, id: "PVT_live-project" },
+    { owner: "TychoHenzen", number: 2, id: "PVT_live-project" },
+  ]);
   assert.deepEqual(calls.map(({ fields, query, perPage }) => ({ fields, query, perPage })), [
     { fields: PROJECT_FIELDS, query: "is:issue", perPage: 100 },
     { fields: PROJECT_FIELDS, query: "is:issue", perPage: 100 },
   ]);
   assert.deepEqual(snapshot.items.map(({ content }) => content.number), [444, 536, 517, 31]);
+  assert.deepEqual(snapshot.items.map(({ id, node_id }) => ({ id, node_id })), [
+    { id: "444", node_id: "PVTI_444" },
+    { id: "536", node_id: "PVTI_536" },
+    { id: "517", node_id: "PVTI_517" },
+    { id: "31", node_id: "PVTI_31" },
+  ]);
   assert.equal(snapshot.records.find(({ issueNumber }) => issueNumber === 536).parentIssueNumber, 444);
   assert.deepEqual(snapshot.records.find(({ issueNumber }) => issueNumber === 444).childIssues, [
     { number: 536, state: "closed" },
@@ -465,6 +476,32 @@ test("retries one transient read, never retries rate limits or entitlement failu
   });
   assert.equal(selectQueueItem(rateLimited), null);
 
+  let markedRateLimitReads = 0;
+  const markedRateLimited = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        markedRateLimitReads += 1;
+        throw Object.assign(new Error("forbidden token=secret"), {
+          status: 403,
+          headers: { "X-RateLimit-Reset": "1700000000" },
+        });
+      },
+      async readIssue() {
+        throw new Error("must not read issue after marked rate limit");
+      },
+      async readPullRequest() {
+        throw new Error("must not read PR after marked rate limit");
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+  assert.equal(markedRateLimitReads, 1);
+  assert.equal(markedRateLimited.readFailures[0].category, "rate_limit");
+  assert.equal(markedRateLimited.readFailures[0].rateLimitResetAt, 1_700_000_000);
+  assert.doesNotMatch(markedRateLimited.readFailures[0].message, /secret/);
+  assert.equal(selectQueueItem(markedRateLimited), null);
+
   let entitlementReads = 0;
   const denied = await readQueueSnapshot({
     provider: {
@@ -490,6 +527,87 @@ test("retries one transient read, never retries rate limits or entitlement failu
   assert.equal(denied.readFailures[0].category, "entitlement");
   assert.deepEqual(denied.records[0].missingEvidence, ["issue #401"]);
   assert.equal(selectQueueItem(denied), null);
+});
+
+test("falls back once from explicit MCP 429 and 403 exhaustion without changing the read request", async () => {
+  for (const failure of [
+    Object.assign(new Error("API rate limit exceeded"), { status: 429, retryAfterMs: 60_000 }),
+    Object.assign(new Error("API rate limit exceeded token=secret"), {
+      status: 403,
+      headers: { "X-RateLimit-Reset": "1700000000" },
+    }),
+  ]) {
+    const primaryRequests = [];
+    const restRequests = [];
+    const item = projectItem({ id: "fallback", repository: "TychoHenzen/dod-guard", number: 405, status: "Todo" });
+    const snapshot = await readQueueSnapshot({
+      provider: {
+        async listProjectItems(request) {
+          primaryRequests.push(request);
+          throw failure;
+        },
+        async readIssue() {
+          return { number: 405, state: "open", children: [] };
+        },
+        async readPullRequest() {
+          throw new Error("unexpected PR read");
+        },
+        rest: {
+          async listProjectItems(request) {
+            restRequests.push(request);
+            return { items: [item], pageInfo: { hasNextPage: false } };
+          },
+        },
+      },
+      project: { owner: "TychoHenzen", number: 2, id: "PVT_live" },
+      repository: "TychoHenzen/dod-guard",
+    });
+
+    assert.equal(primaryRequests.length, 1);
+    assert.deepEqual(restRequests, primaryRequests);
+    assert.equal(selectQueueItem(snapshot).rootIssueNumber, 405);
+    assert.equal(snapshot.evidence.transportFailures.length, 1);
+    assert.equal(snapshot.evidence.transportFailures[0].failure.category, "mcp_rate_limit");
+    assert.doesNotMatch(snapshot.evidence.transportFailures[0].failure.message, /secret/);
+  }
+});
+
+test("stops after one REST failure following MCP exhaustion", async () => {
+  let primaryCalls = 0;
+  let restCalls = 0;
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        primaryCalls += 1;
+        throw Object.assign(new Error("API rate limit exceeded"), { status: 429 });
+      },
+      async readIssue() {
+        throw new Error("must not read issue after project failure");
+      },
+      async readPullRequest() {
+        throw new Error("must not read PR after project failure");
+      },
+      rest: {
+        async listProjectItems() {
+          restCalls += 1;
+          throw Object.assign(new Error("REST temporarily unavailable"), { status: 503 });
+        },
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+
+  assert.equal(primaryCalls, 1);
+  assert.equal(restCalls, 1);
+  assert.equal(snapshot.evidence.readAttempts.length, 1);
+  assert.equal(snapshot.evidence.retries.length, 0);
+  assert.equal(snapshot.evidence.readFailures.length, 1);
+  assert.equal(snapshot.evidence.readFailures[0].retryable, false);
+  assert.deepEqual(snapshot.evidence.transportFailures.map(({ failure }) => failure.category), [
+    "mcp_rate_limit",
+    "transient",
+  ]);
 });
 
 test("holds a timed-out pull request after the single bounded retry", async () => {
