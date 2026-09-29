@@ -8,10 +8,11 @@
     "code-explorer": "dist/bundle.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.browser.json",
     "build:test": "node ../../scripts/ci/clean-test-project.mjs && tsc -p tsconfig.test.json",
     "prepare:test": "node scripts/prepare-test-project.mjs",
-    "test": "tsc && npm run build:test && npm run bundle && npm run prepare:test && node --test \"dist-test/tests/**/*.test.js\"",
+    "test": "npm run build && npm run build:test && npm run bundle && npm run prepare:test && node --test \"dist-test/tests/**/*.test.js\" && npm run test:build-order",
+    "test:build-order": "node --test scripts/build-order.test.mjs",
     "bundle": "node scripts/build-browser.mjs && node esbuild.config.mjs",
     "start": "node dist/bundle.js",
     "coverage": "c8 --include=\"dist-test/src/**/*.js\" --exclude=\"dist-test/**/*.test.js\" --reporter=text --reporter=html node --test \"dist-test/tests/**/*.test.js\"",
