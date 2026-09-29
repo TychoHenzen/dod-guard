@@ -23,7 +23,7 @@ function runFixture({ firstFails, secondFails }) {
     delete environment.NODE_TEST_CONTEXT;
     environment.DOD_GUARD_SKILL_FIXTURE_FAILURE = firstFails ? firstName : secondFails ? secondName : "";
     const npmArgs = ["run", "test:dod-guard-skills"];
-    const command = process.platform === "win32" ? process.env.ComSpec ?? "cmd.exe" : "npm";
+    const command = process.platform === "win32" ? (process.env.ComSpec ?? "cmd.exe") : "npm";
     const args = process.platform === "win32" ? ["/d", "/s", "/c", "npm.cmd", ...npmArgs] : npmArgs;
     const result = spawnSync(command, args, { cwd: repositoryRoot, encoding: "utf8", env: environment, shell: false });
 
