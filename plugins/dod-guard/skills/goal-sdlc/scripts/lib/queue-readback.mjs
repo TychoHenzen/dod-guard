@@ -1,6 +1,8 @@
 import {
   FAILURE_CATEGORIES,
+  TransportStopError,
   classifyTransportFailure,
+  runTransport,
 } from "../../../../lib/transport-policy.mjs";
 
 const PROJECT_FIELDS = Object.freeze([
@@ -166,7 +168,10 @@ function safeRequest(request) {
 }
 
 function failureDetails(operation, request, error, attempt, attempts, missingEvidence) {
-  const classified = classifyTransportFailure(error);
+  const transportFailure = error instanceof TransportStopError
+    ? error.details.restFailure ?? error.details.primaryFailure
+    : error;
+  const classified = classifyTransportFailure(transportFailure);
   return {
     operation,
     request: safeRequest(request),
@@ -196,9 +201,32 @@ async function readProvider(provider, operation, request, evidence, missingEvide
   while (attempt < 2) {
     attempt += 1;
     try {
-      const result = await provider[operation](request);
-      const failure = providerFailure(result);
-      if (failure) throw failure;
+      const rest = provider.rest?.[operation];
+      const endpoint = operation === "listProjectItems"
+        ? `GET /users/${request.project.owner}/projectsV2/${request.project.number}/items`
+        : operation === "readIssue"
+          ? `GET /repos/${request.repository}/issues/${request.issueNumber}`
+          : `GET /repos/${request.repository}/pulls/${request.pullNumber}`;
+      const { value: result } = await runTransport({
+        operation,
+        request,
+        primary: async () => {
+          const value = await provider[operation](request);
+          const failure = providerFailure(value);
+          if (failure) throw failure;
+          return value;
+        },
+        rest: typeof rest === "function"
+          ? async () => {
+              const value = await provider.rest[operation](request);
+              const failure = providerFailure(value);
+              if (failure) throw failure;
+              return value;
+            }
+          : undefined,
+        restEndpoint: endpoint,
+        evidence: evidence.transportFailures,
+      });
       return result;
     } catch (error) {
       const details = failureDetails(operation, request, error, attempt, attempt, missingEvidence);
@@ -412,6 +440,7 @@ function createEvidence() {
     providerAvailable: true,
     readAttempts: [],
     readFailures: [],
+    transportFailures: [],
     retries: [],
     duplicates: [],
     duplicateConflicts: [],

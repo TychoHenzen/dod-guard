@@ -528,6 +528,49 @@ test("retries one transient read, never retries rate limits or entitlement failu
   assert.equal(selectQueueItem(denied), null);
 });
 
+test("falls back once from explicit MCP 429 and 403 exhaustion without changing the read request", async () => {
+  for (const failure of [
+    Object.assign(new Error("API rate limit exceeded"), { status: 429, retryAfterMs: 60_000 }),
+    Object.assign(new Error("API rate limit exceeded token=secret"), {
+      status: 403,
+      headers: { "X-RateLimit-Reset": "1700000000" },
+    }),
+  ]) {
+    const primaryRequests = [];
+    const restRequests = [];
+    const item = projectItem({ id: "fallback", repository: "TychoHenzen/dod-guard", number: 405, status: "Todo" });
+    const snapshot = await readQueueSnapshot({
+      provider: {
+        async listProjectItems(request) {
+          primaryRequests.push(request);
+          throw failure;
+        },
+        async readIssue() {
+          return { number: 405, state: "open", children: [] };
+        },
+        async readPullRequest() {
+          throw new Error("unexpected PR read");
+        },
+        rest: {
+          async listProjectItems(request) {
+            restRequests.push(request);
+            return { items: [item], pageInfo: { hasNextPage: false } };
+          },
+        },
+      },
+      project: { owner: "TychoHenzen", number: 2, id: "PVT_live" },
+      repository: "TychoHenzen/dod-guard",
+    });
+
+    assert.equal(primaryRequests.length, 1);
+    assert.deepEqual(restRequests, primaryRequests);
+    assert.equal(selectQueueItem(snapshot).rootIssueNumber, 405);
+    assert.equal(snapshot.evidence.transportFailures.length, 1);
+    assert.equal(snapshot.evidence.transportFailures[0].failure.category, "mcp_rate_limit");
+    assert.doesNotMatch(snapshot.evidence.transportFailures[0].failure.message, /secret/);
+  }
+});
+
 test("holds a timed-out pull request after the single bounded retry", async () => {
   let pullReads = 0;
   const snapshot = await readQueueSnapshot({

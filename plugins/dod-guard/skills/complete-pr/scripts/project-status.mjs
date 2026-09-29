@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command invokes the local GitHub CLI.
 import process from "node:process";
+import { runTransport } from "../../../lib/transport-policy.mjs";
 
 const PROJECT_NODE_ID = /^PVT_[A-Za-z0-9]+$/;
 const PROJECT_PAGE_SIZE = 100;
@@ -324,6 +325,25 @@ function writeProjectStatuses({
   return { projectId, mutations };
 }
 
+async function writeProjectStatusesWithFallback({ primaryMutation, evidence = [], ...options }) {
+  const request = {
+    owner: options.owner,
+    projectNumber: options.projectNumber,
+    statusFieldId: options.statusFieldId,
+    statusOptionId: options.statusOptionId,
+    expectedStatus: options.expectedStatus,
+    itemIds: options.itemIds,
+  };
+  return runTransport({
+    operation: "projectStatusWrite",
+    request,
+    primary: primaryMutation,
+    rest: () => writeProjectStatuses(options),
+    restEndpoint: `PATCH /users/${options.owner}/projectsV2/${options.projectNumber}/items/{itemId}`,
+    evidence,
+  });
+}
+
 function usage() {
   return "Usage: node project-status.mjs <owner> <project-number> <status-field-node-id> <status-option-id> <expected-status> <item-id>...";
 }
@@ -363,4 +383,5 @@ export {
   buildProjectViewCommand,
   resolveProjectNodeId,
   writeProjectStatuses,
+  writeProjectStatusesWithFallback,
 };

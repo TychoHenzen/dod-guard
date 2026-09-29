@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { GitHubClient } from "./lib/github-client.mjs";
-import { writeProjectStatuses } from "./project-status.mjs";
+import { writeProjectStatuses, writeProjectStatusesWithFallback } from "./project-status.mjs";
 import {
   CHILD_NUMBERS,
   HEAD_SHA,
@@ -60,9 +60,9 @@ function assertStatuses(client, expectedStatus) {
   }
 }
 
-function writeStatus(transport, client, expectedStatus) {
+async function writeStatus(transport, client, expectedStatus, options) {
   const option = STATUS_OPTIONS.find((candidate) => candidate.name === expectedStatus);
-  const result = writeProjectStatuses({
+  const writeOptions = {
     owner: OWNER,
     projectNumber: PROJECT_NUMBER,
     statusFieldId: STATUS_FIELD_NODE_ID,
@@ -70,7 +70,17 @@ function writeStatus(transport, client, expectedStatus) {
     expectedStatus,
     itemIds: ITEM_NODE_IDS,
     commandRunner: transport.commandRunner,
-  });
+  };
+  const result = options.mcpRateLimited
+    ? (await writeProjectStatusesWithFallback({
+        ...writeOptions,
+        evidence: options.transportFailures,
+        primaryMutation: async () => {
+          options.mcpCalls.push(expectedStatus);
+          throw Object.assign(new Error("API rate limit exceeded"), { status: 429 });
+        },
+      })).value
+    : writeProjectStatuses(writeOptions);
   assert.deepEqual(result, {
     projectId: PROJECT_NODE_ID,
     mutations: ITEM_NODE_IDS.map((itemId) => ({ itemId, status: expectedStatus })),
@@ -78,9 +88,10 @@ function writeStatus(transport, client, expectedStatus) {
   assertStatuses(client, expectedStatus);
 }
 
-function runDisposableLifecycle(options = {}) {
+async function runDisposableLifecycle(options = {}) {
   const transport = createRecordingTransport(options);
   const client = new GitHubClient(REPOSITORY, PULL_NUMBER, transport.commandRunner);
+  const transportOptions = { ...options, mcpCalls: [], transportFailures: [] };
 
   assert.deepEqual(client.getRepository(), {
     autoMergeAllowed: true,
@@ -113,7 +124,7 @@ function runDisposableLifecycle(options = {}) {
   assert.deepEqual(projectMembership, ISSUE_NUMBERS.slice().sort((a, b) => a - b));
   assertIssueReadbacks(transport, new Map(ISSUE_NUMBERS.map((number) => [number, []])));
   assertStatuses(client, "Backlog");
-  if (options.alreadyAppliedStatus) writeStatus(transport, client, options.alreadyAppliedStatus);
+  if (options.alreadyAppliedStatus) await writeStatus(transport, client, options.alreadyAppliedStatus, transportOptions);
 
   for (const number of ISSUE_NUMBERS) {
     runRest(transport, [
@@ -125,8 +136,8 @@ function runDisposableLifecycle(options = {}) {
     ]);
   }
   assertIssueReadbacks(transport, ISSUE_LABELS);
-  writeStatus(transport, client, "Todo");
-  writeStatus(transport, client, "In Progress");
+  await writeStatus(transport, client, "Todo", transportOptions);
+  await writeStatus(transport, client, "In Progress", transportOptions);
 
   const pullRequest = client.getPullRequest();
   assert.equal(pullRequest.state, "OPEN");
@@ -147,7 +158,7 @@ function runDisposableLifecycle(options = {}) {
   for (const number of ISSUE_NUMBERS) {
     runRest(transport, ["api", "--method", "PATCH", `repos/${REPOSITORY}/issues/${number}`, "-f", "state=closed"]);
   }
-  writeStatus(transport, client, "Done");
+  await writeStatus(transport, client, "Done", transportOptions);
   assert.deepEqual(client.getPullRequest().state, "MERGED");
   assert.deepEqual(
     client.getLinkedIssues(PULL_NUMBER).map(({ number, state }) => ({ number, state })),
@@ -155,11 +166,11 @@ function runDisposableLifecycle(options = {}) {
   );
   assertIssueReadbacks(transport, ISSUE_LABELS, "closed");
   assert.equal(transport.calls.some((args) => args.some((value) => /graphql/i.test(String(value)))), false);
-  return transport;
+  return { ...transport, ...transportOptions };
 }
 
-test("proves the disposable PBI lifecycle with recording REST readbacks", () => {
-  const transport = runDisposableLifecycle();
+test("proves the disposable PBI lifecycle with recording REST readbacks", async () => {
+  const transport = await runDisposableLifecycle();
   assert.deepEqual(transport.transitions.map(({ status }) => status), [
     ...Array(ITEM_NODE_IDS.length).fill("Todo"),
     ...Array(ITEM_NODE_IDS.length).fill("In Progress"),
@@ -168,8 +179,8 @@ test("proves the disposable PBI lifecycle with recording REST readbacks", () => 
   assert.deepEqual(transport.transitions.slice(0, ITEM_NODE_IDS.length).map(({ itemId }) => itemId), ITEM_NODE_IDS);
 });
 
-test("reuses automatically-created Project items and skips an already-applied status", () => {
-  const transport = runDisposableLifecycle({ autoAddProjectItems: true, alreadyAppliedStatus: "Backlog" });
+test("reuses automatically-created Project items and skips an already-applied status", async () => {
+  const transport = await runDisposableLifecycle({ autoAddProjectItems: true, alreadyAppliedStatus: "Backlog" });
   const projectItemCreates = transport.calls.filter((args) =>
     args.includes("--method") && args.includes("POST") && args.some((value) => String(value).includes("/projectsV2/2/items")),
   );
@@ -178,8 +189,8 @@ test("reuses automatically-created Project items and skips an already-applied st
   assert.equal(transport.transitions.some(({ status }) => status === "Backlog"), false);
 });
 
-test("recovers an ambiguous status write from the authoritative readback once", () => {
-  const transport = runDisposableLifecycle({ ambiguousStatusWrite: "Todo" });
+test("recovers an ambiguous status write from the authoritative readback once", async () => {
+  const transport = await runDisposableLifecycle({ ambiguousStatusWrite: "Todo" });
   assert.deepEqual(transport.transitions.filter(({ status }) => status === "Todo"), ITEM_NODE_IDS.map((itemId) => ({
     itemId,
     status: "Todo",
@@ -187,13 +198,21 @@ test("recovers an ambiguous status write from the authoritative readback once", 
   assert.equal(transport.calls.filter((args) => args.includes("PATCH") && args.some((value) => String(value).includes("/items/"))).length, ITEM_NODE_IDS.length * 3);
 });
 
-test("fails closed on missing, contradictory, and forbidden lifecycle evidence", () => {
-  assert.throws(
-    () => runDisposableLifecycle({ missingProjectItem: CHILD_NUMBERS[0] }),
+test("runs capture through completion when MCP Project writes are rate limited", async () => {
+  const transport = await runDisposableLifecycle({ mcpRateLimited: true });
+  assert.deepEqual(transport.mcpCalls, ["Todo", "In Progress", "Done"]);
+  assert.equal(transport.transportFailures.length, 3);
+  assert.equal(transport.transportFailures.every(({ failure }) => failure.category === "mcp_rate_limit"), true);
+  assert.equal(transport.calls.some((args) => args.some((value) => /graphql/i.test(String(value)))), false);
+});
+
+test("fails closed on missing, contradictory, and forbidden lifecycle evidence", async () => {
+  await assert.rejects(
+    runDisposableLifecycle({ missingProjectItem: CHILD_NUMBERS[0] }),
     /Project membership readback/,
   );
-  assert.throws(
-    () => runDisposableLifecycle({ contradictoryStatus: true }),
+  await assert.rejects(
+    runDisposableLifecycle({ contradictoryStatus: true }),
     /non-contradictory Status field\/value/,
   );
   const transport = createRecordingTransport();
