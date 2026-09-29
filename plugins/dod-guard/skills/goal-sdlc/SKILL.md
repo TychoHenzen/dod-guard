@@ -352,6 +352,22 @@ For an already-started parent, resume its existing checkpoint and skip completed
 
 Do not spam the full linter, full test suite, or every gate after every edit, not every subtask needs to 100% pass.
 
+Before broad validation gates, run the cheap workspace-loader preflight. It
+must check that the workspace requirements can load without discovering the
+whole tree. If the loader fails, assign one recovery owner and record the
+current head SHA, loader path, exact error, and validation stage before giving
+that owner at most one fresh bounded validator retry. Do not fan out duplicate
+retries or hide a loader failure inside an application-test result.
+
+If a protected user-owned path prevents broad discovery, record that
+environment limitation separately from touched-path acceptance evidence. Keep
+the protected path untouched, and list the changed paths, targeted checks, and
+their results as the acceptance record; do not claim whole-tree validation
+from those focused checks. The limitation does not trigger fan-out, a second
+retry, or edits to the protected path. A failed touched-path check remains an
+application failure; an unreadable protected path remains an environment
+limitation.
+
 During basic implementation:
 
 - Use only small targeted checks needed to prevent obvious dead ends.

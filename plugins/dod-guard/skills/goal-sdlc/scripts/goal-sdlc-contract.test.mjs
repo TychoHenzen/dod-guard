@@ -744,6 +744,31 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   );
 });
 
+test("goal-sdlc bounds workspace-loader recovery and separates acceptance evidence", async () => {
+  const skill = await readSkill();
+  for (const marker of [
+    "Before broad validation gates, run the cheap workspace-loader preflight",
+    "assign one recovery owner and record the",
+    "at most one fresh bounded validator retry",
+    "current head SHA, loader path, exact error, and validation stage",
+    "If a protected user-owned path prevents broad discovery",
+    "environment limitation separately from touched-path acceptance evidence",
+    "changed paths, targeted checks",
+    "The limitation does not trigger fan-out, a second",
+    "A failed touched-path check remains an",
+  ]) {
+    assert.ok(skill.includes(marker), `missing workspace recovery marker: ${marker}`);
+  }
+  assert.match(
+    skill,
+    /Before broad validation gates[\s\S]*cheap workspace-loader preflight[\s\S]*at most one fresh bounded validator retry/,
+  );
+  assert.match(
+    skill,
+    /protected user-owned path[\s\S]*separately from touched-path acceptance evidence[\s\S]*protected path untouched/,
+  );
+});
+
 test("goal-sdlc publishes one completed review and reconciles moving refs", async () => {
   const skill = await readSkill();
   for (const marker of [
