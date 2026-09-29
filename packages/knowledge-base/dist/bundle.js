@@ -14534,7 +14534,6 @@ var require_dist2 = __commonJS({
 
 // src/index.ts
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, join as join2 } from "node:path";
 import process2 from "node:process";
 import { fileURLToPath } from "node:url";
@@ -29332,7 +29331,7 @@ function packageInfo() {
   return JSON.parse(readFileSync(packagePath, "utf8"));
 }
 function defaultKnowledgeBaseDir() {
-  return process2.env.DOD_GUARD_KNOWLEDGE_BASE_DIR ?? join2(homedir(), ".codex", "knowledge-base");
+  return process2.env.DOD_GUARD_KNOWLEDGE_BASE_DIR ?? "C:\\Obsidian\\Knowledgebase";
 }
 function createKnowledgeBaseServer(rootDir = defaultKnowledgeBaseDir()) {
   const pkg = packageInfo();

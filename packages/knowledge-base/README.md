@@ -1,7 +1,7 @@
 # knowledge-base
 
 `knowledge-base` is a local MCP server for reusable reference knowledge. It
-stores Markdown documents under `~/.codex/knowledge-base` by default. Set
+stores Markdown documents under `C:\Obsidian\Knowledgebase` by default. Set
 `DOD_GUARD_KNOWLEDGE_BASE_DIR` to choose another root.
 
 ## Progressive retrieval
