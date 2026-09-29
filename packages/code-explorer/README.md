@@ -36,4 +36,6 @@ root is a stop condition for semantic claims, not permission to guess. Keep
 the package read-only; writes and alternate project roots are unsupported.
 
 For local package checks, run `npm run build`, `npm test`, and `npm run bundle`
-from `packages/code-explorer`.
+from `packages/code-explorer`. `npm run build` type-checks browser sources
+without emitting them; `npm run bundle` is the only command that writes
+`dist/browser/client.js`.

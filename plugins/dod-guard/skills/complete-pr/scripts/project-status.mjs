@@ -10,9 +10,14 @@ import { runTransport } from "../../../lib/transport-policy.mjs";
 
 const PROJECT_NODE_ID = /^PVT_[A-Za-z0-9]+$/;
 const PROJECT_PAGE_SIZE = 100;
+const PROJECT_OUTPUT_MAX_BUFFER = 32 * 1024 * 1024;
 
-function runGh(args) {
-  const result = spawnSync("gh", args, { encoding: "utf8", windowsHide: true });
+function runGh(args, spawn = spawnSync) {
+  const result = spawn("gh", args, {
+    encoding: "utf8",
+    windowsHide: true,
+    maxBuffer: PROJECT_OUTPUT_MAX_BUFFER,
+  });
   if (result.error) {
     throw result.error;
   }
@@ -382,6 +387,7 @@ export {
   buildProjectItemListCommand,
   buildProjectViewCommand,
   resolveProjectNodeId,
+  runGh,
   writeProjectStatuses,
   writeProjectStatusesWithFallback,
 };

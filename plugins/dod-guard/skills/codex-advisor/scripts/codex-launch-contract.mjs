@@ -1,4 +1,7 @@
+import { createRequire } from "node:module";
+import { existsSync, readFileSync } from "node:fs";
 import process from "node:process";
+import { dirname, join, resolve, sep } from "node:path";
 
 const CODEX_WRITE_APPROVAL_FLAG = "--approve-for-me";
 const CODEX_OBSOLETE_APPROVAL_FLAG = "--ask-for-approval";
@@ -21,11 +24,77 @@ function validateMode(mode) {
   }
 }
 
-export function resolveCodexExecutable(platform = process.platform) {
-  if (platform === "win32") {
-    return "codex.exe";
+function pathValue(environment) {
+  if (typeof environment?.PATH === "string") return environment.PATH;
+  if (typeof environment?.Path === "string") return environment.Path;
+  const key = Object.keys(environment ?? {}).find((name) => name.toLowerCase() === "path");
+  return typeof key === "string" ? environment[key] : "";
+}
+
+function windowsPathEntries(environment) {
+  return pathValue(environment)
+    .split(";")
+    .filter((entry) => entry.length > 0)
+    .map((entry) => resolve(entry));
+}
+
+function shimPackageRoot(shimPath) {
+  let contents;
+  try {
+    contents = readFileSync(shimPath, "utf8");
+  } catch {
+    return undefined;
   }
-  return "codex";
+  const target = contents.match(/%dp0%[\\/]+([^"\r\n]*?codex\.js)/iu)?.[1];
+  if (target) {
+    const targetPath = resolve(dirname(shimPath), target.split(/[\\/]/u).join(sep));
+    const packageRoot = resolve(dirname(targetPath), "..");
+    if (existsSync(join(packageRoot, "package.json"))) return packageRoot;
+  }
+  const packageRoot = resolve(dirname(shimPath), "node_modules", "@openai", "codex");
+  return existsSync(join(packageRoot, "bin", "codex.js")) ? packageRoot : undefined;
+}
+
+function nativePackagePath(packageRoot, packageName) {
+  try {
+    const packageJson = createRequire(join(packageRoot, "package.json")).resolve(`${packageName}/package.json`);
+    return dirname(packageJson);
+  } catch {
+    return undefined;
+  }
+}
+
+function resolveWindowsNativeExecutable(shimPath, architecture) {
+  const packageRoot = shimPackageRoot(shimPath);
+  if (!packageRoot) return undefined;
+  const target = architecture === "arm64"
+    ? { packageName: "@openai/codex-win32-arm64", triple: "aarch64-pc-windows-msvc" }
+    : { packageName: "@openai/codex-win32-x64", triple: "x86_64-pc-windows-msvc" };
+  const packagePath = nativePackagePath(packageRoot, target.packageName);
+  const candidate = packagePath
+    ? join(packagePath, "vendor", target.triple, "bin", "codex.exe")
+    : join(packageRoot, "node_modules", target.packageName, "vendor", target.triple, "bin", "codex.exe");
+  if (existsSync(candidate)) return candidate;
+  const bundledCandidate = join(packageRoot, "vendor", target.triple, "bin", "codex.exe");
+  if (existsSync(bundledCandidate)) return bundledCandidate;
+  return undefined;
+}
+
+export function resolveCodexExecutable(platform = process.platform, environment = process.env, architecture = process.arch) {
+  if (platform !== "win32") return "codex";
+  const entries = windowsPathEntries(environment);
+  for (const entry of entries) {
+    const nativePath = join(entry, "codex.exe");
+    if (existsSync(nativePath)) return nativePath;
+  }
+  for (const entry of entries) {
+    const shimPath = join(entry, "codex.cmd");
+    if (existsSync(shimPath)) {
+      const nativePath = resolveWindowsNativeExecutable(shimPath, architecture);
+      if (nativePath) return nativePath;
+    }
+  }
+  return undefined;
 }
 
 export function buildCodexPreflightArgs({ mode = "read-only", prefixArgs = [] } = {}) {

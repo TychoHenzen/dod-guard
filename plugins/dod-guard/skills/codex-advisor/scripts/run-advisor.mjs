@@ -188,7 +188,7 @@ function parseAdvice(raw) {
 
 export async function runAdvisor({
   prompt,
-  executable = resolveCodexExecutable(),
+  executable,
   prefixArgs = [],
   model = "gpt-5.6-luna",
   reasoningEffort = "max",
@@ -196,10 +196,22 @@ export async function runAdvisor({
   tempRoot = tmpdir(),
   signal,
   env = {},
+  platform = process.platform,
   parseResponse = parseAdvice,
   spawnImpl = spawn,
 }) {
+  executable = executable ?? resolveCodexExecutable(platform, { ...process.env, ...env });
   const attemptedArgs = attemptedExecArgs({ mode: "read-only", prefixArgs, model, reasoningEffort });
+  if (!executable) {
+    return failure(
+      "Codex advisor installation is unavailable: no existing Codex executable was found on the Windows PATH or behind a codex.cmd shim",
+      undefined,
+      executable,
+      attemptedArgs,
+      "launcher-contract",
+      prefixArgs,
+    );
+  }
   const invalidOption = [
     ["model", model],
     ["reasoning effort", reasoningEffort],
