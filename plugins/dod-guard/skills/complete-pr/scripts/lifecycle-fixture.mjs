@@ -3,7 +3,7 @@ export const OWNER = "owner";
 export const PROJECT_NUMBER = 2;
 export const PROJECT_NODE_ID = "PVT_disposable";
 export const STATUS_FIELD_NODE_ID = "PVTSSF_status";
-export const STATUS_FIELD_ID = 407767889;
+export const STATUS_FIELD_ID = 407_767_889;
 export const PULL_NUMBER = 670;
 export const HEAD_SHA = "head-1";
 export const PARENT_NUMBER = 660;
@@ -16,7 +16,7 @@ export const ITEM_NODE_IDS = [
   "PVTI_child-668",
   "PVTI_parent",
 ];
-export const ITEM_NUMERIC_IDS = new Map(ITEM_NODE_IDS.map((itemId, index) => [itemId, 256202820 + index]));
+export const ITEM_NUMERIC_IDS = new Map(ITEM_NODE_IDS.map((itemId, index) => [itemId, 256_202_820 + index]));
 export const ITEM_NODE_BY_ISSUE = new Map([
   [665, ITEM_NODE_IDS[0]],
   [666, ITEM_NODE_IDS[1]],
@@ -38,6 +38,10 @@ export const ISSUE_LABELS = new Map([
   [668, ["bug", "Prio 1 - Emergency", "Effort 3 - Medium"]],
 ]);
 
+export function issueMarker(number) {
+  return `<!-- dod-guard:lifecycle-fixture:${number} -->`;
+}
+
 function commandResult(data, status = 0, stderr = "") {
   return { status, stderr, stdout: data === undefined ? "" : JSON.stringify(data) };
 }
@@ -51,13 +55,32 @@ export function createRecordingTransport({
   contradictoryStatus = false,
   autoAddProjectItems = false,
   ambiguousStatusWrite,
+  existingIssueNumbers = [],
+  ambiguousIssueCreate,
+  unresolvedIssueCreate,
 } = {}) {
   const calls = [];
   const issues = new Map();
   const projectItems = new Map();
   const transitions = [];
   const pull = { merged: false };
-  let captureIndex = 0;
+
+  function createIssue(number, title = `Disposable fixture ${number}`) {
+    return {
+      id: 900_000 + number,
+      number,
+      title,
+      body: `Captured for REST lifecycle proof.\n\n${issueMarker(number)}`,
+      state: "open",
+      labels: [],
+      parent: null,
+      children: [],
+    };
+  }
+
+  for (const number of existingIssueNumbers) {
+    issues.set(number, createIssue(number));
+  }
 
   function issueRecord(number) {
     const issue = issues.get(number);
@@ -128,20 +151,24 @@ export function createRecordingTransport({
     if (endpoint === `repos/${REPOSITORY}`) {
       return commandResult({ full_name: REPOSITORY, default_branch: "master", allow_auto_merge: true, permissions: { push: true } });
     }
+    if (endpoint === `${issuesEndpoint}?state=all&per_page=100` && method === "GET") {
+      const visibleIssues = [...issues.values()].filter((issue) => issue.number !== unresolvedIssueCreate);
+      return commandResult(visibleIssues.map(({ number }) => issueRecord(number)));
+    }
     if (endpoint === issuesEndpoint && method === "POST") {
-      const number = ISSUE_NUMBERS[captureIndex++];
-      const issue = {
-        id: 900000 + number,
-        number,
-        title: `Disposable fixture ${number}`,
-        body: "Captured for REST lifecycle proof.",
-        state: "open",
-        labels: [],
-        parent: null,
-        children: [],
-      };
+      const body = formValues(args, "body=")[0] ?? "";
+      const markerMatch = body.match(/<!-- dod-guard:lifecycle-fixture:(\d+) -->/);
+      if (!markerMatch) throw new Error("Issue create requires the exact lifecycle marker.");
+      const number = Number(markerMatch[1]);
+      if (!ISSUE_NUMBERS.includes(number)) throw new Error(`Unknown lifecycle issue marker ${number}.`);
+      if (issues.has(number)) throw new Error(`Lifecycle issue ${number} already exists.`);
+      const title = formValues(args, "title=")[0] ?? `Disposable fixture ${number}`;
+      const issue = createIssue(number, title);
       issues.set(number, issue);
       if (autoAddProjectItems) projectItems.set(number, createProjectItem(issue));
+      if (ambiguousIssueCreate === number || unresolvedIssueCreate === number) {
+        throw new Error(`Ambiguous issue create for ${number}.`);
+      }
       return commandResult(issueRecord(number));
     }
     if (endpoint?.startsWith(`${issuesEndpoint}/`) === true) {
@@ -241,7 +268,7 @@ export function createRecordingTransport({
       const restItemId = endpoint.slice(`${projectItemsEndpoint}/`.length);
       const item = [...projectItems.values()].find((candidate) => String(candidate.id) === restItemId);
       const option = STATUS_OPTIONS.find((candidate) => candidate.id === formValues(args, "fields[][value]=")[0]);
-      if (!item || !option) throw new Error(`Unknown project status mutation ${restItemId}.`);
+      if (!(item && option)) throw new Error(`Unknown project status mutation ${restItemId}.`);
       item.status = option.name;
       transitions.push({ itemId: item.nodeId, status: item.status });
       if (ambiguousStatusWrite === option.name) throw new Error(`Ambiguous status write for ${item.nodeId}.`);
