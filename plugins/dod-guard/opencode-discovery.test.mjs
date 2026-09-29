@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const OPENCODE = "C:\\Users\\siriu\\AppData\\Local\\Programs\\@opencodedesktop\\resources\\opencode-cli.exe";
+const OPENCODE = process.env.OPENCODE_BIN?.trim() || "opencode";
+const NPM_COMMAND = process.platform === "win32" ? process.execPath : "npm";
+const NPM_PREFIX = process.platform === "win32" ? [join(dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js")] : [];
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -41,10 +43,39 @@ async function stop(process) {
 }
 
 function assertSupportedOpenCode() {
-  assert.equal(existsSync(OPENCODE), true, `missing pinned OpenCode CLI: ${OPENCODE}`);
   const version = spawnSync(OPENCODE, ["--version"], { encoding: "utf8" });
-  assert.equal(version.status, 0, version.stderr);
+  assert.equal(
+    version.status,
+    0,
+    version.error
+      ? `OpenCode CLI not found: ${OPENCODE}. Install OpenCode v2.0.18 and add \'opencode\' to PATH, or set OPENCODE_BIN to its executable path. ${version.error.message}`
+      : version.stderr,
+  );
   assert.match(version.stdout, /^opencode v2\.0\.18\s*$/);
+}
+
+function installLocalPackage(source, target, environment) {
+  mkdirSync(target, { recursive: true });
+  writeFileSync(join(target, "package.json"), "{}\n");
+  const result = spawnSync(
+    NPM_COMMAND,
+    [
+      ...NPM_PREFIX,
+      "install",
+      "--prefix",
+      target,
+      "--no-save",
+      "--no-package-lock",
+      "--ignore-scripts",
+      "--no-audit",
+      "--no-fund",
+      "--install-links",
+      source,
+    ],
+    { cwd: target, env: environment, encoding: "utf8" },
+  );
+  assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  return join(target, "node_modules", "@tychohenzen", "dod-guard-opencode");
 }
 
 function createFixture(plugins, configContents = JSON.stringify({ $schema: "https://opencode.ai/config.json", plugins }, null, 2)) {
@@ -262,10 +293,11 @@ for (const [label, invalidConfig] of [
 test("keeps an installed adapter idempotent across duplicate load, reload, and replacement", async () => {
   assertSupportedOpenCode();
   const fixture = createFixture([]);
-  const installed = join(fixture.fixture, "node_modules", "@tychohenzen", "dod-guard-opencode");
-  const upgraded = join(fixture.fixture, "upgrade", "dod-guard-opencode");
-  cpSync(ROOT, installed, { recursive: true });
-  cpSync(ROOT, upgraded, { recursive: true });
+  const installed = installLocalPackage(ROOT, join(fixture.fixture, "installed"), fixture.environment);
+  const upgraded = installLocalPackage(ROOT, join(fixture.fixture, "upgrade"), fixture.environment);
+  assert.equal(existsSync(join(installed, "index.js")), true);
+  assert.equal(existsSync(join(installed, "skills", "next-ticket", "SKILL.md")), true);
+  assert.equal(existsSync(join(installed, "opencode-discovery.test.mjs")), false);
   writeFileSync(fixture.config, JSON.stringify({ $schema: "https://opencode.ai/config.json", plugins: [installed, installed] }, null, 2));
   let server;
 

@@ -3,7 +3,8 @@
 // marketplace at the root; package-level marketplaces create duplicate catalogs.
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { readFrontmatter, walkStrings } from "./fs-utils.mjs";
 
 const PLUGIN_ROOT_REF = /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"'\s]+)/g;
@@ -216,7 +217,7 @@ export function createPluginChecks(report, isTracked) {
     }
   }
 
-  function checkOpenCodeAdapter(pkg) {
+  async function checkOpenCodeAdapter(pkg) {
     const packageFile = join(pkg.dir, "package.json");
     const codexDirectory = join(pkg.dir, ".codex-plugin");
     if (!(existsSync(codexDirectory) || existsSync(packageFile))) return;
@@ -275,11 +276,37 @@ export function createPluginChecks(report, isTracked) {
           report(packageFile, `files must include "${required}" for the shared OpenCode inventory`);
     }
 
-    const entrypoint = join(pkg.dir, "index.js");
+    const declaredEntrypoint = adapter.exports?.["."];
+    const entrypoint = resolve(pkg.dir, typeof declaredEntrypoint === "string" ? declaredEntrypoint : "./index.js");
+    const entrypointRelativePath = relative(pkg.dir, entrypoint);
+    const entrypointInsidePackage =
+      entrypointRelativePath && !entrypointRelativePath.startsWith("..") && !isAbsolute(entrypointRelativePath);
     if (!existsSync(entrypoint))
       report(entrypoint, "missing — package exports point at the OpenCode adapter entrypoint");
-    else if (isTracked && !isTracked(entrypoint))
-      report(entrypoint, "not tracked by git — the OpenCode adapter entrypoint would not ship");
+    else if (!entrypointInsidePackage) {
+      report(
+        packageFile,
+        `exports["."] must resolve inside the OpenCode package, got ${JSON.stringify(declaredEntrypoint)}`,
+      );
+    } else {
+      if (isTracked && !isTracked(entrypoint))
+        report(entrypoint, "not tracked by git — the OpenCode adapter entrypoint would not ship");
+      try {
+        const module = await import(pathToFileURL(entrypoint).href);
+        const plugin = module.default;
+        if (
+          !plugin ||
+          typeof plugin !== "object" ||
+          typeof plugin.id !== "string" ||
+          !plugin.id.trim() ||
+          typeof plugin.setup !== "function"
+        ) {
+          report(entrypoint, "must export a default OpenCode plugin with a non-empty string id and setup function");
+        }
+      } catch (error) {
+        report(entrypoint, `could not import OpenCode adapter entrypoint: ${error.message}`);
+      }
+    }
     if (isTracked && !isTracked(packageFile))
       report(packageFile, "not tracked by git — the OpenCode package metadata would not ship");
     if (existsSync(codexFile) && isTracked && !isTracked(codexFile))

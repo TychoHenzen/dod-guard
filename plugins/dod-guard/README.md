@@ -47,11 +47,15 @@ paths remain untouched.
 
 ### Disposable discovery proof
 
-Run the Windows runtime check with the pinned OpenCode CLI:
+Run the runtime check with OpenCode v2.0.18 available on `PATH`:
 
 ```text
 node --test plugins/dod-guard/opencode-discovery.test.mjs
 ```
+
+Set `OPENCODE_BIN` to the executable path when OpenCode is installed outside
+`PATH`. The test reports the install or configuration fix when the executable
+is missing.
 
 The test creates a temporary project and isolated config/data directories,
 checks `opencode v2.0.18`, verifies plugin list/check output, activates the

@@ -147,7 +147,7 @@ export function goodOpenCodeTree() {
       2,
     ),
   );
-  write(root, `plugins/${PKG_NAME}/index.js`, "export default { id: \"sample-plugin\" };\n");
+  write(root, `plugins/${PKG_NAME}/index.js`, "export default { id: \"sample-plugin\", setup() {} };\n");
   write(
     root,
     `plugins/${PKG_NAME}/skills/sample-skill/SKILL.md`,
