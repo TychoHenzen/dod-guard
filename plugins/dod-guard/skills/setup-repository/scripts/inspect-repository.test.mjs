@@ -5,10 +5,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
-import { assessGitHubSnapshot, inspectRepository } from "./inspect-repository.mjs";
+import { assessGitHubSnapshot, inspectRepository, summarizeRepository } from "./inspect-repository.mjs";
 
 const execFileAsync = promisify(execFile);
+const inspectorPath = fileURLToPath(new URL("./inspect-repository.mjs", import.meta.url));
 const workflowLabelsPath = new URL("./workflow-labels.json", import.meta.url);
 const skillPath = new URL("../SKILL.md", import.meta.url);
 const EXPECTED_WORKFLOW_LABELS = [
@@ -43,6 +45,17 @@ async function fixture(t, name) {
 
 async function git(root, ...args) {
   await execFileAsync("git", ["-C", root, ...args], { windowsHide: true });
+}
+
+async function runInspector(...args) {
+  return execFileAsync(process.execPath, [inspectorPath, ...args], { windowsHide: true });
+}
+
+async function assertInspectorUsage(args, expected) {
+  await assert.rejects(runInspector(...args), (error) => {
+    assert.match(error.stderr, expected);
+    return true;
+  });
 }
 
 test("inventories a fresh project without inventing Git state", async (t) => {
@@ -120,6 +133,83 @@ test("reports likely credentials without returning their values", async (t) => {
     { file: "config.txt", line: 1, signal: "github-token" },
   ]);
   assert.doesNotMatch(JSON.stringify(report), new RegExp(token));
+});
+
+test("projects a bounded summary without inventory arrays or credential values", async (t) => {
+  const root = await fixture(t, "summary");
+  const token = ["github", "_pat_", "abcdefghijklmnopqrstuvwxyz123456"].join("");
+  await mkdir(path.join(root, ".github", "workflows"), { recursive: true });
+  await writeFile(path.join(root, ".env"), "TOKEN=secret\n");
+  await writeFile(path.join(root, "config.txt"), `${token}\n`);
+  await writeFile(path.join(root, "index.ts"), "export const answer = 42;\n");
+  await writeFile(path.join(root, "main.zig"), "pub fn main() void {}\n");
+  await writeFile(path.join(root, "package.json"), "{}\n");
+  await writeFile(path.join(root, ".github", "workflows", "ci.yml"), "name: test\n");
+
+  const summary = summarizeRepository(await inspectRepository(root));
+
+  assert.deepEqual(summary, {
+    root,
+    git: { repository: false, hasCommits: false, branch: null, remotes: 0 },
+    counts: {
+      files: 6,
+      manifests: 1,
+      configurations: 1,
+      instructions: 0,
+      sourceExtensions: 5,
+      languages: 1,
+      unclassifiedExtensions: 1,
+      credentialFindings: 2,
+    },
+  });
+  assert.doesNotMatch(JSON.stringify(summary), new RegExp(token));
+  assert.equal("files" in summary, false);
+  assert.equal("credentialFindings" in summary, false);
+});
+
+test("summary CLI stays bounded while the default and snapshot modes remain detailed", async (t) => {
+  const root = await fixture(t, "cli");
+  await writeFile(path.join(root, "index.ts"), "export const answer = 42;\n");
+  await writeFile(path.join(root, ".env"), "TOKEN=secret\n");
+  const token = ["github", "_pat_", "abcdefghijklmnopqrstuvwxyz123456"].join("");
+  await writeFile(path.join(root, "config.txt"), `${token}\n`);
+
+  const summaryOutput = await runInspector("--summary", root);
+  const summary = JSON.parse(summaryOutput.stdout);
+  assert.deepEqual(summary.counts, {
+    files: 3,
+    manifests: 0,
+    configurations: 0,
+    instructions: 0,
+    sourceExtensions: 2,
+    languages: 1,
+    unclassifiedExtensions: 0,
+    credentialFindings: 2,
+  });
+  assert.ok(summaryOutput.stdout.length < 500);
+  assert.doesNotMatch(summaryOutput.stdout, new RegExp(token));
+
+  const full = JSON.parse((await runInspector(root)).stdout);
+  assert.deepEqual(full.files, [".env", "config.txt", "index.ts"]);
+  assert.deepEqual(full.credentialFindings, [
+    { file: ".env", line: null, signal: "secret-like-filename" },
+    { file: "config.txt", line: 1, signal: "github-token" },
+  ]);
+
+  const snapshotPath = path.join(root, "snapshot.json");
+  await writeFile(snapshotPath, JSON.stringify({
+    projects: [{ closed: false, statusOptions: ["Backlog", "Todo", "In Progress", "Done"] }],
+    checks: [{ name: "test", conclusion: "SUCCESS" }],
+  }));
+  const snapshot = JSON.parse((await runInspector("--github-snapshot", snapshotPath)).stdout);
+  assert.equal(snapshot.readyForProtection, true);
+  assert.deepEqual(snapshot.requiredChecks, ["test"]);
+});
+
+test("rejects malformed summary arguments", async () => {
+  await assertInspectorUsage(["--summary"], /Usage: inspect-repository\.mjs --summary <project-root>/);
+  await assertInspectorUsage(["--summary", "one", "two"], /Usage: inspect-repository\.mjs --summary <project-root>/);
+  await assertInspectorUsage(["project", "--summary"], /Usage: inspect-repository\.mjs \[project-root\]/);
 });
 
 test("ships the canonical workflow labels while preserving repository-specific labels", async () => {
