@@ -224,6 +224,15 @@ test("ships the canonical workflow labels while preserving repository-specific l
   assert.match(skill, /each preserved label must be unchanged/);
 });
 
+test("documents bounded routine inspection and full evidence boundaries", async () => {
+  const skill = await readFile(skillPath, "utf8");
+
+  assert.match(skill, /inspect-repository\.mjs --summary <project-root>/);
+  assert.match(skill, /inspect-repository\.mjs <project-root>/);
+  assert.match(skill, /Full mode remains required for `credentialFindings`, staged-file review/);
+  assert.match(skill, /Summary mode is not a\s+substitute for this per-file credential evidence/);
+});
+
 test("blocks ambiguous linked Project state", () => {
   const assessment = assessGitHubSnapshot({
     projects: [
