@@ -16,5 +16,14 @@
     "reason": "Reviewed #505: TransportStopError is the intentional typed boundary for shared MCP-to-REST fallback. Its constructor and diagnostic name, code, and details are consumed by lifecycle adapters and focused tests; this remains one internal plugin transport contract, not a second provider abstraction.",
     "author": "Codex",
     "time": "2026-09-29T05:49:56.783Z"
+  },
+  {
+    "findingId": "6ca4033d7959658983983b7f977473fca762886b815f72f0d47339cb2e91e284",
+    "fingerprint": "aa5b4cbb79d51935479d8d94b0de7516f3dd2c094434dc6b49fd52aa6a21f87f",
+    "baseSha": "7a0d225a7cdd99a1f3f11db15a7037c9fa84d61d",
+    "targetSha": "9b8e32b4dcf3dce662eb008ec684879ea8b2928b",
+    "reason": "Reviewed #505: TransportStopError is the intentional typed boundary for shared MCP-to-REST fallback. Its constructor and diagnostic name, code, and details are consumed by lifecycle adapters and focused tests; this remains one internal plugin transport contract, not a second provider abstraction.",
+    "author": "Codex",
+    "time": "2026-09-29T05:52:57.329Z"
   }
 ]
