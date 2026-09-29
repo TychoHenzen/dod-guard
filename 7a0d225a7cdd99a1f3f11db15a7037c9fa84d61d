@@ -25,5 +25,14 @@
     "reason": "Intentional public-surface growth in merged PR #685: the ready_transition_failed classification preserves an explicit complete-pr failure contract after the ready transition and is covered by tests. Reviewed for this exact merge target and fingerprint.",
     "author": "Codex",
     "time": "2026-09-29T01:13:02.544Z"
+  },
+  {
+    "findingId": "c1a9d5f3de4b030c97230efa1ea0f49486b947ee31f89b0d107ff6b558fb722f",
+    "fingerprint": "15cfc30cf60cd7c61991c3e9825aecf8e62c088417b5442680598f4413152865",
+    "baseSha": "9d944eea02a85cba1b54d32493c50da9de7cc972",
+    "targetSha": "7a0d225a7cdd99a1f3f11db15a7037c9fa84d61d",
+    "reason": "Intentional public-surface growth in merged PR #685: the REST pull-request node ID bridges the existing REST lookup to the GraphQL ready-transition mutation and is validated by the complete-pr tests. Reviewed for this exact merge target and fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-29T01:16:03.746Z"
   }
 ]
