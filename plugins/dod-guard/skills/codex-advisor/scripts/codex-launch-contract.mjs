@@ -77,7 +77,7 @@ function resolveWindowsNativeExecutable(shimPath, architecture) {
   if (existsSync(candidate)) return candidate;
   const bundledCandidate = join(packageRoot, "vendor", target.triple, "bin", "codex.exe");
   if (existsSync(bundledCandidate)) return bundledCandidate;
-  return candidate;
+  return undefined;
 }
 
 export function resolveCodexExecutable(platform = process.platform, environment = process.env, architecture = process.arch) {
@@ -94,7 +94,7 @@ export function resolveCodexExecutable(platform = process.platform, environment 
       if (nativePath) return nativePath;
     }
   }
-  return "codex.exe";
+  return undefined;
 }
 
 export function buildCodexPreflightArgs({ mode = "read-only", prefixArgs = [] } = {}) {

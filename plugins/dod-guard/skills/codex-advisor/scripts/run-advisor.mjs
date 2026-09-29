@@ -202,6 +202,16 @@ export async function runAdvisor({
 }) {
   executable = executable ?? resolveCodexExecutable(platform, { ...process.env, ...env });
   const attemptedArgs = attemptedExecArgs({ mode: "read-only", prefixArgs, model, reasoningEffort });
+  if (!executable) {
+    return failure(
+      "Codex advisor installation is unavailable: no existing Codex executable was found on the Windows PATH or behind a codex.cmd shim",
+      undefined,
+      executable,
+      attemptedArgs,
+      "launcher-contract",
+      prefixArgs,
+    );
+  }
   const invalidOption = [
     ["model", model],
     ["reasoning effort", reasoningEffort],

@@ -133,6 +133,7 @@ async function dispatchReviewers({
       tempRoot,
       env,
       signal,
+      platform,
       parseResponse: parseReviewerResponse,
       spawnImpl,
     });

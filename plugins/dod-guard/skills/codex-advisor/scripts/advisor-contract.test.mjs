@@ -222,6 +222,32 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
   }
 });
 
+test("advisor runner reports an unavailable Windows installation before spawning", async () => {
+  const fixture = await createFixture();
+  const packageRoot = join(fixture.root, "node_modules", "@openai", "codex");
+  try {
+    await mkdir(join(packageRoot, "bin"), { recursive: true });
+    await writeFile(join(fixture.root, "codex.cmd"), '@ECHO off\r\nnode "%dp0%\\node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n');
+    await writeFile(join(packageRoot, "package.json"), JSON.stringify({ name: "@openai/codex" }));
+    await writeFile(join(packageRoot, "bin", "codex.js"), "");
+    const result = await runAdvisor({
+      platform: "win32",
+      env: { PATH: fixture.root },
+      prompt: "Problem",
+      tempRoot: fixture.runs,
+      spawnImpl: () => {
+        throw new Error("spawn should not run");
+      },
+    });
+    assert.equal(result.ok, false);
+    assert.match(result.error, /installation is unavailable.*existing Codex executable/i);
+    assert.equal(result.execution, undefined);
+    assert.deepEqual(await readdir(fixture.runs), []);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test("advisor runner supports explicit cancellation before prompt submission", async () => {
   const fixture = await createFixture();
   const controller = new AbortController();
