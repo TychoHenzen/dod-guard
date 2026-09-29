@@ -1,0 +1,38 @@
+[
+  {
+    "findingId": "4b12a62bfd90d43260d07773dd38bb8b57cd9debe642276a35bbed55a5bd39f6",
+    "fingerprint": "8000b9f35378675b455961d3d5a4347a14181b741948d8d382f0ac17efc2bd85",
+    "baseSha": "9d944eea02a85cba1b54d32493c50da9de7cc972",
+    "targetSha": "aa9a0f15e3ff27037cc7846333f54d13bcdb853e",
+    "reason": "Parser false positive: unchanged plugins/dod-guard/skills/complete-pr/scripts/lib/github-client.mjs exposes GitHubClient.transition as an intentional internal GitHubClient adapter member used by complete-pr orchestration; it is not new public API. Accept only for this exact target and fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-29T00:28:01.613Z"
+  },
+  {
+    "findingId": "52441850731dcb47f259f0decab2a2301d960d57bc85685ee87cfb3d6288070d",
+    "fingerprint": "8000b9f35378675b455961d3d5a4347a14181b741948d8d382f0ac17efc2bd85",
+    "baseSha": "9d944eea02a85cba1b54d32493c50da9de7cc972",
+    "targetSha": "aa9a0f15e3ff27037cc7846333f54d13bcdb853e",
+    "reason": "Parser false positive: unchanged plugins/dod-guard/skills/complete-pr/scripts/lib/github-client.mjs exposes GitHubClient.graphql as an intentional internal GitHubClient adapter member used by complete-pr orchestration; it is not new public API. Accept only for this exact target and fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-29T00:28:01.613Z"
+  },
+  {
+    "findingId": "76451e5c0ff872883a12530f8e0c60734142238b593ebda226115de4102ecb43",
+    "fingerprint": "8000b9f35378675b455961d3d5a4347a14181b741948d8d382f0ac17efc2bd85",
+    "baseSha": "9d944eea02a85cba1b54d32493c50da9de7cc972",
+    "targetSha": "aa9a0f15e3ff27037cc7846333f54d13bcdb853e",
+    "reason": "Parser false positive: unchanged plugins/dod-guard/skills/complete-pr/scripts/lib/github-client.mjs exposes GitHubClient.ready_transition_failed as an intentional internal GitHubClient adapter member used by complete-pr orchestration; it is not new public API. Accept only for this exact target and fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-29T00:28:01.613Z"
+  },
+  {
+    "findingId": "c1a9d5f3de4b030c97230efa1ea0f49486b947ee31f89b0d107ff6b558fb722f",
+    "fingerprint": "8000b9f35378675b455961d3d5a4347a14181b741948d8d382f0ac17efc2bd85",
+    "baseSha": "9d944eea02a85cba1b54d32493c50da9de7cc972",
+    "targetSha": "aa9a0f15e3ff27037cc7846333f54d13bcdb853e",
+    "reason": "Parser false positive: unchanged plugins/dod-guard/skills/complete-pr/scripts/lib/github-client.mjs exposes GitHubClient.pullRequestId as an intentional internal GitHubClient adapter member used by complete-pr orchestration; it is not new public API. Accept only for this exact target and fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-29T00:28:01.613Z"
+  }
+]
