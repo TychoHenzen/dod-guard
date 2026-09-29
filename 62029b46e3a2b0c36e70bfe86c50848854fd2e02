@@ -1,0 +1,11 @@
+[
+  {
+    "findingId": "4b12a62bfd90d43260d07773dd38bb8b57cd9debe642276a35bbed55a5bd39f6",
+    "fingerprint": "809655344142fbaf5ec698827e7ff6a07e71153ae93b013b09e4c0ad24df4119",
+    "baseSha": "70f50a80bd87cdd525b181a6641747794c46915c",
+    "targetSha": "62029b46e3a2b0c36e70bfe86c50848854fd2e02",
+    "reason": "Parser false positive: intentional GraphQL ready-transition strings in unchanged github-client.mjs; no source change required.",
+    "author": "Codex",
+    "time": "2026-09-29T02:57:46.839Z"
+  }
+]
