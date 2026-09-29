@@ -1,0 +1,11 @@
+[
+  {
+    "findingId": "4b12a62bfd90d43260d07773dd38bb8b57cd9debe642276a35bbed55a5bd39f6",
+    "fingerprint": "15cfc30cf60cd7c61991c3e9825aecf8e62c088417b5442680598f4413152865",
+    "baseSha": "9d944eea02a85cba1b54d32493c50da9de7cc972",
+    "targetSha": "7a0d225a7cdd99a1f3f11db15a7037c9fa84d61d",
+    "reason": "Intentional public-surface growth in merged PR #685: GitHubClient transition support is required by the complete-pr ready-transition path and its tests. Reviewed for this exact merge target and fingerprint.",
+    "author": "Codex",
+    "time": "2026-09-29T01:06:25.665Z"
+  }
+]
