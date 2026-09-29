@@ -16,8 +16,8 @@ function runFixture({ firstFails, secondFails }) {
     mkdirSync(secondRoot, { recursive: true });
     const firstName = "configured first skill group";
     const secondName = "configured second skill group";
-    writeFixtureTest(join(firstRoot, "first.test.mjs"), firstName);
-    writeFixtureTest(join(secondRoot, "second.test.mjs"), secondName);
+    writeFixtureTest(join(firstRoot, "first.test.mjs"));
+    writeFixtureTest(join(secondRoot, "second.test.mjs"));
 
     const environment = { ...process.env };
     delete environment.NODE_TEST_CONTEXT;
@@ -34,9 +34,18 @@ function runFixture({ firstFails, secondFails }) {
   }
 }
 
-function writeFixtureTest(path, name) {
-  const failure = `if (process.env.DOD_GUARD_SKILL_FIXTURE_FAILURE === ${JSON.stringify(name)}) throw new Error(${JSON.stringify(`${name} failed`)});`;
-  writeFileSync(path, `import test from "node:test"; test(${JSON.stringify(name)}, () => { ${failure} });\n`);
+function writeFixtureTest(path) {
+  writeFileSync(
+    path,
+    `import test from "node:test";
+
+const group = import.meta.url.includes("/lib/") ? "configured second skill group" : "configured first skill group";
+
+test(group, () => {
+  if (process.env.DOD_GUARD_SKILL_FIXTURE_FAILURE === group) throw new Error(group + " failed");
+});
+`,
+  );
 }
 
 test("runs both configured skill test globs through the npm script", () => {
