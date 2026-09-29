@@ -189,6 +189,8 @@ test("summary CLI stays bounded while the default and snapshot modes remain deta
   });
   assert.ok(summaryOutput.stdout.length < 500);
   assert.doesNotMatch(summaryOutput.stdout, new RegExp(token));
+  assert.equal("files" in summary, false);
+  assert.equal("credentialFindings" in summary, false);
 
   const full = JSON.parse((await runInspector(root)).stdout);
   assert.deepEqual(full.files, [".env", "config.txt", "index.ts"]);
@@ -235,6 +237,14 @@ test("rejects malformed summary arguments", async () => {
   await assertInspectorUsage(["--summary"], /Usage: inspect-repository\.mjs --summary <project-root>/);
   await assertInspectorUsage(["--summary", "one", "two"], /Usage: inspect-repository\.mjs --summary <project-root>/);
   await assertInspectorUsage(["project", "--summary"], /Usage: inspect-repository\.mjs \[project-root\]/);
+});
+
+test("rejects malformed GitHub snapshot arguments", async () => {
+  const usage = /Usage: inspect-repository\.mjs --github-snapshot <snapshot\.json>/;
+
+  await assertInspectorUsage(["--github-snapshot"], usage);
+  await assertInspectorUsage(["--github-snapshot", "snapshot.json", "extra"], usage);
+  await assertInspectorUsage(["snapshot.json", "--github-snapshot"], usage);
 });
 
 test("ships the canonical workflow labels while preserving repository-specific labels", async () => {
