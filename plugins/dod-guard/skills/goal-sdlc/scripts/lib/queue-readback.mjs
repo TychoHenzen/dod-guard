@@ -169,6 +169,7 @@ function safeRequest(request) {
 }
 
 function failureDetails(operation, request, error, attempt, attempts, missingEvidence) {
+  const fallbackAttempted = error instanceof TransportStopError && error.details?.restFailure !== undefined;
   const transportFailure = error instanceof TransportStopError
     ? error.details.restFailure ?? error.details.primaryFailure
     : error;
@@ -182,7 +183,7 @@ function failureDetails(operation, request, error, attempt, attempts, missingEvi
     code: classified.code,
     status: classified.status,
     message: classified.message,
-    retryable: classified.retryable,
+    retryable: classified.retryable && !fallbackAttempted,
     retryAfterMs: classified.retryAfterMs,
     ...(classified.rateLimitResetAt === null ? {} : { rateLimitResetAt: classified.rateLimitResetAt }),
     missingEvidence: [...new Set(missingEvidence)],

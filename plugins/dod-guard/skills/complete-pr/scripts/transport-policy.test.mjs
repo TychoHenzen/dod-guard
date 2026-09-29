@@ -164,6 +164,33 @@ test("classifies a bare 403 as permission and an explicit MCP marker as rate lim
   assert.equal(classifyTransportFailure(Object.assign(new Error("API rate limit exceeded"), { status: 403 }), "mcp").category, FAILURE_CATEGORIES.MCP_RATE_LIMIT);
 });
 
+test("gives explicit MCP rate-limit evidence precedence over authentication text", () => {
+  const failures = [
+    Object.assign(new Error("authentication API rate limit exceeded token=secret"), { status: 429 }),
+    Object.assign(new Error("unauthorized token=secret"), { status: 403, code: "rate_limit" }),
+    Object.assign(new Error("authentication token=secret"), {
+      status: 403,
+      headers: { "X-RateLimit-Remaining": "0" },
+    }),
+    Object.assign(new Error("authentication token=secret"), { status: 403, category: "rate_limit" }),
+  ];
+
+  for (const error of failures) {
+    const failure = classifyTransportFailure(error, "mcp");
+    assert.equal(failure.category, FAILURE_CATEGORIES.MCP_RATE_LIMIT);
+    assert.doesNotMatch(failure.message, /secret/);
+  }
+
+  assert.equal(
+    classifyTransportFailure(Object.assign(new Error("unauthorized"), { status: 401 }), "mcp").category,
+    FAILURE_CATEGORIES.AUTHENTICATION,
+  );
+  assert.equal(
+    classifyTransportFailure(Object.assign(new Error("forbidden"), { status: 403 }), "mcp").category,
+    FAILURE_CATEGORIES.PERMISSION,
+  );
+});
+
 test("retains Retry-After and reset evidence without exposing credentials", () => {
   const failure = classifyTransportFailure(Object.assign(new Error("forbidden token=secret"), {
     status: 403,

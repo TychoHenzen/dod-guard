@@ -572,6 +572,44 @@ test("falls back once from explicit MCP 429 and 403 exhaustion without changing 
   }
 });
 
+test("stops after one REST failure following MCP exhaustion", async () => {
+  let primaryCalls = 0;
+  let restCalls = 0;
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        primaryCalls += 1;
+        throw Object.assign(new Error("API rate limit exceeded"), { status: 429 });
+      },
+      async readIssue() {
+        throw new Error("must not read issue after project failure");
+      },
+      async readPullRequest() {
+        throw new Error("must not read PR after project failure");
+      },
+      rest: {
+        async listProjectItems() {
+          restCalls += 1;
+          throw Object.assign(new Error("REST temporarily unavailable"), { status: 503 });
+        },
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+
+  assert.equal(primaryCalls, 1);
+  assert.equal(restCalls, 1);
+  assert.equal(snapshot.evidence.readAttempts.length, 1);
+  assert.equal(snapshot.evidence.retries.length, 0);
+  assert.equal(snapshot.evidence.readFailures.length, 1);
+  assert.equal(snapshot.evidence.readFailures[0].retryable, false);
+  assert.deepEqual(snapshot.evidence.transportFailures.map(({ failure }) => failure.category), [
+    "mcp_rate_limit",
+    "transient",
+  ]);
+});
+
 test("holds a timed-out pull request after the single bounded retry", async () => {
   let pullReads = 0;
   const snapshot = await readQueueSnapshot({

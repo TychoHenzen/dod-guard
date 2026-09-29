@@ -164,15 +164,17 @@ export function classifyTransportFailure(error, source = "mcp") {
     headerValue(error, "x-ratelimit-remaining") === "0" || retryAfter !== null || resetAt !== null
   );
   const explicit = categoryFromExplicitValue(explicitCategory(error), transport);
+  const explicitRateLimit = [FAILURE_CATEGORIES.MCP_RATE_LIMIT, FAILURE_CATEGORIES.REST_RATE_LIMIT].includes(explicit);
+  const rateLimitEvidence = explicitRateLimit || status === 429 || RATE_LIMIT_MARKER.test(message) ||
+    code === "rate_limit" || code === "secondary_rate_limit" || rateLimitHeader;
   let category = explicit;
 
-  if (status === 401 || AUTHENTICATION_MARKER.test(message) || code === "unauthorized") {
+  if (rateLimitEvidence) {
+    category = explicitRateLimit ? explicit : transport === "mcp" ? FAILURE_CATEGORIES.MCP_RATE_LIMIT : FAILURE_CATEGORIES.REST_RATE_LIMIT;
+  } else if (!category && (status === 401 || AUTHENTICATION_MARKER.test(message) || code === "unauthorized")) {
     category = FAILURE_CATEGORIES.AUTHENTICATION;
   } else if (!category && (TRANSPORT_UNAVAILABLE_MARKER.test(message) || code === "transport_unavailable")) {
     category = FAILURE_CATEGORIES.TRANSPORT_UNAVAILABLE;
-  } else if (!category && (RATE_LIMIT_MARKER.test(message) || status === 429 ||
-    code === "rate_limit" || code === "secondary_rate_limit" || rateLimitHeader)) {
-    category = transport === "mcp" ? FAILURE_CATEGORIES.MCP_RATE_LIMIT : FAILURE_CATEGORIES.REST_RATE_LIMIT;
   } else if (!category && (status === 403 || /forbidden|permission|entitlement/i.test(message))) {
     category = FAILURE_CATEGORIES.PERMISSION;
   } else if (!category && (TIMEOUT_MARKER.test(message) || code === "timeout" || code === "etimedout")) {
