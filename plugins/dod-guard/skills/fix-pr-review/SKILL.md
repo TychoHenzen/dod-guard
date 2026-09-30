@@ -155,7 +155,17 @@ existing upstream. Never force-push or rewrite commits.
 
 ## Update proven findings
 
-Re-read the provider head and require it to equal the pushed commit.
+After a successful push, record its commit SHA and run bounded, read-only
+head convergence before replying to or resolving any provider finding. Read
+the same-repository source branch ref, PR API head, and
+`refs/pull/<number>/head` until all three equal that pushed SHA. If
+`refs/pull/<number>/merge` exists, read its commit parents and require the
+pushed SHA as a source parent; never use the merge SHA as the CI target. A
+stale read may be retried only within the bounded wait. Stop with the expected
+and observed SHAs on branch drift, fork ownership, missing or malformed refs,
+provider read failure, merge-parent mismatch, or timeout. Do not push again,
+write `refs/pull/*`, call `update-branch`, resolve a review thread, or make any
+other provider mutation while convergence is unresolved.
 
 - GitHub: use the connector's reply and exact-thread resolution operations when
   available. Otherwise reply through

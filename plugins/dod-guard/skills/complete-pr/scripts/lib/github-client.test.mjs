@@ -108,3 +108,66 @@ test("does not retry or accept a wrong-provider exact-head check run", () => {
     1,
   );
 });
+
+test("reads temporary pull-request refs with a delimited pull-number prefix", () => {
+  const calls = [];
+  const client = new GitHubClient("owner/repo", 24, (args) => {
+    calls.push(args);
+    return {
+      status: 0,
+      stderr: "",
+      stdout: JSON.stringify([
+        { ref: "refs/pull/24/head", object: { sha: "head-1" } },
+        { ref: "refs/pull/24/merge", object: { sha: "merge-1" } },
+      ]),
+    };
+  });
+
+  assert.deepEqual(client.getPullRequestRefs(), [
+    { kind: "head", ref: "refs/pull/24/head", sha: "head-1" },
+    { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-1" },
+  ]);
+  assert.deepEqual(calls, [["api", "repos/owner/repo/git/matching-refs/pull/24/"]]);
+  assert.equal(calls.some((args) => args.includes("--method") || args.includes("PUT") || args.includes("POST")), false);
+});
+
+test("treats an absent temporary pull-request ref set as empty", () => {
+  const client = new GitHubClient("owner/repo", 24, () => ({
+    status: 1,
+    stderr: "HTTP 404: Not Found",
+    stdout: "",
+  }));
+
+  assert.deepEqual(client.getPullRequestRefs(), []);
+});
+
+test("rejects malformed and duplicate temporary pull-request refs", () => {
+  for (const response of [
+    [{ ref: "refs/pull/24/head", object: {} }],
+    [{ ref: "refs/pull/24/other", object: { sha: "head-1" } }],
+    [
+      { ref: "refs/pull/24/head", object: { sha: "head-1" } },
+      { ref: "refs/pull/24/head", object: { sha: "head-1" } },
+    ],
+  ]) {
+    const client = new GitHubClient("owner/repo", 24, () => ({
+      status: 0,
+      stderr: "",
+      stdout: JSON.stringify(response),
+    }));
+
+    assert.throws(() => client.getPullRequestRefs(), { code: "github_response_shape" });
+  }
+});
+
+test("rejects a malformed source branch ref", () => {
+  const client = new GitHubClient("owner/repo", 24, () => ({
+    status: 0,
+    stderr: "",
+    stdout: JSON.stringify({ object: {} }),
+  }));
+
+  assert.throws(() => client.getSourceBranchRef("codex/24-complete-pr"), {
+    code: "github_response_shape",
+  });
+});

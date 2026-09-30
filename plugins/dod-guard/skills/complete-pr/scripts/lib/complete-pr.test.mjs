@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { completePullRequest, recoverMergedPullRequest } from "./complete-pr.mjs";
+import { completePullRequest, recoverMergedPullRequest, waitForHeadConvergence } from "./complete-pr.mjs";
 import { GitHubClient, normalizePullRequest } from "./github-client.mjs";
 
 const pendingChecks = [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }];
@@ -154,6 +154,9 @@ class FixtureClient {
     this.issues = [...(options.issues ?? [[{ number: 24, state: "CLOSED", url: "issue" }]])];
     this.projectStatuses = [...(options.projectStatuses ?? [["Done"]])];
     this.refs = [...(options.refs ?? [{ sha: "head-1" }, null])];
+    this.sourceRefs = options.sourceRefs ? [...options.sourceRefs] : null;
+    this.pullRefs = options.pullRefs ? [...options.pullRefs] : null;
+    this.lastPullHeadSha = "head-1";
     this.workflowRuns = options.workflowRuns ?? null;
     this.workflowDispatchError = options.workflowDispatchError;
     this.enableRepositoryError = options.enableRepositoryError;
@@ -169,6 +172,7 @@ class FixtureClient {
 
   getPullRequest() {
     const value = nextValue(this.pulls);
+    this.lastPullHeadSha = value.headSha;
     this.calls.push(["getPullRequest", value.headSha, value.state]);
     return value;
   }
@@ -236,6 +240,20 @@ class FixtureClient {
     return nextValue(this.refs);
   }
 
+  getSourceBranchRef(branchName) {
+    this.calls.push(["getSourceBranchRef", branchName]);
+    return this.sourceRefs
+      ? nextValue(this.sourceRefs)
+      : { sha: this.lastPullHeadSha };
+  }
+
+  getPullRequestRefs(number) {
+    this.calls.push(["getPullRequestRefs", number]);
+    return this.pullRefs
+      ? nextValue(this.pullRefs)
+      : [{ kind: "head", ref: `refs/pull/${number}/head`, sha: this.lastPullHeadSha }];
+  }
+
   deleteBranchRef(branchName) {
     this.calls.push(["deleteBranchRef", branchName]);
     if (this.deleteBranchError) {
@@ -266,6 +284,221 @@ const immediateOptions = {
   pollMs: 0,
   updatePollLimit: 2,
 };
+
+test("waits for stale PR and temporary head refs to converge", async () => {
+  const client = new FixtureClient({
+    pulls: [pull({ headSha: "head-2", isDraft: false })],
+    pullRefs: [
+      [{ kind: "head", ref: "refs/pull/24/head", sha: "head-1" }],
+      [{ kind: "head", ref: "refs/pull/24/head", sha: "head-2" }],
+    ],
+    sourceRefs: [{ sha: "head-2" }, { sha: "head-2" }],
+  });
+
+  const result = await waitForHeadConvergence(
+    client,
+    {
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
+      options: { headPollLimit: 2, pollMs: 0 },
+      repository: client.repositoryDetails,
+    },
+  );
+
+  assert.equal(result.headSha, "head-2");
+  assert.deepEqual(client.calls.filter(([name]) => name === "wait"), [["wait"]]);
+  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+});
+
+test("uses the converged SHA for CI, merge, and cleanup", async () => {
+  const client = new FixtureClient({
+    pulls: [
+      pull({ headSha: "head-1", isDraft: false }),
+      pull({ headSha: "head-2", isDraft: false }),
+      pull({ headSha: "head-2", isDraft: false }),
+      pull({ headSha: "head-2", isDraft: false }),
+      pull({ headSha: "head-2", isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+    ],
+    pullRefs: [
+      [{ kind: "head", ref: "refs/pull/24/head", sha: "head-1" }],
+      [{ kind: "head", ref: "refs/pull/24/head", sha: "head-2" }],
+    ],
+    refs: [{ sha: "head-2" }, null],
+    sourceRefs: [{ sha: "head-2" }, { sha: "head-2" }],
+  });
+
+  const result = await completePullRequest(client, { ...immediateOptions, pushedHead: "head-2" });
+
+  assert.equal(result.acceptedHead, "head-2");
+  assert.equal(client.calls.filter(([name]) => name === "getCiWorkflowRuns").every(([, sha]) => sha === "head-2"), true);
+  assert.deepEqual(client.calls.filter(([name]) => name === "mergePullRequest"), [["mergePullRequest", 24, "head-2"]]);
+  assert.deepEqual(client.calls.filter(([name]) => name === "deleteBranchRef"), [["deleteBranchRef", "codex/24-complete-pr"]]);
+});
+
+test("stops after bounded stale-head convergence without writes", async () => {
+  const client = new FixtureClient({
+    pulls: [pull({ headSha: "head-1", isDraft: false }), pull({ headSha: "head-1", isDraft: false })],
+    pullRefs: [[{ kind: "head", ref: "refs/pull/24/head", sha: "head-1" }]],
+    sourceRefs: [{ sha: "head-2" }],
+  });
+
+  await assert.rejects(
+    waitForHeadConvergence(
+      client,
+      {
+        expectedHead: "head-2",
+        initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
+        options: { headPollLimit: 2, pollMs: 0 },
+        repository: client.repositoryDetails,
+      },
+    ),
+    { code: "head_convergence_timeout", message: /head-2.*head-1/ },
+  );
+  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+});
+
+test("stops when the source branch moves during convergence", async () => {
+  const client = new FixtureClient({
+    pullRefs: [[{ kind: "head", ref: "refs/pull/24/head", sha: "head-1" }]],
+    sourceRefs: [{ sha: "head-2" }, { sha: "head-3" }],
+  });
+
+  await assert.rejects(
+    waitForHeadConvergence(
+      client,
+      {
+        expectedHead: "head-2",
+        initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
+        options: { headPollLimit: 2, pollMs: 0 },
+        repository: client.repositoryDetails,
+      },
+    ),
+    { code: "head_branch_changed", message: /head-2.*head-3/ },
+  );
+});
+
+test("rejects a generated merge ref that omits the synchronized source parent", async () => {
+  const client = new FixtureClient({
+    commits: { "merge-ref": { parents: ["base-1", "other-head"], sha: "merge-ref" } },
+    pullRefs: [[
+      { kind: "head", ref: "refs/pull/24/head", sha: "head-2" },
+      { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-ref" },
+    ]],
+    sourceRefs: [{ sha: "head-2" }],
+  });
+
+  await assert.rejects(
+    waitForHeadConvergence(
+      client,
+      {
+        expectedHead: "head-2",
+        initialPullRequest: pull({ headSha: "head-2", isDraft: false }),
+        options: { headPollLimit: 1, pollMs: 0 },
+        repository: client.repositoryDetails,
+      },
+    ),
+    { code: "head_merge_ref_mismatch", message: /head-2/ },
+  );
+});
+
+test("retries a stale generated merge ref until the synchronized source parent appears", async () => {
+  const client = new FixtureClient({
+    commits: {
+      "merge-old": { parents: ["base-1", "head-1"], sha: "merge-old" },
+      "merge-new": { parents: ["base-1", "head-2"], sha: "merge-new" },
+    },
+    pulls: [pull({ headSha: "head-2", isDraft: false })],
+    pullRefs: [
+      [
+        { kind: "head", ref: "refs/pull/24/head", sha: "head-1" },
+        { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-old" },
+      ],
+      [
+        { kind: "head", ref: "refs/pull/24/head", sha: "head-2" },
+        { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-new" },
+      ],
+    ],
+    sourceRefs: [{ sha: "head-2" }, { sha: "head-2" }],
+  });
+
+  const result = await waitForHeadConvergence(client, {
+    expectedHead: "head-2",
+    initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
+    options: { headPollLimit: 2, pollMs: 0 },
+    repository: client.repositoryDetails,
+  });
+
+  assert.equal(result.headSha, "head-2");
+  assert.deepEqual(client.calls.filter(([name]) => name === "wait"), [["wait"]]);
+});
+
+test("stops on missing temporary head evidence", async () => {
+  const client = new FixtureClient({
+    pullRefs: [[]],
+    sourceRefs: [{ sha: "head-2" }],
+  });
+
+  await assert.rejects(
+    waitForHeadConvergence(client, {
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
+      options: { headPollLimit: 1, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
+    { code: "head_convergence_timeout", message: /<missing>/ },
+  );
+  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+});
+
+test("stops on a temporary-ref provider read failure", async () => {
+  const client = new FixtureClient({ sourceRefs: [{ sha: "head-2" }] });
+  const failure = new Error("HTTP 503: temporary ref read failed");
+  client.getPullRequestRefs = () => {
+    throw failure;
+  };
+
+  await assert.rejects(
+    waitForHeadConvergence(client, {
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-2", isDraft: false }),
+      options: { headPollLimit: 2, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
+    {
+      code: "head_convergence_provider_error",
+      message: /temporary pull-request refs.*expected synchronized SHA head-2.*HTTP 503: temporary ref read failed.*source branch head-2.*PR API head head-2.*refs\/pull\/24\/head <unread>/,
+    },
+  );
+  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+});
+
+test("includes identities when a synthetic merge ref read fails", async () => {
+  const client = new FixtureClient({
+    pullRefs: [[
+      { kind: "head", ref: "refs/pull/24/head", sha: "head-2" },
+      { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-ref" },
+    ]],
+    sourceRefs: [{ sha: "head-2" }],
+  });
+  const failure = new Error("HTTP 503: synthetic merge ref read failed");
+  client.getCommit = () => {
+    throw failure;
+  };
+
+  await assert.rejects(
+    waitForHeadConvergence(client, {
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-2", isDraft: false }),
+      options: { headPollLimit: 1, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
+    {
+      code: "head_convergence_provider_error",
+      message: /synthetic merge ref.*expected synchronized SHA head-2.*HTTP 503: synthetic merge ref read failed.*source branch head-2.*PR API head head-2.*refs\/pull\/24\/head head-2/,
+    },
+  );
+  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+});
 
 test("normalizes the narrow REST pull request payload used by the completion loop", () => {
   assert.deepEqual(
@@ -627,6 +860,23 @@ test("recovers an already-merged pull request through guarded remote and local c
     ["getBranchRef", "codex/24-complete-pr"],
     ["getBranchRef", "codex/24-complete-pr"],
   ]);
+});
+
+test("recovers merged cleanup when the remote source branch is already absent", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [null],
+    sourceRefs: [null],
+  });
+
+  const result = await recoverMergedPullRequest(client, { ...immediateOptions, localGit });
+
+  assert.equal(result.branch, "already_absent");
+  assert.deepEqual(client.calls.filter(([name]) => name === "getSourceBranchRef"), [
+    ["getSourceBranchRef", "codex/24-complete-pr"],
+  ]);
+  assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
 });
 
 test("dry-runs merged pull-request recovery without cleanup mutation", async () => {

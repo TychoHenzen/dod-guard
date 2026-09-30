@@ -44,10 +44,13 @@ boundaries in this skill win.
 Resolve this skill's directory from the loaded `SKILL.md`, then run:
 
 ```text
-node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number>
+node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha>
 ```
 
-The helper records the accepted head SHA first. If the pull request is a draft,
+Normal completion requires the exact pushed head SHA already verified by the
+calling workflow; the helper never adopts a mutable provider head as its first
+acceptance signal. Merged-recovery mode uses the recorded merged head instead
+and keeps its existing `--recover-merged [--dry-run]` invocation. If the pull request is a draft,
 it marks it ready. If it is already ready, it preserves that state. It then:
 
 - checks for a `.github/workflows/ci.yml` run on the accepted head SHA; if none

@@ -9,7 +9,11 @@ const [repository, pullNumberText, ...flags] = process.argv.slice(2);
 const pullNumber = Number.parseInt(pullNumberText, 10);
 const recoveryMode = flags.includes("--recover-merged");
 const dryRun = flags.includes("--dry-run");
-const validFlags = flags.length === 0 || (recoveryMode && (flags.length === 1 || (flags.length === 2 && dryRun)));
+const pushedHead = flags[0] === "--pushed-head" ? flags[1] : null;
+const validPushedHead = typeof pushedHead === "string" && /^[0-9a-f]{40}$/i.test(pushedHead);
+const validFlags = recoveryMode
+  ? flags.length === 1 || (flags.length === 2 && dryRun)
+  : flags.length === 2 && flags[0] === "--pushed-head" && validPushedHead;
 
 if (repository && Number.isInteger(pullNumber) && pullNumber > 0 && validFlags) {
   try {
@@ -19,7 +23,7 @@ if (repository && Number.isInteger(pullNumber) && pullNumber > 0 && validFlags) 
     if (recoveryMode) {
       result = await recoverMergedPullRequest(client, { dryRun, localGit });
     } else {
-      result = await completePullRequest(client, { localGit });
+      result = await completePullRequest(client, { localGit, pushedHead });
     }
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   } catch (error) {
@@ -32,7 +36,7 @@ if (repository && Number.isInteger(pullNumber) && pullNumber > 0 && validFlags) 
   }
 } else {
   process.stderr.write(
-    "Usage: node complete-pr.mjs <owner/repository> <pull-request-number> [--recover-merged [--dry-run]]\n",
+    "Usage: node complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha> | [--recover-merged [--dry-run]]\n",
   );
   process.exitCode = 2;
 }
