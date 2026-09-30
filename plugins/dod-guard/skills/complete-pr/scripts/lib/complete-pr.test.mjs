@@ -37,6 +37,21 @@ function projectStatusResponse(status, id = 1701, number = 24, repository = "own
   };
 }
 
+function projectItemIdentity(item) {
+  return {
+    id: item.id,
+    node_id: item.node_id,
+    content: {
+      number: item.content?.number,
+      repository: {
+        full_name: item.content?.repository?.full_name,
+        fullName: item.content?.repository?.fullName,
+      },
+      repository_url: item.content?.repository_url,
+    },
+  };
+}
+
 function createProjectStatusReader({
   projects = [{ number: 2, state: "open" }],
   itemsByProject = new Map([["2", [linkedProjectItem(1701)]]]),
@@ -65,10 +80,11 @@ function createProjectStatusReader({
         return { status: 1, stderr: "HTTP 403: API rate limit exceeded", stdout: "" };
       }
       const pages = itemPagesByProject.get(itemListMatch[1]);
+      const items = (pages ?? [itemsByProject.get(itemListMatch[1]) ?? []]).flat().map(projectItemIdentity);
       return {
         status: 0,
         stderr: "",
-        stdout: JSON.stringify(pages ?? [itemsByProject.get(itemListMatch[1]) ?? []]),
+        stdout: items.map((item) => JSON.stringify(item)).join("\n"),
       };
     }
 
@@ -287,7 +303,7 @@ test("reads linked Project statuses through REST without GraphQL", () => {
   const calls = [];
   const responses = new Map([
     ["users/owner/projectsV2?per_page=100", "[[{\"number\":2,\"state\":\"open\"}]]"],
-    ["users/owner/projectsV2/2/items?per_page=100", "[[{\"id\":1701,\"node_id\":\"PVTI_item-1701\",\"content\":{\"number\":24,\"repository\":{\"full_name\":\"owner/repo\"},\"repository_url\":\"https://api.github.com/repos/owner/repo\"}}]]"],
+    ["users/owner/projectsV2/2/items?per_page=100", JSON.stringify(projectItemIdentity(linkedProjectItem(1701)))],
     ["users/owner/projectsV2/2/fields?per_page=100", "[[{\"id\":407,\"name\":\"Status\",\"data_type\":\"single_select\"}]]"],
     ["users/owner/projectsV2/2/items/1701?fields=407", "{\"id\":1701,\"node_id\":\"PVTI_item-1701\",\"content\":{\"number\":24,\"repository\":{\"full_name\":\"owner/repo\"},\"repository_url\":\"https://api.github.com/repos/owner/repo\"},\"fields\":[{\"id\":407,\"name\":\"Status\",\"value\":{\"id\":\"done\",\"name\":{\"raw\":\"Done\"}}}]}"],
   ]);
@@ -303,9 +319,22 @@ test("reads linked Project statuses through REST without GraphQL", () => {
   });
 
   assert.deepEqual(client.getIssueProjectStatuses(24), ["Done"]);
-  assert.deepEqual(calls, [
+  const itemCall = calls.find((args) => args.includes("users/owner/projectsV2/2/items?per_page=100"));
+  assert.deepEqual(itemCall.slice(0, 3), ["api", "--paginate", "--jq"]);
+  for (const field of [
+    ".id",
+    ".node_id",
+    ".content.number",
+    ".content.repository.full_name",
+    ".content.repository.fullName",
+    ".content.repository_url",
+  ]) {
+    assert.match(itemCall[3], new RegExp(field.replaceAll(".", "\\.")));
+  }
+  assert.doesNotMatch(itemCall[3], /\.content\.(body|title|user)/);
+  assert.equal(itemCall.at(-1), "users/owner/projectsV2/2/items?per_page=100");
+  assert.deepEqual(calls.filter((args) => args !== itemCall), [
     ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"],
-    ["api", "--paginate", "--slurp", "users/owner/projectsV2/2/items?per_page=100"],
     ["api", "--paginate", "--slurp", "users/owner/projectsV2/2/fields?per_page=100"],
     ["api", "users/owner/projectsV2/2/items/1701?fields=407"],
   ]);
@@ -322,7 +351,9 @@ test("follows every Link-paginated Project item page without changing live IDs",
   assert.deepEqual(reader.getIssueProjectStatuses(24), ["Done"]);
   const itemCall = calls.find((args) => args.some((value) => String(value).includes("/items?")));
   assert.ok(itemCall.includes("--paginate"));
-  assert.ok(itemCall.includes("--slurp"));
+  assert.ok(itemCall.includes("--jq"));
+  assert.equal(itemCall.includes("--slurp"), false);
+  assert.match(itemCall.find((value) => String(value).includes(".content.number")), /\.content\.repository/);
   assert.equal(itemCall.some((value) => /[?&]page=/.test(String(value))), false);
   assert.equal(calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields=407"))), true);
 });
@@ -339,6 +370,45 @@ test("rejects contradictory membership identity and stale item readback", () => 
     itemResponses: new Map([["2/1701", projectStatusResponse("Done", 1702)]]),
   });
   assert.throws(() => staleReader.getIssueProjectStatuses(24), /same Project item IDs/);
+});
+
+test("rejects malformed Project membership identity before status readback", () => {
+  const missingContent = linkedProjectItem(1701);
+  missingContent.content = undefined;
+  const missingIssueNumber = linkedProjectItem(1701);
+  missingIssueNumber.content.number = undefined;
+  const blankRepository = linkedProjectItem(1701);
+  blankRepository.content.repository.full_name = "   ";
+  blankRepository.content.repository_url = undefined;
+  const invalidRepositoryUrl = linkedProjectItem(1701);
+  invalidRepositoryUrl.content.repository_url = "https://example.test/repos/owner/repo";
+  const cases = [
+    { item: { ...linkedProjectItem(1701), id: undefined }, error: /items with IDs/ },
+    { item: { ...linkedProjectItem(1701), node_id: undefined }, error: /items with global IDs/ },
+    { item: missingContent, error: /repository identity/ },
+    { item: missingIssueNumber, error: /valid issue number/ },
+    { item: blankRepository, error: /non-blank repository identity/ },
+    { item: invalidRepositoryUrl, error: /canonical repository URL/ },
+  ];
+
+  for (const { item, error } of cases) {
+    const { reader, calls } = createProjectStatusReader({ itemsByProject: new Map([["2", [item]]]) });
+    assert.throws(() => reader.getIssueProjectStatuses(24), error);
+    assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
+    assert.equal(calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields="))), false);
+  }
+});
+
+test("rejects contradictory repository identity casing before status readback", () => {
+  const contradictory = linkedProjectItem(1701);
+  contradictory.content.repository.fullName = "other/repo";
+  const { reader, calls } = createProjectStatusReader({
+    itemsByProject: new Map([["2", [contradictory]]]),
+  });
+
+  assert.throws(() => reader.getIssueProjectStatuses(24), /one non-contradictory repository identity/);
+  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
+  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields="))), false);
 });
 
 test("rejects two open linked Projects even when their statuses disagree", () => {
