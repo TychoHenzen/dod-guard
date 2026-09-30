@@ -58,12 +58,12 @@ function run(command, args, { name, allowFailure = false, env = process.env, she
   if (status !== 0 && !allowFailure) {
     throw new Error(`${name} exited with status ${status}`);
   }
-  return { status, stdout: result.stdout ?? "" };
+  return { status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
 }
 
-function runNpm(name, args) {
+function runNpm(name, args, options = {}) {
   const command = npmCommand(args);
-  return run(command.command, command.args, { name, shell: command.shell });
+  return run(command.command, command.args, { name, shell: command.shell, ...options });
 }
 
 function runNode(name, script, args, options = {}) {
@@ -172,6 +172,47 @@ function runCoverageRatchet(failures) {
   }
 }
 
+function runBiomeCheck() {
+  const primary = runNpm(
+    "Biome strict check",
+    ["exec", "--", "biome", "check", "--max-diagnostics=200", "--no-errors-on-unmatched"],
+    {
+      allowFailure: true,
+    },
+  );
+  const output = `${primary.stdout}${primary.stderr}`;
+  if (!/Diagnostics not shown:\s*[1-9]\d*/.test(output)) {
+    if (primary.status !== 0) throw new Error(`Biome strict check exited with status ${primary.status}`);
+    return;
+  }
+
+  let fallback;
+  let fallbackError;
+  try {
+    fallback = runNpm(
+      "Biome error diagnostics",
+      [
+        "exec",
+        "--",
+        "biome",
+        "check",
+        "--diagnostic-level=error",
+        "--max-diagnostics=none",
+        "--no-errors-on-unmatched",
+      ],
+      { allowFailure: true },
+    );
+  } catch (error) {
+    fallbackError = error;
+  }
+
+  const failures = [];
+  if (primary.status !== 0) failures.push(`Biome strict check exited with status ${primary.status}`);
+  if (fallbackError) failures.push(fallbackError.message);
+  else if (fallback.status !== 0) failures.push(`Biome error diagnostics exited with status ${fallback.status}`);
+  if (failures.length > 0) throw new Error(failures.join("; "));
+}
+
 function runRatchets() {
   const failures = [];
   const env = { ...process.env, QUALITY_RULES, QUALITY_SCAN };
@@ -187,7 +228,7 @@ function runRatchets() {
   runNode("Unacknowledged quality-gate waivers", "packages/quality-guard/scripts/check-skips.mjs", ["."]);
   runAdvisoryRatchet(failures);
   runCoverageRatchet(failures);
-  runNpm("Biome strict check", ["exec", "--", "biome", "check", "--max-diagnostics=200", "--no-errors-on-unmatched"]);
+  runBiomeCheck();
   if (failures.length > 0) {
     throw new Error(`RATCHET FAILED for: ${failures.join(", ")}`);
   }
