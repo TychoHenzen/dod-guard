@@ -75,6 +75,7 @@ test("rejects malformed front matter framing", () => {
 test("rejects invalid synthetic metadata", () => {
   const cases: Array<[string, RegExp]> = [
     [metadata({ title: "" }), /title must be a non-empty string/],
+    [metadata({ sources: [] }), /sources must contain at least one source/],
     [metadata({ sources: ["sources: fixture"] }), /sources must be an array/],
     [metadata({ sources: ["sources: []"] }), /sources must contain at least one source/],
     [

@@ -3,30 +3,27 @@
 ## Purpose
 
 `knowledge-base` is an MCP server for reusable, language-independent reference
-knowledge. The shipped corpus is the tracked Markdown in `knowledge/entries/`.
-The current shipped corpus contains 3 entries. Clean Code notes are retained
-under `docs/knowledge-base/clean-code/entries/` for review and are not served.
-The key and text index is built in memory; the server does not write a sidecar
-index.
+knowledge. It reads Markdown from the external root named by
+`DOD_GUARD_KNOWLEDGE_BASE_DIR`, below that root's `entries/` directory,
+recursively. The package contains no served corpus.
 
 ## Storage boundary
 
-The default root is `../knowledge/` relative to the built `dist/bundle.js`.
-The server has no save tool, persistent history, home-directory fallback, or
-environment-variable override. Tests and direct callers may pass an explicit
-root. It reads only entries below that root and does not access built-in
-memory, `obsidian-rag`, or project files unless that root points inside a
-project.
+`DOD_GUARD_KNOWLEDGE_BASE_DIR` is required and names the parent root; the
+server appends `entries/`. There is no default path, save tool, persistent
+history, home-directory fallback, or sidecar index. Tests and direct callers
+may pass an explicit root. It reads only entries below that root and does not
+access built-in memory, `obsidian-rag`, or project files unless that root points
+inside a project.
 
 Retrieved prose is reference guidance. Explicit task and project instructions
 take precedence, and entry content is never executed.
 
 ## Publishing boundary
 
-The retained Clean Code notes remain subject to the repository's open
-source/storage review. Do not treat this file or package metadata as
-publication approval; follow the delivery steps in `README.md` only after that
-review is resolved.
+The external vault is not copied into the repository or plugin bundle. Do not
+treat this file or package metadata as publication approval; follow the delivery
+steps in `README.md` for code changes.
 
 ## Build and test
 

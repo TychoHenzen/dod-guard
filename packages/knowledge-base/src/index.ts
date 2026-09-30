@@ -15,18 +15,23 @@ function packageInfo(): { name: string; version: string } {
   return JSON.parse(readFileSync(packagePath, "utf8")) as { name: string; version: string };
 }
 
-function shippedKnowledgeBaseDir(): string {
-  return join(dirname(fileURLToPath(import.meta.url)), "..", "knowledge");
+const KNOWLEDGE_BASE_DIR_ENV = "DOD_GUARD_KNOWLEDGE_BASE_DIR";
+
+export function defaultKnowledgeBaseDir(): string {
+  const rootDir = process.env[KNOWLEDGE_BASE_DIR_ENV];
+  if (!rootDir?.trim()) {
+    throw new Error(`${KNOWLEDGE_BASE_DIR_ENV} must be set to the external knowledge-base root`);
+  }
+  return rootDir;
 }
 
-export function createKnowledgeBaseServer(rootDir = shippedKnowledgeBaseDir()): McpServer {
+export function createKnowledgeBaseServer(rootDir = defaultKnowledgeBaseDir()): McpServer {
   const pkg = packageInfo();
   const server = new McpServer({ name: pkg.name, version: pkg.version }, { capabilities: { tools: {} } });
   registerKnowledgeTools(server, new KnowledgeBase(rootDir));
   return server;
 }
 
-const server = createKnowledgeBaseServer();
 const filename = fileURLToPath(import.meta.url);
 
 function isMainModule(): boolean {
@@ -40,6 +45,7 @@ function isMainModule(): boolean {
 }
 
 async function main(): Promise<void> {
+  const server = createKnowledgeBaseServer();
   await server.connect(new StdioServerTransport());
 }
 

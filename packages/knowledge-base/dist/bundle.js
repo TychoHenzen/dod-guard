@@ -28773,7 +28773,7 @@ var StdioServerTransport = class {
 };
 
 // src/store.ts
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
 // src/schema.ts
@@ -28911,22 +28911,35 @@ function parseKnowledgeDocument(raw, location) {
 
 // src/store.ts
 var ENTRIES_DIR = "entries";
+var KNOWLEDGE_BASE_DIR_ENV = "DOD_GUARD_KNOWLEDGE_BASE_DIR";
 var TOKEN_PATTERN = /[\p{L}\p{N}]+(?:[#+.-][\p{L}\p{N}]*)*/gu;
 async function markdownFiles(dir) {
   const files = [];
-  let entries;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch (error2) {
-    if (error2.code === "ENOENT") return files;
-    throw error2;
-  }
+  const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) files.push(...await markdownFiles(path));
     else if (entry.isFile() && entry.name.endsWith(".md")) files.push(path);
   }
   return files;
+}
+async function requireDirectory(path, label) {
+  try {
+    const details = await stat(path);
+    if (!details.isDirectory()) {
+      throw new KnowledgeBaseError(
+        `Knowledge-base ${label} path configured by ${KNOWLEDGE_BASE_DIR_ENV} is not a directory: ${path}`
+      );
+    }
+  } catch (error2) {
+    if (error2 instanceof KnowledgeBaseError) throw error2;
+    if (error2.code === "ENOENT") {
+      throw new KnowledgeBaseError(
+        `Knowledge-base ${label} path configured by ${KNOWLEDGE_BASE_DIR_ENV} does not exist: ${path}`
+      );
+    }
+    throw error2;
+  }
 }
 function summary(entry) {
   if (!entry.path) throw new KnowledgeBaseError(`entry ${entry.key} has no stored path`);
@@ -28978,6 +28991,8 @@ var KnowledgeBase = class {
     this.now = now;
   }
   async buildIndex() {
+    await requireDirectory(this.rootDir, "root");
+    await requireDirectory(this.entriesDir, "entries");
     const files = await markdownFiles(this.entriesDir);
     const entries = [];
     for (const file of files.sort()) {
@@ -29081,8 +29096,8 @@ async function safe(operation) {
     return errorResponse(error2);
   }
 }
-function registerKnowledgeTools(server2, knowledgeBase) {
-  server2.tool(
+function registerKnowledgeTools(server, knowledgeBase) {
+  server.tool(
     "knowledge_list_chapters",
     "List knowledge chapters without returning entry content. Start here for progressive disclosure.",
     {},
@@ -29092,7 +29107,7 @@ function registerKnowledgeTools(server2, knowledgeBase) {
       chapters: await knowledgeBase.chapters()
     }))
   );
-  server2.tool(
+  server.tool(
     "knowledge_list_sections",
     "List sections in one knowledge chapter without returning unrelated entry content.",
     { chapter: external_exports.string().min(1).describe("Stable chapter key") },
@@ -29102,7 +29117,7 @@ function registerKnowledgeTools(server2, knowledgeBase) {
       sections: await knowledgeBase.sections(chapter)
     }))
   );
-  server2.tool(
+  server.tool(
     "knowledge_list_entries",
     "List entry summaries in one section. Use the returned key to request full content.",
     {
@@ -29115,7 +29130,7 @@ function registerKnowledgeTools(server2, knowledgeBase) {
       entries: await knowledgeBase.entries(chapter, section)
     }))
   );
-  server2.tool(
+  server.tool(
     "knowledge_search",
     "Search stable keys and indexed text. Results are summaries only and never include full entry content.",
     {
@@ -29128,7 +29143,7 @@ function registerKnowledgeTools(server2, knowledgeBase) {
       entries: await knowledgeBase.search(query, limit)
     }))
   );
-  server2.tool(
+  server.tool(
     "knowledge_get_entry",
     "Return one complete knowledge entry after a stable key has been selected, including content, provenance, and related entries.",
     { key: external_exports.string().min(1).describe("Stable entry key") },
@@ -29148,16 +29163,20 @@ function packageInfo() {
   if (!packagePath) throw new Error("knowledge-base package.json is missing");
   return JSON.parse(readFileSync(packagePath, "utf8"));
 }
-function shippedKnowledgeBaseDir() {
-  return join2(dirname(fileURLToPath(import.meta.url)), "..", "knowledge");
+var KNOWLEDGE_BASE_DIR_ENV2 = "DOD_GUARD_KNOWLEDGE_BASE_DIR";
+function defaultKnowledgeBaseDir() {
+  const rootDir = process2.env[KNOWLEDGE_BASE_DIR_ENV2];
+  if (!rootDir?.trim()) {
+    throw new Error(`${KNOWLEDGE_BASE_DIR_ENV2} must be set to the external knowledge-base root`);
+  }
+  return rootDir;
 }
-function createKnowledgeBaseServer(rootDir = shippedKnowledgeBaseDir()) {
+function createKnowledgeBaseServer(rootDir = defaultKnowledgeBaseDir()) {
   const pkg = packageInfo();
-  const server2 = new McpServer({ name: pkg.name, version: pkg.version }, { capabilities: { tools: {} } });
-  registerKnowledgeTools(server2, new KnowledgeBase(rootDir));
-  return server2;
+  const server = new McpServer({ name: pkg.name, version: pkg.version }, { capabilities: { tools: {} } });
+  registerKnowledgeTools(server, new KnowledgeBase(rootDir));
+  return server;
 }
-var server = createKnowledgeBaseServer();
 var filename = fileURLToPath(import.meta.url);
 function isMainModule() {
   const argument = process2.argv[1];
@@ -29169,6 +29188,7 @@ function isMainModule() {
   }
 }
 async function main() {
+  const server = createKnowledgeBaseServer();
   await server.connect(new StdioServerTransport());
 }
 if (isMainModule()) {
@@ -29180,5 +29200,6 @@ if (isMainModule()) {
 }
 export {
   KnowledgeBase,
-  createKnowledgeBaseServer
+  createKnowledgeBaseServer,
+  defaultKnowledgeBaseDir
 };

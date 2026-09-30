@@ -1,24 +1,14 @@
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-export const shippedKnowledgeRoot = join(packageRoot, "knowledge");
-
-export async function shippedEntryText(name: string): Promise<string> {
-  return readFile(join(shippedKnowledgeRoot, "entries", name), "utf8");
-}
-
-export async function copyShippedKnowledgeRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "knowledge-base-test-"));
-  await cp(shippedKnowledgeRoot, root, { recursive: true });
-  return root;
-}
 
 export async function createSyntheticKnowledgeRoot(entries: Record<string, string>): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "knowledge-base-synthetic-"));
+  await mkdir(join(root, "entries"), { recursive: true });
   for (const [name, content] of Object.entries(entries)) {
     const path = join(root, "entries", name);
     await mkdir(dirname(path), { recursive: true });
@@ -26,8 +16,6 @@ export async function createSyntheticKnowledgeRoot(entries: Record<string, strin
   }
   return root;
 }
-
-export const createKnowledgeRoot = copyShippedKnowledgeRoot;
 
 export async function removeRoot(root: string): Promise<void> {
   await rm(root, { recursive: true, force: true });

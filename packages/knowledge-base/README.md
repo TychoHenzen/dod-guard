@@ -1,12 +1,10 @@
 # knowledge-base
 
-`knowledge-base` serves the read-only Markdown corpus tracked in
-`knowledge/entries/` and shipped with this plugin. The shipped corpus contains
-3 entries across Refactoring, Design Patterns, and UX/UI Design. Clean Code
-notes are retained under `docs/knowledge-base/clean-code/entries/` outside the
-package and are not served.
-The bundled server resolves the corpus relative to `dist/bundle.js`; it does
-not read a home-directory root or an environment-variable override.
+`knowledge-base` serves read-only Markdown from the external root named by
+`DOD_GUARD_KNOWLEDGE_BASE_DIR`. The server reads Markdown below
+`<root>/entries/` recursively. The setting is required; there is no bundled
+corpus, default path, home-directory fallback, or environment-independent
+source of entries.
 
 ## Progressive retrieval
 
@@ -19,12 +17,12 @@ Use the tools in this order:
 
 `knowledge_search` returns summaries and stable keys, not full entry content.
 The MCP server exposes five read-only tools and has no save tool. Author
-knowledge by editing the tracked Markdown entries.
+knowledge by editing Markdown entries under the configured external root.
 
 ## Markdown schema
 
-Each file lives under `knowledge/entries/` and uses a stable key as its
-filename, such as `knowledge/entries/example.topic.md`:
+Each file lives under `<root>/entries/` and uses a stable key in its front
+matter, such as `<root>/entries/example/topic.md`:
 
 ```markdown
 ---
@@ -47,18 +45,17 @@ Full reference content goes here.
 
 Keys use lowercase letters, digits, dots, and hyphens. An entry key belongs to
 its chapter, and a section key belongs to its chapter. Related keys must exist.
-Malformed documents, duplicate keys, and missing related keys fail corpus
-validation. The search index is rebuilt in memory.
+Malformed documents, duplicate keys, and missing related keys fail validation.
+The search index is rebuilt in memory for each request.
 
 ## Delivery
 
-The retained Clean Code notes remain subject to the repository's open
-source/storage review; do not move them into the shipped corpus until that
-review is resolved. After an approved corpus change is merged, follow the
-repository's `/publish` workflow,
-then run `/plugin update` in Claude Code and start a new session. Existing
-sessions may need a restart. The Codex MCP pool serves the same published
-bundle at `/servers/knowledge-base/mcp`.
+The external vault is not packaged or published with this plugin. After a code
+change is merged, follow the repository's `/publish` workflow, then run
+`/plugin update` in Claude Code and start a new session. Existing sessions may
+need a restart. The Codex MCP pool serves the published bundle at
+`/servers/knowledge-base/mcp`; configure its process with
+`DOD_GUARD_KNOWLEDGE_BASE_DIR` before starting it.
 
 ## Guidance boundary
 

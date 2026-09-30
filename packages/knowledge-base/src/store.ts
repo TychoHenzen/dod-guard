@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 import {
   type EntrySummary,
@@ -13,6 +13,7 @@ import {
 } from "./schema.js";
 
 const ENTRIES_DIR = "entries";
+const KNOWLEDGE_BASE_DIR_ENV = "DOD_GUARD_KNOWLEDGE_BASE_DIR";
 const TOKEN_PATTERN = /[\p{L}\p{N}]+(?:[#+.-][\p{L}\p{N}]*)*/gu;
 
 interface ChapterSummary {
@@ -28,19 +29,32 @@ interface SectionSummary {
 
 async function markdownFiles(dir: string): Promise<string[]> {
   const files: string[] = [];
-  let entries;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return files;
-    throw error;
-  }
+  const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) files.push(...(await markdownFiles(path)));
     else if (entry.isFile() && entry.name.endsWith(".md")) files.push(path);
   }
   return files;
+}
+
+async function requireDirectory(path: string, label: "root" | "entries"): Promise<void> {
+  try {
+    const details = await stat(path);
+    if (!details.isDirectory()) {
+      throw new KnowledgeBaseError(
+        `Knowledge-base ${label} path configured by ${KNOWLEDGE_BASE_DIR_ENV} is not a directory: ${path}`,
+      );
+    }
+  } catch (error) {
+    if (error instanceof KnowledgeBaseError) throw error;
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new KnowledgeBaseError(
+        `Knowledge-base ${label} path configured by ${KNOWLEDGE_BASE_DIR_ENV} does not exist: ${path}`,
+      );
+    }
+    throw error;
+  }
 }
 
 function summary(entry: KnowledgeEntry | IndexedEntry): EntrySummary {
@@ -104,6 +118,8 @@ export class KnowledgeBase {
   }
 
   private async buildIndex(): Promise<KnowledgeIndex> {
+    await requireDirectory(this.rootDir, "root");
+    await requireDirectory(this.entriesDir, "entries");
     const files = await markdownFiles(this.entriesDir);
     const entries: KnowledgeEntry[] = [];
     for (const file of files.sort()) {

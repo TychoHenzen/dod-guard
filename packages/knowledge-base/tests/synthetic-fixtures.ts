@@ -71,3 +71,23 @@ export const syntheticToolEntries = {
     "Related full content.",
   ].join("\n"),
 };
+
+export const syntheticSchemaEntry = [
+  "---",
+  "key: schema.sample",
+  "title: Sample synthetic entry",
+  "chapter: schema",
+  "section: schema.validation",
+  "summary: Synthetic schema fixture",
+  "sources:",
+  "  - label: synthetic fixture",
+  "    project: fixture-project",
+  "    language: TypeScript",
+  "related_keys: []",
+  "---",
+  "Generic synthetic Markdown content.",
+].join("\n");
+
+export const syntheticSchemaEntries = {
+  "schema/sample.md": syntheticSchemaEntry,
+};

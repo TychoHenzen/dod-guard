@@ -1,7 +1,7 @@
 {
   "name": "knowledge-base",
-  "version": "0.1.2",
-  "description": "Read-only retrieval from the repository-authored Markdown corpus shipped with this plugin. Browse chapters, sections, and source-linked entries.",
+  "version": "0.1.3",
+  "description": "Read-only retrieval from Markdown in an externally configured knowledge-base vault. Browse chapters, sections, and source-linked entries.",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/TychoHenzen"
@@ -18,8 +18,8 @@
   },
   "interface": {
     "displayName": "knowledge-base",
-    "shortDescription": "Browse the shipped read-only Markdown corpus in stages.",
-    "longDescription": "Reads the tracked Markdown corpus shipped with the plugin and returns chapter, section, summary, and full-content views separately. Author updates by editing tracked entries; publication remains subject to the repository's source/storage review.",
+    "shortDescription": "Browse an externally configured read-only Markdown knowledge base.",
+    "longDescription": "Reads Markdown recursively below DOD_GUARD_KNOWLEDGE_BASE_DIR/entries and returns chapter, section, summary, and full-content views separately. The setting is required and the server exposes five read-only tools with no bundled corpus or write path.",
     "developerName": "tychohenzen",
     "category": "Developer Tools",
     "capabilities": ["MCP tools", "Progressive retrieval"],
