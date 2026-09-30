@@ -1,0 +1,11 @@
+[
+  {
+    "findingId": "5388f10ba1ce00bb965a0255cb87ab0fe1e3a64857250a723bd5a4a61cf453ea",
+    "fingerprint": "d741dfbe08e35646b6d905d43d76d22137ef5bddef4e3697062f85d5274ab907",
+    "baseSha": "b77e507485d361941f93c54774a72e54755815e3",
+    "targetSha": "a4b55d9e3532eb092835d03248be56b05c825a69",
+    "reason": "Reviewed in PR #729: this intentional public compatibility wrapper is exercised by complete-pr convergence recovery and its focused tests; the resolved review thread accepts the behavior.",
+    "author": "Codex",
+    "time": "2026-09-30T20:48:11.655Z"
+  }
+]
