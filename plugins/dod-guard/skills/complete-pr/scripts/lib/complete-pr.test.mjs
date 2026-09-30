@@ -433,7 +433,38 @@ test("stops on a temporary-ref provider read failure", async () => {
       options: { headPollLimit: 2, pollMs: 0 },
       repository: client.repositoryDetails,
     }),
-    failure,
+    {
+      code: "head_convergence_provider_error",
+      message: /temporary pull-request refs.*expected synchronized SHA head-2.*HTTP 503: temporary ref read failed.*source branch head-2.*PR API head head-2.*refs\/pull\/24\/head <unread>/,
+    },
+  );
+  assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
+});
+
+test("includes identities when a synthetic merge ref read fails", async () => {
+  const client = new FixtureClient({
+    pullRefs: [[
+      { kind: "head", ref: "refs/pull/24/head", sha: "head-2" },
+      { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-ref" },
+    ]],
+    sourceRefs: [{ sha: "head-2" }],
+  });
+  const failure = new Error("HTTP 503: synthetic merge ref read failed");
+  client.getCommit = () => {
+    throw failure;
+  };
+
+  await assert.rejects(
+    waitForHeadConvergence(client, {
+      expectedHead: "head-2",
+      initialPullRequest: pull({ headSha: "head-2", isDraft: false }),
+      options: { headPollLimit: 1, pollMs: 0 },
+      repository: client.repositoryDetails,
+    }),
+    {
+      code: "head_convergence_provider_error",
+      message: /synthetic merge ref.*expected synchronized SHA head-2.*HTTP 503: synthetic merge ref read failed.*source branch head-2.*PR API head head-2.*refs\/pull\/24\/head head-2/,
+    },
   );
   assert.equal(client.calls.some(([name]) => ["dispatch", "mergePullRequest", "deleteBranchRef"].includes(name)), false);
 });

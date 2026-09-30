@@ -85,11 +85,32 @@ function refSha(refs, kind) {
   return refs.find((ref) => ref.kind === kind)?.sha ?? "<missing>";
 }
 
+function convergenceProviderError(error, expectedHead, observed, operation) {
+  const cause = error instanceof Error ? error.message : String(error);
+  return new CompletionError(
+    "head_convergence_provider_error",
+    `Failed to read ${operation} while converging pull request #${observed.pullNumber} on expected synchronized SHA ${expectedHead}: ${cause}. ` +
+      `Observed source branch ${observed.branchSha}, PR API head ${observed.pullRequestSha}, ` +
+      `and refs/pull/${observed.pullNumber}/head ${observed.pullHeadSha}.`,
+    { cause: error },
+  );
+}
+
 function requireMergeRefParent(client, mergeRef, expectedHead, observed) {
   if (!mergeRef) {
     return;
   }
-  const commit = client.getCommit(mergeRef.sha);
+  let commit;
+  try {
+    commit = client.getCommit(mergeRef.sha);
+  } catch (error) {
+    throw convergenceProviderError(
+      error,
+      expectedHead,
+      observed,
+      `synthetic merge ref refs/pull/${observed.pullNumber}/merge at ${mergeRef.sha}`,
+    );
+  }
   const hasExpectedParent = commit && Array.isArray(commit.parents) && commit.parents.includes(expectedHead);
   if (!hasExpectedParent) {
     stop(
@@ -119,13 +140,19 @@ async function readHeadConvergenceAttempt(client, { repository, initialPullReque
     pullRequest = await client.getPullRequest(initialPullRequest.number);
   }
   requireConvergencePullRequest(repository, initialPullRequest, pullRequest, allowMerged);
-  const refs = await client.getPullRequestRefs(initialPullRequest.number);
   const observed = {
     branchSha: branchRef.sha,
     pullNumber: initialPullRequest.number,
     pullRequestSha: pullRequest.headSha ?? "<missing>",
-    pullHeadSha: refSha(refs, "head"),
+    pullHeadSha: "<unread>",
   };
+  let refs;
+  try {
+    refs = await client.getPullRequestRefs(initialPullRequest.number);
+  } catch (error) {
+    throw convergenceProviderError(error, expectedHead, observed, "temporary pull-request refs");
+  }
+  observed.pullHeadSha = refSha(refs, "head");
   const mergeRef = refs.find((ref) => ref.kind === "merge");
   requireMergeRefParent(client, mergeRef, expectedHead, observed);
   return {
