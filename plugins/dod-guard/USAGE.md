@@ -27,6 +27,12 @@ After an uncertain write, the skill reads back the affected remote state before
 any retry, repairs the smallest verified cause, and resumes. One identical
 transient retry is allowed; safety, authority, credential, provider/head, and
 required-evidence failures still stop the workflow.
+An active command-session handle is authoritative in-progress state: wait or
+poll that same handle to a terminal result before retrying or launching another
+copy, preserve the exact command and session evidence, and treat missing
+intermediate output as non-failure. Only explicit cancellation or confirmed
+session failure permits a retry; cancel only the invocation-owned process or
+session when required, confirm it stopped, then resume.
 
 ## Backlog to draft PR
 

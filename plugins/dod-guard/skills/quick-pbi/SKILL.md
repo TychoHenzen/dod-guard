@@ -64,7 +64,13 @@ referenced skill from the active plugin root before invoking it.
    failure is incomplete only when it produces no
    terminal report with a recommendation; validation, coverage, findings, and
    required-check results in an existing report are completed review evidence,
-   not an incomplete execution. For an incomplete execution, record the exact
+    not an incomplete execution. An active command-session handle is
+    authoritative in-progress state: wait or poll that same handle to a terminal
+    result, preserve the exact command and session evidence, and do not treat
+    missing intermediate output as failure or launch a duplicate check or
+    reviewer. Retry only after explicit cancellation or confirmed session
+    failure; terminate only the invocation-owned process or session when
+    required and confirm it stopped first. For an incomplete execution, record the exact
    failure class and evidence, read back the remote review state,
    repair the cause, verify the repair, and retry until a completed
    recommendation exists; do not repeat an unchanged failure blindly. For a

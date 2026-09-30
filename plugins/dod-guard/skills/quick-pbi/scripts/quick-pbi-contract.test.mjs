@@ -96,6 +96,22 @@ test("distinguishes incomplete execution from completed review evidence", () => 
   ]);
 });
 
+test("waits on active command sessions before retrying checks or reviewers", () => {
+  assert.match(skill, /active command-session handle is\s+authoritative in-progress state/);
+  assert.match(skill, /wait or\s+poll that same handle to a terminal\s+result/);
+  assert.match(skill, /preserve the exact command and\s+session evidence/);
+  assert.match(skill, /missing intermediate output as failure[\s\S]*launch a duplicate check or\s+reviewer/);
+  assert.match(skill, /explicit cancellation or confirmed\s+session\s+failure/);
+  assert.match(skill, /invocation-owned process or session[\s\S]*confirm it stopped first/);
+  assert.match(reviewSkill, /active session handle[\s\S]*same reviewer invocation[\s\S]*terminal result/);
+  assert.match(reviewSkill, /missing intermediate output as failure[\s\S]*launch a duplicate reviewer/);
+  assert.match(reviewSkill, /explicit cancellation or[\s\S]*confirmed session failure/);
+  assert.match(usage, /active command-session handle is\s+authoritative in-progress state/);
+  assert.match(usage, /wait or\s+poll that same handle to a terminal\s+result/);
+  assert.match(usage, /missing\s+intermediate output as non-failure/);
+  assert.match(usage, /invocation-owned process or\s+session[\s\S]*confirm it stopped/);
+});
+
 test("reconciles timed-out reviewers and resolves findings without a second review", () => {
   assertInOrder(skill, [
     /timeout or interruption/,
