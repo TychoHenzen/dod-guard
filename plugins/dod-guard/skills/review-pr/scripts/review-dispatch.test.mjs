@@ -12,7 +12,7 @@ import { join } from "node:path";
 import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { dispatchReviewers, WINDOWS_REVIEWER_CONCURRENCY } from "./review-dispatch.mjs";
+import { dispatchReviewers, incompleteEntries, WINDOWS_REVIEWER_CONCURRENCY } from "./review-dispatch.mjs";
 import { REVIEWERS } from "./lib/review-units.mjs";
 
 const REVIEW_SCHEMA_PATH = join(process.cwd(), "plugins", "dod-guard", "skills", "review-pr", "response-schema.json");
@@ -40,6 +40,10 @@ if (input.reviewer === "review-pr-feature" && process.env.REVIEW_FAIL_ONCE === "
   await writeFile(process.env.REVIEW_STATE, "failed");
   process.stderr.write("fixture launch failure");
   process.exit(23);
+}
+if (input.reviewer === "review-pr-feature" && process.env.REVIEW_FALLBACK === "true" && !(await readFile(process.env.REVIEW_STATE, "utf8").catch(() => ""))) {
+  await writeFile(process.env.REVIEW_STATE, "fallback");
+  process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "error", message: "Model metadata for gpt-5.6-luna not found. Defaulting to fallback metadata; this can degrade performance and cause issues." } }) + "\\n");
 }
 await new Promise((resolve) => setTimeout(resolve, 20));
 const outputPath = args[args.indexOf("--output-last-message") + 1];
@@ -198,12 +202,49 @@ test("keeps failed launches incomplete and retries only that reviewer", async ()
     assert.equal(failed.reviews.slice(1).every(({ execution }) => execution.status === "completed"), true);
 
     const retry = await dispatchReviewers({
-      reviewers: [prompts[0]],
+      reviewers: incompleteEntries(prompts, failed),
       executable: process.execPath,
       prefixArgs: [fixture.executable],
       schemaPath: REVIEW_SCHEMA_PATH,
       tempRoot: fixture.root,
       env: { REVIEW_RECORD: fixture.record, REVIEW_FAIL_ONCE: "true", REVIEW_STATE: fixture.state },
+      platform: "win32",
+    });
+    assert.equal(retry.terminal, true);
+    assert.equal(retry.reviews[0].execution.status, "completed");
+    const records = JSON.parse(await readFile(fixture.record, "utf8"));
+    assert.deepEqual(records.map(({ reviewer }) => reviewer), [...REVIEWERS, "review-pr-feature"]);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("keeps model-metadata fallback incomplete and retries only that reviewer", async () => {
+  const fixture = await createFixture();
+  try {
+    const failed = await dispatchReviewers({
+      reviewers: prompts,
+      executable: process.execPath,
+      prefixArgs: [fixture.executable],
+      schemaPath: REVIEW_SCHEMA_PATH,
+      tempRoot: fixture.root,
+      env: { REVIEW_RECORD: fixture.record, REVIEW_FALLBACK: "true", REVIEW_STATE: fixture.state },
+      platform: "win32",
+    });
+    assert.equal(failed.terminal, false);
+    assert.equal(failed.reviews[0].reviewer, "review-pr-feature");
+    assert.equal(failed.reviews[0].execution.status, "incomplete");
+    assert.equal(failed.reviews[0].execution.exitCode, 0);
+    assert.match(failed.reviews[0].error, /Model metadata for gpt-5\.6-luna not found/);
+    assert.equal(failed.reviews.slice(1).every(({ execution }) => execution.status === "completed"), true);
+
+    const retry = await dispatchReviewers({
+      reviewers: [prompts[0]],
+      executable: process.execPath,
+      prefixArgs: [fixture.executable],
+      schemaPath: REVIEW_SCHEMA_PATH,
+      tempRoot: fixture.root,
+      env: { REVIEW_RECORD: fixture.record, REVIEW_FALLBACK: "true", REVIEW_STATE: fixture.state },
       platform: "win32",
     });
     assert.equal(retry.terminal, true);

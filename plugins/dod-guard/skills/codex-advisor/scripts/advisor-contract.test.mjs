@@ -84,6 +84,32 @@ switch (process.env.ADVISOR_MODE) {
   case "large-output":
     process.stdout.write("x".repeat(8 * 1024 * 1024 + 1));
     break;
+  case "fallback":
+    await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
+    process.stdout.write(JSON.stringify({
+      type: "item.completed",
+      item: {
+        type: "error",
+        message: "Model metadata for gpt-test-model not found. Defaulting to fallback metadata; this can degrade performance and cause issues.",
+      },
+    }) + "\\n");
+    break;
+  case "different-model-fallback":
+    await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
+    process.stdout.write(JSON.stringify({
+      type: "item.completed",
+      item: {
+        type: "error",
+        message: "Model metadata for gpt-other-model not found. Defaulting to fallback metadata; this can degrade performance and cause issues.",
+      },
+    }) + "\\n");
+    break;
+  case "unrelated-output":
+    await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
+    process.stdout.write("fixture banner\\n");
+    process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "fallback metadata is unrelated" } }) + "\\n");
+    process.stdout.write("not a JSON event\\n");
+    break;
   default:
     await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
 }
@@ -217,6 +243,30 @@ test("advisor runner exposes start, exit, output, and schema failures", async ()
     const largeOutput = await runFixture(fixture, "large-output");
     assert.equal(largeOutput.ok, false);
     assert.match(largeOutput.error, /output exceeded/);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("advisor runner fails closed on a matching model-metadata fallback event", async () => {
+  const fixture = await createFixture();
+  try {
+    const result = await runFixture(fixture, "fallback", { model: "gpt-test-model" });
+    assert.equal(result.ok, false);
+    assert.equal(result.error, "Model metadata for gpt-test-model not found. Defaulting to fallback metadata; this can degrade performance and cause issues.");
+    assert.equal(result.execution.status, "incomplete");
+    assert.equal(result.execution.stage, "reviewer-process");
+    assert.equal(result.execution.exitCode, 0);
+    assert.equal(result.execution.fallbackEvent.item.type, "error");
+    assert.match(result.execution.stdout, /Model metadata for gpt-test-model not found/);
+
+    const clean = await runFixture(fixture, "unrelated-output", { model: "gpt-test-model" });
+    assert.equal(clean.ok, true);
+    assert.equal(clean.execution.status, "completed");
+
+    const differentModel = await runFixture(fixture, "different-model-fallback", { model: "gpt-test-model" });
+    assert.equal(differentModel.ok, true);
+    assert.equal(differentModel.execution.status, "completed");
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
