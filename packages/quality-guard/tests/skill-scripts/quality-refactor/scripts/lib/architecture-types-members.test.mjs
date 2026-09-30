@@ -60,3 +60,31 @@ test("C# positional record defaults ignore comparison and lambda operators", () 
     ["Count", "Name", "Shift", "Valid"],
   );
 });
+
+test("TypeScript member extraction ignores comments", () => {
+  const result = extractArchitectureFacts({
+    path: "snapshot.ts",
+    content:
+      "export class Snapshot {\n" +
+      "  // commentField CommentDependency\n" +
+      "  /*\n" +
+      "  phantomMethod() { return this.commentTarget.commentRun(); }\n" +
+      "  */\n" +
+      "  /**\n" +
+      "   * tree\n" +
+      "   * Present\n" +
+      "   */\n" +
+      "  readonly targetCommitSha: string;\n" +
+      "  run() { return this.worker.run(); }\n" +
+      "}",
+  });
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.facts.types[0]?.members, [
+    { name: "targetCommitSha", kind: "field", visibility: "public" },
+    { name: "run", kind: "method", visibility: "public" },
+  ]);
+  assert.deepEqual(result.facts.types[0]?.dependencies, []);
+  assert.deepEqual(result.facts.types[0]?.forwardingPaths, [
+    { member: "run", target: "worker.run" },
+  ]);
+});

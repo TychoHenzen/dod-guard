@@ -25216,8 +25216,9 @@ function methodMembers(body, lang) {
   return members2;
 }
 function typeFacts2(type, lang) {
-  const methods = methodMembers(type.body.text, lang);
-  const fields = fieldMembers(type.body.text, lang);
+  const body = strip(type.body.text, lang).code;
+  const methods = methodMembers(body, lang);
+  const fields = fieldMembers(body, lang);
   const members2 = [...methods, ...fields].sort(
     (left, right) => left.kind.localeCompare(right.kind) || left.name.localeCompare(right.name)
   );
@@ -25225,8 +25226,8 @@ function typeFacts2(type, lang) {
     name: type.name,
     kind: type.kind,
     members: members2,
-    dependencies: fieldDependencies(type.body.text),
-    forwardingPaths: forwardingPaths(type.body.text, methods)
+    dependencies: fieldDependencies(body),
+    forwardingPaths: forwardingPaths(body, methods)
   };
 }
 

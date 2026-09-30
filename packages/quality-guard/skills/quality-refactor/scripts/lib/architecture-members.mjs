@@ -4,6 +4,7 @@ import {
   fieldMembers,
   forwardingPaths,
 } from "./architecture-fields.mjs";
+import { strip } from "./strip.mjs";
 
 const METHOD_PATTERNS = {
   ts: new RegExp(
@@ -71,8 +72,9 @@ function methodMembers(body, lang) {
 }
 
 export function typeFacts(type, lang) {
-  const methods = methodMembers(type.body.text, lang);
-  const fields = fieldMembers(type.body.text, lang);
+  const body = strip(type.body.text, lang).code;
+  const methods = methodMembers(body, lang);
+  const fields = fieldMembers(body, lang);
   const members = [...methods, ...fields].sort(
     (left, right) =>
       left.kind.localeCompare(right.kind) ||
@@ -82,7 +84,7 @@ export function typeFacts(type, lang) {
     name: type.name,
     kind: type.kind,
     members,
-    dependencies: fieldDependencies(type.body.text),
-    forwardingPaths: forwardingPaths(type.body.text, methods),
+    dependencies: fieldDependencies(body),
+    forwardingPaths: forwardingPaths(body, methods),
   };
 }
