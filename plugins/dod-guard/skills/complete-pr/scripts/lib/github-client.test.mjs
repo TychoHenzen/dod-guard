@@ -109,7 +109,7 @@ test("does not retry or accept a wrong-provider exact-head check run", () => {
   );
 });
 
-test("reads temporary pull-request refs without exposing a write path", () => {
+test("reads temporary pull-request refs with a delimited pull-number prefix", () => {
   const calls = [];
   const client = new GitHubClient("owner/repo", 24, (args) => {
     calls.push(args);
@@ -127,7 +127,7 @@ test("reads temporary pull-request refs without exposing a write path", () => {
     { kind: "head", ref: "refs/pull/24/head", sha: "head-1" },
     { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-1" },
   ]);
-  assert.deepEqual(calls, [["api", "repos/owner/repo/git/matching-refs/pull/24"]]);
+  assert.deepEqual(calls, [["api", "repos/owner/repo/git/matching-refs/pull/24/"]]);
   assert.equal(calls.some((args) => args.includes("--method") || args.includes("PUT") || args.includes("POST")), false);
 });
 

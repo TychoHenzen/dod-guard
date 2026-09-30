@@ -18,3 +18,23 @@ test("rejects a dry-run flag without merged-recovery mode", () => {
   assert.equal(result.status, 2);
   assert.match(result.stderr, RECOVERY_FLAG);
 });
+
+test("requires a verified pushed head for normal completion", () => {
+  const result = spawnSync(process.execPath, ["complete-pr.mjs", "owner/repo", "24"], {
+    cwd: import.meta.dirname,
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /--pushed-head/);
+});
+
+test("rejects a malformed pushed head", () => {
+  const result = spawnSync(process.execPath, ["complete-pr.mjs", "owner/repo", "24", "--pushed-head", "not-a-sha"], {
+    cwd: import.meta.dirname,
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /verified-head-sha/);
+});

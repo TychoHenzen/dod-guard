@@ -415,6 +415,10 @@ function normalizePullRequestRefs(data, pullNumber, endpoint) {
   });
 }
 
+function pullRequestRefsEndpoint(repository, pullNumber) {
+  return `repos/${repository}/git/matching-refs/pull/${pullNumber}/`;
+}
+
 export function normalizePullRequest(data, repository) {
   const headRepository = data.head?.repo?.full_name ?? null;
   let state = data.state?.toUpperCase() ?? null;
@@ -494,7 +498,7 @@ export class GitHubClient {
 
   getPullRequestRefs(pullNumber = this.pullNumber) {
     const { data, result } = ghJson(
-      ["api", `repos/${this.repository}/git/matching-refs/pull/${pullNumber}`],
+      ["api", pullRequestRefsEndpoint(this.repository, pullNumber)],
       [0, 1],
       this.#commandRunner,
     );
@@ -507,7 +511,7 @@ export class GitHubClient {
     return normalizePullRequestRefs(
       data,
       pullNumber,
-      `repos/${this.repository}/git/matching-refs/pull/${pullNumber}`,
+      pullRequestRefsEndpoint(this.repository, pullNumber),
     );
   }
 

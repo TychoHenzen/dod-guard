@@ -401,6 +401,37 @@ test("rejects a generated merge ref that omits the synchronized source parent", 
   );
 });
 
+test("retries a stale generated merge ref until the synchronized source parent appears", async () => {
+  const client = new FixtureClient({
+    commits: {
+      "merge-old": { parents: ["base-1", "head-1"], sha: "merge-old" },
+      "merge-new": { parents: ["base-1", "head-2"], sha: "merge-new" },
+    },
+    pulls: [pull({ headSha: "head-2", isDraft: false })],
+    pullRefs: [
+      [
+        { kind: "head", ref: "refs/pull/24/head", sha: "head-1" },
+        { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-old" },
+      ],
+      [
+        { kind: "head", ref: "refs/pull/24/head", sha: "head-2" },
+        { kind: "merge", ref: "refs/pull/24/merge", sha: "merge-new" },
+      ],
+    ],
+    sourceRefs: [{ sha: "head-2" }, { sha: "head-2" }],
+  });
+
+  const result = await waitForHeadConvergence(client, {
+    expectedHead: "head-2",
+    initialPullRequest: pull({ headSha: "head-1", isDraft: false }),
+    options: { headPollLimit: 2, pollMs: 0 },
+    repository: client.repositoryDetails,
+  });
+
+  assert.equal(result.headSha, "head-2");
+  assert.deepEqual(client.calls.filter(([name]) => name === "wait"), [["wait"]]);
+});
+
 test("stops on missing temporary head evidence", async () => {
   const client = new FixtureClient({
     pullRefs: [[]],
@@ -829,6 +860,23 @@ test("recovers an already-merged pull request through guarded remote and local c
     ["getBranchRef", "codex/24-complete-pr"],
     ["getBranchRef", "codex/24-complete-pr"],
   ]);
+});
+
+test("recovers merged cleanup when the remote source branch is already absent", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [null],
+    sourceRefs: [null],
+  });
+
+  const result = await recoverMergedPullRequest(client, { ...immediateOptions, localGit });
+
+  assert.equal(result.branch, "already_absent");
+  assert.deepEqual(client.calls.filter(([name]) => name === "getSourceBranchRef"), [
+    ["getSourceBranchRef", "codex/24-complete-pr"],
+  ]);
+  assert.deepEqual(localGit.calls, [["codex/24-complete-pr", "master", { dryRun: false }]]);
 });
 
 test("dry-runs merged pull-request recovery without cleanup mutation", async () => {

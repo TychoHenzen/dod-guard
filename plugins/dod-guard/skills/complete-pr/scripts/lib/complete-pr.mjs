@@ -98,7 +98,7 @@ function convergenceProviderError(error, expectedHead, observed, operation) {
 
 function requireMergeRefParent(client, mergeRef, expectedHead, observed) {
   if (!mergeRef) {
-    return;
+    return true;
   }
   let commit;
   try {
@@ -113,35 +113,43 @@ function requireMergeRefParent(client, mergeRef, expectedHead, observed) {
   }
   const hasExpectedParent = commit && Array.isArray(commit.parents) && commit.parents.includes(expectedHead);
   if (!hasExpectedParent) {
-    stop(
-      "head_merge_ref_mismatch",
-      `refs/pull/${observed.pullNumber}/merge at ${mergeRef.sha} does not identify ${expectedHead} as a source parent.`,
-    );
+    return false;
   }
+  return true;
 }
 
-async function readHeadConvergenceAttempt(client, { repository, initialPullRequest, attempt, trustedHead, allowMerged }) {
+async function readHeadConvergenceAttempt(
+  client,
+  { repository, initialPullRequest, attempt, trustedHead, allowMerged, isFinalAttempt },
+) {
   const branchRef = await sourceBranchRef(client, initialPullRequest.headBranch);
-  if (!branchRef) {
+  if (!branchRef && !allowMerged) {
     stop(
       "head_branch_not_found",
       `Source branch ${initialPullRequest.headBranch} no longer exists while converging pull request #${initialPullRequest.number}.`,
     );
   }
-  if (trustedHead && branchRef.sha !== trustedHead) {
+  if (trustedHead && branchRef && branchRef.sha !== trustedHead) {
     stop(
       "head_branch_changed",
       `Source branch ${initialPullRequest.headBranch} moved from ${trustedHead} to ${branchRef.sha}.`,
     );
   }
-  const expectedHead = trustedHead ?? branchRef.sha;
   let pullRequest = initialPullRequest;
   if (attempt !== 0) {
     pullRequest = await client.getPullRequest(initialPullRequest.number);
   }
   requireConvergencePullRequest(repository, initialPullRequest, pullRequest, allowMerged);
+  const sourceHead = branchRef?.sha ?? pullRequest.headSha;
+  if (trustedHead && sourceHead !== trustedHead) {
+    stop(
+      "head_branch_changed",
+      `Source branch ${initialPullRequest.headBranch} moved from ${trustedHead} to ${sourceHead}.`,
+    );
+  }
+  const expectedHead = trustedHead ?? sourceHead;
   const observed = {
-    branchSha: branchRef.sha,
+    branchSha: branchRef?.sha ?? "<absent>",
     pullNumber: initialPullRequest.number,
     pullRequestSha: pullRequest.headSha ?? "<missing>",
     pullHeadSha: "<unread>",
@@ -154,12 +162,19 @@ async function readHeadConvergenceAttempt(client, { repository, initialPullReque
   }
   observed.pullHeadSha = refSha(refs, "head");
   const mergeRef = refs.find((ref) => ref.kind === "merge");
-  requireMergeRefParent(client, mergeRef, expectedHead, observed);
+  const identitiesConverged = pullRequest.headSha === expectedHead && observed.pullHeadSha === expectedHead;
+  const mergeParentConverged = requireMergeRefParent(client, mergeRef, expectedHead, observed);
+  if (!mergeParentConverged && (identitiesConverged || isFinalAttempt)) {
+    stop(
+      "head_merge_ref_mismatch",
+      `refs/pull/${observed.pullNumber}/merge at ${mergeRef.sha} does not identify ${expectedHead} as a source parent.`,
+    );
+  }
   return {
-    converged: pullRequest.headSha === expectedHead && observed.pullHeadSha === expectedHead,
+    converged: identitiesConverged && mergeParentConverged,
     observed,
     pullRequest,
-    sourceHead: branchRef.sha,
+    sourceHead,
   };
 }
 
@@ -180,6 +195,7 @@ async function waitForHeadConvergence(client, {
       initialPullRequest,
       repository,
       trustedHead,
+      isFinalAttempt: attempt + 1 === options.headPollLimit,
     });
     if (!trustedHead) {
       trustedHead = result.sourceHead;
