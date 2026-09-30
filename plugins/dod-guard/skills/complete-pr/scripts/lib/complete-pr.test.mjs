@@ -158,6 +158,7 @@ class FixtureClient {
     this.workflowDispatchError = options.workflowDispatchError;
     this.enableRepositoryError = options.enableRepositoryError;
     this.deleteBranchError = options.deleteBranchError;
+    this.requiredChecksError = options.requiredChecksError;
     this.projectStatusReader = options.projectStatusReader;
     this.calls = [];
   }
@@ -189,6 +190,9 @@ class FixtureClient {
 
   getRequiredChecks() {
     this.calls.push(["getRequiredChecks"]);
+    if (this.requiredChecksError) {
+      throw this.requiredChecksError;
+    }
     return nextValue(this.checks);
   }
 
@@ -818,6 +822,20 @@ test("stops on missing fallback evidence without merge or branch cleanup", async
   });
   assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
   assert.equal(client.calls.some(([name]) => name === "dispatch"), false);
+});
+
+test("stops without merge or branch cleanup after required-check read recovery is exhausted", async () => {
+  const localGit = createFixtureLocalGit();
+  const failure = new Error("HTTP 500: transient provider failure");
+  const client = new FixtureClient({
+    requiredChecksError: failure,
+    pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
+  });
+
+  await assert.rejects(completePullRequest(client, { ...immediateOptions, localGit }), failure);
+  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
+  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.equal(localGit.calls.length, 0);
 });
 
 test(

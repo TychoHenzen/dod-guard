@@ -5,6 +5,7 @@ import { CompletionError } from "./completion-error.mjs";
 
 const GH_CHECKS_PENDING_EXIT = 8;
 const HTTP_NOT_FOUND = /HTTP 404/;
+const HTTP_TRANSIENT_SERVER_ERROR = /HTTP 5\d{2}/;
 const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
 const JSON_LINE_SEPARATOR = /\r?\n/u;
 const PROJECT_REPOSITORY_IDENTITY_KEYS = ["full_name", "fullName"];
@@ -141,6 +142,17 @@ function projectStatusName(item, statusFieldId, endpoint) {
     throw githubResponseContractError(endpoint, "one non-contradictory Status field/value");
   }
   return names[0];
+}
+
+function readExactHeadCheckRuns(endpoint, commandRunner) {
+  try {
+    return ghJsonPages(endpoint, "check_runs", commandRunner);
+  } catch (error) {
+    if (!HTTP_TRANSIENT_SERVER_ERROR.test(errorMessage(error))) {
+      throw error;
+    }
+    return ghJsonPages(endpoint, "check_runs", commandRunner);
+  }
 }
 
 function errorMessage(error) {
@@ -410,9 +422,8 @@ function readFallbackRequiredChecks(repository, pullRequest, commandRunner) {
     return [];
   }
   const protection = protectionResponse.data ?? {};
-  const checkRuns = ghJsonPages(
+  const checkRuns = readExactHeadCheckRuns(
     `repos/${repository}/commits/${pullRequest.headSha}/check-runs?per_page=100`,
-    "check_runs",
     commandRunner,
   );
   const statusPages = ghJsonPagesData(
