@@ -12,7 +12,7 @@ import { join } from "node:path";
 import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { dispatchReviewers, WINDOWS_REVIEWER_CONCURRENCY } from "./review-dispatch.mjs";
+import { dispatchReviewers, incompleteEntries, WINDOWS_REVIEWER_CONCURRENCY } from "./review-dispatch.mjs";
 import { REVIEWERS } from "./lib/review-units.mjs";
 
 const REVIEW_SCHEMA_PATH = join(process.cwd(), "plugins", "dod-guard", "skills", "review-pr", "response-schema.json");
@@ -202,7 +202,7 @@ test("keeps failed launches incomplete and retries only that reviewer", async ()
     assert.equal(failed.reviews.slice(1).every(({ execution }) => execution.status === "completed"), true);
 
     const retry = await dispatchReviewers({
-      reviewers: [prompts[0]],
+      reviewers: incompleteEntries(prompts, failed),
       executable: process.execPath,
       prefixArgs: [fixture.executable],
       schemaPath: REVIEW_SCHEMA_PATH,
