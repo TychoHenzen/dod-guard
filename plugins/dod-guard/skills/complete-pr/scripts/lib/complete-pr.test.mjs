@@ -321,9 +321,17 @@ test("reads linked Project statuses through REST without GraphQL", () => {
   assert.deepEqual(client.getIssueProjectStatuses(24), ["Done"]);
   const itemCall = calls.find((args) => args.includes("users/owner/projectsV2/2/items?per_page=100"));
   assert.deepEqual(itemCall.slice(0, 3), ["api", "--paginate", "--jq"]);
-  assert.match(itemCall[3], /\.content\.number/);
-  assert.match(itemCall[3], /\.content\.repository\.full_name/);
-  assert.doesNotMatch(itemCall[3], /\.content\.body/);
+  for (const field of [
+    ".id",
+    ".node_id",
+    ".content.number",
+    ".content.repository.full_name",
+    ".content.repository.fullName",
+    ".content.repository_url",
+  ]) {
+    assert.match(itemCall[3], new RegExp(field.replaceAll(".", "\\.")));
+  }
+  assert.doesNotMatch(itemCall[3], /\.content\.(body|title|user)/);
   assert.equal(itemCall.at(-1), "users/owner/projectsV2/2/items?per_page=100");
   assert.deepEqual(calls.filter((args) => args !== itemCall), [
     ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"],
@@ -362,6 +370,45 @@ test("rejects contradictory membership identity and stale item readback", () => 
     itemResponses: new Map([["2/1701", projectStatusResponse("Done", 1702)]]),
   });
   assert.throws(() => staleReader.getIssueProjectStatuses(24), /same Project item IDs/);
+});
+
+test("rejects malformed Project membership identity before status readback", () => {
+  const missingContent = linkedProjectItem(1701);
+  missingContent.content = undefined;
+  const missingIssueNumber = linkedProjectItem(1701);
+  missingIssueNumber.content.number = undefined;
+  const blankRepository = linkedProjectItem(1701);
+  blankRepository.content.repository.full_name = "   ";
+  blankRepository.content.repository_url = undefined;
+  const invalidRepositoryUrl = linkedProjectItem(1701);
+  invalidRepositoryUrl.content.repository_url = "https://example.test/repos/owner/repo";
+  const cases = [
+    { item: { ...linkedProjectItem(1701), id: undefined }, error: /items with IDs/ },
+    { item: { ...linkedProjectItem(1701), node_id: undefined }, error: /items with global IDs/ },
+    { item: missingContent, error: /repository identity/ },
+    { item: missingIssueNumber, error: /valid issue number/ },
+    { item: blankRepository, error: /non-blank repository identity/ },
+    { item: invalidRepositoryUrl, error: /canonical repository URL/ },
+  ];
+
+  for (const { item, error } of cases) {
+    const { reader, calls } = createProjectStatusReader({ itemsByProject: new Map([["2", [item]]]) });
+    assert.throws(() => reader.getIssueProjectStatuses(24), error);
+    assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
+    assert.equal(calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields="))), false);
+  }
+});
+
+test("rejects contradictory repository identity casing before status readback", () => {
+  const contradictory = linkedProjectItem(1701);
+  contradictory.content.repository.fullName = "other/repo";
+  const { reader, calls } = createProjectStatusReader({
+    itemsByProject: new Map([["2", [contradictory]]]),
+  });
+
+  assert.throws(() => reader.getIssueProjectStatuses(24), /one non-contradictory repository identity/);
+  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
+  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/items/1701?fields="))), false);
 });
 
 test("rejects two open linked Projects even when their statuses disagree", () => {

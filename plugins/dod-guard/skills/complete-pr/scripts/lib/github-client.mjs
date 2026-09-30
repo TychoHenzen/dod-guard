@@ -7,6 +7,7 @@ const GH_CHECKS_PENDING_EXIT = 8;
 const HTTP_NOT_FOUND = /HTTP 404/;
 const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
 const JSON_LINE_SEPARATOR = /\r?\n/u;
+const PROJECT_REPOSITORY_IDENTITY_KEYS = ["full_name", "fullName"];
 const PROJECT_ITEM_IDENTITY_JQ = ".[] | {id: .id, node_id: .node_id, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
 const READY_MUTATION = [
   "mutation($pullRequestId: ID!) {",
@@ -220,15 +221,24 @@ function repositoryName(value) {
 
 function projectItemRepository(item, endpoint) {
   const content = item?.content;
-  if (!content || typeof content !== "object") return null;
-  const fullName = content.repository?.full_name ?? content.repository?.fullName;
+  if (!content || typeof content !== "object" || Array.isArray(content)) {
+    throw githubResponseContractError(endpoint, "Project items with content identity");
+  }
+  const repository = content.repository;
+  if (!repository || typeof repository !== "object" || Array.isArray(repository)) {
+    throw githubResponseContractError(endpoint, "Project items with repository identity");
+  }
   const url = content.repository_url;
   const identities = [];
-  if (fullName !== undefined && fullName !== null) {
-    if (repositoryName(fullName) === null) {
-      throw githubResponseContractError(endpoint, "a non-blank repository identity");
+  for (const key of PROJECT_REPOSITORY_IDENTITY_KEYS) {
+    const fullName = repository[key];
+    if (fullName !== undefined && fullName !== null) {
+      const normalized = repositoryName(fullName);
+      if (normalized === null) {
+        throw githubResponseContractError(endpoint, "a non-blank repository identity");
+      }
+      identities.push(normalized);
     }
-    identities.push(repositoryName(fullName));
   }
   if (url !== undefined && url !== null) {
     const match = typeof url === "string" && url.match(/^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)$/i);
@@ -237,10 +247,22 @@ function projectItemRepository(item, endpoint) {
     }
     identities.push(repositoryName(match[1]));
   }
+  if (identities.length === 0) {
+    throw githubResponseContractError(endpoint, "a non-blank repository identity");
+  }
   if (new Set(identities).size > 1) {
     throw githubResponseContractError(endpoint, "one non-contradictory repository identity");
   }
-  return identities[0] ?? null;
+  return identities[0];
+}
+
+function projectItemIssueNumber(item, endpoint) {
+  const value = item?.content?.number;
+  const number = Number(value);
+  if (value === undefined || value === null || !Number.isInteger(number) || number <= 0) {
+    throw githubResponseContractError(endpoint, "a valid issue number");
+  }
+  return number;
 }
 
 function projectItemId(item, endpoint) {
@@ -271,22 +293,20 @@ function projectItemsForRead(endpoint, commandRunner) {
     seenIds.add(id);
     seenNodeIds.add(String(nodeId));
     const itemRepository = projectItemRepository(item, endpoint);
-    const number = item.content?.number;
-    if (itemRepository !== null && number !== undefined && number !== null) {
-      const membership = `${itemRepository}#${number}`;
-      if (seenMembership.has(membership)) {
-        throw githubResponseContractError(endpoint, "unique repository issue membership; exactly one matching issue item");
-      }
-      seenMembership.add(membership);
+    const number = projectItemIssueNumber(item, endpoint);
+    const membership = `${itemRepository}#${number}`;
+    if (seenMembership.has(membership)) {
+      throw githubResponseContractError(endpoint, "unique repository issue membership; exactly one matching issue item");
     }
+    seenMembership.add(membership);
   }
   return items;
 }
 
 function projectItemMatchesRepository(item, repository, issueNumber, endpoint) {
-  const content = item?.content;
+  const number = projectItemIssueNumber(item, endpoint);
   const itemRepository = projectItemRepository(item, endpoint);
-  return Number(content?.number) === issueNumber && itemRepository === repositoryName(repository);
+  return number === issueNumber && itemRepository === repositoryName(repository);
 }
 
 function validateProjectItemReadback(item, expectedItem, repository, issueNumber, endpoint) {
