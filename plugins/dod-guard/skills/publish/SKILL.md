@@ -92,6 +92,34 @@ returned `pluginRoot` for every later `<plugin-root>` path and bind this run to
 the returned version and `skillPath`. Never scan caches, choose a newest path,
 or fall back to another marketplace, client installation, or checkout.
 
+## Windows authentication boundary
+
+On Windows, run the complete publish flow from the authenticated interactive
+PowerShell session that launched it. Before any GitHub API, protection,
+release, commit, push, or post-release verification operation, prove that this
+same session can use GitHub CLI:
+
+```powershell
+gh auth status
+$githubAuthStatus = $LASTEXITCODE
+if ($githubAuthStatus -ne 0) {
+  throw "GitHub CLI authentication failed; stop before release mutations"
+}
+```
+
+The checked-in `maintenance-publish.ps1` owns the mutation-side `gh` calls,
+and `release-verification.ps1` owns the post-release read-only `gh` calls.
+`preflight-installation.mjs` only parses local client inventory; it is not an
+authentication bridge. Do not invoke `gh api` from a Node REPL or another
+unauthenticated nested runtime.
+
+If `gh auth status` fails, stop before protection changes, checkout or ref
+movement, commit, push, client refresh, or cache mutation. Restore GitHub CLI
+authentication through the user's normal authenticated PowerShell session,
+rerun this authentication preflight and the installation preflight from the
+start, and discard partial or failed evidence. Never copy or persist
+credentials to another runtime or file.
+
 ## Procedure
 
 1. Inspect `git status --short --branch --untracked-files=all`, the current

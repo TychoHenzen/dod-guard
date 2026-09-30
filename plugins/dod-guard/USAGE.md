@@ -285,6 +285,33 @@ exactly. On mismatch, publish stops before release mutations and reports the
 requested and detected values instead of silently selecting another copy. No
 cache path needs guessing for an unpinned run.
 
+### Windows authentication boundary
+
+Run the complete Windows publish flow from the authenticated interactive
+PowerShell session that launched it. Before any GitHub API, protection,
+release, commit, push, or post-release verification operation, run this
+same-session preflight and check its exit status:
+
+```powershell
+gh auth status
+$githubAuthStatus = $LASTEXITCODE
+if ($githubAuthStatus -ne 0) {
+  throw "GitHub CLI authentication failed; stop before release mutations"
+}
+```
+
+`maintenance-publish.ps1` owns the mutation-side GitHub CLI calls, while
+`release-verification.ps1` owns the post-release read-only calls.
+`preflight-installation.mjs` only parses local client inventory. Do not invoke
+`gh api` through a Node REPL or another unauthenticated nested runtime.
+
+If authentication fails, stop before protection changes, checkout or ref
+movement, commit, push, client refresh, or cache mutation. Restore GitHub CLI
+authentication through the user's normal authenticated PowerShell session,
+rerun the authentication and installation preflights from the start, and do
+not continue from partial or failed evidence. Never copy or persist
+credentials into another runtime or file.
+
 It delegates draft pull-request creation to `/submit-draft-pr`. After a human
 merges it and the published commit has green CI, refresh both clients:
 

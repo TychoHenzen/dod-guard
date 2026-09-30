@@ -60,6 +60,23 @@ test("publish guidance exposes the exact cross-client refresh sequence", async (
   }
 });
 
+test("publish guidance requires the authenticated Windows PowerShell boundary", async () => {
+  const [skill, usage] = await Promise.all([
+    readFile(skillPath, "utf8"),
+    readFile(usagePath, "utf8"),
+  ]);
+
+  for (const document of [skill, usage]) {
+    assert.match(document, /authenticated interactive\s+PowerShell session that launched/);
+    assert.match(document, /gh auth status[\s\S]+\$githubAuthStatus = \$LASTEXITCODE[\s\S]+if \(\$githubAuthStatus -ne 0\)/);
+    assert.match(document, /stop before (?:release mutations|protection changes)/);
+    assert.match(document, /maintenance-publish\.ps1[\s\S]+release-verification\.ps1/);
+    assert.match(document, /preflight-installation\.mjs[\s`]*only parses local client inventory/);
+    assert.match(document, /Do not invoke\s+`gh api`(?: from| through) a Node REPL/);
+    assert.match(document, /Never copy or persist\s+credentials/);
+  }
+});
+
 test("publish skill classifies the complete tree before PBI routing", async () => {
   const skill = await readFile(skillPath, "utf8");
 
