@@ -581,7 +581,7 @@ test("goal-sdlc retains every delivery stage and queue boundary", async () => {
     "### 3. Refinement contract",
     "### 4. Implementation and branch rules",
     "### 5. Goal-directed validation cadence",
-    "### 6. PR, review, remediation, and completion",
+    "### 6. PR completion",
     "### 7. Blocker triage and proactive recovery",
     "### 8. Quality Guard and cache changes",
     "### 9. Common-sense completion and continuation",
@@ -679,12 +679,11 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.match(skill, /main thread is the high-level orchestrator/);
   assert.match(skill, /Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up/);
   assert.match(skill, /\[\$dod-guard:next-ticket\]\(\.\.\/next-ticket\/SKILL\.md\)/);
-  assert.ok(
-    skill.includes(
-      "The shipped `[$dod-guard:review-pr](../review-pr/SKILL.md)` skill owns the\n" +
-        "single PR review for this plugin.",
-    ),
-  );
+  assert.match(skill, /Codex's built-in checks cover ordinary PR\/code-review validation/);
+  assert.match(skill, /\[\$dod-guard:fix-pr-review\]\(\.\.\/fix-pr-review\/SKILL\.md\)/);
+  assert.doesNotMatch(skill, /\[\$dod-guard:review-pr\]/);
+  assert.doesNotMatch(skill, /Review policy:/);
+  assert.doesNotMatch(skill, /completed reviewer recommendation|review slot|reviewer-specific timeout/);
   assert.doesNotMatch(skill, /review-pr-branch/);
   assert.doesNotMatch(skill, /5\.4\.5|plugins[\\/]cache[\\/]dod-guard-monorepo/);
 });
@@ -709,11 +708,11 @@ test("goal-sdlc keeps real work in short-lived subagents", async () => {
 test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   const skill = await readSkill();
   for (const marker of [
-    "remote PR review state",
-    "Do not create or consult a local review ledger",
+    "GitHub Project, PBI, pull request, comments, and\nchecks remain the durable administration record",
+    "local review ledger or any other untracked administration file",
     "current head",
-    "all finding comments were marked as resolved",
-    "exempt from the single-retry cap in `standards/working-defaults.md`",
+    "mark resolved\n  finding comments as resolved",
+    "repository-required CI,\nstatic-analysis, security, integration/E2E, and Quality Guard gates",
     "Preserve the checkpoint on failure or interruption; repair the same step",
     "Then use:",
     "Do not write parent, child, branch, or worktree state from this queue skill.",
@@ -769,13 +768,15 @@ test("goal-sdlc bounds workspace-loader recovery and separates acceptance eviden
   );
 });
 
-test("goal-sdlc publishes one completed review and reconciles moving refs", async () => {
+test("goal-sdlc keeps external findings conditional and reconciles moving refs", async () => {
   const skill = await readSkill();
   for (const marker of [
-    "publish the saved recommendation and evidence once",
-    "A GitHub `COMMENT` is publication transport, not a second review",
+    "If external review findings are supplied",
+    "Inspect each finding against the current PR head",
+    "Fix every valid finding with",
+    "respond to each valid finding",
     "one ref-reconciliation owner",
-    "Invalidate evidence tied to the old refs",
+    "old refs, suppress duplicate attestations",
     "recompute and attest the exact target once",
     "fully paginate the",
     "count parent PBIs and child PBIs separately",
@@ -783,6 +784,7 @@ test("goal-sdlc publishes one completed review and reconciles moving refs", asyn
   ]) {
     assert.ok(skill.includes(marker), `missing workflow safeguard: ${marker}`);
   }
+  assert.doesNotMatch(skill, /publish the saved recommendation|A GitHub `COMMENT` is publication transport/);
 });
 
 test("goal-sdlc makes blocked stops brief and plain-language", async () => {
