@@ -51,6 +51,135 @@ function validateInitialState(repository, pullRequest) {
   }
 }
 
+function requireConvergencePullRequest(repository, expectedPullRequest, pullRequest, allowMerged) {
+  if (pullRequest.headBranch !== expectedPullRequest.headBranch) {
+    stop(
+      "head_branch_changed",
+      `Pull request head branch changed from ${expectedPullRequest.headBranch} to ${pullRequest.headBranch ?? "<missing>"}.`,
+    );
+  }
+  if (allowMerged && pullRequest.state === "MERGED") {
+    if (pullRequest.isCrossRepository || pullRequest.headRepository !== repository.nameWithOwner) {
+      stop("cross_repository_head", "The pull request head must belong to the current repository.");
+    }
+    requireDefaultBase(pullRequest, repository.defaultBranch);
+    if (pullRequest.headBranch === repository.defaultBranch) {
+      stop("default_branch_head", "The pull request head cannot be the default branch.");
+    }
+    if (!repository.canPush) {
+      stop("missing_permission", "The active GitHub user lacks repository push permission.");
+    }
+    return;
+  }
+  validateInitialState(repository, pullRequest);
+}
+
+function sourceBranchRef(client, branchName) {
+  if (typeof client.getSourceBranchRef === "function") {
+    return client.getSourceBranchRef(branchName);
+  }
+  return client.getBranchRef(branchName);
+}
+
+function refSha(refs, kind) {
+  return refs.find((ref) => ref.kind === kind)?.sha ?? "<missing>";
+}
+
+function requireMergeRefParent(client, mergeRef, expectedHead, observed) {
+  if (!mergeRef) {
+    return;
+  }
+  const commit = client.getCommit(mergeRef.sha);
+  const hasExpectedParent = commit && Array.isArray(commit.parents) && commit.parents.includes(expectedHead);
+  if (!hasExpectedParent) {
+    stop(
+      "head_merge_ref_mismatch",
+      `refs/pull/${observed.pullNumber}/merge at ${mergeRef.sha} does not identify ${expectedHead} as a source parent.`,
+    );
+  }
+}
+
+async function readHeadConvergenceAttempt(client, { repository, initialPullRequest, attempt, trustedHead, allowMerged }) {
+  const branchRef = await sourceBranchRef(client, initialPullRequest.headBranch);
+  if (!branchRef) {
+    stop(
+      "head_branch_not_found",
+      `Source branch ${initialPullRequest.headBranch} no longer exists while converging pull request #${initialPullRequest.number}.`,
+    );
+  }
+  if (trustedHead && branchRef.sha !== trustedHead) {
+    stop(
+      "head_branch_changed",
+      `Source branch ${initialPullRequest.headBranch} moved from ${trustedHead} to ${branchRef.sha}.`,
+    );
+  }
+  const expectedHead = trustedHead ?? branchRef.sha;
+  let pullRequest = initialPullRequest;
+  if (attempt !== 0) {
+    pullRequest = await client.getPullRequest(initialPullRequest.number);
+  }
+  requireConvergencePullRequest(repository, initialPullRequest, pullRequest, allowMerged);
+  const refs = await client.getPullRequestRefs(initialPullRequest.number);
+  const observed = {
+    branchSha: branchRef.sha,
+    pullNumber: initialPullRequest.number,
+    pullRequestSha: pullRequest.headSha ?? "<missing>",
+    pullHeadSha: refSha(refs, "head"),
+  };
+  const mergeRef = refs.find((ref) => ref.kind === "merge");
+  requireMergeRefParent(client, mergeRef, expectedHead, observed);
+  return {
+    converged: pullRequest.headSha === expectedHead && observed.pullHeadSha === expectedHead,
+    observed,
+    pullRequest,
+    sourceHead: branchRef.sha,
+  };
+}
+
+async function waitForHeadConvergence(client, {
+  repository,
+  initialPullRequest,
+  options,
+  expectedHead = null,
+  allowMerged = false,
+}) {
+  let trustedHead = expectedHead;
+  let lastObserved = null;
+  for (let attempt = 0; attempt < options.headPollLimit; attempt += 1) {
+    // biome-ignore lint/performance/noAwaitInLoops: Each convergence poll depends on the preceding provider state.
+    const result = await readHeadConvergenceAttempt(client, {
+      allowMerged,
+      attempt,
+      initialPullRequest,
+      repository,
+      trustedHead,
+    });
+    if (!trustedHead) {
+      trustedHead = result.sourceHead;
+    }
+    if (result.sourceHead !== trustedHead) {
+      stop(
+        "head_branch_changed",
+        `Source branch ${initialPullRequest.headBranch} moved from ${trustedHead} to ${result.sourceHead}.`,
+      );
+    }
+    lastObserved = result.observed;
+    if (result.converged) {
+      return result.pullRequest;
+    }
+    if (attempt + 1 < options.headPollLimit) {
+      await client.wait(options.pollMs);
+    }
+  }
+
+  stop(
+    "head_convergence_timeout",
+    `Pull request #${initialPullRequest.number} did not converge on ${trustedHead} after the bounded wait; ` +
+      `observed source branch ${lastObserved?.branchSha ?? "<missing>"}, PR API head ${lastObserved?.pullRequestSha ?? "<missing>"}, ` +
+      `and refs/pull/${initialPullRequest.number}/head ${lastObserved?.pullHeadSha ?? "<missing>"}.`,
+  );
+}
+
 function requireDefaultBase(pullRequest, defaultBranch) {
   if (pullRequest.baseBranch !== defaultBranch) {
     stop("wrong_base_branch", `The pull request must target ${defaultBranch}.`);
@@ -327,7 +456,7 @@ function requireCiWorkflowTimeout(headSha, sawPendingRun) {
 }
 
 async function waitForGuardedUpdate(client, update) {
-  const { baseHead, defaultBranch, options, previousHead, pullNumber } = update;
+  const { baseHead, defaultBranch, options, previousHead, pullNumber, repository } = update;
   for (let attempt = 0; attempt < options.updatePollLimit; attempt += 1) {
     // biome-ignore lint/performance/noAwaitInLoops: Each poll depends on the preceding GitHub state.
     const pullRequest = await client.getPullRequest(pullNumber);
@@ -335,15 +464,19 @@ async function waitForGuardedUpdate(client, update) {
     if (pullRequest.headSha === previousHead) {
       await client.wait(options.pollMs);
     } else {
-      const commit = await client.getCommit(pullRequest.headSha);
+      const convergedPullRequest = await waitForHeadConvergence(
+        client,
+        { expectedHead: pullRequest.headSha, initialPullRequest: pullRequest, options, repository },
+      );
+      const commit = await client.getCommit(convergedPullRequest.headSha);
       const parents = new Set(commit.parents);
       if (commit.parents.length !== 2 || !parents.has(previousHead) || !parents.has(baseHead)) {
         stop(
           "untrusted_base_update",
-          `Updated head ${pullRequest.headSha} is not the guarded merge of ${previousHead} and ${baseHead}.`,
+          `Updated head ${convergedPullRequest.headSha} is not the guarded merge of ${previousHead} and ${baseHead}.`,
         );
       }
-      return pullRequest;
+      return convergedPullRequest;
     }
   }
 
@@ -399,6 +532,7 @@ async function confirmDoneProjects(client, issues) {
 
 async function recoverMergedPullRequest(client, overrides = {}) {
   const options = {
+    headPollLimit: 6,
     issuePollLimit: 6,
     pollMs: 10_000,
     dryRun: false,
@@ -407,8 +541,12 @@ async function recoverMergedPullRequest(client, overrides = {}) {
   const repository = await client.getRepository();
   const pullRequest = await client.getPullRequest();
   validateMergedRecoveryState(repository, pullRequest);
+  const synchronizedPullRequest = await waitForHeadConvergence(
+    client,
+    { allowMerged: true, initialPullRequest: pullRequest, options, repository },
+  );
 
-  const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(pullRequest.number, pullRequest));
+  const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(synchronizedPullRequest.number, synchronizedPullRequest));
   if (!checksPassed) {
     stop("unverified_merge", "The pull request merged without complete required-check evidence.");
   }
@@ -416,22 +554,22 @@ async function recoverMergedPullRequest(client, overrides = {}) {
   const linkedIssues = await confirmClosedIssues(client, pullRequest.number, options);
   await confirmDoneProjects(client, linkedIssues);
   const cleanup = await cleanupTrustedBranch(client, {
-    branchName: pullRequest.headBranch,
+    branchName: synchronizedPullRequest.headBranch,
     defaultBranch: repository.defaultBranch,
     dryRun: options.dryRun,
     localGit: options.localGit,
-    trustedHead: pullRequest.headSha,
+    trustedHead: synchronizedPullRequest.headSha,
   });
 
   return {
-    acceptedHead: pullRequest.headSha,
+    acceptedHead: synchronizedPullRequest.headSha,
     branch: cleanup.branch,
-    headBranch: pullRequest.headBranch,
+    headBranch: synchronizedPullRequest.headBranch,
     linkedIssues,
     local: cleanup.local,
-    mergeCommitSha: pullRequest.mergeCommitSha,
-    pullNumber: pullRequest.number,
-    trustedHead: pullRequest.headSha,
+    mergeCommitSha: synchronizedPullRequest.mergeCommitSha,
+    pullNumber: synchronizedPullRequest.number,
+    trustedHead: synchronizedPullRequest.headSha,
   };
 }
 
@@ -442,6 +580,7 @@ async function waitForMerge(client, completion) {
     defaultBranch,
     options,
     pullNumber,
+    repository,
   } = completion;
   let trustedHead = acceptedHead;
   for (let attempt = 0; attempt < options.pollLimit; attempt += 1) {
@@ -492,6 +631,7 @@ async function waitForMerge(client, completion) {
         options,
         previousHead,
         pullNumber,
+        repository,
       });
       trustedHead = pullRequest.headSha;
     } else if (checksPassed) {
@@ -507,6 +647,7 @@ async function waitForMerge(client, completion) {
 async function completePullRequest(client, overrides = {}) {
   const options = {
     ciRunPollLimit: 12,
+    headPollLimit: 6,
     issuePollLimit: 6,
     pollLimit: 180,
     pollMs: 10_000,
@@ -516,6 +657,12 @@ async function completePullRequest(client, overrides = {}) {
   const repository = await client.getRepository();
   let pullRequest = await client.getPullRequest();
   validateInitialState(repository, pullRequest);
+  pullRequest = await waitForHeadConvergence(client, {
+    expectedHead: options.pushedHead ?? null,
+    initialPullRequest: pullRequest,
+    options,
+    repository,
+  });
   const ciRecovery = createCiRecovery(options);
 
   const acceptedHead = pullRequest.headSha;
@@ -548,7 +695,8 @@ async function completePullRequest(client, overrides = {}) {
     defaultBranch: repository.defaultBranch,
     options,
     pullNumber,
+    repository,
   });
 }
 
-export { CompletionError, completePullRequest, recoverMergedPullRequest };
+export { CompletionError, completePullRequest, recoverMergedPullRequest, waitForHeadConvergence };

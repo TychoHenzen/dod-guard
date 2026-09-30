@@ -46,6 +46,17 @@ automatically.
 Run the repository's required pre-PR checks when fresh evidence is unavailable.
 Stop on a failed or unavailable required check.
 
+After a successful source-branch push, and again after creating or updating the
+pull request, use the same bounded, read-only head convergence contract before
+trusting checks or writing the draft handoff. Read the same-repository branch
+ref, PR API head, and `refs/pull/<number>/head` until they all identify the
+expected pushed SHA. If `refs/pull/<number>/merge` is available, inspect its
+parents only to corroborate that source SHA; never use the generated merge SHA
+for CI or review evidence. Stop with expected and observed identities when a
+ref is missing, malformed, duplicated, forked, moved, inconsistent, or still
+stale after the bound. Never write hidden pull-request or generated merge refs
+or call `update-branch` as metadata repair.
+
 ## Converge structured work
 
 Resolve the active dod-guard plugin root from the directory containing this skill,

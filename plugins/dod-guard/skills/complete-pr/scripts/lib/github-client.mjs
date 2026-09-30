@@ -8,6 +8,7 @@ const HTTP_NOT_FOUND = /HTTP 404/;
 const HTTP_TRANSIENT_SERVER_ERROR = /HTTP 5\d{2}/;
 const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
 const JSON_LINE_SEPARATOR = /\r?\n/u;
+const PULL_REQUEST_REF_KINDS = new Set(["head", "merge"]);
 const PROJECT_REPOSITORY_IDENTITY_KEYS = ["full_name", "fullName"];
 const PROJECT_ITEM_IDENTITY_JQ = ".[] | {id: .id, node_id: .node_id, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
 const READY_MUTATION = [
@@ -387,6 +388,33 @@ function readIssueProjectStatuses(repository, issueNumber, commandRunner) {
   return [projectStatusName(data, statusFieldId, itemEndpoint)];
 }
 
+function normalizePullRequestRefs(data, pullNumber, endpoint) {
+  if (!Array.isArray(data)) {
+    throw githubResponseError(endpoint, "an array of pull-request refs");
+  }
+
+  const prefix = `refs/pull/${pullNumber}/`;
+  const seen = new Set();
+  return data.map((ref) => {
+    if (!ref || typeof ref.ref !== "string" || !ref.ref.startsWith(prefix)) {
+      throw githubResponseContractError(endpoint, "well-formed pull-request refs");
+    }
+    const kind = ref.ref.slice(prefix.length);
+    if (!PULL_REQUEST_REF_KINDS.has(kind)) {
+      throw githubResponseContractError(endpoint, "only head and merge pull-request refs");
+    }
+    if (seen.has(ref.ref)) {
+      throw githubResponseContractError(endpoint, "unique pull-request refs");
+    }
+    seen.add(ref.ref);
+    const sha = ref.object?.sha;
+    if (typeof sha !== "string" || sha.trim().length === 0) {
+      throw githubResponseContractError(endpoint, "pull-request refs with commit SHAs");
+    }
+    return { kind, ref: ref.ref, sha };
+  });
+}
+
 export function normalizePullRequest(data, repository) {
   const headRepository = data.head?.repo?.full_name ?? null;
   let state = data.state?.toUpperCase() ?? null;
@@ -462,6 +490,18 @@ export class GitHubClient {
   getPullRequest(pullNumber = this.pullNumber) {
     const { data } = ghJson(["api", `repos/${this.repository}/pulls/${pullNumber}`], [0], this.#commandRunner);
     return normalizePullRequest(data, this.repository);
+  }
+
+  getPullRequestRefs(pullNumber = this.pullNumber) {
+    const endpoint = `repos/${this.repository}/git/matching-refs/pull/${pullNumber}`;
+    const { data, result } = ghJson(["api", endpoint], [0, 1], this.#commandRunner);
+    if (result.status === 1 && HTTP_NOT_FOUND.test(result.stderr)) {
+      return [];
+    }
+    if (result.status !== 0) {
+      throw new Error(result.stderr.trim() || "Failed to read pull-request refs.");
+    }
+    return normalizePullRequestRefs(data, pullNumber, endpoint);
   }
 
   markReady(pullNumber) {
@@ -610,8 +650,9 @@ export class GitHubClient {
 
   getBranchRef(branchName) {
     const encodedBranch = encodeBranch(branchName);
+    const endpoint = `repos/${this.repository}/git/ref/heads/${encodedBranch}`;
     const { data, result } = ghJson(
-      ["api", `repos/${this.repository}/git/ref/heads/${encodedBranch}`],
+      ["api", endpoint],
       [0, 1],
       this.#commandRunner,
     );
@@ -621,7 +662,14 @@ export class GitHubClient {
     if (result.status !== 0) {
       throw new Error(result.stderr.trim() || "Failed to read remote branch ref.");
     }
+    if (typeof data?.object?.sha !== "string" || data.object.sha.trim().length === 0) {
+      throw githubResponseContractError(endpoint, "a branch ref with a commit SHA");
+    }
     return { sha: data.object.sha };
+  }
+
+  getSourceBranchRef(branchName) {
+    return this.getBranchRef(branchName);
   }
 
   deleteBranchRef(branchName) {
