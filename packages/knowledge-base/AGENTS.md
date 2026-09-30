@@ -8,7 +8,7 @@ truth. `.knowledge-index.json` is a derived key and text index.
 
 ## Storage boundary
 
-The default root is `~/.codex/knowledge-base`. Set
+The default root is `C:\Obsidian\Knowledgebase`. Set
 `DOD_GUARD_KNOWLEDGE_BASE_DIR` to use another root. The package never reads or
 writes built-in memory, `obsidian-rag`, or project files unless the configured
 knowledge-base root is inside that project.

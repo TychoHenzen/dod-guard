@@ -1,5 +1,4 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -17,7 +16,7 @@ function packageInfo(): { name: string; version: string } {
 }
 
 export function defaultKnowledgeBaseDir(): string {
-  return process.env.DOD_GUARD_KNOWLEDGE_BASE_DIR ?? join(homedir(), ".codex", "knowledge-base");
+  return process.env.DOD_GUARD_KNOWLEDGE_BASE_DIR ?? "C:\\Obsidian\\Knowledgebase";
 }
 
 export function createKnowledgeBaseServer(rootDir = defaultKnowledgeBaseDir()): McpServer {

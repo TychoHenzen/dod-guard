@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "strict",
   "createdAt": "2026-09-21T12:48:40.453Z",
-  "total": 109,
+  "total": 110,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -1317,6 +1317,7 @@
     "packages/knowledge-base/src/schema.ts",
     "packages/knowledge-base/src/store.ts",
     "packages/knowledge-base/src/tools.ts",
+    "packages/knowledge-base/tests/index.test.ts",
     "packages/knowledge-base/tests/schema-boundaries.test.ts",
     "packages/knowledge-base/tests/schema-classes.test.ts",
     "packages/knowledge-base/tests/schema-comments.test.ts",
@@ -1788,6 +1789,7 @@
     "packages/quality-guard/src/commit-gate/render/decision.ts::complexity": 1,
     "packages/quality-guard/src/commit-gate/decision-core-acknowledgements.ts::function-length": 1,
     "packages/quality-guard/src/commit-gate/quality-decision-notes.ts::function-length": 1,
-    "packages/quality-guard/tests/src/commit-gate/acknowledgement-replay.test.ts::function-length": 1
+    "packages/quality-guard/tests/src/commit-gate/acknowledgement-replay.test.ts::function-length": 1,
+    "packages/knowledge-base/tests/index.test.ts::else-branch": 1
   }
 }
