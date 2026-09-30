@@ -493,15 +493,22 @@ export class GitHubClient {
   }
 
   getPullRequestRefs(pullNumber = this.pullNumber) {
-    const endpoint = `repos/${this.repository}/git/matching-refs/pull/${pullNumber}`;
-    const { data, result } = ghJson(["api", endpoint], [0, 1], this.#commandRunner);
+    const { data, result } = ghJson(
+      ["api", `repos/${this.repository}/git/matching-refs/pull/${pullNumber}`],
+      [0, 1],
+      this.#commandRunner,
+    );
     if (result.status === 1 && HTTP_NOT_FOUND.test(result.stderr)) {
       return [];
     }
     if (result.status !== 0) {
       throw new Error(result.stderr.trim() || "Failed to read pull-request refs.");
     }
-    return normalizePullRequestRefs(data, pullNumber, endpoint);
+    return normalizePullRequestRefs(
+      data,
+      pullNumber,
+      `repos/${this.repository}/git/matching-refs/pull/${pullNumber}`,
+    );
   }
 
   markReady(pullNumber) {
@@ -650,9 +657,8 @@ export class GitHubClient {
 
   getBranchRef(branchName) {
     const encodedBranch = encodeBranch(branchName);
-    const endpoint = `repos/${this.repository}/git/ref/heads/${encodedBranch}`;
     const { data, result } = ghJson(
-      ["api", endpoint],
+      ["api", `repos/${this.repository}/git/ref/heads/${encodedBranch}`],
       [0, 1],
       this.#commandRunner,
     );
@@ -663,7 +669,10 @@ export class GitHubClient {
       throw new Error(result.stderr.trim() || "Failed to read remote branch ref.");
     }
     if (typeof data?.object?.sha !== "string" || data.object.sha.trim().length === 0) {
-      throw githubResponseContractError(endpoint, "a branch ref with a commit SHA");
+      throw githubResponseContractError(
+        `repos/${this.repository}/git/ref/heads/${encodedBranch}`,
+        "a branch ref with a commit SHA",
+      );
     }
     return { sha: data.object.sha };
   }
