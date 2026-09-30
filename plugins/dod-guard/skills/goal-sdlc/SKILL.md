@@ -30,7 +30,7 @@ The main thread is the high-level orchestrator. For every real work step:
 
 Context-heavy execution belongs in the bounded subagent, not in the main
 thread's working context. Put repository discovery, large source or history
-reads, implementation, review preparation, and noisy test output in the
+reads, implementation, validation preparation, and noisy test output in the
 subagent brief. Return a compact handoff containing changed paths, commands,
 results, and exact evidence instead of pasting the full context back. The main
 thread supplies the snapshot, owns sequencing and external mutations, reads
@@ -60,10 +60,10 @@ and increment it only after one parent PBI is merged and its final Project
 status is read back. Do not count a child, a draft PR, or implementation-
 complete work as a completed PBI.
 
-The shipped `[$dod-guard:review-pr](../review-pr/SKILL.md)` skill owns the
-single PR review for this plugin. A delegated subagent may invoke that owner,
-but the main thread still owns sequencing, evidence verification, mutation
-decisions, and the built-in goal's stop condition.
+Codex's built-in checks cover ordinary PR/code-review validation. The main
+thread still owns sequencing, evidence verification, mutation decisions, and
+the built-in goal's stop condition. Handle any externally supplied findings
+before `complete-pr` as described in section 6.
 
 ## Contract ownership
 
@@ -71,10 +71,9 @@ decisions, and the built-in goal's stop condition.
   decision.
 - `$dod-guard:next-ticket` owns one PBI's implementation branch, evidence, and
   pushed handoff.
-- `$dod-guard:submit-draft-pr` owns PR creation and convergence before review.
-- `$dod-guard:review-pr`, `$dod-guard:fix-pr-review`, and
-  `$dod-guard:complete-pr` own their review, remediation, and guarded merge
-  gates.
+- `$dod-guard:submit-draft-pr` owns PR creation and convergence before completion.
+- `$dod-guard:fix-pr-review` owns remediation of externally supplied findings;
+  `$dod-guard:complete-pr` owns the guarded merge gate.
 - This skill owns only the queue-level orchestration and bounded delegation
   between those existing owners.
 
@@ -99,7 +98,6 @@ source references:
 [$dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md),
 [$dod-guard:next-ticket](../next-ticket/SKILL.md),
 [$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md),
-[$dod-guard:review-pr](../review-pr/SKILL.md), and
 [$dod-guard:complete-pr](../complete-pr/SKILL.md).
 
 target project: the single open GitHub Project explicitly linked to the current repository
@@ -108,7 +106,7 @@ target repo: based on what is in the current working directory
 ### Checkout and execution policy
 
 - Work only in the current repository checkout. Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up. If a skill or tool requires a worktree, do not use it; choose a same-checkout path or record the incompatibility as a blocker.
-- Process exactly one parent PBI/delivery unit at a time, sequentially. Finish and verify it before selecting the next. Do not implement, mutate, review, or deliver multiple PBIs in parallel.
+- Process exactly one parent PBI/delivery unit at a time, sequentially. Finish and verify it before selecting the next. Do not implement, mutate, validate, or deliver multiple PBIs in parallel.
 - Treat a dirty current checkout as evidence that a task is probably already in progress, not as a reason to stop or declare the queue empty. Match the changed paths, branch, checkpoint, issue, child PBIs, and PR before choosing a new unit; when they match, preserve the edits and resume that task from its latest safe checkpoint.
 - If dirty work or an in-progress branch cannot be matched to an existing PBI, create one through `[$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md)` from the observed scope and evidence before continuing. Do not discard, reset, stash, overwrite, or silently absorb those edits into an unrelated PBI; refine the new PBI and resume the same work after it is tracked.
 
@@ -122,7 +120,8 @@ Hard invariants:
 - Each refined parent has one non-duplicated set of mandatory child PBIs.
 - All child implementation happens on one branch and one PR.
 - Do not create or publish a PR until every mandatory child is implementation-complete.
-- Follow the single review policy in section 6 for each delivery unit.
+- Use Codex's built-in checks for ordinary PR/code-review validation, and handle
+  externally supplied findings as described in section 6.
 - After merge, mark every child and its parent complete and read the statuses back.
 - Do not routinely ask the user to resolve problems. Make conservative, reversible, repository-consistent choices and continue.
 
@@ -388,7 +387,7 @@ At the end of basic work:
 
 A child is not implementation-complete merely because code compiles. Record acceptance evidence for every child.
 
-### 6. PR, review, remediation, and completion
+### 6. PR completion
 
 When all mandatory children are implementation-complete, use:
 
@@ -396,44 +395,27 @@ When all mandatory children are implementation-complete, use:
 
 The resulting PR must be published/non-draft (`draft=false`). If the skill creates a draft, publish it using the supported repository operation and verify the remote state.
 
-Review policy:
+Codex's built-in checks cover ordinary PR/code-review validation; do not add a
+separate reviewer phase. If external review findings are supplied:
 
-  [$dod-guard:review-pr](../review-pr/SKILL.md)
+- Inspect each finding against the current PR head and the PBI acceptance
+  criteria before changing code.
+- Fix every valid finding with
+  [$dod-guard:fix-pr-review](../fix-pr-review/SKILL.md).
+- Run focused checks for repaired areas and the complete relevant suite once.
+- Verify the new head SHA, respond to each valid finding, and mark resolved
+  finding comments as resolved before `complete-pr`.
+- Preserve the checkpoint and record an external blocker for an invalid,
+  ambiguous, or unrepairable finding; do not claim completion without the
+  required evidence.
 
-Before review:
+Git history and the remote GitHub Project, PBI, pull request, comments, and
+checks remain the durable administration record. Do not create or consult a
+local review ledger or any other untracked administration file.
 
-- Inspect the PR history, current remote PR review state, checks, and immutable head SHA.
-- Git history and the remote GitHub Project, PBI, pull request, reviews, comments, and checks are the durable administration record. Do not create or consult a local review ledger or any other untracked administration file.
-- If the remote PR has a completed review recommendation for the current head, do not invoke `review-pr` again. A new context, subagent, timeout, or interrupted reviewer without a remote recommendation is not a completed review or a new review slot; an incomplete execution follows the recovery rules below.
-- If no completed recommendation exists for the current head, invoke `review-pr` once. Do not start it until the PR, PBI, and current head have been read from their remote Git/GitHub sources.
-- Record the reviewed head SHA.
-- One invocation of this skill is the complete PR review; do not separately rerun its internal review work.
-
-Review outcome semantics:
-
-- A completed reviewer run with a recommendation of `APPROVE`, `REQUEST_CHANGES`, or `BLOCK`, including any findings, is a successful review and consumes the one-review slot. A completed `BLOCK` or `REQUEST_CHANGES` result is not a failed reviewer execution.
-- A launcher or process failure before a report, timeout, interruption, or other execution failure that produces no remote recommendation is an incomplete review and does not consume the one-review slot; it is not a completed `BLOCK` or `REQUEST_CHANGES` result. Preserve the exact failure evidence in the current handoff, read back the remote PR and review state, and do not rerun blindly. After the cause is repaired, recover or retry that incomplete execution until a completed reviewer recommendation exists; recovery attempts do not count as a second review. Do not repeat an unchanged failure blindly, and stop for explicit user cancellation or an external blocker.
-
-Before `complete-pr`, compare the completed reviewer handoff with the remote provider review state. If the recommendation is missing remotely, publish the saved recommendation and evidence once, then read back exactly one review at the recorded reviewed head. A GitHub `COMMENT` is publication transport, not a second review; never rerun a completed review solely because publication was missing.
-
-**REVIEWS CAN TAKE A VERY LONG TIME**
-
-Do not kill a running reviewer merely because it is quiet. If it exits, times out, or is interrupted, preserve the execution evidence and treat the review as incomplete until the remote PR has a completed recommendation. After repairing the cause, recover or retry until a completed recommendation exists; do not start a replacement reviewer blindly, retry a completed review, or continue after explicit user cancellation or an external blocker.
-
-After review:
-- Make sure every finding made by each reviewer has a comment in the PR corresponding to the line in which the issue was found
-
-Fix every valid finding with:
-
-  [$dod-guard:fix-pr-review](../fix-pr-review/SKILL.md)
-
-After fixes:
-
-- Run focused checks for repaired areas.
-- Run the complete relevant suite once.
-- Verify the new head SHA.
-- Verify that all finding comments have a response explaining how the issue was fixed any why that fixes the issue
-- Verify that all finding comments were marked as resolved.
+The complete relevant validation includes repository-required CI,
+static-analysis, security, integration/E2E, and Quality Guard gates; built-in
+checks do not replace any required gate.
 
 Then use:
 
@@ -442,7 +424,7 @@ Then use:
 Only complete the PR when:
 
 - It is published and mergeable.
-- The current head, not only the reviewed head, passes required checks.
+- The current head passes all required checks.
 - All child acceptance criteria are satisfied.
 - No relevant failure is deferred as “pre-existing” (no part of the application is allowed to be broken on development - development must *ALWAYS* be 100% ready to deploy to production and be 100% usable by real end-users).
 - The PR is merged and the merge state is read back.
@@ -478,7 +460,8 @@ blocked.
 
 - Preserve the current delivery unit and keep implementation out of the incident workaround. The workaround restores safe progress; the durable fix waits in the friction log.
 
-Incomplete review executions are exempt from the single-retry cap in `standards/working-defaults.md`: after each repaired cause, retry until a completed reviewer recommendation exists; never repeat an unchanged failure blindly.
+External review-finding remediation may require another attempt after its cause
+is repaired; never repeat an unchanged failure blindly.
 
 When a provider returns a rate-limit error or reset time, record the operation,
 reset time, and owning checkpoint; assign one wait owner and suppress duplicate
@@ -487,14 +470,14 @@ then retry the blocked operation once after the reset and read back remote state
 Classify another refusal as an external blocker instead of repeating the same
 probe or asking the user to authorize routine work again.
 
-When a pending review or gate observes a changed branch head or base ref, assign
-one ref-reconciliation owner. Invalidate evidence tied to the old refs, suppress
-duplicate attestations while refs move, perform one branch update and remote
-readback, then recompute and attest the exact target once. Continue unrelated
-queue work while reconciliation is blocked; do not stack parallel ref updates or
-repeat attestations against moving refs.
+When an external finding or required gate observes a changed branch head or
+base ref, assign one ref-reconciliation owner. Invalidate evidence tied to the
+old refs, suppress duplicate attestations while refs move, perform one branch
+update and remote readback, then recompute and attest the exact target once.
+Continue unrelated queue work while reconciliation is blocked; do not stack
+parallel ref updates or repeat attestations against moving refs.
 
-For every confirmed blocker that survives local triage, run the advisor that `standards/working-defaults.md` requires, [$dod-guard:codex-advisor](../codex-advisor/SKILL.md), before asking the user or declaring the workflow blocked. Include repository, parent/child PBI, stage, branch, current and reviewed SHAs, exact error, attempts, constraints, and recovery options. The advisor is advice-only; implement and verify the chosen solution locally.
+For every confirmed blocker that survives local triage, run the advisor that `standards/working-defaults.md` requires, [$dod-guard:codex-advisor](../codex-advisor/SKILL.md), before asking the user or declaring the workflow blocked. Include repository, parent/child PBI, stage, branch, current head SHA, exact error, attempts, constraints, and recovery options. The advisor is advice-only; implement and verify the chosen solution locally.
 
 Do not ask the user to choose a workaround, authorize routine work, or confirm whether to continue until the advisor has supplied its recommendation and the safe local recovery path has been tried. A user question is a last resort for a missing external decision or authorization, not a substitute for blocker triage.
 
