@@ -7,5 +7,14 @@
     "reason": "#532 acceptance requires the minimal GitHubClient source-branch read seam for bounded convergence; this public method is intentionally production-facing and reviewed in PR #729.",
     "author": "TychoHenzen",
     "time": "2026-09-30T21:35:15.408Z"
+  },
+  {
+    "findingId": "abdb4eb8b39927272a1ebd41a09f7a209a108afb4bbc2b8dd20057e0ef22c71e",
+    "fingerprint": "65bcc885b456c238ec6b4bffa89ca19a007717c4f360d43469a3b0e299b6e420",
+    "baseSha": "b77e507485d361941f93c54774a72e54755815e3",
+    "targetSha": "914d1e92a4a94adff5b868f01d36ebdb14a41cc8",
+    "reason": "#532 acceptance requires the minimal GitHubClient pull-request temporary-ref read seam for bounded convergence; this public method is intentionally production-facing and reviewed in PR #729.",
+    "author": "TychoHenzen",
+    "time": "2026-09-30T21:38:30.915Z"
   }
 ]
