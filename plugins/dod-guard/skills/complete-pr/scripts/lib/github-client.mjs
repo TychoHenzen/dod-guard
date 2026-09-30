@@ -6,6 +6,8 @@ import { CompletionError } from "./completion-error.mjs";
 const GH_CHECKS_PENDING_EXIT = 8;
 const HTTP_NOT_FOUND = /HTTP 404/;
 const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
+const JSON_LINE_SEPARATOR = /\r?\n/u;
+const PROJECT_ITEM_IDENTITY_JQ = ".[] | {id: .id, node_id: .node_id, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
 const READY_MUTATION = [
   "mutation($pullRequestId: ID!) {",
   "markPullRequestReadyForReview(input: { pullRequestId: $pullRequestId }) {",
@@ -50,6 +52,22 @@ function ghJson(args, acceptedExitCodes = [0], commandRunner = runGh) {
     data = JSON.parse(result.stdout);
   }
   return { data, result };
+}
+
+function ghJsonLines(endpoint, filter, commandRunner) {
+  const result = commandRunner(["api", "--paginate", "--jq", filter, endpoint], [0]);
+  if (result.status !== 0) {
+    throw new Error(result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`);
+  }
+  const lines = String(result.stdout ?? "")
+    .split(JSON_LINE_SEPARATOR)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  try {
+    return lines.map((line) => JSON.parse(line));
+  } catch {
+    throw githubResponseContractError(endpoint, "newline-delimited JSON Project items");
+  }
 }
 
 function ghJsonPages(endpoint, field, commandRunner) {
@@ -234,7 +252,7 @@ function projectItemId(item, endpoint) {
 }
 
 function projectItemsForRead(endpoint, commandRunner) {
-  const items = ghJsonArrayPages(endpoint, commandRunner);
+  const items = ghJsonLines(endpoint, PROJECT_ITEM_IDENTITY_JQ, commandRunner);
   const seenIds = new Set();
   const seenNodeIds = new Set();
   const seenMembership = new Set();
