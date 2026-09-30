@@ -824,7 +824,7 @@ test("stops on missing fallback evidence without merge or branch cleanup", async
   assert.equal(client.calls.some(([name]) => name === "dispatch"), false);
 });
 
-test("stops without merge or branch cleanup after required-check read recovery is exhausted", async () => {
+test("stops without merge or branch cleanup after required-check read failure", async () => {
   const localGit = createFixtureLocalGit();
   const failure = new Error("HTTP 500: transient provider failure");
   const client = new FixtureClient({
