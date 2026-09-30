@@ -50,22 +50,24 @@ rules below are the exception only where they are more specific.
    ```
 
    The runner forwards an optional `--model` to `codex exec --model`. It passes
-   `--output-schema`, the schema path, `--output-last-message`, and the final
-   `-` to `codex exec`. It captures stdout, stderr, and the exit code
+   `--json`, `--output-schema`, the schema path, `--output-last-message`, and
+   the final `-` to `codex exec`. It captures stdout, stderr, and the exit code
    separately, waits for the advisor process to exit naturally, and cleans up
    its temporary directory on every exit path. Captured output has a resource
    bound; exceeding it fails the run without adding an elapsed-time kill.
    External cancellation remains an operator action.
    Codex can print banners or hook diagnostics to stdout, so they are not the
-   response. A failed capability probe or process launch returns incomplete
-   execution evidence before any review state can be consumed. On exit code `0`,
-   the runner returns the executable, probe evidence, and a completed
-   reviewer-process execution record, then reads the output file, validates the
-   schema response, and relays only its trimmed `advice` value. The CLI emits
-   the execution record as one JSON line on stderr, separate from advice on
-   stdout. Model,
-   reasoning, and prefix arguments must be single shell-safe values. The runner
-   rejects shell metacharacters before starting the direct Windows executable.
+   response. The runner parses only complete JSONL event lines from the
+   captured streams. A failed capability probe, process launch, or matching
+   `item.completed`/`error` event reporting model-metadata fallback returns
+   incomplete execution evidence before any review state can be consumed. The
+   fallback preserves the exact event and message; it does not switch models or
+   executables. Only a clean exit code `0` then proceeds to read the output
+   file, validate the schema response, and relay its trimmed `advice` value. The
+   CLI emits the execution record as one JSON line on stderr, separate from
+   advice on stdout. Model, reasoning, and prefix arguments must be single
+   shell-safe values. The runner rejects shell metacharacters before starting
+   the direct Windows executable.
 
 ## Failure handling
 
@@ -75,6 +77,10 @@ Report the exact observable failure and stop without advice when:
 - the process exits non-zero, including the exit code and stderr when present;
 - the output file is missing, empty, not valid JSON, or does not contain a
   non-whitespace `advice` string matching the schema.
+- the requested model emits a model-metadata fallback event. Preserve the
+  diagnostic and execution evidence, repair the model-metadata/runtime cause,
+  then rerun the caller-owned advisor or review dispatch; the runner never
+  silently selects another executable or model.
 
 Do not hide a command failure behind a guessed or partial answer. A successful
 advisor response is still only an untrusted second opinion for the user to

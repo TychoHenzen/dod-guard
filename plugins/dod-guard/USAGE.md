@@ -193,11 +193,17 @@ empty non-repository working directory, read-only restrictions, and an
 ephemeral session, and tells the advisor to skip repository research and
 mutations. It probes the direct executable's version and help before launch;
 write-capable review launchers use `--approve-for-me`, while this advisor never
-uses approval flags. Missing commands, non-zero exits, timeouts, and malformed
-responses remain visible incomplete failures. The result reports the CLI
-version, model setting, reasoning effort, and complete process evidence; the
-CLI keeps advice on stdout and emits one JSON execution record on stderr. The
-skill never edits files,
+uses approval flags. The runner requests `--json` and treats a matching
+`item.completed`/`error` model-metadata fallback event as an incomplete failure
+even when the process exits `0` and the final schema response is valid. It
+preserves the exact event/message and raw process evidence; unrelated JSON,
+banners, malformed lines, and fallback text for another model remain harmless.
+Missing commands, non-zero exits, timeouts, and malformed responses remain
+visible incomplete failures. The result reports the CLI version, model setting,
+reasoning effort, and complete process evidence; the CLI keeps advice on stdout
+and emits one JSON execution record on stderr. The caller repairs the runtime
+cause and uses the existing incomplete-review retry path; the skill never
+switches executables or models automatically. The skill never edits files,
 changes Git or GitHub state, or dispatches another advisor.
 
 Submit or refresh its draft pull request in a separate step:

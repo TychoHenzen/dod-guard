@@ -157,6 +157,7 @@ function attemptedExecArgs({ mode = "read-only", prefixArgs, model, reasoningEff
   if (mode === "read-only") {
     args.push("-s", "read-only", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--ephemeral");
   }
+  args.push("--json");
   return args;
 }
 
@@ -184,6 +185,32 @@ function parseAdvice(raw) {
     return { error: "Codex advisor output does not contain non-whitespace advice" };
   }
   return { value: { advice: response.advice.trim() } };
+}
+
+function modelMetadataFallback(stdout, stderr, model) {
+  if (typeof model !== "string") return undefined;
+  const prefix = `Model metadata for ${model} not found.`;
+  for (const output of [stdout, stderr]) {
+    for (const line of output.split(/\r?\n/u)) {
+      let event;
+      try {
+        event = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const message = event?.item?.message;
+      if (
+        event?.type === "item.completed" &&
+        event.item?.type === "error" &&
+        typeof message === "string" &&
+        message.startsWith(prefix) &&
+        message.includes("Defaulting to fallback metadata")
+      ) {
+        return { event, message };
+      }
+    }
+  }
+  return undefined;
 }
 
 export async function runAdvisor({
@@ -285,6 +312,12 @@ export async function runAdvisor({
     }
     if (result.cancelled) {
       return failure("Codex advisor cancelled by operator", result, executable, args, "reviewer-process", prefixArgs);
+    }
+    const fallback = modelMetadataFallback(result.stdout, result.stderr, model);
+    if (fallback) {
+      const failed = failure(fallback.message, result, executable, args, "reviewer-process", prefixArgs);
+      failed.execution.fallbackEvent = fallback.event;
+      return failed;
     }
     if (result.code !== 0) {
       return failure(`Codex advisor exits non-zero with code ${result.code}`, result, executable, args, "reviewer-process", prefixArgs);

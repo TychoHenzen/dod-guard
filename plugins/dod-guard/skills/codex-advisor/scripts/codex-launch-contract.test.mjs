@@ -75,6 +75,8 @@ test("builds read-only advisor and write-capable review arguments without stale 
   assert.equal(write.includes(CODEX_WRITE_APPROVAL_FLAG), true);
   assert.equal(readOnly.includes(CODEX_OBSOLETE_APPROVAL_FLAG), false);
   assert.equal(write.includes(CODEX_OBSOLETE_APPROVAL_FLAG), false);
+  assert.equal(readOnly.includes("--json"), true);
+  assert.equal(write.includes("--json"), true);
   assert.deepEqual(buildCodexPreflightArgs(), { version: ["--version"], help: ["exec", "--help"] });
 });
 

@@ -128,7 +128,7 @@ export function buildCodexExecArgs({
   if (mode === "read-only") {
     args.push("-s", "read-only", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--ephemeral");
   }
-  args.push("-C", workdir, "--output-schema", schemaPath, "--output-last-message", outputPath, "-");
+  args.push("--json", "-C", workdir, "--output-schema", schemaPath, "--output-last-message", outputPath, "-");
   return args;
 }
 

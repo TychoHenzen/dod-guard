@@ -99,10 +99,11 @@ and `exec --help` before consuming review state. Write-capable execution uses
 the supported `--approve-for-me` option; read-only execution sends no approval
 option. Reject obsolete `--ask-for-approval` arguments before the process
 starts. A launcher or process failure without a completed recommendation is
-incomplete evidence: preserve the exact command, exit evidence, and remote
-review state, repair the cause, then retry until a terminal
-recommendation exists. Never retry a completed `APPROVE`, `REQUEST_CHANGES`, or
-`BLOCK` result.
+incomplete evidence. A requested-model metadata fallback is also incomplete
+evidence: preserve the exact command, event/message, exit evidence, and remote
+review state, repair the cause, then retry until a terminal recommendation exists.
+Never retry a completed `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` result, and
+never silently switch the Codex executable or model.
 
 The shipped `scripts/review-dispatch.mjs` helper is the reviewer launch
 boundary. It reuses the direct Codex argument builder, passes prompts through
@@ -224,8 +225,9 @@ temporary reviewer shells. Record each returned reviewer, unit, execution
 evidence, and result. Wait for every reviewer to finish; do not send progress,
 reminder, or rush messages to a reviewer that is still working.
 
-If a direct Codex executable cannot start, preserve the helper's incomplete
-execution evidence and repair the cause. Then rerun with
+If a direct Codex executable cannot start or reports model-metadata fallback,
+preserve the helper's incomplete execution evidence and repair the cause. Then
+rerun with
 `--retry-incomplete "<previous-result.json>"`, which starts only the pairs
 whose earlier execution did not complete. Never rerun a completed pair.
 
