@@ -110,9 +110,31 @@ function fixture() {
       'import { join } from "node:path";',
       "const args = process.argv.slice(2);",
       'if (args[0] === "run" && args[1] === "bundle" && process.env.PREFLIGHT_SCENARIO === "drift") writeFileSync(join(process.cwd(), "generated.txt"), "generated\\n");',
-      'if (args[0] === "exec" && args.includes("check") && process.env.PREFLIGHT_SCENARIO === "biome") {',
-      '  process.stdout.write("src/example.ts:1:1 lint/style/useConst\\n");',
-      "  process.exitCode = 1;",
+      'if (args[0] === "exec" && args.includes("check") && process.env.PREFLIGHT_SCENARIO.startsWith("biome")) {',
+      '  const capped = args.includes("--max-diagnostics=200");',
+      '  if (process.env.PREFLIGHT_SCENARIO === "biome") process.stdout.write("src/example.ts:1:1 lint/style/useConst\\n");',
+      '  if (process.env.PREFLIGHT_SCENARIO === "biome-uncapped") process.stdout.write("src/example.ts:1:1 lint/style/useConst\\n");',
+      '  if (process.env.PREFLIGHT_SCENARIO === "biome-capped-error" && capped) {',
+      '    process.stdout.write("src/example.ts:1:1 lint/style/useConst\\nDiagnostics not shown: 1\\n");',
+      "    process.exitCode = 1;",
+      "  }",
+      '  if (process.env.PREFLIGHT_SCENARIO === "biome-capped-error" && !capped) {',
+      '    process.stdout.write("fallback invoked\\n");',
+      '    process.stdout.write("src/hidden.ts:2:3 lint/correctness/noUnusedVariables\\n");',
+      "    process.exitCode = 1;",
+      "  }",
+      '  if (process.env.PREFLIGHT_SCENARIO === "biome-capped-warning" && capped) process.stdout.write("src/example.ts:1:1 lint/style/useConst\\nDiagnostics not shown: 1\\n");',
+      '  if (process.env.PREFLIGHT_SCENARIO === "biome-capped-warning" && !capped) process.stdout.write("error-only fallback\\n");',
+      '  if (process.env.PREFLIGHT_SCENARIO === "biome-fallback-failure" && capped) {',
+      '    process.stdout.write("Diagnostics not shown: 1\\n");',
+      "    process.exitCode = 1;",
+      "  }",
+      '  if (process.env.PREFLIGHT_SCENARIO === "biome-fallback-failure" && !capped) {',
+      '    process.stderr.write("fallback failed: fixture\\n");',
+      "    process.exitCode = 2;",
+      "  }",
+      '  if (process.env.PREFLIGHT_SCENARIO === "biome-uncapped") process.exitCode = 0;',
+      '  if (process.env.PREFLIGHT_SCENARIO === "biome") process.exitCode = 1;',
       "}",
     ].join("\n"),
   );
@@ -218,6 +240,64 @@ test("preflight preserves Biome diagnostics and returns failure", () => {
     const result = runPreflight(root, "biome");
     assert.equal(result.status, 1);
     assert.match(`${result.stdout}${result.stderr}`, BIOME_DIAGNOSTIC);
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test("preflight exposes hidden Biome errors after a capped run", () => {
+  const { parent, root } = fixture();
+  try {
+    const result = runPreflight(root, "biome-capped-error");
+    const output = `${result.stdout}${result.stderr}`;
+
+    assert.equal(result.status, 1, output);
+    assert.match(output, /src\/example\.ts:1:1 lint\/style\/useConst/);
+    assert.match(output, /src\/hidden\.ts:2:3 lint\/correctness\/noUnusedVariables/);
+    assert.equal((output.match(/fallback invoked/g) ?? []).length, 1);
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test("preflight does not run the Biome fallback without a cap", () => {
+  const { parent, root } = fixture();
+  try {
+    const result = runPreflight(root, "biome-uncapped");
+    const output = `${result.stdout}${result.stderr}`;
+
+    assert.equal(result.status, 0, output);
+    assert.match(output, BIOME_DIAGNOSTIC);
+    assert.doesNotMatch(output, /Biome error diagnostics/);
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test("preflight keeps warning-only capped Biome runs successful", () => {
+  const { parent, root } = fixture();
+  try {
+    const result = runPreflight(root, "biome-capped-warning");
+    const output = `${result.stdout}${result.stderr}`;
+
+    assert.equal(result.status, 0, output);
+    assert.match(output, /Diagnostics not shown: 1/);
+    assert.match(output, /error-only fallback/);
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test("preflight exposes a Biome fallback failure", () => {
+  const { parent, root } = fixture();
+  try {
+    const result = runPreflight(root, "biome-fallback-failure");
+    const output = `${result.stdout}${result.stderr}`;
+
+    assert.equal(result.status, 1, output);
+    assert.match(output, /fallback failed: fixture/);
+    assert.match(output, /Biome strict check exited with status 1/);
+    assert.match(output, /Biome error diagnostics exited with status 2/);
   } finally {
     rmSync(parent, { recursive: true, force: true });
   }
