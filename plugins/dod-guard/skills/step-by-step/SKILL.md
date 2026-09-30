@@ -26,6 +26,11 @@ Before dispatching, restate the ordered steps, the verification for each, and
 the current repository/branch. Stop for an empty, unordered, ambiguous, or
 unsafe plan.
 
+If the command tool returns an active session handle for dispatch or proof,
+treat it as in-progress: wait or poll that same handle to a terminal result,
+preserve the exact command and session evidence, and do not treat missing
+intermediate output as failure or dispatch another copy.
+
 ## Execute one step
 
 For each step, in order:
@@ -40,15 +45,19 @@ For each step, in order:
 4. Record the result, evidence, and next step in the main-thread checkpoint.
 
 Do not reuse a worker for an unrelated later step. Do not dispatch a second
-step while the active step lacks a terminal result.
+step while the active step lacks a terminal result or its command-session
+handle is still active.
 
 ## Failures and repair
 
-On a failed or incomplete step, preserve the checkpoint and exact failure. Do
-not skip forward or restart completed steps. Give one fresh bounded repair task
-the failed step, error, and required proof; then re-run that proof. If repair
-cannot establish the step's acceptance condition, stop with the checkpoint and
-the precise missing evidence.
+On a failed or incomplete step, preserve the checkpoint and exact failure. An
+active handle is not an incomplete result: continue waiting or polling that
+same invocation, and retry only after explicit cancellation or confirmed
+session failure. Record the exact command and handle; cancel only the
+invocation-owned process or session when required, confirm it stopped, then
+give one fresh bounded repair task the failed step, error, and required proof.
+Do not skip forward or restart completed steps. If repair cannot establish the step's
+acceptance condition, stop with the checkpoint and the precise missing evidence.
 
 ## Finish
 

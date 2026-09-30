@@ -102,6 +102,12 @@ starts. A launcher or process failure without a completed recommendation is
 incomplete evidence. A requested-model metadata fallback is also incomplete
 evidence: preserve the exact command, event/message, exit evidence, and remote
 review state, repair the cause, then retry until a terminal recommendation exists.
+When the command tool returns an active session handle, keep waiting or polling
+that same reviewer invocation to a terminal result; preserve the exact command
+and session evidence, and never treat missing intermediate output as failure or
+launch a duplicate reviewer. Retry only after explicit cancellation or
+confirmed session failure; if cancellation is required, terminate only the
+invocation-owned reviewer process or session and confirm it stopped first.
 Never retry a completed `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` result, and
 never silently switch the Codex executable or model.
 
@@ -229,7 +235,10 @@ If a direct Codex executable cannot start or reports model-metadata fallback,
 preserve the helper's incomplete execution evidence and repair the cause. Then
 rerun with
 `--retry-incomplete "<previous-result.json>"`, which starts only the pairs
-whose earlier execution did not complete. Never rerun a completed pair.
+whose earlier execution did not complete. Do not use this path while an active
+command-session handle is still running; wait for that exact handle or confirm
+explicit cancellation or session failure, then verify any invocation-owned
+process or session has stopped before retrying. Never rerun a completed pair.
 
 Give every reviewer the redacted context for its unit and no other reviewer's
 output. Each reviewer returns one JSON object with `reviewer`, `coverage`, and

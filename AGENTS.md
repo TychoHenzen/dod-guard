@@ -75,6 +75,13 @@ or ratchet baselines.
 Do not add arbitrary wall-clock timeouts that kill long-running agents,
 advisors, reviewers, or delivery tasks. Wait for authoritative terminal state;
 retain only provider/resource safety limits or an explicit user cancellation.
+An active command-session handle is authoritative in-progress state: wait or
+poll that same handle to a terminal result before retrying or launching another
+copy, preserve the exact command and session evidence, and treat missing
+intermediate output as non-failure. Only explicit cancellation or confirmed
+session failure permits a retry; record the command and handle, terminate only
+the invocation-owned process or session when cancellation is required, and
+confirm it stopped before resuming.
 
 ## Plugin structure
 
