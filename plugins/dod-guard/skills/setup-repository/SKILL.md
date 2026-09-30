@@ -44,11 +44,23 @@ Resolve the skill directory. In Claude Code it is
 `${CLAUDE_PLUGIN_ROOT}/skills/setup-repository`. In Codex, use the directory containing this loaded
 `SKILL.md`.
 
-Run the read-only inspector against the local project root:
+Run the bounded summary for routine inventory checks:
+
+```text
+node <skill-dir>/scripts/inspect-repository.mjs --summary <project-root>
+```
+
+Summary mode reports only the project root, compact Git state, and fixed inventory counts. It omits
+per-file arrays and credential values, so it is a readability aid rather than the setup evidence
+boundary. Run the default unflagged command when detailed inventory is needed:
 
 ```text
 node <skill-dir>/scripts/inspect-repository.mjs <project-root>
 ```
+
+Full mode remains required for `credentialFindings`, staged-file review, and any other step that
+needs per-file evidence. Neither mode changes GitHub, Project, security, or branch-protection
+behavior.
 
 Also inspect:
 
@@ -199,8 +211,9 @@ readback instead of claiming that the shared taxonomy exists.
 
 ## 6. Review credentials and staged content
 
-Run the inspector again after local edits. Any `credentialFindings` entry blocks staging until the
-file and exact signal are reviewed. Never print the matched value.
+Run the full inspector again after local edits. Any `credentialFindings` entry blocks staging until
+the file and exact signal are reviewed. Never print the matched value. Summary mode is not a
+substitute for this per-file credential evidence.
 
 Also inspect the complete tracked and untracked file list and run a repository-local secret scanner
 when one is already configured. Before the first push, inspect likely private keys, tokens,

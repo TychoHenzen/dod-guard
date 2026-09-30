@@ -237,9 +237,18 @@ function isManifest(file) {
 }
 
 export async function inspectRepository(rootPath) {
+  if (typeof rootPath !== "string" || rootPath.length === 0) {
+    throw new Error("Project root must be a non-empty path");
+  }
+
   const root = path.resolve(rootPath);
-  const rootStats = await stat(root);
-  if (!rootStats.isDirectory()) throw new Error(`Project root is not a directory: ${root}`);
+  let rootStats;
+  try {
+    rootStats = await stat(root);
+  } catch {
+    throw new Error("Project root is not a directory");
+  }
+  if (!rootStats.isDirectory()) throw new Error("Project root is not a directory");
 
   const files = await collectFiles(root);
   const relativeFiles = files.map((file) => relative(root, file));
@@ -273,6 +282,28 @@ export async function inspectRepository(rootPath) {
     languageSignals: Object.fromEntries([...languageSignals].sort(([a], [b]) => a.localeCompare(b))),
     unclassifiedSourceExtensions: [...unclassifiedSourceExtensions].sort(),
     credentialFindings: await credentialFindings(root, files),
+  };
+}
+
+export function summarizeRepository(report) {
+  return {
+    root: report.root,
+    git: {
+      repository: report.git.repository,
+      hasCommits: report.git.hasCommits,
+      branch: report.git.branch,
+      remotes: report.git.remotes.length,
+    },
+    counts: {
+      files: report.files.length,
+      manifests: report.manifests.length,
+      configurations: report.configurations.length,
+      instructions: report.instructions.length,
+      sourceExtensions: Object.keys(report.sourceExtensions).length,
+      languages: Object.keys(report.languageSignals).length,
+      unclassifiedExtensions: report.unclassifiedSourceExtensions.length,
+      credentialFindings: report.credentialFindings.length,
+    },
   };
 }
 
@@ -329,6 +360,12 @@ async function main() {
     }
     const snapshot = JSON.parse(await readFile(path.resolve(args[1]), "utf8"));
     process.stdout.write(`${JSON.stringify(assessGitHubSnapshot(snapshot), null, 2)}\n`);
+    return;
+  }
+
+  if (args[0] === "--summary") {
+    if (args.length !== 2) throw new Error("Usage: inspect-repository.mjs --summary <project-root>");
+    process.stdout.write(`${JSON.stringify(summarizeRepository(await inspectRepository(args[1])), null, 2)}\n`);
     return;
   }
 
