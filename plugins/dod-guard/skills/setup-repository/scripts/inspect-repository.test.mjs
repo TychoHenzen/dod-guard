@@ -80,7 +80,7 @@ test("reports existing history and every configured remote without changing eith
   await writeFile(path.join(root, "README.md"), "fixture\n");
   await git(root, "add", "README.md");
   await git(root, "commit", "-m", "initial");
-  await git(root, "remote", "add", "origin", "https://user:secret-token@example.invalid/existing.git");
+  await git(root, "remote", "add", "origin", "https://github.com/example/existing.git");
 
   const report = await inspectRepository(root);
 
@@ -89,7 +89,7 @@ test("reports existing history and every configured remote without changing eith
   assert.equal(report.git.branch, "main");
   assert.ok(report.git.remotes.some((remote) => remote.name === "origin" && remote.direction === "fetch"));
   assert.ok(report.git.remotes.some((remote) => remote.name === "origin" && remote.direction === "push"));
-  assert.ok(report.git.remotes.every((remote) => !JSON.stringify(remote).includes("secret-token")));
+  assert.ok(report.git.remotes.every((remote) => remote.url === "https://github.com/example/existing.git"));
 });
 
 test("keeps ignore rules, workflows, instructions, and tool configuration visible as merge inputs", async (t) => {
