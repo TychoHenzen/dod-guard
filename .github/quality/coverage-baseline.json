@@ -14,10 +14,10 @@
       "lines": 98.47
     },
     "knowledge-base": {
-      "statements": 98.35,
-      "branches": 94.61,
+      "statements": 98.94,
+      "branches": 94.76,
       "functions": 100,
-      "lines": 98.35
+      "lines": 98.94
     }
   }
 }
