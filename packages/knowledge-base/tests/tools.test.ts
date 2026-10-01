@@ -5,7 +5,6 @@ import { test } from "node:test";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { withKnowledgeBaseClient } from "./mcp-test-support.js";
 import { syntheticToolEntries } from "./synthetic-fixtures.js";
-import { assertToolSurface } from "./tool-surface-test-support.js";
 import {
   callKnowledgeTool,
   packageRoot,
@@ -13,6 +12,7 @@ import {
   withSyntheticKnowledgeRoot,
   withTemporaryDirectory,
 } from "./test-support.js";
+import { assertToolSurface } from "./tool-surface-test-support.js";
 
 async function assertMissingRoot(client: Client): Promise<void> {
   const result = await client.callTool({ name: "knowledge_list_chapters", arguments: {} });
