@@ -1,8 +1,8 @@
 {
   "version": 2,
   "profile": "strict",
-  "createdAt": "2026-09-26T12:26:54.984Z",
-  "total": 93,
+  "createdAt": "2026-10-01T00:49:49.850Z",
+  "total": 92,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -1320,12 +1320,14 @@
     "packages/knowledge-base/tests/entrypoint.test.ts",
     "packages/knowledge-base/tests/mcp-test-support.ts",
     "packages/knowledge-base/tests/root-boundary.test.ts",
+    "packages/knowledge-base/tests/schema-test-support.ts",
     "packages/knowledge-base/tests/schema-validation.test.ts",
     "packages/knowledge-base/tests/schema.test.ts",
     "packages/knowledge-base/tests/store-synthetic.test.ts",
     "packages/knowledge-base/tests/store.test.ts",
     "packages/knowledge-base/tests/synthetic-fixtures.ts",
     "packages/knowledge-base/tests/test-support.ts",
+    "packages/knowledge-base/tests/tool-surface-test-support.ts",
     "packages/knowledge-base/tests/tools-synthetic.test.ts",
     "packages/knowledge-base/tests/tools.test.ts",
     "packages/quality-guard/esbuild.config.mjs",
@@ -1744,7 +1746,6 @@
     "packages/code-explorer/tests/testing/index/index-navigation-owner.test.ts::complexity": 1,
     "packages/code-explorer/tests/testing/index/index-standalone-ready.test.ts::complexity": 1,
     "packages/knowledge-base/src/schema.ts::complexity": 3,
-    "packages/knowledge-base/src/store.ts::complexity": 1,
     "packages/quality-guard/src/commit-gate/decision-core-acknowledgements.ts::complexity": 1,
     "packages/quality-guard/src/commit-gate/render/decision.ts::complexity": 1,
     "packages/code-explorer/src/runtime-main.ts::function-length": 1,
@@ -1768,7 +1769,9 @@
     "packages/code-explorer/tests/testing/index/index-installed-package.test.ts::nesting-depth": 1,
     "packages/code-explorer/tests/testing/index/index-navigation-owner.test.ts::nesting-depth": 1,
     "packages/code-explorer/tests/testing/index/index-standalone-ready.test.ts::nesting-depth": 2,
+    "packages/knowledge-base/tests/root-boundary.test.ts::nesting-depth": 4,
     "packages/knowledge-base/src/store.ts::else-branch": 1,
+    "packages/knowledge-base/tests/root-boundary.test.ts::else-branch": 1,
     "packages/code-explorer/tests/testing/index/index-navigation-owner.test.ts::stateless-method": 2,
     "packages/knowledge-base/src/store.ts::stateless-method": 1,
     "packages/code-explorer/src/browser-server/router-asset-file.ts::flag-parameter": 1,
@@ -1780,8 +1783,6 @@
     "packages/code-explorer/tests/testing/discovery/landmarks/counting-adapter-fixture.ts::flag-parameter": 1,
     "packages/knowledge-base/src/schema.ts::flag-parameter": 1,
     "packages/code-explorer/src/runtime-main.ts::unused-local": 1,
-    "packages/knowledge-base/src/index.ts::unused-local": 1,
-    "packages/knowledge-base/tests/root-boundary.test.ts::nesting-depth": 4,
-    "packages/knowledge-base/tests/root-boundary.test.ts::else-branch": 1
+    "packages/knowledge-base/src/index.ts::unused-local": 1
   }
 }

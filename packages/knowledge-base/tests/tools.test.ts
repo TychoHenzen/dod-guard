@@ -24,14 +24,12 @@ async function assertMissingRoot(client: Client): Promise<void> {
 test("exposes five read tools for a synthetic root", () =>
   withSyntheticKnowledgeRoot(syntheticToolEntries, (root) =>
     withKnowledgeBaseClient(root, "knowledge-base-test", assertToolSurface),
-  ),
-);
+  ));
 
 test("returns an MCP error when the configured root is missing", () =>
   withTemporaryDirectory("knowledge-base-tools-missing-", (parent) =>
     withKnowledgeBaseClient(join(parent, "missing"), "knowledge-base-missing-root-test", assertMissingRoot),
-  ),
-);
+  ));
 
 test("keeps the package independent from retired storage and executable policy", () => {
   const packageJson = JSON.parse(readFileSync(`${packageRoot}/package.json`, "utf8")) as {
