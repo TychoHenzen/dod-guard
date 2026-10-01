@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -43,6 +43,32 @@ test("rejects a missing entries directory and propagates other read errors", asy
     await assert.rejects(() => new KnowledgeBase(`${root}\0`).chapters(), /null bytes|invalid/i);
   } finally {
     await removeRoot(root);
+  }
+});
+
+test("rejects an entries link that escapes the configured root", async (context) => {
+  const root = await mkdtemp(join(tmpdir(), "knowledge-base-link-root-"));
+  const external = await mkdtemp(join(tmpdir(), "knowledge-base-link-target-"));
+  try {
+    try {
+      await symlink(external, join(root, "entries"), "junction");
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (process.platform === "win32" && (code === "EACCES" || code === "EPERM")) {
+        context.skip("creating a directory junction is unavailable in this Windows environment");
+        return;
+      }
+      throw error;
+    }
+    await writeFile(join(external, "escaped.md"), "outside the configured root", "utf8");
+
+    await assert.rejects(
+      () => new KnowledgeBase(root).chapters(),
+      /entries path configured by DOD_GUARD_KNOWLEDGE_BASE_DIR must not be a symbolic link or junction/,
+    );
+  } finally {
+    await removeRoot(root);
+    await removeRoot(external);
   }
 });
 

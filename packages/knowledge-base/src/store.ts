@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { lstat, readdir, readFile, stat } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 import {
   type EntrySummary,
@@ -54,6 +54,15 @@ async function requireDirectory(path: string, label: "root" | "entries"): Promis
       );
     }
     throw error;
+  }
+}
+
+async function requireEntriesDirectory(path: string): Promise<void> {
+  await requireDirectory(path, "entries");
+  if ((await lstat(path)).isSymbolicLink()) {
+    throw new KnowledgeBaseError(
+      `Knowledge-base entries path configured by ${KNOWLEDGE_BASE_DIR_ENV} must not be a symbolic link or junction: ${path}`,
+    );
   }
 }
 
@@ -119,7 +128,7 @@ export class KnowledgeBase {
 
   private async buildIndex(): Promise<KnowledgeIndex> {
     await requireDirectory(this.rootDir, "root");
-    await requireDirectory(this.entriesDir, "entries");
+    await requireEntriesDirectory(this.entriesDir);
     const files = await markdownFiles(this.entriesDir);
     const entries: KnowledgeEntry[] = [];
     for (const file of files.sort()) {

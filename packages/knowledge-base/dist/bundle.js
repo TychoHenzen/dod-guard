@@ -28773,7 +28773,7 @@ var StdioServerTransport = class {
 };
 
 // src/store.ts
-import { readdir, readFile, stat } from "node:fs/promises";
+import { lstat, readdir, readFile, stat } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
 // src/schema.ts
@@ -28941,6 +28941,14 @@ async function requireDirectory(path, label) {
     throw error2;
   }
 }
+async function requireEntriesDirectory(path) {
+  await requireDirectory(path, "entries");
+  if ((await lstat(path)).isSymbolicLink()) {
+    throw new KnowledgeBaseError(
+      `Knowledge-base entries path configured by ${KNOWLEDGE_BASE_DIR_ENV} must not be a symbolic link or junction: ${path}`
+    );
+  }
+}
 function summary(entry) {
   if (!entry.path) throw new KnowledgeBaseError(`entry ${entry.key} has no stored path`);
   return {
@@ -28992,7 +29000,7 @@ var KnowledgeBase = class {
   }
   async buildIndex() {
     await requireDirectory(this.rootDir, "root");
-    await requireDirectory(this.entriesDir, "entries");
+    await requireEntriesDirectory(this.entriesDir);
     const files = await markdownFiles(this.entriesDir);
     const entries = [];
     for (const file of files.sort()) {
