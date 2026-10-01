@@ -1,64 +1,69 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const exampleNames = [
-  "clean-code.clean-code.md",
-  "clean-code.boundaries.md",
-  "clean-code.classes.md",
-  "clean-code.meaningful-names.md",
-  "clean-code.functions.md",
-  "clean-code.comments.md",
-  "clean-code.formatting.md",
-  "clean-code.objects-data-structures.md",
-  "clean-code.error-handling.md",
-  "clean-code.unit-tests.md",
-  "clean-code.systems.md",
-  "clean-code.emergence.md",
-  "clean-code.concurrency.md",
-  "clean-code.junit-internals.md",
-  "clean-code.refactoring-serialdate.md",
-  "clean-code.successive-refinement.md",
-  "refactoring.move-method.md",
-  "design-patterns.strategy.md",
-  "ux-ui-design.accessible-dialogs.md",
+
+export const knowledgeToolNames = [
+  "knowledge_get_entry",
+  "knowledge_list_chapters",
+  "knowledge_list_entries",
+  "knowledge_list_sections",
+  "knowledge_search",
 ];
 
-export const cleanCodeSectionKeys = [
-  "clean-code.boundaries",
-  "clean-code.classes",
-  "clean-code.comments",
-  "clean-code.concurrency",
-  "clean-code.emergence",
-  "clean-code.error-handling",
-  "clean-code.formatting",
-  "clean-code.foundation",
-  "clean-code.functions",
-  "clean-code.junit-internals",
-  "clean-code.meaningful-names",
-  "clean-code.objects-data-structures",
-  "clean-code.refactoring-serialdate",
-  "clean-code.successive-refinement",
-  "clean-code.systems",
-  "clean-code.unit-tests",
-];
-
-export async function exampleText(name: string): Promise<string> {
-  return readFile(join(packageRoot, "examples", "entries", name), "utf8");
-}
-
-export async function exampleRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "knowledge-base-test-"));
-  const entries = join(root, "entries");
-  await mkdir(entries, { recursive: true });
-  for (const name of exampleNames) await writeFile(join(entries, name), await exampleText(name), "utf8");
+export async function createSyntheticKnowledgeRoot(entries: Record<string, string>): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), "knowledge-base-synthetic-"));
+  await mkdir(join(root, "entries"), { recursive: true });
+  for (const [name, content] of Object.entries(entries)) {
+    const path = join(root, "entries", name);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, content, "utf8");
+  }
   return root;
 }
 
 export async function removeRoot(root: string): Promise<void> {
   await rm(root, { recursive: true, force: true });
+}
+
+export async function withSyntheticKnowledgeRoot<Result>(
+  entries: Record<string, string>,
+  action: (root: string) => Promise<Result>,
+): Promise<Result> {
+  const root = await createSyntheticKnowledgeRoot(entries);
+  try {
+    return await action(root);
+  } finally {
+    await removeRoot(root);
+  }
+}
+
+export async function withTemporaryDirectory<Result>(
+  prefix: string,
+  action: (root: string) => Promise<Result>,
+): Promise<Result> {
+  const root = await mkdtemp(join(tmpdir(), prefix));
+  try {
+    return await action(root);
+  } finally {
+    await removeRoot(root);
+  }
+}
+
+export function toolText(result: unknown): string {
+  const content = (result as { content?: Array<{ type: string; text?: string }> }).content;
+  return content?.[0]?.type === "text" ? (content[0].text ?? "") : "";
+}
+
+export async function callKnowledgeTool<T>(
+  client: Client,
+  name: string,
+  arguments_: Record<string, unknown> = {},
+): Promise<T> {
+  return JSON.parse(toolText(await client.callTool({ name, arguments: arguments_ }))) as T;
 }
 
 export { packageRoot };
