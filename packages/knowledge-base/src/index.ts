@@ -15,8 +15,14 @@ function packageInfo(): { name: string; version: string } {
   return JSON.parse(readFileSync(packagePath, "utf8")) as { name: string; version: string };
 }
 
+const KNOWLEDGE_BASE_DIR_ENV = "DOD_GUARD_KNOWLEDGE_BASE_DIR";
+
 export function defaultKnowledgeBaseDir(): string {
-  return process.env.DOD_GUARD_KNOWLEDGE_BASE_DIR ?? "C:\\Obsidian\\Knowledgebase";
+  const rootDir = process.env[KNOWLEDGE_BASE_DIR_ENV];
+  if (!rootDir?.trim()) {
+    throw new Error(`${KNOWLEDGE_BASE_DIR_ENV} must be set to the external knowledge-base root`);
+  }
+  return rootDir;
 }
 
 export function createKnowledgeBaseServer(rootDir = defaultKnowledgeBaseDir()): McpServer {
@@ -26,7 +32,6 @@ export function createKnowledgeBaseServer(rootDir = defaultKnowledgeBaseDir()): 
   return server;
 }
 
-const server = createKnowledgeBaseServer();
 const filename = fileURLToPath(import.meta.url);
 
 function isMainModule(): boolean {
@@ -40,6 +45,7 @@ function isMainModule(): boolean {
 }
 
 async function main(): Promise<void> {
+  const server = createKnowledgeBaseServer();
   await server.connect(new StdioServerTransport());
 }
 
@@ -54,7 +60,6 @@ export type {
   EntrySummary,
   KnowledgeEntry,
   KnowledgeIndex,
-  RefinementRecord,
   SourceReference,
 } from "./schema.js";
 export { KnowledgeBase } from "./store.js";

@@ -1,13 +1,10 @@
 #!/usr/bin/env node
 
-// smoke-bundle-standalone - run every packaged bundle with no repository
-// node_modules available to resolve external dependencies. Package-root JSON
-// records copied beside each bundle are expected runtime metadata, not a
-// dependency installation or plugin cache.
+// Run packaged bundles without repository node_modules.
 
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { cp, mkdir, mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,9 +13,32 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const PACKAGES_DIR = join(ROOT, "packages");
 const TIMEOUT_MS = 30_000;
 const PROTOCOL_VERSION = "2025-06-18";
+const KNOWLEDGE_BASE_DIR_ENV = "DOD_GUARD_KNOWLEDGE_BASE_DIR";
 
 function send(child, message) {
   child.stdin.write(`${JSON.stringify(message)}\n`);
+}
+
+async function createSyntheticKnowledgeRoot(parent) {
+  const root = join(parent, "knowledge-base-vault");
+  const entries = join(root, "entries", "smoke", "nested");
+  await mkdir(entries, { recursive: true });
+  const content = [
+    "---",
+    "key: smoke.synthetic-entry",
+    "title: Synthetic Smoke Entry",
+    "chapter: smoke",
+    "section: smoke.basics",
+    "summary: A generic entry used by the standalone bundle smoke.",
+    "sources:",
+    "  - label: smoke fixture",
+    "    url: https://example.invalid/smoke",
+    "---",
+    "",
+    "Synthetic standalone bundle smoke content.",
+  ].join("\n");
+  await writeFile(join(entries, "entry.md"), content, "utf8");
+  return root;
 }
 
 function awaitResponse(state, id) {
@@ -53,9 +73,31 @@ function attachStdout(child, state) {
   });
 }
 
-async function handshake(bundle, pkgName, expectedVersion) {
+async function requestTool(child, state, died, timeout, id, name, args) {
+  send(child, { jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } });
+  const result = await Promise.race([awaitResponse(state, id), died, timeout]);
+  if (result.error || result.result?.isError) throw new Error(`${name} failed`);
+  return result;
+}
+
+function parseToolPayload(result, name) {
+  const text = result.result?.content?.find((item) => item.type === "text")?.text;
+  if (!text) throw new Error(`${name} returned no text`);
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new Error(`${name} returned invalid JSON: ${error.message}`);
+  }
+}
+
+async function handshake(bundle, pkgName, expectedVersion, cwd = dirname(bundle), envOverrides = {}) {
+  const env = { ...process.env, ...envOverrides };
+  if (!Object.prototype.hasOwnProperty.call(envOverrides, KNOWLEDGE_BASE_DIR_ENV)) {
+    delete env[KNOWLEDGE_BASE_DIR_ENV];
+  }
   const child = spawn(process.execPath, [bundle], {
-    cwd: dirname(bundle),
+    cwd,
+    env,
     stdio: ["pipe", "pipe", "pipe"],
   });
   const state = { waiters: new Map(), junk: [] };
@@ -106,10 +148,43 @@ async function handshake(bundle, pkgName, expectedVersion) {
     }
 
     send(child, { jsonrpc: "2.0", method: "notifications/initialized" });
+    let tools = [];
     if (init.result?.capabilities?.tools) {
       send(child, { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} });
       const listed = await Promise.race([awaitResponse(state, 2), died, timeout]);
       if (listed.error) throw new Error(`tools/list failed: ${JSON.stringify(listed.error)}`);
+      tools = listed.result?.tools ?? [];
+    }
+    if (pkgName === "knowledge-base") {
+      const expectedTools = [
+        "knowledge_list_chapters",
+        "knowledge_list_sections",
+        "knowledge_list_entries",
+        "knowledge_search",
+        "knowledge_get_entry",
+      ];
+      const toolNames = tools.map((tool) => tool.name);
+      if (JSON.stringify(toolNames) !== JSON.stringify(expectedTools)) {
+        throw new Error(`knowledge-base bundle listed unexpected tools: ${JSON.stringify(toolNames)}`);
+      }
+      const chapters = parseToolPayload(
+        await requestTool(child, state, died, timeout, 3, "knowledge_list_chapters", {}),
+        "knowledge_list_chapters",
+      );
+      if (JSON.stringify(chapters.chapters?.map((chapter) => chapter.key)) !== JSON.stringify(["smoke"])) {
+        throw new Error(`knowledge-base bundle listed unexpected chapters: ${JSON.stringify(chapters.chapters)}`);
+      }
+      const fullEntry = parseToolPayload(
+        await requestTool(child, state, died, timeout, 4, "knowledge_get_entry", { key: "smoke.synthetic-entry" }),
+        "knowledge_get_entry",
+      );
+      if (
+        fullEntry.entry?.key !== "smoke.synthetic-entry" ||
+        fullEntry.entry?.chapter !== "smoke" ||
+        !fullEntry.entry?.content?.includes("Synthetic standalone bundle smoke content.")
+      ) {
+        throw new Error("knowledge-base bundle returned the wrong synthetic entry");
+      }
     }
     if (state.junk.length > 0) throw new Error(`non-JSON output on stdout corrupts the MCP stream: ${state.junk[0]}`);
   } finally {
@@ -167,6 +242,7 @@ export async function runBundles(bundles) {
     if (hasNodeModulesAncestor(tempRoot)) {
       throw new Error(`temporary directory has a node_modules ancestor: ${tempRoot}`);
     }
+    const knowledgeRoot = await createSyntheticKnowledgeRoot(tempRoot);
     for (const bundle of bundles) {
       const isolatedPackage = join(tempRoot, bundle.name);
       const isolatedBundle = join(isolatedPackage, "dist", "bundle.js");
@@ -180,7 +256,14 @@ export async function runBundles(bundles) {
           .map((entry) => cp(join(sourcePackage, entry.name), join(isolatedPackage, entry.name))),
       );
       try {
-        await handshake(isolatedBundle, bundle.name, bundle.version);
+        const knowledgeBase = bundle.name === "knowledge-base";
+        await handshake(
+          isolatedBundle,
+          bundle.name,
+          bundle.version,
+          knowledgeBase ? tempRoot : dirname(isolatedBundle),
+          knowledgeBase ? { [KNOWLEDGE_BASE_DIR_ENV]: knowledgeRoot } : {},
+        );
         process.stdout.write(`standalone smoke OK - ${bundle.name}\n`);
       } catch (err) {
         failures.push(`${bundle.name}: ${err.message}`);

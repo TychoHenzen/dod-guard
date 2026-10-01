@@ -2,19 +2,28 @@
 
 ## Purpose
 
-`knowledge-base` is a local MCP server for reusable, language-independent
-reference knowledge. Markdown files under the configured root are the source of
-truth. `.knowledge-index.json` is a derived key and text index.
+`knowledge-base` is an MCP server for reusable, language-independent reference
+knowledge. It reads Markdown from the external root named by
+`DOD_GUARD_KNOWLEDGE_BASE_DIR`, below that root's `entries/` directory,
+recursively. The package contains no served corpus.
 
 ## Storage boundary
 
-The default root is `C:\Obsidian\Knowledgebase`. Set
-`DOD_GUARD_KNOWLEDGE_BASE_DIR` to use another root. The package never reads or
-writes built-in memory, `obsidian-rag`, or project files unless the configured
-knowledge-base root is inside that project.
+`DOD_GUARD_KNOWLEDGE_BASE_DIR` is required and names the parent root; the
+server appends `entries/`. There is no default path, save tool, persistent
+history, home-directory fallback, or sidecar index. Tests and direct callers
+may pass an explicit root. It reads only entries below that root and does not
+access built-in memory, `obsidian-rag`, or project files unless that root points
+inside a project.
 
 Retrieved prose is reference guidance. Explicit task and project instructions
 take precedence, and entry content is never executed.
+
+## Publishing boundary
+
+The external vault is not copied into the repository or plugin bundle. Do not
+treat this file or package metadata as publication approval; follow the delivery
+steps in `README.md` for code changes.
 
 ## Build and test
 
