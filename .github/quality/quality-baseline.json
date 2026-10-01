@@ -2,7 +2,7 @@
   "version": 2,
   "profile": "strict",
   "createdAt": "2026-09-26T12:26:54.984Z",
-  "total": 88,
+  "total": 93,
   "files": [
     "packages/code-explorer/esbuild.config.mjs",
     "packages/code-explorer/fixtures/csharp/src/ConcreteWorker.cs",
@@ -1319,6 +1319,7 @@
     "packages/knowledge-base/src/tools.ts",
     "packages/knowledge-base/tests/entrypoint.test.ts",
     "packages/knowledge-base/tests/mcp-test-support.ts",
+    "packages/knowledge-base/tests/root-boundary.test.ts",
     "packages/knowledge-base/tests/schema-validation.test.ts",
     "packages/knowledge-base/tests/schema.test.ts",
     "packages/knowledge-base/tests/store-synthetic.test.ts",
@@ -1779,6 +1780,8 @@
     "packages/code-explorer/tests/testing/discovery/landmarks/counting-adapter-fixture.ts::flag-parameter": 1,
     "packages/knowledge-base/src/schema.ts::flag-parameter": 1,
     "packages/code-explorer/src/runtime-main.ts::unused-local": 1,
-    "packages/knowledge-base/src/index.ts::unused-local": 1
+    "packages/knowledge-base/src/index.ts::unused-local": 1,
+    "packages/knowledge-base/tests/root-boundary.test.ts::nesting-depth": 4,
+    "packages/knowledge-base/tests/root-boundary.test.ts::else-branch": 1
   }
 }

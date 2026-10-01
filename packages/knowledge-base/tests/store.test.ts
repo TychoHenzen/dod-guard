@@ -21,7 +21,10 @@ test("indexes, searches, and reads a recursive synthetic corpus", async () => {
       ["alpha.topic"],
     );
     const entries = await base.entries("alpha", "alpha.topic");
-    assert.deepEqual(entries.map((entry) => entry.key), ["alpha.first", "alpha.second"]);
+    assert.deepEqual(
+      entries.map((entry) => entry.key),
+      ["alpha.first", "alpha.second"],
+    );
     assert.equal("content" in (entries[0] ?? {}), false);
     assert.equal((await base.search("fixture-project", 5))[0]?.key, "alpha.first");
     assert.equal((await base.get("alpha.first")).language, "TypeScript");

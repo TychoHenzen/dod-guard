@@ -7,13 +7,7 @@ import { test } from "node:test";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { withKnowledgeBaseClient } from "./mcp-test-support.js";
 import { syntheticToolEntries } from "./synthetic-fixtures.js";
-import {
-  callKnowledgeTool,
-  createSyntheticKnowledgeRoot,
-  packageRoot,
-  removeRoot,
-  toolText,
-} from "./test-support.js";
+import { callKnowledgeTool, createSyntheticKnowledgeRoot, packageRoot, removeRoot, toolText } from "./test-support.js";
 
 async function assertToolSurface(client: Client): Promise<void> {
   assert.deepEqual((await client.listTools()).tools.map((tool) => tool.name).sort(), [
@@ -37,7 +31,10 @@ async function assertToolSurface(client: Client): Promise<void> {
   const sections = await callKnowledgeTool<{ sections: Array<{ key: string }> }>(client, "knowledge_list_sections", {
     chapter: "synthetic",
   });
-  assert.deepEqual(sections.sections.map((section) => section.key), ["synthetic.topic"]);
+  assert.deepEqual(
+    sections.sections.map((section) => section.key),
+    ["synthetic.topic"],
+  );
 
   const entries = await callKnowledgeTool<{ entries: Array<{ key: string; content?: string }> }>(
     client,
@@ -65,7 +62,10 @@ async function assertToolSurface(client: Client): Promise<void> {
     related: Array<{ key: string }>;
   }>(client, "knowledge_get_entry", { key: "synthetic.first" });
   assert.equal(result.entry.content, "Synthetic full content.");
-  assert.deepEqual(result.related.map((entry) => entry.key), ["synthetic.second"]);
+  assert.deepEqual(
+    result.related.map((entry) => entry.key),
+    ["synthetic.second"],
+  );
 }
 
 test("exposes five read tools for a synthetic root", async () => {

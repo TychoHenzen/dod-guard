@@ -35,10 +35,7 @@ test("uses the configured root for the default server", async () => {
   try {
     process.env[environmentName] = root;
     await withKnowledgeBaseClient(undefined, "knowledge-base-configured-root-test", async (client) => {
-      const chapters = await callKnowledgeTool<{ chapters: Array<{ key: string }> }>(
-        client,
-        "knowledge_list_chapters",
-      );
+      const chapters = await callKnowledgeTool<{ chapters: Array<{ key: string }> }>(client, "knowledge_list_chapters");
       assert.deepEqual(
         chapters.chapters.map((chapter) => chapter.key),
         ["alpha", "beta"],
