@@ -6,6 +6,14 @@ import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
+export const knowledgeToolNames = [
+  "knowledge_get_entry",
+  "knowledge_list_chapters",
+  "knowledge_list_entries",
+  "knowledge_list_sections",
+  "knowledge_search",
+];
+
 export async function createSyntheticKnowledgeRoot(entries: Record<string, string>): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "knowledge-base-synthetic-"));
   await mkdir(join(root, "entries"), { recursive: true });
@@ -19,6 +27,30 @@ export async function createSyntheticKnowledgeRoot(entries: Record<string, strin
 
 export async function removeRoot(root: string): Promise<void> {
   await rm(root, { recursive: true, force: true });
+}
+
+export async function withSyntheticKnowledgeRoot<Result>(
+  entries: Record<string, string>,
+  action: (root: string) => Promise<Result>,
+): Promise<Result> {
+  const root = await createSyntheticKnowledgeRoot(entries);
+  try {
+    return await action(root);
+  } finally {
+    await removeRoot(root);
+  }
+}
+
+export async function withTemporaryDirectory<Result>(
+  prefix: string,
+  action: (root: string) => Promise<Result>,
+): Promise<Result> {
+  const root = await mkdtemp(join(tmpdir(), prefix));
+  try {
+    return await action(root);
+  } finally {
+    await removeRoot(root);
+  }
 }
 
 export function toolText(result: unknown): string {
