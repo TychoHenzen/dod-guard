@@ -21,12 +21,13 @@ const sourceEntryPoint = join(packageRoot, "dist-test", "src", "index.js");
 const coverageDirectory = process.env.NODE_V8_COVERAGE;
 const coverageEnvironment: Record<string, string> = coverageDirectory ? { NODE_V8_COVERAGE: coverageDirectory } : {};
 
-async function withStdioClient<Result>(
-  executable: string,
-  root: string,
-  name: string,
-  action: (client: Client) => Promise<Result>,
-): Promise<Result> {
+async function withStdioClient<Result>(options: {
+  executable: string;
+  root: string;
+  name: string;
+  action: (client: Client) => Promise<Result>;
+}): Promise<Result> {
+  const { executable, root, name, action } = options;
   const client = new Client({ name, version: "1.0.0" });
   const transport = new StdioClientTransport({
     command: process.execPath,
@@ -50,32 +51,45 @@ async function assertMalformedDocument(client: Client): Promise<void> {
 
 test("loads a configured synthetic corpus from an unrelated working directory", () =>
   withSyntheticKnowledgeRoot(syntheticStoreEntries, (root) =>
-    withStdioClient(entryPoint, root, "knowledge-base-entrypoint-test", async (client) => {
-      assert.deepEqual((await client.listTools()).tools.map((tool) => tool.name).sort(), knowledgeToolNames);
-      const chapters = await callKnowledgeTool<{ chapters: Array<{ key: string }> }>(client, "knowledge_list_chapters");
-      assert.deepEqual(
-        chapters.chapters.map((chapter) => chapter.key),
-        ["alpha", "beta"],
-      );
+    withStdioClient({
+      executable: entryPoint,
+      root,
+      name: "knowledge-base-entrypoint-test",
+      action: async (client) => {
+        assert.deepEqual((await client.listTools()).tools.map((tool) => tool.name).sort(), knowledgeToolNames);
+        const chapters = await callKnowledgeTool<{ chapters: Array<{ key: string }> }>(
+          client,
+          "knowledge_list_chapters",
+        );
+        assert.deepEqual(
+          chapters.chapters.map((chapter) => chapter.key),
+          ["alpha", "beta"],
+        );
+      },
     }),
-  ),
-);
+  ));
 
 test("runs the compiled source entrypoint with the configured synthetic root", () =>
   withSyntheticKnowledgeRoot(syntheticStoreEntries, (root) =>
-    withStdioClient(sourceEntryPoint, root, "knowledge-base-source-entrypoint-test", async (client) => {
-      const chapters = await callKnowledgeTool<{ chapters: Array<{ key: string }> }>(client, "knowledge_list_chapters");
-      assert.deepEqual(
-        chapters.chapters.map((chapter) => chapter.key),
-        ["alpha", "beta"],
-      );
+    withStdioClient({
+      executable: sourceEntryPoint,
+      root,
+      name: "knowledge-base-source-entrypoint-test",
+      action: async (client) => {
+        const chapters = await callKnowledgeTool<{ chapters: Array<{ key: string }> }>(
+          client,
+          "knowledge_list_chapters",
+        );
+        assert.deepEqual(
+          chapters.chapters.map((chapter) => chapter.key),
+          ["alpha", "beta"],
+        );
+      },
     }),
-  ),
-);
+  ));
 
 test("returns an MCP error when a configured document is malformed", () =>
   withSyntheticKnowledgeRoot(syntheticStoreEntries, async (root) => {
     await writeFile(join(root, "entries", "broken.md"), "missing front matter", "utf8");
     await withKnowledgeBaseClient(root, "knowledge-base-error-test", assertMalformedDocument);
-  }),
-);
+  }));
