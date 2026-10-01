@@ -6,8 +6,8 @@ import process from "node:process";
 import { test } from "node:test";
 import { defaultKnowledgeBaseDir } from "../src/index.js";
 import { withKnowledgeBaseClient } from "./mcp-test-support.js";
-import { callKnowledgeTool, createSyntheticKnowledgeRoot, removeRoot, toolText } from "./test-support.js";
 import { syntheticStoreEntries } from "./synthetic-fixtures.js";
+import { callKnowledgeTool, createSyntheticKnowledgeRoot, removeRoot, toolText } from "./test-support.js";
 
 const environmentName = "DOD_GUARD_KNOWLEDGE_BASE_DIR";
 
