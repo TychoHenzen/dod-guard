@@ -26,11 +26,14 @@ function fenced(content, info = "") {
     longestRun = Math.max(longestRun, run[0].length);
   }
   const fence = "`".repeat(Math.max(MINIMUM_FENCE_LENGTH, longestRun + 1));
+  const hasFinalNewline = content.endsWith("\n");
   let body = content;
-  if (!body.endsWith("\n")) {
+  let finalNewlineNote = "";
+  if (!hasFinalNewline) {
     body += "\n";
+    finalNewlineNote = "\n(source content has no final newline)";
   }
-  return `${fence}${info}\n${body}${fence}`;
+  return `${fence}${info}\n${body}${fence}${finalNewlineNote}`;
 }
 
 function fileBlock(path, contents) {

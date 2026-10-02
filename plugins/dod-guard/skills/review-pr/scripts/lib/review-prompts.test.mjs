@@ -26,6 +26,7 @@ const CONTEXT = {
   reviewRequirements: ["User can open it"],
   workItem: { acceptanceCriteria: "- [ ] User can open it" },
 };
+const MANY_BACKTICK_RUNS = 200_000;
 const UNITS = [
   { id: "docs", files: ["docs/guide.md"], angles: ["review-pr-hygiene"] },
   { id: "src", files: ["src/app.mjs", "src/removed.mjs"], angles: ["review-pr-design", "review-pr-reliability"] },
@@ -70,12 +71,48 @@ test("fences evidence longer than any backtick run so Markdown content stays ins
 });
 
 test("handles many separate backtick runs without spreading them into a function call", () => {
-  const guide = "`x".repeat(200_000);
+  const guide = "`x".repeat(MANY_BACKTICK_RUNS);
   const contents = new Map([...CONTENTS, ["docs/guide.md", guide]]);
   const input = buildDispatchInput({ context: CONTEXT, units: UNITS, contents, diff: DIFF, agents: AGENTS });
   const hygiene = input.reviewers.find(({ reviewer }) => reviewer === "review-pr-hygiene").prompt;
 
   assert.ok(hygiene.includes(`### docs/guide.md\n\n\`\`\`\n${guide}\n\`\`\``));
+});
+
+test("marks content without a final newline instead of normalizing it silently", () => {
+  const withoutFinalNewline = new Map([...CONTENTS, ["docs/guide.md", "x"]]);
+  const withFinalNewline = new Map([...CONTENTS, ["docs/guide.md", "x\n"]]);
+  const missingNewlineInput = buildDispatchInput({ context: CONTEXT, units: UNITS, contents: withoutFinalNewline, diff: DIFF, agents: AGENTS });
+  const finalNewlineInput = buildDispatchInput({ context: CONTEXT, units: UNITS, contents: withFinalNewline, diff: DIFF, agents: AGENTS });
+  const missingNewlinePrompt = missingNewlineInput.reviewers.find(({ reviewer }) => reviewer === "review-pr-hygiene").prompt;
+  const finalNewlinePrompt = finalNewlineInput.reviewers.find(({ reviewer }) => reviewer === "review-pr-hygiene").prompt;
+
+  assert.ok(missingNewlinePrompt.includes("### docs/guide.md\n\n```\nx\n```\n(source content has no final newline)"));
+  assert.ok(finalNewlinePrompt.includes("### docs/guide.md\n\n```\nx\n```\n\n## Diff"));
+  assert.equal(finalNewlinePrompt.includes("### docs/guide.md\n\n```\nx\n```\n(source content has no final newline)"), false);
+});
+
+test("distinguishes empty content from content containing one final newline", () => {
+  const emptyInput = buildDispatchInput({
+    context: CONTEXT,
+    units: UNITS,
+    contents: new Map([...CONTENTS, ["docs/guide.md", ""]]),
+    diff: DIFF,
+    agents: AGENTS,
+  });
+  const newlineInput = buildDispatchInput({
+    context: CONTEXT,
+    units: UNITS,
+    contents: new Map([...CONTENTS, ["docs/guide.md", "\n"]]),
+    diff: DIFF,
+    agents: AGENTS,
+  });
+  const emptyPrompt = emptyInput.reviewers.find(({ reviewer }) => reviewer === "review-pr-hygiene").prompt;
+  const newlinePrompt = newlineInput.reviewers.find(({ reviewer }) => reviewer === "review-pr-hygiene").prompt;
+
+  assert.ok(emptyPrompt.includes("### docs/guide.md\n\n```\n\n```\n(source content has no final newline)"));
+  assert.ok(newlinePrompt.includes("### docs/guide.md\n\n```\n\n```\n\n## Diff"));
+  assert.notEqual(emptyPrompt, newlinePrompt);
 });
 
 test("lists omitted binary evidence instead of fencing it as file content", () => {

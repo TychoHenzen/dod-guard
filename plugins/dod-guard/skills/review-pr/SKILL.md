@@ -86,7 +86,9 @@ or any snapshot path, to a nested reviewer. Nested Codex on Windows cannot
 start a shell to read host files, so `build-dispatch-input` checks each
 snapshot against its manifest hash and embeds the verified UTF-8 bytes in
 the reviewer prompt. A hash mismatch stops dispatch. A binary or non-UTF-8
-file is listed as not embedded, with its hash and size, never decoded.
+file is listed as not embedded, with its hash and size, never decoded. Text
+evidence without a final newline is marked explicitly in the prompt rather
+than being presented as unchanged bytes.
 Keep the diff and snapshot files until publication, then remove them.
 Do not assume `pdftotext` or another local PDF utility is installed, and do not
 read PDF bytes as plain text. If a PDF is explicitly required, use a
