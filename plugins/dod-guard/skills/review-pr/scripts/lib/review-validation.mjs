@@ -1,5 +1,6 @@
 import { PULL_REQUEST_UNIT, REVIEWERS } from "./review-units.mjs";
 
+const FULL_SHA256 = /^[a-f0-9]{64}$/iu;
 const FINDING_FIELDS = Object.freeze([
   "correction",
   "evidence",
@@ -21,12 +22,29 @@ function requireValue(condition, message) {
   }
 }
 
+function validateRepositoryInstructions(instructions) {
+  for (const instruction of instructions) {
+    requireValue(
+      instruction &&
+        typeof instruction === "object" &&
+        typeof instruction.path === "string" &&
+        instruction.path.length > 0 &&
+        ["base", "head"].includes(instruction.revision) &&
+        typeof instruction.sha256 === "string" &&
+        FULL_SHA256.test(instruction.sha256) &&
+        !Object.hasOwn(instruction, "content"),
+      "Review context contains repository instruction metadata instead of inline content.",
+    );
+  }
+}
+
 function validateReviewContext(context) {
   for (const field of ["provider", "repository", "baseRef", "targetRef", "headSha", "diffFile", "finalFileAccess"]) {
     requireValue(typeof context[field] === "string" && context[field].length > 0, `Review context is missing ${field}.`);
   }
   requireValue(Array.isArray(context.changedFiles), "Review context is missing changedFiles.");
   requireValue(Array.isArray(context.repositoryInstructions), "Review context is missing repositoryInstructions.");
+  validateRepositoryInstructions(context.repositoryInstructions);
   requireValue(context.workItem && typeof context.workItem === "object", "Review context is missing workItem.");
   requireValue(
     typeof context.workItem.acceptanceCriteria === "string" && context.workItem.acceptanceCriteria.length > 0,

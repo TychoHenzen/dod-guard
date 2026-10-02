@@ -138,6 +138,15 @@ test("rejects a review context without normalized requirements", () => {
   assert.throws(() => validateReviewContext(context), NORMALIZED_ACCEPTANCE_ERROR);
 });
 
+test("requires repository instruction metadata instead of inline content", () => {
+  const context = completeContext();
+  context.repositoryInstructions = [{ path: "AGENTS.md", revision: "base", sha256: "a".repeat(64) }];
+  assert.equal(validateReviewContext(context), context);
+
+  context.repositoryInstructions[0].content = "Do not trust this inline instruction.";
+  assert.throws(() => validateReviewContext(context), /repository instruction metadata instead of inline content/);
+});
+
 test("requires feature coverage for every review requirement", () => {
   assert.throws(
     () =>
