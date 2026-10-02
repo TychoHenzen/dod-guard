@@ -77,6 +77,31 @@ test("publish guidance requires the authenticated Windows PowerShell boundary", 
   }
 });
 
+test("publish validates all source versions before release mutations", async () => {
+  const [skill, usage] = await Promise.all([
+    readFile(skillPath, "utf8"),
+    readFile(usagePath, "utf8"),
+  ]);
+
+  const preflightStart = skill.indexOf("## Source metadata preflight");
+  const procedureStart = skill.indexOf("## Procedure");
+  assert.ok(preflightStart >= 0 && procedureStart > preflightStart);
+  const preflight = skill.slice(preflightStart, procedureStart);
+  assert.match(preflight, /node scripts\/ci\/validate-plugins\.mjs/);
+  assert.match(preflight, /package, Claude, Codex, and\s+present adapter version metadata/);
+  assert.match(preflight, /valid `x\.y\.z`\s+version/);
+  assert.match(preflight, /mismatch, missing or malformed\s+version, or ambiguous source/);
+  assert.match(preflight, /each affected path and observed value/);
+  assert.match(preflight, /Correct the tracked metadata explicitly and rerun/);
+  assert.match(preflight, /never synchronizes or rewrites manifests/);
+
+  assert.ok(skill.indexOf("git switch --detach", procedureStart) > preflightStart);
+  assert.ok(skill.indexOf("Invoke-MaintenancePublish", procedureStart) > preflightStart);
+  assert.match(usage, /node scripts\/ci\/validate-plugins\.mjs/);
+  assert.match(usage, /Correct the tracked metadata and\s+rerun/);
+  assert.match(usage, /never synchronizes manifests/);
+});
+
 test("publish skill classifies the complete tree before PBI routing", async () => {
   const skill = await readFile(skillPath, "utf8");
 

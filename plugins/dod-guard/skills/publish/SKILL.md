@@ -21,12 +21,11 @@ version-bumped commit directly to `master`, then wait for green CI and refresh
 each client's marketplace.
 
 The root `.claude-plugin/marketplace.json` is the only marketplace manifest.
-Every changed shipped plugin needs matching version bumps in
-`.claude-plugin/plugin.json` and, when present, `.codex-plugin/plugin.json`.
-Those versions are cache keys, so a client can retain old plugin content without
-the bump. A paired version-only bump made solely to invalidate the cache for
-maintenance content remains `maintenance-only`; any other manifest change is
-`functional`.
+Every changed shipped code plugin needs one valid, matching version in its
+`package.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and
+any present adapter package. Those versions are cache keys, so a client can
+retain old plugin content without the bump. A paired version-only bump made solely to invalidate the cache for
+maintenance content remains `maintenance-only`; any other manifest change is `functional`.
 
 ## Installation identity preflight
 
@@ -120,6 +119,24 @@ rerun this authentication preflight and the installation preflight from the
 start, and discard partial or failed evidence. Never copy or persist
 credentials to another runtime or file.
 
+## Source metadata preflight
+
+After the installation and authentication preflights, and before any release,
+protection, checkout/ref, commit, push, or client-cache mutation, run this from
+the repository root:
+
+```text
+node scripts/ci/validate-plugins.mjs
+```
+
+The validator checks every shipped code plugin's package, Claude, Codex, and
+present adapter version metadata. Each source must contain a valid `x.y.z`
+version, and every present source must agree. A mismatch, missing or malformed
+version, or ambiguous source reports each affected path and observed value, then
+stops the release. Correct the tracked metadata explicitly and rerun the
+preflight. It never synchronizes or rewrites manifests, chooses an authority,
+or relies on a later validator or client-cache readback to recover the release.
+
 ## Procedure
 
 1. Inspect `git status --short --branch --untracked-files=all`, the current
@@ -145,9 +162,10 @@ credentials to another runtime or file.
    when all other changes are maintenance-only. Inspect file
    contents when a path classification is unclear. If any file is functional,
    use the functional path for the whole release.
-4. Confirm each changed plugin's Claude Code and Codex manifest versions and
-   descriptions match its shipped skills or agents. Update the root marketplace
-   description if it states a changed skill count.
+4. Use the passing source metadata preflight as the version decision; do not
+   select a canonical source or rewrite a manifest. Confirm changed plugins'
+   descriptions still match their shipped skills or agents. Update the root
+   marketplace description if it states a changed skill count.
 5. Run the release gates from the repository root before committing:
    On Windows PowerShell, list package source directories explicitly.
 
