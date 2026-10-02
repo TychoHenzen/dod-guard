@@ -81,8 +81,11 @@ On Windows, invoke the helper through Node's direct argument-array boundary with
 wrap this call. The helper passes Git arguments directly, writes numbered
 snapshots outside the checkout, and emits a manifest mapping each repository
 path to its snapshot path and SHA-256. Put the manifest path in
-`finalFileAccess`; reviewers open the listed snapshots with their file-reading
-tools instead of reconstructing shell reads.
+`finalFileAccess`. The manifest is coordinator-side evidence: never hand it,
+or any snapshot path, to a nested reviewer. Nested Codex on Windows cannot
+start a shell to read host files, so `build-dispatch-input` checks each
+snapshot against its manifest hash and embeds the verified UTF-8 bytes in
+the reviewer prompt. A hash mismatch or non-UTF-8 file stops dispatch.
 Keep the diff and snapshot files until publication, then remove them.
 Do not assume `pdftotext` or another local PDF utility is installed, and do not
 read PDF bytes as plain text. If a PDF is explicitly required, use a

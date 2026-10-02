@@ -60,6 +60,15 @@ test("embeds a unit's final contents and only its own diff in the prompt", () =>
   assert.ok(!design.includes("+new line"));
 });
 
+test("fences evidence longer than any backtick run so Markdown content stays inside its block", () => {
+  const guide = "# Guide\n\n```bash\nnpm test\n```\n\nInline ````quad```` ticks.\n";
+  const contents = new Map([...CONTENTS, ["docs/guide.md", guide]]);
+  const input = buildDispatchInput({ context: CONTEXT, units: UNITS, contents, diff: DIFF, agents: AGENTS });
+  const hygiene = input.reviewers.find(({ reviewer }) => reviewer === "review-pr-hygiene").prompt;
+
+  assert.ok(hygiene.includes(`### docs/guide.md\n\n\`\`\`\`\`\n${guide}\`\`\`\`\`\n\n## Diff`));
+});
+
 test("splits a unified diff by the file each section changes", () => {
   const sections = diffByFile(DIFF);
 

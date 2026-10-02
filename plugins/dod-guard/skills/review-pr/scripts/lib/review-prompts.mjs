@@ -1,23 +1,41 @@
+import { headerPath, isDiffHeader, sideLinePath } from "./unified-diff.mjs";
 import { PULL_REQUEST_UNIT } from "./review-units.mjs";
 
-const DIFF_FILE_HEADER = /^diff --git a\/.+ b\/(.+)$/;
+const BACKTICK_RUN = /`+/gu;
+const MINIMUM_FENCE_LENGTH = 3;
 
 // Nested reviewers may be unable to run shell reads on the host, so every
 // prompt carries its unit's final file contents and diff instead of paths.
+
+// A section belongs to its post-image path, or to its pre-image path when the
+// file was deleted. Binary and mode-only sections only name it in the header.
+function sectionPath(lines) {
+  const added = lines.find((line) => line.startsWith("+++ "));
+  const removed = lines.find((line) => line.startsWith("--- "));
+  return (added && sideLinePath(added)) ?? (removed && sideLinePath(removed)) ?? headerPath(lines[0]);
+}
+
 function diffByFile(diff) {
-  const sections = new Map();
-  let current = null;
+  const sections = [];
   for (const line of diff.split("\n")) {
-    const header = line.match(DIFF_FILE_HEADER);
-    if (header) {
-      [, current] = header;
-      sections.set(current, []);
+    if (isDiffHeader(line)) {
+      sections.push([]);
     }
-    if (current) {
-      sections.get(current).push(line);
-    }
+    sections.at(-1)?.push(line);
   }
-  return new Map([...sections].map(([path, lines]) => [path, lines.join("\n").trimEnd()]));
+  return new Map(sections.map((lines) => [sectionPath(lines), lines.join("\n").trimEnd()]));
+}
+
+// The fence must outlast every backtick run in the content, or a reviewed
+// Markdown file closes the block early and the reviewer reads altered evidence.
+function fenced(content, info = "") {
+  const longestRun = Math.max(0, ...(content.match(BACKTICK_RUN) ?? []).map((run) => run.length));
+  const fence = "`".repeat(Math.max(MINIMUM_FENCE_LENGTH, longestRun + 1));
+  let body = content;
+  if (!body.endsWith("\n")) {
+    body += "\n";
+  }
+  return `${fence}${info}\n${body}${fence}`;
 }
 
 function fileBlock(path, contents) {
@@ -25,7 +43,7 @@ function fileBlock(path, contents) {
   if (content === undefined || content === null) {
     return `### ${path}\n\n(not present at the reviewed head)`;
   }
-  return `### ${path}\n\n\`\`\`\n${content.trimEnd()}\n\`\`\``;
+  return `### ${path}\n\n${fenced(content)}`;
 }
 
 function unitPrompt({ agent, context, unit, contents, diffs }) {
@@ -40,10 +58,10 @@ function unitPrompt({ agent, context, unit, contents, diffs }) {
   return [
     agent.trimEnd(),
     "## Review unit\n\nReview only the files in this unit, at the angle defined above. The final file contents and the unified diff below are your evidence; cite final-state lines from them.",
-    `\`\`\`json\n${JSON.stringify(scope, null, 2)}\n\`\`\``,
+    fenced(JSON.stringify(scope, null, 2), "json"),
     "## Final files",
     ...unit.files.map((path) => fileBlock(path, contents)),
-    `## Diff\n\n\`\`\`diff\n${diff}\n\`\`\``,
+    `## Diff\n\n${fenced(diff, "diff")}`,
   ].join("\n\n");
 }
 
