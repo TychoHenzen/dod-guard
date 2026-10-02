@@ -122,6 +122,9 @@ language | evidence | format | lint | type | test | coverage | dependency | Code
 
 Use manifests, lockfiles, source files, and existing commands as evidence. Do not classify generated
 files, vendored code, archives, snapshots, or test fixtures as maintained languages.
+The bundled inspector retains those files in its inventory and credential scan, but excludes path
+segments named `generated`, `fixture(s)`, `archive(s)`, `dependency/dependencies`, `deps`,
+`snapshot(s)`, and `test-fixtures` from maintained-language signals.
 
 For each applicable category:
 
@@ -276,6 +279,7 @@ node <skill-dir>/scripts/inspect-repository.mjs --github-snapshot <snapshot.json
 
 Proceed only when `readyForProtection` is true. Use its `protectionPayload` with the current branch
 protection REST endpoint for the resolved default branch. Do not edit the generated check names.
+Malformed or incomplete snapshots are blockers and never produce a protection payload.
 
 Re-query protection and confirm all of these exact outcomes:
 
