@@ -12,7 +12,7 @@ import {
   validateFindingLines,
   writeAzureReport,
 } from "./lib/review-support.mjs";
-import { createReviewEvidenceSnapshot } from "./lib/review-evidence-snapshot.mjs";
+import { createReviewEvidenceSnapshot, readReviewEvidenceSnapshot } from "./lib/review-evidence-snapshot.mjs";
 import { buildDispatchInput } from "./lib/review-prompts.mjs";
 import { REVIEWERS, planReviewUnits } from "./lib/review-units.mjs";
 import { validateReviewContext, validateReviewerResult } from "./lib/review-validation.mjs";
@@ -41,8 +41,7 @@ function requireSameHead(reviewed, current) {
 }
 
 function readDispatchInput(context, units, executable) {
-  const manifest = readJson(context.finalFileAccess);
-  const contents = new Map(manifest.files.map(({ path, snapshotPath }) => [path, readFileSync(snapshotPath, "utf8")]));
+  const contents = readReviewEvidenceSnapshot(context.finalFileAccess, context.headSha);
   const agents = Object.fromEntries(
     REVIEWERS.map((name) => [name, readFileSync(new URL(`../../../agents/${name}.md`, import.meta.url), "utf8")]),
   );

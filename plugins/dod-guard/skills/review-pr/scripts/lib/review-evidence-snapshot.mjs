@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 // biome-ignore lint/correctness/noNodejsModules: This CLI helper runs under Node.js.
 import { createHash } from "node:crypto";
 // biome-ignore lint/correctness/noNodejsModules: This CLI helper runs under Node.js.
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This CLI helper runs under Node.js.
 import { tmpdir } from "node:os";
 // biome-ignore lint/correctness/noNodejsModules: This CLI helper runs under Node.js.
@@ -20,6 +20,29 @@ function isWithinDirectory(directory, candidate) {
   return relativePath === "" || (!isAbsolute(relativePath) && relativePath !== ".." && !relativePath.startsWith(`..${sep}`));
 }
 
+function hasControlCharacter(value) {
+  return Array.from(value).some((character) => character < " " || character === "\u007f");
+}
+
+function hasUnsafeSegment(value) {
+  return value.split("/").some((segment) => !segment || segment === "." || segment === "..");
+}
+
+function isRepositoryRelativePath(value) {
+  if (typeof value !== "string" || !value) {
+    return false;
+  }
+  const isAbsoluteOrBackslashed = value.startsWith("/") || WINDOWS_DRIVE_PATH.test(value) || value.includes("\\");
+  return !(isAbsoluteOrBackslashed || hasControlCharacter(value) || hasUnsafeSegment(value));
+}
+
+function fileRequest(entry) {
+  if (typeof entry === "string") {
+    return { repositoryPath: entry, contentBase64: undefined };
+  }
+  return { repositoryPath: entry?.path, contentBase64: entry?.contentBase64 };
+}
+
 function normalizedFiles(files) {
   if (!Array.isArray(files)) {
     throw new TypeError("Review evidence files must be an array.");
@@ -27,23 +50,8 @@ function normalizedFiles(files) {
 
   const paths = new Set();
   return files.map((entry) => {
-    let repositoryPath;
-    let contentBase64;
-    if (typeof entry === "string") {
-      repositoryPath = entry;
-    } else {
-      repositoryPath = entry?.path;
-      contentBase64 = entry?.contentBase64;
-    }
-    if (
-      typeof repositoryPath !== "string" ||
-      !repositoryPath ||
-      repositoryPath.startsWith("/") ||
-      WINDOWS_DRIVE_PATH.test(repositoryPath) ||
-      repositoryPath.includes("\\") ||
-      Array.from(repositoryPath).some((character) => character < " " || character === "\u007f") ||
-      repositoryPath.split("/").some((segment) => !segment || segment === "." || segment === "..")
-    ) {
+    const { repositoryPath, contentBase64 } = fileRequest(entry);
+    if (!isRepositoryRelativePath(repositoryPath)) {
       throw new Error(`Invalid repository path for review evidence: ${JSON.stringify(repositoryPath)}`);
     }
     if (paths.has(repositoryPath)) {
@@ -83,14 +91,17 @@ function sourceBytes({ contentBase64, repositoryPath }, headSha, repositoryRoot)
   }
 }
 
-function createReviewEvidenceSnapshot(request) {
+function requireRequestShape(request) {
   if (!request || typeof request !== "object" || Array.isArray(request)) {
     throw new TypeError("Review evidence snapshot input must be an object.");
   }
   if (typeof request.headSha !== "string" || !FULL_COMMIT_SHA.test(request.headSha)) {
     throw new Error("Review evidence snapshot requires a full commit SHA.");
   }
+}
 
+function validatedRequest(request) {
+  requireRequestShape(request);
   const files = normalizedFiles(request.files);
   let repositoryRoot;
   if (typeof request.repositoryRoot === "string") {
@@ -99,33 +110,39 @@ function createReviewEvidenceSnapshot(request) {
   if (files.some((file) => file.contentBase64 === undefined) && !repositoryRoot) {
     throw new Error("Review evidence snapshot requires repositoryRoot for Git-backed files.");
   }
+  return { headSha: request.headSha, files, repositoryRoot, temporaryRoot: resolve(request.temporaryRoot ?? tmpdir()) };
+}
 
-  const temporaryRoot = resolve(request.temporaryRoot ?? tmpdir());
-  const directory = mkdtempSync(join(temporaryRoot, "dod-guard-review-evidence-"));
+function writeSnapshot(directory, { headSha, files, repositoryRoot }) {
+  if (repositoryRoot && isWithinDirectory(repositoryRoot, directory)) {
+    throw new Error("Review evidence snapshots must be outside the repository.");
+  }
+
+  const filesDirectory = join(directory, "files");
+  mkdirSync(filesDirectory);
+  const manifestFiles = files.map((file, index) => {
+    const { content, source } = sourceBytes(file, headSha, repositoryRoot);
+    const extension = file.repositoryPath.match(SNAPSHOT_EXTENSION)?.[0] ?? "";
+    const snapshotPath = join(filesDirectory, `${index + 1}${extension}`);
+    writeFileSync(snapshotPath, content);
+    return {
+      path: file.repositoryPath,
+      snapshotPath,
+      source,
+      sha256: createHash("sha256").update(content).digest("hex"),
+    };
+  });
+
+  const manifestPath = join(directory, "manifest.json");
+  writeFileSync(manifestPath, `${JSON.stringify({ headSha, files: manifestFiles }, null, 2)}\n`, "utf8");
+  return { directory, manifestPath, headSha, files: manifestFiles };
+}
+
+function createReviewEvidenceSnapshot(request) {
+  const validated = validatedRequest(request);
+  const directory = mkdtempSync(join(validated.temporaryRoot, "dod-guard-review-evidence-"));
   try {
-    if (repositoryRoot && isWithinDirectory(repositoryRoot, directory)) {
-      throw new Error("Review evidence snapshots must be outside the repository.");
-    }
-
-    const filesDirectory = join(directory, "files");
-    mkdirSync(filesDirectory);
-    const manifestFiles = [];
-    for (const [index, file] of files.entries()) {
-      const { content, source } = sourceBytes(file, request.headSha, repositoryRoot);
-      const extension = file.repositoryPath.match(SNAPSHOT_EXTENSION)?.[0] ?? "";
-      const snapshotPath = join(filesDirectory, `${index + 1}${extension}`);
-      writeFileSync(snapshotPath, content);
-      manifestFiles.push({
-        path: file.repositoryPath,
-        snapshotPath,
-        source,
-        sha256: createHash("sha256").update(content).digest("hex"),
-      });
-    }
-
-    const manifestPath = join(directory, "manifest.json");
-    writeFileSync(manifestPath, `${JSON.stringify({ headSha: request.headSha, files: manifestFiles }, null, 2)}\n`, "utf8");
-    return { directory, manifestPath, headSha: request.headSha, files: manifestFiles };
+    return writeSnapshot(directory, validated);
   } catch (error) {
     try {
       rmSync(directory, { recursive: true, force: true });
@@ -136,4 +153,42 @@ function createReviewEvidenceSnapshot(request) {
   }
 }
 
-export { createReviewEvidenceSnapshot };
+// Text evidence, or an explicit omission for bytes that cannot be shown as text.
+// Decoding them anyway would hand the reviewer replacement characters as if
+// they were the file.
+function embeddableEvidence(content, sha256) {
+  if (content.includes(0)) {
+    return { omitted: `binary or non-UTF-8, sha256 ${sha256}, ${content.length} bytes` };
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(content);
+  } catch {
+    return { omitted: `binary or non-UTF-8, sha256 ${sha256}, ${content.length} bytes` };
+  }
+}
+
+// Reviewers receive these contents inside their prompts, so a snapshot that
+// changed after capture must stop dispatch instead of reaching them altered.
+function readReviewEvidenceSnapshot(manifestPath, expectedHeadSha) {
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  if (typeof expectedHeadSha !== "string" || !FULL_COMMIT_SHA.test(expectedHeadSha)) {
+    throw new Error("Review evidence snapshot requires the expected reviewed head SHA.");
+  }
+  if (manifest.headSha !== expectedHeadSha) {
+    throw new Error(
+      `Review evidence manifest head ${manifest.headSha ?? "<missing>"} does not match expected reviewed head ${expectedHeadSha}.`,
+    );
+  }
+  return new Map(
+    manifest.files.map(({ path, snapshotPath, sha256 }) => {
+      const content = readFileSync(snapshotPath);
+      const actual = createHash("sha256").update(content).digest("hex");
+      if (actual !== sha256) {
+        throw new Error(`Review evidence for ${JSON.stringify(path)} does not match its manifest: expected sha256 ${sha256}, found ${actual}.`);
+      }
+      return [path, embeddableEvidence(content, sha256)];
+    }),
+  );
+}
+
+export { createReviewEvidenceSnapshot, readReviewEvidenceSnapshot };

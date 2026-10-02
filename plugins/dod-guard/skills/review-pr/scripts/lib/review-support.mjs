@@ -1,5 +1,6 @@
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import { writeFileSync } from "node:fs";
+import { parseChangedLines } from "./unified-diff.mjs";
 
 const GITHUB_PULL_URL = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)\/?$/i;
 const AZURE_PULL_URL =
@@ -14,11 +15,7 @@ const AUTHORIZATION_SECRET = /\b(Authorization\s*:\s*(?:Bearer|Basic)\s+)[^\s"']
 const GITHUB_SECRET = /\b(gh[pousr]_)[A-Za-z0-9_]{8,}\b/g;
 const QUERY_SECRET = /([?&](?:access_token|api[_-]?key|pat|sig|token)=)[^&#\s]+/gi;
 const ENVIRONMENT_SECRET = /\b((?:AZURE_DEVOPS_EXT_PAT|AZURE_DEVOPS_PAT|GITHUB_TOKEN)\s*=\s*)[^\s"']+/gi;
-const HUNK_HEADER = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
 const NON_ALPHANUMERIC = /[^a-z0-9]+/g;
-const NEWLINE = /\r?\n/;
-const B_PATH_PREFIX = /^b\//;
-const DIFF_FILE_PREFIX_LENGTH = 4;
 const BLOCKER_RANK = 3;
 const MAJOR_RANK = 2;
 const MINOR_RANK = 1;
@@ -104,38 +101,58 @@ function section(body, heading) {
   return body.match(new RegExp(`^##\\s+${escaped}\\s*$([\\s\\S]*?)(?=^##\\s+|(?![\\s\\S]))`, "im"))?.[1].trim() ?? "";
 }
 
-function normalizeGitHubHierarchy(issue) {
+function gitHubWorkItem(child) {
   return {
-    acceptanceCriteria: section(issue.body ?? "", "Acceptance criteria"),
-    body: issue.body ?? "",
+    body: child.body ?? "",
+    number: child.number,
+    state: child.state,
+    title: child.title,
+    url: child.url,
+  };
+}
+
+function gitHubSubIssues(issue) {
+  return issue.subIssues?.nodes ?? issue.subIssues ?? [];
+}
+
+function normalizeGitHubHierarchy(issue) {
+  const body = issue.body ?? "";
+  return {
+    acceptanceCriteria: section(body, "Acceptance criteria"),
+    body,
     number: issue.number,
     title: issue.title,
     url: issue.url,
-    workItems: (issue.subIssues?.nodes ?? issue.subIssues ?? []).map((child) => ({
-      body: child.body ?? "",
-      number: child.number,
-      state: child.state,
-      title: child.title,
-      url: child.url,
-    })),
+    workItems: gitHubSubIssues(issue).map(gitHubWorkItem),
+  };
+}
+
+function azureField(item, name) {
+  return item.fields?.[name] ?? "";
+}
+
+function azureUrl(item) {
+  return item._links?.html?.href ?? item.url;
+}
+
+function azureWorkItem(child) {
+  return {
+    body: stripHtml(azureField(child, "System.Description")),
+    number: child.id,
+    state: azureField(child, "System.State"),
+    title: azureField(child, "System.Title"),
+    url: azureUrl(child),
   };
 }
 
 function normalizeAzureHierarchy(parent, children = []) {
-  const fields = parent.fields ?? {};
   return {
-    acceptanceCriteria: stripHtml(fields["Microsoft.VSTS.Common.AcceptanceCriteria"] ?? ""),
-    body: stripHtml(fields["System.Description"] ?? ""),
+    acceptanceCriteria: stripHtml(azureField(parent, "Microsoft.VSTS.Common.AcceptanceCriteria")),
+    body: stripHtml(azureField(parent, "System.Description")),
     number: parent.id,
-    title: fields["System.Title"] ?? "",
-    url: parent._links?.html?.href ?? parent.url,
-    workItems: children.map((child) => ({
-      body: stripHtml(child.fields?.["System.Description"] ?? ""),
-      number: child.id,
-      state: child.fields?.["System.State"] ?? "",
-      title: child.fields?.["System.Title"] ?? "",
-      url: child._links?.html?.href ?? child.url,
-    })),
+    title: azureField(parent, "System.Title"),
+    url: azureUrl(parent),
+    workItems: children.map(azureWorkItem),
   };
 }
 
@@ -158,45 +175,6 @@ function redactSecrets(value) {
     return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redactSecrets(item)]));
   }
   return value;
-}
-
-function selectDiffFile(line, changed) {
-  const name = line.slice(DIFF_FILE_PREFIX_LENGTH);
-  if (name === "/dev/null") {
-    return;
-  }
-  const file = name.replace(B_PATH_PREFIX, "");
-  if (!changed.has(file)) {
-    changed.set(file, new Set());
-  }
-  return file;
-}
-
-function recordDiffLine(state, line, changed) {
-  if (line.startsWith("+++ ")) {
-    state.file = selectDiffFile(line, changed);
-  } else {
-    const hunk = line.match(HUNK_HEADER);
-    if (hunk) {
-      state.finalLine = Number(hunk[1]);
-    } else if (state.file && !line.startsWith("--- ")) {
-      if (line.startsWith("+") && !line.startsWith("+++")) {
-        changed.get(state.file).add(state.finalLine);
-        state.finalLine += 1;
-      } else if (!(line.startsWith("-") || line.startsWith("\\"))) {
-        state.finalLine += 1;
-      }
-    }
-  }
-}
-
-function parseChangedLines(diff) {
-  const changed = new Map();
-  const state = { file: undefined, finalLine: 0 };
-  for (const line of diff.split(NEWLINE)) {
-    recordDiffLine(state, line, changed);
-  }
-  return changed;
 }
 
 function validateFindingLines(findings, diff, allowPullRequestLevel = false) {
@@ -292,7 +270,6 @@ export {
   normalizeAzureHierarchy,
   normalizeGitHubHierarchy,
   normalizeReviewTarget,
-  parseChangedLines,
   redactSecrets,
   renderAzureReport,
   validateFindingLines,

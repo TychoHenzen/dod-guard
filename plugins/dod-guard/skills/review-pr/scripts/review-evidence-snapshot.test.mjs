@@ -17,10 +17,13 @@ import { fileURLToPath } from "node:url";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { createReviewEvidenceSnapshot } from "./lib/review-evidence-snapshot.mjs";
-import { runAdvisor } from "../../codex-advisor/scripts/run-advisor.mjs";
+import { dispatchReviewers } from "./review-dispatch.mjs";
 
 const reviewSkill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
-const WINDOWS_ONLY_SKIP = process.platform !== "win32" && "PowerShell integration fixture requires Windows.";
+const REVIEW_SCHEMA_PATH = fileURLToPath(new URL("../response-schema.json", import.meta.url));
+// Markdown with its own fences and a non-ASCII byte sequence, the evidence shape
+// that broke out of fixed ``` prompt blocks.
+const FIXTURE_SOURCE = "# Policy ü\n\n```bash\nnpm test\n```\n\nTests find gaps; coverage has no universal target.\n";
 
 async function createReviewFixture() {
   const root = await mkdtemp(join(tmpdir(), "review evidence ü & fixture-"));
@@ -30,7 +33,7 @@ async function createReviewFixture() {
   const sourcePath = join(repositoryRoot, ...repositoryPath.split("/"));
   await mkdir(dirname(sourcePath), { recursive: true });
   await mkdir(temporaryRoot);
-  await writeFile(sourcePath, "Tests find gaps; coverage has no universal target.\n", "utf8");
+  await writeFile(sourcePath, FIXTURE_SOURCE, "utf8");
   execFileSync("git", ["init"], { cwd: repositoryRoot, stdio: "ignore" });
   execFileSync("git", ["config", "core.autocrlf", "false"], { cwd: repositoryRoot });
   execFileSync("git", ["config", "user.name", "Review Fixture"], { cwd: repositoryRoot });
@@ -43,70 +46,77 @@ async function createReviewFixture() {
   return { headSha, inputPath, repositoryPath, repositoryRoot, root, scriptPath, temporaryRoot };
 }
 
-async function createCodexFixture() {
-  const root = await mkdtemp(join(tmpdir(), "review-codex-integration-"));
-  const runs = join(root, "runs");
+function runSupport(fixture, args) {
+  return JSON.parse(
+    execFileSync(process.execPath, [fixture.scriptPath, ...args], { cwd: fixture.repositoryRoot, encoding: "utf8" }),
+  );
+}
+
+// Snapshots the fixture head and builds the reviewer prompts exactly as the
+// skill does: direct Node processes, no shell, Git's default diff path quoting.
+async function prepareDispatch(fixture) {
+  await writeFile(
+    fixture.inputPath,
+    JSON.stringify({
+      headSha: fixture.headSha,
+      repositoryRoot: fixture.repositoryRoot,
+      temporaryRoot: fixture.temporaryRoot,
+      files: [fixture.repositoryPath],
+    }),
+    "utf8",
+  );
+  const snapshot = runSupport(fixture, ["snapshot-files", "--input", fixture.inputPath]);
+  const diffFile = join(fixture.root, "review diff & ü.patch");
+  await writeFile(
+    diffFile,
+    execFileSync("git", ["show", "--format=", "--unified=0", fixture.headSha], { cwd: fixture.repositoryRoot }),
+  );
+  const contextPath = join(fixture.root, "context & ü.json");
+  const unitsPath = join(fixture.root, "units & ü.json");
+  await writeFile(
+    contextPath,
+    JSON.stringify({
+      repository: "owner/repo",
+      headSha: fixture.headSha,
+      changedFiles: [fixture.repositoryPath],
+      reviewRequirements: ["Pinned evidence reaches the reviewer"],
+      workItem: {},
+      diffFile,
+      finalFileAccess: snapshot.manifestPath,
+    }),
+    "utf8",
+  );
+  await writeFile(
+    unitsPath,
+    JSON.stringify([{ id: "docs", files: [fixture.repositoryPath], angles: ["review-pr-hygiene"] }]),
+    "utf8",
+  );
+  return { contextPath, snapshot, unitsPath };
+}
+
+// Stands in for codex.exe: records the prompt bytes it receives on stdin and
+// opens no evidence file, so the review can only see what the prompt carries.
+async function createPromptRecordingCodex() {
+  const root = await mkdtemp(join(tmpdir(), "review-dispatch-evidence-"));
   const executable = join(root, "fake-codex.mjs");
-  const record = join(root, "review-record.json");
-  await mkdir(runs);
+  const record = join(root, "prompts.json");
   const source = [
     'import { readFile, writeFile } from "node:fs/promises";',
     "const args = process.argv.slice(2);",
-    "if (args[0] === \"--version\") { process.stdout.write(\"codex-cli fixture\"); process.exit(0); }",
-    "if (args[0] === \"exec\" && args[1] === \"--help\") { process.stdout.write(\"codex exec fixture\"); process.exit(0); }",
-    "let prompt = \"\";",
-    "for await (const chunk of process.stdin) prompt += chunk;",
-    "const input = JSON.parse(prompt);",
-    'const manifest = JSON.parse(await readFile(input.finalFileAccess, "utf8"));',
-    "const file = manifest.files.find((entry) => entry.path === input.sourcePath);",
-    "const content = await readFile(file.snapshotPath);",
-    // biome-ignore lint/security/noSecrets: This fixture records snapshot bytes for assertions.
-    "await writeFile(process.env.reviewRecord, JSON.stringify({ args, headSha: manifest.headSha, sourcePath: file.path, sourceBase64: content.toString(\"base64\"), input }));",
-    "const outputPath = args[args.indexOf(\"--output-last-message\") + 1];",
-    'await writeFile(outputPath, JSON.stringify({ advice: "The nested review consumed pinned evidence." }));',
+    'if (args[0] === "--version") { process.stdout.write("codex fixture"); process.exit(0); }',
+    'if (args[0] === "exec" && args[1] === "--help") { process.stdout.write("codex exec fixture"); process.exit(0); }',
+    "const chunks = [];",
+    "for await (const chunk of process.stdin) chunks.push(chunk);",
+    'const prompt = Buffer.concat(chunks).toString("utf8");',
+    'const reviewer = prompt.match(/^name: (review-pr-[a-z]+)$/mu)[1];',
+    'const records = JSON.parse(await readFile(process.env.REVIEW_RECORD, "utf8").catch(() => "[]"));',
+    "records.push({ args, prompt, reviewer });",
+    "await writeFile(process.env.REVIEW_RECORD, JSON.stringify(records));",
+    'const outputPath = args[args.indexOf("--output-last-message") + 1];',
+    'await writeFile(outputPath, JSON.stringify({ reviewer, coverage: [], findings: [] }));',
   ].join("\n");
   await writeFile(executable, source, "utf8");
-  return { executable, record, root, runs };
-}
-
-async function runPowerShellSnapshot(fixture) {
-  const resultPath = join(fixture.root, "snapshot output & ü.json");
-  const powershellPath = join(fixture.root, "snapshot command & ü.ps1");
-  const powershellSource = [
-    // biome-ignore lint/security/noSecrets: This fixture preserves the documented PowerShell invocation.
-    "param([string]$scriptPath, [string]$inputPath, [string]$resultPath)",
-    "$output = & node $scriptPath snapshot-files --input $inputPath",
-    "if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }",
-    "[System.IO.File]::WriteAllText($resultPath, $output, [System.Text.UTF8Encoding]::new($false))",
-  ].join("\n");
-  await writeFile(powershellPath, powershellSource, "utf8");
-  execFileSync(
-    "powershell.exe",
-    ["-NoLogo", "-NoProfile", "-NonInteractive", "-File", powershellPath, fixture.scriptPath, fixture.inputPath, resultPath],
-    { cwd: fixture.repositoryRoot, stdio: "ignore" },
-  );
-  return JSON.parse(await readFile(resultPath, "utf8"));
-}
-
-async function runReadOnlySnapshotReview(fixture, snapshot) {
-  const codex = await createCodexFixture();
-  try {
-    const reviewContext = JSON.stringify({ finalFileAccess: snapshot.manifestPath, sourcePath: fixture.repositoryPath });
-    const review = await runAdvisor({
-      executable: process.execPath,
-      prefixArgs: [codex.executable],
-      prompt: reviewContext,
-      tempRoot: codex.runs,
-      env: { reviewRecord: codex.record },
-    });
-    const record = JSON.parse(await readFile(codex.record, "utf8"));
-    const source = execFileSync("git", ["show", `${fixture.headSha}:${fixture.repositoryPath}`], {
-      cwd: fixture.repositoryRoot,
-    });
-    return { record, review, reviewContext, source };
-  } finally {
-    await rm(codex.root, { recursive: true, force: true });
-  }
+  return { executable, record, root };
 }
 
 test("review skill hands nested reviewers pinned snapshots and explicit document failures", () => {
@@ -158,42 +168,70 @@ test("snapshots exact-head files through the CLI without shell parsing", async (
   }
 });
 
-test(
-  "Windows PowerShell nested review passes pinned evidence through the read-only Codex result boundary",
-  { skip: WINDOWS_ONLY_SKIP },
-  async () => {
-    const fixture = await createReviewFixture();
-    try {
-      await writeFile(
-        fixture.inputPath,
-        JSON.stringify({
-          headSha: fixture.headSha,
-          repositoryRoot: fixture.repositoryRoot,
-          temporaryRoot: fixture.temporaryRoot,
-          files: [fixture.repositoryPath],
-        }),
-        "utf8",
-      );
-      const snapshot = await runPowerShellSnapshot(fixture);
-      const { record, review, reviewContext, source } = await runReadOnlySnapshotReview(fixture, snapshot);
-      assert.equal(snapshot.headSha, fixture.headSha);
-      assert.equal(snapshot.files[0].snapshotPath.endsWith(".md"), true);
-      assert.equal(review.ok, true);
-      assert.equal(review.advice, "The nested review consumed pinned evidence.");
-      assert.equal(review.execution.status, "completed");
-      assert.equal(review.execution.stage, "reviewer-process");
-      assert.equal(review.execution.exitCode, 0);
-      assert.ok(review.execution.command.includes("read-only"));
-      assert.equal(review.execution.command.includes("--approve-for-me"), false);
-      assert.equal(record.headSha, fixture.headSha);
-      assert.equal(record.sourcePath, fixture.repositoryPath);
-      assert.deepEqual(Buffer.from(record.sourceBase64, "base64"), source);
-      assert.deepEqual(record.input, JSON.parse(reviewContext));
-    } finally {
-      await rm(fixture.root, { recursive: true, force: true });
+test("Windows nested reviewers receive the exact pinned bytes in their prompt, not a path to read", async () => {
+  const fixture = await createReviewFixture();
+  const codex = await createPromptRecordingCodex();
+  try {
+    const { contextPath, snapshot, unitsPath } = await prepareDispatch(fixture);
+    const input = runSupport(fixture, ["build-dispatch-input", "--context", contextPath, "--units", unitsPath]);
+    // The reviewer must not depend on host file access, so the evidence is gone before it starts.
+    await rm(snapshot.directory, { recursive: true, force: true });
+
+    const result = await dispatchReviewers({
+      reviewers: input.reviewers,
+      executable: process.execPath,
+      prefixArgs: [codex.executable],
+      schemaPath: REVIEW_SCHEMA_PATH,
+      tempRoot: codex.root,
+      env: { REVIEW_RECORD: codex.record },
+      platform: "win32",
+    });
+
+    const source = execFileSync("git", ["show", `${fixture.headSha}:${fixture.repositoryPath}`], {
+      cwd: fixture.repositoryRoot,
+    });
+    assert.equal(source.toString("utf8"), FIXTURE_SOURCE);
+    assert.equal(createHash("sha256").update(source).digest("hex"), snapshot.files[0].sha256);
+    assert.equal(result.terminal, true);
+    assert.deepEqual(result.reviews.map(({ reviewer, unit }) => [reviewer, unit]), [
+      ["review-pr-feature", "pull-request"],
+      ["review-pr-hygiene", "docs"],
+    ]);
+    const records = JSON.parse(await readFile(codex.record, "utf8"));
+    for (const [index, { args, prompt }] of records.entries()) {
+      assert.ok(prompt.includes(`### ${fixture.repositoryPath}\n\n\`\`\`\`\n${FIXTURE_SOURCE}\`\`\`\`\n`));
+      assert.ok(prompt.includes("+Tests find gaps; coverage has no universal target."));
+      assert.equal(prompt.includes(snapshot.directory), false);
+      assert.equal(prompt.includes(fixture.temporaryRoot), false);
+      assert.ok(args.includes("read-only"));
+      assert.equal(args.includes("--approve-for-me"), false);
+      assert.equal(result.reviews[index].execution.shell, false);
+      assert.equal(result.reviews[index].execution.status, "completed");
     }
-  },
-);
+  } finally {
+    await rm(codex.root, { recursive: true, force: true });
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("dispatch stops when a snapshot no longer matches its manifest hash", async () => {
+  const fixture = await createReviewFixture();
+  try {
+    const { contextPath, snapshot, unitsPath } = await prepareDispatch(fixture);
+    await writeFile(snapshot.files[0].snapshotPath, "altered evidence\n", "utf8");
+
+    assert.throws(
+      () =>
+        execFileSync(process.execPath, [fixture.scriptPath, "build-dispatch-input", "--context", contextPath, "--units", unitsPath], {
+          cwd: fixture.repositoryRoot,
+          stdio: ["ignore", "pipe", "pipe"],
+        }),
+      (error) => error.stderr.toString("utf8").includes(`expected sha256 ${snapshot.files[0].sha256}`),
+    );
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
 
 test("rejects snapshot path traversal before creating temporary output", async () => {
   const fixture = await createReviewFixture();
