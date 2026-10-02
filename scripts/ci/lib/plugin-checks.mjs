@@ -391,6 +391,10 @@ export function createPluginChecks(report, isTracked) {
   /** Run every per-package check for one plugin. */
   function checkPackage(pkg, packages) {
     const packageFile = join(pkg.dir, "package.json");
+    if (!existsSync(packageFile)) {
+      report(packageFile, "missing — plugin package metadata is required");
+      return;
+    }
     const manifest = readJson(packageFile);
     if (!manifest) return;
     checkEncoding(packageFile, manifest);
@@ -401,6 +405,8 @@ export function createPluginChecks(report, isTracked) {
     const claudeSource = checkPluginJson(pkg);
     const codexFile = join(pkg.dir, ".codex-plugin", "plugin.json");
     const codexSource = readJsonSource(codexFile);
+    if (existsSync(codexFile) && isTracked && !isTracked(codexFile))
+      report(codexFile, "not tracked by git — the Codex manifest would not ship");
     const versionDiagnostics = compareVersionSources([
       { file: packageFile, label: "package.json", peerLabel: "plugin metadata", status: "ok", value: manifest },
       { file: claudeFile, label: "plugin metadata", peerLabel: "package.json", ...claudeSource },

@@ -121,6 +121,11 @@ describe("validate-plugins: workspace discovery", () => {
     const violations = collect(packages[0], alwaysTracked);
     match(violations.map((violation) => violation.message).join("\n"), /Claude Code cannot start the MCP server/);
     match(violations.map((violation) => violation.message).join("\n"), /dist\/bundle\.js missing/);
+    const missingRoot = fixture(invalidPluginWorkspaceTree);
+    rmSync(join(missingRoot, "packages/broken/package.json"));
+    const missingPackages = discoverPluginWorkspaces(join(missingRoot, "packages"));
+    strictEqual(missingPackages.length, 1);
+    match(collect(missingPackages[0], alwaysTracked).map((violation) => violation.message).join("\n"), /plugin package metadata is required/);
   });
 });
 
@@ -153,11 +158,11 @@ describe("validate-plugins: shipped plugin version metadata", () => {
         `${label} mismatch omitted package.json`,
       );
       ok(
-        violations.some((violation) => violation.file.endsWith(".claude-plugin\\plugin.json")),
+        violations.some((violation) => violation.file.endsWith(join(".claude-plugin", "plugin.json"))),
         `${label} mismatch omitted the Claude manifest`,
       );
       ok(
-        violations.some((violation) => violation.file.endsWith(".codex-plugin\\plugin.json")),
+        violations.some((violation) => violation.file.endsWith(join(".codex-plugin", "plugin.json"))),
         `${label} mismatch omitted the Codex manifest`,
       );
     }
@@ -194,6 +199,15 @@ describe("validate-plugins: shipped plugin version metadata", () => {
       .map((violation) => violation.message)
       .join("\n");
     match(absentMessages, /Codex manifest version is missing \(observed unavailable\)/);
+  });
+
+  it("rejects an untracked Codex manifest", () => {
+    const root = tree();
+    const pkg = buildPkg(root);
+    const codexFile = join(pkg.dir, ".codex-plugin", "plugin.json");
+    const violations = collect(pkg, (file) => file !== codexFile);
+    strictEqual(violations.length, 1, JSON.stringify(violations));
+    match(violations[0].message, /Codex manifest would not ship/);
   });
 
   it("checks each plugin independently when multiple plugins are scanned", () => {

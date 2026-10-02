@@ -5,8 +5,8 @@ import { existsSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { listDir } from "./fs-utils.mjs";
 
-/** Lists every npm package with the shape shared by plugin validation checks. */
-export function loadPackageWorkspaces(packagesDir) {
+/** Lists every workspace directory with the shape shared by plugin validation checks. */
+function loadWorkspaceDirectories(packagesDir) {
   return listDir(packagesDir, (entry) => statSync(entry).isDirectory())
     .map((name) => {
       const dir = join(packagesDir, name);
@@ -16,13 +16,17 @@ export function loadPackageWorkspaces(packagesDir) {
         skills: listDir(join(dir, "skills"), (entry) => statSync(entry).isDirectory()),
         agents: listDir(join(dir, "agents"), (entry) => entry.endsWith(".md")).map((entry) => basename(entry, ".md")),
       };
-    })
-    .filter((workspace) => existsSync(join(workspace.dir, "package.json")));
+    });
+}
+
+/** Lists every npm package with the shape shared by plugin validation checks. */
+export function loadPackageWorkspaces(packagesDir) {
+  return loadWorkspaceDirectories(packagesDir).filter((workspace) => existsSync(join(workspace.dir, "package.json")));
 }
 
 /** Lists only package workspaces which declare themselves as loadable plugins. */
 export function discoverPluginWorkspaces(packagesDir) {
-  return loadPackageWorkspaces(packagesDir).filter((workspace) =>
+  return loadWorkspaceDirectories(packagesDir).filter((workspace) =>
     existsSync(join(workspace.dir, ".claude-plugin", "plugin.json")),
   );
 }
