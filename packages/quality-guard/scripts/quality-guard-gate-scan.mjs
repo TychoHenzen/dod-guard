@@ -27,13 +27,12 @@ export function baselinePath(repoRoot) {
 
 export function findRepoRoot(filePath) {
   let dir = dirname(resolve(filePath));
-  for (let depth = 0; depth < 40; depth++) {
+  while (true) {
     if (existsSync(join(dir, ".git"))) return dir;
     const parent = dirname(dir);
-    if (parent === dir) break;
+    if (parent === dir) return null;
     dir = parent;
   }
-  return null;
 }
 
 export function runScanner(filePath, repoRoot, rules = FILE_RULES) {
