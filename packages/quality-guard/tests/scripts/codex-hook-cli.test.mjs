@@ -71,6 +71,9 @@ test("the launcher skips an external source target but gates repository files", 
     encoding: "utf8",
   });
   assert.equal(repositoryResult.status, 2);
-  assert.match(repositoryResult.stderr, /quality-guard blocked this file-local write/);
+  assert.match(
+    repositoryResult.stderr,
+    /quality-guard blocked this file-local write/,
+  );
   rmSync(directory, { recursive: true });
 });

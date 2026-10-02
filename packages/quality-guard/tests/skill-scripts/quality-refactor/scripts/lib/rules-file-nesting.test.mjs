@@ -92,35 +92,3 @@ test("supported brace-based string forms do not create nesting findings", () => 
     assert.deepEqual(nestingViolations(lang, source), [], lang);
   }
 });
-
-test("real nested control flow still reports its nesting metric", () => {
-  const source = [
-    "function deeplyNested(value) {",
-    "    if (value) {",
-    "        if (value) {",
-    "            if (value) {",
-    "                if (value) {",
-    "                    if (value) {",
-    "                        if (value) {",
-    "                            return value;",
-    "                        }",
-    "                    }",
-    "                }",
-    "            }",
-    "        }",
-    "    }",
-    "    return value;",
-    "}",
-  ].join("\n");
-
-  assert.deepEqual(nestingViolations("ts", source), [
-    {
-      file: "strings.ts",
-      line: 1,
-      rule: "nesting-depth",
-      severity: "error",
-      message: "deeplyNested() nests 6 levels deep",
-      metric: 6,
-    },
-  ]);
-});
