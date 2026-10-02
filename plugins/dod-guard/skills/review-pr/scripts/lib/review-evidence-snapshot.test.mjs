@@ -18,13 +18,17 @@ test("reports binary evidence as not embedded instead of decoding it", async () 
   const temporaryRoot = await mkdtemp(join(tmpdir(), "review evidence binary ü & "));
   try {
     const bytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0xff, 0xfe]);
+    const nulBytes = Buffer.from("\0\0\0", "binary");
     const text = "Readable evidence ü\n";
+    const bomText = "\uFEFFBOM evidence\n";
     const snapshot = createReviewEvidenceSnapshot({
       headSha: HEAD_SHA,
       temporaryRoot,
       files: [
         { path: "assets/logo ü.png", contentBase64: bytes.toString("base64") },
+        { path: "assets/data.bin", contentBase64: nulBytes.toString("base64") },
         { path: "docs/notes.md", contentBase64: Buffer.from(text, "utf8").toString("base64") },
+        { path: "docs/bom.md", contentBase64: Buffer.from(bomText, "utf8").toString("base64") },
       ],
     });
     const contents = readReviewEvidenceSnapshot(snapshot.manifestPath);
@@ -33,7 +37,11 @@ test("reports binary evidence as not embedded instead of decoding it", async () 
     assert.deepEqual(contents.get("assets/logo ü.png"), {
       omitted: `binary or non-UTF-8, sha256 ${sha256}, ${bytes.length} bytes`,
     });
+    assert.deepEqual(contents.get("assets/data.bin"), {
+      omitted: `binary or non-UTF-8, sha256 ${createHash("sha256").update(nulBytes).digest("hex")}, ${nulBytes.length} bytes`,
+    });
     assert.equal(contents.get("docs/notes.md"), text);
+    assert.equal(contents.get("docs/bom.md"), bomText);
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });
   }

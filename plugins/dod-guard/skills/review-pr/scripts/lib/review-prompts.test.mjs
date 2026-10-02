@@ -69,6 +69,15 @@ test("fences evidence longer than any backtick run so Markdown content stays ins
   assert.ok(hygiene.includes(`### docs/guide.md\n\n\`\`\`\`\`\n${guide}\`\`\`\`\`\n\n## Diff`));
 });
 
+test("handles many separate backtick runs without spreading them into a function call", () => {
+  const guide = "`x".repeat(200_000);
+  const contents = new Map([...CONTENTS, ["docs/guide.md", guide]]);
+  const input = buildDispatchInput({ context: CONTEXT, units: UNITS, contents, diff: DIFF, agents: AGENTS });
+  const hygiene = input.reviewers.find(({ reviewer }) => reviewer === "review-pr-hygiene").prompt;
+
+  assert.ok(hygiene.includes(`### docs/guide.md\n\n\`\`\`\n${guide}\n\`\`\``));
+});
+
 test("lists omitted binary evidence instead of fencing it as file content", () => {
   const omitted = { omitted: "binary or non-UTF-8, sha256 abc, 6 bytes" };
   const contents = new Map([...CONTENTS, ["docs/guide.md", omitted]]);

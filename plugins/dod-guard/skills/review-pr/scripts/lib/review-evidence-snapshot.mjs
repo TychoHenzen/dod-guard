@@ -157,8 +157,11 @@ function createReviewEvidenceSnapshot(request) {
 // Decoding them anyway would hand the reviewer replacement characters as if
 // they were the file.
 function embeddableEvidence(content, sha256) {
+  if (content.includes(0)) {
+    return { omitted: `binary or non-UTF-8, sha256 ${sha256}, ${content.length} bytes` };
+  }
   try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(content);
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(content);
   } catch {
     return { omitted: `binary or non-UTF-8, sha256 ${sha256}, ${content.length} bytes` };
   }

@@ -21,7 +21,10 @@ function diffByFile(diff) {
 // The fence must outlast every backtick run in the content, or a reviewed
 // Markdown file closes the block early and the reviewer reads altered evidence.
 function fenced(content, info = "") {
-  const longestRun = Math.max(0, ...(content.match(BACKTICK_RUN) ?? []).map((run) => run.length));
+  let longestRun = 0;
+  for (const run of content.matchAll(BACKTICK_RUN)) {
+    longestRun = Math.max(longestRun, run[0].length);
+  }
   const fence = "`".repeat(Math.max(MINIMUM_FENCE_LENGTH, longestRun + 1));
   let body = content;
   if (!body.endsWith("\n")) {
