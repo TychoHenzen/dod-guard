@@ -15,6 +15,7 @@ const SIMPLE_ESCAPES = new Map([
 const QUOTED_TOKEN = /\\([0-7]{3})|\\(.)|([^\\]+)/gsu;
 const OCTAL_RADIX = 8;
 const SIDE_PREFIX = /^[ab]\//u;
+const RENAME_TARGET = /^(?:rename|copy) to /u;
 const TRAILING_TERMINATOR = /\t?\r?$/u;
 const DIFF_GIT_PREFIX = "diff --git ";
 const SIDE_LINE_PREFIX_LENGTH = 4;
@@ -51,15 +52,44 @@ function sideLinePath(line) {
   return unquoteDiffPath(line.slice(SIDE_LINE_PREFIX_LENGTH));
 }
 
-// Reads the post-image path from a `diff --git` header. Used only for sections
-// without `---`/`+++` lines (binary or mode-only changes), where both sides name
-// the same file, so an unquoted header splits evenly.
+// Reads the destination of a `rename to ` or `copy to ` line. Unlike side lines,
+// these carry no a/ or b/ prefix.
+function renameTargetPath(line) {
+  const match = line.match(RENAME_TARGET);
+  if (!match) {
+    return;
+  }
+  return decodeQuotedPath(line.slice(match[0].length).replace(TRAILING_TERMINATOR, ""));
+}
+
+// Reads the post-image path from a `diff --git` header. Callers use this only
+// after `---`/`+++` and rename lines are absent: a same-path binary or mode-only
+// change, where both sides name one file, so an unquoted header splits evenly.
 function headerPath(line) {
   const rest = line.slice(DIFF_GIT_PREFIX.length);
   if (rest.endsWith('"')) {
     return unquoteDiffPath(rest.slice(rest.lastIndexOf(' "') + 1));
   }
   return unquoteDiffPath(rest.slice(Math.ceil(rest.length / 2)));
+}
+
+function firstPath(lines, prefix, read) {
+  const line = lines.find((candidate) => candidate.startsWith(prefix));
+  if (line === undefined) {
+    return;
+  }
+  return read(line);
+}
+
+// A section belongs to its post-image path, to its pre-image path when the file
+// was deleted, or to its rename target when only the name changed.
+function diffSectionPath(lines) {
+  return (
+    firstPath(lines, "+++ ", sideLinePath) ??
+    firstPath(lines, "--- ", sideLinePath) ??
+    lines.map(renameTargetPath).find(Boolean) ??
+    headerPath(lines[0])
+  );
 }
 
 function isDiffHeader(line) {
@@ -105,4 +135,4 @@ function parseChangedLines(diff) {
   return changed;
 }
 
-export { headerPath, isDiffHeader, parseChangedLines, sideLinePath };
+export { diffSectionPath, headerPath, isDiffHeader, parseChangedLines, sideLinePath };

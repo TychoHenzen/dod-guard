@@ -1,4 +1,4 @@
-import { headerPath, isDiffHeader, sideLinePath } from "./unified-diff.mjs";
+import { diffSectionPath, isDiffHeader } from "./unified-diff.mjs";
 import { PULL_REQUEST_UNIT } from "./review-units.mjs";
 
 const BACKTICK_RUN = /`+/gu;
@@ -6,14 +6,6 @@ const MINIMUM_FENCE_LENGTH = 3;
 
 // Nested reviewers may be unable to run shell reads on the host, so every
 // prompt carries its unit's final file contents and diff instead of paths.
-
-// A section belongs to its post-image path, or to its pre-image path when the
-// file was deleted. Binary and mode-only sections only name it in the header.
-function sectionPath(lines) {
-  const added = lines.find((line) => line.startsWith("+++ "));
-  const removed = lines.find((line) => line.startsWith("--- "));
-  return (added && sideLinePath(added)) ?? (removed && sideLinePath(removed)) ?? headerPath(lines[0]);
-}
 
 function diffByFile(diff) {
   const sections = [];
@@ -23,7 +15,7 @@ function diffByFile(diff) {
     }
     sections.at(-1)?.push(line);
   }
-  return new Map(sections.map((lines) => [sectionPath(lines), lines.join("\n").trimEnd()]));
+  return new Map(sections.map((lines) => [diffSectionPath(lines), lines.join("\n").trimEnd()]));
 }
 
 // The fence must outlast every backtick run in the content, or a reviewed

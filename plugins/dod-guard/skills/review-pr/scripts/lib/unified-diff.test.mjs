@@ -27,6 +27,14 @@ const SPECIAL_PATH_DIFF = [
   "+c",
   "diff --git a/img x.png b/img x.png",
   "Binary files a/img x.png and b/img x.png differ",
+  "diff --git a/longname.md b/x.md",
+  "similarity index 100%",
+  "rename from longname.md",
+  "rename to x.md",
+  'diff --git "a/\\303\\274 old.md" "b/\\303\\274 new.md"',
+  "similarity index 100%",
+  'rename from "\\303\\274 old.md"',
+  'rename to "\\303\\274 new.md"',
 ].join("\n");
 
 test("decodes Git's quoted and TAB-terminated diff paths", () => {
@@ -39,7 +47,14 @@ test("decodes Git's quoted and TAB-terminated diff paths", () => {
 });
 
 test("keys every diff section by its real repository path", () => {
-  assert.deepEqual([...diffByFile(SPECIAL_PATH_DIFF).keys()], ["docs x/p & ü.md", "gone.md", "sp ace.md", "img x.png"]);
+  assert.deepEqual([...diffByFile(SPECIAL_PATH_DIFF).keys()], [
+    "docs x/p & ü.md",
+    "gone.md",
+    "sp ace.md",
+    "img x.png",
+    "x.md",
+    "ü new.md",
+  ]);
 });
 
 test("records final-state lines for special-character paths", () => {
