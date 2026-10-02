@@ -169,8 +169,16 @@ function embeddableEvidence(content, sha256) {
 
 // Reviewers receive these contents inside their prompts, so a snapshot that
 // changed after capture must stop dispatch instead of reaching them altered.
-function readReviewEvidenceSnapshot(manifestPath) {
+function readReviewEvidenceSnapshot(manifestPath, expectedHeadSha) {
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  if (typeof expectedHeadSha !== "string" || !FULL_COMMIT_SHA.test(expectedHeadSha)) {
+    throw new Error("Review evidence snapshot requires the expected reviewed head SHA.");
+  }
+  if (manifest.headSha !== expectedHeadSha) {
+    throw new Error(
+      `Review evidence manifest head ${manifest.headSha ?? "<missing>"} does not match expected reviewed head ${expectedHeadSha}.`,
+    );
+  }
   return new Map(
     manifest.files.map(({ path, snapshotPath, sha256 }) => {
       const content = readFileSync(snapshotPath);

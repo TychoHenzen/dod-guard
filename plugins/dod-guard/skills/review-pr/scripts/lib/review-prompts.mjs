@@ -3,6 +3,10 @@ import { PULL_REQUEST_UNIT } from "./review-units.mjs";
 
 const BACKTICK_RUN = /`+/gu;
 const MINIMUM_FENCE_LENGTH = 3;
+const MAX_FENCE_LENGTH = 256;
+// biome-ignore lint/style/noMagicNumbers: Keep aggregate nested-review prompts bounded to 64 MiB.
+const MAX_PROMPT_BYTES = 64 * 1024 * 1024;
+const ALTERNATE_FENCE = "~~~";
 
 // Nested reviewers may be unable to run shell reads on the host, so every
 // prompt carries its unit's final file contents and diff instead of paths.
@@ -18,6 +22,13 @@ function diffByFile(diff) {
   return new Map(sections.map((lines) => [diffSectionPath(lines), lines.join("\n").trimEnd()]));
 }
 
+function finalNewlineNote(content) {
+  if (content.endsWith("\n")) {
+    return "";
+  }
+  return "\n(source content has no final newline)";
+}
+
 // The fence must outlast every backtick run in the content, or a reviewed
 // Markdown file closes the block early and the reviewer reads altered evidence.
 function fenced(content, info = "") {
@@ -25,15 +36,16 @@ function fenced(content, info = "") {
   for (const run of content.matchAll(BACKTICK_RUN)) {
     longestRun = Math.max(longestRun, run[0].length);
   }
-  const fence = "`".repeat(Math.max(MINIMUM_FENCE_LENGTH, longestRun + 1));
-  const hasFinalNewline = content.endsWith("\n");
-  let body = content;
-  let finalNewlineNote = "";
-  if (!hasFinalNewline) {
-    body += "\n";
-    finalNewlineNote = "\n(source content has no final newline)";
+  if (longestRun >= MAX_FENCE_LENGTH) {
+    const encoded = Buffer.from(content, "utf8").toString("base64");
+    return `${ALTERNATE_FENCE}${info}\n(base64 UTF-8 evidence; decode before review)\n${encoded}\n${ALTERNATE_FENCE}${finalNewlineNote(content)}`;
   }
-  return `${fence}${info}\n${body}${fence}${finalNewlineNote}`;
+  const fence = "`".repeat(Math.max(MINIMUM_FENCE_LENGTH, longestRun + 1));
+  let body = content;
+  if (!content.endsWith("\n")) {
+    body += "\n";
+  }
+  return `${fence}${info}\n${body}${fence}${finalNewlineNote(content)}`;
 }
 
 function fileBlock(path, contents) {
@@ -73,13 +85,17 @@ function buildDispatchInput({ context, units, contents, diff, agents }) {
     { reviewer: "review-pr-feature", unit: pullRequest },
     ...units.flatMap((unit) => unit.angles.map((reviewer) => ({ reviewer, unit }))),
   ];
-  return {
-    reviewers: entries.map(({ reviewer, unit }) => ({
-      reviewer,
-      unit: unit.id,
-      prompt: unitPrompt({ agent: agents[reviewer], context, unit, contents, diffs }),
-    })),
-  };
+  const reviewers = [];
+  let promptBytes = 0;
+  for (const { reviewer, unit } of entries) {
+    const prompt = unitPrompt({ agent: agents[reviewer], context, unit, contents, diffs });
+    promptBytes += Buffer.byteLength(prompt, "utf8");
+    if (promptBytes > MAX_PROMPT_BYTES) {
+      throw new Error(`Aggregate reviewer prompt size exceeds ${MAX_PROMPT_BYTES} UTF-8 bytes.`);
+    }
+    reviewers.push({ reviewer, unit: unit.id, prompt });
+  }
+  return { reviewers };
 }
 
 export { buildDispatchInput, diffByFile };

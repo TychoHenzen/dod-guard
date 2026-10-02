@@ -27,6 +27,10 @@ const CONTEXT = {
   workItem: { acceptanceCriteria: "- [ ] User can open it" },
 };
 const MANY_BACKTICK_RUNS = 200_000;
+// Keep this below the 64 MiB per-file snapshot cap while matching the large-run failure shape.
+// biome-ignore lint/style/noMagicNumbers: Match the documented large-run regression size.
+const LARGE_BACKTICK_RUN_BYTES = 22 * 1024 * 1024;
+const AGGREGATE_PROMPT_ERROR = /Aggregate reviewer prompt size exceeds/;
 const UNITS = [
   { id: "docs", files: ["docs/guide.md"], angles: ["review-pr-hygiene"] },
   { id: "src", files: ["src/app.mjs", "src/removed.mjs"], angles: ["review-pr-design", "review-pr-reliability"] },
@@ -77,6 +81,37 @@ test("handles many separate backtick runs without spreading them into a function
   const hygiene = input.reviewers.find(({ reviewer }) => reviewer === "review-pr-hygiene").prompt;
 
   assert.ok(hygiene.includes(`### docs/guide.md\n\n\`\`\`\n${guide}\n\`\`\``));
+});
+
+test("uses bounded base64 evidence for one oversized backtick run", () => {
+  const guide = "`".repeat(LARGE_BACKTICK_RUN_BYTES);
+  const context = { ...CONTEXT, changedFiles: ["docs/guide.md"] };
+  const input = buildDispatchInput({
+    context,
+    units: [],
+    contents: new Map([...CONTENTS, ["docs/guide.md", guide]]),
+    diff: DIFF,
+    agents: AGENTS,
+  });
+  const [{ prompt }] = input.reviewers;
+
+  assert.ok(prompt.includes("~~~\n(base64 UTF-8 evidence; decode before review)\n"));
+  assert.equal(prompt.includes(guide), false);
+});
+
+test("rejects aggregate reviewer prompts that exceed the size cap", () => {
+  const guide = "`".repeat(LARGE_BACKTICK_RUN_BYTES);
+  const context = { ...CONTEXT, changedFiles: ["docs/guide.md"] };
+  const units = [{
+    id: "docs",
+    files: ["docs/guide.md"],
+    angles: ["review-pr-hygiene", "review-pr-design", "review-pr-reliability"],
+  }];
+
+  assert.throws(
+    () => buildDispatchInput({ context, units, contents: new Map([...CONTENTS, ["docs/guide.md", guide]]), diff: DIFF, agents: AGENTS }),
+    AGGREGATE_PROMPT_ERROR,
+  );
 });
 
 test("marks content without a final newline instead of normalizing it silently", () => {

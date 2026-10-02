@@ -41,7 +41,7 @@ function requireSameHead(reviewed, current) {
 }
 
 function readDispatchInput(context, units, executable) {
-  const contents = readReviewEvidenceSnapshot(context.finalFileAccess);
+  const contents = readReviewEvidenceSnapshot(context.finalFileAccess, context.headSha);
   const agents = Object.fromEntries(
     REVIEWERS.map((name) => [name, readFileSync(new URL(`../../../agents/${name}.md`, import.meta.url), "utf8")]),
   );
