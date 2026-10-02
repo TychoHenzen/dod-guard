@@ -125,7 +125,12 @@ describe("validate-plugins: workspace discovery", () => {
     rmSync(join(missingRoot, "packages/broken/package.json"));
     const missingPackages = discoverPluginWorkspaces(join(missingRoot, "packages"));
     strictEqual(missingPackages.length, 1);
-    match(collect(missingPackages[0], alwaysTracked).map((violation) => violation.message).join("\n"), /plugin package metadata is required/);
+    match(
+      collect(missingPackages[0], alwaysTracked)
+        .map((violation) => violation.message)
+        .join("\n"),
+      /plugin package metadata is required/,
+    );
   });
 });
 

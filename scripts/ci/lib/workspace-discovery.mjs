@@ -7,16 +7,15 @@ import { listDir } from "./fs-utils.mjs";
 
 /** Lists every workspace directory with the shape shared by plugin validation checks. */
 function loadWorkspaceDirectories(packagesDir) {
-  return listDir(packagesDir, (entry) => statSync(entry).isDirectory())
-    .map((name) => {
-      const dir = join(packagesDir, name);
-      return {
-        name,
-        dir,
-        skills: listDir(join(dir, "skills"), (entry) => statSync(entry).isDirectory()),
-        agents: listDir(join(dir, "agents"), (entry) => entry.endsWith(".md")).map((entry) => basename(entry, ".md")),
-      };
-    });
+  return listDir(packagesDir, (entry) => statSync(entry).isDirectory()).map((name) => {
+    const dir = join(packagesDir, name);
+    return {
+      name,
+      dir,
+      skills: listDir(join(dir, "skills"), (entry) => statSync(entry).isDirectory()),
+      agents: listDir(join(dir, "agents"), (entry) => entry.endsWith(".md")).map((entry) => basename(entry, ".md")),
+    };
+  });
 }
 
 /** Lists every npm package with the shape shared by plugin validation checks. */
