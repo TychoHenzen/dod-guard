@@ -13,6 +13,68 @@ const BUILTIN_AGENTS = new Set(["sonnet", "opus", "haiku", "general-purpose", "E
 // Double-encoded UTF-8 leaves these code points behind; U+FFFD means the file is not valid UTF-8.
 // Built from code points so this file's own encoding cannot corrupt the detector.
 const MOJIBAKE_CODES = [0x00c2, 0x00c3, 0x00e2, 0xfffd, 0xfeff];
+const VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
+
+function observedValue(value) {
+  return value === undefined ? "undefined" : JSON.stringify(value);
+}
+
+/**
+ * Compare one plugin's version-bearing metadata without selecting an authority.
+ * The caller owns file reads and can mark structural errors it already reported.
+ */
+function compareVersionSources(sources) {
+  const diagnostics = [];
+  const readable = [];
+
+  for (const source of sources) {
+    if (source.status === "missing") {
+      if (!source.reported) {
+        diagnostics.push({
+          file: source.file,
+          message: `${source.label} version is missing (observed unavailable)`,
+        });
+      }
+      continue;
+    }
+    if (source.status === "invalid") {
+      if (!source.reported) {
+        diagnostics.push({
+          file: source.file,
+          message: `${source.label} version metadata is not valid JSON: ${source.error}`,
+        });
+      }
+      continue;
+    }
+
+    const version = source.value?.version;
+    if (!VERSION_PATTERN.test(version ?? "")) {
+      diagnostics.push({
+        file: source.file,
+        message: `version must be x.y.z, got ${observedValue(version)}`,
+      });
+      continue;
+    }
+    readable.push({ ...source, version });
+  }
+
+  const observed = readable.map((source) => `${source.label}=${JSON.stringify(source.version)}`).join(", ");
+  const versions = new Set(readable.map((source) => source.version));
+  if (versions.size > 1) {
+    for (const source of readable) {
+      const other =
+        readable.find((candidate) => candidate.version !== source.version && candidate.label === source.peerLabel) ??
+        readable.find((candidate) => candidate.version !== source.version);
+      diagnostics.push({
+        file: source.file,
+        message:
+          `version "${source.version}" disagrees with ${other.label} "${other.version}" ` + `(observed: ${observed})`,
+      });
+    }
+  }
+
+  return diagnostics;
+}
 
 function badCodePoint(text) {
   for (const char of text) {
@@ -25,6 +87,15 @@ function badCodePoint(text) {
 }
 
 export function createPluginChecks(report, isTracked) {
+  function readJsonSource(file) {
+    if (!existsSync(file)) return { status: "missing", value: null };
+    try {
+      return { status: "ok", value: JSON.parse(readFileSync(file, "utf8")) };
+    } catch (error) {
+      return { status: "invalid", value: null, error: error.message };
+    }
+  }
+
   function readJson(file, reportErrors = true) {
     try {
       return JSON.parse(readFileSync(file, "utf8"));
@@ -71,8 +142,6 @@ export function createPluginChecks(report, isTracked) {
     if (manifest.name !== pkg.name) report(file, `name "${manifest.name}" does not match directory "${pkg.name}"`);
     if (manifest.main !== "dist/bundle.js")
       report(file, `main must be dist/bundle.js, got ${JSON.stringify(manifest.main)}`);
-    if (!/^\d+\.\d+\.\d+$/.test(manifest.version ?? ""))
-      report(file, `version must be x.y.z, got ${JSON.stringify(manifest.version)}`);
     const wanted = `packages/${pkg.name}`;
     if (manifest.repository?.directory !== wanted) report(file, `repository.directory must be "${wanted}"`);
   }
@@ -112,21 +181,26 @@ export function createPluginChecks(report, isTracked) {
     }
   }
 
-  function checkPluginJson(pkg, manifest) {
+  function checkPluginJson(pkg) {
     const file = join(pkg.dir, ".claude-plugin", "plugin.json");
-    if (!existsSync(file)) return report(file, "missing — directory is not a loadable Claude Code plugin");
-    const plugin = readJson(file);
-    if (!plugin) return;
+    if (!existsSync(file)) {
+      report(file, "missing — directory is not a loadable Claude Code plugin");
+      return { status: "missing", value: null };
+    }
+    const source = readJsonSource(file);
+    if (source.status === "invalid") {
+      report(file, `not valid JSON: ${source.error}`);
+      return { ...source, reported: true };
+    }
+    if (!source.value || typeof source.value !== "object" || Array.isArray(source.value)) return source;
+    const plugin = source.value;
     checkEncoding(file, plugin);
     if (plugin.name !== pkg.name) report(file, `name "${plugin.name}" does not match package "${pkg.name}"`);
     if (typeof plugin.description !== "string" || !plugin.description.trim())
       report(file, "description missing or empty");
     else checkSkillMentions(file, plugin.description, pkg, "plugin description");
-    // plugin.json may omit version, but must never contradict package.json.
-    if (plugin.version !== undefined && plugin.version !== manifest.version) {
-      report(file, `version "${plugin.version}" disagrees with package.json "${manifest.version}"`);
-    }
     checkHookTargets(pkg, file, plugin);
+    return source;
   }
 
   function checkSkills(pkg) {
@@ -224,9 +298,18 @@ export function createPluginChecks(report, isTracked) {
 
     const claudeFile = join(pkg.dir, ".claude-plugin", "plugin.json");
     const codexFile = join(codexDirectory, "plugin.json");
-    const claude = readJson(claudeFile, false);
-    const codex = existsSync(codexFile) ? readJson(codexFile) : null;
-    if (!existsSync(codexFile)) report(codexFile, "missing — the Codex manifest is part of the shared plugin metadata");
+    const claudeSource = readJsonSource(claudeFile);
+    const codexSource = readJsonSource(codexFile);
+    const packageSource = readJsonSource(packageFile);
+    const versionDiagnostics = compareVersionSources([
+      { file: packageFile, label: "package.json", peerLabel: "plugin metadata", ...packageSource },
+      { file: claudeFile, label: "plugin metadata", peerLabel: "package.json", ...claudeSource },
+      { file: codexFile, label: "Codex manifest", peerLabel: "plugin metadata", ...codexSource },
+    ]);
+    for (const diagnostic of versionDiagnostics) report(diagnostic.file, diagnostic.message);
+
+    const claude = claudeSource.value;
+    const codex = codexSource.value;
 
     if (claude) checkSkillMentions(claudeFile, claude.description ?? "", pkg, "Claude plugin description");
     if (codex) {
@@ -234,17 +317,14 @@ export function createPluginChecks(report, isTracked) {
       if (typeof codex.description !== "string" || !codex.description.trim())
         report(codexFile, "description missing or empty");
       else checkSkillMentions(codexFile, codex.description, pkg, "Codex plugin description");
-      if (claude?.version !== undefined && codex.version !== claude.version) {
-        report(codexFile, `version "${codex.version}" disagrees with Claude manifest "${claude.version}"`);
-      }
     }
 
-    if (!existsSync(packageFile)) {
+    if (packageSource.status === "missing") {
       report(packageFile, "missing — the OpenCode adapter package metadata is required");
       return;
     }
-    const adapter = readJson(packageFile);
-    if (!adapter) return;
+    if (packageSource.status === "invalid" || !packageSource.value || typeof packageSource.value !== "object") return;
+    const adapter = packageSource.value;
     checkEncoding(packageFile, adapter);
     if (typeof adapter.description !== "string" || !adapter.description.trim())
       report(packageFile, "description missing or empty");
@@ -253,11 +333,6 @@ export function createPluginChecks(report, isTracked) {
     const expectedName = claude?.author?.name ? `@${claude.author.name}/${pkg.name}-opencode` : null;
     if (expectedName && adapter.name !== expectedName)
       report(packageFile, `name "${adapter.name}" does not match expected OpenCode package "${expectedName}"`);
-    const expectedVersion = claude?.version ?? codex?.version;
-    if (expectedVersion !== undefined && adapter.version !== expectedVersion)
-      report(packageFile, `version "${adapter.version}" disagrees with plugin metadata "${expectedVersion}"`);
-    if (!/^\d+\.\d+\.\d+$/.test(adapter.version ?? ""))
-      report(packageFile, `version must be x.y.z, got ${JSON.stringify(adapter.version)}`);
     if (adapter.type !== "module") report(packageFile, `type must be "module", got ${JSON.stringify(adapter.type)}`);
     if (adapter.exports?.["."] !== "./index.js")
       report(packageFile, `exports["."] must be "./index.js", got ${JSON.stringify(adapter.exports?.["."])}`);
@@ -315,13 +390,23 @@ export function createPluginChecks(report, isTracked) {
 
   /** Run every per-package check for one plugin. */
   function checkPackage(pkg, packages) {
-    const manifest = readJson(join(pkg.dir, "package.json"));
+    const packageFile = join(pkg.dir, "package.json");
+    const manifest = readJson(packageFile);
     if (!manifest) return;
-    checkEncoding(join(pkg.dir, "package.json"), manifest);
+    checkEncoding(packageFile, manifest);
     checkManifest(pkg, manifest);
     checkBundle(pkg);
     checkMcpConfig(pkg);
-    checkPluginJson(pkg, manifest);
+    const claudeFile = join(pkg.dir, ".claude-plugin", "plugin.json");
+    const claudeSource = checkPluginJson(pkg);
+    const codexFile = join(pkg.dir, ".codex-plugin", "plugin.json");
+    const codexSource = readJsonSource(codexFile);
+    const versionDiagnostics = compareVersionSources([
+      { file: packageFile, label: "package.json", peerLabel: "plugin metadata", status: "ok", value: manifest },
+      { file: claudeFile, label: "plugin metadata", peerLabel: "package.json", ...claudeSource },
+      { file: codexFile, label: "Codex manifest", peerLabel: "plugin metadata", ...codexSource },
+    ]);
+    for (const diagnostic of versionDiagnostics) report(diagnostic.file, diagnostic.message);
     checkSkills(pkg);
     checkAgents(pkg);
     checkAgentReferences(pkg, packages);

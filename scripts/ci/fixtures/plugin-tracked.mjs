@@ -58,6 +58,7 @@ export function goodTree() {
     JSON.stringify(
       {
         name: PKG_NAME,
+        version: "1.0.0",
         description: "A sample plugin used only by validate-plugins.test.mjs.",
         hooks: {
           PostToolUse: [
@@ -73,6 +74,20 @@ export function goodTree() {
             },
           ],
         },
+      },
+      null,
+      2,
+    ),
+  );
+
+  write(
+    root,
+    `packages/${PKG_NAME}/.codex-plugin/plugin.json`,
+    JSON.stringify(
+      {
+        name: PKG_NAME,
+        version: "1.0.0",
+        description: "A sample plugin used only by validate-plugins.test.mjs.",
       },
       null,
       2,

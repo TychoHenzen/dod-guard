@@ -297,6 +297,20 @@ exactly. On mismatch, publish stops before release mutations and reports the
 requested and detected values instead of silently selecting another copy. No
 cache path needs guessing for an unpinned run.
 
+Before any release, protection, checkout/ref, commit, push, or client-cache
+mutation, run the source metadata preflight from the repository root:
+
+```text
+node scripts/ci/validate-plugins.mjs
+```
+
+It checks every shipped code plugin's `package.json`, Claude manifest, Codex
+manifest, and present adapter metadata for a valid matching version. A
+mismatch, missing or malformed version, or ambiguous source reports every
+affected path and observed value, then stops. Correct the tracked metadata and
+rerun; publish never synchronizes manifests or waits for a later validator or
+client-cache readback to recover the release.
+
 ### Windows authentication boundary
 
 Run the complete Windows publish flow from the authenticated interactive

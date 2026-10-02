@@ -4,7 +4,7 @@
 // repo would be absent from a clone, existsSync would filter it out, and the
 // rule would pass vacuously without ever being tested.
 
-import { deepStrictEqual, match, strictEqual } from "node:assert";
+import { deepStrictEqual, match, ok, strictEqual } from "node:assert";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
@@ -41,6 +41,13 @@ function collect(pkg, isTracked) {
   const violations = [];
   const { checkPackage } = createPluginChecks((file, message) => violations.push({ file, message }), isTracked);
   checkPackage(pkg, [pkg]);
+  return violations;
+}
+
+function collectPackages(packages, isTracked = alwaysTracked) {
+  const violations = [];
+  const { checkPackage } = createPluginChecks((file, message) => violations.push({ file, message }), isTracked);
+  for (const pkg of packages) checkPackage(pkg, packages);
   return violations;
 }
 
@@ -114,6 +121,93 @@ describe("validate-plugins: workspace discovery", () => {
     const violations = collect(packages[0], alwaysTracked);
     match(violations.map((violation) => violation.message).join("\n"), /Claude Code cannot start the MCP server/);
     match(violations.map((violation) => violation.message).join("\n"), /dist\/bundle\.js missing/);
+  });
+});
+
+describe("validate-plugins: shipped plugin version metadata", () => {
+  it("accepts matching package, Claude, and Codex versions", () => {
+    const root = tree();
+    deepStrictEqual(collect(buildPkg(root)), []);
+  });
+
+  it("reports every affected source for each mismatch direction", () => {
+    const sources = [
+      ["package", `packages/${PKG_NAME}/package.json`],
+      ["Claude", `packages/${PKG_NAME}/.claude-plugin/plugin.json`],
+      ["Codex", `packages/${PKG_NAME}/.codex-plugin/plugin.json`],
+    ];
+
+    for (const [label, relativePath] of sources) {
+      const root = tree();
+      const file = join(root, relativePath);
+      const metadata = JSON.parse(readFileSync(file, "utf8"));
+      metadata.version = "1.0.1";
+      write(root, relativePath, JSON.stringify(metadata));
+      const violations = collect(buildPkg(root));
+      const messages = violations.map((violation) => violation.message).join("\n");
+
+      ok(messages.includes(`version "1.0.1"`), `${label} mismatch was not reported`);
+      match(messages, /observed: package\.json="(?:1\.0\.0|1\.0\.1)"/);
+      ok(
+        violations.some((violation) => violation.file.endsWith("package.json")),
+        `${label} mismatch omitted package.json`,
+      );
+      ok(
+        violations.some((violation) => violation.file.endsWith(".claude-plugin\\plugin.json")),
+        `${label} mismatch omitted the Claude manifest`,
+      );
+      ok(
+        violations.some((violation) => violation.file.endsWith(".codex-plugin\\plugin.json")),
+        `${label} mismatch omitted the Codex manifest`,
+      );
+    }
+  });
+
+  it("reports missing or malformed versions without changing metadata", () => {
+    const missingRoot = tree();
+    const packageFile = `packages/${PKG_NAME}/package.json`;
+    const packagePath = join(missingRoot, packageFile);
+    const before = readFileSync(packagePath, "utf8");
+    const packageMetadata = JSON.parse(before);
+    delete packageMetadata.version;
+    write(missingRoot, packageFile, JSON.stringify(packageMetadata));
+    const missingMessages = collect(buildPkg(missingRoot))
+      .map((violation) => violation.message)
+      .join("\n");
+    match(missingMessages, /version must be x\.y\.z, got undefined/);
+    strictEqual(JSON.parse(readFileSync(packagePath, "utf8")).version, undefined);
+
+    const malformedRoot = tree();
+    const codexFile = `packages/${PKG_NAME}/.codex-plugin/plugin.json`;
+    const codexPath = join(malformedRoot, codexFile);
+    write(malformedRoot, codexFile, "{\n");
+    const malformedMessages = collect(buildPkg(malformedRoot))
+      .map((violation) => violation.message)
+      .join("\n");
+    match(malformedMessages, /Codex manifest version metadata is not valid JSON/);
+    strictEqual(readFileSync(codexPath, "utf8"), "{\n");
+
+    const absentRoot = tree();
+    const absentPath = join(absentRoot, codexFile);
+    rmSync(absentPath);
+    const absentMessages = collect(buildPkg(absentRoot))
+      .map((violation) => violation.message)
+      .join("\n");
+    match(absentMessages, /Codex manifest version is missing \(observed unavailable\)/);
+  });
+
+  it("checks each plugin independently when multiple plugins are scanned", () => {
+    const firstRoot = tree();
+    const secondRoot = tree();
+    const codexFile = `packages/${PKG_NAME}/.codex-plugin/plugin.json`;
+    const codexPath = join(secondRoot, codexFile);
+    const codexMetadata = JSON.parse(readFileSync(codexPath, "utf8"));
+    codexMetadata.version = "1.0.1";
+    write(secondRoot, codexFile, JSON.stringify(codexMetadata));
+
+    const violations = collectPackages([buildPkg(firstRoot), buildPkg(secondRoot)]);
+    ok(violations.length > 0);
+    ok(violations.every((violation) => violation.file.startsWith(secondRoot)));
   });
 });
 
