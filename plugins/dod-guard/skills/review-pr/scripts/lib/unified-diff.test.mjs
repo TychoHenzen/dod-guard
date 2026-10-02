@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { diffByFile } from "./review-prompts.mjs";
+import { buildDispatchInput, diffByFile } from "./review-prompts.mjs";
 import { headerPath, parseChangedLines, sideLinePath } from "./unified-diff.mjs";
 
 // Captured from `git diff --unified=0` with Git's default core.quotePath=true.
@@ -55,6 +55,33 @@ test("keys every diff section by its real repository path", () => {
     "x.md",
     "ü new.md",
   ]);
+});
+
+test("tells GitHub reviewers how to report pure-renamed defects", () => {
+  const context = {
+    provider: "github",
+    repository: "owner/repo",
+    headSha: "abc1234",
+    changedFiles: ["new-name.md"],
+    repositoryInstructions: [],
+    reviewRequirements: ["The renamed file remains discoverable"],
+    workItem: { acceptanceCriteria: "- [ ] The renamed file remains discoverable" },
+  };
+  const input = buildDispatchInput({
+    context,
+    units: [],
+    contents: new Map([["new-name.md", "renamed content\n"]]),
+    diff: [
+      "diff --git a/old-name.md b/new-name.md",
+      "similarity index 100%",
+      "rename from old-name.md",
+      "rename to new-name.md",
+    ].join("\n"),
+    agents: { "review-pr-feature": "# Feature reviewer" },
+  });
+
+  assert.ok(input.reviewers[0].prompt.includes('location: "pull-request"'));
+  assert.ok(input.reviewers[0].prompt.includes("instead of inventing a line number"));
 });
 
 test("records final-state lines for special-character paths", () => {

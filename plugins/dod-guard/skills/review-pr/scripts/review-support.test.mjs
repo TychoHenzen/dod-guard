@@ -233,6 +233,22 @@ test("accepts only changed final-state lines and explicit PR-level findings", ()
   assert.equal(result.rejected[0].rejection, "Finding does not identify a changed final-state line.");
 });
 
+test("routes pure-rename GitHub findings through the PR-level location", () => {
+  const diff = [
+    "diff --git a/old-name.md b/new-name.md",
+    "similarity index 100%",
+    "rename from old-name.md",
+    "rename to new-name.md",
+  ].join("\n");
+  const pullRequestFinding = { location: "pull-request", file: null, line: null, problem: "Rename breaks discovery" };
+  const fileFinding = { file: "new-name.md", line: 1, problem: "Rename breaks discovery" };
+
+  const result = validateFindingLines([pullRequestFinding, fileFinding], diff, true);
+
+  assert.deepEqual(result.accepted, [pullRequestFinding]);
+  assert.deepEqual(result.rejected, [{ ...fileFinding, rejection: "Finding does not identify a changed final-state line." }]);
+});
+
 test("deduplicates one root cause and keeps its highest severity", () => {
   const result = dedupeFindings([
     { problem: "Symptom one", rootCause: "Unvalidated target ref", severity: "MINOR" },

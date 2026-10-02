@@ -310,9 +310,11 @@ validation failure. Report the failed reviewer, unit, and validation error.
 
 After every result envelope passes validation, combine their `findings`.
 Reject unsupported findings. Re-open the cited file at `headSha`
-and verify the evidence. A finding must cite a changed final-state line. Only a
-GitHub missing-functionality finding with no honest code owner may use
-`"location":"pull-request"` with null file and line.
+and verify the evidence. A finding must cite a changed final-state line. A
+pure-rename diff has no changed final-state line; in GitHub mode, a legitimate
+rename-only defect may use `"location":"pull-request"` with null file and
+line instead of inventing a line number. The same PR-level route applies to a
+GitHub missing-functionality finding with no honest code owner.
 
 Run `validate-findings` against the unified-zero diff. Use
 `--allow-pr-level true` only for GitHub mode. Combine accepted records and run
