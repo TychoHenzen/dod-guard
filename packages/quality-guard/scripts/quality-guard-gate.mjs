@@ -17,6 +17,8 @@ import {
   runScanner,
 } from "./quality-guard-gate-scan.mjs";
 
+const DEFAULT_SERVICES = { localResult, readSentinelState, runScanner, waive };
+
 function blockingFor(scan, comparison, relPath) {
   const unseen = isUnseen(comparison, relPath);
   const blocking = unseen
@@ -67,13 +69,7 @@ function continueGate(context) {
 }
 
 export function gate(input, filePath, deps = {}) {
-  const services = {
-    localResult,
-    readSentinelState,
-    runScanner,
-    waive,
-    ...deps,
-  };
+  const services = { ...DEFAULT_SERVICES, ...deps };
   const repoRoot = findRepoRoot(filePath);
   if (!repoRoot) return 0;
   const baseline = baselinePath(repoRoot);

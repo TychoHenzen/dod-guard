@@ -85,22 +85,8 @@ test("a target outside a repository is a successful no-op", () => {
   const calls = [];
   const target = join(root, "scratch.py");
   const code = gate(fakeInput(target), target, {
-    runScanner: () => {
-      calls.push("scanner");
-      return { violations: [] };
-    },
-    readBaseline: () => {
-      calls.push("baseline");
-      return {};
-    },
-    compareToBaseline: () => {
-      calls.push("comparison");
-      return {};
-    },
-    localResult: () => {
-      calls.push("linter");
-      return 0;
-    },
+    runScanner: () => calls.push("scanner"),
+    localResult: () => calls.push("linter"),
   });
   assert.equal(code, 0);
   assert.deepEqual(calls, []);
