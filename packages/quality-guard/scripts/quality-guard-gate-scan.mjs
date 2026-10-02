@@ -33,7 +33,7 @@ export function findRepoRoot(filePath) {
     if (parent === dir) break;
     dir = parent;
   }
-  return dirname(resolve(filePath));
+  return null;
 }
 
 export function runScanner(filePath, repoRoot, rules = FILE_RULES) {

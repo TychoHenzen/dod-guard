@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -55,6 +56,7 @@ test("Windows launcher forwards a Codex hook payload to the Node hook", {
   );
   const filePath = resolve(directory, "clean.ts");
   const launcher = resolve(packageRoot, "scripts", "quality-guard-hook.cmd");
+  mkdirSync(resolve(directory, ".git"));
   writeFileSync(filePath, "export const answer = 42;\n");
   const input = {
     cwd: directory,

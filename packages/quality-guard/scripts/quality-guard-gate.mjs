@@ -75,6 +75,7 @@ export function gate(input, filePath, deps = {}) {
     ...deps,
   };
   const repoRoot = findRepoRoot(filePath);
+  if (!repoRoot) return 0;
   const baseline = baselinePath(repoRoot);
   const scan = services.runScanner(filePath, repoRoot, FILE_RULES);
   if (!scan || !Array.isArray(scan.violations)) return 0;
