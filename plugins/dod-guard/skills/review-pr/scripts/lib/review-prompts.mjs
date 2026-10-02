@@ -35,6 +35,9 @@ function fileBlock(path, contents) {
   if (content === undefined || content === null) {
     return `### ${path}\n\n(not present at the reviewed head)`;
   }
+  if (typeof content.omitted === "string") {
+    return `### ${path}\n\n(not embedded: ${content.omitted})`;
+  }
   return `### ${path}\n\n${fenced(content)}`;
 }
 

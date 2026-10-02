@@ -153,11 +153,21 @@ function createReviewEvidenceSnapshot(request) {
   }
 }
 
-// Reviewers receive these contents inside their prompts, so a changed snapshot
-// or a non-UTF-8 file must stop dispatch instead of reaching them altered.
+// Text evidence, or an explicit omission for bytes that cannot be shown as text.
+// Decoding them anyway would hand the reviewer replacement characters as if
+// they were the file.
+function embeddableEvidence(content, sha256) {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(content);
+  } catch {
+    return { omitted: `binary or non-UTF-8, sha256 ${sha256}, ${content.length} bytes` };
+  }
+}
+
+// Reviewers receive these contents inside their prompts, so a snapshot that
+// changed after capture must stop dispatch instead of reaching them altered.
 function readReviewEvidenceSnapshot(manifestPath) {
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const decoder = new TextDecoder("utf-8", { fatal: true });
   return new Map(
     manifest.files.map(({ path, snapshotPath, sha256 }) => {
       const content = readFileSync(snapshotPath);
@@ -165,11 +175,7 @@ function readReviewEvidenceSnapshot(manifestPath) {
       if (actual !== sha256) {
         throw new Error(`Review evidence for ${JSON.stringify(path)} does not match its manifest: expected sha256 ${sha256}, found ${actual}.`);
       }
-      try {
-        return [path, decoder.decode(content)];
-      } catch (error) {
-        throw new Error(`Review evidence for ${JSON.stringify(path)} is not valid UTF-8 and cannot be embedded in a reviewer prompt.`, { cause: error });
-      }
+      return [path, embeddableEvidence(content, sha256)];
     }),
   );
 }
