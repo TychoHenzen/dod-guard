@@ -89,8 +89,8 @@ the reviewer prompt. A hash mismatch stops dispatch. A binary or non-UTF-8
 file is listed as not embedded, with its hash and size, never decoded. Text
 evidence without a final newline is marked explicitly in the prompt rather
 than being presented as unchanged bytes. A continuous backtick run over the
-bounded fence limit is encoded as base64 UTF-8 inside a fixed alternate fence;
-dispatch stops when aggregate reviewer prompts exceed 64 MiB.
+bounded fence limit stays readable inside a fixed alternate fence; dispatch
+stops when aggregate reviewer prompts exceed 64 MiB.
 Keep the diff and snapshot files until publication, then remove them.
 Do not assume `pdftotext` or another local PDF utility is installed, and do not
 read PDF bytes as plain text. If a PDF is explicitly required, use a

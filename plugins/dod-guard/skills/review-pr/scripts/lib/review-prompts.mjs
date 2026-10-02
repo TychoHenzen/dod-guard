@@ -31,21 +31,20 @@ function finalNewlineNote(content) {
 
 // The fence must outlast every backtick run in the content, or a reviewed
 // Markdown file closes the block early and the reviewer reads altered evidence.
-function fenced(content, info = "") {
+function fenced(content, info = "", suffix = "") {
   let longestRun = 0;
   for (const run of content.matchAll(BACKTICK_RUN)) {
     longestRun = Math.max(longestRun, run[0].length);
   }
-  if (longestRun >= MAX_FENCE_LENGTH) {
-    const encoded = Buffer.from(content, "utf8").toString("base64");
-    return `${ALTERNATE_FENCE}${info}\n(base64 UTF-8 evidence; decode before review)\n${encoded}\n${ALTERNATE_FENCE}${finalNewlineNote(content)}`;
-  }
-  const fence = "`".repeat(Math.max(MINIMUM_FENCE_LENGTH, longestRun + 1));
   let body = content;
   if (!content.endsWith("\n")) {
     body += "\n";
   }
-  return `${fence}${info}\n${body}${fence}${finalNewlineNote(content)}`;
+  if (longestRun >= MAX_FENCE_LENGTH) {
+    return `${ALTERNATE_FENCE}${info}\n${body}${ALTERNATE_FENCE}${suffix}`;
+  }
+  const fence = "`".repeat(Math.max(MINIMUM_FENCE_LENGTH, longestRun + 1));
+  return `${fence}${info}\n${body}${fence}${suffix}`;
 }
 
 function fileBlock(path, contents) {
@@ -56,7 +55,7 @@ function fileBlock(path, contents) {
   if (typeof content.omitted === "string") {
     return `### ${path}\n\n(not embedded: ${content.omitted})`;
   }
-  return `### ${path}\n\n${fenced(content)}`;
+  return `### ${path}\n\n${fenced(content, "", finalNewlineNote(content))}`;
 }
 
 function unitPrompt({ agent, context, unit, contents, diffs }) {

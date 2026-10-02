@@ -30,6 +30,9 @@ const MANY_BACKTICK_RUNS = 200_000;
 // Keep this below the 64 MiB per-file snapshot cap while matching the large-run failure shape.
 // biome-ignore lint/style/noMagicNumbers: Match the documented large-run regression size.
 const LARGE_BACKTICK_RUN_BYTES = 22 * 1024 * 1024;
+// Exercise the alternate fence at its boundary while keeping the source readable in the prompt.
+const ALTERNATE_FENCE_RUN_LENGTH = 256;
+const EVIDENCE_PREVIEW_BYTES = 1024;
 const AGGREGATE_PROMPT_ERROR = /Aggregate reviewer prompt size exceeds/;
 const UNITS = [
   { id: "docs", files: ["docs/guide.md"], angles: ["review-pr-hygiene"] },
@@ -83,7 +86,7 @@ test("handles many separate backtick runs without spreading them into a function
   assert.ok(hygiene.includes(`### docs/guide.md\n\n\`\`\`\n${guide}\n\`\`\``));
 });
 
-test("uses bounded base64 evidence for one oversized backtick run", () => {
+test("uses bounded readable evidence for one oversized backtick run", () => {
   const guide = "`".repeat(LARGE_BACKTICK_RUN_BYTES);
   const context = { ...CONTEXT, changedFiles: ["docs/guide.md"] };
   const input = buildDispatchInput({
@@ -95,8 +98,29 @@ test("uses bounded base64 evidence for one oversized backtick run", () => {
   });
   const [{ prompt }] = input.reviewers;
 
-  assert.ok(prompt.includes("~~~\n(base64 UTF-8 evidence; decode before review)\n"));
-  assert.equal(prompt.includes(guide), false);
+  assert.ok(prompt.includes(`~~~\n${guide.slice(0, EVIDENCE_PREVIEW_BYTES)}`));
+  assert.ok(prompt.includes(`${guide.slice(-EVIDENCE_PREVIEW_BYTES)}\n~~~`));
+  assert.equal(prompt.includes("base64 UTF-8 evidence"), false);
+});
+
+test("keeps source and diff readable when the alternate fence is needed", () => {
+  const guide = [
+    "const markdown = \"",
+    "`".repeat(ALTERNATE_FENCE_RUN_LENGTH),
+    "\";\n",
+  ].join("");
+  const context = { ...CONTEXT, changedFiles: ["docs/guide.md"] };
+  const [{ prompt }] = buildDispatchInput({
+    context,
+    units: [],
+    contents: new Map([...CONTENTS, ["docs/guide.md", guide]]),
+    diff: DIFF,
+    agents: AGENTS,
+  }).reviewers;
+
+  assert.ok(prompt.includes(`~~~\n${guide}~~~`));
+  assert.ok(prompt.includes("-old line\n+new line"));
+  assert.equal(prompt.includes("base64 UTF-8 evidence"), false);
 });
 
 test("rejects aggregate reviewer prompts that exceed the size cap", () => {
@@ -125,6 +149,25 @@ test("marks content without a final newline instead of normalizing it silently",
   assert.ok(missingNewlinePrompt.includes("### docs/guide.md\n\n```\nx\n```\n(source content has no final newline)"));
   assert.ok(finalNewlinePrompt.includes("### docs/guide.md\n\n```\nx\n```\n\n## Diff"));
   assert.equal(finalNewlinePrompt.includes("### docs/guide.md\n\n```\nx\n```\n(source content has no final newline)"), false);
+});
+
+test("marks missing final newlines only on final-file evidence", () => {
+  const context = { ...CONTEXT, changedFiles: ["docs/guide.md"] };
+  const input = buildDispatchInput({
+    context,
+    units: [],
+    contents: new Map([...CONTENTS, ["docs/guide.md", "x"]]),
+    diff: DIFF,
+    agents: AGENTS,
+  });
+  const [{ prompt }] = input.reviewers;
+  const marker = "(source content has no final newline)";
+  const finalFilesStart = prompt.indexOf("## Final files");
+  const diffStart = prompt.indexOf("## Diff");
+
+  assert.ok(prompt.slice(finalFilesStart, diffStart).includes(marker));
+  assert.equal(prompt.slice(0, finalFilesStart).includes(marker), false);
+  assert.equal(prompt.slice(diffStart).includes(marker), false);
 });
 
 test("distinguishes empty content from content containing one final newline", () => {
