@@ -121,6 +121,29 @@ test("reports unclassified source extensions so unsupported checks need an expli
   assert.deepEqual(report.unclassifiedSourceExtensions, [".zig"]);
 });
 
+test("excludes generated, fixture, archive, dependency, and snapshot paths from maintained-language signals", async (t) => {
+  const root = await fixture(t, "non-maintained-paths");
+  await mkdir(path.join(root, "generated"), { recursive: true });
+  await mkdir(path.join(root, "Fixtures"), { recursive: true });
+  await mkdir(path.join(root, "archive"), { recursive: true });
+  await mkdir(path.join(root, "dependencies"), { recursive: true });
+  await mkdir(path.join(root, "test-fixtures"), { recursive: true });
+  await mkdir(path.join(root, "snapshots"), { recursive: true });
+  await writeFile(path.join(root, "maintained.ts"), "export const answer = 42;\n");
+  await writeFile(path.join(root, "generated", "generated.ts"), "export const generated = true;\n");
+  await writeFile(path.join(root, "Fixtures", "fixture.ts"), "export const fixture = true;\n");
+  await writeFile(path.join(root, "archive", "archived.ts"), "export const archived = true;\n");
+  await writeFile(path.join(root, "dependencies", "dependency.ts"), "export const dependency = true;\n");
+  await writeFile(path.join(root, "test-fixtures", "test-fixture.ts"), "export const fixture = true;\n");
+  await writeFile(path.join(root, "snapshots", "snapshot.ts"), "export const snapshot = true;\n");
+
+  const report = await inspectRepository(root);
+
+  assert.deepEqual(report.sourceExtensions, { ".ts": 1 });
+  assert.deepEqual(report.languageSignals, { "JavaScript/TypeScript": ["maintained.ts"] });
+  assert.deepEqual(report.unclassifiedSourceExtensions, []);
+});
+
 test("reports likely credentials without returning their values", async (t) => {
   const root = await fixture(t, "credentials");
   await writeFile(path.join(root, ".env"), "TOKEN=secret\n");
@@ -291,6 +314,25 @@ test("blocks protection after a failed check", () => {
   assert.equal(assessment.readyForProtection, false);
   assert.ok(assessment.blockers.includes("check build-test concluded FAILURE"));
   assert.equal(assessment.protectionPayload, null);
+});
+
+test("turns malformed GitHub snapshots into a safe protection stop", () => {
+  const assessment = assessGitHubSnapshot({
+    projects: [{ closed: undefined, statusOptions: "Done" }],
+    checks: [{ name: "build-test", conclusion: "SUCCESS" }, null],
+  });
+
+  assert.equal(assessment.readyForProtection, false);
+  assert.ok(assessment.blockers.includes("expected exactly one open linked Project, found 0"));
+  assert.ok(assessment.blockers.includes("check result is missing or malformed"));
+  assert.ok(assessment.blockers.includes("required check names are missing or duplicated"));
+  assert.equal(assessment.protectionPayload, null);
+  assert.deepEqual(assessGitHubSnapshot(null), {
+    readyForProtection: false,
+    blockers: ["GitHub snapshot must be an object"],
+    requiredChecks: [],
+    protectionPayload: null,
+  });
 });
 
 test("builds strict protection from successful observed check names", () => {

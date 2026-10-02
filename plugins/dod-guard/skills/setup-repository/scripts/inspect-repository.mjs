@@ -32,6 +32,21 @@ const SKIP_DIRECTORIES = new Set([
   "vendor",
 ]);
 
+const NON_MAINTAINED_DIRECTORY_NAMES = new Set([
+  "archive",
+  "archives",
+  "dependencies",
+  "dependency",
+  "deps",
+  "fixture",
+  "fixtures",
+  "generated",
+  "snapshot",
+  "snapshots",
+  "test-fixtures",
+  "test_fixtures",
+]);
+
 const MANIFEST_NAMES = new Set([
   "CMakeLists.txt",
   "Cargo.toml",
@@ -138,7 +153,7 @@ async function collectFiles(root, current = root) {
     const fullPath = path.join(current, entry.name);
     if (entry.isSymbolicLink()) return [];
     if (entry.isDirectory()) {
-      if (SKIP_DIRECTORIES.has(entry.name)) return [];
+      if (SKIP_DIRECTORIES.has(entry.name.toLowerCase())) return [];
       return collectFiles(root, fullPath);
     }
     return entry.isFile() ? [fullPath] : [];
@@ -236,6 +251,12 @@ function isManifest(file) {
   return MANIFEST_NAMES.has(path.basename(file)) || MANIFEST_EXTENSIONS.has(path.extname(file).toLowerCase());
 }
 
+function isMaintainedSource(file) {
+  return file
+    .split("/")
+    .every((segment) => !NON_MAINTAINED_DIRECTORY_NAMES.has(segment.toLowerCase()));
+}
+
 export async function inspectRepository(rootPath) {
   if (typeof rootPath !== "string" || rootPath.length === 0) {
     throw new Error("Project root must be a non-empty path");
@@ -256,7 +277,7 @@ export async function inspectRepository(rootPath) {
   const languageSignals = new Map();
   const unclassifiedSourceExtensions = new Set();
 
-  for (const file of relativeFiles) {
+  for (const file of relativeFiles.filter(isMaintainedSource)) {
     const extension = sourceExtension(file);
     if (!extension) continue;
     sourceExtensions.set(extension, (sourceExtensions.get(extension) ?? 0) + 1);
@@ -309,26 +330,52 @@ export function summarizeRepository(report) {
 
 export function assessGitHubSnapshot(snapshot) {
   const blockers = [];
-  const openProjects = (snapshot.projects ?? []).filter((project) => !project.closed);
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
+    return {
+      readyForProtection: false,
+      blockers: ["GitHub snapshot must be an object"],
+      requiredChecks: [],
+      protectionPayload: null,
+    };
+  }
+
+  const projects = Array.isArray(snapshot.projects) ? snapshot.projects : [];
+  if (!Array.isArray(snapshot.projects)) blockers.push("linked Project snapshot is missing or malformed");
+  const openProjects = projects.filter((project) => project && project.closed === false);
   if (openProjects.length !== 1) {
     blockers.push(`expected exactly one open linked Project, found ${openProjects.length}`);
   }
 
   if (openProjects.length === 1) {
-    const options = openProjects[0].statusOptions ?? [];
+    const options = Array.isArray(openProjects[0].statusOptions) ? openProjects[0].statusOptions : [];
+    if (!Array.isArray(openProjects[0].statusOptions)) {
+      blockers.push("linked Project status options are missing or malformed");
+    }
     for (const required of ["Backlog", "Todo", "In Progress", "Done"]) {
-      const count = options.filter((option) => option.toLowerCase() === required.toLowerCase()).length;
+      const count = options.filter(
+        (option) => typeof option === "string" && option.toLowerCase() === required.toLowerCase(),
+      ).length;
       if (count !== 1) blockers.push(`expected one ${required} status, found ${count}`);
     }
   }
 
-  const checks = snapshot.checks ?? [];
+  const checks = Array.isArray(snapshot.checks) ? snapshot.checks : [];
+  if (!Array.isArray(snapshot.checks)) blockers.push("check snapshot is missing or malformed");
   if (checks.length === 0) blockers.push("no required check results were supplied");
   for (const check of checks) {
-    if (check.conclusion !== "SUCCESS") blockers.push(`check ${check.name} concluded ${check.conclusion ?? "unknown"}`);
+    if (!check || typeof check !== "object") {
+      blockers.push("check result is missing or malformed");
+      continue;
+    }
+    if (check.conclusion !== "SUCCESS") {
+      const name = typeof check.name === "string" ? check.name : "<unnamed>";
+      blockers.push(`check ${name} concluded ${check.conclusion ?? "unknown"}`);
+    }
   }
 
-  const uniqueCheckNames = [...new Set(checks.map((check) => check.name).filter(Boolean))].sort();
+  const uniqueCheckNames = [
+    ...new Set(checks.map((check) => check?.name).filter((name) => typeof name === "string" && name.length > 0)),
+  ].sort();
   if (uniqueCheckNames.length !== checks.length) blockers.push("required check names are missing or duplicated");
 
   return {
