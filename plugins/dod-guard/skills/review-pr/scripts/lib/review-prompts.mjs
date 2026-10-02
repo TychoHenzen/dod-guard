@@ -2,6 +2,8 @@ import { diffSectionPath, isDiffHeader } from "./unified-diff.mjs";
 import { PULL_REQUEST_UNIT } from "./review-units.mjs";
 
 const BACKTICK_RUN = /`+/gu;
+const TILDE_RUN = /~+/gu;
+const TILDE_FENCE_LINE = /^( {0,3})(~{3,})([ \t]*)(\r?)$/gmu;
 const MINIMUM_FENCE_LENGTH = 3;
 const MAX_FENCE_LENGTH = 256;
 // biome-ignore lint/style/noMagicNumbers: Keep aggregate nested-review prompts bounded to 64 MiB.
@@ -29,6 +31,20 @@ function finalNewlineNote(content) {
   return "\n(source content has no final newline)";
 }
 
+function alternateFence(content) {
+  let longestRun = 0;
+  for (const run of content.matchAll(TILDE_RUN)) {
+    longestRun = Math.max(longestRun, run[0].length);
+  }
+  if (longestRun < MAX_FENCE_LENGTH) {
+    return { body: content, fence: "~".repeat(Math.max(MINIMUM_FENCE_LENGTH, longestRun + 1)) };
+  }
+  return {
+    body: content.replace(TILDE_FENCE_LINE, "$1\\$2$3$4"),
+    fence: ALTERNATE_FENCE,
+  };
+}
+
 // The fence must outlast every backtick run in the content, or a reviewed
 // Markdown file closes the block early and the reviewer reads altered evidence.
 function fenced(content, info = "", suffix = "") {
@@ -41,7 +57,8 @@ function fenced(content, info = "", suffix = "") {
     body += "\n";
   }
   if (longestRun >= MAX_FENCE_LENGTH) {
-    return `${ALTERNATE_FENCE}${info}\n${body}${ALTERNATE_FENCE}${suffix}`;
+    const alternate = alternateFence(body);
+    return `${alternate.fence}${info}\n${alternate.body}${alternate.fence}${suffix}`;
   }
   const fence = "`".repeat(Math.max(MINIMUM_FENCE_LENGTH, longestRun + 1));
   return `${fence}${info}\n${body}${fence}${suffix}`;
@@ -58,6 +75,13 @@ function fileBlock(path, contents) {
   return `### ${path}\n\n${fenced(content, "", finalNewlineNote(content))}`;
 }
 
+function repositoryInstructionBlocks(instructions) {
+  if (instructions.length === 0) {
+    return ["(none captured)"];
+  }
+  return instructions.flatMap(({ path, content }) => [`### ${path}`, fenced(content)]);
+}
+
 function unitPrompt({ agent, context, unit, contents, diffs }) {
   const scope = {
     repository: context.repository,
@@ -71,6 +95,8 @@ function unitPrompt({ agent, context, unit, contents, diffs }) {
     agent.trimEnd(),
     "## Review unit\n\nReview only the files in this unit, at the angle defined above. The final file contents and the unified diff below are your evidence; cite final-state lines from them.",
     fenced(JSON.stringify(scope, null, 2), "json"),
+    "## Repository instructions",
+    ...repositoryInstructionBlocks(context.repositoryInstructions ?? []),
     "## Final files",
     ...unit.files.map((path) => fileBlock(path, contents)),
     `## Diff\n\n${fenced(diff, "diff")}`,

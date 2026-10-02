@@ -23,6 +23,7 @@ const CONTEXT = {
   repository: "owner/repo",
   headSha: "abc1234",
   changedFiles: ["docs/guide.md", "src/app.mjs", "src/removed.mjs"],
+  repositoryInstructions: [],
   reviewRequirements: ["User can open it"],
   workItem: { acceptanceCriteria: "- [ ] User can open it" },
 };
@@ -107,7 +108,7 @@ test("keeps source and diff readable when the alternate fence is needed", () => 
   const guide = [
     "const markdown = \"",
     "`".repeat(ALTERNATE_FENCE_RUN_LENGTH),
-    "\";\n",
+    "\";\n~~~\n",
   ].join("");
   const context = { ...CONTEXT, changedFiles: ["docs/guide.md"] };
   const [{ prompt }] = buildDispatchInput({
@@ -118,9 +119,26 @@ test("keeps source and diff readable when the alternate fence is needed", () => 
     agents: AGENTS,
   }).reviewers;
 
-  assert.ok(prompt.includes(`~~~\n${guide}~~~`));
+  assert.ok(prompt.includes(`~~~~\n${guide}~~~~`));
   assert.ok(prompt.includes("-old line\n+new line"));
   assert.equal(prompt.includes("base64 UTF-8 evidence"), false);
+});
+
+test("embeds every repository instruction with its path in each reviewer prompt", () => {
+  const context = {
+    ...CONTEXT,
+    repositoryInstructions: [
+      { path: "AGENTS.md", content: "Keep the review read-only.\n" },
+      { path: "plugins/AGENTS.md", content: "Use the shipped skill contract.\n" },
+    ],
+  };
+  const input = buildDispatchInput({ context, units: UNITS, contents: CONTENTS, diff: DIFF, agents: AGENTS });
+
+  for (const { prompt } of input.reviewers) {
+    assert.ok(prompt.includes("## Repository instructions"));
+    assert.ok(prompt.includes("### AGENTS.md\n\n```\nKeep the review read-only.\n```"));
+    assert.ok(prompt.includes("### plugins/AGENTS.md\n\n```\nUse the shipped skill contract.\n```"));
+  }
 });
 
 test("rejects aggregate reviewer prompts that exceed the size cap", () => {
