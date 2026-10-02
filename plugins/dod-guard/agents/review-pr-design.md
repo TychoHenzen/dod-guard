@@ -24,4 +24,6 @@ and `findings`. Coverage records the assigned concerns checked, a
 `findings` array when no actionable defect exists. Finding severity is exactly
 `BLOCKER`, `MAJOR`, or `MINOR`. Each finding must contain `severity`, `file`, `line`, `problem`, `impact`,
 `requirement`, `correction`, `rootCause`, and `evidence`. Cite a changed
-final-state line. Do not report taste, praise, summaries, or speculative risks.
+final-state line, except that in GitHub mode a pure rename-only defect may use
+the documented PR-level location with `location: "pull-request"`, `file: null`,
+and `line: null`. Do not report taste, praise, summaries, or speculative risks.
