@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   PROJECT_FIELDS,
   defaultQueueDecision,
+  reconcileProjectCounts,
   readQueueSnapshot,
   selectQueueItem,
 } from "./queue-readback.mjs";
@@ -127,6 +128,15 @@ test("reads every Project page, filters the repository, and preserves PR head ev
     { id: "517", node_id: "PVTI_517" },
     { id: "31", node_id: "PVTI_31" },
   ]);
+  assert.deepEqual(snapshot.counts, {
+    rawItems: 4,
+    parentItems: 3,
+    childItems: 1,
+    parentDoneItems: 1,
+    childDoneItems: 1,
+    balanced: true,
+    missingEvidence: [],
+  });
   assert.equal(snapshot.records.find(({ issueNumber }) => issueNumber === 536).parentIssueNumber, 444);
   assert.deepEqual(snapshot.records.find(({ issueNumber }) => issueNumber === 444).childIssues, [
     { number: 536, state: "closed" },
@@ -152,6 +162,85 @@ test("reads every Project page, filters the repository, and preserves PR head ev
     requiredChecks: null,
   });
   assert.deepEqual(mutations, []);
+});
+
+test("reports missing Parent issue evidence instead of inferring a balanced count", () => {
+  const counts = reconcileProjectCounts(
+    [{ id: "99" }],
+    [{
+      issueNumber: 99,
+      parentIssueNumber: null,
+      parentIssueFieldObserved: false,
+      projectStatus: "Done",
+    }],
+  );
+
+  assert.equal(counts.rawItems, 1);
+  assert.equal(counts.parentItems, 1);
+  assert.equal(counts.parentDoneItems, 1);
+  assert.equal(counts.balanced, false);
+  assert.deepEqual(counts.missingEvidence, ["Project item #99 Parent issue"]);
+});
+
+test("reports contradictory Project and issue parent relationships", async () => {
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        return {
+          items: [projectItem({
+            id: "child",
+            repository: "TychoHenzen/dod-guard",
+            number: 536,
+            status: "Todo",
+            parentIssue: null,
+          })],
+          pageInfo: { hasNextPage: false },
+        };
+      },
+      async readIssue() {
+        return { number: 536, state: "open", parent: { number: 444 }, children: [] };
+      },
+      async readPullRequest() {
+        return null;
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+
+  assert.ok(snapshot.evidence.staleRelationships.some(({ mismatches }) =>
+    mismatches.includes("Project Parent issue is missing the observed issue parent")));
+  assert.ok(snapshot.missingEvidence.includes("relationship/head evidence changed during read"));
+});
+
+test("reports a missing issue parent when the Project records a child relationship", async () => {
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        return {
+          items: [projectItem({
+            id: "child",
+            repository: "TychoHenzen/dod-guard",
+            number: 536,
+            status: "Todo",
+            parentIssue: 444,
+          })],
+          pageInfo: { hasNextPage: false },
+        };
+      },
+      async readIssue() {
+        return { number: 536, state: "open", children: [] };
+      },
+      async readPullRequest() {
+        return null;
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+
+  assert.ok(snapshot.evidence.staleRelationships.some(({ mismatches }) =>
+    mismatches.includes("issue parent is missing the observed Project Parent issue")));
 });
 
 test("selects the normal Todo parent after excluding merged delivery groups", async () => {

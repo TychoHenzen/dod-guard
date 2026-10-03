@@ -635,6 +635,27 @@ test("goal-sdlc defines one exact-head pre-review checkpoint", async () => {
   assert.match(skill, /never becomes a second ledger/);
 });
 
+test("goal-sdlc suppresses duplicate review triggers and publishes one Project count snapshot", async () => {
+  const skill = await readSkill();
+  for (const marker of [
+    "## Review trigger lifecycle",
+    "completed Review Summary suppresses every later review trigger",
+    "required two-minute wait",
+    "exactly one `@codex review` trigger",
+    "emit a second trigger",
+    "raw items, parent items, child items",
+    "parent items with `Done`",
+    "child items with `Done`",
+    "never run a second scan or infer a count",
+    "active process or session handle",
+    "yield limit is not an operation deadline",
+    "CreateProcess ... rejected by policy",
+    "operator explicitly cancels",
+  ]) {
+    assert.ok(skill.includes(marker), `missing friction safeguard marker: ${marker}`);
+  }
+});
+
 test("reconciliation excludes stale merged records and recognizes complete grouped delivery", async () => {
   const skill = await readSkill();
   for (const fixture of reconciliationFixtures) {

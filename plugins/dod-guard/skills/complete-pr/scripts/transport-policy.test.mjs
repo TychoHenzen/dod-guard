@@ -94,6 +94,71 @@ test("routes supported transport unavailability once and never retries MCP", asy
   assert.equal(REST_ENDPOINTS.pullRequest, "GET /repos/{repository}/pulls/{pullNumber}");
 });
 
+test("routes one proven interactive-form no-op through identical REST mutation and readback", async () => {
+  const request = {
+    repository: "owner/repo",
+    issueNumber: 745,
+    project: { owner: "owner", number: 2 },
+    pullNumber: 750,
+  };
+  const evidence = [];
+  const calls = [];
+  const readbacks = [];
+  const result = await runTransport({
+    operation: "issueMutation",
+    request,
+    mutation: true,
+    restEndpoint: "PATCH /repos/owner/repo/issues/745",
+    primary: async () => {
+      calls.push("mcp");
+      return {
+        isError: true,
+        structuredContent: {
+          status: "awaiting_user_submission",
+          reason: "interactive form shown",
+        },
+      };
+    },
+    rest: async (value) => {
+      calls.push(["rest", value]);
+      assert.strictEqual(value, request);
+      return { number: 745, state: "open" };
+    },
+    readback: async (value) => {
+      readbacks.push(value);
+      return value.phase === "before-fallback"
+        ? { mutated: false, value: { number: 745, state: "open" } }
+        : { mutated: true, value: { number: 745, state: "open" } };
+    },
+    evidence,
+  });
+
+  assert.equal(result.transport, "rest");
+  assert.deepEqual(calls, ["mcp", ["rest", request]]);
+  assert.deepEqual(readbacks.map(({ phase }) => phase), ["before-fallback", "after-fallback"]);
+  assert.equal(result.primaryFailure.category, FAILURE_CATEGORIES.INTERACTIVE_FORM);
+  assert.equal(evidence[0].failure.category, FAILURE_CATEGORIES.INTERACTIVE_FORM);
+});
+
+test("stops an interactive-form write unless readback proves no mutation", async () => {
+  let restCalls = 0;
+  await assert.rejects(
+    runTransport({
+      operation: "pullRequestMutation",
+      request: { repository: "owner/repo", pullNumber: 750 },
+      mutation: true,
+      restEndpoint: "PATCH /repos/owner/repo/pulls/750",
+      primary: async () => ({ isError: true, structuredContent: { status: "awaiting_user_submission" } }),
+      rest: async () => { restCalls += 1; },
+      readback: async () => ({ mutated: true }),
+    }),
+    (error) => error instanceof TransportStopError &&
+      error.details.category === FAILURE_CATEGORIES.PROVIDER &&
+      error.details.primaryFailure.category === FAILURE_CATEGORIES.INTERACTIVE_FORM,
+  );
+  assert.equal(restCalls, 0);
+});
+
 test("stops without REST for unsupported and non-MCP failures", async () => {
   const failures = [
     { category: "authentication", status: 401 },
