@@ -21,6 +21,7 @@ function observation(name, state = "success", overrides = {}) {
     provider: "github-actions",
     workflow: name === "codeql-python" ? "codeql.yml" : "ci.yml",
     runId: `${name}-run`,
+    repository: REPOSITORY,
     ref: REF,
     headSha: HEAD_SHA,
     state,
@@ -32,6 +33,8 @@ function completeMatrix(overrides = {}) {
   return buildRequiredContextMatrix({
     requiredContexts: REQUIRED_CONTEXTS,
     observations: [observation("build-test"), observation("codeql-python")],
+    repository: REPOSITORY,
+    ref: REF,
     headSha: HEAD_SHA,
     ...overrides,
   });
@@ -63,6 +66,8 @@ test("builds and validates one exact-head row for every required context state",
     const matrix = buildRequiredContextMatrix({
       requiredContexts: [{ name: "build-test", provider: "github-actions", workflow: "ci.yml" }],
       observations: [observation("build-test", state)],
+      repository: REPOSITORY,
+      ref: REF,
       headSha: HEAD_SHA,
     });
     assert.equal(matrix.rows[0].state, state === "success" ? "present" : state === "failure" ? "failed" : state);
@@ -74,6 +79,8 @@ test("builds and validates one exact-head row for every required context state",
   const unavailable = buildRequiredContextMatrix({
     requiredContexts: REQUIRED_CONTEXTS,
     observations: [observation("build-test")],
+    repository: REPOSITORY,
+    ref: REF,
     headSha: HEAD_SHA,
   });
   assert.equal(unavailable.rows[1].state, "unavailable");
@@ -90,6 +97,8 @@ test("required-context validation rejects missing, stale, duplicate, and non-pre
     validateRequiredContextMatrix({
       matrix,
       requiredContexts: REQUIRED_CONTEXTS,
+    repository: REPOSITORY,
+    ref: REF,
       headSha: HEAD_SHA,
     }).valid,
     true,
@@ -101,6 +110,8 @@ test("required-context validation rejects missing, stale, duplicate, and non-pre
   const staleResult = validateRequiredContextMatrix({
     matrix: stale,
     requiredContexts: REQUIRED_CONTEXTS,
+    repository: REPOSITORY,
+    ref: REF,
     headSha: HEAD_SHA,
   });
   assert.equal(staleResult.valid, false);
@@ -112,10 +123,26 @@ test("required-context validation rejects missing, stale, duplicate, and non-pre
   const pendingResult = validateRequiredContextMatrix({
     matrix: pending,
     requiredContexts: REQUIRED_CONTEXTS,
+    repository: REPOSITORY,
+    ref: REF,
     headSha: HEAD_SHA,
   });
   assert.equal(pendingResult.valid, false);
   assert.ok(pendingResult.errors.includes("required context build-test is pending"));
+
+  const skipped = completeMatrix({
+    observations: [observation("build-test", "skipped"), observation("codeql-python")],
+  });
+  assert.equal(
+    validateRequiredContextMatrix({
+      matrix: skipped,
+      requiredContexts: REQUIRED_CONTEXTS,
+      repository: REPOSITORY,
+      ref: REF,
+      headSha: HEAD_SHA,
+    }).valid,
+    true,
+  );
 
   const duplicate = {
     rows: [...matrix.rows, { ...matrix.rows[0] }],
@@ -123,6 +150,8 @@ test("required-context validation rejects missing, stale, duplicate, and non-pre
   const duplicateResult = validateRequiredContextMatrix({
     matrix: duplicate,
     requiredContexts: REQUIRED_CONTEXTS,
+    repository: REPOSITORY,
+    ref: REF,
     headSha: HEAD_SHA,
   });
   assert.equal(duplicateResult.valid, false);
@@ -165,6 +194,7 @@ test("dispatch readback records run, workflow, ref, and exact head evidence", ()
       headSha: HEAD_SHA,
       state: "queued",
     },
+    preDispatchRunIds: ["73000"],
   });
 
   assert.equal(result.valid, true);
@@ -232,7 +262,102 @@ test("dispatch readback rejects stale or mismatched provider evidence", () => {
       headSha: "old-head",
       state: "success",
     },
+    preDispatchRunIds: ["73000"],
   });
   assert.equal(result.valid, false);
   assert.ok(result.errors.includes("workflow dispatch headSha changed during readback"));
+});
+
+test("rejects same-name observations from the wrong repository, ref, or workflow", () => {
+  for (const overrides of [
+    { repository: "fork/example" },
+    { ref: "master" },
+    { workflow: "untrusted.yml" },
+  ]) {
+    const matrix = completeMatrix({ observations: [observation("build-test", "success", overrides)] });
+    assert.equal(matrix.rows[0].state, "unavailable");
+    assert.equal(
+      validateRequiredContextMatrix({
+        matrix,
+        requiredContexts: REQUIRED_CONTEXTS,
+        repository: REPOSITORY,
+        ref: REF,
+        headSha: HEAD_SHA,
+      }).valid,
+      false,
+    );
+  }
+});
+
+test("accepts status-only evidence without workflow or run ID", () => {
+  const matrix = buildRequiredContextMatrix({
+    requiredContexts: [{ name: "legacy-status", provider: "github-status", workflow: "ci.yml" }],
+    observations: [{
+      context: "legacy-status",
+      type: "status",
+      provider: "github-status",
+      state: "success",
+      sha: HEAD_SHA,
+    }],
+    repository: REPOSITORY,
+    ref: REF,
+    headSha: HEAD_SHA,
+  });
+
+  assert.equal(matrix.rows[0].source, "status");
+  assert.equal(matrix.rows[0].workflow, null);
+  assert.equal(matrix.rows[0].runId, null);
+  assert.equal(
+    validateRequiredContextMatrix({
+      matrix,
+      requiredContexts: [{ name: "legacy-status", provider: "github-status", workflow: "ci.yml" }],
+      repository: REPOSITORY,
+      ref: REF,
+      headSha: HEAD_SHA,
+    }).valid,
+    true,
+  );
+});
+
+test("rejects a dispatch readback that reuses a pre-dispatch run", () => {
+  const matrix = completeMatrix({
+    observations: [observation("build-test"), observation("codeql-python", "skipped")],
+  });
+  const plan = planDraftWorkflowDispatch({ matrix, pullRequest: pullRequest(), readiness: readiness() });
+  const result = validateWorkflowDispatchReadback({
+    plan,
+    run: {
+      workflow: "codeql.yml",
+      runId: "73001",
+      repository: REPOSITORY,
+      ref: REF,
+      headSha: HEAD_SHA,
+      state: "queued",
+    },
+    preDispatchRunIds: ["73001"],
+  });
+
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.includes("workflow dispatch readback matched a run that existed before dispatch"));
+});
+
+test("rejects dispatch readback without correlation evidence", () => {
+  const matrix = completeMatrix({
+    observations: [observation("build-test"), observation("codeql-python", "skipped")],
+  });
+  const plan = planDraftWorkflowDispatch({ matrix, pullRequest: pullRequest(), readiness: readiness() });
+  const result = validateWorkflowDispatchReadback({
+    plan,
+    run: {
+      workflow: "codeql.yml",
+      runId: "73001",
+      repository: REPOSITORY,
+      ref: REF,
+      headSha: HEAD_SHA,
+      state: "queued",
+    },
+  });
+
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.includes("workflow dispatch readback needs pre-dispatch run IDs or dispatch timestamp"));
 });

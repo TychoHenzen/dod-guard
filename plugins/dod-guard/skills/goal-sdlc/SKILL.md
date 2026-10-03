@@ -99,8 +99,10 @@ part of the existing implementation handoff and never becomes a second ledger.
    or provider response. Record one row per context with its name, provider,
    workflow, run ID, branch ref, exact head SHA, observed provider state, and
    the normalized state `present`, `pending`, `failed`, `skipped`, or
-   `unavailable`. A missing, malformed, stale, duplicate, forked, or
-   provider-mismatched row is `unavailable`, not success.
+   `unavailable`. Classic status-only contexts may omit workflow and run ID, but
+   still require the observed provider, repository ref, and exact head. A
+   missing, malformed, stale, duplicate, forked, or provider-mismatched row is
+   `unavailable`, not success.
 3. If a draft lifecycle skipped a required workflow, read back draft readiness
    first, then dispatch that workflow at most once for the same repository,
    branch ref, and exact head. Record the workflow, ref, run ID, and resulting

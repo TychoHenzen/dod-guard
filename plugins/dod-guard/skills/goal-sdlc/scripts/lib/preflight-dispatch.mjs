@@ -5,6 +5,7 @@ import {
   observationRef,
   observationRepository,
   observationRunId,
+  text,
 } from "./preflight-values.mjs";
 
 function pullRequestRepository(pullRequest) {
@@ -146,7 +147,45 @@ function dispatchEvidence(run) {
   };
 }
 
-function readbackErrors(plan, evidence) {
+function normalizeRunIds(value) {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  return new Set(value.map((run) => observationRunId(run) ?? text(run)).filter((runId) => runId !== null));
+}
+
+function runCreatedAt(run) {
+  return firstText(run.createdAt, run.created_at);
+}
+
+function dispatchCorrelationErrors(plan, run, { preDispatchRunIds, dispatchStartedAt } = {}) {
+  const priorRunIds = preDispatchRunIds === undefined
+    ? normalizeRunIds(plan?.preDispatchRunIds)
+    : normalizeRunIds(preDispatchRunIds);
+  const startedAt = firstText(dispatchStartedAt, plan?.dispatchStartedAt);
+  if (priorRunIds === null && startedAt === null) {
+    return ["workflow dispatch readback needs pre-dispatch run IDs or dispatch timestamp"];
+  }
+
+  const errors = [];
+  const runId = observationRunId(run);
+  if (priorRunIds?.has(runId)) {
+    errors.push("workflow dispatch readback matched a run that existed before dispatch");
+  }
+  if (startedAt !== null) {
+    const createdAt = runCreatedAt(run);
+    const startedTime = Date.parse(startedAt);
+    const createdTime = createdAt === null ? Number.NaN : Date.parse(createdAt);
+    if (!Number.isFinite(startedTime) || !Number.isFinite(createdTime)) {
+      errors.push("workflow dispatch readback needs valid dispatch and run timestamps");
+    } else if (createdTime <= startedTime) {
+      errors.push("workflow dispatch readback matched a run created before dispatch");
+    }
+  }
+  return errors;
+}
+
+function readbackErrors(plan, run, evidence, correlation) {
   const missing = ["workflow", "runId", "repository", "ref", "headSha"]
     .filter((field) => evidence[field] === null)
     .map((field) => `workflow dispatch evidence is missing ${field}`);
@@ -159,10 +198,15 @@ function readbackErrors(plan, evidence) {
   const stateError = ["present", "pending"].includes(evidence.state)
     ? []
     : [`workflow dispatch readback is ${evidence.state}`];
-  return [...missing, ...changed, ...stateError];
+  return [...missing, ...changed, ...stateError, ...dispatchCorrelationErrors(plan, run, correlation)];
 }
 
-export function validateWorkflowDispatchReadback({ plan, run } = {}) {
+export function validateWorkflowDispatchReadback({
+  plan,
+  run,
+  preDispatchRunIds,
+  dispatchStartedAt,
+} = {}) {
   const planErrors = plan?.kind === "dispatch"
     ? []
     : ["workflow dispatch plan is missing"];
@@ -174,7 +218,7 @@ export function validateWorkflowDispatchReadback({ plan, run } = {}) {
     };
   }
   const evidence = dispatchEvidence(run);
-  const errors = readbackErrors(plan, evidence);
+  const errors = readbackErrors(plan, run, evidence, { preDispatchRunIds, dispatchStartedAt });
   return {
     valid: planErrors.length === 0 && errors.length === 0,
     errors: [...planErrors, ...errors],

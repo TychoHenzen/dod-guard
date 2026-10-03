@@ -56,8 +56,10 @@ function headDrift(identity) {
 function acceptanceHeadDrift(identity, acceptanceHeadSha) {
   const expectedHead = identity.expected.headSha;
   const acceptanceHead = text(acceptanceHeadSha);
+  if (acceptanceHead === null) {
+    return ["independently supplied acceptance head is required"];
+  }
   return expectedHead !== null
-    && acceptanceHead !== null
     && expectedHead !== acceptanceHead
     ? [`acceptance head changed from ${expectedHead} to ${acceptanceHead}`]
     : [];
@@ -91,11 +93,23 @@ function conflictDetected(observed) {
   ].some(Boolean);
 }
 
+function mergeabilityFailure(observed) {
+  const mergeable = String(observed.mergeable ?? "").toUpperCase();
+  const mergeState = String(observed.mergeState ?? "").toUpperCase();
+  if (conflictDetected(observed)) {
+    return "pull request reports merge conflict";
+  }
+  if (observed.mergeable === true || mergeable === "MERGEABLE" || mergeState === "CLEAN") {
+    return null;
+  }
+  return "pull request mergeability is unavailable";
+}
+
 function checkpointState(reasons, conflict) {
   if (conflict) {
     return "conflict";
   }
-  if (reasons.some((reason) => reason.includes("head"))) {
+  if (reasons.some((reason) => /PR head changed|branch head .*differs|acceptance head changed/.test(reason))) {
     return "head-drift";
   }
   if (reasons.some((reason) => reason.includes("base"))) {
@@ -110,9 +124,10 @@ export function evaluateBaseCheckpoint({ expected = {}, observed = {}, acceptanc
     ...requiredIdentityReasons(identity),
     ...identityDriftReasons(identity, acceptanceHeadSha),
   ];
-  const conflict = conflictDetected(observed);
-  if (conflict) {
-    reasons.push("pull request reports merge conflict");
+  const mergeabilityReason = mergeabilityFailure(observed);
+  const conflict = mergeabilityReason === "pull request reports merge conflict";
+  if (mergeabilityReason !== null) {
+    reasons.push(mergeabilityReason);
   }
   const state = checkpointState(reasons, conflict);
   return {

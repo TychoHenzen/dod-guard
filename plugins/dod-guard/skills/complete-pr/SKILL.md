@@ -57,10 +57,13 @@ implementation handoff. Before any ready transition, branch update, merge, or
 cleanup, require the checkpoint's exact branch/PR head, base ref/SHA,
 mergeability, and complete matrix for every required provider context. Every context row must
 retain its provider, workflow, run ID, ref, head SHA, and state. Missing,
-pending, failed, skipped, unavailable, stale, duplicate, forked, or
+pending, failed, unavailable, stale, duplicate, forked, or
 provider-mismatched evidence stops with the expected and observed values rather
-than being inferred from a passing aggregate check. The normalized states are
+than being inferred from a passing aggregate check. An exact-head `skipped`
+context is accepted as passing, matching the completion helper. The normalized states are
 `present`, `pending`, `failed`, `skipped`, and `unavailable`.
+Classic status-only contexts may omit workflow and run ID, but still require the
+observed provider, repository ref, and exact head.
 
 If a draft-skipped workflow needs recovery, verify draft readiness at the same
 repository ref and exact head, dispatch it once through the existing guarded

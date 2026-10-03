@@ -11,8 +11,8 @@ const BASE_SHA = "base-730";
 function baseCheckpoint({
   baseSha = BASE_SHA,
   branchHeadSha = HEAD_SHA,
-  mergeable = true,
-  acceptanceHeadSha,
+  mergeable = "MERGEABLE",
+  acceptanceHeadSha = HEAD_SHA,
 } = {}) {
   return evaluateBaseCheckpoint({
     expected: { baseRef: "master", baseSha: BASE_SHA, headSha: HEAD_SHA },
@@ -71,4 +71,17 @@ test("conflicts and unexpected branch movement stop before review, merge, or cle
   const movedBranch = baseCheckpoint({ branchHeadSha: "unexpected-head" });
   assert.equal(movedBranch.state, "head-drift");
   assert.equal(planBaseSynchronization(movedBranch).code, "unexpected_head_change");
+});
+
+test("treats unknown mergeability and missing acceptance heads as unavailable", () => {
+  const unknownMergeability = baseCheckpoint({ mergeable: "UNKNOWN" });
+  assert.equal(unknownMergeability.state, "unavailable");
+  assert.ok(unknownMergeability.reasons.includes("pull request mergeability is unavailable"));
+
+  const missingMergeability = baseCheckpoint({ mergeable: null });
+  assert.equal(missingMergeability.state, "unavailable");
+
+  const missingAcceptanceHead = baseCheckpoint({ acceptanceHeadSha: null });
+  assert.equal(missingAcceptanceHead.state, "unavailable");
+  assert.ok(missingAcceptanceHead.reasons.includes("independently supplied acceptance head is required"));
 });

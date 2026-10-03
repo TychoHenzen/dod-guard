@@ -1048,6 +1048,28 @@ test("treats skipped required checks as passing", async () => {
   assert.equal(result.branch, "deleted");
 });
 
+test("treats a skipped required check alongside passing checks as complete", async () => {
+  const client = new FixtureClient({
+    checks: [[
+      { bucket: "skipping", name: "build-test", state: "SKIPPED" },
+      { bucket: "pass", name: "plugin-config", state: "SUCCESS" },
+      { bucket: "pass", name: "static-analysis", state: "SUCCESS" },
+      { bucket: "pass", name: "package-integrity", state: "SUCCESS" },
+    ]],
+    pulls: [
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+    ],
+  });
+
+  const result = await completePullRequest(client, immediateOptions);
+
+  assert.equal(result.mergeCommitSha, "merge-1");
+  assert.equal(result.branch, "deleted");
+});
+
 test("reports the fallback reason for unsupported required-check evidence", async () => {
   const client = new FixtureClient({
     checks: [[{ bucket: "unknown", name: "build-test", state: "PROVIDER_MISMATCH" }]],

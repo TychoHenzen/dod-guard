@@ -78,3 +78,23 @@ export function observationRunId(observation) {
 export function observationRepository(observation) {
   return firstText(observation?.repository, observation?.headRepository);
 }
+
+export function observationWorkflow(observation) {
+  return firstText(observation?.workflow, observation?.workflowName);
+}
+
+export function observationType(observation) {
+  return firstText(observation?.type, observation?.kind, observation?.source)?.toLowerCase() ?? null;
+}
+
+export function isStatusObservation(observation) {
+  if (observation?.statusOnly === true) {
+    return true;
+  }
+  if (["status", "commit-status", "commit_status"].includes(observationType(observation))) {
+    return true;
+  }
+  return observation?.name === undefined
+    && observation?.context !== undefined
+    && observationWorkflow(observation) === null;
+}
