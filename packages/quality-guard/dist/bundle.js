@@ -22393,7 +22393,7 @@ function acknowledgeUsage(message) {
 // src/commit-gate/cli-acknowledge-arguments.ts
 function optionName(arg) {
   return ["--finding", "--reason", "--author", "--committed"].find(
-    (flag2) => arg === flag2 || arg.startsWith(`${flag2}=`)
+    (flag) => arg === flag || arg.startsWith(`${flag}=`)
   );
 }
 function optionValue2(args, index, name) {
@@ -22696,6 +22696,17 @@ import * as path3 from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/scanner-failure.ts
+import { execFile } from "node:child_process";
+var asyncExecFile = (command, args, options) => new Promise((resolve4, reject) => {
+  execFile(command, args, options, (error2, stdout) => {
+    if (error2) {
+      Object.assign(error2, { stdout: String(stdout) });
+      reject(error2);
+      return;
+    }
+    resolve4({ stdout: String(stdout) });
+  });
+});
 function parsedFailure(error2) {
   const failure = error2;
   const stdout = failure.stdout;
@@ -22714,49 +22725,6 @@ function scanFailure(error2) {
   throw new Error(`quality scan failed: ${failureMessage(error2)}`);
 }
 
-// src/scanner-execution.ts
-import { execFile } from "node:child_process";
-var asyncExecFile = (command, args, options) => new Promise((resolve4, reject) => {
-  execFile(command, args, options, (error2, stdout) => {
-    if (error2) {
-      Object.assign(error2, { stdout: String(stdout) });
-      reject(error2);
-      return;
-    }
-    resolve4({ stdout: String(stdout) });
-  });
-});
-
-// src/scanner-request.ts
-function buildArgs(request) {
-  return [
-    ...request.paths,
-    "--format=json",
-    ...optionalArgs(request),
-    ...repeatedArgs("--exclude", request.excludes),
-    ...repeatedArgs("--test-path", request.testPaths)
-  ];
-}
-function optionalArgs(request) {
-  return [
-    flag("--root", request.root),
-    flag("--profile", request.profile),
-    flag(
-      "--rules",
-      request.rules?.length ? request.rules.join(",") : void 0
-    ),
-    flag("--baseline", request.baseline),
-    flag("--write-baseline", request.writeBaseline),
-    flag("--fail-on", request.failOn)
-  ].filter((value) => value !== void 0);
-}
-function flag(name, value) {
-  return value === void 0 ? void 0 : `${name}=${value}`;
-}
-function repeatedArgs(name, values) {
-  return (values ?? []).map((value) => `${name}=${value}`);
-}
-
 // src/scanner.ts
 var SCAN_TIMEOUT_MS = 12e4;
 var MAX_BUFFER = 32 * 1024 * 1024;
@@ -22770,6 +22738,23 @@ function scannerPath() {
     "scripts",
     "quality-scan.mjs"
   );
+}
+function buildArgs(request) {
+  const optional2 = [
+    request.root === void 0 ? void 0 : `--root=${request.root}`,
+    request.profile === void 0 ? void 0 : `--profile=${request.profile}`,
+    request.rules?.length ? `--rules=${request.rules.join(",")}` : void 0,
+    request.baseline === void 0 ? void 0 : `--baseline=${request.baseline}`,
+    request.writeBaseline === void 0 ? void 0 : `--write-baseline=${request.writeBaseline}`,
+    request.failOn === void 0 ? void 0 : `--fail-on=${request.failOn}`
+  ].filter((value) => value !== void 0);
+  return [
+    ...request.paths,
+    "--format=json",
+    ...optional2,
+    ...(request.excludes ?? []).map((value) => `--exclude=${value}`),
+    ...(request.testPaths ?? []).map((value) => `--test-path=${value}`)
+  ];
 }
 function runScan(request, run = execFileSync) {
   const args = [scannerPath(), ...buildArgs(request)];

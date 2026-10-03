@@ -1,11 +1,19 @@
 import { execFileSync } from "node:child_process";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { scanFailure } from "./scanner-failure.js";
-import { asyncExecFile } from "./scanner-execution.js";
-import { buildArgs, type ScanRequest } from "./scanner-request.js";
+import { asyncExecFile, scanFailure } from "./scanner-failure.js";
 
-export type { ScanRequest } from "./scanner-request.js";
+export interface ScanRequest {
+  paths: string[];
+  root?: string;
+  rules?: string[];
+  excludes?: string[];
+  testPaths?: string[];
+  profile?: "default" | "strict";
+  baseline?: string;
+  writeBaseline?: string;
+  failOn?: "none" | "error" | "regression" | "any";
+}
 
 const SCAN_TIMEOUT_MS = 120_000;
 const MAX_BUFFER = 32 * 1024 * 1024;
@@ -21,6 +29,28 @@ function scannerPath(): string {
     "scripts",
     "quality-scan.mjs",
   );
+}
+
+function buildArgs(request: ScanRequest): string[] {
+  const optional = [
+    request.root === undefined ? undefined : `--root=${request.root}`,
+    request.profile === undefined ? undefined : `--profile=${request.profile}`,
+    request.rules?.length ? `--rules=${request.rules.join(",")}` : undefined,
+    request.baseline === undefined
+      ? undefined
+      : `--baseline=${request.baseline}`,
+    request.writeBaseline === undefined
+      ? undefined
+      : `--write-baseline=${request.writeBaseline}`,
+    request.failOn === undefined ? undefined : `--fail-on=${request.failOn}`,
+  ].filter((value): value is string => value !== undefined);
+  return [
+    ...request.paths,
+    "--format=json",
+    ...optional,
+    ...(request.excludes ?? []).map((value) => `--exclude=${value}`),
+    ...(request.testPaths ?? []).map((value) => `--test-path=${value}`),
+  ];
 }
 
 /**
