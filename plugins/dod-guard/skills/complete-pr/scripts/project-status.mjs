@@ -345,6 +345,8 @@ async function writeProjectStatusesWithFallback({ primaryMutation, evidence = []
     primary: primaryMutation,
     rest: () => writeProjectStatuses(options),
     restEndpoint: `PATCH /users/${options.owner}/projectsV2/${options.projectNumber}/items/{itemId}`,
+    mutation: true,
+    readback: options.readback,
     evidence,
   });
 }

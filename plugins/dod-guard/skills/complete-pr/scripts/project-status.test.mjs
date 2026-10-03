@@ -407,3 +407,28 @@ test("routes MCP rate-limit writes through guarded REST readback without duplica
   );
   assert.equal(unresolved.calls.filter((args) => args.includes("PATCH")).length, 1);
 });
+
+test("routes an interactive status form only after a no-op readback", async () => {
+  const statuses = new Map([[ITEM_IDS[0], "Backlog"]]);
+  const { calls, runner } = createRunner({ statuses });
+  const phases = [];
+  let primaryCalls = 0;
+  const result = await writeProjectStatusesWithFallback({
+    ...writeOptions({ itemIds: [ITEM_IDS[0]] }),
+    commandRunner: runner,
+    primaryMutation: async () => {
+      primaryCalls += 1;
+      return { isError: true, structuredContent: { status: "awaiting_user_submission" } };
+    },
+    readback: async ({ phase }) => {
+      phases.push(phase);
+      return { mutated: phase === "after-fallback" };
+    },
+  });
+
+  assert.equal(result.transport, "rest");
+  assert.equal(primaryCalls, 1);
+  assert.deepEqual(phases, ["before-fallback", "after-fallback"]);
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
+  assert.deepEqual(result.value.mutations, [{ itemId: ITEM_IDS[0], status: "Done" }]);
+});

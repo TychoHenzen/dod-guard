@@ -64,7 +64,14 @@ function issueNumber(value) {
 }
 
 function parentIssue(item, issue) {
-  return item?.parentIssue ?? fieldValue(item, "Parent issue") ?? issue?.parent ?? issue?.parentIssue ?? null;
+  const projectParent = projectParentIssue(item);
+  return projectParent === undefined ? issue?.parent ?? issue?.parentIssue ?? null : projectParent;
+}
+
+function projectParentIssue(item) {
+  if (item?.parentIssue !== undefined) return item.parentIssue;
+  const field = (Array.isArray(item?.fields) ? item.fields : []).find((candidate) => candidate?.name === "Parent issue");
+  return field ? field.value ?? null : undefined;
 }
 
 function childIssues(issue) {
@@ -81,6 +88,10 @@ function parentIssueObserved(item, issue) {
     Object.hasOwn(item ?? {}, "parentIssue") ||
     Object.hasOwn(issue ?? {}, "parent") ||
     Object.hasOwn(issue ?? {}, "parentIssue");
+}
+
+function parentIssueFieldObserved(item) {
+  return projectParentIssue(item) !== undefined;
 }
 
 function linkedPullRequestsValue(item) {
@@ -248,6 +259,7 @@ function missingProjectFields(item) {
   if (itemRepository(item) === null) missing.push("Repository");
   if (itemIssueNumber(item) === null) missing.push("Issue number");
   if (projectStatus(item) === null) missing.push("Status");
+  if (!parentIssueFieldObserved(item)) missing.push("Parent issue");
   if (
     linkedPullRequestsValue(item) === undefined &&
     Array.isArray(item?.fields) &&
@@ -407,6 +419,17 @@ function compareProjectRelationship(item, issue) {
   if (itemState && observedState && itemState !== observedState) mismatches.push("issue state changed during read");
   if (item?.content?.number !== undefined && issue?.number !== undefined && Number(item.content.number) !== Number(issue.number)) {
     mismatches.push("issue number changed during read");
+  }
+  const projectParentNumber = issueNumber(projectParentIssue(item));
+  const issueParentNumber = issueNumber(issue?.parent ?? issue?.parentIssue);
+  if (projectParentNumber !== null && issueParentNumber !== null && projectParentNumber !== issueParentNumber) {
+    mismatches.push("Parent issue relationship changed during read");
+  }
+  if (projectParentNumber === null && issueParentNumber !== null) {
+    mismatches.push("Project Parent issue is missing the observed issue parent");
+  }
+  if (projectParentNumber !== null && issueParentNumber === null) {
+    mismatches.push("issue parent is missing the observed Project Parent issue");
   }
   return mismatches;
 }
@@ -668,6 +691,7 @@ function buildRecord(item, context) {
     parentIssueNumber: issueEvidence.parentIssueNumber,
     childIssues: childIssues(issueEvidence.issue),
     projectStatus: projectStatus(item),
+    parentIssueFieldObserved: parentIssueFieldObserved(item),
     issue: issueEvidence.issue,
     pullRequests: pullRequestEvidence.pulls,
     pullRequestFailures: pullRequestEvidence.failures,
@@ -679,6 +703,40 @@ function buildRecord(item, context) {
 
 function buildRecords(items, context) {
   return items.map((item) => buildRecord(item, context));
+}
+
+function doneStatus(status) {
+  return typeof status === "string" && status.toLowerCase() === "done";
+}
+
+function reconcileProjectCounts(items, records, { snapshotComplete = true } = {}) {
+  const snapshotItems = Array.isArray(items) ? items : [];
+  const snapshotRecords = Array.isArray(records) ? records : [];
+  const parents = snapshotRecords.filter(({ parentIssueNumber }) => parentIssueNumber === null);
+  const children = snapshotRecords.filter(({ parentIssueNumber }) => parentIssueNumber !== null);
+  const missingParentFields = snapshotRecords
+    .filter(({ parentIssueFieldObserved }) => parentIssueFieldObserved !== true)
+    .map(({ issueNumber }) => `Project item #${issueNumber ?? "?"} Parent issue`);
+  const missingRecordCounts = snapshotItems.length === snapshotRecords.length
+    ? []
+    : [`raw Project items (${snapshotItems.length}) and reconciled records (${snapshotRecords.length}) differ`];
+  const missingEvidence = [...new Set([
+    ...(snapshotComplete ? [] : ["complete Project item pages"]),
+    ...missingParentFields,
+    ...missingRecordCounts,
+  ])];
+  const counts = {
+    rawItems: snapshotItems.length,
+    parentItems: parents.length,
+    childItems: children.length,
+    parentDoneItems: parents.filter(({ projectStatus }) => doneStatus(projectStatus)).length,
+    childDoneItems: children.filter(({ projectStatus }) => doneStatus(projectStatus)).length,
+  };
+  return {
+    ...counts,
+    balanced: snapshotComplete && missingEvidence.length === 0 && counts.rawItems === counts.parentItems + counts.childItems,
+    missingEvidence,
+  };
 }
 
 function finalizeEvidence(evidence, records) {
@@ -706,8 +764,10 @@ async function readQueueSnapshot({ provider, project, repository, query, default
   const issueRead = await readIssueRelationships({ provider, items, repository: repositoryNameValue, evidence });
   const pullRequestRead = await readPullRequestRelationships({ provider, items, repository: repositoryNameValue, evidence });
   const records = buildRecords(items, { ...issueRead, ...pullRequestRead, repository: repositoryNameValue, evidence });
+  const counts = reconcileProjectCounts(items, records, { snapshotComplete: projectResult.error === null });
+  addMissing(evidence.missingEvidence, counts.missingEvidence);
   finalizeEvidence(evidence, records);
-  return { project, repository: repositoryNameValue, defaultBranch: resolvedDefaultBranch, items, records, issues: [...issueRead.issues.values()], pullRequests: [...pullRequestRead.pullRequests.values()], evidence, readFailures: evidence.readFailures, missingEvidence: evidence.missingEvidence };
+  return { project, repository: repositoryNameValue, defaultBranch: resolvedDefaultBranch, items, records, counts, issues: [...issueRead.issues.values()], pullRequests: [...pullRequestRead.pullRequests.values()], evidence, readFailures: evidence.readFailures, missingEvidence: evidence.missingEvidence };
 }
 
 function normalizedStatus(status) {
@@ -845,6 +905,7 @@ function selectQueueItem(snapshot, classify = defaultQueueDecision) {
 export {
   PROJECT_FIELDS,
   defaultQueueDecision,
+  reconcileProjectCounts,
   readQueueSnapshot,
   selectQueueItem,
 };

@@ -43,6 +43,15 @@ Project-item endpoints, branch refs, checks/workflow runs, labels, contents, and
 branch protection. Writes still use the read-before-write and readback rules
 below.
 
+For a mutation, an explicit MCP/connector result such as an interactive form or
+`awaiting_user_submission` is a no-op until a readback proves that the exact
+resource did not change. Only then may the same request go through its one
+authenticated REST handler, followed by one exact readback proving the desired
+state. This fallback is allowed once for the issue, Project/status, or pull
+request mutation path; authentication, permission, malformed, timeout,
+provider, and REST-rate-limit failures remain fail-closed. A missing or
+contradictory no-op readback never selects REST.
+
 ## Resolve the repository and Project
 
 Every GitHub-facing skill resolves these values once, keeps them in the run

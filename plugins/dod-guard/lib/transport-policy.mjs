@@ -9,6 +9,7 @@ const FAILURE_CATEGORIES = Object.freeze({
   UNSUPPORTED: "unsupported",
   REST_RATE_LIMIT: "rest_rate_limit",
   PROVIDER: "provider",
+  INTERACTIVE_FORM: "interactive_form",
 });
 
 const REST_ENDPOINTS = Object.freeze({
@@ -123,7 +124,8 @@ function codeValue(error) {
 }
 
 function explicitCategory(error) {
-  const category = error?.category ?? error?.failureCategory ?? error?.details?.category;
+  const category = error?.category ?? error?.failureCategory ?? error?.details?.category ??
+    error?.structuredContent?.status ?? error?.structured_content?.status;
   return typeof category === "string" ? category.toLowerCase().replace(/[\s-]+/g, "_") : null;
 }
 
@@ -149,6 +151,9 @@ function categoryFromExplicitValue(category, transport) {
   if (["transport_unavailable", "mcp_unavailable", "connector_unavailable"].includes(category)) {
     return FAILURE_CATEGORIES.TRANSPORT_UNAVAILABLE;
   }
+  if (["interactive_form", "awaiting_user_submission", "awaiting_submission", "form_noop"].includes(category)) {
+    return FAILURE_CATEGORIES.INTERACTIVE_FORM;
+  }
   return category === "provider" ? FAILURE_CATEGORIES.PROVIDER : null;
 }
 
@@ -171,12 +176,12 @@ export function classifyTransportFailure(error, source = "mcp") {
 
   if (rateLimitEvidence) {
     category = explicitRateLimit ? explicit : transport === "mcp" ? FAILURE_CATEGORIES.MCP_RATE_LIMIT : FAILURE_CATEGORIES.REST_RATE_LIMIT;
-  } else if (!category && (status === 401 || AUTHENTICATION_MARKER.test(message) || code === "unauthorized")) {
+  } else if (status === 401 || AUTHENTICATION_MARKER.test(message) || code === "unauthorized") {
     category = FAILURE_CATEGORIES.AUTHENTICATION;
+  } else if (status === 403 || /forbidden|permission|entitlement/i.test(message)) {
+    category = FAILURE_CATEGORIES.PERMISSION;
   } else if (!category && (TRANSPORT_UNAVAILABLE_MARKER.test(message) || code === "transport_unavailable")) {
     category = FAILURE_CATEGORIES.TRANSPORT_UNAVAILABLE;
-  } else if (!category && (status === 403 || /forbidden|permission|entitlement/i.test(message))) {
-    category = FAILURE_CATEGORIES.PERMISSION;
   } else if (!category && (TIMEOUT_MARKER.test(message) || code === "timeout" || code === "etimedout")) {
     category = FAILURE_CATEGORIES.TIMEOUT;
   } else if (!category && (TRANSIENT_ERROR_CODES.has(code) || [408, 500, 502, 503, 504].includes(status))) {
@@ -198,10 +203,13 @@ export function classifyTransportFailure(error, source = "mcp") {
 
 function resultFailure(result) {
   if (!result || typeof result !== "object") return null;
-  if (result.isError === true) return result.error ?? result;
+  if (result.isError === true) {
+    return result.error ?? result;
+  }
   if (result.ok === false) return result.error ?? result;
   if (result.error) return result.error;
   if (statusValue(result) !== null && statusValue(result) >= 400) return result;
+  if (categoryFromExplicitValue(explicitCategory(result), "mcp") === FAILURE_CATEGORIES.INTERACTIVE_FORM) return result;
   return null;
 }
 
@@ -234,6 +242,8 @@ export async function runTransport({
   rest,
   restEndpoint,
   evidence = [],
+  mutation = false,
+  readback,
 }) {
   if (typeof primary !== "function") throw new TypeError("primary transport must be a function.");
   const endpoint = restEndpoint ?? REST_ENDPOINTS[operation] ?? null;
@@ -247,10 +257,14 @@ export async function runTransport({
     const primaryFailure = classifyTransportFailure(error, "mcp");
     const primaryEvidence = evidenceEntry(operation, request, endpoint, primaryFailure);
     if (Array.isArray(evidence)) evidence.push(primaryEvidence);
-    const canFallback = primaryFailure.transport === "mcp" &&
+    const canRateLimitFallback = primaryFailure.transport === "mcp" &&
       [FAILURE_CATEGORIES.MCP_RATE_LIMIT, FAILURE_CATEGORIES.TRANSPORT_UNAVAILABLE].includes(primaryFailure.category) &&
       typeof rest === "function" && typeof endpoint === "string" && endpoint.length > 0;
-    if (!canFallback) {
+    const canInteractiveFallback = primaryFailure.transport === "mcp" &&
+      primaryFailure.category === FAILURE_CATEGORIES.INTERACTIVE_FORM && mutation === true &&
+      typeof rest === "function" && typeof readback === "function" &&
+      typeof endpoint === "string" && endpoint.length > 0;
+    if (!canRateLimitFallback && !canInteractiveFallback) {
       throw new TransportStopError({
         operation,
         category: primaryFailure.category,
@@ -261,6 +275,30 @@ export async function runTransport({
     }
 
     try {
+      if (canInteractiveFallback) {
+        const before = await readback({ phase: "before-fallback", request });
+        if (!before || before.mutated !== false) {
+          throw Object.assign(new Error("interactive form readback did not prove a no-op"), {
+            category: FAILURE_CATEGORIES.PROVIDER,
+          });
+        }
+        const restResult = await rest(request);
+        const restFailureValue = resultFailure(restResult);
+        if (restFailureValue) throw restFailureValue;
+        const after = await readback({ phase: "after-fallback", request, result: restResult });
+        if (!after || after.mutated !== true) {
+          throw Object.assign(new Error("REST mutation readback did not prove the requested change"), {
+            category: FAILURE_CATEGORIES.PROVIDER,
+          });
+        }
+        return {
+          value: restResult,
+          transport: "rest",
+          endpoint,
+          primaryFailure,
+          readback: { before, after },
+        };
+      }
       const restResult = await rest(request);
       const restFailureValue = resultFailure(restResult);
       if (restFailureValue) throw restFailureValue;

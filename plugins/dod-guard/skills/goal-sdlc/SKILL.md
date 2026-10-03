@@ -173,6 +173,29 @@ merge, and cleanup safeguards. This checkpoint orchestrates their evidence
 early; it does not force-push, write generated refs, call `update-branch` as
 metadata repair, invoke manual review, or edit an external checkout.
 
+## Review trigger lifecycle
+
+Codex's built-in Review Summary is the only review authority. Read the pull
+request's current review state and exact head before deciding whether a review
+trigger is allowed; the GitHub pull request and its comments are the durable
+record.
+
+- A completed Review Summary suppresses every later review trigger for that
+  pull request, including after follow-up remediation commits. Carry the
+  reviewed head, current head, findings, and resolved-finding evidence through
+  `fix-pr-review` instead of starting another review.
+- If no Review Summary exists and the automatic review has not started after
+  the required two-minute wait, emit exactly one `@codex review` trigger for
+  that pull request and exact head. Record that the fallback was sent; never
+  emit a second trigger for the same PR.
+- If the automatic review is started, its state is unavailable, the wait is
+  incomplete, or the current head is missing, wait or stop with the named
+  evidence. Do not guess that a quiet operation failed and do not trigger a
+  duplicate review.
+- The pure decision boundary is
+  `skills/goal-sdlc/scripts/lib/review-trigger.mjs`; it has no timer, provider
+  mutation, or local review ledger.
+
 ## Contract ownership
 
 - Built-in `/goal` owns goal persistence, continuation, and the final stop
@@ -311,6 +334,14 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
     Project statuses separately rather than collapsing them into a boolean;
     group by the observed root issue and never select a child record as an
     independent parent;
+
+   - publish one canonical count record from that same complete,
+     exact-repository Project snapshot: raw items, parent items, child items,
+     parent items with `Done`, and child items with `Done` are separate named
+     values. Require the raw total to reconcile with the observed parent and
+     child groups and report missing, late, contradictory, or unavailable
+     `Parent issue` fields explicitly; never run a second scan or infer a count
+     by subtraction from an older snapshot;
 
   - treat every reconciliation input as an explicit live observation. An
     omitted, unknown, stale, filtered, or provider-unavailable value is not
@@ -564,6 +595,18 @@ checkout, record the exact error with its stage, PBI, and SHA, read back remote
 state, classify the failure, apply the smallest repair with its narrow proof,
 and resume. Rotate to another eligible parent when this one is externally
 blocked.
+
+- A quiet test, reviewer, provider call, or nested command remains attached to
+  its active process or session handle. Wait or poll that same handle until it
+  reaches terminal state unless the operator explicitly cancels it; a tool
+  yield limit is not an operation deadline and never authorizes a blind retry.
+  Keep the exact command, redacted provider error, verified bytes, hash, and
+  current head together in the evidence record.
+- A provider `CreateProcess ... rejected by policy` result is a provider
+  rejection, not wrapper cancellation. Preserve it as an external hold without
+  killing the active handle or repeating the unchanged operation. The
+  `skills/goal-sdlc/scripts/lib/operation-evidence.mjs` boundary keeps those
+  evidence classes separate and forbids an unchanged retry.
 
 - Daily friction log: record every encountered issue, execution failure, tooling or runtime defect, workflow friction, or recovery-worthy discrepancy in one PBI per day, titled `Friction log YYYY-MM-DD` with today's local date. Do not create a separate backlog issue per incident. Record it even when the immediate incident is recovered.
 
