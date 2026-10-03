@@ -44,6 +44,11 @@ captured JSON to Node. A direct pipeline can hide a failed inventory command.
 Use the snippet for the active shell, set the client to codex or claude, and
 append only exact pins supplied by the caller to the helper command:
 
+All commands in this skill also follow the repository's
+[command-composition contract](../../../docs/command-composition.md). In
+particular, keep native arguments separate, capture producer status before
+limiting output, and stop before mutation on missing arguments or parents.
+
 PowerShell:
 
 ```powershell

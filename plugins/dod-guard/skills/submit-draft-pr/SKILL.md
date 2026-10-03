@@ -46,6 +46,10 @@ automatically.
 Run the repository's required pre-PR checks when fresh evidence is unavailable.
 Stop on a failed or unavailable required check.
 
+Use the repository's [command-composition contract](../../../docs/command-composition.md)
+for shell selection, native argument vectors, bounded output, and preflight
+failures while running those checks.
+
 After a successful source-branch push, and again after creating or updating the
 pull request, use the same bounded, read-only head convergence contract before
 trusting checks or writing the draft handoff. Read the same-repository branch
