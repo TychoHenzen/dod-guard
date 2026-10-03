@@ -4,6 +4,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { ACCEPTANCE_MATRIX_PATHS } from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -42,6 +43,20 @@ const proofScript = path.join(
   "plugins/dod-guard/skills/next-ticket/scripts/structured-workflow-proof.mjs",
 );
 
+function acceptanceMatrix(headSha, contract = "AC-1") {
+  return ACCEPTANCE_MATRIX_PATHS.map((pathName, index) => ({
+    id: `${contract}-${index + 1}`,
+    contract,
+    path: pathName,
+    proof: `proof-${index + 1}`,
+    expected: `expected-${index + 1}`,
+    observed: `observed-${index + 1}`,
+    status: "pass",
+    evidence: `evidence-${index + 1}`,
+    headSha,
+  }));
+}
+
 test("README and usage expose every structured stage contract", () => {
   const stages = [
     ["Principles", "`/setup-repository`", "Repository instructions", "Existing rules guide capture and refinement."],
@@ -76,6 +91,9 @@ test("owners preserve the structured handoffs without a parallel planner", () =>
     assert.match(refine, new RegExp(`\`${marker}\``));
   }
   assert.match(nextTicket, /records as the implementation handoff/);
+  assert.match(nextTicket, /one `## Acceptance matrix` in the handoff/);
+  assert.match(submit, /containing the single `## Acceptance matrix`/);
+  assert.match(submit, /same matrix and exact head/);
   assert.match(nextTicket, /Do not create a tracked\s+planning file/);
   assert.match(submit, /Converge structured work/);
   assert.match(submit, /Map every task and linked sub-issue to applicable evidence/);
@@ -156,10 +174,12 @@ test("structured handoffs are durable and convergence is evidence-based", () => 
 
 test("structured proof produces passing and actionable outcomes", () => {
   const complete = proof.evaluateConvergence({
+    headSha: "abc1234",
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
     tasks: [{ id: "task-1", child: "implementation", evidence: "commit abc123; test passed" }],
     children: proof.REQUIRED_CHILD_CATEGORIES.map((category) => ({ category, evidence: "mapped" })),
     acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
+    acceptanceMatrix: acceptanceMatrix("abc1234"),
     contradictions: [],
   });
   assert.equal(complete.outcome, "verified");
@@ -198,6 +218,20 @@ test("ordinary fixes bypass structured records", () => {
     outcome: "ordinary",
     remainder: [],
   });
+});
+
+test("structured convergence rejects a matrix tied to a different head", () => {
+  const result = proof.evaluateConvergence({
+    headSha: "new-head",
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", child: "implementation", evidence: "commit new-head" }],
+    children: proof.REQUIRED_CHILD_CATEGORIES.map((category) => ({ category, evidence: "mapped" })),
+    acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
+    acceptanceMatrix: acceptanceMatrix("old-head"),
+  });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("expected new-head")));
 });
 
 test("structured proof CLI separates known paths and rejects unknown scenarios", () => {

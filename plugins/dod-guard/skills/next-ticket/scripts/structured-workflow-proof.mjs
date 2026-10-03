@@ -1,5 +1,9 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  ACCEPTANCE_MATRIX_PATHS,
+  validateAcceptanceMatrix,
+} from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
 
 export const REQUIRED_RECORDS = [
   "requirements",
@@ -22,12 +26,26 @@ const PROOF_HANDOFF = {
   headSha: "abc1234",
 };
 
+const PROOF_ACCEPTANCE_MATRIX = ACCEPTANCE_MATRIX_PATHS.map((pathName, index) => ({
+  id: `AC-1-${index + 1}`,
+  contract: "AC-1",
+  path: pathName,
+  proof: `proof-${index + 1}`,
+  expected: `expected-${index + 1}`,
+  observed: `observed-${index + 1}`,
+  status: "pass",
+  evidence: `evidence-${index + 1}`,
+  headSha: PROOF_HANDOFF.headSha,
+}));
+
 export function evaluateConvergence({
   path: deliveryPath = "structured",
   records = {},
   tasks = [],
   children = [],
   acceptance = [],
+  acceptanceMatrix = null,
+  headSha = null,
   contradictions = [],
 }) {
   if (deliveryPath === "ordinary") {
@@ -71,6 +89,15 @@ export function evaluateConvergence({
     if (!criterion.evidence) {
       addRemainder("Acceptance and verification", `${criterion.id} needs fresh evidence`);
     }
+  }
+  const matrixValidation = validateAcceptanceMatrix({
+    matrix: acceptanceMatrix,
+    headSha,
+    requiredContracts: acceptance,
+    requiredPaths: ACCEPTANCE_MATRIX_PATHS,
+  });
+  for (const error of matrixValidation.errors) {
+    addRemainder("Acceptance and verification", `acceptance matrix: ${error}`);
   }
   for (const contradiction of contradictions) {
     addRemainder("Acceptance and verification", contradiction);
@@ -142,6 +169,8 @@ export function scenarioResult(scenario = "passing") {
       tasks: [{ id: "task-1", child: "implementation", evidence: "commit abc123" }],
       children: REQUIRED_CHILD_CATEGORIES.map((category) => ({ category, evidence: "mapped" })),
       acceptance: [{ id: "AC-1", evidence: "proof" }],
+      acceptanceMatrix: PROOF_ACCEPTANCE_MATRIX,
+      headSha: PROOF_HANDOFF.headSha,
     });
   }
   throw new Error(`Unknown proof scenario "${scenario}". Expected: ${PROOF_SCENARIOS.join(", ")}`);

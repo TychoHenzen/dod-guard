@@ -65,6 +65,27 @@ thread still owns sequencing, evidence verification, mutation decisions, and
 the built-in goal's stop condition. Handle any externally supplied findings
 before `complete-pr` as described in section 6.
 
+## Acceptance matrix contract
+
+Every structured PBI uses one compact acceptance matrix in its GitHub
+implementation handoff. It has one row for each parent acceptance criterion
+and each mandatory user-facing path. A row records `id`, contract or criterion,
+risk or user path, proof action, expected observable, observed result, status,
+evidence location, and the exact pushed branch head SHA.
+
+The only row statuses are `pass`, `unverified`, `failed`, `blocked`, and
+`inapplicable`. `inapplicable` is valid only with an explicit reason. Missing
+fields, a non-passing status, or a row bound to another head stops PR and
+Review Summary convergence. A later pushed head invalidates every row and
+requires fresh evidence.
+
+When applicable, the matrix names identity/authorization, interactive controls
+such as zoom or pan, behavioral browser or end-to-end paths, data/error
+boundaries, and recovery behavior. Each category still gets an explicit
+inapplicable row when the PBI does not expose that path. The same matrix is
+carried from the handoff into `submit-draft-pr` convergence and Codex's
+built-in Review Summary; it is not a local ledger or a numeric quality gate.
+
 ## Contract ownership
 
 - Built-in `/goal` owns goal persistence, continuation, and the final stop

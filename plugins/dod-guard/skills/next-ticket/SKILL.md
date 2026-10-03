@@ -176,11 +176,22 @@ Generate tracked build outputs and ratchet baselines on the feature branch when
 the repository requires them. Inspect those changes as part of the same review.
 Do not rely on CI to write generated files or repair the branch.
 
-Map each acceptance criterion to fresh evidence. For a structured PBI, also map
-every mandatory child to its owning task, changed files or verified remote
+Map each acceptance criterion to fresh evidence. For a structured PBI, build
+one `## Acceptance matrix` in the handoff with one row per acceptance
+criterion and mandatory user-facing path. Each row records the contract or
+criterion, risk or user path, proof action, expected observable, observed
+result, status, evidence location, and exact pushed head SHA. Use only
+`pass`, `unverified`, `failed`, `blocked`, or `inapplicable`; an inapplicable
+row needs an explicit reason. Require explicit identity/authorization,
+interactive-control, browser/E2E, data/error, and recovery rows when those
+paths apply, and record why each does not apply otherwise. Validate every row
+against the checked-out and pushed head before committing or handing off.
+
+map every mandatory child to its owning task, changed files or verified remote
 state, commit, and fresh verification. Stop before committing or PR handoff
-when a criterion or mandatory child is unmet, a required check fails, or
-required proof cannot run. State the exact failed command or unverified item.
+when a matrix row, criterion, mandatory child, required check, or
+required proof is missing, failed, unverified, blocked, or head-mismatched.
+State the exact failed command or actionable remainder.
 
 ## Commit and push
 
@@ -196,11 +207,14 @@ branch to its existing upstream. Do not force-push or rewrite existing commits.
 
 After the verified implementation commit is pushed, create or update one
 parent-issue comment headed `## Implementation handoff` with one entry per
-ordered task and mandatory child category. Each entry names the commit or
-verified remote-state evidence, changed files or artifact, and the fresh check
-or user-path result. Include the current remainder explicitly; use `none` only
-when every task, acceptance criterion, and required user path is evidenced. Do
-not create a local planning file or a second issue as a substitute.
+ordered task and mandatory child category, followed by the single
+`## Acceptance matrix`. Each entry names the commit or verified remote-state
+evidence, changed files or artifact, and the fresh check or user-path result.
+The matrix is the durable acceptance record consumed by convergence and
+Codex's built-in Review Summary; do not copy it to a local ledger. Include the
+current remainder explicitly; use `none` only when every task, matrix row,
+acceptance criterion, and required user path is evidenced at the same head.
+Do not create a local planning file or a second issue as a substitute.
 
 ## Result
 

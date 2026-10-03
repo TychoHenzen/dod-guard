@@ -56,6 +56,13 @@ evidence, the checks that prove it, and the current user-path result. It is the
 handoff from refinement to draft-PR convergence; it is not a local planning
 file.
 
+The same comment contains one `## Acceptance matrix` with one row for every
+acceptance criterion and mandatory user-facing path. Each row records the
+contract or criterion, risk or path, proof action, expected and observed
+behavior, status, evidence location, and exact pushed head SHA. Missing,
+failed, unverified, blocked, or head-mismatched rows stop the handoff; an
+`inapplicable` row is valid only with an explicit reason.
+
 ## Structured handoff records
 
 For a structured PBI, keep these records in the issue's `## Implementation
@@ -89,7 +96,9 @@ links it instead of restating it:
 
 Convergence is passing only when every named record exists, every task and
 mandatory child is mapped by the implementation handoff, every acceptance
-criterion has fresh evidence, and no item is contradicted or unresolved.
+criterion has fresh evidence at the exact head; every matrix row does too, and
+no item is contradicted or unresolved. Codex's built-in Review Summary consumes
+that same matrix; it is not copied into a second review ledger.
 
 An incomplete or contradicted result is not reported as complete. Write the
 actionable remainder, with the next task and owner, to the PBI and stop before
