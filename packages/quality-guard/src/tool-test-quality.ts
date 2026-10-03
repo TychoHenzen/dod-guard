@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { requireRepositoryRoot } from "./repository-root.js";
 import { runTestQualityReport } from "./test-quality/report.js";
 import { text, toolError } from "./tool-response.js";
-import { requireRepositoryRoot } from "./repository-root.js";
 import { ROOT } from "./tool-schemas.js";
 
 export function registerQualityTestQuality(server: McpServer): void {
@@ -26,7 +26,10 @@ async function qualityTestQuality(input: { root?: string; evidence?: string }) {
   try {
     return text(
       JSON.stringify(
-        runTestQualityReport({ root: requireRepositoryRoot(input.root), evidence: input.evidence }),
+        runTestQualityReport({
+          root: requireRepositoryRoot(input.root),
+          evidence: input.evidence,
+        }),
         null,
         2,
       ),

@@ -28420,12 +28420,13 @@ async function startMcpHttpServer(options) {
       json2(response, 404, { error: "not_found", service: options.serviceName });
       return;
     }
-    const mcpServer = options.createMcpServer();
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: void 0
     });
+    let mcpServer;
     transports.add(transport);
     try {
+      mcpServer = options.createMcpServer();
       await mcpServer.connect(transport);
       await transport.handleRequest(request, response);
     } catch (error2) {
@@ -28444,7 +28445,7 @@ async function startMcpHttpServer(options) {
     } finally {
       transports.delete(transport);
       await transport.close().catch(() => void 0);
-      await mcpServer.close().catch(() => void 0);
+      if (mcpServer) await mcpServer.close().catch(() => void 0);
     }
   });
   server.on("connection", (socket) => {
@@ -29168,21 +29169,6 @@ async function runQualityGuardCli(args, dependencies) {
   await server.connect(new StdioServerTransport());
 }
 
-// src/tool-response.ts
-function text2(value) {
-  return { content: [{ type: "text", text: value }] };
-}
-function toolError(err) {
-  return {
-    content: [
-      {
-        type: "text",
-        text: `ERROR: ${err instanceof Error ? err.message : String(err)}`
-      }
-    ]
-  };
-}
-
 // src/repository-root.ts
 import { statSync } from "node:fs";
 import * as path15 from "node:path";
@@ -29209,6 +29195,21 @@ function requireRepositoryRoot(root2) {
   return resolved;
 }
 
+// src/tool-response.ts
+function text2(value) {
+  return { content: [{ type: "text", text: value }] };
+}
+function toolError(err) {
+  return {
+    content: [
+      {
+        type: "text",
+        text: `ERROR: ${err instanceof Error ? err.message : String(err)}`
+      }
+    ]
+  };
+}
+
 // src/tool-commit.ts
 function commitGateResponse(input) {
   if (input.intent === "refactor" && !input.target)
@@ -29226,7 +29227,10 @@ function commitGateResponse(input) {
 }
 async function commitGateTool(input) {
   try {
-    return commitGateResponse({ ...input, root: requireRepositoryRoot(input.root) });
+    return commitGateResponse({
+      ...input,
+      root: requireRepositoryRoot(input.root)
+    });
   } catch (err) {
     return toolError(err);
   }
@@ -29315,7 +29319,12 @@ function registerQualityReport(server) {
       try {
         return text2(
           JSON.stringify(
-            runQualityReport({ root: requireRepositoryRoot(root2), excludes, testPaths, profile }),
+            runQualityReport({
+              root: requireRepositoryRoot(root2),
+              excludes,
+              testPaths,
+              profile
+            }),
             null,
             2
           )
@@ -29361,7 +29370,10 @@ var QUALITY_SCAN_INPUT = {
 };
 async function qualityScan(input) {
   try {
-    const { report } = runScan({ ...input, root: requireRepositoryRoot(input.root) });
+    const { report } = runScan({
+      ...input,
+      root: requireRepositoryRoot(input.root)
+    });
     return text2(JSON.stringify(report, null, 2));
   } catch (err) {
     return toolError(err);
@@ -29422,7 +29434,10 @@ async function qualityTestQuality(input) {
   try {
     return text2(
       JSON.stringify(
-        runTestQualityReport({ root: requireRepositoryRoot(input.root), evidence: input.evidence }),
+        runTestQualityReport({
+          root: requireRepositoryRoot(input.root),
+          evidence: input.evidence
+        }),
         null,
         2
       )

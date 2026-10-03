@@ -181,7 +181,10 @@ export function createPluginChecks(report, isTracked) {
     if (!(expected && manifest?.mcpServers)) return;
     const server = manifest.mcpServers[pkg.name];
     if (server?.type !== "http" || server?.url !== expected) {
-      report(file, `host-managed ${pkg.name} Codex registration must use type "http" and URL ${JSON.stringify(expected)}`);
+      report(
+        file,
+        `host-managed ${pkg.name} Codex registration must use type "http" and URL ${JSON.stringify(expected)}`,
+      );
     }
   }
 

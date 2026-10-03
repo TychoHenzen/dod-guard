@@ -8,6 +8,7 @@ import {
   installKnowledgeHttpSignals,
   type KnowledgeHttpOptions,
   parseKnowledgeHttpCliOptions,
+  type RunningKnowledgeHttpServer,
   startKnowledgeBaseHttpServer as startKnowledgeBaseHttpService,
 } from "./http.js";
 import { KnowledgeBase } from "./store.js";
@@ -50,8 +51,9 @@ function isMainModule(): boolean {
   }
 }
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+export async function runKnowledgeBaseCli(
+  args = process.argv.slice(2),
+): Promise<RunningKnowledgeHttpServer | undefined> {
   if (args[0] === "--http") {
     const rootDir = process.env[KNOWLEDGE_BASE_DIR_ENV];
     if (!rootDir?.trim()) throw new Error(`${KNOWLEDGE_BASE_DIR_ENV} must be set to the external knowledge-base root`);
@@ -61,7 +63,7 @@ async function main(): Promise<void> {
     });
     installKnowledgeHttpSignals(running);
     process.stderr.write(`knowledge-base HTTP ready at http://${running.host}:${running.port}${running.path}\n`);
-    return;
+    return running;
   }
   const server = createKnowledgeBaseServer();
   await server.connect(new StdioServerTransport());
@@ -75,7 +77,7 @@ export function startKnowledgeBaseHttpServer(options: Omit<KnowledgeHttpOptions,
 }
 
 if (isMainModule()) {
-  main().catch((error) => {
+  runKnowledgeBaseCli().catch((error) => {
     process.stderr.write(`knowledge-base MCP server failed: ${error}\n`);
     process.exit(1);
   });

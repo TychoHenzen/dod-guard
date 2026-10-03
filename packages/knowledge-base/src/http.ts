@@ -107,9 +107,10 @@ export async function startKnowledgeBaseHttpServer(options: KnowledgeHttpOptions
     }
 
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-    const mcpServer = options.createMcpServer();
+    let mcpServer: McpServer | undefined;
     transports.add(transport);
     try {
+      mcpServer = options.createMcpServer();
       await mcpServer.connect(transport);
       await transport.handleRequest(request, response);
     } catch (error) {
@@ -128,7 +129,7 @@ export async function startKnowledgeBaseHttpServer(options: KnowledgeHttpOptions
     } finally {
       transports.delete(transport);
       await transport.close().catch(() => undefined);
-      await mcpServer.close().catch(() => undefined);
+      if (mcpServer) await mcpServer.close().catch(() => undefined);
     }
   });
   server.on("connection", (socket) => {

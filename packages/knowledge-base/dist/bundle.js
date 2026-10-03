@@ -26158,13 +26158,13 @@ var zodToJsonSchema = (schema, options) => {
     }, true) ?? parseAnyDef(refs)
   }), {}) : void 0;
   const name = typeof options === "string" ? options : options?.nameStrategy === "title" ? void 0 : options?.name;
-  const main2 = parseDef(schema._def, name === void 0 ? refs : {
+  const main = parseDef(schema._def, name === void 0 ? refs : {
     ...refs,
     currentPath: [...refs.basePath, refs.definitionPath, name]
   }, false) ?? parseAnyDef(refs);
   const title = typeof options === "object" && options.name !== void 0 && options.nameStrategy === "title" ? options.name : void 0;
   if (title !== void 0) {
-    main2.title = title;
+    main.title = title;
   }
   if (refs.flags.hasReferencedOpenAiAnyType) {
     if (!definitions) {
@@ -26185,9 +26185,9 @@ var zodToJsonSchema = (schema, options) => {
     }
   }
   const combined = name === void 0 ? definitions ? {
-    ...main2,
+    ...main,
     [refs.definitionPath]: definitions
-  } : main2 : {
+  } : main : {
     $ref: [
       ...refs.$refStrategy === "relative" ? [] : refs.basePath,
       refs.definitionPath,
@@ -26195,7 +26195,7 @@ var zodToJsonSchema = (schema, options) => {
     ].join("/"),
     [refs.definitionPath]: {
       ...definitions,
-      [name]: main2
+      [name]: main
     }
   };
   if (refs.target === "jsonSchema7") {
@@ -31162,9 +31162,10 @@ async function startKnowledgeBaseHttpServer(options) {
       return;
     }
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: void 0 });
-    const mcpServer = options.createMcpServer();
+    let mcpServer;
     transports.add(transport);
     try {
+      mcpServer = options.createMcpServer();
       await mcpServer.connect(transport);
       await transport.handleRequest(request, response2);
     } catch (error2) {
@@ -31183,7 +31184,7 @@ async function startKnowledgeBaseHttpServer(options) {
     } finally {
       transports.delete(transport);
       await transport.close().catch(() => void 0);
-      await mcpServer.close().catch(() => void 0);
+      if (mcpServer) await mcpServer.close().catch(() => void 0);
     }
   });
   server.on("connection", (socket) => {
@@ -31386,8 +31387,7 @@ function isMainModule() {
     return argument2 === filename;
   }
 }
-async function main() {
-  const args = process3.argv.slice(2);
+async function runKnowledgeBaseCli(args = process3.argv.slice(2)) {
   if (args[0] === "--http") {
     const rootDir = process3.env[KNOWLEDGE_BASE_DIR_ENV2];
     if (!rootDir?.trim()) throw new Error(`${KNOWLEDGE_BASE_DIR_ENV2} must be set to the external knowledge-base root`);
@@ -31398,7 +31398,7 @@ async function main() {
     installKnowledgeHttpSignals(running);
     process3.stderr.write(`knowledge-base HTTP ready at http://${running.host}:${running.port}${running.path}
 `);
-    return;
+    return running;
   }
   const server = createKnowledgeBaseServer();
   await server.connect(new StdioServerTransport());
@@ -31410,7 +31410,7 @@ function startKnowledgeBaseHttpServer2(options) {
   });
 }
 if (isMainModule()) {
-  main().catch((error2) => {
+  runKnowledgeBaseCli().catch((error2) => {
     process3.stderr.write(`knowledge-base MCP server failed: ${error2}
 `);
     process3.exit(1);
@@ -31420,6 +31420,7 @@ export {
   KnowledgeBase,
   createKnowledgeBaseServer,
   defaultKnowledgeBaseDir,
+  runKnowledgeBaseCli,
   startKnowledgeBaseHttpServer2 as startKnowledgeBaseHttpServer
 };
 /*! Bundled license information:

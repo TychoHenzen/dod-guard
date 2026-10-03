@@ -243,7 +243,9 @@ async function main(argv) {
     const configured = codexManifest.mcpServers?.[pkgName];
     if (configured?.type === "http") {
       if (typeof configured.url !== "string" || !configured.url.startsWith("http://127.0.0.1:")) {
-        process.stdout.write(`smoke FAILED for ${pkgName} Codex manifest\n  host-managed MCP URL must be loopback HTTP\n`);
+        process.stdout.write(
+          `smoke FAILED for ${pkgName} Codex manifest\n  host-managed MCP URL must be loopback HTTP\n`,
+        );
         return 1;
       }
       process.stdout.write(`  Codex manifest OK: host-managed endpoint ${configured.url}\n`);
