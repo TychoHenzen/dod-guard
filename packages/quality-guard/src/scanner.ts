@@ -33,24 +33,26 @@ function scannerPath(): string {
 
 function buildArgs(request: ScanRequest): string[] {
   const optional = [
-    request.root === undefined ? undefined : `--root=${request.root}`,
-    request.profile === undefined ? undefined : `--profile=${request.profile}`,
-    request.rules?.length ? `--rules=${request.rules.join(",")}` : undefined,
-    request.baseline === undefined
-      ? undefined
-      : `--baseline=${request.baseline}`,
-    request.writeBaseline === undefined
-      ? undefined
-      : `--write-baseline=${request.writeBaseline}`,
-    request.failOn === undefined ? undefined : `--fail-on=${request.failOn}`,
-  ].filter((value): value is string => value !== undefined);
+    ["--root", request.root],
+    ["--profile", request.profile],
+    ["--rules", request.rules?.length ? request.rules.join(",") : undefined],
+    ["--baseline", request.baseline],
+    ["--write-baseline", request.writeBaseline],
+    ["--fail-on", request.failOn],
+  ] as const;
   return [
     ...request.paths,
     "--format=json",
-    ...optional,
-    ...(request.excludes ?? []).map((value) => `--exclude=${value}`),
-    ...(request.testPaths ?? []).map((value) => `--test-path=${value}`),
+    ...optional
+      .filter(([, value]) => value !== undefined)
+      .map(([name, value]) => `${name}=${value}`),
+    ...list(request.excludes).map((value) => `--exclude=${value}`),
+    ...list(request.testPaths).map((value) => `--test-path=${value}`),
   ];
+}
+
+function list<T>(values: T[] | undefined): T[] {
+  return values ?? [];
 }
 
 /**

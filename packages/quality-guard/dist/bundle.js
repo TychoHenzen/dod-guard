@@ -7172,8 +7172,8 @@ var require_dist = __commonJS({
         return ajv;
       }
       const [formats, exportName] = opts.mode === "fast" ? [formats_1.fastFormats, fastName] : [formats_1.fullFormats, fullName];
-      const list = opts.formats || formats_1.formatNames;
-      addFormats(ajv, list, formats, exportName);
+      const list2 = opts.formats || formats_1.formatNames;
+      addFormats(ajv, list2, formats, exportName);
       if (opts.keywords)
         (0, limit_1.default)(ajv);
       return ajv;
@@ -7185,11 +7185,11 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f;
     };
-    function addFormats(ajv, list, fs, exportName) {
+    function addFormats(ajv, list2, fs, exportName) {
       var _a;
       var _b;
       (_a = (_b = ajv.opts.code).formats) !== null && _a !== void 0 ? _a : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
-      for (const f of list)
+      for (const f of list2)
         ajv.addFormat(f, fs[f]);
     }
     module.exports = exports = formatsPlugin;
@@ -22741,20 +22741,23 @@ function scannerPath() {
 }
 function buildArgs(request) {
   const optional2 = [
-    request.root === void 0 ? void 0 : `--root=${request.root}`,
-    request.profile === void 0 ? void 0 : `--profile=${request.profile}`,
-    request.rules?.length ? `--rules=${request.rules.join(",")}` : void 0,
-    request.baseline === void 0 ? void 0 : `--baseline=${request.baseline}`,
-    request.writeBaseline === void 0 ? void 0 : `--write-baseline=${request.writeBaseline}`,
-    request.failOn === void 0 ? void 0 : `--fail-on=${request.failOn}`
-  ].filter((value) => value !== void 0);
+    ["--root", request.root],
+    ["--profile", request.profile],
+    ["--rules", request.rules?.length ? request.rules.join(",") : void 0],
+    ["--baseline", request.baseline],
+    ["--write-baseline", request.writeBaseline],
+    ["--fail-on", request.failOn]
+  ];
   return [
     ...request.paths,
     "--format=json",
-    ...optional2,
-    ...(request.excludes ?? []).map((value) => `--exclude=${value}`),
-    ...(request.testPaths ?? []).map((value) => `--test-path=${value}`)
+    ...optional2.filter(([, value]) => value !== void 0).map(([name, value]) => `${name}=${value}`),
+    ...list(request.excludes).map((value) => `--exclude=${value}`),
+    ...list(request.testPaths).map((value) => `--test-path=${value}`)
   ];
+}
+function list(values) {
+  return values ?? [];
 }
 function runScan(request, run = execFileSync) {
   const args = [scannerPath(), ...buildArgs(request)];
