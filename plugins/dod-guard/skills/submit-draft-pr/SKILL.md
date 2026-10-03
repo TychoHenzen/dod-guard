@@ -77,20 +77,24 @@ map each category to the parent branch or verified remote-state evidence. For a
 code-backed sub-issue, map changed files and commits and require its pushed
 implementation. For an administrative sub-issue, map verified remote-state evidence
 instead of branch evidence. Require one durable parent-issue `## Implementation
-handoff` comment from `next-ticket`; consume its task, child, commit, check, and
-user-path mappings rather than reconstructing them from passing tests. Before
-consuming it, read the current remote head for the handoff branch with the
+handoff` comment from `next-ticket`, containing the single `## Acceptance matrix`;
+consume its task, child, commit, check, matrix-row, and user-path
+mappings rather than reconstructing them from passing tests. Validate every
+matrix row against the current pushed head and require pass or explicitly
+reasoned inapplicable status before convergence. Before consuming it, read the current remote head
+for the handoff branch with the
 GitHub branch metadata operation or `git ls-remote origin refs/heads/<branch>`
 and require an exact remote-head match: the remote branch SHA, checked-out
 `HEAD`, and handoff commit must be identical, and the branch names must match.
-If any value differs, treat the handoff as stale, stop, and rerun the
-implementation handoff after the branch state is stable; do not copy stale
-evidence into Convergence. If
+If any value or matrix row head differs, treat the handoff as stale, stop, and
+rerun the implementation handoff after the branch state is stable; do not copy
+stale evidence into Convergence. If
 implementation is incomplete or contradicted, write the actionable remainder to
 the issue and stop without creating or updating the draft PR. Do not call
 passing tests convergence by themselves. When all records agree, link the
-handoff instead of restating its mapping. Include this section in the draft PR
-body:
+handoff instead of restating its mapping. The linked handoff and the built-in
+Review Summary must consume the same matrix and exact head. Include this
+section in the draft PR body:
 
 ```text
 ## Convergence

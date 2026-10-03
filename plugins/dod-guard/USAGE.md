@@ -112,11 +112,13 @@ convergence check. The canonical records and handoffs are in
 
 On the structured path, `/next-ticket` leaves one durable `## Implementation
 handoff` comment on the parent issue, mapping every task and mandatory child to
-its commit or verified remote-state evidence, checks, and user-path result.
+its commit or verified remote-state evidence, checks, and user-path result,
+followed by one `## Acceptance matrix` with exact-head rows for each acceptance
+criterion and mandatory user-facing path.
 `/submit-draft-pr` compares that handoff with the issue contract and links it
-from `## Convergence` instead of copying the mapping; missing or contradicted
-evidence stays an actionable remainder. Small, clear fixes use the ordinary
-path instead.
+from `## Convergence` instead of copying the mapping; missing, contradicted, or
+stale matrix evidence stays an actionable remainder. Small, clear fixes use
+the ordinary path instead.
 
 The structured path does not create a parallel local plan. It preserves stops
 for material ambiguity, credentials, destructive or authority-bound actions,

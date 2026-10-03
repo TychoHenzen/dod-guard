@@ -573,6 +573,7 @@ test("normalizes parent, child, no-child, orphan, and status-drift ancestry", ()
 test("goal-sdlc retains every delivery stage and queue boundary", async () => {
   const skill = await readSkill();
   for (const marker of [
+    "## Acceptance matrix contract",
     "### Checkout and execution policy",
     "### Continuous queue loop",
     "### State snapshot and read discipline",
@@ -598,6 +599,9 @@ test("goal-sdlc retains every delivery stage and queue boundary", async () => {
   );
   assert.match(skill, /classify the missing evidence as `hold`/);
   assert.match(skill, /Process exactly one parent PBI\/delivery unit at a time/);
+  assert.match(skill, /one compact acceptance matrix in its GitHub/);
+  assert.match(skill, /identity\/authorization, interactive controls/);
+  assert.match(skill, /not a local ledger or a numeric quality gate/);
   assert.match(skill, /Do not mark the goal complete after one PBI/);
   assert.match(
     skill,
