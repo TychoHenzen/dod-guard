@@ -151,5 +151,14 @@
     "reason": "Intentional #681 hosting seam: HTTP/PM2/MCP hosting options, runtime state, and dependency seams are required by the host-managed deployment and covered by HTTP, launcher, readiness, isolation, shutdown, plugin-validation, and publish tests.",
     "author": "Codex (Quality Guard reviewer)",
     "time": "2026-10-03T14:56:46.254Z"
+  },
+  {
+    "findingId": "b4931d67857b76c9e07687bd0c40ec746f81d8548a285eeaf08dcefe440617e4",
+    "fingerprint": "a1776b76c62fb7ab9a59b446b144d72994f0e369c7054974b98afdb847eb1fd4",
+    "baseSha": "bc4527441377632896522e5c16287057ba407f0b",
+    "targetSha": "d6422d4fc5770c64eacf39f413167a8fa7b40063",
+    "reason": "Intentional #681 hosting seam: HTTP/PM2/MCP hosting options, runtime state, and dependency seams are required by the host-managed deployment and covered by HTTP, launcher, readiness, isolation, shutdown, plugin-validation, and publish tests.",
+    "author": "Codex (Quality Guard reviewer)",
+    "time": "2026-10-03T14:59:34.580Z"
   }
 ]
