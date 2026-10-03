@@ -44,7 +44,7 @@ boundaries in this skill win.
 Resolve this skill's directory from the loaded `SKILL.md`, then run:
 
 The helper invocation follows the repository's
-[command-composition contract](../../../docs/command-composition.md): pass the
+[command-composition contract](../../docs/command-composition.md): pass the
 repository and pull-request values as separate native arguments and preserve a
 non-zero preflight result.
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import process from "node:process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -9,6 +9,7 @@ import { mutationState } from "./command-composition-fixtures.mjs";
 
 const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const CONTRACT = join(ROOT, "docs", "command-composition.md");
+const PLUGIN_CONTRACT = join(ROOT, "plugins", "dod-guard", "docs", "command-composition.md");
 const FIXTURE = join(ROOT, "scripts", "ci", "command-composition-fixtures.mjs");
 const OUTPUT_LINE_COUNT = 120;
 const DISPLAY_LINE_COUNT = 45;
@@ -27,6 +28,14 @@ const GUIDANCE = [
   "AGENTS.md",
   "plugins/dod-guard/USAGE.md",
   "docs/handoffs/2026-08-30-serena-code-explorer.md",
+  "plugins/dod-guard/skills/next-ticket/SKILL.md",
+  "plugins/dod-guard/skills/submit-draft-pr/SKILL.md",
+  "plugins/dod-guard/skills/complete-pr/SKILL.md",
+  "plugins/dod-guard/skills/review-pr/SKILL.md",
+  "plugins/dod-guard/skills/publish/SKILL.md",
+];
+const SHIPPED_GUIDANCE = [
+  "plugins/dod-guard/USAGE.md",
   "plugins/dod-guard/skills/next-ticket/SKILL.md",
   "plugins/dod-guard/skills/submit-draft-pr/SKILL.md",
   "plugins/dod-guard/skills/complete-pr/SKILL.md",
@@ -52,6 +61,7 @@ function read(path) {
 
 test("the contract defines shell, native, path, output, and precondition boundaries", () => {
   const contract = readFileSync(CONTRACT, "utf8");
+  assert.equal(readFileSync(PLUGIN_CONTRACT, "utf8"), contract, "plugin contract must match repository contract");
   for (const fragment of [
     "Windows PowerShell",
     "Native executable",
@@ -65,6 +75,16 @@ test("the contract defines shell, native, path, output, and precondition boundar
     "*** End Patch",
   ]) {
     assert.ok(contract.includes(fragment), `contract is missing ${fragment}`);
+  }
+});
+
+test("shipped plugin guidance resolves the shipped contract", () => {
+  for (const path of SHIPPED_GUIDANCE) {
+    const source = read(path);
+    const link = source.match(/\]\(([^)]*command-composition\.md)\)/u)?.[1];
+    assert.ok(link, `${path} must link the command-composition contract`);
+    assert.equal(resolve(ROOT, dirname(path), link), PLUGIN_CONTRACT, `${path} must resolve the shipped contract`);
+    assert.ok(existsSync(resolve(ROOT, dirname(path), link)), `${path} target must exist`);
   }
 });
 
@@ -87,7 +107,13 @@ test("path fixtures reject wildcard and collapsed forms but preserve explicit ar
   assert.equal(collapsed.status, 2);
   assert.match(collapsed.stderr, SEPARATE_ARGUMENTS_ERROR);
 
-  const paths = ["packages/code-explorer/src/", "packages/fossil/src/", "packages/quality-guard/src/", "scripts/ci/"];
+  const paths = [
+    "packages/code-explorer/src/",
+    "packages/fossil/src/",
+    "packages/knowledge-base/src/",
+    "packages/quality-guard/src/",
+    "scripts/ci/",
+  ];
   const accepted = runFixture(["paths", ...paths]);
   assert.equal(accepted.status, 0, accepted.stderr);
   assert.deepEqual(JSON.parse(accepted.stdout).paths, paths);

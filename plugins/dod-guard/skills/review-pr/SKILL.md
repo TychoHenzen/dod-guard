@@ -136,7 +136,7 @@ fan-out, `powershell.exe`, `pwsh`, `cmd.exe`, `run-reviewer.ps1`, or another
 generated reviewer wrapper.
 
 This direct-process boundary is the repository's
-[command-composition contract](../../../docs/command-composition.md) in action.
+[command-composition contract](../../docs/command-composition.md) in action.
 
 ### Git and GitHub
 

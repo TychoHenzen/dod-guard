@@ -129,7 +129,7 @@ All GitHub-backed commands follow the shared request policy in
 
 Cross-shell RTK, native-executable, path, output, and precondition commands
 follow the repository contract in
-[`docs/command-composition.md`](../../docs/command-composition.md).
+[`docs/command-composition.md`](docs/command-composition.md).
 
 Start or continue the Todo PBI from the repository's main checkout. Use an
 isolated worktree only when that checkout cannot safely retain the selected

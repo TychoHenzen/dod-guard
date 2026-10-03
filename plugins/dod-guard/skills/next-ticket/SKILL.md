@@ -156,7 +156,7 @@ is clearer. Do not require a functional language or dense composition.
 
 When a verification command crosses PowerShell, a native executable, or an
 explicitly selected POSIX shell, apply the repository's
-[command-composition contract](../../../docs/command-composition.md). Preserve
+[command-composition contract](../../docs/command-composition.md). Preserve
 separate path arguments, required-argument checks, destination-parent
 preconditions, and producer exit status.
 

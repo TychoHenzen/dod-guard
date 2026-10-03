@@ -46,7 +46,7 @@ automatically.
 Run the repository's required pre-PR checks when fresh evidence is unavailable.
 Stop on a failed or unavailable required check.
 
-Use the repository's [command-composition contract](../../../docs/command-composition.md)
+Use the repository's [command-composition contract](../../docs/command-composition.md)
 for shell selection, native argument vectors, bounded output, and preflight
 failures while running those checks.
 
