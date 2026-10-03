@@ -14,6 +14,7 @@ import {
   buildPkg,
   goodOpenCodeTree,
   goodTree,
+  hostedTree,
   PKG_NAME,
   write,
 } from "./fixtures/plugin-tracked.mjs";
@@ -227,6 +228,21 @@ describe("validate-plugins: shipped plugin version metadata", () => {
     const violations = collectPackages([buildPkg(firstRoot), buildPkg(secondRoot)]);
     ok(violations.length > 0);
     ok(violations.every((violation) => violation.file.startsWith(secondRoot)));
+  });
+});
+
+describe("validate-plugins: hosted Codex registration", () => {
+  it("rejects a hosted manifest that omits mcpServers", () => {
+    const root = fixture(hostedTree);
+    const codexPath = join(root, "packages/quality-guard/.codex-plugin/plugin.json");
+    const codex = JSON.parse(readFileSync(codexPath, "utf8"));
+    delete codex.mcpServers;
+    write(root, "packages/quality-guard/.codex-plugin/plugin.json", JSON.stringify(codex));
+    const violations = collect(buildPkg(root, "quality-guard"));
+    match(
+      violations.map((violation) => violation.message).join("\n"),
+      /host-managed quality-guard Codex registration must define mcpServers/,
+    );
   });
 });
 

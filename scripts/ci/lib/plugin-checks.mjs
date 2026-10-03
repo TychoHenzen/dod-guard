@@ -10,6 +10,10 @@ import { readFrontmatter, walkStrings } from "./fs-utils.mjs";
 const PLUGIN_ROOT_REF = /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"'\s]+)/g;
 // Model names and built-in agents are legal subagent_type values with no agent file.
 const BUILTIN_AGENTS = new Set(["sonnet", "opus", "haiku", "general-purpose", "Explore", "Plan", "claude"]);
+const HOSTED_MCP_ENDPOINTS = Object.freeze({
+  "quality-guard": "http://127.0.0.1:21720/servers/quality-guard/mcp",
+  "knowledge-base": "http://127.0.0.1:21721/servers/knowledge-base/mcp",
+});
 // Double-encoded UTF-8 leaves these code points behind; U+FFFD means the file is not valid UTF-8.
 // Built from code points so this file's own encoding cannot corrupt the detector.
 const MOJIBAKE_CODES = [0x00c2, 0x00c3, 0x00e2, 0xfffd, 0xfeff];
@@ -157,12 +161,35 @@ export function createPluginChecks(report, isTracked) {
       return report(file, `mcpServers must hold exactly one key named "${pkg.name}", got [${servers.join(", ")}]`);
     }
     const server = config.mcpServers[pkg.name];
+    const hostedEndpoint = HOSTED_MCP_ENDPOINTS[pkg.name];
+    if (hostedEndpoint) {
+      if (server?.type !== "http") report(file, `host-managed ${pkg.name} registration must use type "http"`);
+      if (server?.url !== hostedEndpoint)
+        report(file, `host-managed ${pkg.name} registration must use ${JSON.stringify(hostedEndpoint)}`);
+      return;
+    }
     // Literal string, not a template: this is the exact byte sequence every .mcp.json ships.
     // biome-ignore lint/suspicious/noTemplateCurlyInString: intentionally literal, see comment above
     const expectedArg = "${CLAUDE_PLUGIN_ROOT}/dist/bundle.js";
     if (server.command !== "node") report(file, `command must be "node", got ${JSON.stringify(server.command)}`);
     if (server.args?.[0] !== expectedArg)
       report(file, `args[0] must be ${JSON.stringify(expectedArg)}, got ${JSON.stringify(server.args?.[0])}`);
+  }
+
+  function checkCodexMcpConfig(file, pkg, manifest) {
+    const expected = HOSTED_MCP_ENDPOINTS[pkg.name];
+    if (!expected) return;
+    if (!manifest?.mcpServers || typeof manifest.mcpServers !== "object" || Array.isArray(manifest.mcpServers)) {
+      report(file, `host-managed ${pkg.name} Codex registration must define mcpServers`);
+      return;
+    }
+    const server = manifest.mcpServers[pkg.name];
+    if (server?.type !== "http" || server?.url !== expected) {
+      report(
+        file,
+        `host-managed ${pkg.name} Codex registration must use type "http" and URL ${JSON.stringify(expected)}`,
+      );
+    }
   }
 
   function checkHookTargets(pkg, file, plugin) {
@@ -405,6 +432,7 @@ export function createPluginChecks(report, isTracked) {
     const claudeSource = checkPluginJson(pkg);
     const codexFile = join(pkg.dir, ".codex-plugin", "plugin.json");
     const codexSource = readJsonSource(codexFile);
+    checkCodexMcpConfig(codexFile, pkg, codexSource.value);
     if (existsSync(codexFile) && isTracked && !isTracked(codexFile))
       report(codexFile, "not tracked by git — the Codex manifest would not ship");
     const versionDiagnostics = compareVersionSources([

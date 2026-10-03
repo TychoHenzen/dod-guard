@@ -1,10 +1,7 @@
 import { execFileSync } from "node:child_process";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { scanFailure } from "./scanner-failure.js";
-
-const SCAN_TIMEOUT_MS = 120_000;
-const MAX_BUFFER = 32 * 1024 * 1024;
+import { asyncExecFile, scanFailure } from "./scanner-failure.js";
 
 export interface ScanRequest {
   paths: string[];
@@ -17,6 +14,9 @@ export interface ScanRequest {
   writeBaseline?: string;
   failOn?: "none" | "error" | "regression" | "any";
 }
+
+const SCAN_TIMEOUT_MS = 120_000;
+const MAX_BUFFER = 32 * 1024 * 1024;
 
 /** Absolute path to the scanner that ships beside this server. */
 function scannerPath(): string {
@@ -32,35 +32,27 @@ function scannerPath(): string {
 }
 
 function buildArgs(request: ScanRequest): string[] {
+  const optional = [
+    ["--root", request.root],
+    ["--profile", request.profile],
+    ["--rules", request.rules?.length ? request.rules.join(",") : undefined],
+    ["--baseline", request.baseline],
+    ["--write-baseline", request.writeBaseline],
+    ["--fail-on", request.failOn],
+  ] as const;
   return [
     ...request.paths,
     "--format=json",
-    ...optionalArgs(request),
-    ...repeatedArgs("--exclude", request.excludes),
-    ...repeatedArgs("--test-path", request.testPaths),
+    ...optional
+      .filter(([, value]) => value !== undefined)
+      .map(([name, value]) => `${name}=${value}`),
+    ...list(request.excludes).map((value) => `--exclude=${value}`),
+    ...list(request.testPaths).map((value) => `--test-path=${value}`),
   ];
 }
 
-function optionalArgs(request: ScanRequest): string[] {
-  return [
-    flag("--root", request.root),
-    flag("--profile", request.profile),
-    flag(
-      "--rules",
-      request.rules?.length ? request.rules.join(",") : undefined,
-    ),
-    flag("--baseline", request.baseline),
-    flag("--write-baseline", request.writeBaseline),
-    flag("--fail-on", request.failOn),
-  ].filter((value): value is string => value !== undefined);
-}
-
-function flag(name: string, value: string | undefined): string | undefined {
-  return value === undefined ? undefined : `${name}=${value}`;
-}
-
-function repeatedArgs(name: string, values: string[] | undefined): string[] {
-  return (values ?? []).map((value) => `${name}=${value}`);
+function list<T>(values: T[] | undefined): T[] {
+  return values ?? [];
 }
 
 /**
@@ -77,6 +69,21 @@ export function runScan(request: ScanRequest, run = execFileSync) {
       maxBuffer: MAX_BUFFER,
       cwd: request.root,
     }) as string;
+    return { exitCode: 0, report: JSON.parse(stdout) };
+  } catch (err) {
+    return scanFailure(err);
+  }
+}
+
+export async function runScanAsync(request: ScanRequest, run = asyncExecFile) {
+  const args = [scannerPath(), ...buildArgs(request)];
+  try {
+    const { stdout } = await run(process.execPath, args, {
+      encoding: "utf8",
+      timeout: SCAN_TIMEOUT_MS,
+      maxBuffer: MAX_BUFFER,
+      cwd: request.root,
+    });
     return { exitCode: 0, report: JSON.parse(stdout) };
   } catch (err) {
     return scanFailure(err);

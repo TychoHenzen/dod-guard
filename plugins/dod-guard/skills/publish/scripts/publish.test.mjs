@@ -60,6 +60,16 @@ test("publish guidance exposes the exact cross-client refresh sequence", async (
   }
 });
 
+test("publish guidance restarts only the shared host after cache refresh", async () => {
+  const document = await readFile(skillPath, "utf8");
+  const codexRefresh = document.indexOf("codex plugin add dod-guard@dod-guard-monorepo");
+  const hostRestart = document.indexOf("pm2 restart dod-guard-quality-guard dod-guard-knowledge-base --update-env");
+  assert.ok(codexRefresh >= 0);
+  assert.ok(hostRestart > codexRefresh);
+  assert.match(document, /restart only its two named apps/);
+  assert.doesNotMatch(document, /pm2 restart all/);
+});
+
 test("publish guidance requires the authenticated Windows PowerShell boundary", async () => {
   const [skill, usage] = await Promise.all([
     readFile(skillPath, "utf8"),

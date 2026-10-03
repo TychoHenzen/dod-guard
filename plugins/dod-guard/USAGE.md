@@ -376,7 +376,16 @@ failure, not a successful release.
 Confirm `codex plugin list` reports the released version. Do not copy files
 into either client cache manually.
 
-On Windows PowerShell, after both client refreshes, run the checked-in
+If the shared MCP host is managed by PM2, restart only its two apps after the
+client cache refresh succeeds:
+
+```text
+pm2 restart dod-guard-quality-guard dod-guard-knowledge-base --update-env
+```
+
+Do not restart them before refresh or restart unrelated PM2 processes.
+
+On Windows PowerShell, after both client refreshes and any host restart, run the checked-in
 read-only evidence boundary with the exact release values:
 
 ```powershell

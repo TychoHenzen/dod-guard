@@ -4,6 +4,13 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  installKnowledgeHttpSignals,
+  type KnowledgeHttpOptions,
+  parseKnowledgeHttpCliOptions,
+  type RunningKnowledgeHttpServer,
+  startKnowledgeBaseHttpServer as startKnowledgeBaseHttpService,
+} from "./http.js";
 import { KnowledgeBase } from "./store.js";
 import { registerKnowledgeTools } from "./tools.js";
 
@@ -44,13 +51,33 @@ function isMainModule(): boolean {
   }
 }
 
-async function main(): Promise<void> {
+export async function runKnowledgeBaseCli(
+  args = process.argv.slice(2),
+): Promise<RunningKnowledgeHttpServer | undefined> {
+  if (args[0] === "--http") {
+    const rootDir = process.env[KNOWLEDGE_BASE_DIR_ENV];
+    if (!rootDir?.trim()) throw new Error(`${KNOWLEDGE_BASE_DIR_ENV} must be set to the external knowledge-base root`);
+    const running = await startKnowledgeBaseHttpServer({
+      ...parseKnowledgeHttpCliOptions(args.slice(1)),
+      rootDir,
+    });
+    installKnowledgeHttpSignals(running);
+    process.stderr.write(`knowledge-base HTTP ready at http://${running.host}:${running.port}${running.path}\n`);
+    return running;
+  }
   const server = createKnowledgeBaseServer();
   await server.connect(new StdioServerTransport());
 }
 
+export function startKnowledgeBaseHttpServer(options: Omit<KnowledgeHttpOptions, "createMcpServer">) {
+  return startKnowledgeBaseHttpService({
+    ...options,
+    createMcpServer: () => createKnowledgeBaseServer(options.rootDir),
+  });
+}
+
 if (isMainModule()) {
-  main().catch((error) => {
+  runKnowledgeBaseCli().catch((error) => {
     process.stderr.write(`knowledge-base MCP server failed: ${error}\n`);
     process.exit(1);
   });

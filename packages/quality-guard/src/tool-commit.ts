@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { renderDecision, runStagedCheck } from "./commit-gate/cli.js";
+import { requireRepositoryRoot } from "./repository-root.js";
 import { text, toolError } from "./tool-response.js";
 
 function commitGateResponse(input: {
@@ -28,7 +29,10 @@ async function commitGateTool(input: {
   target?: string;
 }) {
   try {
-    return commitGateResponse(input);
+    return commitGateResponse({
+      ...input,
+      root: requireRepositoryRoot(input.root),
+    });
   } catch (err) {
     return toolError(err);
   }

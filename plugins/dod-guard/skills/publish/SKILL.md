@@ -278,7 +278,18 @@ or relies on a later validator or client-cache readback to recover the release.
 
    Confirm `codex plugin list` reports the released version. Do not copy files
    into either client cache manually.
-11. On Windows PowerShell, after both client refreshes, use the checked-in
+   If the machine runs the shared MCP host, restart only its two named apps
+   after both refresh commands succeed:
+
+   ```text
+   pm2 restart dod-guard-quality-guard dod-guard-knowledge-base --update-env
+   ```
+
+   Never restart these apps before the cache refresh succeeds, and never use
+   this step to restart unrelated PM2 processes. A machine without those apps
+   has no host restart to perform.
+11. On Windows PowerShell, after both client refreshes and any host restart,
+   use the checked-in
     `<skill-dir>/scripts/release-verification.ps1` read-only boundary. Bind it to
     the exact published SHA, its expected parent SHA, and the released version:
 

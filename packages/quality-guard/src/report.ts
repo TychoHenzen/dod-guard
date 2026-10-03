@@ -4,7 +4,7 @@ import { parseQualityConfig } from "./commit-gate/config.js";
 import * as currentArchitecture from "./commit-gate/current-architecture.js";
 import { extractFactInventory } from "./commit-gate/facts.js";
 import { buildQualityReport } from "./report-builder.js";
-import { runScan, type ScanRequest } from "./scanner.js";
+import { runScan, runScanAsync, type ScanRequest } from "./scanner.js";
 
 const analyzeArchitecture = currentArchitecture.analyzeCurrentArchitecture;
 
@@ -54,10 +54,24 @@ function asReportScan(
   return candidate as Parameters<typeof buildQualityReport>[0];
 }
 
+function reportRoot(request: { root?: string }): string {
+  return path.resolve(request.root ?? process.cwd());
+}
+
 export function runQualityReport(
   request: Omit<ScanRequest, "paths"> & { root?: string },
 ) {
-  const root = path.resolve(request.root ?? process.cwd());
+  const root = reportRoot(request);
   const scan = asReportScan(runScan({ ...request, root, paths: ["."] }).report);
+  return buildQualityReport(scan, architectureFor(root, scan));
+}
+
+export async function runQualityReportAsync(
+  request: Omit<ScanRequest, "paths"> & { root?: string },
+) {
+  const root = reportRoot(request);
+  const scan = asReportScan(
+    (await runScanAsync({ ...request, root, paths: ["."] })).report,
+  );
   return buildQualityReport(scan, architectureFor(root, scan));
 }

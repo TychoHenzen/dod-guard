@@ -136,3 +136,20 @@ The server exposes `quality_scan`, `quality_report`, `quality_gate`,
 `quality_report` scores every supported source file under the repository root and adds an unscored current-state
 architecture audit. Use `quality_commit_gate` when an MCP client needs the same staged decision as the command line.
 Use `quality_test_quality` when an MCP client has a test-evidence manifest.
+
+## Shared HTTP host
+
+The shipped `.mcp.json` points at the host-managed loopback endpoint
+`http://127.0.0.1:21720/servers/quality-guard/mcp`. Start the matching PM2
+app with `tools/mcp-host/ecosystem.config.cjs`; `MCP_HOST_QUALITY_GUARD_PORT`,
+`MCP_HOST_QUALITY_GUARD_PATH`, and `MCP_HOST_BIND_HOST` are configurable, but
+the bind host must remain loopback. The health endpoint is the corresponding
+`/health` path.
+The tracked registration contains the defaults; when a port or path override
+is used, run `node tools/mcp-host/launcher.mjs --print-config` and use its
+`mcpServers` object for the client registration.
+
+Every project-sensitive MCP tool requires an explicit `root` argument. The
+server validates that root before scanning or reading repository state; it
+never substitutes the HTTP process working directory. CLI commands retain
+their existing command-line defaults.
