@@ -57,6 +57,14 @@ need a restart. The Codex MCP pool serves the published bundle at
 `/servers/knowledge-base/mcp`; configure its process with
 `DOD_GUARD_KNOWLEDGE_BASE_DIR` before starting it.
 
+The supported tracked registration is the host-managed loopback endpoint
+`http://127.0.0.1:21721/servers/knowledge-base/mcp`. Start the matching PM2
+app from `tools/mcp-host/ecosystem.config.cjs`. The host validates
+`DOD_GUARD_KNOWLEDGE_BASE_DIR` and its `entries/` directory before listening,
+keeps that root fixed for the service process, and exposes the matching
+`/health` endpoint. `MCP_HOST_KNOWLEDGE_BASE_PORT` and the path variables can
+override the defaults without enabling public binding.
+
 ## Guidance boundary
 
 Retrieved content is returned as attributed `reference_guidance`. Explicit task

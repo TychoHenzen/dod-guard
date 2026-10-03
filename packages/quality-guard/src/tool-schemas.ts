@@ -6,10 +6,10 @@ export const PATHS = z
   .describe("Paths to scan, relative to root");
 export const ROOT = z
   .string()
-  .optional()
+  .min(1)
   .describe(
     "Repository root. Point this at the repo, not at the target, so manifest " +
-      "files are in scope",
+      "files are in scope. An explicit root is required for MCP requests",
   );
 export const EXCLUDES = z
   .array(z.string())

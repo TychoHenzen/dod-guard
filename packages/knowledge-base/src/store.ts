@@ -126,6 +126,10 @@ export class KnowledgeBase {
     this.now = now;
   }
 
+  async validate(): Promise<void> {
+    await this.buildIndex();
+  }
+
   private async buildIndex(): Promise<KnowledgeIndex> {
     await requireDirectory(this.rootDir, "root");
     await requireEntriesDirectory(this.entriesDir);

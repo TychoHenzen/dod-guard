@@ -3,6 +3,7 @@ import { z } from "zod";
 import { runQualityReport } from "./report.js";
 import { formatSkips, readSkipLog } from "./skips.js";
 import { text, toolError } from "./tool-response.js";
+import { requireRepositoryRoot } from "./repository-root.js";
 import { EXCLUDES, ROOT, TEST_PATHS } from "./tool-schemas.js";
 
 export function registerQualityReport(server: McpServer): void {
@@ -21,7 +22,7 @@ export function registerQualityReport(server: McpServer): void {
       try {
         return text(
           JSON.stringify(
-            runQualityReport({ root, excludes, testPaths, profile }),
+            runQualityReport({ root: requireRepositoryRoot(root), excludes, testPaths, profile }),
             null,
             2,
           ),
@@ -42,7 +43,7 @@ export function registerQualitySkips(server: McpServer): void {
     { root: z.string().describe("Repository root") },
     async ({ root }) => {
       try {
-        return text(formatSkips(readSkipLog(root)));
+        return text(formatSkips(readSkipLog(requireRepositoryRoot(root))));
       } catch (err) {
         return toolError(err);
       }

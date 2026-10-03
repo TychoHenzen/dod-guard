@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { runScan, type ScanRequest } from "./scanner.js";
+import { requireRepositoryRoot } from "./repository-root.js";
 import { text, toolError } from "./tool-response.js";
 import { EXCLUDES, PATHS, ROOT, TEST_PATHS } from "./tool-schemas.js";
 
@@ -28,7 +29,7 @@ const QUALITY_SCAN_INPUT = {
 
 async function qualityScan(input: ScanRequest) {
   try {
-    const { report } = runScan(input);
+    const { report } = runScan({ ...input, root: requireRepositoryRoot(input.root) });
     return text(JSON.stringify(report, null, 2));
   } catch (err) {
     return toolError(err);
@@ -66,6 +67,7 @@ async function qualityGate(input: ScanRequest) {
 function runGateScan(input: ScanRequest) {
   return runScan({
     ...input,
+    root: requireRepositoryRoot(input.root),
     failOn: input.failOn ?? "regression",
   });
 }
