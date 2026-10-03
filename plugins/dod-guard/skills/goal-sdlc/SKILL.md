@@ -86,6 +86,42 @@ inapplicable row when the PBI does not expose that path. The same matrix is
 carried from the handoff into `submit-draft-pr` convergence and Codex's
 built-in Review Summary; it is not a local ledger or a numeric quality gate.
 
+## Exact-head pre-review checkpoint
+
+Before Codex's built-in Review Summary or guarded completion, run one
+read-before-write checkpoint for the selected pull request. The checkpoint is
+part of the existing implementation handoff and never becomes a second ledger.
+
+1. Read the same-repository branch ref and the pull request at one exact pushed
+   head. Record the branch ref, branch head SHA, PR head SHA, base ref, base
+   SHA, and mergeability before trusting any acceptance or review evidence.
+2. Enumerate every required provider context from the live branch-protection
+   or provider response. Record one row per context with its name, provider,
+   workflow, run ID, branch ref, exact head SHA, observed provider state, and
+   the normalized state `present`, `pending`, `failed`, `skipped`, or
+   `unavailable`. Classic status-only contexts may omit workflow and run ID, but
+   still require the observed provider, repository ref, and exact head. A
+   missing, malformed, stale, duplicate, forked, or provider-mismatched row is
+   `unavailable`, not success.
+3. If a draft lifecycle skipped a required workflow, read back draft readiness
+   first, then dispatch that workflow at most once for the same repository,
+   branch ref, and exact head. Record the workflow, ref, run ID, and resulting
+   head SHA from the dispatch readback before proceeding. A workflow without a
+   supported dispatch path is a fail-closed stop.
+4. If the base ref or SHA advances, or mergeability becomes conflicting, mark
+   the acceptance matrix stale. Route one bounded synchronization through the
+   existing `complete-pr` owner, read back the final branch and PR heads, and
+   rerun acceptance, required-context, and real-data proof at that final head.
+   Unexpected branch movement, unresolved conflicts, provider failure, or an
+   exhausted synchronization bound stops before review resolution, merge, or
+   cleanup.
+
+`submit-draft-pr` owns draft creation and read-only convergence; `complete-pr`
+retains the existing provider dispatch, exact-head, branch-update, conflict,
+merge, and cleanup safeguards. This checkpoint orchestrates their evidence
+early; it does not force-push, write generated refs, call `update-branch` as
+metadata repair, invoke manual review, or edit an external checkout.
+
 ## Contract ownership
 
 - Built-in `/goal` owns goal persistence, continuation, and the final stop
@@ -413,6 +449,13 @@ A child is not implementation-complete merely because code compiles. Record acce
 When all mandatory children are implementation-complete, use:
 
   [$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md)
+
+After the draft exists, complete the exact-head pre-review checkpoint before
+allowing built-in Review Summary to run. Carry its required-context matrix,
+dispatch readback, base/mergeability evidence, and any recovery remainder in
+the same implementation handoff and Convergence record. A later branch or
+base change invalidates the matrix and requires fresh proof; passing tests alone
+do not restore stale evidence.
 
 The resulting PR must be published/non-draft (`draft=false`). If the skill creates a draft, publish it using the supported repository operation and verify the remote state.
 

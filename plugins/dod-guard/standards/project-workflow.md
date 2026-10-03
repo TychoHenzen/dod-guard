@@ -63,6 +63,18 @@ behavior, status, evidence location, and exact pushed head SHA. Missing,
 failed, unverified, blocked, or head-mismatched rows stop the handoff; an
 `inapplicable` row is valid only with an explicit reason.
 
+The same handoff also carries one `## Preflight checkpoint` record for the
+selected pull request once its branch exists. It records the exact branch and
+PR head, base ref and SHA, mergeability, and one row for every required
+provider context. Each context row records its provider, workflow, run ID, ref,
+head SHA, and one of `present`, `pending`, `failed`, `skipped`, or
+`unavailable`. Missing, stale, duplicate, forked, or provider-mismatched
+evidence is not acceptance evidence. A draft-skipped workflow may be dispatched
+once only after readiness is read back for the same repository, ref, and head;
+the dispatch and resulting run are recorded in this record. Base drift
+invalidates the acceptance matrix and routes one bounded synchronization through
+`complete-pr`; conflicts or unexpected branch movement stop the workflow.
+
 ## Structured handoff records
 
 For a structured PBI, keep these records in the issue's `## Implementation
@@ -91,14 +103,17 @@ links it instead of restating it:
 ```text
 ## Convergence
 - Handoff: <link to the ## Implementation handoff comment> (head <sha>)
+- Preflight checkpoint: same handoff record (head <sha>)
 - Remainder: none
 ```
 
 Convergence is passing only when every named record exists, every task and
 mandatory child is mapped by the implementation handoff, every acceptance
 criterion has fresh evidence at the exact head; every matrix row does too, and
-no item is contradicted or unresolved. Codex's built-in Review Summary consumes
-that same matrix; it is not copied into a second review ledger.
+no item is contradicted or unresolved. The required-context and base/mergeability
+checkpoint must also be stable at that exact head. Codex's built-in Review
+Summary consumes that same matrix and checkpoint; neither is copied into a
+second review ledger.
 
 An incomplete or contradicted result is not reported as complete. Write the
 actionable remainder, with the next task and owner, to the PBI and stop before

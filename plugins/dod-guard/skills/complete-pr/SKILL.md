@@ -52,6 +52,29 @@ non-zero preflight result.
 node <skill-dir>/scripts/complete-pr.mjs <owner/repository> <pull-request-number> --pushed-head <verified-head-sha>
 ```
 
+The final gate consumes the `## Preflight checkpoint` carried by the
+implementation handoff. Before any ready transition, branch update, merge, or
+cleanup, require the checkpoint's exact branch/PR head, base ref/SHA,
+mergeability, and complete matrix for every required provider context. Every context row must
+retain its provider, workflow, run ID, ref, head SHA, and state. Missing,
+pending, failed, unavailable, stale, duplicate, forked, or
+provider-mismatched evidence stops with the expected and observed values rather
+than being inferred from a passing aggregate check. An exact-head `skipped`
+context is accepted as passing, matching the completion helper. The normalized states are
+`present`, `pending`, `failed`, `skipped`, and `unavailable`.
+Classic status-only contexts may omit workflow and run ID, but still require the
+observed provider, repository ref, and exact head.
+
+If a draft-skipped workflow needs recovery, verify draft readiness at the same
+repository ref and exact head, dispatch it once through the existing guarded
+workflow owner, and read back the run, workflow, ref, and head before waiting
+for required checks. A base advance invalidates the handoff and acceptance
+matrix; the bounded branch synchronization below is the only recovery path.
+Conflicts, unexpected branch movement, failed readback, or a second dispatch
+stop before review resolution, merge, cleanup, force-push, or generated-ref
+mutation. Fresh acceptance and required-check proof is mandatory at the final
+head after synchronization.
+
 Normal completion requires the exact pushed head SHA already verified by the
 calling workflow; the helper never adopts a mutable provider head as its first
 acceptance signal. Merged-recovery mode uses the recorded merged head instead
