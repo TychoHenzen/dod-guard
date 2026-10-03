@@ -130,6 +130,22 @@ test("structured parents require one evidenced child in every delivery category"
   assert.doesNotMatch(submit, /Mandatory child categories: each mapped/);
 });
 
+test("structured handoffs carry one exact-head preflight checkpoint", () => {
+  for (const document of [standard, nextTicket, submit, completePr]) {
+    assert.match(document, /Preflight checkpoint/);
+    assert.match(document, /required\s+provider context/);
+    assert.match(document, /base ref(?:\s+and(?:\s+base)?|\s*\/)\s*SHA/i);
+    assert.match(document, /mergeability/);
+    assert.match(document, /present`,\s*`pending`,\s*`failed`,\s*`skipped`,\s*(?:or|and)/);
+    assert.match(document, /same repository.*(?:ref|head)|same-repository.*(?:ref|head)/si);
+  }
+  assert.match(standard, /one `## Preflight checkpoint` record/);
+  assert.match(nextTicket, /same\s+handoff|same `## Preflight checkpoint`/i);
+  assert.match(submit, /before built-in Review Summary\s+or guarded completion/);
+  assert.match(completePr, /Before any ready transition, branch update, merge, or/);
+  assert.match(submit, /checkpoint remains\s+in the same handoff and Convergence record/);
+});
+
 test("draft submission runs the repository preflight before PR writes", () => {
   const preflight = submit.indexOf("npm run preflight:static-analysis");
   const createOrUpdate = submit.indexOf("## Create or update the draft");

@@ -61,6 +61,31 @@ ref is missing, malformed, duplicated, forked, moved, inconsistent, or still
 stale after the bound. Never write hidden pull-request or generated merge refs
 or call `update-branch` as metadata repair.
 
+## Early required-context and base checkpoint
+
+After the draft PR is created or updated, and before built-in Review Summary
+or guarded completion, consume the one `## Preflight checkpoint` record in the
+implementation handoff. Read the same-repository branch ref, PR API head, and
+`refs/pull/<number>/head` at one exact pushed SHA, then record the base ref and
+base SHA, mergeability, and every required provider context. Each context row
+must carry its name, provider, workflow, run ID, branch ref, exact head SHA, and
+one of `present`, `pending`, `failed`, `skipped`, or `unavailable`.
+
+Missing, malformed, stale, duplicate, forked, or provider-mismatched evidence
+stops convergence. When a draft-skipped required workflow is dispatchable,
+read back readiness first and route one dispatch for the same repository,
+branch ref, workflow, and exact head through the existing guarded owner. Read
+back the resulting run and record its run ID, ref, workflow, and head before
+proceeding. A second dispatch, an unavailable provider, or a failed readback
+stops without review, merge, cleanup, or generated-ref mutation.
+
+Compare the recorded base and head with the current PR before trusting the
+acceptance matrix. Base advancement invalidates earlier acceptance and routes
+one bounded synchronization through `complete-pr`, followed by fresh checks and
+proof at the final head. Conflicts, unexpected branch movement, or an exhausted
+bound stop with the expected and observed ref/SHA values. The checkpoint remains
+in the same handoff and Convergence record; do not create a local ledger.
+
 ## Converge structured work
 
 Resolve the active dod-guard plugin root from the directory containing this skill,
@@ -99,6 +124,7 @@ section in the draft PR body:
 ```text
 ## Convergence
 - Handoff: <link to the ## Implementation handoff comment> (head <sha>)
+- Preflight checkpoint: same handoff record (head <sha>)
 - Remainder: none
 ```
 

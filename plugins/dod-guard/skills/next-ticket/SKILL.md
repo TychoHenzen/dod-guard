@@ -193,6 +193,18 @@ when a matrix row, criterion, mandatory child, required check, or
 required proof is missing, failed, unverified, blocked, or head-mismatched.
 State the exact failed command or actionable remainder.
 
+For a structured parent, add one `## Preflight checkpoint` section to the same
+handoff record once the pull request exists. Keep it tied to the exact pushed
+head and record the branch ref and SHA, PR head SHA, base ref and SHA,
+mergeability, and one row for every required provider context. Each row carries
+the provider, workflow, run ID, ref, head SHA, and one of `present`, `pending`,
+`failed`, `skipped`, or `unavailable`. A draft-skipped workflow is dispatched
+only after readiness is read back and only once for the same repository, ref,
+workflow, and head; record the run and resulting head readback. The handoff
+must record base drift, conflict, unexpected movement, provider failure, or
+bounded-recovery remainder explicitly rather than treating the acceptance
+matrix as still current. This is one evidence record, not a local review ledger.
+
 ## Commit and push
 
 After implementation and required checks, include the classified pending
@@ -208,12 +220,14 @@ branch to its existing upstream. Do not force-push or rewrite existing commits.
 After the verified implementation commit is pushed, create or update one
 parent-issue comment headed `## Implementation handoff` with one entry per
 ordered task and mandatory child category, followed by the single
-`## Acceptance matrix`. Each entry names the commit or verified remote-state
+`## Acceptance matrix` and, when the PR exists, the single `## Preflight
+checkpoint`. Each entry names the commit or verified remote-state
 evidence, changed files or artifact, and the fresh check or user-path result.
 The matrix is the durable acceptance record consumed by convergence and
 Codex's built-in Review Summary; do not copy it to a local ledger. Include the
 current remainder explicitly; use `none` only when every task, matrix row,
-acceptance criterion, and required user path is evidenced at the same head.
+acceptance criterion, required user path, and preflight checkpoint are
+evidenced at the same head.
 Do not create a local planning file or a second issue as a substitute.
 
 ## Result

@@ -613,6 +613,28 @@ test("goal-sdlc retains every delivery stage and queue boundary", async () => {
   );
 });
 
+test("goal-sdlc defines one exact-head pre-review checkpoint", async () => {
+  const skill = await readSkill();
+  for (const marker of [
+    "## Exact-head pre-review checkpoint",
+    "required provider context",
+    "present`, `pending`, `failed`, `skipped`, or",
+    "draft lifecycle skipped a required workflow",
+    "at most once for the same repository",
+    "dispatch readback",
+    "base ref or SHA advances",
+    "acceptance matrix stale",
+    "Unexpected branch movement, unresolved conflicts",
+    "does not force-push, write generated refs",
+  ]) {
+    assert.ok(skill.includes(marker), `missing pre-review checkpoint marker: ${marker}`);
+  }
+  assert.match(skill, /Before Codex's built-in Review Summary or guarded completion/);
+  assert.match(skill, /submit-draft-pr` owns draft creation and read-only convergence/);
+  assert.match(skill, /`complete-pr`\s+retains the existing provider dispatch/);
+  assert.match(skill, /never becomes a second ledger/);
+});
+
 test("reconciliation excludes stale merged records and recognizes complete grouped delivery", async () => {
   const skill = await readSkill();
   for (const fixture of reconciliationFixtures) {
