@@ -156,15 +156,31 @@ function contractErrors(rows, requiredContracts) {
   return requiredContracts
     .map(contractName)
     .filter(Boolean)
-    .filter((contract) => !rows.some((row) => row.id === contract || row.contract === contract))
-    .map((contract) => `missing acceptance row for ${contract}`);
+    .filter((contract) => !rows.some(
+      (row) => (row.id === contract || row.contract === contract) && row.status === "pass",
+    ))
+    .map((contract) => `missing passing acceptance row for ${contract}`);
 }
 
 function pathErrors(rows, requiredPaths) {
+  const matchedRows = new Map();
+  const assignRow = (requiredPath, seenRows) => {
+    for (const row of rows) {
+      if (row.path === null || !pathMatches(row.path, requiredPath) || seenRows.has(row.index)) {
+        continue;
+      }
+      seenRows.add(row.index);
+      const assignedPath = matchedRows.get(row.index);
+      if (assignedPath === undefined || assignRow(assignedPath, seenRows)) {
+        matchedRows.set(row.index, requiredPath);
+        return true;
+      }
+    }
+    return false;
+  };
+
   return requiredPaths
-    .filter((requiredPath) => !rows.some(
-      (row) => row.path !== null && pathMatches(row.path, requiredPath),
-    ))
+    .filter((requiredPath) => !assignRow(requiredPath, new Set()))
     .map((requiredPath) => `missing acceptance row for ${requiredPath}`);
 }
 
@@ -177,13 +193,6 @@ function validateRows(rows, expectedHeadSha) {
   return errors;
 }
 
-function matrixHeadSha(matrix) {
-  if (Array.isArray(matrix)) {
-    return null;
-  }
-  return textValue(matrix?.headSha);
-}
-
 function validateAcceptanceMatrix({
   matrix,
   headSha,
@@ -192,7 +201,7 @@ function validateAcceptanceMatrix({
 } = {}) {
   const errors = [];
   const rows = matrixRows(matrix);
-  const expectedHeadSha = textValue(headSha) ?? matrixHeadSha(matrix);
+  const expectedHeadSha = textValue(headSha);
   const normalizedRows = [];
   if (rows !== null) {
     normalizedRows.push(...rows.map(normalizeRow));
@@ -202,7 +211,7 @@ function validateAcceptanceMatrix({
     errors.push("acceptance matrix needs one row per contract or required user path");
   }
   if (expectedHeadSha === null) {
-    errors.push("acceptance matrix needs the current pushed head SHA");
+    errors.push("acceptance matrix needs an independently fetched current pushed head SHA");
   }
 
   errors.push(...validateRows(normalizedRows, expectedHeadSha));

@@ -68,7 +68,46 @@ test("missing, non-passing, and stale rows fail closed", () => {
   assert.ok(result.errors.some((error) => error.includes("non-passing status unverified")));
   assert.ok(result.errors.some((error) => error.includes("expected abc1234")));
   assert.ok(result.errors.some((error) => error.includes("missing acceptance row for recovery")));
-  assert.ok(result.errors.some((error) => error.includes("missing acceptance row for AC-missing")));
+  assert.ok(result.errors.some((error) => error.includes("missing passing acceptance row for AC-missing")));
+});
+
+test("requires an independently fetched head instead of trusting matrix-owned metadata", () => {
+  const result = validateAcceptanceMatrix({
+    matrix: { headSha: HEAD_SHA, rows: completeRows() },
+  });
+
+  assert.equal(result.valid, false);
+  assert.equal(result.headSha, null);
+  assert.ok(result.errors.includes("acceptance matrix needs an independently fetched current pushed head SHA"));
+});
+
+test("requires distinct rows for mandatory path categories", () => {
+  const result = validateAcceptanceMatrix({
+    matrix: [row("identity, interactive control, browser/e2e, data/error, recovery", 1)],
+    headSha: HEAD_SHA,
+  });
+
+  assert.equal(result.valid, false);
+  assert.equal(
+    result.errors.filter((error) => error.startsWith("missing acceptance row for ")).length,
+    ACCEPTANCE_MATRIX_PATHS.length - 1,
+  );
+});
+
+test("requires a passing row for every acceptance contract", () => {
+  const matrix = completeRows().map((entry, index) =>
+    index === 0
+      ? { ...entry, status: "inapplicable", reason: "No separate identity surface exists." }
+      : entry,
+  );
+  const result = validateAcceptanceMatrix({
+    matrix,
+    headSha: HEAD_SHA,
+    requiredContracts: ["AC-1"],
+  });
+
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.includes("missing passing acceptance row for AC-1"));
 });
 
 test("failed and blocked statuses cannot masquerade as acceptance", () => {
