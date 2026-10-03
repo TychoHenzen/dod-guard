@@ -79,8 +79,8 @@ an empty unavailable report.
 
 Comment findings stay deliberately conservative: `comment-metadata` reports
 recognizable metadata/history markers, including explicit tags and leading
-author or change-history labels, `comment-placeholder` reports deterministic
-placeholder text, and `comment-missing-reference` checks only explicit
+`Author:` or date-shaped `Changed on` markers, `comment-placeholder` reports
+deterministic placeholder text, and `comment-missing-reference` checks only explicit
 `@see path[#Symbol]` and `@config file:key` references. Age, prose quality,
 grammar, and ordinary explanatory comments are not generic findings.
 

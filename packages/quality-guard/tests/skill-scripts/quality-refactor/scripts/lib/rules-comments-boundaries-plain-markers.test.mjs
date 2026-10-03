@@ -55,7 +55,7 @@ test("reports plain markers on their block-comment lines", () => {
   }
 });
 
-test("keeps non-leading author, history, and date prose quiet", () => {
+test("keeps metadata-like prose without leading markers quiet", () => {
   for (const [language, prefix, declaration] of [
     ["cs", "//", "public class Value {}"],
     ["py", "#", "value = 1"],
@@ -65,6 +65,7 @@ test("keeps non-leading author, history, and date prose quiet", () => {
     const code = [
       `${prefix} The author is Bob, 2003-04-01.`,
       `${prefix} This changed on 2004-02-11: fixed bug.`,
+      `${prefix} Changed on every render to reflect the active tab.`,
       `${prefix} The date is 2004-02-11 and the author is recorded elsewhere.`,
       `${prefix} Author Bob is mentioned without a marker colon.`,
       declaration,

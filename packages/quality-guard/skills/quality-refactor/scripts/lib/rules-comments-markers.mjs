@@ -5,7 +5,7 @@ import { checkCommentedOutCode } from "./rules-comments/code.mjs";
 const TODO_MARKER = /\b(TODO|FIXME|HACK|XXX)\b/;
 const ASSUMPTION_MARKER = /\bASSUMPTION\b/;
 const METADATA_COMMENT =
-  /^(?:@(?:author|version|since|date|history)\b|author\s*:|changed\s+on\b|(?:created|last\s+modified|updated)\s+by\b)/i;
+  /^(?:@(?:author|version|since|date|history)\b|author\s*:|changed\s+on\s+\d{4}-\d{2}-\d{2}\b|(?:created|last\s+modified|updated)\s+by\b)/i;
 const PLACEHOLDER_COMMENT = /^(?:(?:tbd|tba|placeholder)\b|\?{3})(?:[:\s-]|$)/i;
 
 function checkMetadata(ctx, body, line) {
