@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { runScan } from "../../src/scanner.js";
+import { runScan, runScanAsync } from "../../src/scanner.js";
 
 test("runScan parses the scanner report on success", () => {
   const fake = () => JSON.stringify({ summary: { total: 0 }, violations: [] });
@@ -43,4 +43,24 @@ test("runScan throws when the scanner produced no report at all", () => {
     () => runScan({ paths: ["src"] }, fake as never),
     /quality scan failed: spawn ENOENT/,
   );
+});
+
+test("runScanAsync waits on an asynchronous runner without blocking the event loop", async () => {
+  let eventLoopTurned = false;
+  const scan = runScanAsync(
+    { paths: ["src"] },
+    async () => {
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      return { stdout: JSON.stringify({ summary: { total: 0 }, violations: [] }) };
+    },
+  );
+  await new Promise<void>((resolve) => {
+    setImmediate(() => {
+      eventLoopTurned = true;
+      resolve();
+    });
+  });
+  const result = await scan;
+  assert.equal(eventLoopTurned, true);
+  assert.equal(result.exitCode, 0);
 });

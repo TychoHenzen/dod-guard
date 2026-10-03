@@ -2,7 +2,7 @@
 // one package directory that satisfies every rule in plugin-checks.mjs, so a
 // case that flips one predicate answer shows exactly which rule caught it.
 
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -100,14 +100,63 @@ export function goodTree() {
   return root;
 }
 
+export function hostedTree() {
+  const root = goodTree();
+  const source = join(root, "packages", PKG_NAME);
+  const packageName = "quality-guard";
+  const target = join(root, "packages", packageName);
+  renameSync(source, target);
+
+  const packagePath = join(target, "package.json");
+  const packageMetadata = JSON.parse(readFileSync(packagePath, "utf8"));
+  packageMetadata.name = packageName;
+  packageMetadata.repository.directory = `packages/${packageName}`;
+  writeFileSync(packagePath, JSON.stringify(packageMetadata, null, 2));
+
+  writeFileSync(
+    join(target, ".mcp.json"),
+    JSON.stringify(
+      {
+        mcpServers: {
+          [packageName]: {
+            type: "http",
+            url: "http://127.0.0.1:21720/servers/quality-guard/mcp",
+          },
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(
+    join(target, ".codex-plugin", "plugin.json"),
+    JSON.stringify(
+      {
+        name: packageName,
+        version: "1.0.0",
+        description: "A sample plugin used only by validate-plugins.test.mjs.",
+        mcpServers: {
+          [packageName]: {
+            type: "http",
+            url: "http://127.0.0.1:21720/servers/quality-guard/mcp",
+          },
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  return root;
+}
+
 /**
  * The `{ name, dir, skills, agents }` shape loadPackages() builds in
  * validate-plugins.mjs, plus the two file paths the tracked-file tests break.
  */
-export function buildPkg(root) {
-  const dir = join(root, "packages", PKG_NAME);
+export function buildPkg(root, packageName = PKG_NAME) {
+  const dir = join(root, "packages", packageName);
   return {
-    name: PKG_NAME,
+    name: packageName,
     dir,
     skills: [],
     agents: [],

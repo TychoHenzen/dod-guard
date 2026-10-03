@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { request as httpRequest } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -8,6 +9,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import {
   installKnowledgeHttpSignals,
+  normalizeHttpPath,
   parseKnowledgeHttpCliOptions,
   startKnowledgeBaseHttpServer as startKnowledgeBaseHttpService,
 } from "../src/http.js";
@@ -40,6 +42,23 @@ async function connected(root: string): Promise<{ client: Client; close: () => P
       await server.close();
     },
   };
+}
+
+async function rawHttpRequest(url: string, headers: Record<string, string>) {
+  return new Promise<{ status: number; body: string }>((resolve, reject) => {
+    const request = httpRequest(url, { headers }, (response) => {
+      const chunks: Buffer[] = [];
+      response.on("data", (chunk: Buffer) => chunks.push(chunk));
+      response.on("end", () =>
+        resolve({
+          status: response.statusCode ?? 0,
+          body: Buffer.concat(chunks).toString("utf8"),
+        }),
+      );
+    });
+    request.on("error", reject);
+    request.end();
+  });
 }
 
 test("validates the external corpus before listening and serves real HTTP MCP calls", async () => {
@@ -99,6 +118,42 @@ test("keeps the configured corpus root fixed across concurrent HTTP clients", as
   } finally {
     await removeRoot(root);
   }
+});
+
+test("rejects hostile loopback headers before knowledge dispatch", async () => {
+  const root = await createSyntheticKnowledgeRoot(syntheticStoreEntries);
+  let factories = 0;
+  try {
+    const server = await startKnowledgeBaseHttpService({
+      rootDir: root,
+      path: "/mcp",
+      port: 0,
+      createMcpServer: () => {
+        factories += 1;
+        throw new Error("the factory must not run for hostile headers");
+      },
+    });
+    try {
+      const hostileHost = await rawHttpRequest(
+        `http://127.0.0.1:${server.port}${server.path}`,
+        { host: "attacker.example" },
+      );
+      assert.equal(hostileHost.status, 403);
+      const hostileOrigin = await fetch(`http://127.0.0.1:${server.port}${server.path}`, {
+        headers: { origin: "http://attacker.example" },
+      });
+      assert.equal(hostileOrigin.status, 403);
+      assert.equal(factories, 0);
+    } finally {
+      await server.close();
+    }
+  } finally {
+    await removeRoot(root);
+  }
+});
+
+test("normalizes a large trailing-slash suffix without a backtracking regex", () => {
+  assert.equal(normalizeHttpPath(`/mcp${"/".repeat(200_000)}`), "/mcp");
 });
 
 test("rejects invalid roots and public binding before accepting requests", async () => {

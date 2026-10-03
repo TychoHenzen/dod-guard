@@ -64,6 +64,9 @@ app from `tools/mcp-host/ecosystem.config.cjs`. The host validates
 keeps that root fixed for the service process, and exposes the matching
 `/health` endpoint. `MCP_HOST_KNOWLEDGE_BASE_PORT` and the path variables can
 override the defaults without enabling public binding.
+The tracked registration contains the defaults; when a port or path override
+is used, run `node tools/mcp-host/launcher.mjs --print-config` and use its
+`mcpServers` object for the client registration.
 
 ## Guidance boundary
 

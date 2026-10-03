@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { runQualityReport } from "./report.js";
+import { runQualityReportAsync } from "./report.js";
 import { requireRepositoryRoot } from "./repository-root.js";
 import { formatSkips, readSkipLog } from "./skips.js";
 import { text, toolError } from "./tool-response.js";
@@ -22,7 +22,7 @@ export function registerQualityReport(server: McpServer): void {
       try {
         return text(
           JSON.stringify(
-            runQualityReport({
+            await runQualityReportAsync({
               root: requireRepositoryRoot(root),
               excludes,
               testPaths,

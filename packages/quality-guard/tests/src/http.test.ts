@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { request as httpRequest } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import {
   installHttpSignalHandlers,
+  normalizeHttpPath,
   parseHttpCliOptions,
   startMcpHttpServer,
 } from "../../src/http.js";
@@ -18,6 +21,23 @@ function fixture(name: string): string {
   mkdirSync(join(root, "src"));
   writeFileSync(join(root, "src", `${name}.ts`), `export const ${name} = 1;\n`);
   return root;
+}
+
+async function rawHttpRequest(url: string, headers: Record<string, string>) {
+  return new Promise<{ status: number; body: string }>((resolve, reject) => {
+    const request = httpRequest(url, { headers }, (response) => {
+      const chunks: Buffer[] = [];
+      response.on("data", (chunk: Buffer) => chunks.push(chunk));
+      response.on("end", () =>
+        resolve({
+          status: response.statusCode ?? 0,
+          body: Buffer.concat(chunks).toString("utf8"),
+        }),
+      );
+    });
+    request.on("error", reject);
+    request.end();
+  });
 }
 
 async function withClient<Result>(
@@ -94,6 +114,88 @@ test("serves health and MCP initialization over Streamable HTTP", async () => {
     }
   } finally {
     await server.close();
+    await server.close();
+  }
+});
+
+test("rejects hostile loopback headers before MCP dispatch", async () => {
+  let factories = 0;
+  const server = await startMcpHttpServer({
+    path: "/mcp",
+    healthPath: "/health",
+    port: 0,
+    serviceName: "quality-guard",
+    createMcpServer: () => {
+      factories += 1;
+      throw new Error("the factory must not run for hostile headers");
+    },
+  });
+  try {
+    const hostileHost = await rawHttpRequest(
+      `http://127.0.0.1:${server.port}${server.path}`,
+      { host: "attacker.example" },
+    );
+    assert.equal(hostileHost.status, 403);
+
+    const hostileOrigin = await fetch(`http://127.0.0.1:${server.port}${server.path}`, {
+      headers: { origin: "http://attacker.example" },
+    });
+    assert.equal(hostileOrigin.status, 403);
+    assert.equal(factories, 0);
+  } finally {
+    await server.close();
+  }
+});
+
+test("normalizes a large trailing-slash suffix without a backtracking regex", () => {
+  assert.equal(normalizeHttpPath(`/mcp${"/".repeat(200_000)}`), "/mcp");
+});
+
+test("drains an in-flight MCP request before closing the HTTP server", async () => {
+  let release: (() => void) | undefined;
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let signalStarted: (() => void) | undefined;
+  const started = new Promise<void>((resolve) => {
+    signalStarted = resolve;
+  });
+  const server = await startMcpHttpServer({
+    path: "/mcp",
+    port: 0,
+    serviceName: "quality-guard",
+    createMcpServer: () => {
+      const mcpServer = new McpServer({ name: "drain-test", version: "1.0.0" });
+      mcpServer.tool("slow", async () => {
+        signalStarted?.();
+        await released;
+        return { content: [{ type: "text", text: "finished" }] };
+      });
+      return mcpServer;
+    },
+  });
+  const client = new Client({ name: "drain-client", version: "1.0.0" });
+  const transport = new StreamableHTTPClientTransport(
+    new URL(`http://127.0.0.1:${server.port}${server.path}`),
+  );
+  try {
+    await client.connect(transport);
+    const resultPromise = client.callTool({ name: "slow", arguments: {} });
+    await started;
+    let closed = false;
+    const closePromise = server.close().then(() => {
+      closed = true;
+    });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.equal(closed, false);
+    release?.();
+    const result = await resultPromise;
+    assert.match(JSON.stringify(result), /finished/);
+    await client.close();
+    await closePromise;
+  } finally {
+    release?.();
+    await client.close().catch(() => undefined);
     await server.close();
   }
 });

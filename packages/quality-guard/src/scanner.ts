@@ -1,10 +1,35 @@
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { scanFailure } from "./scanner-failure.js";
 
 const SCAN_TIMEOUT_MS = 120_000;
 const MAX_BUFFER = 32 * 1024 * 1024;
+
+type AsyncExecOptions = {
+  encoding: "utf8";
+  timeout: number;
+  maxBuffer: number;
+  cwd?: string;
+};
+
+type AsyncExec = (
+  command: string,
+  args: string[],
+  options: AsyncExecOptions,
+) => Promise<{ stdout: string }>;
+
+const asyncExecFile: AsyncExec = (command, args, options) =>
+  new Promise((resolve, reject) => {
+    execFile(command, args, options, (error, stdout) => {
+      if (error) {
+        Object.assign(error, { stdout: String(stdout) });
+        reject(error);
+        return;
+      }
+      resolve({ stdout: String(stdout) });
+    });
+  });
 
 export interface ScanRequest {
   paths: string[];
@@ -77,6 +102,24 @@ export function runScan(request: ScanRequest, run = execFileSync) {
       maxBuffer: MAX_BUFFER,
       cwd: request.root,
     }) as string;
+    return { exitCode: 0, report: JSON.parse(stdout) };
+  } catch (err) {
+    return scanFailure(err);
+  }
+}
+
+export async function runScanAsync(
+  request: ScanRequest,
+  run: AsyncExec = asyncExecFile,
+) {
+  const args = [scannerPath(), ...buildArgs(request)];
+  try {
+    const { stdout } = await run(process.execPath, args, {
+      encoding: "utf8",
+      timeout: SCAN_TIMEOUT_MS,
+      maxBuffer: MAX_BUFFER,
+      cwd: request.root,
+    });
     return { exitCode: 0, report: JSON.parse(stdout) };
   } catch (err) {
     return scanFailure(err);

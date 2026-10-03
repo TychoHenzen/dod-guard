@@ -178,7 +178,11 @@ export function createPluginChecks(report, isTracked) {
 
   function checkCodexMcpConfig(file, pkg, manifest) {
     const expected = HOSTED_MCP_ENDPOINTS[pkg.name];
-    if (!(expected && manifest?.mcpServers)) return;
+    if (!expected) return;
+    if (!manifest?.mcpServers || typeof manifest.mcpServers !== "object" || Array.isArray(manifest.mcpServers)) {
+      report(file, `host-managed ${pkg.name} Codex registration must define mcpServers`);
+      return;
+    }
     const server = manifest.mcpServers[pkg.name];
     if (server?.type !== "http" || server?.url !== expected) {
       report(

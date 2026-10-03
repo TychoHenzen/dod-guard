@@ -4,7 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import ecosystem from "./ecosystem.config.cjs";
-import { parseLauncherOptions, resolveNewestBundle, startService } from "./launcher.mjs";
+import {
+  parseLauncherOptions,
+  renderMcpRegistrationConfig,
+  resolveNewestBundle,
+  startService,
+} from "./launcher.mjs";
 
 async function bundle(root, service, version) {
   const location = join(root, service, version, "dist");
@@ -63,6 +68,34 @@ test("parses service-specific endpoints and requires a knowledge corpus root", (
     bundle: undefined,
     rootDir: "C:/vault",
   });
+});
+
+test("renders client registrations from the same configurable endpoints as PM2", () => {
+  assert.deepEqual(
+    renderMcpRegistrationConfig({
+      MCP_HOST_BIND_HOST: "localhost",
+      MCP_HOST_QUALITY_GUARD_PORT: "21920",
+      MCP_HOST_QUALITY_GUARD_PATH: "/quality/",
+      MCP_HOST_KNOWLEDGE_BASE_PORT: "21921",
+      MCP_HOST_KNOWLEDGE_BASE_PATH: "/knowledge/mcp/",
+    }),
+    {
+      mcpServers: {
+        "quality-guard": {
+          type: "http",
+          url: "http://localhost:21920/quality",
+        },
+        "knowledge-base": {
+          type: "http",
+          url: "http://localhost:21921/knowledge/mcp",
+        },
+      },
+    },
+  );
+  assert.throws(
+    () => renderMcpRegistrationConfig({ MCP_HOST_BIND_HOST: "0.0.0.0" }),
+    /loopback-only/,
+  );
 });
 
 test("starts one validated bundle export and returns its lifecycle", async () => {

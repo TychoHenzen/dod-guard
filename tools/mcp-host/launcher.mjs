@@ -142,6 +142,23 @@ function integer(value_, name) {
   return valueNumber;
 }
 
+function registrationPath(value, service) {
+  if (!value.startsWith("/") || value.includes("?") || value.includes("#")) {
+    throw new Error(`${service} registration path must be an absolute URL path without a query or fragment: ${value}`);
+  }
+  let end = value.length;
+  while (end > 1 && value.charCodeAt(end - 1) === 47) end -= 1;
+  return value.slice(0, end);
+}
+
+function registrationHost(value) {
+  const normalized = value.trim().toLowerCase();
+  if (!["127.0.0.1", "::1", "localhost"].includes(normalized)) {
+    throw new Error(`MCP host registration bind host must be loopback-only: ${value}`);
+  }
+  return normalized === "::1" ? `[${normalized}]` : normalized;
+}
+
 export function parseLauncherOptions(args, env = process.env) {
   const service = value(args, "--service") ?? env.MCP_HOST_SERVICE;
   if (!service) throw new Error("MCP host service is required; pass --service quality-guard or --service knowledge-base");
@@ -157,6 +174,20 @@ export function parseLauncherOptions(args, env = process.env) {
     bundle: env[config.bundleEnvironment],
     rootDir: config.rootEnvironment ? env[config.rootEnvironment] : undefined,
   };
+}
+
+export function renderMcpRegistrationConfig(env = process.env) {
+  const mcpServers = {};
+  for (const service of Object.keys(SERVICE_DEFINITIONS)) {
+    const options = parseLauncherOptions(["--service", service], env);
+    const host = registrationHost(options.host);
+    const path = registrationPath(options.path, service);
+    mcpServers[service] = {
+      type: "http",
+      url: `http://${host}:${options.port}${path}`,
+    };
+  }
+  return { mcpServers };
 }
 
 export async function startService({ options, env = process.env, fs = systemFs, importModule = (url) => import(url) }) {
@@ -189,6 +220,10 @@ export async function startService({ options, env = process.env, fs = systemFs, 
 }
 
 async function main() {
+  if (process.argv.includes("--print-config")) {
+    process.stdout.write(`${JSON.stringify(renderMcpRegistrationConfig())}\n`);
+    return;
+  }
   const options = parseLauncherOptions(process.argv.slice(2));
   const running = await startService({ options });
   process.stderr.write(`${JSON.stringify({ service: running.service, status: "ready", bundle: running.bundle, host: running.host, port: running.port, path: running.path, healthPath: running.healthPath })}\n`);

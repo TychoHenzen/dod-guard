@@ -4,7 +4,6 @@ import {
   type Server,
   type ServerResponse,
 } from "node:http";
-import type { Socket } from "node:net";
 import process from "node:process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -68,16 +67,38 @@ function requirePath(value: string, name: string): string {
       `${name} must be an absolute URL path without a query or fragment: ${value}`,
     );
   }
-  return normalized.length > 1 ? normalized.replace(/\/+$/u, "") : normalized;
+  return normalizeHttpPath(normalized);
+}
+
+export function normalizeHttpPath(value: string): string {
+  let end = value.length;
+  while (end > 1 && value.charCodeAt(end - 1) === 47) end -= 1;
+  return value.slice(0, end);
 }
 
 function routePath(request: IncomingMessage): string {
-  return (
-    new URL(request.url ?? "/", "http://127.0.0.1").pathname.replace(
-      /\/+$/u,
-      "",
-    ) || "/"
+  return normalizeHttpPath(
+    new URL(request.url ?? "/", "http://127.0.0.1").pathname,
   );
+}
+
+function allowedHosts(port: number): string[] {
+  return [`127.0.0.1:${port}`, `localhost:${port}`, `[::1]:${port}`];
+}
+
+function allowedOrigins(port: number): string[] {
+  return [
+    `http://127.0.0.1:${port}`,
+    `http://localhost:${port}`,
+    `http://[::1]:${port}`,
+  ];
+}
+
+function acceptsLoopbackRequest(request: IncomingMessage, port: number): boolean {
+  const host = request.headers.host?.toLowerCase();
+  if (!host || !allowedHosts(port).includes(host)) return false;
+  const origin = request.headers.origin;
+  return origin === undefined || allowedOrigins(port).includes(origin);
 }
 
 function json(response: ServerResponse, status: number, value: unknown): void {
@@ -106,7 +127,7 @@ async function closeServer(server: Server): Promise<void> {
         reject(error);
       else resolve();
     });
-    server.closeAllConnections?.();
+    server.closeIdleConnections?.();
   });
 }
 
@@ -121,8 +142,15 @@ export async function startMcpHttpServer(
     "HTTP health path",
   );
   const transports = new Set<StreamableHTTPServerTransport>();
-  const sockets = new Set<Socket>();
   const server = createServer(async (request, response) => {
+    const hostHeader = request.headers.host;
+    if (!hostHeader || !acceptsLoopbackRequest(request, addressPort(server))) {
+      json(response, 403, {
+        error: "forbidden",
+        service: options.serviceName,
+      });
+      return;
+    }
     const requestedPath = routePath(request);
     if (requestedPath === healthPath && request.method === "GET") {
       json(response, 200, {
@@ -139,6 +167,9 @@ export async function startMcpHttpServer(
 
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
+      enableDnsRebindingProtection: true,
+      allowedHosts: [hostHeader],
+      allowedOrigins: allowedOrigins(addressPort(server)),
     });
     let mcpServer: McpServer | undefined;
     transports.add(transport);
@@ -165,11 +196,6 @@ export async function startMcpHttpServer(
       if (mcpServer) await mcpServer.close().catch(() => undefined);
     }
   });
-  server.on("connection", (socket) => {
-    sockets.add(socket);
-    socket.once("close", () => sockets.delete(socket));
-  });
-
   try {
     await new Promise<void>((resolve, reject) => {
       const onError = (error: Error) => {
@@ -203,13 +229,12 @@ export async function startMcpHttpServer(
     healthPath,
     close: () => {
       closePromise ??= (async () => {
+        await closeServer(server);
         await Promise.all(
           [...transports].map((transport) =>
             transport.close().catch(() => undefined),
           ),
         );
-        for (const socket of sockets) socket.destroy();
-        await closeServer(server);
       })();
       return closePromise;
     },

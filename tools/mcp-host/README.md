@@ -18,6 +18,17 @@ variable when the installed cache is elsewhere. Same-version candidates are
 rejected as ambiguous instead of being selected by directory order. Set
 `DOD_GUARD_KNOWLEDGE_BASE_DIR` before starting the knowledge-base app.
 
+The tracked package registrations use these defaults. If endpoint environment
+variables override a port or path, render matching client registrations before
+connecting a client:
+
+```text
+node tools/mcp-host/launcher.mjs --print-config
+```
+
+The command prints a complete `mcpServers` JSON object using the same PM2
+environment values and rejects non-loopback registration hosts.
+
 The launcher owns bundle selection and process signals. Package factories own
 MCP tool registration and HTTP request handling; the host does not construct
 package internals or change repository roots.

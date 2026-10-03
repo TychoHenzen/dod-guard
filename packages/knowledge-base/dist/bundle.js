@@ -31116,10 +31116,31 @@ function endpoint(value, name) {
   if (!result.startsWith("/") || result.includes("?") || result.includes("#")) {
     throw new Error(`${name} must be an absolute URL path without a query or fragment: ${value}`);
   }
-  return result.length > 1 ? result.replace(/\/+$/u, "") : result;
+  return normalizeHttpPath(result);
+}
+function normalizeHttpPath(value) {
+  let end = value.length;
+  while (end > 1 && value.charCodeAt(end - 1) === 47) end -= 1;
+  return value.slice(0, end);
 }
 function requestPath(request) {
-  return new URL(request.url ?? "/", "http://127.0.0.1").pathname.replace(/\/+$/u, "") || "/";
+  return normalizeHttpPath(new URL(request.url ?? "/", "http://127.0.0.1").pathname);
+}
+function allowedHosts(port2) {
+  return [`127.0.0.1:${port2}`, `localhost:${port2}`, `[::1]:${port2}`];
+}
+function allowedOrigins(port2) {
+  return [
+    `http://127.0.0.1:${port2}`,
+    `http://localhost:${port2}`,
+    `http://[::1]:${port2}`
+  ];
+}
+function acceptsLoopbackRequest(request, port2) {
+  const host = request.headers.host?.toLowerCase();
+  if (!host || !allowedHosts(port2).includes(host)) return false;
+  const origin = request.headers.origin;
+  return origin === void 0 || allowedOrigins(port2).includes(origin);
 }
 function sendJson(response2, status, body) {
   if (response2.headersSent) return;
@@ -31139,7 +31160,7 @@ async function closeHttpServer(server) {
       if (error2 && error2.code !== "ERR_SERVER_NOT_RUNNING") reject(error2);
       else resolve2();
     });
-    server.closeAllConnections?.();
+    server.closeIdleConnections?.();
   });
 }
 async function startKnowledgeBaseHttpServer(options) {
@@ -31150,8 +31171,12 @@ async function startKnowledgeBaseHttpServer(options) {
   const mcpPath = endpoint(options.path ?? DEFAULT_PATH, "HTTP MCP path");
   const healthPath = endpoint(options.healthPath ?? DEFAULT_HEALTH_PATH, "HTTP health path");
   const transports = /* @__PURE__ */ new Set();
-  const sockets = /* @__PURE__ */ new Set();
   const server = createServer(async (request, response2) => {
+    const hostHeader = request.headers.host;
+    if (!hostHeader || !acceptsLoopbackRequest(request, listeningPort(server))) {
+      sendJson(response2, 403, { error: "forbidden", service: "knowledge-base" });
+      return;
+    }
     const path = requestPath(request);
     if (path === healthPath && request.method === "GET") {
       sendJson(response2, 200, { service: "knowledge-base", status: "ready", endpoint: mcpPath, root: root.rootDir });
@@ -31161,7 +31186,12 @@ async function startKnowledgeBaseHttpServer(options) {
       sendJson(response2, 404, { error: "not_found", service: "knowledge-base" });
       return;
     }
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: void 0 });
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: void 0,
+      enableDnsRebindingProtection: true,
+      allowedHosts: [hostHeader],
+      allowedOrigins: allowedOrigins(listeningPort(server))
+    });
     let mcpServer;
     transports.add(transport);
     try {
@@ -31186,10 +31216,6 @@ async function startKnowledgeBaseHttpServer(options) {
       await transport.close().catch(() => void 0);
       if (mcpServer) await mcpServer.close().catch(() => void 0);
     }
-  });
-  server.on("connection", (socket) => {
-    sockets.add(socket);
-    socket.once("close", () => sockets.delete(socket));
   });
   try {
     await new Promise((resolve2, reject) => {
@@ -31220,9 +31246,8 @@ async function startKnowledgeBaseHttpServer(options) {
     healthPath,
     close: () => {
       closePromise ??= (async () => {
-        await Promise.all([...transports].map((transport) => transport.close().catch(() => void 0)));
-        for (const socket of sockets) socket.destroy();
         await closeHttpServer(server);
+        await Promise.all([...transports].map((transport) => transport.close().catch(() => void 0)));
       })();
       return closePromise;
     }

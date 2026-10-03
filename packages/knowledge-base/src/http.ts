@@ -1,5 +1,4 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import type { Socket } from "node:net";
 import process from "node:process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -54,11 +53,36 @@ function endpoint(value: string, name: string): string {
   if (!result.startsWith("/") || result.includes("?") || result.includes("#")) {
     throw new Error(`${name} must be an absolute URL path without a query or fragment: ${value}`);
   }
-  return result.length > 1 ? result.replace(/\/+$/u, "") : result;
+  return normalizeHttpPath(result);
+}
+
+export function normalizeHttpPath(value: string): string {
+  let end = value.length;
+  while (end > 1 && value.charCodeAt(end - 1) === 47) end -= 1;
+  return value.slice(0, end);
 }
 
 function requestPath(request: IncomingMessage): string {
-  return new URL(request.url ?? "/", "http://127.0.0.1").pathname.replace(/\/+$/u, "") || "/";
+  return normalizeHttpPath(new URL(request.url ?? "/", "http://127.0.0.1").pathname);
+}
+
+function allowedHosts(port: number): string[] {
+  return [`127.0.0.1:${port}`, `localhost:${port}`, `[::1]:${port}`];
+}
+
+function allowedOrigins(port: number): string[] {
+  return [
+    `http://127.0.0.1:${port}`,
+    `http://localhost:${port}`,
+    `http://[::1]:${port}`,
+  ];
+}
+
+function acceptsLoopbackRequest(request: IncomingMessage, port: number): boolean {
+  const host = request.headers.host?.toLowerCase();
+  if (!host || !allowedHosts(port).includes(host)) return false;
+  const origin = request.headers.origin;
+  return origin === undefined || allowedOrigins(port).includes(origin);
 }
 
 function sendJson(response: ServerResponse, status: number, body: unknown): void {
@@ -81,7 +105,7 @@ async function closeHttpServer(server: Server): Promise<void> {
       if (error && (error as NodeJS.ErrnoException).code !== "ERR_SERVER_NOT_RUNNING") reject(error);
       else resolve();
     });
-    server.closeAllConnections?.();
+    server.closeIdleConnections?.();
   });
 }
 
@@ -94,8 +118,12 @@ export async function startKnowledgeBaseHttpServer(options: KnowledgeHttpOptions
   const mcpPath = endpoint(options.path ?? DEFAULT_PATH, "HTTP MCP path");
   const healthPath = endpoint(options.healthPath ?? DEFAULT_HEALTH_PATH, "HTTP health path");
   const transports = new Set<StreamableHTTPServerTransport>();
-  const sockets = new Set<Socket>();
   const server = createServer(async (request, response) => {
+    const hostHeader = request.headers.host;
+    if (!hostHeader || !acceptsLoopbackRequest(request, listeningPort(server))) {
+      sendJson(response, 403, { error: "forbidden", service: "knowledge-base" });
+      return;
+    }
     const path = requestPath(request);
     if (path === healthPath && request.method === "GET") {
       sendJson(response, 200, { service: "knowledge-base", status: "ready", endpoint: mcpPath, root: root.rootDir });
@@ -106,7 +134,12 @@ export async function startKnowledgeBaseHttpServer(options: KnowledgeHttpOptions
       return;
     }
 
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableDnsRebindingProtection: true,
+      allowedHosts: [hostHeader],
+      allowedOrigins: allowedOrigins(listeningPort(server)),
+    });
     let mcpServer: McpServer | undefined;
     transports.add(transport);
     try {
@@ -132,11 +165,6 @@ export async function startKnowledgeBaseHttpServer(options: KnowledgeHttpOptions
       if (mcpServer) await mcpServer.close().catch(() => undefined);
     }
   });
-  server.on("connection", (socket) => {
-    sockets.add(socket);
-    socket.once("close", () => sockets.delete(socket));
-  });
-
   try {
     await new Promise<void>((resolve, reject) => {
       const failed = (error: Error) => {
@@ -167,9 +195,8 @@ export async function startKnowledgeBaseHttpServer(options: KnowledgeHttpOptions
     healthPath,
     close: () => {
       closePromise ??= (async () => {
-        await Promise.all([...transports].map((transport) => transport.close().catch(() => undefined)));
-        for (const socket of sockets) socket.destroy();
         await closeHttpServer(server);
+        await Promise.all([...transports].map((transport) => transport.close().catch(() => undefined)));
       })();
       return closePromise;
     },

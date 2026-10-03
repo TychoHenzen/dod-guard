@@ -22691,7 +22691,7 @@ import { tmpdir } from "node:os";
 import * as path5 from "node:path";
 
 // src/scanner.ts
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import * as path3 from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22717,6 +22717,16 @@ function scanFailure(error2) {
 // src/scanner.ts
 var SCAN_TIMEOUT_MS = 12e4;
 var MAX_BUFFER = 32 * 1024 * 1024;
+var asyncExecFile = (command, args, options) => new Promise((resolve4, reject) => {
+  execFile(command, args, options, (error2, stdout) => {
+    if (error2) {
+      Object.assign(error2, { stdout: String(stdout) });
+      reject(error2);
+      return;
+    }
+    resolve4({ stdout: String(stdout) });
+  });
+});
 function scannerPath() {
   const here = path3.dirname(fileURLToPath(import.meta.url));
   return path3.join(
@@ -22760,6 +22770,20 @@ function runScan(request, run = execFileSync) {
   const args = [scannerPath(), ...buildArgs(request)];
   try {
     const stdout = run(process.execPath, args, {
+      encoding: "utf8",
+      timeout: SCAN_TIMEOUT_MS,
+      maxBuffer: MAX_BUFFER,
+      cwd: request.root
+    });
+    return { exitCode: 0, report: JSON.parse(stdout) };
+  } catch (err) {
+    return scanFailure(err);
+  }
+}
+async function runScanAsync(request, run = asyncExecFile) {
+  const args = [scannerPath(), ...buildArgs(request)];
+  try {
+    const { stdout } = await run(process.execPath, args, {
       encoding: "utf8",
       timeout: SCAN_TIMEOUT_MS,
       maxBuffer: MAX_BUFFER,
@@ -28364,13 +28388,33 @@ function requirePath(value, name) {
       `${name} must be an absolute URL path without a query or fragment: ${value}`
     );
   }
-  return normalized.length > 1 ? normalized.replace(/\/+$/u, "") : normalized;
+  return normalizeHttpPath(normalized);
+}
+function normalizeHttpPath(value) {
+  let end = value.length;
+  while (end > 1 && value.charCodeAt(end - 1) === 47) end -= 1;
+  return value.slice(0, end);
 }
 function routePath(request) {
-  return new URL(request.url ?? "/", "http://127.0.0.1").pathname.replace(
-    /\/+$/u,
-    ""
-  ) || "/";
+  return normalizeHttpPath(
+    new URL(request.url ?? "/", "http://127.0.0.1").pathname
+  );
+}
+function allowedHosts(port) {
+  return [`127.0.0.1:${port}`, `localhost:${port}`, `[::1]:${port}`];
+}
+function allowedOrigins(port) {
+  return [
+    `http://127.0.0.1:${port}`,
+    `http://localhost:${port}`,
+    `http://[::1]:${port}`
+  ];
+}
+function acceptsLoopbackRequest(request, port) {
+  const host = request.headers.host?.toLowerCase();
+  if (!host || !allowedHosts(port).includes(host)) return false;
+  const origin = request.headers.origin;
+  return origin === void 0 || allowedOrigins(port).includes(origin);
 }
 function json2(response, status, value) {
   if (response.headersSent) return;
@@ -28393,7 +28437,7 @@ async function closeServer(server) {
         reject(error2);
       else resolve4();
     });
-    server.closeAllConnections?.();
+    server.closeIdleConnections?.();
   });
 }
 async function startMcpHttpServer(options) {
@@ -28405,8 +28449,15 @@ async function startMcpHttpServer(options) {
     "HTTP health path"
   );
   const transports = /* @__PURE__ */ new Set();
-  const sockets = /* @__PURE__ */ new Set();
   const server = createServer(async (request, response) => {
+    const hostHeader = request.headers.host;
+    if (!hostHeader || !acceptsLoopbackRequest(request, addressPort(server))) {
+      json2(response, 403, {
+        error: "forbidden",
+        service: options.serviceName
+      });
+      return;
+    }
     const requestedPath = routePath(request);
     if (requestedPath === healthPath && request.method === "GET") {
       json2(response, 200, {
@@ -28421,7 +28472,10 @@ async function startMcpHttpServer(options) {
       return;
     }
     const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: void 0
+      sessionIdGenerator: void 0,
+      enableDnsRebindingProtection: true,
+      allowedHosts: [hostHeader],
+      allowedOrigins: allowedOrigins(addressPort(server))
     });
     let mcpServer;
     transports.add(transport);
@@ -28447,10 +28501,6 @@ async function startMcpHttpServer(options) {
       await transport.close().catch(() => void 0);
       if (mcpServer) await mcpServer.close().catch(() => void 0);
     }
-  });
-  server.on("connection", (socket) => {
-    sockets.add(socket);
-    socket.once("close", () => sockets.delete(socket));
   });
   try {
     await new Promise((resolve4, reject) => {
@@ -28481,13 +28531,12 @@ async function startMcpHttpServer(options) {
     healthPath,
     close: () => {
       closePromise ??= (async () => {
+        await closeServer(server);
         await Promise.all(
           [...transports].map(
             (transport) => transport.close().catch(() => void 0)
           )
         );
-        for (const socket of sockets) socket.destroy();
-        await closeServer(server);
       })();
       return closePromise;
     }
@@ -29108,6 +29157,13 @@ function runQualityReport(request) {
   const scan = asReportScan(runScan({ ...request, root: root2, paths: ["."] }).report);
   return buildQualityReport(scan, architectureFor(root2, scan));
 }
+async function runQualityReportAsync(request) {
+  const root2 = path14.resolve(request.root ?? process.cwd());
+  const scan = asReportScan(
+    (await runScanAsync({ ...request, root: root2, paths: ["."] })).report
+  );
+  return buildQualityReport(scan, architectureFor(root2, scan));
+}
 
 // src/cli-entrypoint.ts
 function runReportCommand(args) {
@@ -29319,7 +29375,7 @@ function registerQualityReport(server) {
       try {
         return text2(
           JSON.stringify(
-            runQualityReport({
+            await runQualityReportAsync({
               root: requireRepositoryRoot(root2),
               excludes,
               testPaths,
@@ -29370,7 +29426,7 @@ var QUALITY_SCAN_INPUT = {
 };
 async function qualityScan(input) {
   try {
-    const { report } = runScan({
+    const { report } = await runScanAsync({
       ...input,
       root: requireRepositoryRoot(input.root)
     });
@@ -29392,7 +29448,7 @@ var QUALITY_GATE_INPUT = {
 };
 async function qualityGate(input) {
   try {
-    const result = runGateScan(input);
+    const result = await runGateScan(input);
     const verdict2 = result.exitCode === 0 ? "PASS" : "FAIL";
     const report = JSON.stringify(result.report, null, 2);
     return text2(`${verdict2} (exit ${result.exitCode})
@@ -29402,8 +29458,8 @@ ${report}`);
     return toolError(err);
   }
 }
-function runGateScan(input) {
-  return runScan({
+async function runGateScan(input) {
+  return runScanAsync({
     ...input,
     root: requireRepositoryRoot(input.root),
     failOn: input.failOn ?? "regression"
