@@ -70,6 +70,16 @@
   },
   "overrides": [
     {
+      "includes": ["packages/code-explorer/scripts/build-browser.mjs"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noNodejsModules": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["packages/*/src/**/*.ts", "packages/*/tests/**/*.ts", "scripts/ci/**/*.mjs"],
       "linter": {
         "rules": {

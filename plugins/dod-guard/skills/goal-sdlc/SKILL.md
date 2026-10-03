@@ -65,6 +65,57 @@ thread still owns sequencing, evidence verification, mutation decisions, and
 the built-in goal's stop condition. Handle any externally supplied findings
 before `complete-pr` as described in section 6.
 
+## Shared-checkout ownership handshake
+
+The existing goal/PBI handoff is the ownership record for a shared checkout.
+Do not create a lock file, local coordination ledger, hidden ref, or second
+review record. Before selecting or delegating a checkpoint, read active peer
+goal or agent runs and the latest handoff for the same repository, parent and
+child PBI, branch, and owned responsibility. Missing, stale, or conflicting
+evidence is unsafe; it is not permission to guess.
+
+Each active checkpoint has one canonical owner record with these values:
+
+- owner handle: the active goal or subagent handle that owns the checkpoint;
+- repository: the exact `nameWithOwner` value;
+- parent and child PBI: the parent number and optional child number;
+- branch and head: the exact branch ref and observed commit SHA; and
+- responsibility and observed-at: the bounded checkpoint and its read time.
+
+Treat repository, parent and child PBI, branch, and responsibility as the
+logical scope. Head and handoff revision are volatile evidence for that scope.
+When one active peer matches the logical scope and the exact evidence, keep
+that peer's owner handle canonical and return a wait/no-mutation result. Do not dispatch, switch or
+edit the checkout, assign or move an issue, commit,
+push, create a pull request, or write a second handoff record. The waiting run's mutation list is
+empty; it waits for the owner to finish and then performs a fresh read.
+
+An active peer with complete identity in the same logical scope but a changed
+head or handoff revision is stale conflicting evidence, not an absent peer.
+Treat any such peer, alone or alongside an exact peer, as a conflict and fail
+closed with its handle as the recovery owner. A peer that appears between the
+no-peer read and the claim is the same conflict; do not let the first read
+authorize a second writer.
+
+When no active peer in the logical scope exists, read the local branch, remote
+branch, and latest handoff immediately before claiming the checkpoint. Record
+the current handle, exact branch, exact head, and responsibility in the
+existing handoff, read it back, and dispatch only after that exact identity is stable.
+If a peer appears or any identity changes during the claim, stop without
+mutation and return the conflicting owner or a named recovery owner.
+
+Before every later write, refresh the branch ref, remote head, and existing
+handoff. A peer write, branch movement, changed handoff, or head mismatch
+invalidates the old owner evidence. Do not append a competing owner or repair
+stale evidence with a hidden state channel. Refresh once at the exact head;
+only then may the owning lifecycle skill continue with commit, push, pull
+request, review, or completion work.
+
+Missing owner evidence, duplicate owners, stale same-scope peers, unexpected
+branch movement, and stale handoffs fail closed with an actionable recovery owner.
+The failure leaves the checkout and GitHub administration untouched until the
+recovery owner has fresh exact-head and remote evidence.
+
 ## Acceptance matrix contract
 
 Every structured PBI uses one compact acceptance matrix in its GitHub
