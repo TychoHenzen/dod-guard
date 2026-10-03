@@ -4,6 +4,29 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { runScan, runScanAsync } from "../../src/scanner.js";
 
+function nextEventLoopTurn(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
+async function successfulAsyncScan(): Promise<{ stdout: string }> {
+  await nextEventLoopTurn();
+  return {
+    stdout: JSON.stringify({ summary: { total: 0 }, violations: [] }),
+  };
+}
+
+async function failedAsyncScan(): Promise<{ stdout: string }> {
+  const error = new Error("scanner failed") as Error & {
+    status: number;
+    stdout: string;
+  };
+  error.status = 1;
+  error.stdout = JSON.stringify({
+    comparison: { regressions: [{ file: "a.ts" }] },
+  });
+  throw error;
+}
+
 test("runScan parses the scanner report on success", () => {
   const fake = () => JSON.stringify({ summary: { total: 0 }, violations: [] });
   const result = runScan({ paths: ["src"] }, fake as never);
@@ -49,32 +72,16 @@ test("runScan throws when the scanner produced no report at all", () => {
 
 test("runScanAsync waits on an asynchronous runner without blocking the event loop", async () => {
   let eventLoopTurned = false;
-  const scan = runScanAsync({ paths: ["src"] }, async () => {
-    await new Promise<void>((resolve) => setImmediate(resolve));
-    return {
-      stdout: JSON.stringify({ summary: { total: 0 }, violations: [] }),
-    };
-  });
-  await new Promise<void>((resolve) => {
-    setImmediate(() => {
-      eventLoopTurned = true;
-      resolve();
-    });
-  });
+  const scan = runScanAsync({ paths: ["src"] }, successfulAsyncScan);
+  await nextEventLoopTurn();
+  eventLoopTurned = true;
   const result = await scan;
   assert.equal(eventLoopTurned, true);
   assert.equal(result.exitCode, 0);
 });
 
 test("runScanAsync returns a scanner failure when the asynchronous runner rejects", async () => {
-  const result = await runScanAsync({ paths: ["src"] }, async () => {
-    throw Object.assign(new Error("scanner failed"), {
-      status: 1,
-      stdout: JSON.stringify({
-        comparison: { regressions: [{ file: "a.ts" }] },
-      }),
-    });
-  });
+  const result = await runScanAsync({ paths: ["src"] }, failedAsyncScan);
   assert.equal(result.exitCode, 1);
   assert.deepEqual(result.report, {
     comparison: { regressions: [{ file: "a.ts" }] },

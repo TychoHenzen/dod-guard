@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { request as httpRequest } from "node:http";
+import { request as httpRequest, type IncomingMessage } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -12,6 +12,7 @@ import {
   installHttpSignalHandlers,
   normalizeHttpPath,
   parseHttpCliOptions,
+  type RunningHttpServer,
   startMcpHttpServer,
 } from "../../src/http.js";
 import { startQualityGuardHttpServer } from "../../src/index.js";
@@ -23,21 +24,49 @@ function fixture(name: string): string {
   return root;
 }
 
+async function readRawResponse(
+  response: IncomingMessage,
+): Promise<{ status: number; body: string }> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of response) chunks.push(Buffer.from(chunk));
+  return {
+    status: response.statusCode ?? 0,
+    body: Buffer.concat(chunks).toString("utf8"),
+  };
+}
+
 async function rawHttpRequest(url: string, headers: Record<string, string>) {
   return new Promise<{ status: number; body: string }>((resolve, reject) => {
-    const request = httpRequest(url, { headers }, (response) => {
-      const chunks: Buffer[] = [];
-      response.on("data", (chunk: Buffer) => chunks.push(chunk));
-      response.on("end", () =>
-        resolve({
-          status: response.statusCode ?? 0,
-          body: Buffer.concat(chunks).toString("utf8"),
-        }),
-      );
+    const request = httpRequest(url, { headers });
+    request.on("response", (response) => {
+      void readRawResponse(response).then(resolve, reject);
     });
     request.on("error", reject);
     request.end();
   });
+}
+
+async function forbiddenHeaderStatuses(url: string): Promise<number[]> {
+  const hostileHost = await rawHttpRequest(url, { host: "attacker.example" });
+  const hostileOrigin = await fetch(url, {
+    headers: { origin: "http://attacker.example" },
+  });
+  return [hostileHost.status, hostileOrigin.status];
+}
+
+function rejectingMcpFactory(onCall: () => unknown, message: string) {
+  return () => {
+    onCall();
+    throw new Error(message);
+  };
+}
+
+async function assertHostileLoopbackHeaders(
+  url: string,
+  factoryCount: () => number,
+): Promise<void> {
+  assert.deepEqual(await forbiddenHeaderStatuses(url), [403, 403]);
+  assert.equal(factoryCount(), 0);
 }
 
 async function withClient<Result>(
@@ -66,6 +95,66 @@ async function withClient<Result>(
   } finally {
     await client.close();
     await server.close();
+  }
+}
+
+function createDrainMcpServer(
+  released: Promise<void>,
+  started: () => void,
+): McpServer {
+  const server = new McpServer({ name: "drain-test", version: "1.0.0" });
+  server.tool("slow", async () => {
+    started();
+    await released;
+    return { content: [{ type: "text", text: "finished" }] };
+  });
+  return server;
+}
+
+async function createDrainServer() {
+  let release: () => void = () => {};
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let signalStarted: () => void = () => {};
+  const started = new Promise<void>((resolve) => {
+    signalStarted = resolve;
+  });
+  const server = await startMcpHttpServer({
+    path: "/mcp",
+    port: 0,
+    serviceName: "quality-guard",
+    createMcpServer: () => createDrainMcpServer(released, signalStarted),
+  });
+  return { server, release, started };
+}
+
+async function completeDrainRequest(
+  server: RunningHttpServer,
+  release: () => void,
+  started: Promise<void>,
+): Promise<void> {
+  const client = new Client({ name: "drain-client", version: "1.0.0" });
+  const transport = new StreamableHTTPClientTransport(
+    new URL(`http://127.0.0.1:${server.port}${server.path}`),
+  );
+  try {
+    await client.connect(transport);
+    const resultPromise = client.callTool({ name: "slow", arguments: {} });
+    await started;
+    let closed = false;
+    const closePromise = server.close().then(() => {
+      closed = true;
+    });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.equal(closed, false);
+    release();
+    const result = await resultPromise;
+    assert.match(JSON.stringify(result), /finished/);
+    await client.close();
+    await closePromise;
+  } finally {
+    await client.close().catch(() => undefined);
   }
 }
 
@@ -119,32 +208,22 @@ test("serves health and MCP initialization over Streamable HTTP", async () => {
 });
 
 test("rejects hostile loopback headers before MCP dispatch", async () => {
-  let factories = 0;
+  const factories = { count: 0 };
   const server = await startMcpHttpServer({
     path: "/mcp",
     healthPath: "/health",
     port: 0,
     serviceName: "quality-guard",
-    createMcpServer: () => {
-      factories += 1;
-      throw new Error("the factory must not run for hostile headers");
-    },
+    createMcpServer: rejectingMcpFactory(
+      () => (factories.count += 1),
+      "the factory must not run for hostile headers",
+    ),
   });
   try {
-    const hostileHost = await rawHttpRequest(
+    await assertHostileLoopbackHeaders(
       `http://127.0.0.1:${server.port}${server.path}`,
-      { host: "attacker.example" },
+      () => factories.count,
     );
-    assert.equal(hostileHost.status, 403);
-
-    const hostileOrigin = await fetch(
-      `http://127.0.0.1:${server.port}${server.path}`,
-      {
-        headers: { origin: "http://attacker.example" },
-      },
-    );
-    assert.equal(hostileOrigin.status, 403);
-    assert.equal(factories, 0);
   } finally {
     await server.close();
   }
@@ -155,50 +234,11 @@ test("normalizes a large trailing-slash suffix without a backtracking regex", ()
 });
 
 test("drains an in-flight MCP request before closing the HTTP server", async () => {
-  let release: (() => void) | undefined;
-  const released = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  let signalStarted: (() => void) | undefined;
-  const started = new Promise<void>((resolve) => {
-    signalStarted = resolve;
-  });
-  const server = await startMcpHttpServer({
-    path: "/mcp",
-    port: 0,
-    serviceName: "quality-guard",
-    createMcpServer: () => {
-      const mcpServer = new McpServer({ name: "drain-test", version: "1.0.0" });
-      mcpServer.tool("slow", async () => {
-        signalStarted?.();
-        await released;
-        return { content: [{ type: "text", text: "finished" }] };
-      });
-      return mcpServer;
-    },
-  });
-  const client = new Client({ name: "drain-client", version: "1.0.0" });
-  const transport = new StreamableHTTPClientTransport(
-    new URL(`http://127.0.0.1:${server.port}${server.path}`),
-  );
+  const { server, release, started } = await createDrainServer();
   try {
-    await client.connect(transport);
-    const resultPromise = client.callTool({ name: "slow", arguments: {} });
-    await started;
-    let closed = false;
-    const closePromise = server.close().then(() => {
-      closed = true;
-    });
-    await new Promise<void>((resolve) => setImmediate(resolve));
-    assert.equal(closed, false);
-    release?.();
-    const result = await resultPromise;
-    assert.match(JSON.stringify(result), /finished/);
-    await client.close();
-    await closePromise;
+    await completeDrainRequest(server, release, started);
   } finally {
-    release?.();
-    await client.close().catch(() => undefined);
+    release();
     await server.close();
   }
 });

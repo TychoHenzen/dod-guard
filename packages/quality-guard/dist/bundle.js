@@ -22691,7 +22691,7 @@ import { tmpdir } from "node:os";
 import * as path5 from "node:path";
 
 // src/scanner.ts
-import { execFile, execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import * as path3 from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22714,9 +22714,8 @@ function scanFailure(error2) {
   throw new Error(`quality scan failed: ${failureMessage(error2)}`);
 }
 
-// src/scanner.ts
-var SCAN_TIMEOUT_MS = 12e4;
-var MAX_BUFFER = 32 * 1024 * 1024;
+// src/scanner-execution.ts
+import { execFile } from "node:child_process";
 var asyncExecFile = (command, args, options) => new Promise((resolve4, reject) => {
   execFile(command, args, options, (error2, stdout) => {
     if (error2) {
@@ -22727,17 +22726,8 @@ var asyncExecFile = (command, args, options) => new Promise((resolve4, reject) =
     resolve4({ stdout: String(stdout) });
   });
 });
-function scannerPath() {
-  const here = path3.dirname(fileURLToPath(import.meta.url));
-  return path3.join(
-    here,
-    "..",
-    "skills",
-    "quality-refactor",
-    "scripts",
-    "quality-scan.mjs"
-  );
-}
+
+// src/scanner-request.ts
 function buildArgs(request) {
   return [
     ...request.paths,
@@ -22765,6 +22755,21 @@ function flag(name, value) {
 }
 function repeatedArgs(name, values) {
   return (values ?? []).map((value) => `${name}=${value}`);
+}
+
+// src/scanner.ts
+var SCAN_TIMEOUT_MS = 12e4;
+var MAX_BUFFER = 32 * 1024 * 1024;
+function scannerPath() {
+  const here = path3.dirname(fileURLToPath(import.meta.url));
+  return path3.join(
+    here,
+    "..",
+    "skills",
+    "quality-refactor",
+    "scripts",
+    "quality-scan.mjs"
+  );
 }
 function runScan(request, run = execFileSync) {
   const args = [scannerPath(), ...buildArgs(request)];
