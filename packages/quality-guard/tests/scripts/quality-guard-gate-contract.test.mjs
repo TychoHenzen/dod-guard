@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { gate } from "../../scripts/quality-guard-gate.mjs";
 import {
@@ -74,5 +76,19 @@ test("the project linter runs after a passing structural check", () => {
   const code = gateWith(filePath, calls, { violations: [] });
   assert.equal(code, 0);
   assert.deepEqual(calls, ["scanner", "linter"]);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("a target outside a repository is a successful no-op", () => {
+  const root = mkdtempSync(join(tmpdir(), "qg-external-"));
+  writeFileSync(join(root, "scratch.py"), "def scratch():\n    return 1\n");
+  const calls = [];
+  const target = join(root, "scratch.py");
+  const code = gate(fakeInput(target), target, {
+    runScanner: () => calls.push("scanner"),
+    localResult: () => calls.push("linter"),
+  });
+  assert.equal(code, 0);
+  assert.deepEqual(calls, []);
   rmSync(root, { recursive: true, force: true });
 });

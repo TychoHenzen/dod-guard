@@ -121,6 +121,11 @@ quality-guard check --staged --intent refactor --target .quality/responsibility-
 
 The shipped PostToolUse hook is optional feedback for compatible agent runtimes. A repository may also wire its own Git pre-commit hook to run `quality-guard check --staged`. That hook is a convenience only. CI remains authoritative because it replays `quality-guard check --committed HEAD --json` from Git objects.
 
+The PostToolUse hook only provides file-local feedback for targets inside an
+ancestor Git repository. A target outside any repository exits successfully
+without scanner, baseline, or project-linter work; staged and committed checks
+remain the authority for repository decisions.
+
 Codex discovers the plugin hook from `hooks/hooks.json`. After installation or an update, review and trust the hook in `/hooks`; Codex does not run a new plugin hook before that trust step.
 
 ## MCP tools

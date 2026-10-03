@@ -6,6 +6,7 @@ import {
   readFileSync,
   rmSync,
   writeFileSync,
+  mkdirSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
@@ -55,6 +56,7 @@ test("Windows launcher forwards a Codex hook payload to the Node hook", {
   );
   const filePath = resolve(directory, "clean.ts");
   const launcher = resolve(packageRoot, "scripts", "quality-guard-hook.cmd");
+  mkdirSync(resolve(directory, ".git"));
   writeFileSync(filePath, "export const answer = 42;\n");
   const input = {
     cwd: directory,

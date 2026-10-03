@@ -11,6 +11,7 @@ export const OVER_BOUND_LINES = 301;
 
 export function tempRepo() {
   const root = mkdtempSync(join(tmpdir(), "qg-tracked-"));
+  mkdirSync(join(root, ".git"));
   mkdirSync(join(root, ".github", "quality"), { recursive: true });
   return root;
 }
