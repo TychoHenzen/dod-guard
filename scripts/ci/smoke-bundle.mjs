@@ -241,23 +241,31 @@ async function main(argv) {
       readFileSync(join(ROOT, "packages", pkgName, ".codex-plugin", "plugin.json"), "utf8"),
     );
     const configured = codexManifest.mcpServers?.[pkgName];
-    if (
-      configured?.command !== "node" ||
-      JSON.stringify(configured.args) !== JSON.stringify(["dist/bundle.js"]) ||
-      configured.cwd !== "."
-    ) {
-      process.stdout.write(
-        `smoke FAILED for ${pkgName} Codex manifest\n  Codex manifest must launch dist/bundle.js from the plugin root\n`,
-      );
-      return 1;
-    }
-    process.stdout.write("  Codex manifest OK: relative bundle path resolves from the plugin root\n");
-    try {
-      await handshake(configured.args[0], pkgName, expectedVersion, join(ROOT, "packages", pkgName), envOverrides);
-      process.stdout.write("  Codex manifest launch OK: initialize completed through the relative path\n");
-    } catch (err) {
-      process.stdout.write(`smoke FAILED for ${pkgName} Codex manifest launch\n  ${err.message}\n`);
-      return 1;
+    if (configured?.type === "http") {
+      if (typeof configured.url !== "string" || !configured.url.startsWith("http://127.0.0.1:")) {
+        process.stdout.write(`smoke FAILED for ${pkgName} Codex manifest\n  host-managed MCP URL must be loopback HTTP\n`);
+        return 1;
+      }
+      process.stdout.write(`  Codex manifest OK: host-managed endpoint ${configured.url}\n`);
+    } else {
+      if (
+        configured?.command !== "node" ||
+        JSON.stringify(configured.args) !== JSON.stringify(["dist/bundle.js"]) ||
+        configured.cwd !== "."
+      ) {
+        process.stdout.write(
+          `smoke FAILED for ${pkgName} Codex manifest\n  Codex manifest must launch dist/bundle.js from the plugin root\n`,
+        );
+        return 1;
+      }
+      process.stdout.write("  Codex manifest OK: relative bundle path resolves from the plugin root\n");
+      try {
+        await handshake(configured.args[0], pkgName, expectedVersion, join(ROOT, "packages", pkgName), envOverrides);
+        process.stdout.write("  Codex manifest launch OK: initialize completed through the relative path\n");
+      } catch (err) {
+        process.stdout.write(`smoke FAILED for ${pkgName} Codex manifest launch\n  ${err.message}\n`);
+        return 1;
+      }
     }
 
     if (pkgName === "code-explorer") {
