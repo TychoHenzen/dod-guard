@@ -714,6 +714,27 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.doesNotMatch(skill, /5\.4\.5|plugins[\\/]cache[\\/]dod-guard-monorepo/);
 });
 
+test("goal-sdlc serializes shared-checkout ownership in the existing handoff", async () => {
+  const skill = await readSkill();
+  for (const marker of [
+    "## Shared-checkout ownership handshake",
+    "active peer\ngoal or agent runs",
+    "one canonical owner record",
+    "parent and child PBI",
+    "exact branch ref and observed commit SHA",
+    "wait/no-mutation result",
+    "The waiting run's mutation list is\nempty",
+    "read it back, and dispatch only after that exact identity is stable",
+    "A peer write, branch movement, changed handoff, or head mismatch\ninvalidates the old owner evidence",
+    "fail closed with an actionable recovery owner",
+  ]) {
+    assert.ok(skill.includes(marker), `missing ownership marker: ${marker}`);
+  }
+  assert.match(skill, /Do not create a lock file, local coordination ledger, hidden ref/);
+  assert.match(skill, /Do not dispatch, switch or\nedit the checkout/);
+  assert.doesNotMatch(skill, /active peer.*writes? a local lock/u);
+});
+
 test("goal-sdlc keeps real work in short-lived subagents", async () => {
   const skill = await readSkill();
   for (const marker of [
