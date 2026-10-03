@@ -26,8 +26,11 @@ npm run preflight:static-analysis
 npm test
 npm run bundle
 node scripts/ci/validate-plugins.mjs
-npx @biomejs/biome check packages/*/src/ scripts/ci/ --no-errors-on-unmatched
+npx @biomejs/biome check packages/code-explorer/src/ packages/fossil/src/ packages/knowledge-base/src/ packages/quality-guard/src/ scripts/ci/ --no-errors-on-unmatched
 ```
+
+Commands that cross PowerShell, native executables, or an explicitly selected
+POSIX shell follow [`docs/command-composition.md`](docs/command-composition.md).
 
 Tracked bundles live at `packages/*/dist/bundle.js`. Regenerate and commit them
 on the feature branch. CI reproduces generated files and fails on drift.

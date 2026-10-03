@@ -127,6 +127,10 @@ dependency.
 All GitHub-backed commands follow the shared request policy in
 [`standards/github-request-discipline.md`](standards/github-request-discipline.md).
 
+Cross-shell RTK, native-executable, path, output, and precondition commands
+follow the repository contract in
+[`docs/command-composition.md`](docs/command-composition.md).
+
 Start or continue the Todo PBI from the repository's main checkout. Use an
 isolated worktree only when that checkout cannot safely retain the selected
 branch and user-owned changes, and record the exception and recovery path:

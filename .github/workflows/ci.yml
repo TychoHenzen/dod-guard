@@ -56,6 +56,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      - name: Run the Windows command-composition boundary
+        run: node --test scripts/ci/command-composition.test.mjs
       - name: Run the Windows advisor contract
         run: node --test plugins/dod-guard/skills/codex-advisor/scripts/advisor-contract.test.mjs
 

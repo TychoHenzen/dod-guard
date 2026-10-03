@@ -154,6 +154,12 @@ For code shape, prefer small pure functions with explicit inputs and outputs,
 keep external I/O at boundaries, and use ordinary loops or mutation when that
 is clearer. Do not require a functional language or dense composition.
 
+When a verification command crosses PowerShell, a native executable, or an
+explicitly selected POSIX shell, apply the repository's
+[command-composition contract](../../docs/command-composition.md). Preserve
+separate path arguments, required-argument checks, destination-parent
+preconditions, and producer exit status.
+
 When a test fails, compare its expectation with the clear task contract. Update
 a stale expectation and rerun it. Fix the implementation when it violates the
 contract. Never weaken or delete a test only to obtain a pass.

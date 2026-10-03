@@ -135,6 +135,9 @@ starts at most one reviewer at a time. Never replace it with an active-client
 fan-out, `powershell.exe`, `pwsh`, `cmd.exe`, `run-reviewer.ps1`, or another
 generated reviewer wrapper.
 
+This direct-process boundary is the repository's
+[command-composition contract](../../docs/command-composition.md) in action.
+
 ### Git and GitHub
 
 Use the GitHub MCP repository metadata operation when the checkout has a

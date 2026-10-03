@@ -1,5 +1,10 @@
 # Serena code explorer handoff
 
+Command examples in this handoff follow the repository's
+[command-composition contract](../command-composition.md): `rtk` is a native
+executable, and the `cmd.exe` boundary below is selected explicitly rather than
+being inferred from a bare shell name.
+
 ## Current situation
 
 Serena is installed and registered as a Codex MCP server. Its MCP tools are available in the current Codex session.
