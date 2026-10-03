@@ -21,9 +21,13 @@ function writeFixture(root, relativePath, content) {
 function runBiome(root, relativePath) {
   return spawnSync(
     process.execPath,
-    [BIOME_CLI, "lint", relativePath, "--max-diagnostics=none", "--no-errors-on-unmatched"],
+    [BIOME_CLI, "lint", relativePath, "--max-diagnostics=none", "--no-errors-on-unmatched", "--reporter=json"],
     { cwd: root, encoding: "utf8" },
   );
+}
+
+function parseLintResult(result) {
+  return JSON.parse(result.stdout);
 }
 
 test("Biome exempts the Node build helper but keeps the browser boundary covered", () => {
@@ -43,6 +47,18 @@ test("Biome exempts the Node build helper but keeps the browser boundary covered
 
     const nodeScript = runBiome(root, "packages/code-explorer/scripts/build-browser.mjs");
     const browserSource = runBiome(root, "packages/code-explorer/src/browser/biome-boundary.ts");
+    for (const [label, result] of [
+      ["Node build helper", nodeScript],
+      ["browser source", browserSource],
+    ]) {
+      assert.equal(result.error, undefined, `${label} failed to start: ${result.error?.message ?? "unknown error"}`);
+      assert.equal(result.status, 0, `${label} exited with ${result.status}: ${result.stderr}`);
+      const report = parseLintResult(result);
+      assert.equal(report.command, "lint", `${label} did not run the lint command`);
+      assert.equal(report.summary.skipped, 0, `${label} skipped files`);
+      assert.equal(report.summary.unchanged, 1, `${label} did not process exactly one file`);
+      assert.equal(report.summary.errors, 0, `${label} reported lint errors`);
+    }
     assert.doesNotMatch(`${nodeScript.stdout}${nodeScript.stderr}`, NODE_MODULES_DIAGNOSTIC);
     assert.match(`${browserSource.stdout}${browserSource.stderr}`, NODE_MODULES_DIAGNOSTIC);
   } finally {

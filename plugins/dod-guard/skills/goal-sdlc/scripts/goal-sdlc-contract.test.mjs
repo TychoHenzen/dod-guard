@@ -722,10 +722,16 @@ test("goal-sdlc serializes shared-checkout ownership in the existing handoff", a
     "one canonical owner record",
     "parent and child PBI",
     "exact branch ref and observed commit SHA",
+    "logical scope",
+    "volatile evidence",
     "wait/no-mutation result",
+    "stale conflicting evidence",
+    "alone or alongside an exact peer",
+    "peer that appears between the",
     "The waiting run's mutation list is\nempty",
     "read it back, and dispatch only after that exact identity is stable",
     "A peer write, branch movement, changed handoff, or head mismatch\ninvalidates the old owner evidence",
+    "stale same-scope peers",
     "fail closed with an actionable recovery owner",
   ]) {
     assert.ok(skill.includes(marker), `missing ownership marker: ${marker}`);

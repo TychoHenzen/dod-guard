@@ -11,14 +11,22 @@ const CHECKPOINT = Object.freeze({
   handoffRevision: 1,
 });
 
-const scopeFields = [
+const logicalScopeFields = [
   "repository",
   "parentIssue",
   "childIssue",
   "branch",
-  "head",
   "responsibility",
+];
+
+const evidenceFields = [
+  "head",
   "handoffRevision",
+];
+
+const identityFields = [
+  ...logicalScopeFields,
+  ...evidenceFields,
 ];
 
 function owner(handle, overrides = {}) {
@@ -29,18 +37,33 @@ function hasCompleteIdentity(value) {
   return value?.active === true
     && typeof value.handle === "string"
     && value.handle.length > 0
-    && scopeFields.every((field) => value[field] !== undefined && value[field] !== null);
+    && identityFields.every((field) => value[field] !== undefined && value[field] !== null);
 }
 
 function sameScope(left, right) {
-  return scopeFields.every((field) => left?.[field] === right?.[field]);
+  return identityFields.every((field) => left?.[field] === right?.[field]);
+}
+
+function sameLogicalScope(left, right) {
+  return logicalScopeFields.every((field) => left?.[field] === right?.[field]);
 }
 
 function assessOwnership({ currentOwner = null, peers = [], observed = CHECKPOINT } = {}) {
   const activePeers = peers.filter((peer) => peer?.active === true);
   const matchingPeers = activePeers.filter((peer) => hasCompleteIdentity(peer) && sameScope(peer, observed));
+  const stalePeers = activePeers.filter(
+    (peer) => hasCompleteIdentity(peer) && sameLogicalScope(peer, observed) && !sameScope(peer, observed),
+  );
   const incompletePeers = activePeers.filter((peer) => !hasCompleteIdentity(peer));
 
+  if (stalePeers.length > 0) {
+    return {
+      decision: "hold",
+      reason: "stale peer conflict",
+      recoveryOwner: stalePeers[0].handle,
+      effects: [],
+    };
+  }
   if (matchingPeers.length > 1) {
     return { decision: "hold", reason: "conflicting owners", effects: [] };
   }
@@ -57,6 +80,14 @@ function assessOwnership({ currentOwner = null, peers = [], observed = CHECKPOIN
     return { decision: "stale", recoveryOwner: currentOwner.handle ?? null, effects: [] };
   }
   return { decision: "proceed", canonicalOwner: currentOwner.handle, effects: [] };
+}
+
+function observeThenClaim({ peersAtObservation = [], peersAtClaim = [] } = {}) {
+  const observation = assessOwnership({ peers: peersAtObservation });
+  if (observation.decision !== "claim") {
+    return observation;
+  }
+  return assessOwnership({ currentOwner: owner("self"), peers: peersAtClaim });
 }
 
 test("sole ownership claims one exact checkpoint before dispatch", () => {
@@ -79,6 +110,58 @@ test("duplicate owners fail closed without a second dispatch", () => {
   assert.deepEqual(
     assessOwnership({ peers: [owner("first-peer"), owner("second-peer")] }),
     { decision: "hold", reason: "conflicting owners", effects: [] },
+  );
+});
+
+test("a stale peer head is a conflict instead of permission to claim", () => {
+  assert.deepEqual(
+    assessOwnership({ peers: [owner("stale-peer", { head: "newer-head" })] }),
+    {
+      decision: "hold",
+      reason: "stale peer conflict",
+      recoveryOwner: "stale-peer",
+      effects: [],
+    },
+  );
+});
+
+test("a stale handoff revision is a conflict instead of permission to claim", () => {
+  assert.deepEqual(
+    assessOwnership({ peers: [owner("stale-peer", { handoffRevision: 2 })] }),
+    {
+      decision: "hold",
+      reason: "stale peer conflict",
+      recoveryOwner: "stale-peer",
+      effects: [],
+    },
+  );
+});
+
+test("a peer appearing between observation and claim fails closed", () => {
+  assert.deepEqual(
+    observeThenClaim({ peersAtClaim: [owner("race-peer")] }),
+    { decision: "wait", canonicalOwner: "race-peer", effects: [] },
+  );
+  assert.deepEqual(
+    observeThenClaim({ peersAtClaim: [owner("race-peer", { head: "newer-head" })] }),
+    {
+      decision: "hold",
+      reason: "stale peer conflict",
+      recoveryOwner: "race-peer",
+      effects: [],
+    },
+  );
+});
+
+test("an exact peer alongside stale evidence still fails closed", () => {
+  assert.deepEqual(
+    assessOwnership({ peers: [owner("current-peer"), owner("stale-peer", { handoffRevision: 2 })] }),
+    {
+      decision: "hold",
+      reason: "stale peer conflict",
+      recoveryOwner: "stale-peer",
+      effects: [],
+    },
   );
 });
 

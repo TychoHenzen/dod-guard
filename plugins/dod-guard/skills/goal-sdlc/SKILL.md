@@ -82,18 +82,27 @@ Each active checkpoint has one canonical owner record with these values:
 - branch and head: the exact branch ref and observed commit SHA; and
 - responsibility and observed-at: the bounded checkpoint and its read time.
 
-When one active peer matches every scope value, keep that peer's owner handle
-canonical and return a wait/no-mutation result. Do not dispatch, switch or
-edit the checkout, assign or move an issue, commit, push, create a pull
-request, or write a second handoff record. The waiting run's mutation list is
+Treat repository, parent and child PBI, branch, and responsibility as the
+logical scope. Head and handoff revision are volatile evidence for that scope.
+When one active peer matches the logical scope and the exact evidence, keep
+that peer's owner handle canonical and return a wait/no-mutation result. Do not dispatch, switch or
+edit the checkout, assign or move an issue, commit,
+push, create a pull request, or write a second handoff record. The waiting run's mutation list is
 empty; it waits for the owner to finish and then performs a fresh read.
 
-When no matching peer exists, read the local branch, remote branch, and latest
-handoff immediately before claiming the checkpoint. Record the current
-handle, exact branch, exact head, and responsibility in the existing handoff,
-read it back, and dispatch only after that exact identity is stable. If a peer
-appears or any identity changes during the claim, stop without mutation and
-return the conflicting owner or a named recovery owner.
+An active peer with complete identity in the same logical scope but a changed
+head or handoff revision is stale conflicting evidence, not an absent peer.
+Treat any such peer, alone or alongside an exact peer, as a conflict and fail
+closed with its handle as the recovery owner. A peer that appears between the
+no-peer read and the claim is the same conflict; do not let the first read
+authorize a second writer.
+
+When no active peer in the logical scope exists, read the local branch, remote
+branch, and latest handoff immediately before claiming the checkpoint. Record
+the current handle, exact branch, exact head, and responsibility in the
+existing handoff, read it back, and dispatch only after that exact identity is stable.
+If a peer appears or any identity changes during the claim, stop without
+mutation and return the conflicting owner or a named recovery owner.
 
 Before every later write, refresh the branch ref, remote head, and existing
 handoff. A peer write, branch movement, changed handoff, or head mismatch
@@ -102,10 +111,10 @@ stale evidence with a hidden state channel. Refresh once at the exact head;
 only then may the owning lifecycle skill continue with commit, push, pull
 request, review, or completion work.
 
-Missing owner evidence, duplicate owners, unexpected branch movement, and
-stale handoffs fail closed with an actionable recovery owner. The failure
-leaves the checkout and GitHub administration untouched until the recovery
-owner has fresh exact-head and remote evidence.
+Missing owner evidence, duplicate owners, stale same-scope peers, unexpected
+branch movement, and stale handoffs fail closed with an actionable recovery owner.
+The failure leaves the checkout and GitHub administration untouched until the
+recovery owner has fresh exact-head and remote evidence.
 
 ## Acceptance matrix contract
 
