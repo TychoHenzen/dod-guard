@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
+import process from "node:process";
 import { test } from "node:test";
-import { runQualityReport } from "../../src/report.js";
+import { runQualityReport, runQualityReportAsync } from "../../src/report.js";
 
 test("runs the scanner and architecture analysis for a project root", () => {
   const root = fs.mkdtempSync(path.join(tmpdir(), "quality-report-"));
@@ -22,6 +23,24 @@ test("runs the scanner and architecture analysis for a project root", () => {
     );
     assert.equal(report.architecture.errors.length, 0);
   } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("runs the asynchronous report scanner with the default root", async () => {
+  const root = fs.mkdtempSync(path.join(tmpdir(), "quality-report-async-"));
+  const previousRoot = process.cwd();
+  try {
+    fs.mkdirSync(path.join(root, "src"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "src", "service.ts"),
+      'export class Service { run(): string { return "ok"; } }\n',
+    );
+    process.chdir(root);
+    const report = await runQualityReportAsync({});
+    assert.equal(report.schemaVersion, 1);
+  } finally {
+    process.chdir(previousRoot);
     fs.rmSync(root, { recursive: true, force: true });
   }
 });

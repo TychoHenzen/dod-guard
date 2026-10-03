@@ -6,8 +6,8 @@ import { join } from "node:path";
 import process from "node:process";
 import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   installHttpSignalHandlers,
   normalizeHttpPath,
@@ -137,9 +137,12 @@ test("rejects hostile loopback headers before MCP dispatch", async () => {
     );
     assert.equal(hostileHost.status, 403);
 
-    const hostileOrigin = await fetch(`http://127.0.0.1:${server.port}${server.path}`, {
-      headers: { origin: "http://attacker.example" },
-    });
+    const hostileOrigin = await fetch(
+      `http://127.0.0.1:${server.port}${server.path}`,
+      {
+        headers: { origin: "http://attacker.example" },
+      },
+    );
     assert.equal(hostileOrigin.status, 403);
     assert.equal(factories, 0);
   } finally {

@@ -134,10 +134,9 @@ test("rejects hostile loopback headers before knowledge dispatch", async () => {
       },
     });
     try {
-      const hostileHost = await rawHttpRequest(
-        `http://127.0.0.1:${server.port}${server.path}`,
-        { host: "attacker.example" },
-      );
+      const hostileHost = await rawHttpRequest(`http://127.0.0.1:${server.port}${server.path}`, {
+        host: "attacker.example",
+      });
       assert.equal(hostileHost.status, 403);
       const hostileOrigin = await fetch(`http://127.0.0.1:${server.port}${server.path}`, {
         headers: { origin: "http://attacker.example" },

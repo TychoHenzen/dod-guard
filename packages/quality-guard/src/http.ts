@@ -94,9 +94,12 @@ function allowedOrigins(port: number): string[] {
   ];
 }
 
-function acceptsLoopbackRequest(request: IncomingMessage, port: number): boolean {
+function acceptsLoopbackRequest(
+  request: IncomingMessage,
+  port: number,
+): boolean {
   const host = request.headers.host?.toLowerCase();
-  if (!host || !allowedHosts(port).includes(host)) return false;
+  if (!(host && allowedHosts(port).includes(host))) return false;
   const origin = request.headers.origin;
   return origin === undefined || allowedOrigins(port).includes(origin);
 }
@@ -144,7 +147,7 @@ export async function startMcpHttpServer(
   const transports = new Set<StreamableHTTPServerTransport>();
   const server = createServer(async (request, response) => {
     const hostHeader = request.headers.host;
-    if (!hostHeader || !acceptsLoopbackRequest(request, addressPort(server))) {
+    if (!acceptsLoopbackRequest(request, addressPort(server))) {
       json(response, 403, {
         error: "forbidden",
         service: options.serviceName,
@@ -168,7 +171,7 @@ export async function startMcpHttpServer(
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableDnsRebindingProtection: true,
-      allowedHosts: [hostHeader],
+      allowedHosts: [hostHeader!],
       allowedOrigins: allowedOrigins(addressPort(server)),
     });
     let mcpServer: McpServer | undefined;

@@ -28412,7 +28412,7 @@ function allowedOrigins(port) {
 }
 function acceptsLoopbackRequest(request, port) {
   const host = request.headers.host?.toLowerCase();
-  if (!host || !allowedHosts(port).includes(host)) return false;
+  if (!(host && allowedHosts(port).includes(host))) return false;
   const origin = request.headers.origin;
   return origin === void 0 || allowedOrigins(port).includes(origin);
 }
@@ -28451,7 +28451,7 @@ async function startMcpHttpServer(options) {
   const transports = /* @__PURE__ */ new Set();
   const server = createServer(async (request, response) => {
     const hostHeader = request.headers.host;
-    if (!hostHeader || !acceptsLoopbackRequest(request, addressPort(server))) {
+    if (!acceptsLoopbackRequest(request, addressPort(server))) {
       json2(response, 403, {
         error: "forbidden",
         service: options.serviceName
@@ -29152,13 +29152,16 @@ function asReportScan(report) {
   }
   return candidate;
 }
+function reportRoot(request) {
+  return path14.resolve(request.root ?? process.cwd());
+}
 function runQualityReport(request) {
-  const root2 = path14.resolve(request.root ?? process.cwd());
+  const root2 = reportRoot(request);
   const scan = asReportScan(runScan({ ...request, root: root2, paths: ["."] }).report);
   return buildQualityReport(scan, architectureFor(root2, scan));
 }
 async function runQualityReportAsync(request) {
-  const root2 = path14.resolve(request.root ?? process.cwd());
+  const root2 = reportRoot(request);
   const scan = asReportScan(
     (await runScanAsync({ ...request, root: root2, paths: ["."] })).report
   );

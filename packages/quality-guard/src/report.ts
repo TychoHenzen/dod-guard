@@ -54,10 +54,14 @@ function asReportScan(
   return candidate as Parameters<typeof buildQualityReport>[0];
 }
 
+function reportRoot(request: { root?: string }): string {
+  return path.resolve(request.root ?? process.cwd());
+}
+
 export function runQualityReport(
   request: Omit<ScanRequest, "paths"> & { root?: string },
 ) {
-  const root = path.resolve(request.root ?? process.cwd());
+  const root = reportRoot(request);
   const scan = asReportScan(runScan({ ...request, root, paths: ["."] }).report);
   return buildQualityReport(scan, architectureFor(root, scan));
 }
@@ -65,7 +69,7 @@ export function runQualityReport(
 export async function runQualityReportAsync(
   request: Omit<ScanRequest, "paths"> & { root?: string },
 ) {
-  const root = path.resolve(request.root ?? process.cwd());
+  const root = reportRoot(request);
   const scan = asReportScan(
     (await runScanAsync({ ...request, root, paths: ["."] })).report,
   );

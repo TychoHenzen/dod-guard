@@ -31130,15 +31130,11 @@ function allowedHosts(port2) {
   return [`127.0.0.1:${port2}`, `localhost:${port2}`, `[::1]:${port2}`];
 }
 function allowedOrigins(port2) {
-  return [
-    `http://127.0.0.1:${port2}`,
-    `http://localhost:${port2}`,
-    `http://[::1]:${port2}`
-  ];
+  return [`http://127.0.0.1:${port2}`, `http://localhost:${port2}`, `http://[::1]:${port2}`];
 }
 function acceptsLoopbackRequest(request, port2) {
   const host = request.headers.host?.toLowerCase();
-  if (!host || !allowedHosts(port2).includes(host)) return false;
+  if (!(host && allowedHosts(port2).includes(host))) return false;
   const origin = request.headers.origin;
   return origin === void 0 || allowedOrigins(port2).includes(origin);
 }
@@ -31173,7 +31169,7 @@ async function startKnowledgeBaseHttpServer(options) {
   const transports = /* @__PURE__ */ new Set();
   const server = createServer(async (request, response2) => {
     const hostHeader = request.headers.host;
-    if (!hostHeader || !acceptsLoopbackRequest(request, listeningPort(server))) {
+    if (!(hostHeader && acceptsLoopbackRequest(request, listeningPort(server)))) {
       sendJson(response2, 403, { error: "forbidden", service: "knowledge-base" });
       return;
     }
