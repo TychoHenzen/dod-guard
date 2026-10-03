@@ -15,6 +15,10 @@ function reviewedHead(summary) {
   return summary?.headSha ?? summary?.head_sha ?? null;
 }
 
+function hasHead(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 function reviewTriggerDecision({
   reviewSummary = null,
   automaticReviewStarted,
@@ -27,14 +31,17 @@ function reviewTriggerDecision({
     reviewedHeadSha: reviewedHead(reviewSummary),
   };
 
+  if (!hasHead(currentHeadSha)) {
+    return { ...evidence, action: "hold", reason: "current-head-missing" };
+  }
   if (completedReviewSummary(reviewSummary)) {
+    if (!hasHead(evidence.reviewedHeadSha)) {
+      return { ...evidence, action: "hold", reason: "reviewed-head-missing" };
+    }
     return { ...evidence, action: "suppress", reason: "review-summary-complete" };
   }
   if (triggerSent) {
     return { ...evidence, action: "suppress", reason: "review-trigger-already-sent" };
-  }
-  if (typeof currentHeadSha !== "string" || currentHeadSha.length === 0) {
-    return { ...evidence, action: "hold", reason: "current-head-missing" };
   }
   if (automaticReviewStarted === true) {
     return { ...evidence, action: "wait", reason: "automatic-review-started" };

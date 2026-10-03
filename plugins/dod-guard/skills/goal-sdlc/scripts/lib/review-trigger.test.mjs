@@ -21,6 +21,31 @@ test("suppresses a review trigger after a completed Review Summary", () => {
   );
 });
 
+test("holds a completed summary until both reviewed and current heads are present", () => {
+  assert.deepEqual(
+    reviewTriggerDecision({
+      reviewSummary: { status: "completed" },
+      automaticReviewStarted: false,
+      waitedMs: REVIEW_WAIT_MS * 2,
+      currentHeadSha: "follow-up-head",
+    }),
+    {
+      action: "hold",
+      reason: "reviewed-head-missing",
+      currentHeadSha: "follow-up-head",
+      reviewedHeadSha: null,
+    },
+  );
+  assert.equal(
+    reviewTriggerDecision({
+      reviewSummary: { status: "completed", headSha: "reviewed-head" },
+      automaticReviewStarted: false,
+      waitedMs: REVIEW_WAIT_MS * 2,
+    }).reason,
+    "current-head-missing",
+  );
+});
+
 test("allows exactly one fallback trigger after an unstarted review wait", () => {
   const beforeWait = reviewTriggerDecision({
     automaticReviewStarted: false,

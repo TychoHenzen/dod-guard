@@ -140,6 +140,26 @@ test("routes one proven interactive-form no-op through identical REST mutation a
   assert.equal(evidence[0].failure.category, FAILURE_CATEGORIES.INTERACTIVE_FORM);
 });
 
+test("routes a non-error interactive-form envelope through the same no-op fallback", async () => {
+  const calls = [];
+  const result = await runTransport({
+    operation: "issueMutation",
+    request: { repository: "owner/repo", issueNumber: 745 },
+    mutation: true,
+    restEndpoint: "PATCH /repos/owner/repo/issues/745",
+    primary: async () => ({ structuredContent: { status: "awaiting_user_submission" } }),
+    rest: async (request) => {
+      calls.push(["rest", request]);
+      return { number: 745, state: "open" };
+    },
+    readback: async ({ phase }) => ({ mutated: phase === "after-fallback" }),
+  });
+
+  assert.equal(result.transport, "rest");
+  assert.deepEqual(calls, [["rest", { repository: "owner/repo", issueNumber: 745 }]]);
+  assert.equal(result.primaryFailure.category, FAILURE_CATEGORIES.INTERACTIVE_FORM);
+});
+
 test("stops an interactive-form write unless readback proves no mutation", async () => {
   let restCalls = 0;
   await assert.rejects(
@@ -183,6 +203,31 @@ test("stops without REST for unsupported and non-MCP failures", async () => {
         rest: async () => { restCalls += 1; },
       }),
       (error) => error instanceof TransportStopError && error.details.category === expectedCategory,
+    );
+    assert.equal(restCalls, 0);
+  }
+});
+
+test("gives authentication and permission evidence precedence over interactive-form status", async () => {
+  for (const failure of [
+    { status: 401, category: FAILURE_CATEGORIES.AUTHENTICATION },
+    { status: 403, category: FAILURE_CATEGORIES.PERMISSION },
+  ]) {
+    let restCalls = 0;
+    await assert.rejects(
+      runTransport({
+        operation: "issueMutation",
+        request: { repository: "owner/repo", issueNumber: 745 },
+        mutation: true,
+        restEndpoint: "PATCH /repos/owner/repo/issues/745",
+        primary: async () => ({
+          status: failure.status,
+          structuredContent: { status: "awaiting_user_submission" },
+        }),
+        rest: async () => { restCalls += 1; },
+        readback: async () => ({ mutated: false }),
+      }),
+      (error) => error instanceof TransportStopError && error.details.category === failure.category,
     );
     assert.equal(restCalls, 0);
   }

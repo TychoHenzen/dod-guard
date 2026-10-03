@@ -3,6 +3,16 @@ import { createHash } from "node:crypto";
 import { classifyTransportFailure } from "../../../../lib/transport-policy.mjs";
 
 const CREATE_PROCESS_POLICY_REJECTION = /CreateProcess[\s\S]*rejected by policy/i;
+const ACTIVE_OPERATION_STATES = new Set([
+  "active",
+  "in_progress",
+  "pending",
+  "queued",
+  "running",
+  "started",
+  "waiting",
+  "working",
+]);
 
 function requireHandle(handle) {
   if (handle === null || handle === undefined || handle === "") {
@@ -43,6 +53,17 @@ function operationBytesEvidence(verifiedBytes, expectedSha256) {
   return { value: bytes.toString("base64"), sha256 };
 }
 
+function operationState(result) {
+  if (!result || typeof result !== "object") return null;
+  const state = result.state ?? result.status;
+  return typeof state === "string" ? state.toLowerCase().replace(/[\s-]+/g, "_") : null;
+}
+
+function operationIsActive(result) {
+  if (result?.active === true || result?.done === false || result?.terminal === false) return true;
+  return ACTIVE_OPERATION_STATES.has(operationState(result));
+}
+
 async function awaitOperation({ handle, wait, cancelledByOperator = false } = {}) {
   const activeHandle = requireHandle(handle);
   if (cancelledByOperator) {
@@ -51,7 +72,10 @@ async function awaitOperation({ handle, wait, cancelledByOperator = false } = {}
   if (typeof wait !== "function") {
     throw new TypeError("operation wait function is required.");
   }
-  const result = await wait(activeHandle);
+  let result;
+  do {
+    result = await wait(activeHandle);
+  } while (operationIsActive(result));
   return { kind: "terminal", handle: activeHandle, result };
 }
 

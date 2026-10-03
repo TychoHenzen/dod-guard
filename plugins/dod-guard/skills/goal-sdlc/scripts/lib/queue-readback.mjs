@@ -709,7 +709,7 @@ function doneStatus(status) {
   return typeof status === "string" && status.toLowerCase() === "done";
 }
 
-function reconcileProjectCounts(items, records) {
+function reconcileProjectCounts(items, records, { snapshotComplete = true } = {}) {
   const snapshotItems = Array.isArray(items) ? items : [];
   const snapshotRecords = Array.isArray(records) ? records : [];
   const parents = snapshotRecords.filter(({ parentIssueNumber }) => parentIssueNumber === null);
@@ -720,7 +720,11 @@ function reconcileProjectCounts(items, records) {
   const missingRecordCounts = snapshotItems.length === snapshotRecords.length
     ? []
     : [`raw Project items (${snapshotItems.length}) and reconciled records (${snapshotRecords.length}) differ`];
-  const missingEvidence = [...new Set([...missingParentFields, ...missingRecordCounts])];
+  const missingEvidence = [...new Set([
+    ...(snapshotComplete ? [] : ["complete Project item pages"]),
+    ...missingParentFields,
+    ...missingRecordCounts,
+  ])];
   const counts = {
     rawItems: snapshotItems.length,
     parentItems: parents.length,
@@ -730,7 +734,7 @@ function reconcileProjectCounts(items, records) {
   };
   return {
     ...counts,
-    balanced: missingEvidence.length === 0 && counts.rawItems === counts.parentItems + counts.childItems,
+    balanced: snapshotComplete && missingEvidence.length === 0 && counts.rawItems === counts.parentItems + counts.childItems,
     missingEvidence,
   };
 }
@@ -760,7 +764,7 @@ async function readQueueSnapshot({ provider, project, repository, query, default
   const issueRead = await readIssueRelationships({ provider, items, repository: repositoryNameValue, evidence });
   const pullRequestRead = await readPullRequestRelationships({ provider, items, repository: repositoryNameValue, evidence });
   const records = buildRecords(items, { ...issueRead, ...pullRequestRead, repository: repositoryNameValue, evidence });
-  const counts = reconcileProjectCounts(items, records);
+  const counts = reconcileProjectCounts(items, records, { snapshotComplete: projectResult.error === null });
   addMissing(evidence.missingEvidence, counts.missingEvidence);
   finalizeEvidence(evidence, records);
   return { project, repository: repositoryNameValue, defaultBranch: resolvedDefaultBranch, items, records, counts, issues: [...issueRead.issues.values()], pullRequests: [...pullRequestRead.pullRequests.values()], evidence, readFailures: evidence.readFailures, missingEvidence: evidence.missingEvidence };

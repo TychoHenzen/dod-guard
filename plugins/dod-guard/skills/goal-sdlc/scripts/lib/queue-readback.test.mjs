@@ -448,6 +448,37 @@ test("holds an incomplete or looping Project page with exact pagination evidence
   assert.equal(selectQueueItem(snapshot), null);
 });
 
+test("marks counts unreconciled when a later Project page fails", async () => {
+  let calls = 0;
+  const snapshot = await readQueueSnapshot({
+    provider: {
+      async listProjectItems() {
+        calls += 1;
+        if (calls === 1) {
+          return {
+            items: [projectItem({ id: "partial", repository: "TychoHenzen/dod-guard", number: 250, status: "Todo" })],
+            pageInfo: { hasNextPage: true, nextCursor: "page-2" },
+          };
+        }
+        throw Object.assign(new Error("Project page unavailable"), { status: 503 });
+      },
+      async readIssue() {
+        return { number: 250, state: "open", children: [] };
+      },
+      async readPullRequest() {
+        throw new Error("must not read PR");
+      },
+    },
+    project: { owner: "TychoHenzen", number: 2 },
+    repository: "TychoHenzen/dod-guard",
+  });
+
+  assert.equal(calls, 3);
+  assert.equal(snapshot.counts.balanced, false);
+  assert.ok(snapshot.counts.missingEvidence.includes("complete Project item pages"));
+  assert.ok(snapshot.missingEvidence.includes("complete Project item pages"));
+});
+
 test("holds stale issue and pull-request relationships instead of selecting them", async () => {
   const snapshot = await readQueueSnapshot({
     provider: {

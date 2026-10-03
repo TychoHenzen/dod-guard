@@ -176,12 +176,12 @@ export function classifyTransportFailure(error, source = "mcp") {
 
   if (rateLimitEvidence) {
     category = explicitRateLimit ? explicit : transport === "mcp" ? FAILURE_CATEGORIES.MCP_RATE_LIMIT : FAILURE_CATEGORIES.REST_RATE_LIMIT;
-  } else if (!category && (status === 401 || AUTHENTICATION_MARKER.test(message) || code === "unauthorized")) {
+  } else if (status === 401 || AUTHENTICATION_MARKER.test(message) || code === "unauthorized") {
     category = FAILURE_CATEGORIES.AUTHENTICATION;
+  } else if (status === 403 || /forbidden|permission|entitlement/i.test(message)) {
+    category = FAILURE_CATEGORIES.PERMISSION;
   } else if (!category && (TRANSPORT_UNAVAILABLE_MARKER.test(message) || code === "transport_unavailable")) {
     category = FAILURE_CATEGORIES.TRANSPORT_UNAVAILABLE;
-  } else if (!category && (status === 403 || /forbidden|permission|entitlement/i.test(message))) {
-    category = FAILURE_CATEGORIES.PERMISSION;
   } else if (!category && (TIMEOUT_MARKER.test(message) || code === "timeout" || code === "etimedout")) {
     category = FAILURE_CATEGORIES.TIMEOUT;
   } else if (!category && (TRANSIENT_ERROR_CODES.has(code) || [408, 500, 502, 503, 504].includes(status))) {
@@ -209,6 +209,7 @@ function resultFailure(result) {
   if (result.ok === false) return result.error ?? result;
   if (result.error) return result.error;
   if (statusValue(result) !== null && statusValue(result) >= 400) return result;
+  if (categoryFromExplicitValue(explicitCategory(result), "mcp") === FAILURE_CATEGORIES.INTERACTIVE_FORM) return result;
   return null;
 }
 

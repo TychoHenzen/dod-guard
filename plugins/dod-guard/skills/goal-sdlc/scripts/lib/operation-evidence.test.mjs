@@ -25,6 +25,22 @@ test("waits on the same active handle and does not replace a quiet operation", a
   assert.deepEqual(result, { kind: "terminal", handle, result: { state: "completed" } });
 });
 
+test("keeps polling the same handle while the provider reports an active state", async () => {
+  const handle = { id: "session-running" };
+  const seen = [];
+  const results = [{ state: "running" }, { state: "completed" }];
+  const result = await awaitOperation({
+    handle,
+    wait: (value) => {
+      seen.push(value);
+      return results.shift();
+    },
+  });
+
+  assert.deepEqual(seen, [handle, handle]);
+  assert.deepEqual(result, { kind: "terminal", handle, result: { state: "completed" } });
+});
+
 test("records operator cancellation without polling or retrying", async () => {
   let waits = 0;
   const handle = "session-2";
