@@ -8,6 +8,12 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 
 import { assessGitHubSnapshot, inspectRepository, summarizeRepository } from "./inspect-repository.mjs";
+import {
+  PUBLIC_VISIBILITY,
+  assertPublicRepositoryReadback,
+  buildPublicRepositoryPayload,
+  createPublicRepository,
+} from "./repository-visibility.mjs";
 
 const execFileAsync = promisify(execFile);
 const inspectorPath = fileURLToPath(new URL("./inspect-repository.mjs", import.meta.url));
@@ -36,6 +42,16 @@ const EXPECTED_WORKFLOW_LABELS = [
   ["question", "Further information is requested", "d876e3"],
   ["wontfix", "This will not be worked on", "ffffff"],
 ].map(([name, description, color]) => ({ name, description, color }));
+const HTTP_FORBIDDEN = 403;
+
+function visibilityRepository({ visibility = PUBLIC_VISIBILITY, isPrivate = false } = {}) {
+  return {
+    "full_name": "owner/target",
+    name: "target",
+    private: isPrivate,
+    visibility,
+  };
+}
 
 async function fixture(t, name) {
   const root = await mkdtemp(path.join(tmpdir(), `setup-repository-${name}-`));
@@ -291,6 +307,23 @@ test("documents bounded routine inspection and full evidence boundaries", async 
   assert.match(skill, /Summary mode is not a\s+substitute for this per-file credential evidence/);
 });
 
+test("documents the public target creation and visibility readback boundary", async () => {
+  const [skill, usage, readme] = await Promise.all([
+    readFile(skillPath, "utf8"),
+    readFile(new URL("../../../USAGE.md", import.meta.url), "utf8"),
+    readFile(new URL("../../../README.md", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(skill, /`private: false` explicitly/);
+  assert.match(skill, /existing private repository public/);
+  assert.match(skill, /`private: false`/);
+  assert.match(skill, /`visibility: "public"`/);
+  assert.match(skill, /repository-visibility\.mjs[\s\S]+reads before creation[\s\S]+reads back after the mutation/);
+  assert.match(skill, /Do not add `origin`, push, link a Project,[\s\S]+enable security, or protect a branch/);
+  assert.match(usage, /explicit `private: false` payload/);
+  assert.match(readme, /creates a new target as\s+an explicitly public repository/);
+});
+
 test("blocks ambiguous linked Project state", () => {
   const assessment = assessGitHubSnapshot({
     projects: [
@@ -356,4 +389,119 @@ test("builds strict protection from successful observed check names", () => {
   assert.equal(assessment.protectionPayload.enforce_admins, true);
   assert.equal(assessment.protectionPayload.allow_force_pushes, false);
   assert.equal(assessment.protectionPayload.allow_deletions, false);
+});
+
+test("builds an explicit public create payload without initializing remote content", () => {
+  assert.deepEqual(buildPublicRepositoryPayload({
+    name: "target",
+    organization: "owner",
+    description: "fixture",
+  }), {
+    name: "target",
+    organization: "owner",
+    description: "fixture",
+    private: false,
+    autoInit: false,
+  });
+});
+
+test("creates only an absent target and verifies public visibility after the mutation", async () => {
+  const calls = [];
+  let observed = null;
+  const ledger = [];
+  const result = await createPublicRepository({
+    owner: "owner",
+    name: "target",
+    organization: "owner",
+    readRepository: () => {
+      calls.push("read");
+      return observed;
+    },
+    createRepository: (payload) => {
+      calls.push(["create", payload]);
+      observed = visibilityRepository();
+    },
+    mutationLedger: ledger,
+  });
+
+  assert.deepEqual(calls, [
+    "read",
+    ["create", { name: "target", organization: "owner", private: false, autoInit: false }],
+    "read",
+  ]);
+  assert.equal(result.repository.visibility, PUBLIC_VISIBILITY);
+  assert.equal(result.repository.private, false);
+  assert.deepEqual(ledger, [{
+    operation: "create_repository",
+    target: "owner/target",
+    requestedVisibility: PUBLIC_VISIBILITY,
+    status: "verified",
+  }]);
+});
+
+test("refuses to mutate an existing private repository", async () => {
+  let createCalls = 0;
+  const ledger = [];
+
+  await assert.rejects(
+    createPublicRepository({
+      owner: "owner",
+      name: "target",
+      readRepository: () => visibilityRepository({ visibility: "private", isPrivate: true }),
+      createRepository: () => { createCalls += 1; },
+      mutationLedger: ledger,
+    }),
+    (error) => error.name === "RepositoryVisibilityStopError" &&
+      error.details.stage === "pre-create read" &&
+      error.details.mutationAttempted === false,
+  );
+  assert.equal(createCalls, 0);
+  assert.deepEqual(ledger, []);
+});
+
+test("fails closed when creation readback is missing", async () => {
+  const ledger = [];
+  await assert.rejects(
+    createPublicRepository({
+      owner: "owner",
+      name: "target",
+      readRepository: () => null,
+      createRepository: () => undefined,
+      mutationLedger: ledger,
+    }),
+    (error) => error.name === "RepositoryVisibilityStopError" &&
+      error.details.stage === "post-create readback" &&
+      error.details.mutationAttempted === true,
+  );
+  assert.equal(ledger[0].status, "attempted");
+});
+
+test("does not expose provider error text in failure diagnostics", async () => {
+  const providerError = Object.assign(new Error("token=secret-value"), {
+    status: HTTP_FORBIDDEN,
+    category: "permission",
+  });
+
+  await assert.rejects(
+    createPublicRepository({
+      owner: "owner",
+      name: "target",
+      readRepository: () => null,
+      createRepository: () => { throw providerError; },
+    }),
+    (error) => error.details.provider.status === HTTP_FORBIDDEN &&
+      error.details.provider.category === "permission" &&
+      !JSON.stringify(error.details).includes("secret-value"),
+  );
+});
+
+test("rejects a contradictory repository readback", () => {
+  assert.throws(
+    () => assertPublicRepositoryReadback(visibilityRepository({ visibility: "private", isPrivate: true }), {
+      owner: "owner",
+      name: "target",
+    }),
+    (error) => error.name === "RepositoryVisibilityStopError" &&
+      error.details.stage === "repository readback",
+  );
 });

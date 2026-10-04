@@ -34,6 +34,10 @@ boundaries in this skill win.
   weaken protection, install global plugins, or support a non-GitHub remote.
 - Do not silently enable a different formatter, linter, test runner, package manager, or build tool
   when the project already chose one.
+- A repository created by this skill is public. Send `private: false` explicitly; never infer,
+  omit, or override that visibility choice.
+- Preserve the visibility of an existing remote. Do not make an existing private repository public
+  as part of setup.
 - Do not claim an unavailable GitHub plan feature succeeded. Stop and report the exact API result.
 - Keep a mutation ledger after the first write. On failure, report completed local and GitHub
   mutations, the failed operation, and the state left behind. Do not roll back automatically.
@@ -96,19 +100,31 @@ repository identity.
 
 ### No GitHub remote
 
-Before creating anything, collect or infer all four values: GitHub owner, repository name,
-visibility, and default branch.
+Before creating anything, collect or infer the GitHub owner, repository name, and default branch.
 
 Infer only an unambiguous value. The active authenticated user can supply the owner. The directory
 name can supply the repository name when it is valid and unused. A current unborn Git branch can
-supply the default branch. Visibility cannot be inferred. Ask once for all missing values.
+supply the default branch. The new target visibility is fixed by this skill as public; do not ask
+for a visibility choice.
 
 Check that `owner/name` does not already exist. Then:
 
 1. Initialize Git with the chosen default branch only when the project is not already a worktree.
-2. Create the GitHub repository without pushing.
-3. Add `origin` without replacing any remote.
-4. Query the repository again and verify owner, name, visibility, remote URL, and default branch.
+2. Create the GitHub repository without pushing, using the exact API payload
+   `{ "name": "<name>", "private": false, "auto_init": false }` (MCP uses `autoInit`). Include
+   `organization` only when the resolved owner is an organization.
+3. Read the exact target repository back. Require the resolved owner/name, `private: false`, and
+   `visibility: "public"` before recording creation as successful.
+4. Add `origin` without replacing any remote, then query the repository again and verify owner,
+   name, public visibility, remote URL, and default branch.
+
+The checked-in `scripts/repository-visibility.mjs` owns the provider-independent create/readback
+boundary used by the focused fixtures: it reads before creation, mutates only an absent target,
+records the attempted mutation, reads back after the mutation, and fails closed on a missing,
+contradictory, or failed response. A failed or ambiguous create is read back once before any retry;
+the raw provider error is not copied into diagnostics. Do not add `origin`, push, link a Project,
+enable security, or protect a branch after a failed public-visibility readback. An existing remote
+follows the existing-remote path above and is read only for visibility.
 
 Do not push until the credential and staged-file review in section 6 passes.
 
@@ -298,7 +314,8 @@ Delete only the temporary snapshot after verification. Do not delete the reposit
 
 ## Result
 
-Report the local path, repository URL, default branch, pushed commit, linked Project, status options,
+Report the local path, repository URL, public visibility for a newly created target (or the preserved
+visibility of an existing remote), default branch, pushed commit, linked Project, status options,
 shared labels and preserved repository-specific labels, applicability table, successful checks, security
 settings, protection settings including zero required approvals for the solo owner, and clean worktree
 evidence. State that independent review and exact-current-head required checks still gate delivery.

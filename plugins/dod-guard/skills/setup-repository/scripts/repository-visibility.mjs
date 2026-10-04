@@ -1,0 +1,155 @@
+const PUBLIC_VISIBILITY = "public";
+const HTTP_STATUS_MIN = 100;
+const HTTP_STATUS_MAX = 599;
+
+function requireText(value, name) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new TypeError(`${name} must be a non-empty string.`);
+  }
+  return value.trim();
+}
+
+function targetIdentity({ owner, name }) {
+  return `${requireText(owner, "owner")}/${requireText(name, "name")}`;
+}
+
+function providerEvidence(error) {
+  const evidence = {};
+  const status = Number(error?.status ?? error?.statusCode ?? error?.response?.status);
+  if (Number.isInteger(status) && status >= HTTP_STATUS_MIN && status <= HTTP_STATUS_MAX) {
+    evidence.status = status;
+  }
+  for (const key of ["category", "code"]) {
+    if (typeof error?.[key] === "string" && error[key].length > 0) {
+      evidence[key] = error[key];
+    }
+  }
+  return evidence;
+}
+
+function stop({ stage, target, mutationAttempted, cause, readback }) {
+  const error = new Error(`Repository visibility setup stopped during ${stage} for ${target}.`, { cause });
+  error.name = "RepositoryVisibilityStopError";
+  error.details = {
+    stage,
+    target,
+    mutationAttempted,
+  };
+  if (cause) error.details.provider = providerEvidence(cause);
+  if (readback) error.details.readback = providerEvidence(readback);
+  return error;
+}
+
+export function buildPublicRepositoryPayload({ name, organization, description }) {
+  const payload = {
+    name: requireText(name, "name"),
+    private: false,
+    autoInit: false,
+  };
+  if (organization !== undefined) {
+    payload.organization = requireText(organization, "organization");
+  }
+  if (description !== undefined) {
+    payload.description = requireText(description, "description");
+  }
+  return payload;
+}
+
+export function assertPublicRepositoryReadback(repository, { owner, name }) {
+  const target = targetIdentity({ owner, name });
+  if (!repository || typeof repository !== "object" || Array.isArray(repository)) {
+    throw stop({ stage: "repository readback", target, mutationAttempted: true });
+  }
+
+  const observedIdentity = repository.full_name ?? repository.nameWithOwner;
+  if (observedIdentity !== target) {
+    throw stop({ stage: "repository readback", target, mutationAttempted: true });
+  }
+  if (repository.private !== false || repository.visibility !== PUBLIC_VISIBILITY) {
+    throw stop({ stage: "repository readback", target, mutationAttempted: true });
+  }
+  return repository;
+}
+
+export async function createPublicRepository({
+  owner,
+  name,
+  organization,
+  description,
+  readRepository,
+  createRepository,
+  mutationLedger = [],
+}) {
+  const target = targetIdentity({ owner, name });
+  if (typeof readRepository !== "function") {
+    throw new TypeError("readRepository must be a function.");
+  }
+  if (typeof createRepository !== "function") {
+    throw new TypeError("createRepository must be a function.");
+  }
+  if (!Array.isArray(mutationLedger)) {
+    throw new TypeError("mutationLedger must be an array.");
+  }
+
+  let existing;
+  try {
+    existing = await readRepository({ owner, name });
+  } catch (error) {
+    throw stop({ stage: "pre-create read", target, mutationAttempted: false, cause: error });
+  }
+  if (existing === undefined) {
+    throw stop({ stage: "pre-create read", target, mutationAttempted: false });
+  }
+  if (existing !== null) {
+    throw stop({ stage: "pre-create read", target, mutationAttempted: false, readback: existing });
+  }
+
+  const payload = buildPublicRepositoryPayload({ name, organization, description });
+  const ledgerEntry = {
+    operation: "create_repository",
+    target,
+    requestedVisibility: PUBLIC_VISIBILITY,
+    status: "attempted",
+  };
+  mutationLedger.push(ledgerEntry);
+
+  let createError;
+  try {
+    await createRepository(payload);
+  } catch (error) {
+    createError = error;
+  }
+
+  let readback;
+  try {
+    readback = await readRepository({ owner, name });
+  } catch (error) {
+    throw stop({
+      stage: "post-create readback",
+      target,
+      mutationAttempted: true,
+      cause: createError ?? error,
+      readback: error,
+    });
+  }
+  if (readback === undefined || readback === null) {
+    throw stop({ stage: "post-create readback", target, mutationAttempted: true, cause: createError });
+  }
+
+  let verified;
+  try {
+    verified = assertPublicRepositoryReadback(readback, { owner, name });
+  } catch (error) {
+    throw stop({
+      stage: "post-create readback",
+      target,
+      mutationAttempted: true,
+      cause: createError,
+      readback: error,
+    });
+  }
+  ledgerEntry.status = "verified";
+  return { payload, repository: verified, mutationLedger };
+}
+
+export { PUBLIC_VISIBILITY };

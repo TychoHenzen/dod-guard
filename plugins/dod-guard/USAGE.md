@@ -9,8 +9,11 @@ Run from the local project that should join the dod-guard workflow:
 ```
 
 The skill preserves existing Git and project configuration. When no GitHub
-remote exists, it collects the owner, repository name, visibility, and default
-branch before creating one. It pushes reviewed files, waits for generated
+remote exists, it creates the resolved target as a public repository with an
+explicit `private: false` payload, reads that exact repository back, and stops
+before `origin`, push, Project, security, or protection mutations if the
+readback is missing or contradictory. Existing remote visibility is preserved;
+setup never makes an existing private repository public. It pushes reviewed files, waits for generated
 quality checks, links one Project with `Backlog`, `Todo`, `In Progress`, and
 `Done`, enables supported security settings, and then protects the default
 branch. Setup establishes the shared priority, effort, and classification
