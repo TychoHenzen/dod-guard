@@ -21438,7 +21438,7 @@ var EMPTY_COMPLETION_RESULT = {
 
 // src/cli-entrypoint.ts
 import { readFileSync as readFileSync4 } from "node:fs";
-import process5 from "node:process";
+import process6 from "node:process";
 
 // ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process2 from "node:process";
@@ -21566,830 +21566,8 @@ function runRetiredQualityCommand(command) {
   process3.exitCode = 0;
 }
 
-// src/test-quality/report.ts
-import { existsSync, readFileSync } from "node:fs";
-import * as path from "node:path";
-
-// src/test-quality/findings/finding.ts
-function makeFinding(input) {
-  return { ...input, severity: "review", line: 1 };
-}
-function activeTests(evidence, behaviorId) {
-  return evidence.tests.filter(
-    (test) => test.status !== "skipped" && test.covers.includes(behaviorId)
-  );
-}
-function sourceForBehavior(evidence, behaviorId) {
-  return evidence.sources.find(
-    (source) => source.behaviors.some((behavior) => behavior.id === behaviorId)
-  )?.path;
-}
-function uncovered(observation) {
-  return ["statements", "branches", "functions", "lines"].flatMap(
-    (name) => {
-      const current = observation[name];
-      return current && current.covered < current.total ? [`${name}:${current.covered}/${current.total}`] : [];
-    }
-  );
-}
-
-// src/test-quality/findings/behavior-findings.ts
-function detailsFor(behavior) {
-  if (behavior.trivial)
-    return {
-      heuristic: "T3",
-      rule: "trivial-test",
-      message: `trivial behavior ${behavior.id} has no active documentary test`,
-      remediation: "Add the cheap test that documents this behavior instead of relying on aggregate coverage."
-    };
-  if (behavior.kind === "boundary")
-    return {
-      heuristic: "T5",
-      rule: "boundary-test",
-      message: `boundary ${behavior.id} has no active test evidence`,
-      remediation: "Test the declared edge values and expected results, including the adjacent in-range value."
-    };
-  return {
-    heuristic: "T1",
-    rule: "insufficient-tests",
-    message: `behavior ${behavior.id} has no active test evidence`,
-    remediation: "Add a behavior-oriented test for the declared path or explain why it is outside this suite."
-  };
-}
-function missingFinding(sourcePath, behavior) {
-  return [
-    makeFinding({
-      ...detailsFor(behavior),
-      path: sourcePath,
-      evidence: {
-        behaviorId: behavior.id,
-        ...behavior.boundary ? { boundary: behavior.boundary } : {}
-      }
-    })
-  ];
-}
-function missingBehaviorFindings(evidence) {
-  return evidence.sources.flatMap(
-    (source) => source.behaviors.flatMap((behavior) => {
-      if (activeTests(evidence, behavior.id).length === 0)
-        return missingFinding(source.path, behavior);
-      return [];
-    })
-  );
-}
-function behaviorFindings(evidence) {
-  return missingBehaviorFindings(evidence);
-}
-
-// src/test-quality/findings/evidence-findings.ts
-function unavailableCoverageFinding() {
-  return makeFinding({
-    heuristic: "T2",
-    rule: "coverage-evidence",
-    path: ".",
-    message: "no coverage provider or source observations were supplied",
-    remediation: "Run a coverage provider and record per-source observations; missing coverage is not zero.",
-    evidence: { status: "unavailable" }
-  });
-}
-function coverageFinding(source, observations) {
-  const observed = observations.some(
-    (observation) => observation.sourcePath === source.path
-  );
-  if (source.behaviors.length === 0 || observed) return [];
-  return [
-    makeFinding({
-      heuristic: "T2",
-      rule: "coverage-evidence",
-      path: source.path,
-      message: "source has behavior evidence but no coverage observation",
-      remediation: "Add this source's observation or record why the provider excludes it.",
-      evidence: { sourcePath: source.path, status: "unobserved" }
-    })
-  ];
-}
-function coverageFindings(evidence) {
-  if (!evidence.coverage) return [unavailableCoverageFinding()];
-  return evidence.sources.flatMap(
-    (source) => coverageFinding(source, evidence.coverage?.observations ?? [])
-  );
-}
-function skipFindings(evidence) {
-  return evidence.tests.flatMap(
-    (test) => test.status === "skipped" && test.skipReason?.kind === "ambiguity" ? [
-      makeFinding({
-        heuristic: "T4",
-        rule: "ignored-test-ambiguity",
-        path: test.path,
-        message: `skipped test ${test.id} records an unresolved ambiguity`,
-        remediation: `Resolve the requirement or link the decision: ${test.skipReason.detail}`,
-        evidence: { testId: test.id, skipReason: test.skipReason }
-      })
-    ] : []
-  );
-}
-function bugFindings(evidence) {
-  return (evidence.bugs ?? []).flatMap((bug) => {
-    const missing = bug.behaviorIds.filter(
-      (id) => activeTests(evidence, id).length === 0
-    );
-    return missing.length > 0 ? [
-      makeFinding({
-        heuristic: "T6",
-        rule: "bug-regression-test",
-        path: bug.sourcePath,
-        message: `bug ${bug.id} has affected behavior without regression coverage`,
-        remediation: "Add regression coverage for the reported behavior and nearby cases.",
-        evidence: { bugId: bug.id, missingBehaviorIds: missing }
-      })
-    ] : [];
-  });
-}
-function evidenceFindings(evidence) {
-  return [
-    ...coverageFindings(evidence),
-    ...skipFindings(evidence),
-    ...bugFindings(evidence)
-  ];
-}
-
-// src/test-quality/coverage-finding.ts
-function linkedBehaviorIds(observation) {
-  return [...new Set(observation.uncoveredBehaviorIds ?? [])];
-}
-function linkedFailures(evidence, behaviorIds) {
-  return (evidence.failures ?? []).filter(
-    (failure) => failure.behaviorId !== void 0 && behaviorIds.includes(failure.behaviorId)
-  );
-}
-function coverageFinding2(evidence, observation) {
-  const uncoveredBehaviorIds = linkedBehaviorIds(observation);
-  const failures = linkedFailures(evidence, uncoveredBehaviorIds);
-  const gaps = uncovered(observation);
-  if (failures.length === 0 || gaps.length === 0) return [];
-  return [
-    makeFinding({
-      heuristic: "T8",
-      rule: "coverage-pattern",
-      path: observation.sourcePath,
-      message: "uncovered coverage regions overlap a recorded runtime failure",
-      remediation: "Use the gap to inspect the failing behavior and add a focused test.",
-      evidence: {
-        sourcePath: observation.sourcePath,
-        uncovered: gaps,
-        uncoveredBehaviorIds,
-        failureTestIds: [...new Set(failures.map((failure) => failure.testId))]
-      }
-    })
-  ];
-}
-
-// src/test-quality/findings/timing-findings.ts
-function budgetMap(evidence) {
-  return new Map(
-    (evidence.timing?.budgets ?? []).map((budget) => [
-      budget.testClass,
-      budget.maxDurationMs
-    ])
-  );
-}
-function slowFinding(test, budget) {
-  return makeFinding({
-    heuristic: "T9",
-    rule: "slow-test",
-    path: test.path,
-    message: `test ${test.id} took ${test.durationMs}ms above its ${budget}ms budget`,
-    remediation: "Split or isolate expensive work, or change the budget with environment evidence.",
-    evidence: {
-      testId: test.id,
-      durationMs: test.durationMs,
-      budgetMs: budget
-    }
-  });
-}
-function slowTests(evidence) {
-  if (!evidence.timing) return [];
-  const budgets = budgetMap(evidence);
-  return evidence.tests.flatMap((test) => {
-    if (test.durationMs === void 0) return [];
-    const budget = budgets.get(test.testClass);
-    if (budget === void 0 || test.durationMs <= budget) return [];
-    return [slowFinding(test, budget)];
-  });
-}
-
-// src/test-quality/findings/runtime-findings.ts
-function failureSource(evidence, failure) {
-  if (failure.sourcePath) return failure.sourcePath;
-  if (failure.behaviorId)
-    return sourceForBehavior(evidence, failure.behaviorId) ?? ".";
-  return ".";
-}
-function clusterFinding(key2, failures) {
-  const testIds = [...new Set(failures.map((failure) => failure.testId))];
-  if (testIds.length < 2) return [];
-  const [path18, signature, inputClass] = key2.split("|");
-  return [
-    makeFinding({
-      heuristic: "T7",
-      rule: "failure-pattern",
-      path: path18 ?? ".",
-      message: `${testIds.length} failures share ${signature} for ${inputClass}`,
-      remediation: "Inspect the shared input and affected path before fixing tests one by one.",
-      evidence: { testIds, signature, inputClass }
-    })
-  ];
-}
-function addFailure(clusters, evidence, failure) {
-  const key2 = `${failureSource(evidence, failure)}|${failure.signature}|${failure.inputClass}`;
-  clusters.set(key2, [...clusters.get(key2) ?? [], failure]);
-}
-function groupedFailures(evidence) {
-  const clusters = /* @__PURE__ */ new Map();
-  for (const failure of evidence.failures ?? [])
-    addFailure(clusters, evidence, failure);
-  return clusters;
-}
-function failureClusters(evidence) {
-  const clusters = groupedFailures(evidence);
-  return [...clusters.entries()].flatMap(
-    ([key2, failures]) => clusterFinding(key2, failures)
-  );
-}
-function coveragePatterns(evidence) {
-  return (evidence.coverage?.observations ?? []).flatMap(
-    (observation) => coverageFinding2(evidence, observation)
-  );
-}
-function runtimeFindings(evidence) {
-  return [
-    ...failureClusters(evidence),
-    ...coveragePatterns(evidence),
-    ...slowTests(evidence)
-  ];
-}
-
-// src/test-quality/findings/findings.ts
-function findingsFor(evidence) {
-  return [
-    ...behaviorFindings(evidence),
-    ...evidenceFindings(evidence),
-    ...runtimeFindings(evidence)
-  ].sort(
-    (left, right) => left.heuristic.localeCompare(right.heuristic) || left.path.localeCompare(right.path) || left.message.localeCompare(right.message)
-  );
-}
-
-// src/test-quality/metrics/coverage-metrics.ts
-function uncoveredMetrics(evidence) {
-  const uncovered2 = {};
-  for (const observation of evidence)
-    for (const name of [
-      "statements",
-      "branches",
-      "functions",
-      "lines"
-    ]) {
-      const value = observation[name];
-      if (value && value.covered < value.total)
-        uncovered2[`${observation.sourcePath}:${name}`] = value;
-    }
-  return uncovered2;
-}
-function coverageGaps(evidence, observations) {
-  return evidence.sources.filter(
-    (source) => source.behaviors.length > 0 && !observations.includes(source.path)
-  ).map((source) => source.path);
-}
-function coverageMetrics(evidence) {
-  const observations = evidence.coverage?.observations ?? [];
-  const observedPaths = observations.map(
-    (observation) => observation.sourcePath
-  );
-  return {
-    ...evidence.coverage?.provider ? { provider: evidence.coverage.provider } : {},
-    observedSourceCount: observations.length,
-    gaps: coverageGaps(evidence, observedPaths),
-    uncovered: uncoveredMetrics(observations)
-  };
-}
-
-// src/test-quality/metrics/language-stats.ts
-function testedCount(items, tested) {
-  return items.filter((item) => tested(item.id)).length;
-}
-function behaviorStats(sources, tested) {
-  const behaviors = sources.flatMap(
-    (source) => source.behaviors.filter((behavior) => behavior.kind === "behavior")
-  );
-  const boundaries = sources.flatMap(
-    (source) => source.behaviors.filter((behavior) => behavior.kind === "boundary")
-  );
-  return {
-    behaviorCount: behaviors.length,
-    testedBehaviorCount: testedCount(behaviors, tested),
-    boundaryCount: boundaries.length,
-    testedBoundaryCount: testedCount(boundaries, tested)
-  };
-}
-function bugStats(evidence, paths, tested) {
-  const bugs = (evidence.bugs ?? []).filter((bug) => paths.has(bug.sourcePath));
-  return {
-    bugCount: bugs.length,
-    testedBugCount: bugs.filter((bug) => bug.behaviorIds.every(tested)).length
-  };
-}
-
-// src/test-quality/metrics/metric-constants.ts
-var METRIC_KEYS = [
-  "sourceCount",
-  "testCount",
-  "skippedTestCount",
-  "behaviorCount",
-  "testedBehaviorCount",
-  "boundaryCount",
-  "testedBoundaryCount",
-  "bugCount",
-  "testedBugCount",
-  "coverageSourceCount",
-  "failureCount"
-];
-function emptyMetrics() {
-  return {
-    languages: [],
-    totals: Object.fromEntries(METRIC_KEYS.map((key2) => [key2, 0])),
-    coverage: { observedSourceCount: 0, gaps: [], uncovered: {} },
-    timing: {
-      measuredTestCount: 0,
-      overBudgetTestCount: 0,
-      unbudgetedTestIds: []
-    }
-  };
-}
-
-// src/test-quality/metrics/language-metrics.ts
-function normalizedLanguage(value) {
-  return {
-    ".net": "csharp",
-    cs: "csharp",
-    csharp: "csharp",
-    dotnet: "csharp",
-    js: "typescript",
-    net: "csharp",
-    py: "python",
-    python: "python",
-    rs: "rust",
-    rust: "rust",
-    ts: "typescript",
-    typescript: "typescript"
-  }[value.toLowerCase()] ?? value.toLowerCase();
-}
-function sourcesForLanguage(evidence, language) {
-  return evidence.sources.filter(
-    (source) => normalizedLanguage(source.language) === language
-  );
-}
-function testsForLanguage(evidence, language) {
-  return evidence.tests.filter(
-    (test) => normalizedLanguage(test.language) === language
-  );
-}
-function coverageCount(evidence, paths) {
-  return (evidence.coverage?.observations ?? []).filter(
-    (item) => paths.has(item.sourcePath)
-  ).length;
-}
-function failureCount(evidence, paths) {
-  return (evidence.failures ?? []).filter(
-    (item) => item.sourcePath && paths.has(item.sourcePath)
-  ).length;
-}
-function languageMetric(evidence, language) {
-  const sources = sourcesForLanguage(evidence, language);
-  const tests = testsForLanguage(evidence, language);
-  const paths = new Set(sources.map((source) => source.path));
-  const tested = (id) => activeTests(evidence, id).length > 0;
-  const behaviors = behaviorStats(sources, tested);
-  const bugs = bugStats(evidence, paths, tested);
-  return {
-    language,
-    sourceCount: sources.length,
-    testCount: tests.length,
-    skippedTestCount: tests.filter((test) => test.status === "skipped").length,
-    ...behaviors,
-    ...bugs,
-    coverageSourceCount: coverageCount(evidence, paths),
-    failureCount: failureCount(evidence, paths)
-  };
-}
-function languageMetrics(evidence) {
-  const languages = /* @__PURE__ */ new Set([
-    ...evidence.sources.map((source) => normalizedLanguage(source.language)),
-    ...evidence.tests.map((test) => normalizedLanguage(test.language))
-  ]);
-  return [...languages].sort().map((language) => languageMetric(evidence, language));
-}
-function sumMetrics(metrics) {
-  return Object.fromEntries(
-    METRIC_KEYS.map((key2) => [
-      key2,
-      metrics.reduce((sum, item) => sum + item[key2], 0)
-    ])
-  );
-}
-
-// src/test-quality/metrics/timing-metrics.ts
-function budgetMap2(evidence) {
-  return new Map(
-    (evidence.timing?.budgets ?? []).map((budget) => [
-      budget.testClass,
-      budget.maxDurationMs
-    ])
-  );
-}
-function overBudgetCount(tests, budgets) {
-  return tests.filter((test) => {
-    const budget = budgets.get(test.testClass);
-    return test.durationMs !== void 0 && budget !== void 0 && test.durationMs > budget;
-  }).length;
-}
-function timingMetrics(evidence) {
-  const budgets = budgetMap2(evidence);
-  const measured = evidence.tests.filter(
-    (test) => test.durationMs !== void 0
-  );
-  return {
-    ...evidence.timing?.environment ? { environment: evidence.timing.environment } : {},
-    measuredTestCount: measured.length,
-    overBudgetTestCount: overBudgetCount(measured, budgets),
-    unbudgetedTestIds: measured.filter((test) => evidence.timing && !budgets.has(test.testClass)).map((test) => test.id)
-  };
-}
-
-// src/test-quality/metrics/metrics.ts
-function metricsFor(evidence) {
-  const languages = languageMetrics(evidence);
-  return {
-    languages,
-    totals: sumMetrics(languages),
-    coverage: coverageMetrics(evidence),
-    timing: timingMetrics(evidence)
-  };
-}
-
-// src/test-quality/schema/schema-basics.ts
-var text = external_exports.string().trim().min(1);
-var metricSchema = external_exports.object({
-  covered: external_exports.number().int().nonnegative(),
-  total: external_exports.number().int().nonnegative()
-}).strict().superRefine((value, context) => {
-  if (value.covered > value.total)
-    context.addIssue({
-      code: external_exports.ZodIssueCode.custom,
-      message: "covered cannot exceed total"
-    });
-});
-var behaviorSchema = external_exports.object({
-  id: text,
-  kind: external_exports.enum(["behavior", "boundary"]),
-  trivial: external_exports.boolean().optional(),
-  boundary: external_exports.object({ input: text, expected: text }).strict().optional()
-}).strict().superRefine((value, context) => {
-  if (value.kind === "boundary" && !value.boundary)
-    context.addIssue({
-      code: external_exports.ZodIssueCode.custom,
-      message: "boundary behaviors require input and expected evidence"
-    });
-});
-var testSchema = external_exports.object({
-  id: text,
-  path: text,
-  language: text,
-  covers: external_exports.array(text),
-  status: external_exports.enum(["passed", "failed", "skipped"]),
-  skipReason: external_exports.object({
-    kind: external_exports.enum([
-      "ambiguity",
-      "environment",
-      "platform",
-      "flaky",
-      "other"
-    ]),
-    detail: text
-  }).strict().optional(),
-  durationMs: external_exports.number().int().nonnegative().optional(),
-  testClass: text.default("unit")
-}).strict().superRefine((value, context) => {
-  if (value.status === "skipped" && !value.skipReason)
-    context.addIssue({
-      code: external_exports.ZodIssueCode.custom,
-      message: "skipped tests require skipReason"
-    });
-});
-
-// src/test-quality/schema/schema-parts.ts
-var sourceSchema = external_exports.object({
-  path: text,
-  language: text,
-  behaviors: external_exports.array(behaviorSchema)
-}).strict();
-var coverageSchema = external_exports.object({
-  provider: text,
-  observations: external_exports.array(
-    external_exports.object({
-      sourcePath: text,
-      uncoveredBehaviorIds: external_exports.array(text).optional(),
-      statements: metricSchema.optional(),
-      branches: metricSchema.optional(),
-      functions: metricSchema.optional(),
-      lines: metricSchema.optional()
-    }).strict()
-  )
-}).strict();
-var bugSchema = external_exports.object({
-  id: text,
-  sourcePath: text,
-  behaviorIds: external_exports.array(text).min(1, "bug records require at least one affected behavior")
-}).strict();
-var failureSchema = external_exports.object({
-  testId: text,
-  sourcePath: text.optional(),
-  behaviorId: text.optional(),
-  signature: text,
-  inputClass: text
-}).strict();
-var timingSchema = external_exports.object({
-  environment: text,
-  budgets: external_exports.array(
-    external_exports.object({
-      testClass: text,
-      maxDurationMs: external_exports.number().int().positive()
-    }).strict()
-  )
-}).strict();
-
-// src/test-quality/schema/schema.ts
-var EvidenceSchema = external_exports.object({
-  schemaVersion: external_exports.literal(1),
-  environment: text.optional(),
-  sources: external_exports.array(sourceSchema),
-  tests: external_exports.array(testSchema),
-  coverage: coverageSchema.optional(),
-  bugs: external_exports.array(bugSchema).optional(),
-  failures: external_exports.array(failureSchema).optional(),
-  timing: timingSchema.optional()
-}).strict();
-
-// src/test-quality/validation/validate-links.ts
-function bugReferenceErrors(bug, facts) {
-  const errors = facts.sources.has(bug.sourcePath) ? [] : [`bug ${bug.id} references unknown source ${bug.sourcePath}`];
-  const behaviorErrors = bug.behaviorIds.flatMap((behavior) => {
-    const sourcePath = facts.behaviors.get(behavior);
-    if (sourcePath === void 0)
-      return [`bug ${bug.id} references unknown behavior ${behavior}`];
-    if (sourcePath !== bug.sourcePath)
-      return [
-        `bug ${bug.id} behavior ${behavior} is outside ${bug.sourcePath}`
-      ];
-    return [];
-  });
-  return [...errors, ...behaviorErrors];
-}
-function bugErrors(evidence, facts) {
-  const bugs = evidence.bugs ?? [];
-  const seen = /* @__PURE__ */ new Set();
-  const duplicates = bugs.flatMap((bug) => {
-    if (seen.has(bug.id)) return [`duplicate bug id: ${bug.id}`];
-    seen.add(bug.id);
-    return [];
-  });
-  return [
-    ...duplicates,
-    ...bugs.flatMap((bug) => bugReferenceErrors(bug, facts))
-  ];
-}
-function failureTestErrors(failure, statuses) {
-  const status = statuses.get(failure.testId);
-  if (!status) return [`failure references unknown test ${failure.testId}`];
-  if (status === "failed") return [];
-  return [`failure ${failure.testId} must reference a failed test`];
-}
-function failureSourceErrors(failure, facts) {
-  if (!failure.sourcePath || facts.sources.has(failure.sourcePath)) return [];
-  return [`failure references unknown source ${failure.sourcePath}`];
-}
-function failureBehaviorErrors(failure, facts) {
-  if (!failure.behaviorId) return [];
-  const sourcePath = facts.behaviors.get(failure.behaviorId);
-  if (sourcePath === void 0)
-    return [`failure references unknown behavior ${failure.behaviorId}`];
-  if (!failure.sourcePath || sourcePath === failure.sourcePath) return [];
-  return [
-    `failure behavior ${failure.behaviorId} is outside ${failure.sourcePath}`
-  ];
-}
-function failureReferenceErrors(failure, statuses, facts) {
-  return [
-    ...failureTestErrors(failure, statuses),
-    ...failureSourceErrors(failure, facts),
-    ...failureBehaviorErrors(failure, facts)
-  ];
-}
-function failureErrors(evidence, facts) {
-  const statuses = new Map(
-    evidence.tests.map((test) => [test.id, test.status])
-  );
-  return (evidence.failures ?? []).flatMap(
-    (failure) => failureReferenceErrors(failure, statuses, facts)
-  );
-}
-function timingErrors(evidence) {
-  const classes = (evidence.timing?.budgets ?? []).map(
-    (budget) => budget.testClass
-  );
-  return new Set(classes).size === classes.length ? [] : ["timing.budgets must contain one budget per testClass"];
-}
-
-// src/test-quality/validation/validate-structure.ts
-function duplicateValues(values, label) {
-  const seen = /* @__PURE__ */ new Set();
-  return values.flatMap((value) => {
-    if (seen.has(value)) return [`duplicate ${label}: ${value}`];
-    seen.add(value);
-    return [];
-  });
-}
-function factsFor(evidence) {
-  const facts = {
-    sources: /* @__PURE__ */ new Set(),
-    behaviors: /* @__PURE__ */ new Map()
-  };
-  for (const source of evidence.sources) {
-    facts.sources.add(source.path);
-    for (const behavior of source.behaviors) {
-      facts.behaviors.set(behavior.id, source.path);
-    }
-  }
-  return facts;
-}
-function sourceErrors(evidence) {
-  const errors = duplicateValues(
-    evidence.sources.map((source) => source.path),
-    "source path"
-  );
-  const behaviorIds = [];
-  for (const source of evidence.sources)
-    behaviorIds.push(...source.behaviors.map((behavior) => behavior.id));
-  return [...errors, ...duplicateValues(behaviorIds, "behavior id")];
-}
-function testErrors(evidence, facts) {
-  const duplicates = duplicateValues(
-    evidence.tests.map((test) => test.id),
-    "test id"
-  );
-  const unknown2 = evidence.tests.flatMap(
-    (test) => test.covers.filter((behavior) => !facts.behaviors.has(behavior)).map(
-      (behavior) => `test ${test.id} covers unknown behavior ${behavior}`
-    )
-  );
-  return [...duplicates, ...unknown2];
-}
-function coverageBehaviorErrors(observations, facts) {
-  return observations.flatMap(
-    (observation) => (observation.uncoveredBehaviorIds ?? []).flatMap((behavior) => {
-      const sourcePath = facts.behaviors.get(behavior);
-      if (sourcePath === void 0)
-        return [`coverage observation references unknown behavior ${behavior}`];
-      if (sourcePath !== observation.sourcePath)
-        return [
-          `coverage observation behavior ${behavior} is outside ${observation.sourcePath}`
-        ];
-      return [];
-    })
-  );
-}
-function coverageErrors(evidence, facts) {
-  const observations = evidence.coverage?.observations ?? [];
-  const unknown2 = observations.filter((observation) => !facts.sources.has(observation.sourcePath)).map(
-    (observation) => `coverage observes unknown source ${observation.sourcePath}`
-  );
-  return [
-    ...unknown2,
-    ...coverageBehaviorErrors(observations, facts),
-    ...duplicateValues(
-      observations.map((observation) => observation.sourcePath),
-      "coverage observation"
-    )
-  ];
-}
-
-// src/test-quality/validation/validate.ts
-function validateEvidence(evidence) {
-  const facts = factsFor(evidence);
-  return [
-    ...sourceErrors(evidence),
-    ...testErrors(evidence, facts),
-    ...coverageErrors(evidence, facts),
-    ...bugErrors(evidence, facts),
-    ...failureErrors(evidence, facts),
-    ...timingErrors(evidence)
-  ].filter((error2, index, errors) => errors.indexOf(error2) === index).sort();
-}
-
-// src/test-quality/analyze.ts
-function invalidReport(errors) {
-  return {
-    schemaVersion: 1,
-    status: "invalid",
-    errors: [...new Set(errors)].sort(),
-    findings: [],
-    metrics: emptyMetrics()
-  };
-}
-function analyzeTestQuality(value) {
-  const parsed = EvidenceSchema.safeParse(value);
-  if (!parsed.success)
-    return invalidReport(
-      parsed.error.issues.map(
-        (issue2) => `${issue2.path.join(".")}: ${issue2.message}`
-      )
-    );
-  const errors = validateEvidence(parsed.data);
-  if (errors.length > 0) return invalidReport(errors);
-  return {
-    schemaVersion: 1,
-    status: "ok",
-    ...parsed.data.environment ? { environment: parsed.data.environment } : {},
-    errors: [],
-    findings: findingsFor(parsed.data),
-    metrics: metricsFor(parsed.data)
-  };
-}
-
-// src/test-quality/report.ts
-var DEFAULT_TEST_QUALITY_EVIDENCE = ".quality/test-quality.json";
-function emptyReport(status, evidencePath, errors) {
-  return {
-    schemaVersion: 1,
-    status,
-    evidencePath,
-    errors,
-    findings: [],
-    metrics: emptyMetrics()
-  };
-}
-function readReport(absolutePath, evidencePath) {
-  try {
-    return {
-      ...analyzeTestQuality(JSON.parse(readFileSync(absolutePath, "utf8"))),
-      evidencePath
-    };
-  } catch (error2) {
-    return emptyReport("invalid", evidencePath, [
-      `could not read evidence: ${error2 instanceof Error ? error2.message : String(error2)}`
-    ]);
-  }
-}
-function rootFor(input) {
-  return path.resolve(input.root ?? process.cwd());
-}
-function evidenceFor(input) {
-  return input.evidence ?? DEFAULT_TEST_QUALITY_EVIDENCE;
-}
-function relativeFor(root2, absolutePath) {
-  return path.relative(root2, absolutePath) || ".";
-}
-function pathsFor(input) {
-  const root2 = rootFor(input);
-  const evidencePath = evidenceFor(input);
-  const absolutePath = path.resolve(root2, evidencePath);
-  return {
-    absolutePath,
-    relativePath: relativeFor(root2, absolutePath)
-  };
-}
-function runTestQualityReport(input) {
-  const { absolutePath, relativePath } = pathsFor(input);
-  if (!existsSync(absolutePath))
-    return emptyReport("unavailable", relativePath, [
-      `evidence file not found: ${relativePath}`
-    ]);
-  return readReport(absolutePath, relativePath);
-}
-
-// src/cli-test-quality.ts
-function optionValue(args, name) {
-  return args.find((arg) => arg.startsWith(`${name}=`))?.slice(name.length + 1);
-}
-function runTestQualityCommand(args) {
-  const result = runTestQualityReport({
-    root: optionValue(args, "--root"),
-    evidence: optionValue(args, "--evidence")
-  });
-  process.stdout.write(`${JSON.stringify(result, null, 2)}
-`);
-  if (result.status === "invalid") process.exitCode = 3;
-}
+// src/cli-internal.ts
+import process4 from "node:process";
 
 // src/commit-gate/cli-usage.ts
 function usage(message) {
@@ -22415,7 +21593,7 @@ function optionName(arg) {
     (flag) => arg === flag || arg.startsWith(`${flag}=`)
   );
 }
-function optionValue2(args, index, name) {
+function optionValue(args, index, name) {
   const arg = args[index];
   return arg.startsWith(`${name}=`) ? { value: inlineValue(arg, name.length + 1), next: index } : { value: args[index + 1], next: index + 1 };
 }
@@ -22459,7 +21637,7 @@ function parseAcknowledgeArguments(args) {
   for (let index = 1; index < args.length; index += 1) {
     const name = optionName(args[index]);
     if (!name) return acknowledgeUsage(`unsupported option ${args[index]}`);
-    const result = optionValue2(args, index, name);
+    const result = optionValue(args, index, name);
     applyAcknowledgement(name, result.value, state);
     index = result.next;
   }
@@ -22469,7 +21647,7 @@ function parseAcknowledgeArguments(args) {
 }
 
 // src/commit-gate/cli-check-arguments.ts
-import * as path2 from "node:path";
+import * as path from "node:path";
 
 // src/commit-gate/cli-check-options.ts
 function intentOption(args, index) {
@@ -22528,7 +21706,7 @@ function applyCheckOption(args, index, state) {
 
 // src/commit-gate/cli-check-arguments.ts
 function validTarget(value) {
-  return Boolean(value.trim()) && !path2.isAbsolute(value) && !/^[a-zA-Z]:[\\/]/.test(value) && !value.split(/[\\/]/).includes("..");
+  return Boolean(value.trim()) && !path.isAbsolute(value) && !/^[a-zA-Z]:[\\/]/.test(value) && !value.split(/[\\/]/).includes("..");
 }
 function validCheckState(state) {
   if (state.intent === "refactor" && !state.target)
@@ -22559,8 +21737,8 @@ function parseCheckArguments(args) {
 
 // src/commit-gate/cli-command-acknowledge.ts
 import { execFileSync as execFileSync6 } from "node:child_process";
-import { mkdirSync, readFileSync as readFileSync2, writeFileSync } from "node:fs";
-import * as path12 from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import * as path11 from "node:path";
 
 // src/commit-gate/fingerprint.ts
 import { createHash } from "node:crypto";
@@ -22707,11 +21885,11 @@ import { execFileSync as execFileSync3 } from "node:child_process";
 // src/commit-gate/cli-tree-scanner.ts
 import { mkdtempSync, rmSync as rmSync2 } from "node:fs";
 import { tmpdir } from "node:os";
-import * as path5 from "node:path";
+import * as path4 from "node:path";
 
 // src/scanner.ts
 import { execFileSync } from "node:child_process";
-import * as path3 from "node:path";
+import * as path2 from "node:path";
 import { fileURLToPath } from "node:url";
 
 // src/scanner-failure.ts
@@ -22748,8 +21926,8 @@ function scanFailure(error2) {
 var SCAN_TIMEOUT_MS = 12e4;
 var MAX_BUFFER = 32 * 1024 * 1024;
 function scannerPath() {
-  const here = path3.dirname(fileURLToPath(import.meta.url));
-  return path3.join(
+  const here = path2.dirname(fileURLToPath(import.meta.url));
+  return path2.join(
     here,
     "..",
     "skills",
@@ -22810,22 +21988,22 @@ async function runScanAsync(request, run = asyncExecFile) {
 // src/commit-gate/cli-tree/materialize.ts
 import { execFileSync as execFileSync2 } from "node:child_process";
 import { rmSync } from "node:fs";
-import * as path4 from "node:path";
+import * as path3 from "node:path";
 function materializeTree(root2, ref, target) {
   if (ref === "index") {
     execFileSync2(
       "git",
-      ["checkout-index", "--all", `--prefix=${target}${path4.sep}`],
+      ["checkout-index", "--all", `--prefix=${target}${path3.sep}`],
       { cwd: root2, stdio: "ignore" }
     );
     return;
   }
-  const indexPath = path4.join(target, "index");
+  const indexPath = path3.join(target, "index");
   const env = { ...process.env, GIT_INDEX_FILE: indexPath };
   execFileSync2("git", ["read-tree", ref], { cwd: root2, env, stdio: "ignore" });
   execFileSync2(
     "git",
-    ["checkout-index", "--all", `--prefix=${target}${path4.sep}`],
+    ["checkout-index", "--all", `--prefix=${target}${path3.sep}`],
     { cwd: root2, env, stdio: "ignore" }
   );
   rmSync(indexPath, { force: true });
@@ -22872,7 +22050,7 @@ function commitScanRequest(root2) {
 function scannerEvidence(root2, ref) {
   let stagedRoot;
   try {
-    stagedRoot = mkdtempSync(path5.join(tmpdir(), "quality-guard-index-"));
+    stagedRoot = mkdtempSync(path4.join(tmpdir(), "quality-guard-index-"));
     materializeTree(root2, ref, stagedRoot);
     const result = runScan(commitScanRequest(stagedRoot));
     if (result.exitCode === 0) return { findings: [] };
@@ -23220,10 +22398,10 @@ function noDecision(summary) {
 }
 
 // src/commit-gate/architecture-similarity.ts
-import * as path7 from "node:path";
+import * as path6 from "node:path";
 
 // src/commit-gate/architecture-similarity-signature.ts
-import * as path6 from "node:path";
+import * as path5 from "node:path";
 
 // src/commit-gate/placement-paths.ts
 function normalizeArchitecturePath(filePath) {
@@ -23267,7 +22445,7 @@ function signatureFor(file) {
   const normalized = normalizeArchitecturePath(file.path);
   addTokens(
     signature,
-    path6.posix.basename(normalized, path6.posix.extname(normalized)),
+    path5.posix.basename(normalized, path5.posix.extname(normalized)),
     6
   );
   for (const type of file.types) {
@@ -23456,7 +22634,7 @@ function affectedDirectories(input) {
     input.affectedPaths.filter(
       (filePath) => isProductionArchitecturePath(filePath, input.config)
     ).map(
-      (filePath) => path7.posix.dirname(normalizeArchitecturePath(filePath))
+      (filePath) => path6.posix.dirname(normalizeArchitecturePath(filePath))
     )
   );
 }
@@ -23465,7 +22643,7 @@ function filesByDirectory(input) {
   for (const file of input.afterFiles.filter(
     (candidate) => isEligible(candidate, input)
   )) {
-    const directory = path7.posix.dirname(normalizeArchitecturePath(file.path));
+    const directory = path6.posix.dirname(normalizeArchitecturePath(file.path));
     const files = directories.get(directory) ?? [];
     files.push(file);
     directories.set(directory, files);
@@ -23474,7 +22652,7 @@ function filesByDirectory(input) {
 }
 function isEligible(file, input) {
   const normalized = normalizeArchitecturePath(file.path);
-  return isProductionArchitecturePath(normalized, input.config) && input.affected.has(path7.posix.dirname(normalized));
+  return isProductionArchitecturePath(normalized, input.config) && input.affected.has(path6.posix.dirname(normalized));
 }
 function analyzeSimilarity(input) {
   const changes = changeSets(input);
@@ -23627,13 +22805,13 @@ function findCycles(graph2) {
 }
 
 // src/commit-gate/dependency-graph.ts
-import * as path10 from "node:path";
-
-// src/commit-gate/placement-analysis.ts
 import * as path9 from "node:path";
 
-// src/commit-gate/placement-findings.ts
+// src/commit-gate/placement-analysis.ts
 import * as path8 from "node:path";
+
+// src/commit-gate/placement-findings.ts
+import * as path7 from "node:path";
 function addedTypes(file, previous) {
   return [...file.types].filter((name) => !previous.has(name)).sort((left, right) => left.localeCompare(right));
 }
@@ -23660,7 +22838,7 @@ function contextForFile(input) {
   const normalized = normalizeArchitecturePath(input.file.path);
   if (!(input.changed.has(normalized) && isProductionArchitecturePath(input.file.path, input.config)))
     return null;
-  const directory = path8.posix.dirname(normalized);
+  const directory = path7.posix.dirname(normalized);
   const { previous, current } = directoryTypes(
     input.before,
     input.after,
@@ -23675,7 +22853,7 @@ function findingsForFile(input) {
   return addedTypes(input.file, previous).flatMap(
     (name) => typeFinding(name, {
       generic: input.config.genericBuckets.includes(
-        path8.posix.basename(directory).toLowerCase()
+        path7.posix.basename(directory).toLowerCase()
       ),
       beforeCount: previous.size,
       afterCount: current.size,
@@ -23695,7 +22873,7 @@ function typeNames(files, config2) {
   return result;
 }
 function addTypes(result, file) {
-  const directory = path9.posix.dirname(normalizeArchitecturePath(file.path));
+  const directory = path8.posix.dirname(normalizeArchitecturePath(file.path));
   const names = result.get(directory) ?? /* @__PURE__ */ new Set();
   for (const name of file.types) names.add(name);
   result.set(directory, names);
@@ -23762,8 +22940,8 @@ function extensionless(filePath) {
 }
 function resolveDependency(from, dependency, paths) {
   const normalized = normalizeArchitecturePath(dependency);
-  const candidate = dependency.startsWith(".") ? path10.posix.normalize(
-    path10.posix.join(path10.posix.dirname(from), normalized)
+  const candidate = dependency.startsWith(".") ? path9.posix.normalize(
+    path9.posix.join(path9.posix.dirname(from), normalized)
   ) : normalized;
   if (paths.has(candidate)) return candidate;
   const target = extensionless(candidate);
@@ -23869,7 +23047,7 @@ function navigationFindings(file, config2) {
     ...chain
   }));
 }
-function findingsFor2(file, config2) {
+function findingsFor(file, config2) {
   return [
     ...configurationFindings(file, config2),
     ...navigationFindings(file, config2)
@@ -23888,14 +23066,14 @@ function analyzeDesignSmells(input) {
   const affected = new Set(input.affectedPaths.map(normalizeArchitecturePath));
   const before = new Set(
     input.beforeFiles.flatMap(
-      (file) => findingsFor2(
+      (file) => findingsFor(
         { ...file, path: normalizeArchitecturePath(file.path) },
         input.config
       ).map(findingKey)
     )
   );
   return input.afterFiles.filter((file) => isAffectedProductionFile(file, affected, input.config)).flatMap(
-    (file) => findingsFor2(file, input.config).filter(
+    (file) => findingsFor(file, input.config).filter(
       (finding) => !before.has(findingKey(finding))
     )
   ).sort(
@@ -24108,11 +23286,11 @@ function collectFindings(input) {
 }
 
 // src/commit-gate/refactor-progress-counts.ts
-import * as path11 from "node:path";
+import * as path10 from "node:path";
 function directTypePressure(types, config2) {
   const counts = /* @__PURE__ */ new Map();
   for (const item of types) {
-    const directory = path11.posix.dirname(item.path);
+    const directory = path10.posix.dirname(item.path);
     counts.set(directory, (counts.get(directory) ?? 0) + 1);
   }
   return [...counts.values()].reduce(
@@ -25769,7 +24947,7 @@ function emptyFacts(path18) {
     errors: []
   };
 }
-function factsFor2(file, { lang, types, imports }) {
+function factsFor(file, { lang, types, imports }) {
   return {
     facts: {
       path: file.path,
@@ -25789,7 +24967,7 @@ function extractArchitectureFacts(file) {
   if (declared.error) return { facts: null, errors: [declared.error] };
   const types = declared.types.map((type) => typeFacts2(type, lang)).sort((left, right) => left.name.localeCompare(right.name));
   const imports = importsFor(file.content, lang);
-  return factsFor2(file, { lang, types, imports });
+  return factsFor(file, { lang, types, imports });
 }
 
 // src/commit-gate/facts.ts
@@ -26261,14 +25439,14 @@ function errorMessage(error2) {
 }
 function acknowledgementSource(recordPath) {
   try {
-    return readFileSync2(recordPath, "utf8");
+    return readFileSync(recordPath, "utf8");
   } catch {
     return "[]";
   }
 }
 function writeAcknowledgement(root2, options, match) {
-  const recordPath = path12.join(root2, DECISION_RECORD_PATH);
-  mkdirSync(path12.dirname(recordPath), { recursive: true });
+  const recordPath = path11.join(root2, DECISION_RECORD_PATH);
+  mkdirSync(path11.dirname(recordPath), { recursive: true });
   writeFileSync(
     recordPath,
     appendArchitectureAcknowledgement(acknowledgementSource(recordPath), {
@@ -26460,11 +25638,851 @@ function runCheckCommand(args, root2 = process.cwd()) {
   return runStagedCommand(args, root2);
 }
 
+// src/cli-internal.ts
+function runQualityGuardInternalCheck(args, root2 = process4.cwd()) {
+  if (args[0] !== "check" || args[1] !== "--committed") {
+    process4.stdout.write(
+      "Usage: quality-guard internal check --committed <ref>\n"
+    );
+    process4.exitCode = 3;
+    return;
+  }
+  const result = runCheckCommand(args, root2);
+  process4.stdout.write(`${result.output}
+`);
+  process4.exitCode = result.exitCode;
+}
+
+// src/test-quality/report.ts
+import { existsSync, readFileSync as readFileSync2 } from "node:fs";
+import * as path12 from "node:path";
+
+// src/test-quality/findings/finding.ts
+function makeFinding(input) {
+  return { ...input, severity: "review", line: 1 };
+}
+function activeTests(evidence, behaviorId) {
+  return evidence.tests.filter(
+    (test) => test.status !== "skipped" && test.covers.includes(behaviorId)
+  );
+}
+function sourceForBehavior(evidence, behaviorId) {
+  return evidence.sources.find(
+    (source) => source.behaviors.some((behavior) => behavior.id === behaviorId)
+  )?.path;
+}
+function uncovered(observation) {
+  return ["statements", "branches", "functions", "lines"].flatMap(
+    (name) => {
+      const current = observation[name];
+      return current && current.covered < current.total ? [`${name}:${current.covered}/${current.total}`] : [];
+    }
+  );
+}
+
+// src/test-quality/findings/behavior-findings.ts
+function detailsFor(behavior) {
+  if (behavior.trivial)
+    return {
+      heuristic: "T3",
+      rule: "trivial-test",
+      message: `trivial behavior ${behavior.id} has no active documentary test`,
+      remediation: "Add the cheap test that documents this behavior instead of relying on aggregate coverage."
+    };
+  if (behavior.kind === "boundary")
+    return {
+      heuristic: "T5",
+      rule: "boundary-test",
+      message: `boundary ${behavior.id} has no active test evidence`,
+      remediation: "Test the declared edge values and expected results, including the adjacent in-range value."
+    };
+  return {
+    heuristic: "T1",
+    rule: "insufficient-tests",
+    message: `behavior ${behavior.id} has no active test evidence`,
+    remediation: "Add a behavior-oriented test for the declared path or explain why it is outside this suite."
+  };
+}
+function missingFinding(sourcePath, behavior) {
+  return [
+    makeFinding({
+      ...detailsFor(behavior),
+      path: sourcePath,
+      evidence: {
+        behaviorId: behavior.id,
+        ...behavior.boundary ? { boundary: behavior.boundary } : {}
+      }
+    })
+  ];
+}
+function missingBehaviorFindings(evidence) {
+  return evidence.sources.flatMap(
+    (source) => source.behaviors.flatMap((behavior) => {
+      if (activeTests(evidence, behavior.id).length === 0)
+        return missingFinding(source.path, behavior);
+      return [];
+    })
+  );
+}
+function behaviorFindings(evidence) {
+  return missingBehaviorFindings(evidence);
+}
+
+// src/test-quality/findings/evidence-findings.ts
+function unavailableCoverageFinding() {
+  return makeFinding({
+    heuristic: "T2",
+    rule: "coverage-evidence",
+    path: ".",
+    message: "no coverage provider or source observations were supplied",
+    remediation: "Run a coverage provider and record per-source observations; missing coverage is not zero.",
+    evidence: { status: "unavailable" }
+  });
+}
+function coverageFinding(source, observations) {
+  const observed = observations.some(
+    (observation) => observation.sourcePath === source.path
+  );
+  if (source.behaviors.length === 0 || observed) return [];
+  return [
+    makeFinding({
+      heuristic: "T2",
+      rule: "coverage-evidence",
+      path: source.path,
+      message: "source has behavior evidence but no coverage observation",
+      remediation: "Add this source's observation or record why the provider excludes it.",
+      evidence: { sourcePath: source.path, status: "unobserved" }
+    })
+  ];
+}
+function coverageFindings(evidence) {
+  if (!evidence.coverage) return [unavailableCoverageFinding()];
+  return evidence.sources.flatMap(
+    (source) => coverageFinding(source, evidence.coverage?.observations ?? [])
+  );
+}
+function skipFindings(evidence) {
+  return evidence.tests.flatMap(
+    (test) => test.status === "skipped" && test.skipReason?.kind === "ambiguity" ? [
+      makeFinding({
+        heuristic: "T4",
+        rule: "ignored-test-ambiguity",
+        path: test.path,
+        message: `skipped test ${test.id} records an unresolved ambiguity`,
+        remediation: `Resolve the requirement or link the decision: ${test.skipReason.detail}`,
+        evidence: { testId: test.id, skipReason: test.skipReason }
+      })
+    ] : []
+  );
+}
+function bugFindings(evidence) {
+  return (evidence.bugs ?? []).flatMap((bug) => {
+    const missing = bug.behaviorIds.filter(
+      (id) => activeTests(evidence, id).length === 0
+    );
+    return missing.length > 0 ? [
+      makeFinding({
+        heuristic: "T6",
+        rule: "bug-regression-test",
+        path: bug.sourcePath,
+        message: `bug ${bug.id} has affected behavior without regression coverage`,
+        remediation: "Add regression coverage for the reported behavior and nearby cases.",
+        evidence: { bugId: bug.id, missingBehaviorIds: missing }
+      })
+    ] : [];
+  });
+}
+function evidenceFindings(evidence) {
+  return [
+    ...coverageFindings(evidence),
+    ...skipFindings(evidence),
+    ...bugFindings(evidence)
+  ];
+}
+
+// src/test-quality/coverage-finding.ts
+function linkedBehaviorIds(observation) {
+  return [...new Set(observation.uncoveredBehaviorIds ?? [])];
+}
+function linkedFailures(evidence, behaviorIds) {
+  return (evidence.failures ?? []).filter(
+    (failure) => failure.behaviorId !== void 0 && behaviorIds.includes(failure.behaviorId)
+  );
+}
+function coverageFinding2(evidence, observation) {
+  const uncoveredBehaviorIds = linkedBehaviorIds(observation);
+  const failures = linkedFailures(evidence, uncoveredBehaviorIds);
+  const gaps = uncovered(observation);
+  if (failures.length === 0 || gaps.length === 0) return [];
+  return [
+    makeFinding({
+      heuristic: "T8",
+      rule: "coverage-pattern",
+      path: observation.sourcePath,
+      message: "uncovered coverage regions overlap a recorded runtime failure",
+      remediation: "Use the gap to inspect the failing behavior and add a focused test.",
+      evidence: {
+        sourcePath: observation.sourcePath,
+        uncovered: gaps,
+        uncoveredBehaviorIds,
+        failureTestIds: [...new Set(failures.map((failure) => failure.testId))]
+      }
+    })
+  ];
+}
+
+// src/test-quality/findings/timing-findings.ts
+function budgetMap(evidence) {
+  return new Map(
+    (evidence.timing?.budgets ?? []).map((budget) => [
+      budget.testClass,
+      budget.maxDurationMs
+    ])
+  );
+}
+function slowFinding(test, budget) {
+  return makeFinding({
+    heuristic: "T9",
+    rule: "slow-test",
+    path: test.path,
+    message: `test ${test.id} took ${test.durationMs}ms above its ${budget}ms budget`,
+    remediation: "Split or isolate expensive work, or change the budget with environment evidence.",
+    evidence: {
+      testId: test.id,
+      durationMs: test.durationMs,
+      budgetMs: budget
+    }
+  });
+}
+function slowTests(evidence) {
+  if (!evidence.timing) return [];
+  const budgets = budgetMap(evidence);
+  return evidence.tests.flatMap((test) => {
+    if (test.durationMs === void 0) return [];
+    const budget = budgets.get(test.testClass);
+    if (budget === void 0 || test.durationMs <= budget) return [];
+    return [slowFinding(test, budget)];
+  });
+}
+
+// src/test-quality/findings/runtime-findings.ts
+function failureSource(evidence, failure) {
+  if (failure.sourcePath) return failure.sourcePath;
+  if (failure.behaviorId)
+    return sourceForBehavior(evidence, failure.behaviorId) ?? ".";
+  return ".";
+}
+function clusterFinding(key2, failures) {
+  const testIds = [...new Set(failures.map((failure) => failure.testId))];
+  if (testIds.length < 2) return [];
+  const [path18, signature, inputClass] = key2.split("|");
+  return [
+    makeFinding({
+      heuristic: "T7",
+      rule: "failure-pattern",
+      path: path18 ?? ".",
+      message: `${testIds.length} failures share ${signature} for ${inputClass}`,
+      remediation: "Inspect the shared input and affected path before fixing tests one by one.",
+      evidence: { testIds, signature, inputClass }
+    })
+  ];
+}
+function addFailure(clusters, evidence, failure) {
+  const key2 = `${failureSource(evidence, failure)}|${failure.signature}|${failure.inputClass}`;
+  clusters.set(key2, [...clusters.get(key2) ?? [], failure]);
+}
+function groupedFailures(evidence) {
+  const clusters = /* @__PURE__ */ new Map();
+  for (const failure of evidence.failures ?? [])
+    addFailure(clusters, evidence, failure);
+  return clusters;
+}
+function failureClusters(evidence) {
+  const clusters = groupedFailures(evidence);
+  return [...clusters.entries()].flatMap(
+    ([key2, failures]) => clusterFinding(key2, failures)
+  );
+}
+function coveragePatterns(evidence) {
+  return (evidence.coverage?.observations ?? []).flatMap(
+    (observation) => coverageFinding2(evidence, observation)
+  );
+}
+function runtimeFindings(evidence) {
+  return [
+    ...failureClusters(evidence),
+    ...coveragePatterns(evidence),
+    ...slowTests(evidence)
+  ];
+}
+
+// src/test-quality/findings/findings.ts
+function findingsFor2(evidence) {
+  return [
+    ...behaviorFindings(evidence),
+    ...evidenceFindings(evidence),
+    ...runtimeFindings(evidence)
+  ].sort(
+    (left, right) => left.heuristic.localeCompare(right.heuristic) || left.path.localeCompare(right.path) || left.message.localeCompare(right.message)
+  );
+}
+
+// src/test-quality/metrics/coverage-metrics.ts
+function uncoveredMetrics(evidence) {
+  const uncovered2 = {};
+  for (const observation of evidence)
+    for (const name of [
+      "statements",
+      "branches",
+      "functions",
+      "lines"
+    ]) {
+      const value = observation[name];
+      if (value && value.covered < value.total)
+        uncovered2[`${observation.sourcePath}:${name}`] = value;
+    }
+  return uncovered2;
+}
+function coverageGaps(evidence, observations) {
+  return evidence.sources.filter(
+    (source) => source.behaviors.length > 0 && !observations.includes(source.path)
+  ).map((source) => source.path);
+}
+function coverageMetrics(evidence) {
+  const observations = evidence.coverage?.observations ?? [];
+  const observedPaths = observations.map(
+    (observation) => observation.sourcePath
+  );
+  return {
+    ...evidence.coverage?.provider ? { provider: evidence.coverage.provider } : {},
+    observedSourceCount: observations.length,
+    gaps: coverageGaps(evidence, observedPaths),
+    uncovered: uncoveredMetrics(observations)
+  };
+}
+
+// src/test-quality/metrics/language-stats.ts
+function testedCount(items, tested) {
+  return items.filter((item) => tested(item.id)).length;
+}
+function behaviorStats(sources, tested) {
+  const behaviors = sources.flatMap(
+    (source) => source.behaviors.filter((behavior) => behavior.kind === "behavior")
+  );
+  const boundaries = sources.flatMap(
+    (source) => source.behaviors.filter((behavior) => behavior.kind === "boundary")
+  );
+  return {
+    behaviorCount: behaviors.length,
+    testedBehaviorCount: testedCount(behaviors, tested),
+    boundaryCount: boundaries.length,
+    testedBoundaryCount: testedCount(boundaries, tested)
+  };
+}
+function bugStats(evidence, paths, tested) {
+  const bugs = (evidence.bugs ?? []).filter((bug) => paths.has(bug.sourcePath));
+  return {
+    bugCount: bugs.length,
+    testedBugCount: bugs.filter((bug) => bug.behaviorIds.every(tested)).length
+  };
+}
+
+// src/test-quality/metrics/metric-constants.ts
+var METRIC_KEYS = [
+  "sourceCount",
+  "testCount",
+  "skippedTestCount",
+  "behaviorCount",
+  "testedBehaviorCount",
+  "boundaryCount",
+  "testedBoundaryCount",
+  "bugCount",
+  "testedBugCount",
+  "coverageSourceCount",
+  "failureCount"
+];
+function emptyMetrics() {
+  return {
+    languages: [],
+    totals: Object.fromEntries(METRIC_KEYS.map((key2) => [key2, 0])),
+    coverage: { observedSourceCount: 0, gaps: [], uncovered: {} },
+    timing: {
+      measuredTestCount: 0,
+      overBudgetTestCount: 0,
+      unbudgetedTestIds: []
+    }
+  };
+}
+
+// src/test-quality/metrics/language-metrics.ts
+function normalizedLanguage(value) {
+  return {
+    ".net": "csharp",
+    cs: "csharp",
+    csharp: "csharp",
+    dotnet: "csharp",
+    js: "typescript",
+    net: "csharp",
+    py: "python",
+    python: "python",
+    rs: "rust",
+    rust: "rust",
+    ts: "typescript",
+    typescript: "typescript"
+  }[value.toLowerCase()] ?? value.toLowerCase();
+}
+function sourcesForLanguage(evidence, language) {
+  return evidence.sources.filter(
+    (source) => normalizedLanguage(source.language) === language
+  );
+}
+function testsForLanguage(evidence, language) {
+  return evidence.tests.filter(
+    (test) => normalizedLanguage(test.language) === language
+  );
+}
+function coverageCount(evidence, paths) {
+  return (evidence.coverage?.observations ?? []).filter(
+    (item) => paths.has(item.sourcePath)
+  ).length;
+}
+function failureCount(evidence, paths) {
+  return (evidence.failures ?? []).filter(
+    (item) => item.sourcePath && paths.has(item.sourcePath)
+  ).length;
+}
+function languageMetric(evidence, language) {
+  const sources = sourcesForLanguage(evidence, language);
+  const tests = testsForLanguage(evidence, language);
+  const paths = new Set(sources.map((source) => source.path));
+  const tested = (id) => activeTests(evidence, id).length > 0;
+  const behaviors = behaviorStats(sources, tested);
+  const bugs = bugStats(evidence, paths, tested);
+  return {
+    language,
+    sourceCount: sources.length,
+    testCount: tests.length,
+    skippedTestCount: tests.filter((test) => test.status === "skipped").length,
+    ...behaviors,
+    ...bugs,
+    coverageSourceCount: coverageCount(evidence, paths),
+    failureCount: failureCount(evidence, paths)
+  };
+}
+function languageMetrics(evidence) {
+  const languages = /* @__PURE__ */ new Set([
+    ...evidence.sources.map((source) => normalizedLanguage(source.language)),
+    ...evidence.tests.map((test) => normalizedLanguage(test.language))
+  ]);
+  return [...languages].sort().map((language) => languageMetric(evidence, language));
+}
+function sumMetrics(metrics) {
+  return Object.fromEntries(
+    METRIC_KEYS.map((key2) => [
+      key2,
+      metrics.reduce((sum, item) => sum + item[key2], 0)
+    ])
+  );
+}
+
+// src/test-quality/metrics/timing-metrics.ts
+function budgetMap2(evidence) {
+  return new Map(
+    (evidence.timing?.budgets ?? []).map((budget) => [
+      budget.testClass,
+      budget.maxDurationMs
+    ])
+  );
+}
+function overBudgetCount(tests, budgets) {
+  return tests.filter((test) => {
+    const budget = budgets.get(test.testClass);
+    return test.durationMs !== void 0 && budget !== void 0 && test.durationMs > budget;
+  }).length;
+}
+function timingMetrics(evidence) {
+  const budgets = budgetMap2(evidence);
+  const measured = evidence.tests.filter(
+    (test) => test.durationMs !== void 0
+  );
+  return {
+    ...evidence.timing?.environment ? { environment: evidence.timing.environment } : {},
+    measuredTestCount: measured.length,
+    overBudgetTestCount: overBudgetCount(measured, budgets),
+    unbudgetedTestIds: measured.filter((test) => evidence.timing && !budgets.has(test.testClass)).map((test) => test.id)
+  };
+}
+
+// src/test-quality/metrics/metrics.ts
+function metricsFor(evidence) {
+  const languages = languageMetrics(evidence);
+  return {
+    languages,
+    totals: sumMetrics(languages),
+    coverage: coverageMetrics(evidence),
+    timing: timingMetrics(evidence)
+  };
+}
+
+// src/test-quality/schema/schema-basics.ts
+var text = external_exports.string().trim().min(1);
+var metricSchema = external_exports.object({
+  covered: external_exports.number().int().nonnegative(),
+  total: external_exports.number().int().nonnegative()
+}).strict().superRefine((value, context) => {
+  if (value.covered > value.total)
+    context.addIssue({
+      code: external_exports.ZodIssueCode.custom,
+      message: "covered cannot exceed total"
+    });
+});
+var behaviorSchema = external_exports.object({
+  id: text,
+  kind: external_exports.enum(["behavior", "boundary"]),
+  trivial: external_exports.boolean().optional(),
+  boundary: external_exports.object({ input: text, expected: text }).strict().optional()
+}).strict().superRefine((value, context) => {
+  if (value.kind === "boundary" && !value.boundary)
+    context.addIssue({
+      code: external_exports.ZodIssueCode.custom,
+      message: "boundary behaviors require input and expected evidence"
+    });
+});
+var testSchema = external_exports.object({
+  id: text,
+  path: text,
+  language: text,
+  covers: external_exports.array(text),
+  status: external_exports.enum(["passed", "failed", "skipped"]),
+  skipReason: external_exports.object({
+    kind: external_exports.enum([
+      "ambiguity",
+      "environment",
+      "platform",
+      "flaky",
+      "other"
+    ]),
+    detail: text
+  }).strict().optional(),
+  durationMs: external_exports.number().int().nonnegative().optional(),
+  testClass: text.default("unit")
+}).strict().superRefine((value, context) => {
+  if (value.status === "skipped" && !value.skipReason)
+    context.addIssue({
+      code: external_exports.ZodIssueCode.custom,
+      message: "skipped tests require skipReason"
+    });
+});
+
+// src/test-quality/schema/schema-parts.ts
+var sourceSchema = external_exports.object({
+  path: text,
+  language: text,
+  behaviors: external_exports.array(behaviorSchema)
+}).strict();
+var coverageSchema = external_exports.object({
+  provider: text,
+  observations: external_exports.array(
+    external_exports.object({
+      sourcePath: text,
+      uncoveredBehaviorIds: external_exports.array(text).optional(),
+      statements: metricSchema.optional(),
+      branches: metricSchema.optional(),
+      functions: metricSchema.optional(),
+      lines: metricSchema.optional()
+    }).strict()
+  )
+}).strict();
+var bugSchema = external_exports.object({
+  id: text,
+  sourcePath: text,
+  behaviorIds: external_exports.array(text).min(1, "bug records require at least one affected behavior")
+}).strict();
+var failureSchema = external_exports.object({
+  testId: text,
+  sourcePath: text.optional(),
+  behaviorId: text.optional(),
+  signature: text,
+  inputClass: text
+}).strict();
+var timingSchema = external_exports.object({
+  environment: text,
+  budgets: external_exports.array(
+    external_exports.object({
+      testClass: text,
+      maxDurationMs: external_exports.number().int().positive()
+    }).strict()
+  )
+}).strict();
+
+// src/test-quality/schema/schema.ts
+var EvidenceSchema = external_exports.object({
+  schemaVersion: external_exports.literal(1),
+  environment: text.optional(),
+  sources: external_exports.array(sourceSchema),
+  tests: external_exports.array(testSchema),
+  coverage: coverageSchema.optional(),
+  bugs: external_exports.array(bugSchema).optional(),
+  failures: external_exports.array(failureSchema).optional(),
+  timing: timingSchema.optional()
+}).strict();
+
+// src/test-quality/validation/validate-links.ts
+function bugReferenceErrors(bug, facts) {
+  const errors = facts.sources.has(bug.sourcePath) ? [] : [`bug ${bug.id} references unknown source ${bug.sourcePath}`];
+  const behaviorErrors = bug.behaviorIds.flatMap((behavior) => {
+    const sourcePath = facts.behaviors.get(behavior);
+    if (sourcePath === void 0)
+      return [`bug ${bug.id} references unknown behavior ${behavior}`];
+    if (sourcePath !== bug.sourcePath)
+      return [
+        `bug ${bug.id} behavior ${behavior} is outside ${bug.sourcePath}`
+      ];
+    return [];
+  });
+  return [...errors, ...behaviorErrors];
+}
+function bugErrors(evidence, facts) {
+  const bugs = evidence.bugs ?? [];
+  const seen = /* @__PURE__ */ new Set();
+  const duplicates = bugs.flatMap((bug) => {
+    if (seen.has(bug.id)) return [`duplicate bug id: ${bug.id}`];
+    seen.add(bug.id);
+    return [];
+  });
+  return [
+    ...duplicates,
+    ...bugs.flatMap((bug) => bugReferenceErrors(bug, facts))
+  ];
+}
+function failureTestErrors(failure, statuses) {
+  const status = statuses.get(failure.testId);
+  if (!status) return [`failure references unknown test ${failure.testId}`];
+  if (status === "failed") return [];
+  return [`failure ${failure.testId} must reference a failed test`];
+}
+function failureSourceErrors(failure, facts) {
+  if (!failure.sourcePath || facts.sources.has(failure.sourcePath)) return [];
+  return [`failure references unknown source ${failure.sourcePath}`];
+}
+function failureBehaviorErrors(failure, facts) {
+  if (!failure.behaviorId) return [];
+  const sourcePath = facts.behaviors.get(failure.behaviorId);
+  if (sourcePath === void 0)
+    return [`failure references unknown behavior ${failure.behaviorId}`];
+  if (!failure.sourcePath || sourcePath === failure.sourcePath) return [];
+  return [
+    `failure behavior ${failure.behaviorId} is outside ${failure.sourcePath}`
+  ];
+}
+function failureReferenceErrors(failure, statuses, facts) {
+  return [
+    ...failureTestErrors(failure, statuses),
+    ...failureSourceErrors(failure, facts),
+    ...failureBehaviorErrors(failure, facts)
+  ];
+}
+function failureErrors(evidence, facts) {
+  const statuses = new Map(
+    evidence.tests.map((test) => [test.id, test.status])
+  );
+  return (evidence.failures ?? []).flatMap(
+    (failure) => failureReferenceErrors(failure, statuses, facts)
+  );
+}
+function timingErrors(evidence) {
+  const classes = (evidence.timing?.budgets ?? []).map(
+    (budget) => budget.testClass
+  );
+  return new Set(classes).size === classes.length ? [] : ["timing.budgets must contain one budget per testClass"];
+}
+
+// src/test-quality/validation/validate-structure.ts
+function duplicateValues(values, label) {
+  const seen = /* @__PURE__ */ new Set();
+  return values.flatMap((value) => {
+    if (seen.has(value)) return [`duplicate ${label}: ${value}`];
+    seen.add(value);
+    return [];
+  });
+}
+function factsFor2(evidence) {
+  const facts = {
+    sources: /* @__PURE__ */ new Set(),
+    behaviors: /* @__PURE__ */ new Map()
+  };
+  for (const source of evidence.sources) {
+    facts.sources.add(source.path);
+    for (const behavior of source.behaviors) {
+      facts.behaviors.set(behavior.id, source.path);
+    }
+  }
+  return facts;
+}
+function sourceErrors(evidence) {
+  const errors = duplicateValues(
+    evidence.sources.map((source) => source.path),
+    "source path"
+  );
+  const behaviorIds = [];
+  for (const source of evidence.sources)
+    behaviorIds.push(...source.behaviors.map((behavior) => behavior.id));
+  return [...errors, ...duplicateValues(behaviorIds, "behavior id")];
+}
+function testErrors(evidence, facts) {
+  const duplicates = duplicateValues(
+    evidence.tests.map((test) => test.id),
+    "test id"
+  );
+  const unknown2 = evidence.tests.flatMap(
+    (test) => test.covers.filter((behavior) => !facts.behaviors.has(behavior)).map(
+      (behavior) => `test ${test.id} covers unknown behavior ${behavior}`
+    )
+  );
+  return [...duplicates, ...unknown2];
+}
+function coverageBehaviorErrors(observations, facts) {
+  return observations.flatMap(
+    (observation) => (observation.uncoveredBehaviorIds ?? []).flatMap((behavior) => {
+      const sourcePath = facts.behaviors.get(behavior);
+      if (sourcePath === void 0)
+        return [`coverage observation references unknown behavior ${behavior}`];
+      if (sourcePath !== observation.sourcePath)
+        return [
+          `coverage observation behavior ${behavior} is outside ${observation.sourcePath}`
+        ];
+      return [];
+    })
+  );
+}
+function coverageErrors(evidence, facts) {
+  const observations = evidence.coverage?.observations ?? [];
+  const unknown2 = observations.filter((observation) => !facts.sources.has(observation.sourcePath)).map(
+    (observation) => `coverage observes unknown source ${observation.sourcePath}`
+  );
+  return [
+    ...unknown2,
+    ...coverageBehaviorErrors(observations, facts),
+    ...duplicateValues(
+      observations.map((observation) => observation.sourcePath),
+      "coverage observation"
+    )
+  ];
+}
+
+// src/test-quality/validation/validate.ts
+function validateEvidence(evidence) {
+  const facts = factsFor2(evidence);
+  return [
+    ...sourceErrors(evidence),
+    ...testErrors(evidence, facts),
+    ...coverageErrors(evidence, facts),
+    ...bugErrors(evidence, facts),
+    ...failureErrors(evidence, facts),
+    ...timingErrors(evidence)
+  ].filter((error2, index, errors) => errors.indexOf(error2) === index).sort();
+}
+
+// src/test-quality/analyze.ts
+function invalidReport(errors) {
+  return {
+    schemaVersion: 1,
+    status: "invalid",
+    errors: [...new Set(errors)].sort(),
+    findings: [],
+    metrics: emptyMetrics()
+  };
+}
+function analyzeTestQuality(value) {
+  const parsed = EvidenceSchema.safeParse(value);
+  if (!parsed.success)
+    return invalidReport(
+      parsed.error.issues.map(
+        (issue2) => `${issue2.path.join(".")}: ${issue2.message}`
+      )
+    );
+  const errors = validateEvidence(parsed.data);
+  if (errors.length > 0) return invalidReport(errors);
+  return {
+    schemaVersion: 1,
+    status: "ok",
+    ...parsed.data.environment ? { environment: parsed.data.environment } : {},
+    errors: [],
+    findings: findingsFor2(parsed.data),
+    metrics: metricsFor(parsed.data)
+  };
+}
+
+// src/test-quality/report.ts
+var DEFAULT_TEST_QUALITY_EVIDENCE = ".quality/test-quality.json";
+function emptyReport(status, evidencePath, errors) {
+  return {
+    schemaVersion: 1,
+    status,
+    evidencePath,
+    errors,
+    findings: [],
+    metrics: emptyMetrics()
+  };
+}
+function readReport(absolutePath, evidencePath) {
+  try {
+    return {
+      ...analyzeTestQuality(JSON.parse(readFileSync2(absolutePath, "utf8"))),
+      evidencePath
+    };
+  } catch (error2) {
+    return emptyReport("invalid", evidencePath, [
+      `could not read evidence: ${error2 instanceof Error ? error2.message : String(error2)}`
+    ]);
+  }
+}
+function rootFor(input) {
+  return path12.resolve(input.root ?? process.cwd());
+}
+function evidenceFor(input) {
+  return input.evidence ?? DEFAULT_TEST_QUALITY_EVIDENCE;
+}
+function relativeFor(root2, absolutePath) {
+  return path12.relative(root2, absolutePath) || ".";
+}
+function pathsFor(input) {
+  const root2 = rootFor(input);
+  const evidencePath = evidenceFor(input);
+  const absolutePath = path12.resolve(root2, evidencePath);
+  return {
+    absolutePath,
+    relativePath: relativeFor(root2, absolutePath)
+  };
+}
+function runTestQualityReport(input) {
+  const { absolutePath, relativePath } = pathsFor(input);
+  if (!existsSync(absolutePath))
+    return emptyReport("unavailable", relativePath, [
+      `evidence file not found: ${relativePath}`
+    ]);
+  return readReport(absolutePath, relativePath);
+}
+
+// src/cli-test-quality.ts
+function optionValue2(args, name) {
+  return args.find((arg) => arg.startsWith(`${name}=`))?.slice(name.length + 1);
+}
+function runTestQualityCommand(args) {
+  const result = runTestQualityReport({
+    root: optionValue2(args, "--root"),
+    evidence: optionValue2(args, "--evidence")
+  });
+  process.stdout.write(`${JSON.stringify(result, null, 2)}
+`);
+  if (result.status === "invalid") process.exitCode = 3;
+}
+
 // src/http.ts
 import {
   createServer
 } from "node:http";
-import process4 from "node:process";
+import process5 from "node:process";
 
 // ../../node_modules/@hono/node-server/dist/constants-BLSFu_RU.mjs
 var X_ALREADY_SENT = "x-hono-already-sent";
@@ -28564,7 +28582,7 @@ function parsePort(value) {
   if (value === void 0 || value.trim().length === 0) return DEFAULT_PORT;
   return requirePort(Number(value));
 }
-function parseHttpCliOptions(args, env = process4.env) {
+function parseHttpCliOptions(args, env = process5.env) {
   return {
     host: envOrOption(args, "--host", "MCP_HOST_BIND_HOST", env) ?? DEFAULT_HOST,
     port: parsePort(envOrOption(args, "--port", "MCP_HOST_PORT", env)),
@@ -28572,17 +28590,17 @@ function parseHttpCliOptions(args, env = process4.env) {
     healthPath: envOrOption(args, "--health-path", "MCP_HOST_HEALTH_PATH", env) ?? DEFAULT_HEALTH_PATH
   };
 }
-function installHttpSignalHandlers(running, processLike = process4) {
+function installHttpSignalHandlers(running, processLike = process5) {
   let shuttingDown = false;
   const shutdown = () => {
     if (shuttingDown) return;
     shuttingDown = true;
     void running.close().catch((error2) => {
-      process4.stderr.write(
+      process5.stderr.write(
         `MCP HTTP shutdown failed: ${error2 instanceof Error ? error2.message : String(error2)}
 `
       );
-      process4.exitCode = 1;
+      process5.exitCode = 1;
     });
   };
   processLike.on("SIGINT", shutdown);
@@ -29183,15 +29201,15 @@ async function runQualityReportAsync(request) {
 // src/cli-entrypoint.ts
 function runReportCommand(args) {
   const root2 = args.find((arg) => arg.startsWith("--root="))?.slice("--root=".length);
-  process5.stdout.write(
+  process6.stdout.write(
     `${JSON.stringify(runQualityReport({ root: root2 }), null, 2)}
 `
   );
 }
 function runReadabilityCommand(args) {
   if (args[1] !== "--stdin" || args.length !== 2) {
-    process5.stdout.write("Usage: quality-guard readability --stdin\n");
-    process5.exitCode = 3;
+    process6.stdout.write("Usage: quality-guard readability --stdin\n");
+    process6.exitCode = 3;
     return;
   }
   let text3;
@@ -29201,33 +29219,22 @@ function runReadabilityCommand(args) {
     const result2 = unavailableReadabilityResult(
       `could not read stdin: ${error2 instanceof Error ? error2.message : String(error2)}`
     );
-    process5.stdout.write(`${JSON.stringify(result2, null, 2)}
+    process6.stdout.write(`${JSON.stringify(result2, null, 2)}
 `);
-    process5.exitCode = 0;
+    process6.exitCode = 0;
     return;
   }
   const result = checkPlaintextReadability(text3);
-  process5.stdout.write(`${JSON.stringify(result, null, 2)}
+  process6.stdout.write(`${JSON.stringify(result, null, 2)}
 `);
-  process5.exitCode = readabilityExitCode(result.status);
+  process6.exitCode = readabilityExitCode(result.status);
 }
 function retiredQualityCommand(args) {
   const command = args[0];
   return command === "check" || command === "acknowledge" ? command : void 0;
 }
-function runQualityGuardInternalCheck(args, root2 = process5.cwd()) {
-  if (args[0] !== "check" || args[1] !== "--committed") {
-    process5.stdout.write("Usage: quality-guard internal check --committed <ref>\n");
-    process5.exitCode = 3;
-    return;
-  }
-  const result = runCheckCommand(args, root2);
-  process5.stdout.write(`${result.output}
-`);
-  process5.exitCode = result.exitCode;
-}
 async function runQualityGuardCli(args, dependencies) {
-  if (process5.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK === "1" && args[0] === "check" && args[1] === "--committed")
+  if (process6.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK === "1" && args[0] === "check" && args[1] === "--committed")
     return runQualityGuardInternalCheck(args);
   if (args[0] === "test-quality") return runTestQualityCommand(args);
   if (args[0] === "report") return runReportCommand(args);
@@ -29237,7 +29244,7 @@ async function runQualityGuardCli(args, dependencies) {
       parseHttpCliOptions(args.slice(1))
     );
     installHttpSignalHandlers(running);
-    process5.stderr.write(
+    process6.stderr.write(
       `quality-guard HTTP ready at http://${running.host}:${running.port}${running.path}
 `
     );

@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import { WHOLE_PROJECT_TIMEOUT_MS as TIMEOUT_MS } from "./linter-timeout.mjs";
-import { linterResult, linterUnavailable } from "./project-linter-support.mjs";
+import { formatRustResult } from "./rust-linter-result.mjs";
 function run(spawn, args, cwd) {
   return spawn("cargo", args, {
     cwd,
@@ -80,26 +80,17 @@ function clippyFindings(stdout, filePath, repoRoot) {
  * finding nothing.
  */
 export function rustFindings(filePath, repoRoot, spawn = spawnSync) {
-  if (!existsSync(join(repoRoot, "Cargo.toml"))) return linterResult();
+  if (!existsSync(join(repoRoot, "Cargo.toml")))
+    return { findings: [], unavailable: null };
   try {
-    const result = run(
-      spawn,
-      ["clippy", "--message-format=json", "--no-deps"],
-      repoRoot,
+    return formatRustResult(
+      run(spawn, ["clippy", "--message-format=json", "--no-deps"], repoRoot),
+      (stdout) => clippyFindings(stdout, filePath, repoRoot),
     );
-    if (result.error)
-      return linterUnavailable(`cargo clippy failed: ${result.error.message}`);
-    const stdout = result.stdout || "";
-    const parsedLines = stdout
-      .split("\n")
-      .map((line) => parseJson(line.trim()))
-      .filter((line) => line !== null);
-    if (parsedLines.length === 0)
-      return linterUnavailable("cargo clippy returned malformed JSON output.");
-    return linterResult(clippyFindings(stdout, filePath, repoRoot));
   } catch (error) {
-    return linterUnavailable(
-      `cargo clippy failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    return {
+      findings: [],
+      unavailable: `cargo clippy failed: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }

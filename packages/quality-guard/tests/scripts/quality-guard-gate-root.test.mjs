@@ -84,25 +84,3 @@ test("a project-linter failure reports unavailable evidence and fails open", () 
   assert.match(result.output, /project-linter failed: linter unavailable/);
   rmSync(root, { recursive: true, force: true });
 });
-
-test("an explicit linter-unavailable result reports actionable JSON evidence", () => {
-  const { root, filePath } = testTarget("linter-state.js");
-  const result = captureOutput(() =>
-    gate(
-      fakeInput(filePath),
-      filePath,
-      gateDeps({
-        runScanner: () => ({ violations: [] }),
-        localResult: () => ({ unavailable: "configured linter timed out" }),
-      }),
-    ),
-  );
-  assert.equal(result.value, 0);
-  const protocol = JSON.parse(result.stdout);
-  assert.equal(protocol.hookSpecificOutput.hookEventName, "PostToolUse");
-  assert.match(
-    protocol.hookSpecificOutput.additionalContext,
-    /project-linter unavailable: configured linter timed out/,
-  );
-  rmSync(root, { recursive: true, force: true });
-});

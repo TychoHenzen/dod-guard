@@ -3,8 +3,8 @@ import process from "node:process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
 import { runRetiredQualityCommand } from "./cli-advisory.js";
+import { runQualityGuardInternalCheck } from "./cli-internal.js";
 import { runTestQualityCommand } from "./cli-test-quality.js";
-import { runCheckCommand } from "./commit-gate/cli.js";
 import {
   type HttpServerOptions,
   installHttpSignalHandlers,
@@ -61,22 +61,6 @@ function retiredQualityCommand(
 ): "check" | "acknowledge" | undefined {
   const command = args[0];
   return command === "check" || command === "acknowledge" ? command : undefined;
-}
-
-export function runQualityGuardInternalCheck(
-  args: string[],
-  root = process.cwd(),
-): void {
-  if (args[0] !== "check" || args[1] !== "--committed") {
-    process.stdout.write(
-      "Usage: quality-guard internal check --committed <ref>\n",
-    );
-    process.exitCode = 3;
-    return;
-  }
-  const result = runCheckCommand(args, root);
-  process.stdout.write(`${result.output}\n`);
-  process.exitCode = result.exitCode;
 }
 
 export async function runQualityGuardCli(

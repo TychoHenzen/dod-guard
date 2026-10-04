@@ -34,18 +34,8 @@ function advisoryResult(context) {
   );
 }
 
-function continueGate(context) {
-  const { input, filePath, repoRoot, scan, comparison, relPath, deps } =
-    context;
-  const { unseen, findings } = findingsFor(scan, comparison, relPath);
-  const advisory = advisoryResult({
-    repoRoot,
-    filePath,
-    relPath,
-    unseen,
-    findings,
-  });
-  if (advisory !== 0) return advisory;
+function localFeedback(context) {
+  const { input, filePath, repoRoot, deps } = context;
   try {
     const local = deps.localResult(input, filePath, repoRoot);
     if (local?.unavailable)
@@ -64,6 +54,21 @@ function continueGate(context) {
       `project-linter failed: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
+}
+
+function continueGate(context) {
+  const { input, filePath, repoRoot, scan, comparison, relPath, deps } =
+    context;
+  const { unseen, findings } = findingsFor(scan, comparison, relPath);
+  const advisory = advisoryResult({
+    repoRoot,
+    filePath,
+    relPath,
+    unseen,
+    findings,
+  });
+  if (advisory !== 0) return advisory;
+  return localFeedback({ input, filePath, repoRoot, deps });
 }
 
 export function gate(input, filePath, deps = {}) {
