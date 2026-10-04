@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import process from "node:process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
+import { runRetiredQualityCommand } from "./cli-advisory.js";
 import { runTestQualityCommand } from "./cli-test-quality.js";
 import {
   type HttpServerOptions,
@@ -30,24 +31,6 @@ function runReportCommand(args: string[]): void {
   process.stdout.write(
     `${JSON.stringify(runQualityReport({ root }), null, 2)}\n`,
   );
-}
-
-function runRetiredQualityCommand(command: "check" | "acknowledge"): void {
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        status: "advisory",
-        command,
-        message:
-          "The public CLI no longer provides commit or ledger acceptance.",
-        nextStep:
-          "Use report, test-quality, readability, or the normal MCP server for diagnostic evidence.",
-      },
-      null,
-      2,
-    )}\n`,
-  );
-  process.exitCode = 0;
 }
 
 function runReadabilityCommand(args: string[]): void {

@@ -21438,7 +21438,7 @@ var EMPTY_COMPLETION_RESULT = {
 
 // src/cli-entrypoint.ts
 import { readFileSync as readFileSync3 } from "node:fs";
-import process4 from "node:process";
+import process5 from "node:process";
 
 // ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process2 from "node:process";
@@ -21546,6 +21546,25 @@ var StdioServerTransport = class {
     });
   }
 };
+
+// src/cli-advisory.ts
+import process3 from "node:process";
+function runRetiredQualityCommand(command) {
+  process3.stdout.write(
+    `${JSON.stringify(
+      {
+        status: "advisory",
+        command,
+        message: "The public CLI no longer provides commit or ledger acceptance.",
+        nextStep: "Use report, test-quality, readability, or the normal MCP server for diagnostic evidence."
+      },
+      null,
+      2
+    )}
+`
+  );
+  process3.exitCode = 0;
+}
 
 // src/test-quality/report.ts
 import { existsSync, readFileSync } from "node:fs";
@@ -22376,7 +22395,7 @@ function runTestQualityCommand(args) {
 import {
   createServer
 } from "node:http";
-import process3 from "node:process";
+import process4 from "node:process";
 
 // ../../node_modules/@hono/node-server/dist/constants-BLSFu_RU.mjs
 var X_ALREADY_SENT = "x-hono-already-sent";
@@ -24476,7 +24495,7 @@ function parsePort(value) {
   if (value === void 0 || value.trim().length === 0) return DEFAULT_PORT;
   return requirePort(Number(value));
 }
-function parseHttpCliOptions(args, env = process3.env) {
+function parseHttpCliOptions(args, env = process4.env) {
   return {
     host: envOrOption(args, "--host", "MCP_HOST_BIND_HOST", env) ?? DEFAULT_HOST,
     port: parsePort(envOrOption(args, "--port", "MCP_HOST_PORT", env)),
@@ -24484,17 +24503,17 @@ function parseHttpCliOptions(args, env = process3.env) {
     healthPath: envOrOption(args, "--health-path", "MCP_HOST_HEALTH_PATH", env) ?? DEFAULT_HEALTH_PATH
   };
 }
-function installHttpSignalHandlers(running, processLike = process3) {
+function installHttpSignalHandlers(running, processLike = process4) {
   let shuttingDown = false;
   const shutdown = () => {
     if (shuttingDown) return;
     shuttingDown = true;
     void running.close().catch((error2) => {
-      process3.stderr.write(
+      process4.stderr.write(
         `MCP HTTP shutdown failed: ${error2 instanceof Error ? error2.message : String(error2)}
 `
       );
-      process3.exitCode = 1;
+      process4.exitCode = 1;
     });
   };
   processLike.on("SIGINT", shutdown);
@@ -27359,31 +27378,15 @@ async function runQualityReportAsync(request) {
 // src/cli-entrypoint.ts
 function runReportCommand(args) {
   const root2 = args.find((arg) => arg.startsWith("--root="))?.slice("--root=".length);
-  process4.stdout.write(
+  process5.stdout.write(
     `${JSON.stringify(runQualityReport({ root: root2 }), null, 2)}
 `
   );
 }
-function runRetiredQualityCommand(command) {
-  process4.stdout.write(
-    `${JSON.stringify(
-      {
-        status: "advisory",
-        command,
-        message: "The public CLI no longer provides commit or ledger acceptance.",
-        nextStep: "Use report, test-quality, readability, or the normal MCP server for diagnostic evidence."
-      },
-      null,
-      2
-    )}
-`
-  );
-  process4.exitCode = 0;
-}
 function runReadabilityCommand(args) {
   if (args[1] !== "--stdin" || args.length !== 2) {
-    process4.stdout.write("Usage: quality-guard readability --stdin\n");
-    process4.exitCode = 3;
+    process5.stdout.write("Usage: quality-guard readability --stdin\n");
+    process5.exitCode = 3;
     return;
   }
   let text3;
@@ -27393,15 +27396,15 @@ function runReadabilityCommand(args) {
     const result2 = unavailableReadabilityResult(
       `could not read stdin: ${error2 instanceof Error ? error2.message : String(error2)}`
     );
-    process4.stdout.write(`${JSON.stringify(result2, null, 2)}
+    process5.stdout.write(`${JSON.stringify(result2, null, 2)}
 `);
-    process4.exitCode = 0;
+    process5.exitCode = 0;
     return;
   }
   const result = checkPlaintextReadability(text3);
-  process4.stdout.write(`${JSON.stringify(result, null, 2)}
+  process5.stdout.write(`${JSON.stringify(result, null, 2)}
 `);
-  process4.exitCode = readabilityExitCode(result.status);
+  process5.exitCode = readabilityExitCode(result.status);
 }
 function retiredQualityCommand(args) {
   const command = args[0];
@@ -27416,7 +27419,7 @@ async function runQualityGuardCli(args, dependencies) {
       parseHttpCliOptions(args.slice(1))
     );
     installHttpSignalHandlers(running);
-    process4.stderr.write(
+    process5.stderr.write(
       `quality-guard HTTP ready at http://${running.host}:${running.port}${running.path}
 `
     );
