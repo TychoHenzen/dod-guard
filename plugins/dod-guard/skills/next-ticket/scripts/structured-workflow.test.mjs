@@ -103,6 +103,13 @@ test("owners preserve the structured handoffs without a parallel planner", () =>
   assert.match(submit, /resolve the active dod-guard plugin root/i);
 });
 
+test("next-ticket keeps quality diagnostics report-only", () => {
+  assert.match(nextTicket, /Generate tracked build outputs on the feature branch/);
+  assert.match(nextTicket, /Quality diagnostics are report-only evidence/);
+  assert.match(nextTicket, /do not generate or\s+persist metric state/);
+  assert.doesNotMatch(nextTicket, /ratchet baselines?/i);
+});
+
 test("convergence blocks incomplete work and leaves the small-fix bypass", () => {
   assert.match(
     standard,

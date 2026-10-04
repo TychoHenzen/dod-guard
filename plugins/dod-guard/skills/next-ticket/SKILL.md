@@ -172,8 +172,10 @@ outside the repository or be removed before the commit.
 Use the repository's documented build, test, lint, and formatting commands.
 Run focused checks while implementing, then run every required pre-PR gate.
 
-Generate tracked build outputs and ratchet baselines on the feature branch when
-the repository requires them. Inspect those changes as part of the same review.
+Generate tracked build outputs on the feature branch when the repository
+requires them. Quality diagnostics are report-only evidence; do not generate or
+persist metric state as part of ticket delivery. Inspect generated changes as
+part of the same review.
 Do not rely on CI to write generated files or repair the branch.
 
 Map each acceptance criterion to fresh evidence. For a structured PBI, build

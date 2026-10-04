@@ -91,8 +91,8 @@ is good, and none of it runs in production.
 production symbol that only tests call. The other is a test-support symbol that
 only tests are ever supposed to call. A fixture builder, a fake, or a scenario
 harness has exactly the same reference graph as real dead code. When the rule
-was an error it marked whole test harnesses for deletion. It now warns, and the
-ratchet still stops the count from rising.
+was an error it marked whole test harnesses for deletion. It now reports an
+advisory finding for human review rather than deciding whether a commit passes.
 
 **Declare your harness directories.** Pass `--test-path=<fragment>` once per
 directory that holds test-support code the built-in patterns miss, for example

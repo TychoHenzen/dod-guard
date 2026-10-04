@@ -307,6 +307,15 @@ test("documents bounded routine inspection and full evidence boundaries", async 
   assert.match(skill, /Summary mode is not a\s+substitute for this per-file credential evidence/);
 });
 
+test("documents advisory quality diagnostics separately from correctness gates", async () => {
+  const skill = await readFile(skillPath, "utf8");
+
+  assert.match(skill, /applicable correctness gates/);
+  assert.match(skill, /persisted quality state/);
+  assert.match(skill, /diagnostic output remains visible/);
+  assert.doesNotMatch(skill, /ratchet baselines?/i);
+});
+
 test("documents the public target creation and visibility readback boundary", async () => {
   const [skill, usage, readme] = await Promise.all([
     readFile(skillPath, "utf8"),
