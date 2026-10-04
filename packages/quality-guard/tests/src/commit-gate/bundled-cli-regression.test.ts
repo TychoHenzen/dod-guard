@@ -34,7 +34,10 @@ function assertRetiredCommand(
   const output = JSON.parse(result.output);
   assert.equal(output.status, "advisory");
   assert.equal(output.command, command);
-  assert.match(output.message, /no longer provides commit or ledger acceptance/);
+  assert.match(
+    output.message,
+    /no longer provides commit or ledger acceptance/,
+  );
   assert.match(output.nextStep, /diagnostic evidence/);
 }
 
