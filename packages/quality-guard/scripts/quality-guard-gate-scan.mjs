@@ -55,6 +55,21 @@ export function runScanner(filePath, repoRoot, rules = FILE_RULES) {
   }
 }
 
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export function scanFile({ filePath, repoRoot, scanner, rules = FILE_RULES }) {
+  try {
+    const scan = scanner(filePath, repoRoot, rules);
+    if (!scan || !Array.isArray(scan.violations))
+      return { error: "scanner did not return a readable report." };
+    return { scan };
+  } catch (error) {
+    return { error: `scanner failed: ${errorMessage(error)}` };
+  }
+}
+
 export function readComparison({ baseline, scan, relPath, deps }) {
   if (!existsSync(baseline)) return { ok: true, value: null };
   try {

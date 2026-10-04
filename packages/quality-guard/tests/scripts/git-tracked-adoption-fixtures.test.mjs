@@ -22,6 +22,11 @@ export function writeTarget(root, name, lines) {
   return filePath;
 }
 
+export function testTarget(name) {
+  const root = tempRepo();
+  return { root, filePath: writeTarget(root, name, 10) };
+}
+
 export function writeBaselineFile(root, files, counts) {
   const path = join(root, ".github", "quality", "quality-baseline.json");
   writeFileSync(

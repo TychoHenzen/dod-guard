@@ -45,7 +45,7 @@ test("quality-refactor documents the staged gate and recovery", () => {
   const plan = section("## Plan from ownership", "## Recovery and stops");
   assert.ok(
     plan.includes(
-      "quality-guard check --staged --intent refactor --target .quality/responsibility-map.json --json",
+      "QUALITY_GUARD_INTERNAL_CHECK=1 quality-guard check --staged --intent refactor --target .quality/responsibility-map.json --json",
     ),
   );
 
@@ -87,7 +87,7 @@ test("quality-refactor documents execution and committed verification", () => {
       "full build, tests",
       "final scanner with `--fail-on=error`",
       ".quality/quality-report.json",
-      "quality-guard check --committed HEAD --json",
+      "QUALITY_GUARD_INTERNAL_CHECK=1 quality-guard check --committed HEAD --json",
     ],
     "finish",
   );

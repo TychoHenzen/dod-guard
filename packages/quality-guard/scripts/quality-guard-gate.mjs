@@ -3,93 +3,92 @@ import { localResult } from "./quality-guard-local.mjs";
 import {
   absoluteTail,
   isUnseen,
+  prepareGate,
   report,
-  readSentinelState,
   trackedTail,
-  waive,
+  unavailable,
 } from "./quality-guard-gate-support.mjs";
 import {
   FILE_RULES,
-  baselinePath,
   findRepoRoot,
-  readComparison,
-  relativePath,
   runScanner,
 } from "./quality-guard-gate-scan.mjs";
 
-const DEFAULT_SERVICES = { localResult, readSentinelState, runScanner, waive };
+const DEFAULT_SERVICES = { localResult, report, runScanner, unavailable };
 
-function blockingFor(scan, comparison, relPath) {
+function findingsFor(scan, comparison, relPath) {
   const unseen = isUnseen(comparison, relPath);
-  const blocking = unseen
+  const findings = unseen
     ? absoluteVerdict(scan.violations)
     : ratchetVerdict(comparison, relPath, scan.violations);
-  return { unseen, blocking };
+  return { unseen, findings };
 }
 
-function blockingResult(context) {
-  const { repoRoot, filePath, relPath, unseen, blocking, deps } = context;
-  if (
-    blocking.length === 0 ||
-    deps.waive(repoRoot, deps.readSentinelState(repoRoot), {
-      isNew: unseen,
-      record: { file: relPath, reasons: blocking },
-    })
-  )
-    return 0;
-  return report(
-    `quality-guard blocked this file-local write. ${filePath} did not ` +
-      "pass its applicable check.",
-    blocking,
+function advisoryResult(context) {
+  const { repoRoot, filePath, unseen, findings, emit } = context;
+  if (findings.length === 0) return 0;
+  return emit(
+    `quality-guard advisory findings for ${filePath}. The write continues.`,
+    findings,
     unseen ? absoluteTail(repoRoot) : trackedTail(filePath, repoRoot),
   );
+}
+
+function localFeedback(context) {
+  const { input, filePath, repoRoot, deps } = context;
+  try {
+    const local = deps.localResult(input, filePath, repoRoot);
+    if (local?.unavailable)
+      return deps.unavailable(
+        filePath,
+        `project-linter unavailable: ${local.unavailable}`,
+      );
+    if (local !== 0) return local;
+    process.stderr.write(
+      `quality-guard file-local advisory feedback passed for ${filePath}.\n`,
+    );
+    return 0;
+  } catch (error) {
+    return deps.unavailable(
+      filePath,
+      `project-linter failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 function continueGate(context) {
   const { input, filePath, repoRoot, scan, comparison, relPath, deps } =
     context;
-  const { unseen, blocking } = blockingFor(scan, comparison, relPath);
-  const blocked = blockingResult({
+  const { unseen, findings } = findingsFor(scan, comparison, relPath);
+  const advisory = advisoryResult({
     repoRoot,
     filePath,
     relPath,
     unseen,
-    blocking,
-    deps,
+    findings,
+    emit: deps.report,
   });
-  if (blocked !== 0) return blocked;
-  const local = deps.localResult(input, filePath, repoRoot);
-  if (local !== 0) return local;
-  process.stderr.write(
-    `quality-guard file-local feedback passed for ${filePath}. This is ` +
-      "not commit evidence.\n" +
-      "Run quality-guard check --staged before committing.\n",
-  );
-  return 0;
+  if (advisory !== 0) return advisory;
+  return localFeedback({ input, filePath, repoRoot, deps });
 }
 
 export function gate(input, filePath, deps = {}) {
   const services = { ...DEFAULT_SERVICES, ...deps };
   const repoRoot = findRepoRoot(filePath);
-  if (!repoRoot) return 0;
-  const baseline = baselinePath(repoRoot);
-  const scan = services.runScanner(filePath, repoRoot, FILE_RULES);
-  if (!scan || !Array.isArray(scan.violations)) return 0;
-  const relPath = relativePath(repoRoot, filePath);
-  const comparison = readComparison({
-    baseline,
-    scan,
-    relPath,
-    deps: services,
+  if (!repoRoot)
+    return services.unavailable(filePath, "no Git repository root was found.");
+  const prepared = prepareGate({
+    filePath,
+    repoRoot,
+    services,
+    rules: FILE_RULES,
   });
-  if (!comparison.ok) return 0;
+  if (prepared.error) return services.unavailable(filePath, prepared.error);
   return continueGate({
     input,
     filePath,
     repoRoot,
-    scan,
-    comparison: comparison.value,
-    relPath,
+    ...prepared,
     deps: services,
   });
 }

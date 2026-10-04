@@ -98,10 +98,11 @@ function committedDecision(root) {
   return spawnSync(process.execPath, [BUNDLE, "check", "--committed", "HEAD", "--json"], {
     cwd: root,
     encoding: "utf8",
+    env: { ...process.env, QUALITY_GUARD_INTERNAL_COMMITTED_CHECK: "1" },
   });
 }
 
-test("CI command reports REVIEW_REQUIRED for a committed change without a local hook", () => {
+test("CI command preserves committed decision evidence without a local hook", () => {
   const root = fixture();
   try {
     mkdirSync(join(root, ".github", "quality"), { recursive: true });
@@ -119,13 +120,14 @@ test("CI command reports REVIEW_REQUIRED for a committed change without a local 
     const result = committedDecision(root);
 
     assert.equal(result.status, 2, result.stdout);
-    assert.equal(JSON.parse(result.stdout).verdict, "REVIEW_REQUIRED");
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.verdict, "REVIEW_REQUIRED");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test("CI command reports FAIL for a committed dependency boundary violation without a local hook", () => {
+test("CI command preserves committed dependency decisions without a local hook", () => {
   const root = fixture();
   try {
     writeFileSync(
@@ -146,8 +148,9 @@ test("CI command reports FAIL for a committed dependency boundary violation with
 
     const result = committedDecision(root);
 
-    assert.equal(result.status, 1);
-    assert.equal(JSON.parse(result.stdout).verdict, "FAIL");
+    assert.equal(result.status, 1, result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.verdict, "FAIL");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

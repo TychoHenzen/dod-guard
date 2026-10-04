@@ -1,64 +1,99 @@
-import { join } from "node:path";
 import {
-  deleteSentinel,
-  readSentinel,
-  recordConsumption,
-} from "./sentinel.mjs";
-import { SCANNER } from "./quality-guard-gate-scan.mjs";
+  baselinePath,
+  readComparison,
+  relativePath,
+  scanFile,
+  SCANNER,
+} from "./quality-guard-gate-scan.mjs";
 const MAX_REPORTED = 20;
-
-export function report(header, lines, tail) {
+export function prepareGate({ filePath, repoRoot, services, rules }) {
+  const scanResult = scanFile({
+    filePath,
+    repoRoot,
+    scanner: services.runScanner,
+    rules,
+  });
+  if (scanResult.error) return scanResult;
+  const { scan } = scanResult;
+  const relPath = relativePath(repoRoot, filePath);
+  const comparison = readComparison({
+    baseline: baselinePath(repoRoot),
+    scan,
+    relPath,
+    deps: services,
+  });
+  if (!comparison.ok)
+    return {
+      error: "baseline comparison did not produce a readable result.",
+    };
+  return { scan, comparison: comparison.value, relPath };
+}
+function reportContext(header, lines, tail) {
   const shown = lines.slice(0, MAX_REPORTED);
   const extra = lines.length - shown.length;
-  const body = [
+  return [
     header,
     "",
     ...shown,
     extra > 0 ? `... and ${extra} more.` : "",
     "",
     tail,
-  ];
-  process.stderr.write(`${body.filter(Boolean).join("\n")}\n`);
-  return 2;
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
-
+function emitProtocol(contexts) {
+  if (contexts.length === 0) return;
+  process.stdout.write(
+    `${JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PostToolUse",
+        additionalContext: contexts.join("\n\n"),
+      },
+    })}\n`,
+  );
+}
+export function createHookOutput() {
+  const contexts = [];
+  const report = (header, lines, tail) => {
+    contexts.push(reportContext(header, lines, tail));
+    return 0;
+  };
+  return {
+    report,
+    unavailable: (filePath, detail) => unavailable(filePath, detail, report),
+    flush: () => emitProtocol(contexts),
+  };
+}
+export function report(header, lines, tail) {
+  emitProtocol([reportContext(header, lines, tail)]);
+  return 0;
+}
 export function absoluteTail(repoRoot) {
-  const sentinel = join(repoRoot, ".quality-skip");
   return (
-    "This file-local hard bound applies before a baseline exists or knows " +
-    "this file. Split it up.\n" +
-    `To waive this one write: touch "${sentinel}"\n` +
-    "Before committing, run: quality-guard check --staged"
+    "Next step: inspect the finding and split the change or run the scanner " +
+    `directly for more detail. The write continues for ${repoRoot}.`
   );
 }
-
 export function trackedTail(filePath, repoRoot) {
-  const sentinel = join(repoRoot, ".quality-skip");
   return (
-    "Fix the new violations, or split the change. The baseline records what " +
-    "was\n" +
-    "already there, so only the increase blocks. Run the scanner directly:\n" +
+    "Next step: inspect the baseline comparison and run the scanner directly:\n" +
     `  node "${SCANNER}" "${filePath}" --root="${repoRoot}"\n` +
-    `To waive this tracked regression once: echo '{"rebaseline": true}' > ` +
-    `"${sentinel}"\n` +
-    "Before committing, run: quality-guard check --staged"
+    "The write continues; this output is advisory evidence only."
   );
 }
-
-export function waive(repoRoot, sentinel, context) {
-  if (!sentinel || (!context.isNew && !sentinel.rebaseline)) return false;
-  recordConsumption(repoRoot, {
-    ...context.record,
-    rebaseline: sentinel.rebaseline === true,
-  });
-  deleteSentinel(repoRoot);
-  return true;
+function unavailableTail(filePath) {
+  return (
+    `Next step: run the relevant Quality Guard diagnostic again for "${filePath}" ` +
+    "inside a repository. The write continues."
+  );
 }
-
-export function isUnseen(comparison, relPath) {
-  return comparison === null || comparison.newFiles.includes(relPath);
+export function unavailable(filePath, detail, emit = report) {
+  return emit(
+    `quality-guard advisory unavailable for ${filePath}. The write continues.`,
+    [`[unavailable] ${detail}`],
+    unavailableTail(filePath),
+  );
 }
-
-export function readSentinelState(repoRoot) {
-  return readSentinel(repoRoot);
-}
+export const isUnseen = (comparison, relPath) =>
+  comparison === null || comparison.newFiles.includes(relPath);

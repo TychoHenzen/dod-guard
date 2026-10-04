@@ -11,14 +11,10 @@ import {
 import {
   fakeInput,
   gateDeps,
+  testTarget,
   tempRepo,
   writeTarget,
 } from "./git-tracked-adoption-fixtures.test.mjs";
-
-function testTarget(name) {
-  const root = tempRepo();
-  return { root, filePath: writeTarget(root, name, 10) };
-}
 
 function gateWith(filePath, calls, scan) {
   return gate(
@@ -36,15 +32,6 @@ function gateWith(filePath, calls, scan) {
     }),
   );
 }
-
-test("a scanner failure fails open before the linter runs", () => {
-  const { root, filePath } = testTarget("scanner-failure.js");
-  const calls = [];
-  const code = gateWith(filePath, calls, null);
-  assert.equal(code, 0);
-  assert.deepEqual(calls, ["scanner"]);
-  rmSync(root, { recursive: true, force: true });
-});
 
 test("the file-local rule set excludes project reachability rules", () => {
   assert.match(FILE_RULES, /file-length/);

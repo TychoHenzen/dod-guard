@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -7,7 +7,7 @@ import { rustFindings } from "../../scripts/rust-linter.mjs";
 import { runProjectLinter } from "../../scripts/project-linter.mjs";
 import { tempCrate } from "./project-linter-fixtures.test.mjs";
 
-test("a timeout produces no findings and throws nothing", () => {
+test("a timeout reports unavailable linter evidence", () => {
   const root = tempCrate();
   const filePath = join(root, "src", "main.rs");
   const spawn = () => {
@@ -17,8 +17,9 @@ test("a timeout produces no findings and throws nothing", () => {
   };
 
   assert.doesNotThrow(() => {
-    const findings = rustFindings(filePath, root, spawn);
-    assert.deepEqual(findings, []);
+    const result = rustFindings(filePath, root, spawn);
+    assert.deepEqual(result.findings, []);
+    assert.match(result.unavailable, /ETIMEDOUT/);
   });
   rmSync(root, { recursive: true, force: true });
 });
@@ -35,14 +36,45 @@ test(
       );
     };
 
-    const findings = rustFindings(filePath, root, spawn);
+    const result = rustFindings(filePath, root, spawn);
 
-    assert.deepEqual(findings, []);
-    assert.deepEqual(
-      runProjectLinter(filePath, root),
-      [],
-      "the dispatcher must agree",
-    );
+    assert.deepEqual(result.findings, []);
+    assert.equal(result.unavailable, null);
+    const dispatched = runProjectLinter(filePath, root);
+    assert.deepEqual(dispatched.findings, [], "the dispatcher must agree");
+    assert.equal(dispatched.unavailable, null);
     rmSync(root, { recursive: true, force: true });
   },
 );
+
+test("the dispatcher preserves a configured linter failure as unavailable evidence", () => {
+  const root = mkdtempSync(join(tmpdir(), "qg-eslint-"));
+  const filePath = join(root, "main.ts");
+  writeFileSync(join(root, "eslint.config.js"), "export default []\n");
+  writeFileSync(filePath, "export const value = true;\n");
+
+  const result = runProjectLinter(filePath, root);
+
+  assert.deepEqual(result.findings, []);
+  assert.match(result.unavailable, /eslint executable is not installed/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("ruff uses the per-file timeout budget", () => {
+  const root = mkdtempSync(join(tmpdir(), "qg-ruff-"));
+  const filePath = join(root, "main.py");
+  const calls = [];
+  writeFileSync(join(root, "ruff.toml"), "[lint]\nselect = ['E']\n");
+  writeFileSync(filePath, "value = 1\n");
+
+  const result = runProjectLinter(filePath, root, (command, args, options) => {
+    calls.push({ command, args, options });
+    return { stdout: "[]" };
+  });
+
+  assert.deepEqual(result.findings, []);
+  assert.equal(result.unavailable, null);
+  assert.equal(calls[0].command, "ruff");
+  assert.equal(calls[0].options.timeout, 10_000);
+  rmSync(root, { recursive: true, force: true });
+});

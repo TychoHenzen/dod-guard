@@ -2,8 +2,12 @@ import { readFileSync } from "node:fs";
 import process from "node:process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  runQualityGuardInternalCheck,
+  runRetiredQualityCommand,
+  shouldRunInternalCheck,
+} from "./cli-advisory.js";
 import { runTestQualityCommand } from "./cli-test-quality.js";
-import { runCheckCommand } from "./commit-gate/cli.js";
 import {
   type HttpServerOptions,
   installHttpSignalHandlers,
@@ -33,12 +37,6 @@ function runReportCommand(args: string[]): void {
   );
 }
 
-function runCheckCommandLine(args: string[]): void {
-  const result = runCheckCommand(args);
-  process.stdout.write(`${result.output}\n`);
-  process.exitCode = result.exitCode;
-}
-
 function runReadabilityCommand(args: string[]): void {
   if (args[1] !== "--stdin" || args.length !== 2) {
     process.stdout.write("Usage: quality-guard readability --stdin\n");
@@ -61,14 +59,18 @@ function runReadabilityCommand(args: string[]): void {
   process.exitCode = readabilityExitCode(result.status);
 }
 
-function isCheckCommand(args: string[]): boolean {
-  return args[0] === "check" || args[0] === "acknowledge";
+function retiredQualityCommand(
+  args: string[],
+): "check" | "acknowledge" | undefined {
+  const command = args[0];
+  return command === "check" || command === "acknowledge" ? command : undefined;
 }
 
 export async function runQualityGuardCli(
   args: string[],
   dependencies: QualityGuardCliDependencies,
 ): Promise<void> {
+  if (shouldRunInternalCheck(args)) return runQualityGuardInternalCheck(args);
   if (args[0] === "test-quality") return runTestQualityCommand(args);
   if (args[0] === "report") return runReportCommand(args);
   if (args[0] === "readability") return runReadabilityCommand(args);
@@ -82,7 +84,8 @@ export async function runQualityGuardCli(
     );
     return;
   }
-  if (isCheckCommand(args)) return runCheckCommandLine(args);
+  const retiredCommand = retiredQualityCommand(args);
+  if (retiredCommand) return runRetiredQualityCommand(retiredCommand);
   const server = dependencies.createServer();
   await server.connect(new stdio.StdioServerTransport());
 }

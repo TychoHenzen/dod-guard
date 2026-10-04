@@ -13,10 +13,9 @@ export function registerQualityScan(server: McpServer): void {
     qualityScan,
   );
 }
-
 const QUALITY_SCAN_DESCRIPTION =
-  "Measure structural quality of the given paths and return the raw report. " +
-  "No verdict, no baseline. Use quality_gate to decide pass or fail.";
+  "Measure structural quality of the given paths and return advisory evidence. " +
+  "This report has no commit, merge, or acceptance authority.";
 
 const QUALITY_SCAN_INPUT = {
   paths: PATHS,

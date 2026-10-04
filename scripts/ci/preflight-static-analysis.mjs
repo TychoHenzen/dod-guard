@@ -222,7 +222,13 @@ function runRatchets() {
     "Committed-tree quality decision",
     "packages/quality-guard/dist/bundle.js",
     ["check", "--committed", "HEAD", "--json"],
-    { env: { ...env, QUALITY_GUARD_SKIP_STRUCTURAL: "1" } },
+    {
+      env: {
+        ...env,
+        QUALITY_GUARD_INTERNAL_COMMITTED_CHECK: "1",
+        QUALITY_GUARD_SKIP_STRUCTURAL: "1",
+      },
+    },
   );
   runTestPresenceRatchet(failures);
   runNode("Unacknowledged quality-gate waivers", "packages/quality-guard/scripts/check-skips.mjs", ["."]);

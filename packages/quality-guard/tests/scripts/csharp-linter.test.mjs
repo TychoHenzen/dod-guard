@@ -15,7 +15,7 @@ test("matching FilePath diagnostics surface", () => {
   const filePath = join(root, "Program.cs");
   const spawn = stubSpawn(() => [reportEntry(filePath)]);
 
-  const findings = csharpFindings(filePath, root, spawn);
+  const findings = csharpFindings(filePath, root, spawn).findings;
 
   assert.equal(findings.length, 1);
   assert.deepEqual(findings[0], {
@@ -34,7 +34,7 @@ test("a diagnostic in a report entry for a different file is dropped", () => {
   const otherPath = join(root, "Other.cs");
   const spawn = stubSpawn(() => [reportEntry(otherPath)]);
 
-  const findings = csharpFindings(filePath, root, spawn);
+  const findings = csharpFindings(filePath, root, spawn).findings;
 
   assert.deepEqual(findings, []);
   rmSync(root, { recursive: true, force: true });
@@ -58,7 +58,7 @@ test("a warning-level diagnostic is dropped", () => {
     }),
   ]);
 
-  const findings = csharpFindings(filePath, root, spawn);
+  const findings = csharpFindings(filePath, root, spawn).findings;
 
   assert.deepEqual(findings, []);
   rmSync(root, { recursive: true, force: true });

@@ -4,11 +4,17 @@ import { registerQualityReport, registerQualitySkips } from "./tool-report.js";
 import { registerQualityGate, registerQualityScan } from "./tool-scan.js";
 import { registerQualityTestQuality } from "./tool-test-quality.js";
 
-export function registerQualityGuardTools(server: McpServer): void {
+type QualityToolSurface = "advisory" | "legacy";
+
+export function registerQualityGuardTools(
+  server: McpServer,
+  surface: QualityToolSurface = "advisory",
+): void {
   registerQualityScan(server);
-  registerQualityGate(server);
   registerQualityReport(server);
+  registerQualityTestQuality(server);
+  if (surface !== "legacy") return;
+  registerQualityGate(server);
   registerQualitySkips(server);
   registerQualityCommitGate(server);
-  registerQualityTestQuality(server);
 }

@@ -1,16 +1,15 @@
-/** Run fail-open Clippy checks for one Rust file. */
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import { WHOLE_PROJECT_TIMEOUT_MS as TIMEOUT_MS } from "./linter-timeout.mjs";
+import { linterResult, linterUnavailable } from "./project-linter-support.mjs";
 function run(spawn, args, cwd) {
-  const result = spawn("cargo", args, {
+  return spawn("cargo", args, {
     cwd,
     encoding: "utf8",
     timeout: TIMEOUT_MS,
     shell: false,
   });
-  return result.stdout || "";
 }
 function parseJson(text) {
   try {
@@ -20,12 +19,10 @@ function parseJson(text) {
   }
 }
 
-/** A path, resolved against the crate root, with backslashes normalised. */
 function normalizedPath(repoRoot, candidate) {
   return resolve(repoRoot, candidate).replace(/\\/g, "/");
 }
 
-/** The span clippy marks as primary, or null when the diagnostic has none. */
 function primarySpan(message) {
   return (message.spans || []).find((span) => span.is_primary) || null;
 }
@@ -36,12 +33,6 @@ function isCompilerError(parsed) {
   );
 }
 
-/**
- * One clippy diagnostic from one line of `--message-format=json` output, or
- * null when the line is not an error-level diagnostic on the target file.
- * Most lines in the stream are build artefacts, not diagnostics, and clippy
- * also reports warnings and notes on the same stream.
- */
 function errorDiagnostic(line) {
   const parsed = parseJson(line);
   if (!isCompilerError(parsed)) return null;
@@ -63,7 +54,6 @@ function diagnosticAt(line, target, repoRoot) {
   };
 }
 
-/** Error-level clippy diagnostics whose primary span names the edited file. */
 function clippyFindings(stdout, filePath, repoRoot) {
   const target = normalizedPath(repoRoot, filePath);
   return stdout.split("\n").flatMap((line) => {
@@ -74,21 +64,33 @@ function clippyFindings(stdout, filePath, repoRoot) {
   });
 }
 
-/**
- * Clippy, only when the repository is a cargo crate. Fails open: a timeout,
- * a missing cargo binary, or unparsable output all read the same as clippy
- * finding nothing.
- */
+function formatRustResult(result, findings) {
+  if (result.error)
+    return linterUnavailable(`cargo clippy failed: ${result.error.message}`);
+  const stdout = result.stdout || "";
+  const hasJson = stdout.split("\n").some((line) => {
+    try {
+      JSON.parse(line.trim());
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  if (!hasJson)
+    return linterUnavailable("cargo clippy returned malformed JSON output.");
+  return linterResult(findings(stdout));
+}
+
 export function rustFindings(filePath, repoRoot, spawn = spawnSync) {
-  if (!existsSync(join(repoRoot, "Cargo.toml"))) return [];
+  if (!existsSync(join(repoRoot, "Cargo.toml"))) return linterResult();
   try {
-    const stdout = run(
-      spawn,
-      ["clippy", "--message-format=json", "--no-deps"],
-      repoRoot,
+    return formatRustResult(
+      run(spawn, ["clippy", "--message-format=json", "--no-deps"], repoRoot),
+      (stdout) => clippyFindings(stdout, filePath, repoRoot),
     );
-    return clippyFindings(stdout, filePath, repoRoot);
-  } catch {
-    return [];
+  } catch (error) {
+    return linterUnavailable(
+      `cargo clippy failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }

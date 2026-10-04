@@ -3,27 +3,30 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { WHOLE_PROJECT_TIMEOUT_MS as TIMEOUT_MS } from "./linter-timeout.mjs";
-
+import { linterResult, linterUnavailable } from "./project-linter-support.mjs";
 const REPORT_FILE = "format-report.json";
 const SEVERITY_PREFIX = /^(\w+)\s+\S+:\s*/;
+const FORMAT_ARGS = ["format", "analyzers", "--verify-no-changes", "--report"];
+const DOTNET_OPTIONS = { encoding: "utf8", timeout: TIMEOUT_MS, shell: false };
 
-function hasProjectOrSolution(repoRoot) {
-  return readdirSync(repoRoot).some(
+const hasProjectOrSolution = (repoRoot) =>
+  readdirSync(repoRoot).some(
     (name) => name.endsWith(".sln") || name.endsWith(".csproj"),
   );
-}
 
 function run(spawn, reportDir, cwd) {
-  spawn(
-    "dotnet",
-    ["format", "analyzers", "--verify-no-changes", "--report", reportDir],
-    {
+  try {
+    return spawn("dotnet", [...FORMAT_ARGS, reportDir], {
+      ...DOTNET_OPTIONS,
       cwd,
-      encoding: "utf8",
-      timeout: TIMEOUT_MS,
-      shell: false,
-    },
-  );
+    });
+  } catch (error) {
+    return { error };
+  }
+}
+
+function normalizedPath(repoRoot, candidate) {
+  return resolve(repoRoot, candidate).replace(/\\/g, "/");
 }
 
 function parseJson(text) {
@@ -32,10 +35,6 @@ function parseJson(text) {
   } catch {
     return null;
   }
-}
-
-function normalizedPath(repoRoot, candidate) {
-  return resolve(repoRoot, candidate).replace(/\\/g, "/");
 }
 
 function errorMessage(formatDescription) {
@@ -64,23 +63,36 @@ function findingsInFile(entry, target, repoRoot) {
   return (entry.FileChanges || []).flatMap(findingForChange);
 }
 
-function reportFindings(report, filePath, repoRoot) {
-  if (!Array.isArray(report)) return [];
-  const target = normalizedPath(repoRoot, filePath);
-  return report.flatMap((entry) => findingsInFile(entry, target, repoRoot));
-}
-
-export function csharpFindings(filePath, repoRoot, spawn = spawnSync) {
-  if (!hasProjectOrSolution(repoRoot)) return [];
-  const reportDir = mkdtempSync(join(tmpdir(), "qg-csharp-"));
+function formatCsharpResult(result, reportDir, context) {
+  if (result?.error)
+    return linterUnavailable(`dotnet format failed: ${result.error.message}`);
   try {
-    run(spawn, reportDir, repoRoot);
     const report = parseJson(
       readFileSync(join(reportDir, REPORT_FILE), "utf8"),
     );
-    return reportFindings(report, filePath, repoRoot);
-  } catch {
-    return [];
+    if (!Array.isArray(report))
+      return linterUnavailable("dotnet format returned malformed JSON output.");
+    const target = normalizedPath(context.repoRoot, context.filePath);
+    return linterResult(
+      report.flatMap((entry) =>
+        findingsInFile(entry, target, context.repoRoot),
+      ),
+    );
+  } catch (error) {
+    return linterUnavailable(
+      `dotnet format failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+export function csharpFindings(filePath, repoRoot, spawn = spawnSync) {
+  if (!hasProjectOrSolution(repoRoot)) return linterResult();
+  const reportDir = mkdtempSync(join(tmpdir(), "qg-csharp-"));
+  try {
+    return formatCsharpResult(run(spawn, reportDir, repoRoot), reportDir, {
+      filePath,
+      repoRoot,
+    });
   } finally {
     rmSync(reportDir, { recursive: true, force: true });
   }
