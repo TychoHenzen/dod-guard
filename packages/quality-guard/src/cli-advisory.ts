@@ -1,6 +1,8 @@
 import process from "node:process";
 
-export function runRetiredQualityCommand(command: "check" | "acknowledge"): void {
+export function runRetiredQualityCommand(
+  command: "check" | "acknowledge",
+): void {
   process.stdout.write(
     `${JSON.stringify(
       {
