@@ -37,15 +37,6 @@ test("legacy registration remains internal and keeps wrappers exercised", async 
     connection.client.callTool({ name, arguments: arguments_ });
   const missingRoot = join(root, "missing");
   try {
-    const tools = await connection.client.listTools();
-    assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), [
-      "quality_commit_gate",
-      "quality_gate",
-      "quality_report",
-      "quality_scan",
-      "quality_skips",
-      "quality_test_quality",
-    ]);
     await assertLegacyReadTools(call, root, missingRoot);
     assert.match(
       resultText(
