@@ -3,7 +3,6 @@ import process from "node:process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
 import { runTestQualityCommand } from "./cli-test-quality.js";
-import { runCheckCommand } from "./commit-gate/cli.js";
 import {
   type HttpServerOptions,
   installHttpSignalHandlers,
@@ -33,10 +32,22 @@ function runReportCommand(args: string[]): void {
   );
 }
 
-function runCheckCommandLine(args: string[]): void {
-  const result = runCheckCommand(args);
-  process.stdout.write(`${result.output}\n`);
-  process.exitCode = result.exitCode;
+function runRetiredQualityCommand(command: "check" | "acknowledge"): void {
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        status: "advisory",
+        command,
+        message:
+          "The public CLI no longer provides commit or ledger acceptance.",
+        nextStep:
+          "Use report, test-quality, readability, or the normal MCP server for diagnostic evidence.",
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  process.exitCode = 0;
 }
 
 function runReadabilityCommand(args: string[]): void {
@@ -61,8 +72,11 @@ function runReadabilityCommand(args: string[]): void {
   process.exitCode = readabilityExitCode(result.status);
 }
 
-function isCheckCommand(args: string[]): boolean {
-  return args[0] === "check" || args[0] === "acknowledge";
+function retiredQualityCommand(
+  args: string[],
+): "check" | "acknowledge" | undefined {
+  const command = args[0];
+  return command === "check" || command === "acknowledge" ? command : undefined;
 }
 
 export async function runQualityGuardCli(
@@ -82,7 +96,8 @@ export async function runQualityGuardCli(
     );
     return;
   }
-  if (isCheckCommand(args)) return runCheckCommandLine(args);
+  const retiredCommand = retiredQualityCommand(args);
+  if (retiredCommand) return runRetiredQualityCommand(retiredCommand);
   const server = dependencies.createServer();
   await server.connect(new stdio.StdioServerTransport());
 }
