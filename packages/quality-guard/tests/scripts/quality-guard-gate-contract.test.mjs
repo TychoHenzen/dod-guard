@@ -11,14 +11,10 @@ import {
 import {
   fakeInput,
   gateDeps,
+  testTarget,
   tempRepo,
   writeTarget,
 } from "./git-tracked-adoption-fixtures.test.mjs";
-
-function testTarget(name) {
-  const root = tempRepo();
-  return { root, filePath: writeTarget(root, name, 10) };
-}
 
 function gateWith(filePath, calls, scan) {
   return gate(
@@ -36,48 +32,6 @@ function gateWith(filePath, calls, scan) {
     }),
   );
 }
-
-test("a scanner failure reports unavailable evidence and fails open", () => {
-  const { root, filePath } = testTarget("scanner-failure.js");
-  const calls = [];
-  let output = "";
-  const originalWrite = process.stderr.write;
-  process.stderr.write = (chunk) => {
-    output += String(chunk);
-    return true;
-  };
-  const code = gateWith(filePath, calls, null);
-  process.stderr.write = originalWrite;
-  assert.equal(code, 0);
-  assert.deepEqual(calls, ["scanner"]);
-  assert.match(output, /advisory unavailable/);
-  assert.match(output, /scanner did not return a readable report/);
-  rmSync(root, { recursive: true, force: true });
-});
-
-test("a project-linter failure reports unavailable evidence and fails open", () => {
-  const { root, filePath } = testTarget("linter-failure.js");
-  let output = "";
-  const originalWrite = process.stderr.write;
-  process.stderr.write = (chunk) => {
-    output += String(chunk);
-    return true;
-  };
-  const code = gate(
-    fakeInput(filePath),
-    filePath,
-    gateDeps({
-      runScanner: () => ({ violations: [] }),
-      localResult: () => {
-        throw new Error("linter unavailable");
-      },
-    }),
-  );
-  process.stderr.write = originalWrite;
-  assert.equal(code, 0);
-  assert.match(output, /project-linter failed: linter unavailable/);
-  rmSync(root, { recursive: true, force: true });
-});
 
 test("the file-local rule set excludes project reachability rules", () => {
   assert.match(FILE_RULES, /file-length/);

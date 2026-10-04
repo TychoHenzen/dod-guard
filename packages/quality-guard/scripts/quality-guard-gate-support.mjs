@@ -1,8 +1,3 @@
-import {
-  deleteSentinel,
-  readSentinel,
-  recordConsumption,
-} from "./sentinel.mjs";
 import { SCANNER } from "./quality-guard-gate-scan.mjs";
 const MAX_REPORTED = 20;
 
@@ -36,27 +31,21 @@ export function trackedTail(filePath, repoRoot) {
   );
 }
 
-export function unavailableTail(filePath) {
+function unavailableTail(filePath) {
   return (
     `Next step: run the relevant Quality Guard diagnostic again for "${filePath}" ` +
     "inside a repository. The write continues."
   );
 }
 
-export function waive(repoRoot, sentinel, context) {
-  if (!sentinel || (!context.isNew && !sentinel.rebaseline)) return false;
-  recordConsumption(repoRoot, {
-    ...context.record,
-    rebaseline: sentinel.rebaseline === true,
-  });
-  deleteSentinel(repoRoot);
-  return true;
+export function unavailable(filePath, detail) {
+  return report(
+    `quality-guard advisory unavailable for ${filePath}. The write continues.`,
+    [`[unavailable] ${detail}`],
+    unavailableTail(filePath),
+  );
 }
 
 export function isUnseen(comparison, relPath) {
   return comparison === null || comparison.newFiles.includes(relPath);
-}
-
-export function readSentinelState(repoRoot) {
-  return readSentinel(repoRoot);
 }

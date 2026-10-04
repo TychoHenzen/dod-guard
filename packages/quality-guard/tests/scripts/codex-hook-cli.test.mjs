@@ -72,10 +72,7 @@ test("the launcher skips an external source target but gates repository files", 
     encoding: "utf8",
   });
   assert.equal(repositoryResult.status, 0);
-  assert.match(
-    repositoryResult.stderr,
-    /quality-guard advisory findings for/,
-  );
+  assert.match(repositoryResult.stderr, /quality-guard advisory findings for/);
   assert.match(repositoryResult.stderr, /\[error\]/);
   assert.match(repositoryResult.stderr, /The write continues/);
   rmSync(directory, { recursive: true });

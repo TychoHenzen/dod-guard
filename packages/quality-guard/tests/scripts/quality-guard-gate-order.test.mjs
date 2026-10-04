@@ -50,11 +50,6 @@ test("an advisory regression runs the linter without consuming a waiver", () => 
     }),
   );
   assert.equal(code, 0);
-  assert.deepEqual(calls, [
-    "scanner",
-    "baseline",
-    "comparison",
-    "linter",
-  ]);
+  assert.deepEqual(calls, ["scanner", "baseline", "comparison", "linter"]);
   rmSync(root, { recursive: true, force: true });
 });

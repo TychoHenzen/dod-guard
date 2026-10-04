@@ -13,7 +13,6 @@ export function registerQualityScan(server: McpServer): void {
     qualityScan,
   );
 }
-
 const QUALITY_SCAN_DESCRIPTION =
   "Measure structural quality of the given paths and return advisory evidence. " +
   "This report has no commit, merge, or acceptance authority.";

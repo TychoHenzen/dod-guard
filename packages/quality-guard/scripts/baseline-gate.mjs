@@ -12,10 +12,17 @@ export function absoluteVerdict(violations) {
     .filter((violation) => violation.severity === "error")
     .map(
       (violation) =>
-        `${violation.file}:${violation.line} [${violation.severity}] ` +
-        `${violation.rule || "unknown-rule"}: ${violation.message || "no message"} ` +
-        "(file-local hard bound)",
+        `${findingText(violation, "unknown-file", "unknown-rule")} (file-local hard bound)`,
     );
+}
+
+function findingText(violation, fallbackFile, fallbackRule) {
+  const file = violation.file ?? fallbackFile;
+  const line = violation.line ?? "?";
+  const severity = violation.severity ?? "unknown";
+  const rule = violation.rule ?? fallbackRule;
+  const message = violation.message ?? "no message";
+  return `${file}:${line} [${severity}] ${rule}: ${message}`;
 }
 
 /** Regressions the comparison found in this one file, rendered for a human. */
@@ -27,12 +34,7 @@ export function ratchetVerdict(comparison, relPath, violations) {
       .filter((violation) => violation.rule === item.rule)
       .slice(0, 3);
     const detail = worst
-      .map(
-        (v) =>
-          `  ${v.file || relPath}:${v.line ?? "?"} ` +
-          `[${v.severity || "unknown"}] ${v.rule || item.rule}: ` +
-          `${v.message || "no message"}`,
-      )
+      .map((violation) => `  ${findingText(violation, relPath, item.rule)}`)
       .join("\n");
     blocking.push(
       `${item.rule}: ${item.before} before, ${item.now} now\n${detail}`,

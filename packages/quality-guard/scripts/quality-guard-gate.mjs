@@ -5,15 +5,16 @@ import {
   isUnseen,
   report,
   trackedTail,
-  unavailableTail,
+  unavailable,
 } from "./quality-guard-gate-support.mjs";
 import {
   FILE_RULES,
   baselinePath,
+  compareFile,
   findRepoRoot,
-  readComparison,
   relativePath,
   runScanner,
+  scanFile,
 } from "./quality-guard-gate-scan.mjs";
 
 const DEFAULT_SERVICES = { localResult, runScanner };
@@ -48,73 +49,42 @@ function continueGate(context) {
     findings,
   });
   if (advisory !== 0) return advisory;
-  let local;
   try {
-    local = deps.localResult(input, filePath, repoRoot);
+    const local = deps.localResult(input, filePath, repoRoot);
+    if (local !== 0) return local;
+    process.stderr.write(
+      `quality-guard file-local advisory feedback passed for ${filePath}.\n`,
+    );
+    return 0;
   } catch (error) {
-    return report(
-      `quality-guard advisory unavailable for ${filePath}. The write continues.`,
-      [
-        `[unavailable] project-linter failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      ],
-      unavailableTail(filePath),
+    return unavailable(
+      filePath,
+      `project-linter failed: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
-  if (local !== 0) return local;
-  process.stderr.write(
-    `quality-guard file-local advisory feedback passed for ${filePath}.\n`,
-  );
-  return 0;
 }
 
 export function gate(input, filePath, deps = {}) {
   const services = { ...DEFAULT_SERVICES, ...deps };
   const repoRoot = findRepoRoot(filePath);
-  if (!repoRoot) {
-    return report(
-      `quality-guard advisory unavailable for ${filePath}. The write continues.`,
-      ["[unavailable] no Git repository root was found."],
-      unavailableTail(filePath),
-    );
-  }
+  if (!repoRoot)
+    return unavailable(filePath, "no Git repository root was found.");
   const baseline = baselinePath(repoRoot);
-  let scan;
-  try {
-    scan = services.runScanner(filePath, repoRoot, FILE_RULES);
-  } catch (error) {
-    return report(
-      `quality-guard advisory unavailable for ${filePath}. The write continues.`,
-      [
-        `[unavailable] scanner failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      ],
-      unavailableTail(filePath),
-    );
-  }
-  if (!scan || !Array.isArray(scan.violations)) {
-    return report(
-      `quality-guard advisory unavailable for ${filePath}. The write continues.`,
-      ["[unavailable] scanner did not return a readable report."],
-      unavailableTail(filePath),
-    );
-  }
-  const relPath = relativePath(repoRoot, filePath);
-  const comparison = readComparison({
-    baseline,
-    scan,
-    relPath,
-    deps: services,
+  const scanResult = scanFile({
+    filePath,
+    repoRoot,
+    scanner: services.runScanner,
+    rules: FILE_RULES,
   });
-  if (!comparison.ok) {
-    return report(
-      `quality-guard advisory unavailable for ${filePath}. The write continues.`,
-      ["[unavailable] baseline comparison did not produce a readable result."],
-      unavailableTail(filePath),
+  if (scanResult.error) return unavailable(filePath, scanResult.error);
+  const { scan } = scanResult;
+  const relPath = relativePath(repoRoot, filePath);
+  const comparison = compareFile({ baseline, scan, relPath, services });
+  if (!comparison.ok)
+    return unavailable(
+      filePath,
+      "baseline comparison did not produce a readable result.",
     );
-  }
   return continueGate({
     input,
     filePath,

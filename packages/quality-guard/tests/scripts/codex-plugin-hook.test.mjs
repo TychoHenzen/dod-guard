@@ -84,6 +84,9 @@ test("Windows launcher forwards a Codex hook payload to the Node hook", {
   );
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stderr, /quality-guard file-local advisory feedback passed/);
+  assert.match(
+    result.stderr,
+    /quality-guard file-local advisory feedback passed/,
+  );
   rmSync(directory, { recursive: true });
 });
