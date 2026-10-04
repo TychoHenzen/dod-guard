@@ -75,7 +75,7 @@ test("public checks stay advisory while internal committed checks replay CI", as
     const internalOutput = await committedCheck();
     const internalResult = JSON.parse(internalOutput);
     assert.notEqual(internalResult.status, "advisory");
-    assert.ok(internalResult.verdict);
+    assert.ok(internalResult.verdict && process.exitCode === 0);
   } finally {
     process.chdir(originalCwd);
     process.exitCode = originalExitCode;
