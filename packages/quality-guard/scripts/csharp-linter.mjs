@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { WHOLE_PROJECT_TIMEOUT_MS as TIMEOUT_MS } from "./linter-timeout.mjs";
+import { linterResult, linterUnavailable } from "./project-linter-support.mjs";
 
 const REPORT_FILE = "format-report.json";
 const SEVERITY_PREFIX = /^(\w+)\s+\S+:\s*/;
@@ -14,7 +15,7 @@ function hasProjectOrSolution(repoRoot) {
 }
 
 function run(spawn, reportDir, cwd) {
-  spawn(
+  return spawn(
     "dotnet",
     ["format", "analyzers", "--verify-no-changes", "--report", reportDir],
     {
@@ -71,16 +72,21 @@ function reportFindings(report, filePath, repoRoot) {
 }
 
 export function csharpFindings(filePath, repoRoot, spawn = spawnSync) {
-  if (!hasProjectOrSolution(repoRoot)) return [];
+  if (!hasProjectOrSolution(repoRoot)) return linterResult();
   const reportDir = mkdtempSync(join(tmpdir(), "qg-csharp-"));
   try {
-    run(spawn, reportDir, repoRoot);
-    const report = parseJson(
-      readFileSync(join(reportDir, REPORT_FILE), "utf8"),
+    const result = run(spawn, reportDir, repoRoot);
+    if (result?.error)
+      return linterUnavailable(`dotnet format failed: ${result.error.message}`);
+    const reportText = readFileSync(join(reportDir, REPORT_FILE), "utf8");
+    const report = parseJson(reportText);
+    if (!Array.isArray(report))
+      return linterUnavailable("dotnet format returned malformed JSON output.");
+    return linterResult(reportFindings(report, filePath, repoRoot));
+  } catch (error) {
+    return linterUnavailable(
+      `dotnet format failed: ${error instanceof Error ? error.message : String(error)}`,
     );
-    return reportFindings(report, filePath, repoRoot);
-  } catch {
-    return [];
   } finally {
     rmSync(reportDir, { recursive: true, force: true });
   }

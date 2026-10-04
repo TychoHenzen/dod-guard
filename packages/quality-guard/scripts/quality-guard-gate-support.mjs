@@ -41,7 +41,14 @@ export function report(header, lines, tail) {
     "",
     tail,
   ];
-  process.stderr.write(`${body.filter(Boolean).join("\n")}\n`);
+  process.stdout.write(
+    `${JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PostToolUse",
+        additionalContext: body.filter(Boolean).join("\n"),
+      },
+    })}\n`,
+  );
   return 0;
 }
 

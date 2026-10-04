@@ -4,6 +4,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
 import { runRetiredQualityCommand } from "./cli-advisory.js";
 import { runTestQualityCommand } from "./cli-test-quality.js";
+import { runCheckCommand } from "./commit-gate/cli.js";
 import {
   type HttpServerOptions,
   installHttpSignalHandlers,
@@ -62,10 +63,32 @@ function retiredQualityCommand(
   return command === "check" || command === "acknowledge" ? command : undefined;
 }
 
+export function runQualityGuardInternalCheck(
+  args: string[],
+  root = process.cwd(),
+): void {
+  if (args[0] !== "check" || args[1] !== "--committed") {
+    process.stdout.write(
+      "Usage: quality-guard internal check --committed <ref>\n",
+    );
+    process.exitCode = 3;
+    return;
+  }
+  const result = runCheckCommand(args, root);
+  process.stdout.write(`${result.output}\n`);
+  process.exitCode = result.exitCode;
+}
+
 export async function runQualityGuardCli(
   args: string[],
   dependencies: QualityGuardCliDependencies,
 ): Promise<void> {
+  if (
+    process.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK === "1" &&
+    args[0] === "check" &&
+    args[1] === "--committed"
+  )
+    return runQualityGuardInternalCheck(args);
   if (args[0] === "test-quality") return runTestQualityCommand(args);
   if (args[0] === "report") return runReportCommand(args);
   if (args[0] === "readability") return runReadabilityCommand(args);

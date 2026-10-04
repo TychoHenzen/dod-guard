@@ -3,6 +3,8 @@ import { csharpFindings } from "./csharp-linter.mjs";
 import {
   ESLINT_EXT,
   eslintFindings,
+  linterResult,
+  linterUnavailable,
   ruffFindings,
 } from "./project-linter-support.mjs";
 
@@ -20,11 +22,14 @@ const LINTERS = [
 /** Findings from the repository linter that matches this file. */
 export function runProjectLinter(filePath, repoRoot) {
   const lower = filePath.toLowerCase();
+  const linter = LINTERS.find(([test]) => test(lower))?.[1];
+  if (!linter) return linterResult();
   try {
-    return (
-      LINTERS.find(([test]) => test(lower))?.[1]?.(filePath, repoRoot) ?? []
+    const result = linter(filePath, repoRoot);
+    return Array.isArray(result) ? linterResult(result) : result;
+  } catch (error) {
+    return linterUnavailable(
+      `project linter failed: ${error instanceof Error ? error.message : String(error)}`,
     );
-  } catch {
-    return [];
   }
 }

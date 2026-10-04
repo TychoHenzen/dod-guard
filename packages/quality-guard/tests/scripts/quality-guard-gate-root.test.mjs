@@ -22,17 +22,24 @@ test("repository discovery reaches roots beyond forty directory levels", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-function captureStderr(run) {
-  let output = "";
+function captureOutput(run) {
+  let stdout = "";
+  let stderr = "";
+  const originalStdout = process.stdout.write;
   const originalWrite = process.stderr.write;
+  process.stdout.write = (chunk) => {
+    stdout += String(chunk);
+    return true;
+  };
   process.stderr.write = (chunk) => {
-    output += String(chunk);
+    stderr += String(chunk);
     return true;
   };
   try {
     const value = run();
-    return { output, value };
+    return { output: `${stdout}${stderr}`, stdout, stderr, value };
   } finally {
+    process.stdout.write = originalStdout;
     process.stderr.write = originalWrite;
   }
 }
@@ -40,7 +47,7 @@ function captureStderr(run) {
 test("a scanner failure reports unavailable evidence and fails open", () => {
   const { root, filePath } = testTarget("scanner-failure.js");
   const calls = [];
-  const result = captureStderr(() =>
+  const result = captureOutput(() =>
     gate(
       fakeInput(filePath),
       filePath,
@@ -61,7 +68,7 @@ test("a scanner failure reports unavailable evidence and fails open", () => {
 
 test("a project-linter failure reports unavailable evidence and fails open", () => {
   const { root, filePath } = testTarget("linter-failure.js");
-  const result = captureStderr(() =>
+  const result = captureOutput(() =>
     gate(
       fakeInput(filePath),
       filePath,
@@ -75,5 +82,27 @@ test("a project-linter failure reports unavailable evidence and fails open", () 
   );
   assert.equal(result.value, 0);
   assert.match(result.output, /project-linter failed: linter unavailable/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("an explicit linter-unavailable result reports actionable JSON evidence", () => {
+  const { root, filePath } = testTarget("linter-state.js");
+  const result = captureOutput(() =>
+    gate(
+      fakeInput(filePath),
+      filePath,
+      gateDeps({
+        runScanner: () => ({ violations: [] }),
+        localResult: () => ({ unavailable: "configured linter timed out" }),
+      }),
+    ),
+  );
+  assert.equal(result.value, 0);
+  const protocol = JSON.parse(result.stdout);
+  assert.equal(protocol.hookSpecificOutput.hookEventName, "PostToolUse");
+  assert.match(
+    protocol.hookSpecificOutput.additionalContext,
+    /project-linter unavailable: configured linter timed out/,
+  );
   rmSync(root, { recursive: true, force: true });
 });

@@ -48,6 +48,11 @@ function continueGate(context) {
   if (advisory !== 0) return advisory;
   try {
     const local = deps.localResult(input, filePath, repoRoot);
+    if (local?.unavailable)
+      return unavailable(
+        filePath,
+        `project-linter unavailable: ${local.unavailable}`,
+      );
     if (local !== 0) return local;
     process.stderr.write(
       `quality-guard file-local advisory feedback passed for ${filePath}.\n`,

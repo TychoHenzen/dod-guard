@@ -7,7 +7,7 @@ import { csharpFindings } from "../../scripts/csharp-linter.mjs";
 import { runProjectLinter } from "../../scripts/project-linter.mjs";
 import { tempProject } from "./csharp-linter-fixtures.test.mjs";
 
-test("a timeout produces no findings and throws nothing", () => {
+test("a timeout reports unavailable linter evidence", () => {
   const root = tempProject();
   const filePath = join(root, "Program.cs");
   const spawn = () => ({
@@ -15,25 +15,25 @@ test("a timeout produces no findings and throws nothing", () => {
     signal: "SIGTERM",
     stdout: "",
   });
-  assert.doesNotThrow(() =>
-    assert.deepEqual(csharpFindings(filePath, root, spawn), []),
-  );
+  const result = csharpFindings(filePath, root, spawn);
+  assert.deepEqual(result.findings, []);
+  assert.match(result.unavailable, /ETIMEDOUT/);
   rmSync(root, { recursive: true, force: true });
 });
 
-test("a missing dotnet binary produces no findings and throws nothing", () => {
+test("a missing dotnet binary reports unavailable linter evidence", () => {
   const root = tempProject();
   const filePath = join(root, "Program.cs");
   const spawn = () => {
     throw new Error("ENOENT: dotnet not found");
   };
-  assert.doesNotThrow(() =>
-    assert.deepEqual(csharpFindings(filePath, root, spawn), []),
-  );
+  const result = csharpFindings(filePath, root, spawn);
+  assert.deepEqual(result.findings, []);
+  assert.match(result.unavailable, /dotnet not found/);
   rmSync(root, { recursive: true, force: true });
 });
 
-test("unparsable report output produces no findings", () => {
+test("unparsable report output reports unavailable linter evidence", () => {
   const root = tempProject();
   const filePath = join(root, "Program.cs");
   const spawn = (_command, args) => {
@@ -41,7 +41,9 @@ test("unparsable report output produces no findings", () => {
     writeFileSync(join(reportDir, "format-report.json"), "not json");
     return { status: 0 };
   };
-  assert.deepEqual(csharpFindings(filePath, root, spawn), []);
+  const result = csharpFindings(filePath, root, spawn);
+  assert.deepEqual(result.findings, []);
+  assert.match(result.unavailable, /malformed JSON/);
   rmSync(root, { recursive: true, force: true });
 });
 
@@ -54,7 +56,11 @@ test("a repository with no project or solution file produces nothing", () => {
         "or solution file",
     );
   };
-  assert.deepEqual(csharpFindings(filePath, root, spawn), []);
-  assert.deepEqual(runProjectLinter(filePath, root), []);
+  const result = csharpFindings(filePath, root, spawn);
+  assert.deepEqual(result.findings, []);
+  assert.equal(result.unavailable, null);
+  const dispatched = runProjectLinter(filePath, root);
+  assert.deepEqual(dispatched.findings, []);
+  assert.equal(dispatched.unavailable, null);
   rmSync(root, { recursive: true, force: true });
 });

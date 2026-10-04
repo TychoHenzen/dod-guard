@@ -6,6 +6,7 @@ import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hookTargets } from "./hook-targets.mjs";
 import { gate } from "./quality-guard-gate.mjs";
+import { unavailable } from "./quality-guard-gate-support.mjs";
 
 const CODE_EXT = new Set([
   ".ts",
@@ -52,14 +53,10 @@ async function runTargets(input) {
     try {
       code = await gate(target.input, target.filePath, baselineLib);
     } catch (error) {
-      process.stderr.write(
-        `quality-guard advisory unavailable for ${target.filePath}. ` +
-          "The write continues.\n" +
-          `[unavailable] hook failed: ${
-            error instanceof Error ? error.message : String(error)
-          }\n`,
+      code = unavailable(
+        target.filePath,
+        `hook failed: ${error instanceof Error ? error.message : String(error)}`,
       );
-      code = 0;
     }
     if (code !== 0) return code;
   }

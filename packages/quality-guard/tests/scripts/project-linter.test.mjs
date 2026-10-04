@@ -14,7 +14,7 @@ test("a clippy error whose primary span names the edited file surfaces", () => {
   const filePath = join(root, "src", "main.rs");
   const spawn = stubSpawn(clippyLine());
 
-  const findings = rustFindings(filePath, root, spawn);
+  const findings = rustFindings(filePath, root, spawn).findings;
 
   assert.equal(findings.length, 1);
   assert.deepEqual(findings[0], {
@@ -33,7 +33,7 @@ test("diagnostics for another file are dropped", () => {
     }),
   );
 
-  const findings = rustFindings(filePath, root, spawn);
+  const findings = rustFindings(filePath, root, spawn).findings;
 
   assert.deepEqual(findings, []);
   rmSync(root, { recursive: true, force: true });
@@ -43,7 +43,7 @@ test("a warning-level diagnostic is dropped", () => {
   const filePath = join(root, "src", "main.rs");
   const spawn = stubSpawn(clippyLine({ level: "warning" }));
 
-  const findings = rustFindings(filePath, root, spawn);
+  const findings = rustFindings(filePath, root, spawn).findings;
 
   assert.deepEqual(findings, []);
   rmSync(root, { recursive: true, force: true });

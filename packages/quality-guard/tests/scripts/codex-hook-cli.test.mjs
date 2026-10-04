@@ -57,8 +57,19 @@ test("the launcher skips an external source target but gates repository files", 
     encoding: "utf8",
   });
   assert.equal(externalResult.status, 0);
-  assert.match(externalResult.stderr, /advisory unavailable/);
-  assert.match(externalResult.stderr, /no Git repository root/);
+  const externalProtocol = JSON.parse(externalResult.stdout);
+  assert.equal(
+    externalProtocol.hookSpecificOutput.hookEventName,
+    "PostToolUse",
+  );
+  assert.match(
+    externalProtocol.hookSpecificOutput.additionalContext,
+    /advisory unavailable/,
+  );
+  assert.match(
+    externalProtocol.hookSpecificOutput.additionalContext,
+    /no Git repository root/,
+  );
 
   const repository = resolve(directory, "repository");
   mkdirSync(resolve(repository, ".git"), { recursive: true });
@@ -72,8 +83,22 @@ test("the launcher skips an external source target but gates repository files", 
     encoding: "utf8",
   });
   assert.equal(repositoryResult.status, 0);
-  assert.match(repositoryResult.stderr, /quality-guard advisory findings for/);
-  assert.match(repositoryResult.stderr, /\[error\]/);
-  assert.match(repositoryResult.stderr, /The write continues/);
+  const repositoryProtocol = JSON.parse(repositoryResult.stdout);
+  assert.equal(
+    repositoryProtocol.hookSpecificOutput.hookEventName,
+    "PostToolUse",
+  );
+  assert.match(
+    repositoryProtocol.hookSpecificOutput.additionalContext,
+    /quality-guard advisory findings for/,
+  );
+  assert.match(
+    repositoryProtocol.hookSpecificOutput.additionalContext,
+    /\[error\]/,
+  );
+  assert.match(
+    repositoryProtocol.hookSpecificOutput.additionalContext,
+    /The write continues/,
+  );
   rmSync(directory, { recursive: true });
 });

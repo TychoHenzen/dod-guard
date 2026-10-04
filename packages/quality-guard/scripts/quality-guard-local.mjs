@@ -3,10 +3,9 @@ import { runProjectLinter } from "./project-linter.mjs";
 import { report } from "./quality-guard-gate-support.mjs";
 
 export function localResult(input, filePath, repoRoot) {
-  const findings = scopeToChangedLines(
-    input,
-    runProjectLinter(filePath, repoRoot),
-  );
+  const result = runProjectLinter(filePath, repoRoot);
+  if (result.unavailable) return { unavailable: result.unavailable };
+  const findings = scopeToChangedLines(input, result.findings);
   if (findings.length === 0) return 0;
   return report(
     `quality-guard advisory findings for ${filePath}. The write continues.`,
