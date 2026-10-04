@@ -3,7 +3,6 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 const TIMEOUT_MS = 10_000;
-const RUFF_CONFIGS = ["ruff.toml", ".ruff.toml", "pyproject.toml"];
 
 export function linterResult(findings = []) {
   return { findings, unavailable: null };
@@ -87,7 +86,6 @@ function eslintFinding(message) {
   ];
 }
 
-/** ESLint, only from a binary already installed in the repository. */
 export function eslintFindings(filePath, repoRoot) {
   const result = eslintMessages(filePath, repoRoot);
   if (result.unavailable) return result;
@@ -96,32 +94,6 @@ export function eslintFindings(filePath, repoRoot) {
   return linterResult(
     result.findings.flatMap((file) =>
       (file.messages || []).flatMap(eslintFinding),
-    ),
-  );
-}
-
-function ruffFindingsFor(result) {
-  if (result.unavailable) return result;
-  if (!Array.isArray(result.findings))
-    return linterUnavailable("ruff returned an unexpected result.");
-  return linterResult(
-    result.findings
-      .filter((item) => item.location?.row)
-      .map((item) => ({
-        line: item.location.row,
-        rule: item.code || "ruff",
-        message: item.message,
-      })),
-  );
-}
-
-/** Ruff, only when the repository configures it. */
-export function ruffFindings(filePath, repoRoot) {
-  if (!hasAny(repoRoot, RUFF_CONFIGS)) return linterResult();
-  return ruffFindingsFor(
-    parseCommandResult(
-      "ruff",
-      run("ruff", ["check", "--output-format=json", filePath], repoRoot),
     ),
   );
 }

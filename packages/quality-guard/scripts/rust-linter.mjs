@@ -1,4 +1,3 @@
-/** Run fail-open Clippy checks for one Rust file. */
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
@@ -20,12 +19,10 @@ function parseJson(text) {
   }
 }
 
-/** A path, resolved against the crate root, with backslashes normalised. */
 function normalizedPath(repoRoot, candidate) {
   return resolve(repoRoot, candidate).replace(/\\/g, "/");
 }
 
-/** The span clippy marks as primary, or null when the diagnostic has none. */
 function primarySpan(message) {
   return (message.spans || []).find((span) => span.is_primary) || null;
 }
@@ -36,12 +33,6 @@ function isCompilerError(parsed) {
   );
 }
 
-/**
- * One clippy diagnostic from one line of `--message-format=json` output, or
- * null when the line is not an error-level diagnostic on the target file.
- * Most lines in the stream are build artefacts, not diagnostics, and clippy
- * also reports warnings and notes on the same stream.
- */
 function errorDiagnostic(line) {
   const parsed = parseJson(line);
   if (!isCompilerError(parsed)) return null;
@@ -63,7 +54,6 @@ function diagnosticAt(line, target, repoRoot) {
   };
 }
 
-/** Error-level clippy diagnostics whose primary span names the edited file. */
 function clippyFindings(stdout, filePath, repoRoot) {
   const target = normalizedPath(repoRoot, filePath);
   return stdout.split("\n").flatMap((line) => {
@@ -91,11 +81,6 @@ function formatRustResult(result, findings) {
   return linterResult(findings(stdout));
 }
 
-/**
- * Clippy, only when the repository is a cargo crate. Fails open: a timeout,
- * a missing cargo binary, or unparsable output all read the same as clippy
- * finding nothing.
- */
 export function rustFindings(filePath, repoRoot, spawn = spawnSync) {
   if (!existsSync(join(repoRoot, "Cargo.toml"))) return linterResult();
   try {
