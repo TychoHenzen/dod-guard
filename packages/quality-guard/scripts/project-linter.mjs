@@ -1,8 +1,12 @@
 import { rustFindings } from "./rust-linter.mjs";
 import { csharpFindings } from "./csharp-linter.mjs";
-import { ruffFindings } from "./ruff-linter.mjs";
-import { linterResult, linterUnavailable } from "./project-linter-result.mjs";
-import { ESLINT_EXT, eslintFindings } from "./project-linter-support.mjs";
+import {
+  ESLINT_EXT,
+  eslintFindings,
+  linterResult,
+  linterUnavailable,
+  ruffFindings,
+} from "./project-linter-support.mjs";
 
 /** Extension test paired with its finder, tried in order. */
 const LINTERS = [

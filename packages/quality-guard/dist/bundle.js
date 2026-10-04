@@ -21438,7 +21438,7 @@ var EMPTY_COMPLETION_RESULT = {
 
 // src/cli-entrypoint.ts
 import { readFileSync as readFileSync4 } from "node:fs";
-import process6 from "node:process";
+import process5 from "node:process";
 
 // ../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process2 from "node:process";
@@ -21549,25 +21549,6 @@ var StdioServerTransport = class {
 
 // src/cli-advisory.ts
 import process3 from "node:process";
-function runRetiredQualityCommand(command) {
-  process3.stdout.write(
-    `${JSON.stringify(
-      {
-        status: "advisory",
-        command,
-        message: "The public CLI no longer provides commit or ledger acceptance.",
-        nextStep: "Use report, test-quality, readability, or the normal MCP server for diagnostic evidence."
-      },
-      null,
-      2
-    )}
-`
-  );
-  process3.exitCode = 0;
-}
-
-// src/cli-internal.ts
-import process4 from "node:process";
 
 // src/commit-gate/cli-usage.ts
 function usage(message) {
@@ -25638,19 +25619,35 @@ function runCheckCommand(args, root2 = process.cwd()) {
   return runStagedCommand(args, root2);
 }
 
-// src/cli-internal.ts
-function runQualityGuardInternalCheck(args, root2 = process4.cwd()) {
+// src/cli-advisory.ts
+function runQualityGuardInternalCheck(args, root2 = process3.cwd()) {
   if (args[0] !== "check" || args[1] !== "--committed") {
-    process4.stdout.write(
+    process3.stdout.write(
       "Usage: quality-guard internal check --committed <ref>\n"
     );
-    process4.exitCode = 3;
+    process3.exitCode = 3;
     return;
   }
   const result = runCheckCommand(args, root2);
-  process4.stdout.write(`${result.output}
+  process3.stdout.write(`${result.output}
 `);
-  process4.exitCode = result.exitCode;
+  process3.exitCode = result.exitCode;
+}
+function runRetiredQualityCommand(command) {
+  process3.stdout.write(
+    `${JSON.stringify(
+      {
+        status: "advisory",
+        command,
+        message: "The public CLI no longer provides commit or ledger acceptance.",
+        nextStep: "Use report, test-quality, readability, or the normal MCP server for diagnostic evidence."
+      },
+      null,
+      2
+    )}
+`
+  );
+  process3.exitCode = 0;
 }
 
 // src/test-quality/report.ts
@@ -26482,7 +26479,7 @@ function runTestQualityCommand(args) {
 import {
   createServer
 } from "node:http";
-import process5 from "node:process";
+import process4 from "node:process";
 
 // ../../node_modules/@hono/node-server/dist/constants-BLSFu_RU.mjs
 var X_ALREADY_SENT = "x-hono-already-sent";
@@ -28582,7 +28579,7 @@ function parsePort(value) {
   if (value === void 0 || value.trim().length === 0) return DEFAULT_PORT;
   return requirePort(Number(value));
 }
-function parseHttpCliOptions(args, env = process5.env) {
+function parseHttpCliOptions(args, env = process4.env) {
   return {
     host: envOrOption(args, "--host", "MCP_HOST_BIND_HOST", env) ?? DEFAULT_HOST,
     port: parsePort(envOrOption(args, "--port", "MCP_HOST_PORT", env)),
@@ -28590,17 +28587,17 @@ function parseHttpCliOptions(args, env = process5.env) {
     healthPath: envOrOption(args, "--health-path", "MCP_HOST_HEALTH_PATH", env) ?? DEFAULT_HEALTH_PATH
   };
 }
-function installHttpSignalHandlers(running, processLike = process5) {
+function installHttpSignalHandlers(running, processLike = process4) {
   let shuttingDown = false;
   const shutdown = () => {
     if (shuttingDown) return;
     shuttingDown = true;
     void running.close().catch((error2) => {
-      process5.stderr.write(
+      process4.stderr.write(
         `MCP HTTP shutdown failed: ${error2 instanceof Error ? error2.message : String(error2)}
 `
       );
-      process5.exitCode = 1;
+      process4.exitCode = 1;
     });
   };
   processLike.on("SIGINT", shutdown);
@@ -29201,15 +29198,15 @@ async function runQualityReportAsync(request) {
 // src/cli-entrypoint.ts
 function runReportCommand(args) {
   const root2 = args.find((arg) => arg.startsWith("--root="))?.slice("--root=".length);
-  process6.stdout.write(
+  process5.stdout.write(
     `${JSON.stringify(runQualityReport({ root: root2 }), null, 2)}
 `
   );
 }
 function runReadabilityCommand(args) {
   if (args[1] !== "--stdin" || args.length !== 2) {
-    process6.stdout.write("Usage: quality-guard readability --stdin\n");
-    process6.exitCode = 3;
+    process5.stdout.write("Usage: quality-guard readability --stdin\n");
+    process5.exitCode = 3;
     return;
   }
   let text3;
@@ -29219,22 +29216,22 @@ function runReadabilityCommand(args) {
     const result2 = unavailableReadabilityResult(
       `could not read stdin: ${error2 instanceof Error ? error2.message : String(error2)}`
     );
-    process6.stdout.write(`${JSON.stringify(result2, null, 2)}
+    process5.stdout.write(`${JSON.stringify(result2, null, 2)}
 `);
-    process6.exitCode = 0;
+    process5.exitCode = 0;
     return;
   }
   const result = checkPlaintextReadability(text3);
-  process6.stdout.write(`${JSON.stringify(result, null, 2)}
+  process5.stdout.write(`${JSON.stringify(result, null, 2)}
 `);
-  process6.exitCode = readabilityExitCode(result.status);
+  process5.exitCode = readabilityExitCode(result.status);
 }
 function retiredQualityCommand(args) {
   const command = args[0];
   return command === "check" || command === "acknowledge" ? command : void 0;
 }
 async function runQualityGuardCli(args, dependencies) {
-  if (process6.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK === "1" && args[0] === "check" && args[1] === "--committed")
+  if (process5.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK === "1" && args[0] === "check" && args[1] === "--committed")
     return runQualityGuardInternalCheck(args);
   if (args[0] === "test-quality") return runTestQualityCommand(args);
   if (args[0] === "report") return runReportCommand(args);
@@ -29244,7 +29241,7 @@ async function runQualityGuardCli(args, dependencies) {
       parseHttpCliOptions(args.slice(1))
     );
     installHttpSignalHandlers(running);
-    process6.stderr.write(
+    process5.stderr.write(
       `quality-guard HTTP ready at http://${running.host}:${running.port}${running.path}
 `
     );

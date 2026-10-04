@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import { WHOLE_PROJECT_TIMEOUT_MS as TIMEOUT_MS } from "./linter-timeout.mjs";
-import { formatRustResult } from "./rust-linter-result.mjs";
+import { linterResult, linterUnavailable } from "./project-linter-support.mjs";
 function run(spawn, args, cwd) {
   return spawn("cargo", args, {
     cwd,
@@ -74,23 +74,38 @@ function clippyFindings(stdout, filePath, repoRoot) {
   });
 }
 
+function formatRustResult(result, findings) {
+  if (result.error)
+    return linterUnavailable(`cargo clippy failed: ${result.error.message}`);
+  const stdout = result.stdout || "";
+  const hasJson = stdout.split("\n").some((line) => {
+    try {
+      JSON.parse(line.trim());
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  if (!hasJson)
+    return linterUnavailable("cargo clippy returned malformed JSON output.");
+  return linterResult(findings(stdout));
+}
+
 /**
  * Clippy, only when the repository is a cargo crate. Fails open: a timeout,
  * a missing cargo binary, or unparsable output all read the same as clippy
  * finding nothing.
  */
 export function rustFindings(filePath, repoRoot, spawn = spawnSync) {
-  if (!existsSync(join(repoRoot, "Cargo.toml")))
-    return { findings: [], unavailable: null };
+  if (!existsSync(join(repoRoot, "Cargo.toml"))) return linterResult();
   try {
     return formatRustResult(
       run(spawn, ["clippy", "--message-format=json", "--no-deps"], repoRoot),
       (stdout) => clippyFindings(stdout, filePath, repoRoot),
     );
   } catch (error) {
-    return {
-      findings: [],
-      unavailable: `cargo clippy failed: ${error instanceof Error ? error.message : String(error)}`,
-    };
+    return linterUnavailable(
+      `cargo clippy failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }

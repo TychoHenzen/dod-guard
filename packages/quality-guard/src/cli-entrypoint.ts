@@ -2,8 +2,10 @@ import { readFileSync } from "node:fs";
 import process from "node:process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
-import { runRetiredQualityCommand } from "./cli-advisory.js";
-import { runQualityGuardInternalCheck } from "./cli-internal.js";
+import {
+  runQualityGuardInternalCheck,
+  runRetiredQualityCommand,
+} from "./cli-advisory.js";
 import { runTestQualityCommand } from "./cli-test-quality.js";
 import {
   type HttpServerOptions,

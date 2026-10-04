@@ -1,9 +1,17 @@
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { WHOLE_PROJECT_TIMEOUT_MS as TIMEOUT_MS } from "./linter-timeout.mjs";
-import { formatCsharpResult } from "./csharp-linter-result.mjs";
+import { linterResult, linterUnavailable } from "./project-linter-support.mjs";
+
+const REPORT_FILE = "format-report.json";
+const SEVERITY_PREFIX = /^(\w+)\s+\S+:\s*/;
 
 function hasProjectOrSolution(repoRoot) {
   return readdirSync(repoRoot).some(
@@ -28,9 +36,61 @@ function run(spawn, reportDir, cwd) {
   }
 }
 
+function parseJson(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function normalizedPath(repoRoot, candidate) {
+  return resolve(repoRoot, candidate).replace(/\\/g, "/");
+}
+
+function findingForChange(change) {
+  const match = SEVERITY_PREFIX.exec(change.FormatDescription || "");
+  if (!match || match[1].toLowerCase() !== "error" || !change.LineNumber)
+    return [];
+  return [
+    {
+      line: change.LineNumber,
+      rule: change.DiagnosticId || "dotnet-format",
+      message: change.FormatDescription.slice(match[0].length),
+    },
+  ];
+}
+
+function findingsInFile(entry, target, repoRoot) {
+  if (
+    normalizedPath(repoRoot, entry.FilePath || entry.FileName || "") !== target
+  )
+    return [];
+  return (entry.FileChanges || []).flatMap(findingForChange);
+}
+
+function formatCsharpResult(result, reportDir, filePath, repoRoot) {
+  if (result?.error)
+    return linterUnavailable(`dotnet format failed: ${result.error.message}`);
+  try {
+    const report = parseJson(
+      readFileSync(join(reportDir, REPORT_FILE), "utf8"),
+    );
+    if (!Array.isArray(report))
+      return linterUnavailable("dotnet format returned malformed JSON output.");
+    const target = normalizedPath(repoRoot, filePath);
+    return linterResult(
+      report.flatMap((entry) => findingsInFile(entry, target, repoRoot)),
+    );
+  } catch (error) {
+    return linterUnavailable(
+      `dotnet format failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
 export function csharpFindings(filePath, repoRoot, spawn = spawnSync) {
-  if (!hasProjectOrSolution(repoRoot))
-    return { findings: [], unavailable: null };
+  if (!hasProjectOrSolution(repoRoot)) return linterResult();
   const reportDir = mkdtempSync(join(tmpdir(), "qg-csharp-"));
   try {
     return formatCsharpResult(

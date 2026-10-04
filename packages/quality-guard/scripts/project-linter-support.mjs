@@ -1,9 +1,17 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { linterResult, linterUnavailable } from "./project-linter-result.mjs";
 
 const TIMEOUT_MS = 10_000;
+const RUFF_CONFIGS = ["ruff.toml", ".ruff.toml", "pyproject.toml"];
+
+export function linterResult(findings = []) {
+  return { findings, unavailable: null };
+}
+
+export function linterUnavailable(detail) {
+  return { findings: [], unavailable: detail };
+}
 
 export const ESLINT_EXT = new Set(
   ".ts,.tsx,.mts,.cts,.js,.jsx,.mjs,.cjs".split(","),
@@ -88,6 +96,32 @@ export function eslintFindings(filePath, repoRoot) {
   return linterResult(
     result.findings.flatMap((file) =>
       (file.messages || []).flatMap(eslintFinding),
+    ),
+  );
+}
+
+function ruffFindingsFor(result) {
+  if (result.unavailable) return result;
+  if (!Array.isArray(result.findings))
+    return linterUnavailable("ruff returned an unexpected result.");
+  return linterResult(
+    result.findings
+      .filter((item) => item.location?.row)
+      .map((item) => ({
+        line: item.location.row,
+        rule: item.code || "ruff",
+        message: item.message,
+      })),
+  );
+}
+
+/** Ruff, only when the repository configures it. */
+export function ruffFindings(filePath, repoRoot) {
+  if (!hasAny(repoRoot, RUFF_CONFIGS)) return linterResult();
+  return ruffFindingsFor(
+    parseCommandResult(
+      "ruff",
+      run("ruff", ["check", "--output-format=json", filePath], repoRoot),
     ),
   );
 }
