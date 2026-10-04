@@ -123,6 +123,7 @@ function pull(overrides = {}) {
 function workflowRun(headSha, overrides = {}) {
   return {
     conclusion: "success",
+    event: "push",
     [headShaField]: headSha,
     name: "CI",
     path: ".github/workflows/ci.yml@refs/heads/codex/24-complete-pr",
@@ -842,6 +843,29 @@ test(
   },
 );
 
+test("accepts one exact-head ci.yml run for each trigger event", async () => {
+  const client = new FixtureClient({
+    workflowRuns: [[
+      workflowRun("head-1", { event: "push" }),
+      workflowRun("head-1", { event: "pull_request" }),
+    ]],
+    pulls: [
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" }),
+    ],
+  });
+
+  const result = await completePullRequest(client, immediateOptions);
+
+  assert.equal(result.acceptedHead, "head-1");
+  assert.equal(result.mergeCommitSha, "merge-1");
+  assert.equal(result.branch, "deleted");
+  assert.ok(client.calls.some(([name]) => name === "getCiWorkflowRuns"));
+});
+
 test("recovers an already-merged pull request through guarded remote and local cleanup", async () => {
   const localGit = createFixtureLocalGit();
   const client = new FixtureClient({
@@ -1296,7 +1320,10 @@ test(
   const cases = [
     {
       code: "duplicate_ci_workflow_run",
-      runs: [workflowRun("head-1"), workflowRun("head-1")],
+      runs: [
+        workflowRun("head-1", { event: "push" }),
+        workflowRun("head-1", { event: "push" }),
+      ],
     },
     { code: "stale_ci_workflow_run", runs: [workflowRun("old-head")] },
     {

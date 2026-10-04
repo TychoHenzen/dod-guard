@@ -244,17 +244,31 @@ function requireCiWorkflowRun(runs, headSha) {
       `GitHub returned an invalid run list for ${headSha}.`,
     );
   }
-  if (runs.length > 1) {
-    stop(
-      "duplicate_ci_workflow_run",
-      `Found multiple ci.yml runs for ${headSha}.`,
-    );
-  }
   if (runs.length === 0) {
     return null;
   }
 
-  return requireExactCiWorkflowRun(runs[0], headSha);
+  const runsByEvent = new Map();
+  for (const run of runs) {
+    const hasEvent =
+      run && typeof run === "object" &&
+      typeof run.event === "string" && run.event.length > 0;
+    if (!hasEvent) {
+      stop(
+        "unknown_ci_workflow_state",
+        `GitHub returned an invalid ci.yml run event for ${headSha}.`,
+      );
+    }
+    if (runsByEvent.has(run.event)) {
+      stop(
+        "duplicate_ci_workflow_run",
+        `Found multiple ci.yml runs for ${headSha} and event ${run.event}.`,
+      );
+    }
+    runsByEvent.set(run.event, requireExactCiWorkflowRun(run, headSha));
+  }
+
+  return [...runsByEvent.values()];
 }
 
 function requireExactCiWorkflowRun(run, headSha) {
@@ -325,11 +339,25 @@ function ciWorkflowStateLabel(check) {
 }
 
 async function readCiWorkflowState(client, headSha) {
-  const run = requireCiWorkflowRun(
+  const runs = requireCiWorkflowRun(
     await client.getCiWorkflowRuns(headSha),
     headSha,
   );
-  return run ? normalizeCiWorkflowState(run, headSha) : null;
+  if (!runs) {
+    return null;
+  }
+
+  let sawPendingRun = false;
+  for (const run of runs) {
+    const state = normalizeCiWorkflowState(run, headSha);
+    if (state === "pending") {
+      sawPendingRun = true;
+    }
+  }
+  if (sawPendingRun) {
+    return "pending";
+  }
+  return "pass";
 }
 
 function requireTrustedCiHead(repository, pullRequest) {
