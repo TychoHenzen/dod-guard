@@ -1,12 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createQualityGuardServer } from "../../src/index.js";
-import { registerQualityGuardTools } from "../../src/server-tools.js";
 
 function git(root: string, args: string[]): void {
   execFileSync("git", args, { cwd: root, stdio: "ignore" });
@@ -17,13 +16,7 @@ export function stagedFixture(): string {
   git(root, ["init"]);
   git(root, ["config", "user.email", "test@example.invalid"]);
   git(root, ["config", "user.name", "Test"]);
-  mkdirSync(path.join(root, ".github", "quality"), { recursive: true });
   writeFileSync(path.join(root, "source.ts"), "export class Existing {}\n");
-  writeFileSync(
-    path.join(root, ".github", "quality", "quality-baseline.json"),
-    '{"version":2,"profile":"default","total":0,"counts":{},' +
-      '"files":["source.ts"]}\n',
-  );
   git(root, ["add", "."]);
   git(root, ["commit", "-m", "base"]);
   writeFileSync(
@@ -39,15 +32,6 @@ export async function connect(): Promise<{
   close: () => Promise<void>;
 }> {
   return connectServer(createQualityGuardServer());
-}
-
-export async function connectLegacy(): Promise<{
-  client: Client;
-  close: () => Promise<void>;
-}> {
-  const server = new McpServer({ name: "quality-guard", version: "1.0.0" });
-  registerQualityGuardTools(server, "legacy");
-  return connectServer(server);
 }
 
 async function connectServer(server: McpServer): Promise<{

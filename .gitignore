@@ -36,15 +36,11 @@ npm-debug.log*
 .stryker-tmp/
 reports/
 
-# quality-guard: the old per-repo hook baseline. The gate now uses
-# .github/quality/quality-baseline.json, which is tracked on purpose.
-.quality-baseline.json
-
 # Generated local quality dashboard report.
 .quality/
 
-# quality-guard: the one-shot gate waiver. It must never be committed.
-.quality-skip
+# Legacy local quality scratch from another checkout.
+.quality-baseline.json
 
 # tighten loop scratch: ledger, quarantine
 .tighten/

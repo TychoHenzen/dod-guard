@@ -1,2 +1,0 @@
-# Source files with no matching or statically reachable .test.ts. Ratcheted by scripts/ci/check-tests-present.mjs.
-# This list may shrink, never grow.

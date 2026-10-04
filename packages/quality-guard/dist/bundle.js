@@ -3262,8 +3262,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path12) {
-      let input = path12;
+    function removeDotSegments(path11) {
+      let input = path11;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -3672,8 +3672,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path12 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path12 && path12 !== "/" ? path12 : void 0;
+        const path11 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path11 && path11 !== "/" ? path11 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -7303,8 +7303,8 @@ var require_content_type = __commonJS({
 });
 
 // src/index.ts
-import { readFileSync as readFileSync5, realpathSync } from "node:fs";
-import * as path11 from "node:path";
+import { readFileSync as readFileSync4, realpathSync } from "node:fs";
+import * as path10 from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // ../../node_modules/zod/v3/external.js
@@ -7785,8 +7785,8 @@ function getErrorMap() {
 
 // ../../node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path12, errorMaps, issueData } = params;
-  const fullPath = [...path12, ...issueData.path || []];
+  const { data, path: path11, errorMaps, issueData } = params;
+  const fullPath = [...path11, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7902,11 +7902,11 @@ var errorUtil;
 
 // ../../node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path12, key2) {
+  constructor(parent, value, path11, key2) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path12;
+    this._path = path11;
     this._key = key2;
   }
   get path() {
@@ -11543,10 +11543,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path12) {
-  if (!path12)
+function getElementAtPath(obj, path11) {
+  if (!path11)
     return obj;
-  return path12.reduce((acc, key2) => acc?.[key2], obj);
+  return path11.reduce((acc, key2) => acc?.[key2], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -11866,11 +11866,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path12, issues) {
+function prefixIssues(path11, issues) {
   return issues.map((iss) => {
     var _a;
     (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path12);
+    iss.path.unshift(path11);
     return iss;
   });
 }
@@ -15281,11 +15281,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path12) {
-  if (path12.length === 0) {
+function getDotPath(path11) {
+  if (path11.length === 0) {
     return "object root";
   }
-  return path12.reduce((acc, seg, index) => {
+  return path11.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -21788,12 +21788,12 @@ function failureSource(evidence, failure) {
 function clusterFinding(key2, failures) {
   const testIds = [...new Set(failures.map((failure) => failure.testId))];
   if (testIds.length < 2) return [];
-  const [path12, signature, inputClass] = key2.split("|");
+  const [path11, signature, inputClass] = key2.split("|");
   return [
     makeFinding({
       heuristic: "T7",
       rule: "failure-pattern",
-      path: path12 ?? ".",
+      path: path11 ?? ".",
       message: `${testIds.length} failures share ${signature} for ${inputClass}`,
       remediation: "Inspect the shared input and affected path before fixing tests one by one.",
       evidence: { testIds, signature, inputClass }
@@ -24386,7 +24386,7 @@ async function closeServer(server) {
 async function startMcpHttpServer(options) {
   const host = requireLoopbackHost(options.host ?? DEFAULT_HOST);
   const port = requirePort(options.port ?? DEFAULT_PORT);
-  const path12 = requirePath(options.path ?? DEFAULT_PATH, "HTTP MCP path");
+  const path11 = requirePath(options.path ?? DEFAULT_PATH, "HTTP MCP path");
   const healthPath = requirePath(
     options.healthPath ?? DEFAULT_HEALTH_PATH,
     "HTTP health path"
@@ -24406,11 +24406,11 @@ async function startMcpHttpServer(options) {
       json2(response, 200, {
         service: options.serviceName,
         status: "ready",
-        endpoint: path12
+        endpoint: path11
       });
       return;
     }
-    if (requestedPath !== path12) {
+    if (requestedPath !== path11) {
       json2(response, 404, { error: "not_found", service: options.serviceName });
       return;
     }
@@ -24470,7 +24470,7 @@ async function startMcpHttpServer(options) {
   return {
     host,
     port: addressPort(server),
-    path: path12,
+    path: path11,
     healthPath,
     close: () => {
       closePromise ??= (async () => {
@@ -25508,19 +25508,19 @@ function analyzeCurrentDependencies(files, config2) {
 }
 
 // src/commit-gate/design-smells/findings.ts
-function groupsFor(path12, config2) {
+function groupsFor(path11, config2) {
   return config2.lowLevelPathGroups.filter(
     (group) => config2.pathGroups[group]?.some(
-      (pattern) => matchesArchitecturePath(path12, pattern)
+      (pattern) => matchesArchitecturePath(path11, pattern)
     )
   );
 }
 function configurationFindings(file, config2) {
-  const path12 = normalizeArchitecturePath(file.path);
-  return groupsFor(path12, config2).flatMap(
+  const path11 = normalizeArchitecturePath(file.path);
+  return groupsFor(path11, config2).flatMap(
     (group) => (file.configurationDefaults ?? []).map((defaultValue) => ({
       kind: "configurable-data",
-      path: path12,
+      path: path11,
       group,
       ...defaultValue
     }))
@@ -25531,12 +25531,12 @@ function markerMatch(value, markers) {
   return markers.some((marker) => normalized.includes(marker.toLowerCase()));
 }
 function navigationFindings(file, config2) {
-  const path12 = normalizeArchitecturePath(file.path);
+  const path11 = normalizeArchitecturePath(file.path);
   return (file.transitiveNavigation ?? []).filter(
     (chain) => !(markerMatch(chain.root, config2.fluentMarkers) || chain.hops.some((hop) => markerMatch(hop, config2.fluentMarkers)))
   ).map((chain) => ({
     kind: "transitive-navigation",
-    path: path12,
+    path: path11,
     ...chain
   }));
 }
@@ -25552,8 +25552,8 @@ function findingKey(finding) {
 
 // src/commit-gate/design-smells/design-smells.ts
 function isAffectedProductionFile(file, affected, config2) {
-  const path12 = normalizeArchitecturePath(file.path);
-  return affected.has(path12) && isProductionArchitecturePath(path12, config2);
+  const path11 = normalizeArchitecturePath(file.path);
+  return affected.has(path11) && isProductionArchitecturePath(path11, config2);
 }
 function analyzeDesignSmells(input) {
   const affected = new Set(input.affectedPaths.map(normalizeArchitecturePath));
@@ -25648,7 +25648,7 @@ function publicFindings(input) {
 // src/commit-gate/encapsulation.ts
 function forwardingKeys(type) {
   return new Set(
-    type.forwardingPaths.map((path12) => `${path12.member}\0${path12.target}`)
+    type.forwardingPaths.map((path11) => `${path11.member}\0${path11.target}`)
   );
 }
 function forwardingFindings(type, previous, filePath) {
@@ -27008,10 +27008,10 @@ function referencesFor(source, types, imports) {
     )
   );
 }
-function emptyFacts(path12) {
+function emptyFacts(path11) {
   return {
     facts: {
-      path: path12,
+      path: path11,
       language: null,
       imports: [],
       references: [],
@@ -27199,10 +27199,7 @@ function buildArgs(request) {
   const optional2 = [
     ["--root", request.root],
     ["--profile", request.profile],
-    ["--rules", request.rules?.length ? request.rules.join(",") : void 0],
-    ["--baseline", request.baseline],
-    ["--write-baseline", request.writeBaseline],
-    ["--fail-on", request.failOn]
+    ["--rules", request.rules?.length ? request.rules.join(",") : void 0]
   ];
   return [
     ...request.paths,
@@ -27377,52 +27374,6 @@ function requireRepositoryRoot(root2) {
   return resolved;
 }
 
-// src/skips.ts
-import { existsSync as existsSync3, readFileSync as readFileSync4 } from "node:fs";
-import * as path10 from "node:path";
-var SKIP_LOG = path10.join(".github", "quality", "skip-log.json");
-function readSkipLog(root2) {
-  const target = path10.join(root2, SKIP_LOG);
-  if (!existsSync3(target)) return [];
-  try {
-    const parsed = JSON.parse(readFileSync4(target, "utf8"));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-function formatSkips(records) {
-  const open = records.filter((record3) => record3.acknowledged !== true);
-  if (open.length === 0) return "No unacknowledged quality-gate waivers.";
-  return [
-    `${open.length} unacknowledged waiver(s):`,
-    "",
-    ...open.flatMap(formatRecord),
-    "",
-    `Acknowledge by setting "acknowledged": true in ${SKIP_LOG}.`
-  ].join("\n");
-}
-function formatRecord(record3) {
-  return [
-    `${record3.file}  [${recordKind(record3)}]  ${recordTime(record3)}`,
-    ...recordReasons(record3)
-  ];
-}
-function recordKind(record3) {
-  if (record3.rebaseline) return "rebaseline";
-  return "new-file ceiling";
-}
-function recordTime(record3) {
-  if (record3.at) return record3.at;
-  return "unknown time";
-}
-function recordReasons(record3) {
-  if (!record3.reasons) return [];
-  return record3.reasons.flatMap(
-    (reason) => reason.split("\n").map((line) => `    ${line}`)
-  );
-}
-
 // src/tool-response.ts
 function text2(value) {
   return { content: [{ type: "text", text: value }] };
@@ -27477,20 +27428,6 @@ function registerQualityReport(server) {
     }
   );
 }
-function registerQualitySkips(server) {
-  server.tool(
-    "quality_skips",
-    "List .quality-skip waivers that were consumed but never acknowledged. Each one is a place where the quality gate was bypassed on purpose. The pre-commit hook refuses to commit while any remain open.",
-    { root: external_exports.string().describe("Repository root") },
-    async ({ root: root2 }) => {
-      try {
-        return text2(formatSkips(readSkipLog(requireRepositoryRoot(root2))));
-      } catch (err) {
-        return toolError(err);
-      }
-    }
-  );
-}
 
 // src/tool-scan.ts
 function registerQualityScan(server) {
@@ -27520,44 +27457,6 @@ async function qualityScan(input) {
   } catch (err) {
     return toolError(err);
   }
-}
-var QUALITY_GATE_INPUT = {
-  paths: PATHS,
-  baseline: external_exports.string().describe(
-    "Path to the baseline, normally .github/quality/quality-baseline.json"
-  ),
-  root: ROOT,
-  rules: external_exports.array(external_exports.string()).optional(),
-  excludes: EXCLUDES,
-  testPaths: TEST_PATHS,
-  failOn: external_exports.enum(["none", "error", "regression", "any"]).optional().describe("Default regression")
-};
-async function qualityGate(input) {
-  try {
-    const result = await runGateScan(input);
-    const verdict = result.exitCode === 0 ? "PASS" : "FAIL";
-    const report = JSON.stringify(result.report, null, 2);
-    return text2(`${verdict} (exit ${result.exitCode})
-
-${report}`);
-  } catch (err) {
-    return toolError(err);
-  }
-}
-async function runGateScan(input) {
-  return runScanAsync({
-    ...input,
-    root: requireRepositoryRoot(input.root),
-    failOn: input.failOn ?? "regression"
-  });
-}
-function registerQualityGate(server) {
-  server.tool(
-    "quality_gate",
-    "Compare the given paths against a recorded baseline and report regressions. Existing debt is allowed, making it worse is not. A file the baseline has never seen is adopted rather than failed.",
-    QUALITY_GATE_INPUT,
-    qualityGate
-  );
 }
 
 // src/tool-test-quality.ts
@@ -27590,19 +27489,16 @@ async function qualityTestQuality(input) {
 }
 
 // src/server-tools.ts
-function registerQualityGuardTools(server, surface = "advisory") {
+function registerQualityGuardTools(server) {
   registerQualityScan(server);
   registerQualityReport(server);
   registerQualityTestQuality(server);
-  if (surface !== "legacy") return;
-  registerQualityGate(server);
-  registerQualitySkips(server);
 }
 
 // src/index.ts
-var _dirname = path11.dirname(fileURLToPath2(import.meta.url));
+var _dirname = path10.dirname(fileURLToPath2(import.meta.url));
 var _pkg = JSON.parse(
-  readFileSync5(path11.join(_dirname, "..", "package.json"), "utf-8")
+  readFileSync4(path10.join(_dirname, "..", "package.json"), "utf-8")
 );
 function createQualityGuardServer() {
   const server = new McpServer({

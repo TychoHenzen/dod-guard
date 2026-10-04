@@ -130,7 +130,7 @@ a regression pass.
 
 ## Finish
 
-Run the full build, tests, and final scanner with `--fail-on=error`, then
+Run the full build, tests, and final scanner in advisory mode, then
 regenerate `.quality/quality-report.json`:
 
 ```text

@@ -49,14 +49,12 @@ test("buildArgs repeats excludes and test paths", () => {
   ]);
 });
 
-test("buildArgs passes the gate options through", () => {
+test("buildArgs passes advisory scan options through", () => {
   const args = captureArgs({
     paths: ["packages"],
     root: "/repo",
     profile: "strict",
     rules: ["complexity", "file-length"],
-    baseline: ".github/quality/quality-baseline.json",
-    failOn: "regression",
   }).slice(1);
   assert.deepEqual(args, [
     "packages",
@@ -64,8 +62,6 @@ test("buildArgs passes the gate options through", () => {
     "--root=/repo",
     "--profile=strict",
     "--rules=complexity,file-length",
-    "--baseline=.github/quality/quality-baseline.json",
-    "--fail-on=regression",
   ]);
 });
 

@@ -14,7 +14,7 @@ import { collectTarget } from "./walk-target.mjs";
  * This is the binary guard. */
 const BINARY_MARKER = /[\x00-\x08\x0e-\x1f]/;
 
-/** Normalize to forward slashes so output and baselines are OS-independent. */
+/** Normalize to forward slashes so output is OS-independent. */
 function toPosix(p) {
   return p.split(sep).join("/");
 }

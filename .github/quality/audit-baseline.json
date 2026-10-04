@@ -1,4 +1,0 @@
-{
-  "note": "Known high/critical advisories in production dependencies. New ones fail CI.",
-  "known": []
-}

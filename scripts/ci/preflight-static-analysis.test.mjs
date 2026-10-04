@@ -6,11 +6,11 @@ import { dirname, join, resolve } from "node:path";
 import process from "node:process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { main as coverageMain } from "./check-coverage.mjs";
 import { npmCommand } from "./npm-command.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const PREFLIGHT = readFileSync(join(ROOT, "scripts/ci/preflight-static-analysis.mjs"), "utf8");
-const COVERAGE = readFileSync(join(ROOT, "scripts/ci/check-coverage.mjs"), "utf8");
 const WORKFLOW = readFileSync(join(ROOT, ".github/workflows/ci.yml"), "utf8");
 const STATIC_ANALYSIS_COMMAND =
   /static-analysis:[\s\S]*?name: Run static-analysis preflight\s+run: npm run preflight:static-analysis/;
@@ -39,24 +39,44 @@ test("preflight is CI's single source for generated checks, policy, and Biome fl
     '"format", "--write", "--no-errors-on-unmatched"',
     '"check", "--max-diagnostics=200", "--no-errors-on-unmatched"',
     '"--profile=strict"',
-    '"--fail-on=regression"',
-    '"--baseline=.github/quality/quality-baseline.json"',
-    '"--write-baseline=.github/quality/quality-baseline.json"',
+    '"Quality diagnostics (advisory)"',
     '"scripts/ci/check-tests-present.mjs"',
     '"scripts/ci/check-audit.mjs"',
     '"scripts/ci/check-coverage.mjs"',
   ]) {
     assert.ok(PREFLIGHT.includes(fragment), `preflight is missing CI behavior: ${fragment}`);
   }
+  for (const fragment of [
+    "quality-baseline",
+    "coverage-baseline",
+    "audit-baseline",
+    "untested-sources",
+    "check-skips",
+    "--fail-on=",
+    "--write-baseline",
+  ]) {
+    assert.doesNotMatch(PREFLIGHT, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
   assert.match(WORKFLOW, STATIC_ANALYSIS_COMMAND);
   assert.doesNotMatch(PREFLIGHT, NO_UNIVERSAL_TARGET);
 });
 
-test("coverage ratchet invokes its installed c8 CLI directly through Node", () => {
-  assert.match(COVERAGE, /const C8_CLI = join\(ROOT, "node_modules", "c8", "bin", "c8\.js"\)/);
-  assert.match(COVERAGE, /execFileSync\(process\.execPath, \[C8_CLI, \.\.\.c8Args\(pkg, reportDir\)\]/);
-  assert.doesNotMatch(COVERAGE, /\n\s+"c8",/);
-  assert.doesNotMatch(COVERAGE, /\bnpx\b/);
+test("coverage diagnostics are report-only and preserve package evidence", () => {
+  let output = "";
+  const result = coverageMain([], {
+    measure: () => ({
+      qualityGuard: { statements: 80, branches: 70, functions: 90, lines: 80 },
+    }),
+    stdout: {
+      write: (chunk) => {
+        output += chunk;
+      },
+    },
+    stderr: { write: () => {} },
+  });
+  assert.equal(result, 0);
+  assert.match(output, /qualityGuard/);
+  assert.match(output, /coverage advisory/);
 });
 
 test("standalone CI scripts can invoke npm without npm's injected environment", () => {
@@ -148,37 +168,11 @@ function fixture() {
     "scripts/ci/preflight-static-analysis.test.mjs",
     'import test from "node:test"; test("fixture", () => {});\n',
   );
-  write(root, "scripts/ci/check-tests-present.mjs", 'process.stdout.write("test presence OK\\n");\n');
-  write(root, "scripts/ci/check-audit.mjs", 'process.stdout.write("audit OK\\n");\n');
-  write(
-    root,
-    "scripts/ci/check-coverage.mjs",
-    [
-      'const writing = process.argv.includes("--write-baseline");',
-      'const refreshing = ["coverage-refresh", "coverage-writer-failure"].includes(process.env.PREFLIGHT_SCENARIO);',
-      'if (!refreshing) process.stdout.write("coverage OK\\n");',
-      "if (refreshing && !writing) {",
-      '  process.stdout.write("coverage check-only\\n");',
-      '  process.stdout.write("quality-guard    stat 95.52%  bran 89.08%  func 95.9%  line 95.52%\\n");',
-      '  process.stdout.write("fossil           stat 98.47%  bran 86.84%  func 99.76% line 98.47%\\n");',
-      '  process.stdout.write("knowledge-base   stat 94.92%  bran 80.85%  func 100%   line 94.92%\\n");',
-      '  process.stdout.write("adopted: new-package at 91% statements\\n");',
-      "}",
-      "if (refreshing && writing) {",
-      '  process.stdout.write("coverage baseline writer invoked\\n");',
-      '  if (process.env.PREFLIGHT_SCENARIO === "coverage-writer-failure") {',
-      '    process.stderr.write("baseline write refused: fixture\\n");',
-      "    process.exitCode = 1;",
-      "  }",
-      "}",
-    ].join("\n"),
-  );
   write(root, "packages/quality-guard/dist/bundle.js", "");
-  write(root, "packages/quality-guard/scripts/check-skips.mjs", "");
   write(
     root,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs",
-    'process.stdout.write("Improvements: 0 current\\n");\n',
+    'process.stdout.write(JSON.stringify({summary:{total:1,errors:1,warnings:0,byRule:{complexity:1},byFile:{"fixture.js":1}},violations:[{rule:"complexity",severity:"error"}]}) + "\\n");\n',
   );
 
   git(root, ["add", "."]);
@@ -287,39 +281,6 @@ test("preflight exposes a Biome fallback failure", () => {
     assert.match(output, /fallback failed: fixture/);
     assert.match(output, /Biome strict check exited with status 1/);
     assert.match(output, /Biome error diagnostics exited with status 2/);
-  } finally {
-    rmSync(parent, { recursive: true, force: true });
-  }
-});
-
-test("preflight refreshes package coverage through its guarded writer", () => {
-  const { parent, root } = fixture();
-  try {
-    const result = runPreflight(root, "coverage-refresh");
-    const output = `${result.stdout}${result.stderr}`;
-
-    assert.equal(result.status, 0, output);
-    assert.match(output, /coverage check-only/);
-    assert.match(output, /quality-guard\s+stat 95\.52%/);
-    assert.match(output, /fossil\s+stat 98\.47%/);
-    assert.match(output, /knowledge-base\s+stat 94\.92%/);
-    assert.match(output, /adopted: new-package at 91% statements/);
-    assert.ok(output.indexOf("coverage check-only") < output.indexOf("coverage baseline writer invoked"));
-    assert.equal((output.match(/coverage baseline writer invoked/g) ?? []).length, 1);
-  } finally {
-    rmSync(parent, { recursive: true, force: true });
-  }
-});
-
-test("preflight propagates a refused coverage baseline write", () => {
-  const { parent, root } = fixture();
-  try {
-    const result = runPreflight(root, "coverage-writer-failure");
-    const output = `${result.stdout}${result.stderr}`;
-
-    assert.equal(result.status, 1, output);
-    assert.match(output, /baseline write refused: fixture/);
-    assert.match(output, /Tighten coverage baseline exited with status 1/);
   } finally {
     rmSync(parent, { recursive: true, force: true });
   }

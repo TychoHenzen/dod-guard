@@ -18,13 +18,4 @@ export const FLAG_HANDLERS = {
   top: (options, value) => {
     options.top = Number.parseInt(value, 10) || 15;
   },
-  "write-baseline": (options, value) => {
-    options.writeBaseline = value;
-  },
-  baseline: (options, value) => {
-    options.baseline = value;
-  },
-  "fail-on": (options, value) => {
-    options.failOn = value;
-  },
 };

@@ -46,10 +46,7 @@ test("runScan treats a non-zero exit as a verdict, not a crash", () => {
     });
     throw err;
   };
-  const result = runScan(
-    { paths: ["src"], failOn: "regression" },
-    fake as never,
-  );
+  const result = runScan({ paths: ["src"] }, fake as never);
   assert.equal(
     result.exitCode,
     1,

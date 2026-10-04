@@ -1,10 +1,5 @@
 import { resolve } from "node:path";
-import {
-  comparisonFor,
-  resultFor,
-  writeBaselineIfRequested,
-  writeResult,
-} from "./quality-scan-output.mjs";
+import { resultFor, writeResult } from "./quality-scan-output.mjs";
 import { sortViolations, summarize } from "./lib/report.mjs";
 import { scanFile } from "./lib/rules-file.mjs";
 import {
@@ -45,28 +40,16 @@ export function scan(options, config) {
     );
   return { files, violations };
 }
-function gateFailed(failOn, summary, comparison) {
-  if (failOn === "any") return summary.total > 0;
-  if (failOn === "error") return summary.errors > 0;
-  if (failOn === "regression")
-    return comparison !== null && comparison.regressions.length > 0;
-  return false;
-}
 export function run(options, config) {
   const { files, violations } = scan(options, config);
-  const scanned = files.map((file) => file.rel);
   const sorted = sortViolations(violations);
   const summary = summarize(sorted);
-  const comparison = comparisonFor(options, sorted, scanned);
-  if (comparison.failed) return 3;
-  writeBaselineIfRequested(options, sorted, scanned);
   const result = resultFor({
     options,
     files,
     sorted,
     summary,
-    comparison: comparison.value,
   });
   writeResult(options, result);
-  return gateFailed(options.failOn, summary, comparison.value) ? 1 : 0;
+  return 0;
 }

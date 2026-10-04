@@ -88,7 +88,7 @@ test("quality-refactor documents execution and final report verification", () =>
     finish,
     [
       "full build, tests",
-      "final scanner with `--fail-on=error`",
+      "final scanner in advisory mode",
       ".quality/quality-report.json",
       "node <quality-scan.mjs> . --root=<repository> --format=units > .quality/units.json",
       "quality-guard report --root=<repository> > .quality/quality-report.json",
@@ -96,4 +96,5 @@ test("quality-refactor documents execution and final report verification", () =>
     ],
     "finish",
   );
+  assert.doesNotMatch(finish, /--fail-on=error/);
 });

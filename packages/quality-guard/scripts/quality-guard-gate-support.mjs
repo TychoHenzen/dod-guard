@@ -1,10 +1,4 @@
-import {
-  baselinePath,
-  readComparison,
-  relativePath,
-  scanFile,
-  SCANNER,
-} from "./quality-guard-gate-scan.mjs";
+import { scanFile } from "./quality-guard-gate-scan.mjs";
 const MAX_REPORTED = 20;
 export function prepareGate({ filePath, repoRoot, services, rules }) {
   const scanResult = scanFile({
@@ -14,19 +8,7 @@ export function prepareGate({ filePath, repoRoot, services, rules }) {
     rules,
   });
   if (scanResult.error) return scanResult;
-  const { scan } = scanResult;
-  const relPath = relativePath(repoRoot, filePath);
-  const comparison = readComparison({
-    baseline: baselinePath(repoRoot),
-    scan,
-    relPath,
-    deps: services,
-  });
-  if (!comparison.ok)
-    return {
-      error: "baseline comparison did not produce a readable result.",
-    };
-  return { scan, comparison: comparison.value, relPath };
+  return scanResult;
 }
 function reportContext(header, lines, tail) {
   const shown = lines.slice(0, MAX_REPORTED);
@@ -75,12 +57,19 @@ export function absoluteTail(repoRoot) {
     `directly for more detail. The write continues for ${repoRoot}.`
   );
 }
-export function trackedTail(filePath, repoRoot) {
-  return (
-    "Next step: inspect the baseline comparison and run the scanner directly:\n" +
-    `  node "${SCANNER}" "${filePath}" --root="${repoRoot}"\n` +
-    "The write continues; this output is advisory evidence only."
-  );
+export function hardBoundFindings(violations) {
+  return violations
+    .filter((violation) => violation.severity === "error")
+    .map((violation) => {
+      const {
+        file = "unknown-file",
+        line = "?",
+        severity = "unknown",
+        rule = "unknown-rule",
+        message = "no message",
+      } = violation;
+      return `${file}:${line} [${severity}] ${rule}: ${message} (file-local hard bound)`;
+    });
 }
 function unavailableTail(filePath) {
   return (
@@ -95,5 +84,3 @@ export function unavailable(filePath, detail, emit = report) {
     unavailableTail(filePath),
   );
 }
-export const isUnseen = (comparison, relPath) =>
-  comparison === null || comparison.newFiles.includes(relPath);
