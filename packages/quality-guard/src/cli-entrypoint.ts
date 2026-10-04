@@ -2,11 +2,7 @@ import { readFileSync } from "node:fs";
 import process from "node:process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  runQualityGuardInternalCheck,
-  runRetiredQualityCommand,
-  shouldRunInternalCheck,
-} from "./cli-advisory.js";
+import { runRetiredQualityCommand } from "./cli-advisory.js";
 import { runTestQualityCommand } from "./cli-test-quality.js";
 import {
   type HttpServerOptions,
@@ -70,7 +66,6 @@ export async function runQualityGuardCli(
   args: string[],
   dependencies: QualityGuardCliDependencies,
 ): Promise<void> {
-  if (shouldRunInternalCheck(args)) return runQualityGuardInternalCheck(args);
   if (args[0] === "test-quality") return runTestQualityCommand(args);
   if (args[0] === "report") return runReportCommand(args);
   if (args[0] === "readability") return runReadabilityCommand(args);

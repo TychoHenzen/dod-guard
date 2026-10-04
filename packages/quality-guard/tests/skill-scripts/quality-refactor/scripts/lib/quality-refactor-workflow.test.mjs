@@ -8,7 +8,10 @@ const skillPath = fileURLToPath(
 );
 const skill = await readFile(skillPath, "utf8");
 
-const whitespace = /\s+/g;
+test("quality-refactor never invokes the retired decision route", () => {
+  assert.doesNotMatch(skill, /QUALITY_GUARD_INTERNAL_CHECK=1/);
+  assert.doesNotMatch(skill, /quality-guard check --(?:staged|committed)/);
+});
 
 function section(heading, nextHeading) {
   const start = skill.indexOf(heading);
@@ -41,14 +44,18 @@ test("quality-refactor documents defaults and evidence", () => {
   );
 });
 
-test("quality-refactor documents the staged gate and recovery", () => {
+test("quality-refactor documents advisory evidence and recovery", () => {
   const plan = section("## Plan from ownership", "## Recovery and stops");
-  assert.ok(
-    plan.includes(
-      "QUALITY_GUARD_INTERNAL_CHECK=1 quality-guard check --staged --intent refactor --target .quality/responsibility-map.json --json",
-    ),
+  assertSignals(
+    plan,
+    [
+      "Before each commit, refresh the report evidence",
+      "node <quality-scan.mjs> . --root=<repository> --format=units > .quality/units.json",
+      "quality-guard report --root=<repository> > .quality/quality-report.json",
+      "read-only evidence",
+    ],
+    "advisory evidence",
   );
-
   assertSignals(
     section("## Recovery and stops", "## Execute"),
     [
@@ -58,10 +65,8 @@ test("quality-refactor documents the staged gate and recovery", () => {
       ".quality-skip",
       '{"rebaseline": true}',
       ".github/quality/skip-log.json",
-      "REVIEW_REQUIRED",
-      "repair `FAIL`",
-      "deterministic code or\n  configuration finding",
-      "Scanner, materialization, or analysis errors",
+      "Scanner, materialization, or report-analysis errors",
+      "no staged or committed acceptance decision",
       "credentials",
       "destructive intent",
       "unresolved ownership",
@@ -72,12 +77,10 @@ test("quality-refactor documents the staged gate and recovery", () => {
   );
 });
 
-test("quality-refactor documents execution and committed verification", () => {
+test("quality-refactor documents execution and final report verification", () => {
   const execute = section("## Execute", "## Finish");
   assert.ok(
-    execute.includes(
-      "stage only its files, then run the staged refactor decision",
-    ),
+    execute.includes("stage only its files, then refresh the report evidence"),
   );
 
   const finish = section("## Finish", "Rules and remediation guidance");
@@ -87,13 +90,10 @@ test("quality-refactor documents execution and committed verification", () => {
       "full build, tests",
       "final scanner with `--fail-on=error`",
       ".quality/quality-report.json",
-      "QUALITY_GUARD_INTERNAL_CHECK=1 quality-guard check --committed HEAD --json",
+      "node <quality-scan.mjs> . --root=<repository> --format=units > .quality/units.json",
+      "quality-guard report --root=<repository> > .quality/quality-report.json",
+      "current diagnostic evidence",
     ],
     "finish",
-  );
-  assert.ok(
-    finish
-      .replace(whitespace, " ")
-      .includes("committed replay is the final local proof"),
   );
 });

@@ -97,25 +97,6 @@ function reportPaths(title, paths) {
   }
 }
 
-function fetchQualityDecisionNotes() {
-  const result = spawnSync("git", ["fetch", "origin", "refs/notes/quality-decisions:refs/notes/quality-decisions"], {
-    cwd: ROOT,
-    encoding: "utf8",
-  });
-  if (result.stdout) {
-    process.stdout.write(result.stdout);
-  }
-  if (result.status === 0) return;
-  if (result.stderr?.includes("couldn't find remote ref refs/notes/quality-decisions")) {
-    process.stdout.write("No quality decision notes ref is published for this repository.\n");
-    return;
-  }
-  if (result.stderr) {
-    process.stderr.write(result.stderr);
-  }
-  throw new Error(`fetch quality decision notes exited with status ${result.status ?? "unknown"}`);
-}
-
 function runQualityRatchet(failures) {
   const env = { ...process.env, QUALITY_RULES, QUALITY_SCAN };
   const qualityArgs = [
@@ -217,19 +198,6 @@ function runRatchets() {
   const failures = [];
   const env = { ...process.env, QUALITY_RULES, QUALITY_SCAN };
   runQualityRatchet(failures);
-  fetchQualityDecisionNotes();
-  runNode(
-    "Committed-tree quality decision",
-    "packages/quality-guard/dist/bundle.js",
-    ["check", "--committed", "HEAD", "--json"],
-    {
-      env: {
-        ...env,
-        QUALITY_GUARD_INTERNAL_COMMITTED_CHECK: "1",
-        QUALITY_GUARD_SKIP_STRUCTURAL: "1",
-      },
-    },
-  );
   runTestPresenceRatchet(failures);
   runNode("Unacknowledged quality-gate waivers", "packages/quality-guard/scripts/check-skips.mjs", ["."]);
   runAdvisoryRatchet(failures);
@@ -254,13 +222,9 @@ function main() {
     runNpm("Build test workspaces", ["run", "build:test", "--workspaces"]);
     runNpm("Prepare test workspaces", ["run", "prepare:test", "--workspaces", "--if-present"]);
     runNpm("Reproduce Biome formatting", ["exec", "--", "biome", "format", "--write", "--no-errors-on-unmatched"]);
-    run(
-      process.execPath,
-      ["--test", "scripts/ci/committed-quality-gate.test.mjs", "scripts/ci/preflight-static-analysis.test.mjs"],
-      {
-        name: "Committed-tree quality decision tests",
-      },
-    );
+    run(process.execPath, ["--test", "scripts/ci/preflight-static-analysis.test.mjs"], {
+      name: "Static-analysis preflight tests",
+    });
     runRatchets();
   } catch (error) {
     process.stderr.write(`${error.message}\n`);

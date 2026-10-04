@@ -59,28 +59,3 @@ export function graph(
     ]),
   );
 }
-function edgeKeys(graphInput: Map<string, DependencyEdge[]>): Set<string> {
-  return new Set(
-    [...graphInput.values()].flat().map((edge) => `${edge.from}\0${edge.to}`),
-  );
-}
-export function addedEdges(
-  before: Map<string, DependencyEdge[]>,
-  after: Map<string, DependencyEdge[]>,
-  affectedPaths: string[],
-): DependencyEdge[] {
-  const oldEdges = edgeKeys(before);
-  const changed = new Set(affectedPaths.map(normalizeArchitecturePath));
-  return [...after.values()]
-    .flat()
-    .filter(
-      (edge) =>
-        changed.has(edge.from) && !oldEdges.has(`${edge.from}\0${edge.to}`),
-    )
-    .sort(
-      (left, right) =>
-        left.from.localeCompare(right.from) ||
-        left.to.localeCompare(right.to) ||
-        left.dependency.localeCompare(right.dependency),
-    );
-}
