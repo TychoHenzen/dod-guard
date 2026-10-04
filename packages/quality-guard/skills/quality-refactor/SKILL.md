@@ -140,4 +140,5 @@ dependency outcomes hold, not when counts alone improve. Leave the parent issue
 and pull request open for human review and merge.
 
 Rules and remediation guidance live in `reference/rules.md` and
-`reference/catalog.md`.
+`reference/catalog.md`. Chapter-only outcomes that are not generic scanner
+rules live in `reference/dispositions.md`.
