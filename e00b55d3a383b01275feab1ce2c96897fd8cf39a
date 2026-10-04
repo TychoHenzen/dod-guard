@@ -1,0 +1,11 @@
+[
+  {
+    "findingId": "3b7fd57c0de7e3ce30b1bf0f52b885847f49ad48308ad6e89d7d2741649a3d85",
+    "fingerprint": "3a9fc374bae263172d6b09a7da741541fc8c40b6297ae0a84945edba3623b596",
+    "baseSha": "b072c1f3542778889e8a05e7a09901d28453d92a",
+    "targetSha": "e00b55d3a383b01275feab1ce2c96897fd8cf39a",
+    "reason": "Reviewed PR #810 against the exact synthetic merge target: packages/quality-guard/scripts intentionally contains two cohesive ownership groups, the Quality Guard gate pipeline and project-linter adapters. The similarity split is a heuristic architecture-shape signal, not an unresolved boundary defect for this advisory-surface delivery.",
+    "author": "Codex",
+    "time": "2026-10-04T19:45:17.117Z"
+  }
+]
