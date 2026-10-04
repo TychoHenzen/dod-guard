@@ -13,6 +13,10 @@ function targetIdentity({ owner, name }) {
   return `${requireText(owner, "owner")}/${requireText(name, "name")}`;
 }
 
+function sameIdentity(left, right) {
+  return typeof left === "string" && typeof right === "string" && left.toLowerCase() === right.toLowerCase();
+}
+
 function providerEvidence(error) {
   const evidence = {};
   const status = Number(error?.status ?? error?.statusCode ?? error?.response?.status);
@@ -27,15 +31,15 @@ function providerEvidence(error) {
   return evidence;
 }
 
-function stop({ stage, target, mutationAttempted, cause, readback }) {
-  const error = new Error(`Repository visibility setup stopped during ${stage} for ${target}.`, { cause });
+function stop({ stage, target, mutationAttempted, providerError, readback }) {
+  const error = new Error(`Repository visibility setup stopped during ${stage} for ${target}.`);
   error.name = "RepositoryVisibilityStopError";
   error.details = {
     stage,
     target,
     mutationAttempted,
   };
-  if (cause) error.details.provider = providerEvidence(cause);
+  if (providerError) error.details.provider = providerEvidence(providerError);
   if (readback) error.details.readback = providerEvidence(readback);
   return error;
 }
@@ -62,7 +66,7 @@ export function assertPublicRepositoryReadback(repository, { owner, name }) {
   }
 
   const observedIdentity = repository.full_name ?? repository.nameWithOwner;
-  if (observedIdentity !== target) {
+  if (!sameIdentity(observedIdentity, target)) {
     throw stop({ stage: "repository readback", target, mutationAttempted: true });
   }
   if (repository.private !== false || repository.visibility !== PUBLIC_VISIBILITY) {
@@ -81,6 +85,12 @@ export async function createPublicRepository({
   mutationLedger = [],
 }) {
   const target = targetIdentity({ owner, name });
+  const resolvedOwner = requireText(owner, "owner");
+  const resolvedName = requireText(name, "name");
+  const resolvedOrganization = organization === undefined ? undefined : requireText(organization, "organization");
+  if (resolvedOrganization !== undefined && !sameIdentity(resolvedOrganization, resolvedOwner)) {
+    throw stop({ stage: "destination validation", target, mutationAttempted: false });
+  }
   if (typeof readRepository !== "function") {
     throw new TypeError("readRepository must be a function.");
   }
@@ -93,9 +103,9 @@ export async function createPublicRepository({
 
   let existing;
   try {
-    existing = await readRepository({ owner, name });
+    existing = await readRepository({ owner: resolvedOwner, name: resolvedName });
   } catch (error) {
-    throw stop({ stage: "pre-create read", target, mutationAttempted: false, cause: error });
+    throw stop({ stage: "pre-create read", target, mutationAttempted: false, providerError: error });
   }
   if (existing === undefined) {
     throw stop({ stage: "pre-create read", target, mutationAttempted: false });
@@ -104,7 +114,11 @@ export async function createPublicRepository({
     throw stop({ stage: "pre-create read", target, mutationAttempted: false, readback: existing });
   }
 
-  const payload = buildPublicRepositoryPayload({ name, organization, description });
+  const payload = buildPublicRepositoryPayload({
+    name: resolvedName,
+    organization: resolvedOrganization === undefined ? undefined : resolvedOwner,
+    description,
+  });
   const ledgerEntry = {
     operation: "create_repository",
     target,
@@ -122,29 +136,29 @@ export async function createPublicRepository({
 
   let readback;
   try {
-    readback = await readRepository({ owner, name });
+    readback = await readRepository({ owner: resolvedOwner, name: resolvedName });
   } catch (error) {
     throw stop({
       stage: "post-create readback",
       target,
       mutationAttempted: true,
-      cause: createError ?? error,
+      providerError: createError ?? error,
       readback: error,
     });
   }
   if (readback === undefined || readback === null) {
-    throw stop({ stage: "post-create readback", target, mutationAttempted: true, cause: createError });
+    throw stop({ stage: "post-create readback", target, mutationAttempted: true, providerError: createError });
   }
 
   let verified;
   try {
-    verified = assertPublicRepositoryReadback(readback, { owner, name });
+    verified = assertPublicRepositoryReadback(readback, { owner: resolvedOwner, name: resolvedName });
   } catch (error) {
     throw stop({
       stage: "post-create readback",
       target,
       mutationAttempted: true,
-      cause: createError,
+      providerError: createError,
       readback: error,
     });
   }

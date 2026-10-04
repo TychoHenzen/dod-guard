@@ -481,6 +481,7 @@ test("does not expose provider error text in failure diagnostics", async () => {
     status: HTTP_FORBIDDEN,
     category: "permission",
   });
+  let observedError;
 
   await assert.rejects(
     createPublicRepository({
@@ -489,10 +490,51 @@ test("does not expose provider error text in failure diagnostics", async () => {
       readRepository: () => null,
       createRepository: () => { throw providerError; },
     }),
-    (error) => error.details.provider.status === HTTP_FORBIDDEN &&
-      error.details.provider.category === "permission" &&
-      !JSON.stringify(error.details).includes("secret-value"),
+    (error) => {
+      observedError = error;
+      return error.details.provider.status === HTTP_FORBIDDEN &&
+        error.details.provider.category === "permission" &&
+        error.cause === undefined &&
+        !Object.hasOwn(error, "cause") &&
+        !JSON.stringify(error, Object.getOwnPropertyNames(error)).includes("secret-value");
+    },
   );
+  assert.equal(observedError.cause, undefined);
+});
+
+test("accepts case-insensitive GitHub identity in the public readback", () => {
+  const repository = visibilityRepository();
+  repository.full_name = "OWNER/TARGET";
+  assert.equal(assertPublicRepositoryReadback(repository, { owner: "owner", name: "target" }), repository);
+});
+
+test("rejects a create destination that differs from the resolved owner", async () => {
+  const ledger = [];
+  let readCalls = 0;
+  let createCalls = 0;
+
+  await assert.rejects(
+    createPublicRepository({
+      owner: "owner",
+      name: "target",
+      organization: "other-owner",
+      readRepository: () => {
+        readCalls += 1;
+        return null;
+      },
+      createRepository: () => {
+        createCalls += 1;
+      },
+      mutationLedger: ledger,
+    }),
+    (error) => error.name === "RepositoryVisibilityStopError" &&
+      error.details.stage === "destination validation" &&
+      error.details.mutationAttempted === false,
+  );
+
+  assert.equal(readCalls, 0);
+  assert.equal(createCalls, 0);
+  assert.deepEqual(ledger, []);
 });
 
 test("rejects a contradictory repository readback", () => {
