@@ -4,7 +4,9 @@ import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createQualityGuardServer } from "../../src/index.js";
+import { registerQualityGuardTools } from "../../src/server-tools.js";
 
 function git(root: string, args: string[]): void {
   execFileSync("git", args, { cwd: root, stdio: "ignore" });
@@ -36,9 +38,24 @@ export async function connect(): Promise<{
   client: Client;
   close: () => Promise<void>;
 }> {
+  return connectServer(createQualityGuardServer());
+}
+
+export async function connectLegacy(): Promise<{
+  client: Client;
+  close: () => Promise<void>;
+}> {
+  const server = new McpServer({ name: "quality-guard", version: "1.0.0" });
+  registerQualityGuardTools(server, "legacy");
+  return connectServer(server);
+}
+
+async function connectServer(server: McpServer): Promise<{
+  client: Client;
+  close: () => Promise<void>;
+}> {
   const [clientTransport, serverTransport] =
     InMemoryTransport.createLinkedPair();
-  const server = createQualityGuardServer();
   await server.connect(serverTransport);
   const client = new Client({ name: "quality-guard-test", version: "1.0.0" });
   await client.connect(clientTransport);
