@@ -82,7 +82,7 @@ pushed. Add the commit as evidence, then close it.
 Before each commit, run the staged refactor decision:
 
 ```text
-quality-guard check --staged --intent refactor --target .quality/responsibility-map.json --json
+QUALITY_GUARD_INTERNAL_CHECK=1 quality-guard check --staged --intent refactor --target .quality/responsibility-map.json --json
 ```
 
 ## Recovery and stops
@@ -131,7 +131,7 @@ Run the full build, tests, and final scanner with `--fail-on=error`, regenerate
 decision after the final commit:
 
 ```text
-quality-guard check --committed HEAD --json
+QUALITY_GUARD_INTERNAL_CHECK=1 quality-guard check --committed HEAD --json
 ```
 
 The staged decision runs before each commit; the committed replay is the final

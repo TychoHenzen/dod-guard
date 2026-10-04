@@ -5,6 +5,7 @@ import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   runQualityGuardInternalCheck,
   runRetiredQualityCommand,
+  shouldRunInternalCheck,
 } from "./cli-advisory.js";
 import { runTestQualityCommand } from "./cli-test-quality.js";
 import {
@@ -69,11 +70,7 @@ export async function runQualityGuardCli(
   args: string[],
   dependencies: QualityGuardCliDependencies,
 ): Promise<void> {
-  if (
-    process.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK === "1" &&
-    args[0] === "check" &&
-    args[1] === "--committed"
-  )
+  if (shouldRunInternalCheck(args))
     return runQualityGuardInternalCheck(args);
   if (args[0] === "test-quality") return runTestQualityCommand(args);
   if (args[0] === "report") return runReportCommand(args);

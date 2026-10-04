@@ -59,3 +59,22 @@ test("the dispatcher preserves a configured linter failure as unavailable eviden
   assert.match(result.unavailable, /eslint executable is not installed/);
   rmSync(root, { recursive: true, force: true });
 });
+
+test("ruff uses the per-file timeout budget", () => {
+  const root = mkdtempSync(join(tmpdir(), "qg-ruff-"));
+  const filePath = join(root, "main.py");
+  const calls = [];
+  writeFileSync(join(root, "ruff.toml"), "[lint]\nselect = ['E']\n");
+  writeFileSync(filePath, "value = 1\n");
+
+  const result = runProjectLinter(filePath, root, (command, args, options) => {
+    calls.push({ command, args, options });
+    return { stdout: "[]" };
+  });
+
+  assert.deepEqual(result.findings, []);
+  assert.equal(result.unavailable, null);
+  assert.equal(calls[0].command, "ruff");
+  assert.equal(calls[0].options.timeout, 10_000);
+  rmSync(root, { recursive: true, force: true });
+});

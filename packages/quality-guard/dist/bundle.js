@@ -25620,10 +25620,18 @@ function runCheckCommand(args, root2 = process.cwd()) {
 }
 
 // src/cli-advisory.ts
+function shouldRunInternalCheck(args) {
+  if (args[0] !== "check") return false;
+  if (args[1] === "--staged")
+    return process3.env.QUALITY_GUARD_INTERNAL_CHECK === "1";
+  if (args[1] !== "--committed") return false;
+  return process3.env.QUALITY_GUARD_INTERNAL_CHECK === "1" || process3.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK === "1";
+}
 function runQualityGuardInternalCheck(args, root2 = process3.cwd()) {
-  if (args[0] !== "check" || args[1] !== "--committed") {
+  const mode = args[1];
+  if (args[0] !== "check" || mode !== "--staged" && mode !== "--committed") {
     process3.stdout.write(
-      "Usage: quality-guard internal check --committed <ref>\n"
+      "Usage: QUALITY_GUARD_INTERNAL_CHECK=1 quality-guard check --staged|--committed [options]\n"
     );
     process3.exitCode = 3;
     return;
@@ -29231,7 +29239,7 @@ function retiredQualityCommand(args) {
   return command === "check" || command === "acknowledge" ? command : void 0;
 }
 async function runQualityGuardCli(args, dependencies) {
-  if (process5.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK === "1" && args[0] === "check" && args[1] === "--committed")
+  if (shouldRunInternalCheck(args))
     return runQualityGuardInternalCheck(args);
   if (args[0] === "test-quality") return runTestQualityCommand(args);
   if (args[0] === "report") return runReportCommand(args);

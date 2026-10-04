@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-const TIMEOUT_MS = 10_000;
+export const PER_FILE_TIMEOUT_MS = 10_000;
 
 export function linterResult(findings = []) {
   return { findings, unavailable: null };
@@ -40,7 +40,7 @@ function run(command, args, cwd) {
   return spawnSync(command, args, {
     cwd,
     encoding: "utf8",
-    timeout: TIMEOUT_MS,
+    timeout: PER_FILE_TIMEOUT_MS,
     shell: false,
   });
 }

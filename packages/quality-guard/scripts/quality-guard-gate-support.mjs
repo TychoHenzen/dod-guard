@@ -30,25 +30,35 @@ export function prepareGate({ filePath, repoRoot, services, rules }) {
   return { scan, comparison: comparison.value, relPath };
 }
 
-export function report(header, lines, tail) {
+export function reportContext(header, lines, tail) {
   const shown = lines.slice(0, MAX_REPORTED);
   const extra = lines.length - shown.length;
-  const body = [
+  return [
     header,
     "",
     ...shown,
     extra > 0 ? `... and ${extra} more.` : "",
     "",
     tail,
-  ];
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function emitProtocol(contexts) {
+  if (contexts.length === 0) return;
   process.stdout.write(
     `${JSON.stringify({
       hookSpecificOutput: {
         hookEventName: "PostToolUse",
-        additionalContext: body.filter(Boolean).join("\n"),
+        additionalContext: contexts.join("\n\n"),
       },
     })}\n`,
   );
+}
+
+export function report(header, lines, tail) {
+  emitProtocol([reportContext(header, lines, tail)]);
   return 0;
 }
 
@@ -74,8 +84,8 @@ function unavailableTail(filePath) {
   );
 }
 
-export function unavailable(filePath, detail) {
-  return report(
+export function unavailable(filePath, detail, emit = report) {
+  return emit(
     `quality-guard advisory unavailable for ${filePath}. The write continues.`,
     [`[unavailable] ${detail}`],
     unavailableTail(filePath),

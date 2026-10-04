@@ -1,13 +1,29 @@
 import process from "node:process";
 import { runCheckCommand } from "./commit-gate/cli.js";
 
+export function shouldRunInternalCheck(args: string[]): boolean {
+  if (args[0] !== "check") return false;
+  if (args[1] === "--staged")
+    return process.env.QUALITY_GUARD_INTERNAL_CHECK === "1";
+  if (args[1] !== "--committed") return false;
+  return (
+    process.env.QUALITY_GUARD_INTERNAL_CHECK === "1" ||
+    process.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK === "1"
+  );
+}
+
 export function runQualityGuardInternalCheck(
   args: string[],
   root = process.cwd(),
 ): void {
-  if (args[0] !== "check" || args[1] !== "--committed") {
+  const mode = args[1];
+  if (
+    args[0] !== "check" ||
+    (mode !== "--staged" && mode !== "--committed")
+  ) {
     process.stdout.write(
-      "Usage: quality-guard internal check --committed <ref>\n",
+      "Usage: QUALITY_GUARD_INTERNAL_CHECK=1 quality-guard check " +
+        "--staged|--committed [options]\n",
     );
     process.exitCode = 3;
     return;

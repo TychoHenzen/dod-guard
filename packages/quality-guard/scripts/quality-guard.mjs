@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /** PostToolUse file-local quality gate. Internal failures fail open. */
-
 import { existsSync, readFileSync } from "node:fs";
 import { extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hookTargets } from "./hook-targets.mjs";
 import { gate } from "./quality-guard-gate.mjs";
-import { unavailable } from "./quality-guard-gate-support.mjs";
+import { createLocalResult } from "./quality-guard-local.mjs";
+import { createHookOutput } from "./quality-guard-hook-output.mjs";
 
 const CODE_EXT = new Set([
   ".ts",
@@ -46,21 +46,39 @@ function shouldGate(input) {
   return activeTargets(input).length > 0;
 }
 
+async function runTarget({ target, services, report, unavailableReport }) {
+  try {
+    return await gate(target.input, target.filePath, {
+      ...services,
+      localResult: services.localResult,
+      report,
+      unavailable: unavailableReport,
+    });
+  } catch (error) {
+    return unavailableReport(
+      target.filePath,
+      `hook failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
 async function runTargets(input) {
   const baselineLib = await import("./baseline-lib.mjs");
+  const output = createHookOutput();
+  const localResult = createLocalResult(output.report);
+  const services = { ...baselineLib, localResult };
+  let code = 0;
   for (const target of activeTargets(input)) {
-    let code;
-    try {
-      code = await gate(target.input, target.filePath, baselineLib);
-    } catch (error) {
-      code = unavailable(
-        target.filePath,
-        `hook failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-    if (code !== 0) return code;
+    code = await runTarget({
+      target,
+      services,
+      report: output.report,
+      unavailableReport: output.unavailable,
+    });
+    if (code !== 0) break;
   }
-  return 0;
+  output.flush();
+  return code === 0 ? 0 : code;
 }
 
 async function main() {

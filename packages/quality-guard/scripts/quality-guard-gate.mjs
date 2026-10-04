@@ -14,7 +14,7 @@ import {
   runScanner,
 } from "./quality-guard-gate-scan.mjs";
 
-const DEFAULT_SERVICES = { localResult, runScanner };
+const DEFAULT_SERVICES = { localResult, report, runScanner, unavailable };
 
 function findingsFor(scan, comparison, relPath) {
   const unseen = isUnseen(comparison, relPath);
@@ -25,9 +25,9 @@ function findingsFor(scan, comparison, relPath) {
 }
 
 function advisoryResult(context) {
-  const { repoRoot, filePath, unseen, findings } = context;
+  const { repoRoot, filePath, unseen, findings, emit } = context;
   if (findings.length === 0) return 0;
-  return report(
+  return emit(
     `quality-guard advisory findings for ${filePath}. The write continues.`,
     findings,
     unseen ? absoluteTail(repoRoot) : trackedTail(filePath, repoRoot),
@@ -39,7 +39,7 @@ function localFeedback(context) {
   try {
     const local = deps.localResult(input, filePath, repoRoot);
     if (local?.unavailable)
-      return unavailable(
+      return deps.unavailable(
         filePath,
         `project-linter unavailable: ${local.unavailable}`,
       );
@@ -49,7 +49,7 @@ function localFeedback(context) {
     );
     return 0;
   } catch (error) {
-    return unavailable(
+    return deps.unavailable(
       filePath,
       `project-linter failed: ${error instanceof Error ? error.message : String(error)}`,
     );
@@ -66,6 +66,7 @@ function continueGate(context) {
     relPath,
     unseen,
     findings,
+    emit: deps.report,
   });
   if (advisory !== 0) return advisory;
   return localFeedback({ input, filePath, repoRoot, deps });
@@ -75,14 +76,14 @@ export function gate(input, filePath, deps = {}) {
   const services = { ...DEFAULT_SERVICES, ...deps };
   const repoRoot = findRepoRoot(filePath);
   if (!repoRoot)
-    return unavailable(filePath, "no Git repository root was found.");
+    return services.unavailable(filePath, "no Git repository root was found.");
   const prepared = prepareGate({
     filePath,
     repoRoot,
     services,
     rules: FILE_RULES,
   });
-  if (prepared.error) return unavailable(filePath, prepared.error);
+  if (prepared.error) return services.unavailable(filePath, prepared.error);
   return continueGate({
     input,
     filePath,

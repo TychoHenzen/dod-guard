@@ -8,17 +8,17 @@ import {
   eslintFindings,
   linterResult,
   linterUnavailable,
+  PER_FILE_TIMEOUT_MS,
 } from "./project-linter-support.mjs";
-import { WHOLE_PROJECT_TIMEOUT_MS as TIMEOUT_MS } from "./linter-timeout.mjs";
 
 const RUFF_CONFIGS = ["ruff.toml", ".ruff.toml", "pyproject.toml"];
 
-function runRuff(filePath, repoRoot) {
+function runRuff(filePath, repoRoot, spawn = spawnSync) {
   try {
-    return spawnSync("ruff", ["check", "--output-format=json", filePath], {
+    return spawn("ruff", ["check", "--output-format=json", filePath], {
       cwd: repoRoot,
       encoding: "utf8",
-      timeout: TIMEOUT_MS,
+      timeout: PER_FILE_TIMEOUT_MS,
       shell: false,
     });
   } catch (error) {
@@ -51,10 +51,10 @@ function parseRuffResult(result) {
   );
 }
 
-function ruffFindings(filePath, repoRoot) {
+function ruffFindings(filePath, repoRoot, spawn = spawnSync) {
   if (!RUFF_CONFIGS.some((name) => existsSync(join(repoRoot, name))))
     return linterResult();
-  return parseRuffResult(runRuff(filePath, repoRoot));
+  return parseRuffResult(runRuff(filePath, repoRoot, spawn));
 }
 
 /** Extension test paired with its finder, tried in order. */
@@ -69,12 +69,12 @@ const LINTERS = [
 ];
 
 /** Findings from the repository linter that matches this file. */
-export function runProjectLinter(filePath, repoRoot) {
+export function runProjectLinter(filePath, repoRoot, spawn = spawnSync) {
   const lower = filePath.toLowerCase();
   const linter = LINTERS.find(([test]) => test(lower))?.[1];
   if (!linter) return linterResult();
   try {
-    const result = linter(filePath, repoRoot);
+    const result = linter(filePath, repoRoot, spawn);
     return Array.isArray(result) ? linterResult(result) : result;
   } catch (error) {
     return linterUnavailable(
