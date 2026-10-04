@@ -38,43 +38,19 @@ test("legacy registration remains internal and keeps wrappers exercised", async 
   const missingRoot = join(root, "missing");
   try {
     const tools = await connection.client.listTools();
-    assert.deepEqual(
-      tools.tools.map((tool) => tool.name).sort(),
-      [
-        "quality_commit_gate",
-        "quality_gate",
-        "quality_report",
-        "quality_scan",
-        "quality_skips",
-        "quality_test_quality",
-      ],
-    );
-    const gate = await call("quality_gate", {
-      baseline: ".github/quality/quality-baseline.json",
-      paths: ["."],
-      root,
-    });
-    assert.equal(gate.isError, undefined);
+    assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), [
+      "quality_commit_gate",
+      "quality_gate",
+      "quality_report",
+      "quality_scan",
+      "quality_skips",
+      "quality_test_quality",
+    ]);
+    await assertLegacyReadTools(call, root, missingRoot);
     assert.match(
       resultText(
-        await call("quality_gate", {
-          baseline: ".github/quality/quality-baseline.json",
-          paths: ["."],
-          root: missingRoot,
-        }),
+        await call("quality_commit_gate", { intent: "refactor", root }),
       ),
-      MISSING_ROOT,
-    );
-    assert.equal(
-      resultText(await call("quality_skips", { root })),
-      "No unacknowledged quality-gate waivers.",
-    );
-    assert.match(
-      resultText(await call("quality_skips", { root: missingRoot })),
-      MISSING_ROOT,
-    );
-    assert.match(
-      resultText(await call("quality_commit_gate", { intent: "refactor", root })),
       REFACTOR_TARGET,
     );
     assert.equal(
@@ -90,3 +66,34 @@ test("legacy registration remains internal and keeps wrappers exercised", async 
     removeFixture(root);
   }
 });
+
+async function assertLegacyReadTools(
+  call: (name: string, arguments_: Record<string, unknown>) => Promise<unknown>,
+  root: string,
+  missingRoot: string,
+) {
+  const gate = await call("quality_gate", {
+    baseline: ".github/quality/quality-baseline.json",
+    paths: ["."],
+    root,
+  });
+  assert.equal((gate as { isError?: boolean }).isError, undefined);
+  assert.match(
+    resultText(
+      await call("quality_gate", {
+        baseline: ".github/quality/quality-baseline.json",
+        paths: ["."],
+        root: missingRoot,
+      }),
+    ),
+    MISSING_ROOT,
+  );
+  assert.equal(
+    resultText(await call("quality_skips", { root })),
+    "No unacknowledged quality-gate waivers.",
+  );
+  assert.match(
+    resultText(await call("quality_skips", { root: missingRoot })),
+    MISSING_ROOT,
+  );
+}
