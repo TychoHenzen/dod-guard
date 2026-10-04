@@ -101,7 +101,7 @@ function committedDecision(root) {
   });
 }
 
-test("CI command reports REVIEW_REQUIRED for a committed change without a local hook", () => {
+test("CI command reports advisory evidence for a committed change without a local hook", () => {
   const root = fixture();
   try {
     mkdirSync(join(root, ".github", "quality"), { recursive: true });
@@ -118,14 +118,16 @@ test("CI command reports REVIEW_REQUIRED for a committed change without a local 
 
     const result = committedDecision(root);
 
-    assert.equal(result.status, 2, result.stdout);
-    assert.equal(JSON.parse(result.stdout).verdict, "REVIEW_REQUIRED");
+    assert.equal(result.status, 0, result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.status, "advisory");
+    assert.equal(output.command, "check");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test("CI command reports FAIL for a committed dependency boundary violation without a local hook", () => {
+test("CI command reports advisory evidence for a committed dependency boundary violation without a local hook", () => {
   const root = fixture();
   try {
     writeFileSync(
@@ -146,8 +148,10 @@ test("CI command reports FAIL for a committed dependency boundary violation with
 
     const result = committedDecision(root);
 
-    assert.equal(result.status, 1);
-    assert.equal(JSON.parse(result.stdout).verdict, "FAIL");
+    assert.equal(result.status, 0, result.stdout);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.status, "advisory");
+    assert.equal(output.command, "check");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
