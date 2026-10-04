@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { hookTargets } from "./hook-targets.mjs";
 import { gate } from "./quality-guard-gate.mjs";
 import { createLocalResult } from "./quality-guard-local.mjs";
-import { createHookOutput } from "./quality-guard-hook-output.mjs";
+import { createHookOutput } from "./quality-guard-gate-support.mjs";
 
 const CODE_EXT = new Set([
   ".ts",

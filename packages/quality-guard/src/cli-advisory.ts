@@ -17,10 +17,7 @@ export function runQualityGuardInternalCheck(
   root = process.cwd(),
 ): void {
   const mode = args[1];
-  if (
-    args[0] !== "check" ||
-    (mode !== "--staged" && mode !== "--committed")
-  ) {
+  if (args[0] !== "check" || (mode !== "--staged" && mode !== "--committed")) {
     process.stdout.write(
       "Usage: QUALITY_GUARD_INTERNAL_CHECK=1 quality-guard check " +
         "--staged|--committed [options]\n",

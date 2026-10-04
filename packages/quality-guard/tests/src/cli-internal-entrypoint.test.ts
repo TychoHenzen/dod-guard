@@ -5,7 +5,9 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { fixture } from "./commit-gate/acknowledgement-test-support.js";
 
-const BUNDLE = fileURLToPath(new URL("../../../dist/bundle.js", import.meta.url));
+const BUNDLE = fileURLToPath(
+  new URL("../../../dist/bundle.js", import.meta.url),
+);
 
 test("the generic internal entry point keeps staged checks authoritative", () => {
   const root = fixture();

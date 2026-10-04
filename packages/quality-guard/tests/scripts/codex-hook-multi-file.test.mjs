@@ -8,7 +8,8 @@ import test from "node:test";
 const SOURCE = [
   "def deeply_nested(value):",
   ...Array.from(
-    { length: 6 }, (_, index) => `${" ".repeat((index + 1) * 4)}if value:`,
+    { length: 6 },
+    (_, index) => `${" ".repeat((index + 1) * 4)}if value:`,
   ),
   "                            return value",
   "    return value",
@@ -20,7 +21,10 @@ test("a multi-file apply_patch emits one JSON document with all contexts", () =>
   mkdirSync(join(repository, ".git"), { recursive: true });
   writeFileSync(join(repository, "first.py"), SOURCE);
   writeFileSync(join(repository, "second.py"), SOURCE);
-  const launcher = resolve(import.meta.dirname, "../../scripts/quality-guard.mjs");
+  const launcher = resolve(
+    import.meta.dirname,
+    "../../scripts/quality-guard.mjs",
+  );
   const patch = [
     "*** Begin Patch",
     "*** Update File: first.py",

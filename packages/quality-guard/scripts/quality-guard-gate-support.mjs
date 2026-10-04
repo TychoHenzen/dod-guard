@@ -6,7 +6,6 @@ import {
   SCANNER,
 } from "./quality-guard-gate-scan.mjs";
 const MAX_REPORTED = 20;
-
 export function prepareGate({ filePath, repoRoot, services, rules }) {
   const scanResult = scanFile({
     filePath,
@@ -29,7 +28,6 @@ export function prepareGate({ filePath, repoRoot, services, rules }) {
     };
   return { scan, comparison: comparison.value, relPath };
 }
-
 export function reportContext(header, lines, tail) {
   const shown = lines.slice(0, MAX_REPORTED);
   const extra = lines.length - shown.length;
@@ -44,7 +42,6 @@ export function reportContext(header, lines, tail) {
     .filter(Boolean)
     .join("\n");
 }
-
 export function emitProtocol(contexts) {
   if (contexts.length === 0) return;
   process.stdout.write(
@@ -56,19 +53,28 @@ export function emitProtocol(contexts) {
     })}\n`,
   );
 }
-
+export function createHookOutput() {
+  const contexts = [];
+  const report = (header, lines, tail) => {
+    contexts.push(reportContext(header, lines, tail));
+    return 0;
+  };
+  return {
+    report,
+    unavailable: (filePath, detail) => unavailable(filePath, detail, report),
+    flush: () => emitProtocol(contexts),
+  };
+}
 export function report(header, lines, tail) {
   emitProtocol([reportContext(header, lines, tail)]);
   return 0;
 }
-
 export function absoluteTail(repoRoot) {
   return (
     "Next step: inspect the finding and split the change or run the scanner " +
     `directly for more detail. The write continues for ${repoRoot}.`
   );
 }
-
 export function trackedTail(filePath, repoRoot) {
   return (
     "Next step: inspect the baseline comparison and run the scanner directly:\n" +
@@ -76,14 +82,12 @@ export function trackedTail(filePath, repoRoot) {
     "The write continues; this output is advisory evidence only."
   );
 }
-
 function unavailableTail(filePath) {
   return (
     `Next step: run the relevant Quality Guard diagnostic again for "${filePath}" ` +
     "inside a repository. The write continues."
   );
 }
-
 export function unavailable(filePath, detail, emit = report) {
   return emit(
     `quality-guard advisory unavailable for ${filePath}. The write continues.`,
@@ -91,7 +95,5 @@ export function unavailable(filePath, detail, emit = report) {
     unavailableTail(filePath),
   );
 }
-
-export function isUnseen(comparison, relPath) {
-  return comparison === null || comparison.newFiles.includes(relPath);
-}
+export const isUnseen = (comparison, relPath) =>
+  comparison === null || comparison.newFiles.includes(relPath);
