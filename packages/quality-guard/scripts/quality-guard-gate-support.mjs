@@ -28,7 +28,7 @@ export function prepareGate({ filePath, repoRoot, services, rules }) {
     };
   return { scan, comparison: comparison.value, relPath };
 }
-export function reportContext(header, lines, tail) {
+function reportContext(header, lines, tail) {
   const shown = lines.slice(0, MAX_REPORTED);
   const extra = lines.length - shown.length;
   return [
@@ -42,7 +42,7 @@ export function reportContext(header, lines, tail) {
     .filter(Boolean)
     .join("\n");
 }
-export function emitProtocol(contexts) {
+function emitProtocol(contexts) {
   if (contexts.length === 0) return;
   process.stdout.write(
     `${JSON.stringify({

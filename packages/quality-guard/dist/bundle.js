@@ -29239,8 +29239,7 @@ function retiredQualityCommand(args) {
   return command === "check" || command === "acknowledge" ? command : void 0;
 }
 async function runQualityGuardCli(args, dependencies) {
-  if (shouldRunInternalCheck(args))
-    return runQualityGuardInternalCheck(args);
+  if (shouldRunInternalCheck(args)) return runQualityGuardInternalCheck(args);
   if (args[0] === "test-quality") return runTestQualityCommand(args);
   if (args[0] === "report") return runReportCommand(args);
   if (args[0] === "readability") return runReadabilityCommand(args);
