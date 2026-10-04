@@ -36,12 +36,12 @@ test("an allowed tracked source write preserves the adopted baseline", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("a missing baseline still runs file-local hard-bound checks", () => {
+test("a missing baseline reports file-local hard-bound findings", () => {
   const root = tempRepo();
   const filePath = writeTarget(root, "no-baseline.js", OVER_BOUND_LINES);
   assert.equal(
     gate(fakeInput(filePath), filePath, gateDeps({ isTracked: () => true })),
-    2,
+    0,
   );
   assert.equal(
     existsSync(join(root, ".github", "quality", "quality-baseline.json")),
@@ -50,10 +50,10 @@ test("a missing baseline still runs file-local hard-bound checks", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
-test("Git tracking failure falls back to new-file behavior", () => {
+test("Git tracking failure still reports new-file advisory findings", () => {
   const root = tempRepo();
   const filePath = writeTarget(root, "big.js", OVER_BOUND_LINES);
   writeBaselineFile(root, [], {});
-  assert.equal(gate(fakeInput(filePath), filePath, gateDeps()), 2);
+  assert.equal(gate(fakeInput(filePath), filePath, gateDeps()), 0);
   rmSync(root, { recursive: true, force: true });
 });

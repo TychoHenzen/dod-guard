@@ -12,7 +12,7 @@ import { writeTarget } from "./git-tracked-adoption-fixtures.test.mjs";
 const alwaysTracked = () => true;
 
 test(
-  "an unseen source file over the normal bound blocks without changing the " +
+  "an unseen source file over the normal bound reports without changing the " +
     "baseline",
   () => {
     const root = tempRepo();
@@ -24,13 +24,13 @@ test(
       filePath,
       gateDeps({ isTracked: alwaysTracked }),
     );
-    assert.equal(code, 2);
+    assert.equal(code, 0);
     assert.equal(readFileSync(baselinePath, "utf8"), before);
     rmSync(root, { recursive: true, force: true });
   },
 );
 
-test("a blocked tracked source write preserves the tracked baseline", () => {
+test("an advisory tracked source write preserves the tracked baseline", () => {
   const root = tempRepo();
   const filePath = writeTarget(root, "blocked.js", OVER_BOUND_LINES);
   const baselinePath = writeBaselineFile(root, [], {});
@@ -40,12 +40,12 @@ test("a blocked tracked source write preserves the tracked baseline", () => {
     filePath,
     gateDeps({ isTracked: () => true }),
   );
-  assert.equal(code, 2);
+  assert.equal(code, 0);
   assert.equal(readFileSync(baselinePath, "utf8"), before);
   rmSync(root, { recursive: true, force: true });
 });
 
-test("an untracked source file is held to the same normal bound", () => {
+test("an untracked source file reports the same normal bound", () => {
   const root = tempRepo();
   const filePath = writeTarget(root, "big.js", OVER_BOUND_LINES);
   const baselinePath = writeBaselineFile(root, [], {});
@@ -54,7 +54,7 @@ test("an untracked source file is held to the same normal bound", () => {
     filePath,
     gateDeps({ isTracked: () => false }),
   );
-  assert.equal(code, 2);
+  assert.equal(code, 0);
   assert.deepEqual(JSON.parse(readFileSync(baselinePath, "utf8")).files, []);
   rmSync(root, { recursive: true, force: true });
 });

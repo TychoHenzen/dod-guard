@@ -185,14 +185,7 @@ test("serves health and MCP initialization over Streamable HTTP", async () => {
       await client.connect(transport);
       assert.deepEqual(
         (await client.listTools()).tools.map((tool) => tool.name).sort(),
-        [
-          "quality_commit_gate",
-          "quality_gate",
-          "quality_report",
-          "quality_scan",
-          "quality_skips",
-          "quality_test_quality",
-        ],
+        ["quality_report", "quality_scan", "quality_test_quality"],
       );
       const missingRoute = await fetch(
         `http://127.0.0.1:${server.port}/missing`,
@@ -280,11 +273,11 @@ test("requires a usable explicit repository root and isolates concurrent request
         arguments: { root: one },
       });
       assert.equal(report.isError, undefined);
-      const skips = await client.callTool({
-        name: "quality_skips",
+      const testQuality = await client.callTool({
+        name: "quality_test_quality",
         arguments: { root: one },
       });
-      assert.equal(skips.isError, undefined);
+      assert.equal(testQuality.isError, undefined);
 
       const [first, second] = await Promise.all([
         client.callTool({

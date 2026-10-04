@@ -20,7 +20,7 @@ function regressionServices() {
   });
 }
 
-test("a plain sentinel cannot waive a tracked regression", () => {
+test("a plain sentinel is not consumed by an advisory tracked regression", () => {
   const root = fixtures.tempRepo();
   const filePath = fixtures.writeTarget(root, "tracked.js", 10);
   fixtures.writeBaselineFile(root, ["tracked.js"], {});
@@ -30,13 +30,13 @@ test("a plain sentinel cannot waive a tracked regression", () => {
     filePath,
     regressionServices(),
   );
-  assert.equal(code, 2);
+  assert.equal(code, 0);
   assert.equal(existsSync(join(root, SENTINEL_NAME)), true);
   assert.deepEqual(readSkipLog(root), []);
   rmSync(root, { recursive: true, force: true });
 });
 
-test("a rebaseline sentinel authorizes a tracked regression", () => {
+test("a rebaseline sentinel is not consumed by an advisory tracked regression", () => {
   const root = fixtures.tempRepo();
   const filePath = fixtures.writeTarget(root, "tracked.js", 10);
   fixtures.writeBaselineFile(root, ["tracked.js"], {});
@@ -47,7 +47,7 @@ test("a rebaseline sentinel authorizes a tracked regression", () => {
     regressionServices(),
   );
   assert.equal(code, 0);
-  assert.equal(existsSync(join(root, SENTINEL_NAME)), false);
-  assert.equal(readSkipLog(root)[0]?.rebaseline, true);
+  assert.equal(existsSync(join(root, SENTINEL_NAME)), true);
+  assert.deepEqual(readSkipLog(root), []);
   rmSync(root, { recursive: true, force: true });
 });

@@ -4,9 +4,8 @@ import {
   absoluteTail,
   isUnseen,
   report,
-  readSentinelState,
   trackedTail,
-  waive,
+  unavailableTail,
 } from "./quality-guard-gate-support.mjs";
 import {
   FILE_RULES,
@@ -17,30 +16,22 @@ import {
   runScanner,
 } from "./quality-guard-gate-scan.mjs";
 
-const DEFAULT_SERVICES = { localResult, readSentinelState, runScanner, waive };
+const DEFAULT_SERVICES = { localResult, runScanner };
 
-function blockingFor(scan, comparison, relPath) {
+function findingsFor(scan, comparison, relPath) {
   const unseen = isUnseen(comparison, relPath);
-  const blocking = unseen
+  const findings = unseen
     ? absoluteVerdict(scan.violations)
     : ratchetVerdict(comparison, relPath, scan.violations);
-  return { unseen, blocking };
+  return { unseen, findings };
 }
 
-function blockingResult(context) {
-  const { repoRoot, filePath, relPath, unseen, blocking, deps } = context;
-  if (
-    blocking.length === 0 ||
-    deps.waive(repoRoot, deps.readSentinelState(repoRoot), {
-      isNew: unseen,
-      record: { file: relPath, reasons: blocking },
-    })
-  )
-    return 0;
+function advisoryResult(context) {
+  const { repoRoot, filePath, unseen, findings } = context;
+  if (findings.length === 0) return 0;
   return report(
-    `quality-guard blocked this file-local write. ${filePath} did not ` +
-      "pass its applicable check.",
-    blocking,
+    `quality-guard advisory findings for ${filePath}. The write continues.`,
+    findings,
     unseen ? absoluteTail(repoRoot) : trackedTail(filePath, repoRoot),
   );
 }
@@ -48,22 +39,32 @@ function blockingResult(context) {
 function continueGate(context) {
   const { input, filePath, repoRoot, scan, comparison, relPath, deps } =
     context;
-  const { unseen, blocking } = blockingFor(scan, comparison, relPath);
-  const blocked = blockingResult({
+  const { unseen, findings } = findingsFor(scan, comparison, relPath);
+  const advisory = advisoryResult({
     repoRoot,
     filePath,
     relPath,
     unseen,
-    blocking,
-    deps,
+    findings,
   });
-  if (blocked !== 0) return blocked;
-  const local = deps.localResult(input, filePath, repoRoot);
+  if (advisory !== 0) return advisory;
+  let local;
+  try {
+    local = deps.localResult(input, filePath, repoRoot);
+  } catch (error) {
+    return report(
+      `quality-guard advisory unavailable for ${filePath}. The write continues.`,
+      [
+        `[unavailable] project-linter failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      ],
+      unavailableTail(filePath),
+    );
+  }
   if (local !== 0) return local;
   process.stderr.write(
-    `quality-guard file-local feedback passed for ${filePath}. This is ` +
-      "not commit evidence.\n" +
-      "Run quality-guard check --staged before committing.\n",
+    `quality-guard file-local advisory feedback passed for ${filePath}.\n`,
   );
   return 0;
 }
@@ -71,10 +72,35 @@ function continueGate(context) {
 export function gate(input, filePath, deps = {}) {
   const services = { ...DEFAULT_SERVICES, ...deps };
   const repoRoot = findRepoRoot(filePath);
-  if (!repoRoot) return 0;
+  if (!repoRoot) {
+    return report(
+      `quality-guard advisory unavailable for ${filePath}. The write continues.`,
+      ["[unavailable] no Git repository root was found."],
+      unavailableTail(filePath),
+    );
+  }
   const baseline = baselinePath(repoRoot);
-  const scan = services.runScanner(filePath, repoRoot, FILE_RULES);
-  if (!scan || !Array.isArray(scan.violations)) return 0;
+  let scan;
+  try {
+    scan = services.runScanner(filePath, repoRoot, FILE_RULES);
+  } catch (error) {
+    return report(
+      `quality-guard advisory unavailable for ${filePath}. The write continues.`,
+      [
+        `[unavailable] scanner failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      ],
+      unavailableTail(filePath),
+    );
+  }
+  if (!scan || !Array.isArray(scan.violations)) {
+    return report(
+      `quality-guard advisory unavailable for ${filePath}. The write continues.`,
+      ["[unavailable] scanner did not return a readable report."],
+      unavailableTail(filePath),
+    );
+  }
   const relPath = relativePath(repoRoot, filePath);
   const comparison = readComparison({
     baseline,
@@ -82,7 +108,13 @@ export function gate(input, filePath, deps = {}) {
     relPath,
     deps: services,
   });
-  if (!comparison.ok) return 0;
+  if (!comparison.ok) {
+    return report(
+      `quality-guard advisory unavailable for ${filePath}. The write continues.`,
+      ["[unavailable] baseline comparison did not produce a readable result."],
+      unavailableTail(filePath),
+    );
+  }
   return continueGate({
     input,
     filePath,

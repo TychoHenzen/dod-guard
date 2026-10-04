@@ -9,10 +9,11 @@ export function localResult(input, filePath, repoRoot) {
   );
   if (findings.length === 0) return 0;
   return report(
-    `The project linter rejected lines this edit wrote in ${filePath}.`,
+    `quality-guard advisory findings for ${filePath}. The write continues.`,
     findings.map(
-      (f) => `${f.line}: ${f.rule ? `[${f.rule}] ` : ""}${f.message}`,
+      (f) =>
+        `${filePath}:${f.line} [error] ${f.rule || "project-linter"}: ${f.message}`,
     ),
-    "These rules come from the repository config, not from this hook.",
+    "Next step: inspect the repository linter finding and rerun that linter directly.",
   );
 }

@@ -12,7 +12,8 @@ export function absoluteVerdict(violations) {
     .filter((violation) => violation.severity === "error")
     .map(
       (violation) =>
-        `${violation.file}:${violation.line}: ${violation.message} ` +
+        `${violation.file}:${violation.line} [${violation.severity}] ` +
+        `${violation.rule || "unknown-rule"}: ${violation.message || "no message"} ` +
         "(file-local hard bound)",
     );
 }
@@ -26,7 +27,12 @@ export function ratchetVerdict(comparison, relPath, violations) {
       .filter((violation) => violation.rule === item.rule)
       .slice(0, 3);
     const detail = worst
-      .map((v) => `  ${v.file}:${v.line}: ${v.message}`)
+      .map(
+        (v) =>
+          `  ${v.file || relPath}:${v.line ?? "?"} ` +
+          `[${v.severity || "unknown"}] ${v.rule || item.rule}: ` +
+          `${v.message || "no message"}`,
+      )
       .join("\n");
     blocking.push(
       `${item.rule}: ${item.before} before, ${item.now} now\n${detail}`,

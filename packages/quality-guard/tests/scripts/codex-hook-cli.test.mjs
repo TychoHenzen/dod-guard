@@ -57,7 +57,8 @@ test("the launcher skips an external source target but gates repository files", 
     encoding: "utf8",
   });
   assert.equal(externalResult.status, 0);
-  assert.equal(externalResult.stderr, "");
+  assert.match(externalResult.stderr, /advisory unavailable/);
+  assert.match(externalResult.stderr, /no Git repository root/);
 
   const repository = resolve(directory, "repository");
   mkdirSync(resolve(repository, ".git"), { recursive: true });
@@ -70,10 +71,12 @@ test("the launcher skips an external source target but gates repository files", 
     }),
     encoding: "utf8",
   });
-  assert.equal(repositoryResult.status, 2);
+  assert.equal(repositoryResult.status, 0);
   assert.match(
     repositoryResult.stderr,
-    /quality-guard blocked this file-local write/,
+    /quality-guard advisory findings for/,
   );
+  assert.match(repositoryResult.stderr, /\[error\]/);
+  assert.match(repositoryResult.stderr, /The write continues/);
   rmSync(directory, { recursive: true });
 });

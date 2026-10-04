@@ -2,16 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { connect } from "./index-fixtures.test.js";
 
-test("MCP server lists all quality tools", async () => {
+test("MCP server lists advisory quality tools only", async () => {
   const connection = await connect();
   try {
     const tools = await connection.client.listTools();
     assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), [
-      "quality_commit_gate",
-      "quality_gate",
       "quality_report",
       "quality_scan",
-      "quality_skips",
       "quality_test_quality",
     ]);
     assert.equal(

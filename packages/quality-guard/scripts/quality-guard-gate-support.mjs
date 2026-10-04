@@ -1,4 +1,3 @@
-import { join } from "node:path";
 import {
   deleteSentinel,
   readSentinel,
@@ -19,29 +18,28 @@ export function report(header, lines, tail) {
     tail,
   ];
   process.stderr.write(`${body.filter(Boolean).join("\n")}\n`);
-  return 2;
+  return 0;
 }
 
 export function absoluteTail(repoRoot) {
-  const sentinel = join(repoRoot, ".quality-skip");
   return (
-    "This file-local hard bound applies before a baseline exists or knows " +
-    "this file. Split it up.\n" +
-    `To waive this one write: touch "${sentinel}"\n` +
-    "Before committing, run: quality-guard check --staged"
+    "Next step: inspect the finding and split the change or run the scanner " +
+    `directly for more detail. The write continues for ${repoRoot}.`
   );
 }
 
 export function trackedTail(filePath, repoRoot) {
-  const sentinel = join(repoRoot, ".quality-skip");
   return (
-    "Fix the new violations, or split the change. The baseline records what " +
-    "was\n" +
-    "already there, so only the increase blocks. Run the scanner directly:\n" +
+    "Next step: inspect the baseline comparison and run the scanner directly:\n" +
     `  node "${SCANNER}" "${filePath}" --root="${repoRoot}"\n` +
-    `To waive this tracked regression once: echo '{"rebaseline": true}' > ` +
-    `"${sentinel}"\n` +
-    "Before committing, run: quality-guard check --staged"
+    "The write continues; this output is advisory evidence only."
+  );
+}
+
+export function unavailableTail(filePath) {
+  return (
+    `Next step: run the relevant Quality Guard diagnostic again for "${filePath}" ` +
+    "inside a repository. The write continues."
   );
 }
 

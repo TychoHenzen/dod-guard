@@ -7303,7 +7303,7 @@ var require_content_type = __commonJS({
 });
 
 // src/index.ts
-import { readFileSync as readFileSync6, realpathSync } from "node:fs";
+import { readFileSync as readFileSync5, realpathSync } from "node:fs";
 import * as path17 from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 
@@ -29247,6 +29247,10 @@ function requireRepositoryRoot(root2) {
   return resolved;
 }
 
+// src/skips.ts
+import * as path16 from "node:path";
+var SKIP_LOG = path16.join(".github", "quality", "skip-log.json");
+
 // src/tool-response.ts
 function text2(value) {
   return { content: [{ type: "text", text: value }] };
@@ -29260,92 +29264,6 @@ function toolError(err) {
       }
     ]
   };
-}
-
-// src/tool-commit.ts
-function commitGateResponse(input) {
-  if (input.intent === "refactor" && !input.target)
-    return text2("ERROR: Usage error: refactor intent requires --target");
-  return text2(
-    renderDecision(
-      runStagedCheck(input.root, {
-        json: true,
-        intent: input.intent ?? "change",
-        target: input.target
-      }),
-      { json: true }
-    )
-  );
-}
-async function commitGateTool(input) {
-  try {
-    return commitGateResponse({
-      ...input,
-      root: requireRepositoryRoot(input.root)
-    });
-  } catch (err) {
-    return toolError(err);
-  }
-}
-function registerQualityCommitGate(server) {
-  server.tool(
-    "quality_commit_gate",
-    "Judge staged source content through the authoritative commit decision. Returns a stable JSON verdict, fingerprint, and ordered findings.",
-    {
-      root: external_exports.string().min(1).describe("Repository root"),
-      intent: external_exports.enum(["change", "refactor"]).optional().describe("Change intent. Defaults to change."),
-      target: external_exports.string().optional().describe(
-        "Repository-relative responsibility-map path required for refactor intent"
-      )
-    },
-    commitGateTool
-  );
-}
-
-// src/skips.ts
-import { existsSync as existsSync3, readFileSync as readFileSync5 } from "node:fs";
-import * as path16 from "node:path";
-var SKIP_LOG = path16.join(".github", "quality", "skip-log.json");
-function readSkipLog(root2) {
-  const target = path16.join(root2, SKIP_LOG);
-  if (!existsSync3(target)) return [];
-  try {
-    const parsed = JSON.parse(readFileSync5(target, "utf8"));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-function formatSkips(records) {
-  const open = records.filter((record3) => record3.acknowledged !== true);
-  if (open.length === 0) return "No unacknowledged quality-gate waivers.";
-  return [
-    `${open.length} unacknowledged waiver(s):`,
-    "",
-    ...open.flatMap(formatRecord),
-    "",
-    `Acknowledge by setting "acknowledged": true in ${SKIP_LOG}.`
-  ].join("\n");
-}
-function formatRecord(record3) {
-  return [
-    `${record3.file}  [${recordKind(record3)}]  ${recordTime(record3)}`,
-    ...recordReasons(record3)
-  ];
-}
-function recordKind(record3) {
-  if (record3.rebaseline) return "rebaseline";
-  return "new-file ceiling";
-}
-function recordTime(record3) {
-  if (record3.at) return record3.at;
-  return "unknown time";
-}
-function recordReasons(record3) {
-  if (!record3.reasons) return [];
-  return record3.reasons.flatMap(
-    (reason) => reason.split("\n").map((line) => `    ${line}`)
-  );
 }
 
 // src/tool-schemas.ts
@@ -29387,20 +29305,6 @@ function registerQualityReport(server) {
     }
   );
 }
-function registerQualitySkips(server) {
-  server.tool(
-    "quality_skips",
-    "List .quality-skip waivers that were consumed but never acknowledged. Each one is a place where the quality gate was bypassed on purpose. The pre-commit hook refuses to commit while any remain open.",
-    { root: external_exports.string().describe("Repository root") },
-    async ({ root: root2 }) => {
-      try {
-        return text2(formatSkips(readSkipLog(requireRepositoryRoot(root2))));
-      } catch (err) {
-        return toolError(err);
-      }
-    }
-  );
-}
 
 // src/tool-scan.ts
 function registerQualityScan(server) {
@@ -29411,7 +29315,7 @@ function registerQualityScan(server) {
     qualityScan
   );
 }
-var QUALITY_SCAN_DESCRIPTION = "Measure structural quality of the given paths and return the raw report. No verdict, no baseline. Use quality_gate to decide pass or fail.";
+var QUALITY_SCAN_DESCRIPTION = "Measure structural quality of the given paths and return advisory evidence. This report has no commit, merge, or acceptance authority.";
 var QUALITY_SCAN_INPUT = {
   paths: PATHS,
   root: ROOT,
@@ -29442,33 +29346,6 @@ var QUALITY_GATE_INPUT = {
   testPaths: TEST_PATHS,
   failOn: external_exports.enum(["none", "error", "regression", "any"]).optional().describe("Default regression")
 };
-async function qualityGate(input) {
-  try {
-    const result = await runGateScan(input);
-    const verdict2 = result.exitCode === 0 ? "PASS" : "FAIL";
-    const report = JSON.stringify(result.report, null, 2);
-    return text2(`${verdict2} (exit ${result.exitCode})
-
-${report}`);
-  } catch (err) {
-    return toolError(err);
-  }
-}
-async function runGateScan(input) {
-  return runScanAsync({
-    ...input,
-    root: requireRepositoryRoot(input.root),
-    failOn: input.failOn ?? "regression"
-  });
-}
-function registerQualityGate(server) {
-  server.tool(
-    "quality_gate",
-    "Compare the given paths against a recorded baseline and report regressions. Existing debt is allowed, making it worse is not. A file the baseline has never seen is adopted rather than failed.",
-    QUALITY_GATE_INPUT,
-    qualityGate
-  );
-}
 
 // src/tool-test-quality.ts
 function registerQualityTestQuality(server) {
@@ -29502,17 +29379,14 @@ async function qualityTestQuality(input) {
 // src/server-tools.ts
 function registerQualityGuardTools(server) {
   registerQualityScan(server);
-  registerQualityGate(server);
   registerQualityReport(server);
-  registerQualitySkips(server);
-  registerQualityCommitGate(server);
   registerQualityTestQuality(server);
 }
 
 // src/index.ts
 var _dirname = path17.dirname(fileURLToPath2(import.meta.url));
 var _pkg = JSON.parse(
-  readFileSync6(path17.join(_dirname, "..", "package.json"), "utf-8")
+  readFileSync5(path17.join(_dirname, "..", "package.json"), "utf-8")
 );
 function createQualityGuardServer() {
   const server = new McpServer({

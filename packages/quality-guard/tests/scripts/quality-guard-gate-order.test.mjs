@@ -19,7 +19,7 @@ function regressionServices(overrides = {}) {
   });
 }
 
-test("a blocked regression checks the waiver before the linter", () => {
+test("an advisory regression runs the linter without consuming a waiver", () => {
   const root = fixtures.tempRepo();
   const filePath = fixtures.writeTarget(root, "tracked.js", 10);
   fixtures.writeBaselineFile(root, ["tracked.js"], {});
@@ -43,27 +43,18 @@ test("a blocked regression checks the waiver before the linter", () => {
           regressions: [{ file: "tracked.js", rule: "todo-marker" }],
         };
       },
-      readSentinelState: () => {
-        calls.push("sentinel");
-        return { rebaseline: false };
-      },
-      waive: () => {
-        calls.push("waive");
-        return false;
-      },
       localResult: () => {
         calls.push("linter");
         return 0;
       },
     }),
   );
-  assert.equal(code, 2);
+  assert.equal(code, 0);
   assert.deepEqual(calls, [
     "scanner",
     "baseline",
     "comparison",
-    "sentinel",
-    "waive",
+    "linter",
   ]);
   rmSync(root, { recursive: true, force: true });
 });

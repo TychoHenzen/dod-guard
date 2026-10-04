@@ -48,7 +48,19 @@ function shouldGate(input) {
 async function runTargets(input) {
   const baselineLib = await import("./baseline-lib.mjs");
   for (const target of activeTargets(input)) {
-    const code = await gate(target.input, target.filePath, baselineLib);
+    let code;
+    try {
+      code = await gate(target.input, target.filePath, baselineLib);
+    } catch (error) {
+      process.stderr.write(
+        `quality-guard advisory unavailable for ${target.filePath}. ` +
+          "The write continues.\n" +
+          `[unavailable] hook failed: ${
+            error instanceof Error ? error.message : String(error)
+          }\n`,
+      );
+      code = 0;
+    }
     if (code !== 0) return code;
   }
   return 0;
