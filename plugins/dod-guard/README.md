@@ -69,13 +69,15 @@ current contract, and explicit safety or authority boundaries remain.
 
 ## Repository setup
 
-`/setup-repository` connects a local project to GitHub, merges applicable
+`/setup-repository` connects a local project to GitHub, creates a new target as
+an explicitly public repository, reads that visibility back, merges applicable
 quality gates and delivery instructions, links one Project, enables supported
 security settings, and protects the observed default branch after its checks
 pass. It preserves existing Git history, remotes, instructions, ignore rules,
-and tool configuration. Setup establishes the shared workflow labels while
-preserving repository-specific labels, and uses explicit zero required approvals
-for a solo owner without bypassing review or current-head checks.
+and tool configuration; an existing private remote is read and preserved, not
+made public. Setup establishes the shared workflow labels while preserving
+repository-specific labels, and uses explicit zero required approvals for a
+solo owner without bypassing review or current-head checks.
 
 ## Delivery workflow
 
