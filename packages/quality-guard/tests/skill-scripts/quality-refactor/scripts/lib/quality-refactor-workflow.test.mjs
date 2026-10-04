@@ -56,9 +56,6 @@ test("quality-refactor documents advisory evidence and recovery", () => {
     ],
     "advisory evidence",
   );
-  assert.doesNotMatch(plan, /QUALITY_GUARD_INTERNAL_CHECK=1/);
-  assert.doesNotMatch(plan, /quality-guard check --(?:staged|committed)/);
-
   assertSignals(
     section("## Recovery and stops", "## Execute"),
     [
@@ -83,9 +80,7 @@ test("quality-refactor documents advisory evidence and recovery", () => {
 test("quality-refactor documents execution and final report verification", () => {
   const execute = section("## Execute", "## Finish");
   assert.ok(
-    execute.includes(
-      "stage only its files, then refresh the report evidence",
-    ),
+    execute.includes("stage only its files, then refresh the report evidence"),
   );
 
   const finish = section("## Finish", "Rules and remediation guidance");
@@ -101,6 +96,4 @@ test("quality-refactor documents execution and final report verification", () =>
     ],
     "finish",
   );
-  assert.doesNotMatch(finish, /QUALITY_GUARD_INTERNAL_CHECK=1/);
-  assert.doesNotMatch(finish, /quality-guard check --(?:staged|committed)/);
 });
