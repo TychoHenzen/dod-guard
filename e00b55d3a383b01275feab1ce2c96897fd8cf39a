@@ -7,5 +7,14 @@
     "reason": "Reviewed PR #810 against the exact synthetic merge target: packages/quality-guard/scripts intentionally contains two cohesive ownership groups, the Quality Guard gate pipeline and project-linter adapters. The similarity split is a heuristic architecture-shape signal, not an unresolved boundary defect for this advisory-surface delivery.",
     "author": "Codex",
     "time": "2026-10-04T19:45:17.117Z"
+  },
+  {
+    "findingId": "570c81447fdba1be5ec7f5315c59a26e62e4a4f1d0f46aab37ee4e361a9570f7",
+    "fingerprint": "3a9fc374bae263172d6b09a7da741541fc8c40b6297ae0a84945edba3623b596",
+    "baseSha": "b072c1f3542778889e8a05e7a09901d28453d92a",
+    "targetSha": "e00b55d3a383b01275feab1ce2c96897fd8cf39a",
+    "reason": "Reviewed PR #810 against the exact synthetic merge target: cli-advisory.ts is the intentional public advisory dispatch seam for legacy check and acknowledge compatibility. Its low similarity to the existing src clusters is expected for this focused adapter and does not indicate an unresolved ownership defect.",
+    "author": "Codex",
+    "time": "2026-10-04T19:48:04.349Z"
   }
 ]
