@@ -2,7 +2,7 @@
 name: setup-repository
 description: >-
   Bootstrap a local project into the dod-guard GitHub workflow. Use when the user wants to create
-  or connect its GitHub repository, add applicable quality gates, link one Project, secure and
+  or connect its GitHub repository, add applicable correctness gates, link one Project, secure and
   protect the default branch, and leave the intended project state committed and pushed. Preserve
   existing history, remotes, instructions, ignore rules, and tool configuration.
 ---
@@ -150,7 +150,7 @@ For each applicable category:
 - Pin tools in a manifest and lockfile. Pin every GitHub Action to a full commit SHA and retain the
   release tag in a comment.
 - Use check-only formatter commands in CI. CI must not write formatting, generated files, lockfiles,
-  or ratchet baselines.
+  or persisted quality state; diagnostic output remains visible in the run.
 - Record a concrete language, platform, manifest, or tool-conflict reason for every skipped category.
   "Not configured" is not a reason.
 

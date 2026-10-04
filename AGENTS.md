@@ -5,7 +5,7 @@ code-free plugins.
 
 | Path | Purpose |
 |---|---|
-| `packages/quality-guard` | Structural scanner, staged commit gate, and quality-refactor skill. |
+| `packages/quality-guard` | Structural scanner, fail-open advisory hook, report tools, and quality-refactor skill. |
 | `packages/code-explorer` | Read-only source navigation MCP server. |
 | `packages/knowledge-base` | Persistent Markdown-backed knowledge retrieval MCP server. |
 | `packages/fossil` | Git-history and workspace-debris CLI. |
@@ -36,10 +36,16 @@ Tracked bundles live at `packages/*/dist/bundle.js`. Regenerate and commit them
 on the feature branch. CI reproduces generated files and fails on drift.
 
 `npm run preflight:static-analysis` reproduces the static-analysis generation,
-ratchets, formatting, and strict Biome check. It requires a clean checkout and
+report-only diagnostics, formatting, and strict Biome check. It requires a clean checkout and
 leaves changes unstaged. If it reports changed paths, review each one, keep
 only intended generated changes, commit and push them on the same branch, then
 rerun the preflight on the new head.
+
+Quality Guard structural, test-quality, coverage, audit, and readability results
+are diagnostic evidence. They do not accept commits or merges and do not write
+persisted quality state. Build/test, plugin configuration, workflow validation,
+lockfile, generated-file, bundle/package-integrity, and Biome-error checks retain
+correctness authority.
 
 ## GitHub delivery
 
@@ -73,7 +79,7 @@ branch rules:
 - `package-integrity`
 
 CI has read-only repository permission. It does not commit formatting, bundles,
-or ratchet baselines.
+or diagnostic reports.
 
 Do not add arbitrary wall-clock timeouts that kill long-running agents,
 advisors, reviewers, or delivery tasks. Wait for authoritative terminal state;

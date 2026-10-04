@@ -448,14 +448,15 @@ tickets.
 - Inspect both new code and nearby code.
 - Remove accidental complexity, duplication, dead code, unnecessary abstractions, and spaghetti control flow.
 - Prefer deletion and reuse.
-- Reduce code or complexity where safe and improve real Quality Guard metrics.
+- Reduce code or complexity where safe and improve the reported Quality Guard
+  evidence; diagnostics are not correctness gates.
 - Keep cleanup bounded to the selected feature and directly adjacent code.
 - When adjacent cleanup is relevant, keep it bounded and record why no cleanup is safe when applicable.
 - The child must either make a justified cleanup or record evidence that no safe cleanup exists.
 
 #### D. Fixing and reliability
 
-- Fix errors found in the touched paths, required suites, integration path, lint/type checks, or Quality Guard.
+- Fix errors found in the touched paths, required suites, integration path, or lint/type checks, and act on Quality Guard findings when they identify an in-scope problem.
 - Do not label relevant failures “pre-existing” to defer them.
 - Truly unrelated failures require evidence and a recovery decision, not silent dismissal.
 
@@ -509,12 +510,14 @@ limitation.
 During basic implementation:
 
 - Use only small targeted checks needed to prevent obvious dead ends.
-- Before committing or pushing, run one focused acceptance check for every derived or rounded threshold/persisted baseline at the precision used by the real comparison. This supplements, rather than replaces, the complete relevant suite.
+- Before committing or pushing, run one focused acceptance check for every
+  changed behavior boundary or derived value at the precision used by its real
+  consumer. This supplements, rather than replaces, the complete relevant suite.
 - Build the wiring while implementing - logging and general observability are always valuable, but defer comprehensive validation until the required workstreams are substantially complete.
 
 At the end of basic work:
 
-1. Run the complete relevant suite once: tests, lint/type checks, integration/E2E checks, and Quality Guard where applicable.
+1. Run the complete relevant suite once: tests, lint/type checks, integration/E2E checks, and Quality Guard diagnostics where applicable.
 2. Group failures by tool and root cause.
 3. While repairing a failure, run that failing tool or the narrowest relevant target only.
 4. Fix every failure in the selected paths and required gates.
@@ -560,8 +563,8 @@ checks remain the durable administration record. Do not create or consult a
 local review ledger or any other untracked administration file.
 
 The complete relevant validation includes repository-required CI,
-static-analysis, security, integration/E2E, and Quality Guard gates; built-in
-checks do not replace any required gate.
+static-analysis, security, integration/E2E, and Quality Guard diagnostics;
+built-in checks do not replace any required correctness gate.
 
 Then use:
 
@@ -655,18 +658,27 @@ Blocked-state user-facing response:
 
 - When safe progress must stop because the goal or every eligible delivery unit is blocked, replace progress narration with one brief user-facing message. Do not narrate checkpoint, snapshot, delegation, queue, or audit mechanics.
 - Assume the user has zero prior context. Start with `Blocked:` and explain in plain English what was being attempted (repository, PBI number, title, and one-sentence purpose), what is blocking it, the concrete evidence, what recovery was tried, and the one decision or action needed to continue.
-- Use one short paragraph or at most five bullets. Translate workflow jargon such as “authoritative baseline,” “dirty-path disposition,” “state reconciliation,” and “goal pass” instead of exposing it.
+- Use one short paragraph or at most five bullets. Translate workflow jargon
+  such as “stale acceptance evidence,” “dirty-path disposition,” “state
+  reconciliation,” and “goal pass” instead of exposing it.
 - If another eligible delivery unit can proceed, keep working and do not send a blocked-stop message. If the user must decide something, ask one concrete question with the safe options and their consequences.
 - Keep any required `[HH:MM]` or `PBIs completed: N` telemetry compact; it must not become a second status narrative.
 
 ### 8. Quality Guard and cache changes
 
-If Quality Guard fails:
+Quality Guard output is advisory diagnostic evidence. If it reports:
 
-- Separate actual defects from stale or invalid baseline data.
+- Separate actual defects from tool failures, unavailable providers, and source
+  findings.
 - Fix actual findings.
-- Re-baseline only through the supported mechanism, recording old/new fingerprints and the reason.
-- Never suppress findings or alter code merely to game the metric.
+- Keep report, test-quality, and readability evidence current when those paths
+  apply.
+- Never suppress findings or alter code merely to improve a metric.
+
+Build, test, plugin configuration, workflow validation, lockfile,
+generated-file, bundle/package-integrity, and Biome-error checks remain the
+correctness gates. Quality Guard output never accepts a commit or merge and
+never writes persisted quality state.
 
 If a cached skill or script must be edited:
 

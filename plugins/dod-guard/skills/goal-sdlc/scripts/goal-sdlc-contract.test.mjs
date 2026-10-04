@@ -613,6 +613,21 @@ test("goal-sdlc retains every delivery stage and queue boundary", async () => {
   );
 });
 
+test("goal-sdlc keeps Quality Guard output advisory", async () => {
+  const skill = await readSkill();
+  const start = skill.indexOf("### 8. Quality Guard and cache changes");
+  const end = skill.indexOf("### 9. Common-sense completion and continuation", start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const section = skill.slice(start, end);
+
+  assert.match(section, /Quality Guard output is advisory diagnostic evidence/);
+  assert.match(section, /report, test-quality, and readability evidence/);
+  assert.match(section, /correctness gates/);
+  assert.match(section, /never writes persisted quality state/);
+  assert.doesNotMatch(section, /\b(?:baseline|ratchet|re-?baseline)\b/i);
+});
+
 test("goal-sdlc defines one exact-head pre-review checkpoint", async () => {
   const skill = await readSkill();
   for (const marker of [
@@ -786,7 +801,7 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
     "local review ledger or any other untracked administration file",
     "current head",
     "mark resolved\n  finding comments as resolved",
-    "repository-required CI,\nstatic-analysis, security, integration/E2E, and Quality Guard gates",
+    "repository-required CI,\nstatic-analysis, security, integration/E2E, and Quality Guard diagnostics",
     "Preserve the checkpoint on failure or interruption; repair the same step",
     "Then use:",
     "Do not write parent, child, branch, or worktree state from this queue skill.",

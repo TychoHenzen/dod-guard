@@ -1,7 +1,7 @@
 {
   "name": "quality-guard",
   "version": "0.5.15",
-  "description": "Structural code quality analysis, plaintext readability checks, commit decisions, and guided refactoring.",
+  "description": "Advisory structural and plaintext quality diagnostics, report evidence, and guided refactoring.",
   "author": {
     "name": "tychohenzen",
     "url": "https://github.com/tychohenzen"
@@ -17,13 +17,13 @@
   },
   "interface": {
     "displayName": "quality-guard",
-    "shortDescription": "Structural and plaintext quality checks with refactoring guidance.",
-    "longDescription": "Scans structural quality, checks complete plaintext through the optional textstat boundary, reports tracked exceptions, and evaluates staged or committed changes.",
+    "shortDescription": "Advisory structural and plaintext diagnostics with refactoring guidance.",
+    "longDescription": "Provides advisory structural diagnostics, checks complete plaintext through the optional textstat boundary, and reports current-state and test-quality evidence without commit or merge authority.",
     "developerName": "tychohenzen",
     "category": "Developer Tools",
     "capabilities": ["MCP tools", "Skills"],
     "defaultPrompt": [
-      "Check the staged changes with the quality gate.",
+      "Run an advisory structural quality scan.",
       "Refactor the highest structural quality violation."
     ]
   }

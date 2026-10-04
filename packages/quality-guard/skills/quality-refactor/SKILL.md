@@ -4,7 +4,7 @@ description: >-
   Refactor code against quality-guard's structural rules. Use when asked to
   reduce complexity, split responsibilities, remove dead code, or perform a
   repository quality pass. Records work as GitHub issue sub-issues and stores
-  scanner evidence under .quality/.
+  diagnostic evidence under .quality/.
 argument-hint: "[repository, directory, module, or files]"
 ---
 # Quality refactor
@@ -16,9 +16,9 @@ Preserve behavior. Scanner findings identify symptoms, not architecture.
 - Use the supplied repository-relative scope. If no narrower scope is given,
   scan the repository root; never widen the scope to another checkout.
 - Use the `default` profile unless the selected issue explicitly requires
-  `strict`. Keep the active repository configuration and baseline as evidence,
-  not as values to rewrite for a cleaner score.
-- Require a passing baseline build and test run before planning changes. Create
+  `strict`. Keep the active repository configuration and diagnostic evidence
+  read-only; do not rewrite it for a cleaner score.
+- Require a passing build and test run before planning changes. Create
   `.quality/` when absent, then run the scanner twice: once for readable
   findings and once with `--format=units`. Resolve `<repository>` once as the
   repository root and pass it explicitly; scope and root are separate.
@@ -88,7 +88,7 @@ quality-guard report --root=<repository> > .quality/quality-report.json
 ```
 
 These commands produce current, read-only evidence. They do not accept a
-commit, create a verdict, or write ledger state.
+commit, create an acceptance verdict, or write persisted quality state.
 
 ## Recovery and stops
 
@@ -98,17 +98,10 @@ commit, create a verdict, or write ledger state.
   visible, repair the owning path, and rerun the narrowest failed check before
   the full confirmation suite. Do not call failed or unavailable evidence a
   pass.
-- If a baseline is missing, malformed, stale, or regresses, inspect the source
-  and evidence first. Use `--write-baseline=.github/quality/quality-baseline.json`
-  only for a deliberate ratchet update with the old/new fingerprints and reason
-  recorded in the issue or commit. For a tracked regression that needs a
-  one-shot audited bypass, use root `.quality-skip` with
-  `{"rebaseline": true}`, then set the resulting record's `acknowledged` field
-  to `true` in `.github/quality/skip-log.json`. Never edit a baseline or waiver
-  to hide a finding.
-- Scanner, materialization, or report-analysis errors stay visible and stop the
-  workflow until their evidence path is available. Findings remain diagnostic;
-  this skill has no staged or committed acceptance decision.
+- Findings and report-provider errors stay visible. Repair the owning source or
+  evidence path when it is in scope, and rerun the narrowest failed check before
+  the full confirmation suite. Findings remain diagnostic; this skill has no
+  commit or merge acceptance decision.
 - Stop before mutation for credentials, destructive intent, indistinguishable
   unrelated work, unresolved ownership, or missing acceptance evidence. Wait
   for long-running scans to reach terminal state; do not add an arbitrary
@@ -125,8 +118,8 @@ Work through ready sub-issues in dependency order. For each one:
 5. Comment the commit and checks on the sub-issue, then close it.
 
 Re-scan after every structural wave because deletions and moves invalidate the
-old work-unit ranking. Do not modify a tracked ratchet baseline merely to make
-a regression pass.
+old work-unit ranking. Do not alter source or diagnostic evidence merely to
+improve a score.
 
 ## Finish
 
