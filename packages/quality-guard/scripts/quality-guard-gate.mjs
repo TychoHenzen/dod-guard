@@ -3,18 +3,15 @@ import { localResult } from "./quality-guard-local.mjs";
 import {
   absoluteTail,
   isUnseen,
+  prepareGate,
   report,
   trackedTail,
   unavailable,
 } from "./quality-guard-gate-support.mjs";
 import {
   FILE_RULES,
-  baselinePath,
-  compareFile,
   findRepoRoot,
-  relativePath,
   runScanner,
-  scanFile,
 } from "./quality-guard-gate-scan.mjs";
 
 const DEFAULT_SERVICES = { localResult, runScanner };
@@ -69,29 +66,18 @@ export function gate(input, filePath, deps = {}) {
   const repoRoot = findRepoRoot(filePath);
   if (!repoRoot)
     return unavailable(filePath, "no Git repository root was found.");
-  const baseline = baselinePath(repoRoot);
-  const scanResult = scanFile({
+  const prepared = prepareGate({
     filePath,
     repoRoot,
-    scanner: services.runScanner,
+    services,
     rules: FILE_RULES,
   });
-  if (scanResult.error) return unavailable(filePath, scanResult.error);
-  const { scan } = scanResult;
-  const relPath = relativePath(repoRoot, filePath);
-  const comparison = compareFile({ baseline, scan, relPath, services });
-  if (!comparison.ok)
-    return unavailable(
-      filePath,
-      "baseline comparison did not produce a readable result.",
-    );
+  if (prepared.error) return unavailable(filePath, prepared.error);
   return continueGate({
     input,
     filePath,
     repoRoot,
-    scan,
-    comparison: comparison.value,
-    relPath,
+    ...prepared,
     deps: services,
   });
 }

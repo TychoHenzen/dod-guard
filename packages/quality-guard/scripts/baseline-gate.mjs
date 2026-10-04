@@ -17,11 +17,13 @@ export function absoluteVerdict(violations) {
 }
 
 function findingText(violation, fallbackFile, fallbackRule) {
-  const file = violation.file ?? fallbackFile;
-  const line = violation.line ?? "?";
-  const severity = violation.severity ?? "unknown";
-  const rule = violation.rule ?? fallbackRule;
-  const message = violation.message ?? "no message";
+  const {
+    file = fallbackFile,
+    line = "?",
+    severity = "unknown",
+    rule = fallbackRule,
+    message = "no message",
+  } = violation;
   return `${file}:${line} [${severity}] ${rule}: ${message}`;
 }
 

@@ -1,5 +1,34 @@
-import { SCANNER } from "./quality-guard-gate-scan.mjs";
+import {
+  baselinePath,
+  readComparison,
+  relativePath,
+  scanFile,
+  SCANNER,
+} from "./quality-guard-gate-scan.mjs";
 const MAX_REPORTED = 20;
+
+export function prepareGate({ filePath, repoRoot, services, rules }) {
+  const scanResult = scanFile({
+    filePath,
+    repoRoot,
+    scanner: services.runScanner,
+    rules,
+  });
+  if (scanResult.error) return scanResult;
+  const { scan } = scanResult;
+  const relPath = relativePath(repoRoot, filePath);
+  const comparison = readComparison({
+    baseline: baselinePath(repoRoot),
+    scan,
+    relPath,
+    deps: services,
+  });
+  if (!comparison.ok)
+    return {
+      error: "baseline comparison did not produce a readable result.",
+    };
+  return { scan, comparison: comparison.value, relPath };
+}
 
 export function report(header, lines, tail) {
   const shown = lines.slice(0, MAX_REPORTED);

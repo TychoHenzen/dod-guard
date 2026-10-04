@@ -70,7 +70,7 @@ export function scanFile({ filePath, repoRoot, scanner, rules = FILE_RULES }) {
   }
 }
 
-function readComparison({ baseline, scan, relPath, deps }) {
+export function readComparison({ baseline, scan, relPath, deps }) {
   if (!existsSync(baseline)) return { ok: true, value: null };
   try {
     return {
@@ -84,10 +84,6 @@ function readComparison({ baseline, scan, relPath, deps }) {
   } catch {
     return { ok: false, value: null };
   }
-}
-
-export function compareFile({ baseline, scan, relPath, services }) {
-  return readComparison({ baseline, scan, relPath, deps: services });
 }
 
 export function relativePath(repoRoot, filePath) {
