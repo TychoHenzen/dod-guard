@@ -34,6 +34,10 @@ test("active quality documentation describes advisory report-only behavior", () 
   assert.match(documents.get("packages/quality-guard/README.md"), /advisory/i);
   assert.match(
     documents.get("packages/quality-guard/README.md"),
+    /mkdir -p "<repository>\/\.quality"[\s\S]+> "<repository>\/\.quality\/units\.json"[\s\S]+> "<repository>\/\.quality\/quality-report\.json"/,
+  );
+  assert.match(
+    documents.get("packages/quality-guard/README.md"),
     /quality_scan.*quality_report.*quality_test_quality/s,
   );
   assert.match(

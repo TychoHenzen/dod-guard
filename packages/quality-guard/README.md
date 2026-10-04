@@ -17,11 +17,12 @@ or merges and does not persist an acceptance result.
 Run the scanner directly when a structural report is needed:
 
 ```bash
+mkdir -p "<repository>/.quality"
 node skills/quality-refactor/scripts/quality-scan.mjs . \
   --root=<repository> --top=20
 node skills/quality-refactor/scripts/quality-scan.mjs . \
-  --root=<repository> --format=units > .quality/units.json
-quality-guard report --root=<repository> > .quality/quality-report.json
+  --root=<repository> --format=units > "<repository>/.quality/units.json"
+quality-guard report --root=<repository> > "<repository>/.quality/quality-report.json"
 ```
 
 The compatibility CLI names `check` and `acknowledge` are not delivery
