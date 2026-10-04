@@ -10,7 +10,6 @@ import {
 
 const MISSING_ROOT = /repository root does not exist/;
 const REFACTOR_TARGET = /requires --target/;
-
 test("legacy registration remains internal and keeps wrappers exercised", async () => {
   const root = stagedFixture();
   const connection = await connectLegacy();
@@ -24,7 +23,6 @@ test("legacy registration remains internal and keeps wrappers exercised", async 
     removeFixture(root);
   }
 });
-
 async function assertLegacyToolsAvailable(
   connection: Awaited<ReturnType<typeof connectLegacy>>,
 ) {
@@ -36,7 +34,6 @@ async function assertLegacyToolsAvailable(
     );
   }
 }
-
 async function assertLegacyGate(
   connection: Awaited<ReturnType<typeof connectLegacy>>,
   root: string,
@@ -61,7 +58,6 @@ async function assertLegacyGate(
   });
   assert.match(resultText(invalidGate), MISSING_ROOT);
 }
-
 async function assertLegacySkips(
   connection: Awaited<ReturnType<typeof connectLegacy>>,
   root: string,
@@ -78,7 +74,6 @@ async function assertLegacySkips(
   });
   assert.match(resultText(invalidSkips), MISSING_ROOT);
 }
-
 async function assertLegacyCommitGate(
   connection: Awaited<ReturnType<typeof connectLegacy>>,
   root: string,
