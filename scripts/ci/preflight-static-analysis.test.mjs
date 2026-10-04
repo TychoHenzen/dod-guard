@@ -42,7 +42,6 @@ test("preflight is CI's single source for generated checks, policy, and Biome fl
     '"--fail-on=regression"',
     '"--baseline=.github/quality/quality-baseline.json"',
     '"--write-baseline=.github/quality/quality-baseline.json"',
-    '"--committed", "HEAD", "--json"',
     '"scripts/ci/check-tests-present.mjs"',
     '"scripts/ci/check-audit.mjs"',
     '"scripts/ci/check-coverage.mjs"',
@@ -94,7 +93,6 @@ function write(root, file, content) {
 function fixture() {
   const parent = mkdtempSync(join(tmpdir(), "static-analysis-preflight-"));
   const root = join(parent, "repo");
-  const remote = join(parent, "origin.git");
   mkdirSync(root);
   git(root, ["init", "--quiet"]);
   git(root, ["config", "user.email", "test@example.invalid"]);
@@ -147,11 +145,6 @@ function fixture() {
   write(root, "scripts/ci/npm-command.mjs", readFileSync(join(ROOT, "scripts/ci/npm-command.mjs")));
   write(
     root,
-    "scripts/ci/committed-quality-gate.test.mjs",
-    'import test from "node:test"; test("fixture", () => {});\n',
-  );
-  write(
-    root,
     "scripts/ci/preflight-static-analysis.test.mjs",
     'import test from "node:test"; test("fixture", () => {});\n',
   );
@@ -190,10 +183,6 @@ function fixture() {
 
   git(root, ["add", "."]);
   git(root, ["commit", "-m", "fixture"]);
-  execFileSync("git", ["init", "--bare", "--quiet", remote]);
-  git(root, ["remote", "add", "origin", remote]);
-  git(root, ["notes", "--ref=quality-decisions", "add", "-m", "fixture", "HEAD"]);
-  git(root, ["push", "--quiet", "origin", "refs/notes/quality-decisions:refs/notes/quality-decisions"]);
 
   return { parent, root };
 }

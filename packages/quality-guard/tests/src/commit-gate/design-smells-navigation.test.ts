@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseQualityConfig } from "../../../src/commit-gate/config.js";
 import { analyzeCurrentArchitecture } from "../../../src/commit-gate/current-architecture.js";
-import { structuralFindings } from "../../../src/commit-gate/decision-findings-architecture.js";
 import { analyzeDesignSmells } from "../../../src/commit-gate/design-smells/design-smells.js";
 
 test("reports harmful-looking receiver chains but excludes fluent markers", () => {
@@ -52,12 +51,4 @@ test("reports harmful-looking receiver chains but excludes fluent markers", () =
     analyzeCurrentArchitecture(files, config).transitiveNavigation.length,
     1,
   );
-  const [finding] = structuralFindings({
-    beforeFiles: [],
-    afterFiles: files,
-    affectedPaths: ["src/Service.ts"],
-    config,
-  });
-  assert.equal(finding?.severity, "review");
-  assert.match(finding?.reason ?? "", /transitive-navigation/);
 });

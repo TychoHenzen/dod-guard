@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
-import { rmSync } from "node:fs";
 import { test } from "node:test";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { runQualityGuardCli } from "../../src/cli-entrypoint.js";
-import { fixture, git } from "./commit-gate/acknowledgement-test-support.js";
 
 async function captureStdout(action: () => Promise<void>) {
   const originalWrite = process.stdout.write;
@@ -56,33 +54,34 @@ test("no command still starts the normal MCP server", async () => {
   assert.equal(connected, true);
 });
 
-test("public checks stay advisory while internal committed checks replay CI", async () => {
+test("public checks stay advisory", async () => {
   const stagedOutput = await captureStdout(() =>
     runQualityGuardCli(["check", "--staged"], cliDependencies()),
   );
   assert.equal(JSON.parse(stagedOutput).status, "advisory");
   const publicOutput = await committedCheck();
   assert.equal(JSON.parse(publicOutput).status, "advisory");
-  const root = fixture();
-  const originalCwd = process.cwd();
-  const originalExitCode = process.exitCode;
-  const originalInternalFlag =
-    process.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK;
+});
+
+test("legacy internal flags cannot restore a decision path", async () => {
+  const originalInternal = process.env.QUALITY_GUARD_INTERNAL_CHECK;
+  const originalCommitted = process.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK;
   try {
-    git(root, ["commit", "--allow-empty", "-m", "change"]);
+    process.env.QUALITY_GUARD_INTERNAL_CHECK = "1";
     process.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK = "1";
-    process.chdir(root);
-    const internalOutput = await committedCheck();
-    const internalResult = JSON.parse(internalOutput);
-    assert.notEqual(internalResult.status, "advisory");
-    assert.ok(internalResult.verdict && process.exitCode === 0);
+    const output = await captureStdout(() =>
+      runQualityGuardCli(
+        ["check", "--committed", "HEAD", "--json"],
+        cliDependencies(),
+      ),
+    );
+    assert.equal(JSON.parse(output).status, "advisory");
   } finally {
-    process.chdir(originalCwd);
-    process.exitCode = originalExitCode;
-    if (originalInternalFlag === undefined)
-      delete process.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK;
-    if (originalInternalFlag !== undefined)
-      process.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK = originalInternalFlag;
-    rmSync(root, { recursive: true, force: true });
+    delete process.env.QUALITY_GUARD_INTERNAL_CHECK;
+    if (originalInternal !== undefined)
+      process.env.QUALITY_GUARD_INTERNAL_CHECK = originalInternal;
+    delete process.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK;
+    if (originalCommitted !== undefined)
+      process.env.QUALITY_GUARD_INTERNAL_COMMITTED_CHECK = originalCommitted;
   }
 });

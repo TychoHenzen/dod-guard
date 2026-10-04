@@ -10,7 +10,6 @@ import {
 } from "./index-fixtures.test.js";
 
 const MISSING_ROOT = /repository root does not exist/;
-const REFACTOR_TARGET = /requires --target/;
 
 test("MCP server lists advisory quality tools only", async () => {
   const connection = await connect();
@@ -30,28 +29,19 @@ test("MCP server lists advisory quality tools only", async () => {
   }
 });
 
-test("legacy registration remains internal and keeps wrappers exercised", async () => {
+test("legacy registration keeps baseline and waiver wrappers internal", async () => {
   const root = stagedFixture();
   const connection = await connectLegacy();
   const call = (name: string, arguments_: Record<string, unknown>) =>
     connection.client.callTool({ name, arguments: arguments_ });
   const missingRoot = join(root, "missing");
   try {
-    await assertLegacyReadTools(call, root, missingRoot);
-    assert.match(
-      resultText(
-        await call("quality_commit_gate", { intent: "refactor", root }),
-      ),
-      REFACTOR_TARGET,
-    );
+    const tools = await connection.client.listTools();
     assert.equal(
-      (await call("quality_commit_gate", { root })).isError,
-      undefined,
+      tools.tools.some((tool) => tool.name === "quality_commit_gate"),
+      false,
     );
-    assert.match(
-      resultText(await call("quality_commit_gate", { root: missingRoot })),
-      MISSING_ROOT,
-    );
+    await assertLegacyReadTools(call, root, missingRoot);
   } finally {
     await connection.close();
     removeFixture(root);

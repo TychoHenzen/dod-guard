@@ -6,8 +6,7 @@ import { analyzeCurrentDesignSmells } from "./design-smells/current-design-smell
 import { analyzeEncapsulation } from "./encapsulation.js";
 import { analyzeCurrentPlacement } from "./placement-current.js";
 
-/** Current-state audit used by reports.
- * Commit decisions keep their delta analyzers. */
+/** Current-state audit used by reports. */
 export function analyzeCurrentArchitecture(
   files: ArchitectureFileFact[],
   config: QualityConfig,
