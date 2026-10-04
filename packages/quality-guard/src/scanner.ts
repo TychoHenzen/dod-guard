@@ -10,9 +10,6 @@ export interface ScanRequest {
   excludes?: string[];
   testPaths?: string[];
   profile?: "default" | "strict";
-  baseline?: string;
-  writeBaseline?: string;
-  failOn?: "none" | "error" | "regression" | "any";
 }
 
 const SCAN_TIMEOUT_MS = 120_000;
@@ -36,9 +33,6 @@ function buildArgs(request: ScanRequest): string[] {
     ["--root", request.root],
     ["--profile", request.profile],
     ["--rules", request.rules?.length ? request.rules.join(",") : undefined],
-    ["--baseline", request.baseline],
-    ["--write-baseline", request.writeBaseline],
-    ["--fail-on", request.failOn],
   ] as const;
   return [
     ...request.paths,

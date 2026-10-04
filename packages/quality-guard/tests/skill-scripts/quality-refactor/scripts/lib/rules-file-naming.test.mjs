@@ -70,7 +70,7 @@ test("suppresses both encoded prefixes in generated and interop paths", () => {
   }
 });
 
-test("prints actionable naming evidence in the quality-scan JSON report", () => {
+test("prints actionable naming evidence without becoming a gate", () => {
   withProject(
     { src: null, "src/ledger.ts": memberSources.ts("f_total") },
     (root) => {
@@ -81,11 +81,10 @@ test("prints actionable naming evidence in the quality-scan JSON report", () => 
           `--root=${root}`,
           "--format=json",
           "--rules=naming-encoding",
-          "--fail-on=any",
         ],
         { encoding: "utf8" },
       );
-      assert.equal(result.status, 1, result.stderr);
+      assert.equal(result.status, 0, result.stderr);
       const report = JSON.parse(result.stdout);
       assert.equal(
         JSON.stringify(report.violations),

@@ -63,10 +63,9 @@ async function runTarget({ target, services, report, unavailableReport }) {
 }
 
 async function runTargets(input) {
-  const baselineLib = await import("./baseline-lib.mjs");
   const output = createHookOutput();
   const localResult = createLocalResult(output.report);
-  const services = { ...baselineLib, localResult };
+  const services = { localResult };
   let code = 0;
   for (const target of activeTargets(input)) {
     code = await runTarget({

@@ -14,10 +14,6 @@ await cp(
   path.join(testRoot, "package.json"),
 );
 await cp(
-  path.join(packageRoot, "scripts", "sentinel.mjs"),
-  path.join(testRoot, "scripts", "sentinel.mjs"),
-);
-await cp(
   path.join(packageRoot, "skills", "quality-refactor", "scripts"),
   path.join(testRoot, "skills", "quality-refactor", "scripts"),
   { recursive: true },

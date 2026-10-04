@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { ALL_RULES } from "./lib/config.mjs";
 import { USAGE } from "./quality-scan-usage.mjs";
 import { FLAG_HANDLERS } from "./quality-scan-flags.mjs";
@@ -13,9 +12,6 @@ function defaultOptions() {
     testPaths: [],
     root: process.cwd(),
     top: 15,
-    writeBaseline: null,
-    baseline: null,
-    failOn: "none",
   };
 }
 function parseFlag(options, arg) {
@@ -43,13 +39,12 @@ function invalidChoice(options) {
   const choices = [
     ["format", ["text", "json", "units"]],
     ["profile", ["default", "strict"]],
-    ["failOn", ["none", "error", "regression", "any"]],
   ];
   const invalid = choices.find(
     ([key, values]) => !values.includes(options[key]),
   );
   return invalid
-    ? `bad --${invalid[0].replace("failOn", "fail-on")}: ${options[invalid[0]]}`
+    ? `bad --${invalid[0]}: ${options[invalid[0]]}`
     : null;
 }
 
@@ -65,7 +60,5 @@ export function validate(options) {
   if (choiceError) return choiceError;
   const ruleError = validateRules(options);
   if (ruleError) return ruleError;
-  if (options.baseline && !existsSync(options.baseline))
-    return `baseline not found: ${options.baseline}`;
   return null;
 }

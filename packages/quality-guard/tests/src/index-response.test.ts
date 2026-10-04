@@ -10,8 +10,8 @@ test("text wraps a payload in the MCP content shape", () => {
 
 test("toolError reports an Error message without leaking a stack", () => {
   assert.equal(
-    toolError(new Error("baseline not found")).content[0].text,
-    "ERROR: baseline not found",
+    toolError(new Error("scanner failed")).content[0].text,
+    "ERROR: scanner failed",
   );
 });
 

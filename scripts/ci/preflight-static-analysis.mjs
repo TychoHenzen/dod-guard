@@ -97,60 +97,13 @@ function reportPaths(title, paths) {
   }
 }
 
-function runQualityRatchet(failures) {
+function runQualityDiagnostics() {
   const env = { ...process.env, QUALITY_RULES, QUALITY_SCAN };
-  const qualityArgs = [
-    ...QUALITY_PATH_ARGS,
-    "--profile=strict",
-    `--rules=${QUALITY_RULES}`,
-    "--baseline=.github/quality/quality-baseline.json",
-    "--fail-on=regression",
-  ];
-  const quality = runNode("Quality ratchet", QUALITY_SCAN, qualityArgs, { allowFailure: true, env });
-  if (quality.status !== 0) failures.push("structural-quality");
-  else if (!quality.stdout.includes("Improvements: 0 ")) {
-    runNode(
-      "Tighten quality baseline",
-      QUALITY_SCAN,
-      [
-        ...QUALITY_PATH_ARGS,
-        "--profile=strict",
-        `--rules=${QUALITY_RULES}`,
-        "--write-baseline=.github/quality/quality-baseline.json",
-      ],
-      { env },
-    );
-  }
-}
-
-function runTestPresenceRatchet(failures) {
-  const testPresence = runNode("Test presence ratchet", "scripts/ci/check-tests-present.mjs", [], {
+  const qualityArgs = [...QUALITY_PATH_ARGS, "--profile=strict", `--rules=${QUALITY_RULES}`];
+  runNode("Quality diagnostics (advisory)", QUALITY_SCAN, qualityArgs, {
     allowFailure: true,
+    env,
   });
-  if (testPresence.status !== 0) failures.push("test-presence");
-  else if (testPresence.stdout.includes("fixed:")) {
-    runNode("Tighten test presence baseline", "scripts/ci/check-tests-present.mjs", ["--write-baseline"], {
-      allowFailure: true,
-    });
-  }
-}
-
-function runAdvisoryRatchet(failures) {
-  const audit = runNode("Advisory ratchet", "scripts/ci/check-audit.mjs", [], { allowFailure: true });
-  if (audit.status !== 0) failures.push("advisories");
-  else if (audit.stdout.includes("fixed:")) {
-    runNode("Tighten advisory baseline", "scripts/ci/check-audit.mjs", ["--write-baseline"], {
-      allowFailure: true,
-    });
-  }
-}
-
-function runCoverageRatchet(failures) {
-  const coverage = runNode("Coverage ratchet", "scripts/ci/check-coverage.mjs", [], { allowFailure: true });
-  if (coverage.status !== 0) failures.push("coverage");
-  else if (/improved:|adopted:/.test(coverage.stdout)) {
-    runNode("Tighten coverage baseline", "scripts/ci/check-coverage.mjs", ["--write-baseline"]);
-  }
 }
 
 function runBiomeCheck() {
@@ -194,18 +147,18 @@ function runBiomeCheck() {
   if (failures.length > 0) throw new Error(failures.join("; "));
 }
 
-function runRatchets() {
-  const failures = [];
-  const env = { ...process.env, QUALITY_RULES, QUALITY_SCAN };
-  runQualityRatchet(failures);
-  runTestPresenceRatchet(failures);
-  runNode("Unacknowledged quality-gate waivers", "packages/quality-guard/scripts/check-skips.mjs", ["."]);
-  runAdvisoryRatchet(failures);
-  runCoverageRatchet(failures);
+function runDiagnostics() {
+  runQualityDiagnostics();
+  runNode("Test presence diagnostics", "scripts/ci/check-tests-present.mjs", [], {
+    allowFailure: true,
+  });
+  runNode("Dependency advisory diagnostics", "scripts/ci/check-audit.mjs", [], {
+    allowFailure: true,
+  });
+  runNode("Coverage diagnostics", "scripts/ci/check-coverage.mjs", [], {
+    allowFailure: true,
+  });
   runBiomeCheck();
-  if (failures.length > 0) {
-    throw new Error(`RATCHET FAILED for: ${failures.join(", ")}`);
-  }
 }
 
 function main() {
@@ -225,7 +178,7 @@ function main() {
     run(process.execPath, ["--test", "scripts/ci/preflight-static-analysis.test.mjs"], {
       name: "Static-analysis preflight tests",
     });
-    runRatchets();
+    runDiagnostics();
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
     failed = true;

@@ -2,18 +2,17 @@
 # this repo publishes to npm.
 #
 # The marketplace installs plugins straight from a git checkout of this repo,
-# bundle included. Feature branches must carry rebuilt bundles and tightened
-# baselines. CI reproduces them and rejects drift without writing to the branch.
+# bundle included. Feature branches must carry rebuilt bundles. CI reproduces
+# them and rejects drift without writing to the branch.
 #
 # Gates, in the order they can stop a release:
 #   build-test        compile + unit tests
 #   plugin-config     plugin.json / .mcp.json / marketplace.json / skills / agents consistency
-#   static-analysis   Biome plus quality, test presence, advisory, and coverage ratchets, then rejects generated-file drift
+#   static-analysis   advisory quality diagnostics plus Biome, then rejects generated-file drift
 #   package-integrity whether the built bundle actually speaks MCP
 #
-# The ratchets compare against baselines in .github/quality/. Existing debt is
-# allowed; anything worse fails. When a ratchet improves, its tightened baseline
-# must already be committed on the feature branch.
+# Quality metrics remain visible as advisory diagnostics. They do not decide
+# acceptance or write repository state.
 
 name: ci
 

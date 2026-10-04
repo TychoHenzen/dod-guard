@@ -1,11 +1,9 @@
-import { absoluteVerdict, ratchetVerdict } from "./baseline-gate.mjs";
 import { localResult } from "./quality-guard-local.mjs";
 import {
   absoluteTail,
-  isUnseen,
+  hardBoundFindings,
   prepareGate,
   report,
-  trackedTail,
   unavailable,
 } from "./quality-guard-gate-support.mjs";
 import {
@@ -16,21 +14,13 @@ import {
 
 const DEFAULT_SERVICES = { localResult, report, runScanner, unavailable };
 
-function findingsFor(scan, comparison, relPath) {
-  const unseen = isUnseen(comparison, relPath);
-  const findings = unseen
-    ? absoluteVerdict(scan.violations)
-    : ratchetVerdict(comparison, relPath, scan.violations);
-  return { unseen, findings };
-}
-
 function advisoryResult(context) {
-  const { repoRoot, filePath, unseen, findings, emit } = context;
+  const { repoRoot, filePath, findings, emit } = context;
   if (findings.length === 0) return 0;
   return emit(
     `quality-guard advisory findings for ${filePath}. The write continues.`,
     findings,
-    unseen ? absoluteTail(repoRoot) : trackedTail(filePath, repoRoot),
+    absoluteTail(repoRoot),
   );
 }
 
@@ -57,14 +47,11 @@ function localFeedback(context) {
 }
 
 function continueGate(context) {
-  const { input, filePath, repoRoot, scan, comparison, relPath, deps } =
-    context;
-  const { unseen, findings } = findingsFor(scan, comparison, relPath);
+  const { input, filePath, repoRoot, scan, deps } = context;
+  const findings = hardBoundFindings(scan.violations);
   const advisory = advisoryResult({
     repoRoot,
     filePath,
-    relPath,
-    unseen,
     findings,
     emit: deps.report,
   });

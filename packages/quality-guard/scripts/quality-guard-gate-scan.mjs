@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -12,7 +12,6 @@ export const SCANNER = join(
   "scripts",
   "quality-scan.mjs",
 );
-const BASELINE = join(".github", "quality", "quality-baseline.json");
 export const FILE_RULES =
   "file-length,function-length,complexity,param-count," +
   "nesting-depth,types-per-file,else-branch,unnamed-tuple," +
@@ -20,10 +19,6 @@ export const FILE_RULES =
   "comment-bloat,comment-restates-code,comment-metadata,comment-placeholder," +
   "output-parameter,flag-parameter,wildcard-import";
 const SCAN_TIMEOUT_MS = 20_000;
-
-export function baselinePath(repoRoot) {
-  return join(repoRoot, BASELINE);
-}
 
 export function findRepoRoot(filePath) {
   let dir = dirname(resolve(filePath));
@@ -68,24 +63,4 @@ export function scanFile({ filePath, repoRoot, scanner, rules = FILE_RULES }) {
   } catch (error) {
     return { error: `scanner failed: ${errorMessage(error)}` };
   }
-}
-
-export function readComparison({ baseline, scan, relPath, deps }) {
-  if (!existsSync(baseline)) return { ok: true, value: null };
-  try {
-    return {
-      ok: true,
-      value: deps.compareToBaseline(
-        scan.violations,
-        deps.readBaseline(baseline),
-        [relPath],
-      ),
-    };
-  } catch {
-    return { ok: false, value: null };
-  }
-}
-
-export function relativePath(repoRoot, filePath) {
-  return relative(repoRoot, resolve(filePath)).split("\\").join("/");
 }

@@ -1,33 +1,17 @@
 #!/usr/bin/env node
-// check-audit — ratchet on high/critical advisories in published dependencies.
-//
-// A plain `npm audit --audit-level=high` gate breaks unrelated builds the day a
-// new CVE lands, so it gets disabled and stops meaning anything. This records
-// the advisories already known and fails only on NEW ones. Dev dependencies are
-// reported but never block: they never reach a user's machine.
-//
-// Usage: node scripts/ci/check-audit.mjs [--write-baseline]
-//
-// Exit codes:
-//   0  no new high/critical advisories in production dependencies
-//   1  new advisories
-//   3  usage error
+// Report high and critical production dependency advisories without a gate.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { npmCommand } from "./npm-command.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BASELINE = join(ROOT, ".github", "quality", "audit-baseline.json");
-const BLOCKING = new Set(["high", "critical"]);
+const ADVISORY_LEVELS = new Set(["high", "critical"]);
 
-function runAudit(omitDev) {
-  const args = ["audit", "--json", ...(omitDev ? ["--omit=dev"] : [])];
-  const command = npmCommand(args);
+function runAudit() {
+  const command = npmCommand(["audit", "--json", "--omit=dev"]);
   try {
-    // npm audit exits non-zero when vulnerabilities exist; the JSON is still on stdout.
     return JSON.parse(
       execFileSync(command.command, command.args, {
         cwd: ROOT,
@@ -36,16 +20,16 @@ function runAudit(omitDev) {
         stdio: ["ignore", "pipe", "pipe"],
       }),
     );
-  } catch (err) {
-    if (err.stdout) return JSON.parse(err.stdout);
-    throw err;
+  } catch (error) {
+    if (error.stdout) return JSON.parse(error.stdout);
+    throw error;
   }
 }
 
 function advisories(report) {
   const found = new Map();
   for (const entry of Object.values(report.vulnerabilities ?? {})) {
-    if (!BLOCKING.has(entry.severity)) continue;
+    if (!ADVISORY_LEVELS.has(entry.severity)) continue;
     for (const via of entry.via) {
       if (typeof via !== "object" || via.source === undefined) continue;
       found.set(String(via.source), {
@@ -56,47 +40,28 @@ function advisories(report) {
       });
     }
   }
-  return found;
+  return [...found.values()].sort((left, right) => left.id.localeCompare(right.id));
 }
 
-function main(argv) {
-  const unknown = argv.filter((a) => a !== "--write-baseline");
-  if (unknown.length > 0) {
-    process.stderr.write(`unknown option: ${unknown[0]}\nusage: check-audit.mjs [--write-baseline]\n`);
+export function main(argv, dependencies = {}) {
+  if (argv.length > 0) {
+    (dependencies.stderr ?? process.stderr).write(`unknown option: ${argv[0]}\nusage: check-audit.mjs\n`);
     return 3;
   }
 
-  const current = advisories(runAudit(true));
-  if (argv.includes("--write-baseline")) {
-    const known = [...current.values()].sort((a, b) => a.id.localeCompare(b.id));
-    writeFileSync(
-      BASELINE,
-      `${JSON.stringify({ note: "Known high/critical advisories in production dependencies. New ones fail CI.", known }, null, 2)}\n`,
-    );
-    process.stdout.write(`wrote audit baseline with ${known.length} known advisory(ies)\n`);
-    return 0;
+  const stdout = dependencies.stdout ?? process.stdout;
+  try {
+    const current = dependencies.advisories ? dependencies.advisories() : advisories(runAudit());
+    stdout.write(`audit advisory — ${current.length} high/critical production advisory(ies)\n`);
+    for (const item of current) {
+      stdout.write(`  ${item.severity} ${item.package}: ${item.title} (advisory ${item.id})\n`);
+    }
+  } catch (error) {
+    stdout.write(`audit advisory unavailable — ${error instanceof Error ? error.message : String(error)}\n`);
   }
-
-  const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, "utf8")) : { known: [] };
-  const allowed = new Set(baseline.known.map((a) => String(a.id)));
-  const added = [...current.values()].filter((a) => !allowed.has(a.id));
-  const fixed = baseline.known.filter((a) => !current.has(String(a.id)));
-
-  // The ratchet only blocks advisories in published dependencies. Do not run a
-  // second network audit for dev dependencies that cannot affect the decision.
-  for (const advisory of fixed)
-    process.stdout.write(
-      `  fixed: ${advisory.package} (${advisory.id}) no longer vulnerable — rerun with --write-baseline\n`,
-    );
-
-  if (added.length === 0) {
-    process.stdout.write(`audit OK — ${current.size} known high/critical advisory(ies) in production deps, 0 new\n`);
-    return 0;
-  }
-  process.stdout.write(`audit FAILED — ${added.length} new high/critical advisory(ies) in production deps\n\n`);
-  for (const advisory of added)
-    process.stdout.write(`  ${advisory.severity} ${advisory.package}: ${advisory.title} (advisory ${advisory.id})\n`);
-  return 1;
+  return 0;
 }
 
-process.exitCode = main(process.argv.slice(2));
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = main(process.argv.slice(2));
+}

@@ -2,7 +2,6 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { runQualityReportAsync } from "./report.js";
 import { requireRepositoryRoot } from "./repository-root.js";
-import { formatSkips, readSkipLog } from "./skips.js";
 import { text, toolError } from "./tool-response.js";
 import { EXCLUDES, ROOT, TEST_PATHS } from "./tool-schemas.js";
 
@@ -32,23 +31,6 @@ export function registerQualityReport(server: McpServer): void {
             2,
           ),
         );
-      } catch (err) {
-        return toolError(err);
-      }
-    },
-  );
-}
-
-export function registerQualitySkips(server: McpServer): void {
-  server.tool(
-    "quality_skips",
-    "List .quality-skip waivers that were consumed but never acknowledged. " +
-      "Each one is a place where the quality gate was bypassed on purpose. " +
-      "The pre-commit hook refuses to commit while any remain open.",
-    { root: z.string().describe("Repository root") },
-    async ({ root }) => {
-      try {
-        return text(formatSkips(readSkipLog(requireRepositoryRoot(root))));
       } catch (err) {
         return toolError(err);
       }

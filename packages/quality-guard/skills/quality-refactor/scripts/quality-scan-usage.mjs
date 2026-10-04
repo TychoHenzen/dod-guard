@@ -12,9 +12,5 @@ export const USAGE = `quality-scan [paths...] [options]
                              (repeatable)
   --root=<dir>               anchor for relative paths (default: cwd)
   --top=N                    text mode: show N worst files (default 15)
-  --write-baseline=<path>    record the current scan as the ratchet baseline
-  --baseline=<path>          compare against a baseline; unseen files are
-                             adopted
-  --fail-on=none|error|regression|any   what makes this exit 1 (default: none)
 
 Rules: ${ALL_RULES.join(", ")}`;
