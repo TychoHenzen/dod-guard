@@ -58,7 +58,10 @@ test("documents authority source resolution and dynamic unused-local limits", ()
 
   assert.match(rules, /DOD_GUARD_KNOWLEDGE_BASE_DIR/);
   assert.match(rules, /<DOD_GUARD_KNOWLEDGE_BASE_DIR>\/entries\/clean-code/);
-  assert.match(rules, /Do not resolve these paths against the installed Quality Guard plugin/);
+  assert.match(
+    rules,
+    /Do not resolve these paths against the installed Quality Guard plugin/,
+  );
   assert.match(unusedLocal, /dynamic TypeScript\/JavaScript lookup/);
   assert.match(unusedLocal, /Review these cases before deleting/);
   assert.match(unusedLocal, /runtime name lookup/);
