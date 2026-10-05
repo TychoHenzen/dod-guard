@@ -15,9 +15,10 @@ Preserve behavior. Scanner findings identify symptoms, not architecture.
 
 - Use the supplied repository-relative scope. If no narrower scope is given,
   scan the repository root; never widen the scope to another checkout.
-- Use the `default` profile unless the selected issue explicitly requires
-  `strict`. Keep the active repository configuration and diagnostic evidence
-  read-only; do not rewrite it for a cleaner score.
+- Use the `advisory` profile. The legacy `default` and `strict` profile names
+  remain accepted as compatibility aliases and do not change finding meaning.
+  Keep the active repository configuration and diagnostic evidence read-only;
+  do not rewrite it for a cleaner score.
 - Require a passing build and test run before planning changes. Create
   `.quality/` when absent, then run the scanner twice: once for readable
   findings and once with `--format=units`. Resolve `<repository>` once as the

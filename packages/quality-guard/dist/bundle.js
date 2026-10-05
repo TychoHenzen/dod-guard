@@ -27073,13 +27073,17 @@ function extractFactInventory(files, requiredPaths) {
 // src/report-summaries.ts
 function summarize(files) {
   const fileCount = files.length;
-  const errors = files.reduce((sum, file) => sum + file.errors, 0);
-  const warnings = files.reduce((sum, file) => sum + file.warnings, 0);
+  const high = files.reduce((sum, file) => sum + file.high, 0);
+  const medium = files.reduce((sum, file) => sum + file.medium, 0);
+  const low = files.reduce((sum, file) => sum + file.low, 0);
   const scores = files.map((file) => file.score);
   return {
     fileCount,
-    errors,
-    warnings,
+    high,
+    medium,
+    low,
+    errors: high,
+    warnings: medium + low,
     averageScore: fileCount === 0 ? null : scores.reduce((sum, score) => sum + score, 0) / fileCount,
     minimumScore: fileCount === 0 ? null : Math.min(...scores)
   };
@@ -27101,10 +27105,18 @@ var FILE_SELECTION = "supported handwritten source; generated, dependency, build
 function scoring() {
   return {
     initial: 100,
+    highDeduction: 5,
+    mediumDeduction: 1,
+    lowDeduction: 0,
     errorDeduction: 5,
     warningDeduction: 1,
     minimum: 0
   };
+}
+function normalizeSeverity(severity) {
+  if (severity === "error") return "high";
+  if (severity === "warn") return "medium";
+  return severity;
 }
 function compareFinding(left, right) {
   return left.line - right.line || left.rule.localeCompare(right.rule) || left.message.localeCompare(right.message);
@@ -27117,16 +27129,27 @@ function findingsByFile(scan) {
 }
 function scoredFiles(scan, byFile) {
   return [...scan.files].sort((left, right) => left.path.localeCompare(right.path)).map((file) => {
-    const findings = [...byFile.get(file.path) ?? []].sort(compareFinding);
-    const errors = findings.filter(
-      (finding) => finding.severity === "error"
+    const findings = [...byFile.get(file.path) ?? []].map((finding) => ({
+      ...finding,
+      severity: normalizeSeverity(finding.severity)
+    })).sort(compareFinding);
+    const high = findings.filter(
+      (finding) => finding.severity === "high"
     ).length;
-    const warnings = findings.length - errors;
+    const medium = findings.filter(
+      (finding) => finding.severity === "medium"
+    ).length;
+    const low = findings.filter(
+      (finding) => finding.severity === "low"
+    ).length;
     return {
       ...file,
-      score: Math.max(0, 100 - errors * 5 - warnings),
-      errors,
-      warnings,
+      score: Math.max(0, 100 - high * 5 - medium),
+      high,
+      medium,
+      low,
+      errors: high,
+      warnings: medium + low,
       findings
     };
   });
@@ -27137,7 +27160,7 @@ function buildQualityReport(scan, architecture) {
     schemaVersion: 1,
     scoring: scoring(),
     scanner: {
-      profile: scan.profile,
+      profile: "advisory",
       fileSelection: FILE_SELECTION
     },
     summaries: reportSummaries(files),
@@ -27406,7 +27429,9 @@ function registerQualityReport(server) {
       root: ROOT,
       excludes: EXCLUDES,
       testPaths: TEST_PATHS,
-      profile: external_exports.enum(["default", "strict"]).optional()
+      profile: external_exports.enum(["advisory", "default", "strict"]).optional().describe(
+        "Advisory profile; default and strict are compatibility aliases"
+      )
     },
     async ({ root: root2, excludes, testPaths, profile }) => {
       try {
@@ -27445,7 +27470,7 @@ var QUALITY_SCAN_INPUT = {
   rules: external_exports.array(external_exports.string()).optional().describe("Only run these rules"),
   excludes: EXCLUDES,
   testPaths: TEST_PATHS,
-  profile: external_exports.enum(["default", "strict"]).optional()
+  profile: external_exports.enum(["advisory", "default", "strict"]).optional().describe("Advisory profile; default and strict are compatibility aliases")
 };
 async function qualityScan(input) {
   try {

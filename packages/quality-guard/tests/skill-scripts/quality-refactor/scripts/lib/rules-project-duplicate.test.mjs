@@ -25,7 +25,7 @@ test("identical six-line blocks in two files are reported", () => {
   ]);
   for (const violation of found) {
     assert.equal(violation.rule, "duplicate-block");
-    assert.equal(violation.severity, "warn");
+    assert.equal(violation.severity, "medium");
     assert.equal(violation.metric, 2);
     assert.equal(violation.line, 1);
   }

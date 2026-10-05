@@ -36,7 +36,7 @@ test("real nested control flow still reports its nesting metric", () => {
       file: "src/lib.rs",
       line: 1,
       rule: "nesting-depth",
-      severity: "error",
+      severity: "high",
       message: "deeply_nested() nests 6 levels deep",
       metric: 6,
     },

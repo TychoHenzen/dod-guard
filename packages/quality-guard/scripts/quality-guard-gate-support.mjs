@@ -57,19 +57,34 @@ export function absoluteTail(repoRoot) {
     `directly for more detail. The write continues for ${repoRoot}.`
   );
 }
-export function hardBoundFindings(violations) {
+const SEVERITY_ALIASES = {
+  error: "high",
+  warn: "medium",
+  high: "high",
+  medium: "medium",
+  low: "low",
+};
+
+export function advisoryFindings(violations) {
   return violations
-    .filter((violation) => violation.severity === "error")
     .map((violation) => {
       const {
         file = "unknown-file",
         line = "?",
-        severity = "unknown",
+        severity,
         rule = "unknown-rule",
         message = "no message",
       } = violation;
-      return `${file}:${line} [${severity}] ${rule}: ${message} (file-local hard bound)`;
-    });
+      const normalized = SEVERITY_ALIASES[severity];
+      return normalized
+        ? `${file}:${line} [${normalized}] ${rule}: ${message} (advisory finding)`
+        : null;
+    })
+    .filter((finding) => finding !== null);
+}
+
+export function hardBoundFindings(violations) {
+  return advisoryFindings(violations);
 }
 function unavailableTail(filePath) {
   return (

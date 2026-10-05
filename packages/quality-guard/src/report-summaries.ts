@@ -1,4 +1,7 @@
 type ScoredFile = {
+  high: number;
+  medium: number;
+  low: number;
   errors: number;
   warnings: number;
   score: number;
@@ -7,13 +10,17 @@ type ScoredFile = {
 
 function summarize(files: ScoredFile[]) {
   const fileCount = files.length;
-  const errors = files.reduce((sum, file) => sum + file.errors, 0);
-  const warnings = files.reduce((sum, file) => sum + file.warnings, 0);
+  const high = files.reduce((sum, file) => sum + file.high, 0);
+  const medium = files.reduce((sum, file) => sum + file.medium, 0);
+  const low = files.reduce((sum, file) => sum + file.low, 0);
   const scores = files.map((file) => file.score);
   return {
     fileCount,
-    errors,
-    warnings,
+    high,
+    medium,
+    low,
+    errors: high,
+    warnings: medium + low,
     averageScore:
       fileCount === 0
         ? null

@@ -51,7 +51,7 @@ export function complexityFor(code) {
   const config = buildConfig("default");
   config.thresholds = {
     ...config.thresholds,
-    complexity: { warn: 0, error: 0 },
+    complexity: { medium: 0, high: 0 },
   };
   const found = scanFile(rustFile("src/lib.rs", code), config).violations;
   return found.find((violation) => violation.rule === "complexity").metric;

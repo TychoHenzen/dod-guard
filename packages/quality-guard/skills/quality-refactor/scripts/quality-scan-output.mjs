@@ -1,8 +1,9 @@
 import { renderJson, renderText, toWorkUnits } from "./lib/report.mjs";
+import { normalizeProfile } from "./lib/config.mjs";
 
 export function resultFor({ options, files, sorted, summary }) {
   return {
-    profile: options.profile,
+    profile: normalizeProfile(options.profile),
     fileCount: files.length,
     files: files
       .map((file) => ({

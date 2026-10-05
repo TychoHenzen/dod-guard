@@ -44,6 +44,7 @@ test("scores files and excludes architecture from score", () => {
   );
 
   assert.equal(report.schemaVersion, 1);
+  assert.equal(report.scanner.profile, "advisory");
   assert.deepEqual(
     report.files.map((file) => [file.path, file.classification, file.score]),
     [
@@ -51,6 +52,20 @@ test("scores files and excludes architecture from score", () => {
       ["tests/noisy.test.ts", "test", 93],
     ],
   );
+  assert.deepEqual(
+    report.files[1]?.findings.map((finding) => finding.severity),
+    ["high", "medium", "medium"],
+  );
+  assert.deepEqual(report.summaries.test, {
+    fileCount: 1,
+    high: 1,
+    medium: 2,
+    low: 0,
+    errors: 1,
+    warnings: 2,
+    averageScore: 93,
+    minimumScore: 93,
+  });
   assert.equal(report.summaries.production.minimumScore, 100);
   assert.equal(report.summaries.test.averageScore, 93);
   assert.equal(report.architecture.placement.length, 1);
@@ -82,6 +97,8 @@ test("scores stop at zero and findings have deterministic order", () => {
   );
 
   assert.equal(report.files[0]?.score, 0);
+  assert.equal(report.scanner.profile, "advisory");
+  assert.equal(report.files[0]?.high, 21);
   assert.deepEqual(
     report.files[0]?.findings.slice(0, 2).map((finding) => finding.line),
     [1, 2],

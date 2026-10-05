@@ -21,7 +21,7 @@ const NARRATED_FIELD = [
 test("a seven-line story over a one-line field is an error", () => {
   const found = scan("rs", NARRATED_FIELD, "comment-bloat");
   assert.equal(found.length, 1);
-  assert.equal(found[0].severity, "error");
+  assert.equal(found[0].severity, "high");
   assert.equal(found[0].metric, 7);
   assert.match(found[0].message, /7-line comment over 1 line/);
 });

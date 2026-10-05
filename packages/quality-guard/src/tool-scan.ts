@@ -23,7 +23,10 @@ const QUALITY_SCAN_INPUT = {
   rules: z.array(z.string()).optional().describe("Only run these rules"),
   excludes: EXCLUDES,
   testPaths: TEST_PATHS,
-  profile: z.enum(["default", "strict"]).optional(),
+  profile: z
+    .enum(["advisory", "default", "strict"])
+    .optional()
+    .describe("Advisory profile; default and strict are compatibility aliases"),
 };
 
 async function qualityScan(input: ScanRequest) {

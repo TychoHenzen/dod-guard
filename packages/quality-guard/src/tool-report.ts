@@ -15,7 +15,12 @@ export function registerQualityReport(server: McpServer): void {
       root: ROOT,
       excludes: EXCLUDES,
       testPaths: TEST_PATHS,
-      profile: z.enum(["default", "strict"]).optional(),
+      profile: z
+        .enum(["advisory", "default", "strict"])
+        .optional()
+        .describe(
+          "Advisory profile; default and strict are compatibility aliases",
+        ),
     },
     async ({ root, excludes, testPaths, profile }) => {
       try {

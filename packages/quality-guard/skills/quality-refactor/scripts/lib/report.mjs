@@ -1,5 +1,5 @@
 import { renderJson, renderText } from "./report-render.mjs";
-const SEVERITY_ORDER = { error: 0, warn: 1 };
+const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 };
 const RULE_ORDER = [
   "dead-export",
   "test-only-export",
@@ -48,24 +48,38 @@ function increment(counts, key) {
   counts[key] = (counts[key] ?? 0) + 1;
 }
 
+export function normalizeSeverity(severity) {
+  if (severity === "error") return "high";
+  if (severity === "warn") return "medium";
+  if (severity === "high" || severity === "medium" || severity === "low")
+    return severity;
+  throw new Error(`unknown quality severity: ${severity}`);
+}
+
 function recordSummary(summary, violation) {
+  const severity = normalizeSeverity(violation.severity);
   increment(summary.byRule, violation.rule);
   increment(summary.byFile, violation.file);
-  summary.errors += violation.severity === "error";
+  summary[severity] += 1;
 }
 
 export function summarize(violations) {
   const summary = {
     total: violations.length,
-    errors: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
     byRule: {},
     byFile: {},
   };
   for (const violation of violations) recordSummary(summary, violation);
   return {
     total: summary.total,
-    errors: summary.errors,
-    warnings: summary.total - summary.errors,
+    high: summary.high,
+    medium: summary.medium,
+    low: summary.low,
+    errors: summary.high,
+    warnings: summary.medium + summary.low,
     byRule: summary.byRule,
     byFile: summary.byFile,
   };
@@ -74,15 +88,20 @@ export function summarize(violations) {
 function addToWorkUnit(byFile, violation) {
   const unit = byFile.get(violation.file) ?? {
     file: violation.file,
+    high: 0,
+    medium: 0,
+    low: 0,
     errors: 0,
     warnings: 0,
     rules: {},
     items: [],
   };
+  const severity = normalizeSeverity(violation.severity);
   unit.items.push(violation);
   increment(unit.rules, violation.rule);
-  unit.errors += violation.severity === "error";
-  unit.warnings += violation.severity !== "error";
+  unit[severity] += 1;
+  unit.errors = unit.high;
+  unit.warnings = unit.medium + unit.low;
   byFile.set(violation.file, unit);
 }
 
@@ -91,7 +110,8 @@ export function toWorkUnits(violations) {
   for (const violation of sortViolations(violations))
     addToWorkUnit(byFile, violation);
   return [...byFile.values()].sort(
-    (a, b) => b.errors - a.errors || b.warnings - a.warnings,
+    (a, b) =>
+      b.high - a.high || b.medium - a.medium || b.low - a.low,
   );
 }
 export { renderJson, renderText };

@@ -60,7 +60,7 @@ test("the hook emits advisory findings through the exit-0 JSON protocol", () => 
     repositoryContext.additionalContext,
     /quality-guard advisory findings for/,
   );
-  assert.match(repositoryContext.additionalContext, /\[error\]/);
+  assert.match(repositoryContext.additionalContext, /\[high\]/);
   assert.match(repositoryContext.additionalContext, /The write continues/);
   rmSync(directory, { recursive: true });
 });

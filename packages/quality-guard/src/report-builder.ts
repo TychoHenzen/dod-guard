@@ -7,14 +7,20 @@ const FILE_SELECTION =
 function scoring() {
   return {
     initial: 100,
+    highDeduction: 5,
+    mediumDeduction: 1,
+    lowDeduction: 0,
     errorDeduction: 5,
     warningDeduction: 1,
     minimum: 0,
   };
 }
 
+export type Severity = "high" | "medium" | "low";
+type LegacySeverity = "error" | "warn";
+
 type ScanInput = {
-  profile: "default" | "strict";
+  profile: "advisory" | "default" | "strict";
   files: Array<{
     path: string;
     language: string;
@@ -24,11 +30,19 @@ type ScanInput = {
     file: string;
     line: number;
     rule: string;
-    severity: "error" | "warn";
+    severity: Severity | LegacySeverity;
     message: string;
     [key: string]: unknown;
   }>;
 };
+
+export function normalizeSeverity(
+  severity: Severity | LegacySeverity,
+): Severity {
+  if (severity === "error") return "high";
+  if (severity === "warn") return "medium";
+  return severity;
+}
 
 function compareFinding(
   left: ScanInput["violations"][number],
@@ -55,16 +69,29 @@ function scoredFiles(
   return [...scan.files]
     .sort((left, right) => left.path.localeCompare(right.path))
     .map((file) => {
-      const findings = [...(byFile.get(file.path) ?? [])].sort(compareFinding);
-      const errors = findings.filter(
-        (finding) => finding.severity === "error",
+      const findings = [...(byFile.get(file.path) ?? [])]
+        .map((finding) => ({
+          ...finding,
+          severity: normalizeSeverity(finding.severity),
+        }))
+        .sort(compareFinding);
+      const high = findings.filter(
+        (finding) => finding.severity === "high",
       ).length;
-      const warnings = findings.length - errors;
+      const medium = findings.filter(
+        (finding) => finding.severity === "medium",
+      ).length;
+      const low = findings.filter(
+        (finding) => finding.severity === "low",
+      ).length;
       return {
         ...file,
-        score: Math.max(0, 100 - errors * 5 - warnings),
-        errors,
-        warnings,
+        score: Math.max(0, 100 - high * 5 - medium),
+        high,
+        medium,
+        low,
+        errors: high,
+        warnings: medium + low,
         findings,
       };
     });
@@ -87,7 +114,7 @@ export function buildQualityReport(
     schemaVersion: 1,
     scoring: scoring(),
     scanner: {
-      profile: scan.profile,
+      profile: "advisory",
       fileSelection: FILE_SELECTION,
     },
     summaries: reportSummaries(files),

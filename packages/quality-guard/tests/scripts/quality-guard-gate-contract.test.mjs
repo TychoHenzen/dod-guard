@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { gate } from "../../scripts/quality-guard-gate.mjs";
+import { advisoryFindings } from "../../scripts/quality-guard-gate-support.mjs";
 import {
   FILE_RULES,
   runScanner,
@@ -32,6 +33,39 @@ function gateWith(filePath, calls, scan) {
     }),
   );
 }
+
+test("hook findings use normalized advisory severities", () => {
+  assert.deepEqual(
+    advisoryFindings([
+      {
+        file: "src/high.ts",
+        line: 1,
+        rule: "complexity",
+        severity: "error",
+        message: "high",
+      },
+      {
+        file: "src/medium.ts",
+        line: 2,
+        rule: "else-branch",
+        severity: "warn",
+        message: "medium",
+      },
+      {
+        file: "src/low.ts",
+        line: 3,
+        rule: "style",
+        severity: "low",
+        message: "low",
+      },
+    ]),
+    [
+      "src/high.ts:1 [high] complexity: high (advisory finding)",
+      "src/medium.ts:2 [medium] else-branch: medium (advisory finding)",
+      "src/low.ts:3 [low] style: low (advisory finding)",
+    ],
+  );
+});
 
 test("the file-local rule set excludes project reachability rules", () => {
   assert.match(FILE_RULES, /file-length/);

@@ -1,7 +1,7 @@
 import { localResult } from "./quality-guard-local.mjs";
 import {
   absoluteTail,
-  hardBoundFindings,
+  advisoryFindings,
   prepareGate,
   report,
   unavailable,
@@ -48,7 +48,7 @@ function localFeedback(context) {
 
 function continueGate(context) {
   const { input, filePath, repoRoot, scan, deps } = context;
-  const findings = hardBoundFindings(scan.violations);
+  const findings = advisoryFindings(scan.violations);
   const advisory = advisoryResult({
     repoRoot,
     filePath,

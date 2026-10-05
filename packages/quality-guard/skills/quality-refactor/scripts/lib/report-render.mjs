@@ -7,7 +7,7 @@ function topEntries(counts, limit) {
 export function renderText(result, top) {
   const { summary } = result;
   const lines = [];
-  const counts = `${summary.errors} error, ${summary.warnings} warn`;
+  const counts = `${summary.high} high, ${summary.medium} medium, ${summary.low} low`;
   lines.push(
     `Scanned ${result.fileCount} files \u2014 ${summary.total} violations ` +
       `(${counts})`,

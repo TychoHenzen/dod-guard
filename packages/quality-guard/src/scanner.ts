@@ -3,13 +3,15 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { asyncExecFile, scanFailure } from "./scanner-failure.js";
 
+export type ScanProfile = "advisory" | "default" | "strict";
+
 export interface ScanRequest {
   paths: string[];
   root?: string;
   rules?: string[];
   excludes?: string[];
   testPaths?: string[];
-  profile?: "default" | "strict";
+  profile?: ScanProfile;
 }
 
 const SCAN_TIMEOUT_MS = 120_000;
@@ -50,9 +52,9 @@ function list<T>(values: T[] | undefined): T[] {
 }
 
 /**
- * Run the scanner. A non-zero exit is a gate verdict, not a crash, so the exit
- * code is returned rather than thrown. Exit 3 means the scanner rejected the
- * request itself.
+ * Run the scanner. A non-zero exit is diagnostic process evidence, not an
+ * acceptance verdict, so the exit code is returned rather than thrown. Exit 3
+ * means the scanner rejected the request itself.
  */
 export function runScan(request: ScanRequest, run = execFileSync) {
   const args = [scannerPath(), ...buildArgs(request)];

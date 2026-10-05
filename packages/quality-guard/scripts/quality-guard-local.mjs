@@ -12,7 +12,7 @@ export function createLocalResult(emit = report) {
       `quality-guard advisory findings for ${filePath}. The write continues.`,
       findings.map(
         (finding) =>
-          `${filePath}:${finding.line} [error] ${finding.rule || "project-linter"}: ${finding.message}`,
+          `${filePath}:${finding.line} [high] ${finding.rule || "project-linter"}: ${finding.message}`,
       ),
       "Next step: inspect the repository linter finding and rerun that linter directly.",
     );

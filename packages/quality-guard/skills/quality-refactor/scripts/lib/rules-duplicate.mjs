@@ -49,7 +49,7 @@ function bucketWindows(files) {
 function emitGroup({ hits, config, reported, out }) {
   const bounds = config.thresholds["duplicate-block"];
   const severity =
-    bounds.error !== null && hits.length > bounds.error ? "error" : "warn";
+    bounds.high !== null && hits.length > bounds.high ? "high" : "medium";
   const where = hits.map((hit) => `${hit.file}:${hit.line}`).join(", ");
   for (const hit of hits) {
     const key = `${hit.file}:${hit.line}`;

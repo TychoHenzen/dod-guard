@@ -22,7 +22,7 @@ test("reports every candidate in an ambiguous solution layout", () => {
           file: "first.sln",
           line: 1,
           rule: "build-entrypoint",
-          severity: "warn",
+          severity: "medium",
           message:
             "E1: multiple root .NET solution files (first.sln, second.sln) — " +
             "add one root build entry point",
@@ -32,7 +32,7 @@ test("reports every candidate in an ambiguous solution layout", () => {
           file: "first.sln",
           line: 1,
           rule: "test-entrypoint",
-          severity: "warn",
+          severity: "medium",
           message:
             "E2: multiple root .NET solution files (first.sln, second.sln) — " +
             "add one root test entry point",
