@@ -26,7 +26,7 @@ scanner remains advisory when a source pattern cannot prove intent.
 | `else-branch` | `functions/polymorphism-and-names.md`; `dispositions.md` | Syntax-only preferred signal; a genuine two-way branch is legitimate and remains reviewable. |
 | `unnamed-tuple` | `meaningful-names/intent-and-disinformation.md` | Declared tuples are naming signals; local destructuring is not a finding. |
 | `dead-export` | `smells-and-heuristics/functions-and-duplication.md` | Reference-graph evidence; reflection, dependency injection, dynamic imports, and manifests remain explicit review cases. |
-| `unused-local` | `smells-and-heuristics/functions-and-duplication.md` | Same-file reference evidence; unsupported dynamic references remain quiet rather than guessed. |
+| `unused-local` | `smells-and-heuristics/functions-and-duplication.md` | Static same-file reference evidence; dynamic TypeScript lookups, reflection, and string dispatch can still trigger a false positive and require human review. |
 | `test-only-export` | `smells-and-heuristics/functions-and-duplication.md` | Test-only reachability is advisory because fixtures and production seams share the same graph shape. |
 | `commented-out-code` | `comments/bad-comments.md` | Comment syntax is a removal signal; version control retains historical code. |
 | `comment-restates-code` | `comments/bad-comments.md`; `comments/intent-and-limits.md` | Repeated intent is a review signal; keep a comment that explains a non-obvious constraint. |
@@ -43,6 +43,18 @@ scanner remains advisory when a source pattern cannot prove intent.
 | `stateless-method` | `classes/srp-and-class-size.md`; `emergence/pragmatic-size.md`; `dispositions.md` | Syntax-only candidate for a free function; ownership, inheritance, and framework intent are not inferred. |
 | `assumption-marker` | `comments/good-comments.md`; `comments/intent-and-limits.md` | Retired from generic scanning: `ASSUMPTION` has no source/use contract, so it is quiet rather than a policy finding. |
 | `test-quality` | `smells-and-heuristics/test-strategy.md` | Separate report-only T1-T9 evidence path; manifests and coverage observations are diagnostic, never a commit gate. |
+
+## Resolving authority sources
+
+Each path in the matrix's **Source contract** column is relative to the
+external Clean Code collection at
+`<DOD_GUARD_KNOWLEDGE_BASE_DIR>/entries/clean-code/<source-path>`. Set
+`DOD_GUARD_KNOWLEDGE_BASE_DIR` to the vault parent; the knowledge-base server
+adds `entries` itself. For example, `functions/arguments.md` resolves to
+`<DOD_GUARD_KNOWLEDGE_BASE_DIR>/entries/clean-code/functions/arguments.md`.
+Do not resolve these paths against the installed Quality Guard plugin: the
+plugin ships the policy synthesis, while the configured knowledge base owns
+the source-linked entries.
 
 ---
 
@@ -104,8 +116,11 @@ heuristic; it is a proof.
 
 **Fix:** *Remove Dead Code*.
 
-**False positives:** functions referenced only inside a plain string
-literal, in any language but Rust. Rare.
+**False positives:** functions referenced only inside a plain string literal,
+dynamic TypeScript/JavaScript lookup such as `globalThis["foo"]()`, reflection,
+dependency injection, or other string-based dispatch can still be reported.
+Review these cases before deleting a symbol; the scanner does not resolve
+runtime name lookup.
 
 **Rust is the opposite risk: a false negative, not a false positive.** Every
 double-quoted Rust string, not only a `format!`/`println!` argument, is

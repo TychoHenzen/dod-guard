@@ -48,3 +48,18 @@ test("the reference matrix covers every configured rule and report-only path", (
   assert.match(rules, /diagnostic starting points/);
   assert.match(rules, /not universal/);
 });
+
+test("documents authority source resolution and dynamic unused-local limits", () => {
+  const unusedStart = rules.indexOf("## `unused-local`");
+  const unusedEnd = rules.indexOf("## `test-only-export`", unusedStart);
+  assert.notEqual(unusedStart, -1, "unused-local heading is required");
+  assert.notEqual(unusedEnd, -1, "test-only-export heading is required");
+  const unusedLocal = rules.slice(unusedStart, unusedEnd);
+
+  assert.match(rules, /DOD_GUARD_KNOWLEDGE_BASE_DIR/);
+  assert.match(rules, /<DOD_GUARD_KNOWLEDGE_BASE_DIR>\/entries\/clean-code/);
+  assert.match(rules, /Do not resolve these paths against the installed Quality Guard plugin/);
+  assert.match(unusedLocal, /dynamic TypeScript\/JavaScript lookup/);
+  assert.match(unusedLocal, /Review these cases before deleting/);
+  assert.match(unusedLocal, /runtime name lookup/);
+});
