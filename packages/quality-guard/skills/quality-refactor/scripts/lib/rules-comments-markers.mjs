@@ -3,7 +3,6 @@ import { commentBody } from "./rules-comments-text.mjs";
 import { checkCommentedOutCode } from "./rules-comments/code.mjs";
 
 const TODO_MARKER = /\b(TODO|FIXME|HACK|XXX)\b/;
-const ASSUMPTION_MARKER = /\bASSUMPTION\b/;
 const METADATA_COMMENT =
   /^(?:@(?:author|version|since|date|history)\b|author\s*:|changed\s+on\s+\d{4}-\d{2}-\d{2}\b|(?:created|last\s+modified|updated)\s+by\b)/i;
 const PLACEHOLDER_COMMENT = /^(?:(?:tbd|tba|placeholder)\b|\?{3})(?:[:\s-]|$)/i;
@@ -34,19 +33,6 @@ function checkPlaceholder(ctx, body, line) {
   });
 }
 
-function checkAssumptionMarker(ctx, body, line) {
-  if (!ASSUMPTION_MARKER.test(body)) return;
-  push({
-    out: ctx.out,
-    file: ctx.file,
-    line,
-    rule: "assumption-marker",
-    severity: ctx.config.presence["assumption-marker"],
-    message: "unverified guess: " + body.slice(0, 60),
-    metric: 1,
-  });
-}
-
 function checkTodoMarker(ctx, body, line) {
   if (!TODO_MARKER.test(body)) return false;
   push({
@@ -67,7 +53,6 @@ export function checkMarkerOrDeadCode(ctx, comment) {
     const lineNumber = comment.line + offset;
     checkMetadata(ctx, body, lineNumber);
     checkPlaceholder(ctx, body, lineNumber);
-    checkAssumptionMarker(ctx, body, lineNumber);
     if (checkTodoMarker(ctx, body, lineNumber)) continue;
     checkCommentedOutCode(ctx, body, { ...comment, line: lineNumber });
   }

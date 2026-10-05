@@ -47,20 +47,18 @@ test("a comment with both markers takes the todo branch", () => {
   assert.equal(scan(code, "todo-marker").length, 1);
 });
 
-test("the assumption marker fires once", () => {
+test("the assumption marker is quiet without a generic semantic contract", () => {
   const code =
     "// ASSUMPTION: the API returns ids in insertion order\n" +
     "export const a = 1;\n";
-  const found = scan(code, "assumption-marker");
-  assert.equal(found.length, 1);
-  assert.equal(found[0].metric, 1);
+  assert.deepEqual(scan(code, "assumption-marker"), []);
 });
 
 test("both marker rules measure the same comment independently", () => {
   const code =
     "// ASSUMPTION: TODO revisit this once the API is confirmed\n" +
     "export const a = 1;\n";
-  assert.equal(scan(code, "assumption-marker").length, 1);
+  assert.deepEqual(scan(code, "assumption-marker"), []);
   assert.equal(scan(code, "todo-marker").length, 1);
 });
 

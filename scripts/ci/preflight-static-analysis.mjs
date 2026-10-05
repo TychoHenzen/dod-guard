@@ -32,7 +32,6 @@ const QUALITY_RULES = [
   "flag-parameter",
   "wildcard-import",
   "naming-encoding",
-  "assumption-marker",
 ].join(",");
 const QUALITY_PATH_ARGS = ["packages", "--exclude=/dist/", "--exclude=/dist-test/", "--exclude=node_modules"];
 

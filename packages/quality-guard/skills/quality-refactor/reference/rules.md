@@ -4,6 +4,58 @@ One section per scanner rule: what it measures, why the bound is where it is,
 how to fix it, and how it can be wrong. Refactoring names in *italics* are from
 Fowler's catalog - see `catalog.md`.
 
+The matrix below is the single source-and-disposition catalog for configured
+rules. Thresholds are diagnostic starting points for review, not universal
+Clean Code limits or correctness gates. A finding is evidence to inspect with
+the surrounding design, tests, language, and repository conventions. The
+scanner remains advisory when a source pattern cannot prove intent.
+
+## Source and disposition matrix
+
+| Rule | Source contract | Configured signal or disposition |
+| --- | --- | --- |
+| `line-length` | `formatting/vertical-structure.md`; `emergence/pragmatic-size.md` | 80 preferred / 120 hard diagnostic signals; wrap or rename when it improves intent, not to satisfy a number blindly. |
+| `file-length` | `classes/srp-and-class-size.md`; `emergence/pragmatic-size.md` | 100 preferred / 300 hard diagnostic signals; split at a real responsibility boundary. |
+| `function-length` | `functions/small-and-focused.md`; `emergence/pragmatic-size.md` | 30 preferred / 60 hard diagnostic signals; extract a named concept when cohesion or verification suffers. |
+| `complexity` | `functions/small-and-focused.md`; `smells-and-heuristics/structure-and-abstraction.md` | 5 preferred / 10 hard diagnostic signals; simplify paths when the function stops expressing one idea. |
+| `param-count` | `functions/arguments.md` | 3 preferred / 7 hard diagnostic signals; introduce a parameter object or query when arguments form a clump. |
+| `nesting-depth` | `functions/small-and-focused.md`; `smells-and-heuristics/structure-and-abstraction.md` | 3 preferred / 5 hard diagnostic signals; use guard clauses when depth obscures the main path. |
+| `types-per-file` | `classes/srp-and-class-size.md`; `emergence/pragmatic-size.md` | More than 1 top-level type is a navigability signal; split only when the resulting ownership is clearer. |
+| `duplicate-block` | `smells-and-heuristics/functions-and-duplication.md`; `emergence/duplication-and-reuse.md` | Six-line windows and two sites are search signals; retain coincidental duplication when sharing would couple unrelated concepts. |
+| `comment-bloat` | `comments/intent-and-limits.md`; `comments/bad-comments.md` | 2x preferred / 4x hard comment-to-code ratios are review signals; retain context a reader cannot derive. |
+| `else-branch` | `functions/polymorphism-and-names.md`; `dispositions.md` | Syntax-only preferred signal; a genuine two-way branch is legitimate and remains reviewable. |
+| `unnamed-tuple` | `meaningful-names/intent-and-disinformation.md` | Declared tuples are naming signals; local destructuring is not a finding. |
+| `dead-export` | `smells-and-heuristics/functions-and-duplication.md` | Reference-graph evidence; reflection, dependency injection, dynamic imports, and manifests remain explicit review cases. |
+| `unused-local` | `smells-and-heuristics/functions-and-duplication.md` | Static same-file reference evidence; dynamic TypeScript lookups, reflection, and string dispatch can still trigger a false positive and require human review. |
+| `test-only-export` | `smells-and-heuristics/functions-and-duplication.md` | Test-only reachability is advisory because fixtures and production seams share the same graph shape. |
+| `commented-out-code` | `comments/bad-comments.md` | Comment syntax is a removal signal; version control retains historical code. |
+| `comment-restates-code` | `comments/bad-comments.md`; `comments/intent-and-limits.md` | Repeated intent is a review signal; keep a comment that explains a non-obvious constraint. |
+| `comment-metadata` | `comments/bad-comments.md` | Stale author/history metadata is a review signal; keep current tool or protocol metadata when it is required. |
+| `comment-placeholder` | `comments/bad-comments.md`; `comments/good-comments.md` | Empty placeholders are a review signal; replace them with an actionable issue or useful context. |
+| `comment-missing-reference` | `comments/intent-and-limits.md` | An incomplete reference is a review signal; the scanner does not infer which external source was intended. |
+| `output-parameter` | `functions/arguments.md` | Explicit output syntax is a design signal; caller-owned mutation or framework contracts may justify it. |
+| `flag-parameter` | `functions/arguments.md` | Explicit boolean behavior switches are review signals; data booleans and one coherent operation may remain. |
+| `wildcard-import` | `smells-and-heuristics/overview.md`; `dispositions.md` | Retain only syntax-proven Python/Rust wildcard findings; quiet language forms without the same proof. |
+| `naming-encoding` | `meaningful-names/intent-and-disinformation.md` | Explicit `m_`/`f_` member prefixes are review signals; other naming policy stays language or repository-specific. |
+| `build-entrypoint` | `smells-and-heuristics/comments-and-environment.md` | Missing root build command is a reproducibility signal; the scanner does not invent project commands. |
+| `test-entrypoint` | `smells-and-heuristics/comments-and-environment.md` | Missing root test command is a reproducibility signal; the scanner does not infer a complete test workflow. |
+| `todo-marker` | `comments/good-comments.md`; `comments/bad-comments.md` | Bare deferred-work markers are review signals; linked, current work items may be retained. |
+| `stateless-method` | `classes/srp-and-class-size.md`; `emergence/pragmatic-size.md`; `dispositions.md` | Syntax-only candidate for a free function; ownership, inheritance, and framework intent are not inferred. |
+| `assumption-marker` | `comments/good-comments.md`; `comments/intent-and-limits.md` | Retired from generic scanning: `ASSUMPTION` has no source/use contract, so it is quiet rather than a policy finding. |
+| `test-quality` | `smells-and-heuristics/test-strategy.md` | Separate report-only T1-T9 evidence path; manifests and coverage observations are diagnostic, never a commit gate. |
+
+## Resolving authority sources
+
+Each path in the matrix's **Source contract** column is relative to the
+external Clean Code collection at
+`<DOD_GUARD_KNOWLEDGE_BASE_DIR>/entries/clean-code/<source-path>`. Set
+`DOD_GUARD_KNOWLEDGE_BASE_DIR` to the vault parent; the knowledge-base server
+adds `entries` itself. For example, `functions/arguments.md` resolves to
+`<DOD_GUARD_KNOWLEDGE_BASE_DIR>/entries/clean-code/functions/arguments.md`.
+Do not resolve these paths against the installed Quality Guard plugin: the
+plugin ships the policy synthesis, while the configured knowledge base owns
+the source-linked entries.
+
 ---
 
 ## `dead-export` - exported, never referenced
@@ -64,8 +116,11 @@ heuristic; it is a proof.
 
 **Fix:** *Remove Dead Code*.
 
-**False positives:** functions referenced only inside a plain string
-literal, in any language but Rust. Rare.
+**False positives:** functions referenced only inside a plain string literal,
+dynamic TypeScript/JavaScript lookup such as `globalThis["foo"]()`, reflection,
+dependency injection, or other string-based dispatch can still be reported.
+Review these cases before deleting a symbol; the scanner does not resolve
+runtime name lookup.
 
 **Rust is the opposite risk: a false negative, not a false positive.** Every
 double-quoted Rust string, not only a `format!`/`println!` argument, is
@@ -126,10 +181,10 @@ after whitespace normalization, across all scanned files. Comment lines are
 ignored; a window needs at least four distinct lines so that repetitive data
 tables do not register.
 
-**Why hard at 2 sites:** the second occurrence is where duplication becomes a
-maintenance hazard, because now a fix can be applied to one and not the other.
-Waiting for a third occurrence means shipping the bug that the third occurrence
-would have revealed.
+**Why this is a diagnostic signal:** the second occurrence is where duplication
+can become a maintenance hazard, because now a fix can be applied to one and
+not the other. The threshold points to a review; it does not prove that two
+conceptually unrelated blocks must be merged.
 
 **Fix:** *Extract Function*, then *Move Function* if the extracted function has
 a natural home. If the two copies have small differences, *Parameterize
@@ -162,10 +217,11 @@ message explaining why it left.
 `struct` / `trait` / `record` in one file. Nested types are not counted, and a
 wrapping `namespace` / `mod` / `package` block does not count as nesting.
 
-**Why hard, and only hard:** the bound is 1, with no preferred tier, because
-there is no "mostly one type." The rule is what makes a codebase navigable
-without search: a type's file is its name. It also makes diffs, blame, and
-merge conflicts track a single concept.
+**Why this is a diagnostic signal:** the bound is 1, with no preferred tier,
+because there is no "mostly one type." The rule points at navigability and
+ownership; it does not prove that every related type must move to another file.
+Keeping diffs, blame, and merge conflicts around one concept still depends on
+the actual design boundary.
 
 **Fix:** *Extract Class* into a new file named for the type. Put small related
 types in a sibling directory, not a shared file. A discriminated-union member
@@ -182,9 +238,10 @@ directories are for.
 
 **Detects:** total lines, including blanks and comments.
 
-**Why these numbers:** 100 lines is roughly what fits in one screen and one
-head. 300 is where a reader stops building a mental model and starts using
-search. Beyond that the file is a directory that forgot to become one.
+**Why these numbers:** 100 lines is a useful first review point and 300 is a
+stronger signal that a reader may need search instead of a single mental model.
+They are not a universal file-size law. A cohesive file can be better than a
+split that creates two owners which must always change together.
 
 **Fix:** the split has to follow a real seam - *Extract Class*, *Extract
 Function* into a new module, or *Split Phase* when the file does two things in
@@ -200,8 +257,9 @@ cohesive class alone.
 
 **Detects:** lines from signature to closing brace (or dedent, in Python).
 
-**Why:** the *Long Method* smell. A function longer than a screen cannot be
-verified by reading; it can only be trusted.
+**Why this is a diagnostic signal:** it points at the *Long Method* smell. A
+function longer than a screen may be harder to verify by reading, but the
+number alone does not prove that extraction improves the design.
 
 **Fix:** *Extract Function* - but extract a **concept**, not a line range. If
 you cannot name the extracted function without referring to its position
@@ -214,12 +272,13 @@ you cannot name the extracted function without referring to its position
 **Detects:** cyclomatic complexity, counted as 1 plus each `if`, `for`,
 `while`, `case`, `catch`, `&&`, `||`, `??`, ternary, and (in Rust) `match` arm.
 
-**Why 10 hard:** at complexity 10 a function has at least 10 independent paths,
-which is roughly where exhaustive testing stops being practical and where
-readers reliably start missing a branch.
+**Why 10 is a stronger signal:** at complexity 10 a function has at least 10
+independent paths, which is roughly where exhaustive testing often becomes
+impractical and readers may start missing a branch. It is not a universal
+correctness boundary.
 
-**Why 5 preferred:** most functions that do one thing land at 1 - 4. A function
-at 6 is usually two functions.
+**Why 5 is a preferred signal:** many functions that do one thing land at 1 -
+4, so a function at 6 deserves review. It can still be one coherent operation.
 
 **Fix, in order of preference:**
 
@@ -238,8 +297,9 @@ at 6 is usually two functions.
 **Detects:** maximum brace depth inside a function body (indent levels in
 Python).
 
-**Why:** each level is a condition the reader has to hold. Depth 5 means five
-simultaneous conditions to understand the innermost line.
+**Why this is a diagnostic signal:** each level is a condition the reader has
+to hold. Depth 5 can mean five simultaneous conditions to understand the
+innermost line, but the count alone does not establish a defect.
 
 **Fix:** *Replace Nested Conditional with Guard Clauses*. Invert the condition,
 return early, and let the happy path run at depth 1. This usually fixes
@@ -256,13 +316,13 @@ bare `self` form used to be excluded; a method taking `&self`, by far the
 more common form in real Rust code, used to count its own receiver as a
 declared parameter.
 
-**Why 7:** the *Long Parameter List* smell. Past a handful, call sites become
-positional puzzles and every insertion is a breaking change no compiler
-catches when the types happen to match.
+**Why 7 is a stronger signal:** it points at the *Long Parameter List* smell.
+Past a handful, call sites can become positional puzzles and every insertion is
+a breaking change no compiler catches when the types happen to match.
 
-**Why 3 preferred:** most functions that need four arguments are being handed a
-*Data Clump* - a group of values that always travel together and want to be a
-type.
+**Why 3 is a preferred signal:** most functions that need four arguments may be
+being handed a *Data Clump* - a group of values that always travel together and
+want to be a type.
 
 **Fix:**
 
@@ -355,9 +415,9 @@ TypeScript `: [A, B]` and `[first: A, second: B]`; C# `(int, string)` and
 `(int first, string second)` return types; Rust `-> (A, B)`; Python
 `-> Tuple[A, B]`.
 
-**Why hard:** `result.0` and `result[1]` carry no meaning, so every call site
-re-derives what the fields are. Adding or reordering a field silently breaks
-every destructuring that still compiles.
+**Why this is a diagnostic signal:** `result.0` and `result[1]` carry no
+meaning, so every call site re-derives what the fields are. Adding or
+reordering a field silently breaks every destructuring that still compiles.
 
 **Fix:** *Replace Primitive with Object* - declare a named type such as a
 record, struct, class, or interface. Naming tuple elements does not exempt the
@@ -516,12 +576,13 @@ the repository root rather than guessed commands.
 
 **Detects:** characters per line.
 
-**Why 80 preferred:** side-by-side diffs, split editor panes, and terminal
-review all assume it. It also acts as a complexity signal - a line past 80
-characters is usually doing two things.
+**Why 80 is a preferred diagnostic signal:** side-by-side diffs, split editor
+panes, and terminal review often assume it. It can also act as a complexity
+signal - a line past 80 characters may be doing two things.
 
-**Why 120 hard:** past that, wrapping is unavoidable somewhere, and wrapped
-lines are read wrong.
+**Why 120 is a stronger diagnostic signal:** past that, wrapping is often
+unavoidable somewhere. It still points to review rather than proving that a
+line is incorrect or that reformatting alone is useful.
 
 **Fix:** *Extract Variable* for a long expression - the name is documentation.
 Break long parameter lists one per line. Never fix this by reformatting alone
@@ -538,12 +599,14 @@ stops at the first blank line, or at a line that only closes a bracket.
 
 **Why the ratio and not the length:** ten lines over a forty-line function is
 an explanation. Ten lines over a one-line field is an essay. Length alone
-would punish the first and miss the point of the second.
+would punish the first and miss the point of the second. The ratio remains a
+review signal, not a ban on long explanations.
 
 **Why preferred:** the comment is read every time the code is. The reader
 pays for it every time. Some blocks recount the bug that prompted the line,
 name the value it used to hold, or walk through an experiment. Git already
-records all of that, so the toll buys nothing.
+records all of that, so the toll may buy nothing; inspect intent before
+deleting context.
 
 **Fix:** keep the sentence that gives a reason a reader could not derive.
 Delete the history, the changelog, and the rejected alternative. Delete the

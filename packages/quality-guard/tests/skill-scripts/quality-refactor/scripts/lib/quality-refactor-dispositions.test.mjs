@@ -35,3 +35,23 @@ test("records the null-like argument not-planned boundary", () => {
 test("wires chapter-only dispositions into the quality-refactor skill", () => {
   assert.ok(skill.includes("reference/dispositions.md"));
 });
+
+test("records source-backed dispositions for the four edge rules", () => {
+  const normalizedDisposition = disposition.replace(/\s+/g, " ");
+  for (const signal of [
+    "Wildcard imports — retain only syntax-proven forms",
+    "Retain `wildcard-import` for Python",
+    "Else branches — review signal, not blanket ban",
+    "a genuine two-way branch with equally normal outcomes is legitimate",
+    "Stateless methods — syntax-only candidate",
+    "must not infer ownership intent",
+    "Assumption markers — retired from generic scanning",
+    "has no source/use semantic contract",
+    "quiet rather than a policy finding",
+  ]) {
+    assert.ok(
+      normalizedDisposition.includes(signal),
+      `edge-rule disposition must contain ${signal}`,
+    );
+  }
+});

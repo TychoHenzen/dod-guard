@@ -50,7 +50,6 @@ export const PRESENCE_SEVERITY = {
   "build-entrypoint": "warn",
   "test-entrypoint": "warn",
   "todo-marker": "warn",
-  "assumption-marker": "warn",
   "stateless-method": "warn",
 };
 
