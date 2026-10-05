@@ -25,7 +25,6 @@ const RULE_ORDER = [
   "build-entrypoint",
   "test-entrypoint",
   "todo-marker",
-  "assumption-marker",
   "line-length",
 ];
 

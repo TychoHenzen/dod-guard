@@ -136,5 +136,10 @@ dependency outcomes, not a numeric verdict. Leave the parent issue and pull
 request open for human review and merge.
 
 Rules and remediation guidance live in `reference/rules.md` and
-`reference/catalog.md`. Chapter-only outcomes that are not generic scanner
-rules live in `reference/dispositions.md`.
+`reference/catalog.md`. The source-and-disposition matrix in
+`reference/rules.md` is the policy catalog for configured rules; numeric
+thresholds are diagnostic starting points, not universal correctness or Clean
+Code gates. Chapter-only outcomes that are not generic scanner rules live in
+`reference/dispositions.md`. Consult those dispositions before adding
+syntax-only findings, and do not treat a bare `ASSUMPTION` comment as a
+generic scanner violation.

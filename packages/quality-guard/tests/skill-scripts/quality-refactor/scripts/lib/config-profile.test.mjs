@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  ALL_RULES,
   buildConfig,
   severityFor,
 } from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
@@ -31,6 +32,8 @@ test("default profile keeps thresholds and presence severities distinct", () => 
   assert.equal(config.presence["dead-export"], "error");
   assert.equal(config.presence["else-branch"], "warn");
   assert.equal(config.presence["test-only-export"], "warn");
+  assert.equal(ALL_RULES.includes("assumption-marker"), false);
+  assert.equal("assumption-marker" in config.presence, false);
 });
 
 test("strict profile collapses warn bounds and escalates presence rules", () => {
@@ -41,6 +44,6 @@ test("strict profile collapses warn bounds and escalates presence rules", () => 
     warn: null,
     error: 1,
   });
-  assert.equal(config.presence["assumption-marker"], "error");
   assert.equal(config.presence["todo-marker"], "error");
+  assert.equal("assumption-marker" in config.presence, false);
 });

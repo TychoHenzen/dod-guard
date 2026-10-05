@@ -57,6 +57,7 @@ test("preflight is CI's single source for generated checks, policy, and Biome fl
   ]) {
     assert.doesNotMatch(PREFLIGHT, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+  assert.doesNotMatch(PREFLIGHT, /assumption-marker/);
   assert.match(WORKFLOW, STATIC_ANALYSIS_COMMAND);
   assert.doesNotMatch(PREFLIGHT, NO_UNIVERSAL_TARGET);
 });
