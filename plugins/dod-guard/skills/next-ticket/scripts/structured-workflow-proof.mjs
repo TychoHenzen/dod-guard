@@ -146,13 +146,21 @@ export function evaluateConvergence({
       validTaskIds.add(taskId);
       normalizedTaskIds.set(task, taskId);
     }
-    if (evidenceValues(task.evidence).length === 0) addRemainder("Plan and tasks", `${taskId} needs implementation evidence`);
+    if (evidenceValues(task.evidence).length === 0) {
+      addRemainder("Plan and tasks", `${taskId} needs implementation evidence`);
+    }
   }
   const evidenceOwners = new Map();
   for (const task of taskList) {
     const taskId = normalizedTaskIds.get(task);
     if (taskId) {
-      declareEvidence({ owner: taskId, value: task.evidence, section: "Plan and tasks", evidenceOwners, addRemainder });
+      declareEvidence({
+        owner: taskId,
+        value: task.evidence,
+        section: "Plan and tasks",
+        evidenceOwners,
+        addRemainder,
+      });
     }
   }
   const childIds = new Set();

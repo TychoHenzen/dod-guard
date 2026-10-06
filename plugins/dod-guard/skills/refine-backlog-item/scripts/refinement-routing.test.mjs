@@ -11,16 +11,24 @@ const githubDiscipline = await readFile(
   new URL("../../../standards/github-request-discipline.md", import.meta.url),
   "utf8",
 );
-const completeRecords = () => proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {});
+const completeRecords = () =>
+  proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {});
 const validConvergenceInput = () => ({
   records: completeRecords(),
   tasks: [{
     id: "task-1",
     child: "search-flow",
-    evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+    evidence: [
+      "commit-proof",
+      ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
+    ],
   }],
   children: [{ id: "search-flow", evidence: "slice-proof" }],
-  reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
+  reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+    id,
+    owner: "task-1",
+    evidence: `lens-${id}`,
+  })),
   acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
   acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
     id: `AC-1-${index + 1}`,

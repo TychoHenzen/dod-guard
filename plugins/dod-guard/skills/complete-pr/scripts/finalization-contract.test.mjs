@@ -6,6 +6,38 @@ import { ACCEPTANCE_MATRIX_PATHS } from "../../goal-sdlc/scripts/lib/acceptance-
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const standard = await readFile(new URL("../../../standards/github-request-discipline.md", import.meta.url), "utf8");
 const proof = await import("../../next-ticket/scripts/structured-workflow-proof.mjs");
+const completeRecords = () =>
+  proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {});
+const validConvergenceInput = () => ({
+  records: completeRecords(),
+  tasks: [{
+    id: "task-1",
+    child: "search-flow",
+    evidence: [
+      "commit-proof",
+      ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
+    ],
+  }],
+  children: [{ id: "search-flow", evidence: "slice-proof" }],
+  reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+    id,
+    owner: "task-1",
+    evidence: `lens-${id}`,
+  })),
+  acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+  acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
+    id: `AC-1-${index + 1}`,
+    contract: "AC-1",
+    path,
+    proof: `matrix-proof-${index + 1}`,
+    expected: "pass",
+    observed: "pass",
+    status: "pass",
+    evidence: `matrix-evidence-${index + 1}`,
+    headSha: "proof-head",
+  })),
+  headSha: "proof-head",
+});
 
 test("finalizes each structured parent child only after the guarded merge", () => {
   const finalization = skill.slice(skill.indexOf("## Finalize the parent unit"));
@@ -37,31 +69,8 @@ test("shares the global ProjectV2 resolution and sequential readback contract", 
 });
 
 test("finalization relies on executable functional convergence proof", () => {
-  const completeRecords = () => proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {});
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
-  const passing = proof.evaluateConvergence({
-    records: completeRecords(),
-    tasks: [{
-      id: "task-1",
-      child: "search-flow",
-      evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
-    }],
-    children: [{ id: "search-flow", evidence: "slice-proof" }],
-    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
-    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
-    acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
-      id: `AC-1-${index + 1}`,
-      contract: "AC-1",
-      path,
-      proof: `matrix-proof-${index + 1}`,
-      expected: "pass",
-      observed: "pass",
-      status: "pass",
-      evidence: `matrix-evidence-${index + 1}`,
-      headSha: "proof-head",
-    })),
-    headSha: "proof-head",
-  });
+  const passing = proof.evaluateConvergence(validConvergenceInput());
   assert.equal(passing.outcome, "verified");
   const result = proof.evaluateConvergence({
     records: completeRecords(),
@@ -78,6 +87,15 @@ test("finalization relies on executable functional convergence proof", () => {
   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
   assert.ok(result.remainder.some((entry) => entry.includes("implemented-flow slice needs an owning task")));
   assert.ok(!result.remainder.some((entry) => entry.includes("review lens")));
+
+  const missingLens = proof.evaluateConvergence({
+    records: completeRecords(),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: "commit-proof" }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "commit-proof" }],
+  });
+  assert.equal(missingLens.outcome, "actionable remainder");
+  assert.ok(missingLens.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")));
 
   const duplicateSlice = proof.evaluateConvergence({
     records: completeRecords(),

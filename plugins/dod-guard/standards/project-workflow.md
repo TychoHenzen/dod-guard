@@ -57,6 +57,12 @@ Implementation, wiring and end-to-end usability, code quality, and
 failure/recovery each need an owning slice or parent-level task with observable
 evidence. There is no fixed child count or category set. The branch does not
 replace these records: it supplies the implementation evidence they request.
+The executable proof uses the canonical lens IDs `implementation`,
+`wiring/usability`, `quality`, and `reliability`; prose may expand those IDs
+to the corresponding user-facing concern.
+
+Task-list records use `parentLevel: "convergence"` on a task that owns
+cross-cutting parent work without a linked child.
 
 `next-ticket` writes one durable `## Implementation handoff` issue comment (or
 updates the existing one) after pushing the branch. That comment maps every
