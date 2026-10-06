@@ -140,9 +140,10 @@ Cross-shell RTK, native-executable, path, output, and precondition commands
 follow the repository contract in
 [`docs/command-composition.md`](docs/command-composition.md).
 
-Start or continue the Todo PBI from the repository's main checkout. Use an
-isolated worktree only when that checkout cannot safely retain the selected
-branch and user-owned changes, and record the exception and recovery path:
+Start or continue the Todo PBI from the repository's main checkout. When that
+checkout cannot safely retain the selected branch and user-owned changes, the
+skill stops and reports the reason and recovery path; it never creates a Git
+worktree:
 
 ```text
 /dod-guard:next-ticket 42

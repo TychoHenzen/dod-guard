@@ -783,7 +783,7 @@ test("goal-sdlc keeps real work in short-lived subagents", async () => {
   const skill = await readSkill();
   for (const marker of [
     "Subagents are the only delegation mechanism for real work",
-    "Do not use\nuser-visible Codex tasks or threads as workers",
+    "do not use user-visible tasks\nor threads as workers",
     "create_thread",
     "fork_thread",
     "send_message_to_thread",
@@ -922,7 +922,9 @@ test("goal-sdlc records friction in one daily log instead of one issue per incid
     /today's log already has an entry for the same friction[\s\S]*open non-log PBI that already owns the durable fix[\s\S]*Otherwise append a new entry/,
   );
   assert.match(skill, /what happened \(exact error, tool, stage, PBI, and SHA\); the workaround used; the durable fix/);
-  assert.match(skill, /long-term dod-guard repository fix as an entry in today's friction log/);
+  assert.match(skill, /source-repository fix\s+as an entry in today's friction log/);
+  assert.match(skill, /Never edit an installed plugin cache/);
+  assert.doesNotMatch(skill, /repair the skill minimally in the plugin cache|If a cached skill or script must be edited/);
   assert.doesNotMatch(skill, /if no matching PBI exists, create one through `add-backlog-idea`/);
   assert.doesNotMatch(skill, /to track the long-term dod-guard repository fix/);
 });

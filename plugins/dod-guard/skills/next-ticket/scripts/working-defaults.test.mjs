@@ -105,7 +105,9 @@ test("branching and local mutation exceptions are explicit", () => {
   assert.match(defaults, /keep those changes[\s\S]*target branch/);
   assert.match(defaults, /Before selecting a delivery checkout, run `git worktree list --porcelain`/);
   assert.match(defaults, /first worktree as the main checkout/);
-  assert.match(defaults, /isolated worktree and record the reason, affected checkout, and recovery path/);
+  assert.match(defaults, /stop and report\s+the reason, affected checkout, and recovery path\. Never create, switch to, or\s+remove a Git worktree/);
+  assert.doesNotMatch(defaults, /isolated worktree/);
+  assert.doesNotMatch(skills.get("next-ticket"), /use one isolated worktree/);
   assert.match(defaults, /maintenance-only\s+`\/publish` route stays in the existing primary checkout/);
   assert.match(skills.get("next-ticket"), /Do not commit them on the current or default branch/);
   assert.match(skills.get("next-ticket"), /main checkout as the source of truth for ordinary ticket\s+work/);
@@ -118,7 +120,7 @@ test("branching and local mutation exceptions are explicit", () => {
 test("main checkout exceptions preserve user work and release isolation", () => {
   assert.match(defaults, /Never\s+reset,\s+stash, overwrite, move, or silently include user-owned changes/);
   assert.match(defaults, /maintenance-only\s+`\/publish` route stays in the existing primary checkout[\s\S]*Stop and preserve/);
-  assert.match(skills.get("next-ticket"), /locked, unavailable, active, or unsafe user-owned main checkout/);
+  assert.match(skills.get("next-ticket"), /locked, unavailable, active, or unsafe\s+user-owned main checkout, stop and report/);
   assert.match(skills.get("next-ticket"), /Never reset, stash, overwrite,\s+move, or silently include user-owned changes/);
 });
 

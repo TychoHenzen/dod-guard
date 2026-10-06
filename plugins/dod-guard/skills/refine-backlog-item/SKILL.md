@@ -185,9 +185,9 @@ criteria already own the unit. Never duplicate a unit, and give every created
 child minimal parent context, scope, acceptance criteria, and verification.
 
 For every structured PBI, explicitly assess implementation, wiring and
-end-to-end usability—including proof that the feature is reachable from its
-intended UI or supported user-facing surface—refactoring and code quality, and
-failure/recovery reliability beyond the happy path. Attach each concern to the
+end-to-end usability (including proof that the feature is reachable from its
+intended UI or supported user-facing surface), refactoring and code quality,
+and failure/recovery reliability beyond the happy path. Attach each concern to the
 functional child or parent-level task that owns it, with observable acceptance and verification;
 these are review lenses, not mandatory child categories. Linked children are
 checklist work within the parent's one branch and one PR; they do not

@@ -41,10 +41,11 @@ Use subagents only for bounded work that benefits from independent context or
 real parallelism. Do not delegate workflow rereads, compaction recovery, or
 unchanged-state checks; reuse the handoff snapshot instead.
 
-Subagents are the only delegation mechanism for real work. Do not use
-user-visible Codex tasks or threads as workers, and do not satisfy this
-contract with `create_thread`, `fork_thread`, `send_message_to_thread`, or a
-`codex://threads/...` task; those create peer tasks, not subagents.
+Subagents are the only delegation mechanism for real work: the Agent tool in
+Claude Code, spawned agents in Codex. In Codex, do not use user-visible tasks
+or threads as workers, and do not satisfy this contract with `create_thread`,
+`fork_thread`, `send_message_to_thread`, or a `codex://threads/...` task;
+those create peer tasks, not subagents.
 
 Keep each subagent short-lived and scoped to one bounded responsibility. Reuse
 the same subagent only while its cumulative context remains below approximately
@@ -254,7 +255,7 @@ Definitions:
 - `implementation-complete`: all linked slice work and parent-level tasks are implemented and verified enough to enter the PR lifecycle.
 - `Project Done`: the parent and all linked children are marked complete after the PR is merged and final remote checks pass.
 - The parent is implementation-complete when every linked slice and parent-level task is implementation-complete, but Project Done is finalized with the children after merge.
-- “Pre-existing” is not a deferral reason for a failure in a touched path, required suite, user-facing flow, or required gate.
+- "Pre-existing" is not a deferral reason for a failure in a touched path, required suite, user-facing flow, or required gate.
 
 ### Continuous queue loop
 
@@ -462,7 +463,7 @@ evidence in the parent task list.
 ##### D. Failure/recovery reliability
 
 - Fix errors found in the touched paths, required suites, integration path, or lint/type checks, and act on Quality Guard findings when they identify an in-scope problem.
-- Do not label relevant failures “pre-existing” to defer them.
+- Do not label relevant failures "pre-existing" to defer them.
 - Truly unrelated failures require evidence and a recovery decision, not silent dismissal.
 
 Each linked child must contain minimal parent context, scope, acceptance criteria, and verification instructions.
@@ -482,7 +483,7 @@ After refinement:
   explicitly marked parent-level task.
 - If the parent remains Backlog, repair the status and read it back before implementation.
 - Do not create additional children during implementation unless a genuinely independent acceptance requirement appears; update an existing child whenever possible.
-- If the refinement skill cannot satisfy this contract, repair the skill minimally in the plugin cache and record the long-term dod-guard change in today's friction log instead of proceeding with an incomplete plan.
+- If the refinement skill cannot satisfy this contract, record the skill defect and its source-repository fix in today's friction log, keep the parent in Backlog, and continue with another eligible parent instead of proceeding with an incomplete plan. Never edit the installed plugin cache.
 
 ### 4. Implementation and branch rules
 
@@ -590,7 +591,7 @@ Only complete the PR when:
 - It is published and mergeable.
 - The current head passes all required checks.
 - All child acceptance criteria are satisfied.
-- No relevant failure is deferred as “pre-existing” (no part of the application is allowed to be broken on development - development must *ALWAYS* be 100% ready to deploy to production and be 100% usable by real end-users).
+- No relevant failure is deferred as "pre-existing" (no part of the application is allowed to be broken on development - development must *ALWAYS* be 100% ready to deploy to production and be 100% usable by real end-users).
 - The PR is merged and the merge state is read back.
 
 After merge:
@@ -674,8 +675,8 @@ Blocked-state user-facing response:
 - When safe progress must stop because the goal or every eligible delivery unit is blocked, replace progress narration with one brief user-facing message. Do not narrate checkpoint, snapshot, delegation, queue, or audit mechanics.
 - Assume the user has zero prior context. Start with `Blocked:` and explain in plain English what was being attempted (repository, PBI number, title, and one-sentence purpose), what is blocking it, the concrete evidence, what recovery was tried, and the one decision or action needed to continue.
 - Use one short paragraph or at most five bullets. Translate workflow jargon
-  such as “stale acceptance evidence,” “dirty-path disposition,” “state
-  reconciliation,” and “goal pass” instead of exposing it.
+  such as "stale acceptance evidence," "dirty-path disposition," "state
+  reconciliation," and "goal pass" instead of exposing it.
 - If another eligible delivery unit can proceed, keep working and do not send a blocked-stop message. If the user must decide something, ask one concrete question with the safe options and their consequences.
 - Keep any required `[HH:MM]` or `PBIs completed: N` telemetry compact; it must not become a second status narrative.
 
@@ -695,14 +696,12 @@ generated-file, bundle/package-integrity, and Biome-error checks remain the
 correctness gates. Quality Guard output never accepts a commit or merge and
 never writes persisted quality state.
 
-If a cached skill or script must be edited:
-
-- Compare it with tracked source first.
-- Make the smallest reversible change.
-- Validate it.
-- Record the exact cache path and behavior change.
-- Record the long-term dod-guard repository fix as an entry in today's friction log, as described under the daily friction log rule.
-- A cache-only fix is not proof that the tracked plugin is fixed.
+Never edit an installed plugin cache, such as `~/.claude/plugins/` or a Codex
+plugin install. A plugin update overwrites it without warning, and it sits at
+whatever version was last installed. When a dod-guard skill or script is
+wrong, record the defect, the workaround used, and the source-repository fix
+as an entry in today's friction log, as described under the daily friction
+log rule, and continue with the workaround.
 
 ### 9. Common-sense completion and continuation
 
@@ -733,4 +732,4 @@ After every successful merge:
 - Continue the same goal loop.
 - Do not mark the goal complete after one PBI.
 
-Mark the goal complete only when no eligible work remains or the user explicitly ends it. Before marking the goal blocked, refresh every remaining parent/child/PR state and the external blocker once. Mark it blocked only after the same external blocker remains unresolved across three evidence-backed attempts/goal turns. Never use “two active PBIs” as a reason to stop. never stop when todo is empty but the backlog is not.
+Mark the goal complete only when no eligible work remains or the user explicitly ends it. Before marking the goal blocked, refresh every remaining parent/child/PR state and the external blocker once. Mark it blocked only after the same external blocker remains unresolved across three evidence-backed attempts/goal turns. Never use "two active PBIs" as a reason to stop. never stop when todo is empty but the backlog is not.

@@ -8,9 +8,9 @@ description: Execute a refined GitHub Project PBI through implementation, verifi
 Use the repository's main checkout as the source of truth for ordinary ticket
 work. Before selection, run `git worktree list --porcelain`; its first worktree
 is the main checkout. When it can safely create the selected branch from the
-fetched default, run there. Otherwise use one isolated worktree only for a
-locked, unavailable, active, or unsafe user-owned main checkout, and record the
-reason, affected checkout, and recovery path. Never reset, stash, overwrite,
+fetched default, run there. For a locked, unavailable, active, or unsafe
+user-owned main checkout, stop and report the reason, affected checkout, and
+recovery path; never create a worktree. Never reset, stash, overwrite,
 move, or silently include user-owned changes. Never choose a project by title
 similarity or from a remembered owner.
 

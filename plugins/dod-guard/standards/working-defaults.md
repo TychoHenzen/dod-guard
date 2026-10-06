@@ -35,9 +35,10 @@ destructive action.
 - Before selecting a delivery checkout, run `git worktree list --porcelain` and
   treat its first worktree as the main checkout. Run ordinary delivery there
   when it can safely create the selected branch from the fetched default while
-  retaining classified in-scope changes. When it cannot—because it is locked,
-  unavailable, or holds an active or unsafe user-owned branch—create one
-  isolated worktree and record the reason, affected checkout, and recovery path.
+  retaining classified in-scope changes. When it cannot, because it is locked,
+  unavailable, or holds an active or unsafe user-owned branch, stop and report
+  the reason, affected checkout, and recovery path. Never create, switch to, or
+  remove a Git worktree.
   The maintenance-only `/publish` route stays in the existing primary checkout
   and never runs a Git worktree command. Classify every pending path first and
   continue only when all paths are clearly release-scoped. Stop and preserve

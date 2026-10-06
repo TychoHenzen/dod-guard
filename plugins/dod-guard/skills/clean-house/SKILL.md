@@ -17,7 +17,7 @@ Backwards compatibility alone never saves a file. Keep it only when
 somebody names a live consumer. Git history is the safety net, so once
 the evidence is in, deletion is the default answer.
 
-Two repositories are out of scope. Skip a published library or SDK. A
+Two cases are out of scope. Skip a published library or SDK. A
 deprecated export there may have consumers you cannot see. Skip a pair
 that turns out to be a facade over an implementation. That is one design,
 not two.
@@ -48,9 +48,10 @@ Those two graph entries are MCP tools. Call them as tools. They are not
 shell commands and they fail in a shell.
 
 Every command below runs on the user's machine, which may be Windows.
-There the shell is cmd.exe, which has no `grep`, `head`, `tail`, `uniq`,
-POSIX `sort`, or `$(...)` substitution. Its `find` searches file contents,
-not names. It has no single-quote grouping, so `'...'` makes it look for a
+There the shell can be PowerShell, Git Bash, or cmd.exe, depending on the
+client and tool. PowerShell and cmd.exe have no `grep`, `head`, `tail`,
+`uniq`, or POSIX `sort`. cmd.exe's `find` searches file contents, not names,
+and cmd.exe has no single-quote grouping, so `'...'` makes it look for a
 program with that name.
 
 So use `rg` for every scan, including scans over file names. Quote with
@@ -304,12 +305,17 @@ and would otherwise read as live references that block the removal.
 Remove a dependency whose only consumer just went, using the project's
 package manager (e.g. `npm remove`, `cargo remove`, `pip uninstall`).
 
-If a deletion turns out wrong, bring the file back from the last commit
-that held it.
+If a deletion turns out wrong before it is committed, restore it from
+`HEAD`. After the commit, restore it from the parent of the commit that
+deleted it, which `--diff-filter=D` finds even when later commits followed.
 
 ```
-git checkout HEAD~1 -- src/pricing/shipping-rate.ts
+git checkout HEAD -- src/pricing/shipping-rate.ts
+git log -n 1 --diff-filter=D --format=%h -- src/pricing/shipping-rate.ts
+git checkout <that-hash>~1 -- src/pricing/shipping-rate.ts
 ```
+
+Write `~1`, not `^`: cmd.exe treats `^` as its escape character and drops it.
 
 ## After the delete
 
