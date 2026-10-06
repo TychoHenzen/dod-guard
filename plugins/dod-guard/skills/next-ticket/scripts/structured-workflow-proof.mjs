@@ -22,6 +22,48 @@ export const REQUIRED_REVIEW_LENSES = [
 
 export const PROOF_SCENARIOS = ["passing", "incomplete", "ordinary"];
 
+function evidenceValues(value) {
+  if (typeof value === "string") return value.trim() ? [value] : [];
+  if (Array.isArray(value)) return value.flatMap(evidenceValues);
+  return [];
+}
+
+function normalizeEntries(value, label, section, addRemainder) {
+  if (!Array.isArray(value)) {
+    addRemainder(section, `${label} must be an array`);
+    return [];
+  }
+  return value.flatMap((entry, index) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      addRemainder(section, `${label} entry ${index + 1} must be an object`);
+      return [];
+    }
+    return [entry];
+  });
+}
+
+function declareEvidence({ owner, value, section, evidenceOwners, addRemainder }) {
+  for (const evidence of evidenceValues(value)) {
+    const previousOwner = evidenceOwners.get(evidence);
+    if (previousOwner) {
+      addRemainder(section, `evidence ${evidence} is mapped more than once (${previousOwner}, ${owner})`);
+    } else {
+      evidenceOwners.set(evidence, owner);
+    }
+  }
+}
+
+function referenceEvidence({ owner, value, section, evidenceOwners, addRemainder }) {
+  for (const evidence of evidenceValues(value)) {
+    const declaredOwner = evidenceOwners.get(evidence);
+    if (!declaredOwner) {
+      addRemainder(section, `${owner} references undeclared evidence ${evidence}`);
+    } else if (declaredOwner !== owner) {
+      addRemainder(section, `${owner} references evidence owned by ${declaredOwner}`);
+    }
+  }
+}
+
 const PROOF_HANDOFF = {
   url: "https://github.com/owner/repo/issues/1#issuecomment-1",
   headSha: "abc1234",
@@ -66,6 +108,11 @@ export function evaluateConvergence({
     remainder.push(message);
   };
 
+  const taskList = normalizeEntries(tasks, "task", "Plan and tasks", addRemainder);
+  const childList = normalizeEntries(children, "child", "Functional decomposition", addRemainder);
+  const lensList = normalizeEntries(reviewLenses, "review lens", "Functional decomposition", addRemainder);
+  const acceptanceList = normalizeEntries(acceptance, "acceptance criterion", "Acceptance and verification", addRemainder);
+
   for (const record of REQUIRED_RECORDS) {
     if (!records[record]) {
       addRemainder(
@@ -76,24 +123,15 @@ export function evaluateConvergence({
       );
     }
   }
-  for (const task of tasks) {
-    if (!task.evidence) addRemainder("Plan and tasks", `${task.id} needs implementation evidence`);
+  for (const task of taskList) {
+    if (evidenceValues(task.evidence).length === 0) addRemainder("Plan and tasks", `${task.id} needs implementation evidence`);
   }
   const evidenceOwners = new Map();
-  const recordEvidence = (owner, evidence, section) => {
-    if (!evidence) return;
-    const previousOwner = evidenceOwners.get(evidence);
-    if (previousOwner) {
-      addRemainder(section, `evidence ${evidence} is mapped more than once (${previousOwner}, ${owner})`);
-    } else {
-      evidenceOwners.set(evidence, owner);
-    }
-  };
-  for (const task of tasks) {
-    recordEvidence(task.id, task.evidence, "Plan and tasks");
+  for (const task of taskList) {
+    declareEvidence({ owner: task.id, value: task.evidence, section: "Plan and tasks", evidenceOwners, addRemainder });
   }
   const childIds = new Set();
-  for (const child of children) {
+  for (const child of childList) {
     const slice = child.id ?? child.slice ?? child.name;
     if (!slice) {
       addRemainder("Functional decomposition", "linked child needs a functional slice id");
@@ -101,20 +139,20 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${slice} functional slice is linked more than once`);
     } else {
       childIds.add(slice);
-      if (!child.evidence) {
+      if (evidenceValues(child.evidence).length === 0) {
         addRemainder("Functional decomposition", `${slice} slice needs evidence`);
       } else {
-        recordEvidence(slice, child.evidence, "Functional decomposition");
+        declareEvidence({ owner: slice, value: child.evidence, section: "Functional decomposition", evidenceOwners, addRemainder });
       }
     }
   }
-  for (const task of tasks) {
+  for (const task of taskList) {
     if (task.child && !childIds.has(task.child)) {
       addRemainder("Functional decomposition", `${task.id} references missing functional slice ${task.child}`);
     }
   }
   const taskOwners = new Set();
-  for (const task of tasks) {
+  for (const task of taskList) {
     if (task.child && taskOwners.has(task.child)) {
       addRemainder("Functional decomposition", `${task.child} slice has more than one owning task`);
     } else if (task.child) {
@@ -127,7 +165,7 @@ export function evaluateConvergence({
     }
   }
   const seenLenses = new Set();
-  for (const lens of reviewLenses) {
+  for (const lens of lensList) {
     const id = lens.id ?? lens.name;
     if (!id || !REQUIRED_REVIEW_LENSES.includes(id)) {
       addRemainder("Functional decomposition", "review-lens ownership uses an unknown lens");
@@ -135,12 +173,12 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${id} review lens is declared more than once`);
     } else {
       seenLenses.add(id);
-      if (!lens.owner || !lens.evidence) {
+      if (!lens.owner || evidenceValues(lens.evidence).length === 0) {
         addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
-      } else if (!tasks.some((task) => task.id === lens.owner || task.child === lens.owner)) {
+      } else if (!taskList.some((task) => task.id === lens.owner || task.child === lens.owner)) {
         addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
       } else {
-        recordEvidence(`${id} review lens`, lens.evidence, "Functional decomposition");
+        referenceEvidence({ owner: lens.owner, value: lens.evidence, section: "Functional decomposition", evidenceOwners, addRemainder });
       }
     }
   }
@@ -149,17 +187,17 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${lens} review lens needs an owning task`);
     }
   }
-  for (const criterion of acceptance) {
-    if (!criterion.evidence) {
+  for (const criterion of acceptanceList) {
+    if (evidenceValues(criterion.evidence).length === 0) {
       addRemainder("Acceptance and verification", `${criterion.id} needs fresh evidence`);
     } else {
-      recordEvidence(criterion.id, criterion.evidence, "Acceptance and verification");
+      declareEvidence({ owner: criterion.id, value: criterion.evidence, section: "Acceptance and verification", evidenceOwners, addRemainder });
     }
   }
   const matrixValidation = validateAcceptanceMatrix({
     matrix: acceptanceMatrix,
     headSha,
-    requiredContracts: acceptance,
+    requiredContracts: acceptanceList,
     requiredPaths: ACCEPTANCE_MATRIX_PATHS,
   });
   for (const error of matrixValidation.errors) {
@@ -169,7 +207,7 @@ export function evaluateConvergence({
     addRemainder("Acceptance and verification", contradiction);
   }
 
-  const missingTask = tasks.find((task) => !task.evidence);
+  const missingTask = taskList.find((task) => evidenceValues(task.evidence).length === 0);
   const nextAction = missingTask
     ? { task: missingTask.id, owner: missingTask.child ?? "implementation" }
     : remainder.length > 0
@@ -233,7 +271,11 @@ export function scenarioResult(scenario = "passing") {
   if (scenario === "passing") {
     return evaluateConvergence({
       records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [record, true])),
-      tasks: [{ id: "task-1", child: "search-flow", evidence: "commit abc123" }],
+      tasks: [{
+        id: "task-1",
+        child: "search-flow",
+        evidence: ["commit abc123", ...REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+      }],
       children: [{ id: "search-flow", evidence: "mapped" }],
       reviewLenses: REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
       acceptance: [{ id: "AC-1", evidence: "proof" }],

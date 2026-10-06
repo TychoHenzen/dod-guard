@@ -99,11 +99,12 @@ Map every task and linked sub-issue to applicable evidence. For a structured
 parent, require the task list's functional decomposition, map each linked child
 to one independently deliverable slice, and map each slice or parent-level task
 to the parent branch or verified remote-state evidence. There is no fixed child
-count or category set; the implementation, wiring and end-to-end usability,
+count or category set. The implementation, wiring and end-to-end usability,
 code quality, and failure/recovery concerns must still each have an owning
-slice or parent-level task. For a code-backed sub-issue, map changed files and commits and require its pushed
-implementation. For an administrative sub-issue, map verified remote-state evidence
-instead of branch evidence. Require one durable parent-issue `## Implementation
+slice or parent-level task with observable evidence. For a code-backed
+sub-issue, map changed files and commits and require its pushed implementation.
+For an administrative sub-issue, map verified remote-state evidence instead of
+branch evidence. Require one durable parent-issue `## Implementation
 handoff` comment from `next-ticket`, containing the single `## Acceptance matrix`;
 consume its task, child, commit, check, matrix-row, and user-path
 mappings rather than reconstructing them from passing tests. Validate every

@@ -141,10 +141,13 @@ For feature work or material ambiguity, use the structured path in the
 | Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
 For structured work, `/next-ticket` records one `## Implementation handoff`
-comment on the parent issue. It maps each ordered task and linked functional-slice child to
-the pushed commit or verified remote-state evidence, fresh checks, and the
-current user-path result, followed by one `## Acceptance matrix` with exact-head
-proof rows for every acceptance criterion and mandatory user-facing path.
+comment on the parent issue. It maps every declared functional slice, ordered
+task, and linked functional-slice child to the pushed commit or verified
+remote-state evidence, fresh checks, and the current user-path result. It also
+records observable evidence for the implementation, wiring/usability,
+code-quality, and failure/recovery owners, followed by one `## Acceptance
+matrix` with exact-head proof rows for every acceptance criterion and mandatory
+user-facing path.
 `/submit-draft-pr` checks that same matrix against the issue contract, then
 links it from `## Convergence` instead of restating it; missing,
 contradicted, or stale evidence remains an actionable remainder. Small, clear

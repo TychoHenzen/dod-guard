@@ -45,15 +45,15 @@ and pull request as the source of truth.
 ## Structured handoff contract
 
 A structured PBI is implementation-ready when the issue contains the four named
-records, decomposes the work into coherent user-action-centered functional slices, and maps every
-declared slice to exactly one independently deliverable and verifiable owner. Every
-linked child maps back to exactly one declared slice, while parent-level tasks may
-own cross-cutting work without inventing a child. The
-implementation, wiring and end-to-end usability, code quality, and
-failure/recovery concerns must each be covered by an owning slice or
-parent-level task. There is no fixed child count or category set. The branch
-does not replace these records: it supplies the implementation evidence that
-the records request.
+records and decomposes the work into coherent, user-action-first functional
+slices. Every declared slice maps to exactly one independently deliverable and
+verifiable owner. Every linked child maps back to exactly one declared slice;
+parent-level tasks may own cross-cutting work without inventing a child.
+
+Implementation, wiring and end-to-end usability, code quality, and
+failure/recovery each need an owning slice or parent-level task with observable
+evidence. There is no fixed child count or category set. The branch does not
+replace these records: it supplies the implementation evidence they request.
 
 `next-ticket` writes one durable `## Implementation handoff` issue comment (or
 updates the existing one) after pushing the branch. That comment maps every

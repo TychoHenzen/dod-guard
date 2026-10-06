@@ -201,7 +201,11 @@ test("structured proof produces passing and actionable outcomes", () => {
   const complete = proof.evaluateConvergence({
     headSha: "abc1234",
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
-    tasks: [{ id: "task-1", child: "search-flow", evidence: "commit abc123; test passed" }],
+    tasks: [{
+      id: "task-1",
+      child: "search-flow",
+      evidence: ["commit abc123; test passed", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+    }],
     children: [{ id: "search-flow", evidence: "mapped" }],
     reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
     acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
@@ -252,14 +256,22 @@ test("functional convergence rejects duplicate slices, owners, and missing lense
     children: [
       { id: "search-flow", evidence: "mapped" },
       { id: "search-flow", evidence: "mapped again" },
+      { id: "empty-flow", evidence: "" },
     ],
-    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "mapped" }],
+    reviewLenses: [
+      { id: "implementation", owner: "task-1", evidence: "mapped" },
+      { id: "implementation", owner: "task-1", evidence: "mapped again" },
+      { id: "unknown", owner: "task-1", evidence: "mapped third" },
+    ],
   });
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("search-flow functional slice is linked more than once")));
   assert.ok(result.remainder.some((entry) => entry.includes("search-flow slice has more than one owning task")));
   assert.ok(result.remainder.some((entry) => entry.includes("missing-flow")));
+  assert.ok(result.remainder.some((entry) => entry.includes("empty-flow slice needs evidence")));
+  assert.ok(result.remainder.some((entry) => entry.includes("implementation review lens is declared more than once")));
+  assert.ok(result.remainder.some((entry) => entry.includes("unknown lens")));
   assert.ok(result.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")));
 });
 
@@ -274,6 +286,22 @@ test("functional convergence rejects evidence reused across owners", () => {
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.filter((entry) => entry.includes("evidence same-proof is mapped more than once")).length >= 2);
+});
+
+test("functional convergence reports malformed collection entries", () => {
+  const result = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [null],
+    children: ["not a child"],
+    reviewLenses: [null],
+    acceptance: [42],
+  });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 must be an object")));
+  assert.ok(result.remainder.some((entry) => entry.includes("child entry 1 must be an object")));
+  assert.ok(result.remainder.some((entry) => entry.includes("review lens entry 1 must be an object")));
+  assert.ok(result.remainder.some((entry) => entry.includes("acceptance criterion entry 1 must be an object")));
 });
 
 test("ordinary fixes bypass structured records", () => {

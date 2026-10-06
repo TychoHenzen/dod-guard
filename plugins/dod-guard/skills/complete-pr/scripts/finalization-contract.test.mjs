@@ -42,6 +42,22 @@ test("finalization relies on executable functional convergence proof", () => {
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
   assert.ok(result.remainder.some((entry) => entry.includes("review lens needs an owning task")));
+
+  const duplicate = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [
+      { id: "task-1", child: "same-flow", evidence: "same-proof" },
+      { id: "task-2", child: "same-flow", evidence: "other-proof" },
+    ],
+    children: [
+      { id: "same-flow", evidence: "same-proof" },
+      { id: "same-flow", evidence: "other-evidence" },
+      { id: "other-flow", evidence: "other-evidence" },
+    ],
+  });
+
+  assert.ok(duplicate.remainder.some((entry) => entry.includes("same-flow functional slice is linked more than once")));
+  assert.ok(duplicate.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")));
 });
 
 test("keeps routine ProjectV2 guidance out of GraphQL", async () => {
