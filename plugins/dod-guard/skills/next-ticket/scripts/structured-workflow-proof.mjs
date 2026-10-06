@@ -356,7 +356,9 @@ export function evaluateConvergence({
           addRemainder("Functional decomposition", `${id} review lens references ambiguous owner ${lens.owner}`);
         } else {
           const [ownerTask] = ownerTasks;
-          const evidenceOwner = normalizedTaskIds.get(ownerTask);
+          const evidenceOwner = normalizedTaskIds.get(ownerTask) === owner
+            ? owner
+            : normalizedIdentifier(ownerTask.child);
           if (postPushValidation) {
             for (const evidence of evidenceValues(lens.acceptanceEvidence)) {
               if (!matrixEvidence.has(evidence)) {
