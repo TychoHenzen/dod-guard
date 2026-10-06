@@ -136,15 +136,22 @@ For feature work or material ambiguity, use the structured path in the
 | Requirements | `/refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
 | Clarification | `/refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
 | Plan | `/refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
-| Tasks | `/refine-backlog-item` | `task-list` record and four mandatory linked child PBIs for structured work | `Todo` PBI hands every child evidence to implementation on one branch and PR. |
+| Tasks | `/refine-backlog-item` | `task-list` record and functional-slice child PBIs when independent delivery warrants them | `Todo` PBI hands every slice and parent task evidence to implementation on one branch and PR. |
 | Implementation handoff | `/next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
 | Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
 For structured work, `/next-ticket` records one `## Implementation handoff`
-comment on the parent issue. It maps each ordered task and mandatory child to
-the pushed commit or verified remote-state evidence, fresh checks, and the
-current user-path result, followed by one `## Acceptance matrix` with exact-head
-proof rows for every acceptance criterion and mandatory user-facing path.
+comment on the parent issue. It maps every declared functional slice, ordered
+task, and linked functional-slice child to the pushed commit or verified
+remote-state evidence, fresh checks, and the current user-path result. It also
+records observable evidence for the `implementation`, `wiring/usability`,
+`quality` (code quality), and `reliability` (failure/recovery) owners, followed
+by one `## Acceptance matrix` with exact-head proof rows for every acceptance
+criterion and mandatory user-facing path. Each lens entry carries its canonical
+ID, owner, observable evidence, accepted head, `acceptanceEvidence`, and
+`verificationEvidence`. Every slice, task, child, lens, and evidence reference
+maps exactly once to an owner; duplicate, ownerless, stale, or contradictory
+evidence remains an actionable remainder.
 `/submit-draft-pr` checks that same matrix against the issue contract, then
 links it from `## Convergence` instead of restating it; missing,
 contradicted, or stale evidence remains an actionable remainder. Small, clear

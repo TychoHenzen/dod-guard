@@ -174,15 +174,25 @@ its own outcome, implementation notes, acceptance criteria, and verification.
 Keep dependent steps in the parent PBI instead of inventing administrative
 subtasks.
 
-For a structured parent PBI, require exactly one linked child for each category
-below before moving the parent to `Todo`: implementation; wiring and end-to-end
-usability; refactoring and quality; fixing and reliability. Reuse an existing
-child when its outcome and acceptance criteria already own that category. Add
-only missing categories, never duplicate a category, and give every created
+For a structured parent PBI, use functional decomposition: start from the
+user actions and split the outcome into a small set of coherent functional
+slices. Decompose each slice only to a useful level that can be independently
+implemented, tested, and verified; avoid tiny administrative subtasks. Create
+one linked child per useful unit only when it warrants independent tracking;
+keep dependent steps in the parent checklist. A cohesive feature may remain
+one parent-level checklist, and no child is required merely to fill a fixed
+category list. Reuse an existing child when its outcome and acceptance
+criteria already own the unit. Never duplicate a unit, and give every created
 child minimal parent context, scope, acceptance criteria, and verification.
-These mandatory children are the structured-parent exception to the ordinary
-independence rule. They are checklist work within the parent's one branch and
-one PR; they do not authorize child branches or pull requests.
+
+For every structured PBI, explicitly assess implementation, wiring and
+end-to-end usability—including proof that the feature is reachable from its
+intended UI or supported user-facing surface—refactoring and code quality, and
+failure/recovery reliability beyond the happy path. Attach each concern to the
+functional child or parent-level task that owns it, with observable acceptance and verification;
+these are review lenses, not mandatory child categories. Linked children are
+checklist work within the parent's one branch and one PR; they do not
+authorize child branches or pull requests.
 
 Apply the same research, sections, and label requirements to any sub-issue
 being refined into a PBI. Reuse appropriate existing linked issues.
@@ -224,14 +234,15 @@ from the directory containing this skill, then read
 `<plugin-root>/standards/project-workflow.md`. Do not assume the target checkout
 contains the shared standard. Keep these named records in
 `## Implementation notes`: `requirements`, `clarifications`,
-`implementation-plan`, and `task-list`. Use the existing discovery markers as
+`implementation-plan`, `task-list`, and `lens-ownership`. Use the existing discovery markers as
 the evidence inside those records. The task list must identify dependencies and
 mark a task `independent` only when it can be committed and closed separately.
 Write each record as a distinct named subsection, keep the task order stable,
-and map every task to exactly one mandatory child category or explicitly mark
-it as a parent-level convergence task. The four child categories are checklist
-work on the parent's one branch and one pull request, not separate delivery
-units.
+and map every task to its functional slice or explicitly mark it as a
+parent-level convergence task. Record where the implementation, wiring and
+end-to-end usability, code quality, and reliability lenses are covered, or why
+one is not applicable. Functional-slice children are checklist work on the
+parent's one branch and one pull request, not separate delivery units.
 Small, clear fixes may use the ordinary path and do not need these records.
 
 For re-refinement, read the existing discovery notes and compare them with the
@@ -264,9 +275,21 @@ label applies. Confirm unknown priority explains missing evidence and effort
 is below 13 before moving that PBI to `Todo` with the shared REST Project status
 writer.
 For a structured PBI, also confirm the named `requirements`, `clarifications`,
-`implementation-plan`, and `task-list` records are present and coherent; the
-four mandatory child categories are linked exactly once; and every child is
-actionable and `Todo` before moving the parent to `Todo`.
+`implementation-plan`, `task-list`, and `lens-ownership` records are present and coherent; every
+linked child matches one independently deliverable functional slice (each is separately tracked)
+in the task list, is actionable, and is `Todo`; and the four review lenses each have
+an owning child or parent-level task plus mapped observable acceptance or
+verification evidence. Pass the complete task, slice, owner, and evidence mapping
+through the same executable convergence proof used by `next-ticket` before moving
+the parent to `Todo`; `submit-draft-pr` and `complete-pr` consume or revalidate the
+resulting handoff after implementation and PR creation. Stop on any actionable
+remainder. Do not require a fixed
+child count or create category placeholders. When no linked child represents
+cross-cutting parent work, record an explicit parent-level task with
+`parentLevel: "convergence"` so that ownership remains visible and verifiable.
+The executable proof rejects duplicate or missing slice links, unowned slices,
+duplicate evidence, missing or duplicate review lenses, invalid acceptance IDs,
+and incomplete or stale acceptance-matrix rows.
 If an edit fails or readback disagrees, stop before the status change and
 report the actual partial state. Do not claim the PBI is ready.
 

@@ -135,9 +135,38 @@ whose SHA differs from the merged pull request head.
 
 Only after the helper returns a verified merge result, read the linked parent
 PBI, its linked child issues, and their one shared Project. For a structured
-parent, require exactly one child for implementation; wiring and end-to-end
-usability; refactoring and quality; and fixing and reliability. Resolve the
+parent, require each linked child to match one independently delivered and
+verified functional slice recorded in the task list. There is no fixed child
+count or category set; finalize every linked child and every parent-level task
+that owns implementation, wiring and end-to-end usability, code quality, or
+failure/recovery work. Resolve the
 shared Project number, REST item IDs, Status-field ID, and `Done` option ID once.
+Before finalizing a structured parent, consume the current handoff through
+`complete-pr/scripts/finalization-gate.mjs`, which calls the exported
+`evaluateConvergence` API from `next-ticket/scripts/structured-workflow-proof.mjs`,
+and stop on any actionable remainder. Load its `records`, `tasks`, `children`,
+`reviewLenses`, `acceptance`, `acceptanceMatrix`, and exact pushed `headSha`,
+then require `outcome: "verified"`; each lens must also resolve its
+`acceptanceEvidence` and `verificationEvidence` through the exact-head matrix.
+Any other outcome stops finalization. Direct Project readback does not replace
+this convergence proof.
+
+Use the shipped helper as an import-based gate, passing the parsed handoff object
+from the durable issue comment:
+
+```js
+import { evaluateStructuredFinalization } from "./scripts/finalization-gate.mjs";
+const result = evaluateStructuredFinalization(handoff);
+if (result.nextStep !== "project-status.mjs") throw new Error(result.remainder.join("; "));
+```
+Require every parent-level task that owns one of those review lenses to carry
+explicit acceptance and verification evidence in the durable handoff and read
+it back before finalizing the Project item, even when it has no linked child
+commit. The evidence must resolve through the handoff's acceptance matrix, whose
+mandatory user-path rows prove wiring/usability and failure/recovery behavior at
+the exact pushed head. The finalization gate binds `wiring/usability` to
+`interactive-control` and `browser/e2e`, and `reliability` to `data/error` and
+`recovery`; one passing row cannot stand in for multiple lenses.
 Use the shared status-write runner with the child item IDs first and the parent item ID last:
 
 ```text

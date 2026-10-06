@@ -28,8 +28,18 @@ referenced skill from the active plugin root before invoking it.
 - A concrete feature request authorizes the routine lifecycle without a second
   planning or permission round: create or reuse one associated parent PBI,
   move it to `In Progress`, and carry that feature through one branch, its
-  commit series, and one draft PR. Create child PBIs only for genuinely
-  independent deliverables; keep atomic steps in the parent checklist.
+  commit series, and one draft PR. Use functional decomposition during
+  refinement: create child PBIs only for independently deliverable and
+  verifiable functional slices, and keep dependent atomic steps in the parent
+  checklist. Explicitly assess these review lenses:
+  `implementation`; `wiring/usability` for wiring and end-to-end usability,
+  including proof that the feature is reachable from its intended UI or
+  supported user-facing surface; `quality` for refactoring and code quality,
+  including cleanup; and `reliability` for failure/recovery beyond the happy
+  path. Attach each concern to the slice or parent task that owns it
+  instead of manufacturing category children. Linked child PBIs remain
+  checklist work delivered through the parent's single branch, commit series,
+  and draft PR.
 - Do not pause for ceremonial confirmation before issue, Project, branch,
   commit, push, or draft-PR actions already covered by this skill. Ask only the
   batched refinement questions for material constraints, or a real external

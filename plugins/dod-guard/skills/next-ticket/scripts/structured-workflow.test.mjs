@@ -38,13 +38,25 @@ const githubSkills = [
 const directGithubRequestPattern =
   /\bgh(?:\.exe)?\s+\S+|https?:\/\/api\.github\.com\b|\bmcp__github__[a-z][\w-]*|\bGitHub\s+(?:MCP|REST|API)\b/i;
 const proof = await import("./structured-workflow-proof.mjs");
+const recordsWithRequiredKeys = (lensOwnership) =>
+  proof.REQUIRED_RECORDS.reduce(
+    (records, name) => ({ ...records, [name]: name === "lens-ownership" ? lensOwnership : true }),
+    {},
+  );
 const proofScript = path.join(
   root,
   "plugins/dod-guard/skills/next-ticket/scripts/structured-workflow-proof.mjs",
 );
 
+function lensEvidence(id, index, prefix) {
+  if (id === "wiring/usability") return [`${prefix}-2`, `${prefix}-3`];
+  if (id === "reliability") return [`${prefix}-4`, `${prefix}-5`];
+  if (id === "quality") return `${prefix}-6`;
+  return `${prefix}-${index + 1}`;
+}
+
 function acceptanceMatrix(headSha, contract = "AC-1") {
-  return ACCEPTANCE_MATRIX_PATHS.map((pathName, index) => ({
+  return [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((pathName, index) => ({
     id: `${contract}-${index + 1}`,
     contract,
     path: pathName,
@@ -64,7 +76,7 @@ test("README and usage expose every structured stage contract", () => {
     ["Requirements", "`/refine-backlog-item`", "Issue `Outcome`, `Scope`, and checked `Acceptance criteria`", "Clarify gaps, then plan."],
     ["Clarification", "`/refine-backlog-item`", "`Implementation notes` with decisions and discovery evidence", "Only resolved requirements enter the plan."],
     ["Plan", "`/refine-backlog-item`", "`implementation-plan` record in the issue", "Break the plan into actionable tasks."],
-    ["Tasks", "`/refine-backlog-item`", "`task-list` record and four mandatory linked child PBIs for structured work", "`Todo` PBI hands every child evidence to implementation on one branch and PR."],
+    ["Tasks", "`/refine-backlog-item`", "`task-list` record and functional-slice child PBIs when independent delivery warrants them", "`Todo` PBI hands every slice and parent task evidence to implementation on one branch and PR."],
     ["Implementation handoff", "`/next-ticket`", "Issue task list, issue branch, commits, and verification evidence", "A pushed branch can enter draft-PR convergence."],
     ["Convergence", "`/submit-draft-pr`", "Draft PR `## Convergence` section and any actionable issue remainder", "Review and acceptance remain separate."],
   ];
@@ -126,13 +138,17 @@ test("convergence blocks incomplete work and leaves the small-fix bypass", () =>
   assert.match(standard, /After a failed or ambiguous write, read back\s+that resource before retrying/);
 });
 
-test("structured parents require one evidenced child in every delivery category", () => {
-  assert.match(nextTicket, /no linked sub-issues is\s+valid only when it is a small, clear implementation slice/);
-  assert.match(nextTicket, /exactly one\s+linked child for implementation; wiring and end-to-end\s+usability; refactoring\s+and quality; and fixing and reliability/);
-  assert.match(nextTicket, /Each mandatory\s+child must be actionable and `Todo` before execution starts/);
-  assert.match(nextTicket, /pushed\s+implementation evidence before a commit or PR handoff, not before execution/);
-  assert.match(nextTicket, /map\s+every mandatory child to its owning task, changed files or verified remote\s+state, commit, and fresh verification/);
-  assert.match(submit, /exactly one actionable child for implementation; wiring and\s+end-to-end usability; refactoring and quality; and fixing and reliability/);
+test("structured parents require evidenced functional slices without a fixed child count", () => {
+  assert.match(nextTicket, /no linked sub-issues is\s+valid when it is one coherent implementation slice/);
+  assert.match(nextTicket, /functional decomposition/);
+  assert.match(nextTicket, /every linked child,?\s+if any, is actionable and `Todo`/);
+  assert.match(nextTicket, /Before implementation, verify the named\s+`lens-ownership` record maps each required lens/);
+  assert.match(nextTicket, /remainder from the structural phase of the executable convergence proof/);
+  assert.match(nextTicket, /Do not require a fixed child count\s+or category set/);
+  assert.match(nextTicket, /pushed\s+implementation evidence before a\s+commit or PR handoff, not before execution/);
+  assert.match(nextTicket, /map\s+every linked child to its owning task, changed files or verified remote\s+state, commit, and fresh verification/);
+  assert.match(submit, /task list's functional decomposition/);
+  assert.match(submit, /There is no fixed child\s+count or category set/);
   assert.match(submit, /- Handoff: <link to the ## Implementation handoff comment> \(head <sha>\)/);
   assert.doesNotMatch(submit, /Mandatory child categories: each mapped/);
 });
@@ -192,15 +208,33 @@ test("structured handoffs are durable and convergence is evidence-based", () => 
   assert.match(submit, /handoff commit must be identical/);
   assert.match(submit, /branch names must match/);
   assert.match(submit, /treat the\s+handoff as stale/);
-  assert.match(standard, /every acceptance\s+criterion has fresh evidence/);
+  assert.match(standard, /Every acceptance\s+criterion and matrix\s+row has fresh\s+evidence/);
 });
 
 test("structured proof produces passing and actionable outcomes", () => {
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+    id,
+    owner: index === 0 ? "search-flow" : "task-1",
+    evidence: `lens-${id}`,
+    headSha: "abc1234",
+    acceptanceEvidence: lensEvidence(id, index, "evidence"),
+    verificationEvidence: lensEvidence(id, index, "proof"),
+  }));
   const complete = proof.evaluateConvergence({
     headSha: "abc1234",
-    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
-    tasks: [{ id: "task-1", child: "implementation", evidence: "commit abc123; test passed" }],
-    children: proof.REQUIRED_CHILD_CATEGORIES.map((category) => ({ category, evidence: "mapped" })),
+    records: recordsWithRequiredKeys(reviewLenses),
+    tasks: [{
+      id: "task-1",
+      child: "search-flow",
+      evidence: [
+        "commit abc123; test passed",
+        ...proof.REQUIRED_REVIEW_LENSES.filter((id) => id !== "implementation").map((id) => `lens-${id}`),
+      ],
+      acceptanceEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `evidence-${index + 1}`),
+      verificationEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `proof-${index + 1}`),
+    }],
+    children: [{ id: "search-flow", evidence: ["mapped", "lens-implementation"] }],
+    reviewLenses,
     acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
     acceptanceMatrix: acceptanceMatrix("abc1234"),
     contradictions: [],
@@ -210,30 +244,289 @@ test("structured proof produces passing and actionable outcomes", () => {
   assert.deepEqual(complete.sections, {
     "Requirements and clarifications": [],
     "Plan and tasks": [],
-    "Mandatory child categories": [],
+    "Functional decomposition": [],
     "Acceptance and verification": [],
   });
 
   const incomplete = proof.evaluateConvergence({
     records: { requirements: true, clarifications: true, "implementation-plan": true },
     tasks: [{ id: "task-2", child: "wiring", evidence: "" }],
-    children: [{ category: "implementation", evidence: "mapped" }],
+    children: [{ id: "implementation", evidence: "mapped" }],
+    reviewLenses: [{ id: "implementation", owner: "task-2", evidence: "mapped" }],
     acceptance: [{ id: "AC-2", evidence: "" }],
     contradictions: ["user path not exercised"],
   });
   assert.equal(incomplete.outcome, "actionable remainder");
   assert.ok(incomplete.remainder.length > 0);
+  assert.ok(incomplete.remainder.some((entry) => entry.includes("implementation slice needs an owning task")));
   const rendered = proof.renderConvergence(incomplete);
   assert.match(rendered, /Plan and tasks: actionable/);
-  assert.match(rendered, /Mandatory child categories: actionable/);
+  assert.match(rendered, /Functional decomposition: actionable/);
   assert.match(rendered, /Acceptance and verification: actionable/);
   assert.match(rendered, /Next task: task-2; owner: wiring/);
   assert.match(rendered, /Remainder: /);
   assert.doesNotMatch(
     rendered,
-    /^- (?:Requirements and clarifications|Plan and tasks|Mandatory child categories|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
+    /^- (?:Requirements and clarifications|Plan and tasks|Functional decomposition|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
   );
   assert.doesNotMatch(rendered, /Outcome: verified/);
+});
+
+test("functional convergence rejects duplicate slices, owners, and missing mappings", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [
+      { id: "task-1", child: "search-flow", evidence: "commit one" },
+      { id: "task-2", child: "search-flow", evidence: "commit two" },
+      { id: "task-3", child: "missing-flow", evidence: "commit three" },
+    ],
+    children: [
+      { id: "search-flow", evidence: "mapped" },
+      { id: "search-flow", evidence: "mapped again" },
+      { id: "empty-flow", evidence: "" },
+    ],
+  });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("search-flow functional slice is linked more than once")));
+  assert.ok(result.remainder.some((entry) => entry.includes("search-flow slice has more than one owning task")));
+  assert.ok(result.remainder.some((entry) => entry.includes("missing-flow")));
+  assert.ok(result.remainder.some((entry) => entry.includes("empty-flow slice needs evidence")));
+});
+
+test("functional convergence validates review-lens identifiers and ownership", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: "mapped" }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses: [
+      { id: "implementation", owner: "task-1", evidence: "mapped" },
+      { id: "implementation", owner: "task-1", evidence: "mapped again" },
+      { id: "unknown", owner: "task-1", evidence: "mapped third" },
+    ],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("implementation review lens is declared more than once")));
+  assert.ok(result.remainder.some((entry) => entry.includes("unknown lens")));
+  assert.ok(result.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")));
+});
+
+test("functional convergence rejects evidence reused across owners", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: "same-proof" }],
+    children: [{ id: "search-flow", evidence: "same-proof" }],
+    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "same-proof" }],
+    acceptance: [{ id: "AC-1", evidence: "same-proof" }],
+  });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.filter((entry) => entry.includes("evidence same-proof is mapped more than once")).length >= 2);
+});
+
+test("functional convergence rejects repeated evidence references", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: ["commit", "lens-implementation"] }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses: [{
+      id: "implementation",
+      owner: "task-1",
+      evidence: ["lens-implementation", "lens-implementation"],
+      acceptanceEvidence: "planned-acceptance",
+      verificationEvidence: "planned-verification",
+    }],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("references evidence lens-implementation more than once")));
+});
+
+test("functional convergence rejects evidence reused across review lenses", () => {
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+    id,
+    owner: "task-1",
+    evidence: index === 1 ? "lens-implementation" : `lens-${id}`,
+    acceptanceEvidence: index === 1 ? "matrix-evidence-1" : `matrix-evidence-${index + 1}`,
+    verificationEvidence: index === 1 ? "matrix-proof-1" : `matrix-proof-${index + 1}`,
+  }));
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys(reviewLenses),
+    tasks: [{
+      id: "task-1",
+      child: "search-flow",
+      evidence: ["commit", ...new Set(reviewLenses.map((lens) => lens.evidence))],
+      acceptanceEvidence: reviewLenses.map((lens) => lens.acceptanceEvidence),
+      verificationEvidence: reviewLenses.map((lens) => lens.verificationEvidence),
+    }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("reuses evidence lens-implementation")));
+});
+
+test("functional convergence requires lens acceptance and verification evidence before push", () => {
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+    id,
+    owner: "task-1",
+    evidence: `lens-${id}`,
+  }));
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys(reviewLenses),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: ["commit", ...reviewLenses.map((lens) => lens.evidence)] }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+  });
+
+  assert.ok(result.remainder.filter((entry) => entry.includes("needs acceptance and verification evidence")).length >= 4);
+});
+
+test("functional convergence reports malformed collection entries", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [null, { evidence: "orphan" }],
+    children: ["not a child", { id: 42, evidence: "numeric" }],
+    reviewLenses: [null],
+    acceptance: [42],
+  });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 must be an object")));
+  assert.ok(result.remainder.some((entry) => entry.includes("child entry 1 must be an object")));
+  assert.ok(result.remainder.some((entry) => entry.includes("linked child needs a functional slice id")));
+  assert.ok(result.remainder.some((entry) => entry.includes("review lens entry 1 must be an object")));
+  assert.ok(result.remainder.some((entry) => entry.includes("acceptance criterion entry 1 must be an object")));
+});
+
+test("functional convergence rejects missing acceptance identifiers", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [{ id: "task-1", parentLevel: "convergence", evidence: "commit" }],
+    acceptance: [{ evidence: "proof" }],
+  });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("acceptance criterion 1 needs a non-empty id")));
+});
+
+test("functional convergence rejects a task without an identifier", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [{}],
+    acceptance: [{ id: "AC-1", evidence: "proof" }],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 needs a non-empty id")));
+});
+
+test("functional convergence keeps provider child ids separate from slice ids", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
+    children: [{ id: "issue-42", slice: "search-flow", evidence: "proof" }],
+  });
+
+  assert.ok(!result.remainder.some((entry) => entry.includes("functional slice identifiers disagree")));
+  assert.ok(!result.remainder.some((entry) => entry.includes("missing functional slice search-flow")));
+});
+
+test("normalizes task identifiers before matching owners", () => {
+  const reviewLenses = [{
+    id: " implementation ",
+    owner: "task-1",
+    evidence: " lens-implementation ",
+    headSha: "normalization-head",
+    acceptanceEvidence: "evidence-1",
+    verificationEvidence: "proof-1",
+  }];
+  const result = proof.evaluateConvergence({
+    headSha: "normalization-head",
+    records: recordsWithRequiredKeys(reviewLenses),
+    tasks: [{
+      id: " task-1 ",
+      child: "search-flow",
+      evidence: [" commit ", " lens-implementation "],
+      acceptanceEvidence: ["evidence-1"],
+      verificationEvidence: ["proof-1"],
+    }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "proof" }],
+    acceptanceMatrix: acceptanceMatrix("normalization-head"),
+  });
+
+  assert.ok(!result.remainder.some((entry) => entry.includes("implementation review lens")));
+  assert.ok(!result.remainder.some((entry) => entry.includes("missing owner task-1")));
+});
+
+test("review-lens owner IDs cannot collide with slice IDs", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [
+      { id: "task-1", child: "slice-a", evidence: "task-proof" },
+      { id: "slice-a", child: "slice-b", evidence: "owner-proof" },
+    ],
+    children: [
+      { id: "slice-a", evidence: "slice-a-proof" },
+      { id: "slice-b", evidence: "slice-b-proof" },
+    ],
+    reviewLenses: [{ id: "implementation", owner: "slice-a", evidence: "owner-proof" }],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("both a task id and a functional slice id")));
+});
+
+test("structured convergence rejects a placeholder lens-ownership record", () => {
+  const result = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("lens-ownership record must be an array")));
+});
+
+test("structured convergence rejects lens-ownership records that drift from review lenses", () => {
+  const lensOwnership = proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+    id,
+    owner: "task-1",
+    evidence: `record-${id}`,
+  }));
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+    id,
+    owner: "task-1",
+    evidence: `review-${id}`,
+  }));
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys(lensOwnership),
+    tasks: [{
+      id: "task-1",
+      child: "search-flow",
+      evidence: ["commit", ...reviewLenses.map((lens) => lens.evidence)],
+    }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses,
+  });
+
+  assert.ok(
+    result.remainder.some((entry) =>
+      entry.includes("lens-ownership record does not match review-lens evidence"),
+    ),
+  );
+});
+
+test("structured convergence reports malformed lens-ownership entries", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([null]),
+    tasks: [],
+    children: [],
+    reviewLenses: [],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("lens-ownership entry 1 must be an object")));
 });
 
 test("ordinary fixes bypass structured records", () => {
@@ -243,18 +536,68 @@ test("ordinary fixes bypass structured records", () => {
   });
 });
 
+test("structured convergence verifies a parent-level task without children", () => {
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+    id,
+    owner: "task-1",
+    evidence: `lens-${id}`,
+    headSha: "parent-head",
+    acceptanceEvidence: lensEvidence(id, index, "evidence"),
+    verificationEvidence: lensEvidence(id, index, "proof"),
+  }));
+  const result = proof.evaluateConvergence({
+    headSha: "parent-head",
+    records: recordsWithRequiredKeys(reviewLenses),
+    tasks: [{
+      id: "task-1",
+      parentLevel: "convergence",
+      evidence: ["parent-proof", ...reviewLenses.map((lens) => lens.evidence)],
+      acceptanceEvidence: acceptanceMatrix("parent-head").map((row) => row.evidence),
+      verificationEvidence: acceptanceMatrix("parent-head").map((row) => row.proof),
+    }],
+    children: [],
+    reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "parent acceptance" }],
+    acceptanceMatrix: acceptanceMatrix("parent-head"),
+  });
+
+  assert.equal(result.outcome, "verified");
+});
+
 test("structured convergence rejects a matrix tied to a different head", () => {
   const result = proof.evaluateConvergence({
     headSha: "new-head",
-    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", child: "implementation", evidence: "commit new-head" }],
-    children: proof.REQUIRED_CHILD_CATEGORIES.map((category) => ({ category, evidence: "mapped" })),
+    children: [{ id: "search-flow", evidence: "mapped" }],
     acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
     acceptanceMatrix: acceptanceMatrix("old-head"),
   });
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("expected new-head")));
+});
+
+test("structured convergence requires an exact pushed head", () => {
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys([]),
+    tasks: [{ id: "task-1", parentLevel: "convergence", evidence: "commit" }],
+    acceptance: [{ id: "AC-1", evidence: "proof" }],
+    acceptanceMatrix: [],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("needs an exact pushed head")));
+});
+
+test("structured convergence requires an acceptance matrix after the head is known", () => {
+  const result = proof.evaluateConvergence({
+    headSha: "new-head",
+    records: recordsWithRequiredKeys([]),
+    tasks: [{ id: "task-1", parentLevel: "convergence", evidence: "commit" }],
+    acceptance: [{ id: "AC-1", evidence: "proof" }],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("needs an acceptance matrix")));
 });
 
 test("structured proof CLI separates known paths and rejects unknown scenarios", () => {
@@ -270,7 +613,7 @@ test("structured proof CLI separates known paths and rejects unknown scenarios",
   assert.match(incomplete.stdout, /Next task: task-2; owner: wiring/);
   assert.doesNotMatch(
     incomplete.stdout,
-    /^- (?:Requirements and clarifications|Plan and tasks|Mandatory child categories|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
+    /^- (?:Requirements and clarifications|Plan and tasks|Functional decomposition|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
   );
 
   const ordinary = run("ordinary");

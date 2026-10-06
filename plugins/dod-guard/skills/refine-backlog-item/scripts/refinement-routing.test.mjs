@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { ACCEPTANCE_MATRIX_PATHS } from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
+
+const proof = await import("../../next-ticket/scripts/structured-workflow-proof.mjs");
+
+function lensEvidence(id, index, prefix) {
+  if (id === "wiring/usability") return [`${prefix}-2`, `${prefix}-3`];
+  if (id === "reliability") return [`${prefix}-4`, `${prefix}-5`];
+  if (id === "quality") return `${prefix}-6`;
+  return `${prefix}-${index + 1}`;
+}
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const fixtures = await readFile(new URL("../fixtures.md", import.meta.url), "utf8");
@@ -8,6 +18,56 @@ const githubDiscipline = await readFile(
   new URL("../../../standards/github-request-discipline.md", import.meta.url),
   "utf8",
 );
+const completeRecords = (lensOwnership = []) =>
+  proof.REQUIRED_RECORDS.reduce(
+    (records, name) => ({ ...records, [name]: name === "lens-ownership" ? lensOwnership : true }),
+    {},
+  );
+const validConvergenceInput = () => {
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+    id,
+    owner: "task-1",
+    evidence: `lens-${id}`,
+    headSha: "proof-head",
+    acceptanceEvidence: lensEvidence(id, index, "matrix-evidence"),
+    verificationEvidence: lensEvidence(id, index, "matrix-proof"),
+  }));
+  return {
+    records: completeRecords(reviewLenses),
+    tasks: [{
+      id: "task-1",
+      child: "search-flow",
+      evidence: [
+        "commit-proof",
+        ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
+      ],
+      acceptanceEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `matrix-evidence-${index + 1}`),
+      verificationEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `matrix-proof-${index + 1}`),
+    }, {
+      id: "task-2",
+      child: "settings-flow",
+      evidence: "settings-proof",
+    }],
+    children: [
+      { id: "search-flow", evidence: "slice-proof" },
+      { id: "settings-flow", evidence: "settings-slice-proof" },
+    ],
+    reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+    acceptanceMatrix: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((path, index) => ({
+      id: `AC-1-${index + 1}`,
+      contract: "AC-1",
+      path,
+      proof: `matrix-proof-${index + 1}`,
+      expected: "pass",
+      observed: "pass",
+      status: "pass",
+      evidence: `matrix-evidence-${index + 1}`,
+      headSha: "proof-head",
+    })),
+    headSha: "proof-head",
+  };
+};
 
 test("requires explicit Project item types and safe recovery", () => {
   assert.match(
@@ -87,15 +147,109 @@ test("requires durable discovery records and selective re-refinement", () => {
   assert.match(skill, /Do not create duplicate linked sub-issues or scale labels/);
 });
 
-test("requires one reusable mandatory child for every structured parent category", () => {
-  assert.match(skill, /require exactly one linked child for each category/);
-  assert.match(skill, /implementation; wiring and end-to-end\s+usability; refactoring and quality; fixing and reliability/);
-  assert.match(skill, /Reuse an existing\s+child/);
-  assert.match(skill, /never duplicate a category/);
-  assert.match(skill, /structured-parent exception to the ordinary\s+independence rule/);
-  assert.match(skill, /checklist work[\s\S]*not authorize child branches or pull requests/);
-  assert.match(skill, /four mandatory child categories are linked exactly once/);
-  assert.match(skill, /every child is\s+actionable and `Todo` before moving the parent to `Todo`/);
+test("uses functional decomposition with cross-cutting review lenses", () => {
+  const sectionStart = skill.indexOf("For a structured parent PBI");
+  const sectionEnd = skill.indexOf("Apply the same research", sectionStart);
+  assert.ok(sectionStart >= 0);
+  assert.ok(sectionEnd > sectionStart);
+  const structuredParentSection = skill.slice(sectionStart, sectionEnd);
+
+  assert.match(skill, /use functional decomposition/);
+  assert.match(skill, /independently\s+implemented, tested, and verified/);
+  assert.match(skill, /no\s+child is required merely to fill a fixed\s+category list/);
+  assert.match(structuredParentSection, /implementation, wiring and/);
+  assert.match(structuredParentSection, /end-to-end usability/);
+  assert.match(structuredParentSection, /refactoring and code quality/);
+  assert.match(structuredParentSection, /failure\/recovery reliability/);
+  assert.match(structuredParentSection, /these are review lenses, not mandatory child categories/);
+  assert.match(skill, /map every task to its functional slice/);
+  assert.match(skill, /every\s+linked child matches one independently deliverable functional slice/);
+  assert.doesNotMatch(skill, /require exactly one linked child for each category/);
+  assert.doesNotMatch(skill, /four mandatory child categories are linked exactly once/);
+});
+
+test("routes a valid functional decomposition through executable convergence proof", () => {
+  assert.equal(proof.scenarioResult("passing").outcome, "verified");
+  const passing = proof.evaluateConvergence(validConvergenceInput());
+  assert.equal(passing.outcome, "verified");
+  assert.ok(!passing.remainder.some((entry) => entry.includes("review lens")));
+});
+
+test("allows an explicitly parent-level convergence task", () => {
+  const parentLevel = validConvergenceInput();
+  parentLevel.tasks = [{
+    id: "task-1",
+    parentLevel: "convergence",
+    evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+    acceptanceEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `matrix-evidence-${index + 1}`),
+    verificationEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `matrix-proof-${index + 1}`),
+  }];
+  parentLevel.children = [];
+  const parentLevelResult = proof.evaluateConvergence(parentLevel);
+  assert.equal(parentLevelResult.outcome, "verified");
+  assert.ok(!parentLevelResult.remainder.some((entry) => entry.includes("acceptance")));
+});
+
+test("rejects missing and duplicate review lenses", () => {
+  const missingLens = validConvergenceInput();
+  missingLens.reviewLenses = missingLens.reviewLenses.slice(0, -1);
+  const missingLensResult = proof.evaluateConvergence(missingLens);
+  assert.ok(missingLensResult.remainder.some((entry) => entry.includes("reliability review lens needs an owning task")));
+
+  const duplicateLens = validConvergenceInput();
+  duplicateLens.reviewLenses.push({ ...duplicateLens.reviewLenses[0] });
+  const duplicateLensResult = proof.evaluateConvergence(duplicateLens);
+  assert.ok(duplicateLensResult.remainder.some((entry) => entry.includes("implementation review lens is declared more than once")));
+});
+
+test("rejects a task that references a missing functional slice", () => {
+  const input = validConvergenceInput();
+  input.tasks[0].child = "missing-flow";
+  const result = proof.evaluateConvergence(input);
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
+});
+
+test("rejects a functional slice without an owning task", () => {
+  const input = validConvergenceInput();
+  input.children[0].id = "implemented-flow";
+  const result = proof.evaluateConvergence(input);
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("implemented-flow slice needs an owning task")));
+});
+
+test("rejects duplicate functional slices and evidence", () => {
+  const duplicate = proof.evaluateConvergence({
+    records: completeRecords(),
+    tasks: [
+      { id: "task-1", child: "same-flow", evidence: "same-proof" },
+      { id: "task-2", child: "same-flow", evidence: "other-proof" },
+    ],
+    children: [
+      { id: "same-flow", evidence: "same-proof" },
+      { id: "same-flow", evidence: "other-evidence" },
+    ],
+  });
+
+  assert.ok(
+    duplicate.remainder.some((entry) => entry.includes("same-flow functional slice is linked more than once")),
+  );
+  assert.ok(
+    duplicate.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")),
+  );
+});
+
+test("rejects review-lens evidence owned by another mapping", () => {
+  const unmappedInput = validConvergenceInput();
+  unmappedInput.tasks[0].evidence = unmappedInput.tasks[0].evidence.filter(
+    (evidence) => evidence !== "lens-implementation",
+  );
+  unmappedInput.children[0].evidence = "lens-implementation";
+  const unmappedEvidence = proof.evaluateConvergence(unmappedInput);
+  assert.ok(unmappedEvidence.remainder.some((entry) => entry.includes("references evidence owned by search-flow")));
+  assert.ok(!unmappedEvidence.remainder.some((entry) => entry.includes("needs an owning task")));
 });
 
 test("manual fixtures include each route and its record markers", () => {
@@ -113,8 +267,8 @@ test("manual fixtures include each route and its record markers", () => {
     ["Newly discovered gap", ["Return to the matching interview or research route.", "Do not turn the gap into an assumption."]],
     ["Unavailable workflow", ["Record what is unclear, the unavailable workflow or fallback, the impact, and the next decision or evidence.", "Move to `Todo` only when the PBI remains coherent"]],
     ["Re-refinement", ["Reuse current summaries, repeat only the stale or new phase, update notes in place, and create no duplicate sub-issues or scale labels."]],
-    ["Structured parent", ["Create exactly one actionable Todo child for implementation, wiring/usability, quality, and reliability before moving the parent to Todo."]],
-    ["Partial structured parent", ["Reuse those two children, add only wiring/usability and reliability, and do not create child branches or PRs."]],
+    ["Structured parent", ["Create one actionable Todo child per functional slice, keep dependent steps in the parent checklist, and assess implementation, wiring/usability, quality, and reliability across the owning slices with observable evidence."]],
+    ["Partial structured parent", ["Reuse that child, add only independently deliverable missing slices, and do not create category placeholders, child branches, or PRs."]],
   ]) {
     const row = fixtures.split("\n").find((line) => line.startsWith(`| ${fixture} |`));
     assert.ok(row, `missing fixture row: ${fixture}`);
