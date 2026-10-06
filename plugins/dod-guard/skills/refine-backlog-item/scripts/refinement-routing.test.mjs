@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { ACCEPTANCE_MATRIX_PATHS } from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
 
 const proof = await import("../../next-ticket/scripts/structured-workflow-proof.mjs");
 
@@ -113,6 +114,30 @@ test("uses functional decomposition with cross-cutting review lenses", () => {
 
 test("routes functional decomposition through executable convergence proof", () => {
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
+  const passing = proof.evaluateConvergence({
+    records: completeRecords(),
+    tasks: [{
+      id: "task-1",
+      child: "search-flow",
+      evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+    }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
+    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+    acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
+      id: `AC-1-${index + 1}`,
+      contract: "AC-1",
+      path,
+      proof: `matrix-proof-${index + 1}`,
+      expected: "pass",
+      observed: "pass",
+      status: "pass",
+      evidence: `matrix-evidence-${index + 1}`,
+      headSha: "proof-head",
+    })),
+    headSha: "proof-head",
+  });
+  assert.equal(passing.outcome, "verified");
   const result = proof.evaluateConvergence({
     records: completeRecords(),
     tasks: [{ id: "task-1", child: "missing-flow", evidence: "commit" }],
@@ -120,8 +145,8 @@ test("routes functional decomposition through executable convergence proof", () 
   });
 
   assert.equal(result.outcome, "actionable remainder");
-   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
-   assert.ok(result.remainder.some((entry) => entry.includes("slice needs an owning task")));
+  assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
+  assert.ok(result.remainder.some((entry) => entry.includes("slice needs an owning task")));
 
   const duplicate = proof.evaluateConvergence({
     records: completeRecords(),

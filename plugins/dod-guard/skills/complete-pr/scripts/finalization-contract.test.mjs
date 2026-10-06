@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { ACCEPTANCE_MATRIX_PATHS } from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const standard = await readFile(new URL("../../../standards/github-request-discipline.md", import.meta.url), "utf8");
@@ -14,6 +15,8 @@ test("finalizes each structured parent child only after the guarded merge", () =
   assert.match(finalization, /There is no fixed child\s+count or category set/);
   assert.match(finalization, /structured-workflow-proof\.mjs/);
   assert.match(finalization, /stop on any actionable\s+remainder/);
+  assert.match(finalization, /call its exported\s+`evaluateConvergence` API/);
+  assert.match(finalization, /require `outcome: "verified"`/);
   assert.match(finalization, /Resolve the\s+shared Project number, REST item IDs, Status-field ID, and `Done` option ID once/);
   assert.match(finalization, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> \.\.\. <parent-item-id>/);
   assert.match(finalization, /child item IDs first and the parent\s+item ID last/);
@@ -36,6 +39,30 @@ test("shares the global ProjectV2 resolution and sequential readback contract", 
 test("finalization relies on executable functional convergence proof", () => {
   const completeRecords = () => proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {});
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
+  const passing = proof.evaluateConvergence({
+    records: completeRecords(),
+    tasks: [{
+      id: "task-1",
+      child: "search-flow",
+      evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+    }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
+    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+    acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
+      id: `AC-1-${index + 1}`,
+      contract: "AC-1",
+      path,
+      proof: `matrix-proof-${index + 1}`,
+      expected: "pass",
+      observed: "pass",
+      status: "pass",
+      evidence: `matrix-evidence-${index + 1}`,
+      headSha: "proof-head",
+    })),
+    headSha: "proof-head",
+  });
+  assert.equal(passing.outcome, "verified");
   const result = proof.evaluateConvergence({
     records: completeRecords(),
     tasks: [{

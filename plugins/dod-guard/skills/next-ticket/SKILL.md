@@ -70,6 +70,9 @@ or category set; stop before implementation when a child is
 duplicated, mis-mapped, or not actionable, or when the implementation, wiring
 and end-to-end usability, code quality, or failure/recovery concern has no
 owning slice or parent-level task.
+Tasks that own cross-cutting parent work without a linked child must mark that
+task with `parentLevel: "convergence"`; otherwise every task names a functional
+slice.
 
 Stop and name the missing section when the issue is incomplete. Do not invent
 requirements.

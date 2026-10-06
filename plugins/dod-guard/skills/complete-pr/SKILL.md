@@ -143,7 +143,11 @@ failure/recovery work. Resolve the
 shared Project number, REST item IDs, Status-field ID, and `Done` option ID once.
 Before finalizing a structured parent, consume the current handoff through
 `next-ticket/scripts/structured-workflow-proof.mjs` and stop on any actionable
-remainder; direct Project readback does not replace this convergence proof.
+remainder. Load its `records`, `tasks`, `children`, `reviewLenses`, `acceptance`,
+`acceptanceMatrix`, and exact pushed `headSha`, then call its exported
+`evaluateConvergence` API and require `outcome: "verified"`; any other outcome
+stops finalization. Direct Project readback does not replace this convergence
+proof.
 Require every parent-level task that owns one of those review lenses to carry
 explicit acceptance and verification evidence in the durable handoff and read
 it back before finalizing the Project item, even when it has no linked child

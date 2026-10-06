@@ -49,7 +49,9 @@ records and decomposes the work into coherent, user-action-first functional
 slices. Every declared slice maps to exactly one verifiable owner. A slice
 intended for independent child delivery must be independently deliverable;
 parent-level tasks may own explicitly cross-cutting slices without inventing a
-child. Every linked child maps back to exactly one declared slice.
+child. A task without a child must carry `parentLevel: "convergence"` to mark
+that cross-cutting ownership explicitly. Every linked child maps back to
+exactly one declared slice.
 
 Implementation, wiring and end-to-end usability, code quality, and
 failure/recovery each need an owning slice or parent-level task with observable
