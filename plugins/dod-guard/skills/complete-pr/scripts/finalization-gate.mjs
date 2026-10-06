@@ -47,7 +47,8 @@ function lensEvidenceRemainder(handoff) {
           rows,
         };
       }
-      if (text(matches[0]?.status)?.toLowerCase() !== "pass") {
+      const rowStatus = text(matches[0]?.status)?.toLowerCase();
+      if (rowStatus !== "pass" && !(rowStatus === "inapplicable" && text(matches[0]?.reason))) {
         return {
           error: `${label} ${reference} is bound to non-passing status ${text(matches[0]?.status) ?? "no status"}`,
           rows,
@@ -112,7 +113,12 @@ function lensEvidenceRemainder(handoff) {
       && !acceptanceRemainder.error
       && (
         acceptanceRemainder.rows.length !== verificationRemainder.rows.length
-        || acceptanceRemainder.rows.some((row, index) => row !== verificationRemainder.rows[index])
+        || acceptanceRemainder.rows.some((row) => {
+          const key = text(row?.id) ?? String(row?.index);
+          return !verificationRemainder.rows.some(
+            (verificationRow) => (text(verificationRow?.id) ?? String(verificationRow?.index)) === key,
+          );
+        })
       )
     ) {
       remainder.push(`${id} review lens acceptance and verification evidence must share one acceptance-matrix row`);

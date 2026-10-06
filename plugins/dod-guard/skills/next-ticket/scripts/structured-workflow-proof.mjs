@@ -160,7 +160,7 @@ const PROOF_HANDOFF = {
   headSha: "abc1234",
 };
 
-const PROOF_ACCEPTANCE_MATRIX = ACCEPTANCE_MATRIX_PATHS.map((pathName, index) => ({
+const PROOF_ACCEPTANCE_MATRIX = [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((pathName, index) => ({
   id: `AC-1-${index + 1}`,
   contract: "AC-1",
   path: pathName,
@@ -529,10 +529,12 @@ export function scenarioResult(scenario = "passing") {
       headSha: PROOF_HANDOFF.headSha,
       acceptanceEvidence: id === "wiring/usability"
         ? ["evidence-2", "evidence-3"]
-        : id === "reliability" ? ["evidence-4", "evidence-5"] : `evidence-${index + 1}`,
+        : id === "reliability" ? ["evidence-4", "evidence-5"] : id === "quality"
+          ? "evidence-6" : `evidence-${index + 1}`,
       verificationEvidence: id === "wiring/usability"
         ? ["proof-2", "proof-3"]
-        : id === "reliability" ? ["proof-4", "proof-5"] : `proof-${index + 1}`,
+        : id === "reliability" ? ["proof-4", "proof-5"] : id === "quality"
+          ? "proof-6" : `proof-${index + 1}`,
     }));
     return evaluateConvergence({
       records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [

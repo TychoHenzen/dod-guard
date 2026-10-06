@@ -8,6 +8,7 @@ const proof = await import("../../next-ticket/scripts/structured-workflow-proof.
 function lensEvidence(id, index, prefix) {
   if (id === "wiring/usability") return [`${prefix}-2`, `${prefix}-3`];
   if (id === "reliability") return [`${prefix}-4`, `${prefix}-5`];
+  if (id === "quality") return `${prefix}-6`;
   return `${prefix}-${index + 1}`;
 }
 
@@ -40,8 +41,8 @@ const validConvergenceInput = () => {
         "commit-proof",
         ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
       ],
-      acceptanceEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-evidence-${index + 1}`),
-      verificationEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-proof-${index + 1}`),
+      acceptanceEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `matrix-evidence-${index + 1}`),
+      verificationEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `matrix-proof-${index + 1}`),
     }, {
       id: "task-2",
       child: "settings-flow",
@@ -53,7 +54,7 @@ const validConvergenceInput = () => {
     ],
     reviewLenses,
     acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
-    acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
+    acceptanceMatrix: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((path, index) => ({
       id: `AC-1-${index + 1}`,
       contract: "AC-1",
       path,
@@ -180,8 +181,8 @@ test("allows an explicitly parent-level convergence task", () => {
     id: "task-1",
     parentLevel: "convergence",
     evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
-    acceptanceEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-evidence-${index + 1}`),
-    verificationEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-proof-${index + 1}`),
+    acceptanceEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `matrix-evidence-${index + 1}`),
+    verificationEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `matrix-proof-${index + 1}`),
   }];
   parentLevel.children = [];
   const parentLevelResult = proof.evaluateConvergence(parentLevel);

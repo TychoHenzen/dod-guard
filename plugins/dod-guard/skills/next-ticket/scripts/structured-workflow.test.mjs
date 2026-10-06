@@ -51,11 +51,12 @@ const proofScript = path.join(
 function lensEvidence(id, index, prefix) {
   if (id === "wiring/usability") return [`${prefix}-2`, `${prefix}-3`];
   if (id === "reliability") return [`${prefix}-4`, `${prefix}-5`];
+  if (id === "quality") return `${prefix}-6`;
   return `${prefix}-${index + 1}`;
 }
 
 function acceptanceMatrix(headSha, contract = "AC-1") {
-  return ACCEPTANCE_MATRIX_PATHS.map((pathName, index) => ({
+  return [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((pathName, index) => ({
     id: `${contract}-${index + 1}`,
     contract,
     path: pathName,
@@ -229,8 +230,8 @@ test("structured proof produces passing and actionable outcomes", () => {
         "commit abc123; test passed",
         ...proof.REQUIRED_REVIEW_LENSES.filter((id) => id !== "implementation").map((id) => `lens-${id}`),
       ],
-      acceptanceEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `evidence-${index + 1}`),
-      verificationEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `proof-${index + 1}`),
+      acceptanceEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `evidence-${index + 1}`),
+      verificationEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `proof-${index + 1}`),
     }],
     children: [{ id: "search-flow", evidence: ["mapped", "lens-implementation"] }],
     reviewLenses,
@@ -533,6 +534,34 @@ test("ordinary fixes bypass structured records", () => {
     outcome: "ordinary",
     remainder: [],
   });
+});
+
+test("structured convergence verifies a parent-level task without children", () => {
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+    id,
+    owner: "task-1",
+    evidence: `lens-${id}`,
+    headSha: "parent-head",
+    acceptanceEvidence: lensEvidence(id, index, "evidence"),
+    verificationEvidence: lensEvidence(id, index, "proof"),
+  }));
+  const result = proof.evaluateConvergence({
+    headSha: "parent-head",
+    records: recordsWithRequiredKeys(reviewLenses),
+    tasks: [{
+      id: "task-1",
+      parentLevel: "convergence",
+      evidence: ["parent-proof", ...reviewLenses.map((lens) => lens.evidence)],
+      acceptanceEvidence: acceptanceMatrix("parent-head").map((row) => row.evidence),
+      verificationEvidence: acceptanceMatrix("parent-head").map((row) => row.proof),
+    }],
+    children: [],
+    reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "parent acceptance" }],
+    acceptanceMatrix: acceptanceMatrix("parent-head"),
+  });
+
+  assert.equal(result.outcome, "verified");
 });
 
 test("structured convergence rejects a matrix tied to a different head", () => {
