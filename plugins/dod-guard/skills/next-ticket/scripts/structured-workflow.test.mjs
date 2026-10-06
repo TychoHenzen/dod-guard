@@ -329,7 +329,6 @@ test("functional convergence reports malformed collection entries", () => {
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 must be an object")));
-  assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 needs a non-empty id")));
   assert.ok(result.remainder.some((entry) => entry.includes("child entry 1 must be an object")));
   assert.ok(result.remainder.some((entry) => entry.includes("linked child needs a functional slice id")));
   assert.ok(result.remainder.some((entry) => entry.includes("review lens entry 1 must be an object")));
@@ -338,17 +337,26 @@ test("functional convergence reports malformed collection entries", () => {
 });
 
 test("functional convergence rejects missing acceptance identifiers", () => {
-  const missingAcceptanceId = proof.evaluateConvergence({
+});
+
+test("functional convergence rejects a task without an identifier", () => {
+  const result = proof.evaluateConvergence({
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
-    tasks: [{ id: "task-1", evidence: "commit" }],
-    acceptance: [{ evidence: "proof" }],
+    tasks: [{}],
+    acceptance: [{ id: "AC-1", evidence: "proof" }],
   });
-  assert.ok(
-    missingAcceptanceId.remainder.some((entry) =>
-      entry.includes("needs a functional slice or parent-level convergence marker"),
-    ),
-  );
-  assert.ok(missingAcceptanceId.remainder.some((entry) => entry.includes("acceptance criterion 1 needs a non-empty id")));
+
+  assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 needs a non-empty id")));
+});
+
+test("functional convergence rejects conflicting child slice identifiers", () => {
+  const result = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
+    children: [{ id: "search-flow", slice: "other-flow", evidence: "proof" }],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("functional slice identifiers disagree")));
 });
 
 test("normalizes task identifiers before matching owners", () => {

@@ -169,7 +169,16 @@ export function evaluateConvergence({
   }
   const childIds = new Set();
   for (const child of childList) {
-    const slice = [child.id, child.slice, child.name].map(normalizedIdentifier).find(Boolean) ?? null;
+    const sliceIdentifiers = [child.id, child.slice, child.name].map(normalizedIdentifier).filter(Boolean);
+    const distinctSliceIdentifiers = [...new Set(sliceIdentifiers)];
+    if (distinctSliceIdentifiers.length > 1) {
+      addRemainder(
+        "Functional decomposition",
+        `functional slice identifiers disagree (${distinctSliceIdentifiers.join(", ")})`,
+      );
+      continue;
+    }
+    const slice = distinctSliceIdentifiers[0] ?? null;
     if (!slice) {
       addRemainder("Functional decomposition", "linked child needs a functional slice id");
     } else if (childIds.has(slice)) {

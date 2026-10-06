@@ -58,7 +58,8 @@ failure/recovery each need exactly one owning slice or parent-level task with
 observable evidence bound to the accepted head. There is no fixed child count
 or category set. The branch does not replace these records: it supplies the
 implementation evidence they request.
-The executable proof uses the canonical lens IDs `implementation`,
+The executable proof at `skills/next-ticket/scripts/structured-workflow-proof.mjs`
+and its focused tests enforce the canonical lens IDs `implementation`,
 `wiring/usability`, `quality`, and `reliability`; prose may expand those IDs
 to the corresponding user-facing concern.
 

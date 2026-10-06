@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { ACCEPTANCE_MATRIX_PATHS } from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
+import { evaluateStructuredFinalization } from "./finalization-gate.mjs";
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const standard = await readFile(new URL("../../../standards/github-request-discipline.md", import.meta.url), "utf8");
@@ -46,13 +47,6 @@ const validConvergenceInput = () => ({
   })),
   headSha: "proof-head",
 });
-const finalizationGate = (handoff) => {
-  const convergence = proof.evaluateConvergence(handoff);
-  return {
-    convergence,
-    nextStep: convergence.outcome === "verified" ? "project-status.mjs" : "stop",
-  };
-};
 
 test("finalizes each structured parent child only after the guarded merge", () => {
   const finalization = skill.slice(skill.indexOf("## Finalize the parent unit"));
@@ -62,7 +56,7 @@ test("finalizes each structured parent child only after the guarded merge", () =
   assert.match(finalization, /There is no fixed child\s+count or category set/);
   assert.match(finalization, /structured-workflow-proof\.mjs/);
   assert.match(finalization, /stop on any actionable\s+remainder/);
-  assert.match(finalization, /call its exported\s+`evaluateConvergence` API/);
+  assert.match(finalization, /calls the exported\s+`evaluateConvergence` API/);
   assert.match(finalization, /require `outcome: "verified"`/);
   assert.match(finalization, /Resolve the\s+shared Project number, REST item IDs, Status-field ID, and `Done` option ID once/);
   assert.match(finalization, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> \.\.\. <parent-item-id>/);
@@ -149,18 +143,18 @@ test("finalization relies on executable functional convergence proof", () => {
 });
 
 test("finalization gate blocks stale or unmapped user-path evidence", () => {
-  const valid = finalizationGate(validConvergenceInput());
+  const valid = evaluateStructuredFinalization(validConvergenceInput());
   assert.equal(valid.nextStep, "project-status.mjs");
 
   const missingUserPath = validConvergenceInput();
   missingUserPath.acceptanceMatrix = missingUserPath.acceptanceMatrix.filter((row) => row.path !== "browser/e2e");
-  const missingUserPathResult = finalizationGate(missingUserPath);
+  const missingUserPathResult = evaluateStructuredFinalization(missingUserPath);
   assert.equal(missingUserPathResult.nextStep, "stop");
   assert.ok(missingUserPathResult.convergence.remainder.some((entry) => entry.includes("browser/e2e")));
 
   const staleEvidence = validConvergenceInput();
   staleEvidence.acceptanceMatrix = staleEvidence.acceptanceMatrix.map((row) => ({ ...row, headSha: "old-head" }));
-  const staleEvidenceResult = finalizationGate(staleEvidence);
+  const staleEvidenceResult = evaluateStructuredFinalization(staleEvidence);
   assert.equal(staleEvidenceResult.nextStep, "stop");
   assert.ok(staleEvidenceResult.convergence.remainder.some((entry) => entry.includes("expected proof-head")));
 
@@ -168,7 +162,7 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   unmappedUserPath.reviewLenses = unmappedUserPath.reviewLenses.map((lens) =>
     lens.id === "wiring/usability" ? { ...lens, evidence: "missing-user-path-proof" } : lens,
   );
-  const unmappedUserPathResult = finalizationGate(unmappedUserPath);
+  const unmappedUserPathResult = evaluateStructuredFinalization(unmappedUserPath);
   assert.equal(unmappedUserPathResult.nextStep, "stop");
   assert.ok(
     unmappedUserPathResult.convergence.remainder.some((entry) =>
