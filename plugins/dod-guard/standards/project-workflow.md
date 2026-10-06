@@ -46,7 +46,9 @@ and pull request as the source of truth.
 
 A structured PBI is implementation-ready when the issue contains the four named
 records, decomposes the work into coherent user-action-centered functional slices, and maps every
-linked child to one independently deliverable and verifiable slice. The
+declared slice to exactly one independently deliverable and verifiable owner. Every
+linked child maps back to exactly one declared slice, while parent-level tasks may
+own cross-cutting work without inventing a child. The
 implementation, wiring and end-to-end usability, code quality, and
 failure/recovery concerns must each be covered by an owning slice or
 parent-level task. There is no fixed child count or category set. The branch
@@ -114,8 +116,8 @@ links it instead of restating it:
 - Remainder: none
 ```
 
-Convergence is passing only when every named record exists, every task and
-linked functional-slice child is mapped by the implementation handoff, every acceptance
+Convergence is passing only when every named record exists, every declared slice,
+task, and linked functional-slice child is mapped exactly once by the implementation handoff, every acceptance
 criterion has fresh evidence at the exact head; every matrix row does too, and
 no item is contradicted or unresolved. The required-context and base/mergeability
 checkpoint must also be stable at that exact head. Codex's built-in Review

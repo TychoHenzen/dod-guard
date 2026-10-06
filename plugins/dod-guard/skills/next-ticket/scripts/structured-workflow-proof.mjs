@@ -79,6 +79,19 @@ export function evaluateConvergence({
   for (const task of tasks) {
     if (!task.evidence) addRemainder("Plan and tasks", `${task.id} needs implementation evidence`);
   }
+  const evidenceOwners = new Map();
+  const recordEvidence = (owner, evidence, section) => {
+    if (!evidence) return;
+    const previousOwner = evidenceOwners.get(evidence);
+    if (previousOwner) {
+      addRemainder(section, `evidence ${evidence} is mapped more than once (${previousOwner}, ${owner})`);
+    } else {
+      evidenceOwners.set(evidence, owner);
+    }
+  };
+  for (const task of tasks) {
+    recordEvidence(task.id, task.evidence, "Plan and tasks");
+  }
   const childIds = new Set();
   for (const child of children) {
     const slice = child.id ?? child.slice ?? child.name;
@@ -88,7 +101,11 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${slice} functional slice is linked more than once`);
     } else {
       childIds.add(slice);
-      if (!child.evidence) addRemainder("Functional decomposition", `${slice} slice needs evidence`);
+      if (!child.evidence) {
+        addRemainder("Functional decomposition", `${slice} slice needs evidence`);
+      } else {
+        recordEvidence(slice, child.evidence, "Functional decomposition");
+      }
     }
   }
   for (const task of tasks) {
@@ -122,6 +139,8 @@ export function evaluateConvergence({
         addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
       } else if (!tasks.some((task) => task.id === lens.owner || task.child === lens.owner)) {
         addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
+      } else {
+        recordEvidence(`${id} review lens`, lens.evidence, "Functional decomposition");
       }
     }
   }
@@ -133,6 +152,8 @@ export function evaluateConvergence({
   for (const criterion of acceptance) {
     if (!criterion.evidence) {
       addRemainder("Acceptance and verification", `${criterion.id} needs fresh evidence`);
+    } else {
+      recordEvidence(criterion.id, criterion.evidence, "Acceptance and verification");
     }
   }
   const matrixValidation = validateAcceptanceMatrix({
@@ -204,7 +225,7 @@ export function scenarioResult(scenario = "passing") {
       records: { requirements: true, clarifications: true, "implementation-plan": true },
       tasks: [{ id: "task-2", child: "wiring", evidence: "" }],
       children: [{ id: "implementation", evidence: "mapped" }],
-      reviewLenses: [{ id: "implementation", owner: "task-2", evidence: "mapped" }],
+      reviewLenses: [{ id: "implementation", owner: "task-2", evidence: "lens-implementation" }],
       acceptance: [{ id: "AC-2", evidence: "" }],
       contradictions: ["user path not exercised"],
     });
@@ -214,7 +235,7 @@ export function scenarioResult(scenario = "passing") {
       records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [record, true])),
       tasks: [{ id: "task-1", child: "search-flow", evidence: "commit abc123" }],
       children: [{ id: "search-flow", evidence: "mapped" }],
-      reviewLenses: REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: "mapped" })),
+      reviewLenses: REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
       acceptance: [{ id: "AC-1", evidence: "proof" }],
       acceptanceMatrix: PROOF_ACCEPTANCE_MATRIX,
       headSha: PROOF_HANDOFF.headSha,

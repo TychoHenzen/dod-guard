@@ -4,6 +4,7 @@ import test from "node:test";
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const standard = await readFile(new URL("../../../standards/github-request-discipline.md", import.meta.url), "utf8");
+const proof = await import("../../next-ticket/scripts/structured-workflow-proof.mjs");
 
 test("finalizes each structured parent child only after the guarded merge", () => {
   const finalization = skill.slice(skill.indexOf("## Finalize the parent unit"));
@@ -28,6 +29,19 @@ test("shares the global ProjectV2 resolution and sequential readback contract", 
   assert.match(standard, /only for a capability with no connector or REST equivalent/);
   assert.match(standard, /write every child\s+before the parent, then read each item/);
   assert.match(standard, /skills\/complete-pr\/scripts\/project-status\.mjs/);
+});
+
+test("finalization relies on executable functional convergence proof", () => {
+  assert.equal(proof.scenarioResult("passing").outcome, "verified");
+  const result = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", child: "missing-flow", evidence: "commit" }],
+    children: [{ id: "implemented-flow", evidence: "mapped" }],
+  });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
+  assert.ok(result.remainder.some((entry) => entry.includes("review lens needs an owning task")));
 });
 
 test("keeps routine ProjectV2 guidance out of GraphQL", async () => {

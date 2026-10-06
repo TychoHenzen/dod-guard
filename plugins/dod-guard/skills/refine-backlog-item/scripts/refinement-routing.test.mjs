@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
+const proof = await import("../../next-ticket/scripts/structured-workflow-proof.mjs");
+
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const fixtures = await readFile(new URL("../fixtures.md", import.meta.url), "utf8");
 const githubDiscipline = await readFile(
@@ -105,6 +107,19 @@ test("uses functional decomposition with cross-cutting review lenses", () => {
   assert.match(skill, /every\s+linked child matches one independently deliverable functional slice/);
   assert.doesNotMatch(skill, /require exactly one linked child for each category/);
   assert.doesNotMatch(skill, /four mandatory child categories are linked exactly once/);
+});
+
+test("routes functional decomposition through executable convergence proof", () => {
+  assert.equal(proof.scenarioResult("passing").outcome, "verified");
+  const result = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", child: "missing-flow", evidence: "commit" }],
+    children: [{ id: "implemented-flow", evidence: "mapped" }],
+  });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
+  assert.ok(result.remainder.some((entry) => entry.includes("slice needs an owning task")));
 });
 
 test("manual fixtures include each route and its record markers", () => {
