@@ -57,7 +57,7 @@ Act on its `action`:
 | `report` | The code review completed. | Go to "Report". |
 | `trigger` | A draft with no review, a ready PR with no review after two minutes, or a failed review. | Rerun with `--post-trigger`. It posts `@codex review` only if the state still says `trigger`. |
 | `wait` | A review is running, or a trigger was already sent. | Read again about once a minute. |
-| `hold` | The summary layout is unrecognized, or a trigger got no reaction for ten minutes. | Stop and report `reason` with the PR URL. |
+| `hold` | The summary layout is unrecognized, a trigger got no reaction for ten minutes, or the review the trigger started failed (`code-review-failed`). | Stop and report `reason` with the PR URL. |
 
 Pass the elapsed time since your first read as `--waited-ms`; the two-minute
 wait for an automatic review is measured from it. Never post `@codex review`

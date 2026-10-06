@@ -8,6 +8,7 @@ const FINDING_TITLE = /<\/sub><\/sub>\s*(.+?)\*\*/;
 const REVIEW_TRIGGER = /^@codex review\b/i;
 const COMPLETED_CELL = /\*\*Completed\*\*/i;
 const FAILED_CELL = /\*\*Failed\*\*/i;
+const CELL_TIME = /datetime="([^"]+)"/;
 const TRIGGER_ACKNOWLEDGE_MS = 600_000;
 
 function byCodex(item) {
@@ -29,7 +30,12 @@ function codeReviewRow(summaryBody) {
   if (!match) {
     return null;
   }
-  return { status: rowStatus(match[1]), commit: match[2], trigger: match[3].trim() };
+  return {
+    status: rowStatus(match[1]),
+    commit: match[2],
+    trigger: match[3].trim(),
+    updatedAt: match[1].match(CELL_TIME)?.[1],
+  };
 }
 
 function latestSummary(issueComments) {
@@ -96,9 +102,20 @@ function reviewRunning(codeReview, reactions) {
   return codeReview?.status === "pending" || reactions.some((reaction) => byCodex(reaction) && reaction.content === "eyes");
 }
 
+// The one allowed trigger already produced this failure, so another trigger would be a second one.
+function failedAfter(codeReview, trigger) {
+  if (codeReview?.status !== "failed" || !trigger) {
+    return false;
+  }
+  return Date.parse(codeReview.updatedAt) >= Date.parse(trigger.created_at);
+}
+
 function pendingDecision(base, input) {
   const trigger = input.issueComments.filter((comment) => REVIEW_TRIGGER.test(comment.body?.trim() ?? "")).at(-1);
   const running = reviewRunning(base.codeReview, input.reactions);
+  if (failedAfter(base.codeReview, trigger)) {
+    return { ...base, action: "hold", reason: "code-review-failed", triggerUrl: trigger.html_url };
+  }
   if (trigger && !running && input.now - Date.parse(trigger.created_at) >= TRIGGER_ACKNOWLEDGE_MS) {
     return { ...base, action: "hold", reason: "review-trigger-not-acknowledged", triggerUrl: trigger.html_url };
   }

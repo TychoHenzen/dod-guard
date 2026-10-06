@@ -63,7 +63,10 @@ other provider error is not permission to try GraphQL. Stop with the exact
 redacted status, endpoint, and reset or retry-after evidence.
 
 REST comments carry no thread ID or resolution state, so they are enough to
-revalidate and reply but not to resolve a thread. With `gh api`, pass
+revalidate and reply but cannot show which findings are already resolved.
+Without a connector thread operation, use the field-limited `reviewThreads`
+read described under "Update proven findings" here instead, so resolved
+selections are skipped and each finding carries its thread ID. With `gh api`, pass
 `--paginate --slurp` so every page arrives as one JSON array. Redact
 credentials, save the response outside the repository, then run:
 

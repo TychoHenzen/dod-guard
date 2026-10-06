@@ -115,6 +115,17 @@ test("a failed review gets one trigger, and an unknown summary shape holds", () 
   const failed = codexReviewState({ pullRequest, issueComments: [summary("⚠️ **Failed**", "588ec1b")] });
   assert.equal(failed.action, "trigger");
 
+  // The summary row failed at 06:36:44Z, after the 06:30:00Z trigger that started it.
+  const failedAfterTrigger = codexReviewState({
+    pullRequest: { ...pullRequest, draft: true },
+    issueComments: [
+      { user: { login: "TychoHenzen" }, body: "@codex review", created_at: "2026-10-05T06:30:00Z", html_url: "u" },
+      summary("⚠️ **Failed**", "588ec1b"),
+    ],
+    now: Date.parse("2026-10-05T06:37:00Z"),
+  });
+  assert.deepEqual([failedAfterTrigger.action, failedAfterTrigger.reason], ["hold", "code-review-failed"]);
+
   const unknown = codexReviewState({
     pullRequest,
     issueComments: [{ user: bot, body: "<!-- codex-pull-request-review-summary -->\nnew layout" }],
