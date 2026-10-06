@@ -108,8 +108,8 @@ an owning slice or parent-level task with observable evidence:
 - refactoring and code quality;
 - failure/recovery.
 
-For a code-backed
-sub-issue, map changed files and commits and require its pushed implementation.
+For a code-backed sub-issue, map changed files and commits and require its pushed
+implementation.
 For an administrative sub-issue, map verified remote-state evidence instead of
 branch evidence. Require one durable parent-issue `## Implementation
 handoff` comment from `next-ticket`, containing the single `## Acceptance matrix`;

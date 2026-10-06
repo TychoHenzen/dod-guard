@@ -319,6 +319,11 @@ test("functional convergence reports malformed collection entries", () => {
     tasks: [{ id: "task-1", evidence: "commit" }],
     acceptance: [{ evidence: "proof" }],
   });
+  assert.ok(
+    missingAcceptanceId.remainder.some((entry) =>
+      entry.includes("needs a functional slice or parent-level convergence marker"),
+    ),
+  );
   assert.ok(missingAcceptanceId.remainder.some((entry) => entry.includes("acceptance criterion 1 needs a non-empty id")));
 });
 
@@ -327,7 +332,7 @@ test("normalizes task identifiers before matching owners", () => {
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
     tasks: [{ id: " task-1 ", child: "search-flow", evidence: ["commit", "lens-implementation"] }],
     children: [{ id: "search-flow", evidence: "slice-proof" }],
-    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "lens-implementation" }],
+    reviewLenses: [{ id: " implementation ", owner: "task-1", evidence: "lens-implementation" }],
   });
 
   assert.ok(!result.remainder.some((entry) => entry.includes("implementation review lens")));

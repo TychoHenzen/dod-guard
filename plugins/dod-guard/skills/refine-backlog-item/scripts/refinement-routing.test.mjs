@@ -120,8 +120,8 @@ test("routes functional decomposition through executable convergence proof", () 
   });
 
   assert.equal(result.outcome, "actionable remainder");
-  assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
-  assert.ok(result.remainder.some((entry) => entry.includes("slice needs an owning task")));
+   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
+   assert.ok(result.remainder.some((entry) => entry.includes("slice needs an owning task")));
 
   const duplicate = proof.evaluateConvergence({
     records: completeRecords(),
@@ -135,8 +135,12 @@ test("routes functional decomposition through executable convergence proof", () 
     ],
   });
 
-  assert.ok(duplicate.remainder.some((entry) => entry.includes("same-flow functional slice is linked more than once")));
-  assert.ok(duplicate.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")));
+  assert.ok(
+    duplicate.remainder.some((entry) => entry.includes("same-flow functional slice is linked more than once")),
+  );
+  assert.ok(
+    duplicate.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")),
+  );
 
   const unmappedEvidence = proof.evaluateConvergence({
     records: completeRecords(),
@@ -144,7 +148,9 @@ test("routes functional decomposition through executable convergence proof", () 
     children: [{ id: "search-flow", evidence: "mapped" }],
     reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "missing-proof" }],
   });
-  assert.ok(unmappedEvidence.remainder.some((entry) => entry.includes("references undeclared evidence missing-proof")));
+  assert.ok(
+    unmappedEvidence.remainder.some((entry) => entry.includes("references undeclared evidence missing-proof")),
+  );
 });
 
 test("manual fixtures include each route and its record markers", () => {

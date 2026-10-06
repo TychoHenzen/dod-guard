@@ -175,6 +175,11 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${taskId ?? "task"} needs a functional slice id`);
     } else if (slice && !childIds.has(slice)) {
       addRemainder("Functional decomposition", `${taskId ?? "task"} references missing functional slice ${slice}`);
+    } else if (!slice && task.parentLevel !== "convergence") {
+      addRemainder(
+        "Functional decomposition",
+        `${taskId ?? "task"} needs a functional slice or parent-level convergence marker`,
+      );
     }
   }
   const taskOwners = new Set();
@@ -193,7 +198,7 @@ export function evaluateConvergence({
   }
   const seenLenses = new Set();
   for (const lens of lensList) {
-    const id = lens.id ?? lens.name;
+    const id = normalizedIdentifier(lens.id ?? lens.name);
     if (!id || !REQUIRED_REVIEW_LENSES.includes(id)) {
       addRemainder("Functional decomposition", "review-lens ownership uses an unknown lens");
     } else if (seenLenses.has(id)) {
