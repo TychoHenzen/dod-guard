@@ -482,7 +482,10 @@ After refinement:
 
 - Verify the parent is Todo.
 - Verify every linked child exists, is linked, matches one functional slice, and is Todo.
-- Verify every named parent checklist task has an owner and observable evidence.
+- Verify every named parent checklist task has an owner and observable evidence; when it
+  owns cross-cutting work without a child, mark it `parentLevel: "convergence"`.
+- Verify every declared functional slice is represented by a linked child or an
+  explicitly marked parent-level task.
 - If the parent remains Backlog, repair the status and read it back before implementation.
 - Do not create additional children during implementation unless a genuinely independent acceptance requirement appears; update an existing child whenever possible.
 - If the refinement skill cannot satisfy this contract, repair the skill minimally in the plugin cache and record the long-term dod-guard change in today's friction log instead of proceeding with an incomplete plan.

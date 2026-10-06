@@ -32,10 +32,11 @@ referenced skill from the active plugin root before invoking it.
   refinement: create child PBIs only for independently deliverable and
   verifiable functional slices, and keep dependent atomic steps in the parent
   checklist. Explicitly assess these review lenses:
-  `implementation`; `wiring/usability`, including proof that the feature is
-  reachable from its intended UI or supported user-facing surface; `quality`,
-  including cleanup; and `reliability`, including failure/recovery beyond the
-  happy path. Attach each concern to the slice or parent task that owns it
+  `implementation`; `wiring/usability` for wiring and end-to-end usability,
+  including proof that the feature is reachable from its intended UI or
+  supported user-facing surface; `quality` for refactoring and code quality,
+  including cleanup; and `reliability` for failure/recovery beyond the happy
+  path. Attach each concern to the slice or parent task that owns it
   instead of manufacturing category children.
 - Do not pause for ceremonial confirmation before issue, Project, branch,
   commit, push, or draft-PR actions already covered by this skill. Ask only the

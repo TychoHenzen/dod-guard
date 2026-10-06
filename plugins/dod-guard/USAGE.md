@@ -114,8 +114,11 @@ convergence check. The canonical records and handoffs are in
 | Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
 On the structured path, `/next-ticket` leaves one durable `## Implementation
-handoff` comment on the parent issue, mapping every task and linked functional-slice child to
-its commit or verified remote-state evidence, checks, and user-path result,
+handoff` comment on the parent issue, mapping every declared functional slice,
+task, and linked functional-slice child to its commit or verified remote-state
+evidence, checks, and user-path result. Each review lens names its owning slice
+or parent-level task and observable evidence, and a childless parent task uses
+`parentLevel: "convergence"`,
 followed by one `## Acceptance matrix` with exact-head rows for each acceptance
 criterion and mandatory user-facing path.
 `/submit-draft-pr` compares that handoff with the issue contract and links it

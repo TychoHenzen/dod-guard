@@ -169,7 +169,7 @@ export function evaluateConvergence({
   }
   const childIds = new Set();
   for (const child of childList) {
-    const slice = normalizedIdentifier(child.id ?? child.slice ?? child.name);
+    const slice = [child.id, child.slice, child.name].map(normalizedIdentifier).find(Boolean) ?? null;
     if (!slice) {
       addRemainder("Functional decomposition", "linked child needs a functional slice id");
     } else if (childIds.has(slice)) {
