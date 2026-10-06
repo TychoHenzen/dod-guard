@@ -220,15 +220,18 @@ export function evaluateConvergence({
         addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
       } else {
         const owner = normalizedIdentifier(lens.owner);
-        const ownerTask = taskList.find(
+        const ownerTasks = taskList.filter(
           (task) => {
             const taskId = normalizedTaskIds.get(task);
             return taskId && (taskId === owner || normalizedIdentifier(task.child) === owner);
           },
         );
-        if (!ownerTask) {
+        if (ownerTasks.length === 0) {
           addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
+        } else if (ownerTasks.length > 1) {
+          addRemainder("Functional decomposition", `${id} review lens references ambiguous owner ${lens.owner}`);
         } else {
+          const [ownerTask] = ownerTasks;
           const evidenceOwner = normalizedTaskIds.get(ownerTask) === owner ? owner : normalizedIdentifier(ownerTask.child);
           referenceEvidence({
             owner: evidenceOwner,
@@ -246,20 +249,27 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${lens} review lens needs an owning task`);
     }
   }
+  const seenAcceptanceIds = new Set();
   for (const [index, criterion] of acceptanceList.entries()) {
     const criterionId = normalizedIdentifier(criterion.id);
     if (!criterionId) {
       addRemainder("Acceptance and verification", `acceptance criterion ${index + 1} needs a non-empty id`);
-    } else if (evidenceValues(criterion.evidence).length === 0) {
-      addRemainder("Acceptance and verification", `${criterionId} needs fresh evidence`);
+    } else if (seenAcceptanceIds.has(criterionId)) {
+      addRemainder("Acceptance and verification", `${criterionId} acceptance criterion is declared more than once`);
+      seenAcceptanceIds.add(criterionId);
     } else {
-      declareEvidence({
-        owner: criterionId,
-        value: criterion.evidence,
-        section: "Acceptance and verification",
-        evidenceOwners,
-        addRemainder,
-      });
+      seenAcceptanceIds.add(criterionId);
+      if (evidenceValues(criterion.evidence).length === 0) {
+        addRemainder("Acceptance and verification", `${criterionId} needs fresh evidence`);
+      } else {
+        declareEvidence({
+          owner: criterionId,
+          value: criterion.evidence,
+          section: "Acceptance and verification",
+          evidenceOwners,
+          addRemainder,
+        });
+      }
     }
   }
   const matrixValidation = validateAcceptanceMatrix({

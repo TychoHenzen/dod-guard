@@ -17,8 +17,15 @@ const validConvergenceInput = () => ({
       "commit-proof",
       ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
     ],
+  }, {
+    id: "task-2",
+    child: "settings-flow",
+    evidence: "settings-proof",
   }],
-  children: [{ id: "search-flow", evidence: "slice-proof" }],
+  children: [
+    { id: "search-flow", evidence: "slice-proof" },
+    { id: "settings-flow", evidence: "settings-slice-proof" },
+  ],
   reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({
     id,
     owner: "task-1",
