@@ -230,6 +230,22 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
       entry.includes("implementation owner task needs mapped verification evidence"),
     ),
   );
+
+  const crossWiredEvidence = validConvergenceInput();
+  crossWiredEvidence.reviewLenses[0] = {
+    ...crossWiredEvidence.reviewLenses[0],
+    acceptanceEvidence: crossWiredEvidence.acceptanceMatrix[1].evidence,
+    verificationEvidence: crossWiredEvidence.acceptanceMatrix[0].proof,
+  };
+  crossWiredEvidence.tasks[0].acceptanceEvidence[0] = crossWiredEvidence.acceptanceMatrix[1].evidence;
+  crossWiredEvidence.tasks[0].verificationEvidence[0] = crossWiredEvidence.acceptanceMatrix[0].proof;
+  const crossWiredResult = evaluateStructuredFinalization(crossWiredEvidence);
+  assert.equal(crossWiredResult.nextStep, "stop");
+  assert.ok(
+    crossWiredResult.remainder.some((entry) =>
+      entry.includes("must share one acceptance-matrix row"),
+    ),
+  );
 });
 
 test("keeps routine ProjectV2 guidance out of GraphQL", async () => {

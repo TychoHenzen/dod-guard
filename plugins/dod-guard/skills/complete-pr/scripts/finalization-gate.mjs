@@ -30,6 +30,12 @@ function lensEvidenceRemainder(handoff) {
     }
     return null;
   };
+  const matrixRows = (field, value) => {
+    const normalizedValue = text(value);
+    return normalizedValue
+      ? matrix.filter((row) => text(row?.[field]) === normalizedValue)
+      : [];
+  };
   const tasks = Array.isArray(handoff.tasks) ? handoff.tasks : [];
   const remainder = [];
   for (const lens of Array.isArray(handoff.reviewLenses) ? handoff.reviewLenses : []) {
@@ -66,6 +72,15 @@ function lensEvidenceRemainder(handoff) {
       `${id} review lens acceptance evidence`,
     );
     if (acceptanceRemainder) remainder.push(acceptanceRemainder);
+    const acceptanceRows = matrixRows("evidence", lens?.acceptanceEvidence);
+    const verificationRows = matrixRows("proof", lens?.verificationEvidence);
+    if (
+      !verificationRemainder
+      && !acceptanceRemainder
+      && acceptanceRows[0] !== verificationRows[0]
+    ) {
+      remainder.push(`${id} review lens acceptance and verification evidence must share one acceptance-matrix row`);
+    }
   }
   return remainder;
 }

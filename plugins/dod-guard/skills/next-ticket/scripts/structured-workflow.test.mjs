@@ -322,10 +322,58 @@ test("functional convergence rejects repeated evidence references", () => {
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", child: "search-flow", evidence: ["commit", "lens-implementation"] }],
     children: [{ id: "search-flow", evidence: "slice-proof" }],
-    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: ["lens-implementation", "lens-implementation"] }],
+    reviewLenses: [{
+      id: "implementation",
+      owner: "task-1",
+      evidence: ["lens-implementation", "lens-implementation"],
+      acceptanceEvidence: "planned-acceptance",
+      verificationEvidence: "planned-verification",
+    }],
   });
 
   assert.ok(result.remainder.some((entry) => entry.includes("references evidence lens-implementation more than once")));
+});
+
+test("functional convergence rejects evidence reused across review lenses", () => {
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+    id,
+    owner: "task-1",
+    evidence: index === 1 ? "lens-implementation" : `lens-${id}`,
+    acceptanceEvidence: `matrix-evidence-${index + 1}`,
+    verificationEvidence: `matrix-proof-${index + 1}`,
+  }));
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys(reviewLenses),
+    tasks: [{
+      id: "task-1",
+      child: "search-flow",
+      evidence: ["commit", ...new Set(reviewLenses.map((lens) => lens.evidence))],
+      acceptanceEvidence: reviewLenses.map((lens) => lens.acceptanceEvidence),
+      verificationEvidence: reviewLenses.map((lens) => lens.verificationEvidence),
+    }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("reuses evidence lens-implementation")));
+});
+
+test("functional convergence requires lens acceptance and verification evidence before push", () => {
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+    id,
+    owner: "task-1",
+    evidence: `lens-${id}`,
+  }));
+  const result = proof.evaluateConvergence({
+    records: recordsWithRequiredKeys(reviewLenses),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: ["commit", ...reviewLenses.map((lens) => lens.evidence)] }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+  });
+
+  assert.ok(result.remainder.filter((entry) => entry.includes("needs acceptance and verification evidence")).length >= 4);
 });
 
 test("functional convergence reports malformed collection entries", () => {

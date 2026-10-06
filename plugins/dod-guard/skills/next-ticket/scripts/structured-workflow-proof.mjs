@@ -263,7 +263,13 @@ export function evaluateConvergence({
       if (evidenceValues(child.evidence).length === 0) {
         addRemainder("Functional decomposition", `${slice} slice needs evidence`);
       } else {
-        declareEvidence({ owner: slice, value: child.evidence, section: "Functional decomposition", evidenceOwners, addRemainder });
+        declareEvidence({
+          owner: slice,
+          value: child.evidence,
+          section: "Functional decomposition",
+          evidenceOwners,
+          addRemainder,
+        });
       }
     }
   }
@@ -295,6 +301,7 @@ export function evaluateConvergence({
     }
   }
   const seenLenses = new Set();
+  const lensEvidenceOwners = new Map();
   const matrixEvidence = new Set(
     (Array.isArray(acceptanceMatrix) ? acceptanceMatrix : [])
       .map((row) => normalizedIdentifier(row?.evidence))
@@ -320,10 +327,8 @@ export function evaluateConvergence({
     } else {
       seenLenses.add(id);
       const lensHeadSha = normalizedIdentifier(lens.headSha ?? lens.head);
-      const missingAcceptanceEvidence =
-        postPushValidation && evidenceValues(lens.acceptanceEvidence).length === 0;
-      const missingVerificationEvidence =
-        postPushValidation && evidenceValues(lens.verificationEvidence).length === 0;
+      const missingAcceptanceEvidence = evidenceValues(lens.acceptanceEvidence).length === 0;
+      const missingVerificationEvidence = evidenceValues(lens.verificationEvidence).length === 0;
       if (!lens.owner || evidenceValues(lens.evidence).length === 0) {
         addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
       } else if (missingAcceptanceEvidence || missingVerificationEvidence) {
@@ -368,6 +373,17 @@ export function evaluateConvergence({
             evidenceOwners,
             addRemainder,
           });
+          for (const evidence of evidenceValues(lens.evidence)) {
+            const previousLens = lensEvidenceOwners.get(evidence);
+            if (previousLens) {
+              addRemainder(
+                "Functional decomposition",
+                `${id} reuses evidence ${evidence} already assigned to ${previousLens} review lens`,
+              );
+            } else {
+              lensEvidenceOwners.set(evidence, id);
+            }
+          }
         }
       }
     }
