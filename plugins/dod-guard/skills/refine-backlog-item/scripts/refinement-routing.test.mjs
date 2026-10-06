@@ -241,7 +241,7 @@ test("rejects duplicate functional slices and evidence", () => {
   );
 });
 
-test("rejects review-lens evidence that is not mapped", () => {
+test("rejects review-lens evidence owned by another mapping", () => {
   const unmappedInput = validConvergenceInput();
   unmappedInput.tasks[0].evidence = unmappedInput.tasks[0].evidence.filter(
     (evidence) => evidence !== "lens-implementation",

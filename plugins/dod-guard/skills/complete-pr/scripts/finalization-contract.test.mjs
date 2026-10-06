@@ -334,3 +334,11 @@ test("finalization gate returns an actionable remainder for malformed handoff in
   assert.deepEqual(result.remainder, ["finalization handoff must be an object"]);
   assert.equal(result.nextStep, "stop");
 });
+
+test("finalization gate rejects the ordinary delivery bypass", () => {
+  const result = evaluateStructuredFinalization({ path: "ordinary" });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.equal(result.nextStep, "stop");
+  assert.ok(result.remainder.some((entry) => entry.includes("ordinary delivery path")));
+});

@@ -66,7 +66,10 @@ function lensEvidenceRemainder(handoff) {
   });
   const remainder = matrixValidation.errors.map((error) => `acceptance matrix: ${error}`);
   const claimedRows = new Map();
-  for (const lens of Array.isArray(handoff.reviewLenses) ? handoff.reviewLenses : []) {
+  const reviewLenses = handoff.reviewLenses
+    ?? handoff.records?.["lens-ownership"]
+    ?? [];
+  for (const lens of Array.isArray(reviewLenses) ? reviewLenses : []) {
     const id = text(lens?.id ?? lens?.name) ?? "review lens";
     if (text(lens?.headSha ?? lens?.head) !== expectedHead) {
       remainder.push(`${id} review lens is not bound to handoff head ${expectedHead}`);
@@ -156,6 +159,14 @@ export function evaluateStructuredFinalization(handoff) {
     };
   }
   const convergence = evaluateConvergence(handoff);
+  if (convergence.outcome === "ordinary") {
+    return {
+      ...convergence,
+      outcome: "actionable remainder",
+      remainder: ["structured finalization cannot use the ordinary delivery path"],
+      nextStep: "stop",
+    };
+  }
   const lensRemainder = lensEvidenceRemainder(handoff);
   const finalRemainder = [...convergence.remainder, ...lensRemainder];
   const finalOutcome = finalRemainder.length === 0 ? "verified" : "actionable remainder";
