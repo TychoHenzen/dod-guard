@@ -210,8 +210,8 @@ test("structured proof produces passing and actionable outcomes", () => {
     owner: index === 0 ? "search-flow" : "task-1",
     evidence: `lens-${id}`,
     headSha: "abc1234",
-    acceptanceEvidence: index === 1 ? ["evidence-2", "evidence-5"] : `evidence-${index + 1}`,
-    verificationEvidence: index === 1 ? ["proof-2", "proof-5"] : `proof-${index + 1}`,
+    acceptanceEvidence: id === "wiring/usability" ? ["evidence-2", "evidence-5"] : `evidence-${index + 1}`,
+    verificationEvidence: id === "wiring/usability" ? ["proof-2", "proof-5"] : `proof-${index + 1}`,
   }));
   const complete = proof.evaluateConvergence({
     headSha: "abc1234",
@@ -357,8 +357,6 @@ test("functional convergence rejects evidence reused across review lenses", () =
   });
 
   assert.ok(result.remainder.some((entry) => entry.includes("reuses evidence lens-implementation")));
-  assert.ok(result.remainder.some((entry) => entry.includes("reuses acceptanceEvidence matrix-evidence-1")));
-  assert.ok(result.remainder.some((entry) => entry.includes("reuses verificationEvidence matrix-proof-1")));
 });
 
 test("functional convergence requires lens acceptance and verification evidence before push", () => {

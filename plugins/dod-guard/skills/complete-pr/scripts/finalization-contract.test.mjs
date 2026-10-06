@@ -17,8 +17,8 @@ const createReviewLenses = () => proof.REQUIRED_REVIEW_LENSES.map((id, index) =>
   owner: "task-1",
   evidence: `lens-${id}`,
   headSha: "proof-head",
-  acceptanceEvidence: index === 1 ? ["matrix-evidence-2", "matrix-evidence-5"] : `matrix-evidence-${index + 1}`,
-  verificationEvidence: index === 1 ? ["matrix-proof-2", "matrix-proof-5"] : `matrix-proof-${index + 1}`,
+  acceptanceEvidence: id === "wiring/usability" ? ["matrix-evidence-2", "matrix-evidence-5"] : `matrix-evidence-${index + 1}`,
+  verificationEvidence: id === "wiring/usability" ? ["matrix-proof-2", "matrix-proof-5"] : `matrix-proof-${index + 1}`,
 }));
 const validConvergenceInput = () => {
   const reviewLenses = createReviewLenses();

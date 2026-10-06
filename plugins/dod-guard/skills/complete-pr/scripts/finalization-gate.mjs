@@ -19,6 +19,9 @@ function lensEvidenceRemainder(handoff) {
   const expectedHead = text(handoff.headSha);
   if (!expectedHead) return ["finalization needs an exact pushed head"];
   const matrixReference = (field, value, label) => {
+    if (values(value).length === 0) {
+      return { error: `${label} is not mapped in the acceptance matrix`, rows: [] };
+    }
     const rows = [];
     for (const reference of values(value)) {
       const matches = matrix.filter((row) => text(row?.[field]) === reference);
@@ -65,15 +68,19 @@ function lensEvidenceRemainder(handoff) {
     }
     const ownerAcceptance = values(ownerTask?.acceptanceEvidence);
     const ownerVerification = values(ownerTask?.verificationEvidence);
+    const lensAcceptance = values(lens?.acceptanceEvidence);
+    const lensVerification = values(lens?.verificationEvidence);
     if (
       ownerAcceptance.length === 0
-      || !values(lens?.acceptanceEvidence).every((evidence) => ownerAcceptance.includes(evidence))
+      || lensAcceptance.length === 0
+      || !lensAcceptance.every((evidence) => ownerAcceptance.includes(evidence))
     ) {
       remainder.push(`${id} owner task needs mapped acceptance evidence`);
     }
     if (
       ownerVerification.length === 0
-      || !values(lens?.verificationEvidence).every((evidence) => ownerVerification.includes(evidence))
+      || lensVerification.length === 0
+      || !lensVerification.every((evidence) => ownerVerification.includes(evidence))
     ) {
       remainder.push(`${id} owner task needs mapped verification evidence`);
     }
