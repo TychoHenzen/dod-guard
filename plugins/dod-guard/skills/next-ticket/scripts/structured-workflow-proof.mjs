@@ -192,7 +192,8 @@ export function evaluateConvergence({
     remainder.push(message);
   };
   const expectedHeadSha = normalizedIdentifier(headSha);
-  const postPushValidation = expectedHeadSha !== null || acceptanceMatrix !== null;
+  const postPushValidation =
+    expectedHeadSha !== null || (acceptanceMatrix !== null && acceptanceMatrix !== undefined);
   if (postPushValidation && !expectedHeadSha) {
     addRemainder("Acceptance and verification", "structured convergence needs an exact pushed head");
   }
@@ -306,6 +307,8 @@ export function evaluateConvergence({
   }
   const seenLenses = new Set();
   const lensEvidenceOwners = new Map();
+  const lensAcceptanceEvidenceOwners = new Map();
+  const lensVerificationEvidenceOwners = new Map();
   const matrixEvidence = new Set(
     (Array.isArray(acceptanceMatrix) ? acceptanceMatrix : [])
       .map((row) => normalizedIdentifier(row?.evidence))
@@ -386,6 +389,22 @@ export function evaluateConvergence({
               );
             } else {
               lensEvidenceOwners.set(evidence, id);
+            }
+          }
+          for (const [field, owners] of [
+            ["acceptanceEvidence", lensAcceptanceEvidenceOwners],
+            ["verificationEvidence", lensVerificationEvidenceOwners],
+          ]) {
+            for (const evidence of evidenceValues(lens[field])) {
+              const previousLens = owners.get(evidence);
+              if (previousLens) {
+                addRemainder(
+                  "Functional decomposition",
+                  `${id} reuses ${field} ${evidence} already assigned to ${previousLens} review lens`,
+                );
+              } else {
+                owners.set(evidence, id);
+              }
             }
           }
         }

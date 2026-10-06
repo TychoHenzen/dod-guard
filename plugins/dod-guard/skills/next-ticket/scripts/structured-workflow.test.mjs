@@ -339,8 +339,8 @@ test("functional convergence rejects evidence reused across review lenses", () =
     id,
     owner: "task-1",
     evidence: index === 1 ? "lens-implementation" : `lens-${id}`,
-    acceptanceEvidence: `matrix-evidence-${index + 1}`,
-    verificationEvidence: `matrix-proof-${index + 1}`,
+    acceptanceEvidence: index === 1 ? "matrix-evidence-1" : `matrix-evidence-${index + 1}`,
+    verificationEvidence: index === 1 ? "matrix-proof-1" : `matrix-proof-${index + 1}`,
   }));
   const result = proof.evaluateConvergence({
     records: recordsWithRequiredKeys(reviewLenses),
@@ -357,6 +357,8 @@ test("functional convergence rejects evidence reused across review lenses", () =
   });
 
   assert.ok(result.remainder.some((entry) => entry.includes("reuses evidence lens-implementation")));
+  assert.ok(result.remainder.some((entry) => entry.includes("reuses acceptanceEvidence matrix-evidence-1")));
+  assert.ok(result.remainder.some((entry) => entry.includes("reuses verificationEvidence matrix-proof-1")));
 });
 
 test("functional convergence requires lens acceptance and verification evidence before push", () => {

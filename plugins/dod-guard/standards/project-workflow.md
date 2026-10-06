@@ -152,8 +152,8 @@ resolves to one task or slice owner; its evidence must be declared by that
 owner and bound to the accepted head. Every declared evidence identifier is
 unique; reuse the underlying commit or check with a distinct owner-specific
 identifier rather than redeclaring one token. Every evidence reference resolves
-to its owner. Every acceptance
-criterion and matrix row has fresh evidence at the exact head. No item is
+to its owner. Every acceptance criterion and matrix row has fresh evidence at
+the exact head. No item is
 contradicted or unresolved. The
 required-context and base/mergeability
 checkpoint must also be stable at that exact head. Codex's built-in Review

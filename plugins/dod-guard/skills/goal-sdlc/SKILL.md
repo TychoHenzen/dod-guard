@@ -484,7 +484,9 @@ After refinement:
 - Verify every linked child exists, is linked, matches one functional slice, and is Todo.
 - Verify every named parent checklist task has an owner and observable evidence; when it
   owns cross-cutting work without a child, record the task object with
-  `parentLevel: "convergence"` as defined in `standards/project-workflow.md`.
+  `parentLevel: "convergence"` as defined in `standards/project-workflow.md`;
+  the task still carries its `id`, implementation `evidence`, and explicit
+  `acceptanceEvidence` and `verificationEvidence` fields.
 - Verify every declared functional slice is represented by a linked child or an
   explicitly marked parent-level task.
 - If the parent remains Backlog, repair the status and read it back before implementation.
