@@ -141,6 +141,10 @@ count or category set; finalize every linked child and every parent-level task
 that owns implementation, wiring and end-to-end usability, code quality, or
 failure/recovery work. Resolve the
 shared Project number, REST item IDs, Status-field ID, and `Done` option ID once.
+Require every parent-level task that owns one of those review lenses to carry
+explicit acceptance and verification evidence in the durable handoff and read
+it back before finalizing the Project item, even when it has no linked child
+commit.
 Use the shared status-write runner with the child item IDs first and the parent item ID last:
 
 ```text

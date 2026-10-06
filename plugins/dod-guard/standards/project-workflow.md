@@ -90,6 +90,8 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
 - `implementation-plan`: affected owners, approach, and verification approach.
 - `task-list`: ordered tasks with a clear dependency and an `independent`
   marker only when a task can be committed and closed separately.
+- `lens-ownership`: the implementation, wiring/usability, quality, and
+  failure/recovery owners with observable evidence for each lens.
 
 `refine-backlog-item` owns these records. It keeps a material unresolved
 requirement in `Backlog` and moves a coherent PBI to `Todo`. `next-ticket`
@@ -100,6 +102,7 @@ files, commits, and checks. It does not create a parallel local plan.
 
 Before a structured PBI gets a draft PR, `submit-draft-pr` compares the
 implementation with the outcome, requirements, clarifications, plan, tasks,
+lens ownership,
 acceptance criteria, and verification evidence in the `## Implementation
 handoff` comment. That comment is the one evidence record. The draft PR body
 links it instead of restating it:

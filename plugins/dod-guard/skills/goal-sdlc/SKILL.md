@@ -436,7 +436,7 @@ and verified; avoid tiny administrative subtasks. Create one linked child per
 useful unit only when independent tracking is useful, and keep dependent steps
 in the parent checklist. Do not create children to fill a fixed category list. Explicitly assess implementation,
 wiring and end-to-end usability, refactoring and code quality, and
-fixing/failure and recovery reliability; attach each concern to its owning
+failure/recovery reliability; attach each concern to its owning
 slice or parent-level task.
 
 #### Review lenses
@@ -468,7 +468,7 @@ slice or parent-level task.
 - When adjacent cleanup is relevant, keep it bounded and record why no cleanup is safe when applicable.
 - The owning slice or parent-level task must either make a justified cleanup or record evidence that no safe cleanup exists.
 
-##### D. Fixing and reliability
+##### D. Failure/recovery reliability
 
 - Fix errors found in the touched paths, required suites, integration path, or lint/type checks, and act on Quality Guard findings when they identify an in-scope problem.
 - Do not label relevant failures “pre-existing” to defer them.

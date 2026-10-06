@@ -234,7 +234,7 @@ from the directory containing this skill, then read
 `<plugin-root>/standards/project-workflow.md`. Do not assume the target checkout
 contains the shared standard. Keep these named records in
 `## Implementation notes`: `requirements`, `clarifications`,
-`implementation-plan`, and `task-list`. Use the existing discovery markers as
+`implementation-plan`, `task-list`, and `lens-ownership`. Use the existing discovery markers as
 the evidence inside those records. The task list must identify dependencies and
 mark a task `independent` only when it can be committed and closed separately.
 Write each record as a distinct named subsection, keep the task order stable,
@@ -275,7 +275,7 @@ label applies. Confirm unknown priority explains missing evidence and effort
 is below 13 before moving that PBI to `Todo` with the shared REST Project status
 writer.
 For a structured PBI, also confirm the named `requirements`, `clarifications`,
-`implementation-plan`, and `task-list` records are present and coherent; every
+`implementation-plan`, `task-list`, and `lens-ownership` records are present and coherent; every
 linked child matches one independently deliverable functional slice in the
 task list, is actionable, and is `Todo`; and the four review lenses have an
 owning child or parent-level task before moving the parent to `Todo`. Do not

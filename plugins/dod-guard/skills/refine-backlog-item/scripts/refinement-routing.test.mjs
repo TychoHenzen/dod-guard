@@ -88,11 +88,19 @@ test("requires durable discovery records and selective re-refinement", () => {
 });
 
 test("uses functional decomposition with cross-cutting review lenses", () => {
+  const structuredParentSection = skill.slice(
+    skill.indexOf("For a structured parent PBI"),
+    skill.indexOf("Apply the same research", skill.indexOf("For a structured parent PBI")),
+  );
+
   assert.match(skill, /use functional decomposition/);
   assert.match(skill, /independently\s+implemented, tested, and verified/);
   assert.match(skill, /no\s+child is required merely to fill a fixed\s+category list/);
-  assert.match(skill, /implementation, wiring and[\s\S]*end-to-end usability[\s\S]*refactoring and code quality[\s\S]*failure\/recovery reliability/);
-  assert.match(skill, /these are review lenses, not mandatory child categories/);
+  assert.match(structuredParentSection, /implementation, wiring and/);
+  assert.match(structuredParentSection, /end-to-end usability/);
+  assert.match(structuredParentSection, /refactoring and code quality/);
+  assert.match(structuredParentSection, /failure\/recovery reliability/);
+  assert.match(structuredParentSection, /these are review lenses, not mandatory child categories/);
   assert.match(skill, /map every task to its functional slice/);
   assert.match(skill, /every\s+linked child matches one independently deliverable functional slice/);
   assert.doesNotMatch(skill, /require exactly one linked child for each category/);

@@ -10,6 +10,14 @@ export const REQUIRED_RECORDS = [
   "clarifications",
   "implementation-plan",
   "task-list",
+  "lens-ownership",
+];
+
+export const REQUIRED_REVIEW_LENSES = [
+  "implementation",
+  "wiring/usability",
+  "quality",
+  "reliability",
 ];
 
 export const PROOF_SCENARIOS = ["passing", "incomplete", "ordinary"];
@@ -36,6 +44,7 @@ export function evaluateConvergence({
   records = {},
   tasks = [],
   children = [],
+  reviewLenses = [],
   acceptance = [],
   acceptanceMatrix = null,
   headSha = null,
@@ -87,9 +96,38 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${task.id} references missing functional slice ${task.child}`);
     }
   }
+  const taskOwners = new Set();
+  for (const task of tasks) {
+    if (task.child && taskOwners.has(task.child)) {
+      addRemainder("Functional decomposition", `${task.child} slice has more than one owning task`);
+    } else if (task.child) {
+      taskOwners.add(task.child);
+    }
+  }
   for (const slice of childIds) {
-    if (!tasks.some((task) => task.child === slice)) {
+    if (!taskOwners.has(slice)) {
       addRemainder("Functional decomposition", `${slice} slice needs an owning task`);
+    }
+  }
+  const seenLenses = new Set();
+  for (const lens of reviewLenses) {
+    const id = lens.id ?? lens.name;
+    if (!id || !REQUIRED_REVIEW_LENSES.includes(id)) {
+      addRemainder("Functional decomposition", "review-lens ownership uses an unknown lens");
+    } else if (seenLenses.has(id)) {
+      addRemainder("Functional decomposition", `${id} review lens is declared more than once`);
+    } else {
+      seenLenses.add(id);
+      if (!lens.owner || !lens.evidence) {
+        addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
+      } else if (!tasks.some((task) => task.id === lens.owner || task.child === lens.owner)) {
+        addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
+      }
+    }
+  }
+  for (const lens of REQUIRED_REVIEW_LENSES) {
+    if (!seenLenses.has(lens)) {
+      addRemainder("Functional decomposition", `${lens} review lens needs an owning task`);
     }
   }
   for (const criterion of acceptance) {
@@ -166,6 +204,7 @@ export function scenarioResult(scenario = "passing") {
       records: { requirements: true, clarifications: true, "implementation-plan": true },
       tasks: [{ id: "task-2", child: "wiring", evidence: "" }],
       children: [{ id: "implementation", evidence: "mapped" }],
+      reviewLenses: [{ id: "implementation", owner: "task-2", evidence: "mapped" }],
       acceptance: [{ id: "AC-2", evidence: "" }],
       contradictions: ["user path not exercised"],
     });
@@ -175,6 +214,7 @@ export function scenarioResult(scenario = "passing") {
       records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [record, true])),
       tasks: [{ id: "task-1", child: "search-flow", evidence: "commit abc123" }],
       children: [{ id: "search-flow", evidence: "mapped" }],
+      reviewLenses: REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: "mapped" })),
       acceptance: [{ id: "AC-1", evidence: "proof" }],
       acceptanceMatrix: PROOF_ACCEPTANCE_MATRIX,
       headSha: PROOF_HANDOFF.headSha,

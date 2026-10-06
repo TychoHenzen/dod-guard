@@ -75,8 +75,8 @@ Resolve the active dod-guard plugin root from the directory containing this skil
 then read `<plugin-root>/standards/project-workflow.md` and classify the PBI
 before editing. Do not assume the target checkout contains the shared standard.
 A small, clear fix may use the ordinary path. A feature or materially ambiguous
-PBI uses its `requirements`, `clarifications`, `implementation-plan`, and
-`task-list` records as the implementation handoff. Do not create a tracked
+PBI uses its `requirements`, `clarifications`, `implementation-plan`,
+`task-list`, and `lens-ownership` records as the implementation handoff. Do not create a tracked
 planning file or bypass stops for credentials, destructive or authority-bound
 actions, unrelated work, provider or head mismatch, or missing high-risk
 evidence.

@@ -92,7 +92,7 @@ Resolve the active dod-guard plugin root from the directory containing this skil
 then read `<plugin-root>/standards/project-workflow.md`. Do not assume the
 target checkout contains the shared standard. For a structured PBI, compare the pushed
 branch with its outcome, `requirements`, `clarifications`,
-`implementation-plan`, `task-list`, acceptance criteria, and verification
+`implementation-plan`, `task-list`, `lens-ownership`, acceptance criteria, and verification
 evidence before creating or updating the draft PR.
 
 Map every task and linked sub-issue to applicable evidence. For a structured

@@ -203,6 +203,7 @@ test("structured proof produces passing and actionable outcomes", () => {
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
     tasks: [{ id: "task-1", child: "search-flow", evidence: "commit abc123; test passed" }],
     children: [{ id: "search-flow", evidence: "mapped" }],
+    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: "mapped" })),
     acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
     acceptanceMatrix: acceptanceMatrix("abc1234"),
     contradictions: [],
@@ -220,6 +221,7 @@ test("structured proof produces passing and actionable outcomes", () => {
     records: { requirements: true, clarifications: true, "implementation-plan": true },
     tasks: [{ id: "task-2", child: "wiring", evidence: "" }],
     children: [{ id: "implementation", evidence: "mapped" }],
+    reviewLenses: [{ id: "implementation", owner: "task-2", evidence: "mapped" }],
     acceptance: [{ id: "AC-2", evidence: "" }],
     contradictions: ["user path not exercised"],
   });
@@ -237,6 +239,28 @@ test("structured proof produces passing and actionable outcomes", () => {
     /^- (?:Requirements and clarifications|Plan and tasks|Functional decomposition|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
   );
   assert.doesNotMatch(rendered, /Outcome: verified/);
+});
+
+test("functional convergence rejects duplicate slices, owners, and missing lenses", () => {
+  const result = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [
+      { id: "task-1", child: "search-flow", evidence: "commit one" },
+      { id: "task-2", child: "search-flow", evidence: "commit two" },
+      { id: "task-3", child: "missing-flow", evidence: "commit three" },
+    ],
+    children: [
+      { id: "search-flow", evidence: "mapped" },
+      { id: "search-flow", evidence: "mapped again" },
+    ],
+    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "mapped" }],
+  });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("search-flow functional slice is linked more than once")));
+  assert.ok(result.remainder.some((entry) => entry.includes("search-flow slice has more than one owning task")));
+  assert.ok(result.remainder.some((entry) => entry.includes("missing-flow")));
+  assert.ok(result.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")));
 });
 
 test("ordinary fixes bypass structured records", () => {
