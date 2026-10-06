@@ -17,11 +17,13 @@ const completeRecords = (lensOwnership) =>
     {},
   );
 const validConvergenceInput = () => {
-  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
     id,
     owner: "task-1",
     evidence: `lens-${id}`,
     headSha: "proof-head",
+    acceptanceEvidence: `matrix-evidence-${index + 1}`,
+    verificationEvidence: `matrix-proof-${index + 1}`,
   }));
   return {
     records: completeRecords(reviewLenses),

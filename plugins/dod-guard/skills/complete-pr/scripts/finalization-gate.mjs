@@ -13,9 +13,12 @@ function values(value) {
 function lensEvidenceRemainder(handoff) {
   const matrix = Array.isArray(handoff.acceptanceMatrix) ? handoff.acceptanceMatrix : [];
   const expectedHead = text(handoff.headSha);
+  if (!expectedHead) return ["finalization needs an exact pushed head"];
   const matrixReference = (field, value, label) => {
     const normalizedValue = text(value);
-    const matches = matrix.filter((row) => text(row?.[field]) === normalizedValue);
+    const matches = matrix.filter(
+      (row) => text(row?.[field]) === normalizedValue,
+    );
     if (!normalizedValue || matches.length === 0) {
       return `${label} is not mapped in the acceptance matrix`;
     }
@@ -23,7 +26,7 @@ function lensEvidenceRemainder(handoff) {
       return `${label} is mapped to multiple acceptance-matrix rows`;
     }
     if (text(matches[0]?.headSha) !== expectedHead) {
-      return `${label} is bound to ${text(matches[0]?.headSha) ?? "no head"}, expected ${expectedHead ?? "an exact pushed head"}`;
+      return `${label} is bound to ${text(matches[0]?.headSha) ?? "no head"}, expected ${expectedHead}`;
     }
     return null;
   };
@@ -32,22 +35,36 @@ function lensEvidenceRemainder(handoff) {
   for (const lens of Array.isArray(handoff.reviewLenses) ? handoff.reviewLenses : []) {
     const id = text(lens?.id ?? lens?.name) ?? "review lens";
     if (text(lens?.headSha ?? lens?.head) !== expectedHead) {
-      remainder.push(`${id} review lens is not bound to handoff head ${expectedHead ?? "an exact pushed head"}`);
+      remainder.push(`${id} review lens is not bound to handoff head ${expectedHead}`);
     }
     const owner = text(lens?.owner);
     const ownerTask = tasks.find((task) => text(task?.id) === owner)
       ?? tasks.find((task) => text(task?.child) === owner);
     const ownerAcceptance = values(ownerTask?.acceptanceEvidence);
     const ownerVerification = values(ownerTask?.verificationEvidence);
-    if (ownerAcceptance.length === 0 || !ownerAcceptance.includes(text(lens?.acceptanceEvidence))) {
+    if (
+      ownerAcceptance.length === 0
+      || !ownerAcceptance.includes(text(lens?.acceptanceEvidence))
+    ) {
       remainder.push(`${id} owner task needs mapped acceptance evidence`);
     }
-    if (ownerVerification.length === 0 || !ownerVerification.includes(text(lens?.verificationEvidence))) {
+    if (
+      ownerVerification.length === 0
+      || !ownerVerification.includes(text(lens?.verificationEvidence))
+    ) {
       remainder.push(`${id} owner task needs mapped verification evidence`);
     }
-    const verificationRemainder = matrixReference("proof", lens?.verificationEvidence, `${id} review lens verification evidence`);
+    const verificationRemainder = matrixReference(
+      "proof",
+      lens?.verificationEvidence,
+      `${id} review lens verification evidence`,
+    );
     if (verificationRemainder) remainder.push(verificationRemainder);
-    const acceptanceRemainder = matrixReference("evidence", lens?.acceptanceEvidence, `${id} review lens acceptance evidence`);
+    const acceptanceRemainder = matrixReference(
+      "evidence",
+      lens?.acceptanceEvidence,
+      `${id} review lens acceptance evidence`,
+    );
     if (acceptanceRemainder) remainder.push(acceptanceRemainder);
   }
   return remainder;

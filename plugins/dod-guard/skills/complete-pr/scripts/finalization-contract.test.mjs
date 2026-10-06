@@ -23,39 +23,39 @@ const createReviewLenses = () => proof.REQUIRED_REVIEW_LENSES.map((id, index) =>
 const validConvergenceInput = () => {
   const reviewLenses = createReviewLenses();
   return {
-  records: completeRecords(reviewLenses),
-  tasks: [{
-    id: "task-1",
-    child: "search-flow",
-    evidence: [
-      "commit-proof",
-      ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
+    records: completeRecords(reviewLenses),
+    tasks: [{
+      id: "task-1",
+      child: "search-flow",
+      evidence: [
+        "commit-proof",
+        ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
+      ],
+      acceptanceEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-evidence-${index + 1}`),
+      verificationEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-proof-${index + 1}`),
+    }, {
+      id: "task-2",
+      child: "settings-flow",
+      evidence: "settings-proof",
+    }],
+    children: [
+      { id: "search-flow", evidence: "slice-proof" },
+      { id: "settings-flow", evidence: "settings-slice-proof" },
     ],
-    acceptanceEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-evidence-${index + 1}`),
-    verificationEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-proof-${index + 1}`),
-  }, {
-    id: "task-2",
-    child: "settings-flow",
-    evidence: "settings-proof",
-  }],
-  children: [
-    { id: "search-flow", evidence: "slice-proof" },
-    { id: "settings-flow", evidence: "settings-slice-proof" },
-  ],
-  reviewLenses,
-  acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
-  acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
-    id: `AC-1-${index + 1}`,
-    contract: "AC-1",
-    path,
-    proof: `matrix-proof-${index + 1}`,
-    expected: "pass",
-    observed: "pass",
-    status: "pass",
-    evidence: `matrix-evidence-${index + 1}`,
+    reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+    acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
+      id: `AC-1-${index + 1}`,
+      contract: "AC-1",
+      path,
+      proof: `matrix-proof-${index + 1}`,
+      expected: "pass",
+      observed: "pass",
+      status: "pass",
+      evidence: `matrix-evidence-${index + 1}`,
+      headSha: "proof-head",
+    })),
     headSha: "proof-head",
-  })),
-  headSha: "proof-head",
   };
 };
 
@@ -113,14 +113,22 @@ test("finalization relies on executable functional convergence proof", () => {
   duplicateSliceInput.tasks[1].evidence = "other-proof";
   const duplicateSlice = proof.evaluateConvergence(duplicateSliceInput);
 
-  assert.ok(duplicateSlice.remainder.some((entry) => entry.includes("search-flow slice has more than one owning task")));
+  assert.ok(
+    duplicateSlice.remainder.some((entry) =>
+      entry.includes("search-flow slice has more than one owning task"),
+    ),
+  );
   assert.equal(duplicateSlice.outcome, "actionable remainder");
 
   const duplicateEvidenceInput = validConvergenceInput();
   duplicateEvidenceInput.tasks[1].evidence = duplicateEvidenceInput.tasks[0].evidence;
   const duplicateEvidence = proof.evaluateConvergence(duplicateEvidenceInput);
 
-  assert.ok(duplicateEvidence.remainder.some((entry) => entry.includes("evidence commit-proof is mapped more than once")));
+  assert.ok(
+    duplicateEvidence.remainder.some((entry) =>
+      entry.includes("evidence commit-proof is mapped more than once"),
+    ),
+  );
   assert.equal(duplicateEvidence.outcome, "actionable remainder");
 });
 
@@ -129,28 +137,52 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   assert.equal(valid.nextStep, "project-status.mjs");
 
   const missingUserPath = validConvergenceInput();
-  missingUserPath.acceptanceMatrix = missingUserPath.acceptanceMatrix.filter((row) => row.path !== "browser/e2e");
+  missingUserPath.acceptanceMatrix = missingUserPath.acceptanceMatrix.filter(
+    (row) => row.path !== "browser/e2e",
+  );
   const missingUserPathResult = evaluateStructuredFinalization(missingUserPath);
   assert.equal(missingUserPathResult.nextStep, "stop");
   assert.ok(missingUserPathResult.remainder.some((entry) => entry.includes("browser/e2e")));
 
   const staleEvidence = validConvergenceInput();
-  staleEvidence.acceptanceMatrix = staleEvidence.acceptanceMatrix.map((row) => ({ ...row, headSha: "old-head" }));
+  staleEvidence.acceptanceMatrix = staleEvidence.acceptanceMatrix.map(
+    (row) => ({ ...row, headSha: "old-head" }),
+  );
   const staleEvidenceResult = evaluateStructuredFinalization(staleEvidence);
   assert.equal(staleEvidenceResult.nextStep, "stop");
   assert.ok(staleEvidenceResult.remainder.some((entry) => entry.includes("expected proof-head")));
 
   const staleLens = validConvergenceInput();
-  staleLens.reviewLenses[0] = { ...staleLens.reviewLenses[0], headSha: "old-head" };
+  staleLens.reviewLenses[0] = {
+    ...staleLens.reviewLenses[0],
+    headSha: "old-head",
+  };
   const staleLensResult = evaluateStructuredFinalization(staleLens);
   assert.equal(staleLensResult.nextStep, "stop");
-  assert.ok(staleLensResult.remainder.some((entry) => entry.includes("not bound to handoff head proof-head")));
+  assert.ok(
+    staleLensResult.remainder.some((entry) =>
+      entry.includes("not bound to handoff head proof-head"),
+    ),
+  );
 
   const staleReferencedRow = validConvergenceInput();
-  staleReferencedRow.acceptanceMatrix[0] = { ...staleReferencedRow.acceptanceMatrix[0], headSha: "old-head" };
+  staleReferencedRow.acceptanceMatrix[0] = {
+    ...staleReferencedRow.acceptanceMatrix[0],
+    headSha: "old-head",
+  };
   const staleReferencedRowResult = evaluateStructuredFinalization(staleReferencedRow);
   assert.equal(staleReferencedRowResult.nextStep, "stop");
-  assert.ok(staleReferencedRowResult.remainder.some((entry) => entry.includes("implementation review lens acceptance evidence is bound to old-head")));
+  assert.ok(
+    staleReferencedRowResult.remainder.some((entry) =>
+      entry.includes("implementation review lens acceptance evidence is bound to old-head"),
+    ),
+  );
+
+  const missingHead = validConvergenceInput();
+  delete missingHead.headSha;
+  const missingHeadResult = evaluateStructuredFinalization(missingHead);
+  assert.equal(missingHeadResult.nextStep, "stop");
+  assert.ok(missingHeadResult.remainder.some((entry) => entry.includes("exact pushed head")));
 
   const unmappedUserPath = validConvergenceInput();
   unmappedUserPath.reviewLenses = unmappedUserPath.reviewLenses.map((lens) =>
@@ -170,7 +202,9 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   assert.equal(missingLensMatrixEvidenceResult.nextStep, "stop");
   assert.ok(
     missingLensMatrixEvidenceResult.remainder.some((entry) =>
-      entry.includes("implementation review lens acceptance evidence is not mapped in the acceptance matrix"),
+      entry.includes(
+        "implementation review lens needs acceptance and verification evidence",
+      ),
     ),
   );
 

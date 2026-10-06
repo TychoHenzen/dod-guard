@@ -55,10 +55,7 @@ function lensSignature(lens) {
   return JSON.stringify({
     id: normalizedIdentifier(lens.id ?? lens.name),
     owner: normalizedIdentifier(lens.owner),
-    evidence: evidenceValues(lens.evidence),
-    headSha: normalizedIdentifier(lens.headSha ?? lens.head),
-    acceptanceEvidence: evidenceValues(lens.acceptanceEvidence),
-    verificationEvidence: evidenceValues(lens.verificationEvidence),
+    evidence: [...new Set(evidenceValues(lens.evidence))].sort(),
   });
 }
 
@@ -69,6 +66,10 @@ function validateLensOwnershipRecord(record, reviewLenses, section, addRemainder
   }
   const recordById = new Map();
   for (const [index, lens] of record.entries()) {
+    if (!lens || typeof lens !== "object" || Array.isArray(lens)) {
+      addRemainder(section, `lens-ownership entry ${index + 1} must be an object`);
+      continue;
+    }
     const id = normalizedIdentifier(lens?.id ?? lens?.name);
     if (!id) {
       addRemainder(section, `lens-ownership entry ${index + 1} needs a non-empty id`);
@@ -298,8 +299,14 @@ export function evaluateConvergence({
     } else {
       seenLenses.add(id);
       const lensHeadSha = normalizedIdentifier(lens.headSha ?? lens.head);
+      const missingAcceptanceEvidence =
+        postPushValidation && evidenceValues(lens.acceptanceEvidence).length === 0;
+      const missingVerificationEvidence =
+        postPushValidation && evidenceValues(lens.verificationEvidence).length === 0;
       if (!lens.owner || evidenceValues(lens.evidence).length === 0) {
         addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
+      } else if (missingAcceptanceEvidence || missingVerificationEvidence) {
+        addRemainder("Functional decomposition", `${id} review lens needs acceptance and verification evidence`);
       } else if (postPushValidation && lensHeadSha !== expectedHeadSha) {
         addRemainder("Functional decomposition", `${id} review lens evidence is bound to ${lensHeadSha ?? "no head"}, expected ${expectedHeadSha ?? "an exact pushed head"}`);
       } else {
@@ -435,6 +442,8 @@ export function scenarioResult(scenario = "passing") {
       owner: index === 0 ? "search-flow" : "task-1",
       evidence: `lens-${id}`,
       headSha: PROOF_HANDOFF.headSha,
+      acceptanceEvidence: `evidence-${index + 1}`,
+      verificationEvidence: `proof-${index + 1}`,
     }));
     return evaluateConvergence({
       records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [

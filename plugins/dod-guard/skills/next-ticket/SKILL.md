@@ -78,6 +78,10 @@ Tasks that own cross-cutting parent work without a linked child must mark that
 task with `parentLevel: "convergence"`; otherwise every task names a functional
 slice. The required lens IDs are `implementation`, `wiring/usability`,
 `quality`, and `reliability`; descriptive prose maps to those IDs.
+The same functional-slice and lens-ownership handoff is consumed by
+`refine-backlog-item`, `submit-draft-pr`, `complete-pr`, and
+`standards/project-workflow.md`; keep their one-parent-branch and one-PR
+delivery boundary aligned when changing this contract.
 
 Stop and name the missing section when the issue is incomplete. Do not invent
 requirements.
