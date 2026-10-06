@@ -54,9 +54,10 @@ that cross-cutting ownership explicitly. Every linked child maps back to
 exactly one declared slice.
 
 Implementation, wiring and end-to-end usability, code quality, and
-failure/recovery each need an owning slice or parent-level task with observable
-evidence. There is no fixed child count or category set. The branch does not
-replace these records: it supplies the implementation evidence they request.
+failure/recovery each need exactly one owning slice or parent-level task with
+observable evidence bound to the accepted head. There is no fixed child count
+or category set. The branch does not replace these records: it supplies the
+implementation evidence they request.
 The executable proof uses the canonical lens IDs `implementation`,
 `wiring/usability`, `quality`, and `reliability`; prose may expand those IDs
 to the corresponding user-facing concern.
@@ -102,8 +103,9 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
 - `implementation-plan`: affected owners, approach, and verification approach.
 - `task-list`: ordered tasks with a clear dependency and an `independent`
   marker only when a task can be committed and closed separately.
-- `lens-ownership`: the implementation, wiring/usability, quality, and
-  failure/recovery owners with observable evidence for each lens.
+- `lens-ownership`: exactly one implementation, wiring/usability, quality, and
+  failure/recovery owner with observable evidence and the accepted head for
+  each lens.
 
 `refine-backlog-item` owns these records. It keeps a material unresolved
 requirement in `Backlog` and moves a coherent PBI to `Todo`. `next-ticket`
@@ -128,9 +130,12 @@ links it instead of restating it:
 
 Convergence is passing only when every named record exists and every declared
 slice, task, and linked functional-slice child is mapped exactly once by the
-implementation handoff. Every declared evidence identifier is unique, and every
-evidence reference resolves to its owner. Every acceptance criterion and matrix
-row has fresh evidence at the exact head. No item is contradicted or unresolved. The
+implementation handoff. Each canonical review lens appears exactly once and
+resolves to one task or slice owner; its evidence must be declared by that
+owner and bound to the accepted head. Every declared evidence identifier is
+unique, and every evidence reference resolves to its owner. Every acceptance
+criterion and matrix row has fresh evidence at the exact head. No item is
+contradicted or unresolved. The
 required-context and base/mergeability
 checkpoint must also be stable at that exact head. Codex's built-in Review
 Summary consumes that same matrix and checkpoint; neither is copied into a

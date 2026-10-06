@@ -30,6 +30,7 @@ const validConvergenceInput = () => ({
     id,
     owner: "task-1",
     evidence: `lens-${id}`,
+    headSha: "proof-head",
   })),
   acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
   acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
@@ -45,6 +46,13 @@ const validConvergenceInput = () => ({
   })),
   headSha: "proof-head",
 });
+const finalizationGate = (handoff) => {
+  const convergence = proof.evaluateConvergence(handoff);
+  return {
+    convergence,
+    nextStep: convergence.outcome === "verified" ? "project-status.mjs" : "stop",
+  };
+};
 
 test("finalizes each structured parent child only after the guarded merge", () => {
   const finalization = skill.slice(skill.indexOf("## Finalize the parent unit"));
@@ -87,7 +95,12 @@ test("finalization relies on executable functional convergence proof", () => {
       evidence: ["commit", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
     }],
     children: [{ id: "implemented-flow", evidence: "mapped" }],
-    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
+    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+      id,
+      owner: "task-1",
+      evidence: `lens-${id}`,
+      headSha: "proof-head",
+    })),
   });
 
   assert.equal(result.outcome, "actionable remainder");
@@ -112,12 +125,11 @@ test("finalization relies on executable functional convergence proof", () => {
     ],
     children: [
       { id: "same-flow", evidence: "slice-proof" },
-      { id: "same-flow", evidence: "other-slice-proof" },
       { id: "other-flow", evidence: "other-evidence" },
     ],
   });
 
-  assert.ok(duplicateSlice.remainder.some((entry) => entry.includes("same-flow functional slice is linked more than once")));
+  assert.ok(duplicateSlice.remainder.some((entry) => entry.includes("same-flow slice has more than one owning task")));
   assert.equal(duplicateSlice.outcome, "actionable remainder");
 
   const duplicateEvidence = proof.evaluateConvergence({
@@ -134,6 +146,35 @@ test("finalization relies on executable functional convergence proof", () => {
 
   assert.ok(duplicateEvidence.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")));
   assert.equal(duplicateEvidence.outcome, "actionable remainder");
+});
+
+test("finalization gate blocks stale or unmapped user-path evidence", () => {
+  const valid = finalizationGate(validConvergenceInput());
+  assert.equal(valid.nextStep, "project-status.mjs");
+
+  const missingUserPath = validConvergenceInput();
+  missingUserPath.acceptanceMatrix = missingUserPath.acceptanceMatrix.filter((row) => row.path !== "browser/e2e");
+  const missingUserPathResult = finalizationGate(missingUserPath);
+  assert.equal(missingUserPathResult.nextStep, "stop");
+  assert.ok(missingUserPathResult.convergence.remainder.some((entry) => entry.includes("browser/e2e")));
+
+  const staleEvidence = validConvergenceInput();
+  staleEvidence.acceptanceMatrix = staleEvidence.acceptanceMatrix.map((row) => ({ ...row, headSha: "old-head" }));
+  const staleEvidenceResult = finalizationGate(staleEvidence);
+  assert.equal(staleEvidenceResult.nextStep, "stop");
+  assert.ok(staleEvidenceResult.convergence.remainder.some((entry) => entry.includes("expected proof-head")));
+
+  const unmappedUserPath = validConvergenceInput();
+  unmappedUserPath.reviewLenses = unmappedUserPath.reviewLenses.map((lens) =>
+    lens.id === "wiring/usability" ? { ...lens, evidence: "missing-user-path-proof" } : lens,
+  );
+  const unmappedUserPathResult = finalizationGate(unmappedUserPath);
+  assert.equal(unmappedUserPathResult.nextStep, "stop");
+  assert.ok(
+    unmappedUserPathResult.convergence.remainder.some((entry) =>
+      entry.includes("references undeclared evidence missing-user-path-proof"),
+    ),
+  );
 });
 
 test("keeps routine ProjectV2 guidance out of GraphQL", async () => {

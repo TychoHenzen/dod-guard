@@ -136,7 +136,7 @@ export function evaluateConvergence({
       );
     }
   }
-  const validTaskIds = new Set();
+  const seenTaskIds = new Set();
   const normalizedTaskIds = new Map();
   for (const [index, task] of taskList.entries()) {
     const taskId = normalizedIdentifier(task.id);
@@ -145,10 +145,10 @@ export function evaluateConvergence({
       continue;
     }
     normalizedTaskIds.set(task, taskId);
-    if (validTaskIds.has(taskId)) {
+    if (seenTaskIds.has(taskId)) {
       addRemainder("Plan and tasks", `${taskId} task id is declared more than once`);
     } else {
-      validTaskIds.add(taskId);
+      seenTaskIds.add(taskId);
     }
     if (evidenceValues(task.evidence).length === 0) {
       addRemainder("Plan and tasks", `${taskId} needs implementation evidence`);
@@ -224,16 +224,17 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${id} review lens is declared more than once`);
     } else {
       seenLenses.add(id);
+      const lensHeadSha = normalizedIdentifier(lens.headSha ?? lens.head);
       if (!lens.owner || evidenceValues(lens.evidence).length === 0) {
         addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
+      } else if (headSha && lensHeadSha !== headSha) {
+        addRemainder("Functional decomposition", `${id} review lens evidence is bound to ${lensHeadSha ?? "no head"}, expected ${headSha}`);
       } else {
         const owner = normalizedIdentifier(lens.owner);
-        const ownerTasks = taskList.filter(
-          (task) => {
-            const taskId = normalizedTaskIds.get(task);
-            return taskId && (taskId === owner || normalizedIdentifier(task.child) === owner);
-          },
-        );
+        const taskIdOwners = taskList.filter((task) => normalizedTaskIds.get(task) === owner);
+        const ownerTasks = taskIdOwners.length > 0
+          ? taskIdOwners
+          : taskList.filter((task) => normalizedIdentifier(task.child) === owner);
         if (ownerTasks.length === 0) {
           addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
         } else if (ownerTasks.length > 1) {
@@ -369,6 +370,7 @@ export function scenarioResult(scenario = "passing") {
         id,
         owner: index === 0 ? "search-flow" : "task-1",
         evidence: `lens-${id}`,
+        headSha: PROOF_HANDOFF.headSha,
       })),
       acceptance: [{ id: "AC-1", evidence: "proof" }],
       acceptanceMatrix: PROOF_ACCEPTANCE_MATRIX,

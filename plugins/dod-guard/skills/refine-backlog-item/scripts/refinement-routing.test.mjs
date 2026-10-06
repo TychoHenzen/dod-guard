@@ -35,6 +35,7 @@ const validConvergenceInput = () => ({
     id,
     owner: "task-1",
     evidence: `lens-${id}`,
+    headSha: "proof-head",
   })),
   acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
   acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
@@ -198,10 +199,18 @@ test("routes functional decomposition through executable convergence proof", () 
     records: completeRecords(),
     tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
     children: [{ id: "search-flow", evidence: "mapped" }],
-    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "missing-proof" }],
+    reviewLenses: [
+      {
+        id: "implementation",
+        owner: "task-1",
+        evidence: "missing-proof",
+      },
+    ],
   });
   assert.ok(
-    unmappedEvidence.remainder.some((entry) => entry.includes("references undeclared evidence missing-proof")),
+    unmappedEvidence.remainder.some((entry) =>
+      entry.includes("references undeclared evidence missing-proof"),
+    ),
   );
   assert.ok(
     unmappedEvidence.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")),
