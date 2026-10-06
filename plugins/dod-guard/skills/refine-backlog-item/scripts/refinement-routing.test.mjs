@@ -200,6 +200,9 @@ test("routes functional decomposition through executable convergence proof", () 
   assert.ok(
     unmappedEvidence.remainder.some((entry) => entry.includes("references undeclared evidence missing-proof")),
   );
+  assert.ok(
+    unmappedEvidence.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")),
+  );
 });
 
 test("manual fixtures include each route and its record markers", () => {

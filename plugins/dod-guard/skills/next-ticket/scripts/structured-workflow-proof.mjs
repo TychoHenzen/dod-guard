@@ -182,7 +182,11 @@ export function evaluateConvergence({
   for (const task of taskList) {
     const taskId = normalizedTaskIds.get(task);
     const slice = normalizedIdentifier(task.child);
-    if (task.child !== undefined && !slice) {
+    if (task.parentLevel !== undefined && task.parentLevel !== "convergence") {
+      addRemainder("Functional decomposition", `${taskId ?? "task"} uses an unknown parent-level marker`);
+    } else if (slice && task.parentLevel === "convergence") {
+      addRemainder("Functional decomposition", `${taskId ?? "task"} cannot combine a functional slice with the parent-level convergence marker`);
+    } else if (task.child !== undefined && !slice) {
       addRemainder("Functional decomposition", `${taskId ?? "task"} needs a functional slice id`);
     } else if (slice && !childIds.has(slice)) {
       addRemainder("Functional decomposition", `${taskId ?? "task"} references missing functional slice ${slice}`);
