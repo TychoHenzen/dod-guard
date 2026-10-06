@@ -99,9 +99,9 @@ the issue in Backlog. Epics stay there until split into independently
 deliverable PBIs. `/next-ticket`
 implements that PBI, maps every acceptance criterion to fresh evidence, and
 commits and pushes. `/submit-draft-pr` submits its verified draft pull
-request. `/review-pr` is the one independent review: it gets Codex's automatic
-GitHub PR review, triggering it once when needed, and reports its findings with
-a recommendation. After review, `/complete-pr` treats its invocation as
+request. `/review-pr` is the one independent review: it scans the changed
+files with quality-guard, runs four reviewer agents, and posts one comment-only
+review with a recommendation. After review, `/complete-pr` treats its invocation as
 acceptance of the current head and completes the guarded merge.
 `/fix-pr-review` revalidates and fixes selected review findings before that
 acceptance. Each delivery skill resolves the current repository and requires
@@ -178,7 +178,7 @@ GitHub-backed skills share the request policy in
 | `/teach-back` | Explain a repository concept while a curious student tests the explanation. |
 | `/step-by-step` | Run one explicit ordered plan through fresh bounded subagents. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
-| `/review-pr` | Get Codex's automatic review of a GitHub pull request and report its findings with a recommendation. |
+| `/review-pr` | Scan a GitHub pull request's changed files and review them with four agents into one comment-only review. |
 | `/fix-pr-review` | Revalidate and fix selected GitHub review findings. |
 | `/complete-pr` | Complete an explicitly accepted draft through guarded REST merge and branch deletion. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |

@@ -654,10 +654,8 @@ test("goal-sdlc suppresses duplicate review triggers and publishes one Project c
   const skill = await readSkill();
   for (const marker of [
     "## Review trigger lifecycle",
-    "completed Codex review\nsuppresses every later review trigger",
-    "required two-minute wait",
-    "draft gets exactly one `@codex review` trigger",
-    "emits a second trigger",
+    "completed review\nsuppresses every later review",
+    "never posts a second review for the same PR",
     "raw items, parent items, child items",
     "parent items with `Done`",
     "child items with `Done`",
@@ -741,7 +739,8 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.match(skill, /main thread is the high-level orchestrator/);
   assert.match(skill, /Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up/);
   assert.match(skill, /\[dod-guard:next-ticket\]\(\.\.\/next-ticket\/SKILL\.md\)/);
-  assert.match(skill, /`\/review-pr` gets Codex's automatic PR review and is the one code review/);
+  assert.match(skill, /`\/review-pr` scans the changed files, runs its reviewer agents, and is the one\s+code review/);
+  assert.doesNotMatch(skill, /@codex review|Codex's automatic/);
   assert.match(skill, /Leave the PR a draft\. `complete-pr` owns the ready transition/);
   assert.doesNotMatch(skill, /draft=false|published\/non-draft/);
   assert.match(skill, /\[dod-guard:fix-pr-review\]\(\.\.\/fix-pr-review\/SKILL\.md\)/);

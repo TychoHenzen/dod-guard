@@ -7,7 +7,7 @@ argument-hint: [GitHub PR URL or #number] [GH-<id> finding IDs]
 # Fix pull request review findings
 
 Fix selected findings from a GitHub pull request review, usually the `GH-<id>`
-findings that `/dod-guard:review-pr` reported from Codex's review. Revalidate
+findings that `/dod-guard:review-pr` posted. Revalidate
 each finding against the current head before editing. Keep stale, unsupported,
 and unresolved findings visible.
 

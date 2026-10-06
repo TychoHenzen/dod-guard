@@ -62,13 +62,13 @@ referenced skill from the active plugin root before invoking it.
    as the implementation handoff. Do not select another ticket.
 4. Invoke `/submit-draft-pr <issue-number>` and retain the returned pull
    request and head.
-5. Invoke `/review-pr <pull-request>`. It gets Codex's review of the draft,
-   triggering it once when needed, and waits for it to complete. A completed
+5. Invoke `/review-pr <pull-request>`. It scans the changed files, runs its
+   reviewer agents, and posts one comment-only review. A completed
    `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` recommendation is the one review of
    this pull request, including when it contains findings. Read the
    recommendation and reviewed commit back from the remote PR; no local ledger
-   is needed. If `/review-pr` stops on a `hold`, record its reason and the PR
-   URL as a durable blocker and stop. For findings, invoke
+   is needed. If `/review-pr` stops without posting a review, record its
+   reason and the PR URL as a durable blocker and stop. For findings, invoke
    `/fix-pr-review <pull-request> <finding-ids>` with every valid unresolved
    finding, rerun affected checks, and respond to and resolve each finding.
    Do not invoke another review after those fixes.

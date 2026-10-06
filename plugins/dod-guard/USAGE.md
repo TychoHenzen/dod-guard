@@ -65,8 +65,8 @@ Run the complete lifecycle without intermediate confirmation:
 `/complete-pr` in order. It asks only the batched clarification questions that
 refinement requires. It fixes every validated actionable review finding and
 uses that completed review's recommendation before the guarded merge; it does
-not invoke another review after fixes. If Codex's review cannot be obtained,
-`/review-pr` stops with its reason and the run stops with that blocker.
+not invoke another review after fixes. If `/review-pr` cannot post
+its review, the run stops with that blocker.
 
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:
@@ -242,21 +242,21 @@ evidence is recorded in a comment.
 agent must not approve its pull request, mark it ready, merge it, or close the
 parent issue.
 
-Get the independent review of a GitHub pull request from Codex's automatic PR
-review:
+Review a GitHub pull request's changed files:
 
 ```text
 /dod-guard:review-pr
 /dod-guard:review-pr https://github.com/owner/repository/pull/42
 ```
 
-Codex reviews a ready pull request automatically, but never a draft. The skill
-comments `@codex review` once when a draft has no review, or when a ready pull
-request shows no review after two minutes. It waits for Codex's summary to
-report the code review complete, then lists each finding as `GH-<id>` with its
-`P0`/`P1`/`P2` severity and a recommendation: `BLOCK` for any `P0`,
-`REQUEST_CHANGES` for other findings, `APPROVE` for none. Codex review must be
-enabled for the repository in Codex's GitHub settings.
+The PR head must be checked out. The skill scans the whole repository with the
+installed quality-guard scanner and keeps the findings in changed files, then
+runs the feature, design, reliability, and hygiene reviewer agents against the
+PBI. It posts one comment-only review: one comment per changed file for
+scanner findings, one per reviewer finding, each with a `GH-<id>`, and a
+recommendation of `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES` for other
+findings, or `APPROVE` for none. It posts at most one review per pull request.
+quality-guard must be installed and enabled.
 
 Fix selected GitHub review findings:
 

@@ -61,8 +61,8 @@ and increment it only after one parent PBI is merged and its final Project
 status is read back. Do not count a child, a draft PR, or implementation-
 complete work as a completed PBI.
 
-`/review-pr` gets Codex's automatic PR review and is the one code review. The
-main thread still owns sequencing, evidence verification, mutation decisions, and
+`/review-pr` scans the changed files, runs its reviewer agents, and is the one
+code review. The main thread still owns sequencing, evidence verification, mutation decisions, and
 the built-in goal's stop condition. Handle any externally supplied findings
 before `complete-pr` as described in section 6.
 
@@ -136,8 +136,8 @@ such as zoom or pan, behavioral browser or end-to-end paths, data/error
 boundaries, and recovery behavior. Each category still gets an explicit
 inapplicable row when the PBI does not expose that path. The same matrix is
 carried from the handoff into `submit-draft-pr` convergence; it is
-not a local ledger or a numeric quality gate. Codex's review reads the code,
-not this matrix.
+not a local ledger or a numeric quality gate. `/review-pr` reads the code and
+the PBI, not this matrix.
 
 ## Exact-head pre-review checkpoint
 
@@ -178,11 +178,9 @@ metadata repair, invoke manual review, or edit an external checkout.
 ## Review trigger lifecycle
 
 Invoke [dod-guard:review-pr](../review-pr/SKILL.md) once the exact-head
-checkpoint passes. It owns the trigger decision: a completed Codex review
-suppresses every later review trigger for that pull request, including after
-remediation commits; a draft gets exactly one `@codex review` trigger at once;
-a ready pull request gets it only after the required two-minute wait. It never
-emits a second trigger for the same PR. Carry the reviewed commit, current
+checkpoint passes. It posts one review per pull request: a completed review
+suppresses every later review for that pull request, including after
+remediation commits, and it never posts a second review for the same PR. Carry the reviewed commit, current
 head, and findings through `fix-pr-review` instead of starting another review.
 The pull request and its comments are the durable record.
 

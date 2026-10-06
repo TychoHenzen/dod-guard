@@ -155,8 +155,8 @@ to its owner. Every acceptance criterion and matrix row has fresh evidence at
 the exact head. No item is
 contradicted or unresolved. The
 required-context and base/mergeability
-checkpoint must also be stable at that exact head. `/review-pr` then gets
-Codex's review of that head; neither record is copied into a second review
+checkpoint must also be stable at that exact head. `/review-pr` then reviews
+that head; neither record is copied into a second review
 ledger.
 
 An incomplete or contradicted result is not reported as complete. Write the

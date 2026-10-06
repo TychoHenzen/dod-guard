@@ -51,12 +51,12 @@ test("quick-pbi covers the full delivery lifecycle without extra prompts", () =>
   assert.doesNotMatch(skill, /repeat this\s+review-fix cycle/);
 });
 
-test("consumes review-pr's Codex recommendation without a local ledger", () => {
-  assert.match(reviewSkill, /`BLOCK` when any finding is\s+`P0`[\s\S]*`REQUEST_CHANGES`[\s\S]*`APPROVE` when there are none/);
-  assert.match(reviewSkill, /Never post `@codex review`\s+yourself, and never post it twice/);
-  assert.match(reviewSkill, /never writes its own review, approves, marks ready, merges, or\s+closes anything/);
+test("consumes review-pr's recommendation without a local ledger", () => {
+  assert.match(reviewSkill, /any `BLOCKER` is `BLOCK`, any\s+other finding is `REQUEST_CHANGES`, none is `APPROVE`/);
+  assert.match(reviewSkill, /never post a second review/);
+  assert.match(reviewSkill, /Never edit files, approve, mark ready, merge,\s+or close anything/);
   assert.match(skill, /Read the\s+recommendation and reviewed commit back from the remote PR; no local ledger\s+is needed/);
-  assert.match(skill, /stops on a `hold`[\s\S]*durable blocker and stop/);
+  assert.match(skill, /stops without posting a review[\s\S]*durable blocker and stop/);
   assert.doesNotMatch(skill, /durable ledger|read back the ledger|reconcile the ledger/);
   assert.doesNotMatch(usage, /reconciles the ledger/);
 });
