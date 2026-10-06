@@ -4,13 +4,31 @@ function text(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function values(value) {
+  if (Array.isArray(value)) return value.flatMap(values);
+  const result = text(value);
+  return result ? [result] : [];
+}
+
 function lensEvidenceRemainder(handoff) {
   const matrix = Array.isArray(handoff.acceptanceMatrix) ? handoff.acceptanceMatrix : [];
   const matrixProofs = new Set(matrix.map((row) => text(row?.proof)).filter(Boolean));
   const matrixEvidence = new Set(matrix.map((row) => text(row?.evidence)).filter(Boolean));
+  const tasks = Array.isArray(handoff.tasks) ? handoff.tasks : [];
   const remainder = [];
   for (const lens of Array.isArray(handoff.reviewLenses) ? handoff.reviewLenses : []) {
     const id = text(lens?.id ?? lens?.name) ?? "review lens";
+    const owner = text(lens?.owner);
+    const ownerTask = tasks.find((task) => text(task?.id) === owner)
+      ?? tasks.find((task) => text(task?.child) === owner);
+    const ownerAcceptance = values(ownerTask?.acceptanceEvidence);
+    const ownerVerification = values(ownerTask?.verificationEvidence);
+    if (ownerAcceptance.length === 0 || !ownerAcceptance.includes(text(lens?.acceptanceEvidence))) {
+      remainder.push(`${id} owner task needs mapped acceptance evidence`);
+    }
+    if (ownerVerification.length === 0 || !ownerVerification.includes(text(lens?.verificationEvidence))) {
+      remainder.push(`${id} owner task needs mapped verification evidence`);
+    }
     if (!matrixProofs.has(text(lens?.verificationEvidence))) {
       remainder.push(`${id} review lens needs acceptance-matrix verification evidence`);
     }

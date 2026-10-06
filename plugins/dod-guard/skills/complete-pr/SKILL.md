@@ -150,6 +150,15 @@ then require `outcome: "verified"`; each lens must also resolve its
 `acceptanceEvidence` and `verificationEvidence` through the exact-head matrix.
 Any other outcome stops finalization. Direct Project readback does not replace
 this convergence proof.
+
+Use the shipped helper as an import-based gate, passing the parsed handoff object
+from the durable issue comment:
+
+```text
+import { evaluateStructuredFinalization } from "./scripts/finalization-gate.mjs";
+const result = evaluateStructuredFinalization(handoff);
+if (result.nextStep !== "project-status.mjs") stop with result.remainder;
+```
 Require every parent-level task that owns one of those review lenses to carry
 explicit acceptance and verification evidence in the durable handoff and read
 it back before finalizing the Project item, even when it has no linked child

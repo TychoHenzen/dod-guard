@@ -67,7 +67,15 @@ and `verificationEvidence` that prove the lens before Project finalization.
 
 Task-list records use `parentLevel: "convergence"` on a task that owns
 cross-cutting parent work without a linked child; for example,
-`{ "id": "task-1", "parentLevel": "convergence", "evidence": "..." }`.
+```json
+{
+  "id": "task-1",
+  "parentLevel": "convergence",
+  "evidence": "...",
+  "acceptanceEvidence": "matrix-evidence-1",
+  "verificationEvidence": "matrix-proof-1"
+}
+```
 
 `next-ticket` writes one durable `## Implementation handoff` issue comment (or
 updates the existing one) after pushing the branch. That comment maps every

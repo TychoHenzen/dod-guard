@@ -18,6 +18,8 @@ const validConvergenceInput = () => ({
       "commit-proof",
       ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
     ],
+      acceptanceEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-evidence-${index + 1}`),
+      verificationEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-proof-${index + 1}`),
   }, {
     id: "task-2",
     child: "settings-flow",
@@ -150,6 +152,16 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   assert.ok(
     missingLensMatrixEvidenceResult.remainder.some((entry) =>
       entry.includes("implementation review lens needs acceptance-matrix acceptance evidence"),
+    ),
+  );
+
+  const missingOwnerEvidence = validConvergenceInput();
+  delete missingOwnerEvidence.tasks[0].verificationEvidence;
+  const missingOwnerEvidenceResult = evaluateStructuredFinalization(missingOwnerEvidence);
+  assert.equal(missingOwnerEvidenceResult.nextStep, "stop");
+  assert.ok(
+    missingOwnerEvidenceResult.remainder.some((entry) =>
+      entry.includes("implementation owner task needs mapped verification evidence"),
     ),
   );
 });

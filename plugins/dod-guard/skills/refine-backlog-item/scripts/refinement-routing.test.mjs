@@ -171,6 +171,18 @@ test("allows an explicitly parent-level convergence task", () => {
   assert.ok(!parentLevelResult.remainder.some((entry) => entry.includes("acceptance")));
 });
 
+test("rejects missing and duplicate review lenses", () => {
+  const missingLens = validConvergenceInput();
+  missingLens.reviewLenses = missingLens.reviewLenses.slice(0, -1);
+  const missingLensResult = proof.evaluateConvergence(missingLens);
+  assert.ok(missingLensResult.remainder.some((entry) => entry.includes("reliability review lens needs an owning task")));
+
+  const duplicateLens = validConvergenceInput();
+  duplicateLens.reviewLenses.push({ ...duplicateLens.reviewLenses[0] });
+  const duplicateLensResult = proof.evaluateConvergence(duplicateLens);
+  assert.ok(duplicateLensResult.remainder.some((entry) => entry.includes("implementation review lens is declared more than once")));
+});
+
 test("rejects missing and unmapped functional slices", () => {
   const result = proof.evaluateConvergence({
     records: completeRecords(),
@@ -205,28 +217,18 @@ test("rejects duplicate functional slices and evidence", () => {
 });
 
 test("rejects review-lens evidence that is not mapped", () => {
-  const unmappedEvidence = proof.evaluateConvergence({
-    records: completeRecords(),
-    tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
-    children: [{ id: "search-flow", evidence: "mapped" }],
-    reviewLenses: [
-      {
-        id: "implementation",
-        owner: "task-1",
-        evidence: "missing-proof",
-      },
-    ],
-  });
+  const unmappedInput = validConvergenceInput();
+  unmappedInput.tasks[0].evidence = unmappedInput.tasks[0].evidence.filter(
+    (evidence) => evidence !== "lens-implementation",
+  );
+  unmappedInput.reviewLenses[0].evidence = "missing-proof";
+  const unmappedEvidence = proof.evaluateConvergence(unmappedInput);
   assert.ok(
     unmappedEvidence.remainder.some((entry) =>
       entry.includes("references undeclared evidence missing-proof"),
     ),
   );
-  assert.ok(
-    unmappedEvidence.remainder.some((entry) =>
-      entry.includes("wiring/usability review lens needs an owning task"),
-    ),
-  );
+  assert.ok(!unmappedEvidence.remainder.some((entry) => entry.includes("needs an owning task")));
 });
 
 test("manual fixtures include each route and its record markers", () => {

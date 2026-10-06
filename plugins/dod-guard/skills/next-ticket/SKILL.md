@@ -64,7 +64,11 @@ if any, is actionable and `Todo`, maps to exactly one independently deliverable
 slice, and has an owning task. Before implementation, verify the named
 `lens-ownership` record maps each required lens to an existing task or slice and
 observable acceptance or verification evidence; stop on any actionable
-remainder from the executable convergence proof. Require pushed implementation evidence before a
+remainder from the structural phase of the executable convergence proof. Before
+the branch exists, validate records, slice ownership, lens ownership, and
+evidence shape without an exact head or acceptance matrix. After the handoff is
+pushed, rerun the proof with the exact head and matrix and require their
+freshness. Require pushed implementation evidence before a
 commit or PR handoff, not before execution. Do not require a fixed child count
 or category set; stop before implementation when a child is
 duplicated, mis-mapped, or not actionable, or when the implementation, wiring

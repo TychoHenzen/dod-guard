@@ -121,7 +121,8 @@ export function evaluateConvergence({
     remainder.push(message);
   };
   const expectedHeadSha = normalizedIdentifier(headSha);
-  if (!expectedHeadSha) {
+  const postPushValidation = expectedHeadSha !== null || acceptanceMatrix !== null;
+  if (postPushValidation && !expectedHeadSha) {
     addRemainder("Acceptance and verification", "structured convergence needs an exact pushed head");
   }
 
@@ -240,7 +241,7 @@ export function evaluateConvergence({
       const lensHeadSha = normalizedIdentifier(lens.headSha ?? lens.head);
       if (!lens.owner || evidenceValues(lens.evidence).length === 0) {
         addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
-      } else if (lensHeadSha !== expectedHeadSha) {
+      } else if (postPushValidation && lensHeadSha !== expectedHeadSha) {
         addRemainder("Functional decomposition", `${id} review lens evidence is bound to ${lensHeadSha ?? "no head"}, expected ${expectedHeadSha ?? "an exact pushed head"}`);
       } else {
         const owner = normalizedIdentifier(lens.owner);
@@ -293,14 +294,16 @@ export function evaluateConvergence({
       }
     }
   }
-  const matrixValidation = validateAcceptanceMatrix({
-    matrix: acceptanceMatrix,
-    headSha: expectedHeadSha,
-    requiredContracts: acceptanceList,
-    requiredPaths: ACCEPTANCE_MATRIX_PATHS,
-  });
-  for (const error of matrixValidation.errors) {
-    addRemainder("Acceptance and verification", `acceptance matrix: ${error}`);
+  if (postPushValidation) {
+    const matrixValidation = validateAcceptanceMatrix({
+      matrix: acceptanceMatrix,
+      headSha: expectedHeadSha,
+      requiredContracts: acceptanceList,
+      requiredPaths: ACCEPTANCE_MATRIX_PATHS,
+    });
+    for (const error of matrixValidation.errors) {
+      addRemainder("Acceptance and verification", `acceptance matrix: ${error}`);
+    }
   }
   for (const contradiction of contradictions) {
     addRemainder("Acceptance and verification", contradiction);
