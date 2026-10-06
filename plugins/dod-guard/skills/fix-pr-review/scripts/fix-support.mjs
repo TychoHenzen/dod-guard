@@ -1,15 +1,9 @@
 #!/usr/bin/env node
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import process from "node:process";
-import {
-  normalizeGitHubHierarchy,
-  normalizeGitHubReviewThreads,
-  parseAzureReport,
-  redactSecrets,
-  updateAzureReport,
-} from "./lib/fix-support.mjs";
+import { normalizeGitHubHierarchy, normalizeGitHubReviewThreads, redactSecrets } from "./lib/fix-support.mjs";
 
 const SELECTION_SEPARATOR = /[\s,]+/;
 
@@ -45,16 +39,10 @@ const args = argumentsByName(values);
 
 if (command === "normalize-github-comments") {
   emit(normalizeGitHubReviewThreads(readJson(args.input), selectedIds(args.selected)));
-} else if (command === "parse-azure-report") {
-  emit(parseAzureReport(readFileSync(args.input, "utf8"), selectedIds(args.selected)));
 } else if (command === "normalize-github-hierarchy") {
   emit(normalizeGitHubHierarchy(readJson(args.input)));
 } else if (command === "redact-context") {
   emit(redactSecrets(readJson(args.input)));
-} else if (command === "update-azure-report") {
-  const report = readFileSync(args.input, "utf8");
-  writeFileSync(args.output ?? args.input, updateAzureReport(report, readJson(args.resolutions)), "utf8");
-  emit({ output: args.output ?? args.input });
 } else {
   throw new Error(`Unknown command: ${command ?? ""}`);
 }

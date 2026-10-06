@@ -255,18 +255,16 @@ report the code review complete, then lists each finding as `GH-<id>` with its
 `REQUEST_CHANGES` for other findings, `APPROVE` for none. Codex review must be
 enabled for the repository in Codex's GitHub settings.
 
-Fix selected local or GitHub inline findings, or Azure report entries:
+Fix selected GitHub review findings:
 
 ```text
 /dod-guard:fix-pr-review #42 GH-12345
-/dod-guard:fix-pr-review reports/review-42.md ADO-42-1
 ```
 
 The skill reloads the parent PBI and linked subtasks, then rechecks each
-finding against the current head. It skips stale or unsupported findings. It
-pushes the smallest verified fix before replying to or resolving GitHub
-threads. Azure entries change to `Fixed` with commit and check evidence while
-unresolved entries stay unchanged.
+finding against the current head. It skips resolved or unsupported findings,
+and rechecks outdated ones instead of skipping them. It pushes the smallest
+verified fix before replying to or resolving GitHub threads.
 
 After review, explicitly accept and complete the current pull request:
 

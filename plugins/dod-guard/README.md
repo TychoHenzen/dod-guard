@@ -179,7 +179,7 @@ GitHub-backed skills share the request policy in
 | `/step-by-step` | Run one explicit ordered plan through fresh bounded subagents. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
 | `/review-pr` | Get Codex's automatic review of a GitHub pull request and report its findings with a recommendation. |
-| `/fix-pr-review` | Revalidate and fix selected GitHub, local Git, or Azure review findings. |
+| `/fix-pr-review` | Revalidate and fix selected GitHub review findings. |
 | `/complete-pr` | Complete an explicitly accepted draft through guarded REST merge and branch deletion. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |

@@ -96,7 +96,7 @@ test("delivery skills inspect pending state before their mutations", () => {
     assert.match(skills.get(name), /dirty|pending/i, name);
   }
   for (const name of ["complete-pr", "fix-pr-review", "next-ticket", "submit-draft-pr"]) {
-    assert.match(skills.get(name), /`\/commit`/, name);
+    assert.match(skills.get(name), /`\/commit`|Commit only after/, name);
   }
 });
 

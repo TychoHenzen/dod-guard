@@ -29,7 +29,10 @@ only alternate-transport decisions are:
   exception: draft-to-ready (`markPullRequestReadyForReview`, because REST has
   no supported draft field) or a selected review-thread operation. Draft-to-ready
   must verify `isDraft: false`; selected review-thread operations require an
-  explicit REST/connector 404/405 and selected-thread readback. Both exceptions
+  explicit REST/connector 404/405 and selected-thread readback. REST exposes no
+  review-thread IDs, so without a connector thread operation one field-limited,
+  paginated `reviewThreads` read may map selected comments to their threads,
+  as `fix-pr-review` defines. Both exceptions
   preserve redacted transport evidence, stop on failure or ambiguity, and never
   serve as quota fallbacks.
 
