@@ -24,8 +24,9 @@ destructive action.
   `gpt-5.6-luna` at `max` effort. Its advice never replaces the invoking
   skill's repair or proof.
 - For a skill that commits or pushes, inspect a dirty worktree first. Treat
-  ordinary, clearly in-scope pending changes as input to its normal `/commit`
-  path. Preserve and report secrets, destructive intent, and unrelated or
+  ordinary, clearly in-scope pending changes as input to its normal commit
+  step: stage only reviewed in-scope paths and commit them on the target
+  branch. Preserve and report secrets, destructive intent, and unrelated or
   indistinguishable changes. Dirty status alone is not a blocker. If the
   skill creates a branch from a fetched default, keep those changes
   uncommitted until the target branch exists, then commit them only there. If

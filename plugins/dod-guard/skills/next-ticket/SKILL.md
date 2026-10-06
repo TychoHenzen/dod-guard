@@ -28,7 +28,8 @@ boundaries in this skill win.
 2. Read `git status --short --branch` and classify every pending path. A dirty
    worktree is not a blocker by itself. If ordinary pending changes clearly
    belong to the requested work, keep them uncommitted until the ticket branch
-   exists, then carry them through the normal `/commit` path on that branch.
+   exists, then stage and commit them there with the ticket's other reviewed
+   changes.
    Do not commit them on the current or default branch to clear status.
    Preserve and report secrets, destructive intent, unrelated changes, or work
    that cannot be separated safely.

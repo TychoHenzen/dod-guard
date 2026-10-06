@@ -63,10 +63,9 @@ the web, or Context7 can establish. When the result is `no gap`, continue
 without invoking a discovery workflow.
 
 When user constraints or priorities are missing, choose the route from the
-current run mode. In ordinary interactive refinement, use the existing
-`/interview` workflow's research-first contract through ordinary conversation.
-This skill intentionally overrides its one-question-at-a-time interaction rule.
-Ask every currently independent clarification question in one round, give each
+current run mode. In ordinary interactive refinement, ask the user through
+ordinary conversation, after research: never ask what the repository, the web,
+or Context7 can answer. Ask every currently independent clarification question in one round, give each
 question multiple concrete options, and mark the recommended default. Defer
 questions whose options depend on an earlier answer to a later round. Record
 the resulting behavioral contract in an `interview-contract` implementation
@@ -94,11 +93,8 @@ question, evidence, impact, and next required authority, then keep the issue in
 an `unresolved-decision` with the question, researched evidence, exact advisor
 failure, impact, and next required authority, then keep the issue in `Backlog`.
 
-Do not require a provider-specific `AskUserQuestion` tool. If `/interview` is
-unavailable, preserve its contract through ordinary conversation when possible.
-Otherwise record the unavailable workflow, the fallback, its impact, and the
-next decision or evidence needed. Keep the issue in Backlog when a material
-requirement cannot be stated without inventing it.
+Do not require a provider-specific `AskUserQuestion` tool. Keep the issue in
+Backlog when a material requirement cannot be stated without inventing it.
 
 When external facts or context are missing, perform targeted research. Inspect
 the code, callers, tests, and current architecture first. Use the web or
@@ -107,14 +103,16 @@ external evidence. Record each source and its relevant finding in a
 `research-source` implementation note. Do not ask the user for a fact that this
 research can answer.
 
-When a genuine tradeoff remains, frame one concrete decision and invoke the
-existing `$debate` protocol only after the required facts and user constraints
+When a genuine tradeoff remains, frame one concrete decision and debate it
+only after the required facts and user constraints
 are available. Select three to five named real experts whose documented
-positions match the competing concerns. Record each expert's name, lens,
+positions match the competing concerns. Run at least two rounds: each expert
+states a position from their lens, then challenges the strongest opposing
+position. Then synthesize. Record each expert's name, lens,
 competing concern, and why that lens applies, plus the challenges, acknowledged
 uncertainty, synthesis, accepted option, and rejected options in
 `debate-synthesis`, `accepted-option`, and `rejected-option` implementation
-notes. Follow the existing multi-round protocol, keep raw debate scratch files
+notes. Keep raw debate scratch files
 outside the repository, and do not turn expert speculation into a requirement.
 
 After each interview, research, or debate round, run the triage again. If new

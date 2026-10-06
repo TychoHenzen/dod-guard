@@ -35,7 +35,8 @@ boundaries in this skill win.
 5. Read the pull request, linked issue, review result, and latest verification
    evidence. Stop if the draft does not represent the reviewed and verified code.
 6. If the classified pending changes are clearly part of the accepted PBI,
-   invoke `/commit` on this verified branch. Reread the pull request head and
+   stage only those reviewed paths, commit them on this verified branch, and
+   push. Reread the pull request head and
    verification evidence. Stop unless the new head has fresh review and
    verification evidence for those changes.
 

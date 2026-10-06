@@ -192,7 +192,8 @@ test("maintenance releases skip PBI and PR while restoring protection", async ()
   assert.match(skill, /retries that exact POST once and reads both resources again/);
   assert.match(skill, /If either\s+read throws,\s+it stops without a second POST/);
   assert.match(skill, /Other users\s+remain subject to the branch rules/);
-  assert.match(skill, /existing `\/commit` staging\/commit-message and pre-push actions/);
+  assert.match(skill, /`-CommitAction` script block that stages only the classified release paths/);
+  assert.match(skill, /`-PrePushAction` script block that reruns the\s+release gates/);
   assert.match(skill, /It never invokes a Git worktree\s+command/);
   assert.doesNotMatch(skill, /If branch protection requires a pull request, stop/);
   assert.match(defaults, /The explicit `\/publish` maintenance-only route may[\s\S]+temporarily disable only admin enforcement/);
@@ -208,7 +209,7 @@ test("maintenance releases classify pending paths before a primary-checkout tran
     readFile(usagePath, "utf8"),
   ]);
   const inspectStart = skill.indexOf("1. Inspect");
-  const inspectEnd = skill.indexOf("2. Before `/commit`", inspectStart);
+  const inspectEnd = skill.indexOf("2. Before committing", inspectStart);
   const maintenanceStart = skill.indexOf("7. For a `maintenance-only` release:");
   const functionalStart = skill.indexOf("8. For a `functional` release", maintenanceStart);
   const inspection = skill.slice(inspectStart, inspectEnd);

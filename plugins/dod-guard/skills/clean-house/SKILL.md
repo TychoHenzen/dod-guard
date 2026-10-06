@@ -190,9 +190,9 @@ newer side's tests. Commit. Only then move to the next one. Porting the
 whole set and deleting before you run anything hides a change that does
 not compile against the new interface. By then the source is gone.
 
-If test cases have to move from the dying file onto its replacement, hand
-that off. Invoke `/dod-guard:adversarial-workflow` and tell it to start at
-phase 2, the test audit, over the merged test file.
+If test cases have to move from the dying file onto its replacement, port
+them one at a time. Break the behavior each one covers and confirm it fails,
+so a moved test still tests something on its new target.
 
 ## Stage 3, prove removal is safe
 
@@ -318,10 +318,9 @@ full test suite. Run its linter, because a removal leaves imports behind
 that only the linter names. Then sweep the removed names once more with the
 stage 3 command and read the output.
 
-If the work is under a DoD, prove the symbol is gone with command
-`rg shipRate` and predicate `exit_code_not: 0`, because ripgrep exits 1
-when it matches nothing. To prove a name is absent from build or lint
-output instead, run that command and use `output_not_contains`.
+To prove the symbol is gone, run `rg shipRate` and expect exit code 1,
+which is ripgrep's answer for no match. Exit code 0 means a reference
+survived, and exit code 2 means the search itself failed.
 
 Report what you deleted, what you kept and why, what you ported before
 deleting, and every weak pair you left alone. Include any reusable lesson in

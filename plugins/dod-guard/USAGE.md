@@ -79,9 +79,10 @@ Refinement reads affected code, callers, tests, and architecture before choosing
 priority, Fibonacci effort, and standard labels from the repository's live
 descriptions. It then triages missing user constraints, external context, and
 genuine tradeoffs. Interactive refinement uses ordinary conversation to batch
-independent `/interview` questions; an active goal or explicitly non-interactive
-run asks one fresh `/codex-advisor` for bounded advice instead. Targeted web or Context7 research resolves external
-facts, and `$debate` runs only after facts and constraints are known. Discovery
+independent clarification questions; an active goal or explicitly
+non-interactive run asks one fresh `/codex-advisor` for bounded advice instead.
+Targeted web or Context7 research resolves external facts, and an expert-lens
+debate runs only after facts and constraints are known. Discovery
 evidence,
 accepted and rejected options, and unresolved decisions stay in the issue's
 implementation notes. Missing scale labels stop refinement. Re-refinement from

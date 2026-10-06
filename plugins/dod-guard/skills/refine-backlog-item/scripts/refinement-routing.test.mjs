@@ -255,7 +255,7 @@ test("rejects review-lens evidence owned by another mapping", () => {
 test("manual fixtures include each route and its record markers", () => {
   for (const [fixture, markers] of [
     ["No gap", ["discovery-triage: no gap", "Do not invoke interview, external research, or debate."]],
-    ["Batched clarification", ["Use ordinary conversation through `/interview`", "record `interview-contract`"]],
+    ["Batched clarification", ["Use ordinary conversation. Ask both", "record `interview-contract`"]],
     ["Non-interactive clarification", ["Invoke exactly one fresh `dod-guard:codex-advisor`", "Record `advisor-decision`", "re-run triage"]],
     ["Batched non-interactive clarification", ["Batch every currently independent question into the one advisor brief", "Defer questions that depend on an advisor answer"]],
     ["Advisor cannot resolve user authority", ["Record `unresolved-decision` with the question, evidence, impact, and next required authority", "Keep the issue in `Backlog`"]],
@@ -263,7 +263,7 @@ test("manual fixtures include each route and its record markers", () => {
     ["Unanswered clarification", ["record `unresolved-decision`", "Do not ask the dependent question or move to `Todo`"]],
     ["Repository context", ["Inspect the code, callers, tests, and current architecture.", "Record `research-source` findings"]],
     ["External context", ["Use targeted web or Context7 research.", "Record the source, relevant finding, and uncertainty in `research-source`."]],
-    ["Debate after constraints", ["Use the existing multi-round `$debate` protocol", "Record each expert's lens", "`debate-synthesis`", "`accepted-option`", "`rejected-option`"]],
+    ["Debate after constraints", ["Run at least two debate rounds", "Record each expert's lens", "`debate-synthesis`", "`accepted-option`", "`rejected-option`"]],
     ["Newly discovered gap", ["Return to the matching interview or research route.", "Do not turn the gap into an assumption."]],
     ["Unavailable workflow", ["Record what is unclear, the unavailable workflow or fallback, the impact, and the next decision or evidence.", "Move to `Todo` only when the PBI remains coherent"]],
     ["Re-refinement", ["Reuse current summaries, repeat only the stale or new phase, update notes in place, and create no duplicate sub-issues or scale labels."]],

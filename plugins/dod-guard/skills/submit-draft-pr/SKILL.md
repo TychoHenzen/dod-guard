@@ -30,8 +30,8 @@ boundaries in this skill win.
 5. Read the PBI and its linked sub-issues. Stop if a required acceptance
    criterion lacks evidence or a code-backed closed sub-issue lacks a pushed
    implementation commit.
-6. If clearly in-scope ordinary changes were pending, invoke `/commit` on the
-   verified PBI branch. Reread the branch head and rerun the required pre-PR
+6. If clearly in-scope ordinary changes were pending, stage only those
+   reviewed paths, commit them on the verified PBI branch, and push. Reread the branch head and rerun the required pre-PR
    checks before creating or updating the draft. Stop on a failed or unavailable
    check.
 

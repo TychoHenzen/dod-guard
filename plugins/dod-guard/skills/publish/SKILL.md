@@ -153,7 +153,7 @@ or relies on a later validator or client-cache readback to recover the release.
    exact paths and stop before changing the checkout or refs. Never silently
    filter a mixed tree, stash, reset, overwrite, move, or include unrelated
    user-owned changes.
-2. Before `/commit`, run the existing repository inspector against the complete
+2. Before committing, run the existing repository inspector against the complete
    pending tree:
    `node <plugin-root>/skills/setup-repository/scripts/inspect-repository.mjs <repository-root>`.
    Stop when `credentialFindings` is non-empty. Never print matched values.
@@ -208,8 +208,8 @@ or relies on a later validator or client-cache readback to recover the release.
      paths; never use blanket staging. Push only with
      `git push --force-with-lease=refs/heads/master:<saved-sha> origin HEAD:refs/heads/master`.
      This remains a fast-forward, and the lease rejects any intervening update.
-     If master advances, restore protection, stop `/commit`'s pull-and-merge
-     retry, preserve the exact release checkpoint, and stop. A later run must
+     If master advances, restore protection, stop without pulling, merging, or
+     retrying the push, preserve the exact release checkpoint, and stop. A later run must
      classify the pending release paths again and rebuild from the newly saved
      head before rerunning all gates. Never use an unpinned force push or create
      a PR as fallback.
@@ -226,7 +226,9 @@ or relies on a later validator or client-cache readback to recover the release.
    - Use the checked-in `<skill-dir>/scripts/maintenance-publish.ps1` helper as
      the only maintenance mutation boundary. Dot-source it and invoke
      `Invoke-MaintenancePublish` with the owner, repository, saved SHA, and the
-     existing `/commit` staging/commit-message and pre-push actions. The helper
+     `-CommitAction` script block that stages only the classified release paths
+     and commits them, and a `-PrePushAction` script block that reruns the
+     release gates. The helper
      constructs and validates these exact values:
      `protection_endpoint= repos/{owner}/{repo}/branches/master/protection`,
      `admin_endpoint= repos/{owner}/{repo}/branches/master/protection/enforce_admins`,
@@ -262,7 +264,7 @@ or relies on a later validator or client-cache readback to recover the release.
       complete protection snapshot is unchanged.
      Other users remain subject to the branch rules throughout.
 8. For a `functional` release, invoke `/submit-draft-pr` with the parent PBI
-   number after `/commit` has pushed the issue branch. Do not create or update
+   number after the release commit is pushed to the issue branch. Do not create or update
    the pull request yourself. Never approve, mark ready, merge, or close it.
 9. After a direct maintenance push or a human-merged functional release, inspect
    CI on the exact published commit. It must pass
