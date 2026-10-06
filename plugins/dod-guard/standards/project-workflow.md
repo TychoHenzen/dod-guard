@@ -66,7 +66,10 @@ observable evidence, `headSha`, and the acceptance-matrix `acceptanceEvidence`
 and `verificationEvidence` that prove the lens before Project finalization.
 
 Task-list records use `parentLevel: "convergence"` on a task that owns
-cross-cutting parent work without a linked child; for example,
+cross-cutting parent work without a linked child. The following is an
+illustrative fragment; the executable contract and failure cases live in
+`skills/next-ticket/scripts/structured-workflow-proof.mjs` and its focused
+tests:
 ```json
 {
   "id": "task-1",

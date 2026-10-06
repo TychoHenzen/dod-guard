@@ -46,6 +46,10 @@ function lensEvidenceRemainder(handoff) {
     const owner = text(lens?.owner);
     const ownerTask = tasks.find((task) => text(task?.id) === owner)
       ?? tasks.find((task) => text(task?.child) === owner);
+    if (!ownerTask) {
+      remainder.push(`${id} review lens references missing owner ${owner ?? "<missing>"}`);
+      continue;
+    }
     const ownerAcceptance = values(ownerTask?.acceptanceEvidence);
     const ownerVerification = values(ownerTask?.verificationEvidence);
     if (

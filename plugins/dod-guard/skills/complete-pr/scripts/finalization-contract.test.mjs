@@ -246,6 +246,12 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
       entry.includes("must share one acceptance-matrix row"),
     ),
   );
+
+  const missingOwner = validConvergenceInput();
+  missingOwner.reviewLenses[0].owner = "missing-task";
+  const missingOwnerResult = evaluateStructuredFinalization(missingOwner);
+  assert.equal(missingOwnerResult.nextStep, "stop");
+  assert.ok(missingOwnerResult.remainder.some((entry) => entry.includes("references missing owner missing-task")));
 });
 
 test("keeps routine ProjectV2 guidance out of GraphQL", async () => {

@@ -195,15 +195,22 @@ test("rejects missing and duplicate review lenses", () => {
   assert.ok(duplicateLensResult.remainder.some((entry) => entry.includes("implementation review lens is declared more than once")));
 });
 
-test("rejects missing and unmapped functional slices", () => {
+test("rejects a task that references a missing functional slice", () => {
   const input = validConvergenceInput();
   input.tasks[0].child = "missing-flow";
-  input.children[0].id = "implemented-flow";
   const result = proof.evaluateConvergence(input);
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
-  assert.ok(result.remainder.some((entry) => entry.includes("slice needs an owning task")));
+});
+
+test("rejects a functional slice without an owning task", () => {
+  const input = validConvergenceInput();
+  input.children[0].id = "implemented-flow";
+  const result = proof.evaluateConvergence(input);
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("implemented-flow slice needs an owning task")));
 });
 
 test("rejects duplicate functional slices and evidence", () => {

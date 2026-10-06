@@ -56,6 +56,9 @@ function lensSignature(lens) {
     id: normalizedIdentifier(lens.id ?? lens.name),
     owner: normalizedIdentifier(lens.owner),
     evidence: [...new Set(evidenceValues(lens.evidence))].sort(),
+    headSha: normalizedIdentifier(lens.headSha ?? lens.head),
+    acceptanceEvidence: [...new Set(evidenceValues(lens.acceptanceEvidence))].sort(),
+    verificationEvidence: [...new Set(evidenceValues(lens.verificationEvidence))].sort(),
   });
 }
 
