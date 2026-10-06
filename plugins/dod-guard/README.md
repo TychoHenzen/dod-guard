@@ -147,7 +147,9 @@ remote-state evidence, fresh checks, and the current user-path result. It also
 records observable evidence for the `implementation`, `wiring/usability`,
 `quality` (code quality), and `reliability` (failure/recovery) owners, followed
 by one `## Acceptance matrix` with exact-head proof rows for every acceptance
-criterion and mandatory user-facing path.
+criterion and mandatory user-facing path. Each lens entry carries its canonical
+ID, owner, observable evidence, accepted head, `acceptanceEvidence`, and
+`verificationEvidence`.
 `/submit-draft-pr` checks that same matrix against the issue contract, then
 links it from `## Convergence` instead of restating it; missing,
 contradicted, or stale evidence remains an actionable remainder. Small, clear

@@ -252,6 +252,12 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   const missingOwnerResult = evaluateStructuredFinalization(missingOwner);
   assert.equal(missingOwnerResult.nextStep, "stop");
   assert.ok(missingOwnerResult.remainder.some((entry) => entry.includes("references missing owner missing-task")));
+
+  const unmappedSlice = validConvergenceInput();
+  unmappedSlice.tasks[0].child = "missing-flow";
+  const unmappedSliceResult = evaluateStructuredFinalization(unmappedSlice);
+  assert.equal(unmappedSliceResult.nextStep, "stop");
+  assert.ok(unmappedSliceResult.remainder.some((entry) => entry.includes("references missing functional slice missing-flow")));
 });
 
 test("keeps routine ProjectV2 guidance out of GraphQL", async () => {

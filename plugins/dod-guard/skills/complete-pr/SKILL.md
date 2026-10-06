@@ -157,7 +157,7 @@ from the durable issue comment:
 ```js
 import { evaluateStructuredFinalization } from "./scripts/finalization-gate.mjs";
 const result = evaluateStructuredFinalization(handoff);
-if (result.nextStep !== "project-status.mjs") stop with result.remainder;
+if (result.nextStep !== "project-status.mjs") throw new Error(result.remainder.join("; "));
 ```
 Require every parent-level task that owns one of those review lenses to carry
 explicit acceptance and verification evidence in the durable handoff and read

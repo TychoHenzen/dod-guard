@@ -55,10 +55,10 @@ function lensSignature(lens) {
   return JSON.stringify({
     id: normalizedIdentifier(lens.id ?? lens.name),
     owner: normalizedIdentifier(lens.owner),
-    evidence: [...new Set(evidenceValues(lens.evidence))].sort(),
+    evidence: evidenceValues(lens.evidence).sort(),
     headSha: normalizedIdentifier(lens.headSha ?? lens.head),
-    acceptanceEvidence: [...new Set(evidenceValues(lens.acceptanceEvidence))].sort(),
-    verificationEvidence: [...new Set(evidenceValues(lens.verificationEvidence))].sort(),
+    acceptanceEvidence: evidenceValues(lens.acceptanceEvidence).sort(),
+    verificationEvidence: evidenceValues(lens.verificationEvidence).sort(),
   });
 }
 
@@ -186,6 +186,7 @@ export function evaluateConvergence({
     "Acceptance and verification": [],
   };
   const remainder = [];
+  const recordMap = records && typeof records === "object" && !Array.isArray(records) ? records : {};
   const addRemainder = (section, message) => {
     sections[section].push(message);
     remainder.push(message);
@@ -205,7 +206,7 @@ export function evaluateConvergence({
   const acceptanceList = normalizeEntries(acceptance, "acceptance criterion", "Acceptance and verification", addRemainder);
 
   for (const record of REQUIRED_RECORDS) {
-    if (!records[record]) {
+    if (!recordMap[record]) {
       addRemainder(
         record === "implementation-plan" || record === "task-list"
           ? "Plan and tasks"
@@ -316,7 +317,7 @@ export function evaluateConvergence({
       .filter(Boolean),
   );
   validateLensOwnershipRecord(
-    records["lens-ownership"],
+    recordMap["lens-ownership"],
     lensList,
     "Functional decomposition",
     addRemainder,

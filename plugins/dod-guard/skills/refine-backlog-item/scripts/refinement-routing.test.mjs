@@ -11,7 +11,7 @@ const githubDiscipline = await readFile(
   new URL("../../../standards/github-request-discipline.md", import.meta.url),
   "utf8",
 );
-const completeRecords = (lensOwnership) =>
+const completeRecords = (lensOwnership = []) =>
   proof.REQUIRED_RECORDS.reduce(
     (records, name) => ({ ...records, [name]: name === "lens-ownership" ? lensOwnership : true }),
     {},

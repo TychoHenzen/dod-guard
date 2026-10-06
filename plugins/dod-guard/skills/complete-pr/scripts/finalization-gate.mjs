@@ -28,6 +28,9 @@ function lensEvidenceRemainder(handoff) {
     if (text(matches[0]?.headSha) !== expectedHead) {
       return `${label} is bound to ${text(matches[0]?.headSha) ?? "no head"}, expected ${expectedHead}`;
     }
+    if (text(matches[0]?.status)?.toLowerCase() !== "pass") {
+      return `${label} is bound to non-passing status ${text(matches[0]?.status) ?? "no status"}`;
+    }
     return null;
   };
   const matrixRows = (field, value) => {
