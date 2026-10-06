@@ -90,10 +90,11 @@ test("requires durable discovery records and selective re-refinement", () => {
 });
 
 test("uses functional decomposition with cross-cutting review lenses", () => {
-  const structuredParentSection = skill.slice(
-    skill.indexOf("For a structured parent PBI"),
-    skill.indexOf("Apply the same research", skill.indexOf("For a structured parent PBI")),
-  );
+  const sectionStart = skill.indexOf("For a structured parent PBI");
+  const sectionEnd = skill.indexOf("Apply the same research", sectionStart);
+  assert.ok(sectionStart >= 0);
+  assert.ok(sectionEnd > sectionStart);
+  const structuredParentSection = skill.slice(sectionStart, sectionEnd);
 
   assert.match(skill, /use functional decomposition/);
   assert.match(skill, /independently\s+implemented, tested, and verified/);

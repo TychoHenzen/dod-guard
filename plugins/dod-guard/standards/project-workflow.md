@@ -46,9 +46,10 @@ and pull request as the source of truth.
 
 A structured PBI is implementation-ready when the issue contains the five named
 records and decomposes the work into coherent, user-action-first functional
-slices. Every declared slice maps to exactly one independently deliverable and
-verifiable owner. Every linked child maps back to exactly one declared slice;
-parent-level tasks may own cross-cutting work without inventing a child.
+slices. Every declared slice maps to exactly one verifiable owner. A slice
+intended for independent child delivery must be independently deliverable;
+parent-level tasks may own explicitly cross-cutting slices without inventing a
+child. Every linked child maps back to exactly one declared slice.
 
 Implementation, wiring and end-to-end usability, code quality, and
 failure/recovery each need an owning slice or parent-level task with observable
@@ -116,10 +117,11 @@ links it instead of restating it:
 - Remainder: none
 ```
 
-Convergence is passing only when every named record exists, every declared slice,
-task, and linked functional-slice child is mapped exactly once by the implementation handoff, every acceptance
-criterion has fresh evidence at the exact head; every matrix row does too, and
-no item is contradicted or unresolved. The required-context and base/mergeability
+Convergence is passing only when every named record exists and every declared
+slice, task, and linked functional-slice child is mapped exactly once by the
+implementation handoff. Every acceptance criterion and matrix row has fresh
+evidence at the exact head. No item is contradicted or unresolved. The
+required-context and base/mergeability
 checkpoint must also be stable at that exact head. Codex's built-in Review
 Summary consumes that same matrix and checkpoint; neither is copied into a
 second review ledger.

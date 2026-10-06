@@ -194,7 +194,7 @@ test("structured handoffs are durable and convergence is evidence-based", () => 
   assert.match(submit, /handoff commit must be identical/);
   assert.match(submit, /branch names must match/);
   assert.match(submit, /treat the\s+handoff as stale/);
-  assert.match(standard, /every acceptance\s+criterion has fresh evidence/);
+  assert.match(standard, /Every acceptance criterion and matrix row has fresh\s+evidence/);
 });
 
 test("structured proof produces passing and actionable outcomes", () => {
@@ -204,9 +204,12 @@ test("structured proof produces passing and actionable outcomes", () => {
     tasks: [{
       id: "task-1",
       child: "search-flow",
-      evidence: ["commit abc123; test passed", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+      evidence: [
+        "commit abc123; test passed",
+        ...proof.REQUIRED_REVIEW_LENSES.filter((id) => id !== "implementation").map((id) => `lens-${id}`),
+      ],
     }],
-    children: [{ id: "search-flow", evidence: "mapped" }],
+    children: [{ id: "search-flow", evidence: ["mapped", "lens-implementation"] }],
     reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
       id,
       owner: index === 0 ? "search-flow" : "task-1",
@@ -296,7 +299,7 @@ test("functional convergence reports malformed collection entries", () => {
   const result = proof.evaluateConvergence({
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
     tasks: [null, { evidence: "orphan" }],
-    children: ["not a child"],
+    children: ["not a child", { id: 42, evidence: "numeric" }],
     reviewLenses: [null],
     acceptance: [42],
   });
@@ -305,6 +308,7 @@ test("functional convergence reports malformed collection entries", () => {
   assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 must be an object")));
   assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 needs a non-empty id")));
   assert.ok(result.remainder.some((entry) => entry.includes("child entry 1 must be an object")));
+  assert.ok(result.remainder.some((entry) => entry.includes("linked child needs a functional slice id")));
   assert.ok(result.remainder.some((entry) => entry.includes("review lens entry 1 must be an object")));
   assert.ok(result.remainder.some((entry) => entry.includes("acceptance criterion entry 1 must be an object")));
 });

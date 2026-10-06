@@ -100,7 +100,7 @@ parent, require the task list's functional decomposition, map each linked child
 to one independently deliverable slice, and map each slice or parent-level task
 to the parent branch or verified remote-state evidence. There is no fixed child
 count or category set. The implementation, wiring and end-to-end usability,
-code quality, and failure/recovery concerns must still each have an owning
+refactoring and code quality, and failure/recovery concerns must still each have an owning
 slice or parent-level task with observable evidence. For a code-backed
 sub-issue, map changed files and commits and require its pushed implementation.
 For an administrative sub-issue, map verified remote-state evidence instead of

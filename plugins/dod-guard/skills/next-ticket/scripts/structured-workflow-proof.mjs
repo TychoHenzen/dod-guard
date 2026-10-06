@@ -28,6 +28,12 @@ function evidenceValues(value) {
   return [];
 }
 
+function normalizedIdentifier(value) {
+  if (typeof value !== "string") return null;
+  const identifier = value.trim();
+  return identifier ? identifier : null;
+}
+
 function normalizeEntries(value, label, section, addRemainder) {
   if (!Array.isArray(value)) {
     addRemainder(section, `${label} must be an array`);
@@ -144,7 +150,7 @@ export function evaluateConvergence({
   }
   const childIds = new Set();
   for (const child of childList) {
-    const slice = child.id ?? child.slice ?? child.name;
+    const slice = normalizedIdentifier(child.id ?? child.slice ?? child.name);
     if (!slice) {
       addRemainder("Functional decomposition", "linked child needs a functional slice id");
     } else if (childIds.has(slice)) {
@@ -159,16 +165,20 @@ export function evaluateConvergence({
     }
   }
   for (const task of taskList) {
-    if (task.child && !childIds.has(task.child)) {
-      addRemainder("Functional decomposition", `${task.id} references missing functional slice ${task.child}`);
+    const slice = normalizedIdentifier(task.child);
+    if (task.child !== undefined && !slice) {
+      addRemainder("Functional decomposition", `${task.id} needs a functional slice id`);
+    } else if (slice && !childIds.has(slice)) {
+      addRemainder("Functional decomposition", `${task.id} references missing functional slice ${slice}`);
     }
   }
   const taskOwners = new Set();
   for (const task of taskList) {
-    if (task.child && taskOwners.has(task.child)) {
-      addRemainder("Functional decomposition", `${task.child} slice has more than one owning task`);
-    } else if (task.child) {
-      taskOwners.add(task.child);
+    const slice = normalizedIdentifier(task.child);
+    if (slice && taskOwners.has(slice)) {
+      addRemainder("Functional decomposition", `${slice} slice has more than one owning task`);
+    } else if (slice) {
+      taskOwners.add(slice);
     }
   }
   for (const slice of childIds) {
@@ -188,13 +198,15 @@ export function evaluateConvergence({
       if (!lens.owner || evidenceValues(lens.evidence).length === 0) {
         addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
       } else {
+        const owner = normalizedIdentifier(lens.owner);
         const ownerTask = taskList.find(
-          (task) => validTaskIds.has(task.id) && (task.id === lens.owner || task.child === lens.owner),
+          (task) => validTaskIds.has(task.id) && (task.id === owner || normalizedIdentifier(task.child) === owner),
         );
         if (!ownerTask) {
           addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
         } else {
-          referenceEvidence({ owner: ownerTask.id, value: lens.evidence, section: "Functional decomposition", evidenceOwners, addRemainder });
+          const evidenceOwner = ownerTask.id === owner ? ownerTask.id : owner;
+          referenceEvidence({ owner: evidenceOwner, value: lens.evidence, section: "Functional decomposition", evidenceOwners, addRemainder });
         }
       }
     }
@@ -291,10 +303,17 @@ export function scenarioResult(scenario = "passing") {
       tasks: [{
         id: "task-1",
         child: "search-flow",
-        evidence: ["commit abc123", ...REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+        evidence: [
+          "commit abc123",
+          ...REQUIRED_REVIEW_LENSES.filter((id) => id !== "implementation").map((id) => `lens-${id}`),
+        ],
       }],
-      children: [{ id: "search-flow", evidence: "mapped" }],
-      reviewLenses: REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
+      children: [{ id: "search-flow", evidence: ["mapped", "lens-implementation"] }],
+      reviewLenses: REQUIRED_REVIEW_LENSES.map((id, index) => ({
+        id,
+        owner: index === 0 ? "search-flow" : "task-1",
+        evidence: `lens-${id}`,
+      })),
       acceptance: [{ id: "AC-1", evidence: "proof" }],
       acceptanceMatrix: PROOF_ACCEPTANCE_MATRIX,
       headSha: PROOF_HANDOFF.headSha,

@@ -35,30 +35,48 @@ test("finalization relies on executable functional convergence proof", () => {
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
   const result = proof.evaluateConvergence({
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
-    tasks: [{ id: "task-1", child: "missing-flow", evidence: "commit" }],
+    tasks: [{
+      id: "task-1",
+      child: "missing-flow",
+      evidence: ["commit", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+    }],
     children: [{ id: "implemented-flow", evidence: "mapped" }],
+    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
   });
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
   assert.ok(result.remainder.some((entry) => entry.includes("implemented-flow slice needs an owning task")));
-  assert.ok(result.remainder.some((entry) => entry.includes("review lens needs an owning task")));
+  assert.ok(!result.remainder.some((entry) => entry.includes("review lens")));
 
-  const duplicate = proof.evaluateConvergence({
+  const duplicateSlice = proof.evaluateConvergence({
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
     tasks: [
       { id: "task-1", child: "same-flow", evidence: "same-proof" },
       { id: "task-2", child: "same-flow", evidence: "other-proof" },
     ],
     children: [
-      { id: "same-flow", evidence: "same-proof" },
-      { id: "same-flow", evidence: "other-evidence" },
+      { id: "same-flow", evidence: "slice-proof" },
+      { id: "same-flow", evidence: "other-slice-proof" },
       { id: "other-flow", evidence: "other-evidence" },
     ],
   });
 
-  assert.ok(duplicate.remainder.some((entry) => entry.includes("same-flow functional slice is linked more than once")));
-  assert.ok(duplicate.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")));
+  assert.ok(duplicateSlice.remainder.some((entry) => entry.includes("same-flow functional slice is linked more than once")));
+
+  const duplicateEvidence = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [
+      { id: "task-1", child: "first-flow", evidence: "same-proof" },
+      { id: "task-2", child: "second-flow", evidence: "same-proof" },
+    ],
+    children: [
+      { id: "first-flow", evidence: "first-slice-proof" },
+      { id: "second-flow", evidence: "second-slice-proof" },
+    ],
+  });
+
+  assert.ok(duplicateEvidence.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")));
 });
 
 test("keeps routine ProjectV2 guidance out of GraphQL", async () => {
