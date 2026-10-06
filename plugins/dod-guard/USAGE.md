@@ -118,7 +118,7 @@ handoff` comment on the parent issue, mapping every declared functional slice,
 task, and linked functional-slice child to its commit or verified remote-state
 evidence, checks, and user-path result. Each review lens names its owning slice
 or parent-level task and observable evidence, and a childless parent task uses
-`parentLevel: "convergence"`,
+`parentLevel: "convergence"`.
 followed by one `## Acceptance matrix` with exact-head rows for each acceptance
 criterion and mandatory user-facing path.
 `/submit-draft-pr` compares that handoff with the issue contract and links it
