@@ -130,22 +130,26 @@ export function evaluateConvergence({
     }
   }
   const validTaskIds = new Set();
+  const normalizedTaskIds = new Map();
   for (const [index, task] of taskList.entries()) {
-    if (typeof task.id !== "string" || !task.id.trim()) {
+    const taskId = normalizedIdentifier(task.id);
+    if (!taskId) {
       addRemainder("Plan and tasks", `task entry ${index + 1} needs a non-empty id`);
       continue;
     }
-    if (validTaskIds.has(task.id)) {
-      addRemainder("Plan and tasks", `${task.id} task id is declared more than once`);
+    if (validTaskIds.has(taskId)) {
+      addRemainder("Plan and tasks", `${taskId} task id is declared more than once`);
     } else {
-      validTaskIds.add(task.id);
+      validTaskIds.add(taskId);
+      normalizedTaskIds.set(task, taskId);
     }
-    if (evidenceValues(task.evidence).length === 0) addRemainder("Plan and tasks", `${task.id} needs implementation evidence`);
+    if (evidenceValues(task.evidence).length === 0) addRemainder("Plan and tasks", `${taskId} needs implementation evidence`);
   }
   const evidenceOwners = new Map();
   for (const task of taskList) {
-    if (validTaskIds.has(task.id)) {
-      declareEvidence({ owner: task.id, value: task.evidence, section: "Plan and tasks", evidenceOwners, addRemainder });
+    const taskId = normalizedTaskIds.get(task);
+    if (taskId) {
+      declareEvidence({ owner: taskId, value: task.evidence, section: "Plan and tasks", evidenceOwners, addRemainder });
     }
   }
   const childIds = new Set();
@@ -165,11 +169,12 @@ export function evaluateConvergence({
     }
   }
   for (const task of taskList) {
+    const taskId = normalizedTaskIds.get(task);
     const slice = normalizedIdentifier(task.child);
     if (task.child !== undefined && !slice) {
-      addRemainder("Functional decomposition", `${task.id} needs a functional slice id`);
+      addRemainder("Functional decomposition", `${taskId ?? "task"} needs a functional slice id`);
     } else if (slice && !childIds.has(slice)) {
-      addRemainder("Functional decomposition", `${task.id} references missing functional slice ${slice}`);
+      addRemainder("Functional decomposition", `${taskId ?? "task"} references missing functional slice ${slice}`);
     }
   }
   const taskOwners = new Set();
@@ -200,12 +205,15 @@ export function evaluateConvergence({
       } else {
         const owner = normalizedIdentifier(lens.owner);
         const ownerTask = taskList.find(
-          (task) => validTaskIds.has(task.id) && (task.id === owner || normalizedIdentifier(task.child) === owner),
+          (task) => {
+            const taskId = normalizedTaskIds.get(task);
+            return taskId && (taskId === owner || normalizedIdentifier(task.child) === owner);
+          },
         );
         if (!ownerTask) {
           addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
         } else {
-          const evidenceOwner = ownerTask.id === owner ? ownerTask.id : owner;
+          const evidenceOwner = normalizedTaskIds.get(ownerTask) === owner ? owner : normalizedIdentifier(ownerTask.child);
           referenceEvidence({ owner: evidenceOwner, value: lens.evidence, section: "Functional decomposition", evidenceOwners, addRemainder });
         }
       }
@@ -241,7 +249,7 @@ export function evaluateConvergence({
 
   const missingTask = taskList.find((task) => evidenceValues(task.evidence).length === 0);
   const nextAction = missingTask
-    ? { task: missingTask.id, owner: missingTask.child ?? "implementation" }
+    ? { task: normalizedTaskIds.get(missingTask) ?? missingTask.id, owner: missingTask.child ?? "implementation" }
     : remainder.length > 0
       ? { task: remainder[0], owner: "delivery owner" }
       : null;

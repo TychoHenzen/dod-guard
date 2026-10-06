@@ -430,15 +430,16 @@ decomposition identifies an independently deliverable and verifiable slice;
 never duplicate children or recreate a completed refinement set.
 
 Every refined parent uses functional decomposition. Start from the user actions
-and split the outcome into a small set of coherent functional units. Decompose
-each unit only to a useful level that can be independently implemented, tested,
+and split the outcome into a small set of coherent functional slices. Decompose
+each slice only to a useful level that can be independently implemented, tested,
 and verified; avoid tiny administrative subtasks. Create one linked child per
-useful unit only when independent tracking is useful, and keep dependent steps
+useful slice only when independent tracking is useful, and keep dependent steps
 in the parent checklist. Do not create children to fill a fixed category list.
 
 Explicitly assess implementation, wiring and end-to-end usability, refactoring
 and code quality, and failure/recovery reliability. Attach each concern to its
-owning slice or parent-level task.
+owning slice or named parent checklist task, and map that owner to observable
+evidence in the parent task list.
 
 #### Review lenses
 
@@ -481,6 +482,7 @@ After refinement:
 
 - Verify the parent is Todo.
 - Verify every linked child exists, is linked, matches one functional slice, and is Todo.
+- Verify every named parent checklist task has an owner and observable evidence.
 - If the parent remains Backlog, repair the status and read it back before implementation.
 - Do not create additional children during implementation unless a genuinely independent acceptance requirement appears; update an existing child whenever possible.
 - If the refinement skill cannot satisfy this contract, repair the skill minimally in the plugin cache and record the long-term dod-guard change in today's friction log instead of proceeding with an incomplete plan.

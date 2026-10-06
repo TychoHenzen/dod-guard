@@ -10,6 +10,7 @@ const githubDiscipline = await readFile(
   new URL("../../../standards/github-request-discipline.md", import.meta.url),
   "utf8",
 );
+const completeRecords = () => proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {});
 
 test("requires explicit Project item types and safe recovery", () => {
   assert.match(
@@ -113,7 +114,7 @@ test("uses functional decomposition with cross-cutting review lenses", () => {
 test("routes functional decomposition through executable convergence proof", () => {
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
   const result = proof.evaluateConvergence({
-    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    records: completeRecords(),
     tasks: [{ id: "task-1", child: "missing-flow", evidence: "commit" }],
     children: [{ id: "implemented-flow", evidence: "mapped" }],
   });
@@ -123,7 +124,7 @@ test("routes functional decomposition through executable convergence proof", () 
   assert.ok(result.remainder.some((entry) => entry.includes("slice needs an owning task")));
 
   const duplicate = proof.evaluateConvergence({
-    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    records: completeRecords(),
     tasks: [
       { id: "task-1", child: "same-flow", evidence: "same-proof" },
       { id: "task-2", child: "same-flow", evidence: "other-proof" },
@@ -138,7 +139,7 @@ test("routes functional decomposition through executable convergence proof", () 
   assert.ok(duplicate.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")));
 
   const unmappedEvidence = proof.evaluateConvergence({
-    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    records: completeRecords(),
     tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
     children: [{ id: "search-flow", evidence: "mapped" }],
     reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "missing-proof" }],

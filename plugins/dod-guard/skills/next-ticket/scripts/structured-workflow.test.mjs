@@ -320,6 +320,18 @@ test("functional convergence reports malformed collection entries", () => {
   assert.ok(missingAcceptanceId.remainder.some((entry) => entry.includes("acceptance criterion 1 needs a non-empty id")));
 });
 
+test("normalizes task identifiers before matching owners", () => {
+  const result = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: " task-1 ", child: "search-flow", evidence: ["commit", "lens-implementation"] }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "lens-implementation" }],
+  });
+
+  assert.ok(!result.remainder.some((entry) => entry.includes("implementation review lens")));
+  assert.ok(!result.remainder.some((entry) => entry.includes("missing owner task-1")));
+});
+
 test("ordinary fixes bypass structured records", () => {
   assert.deepEqual(proof.evaluateConvergence({ path: "ordinary" }), {
     outcome: "ordinary",

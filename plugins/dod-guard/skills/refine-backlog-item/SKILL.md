@@ -176,7 +176,7 @@ subtasks.
 
 For a structured parent PBI, use functional decomposition: start from the
 user actions and split the outcome into a small set of coherent functional
-units. Decompose each unit only to a useful level that can be independently
+slices. Decompose each slice only to a useful level that can be independently
 implemented, tested, and verified; avoid tiny administrative subtasks. Create
 one linked child per useful unit only when it warrants independent tracking;
 keep dependent steps in the parent checklist. A cohesive feature may remain
