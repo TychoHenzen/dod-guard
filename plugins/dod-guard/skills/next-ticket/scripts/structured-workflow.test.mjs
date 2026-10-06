@@ -282,6 +282,19 @@ test("functional convergence rejects duplicate slices, owners, and missing lense
   assert.ok(result.remainder.some((entry) => entry.includes("implementation review lens is declared more than once")));
   assert.ok(result.remainder.some((entry) => entry.includes("unknown lens")));
   assert.ok(result.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")));
+  assert.deepEqual(result.remainder.slice(0, 11), [
+    "search-flow functional slice is linked more than once",
+    "empty-flow slice needs evidence",
+    "task-3 references missing functional slice missing-flow",
+    "search-flow slice has more than one owning task",
+    "empty-flow slice needs an owning task",
+    "task-1 references evidence owned by search-flow",
+    "implementation review lens is declared more than once",
+    "review-lens ownership uses an unknown lens",
+    "wiring/usability review lens needs an owning task",
+    "quality review lens needs an owning task",
+    "reliability review lens needs an owning task",
+  ]);
 });
 
 test("functional convergence rejects evidence reused across owners", () => {
@@ -330,9 +343,9 @@ test("functional convergence reports malformed collection entries", () => {
 test("normalizes task identifiers before matching owners", () => {
   const result = proof.evaluateConvergence({
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
-    tasks: [{ id: " task-1 ", child: "search-flow", evidence: ["commit", "lens-implementation"] }],
+    tasks: [{ id: " task-1 ", child: "search-flow", evidence: [" commit ", " lens-implementation "] }],
     children: [{ id: "search-flow", evidence: "slice-proof" }],
-    reviewLenses: [{ id: " implementation ", owner: "task-1", evidence: "lens-implementation" }],
+    reviewLenses: [{ id: " implementation ", owner: "task-1", evidence: " lens-implementation " }],
   });
 
   assert.ok(!result.remainder.some((entry) => entry.includes("implementation review lens")));

@@ -93,6 +93,7 @@ test("finalization relies on executable functional convergence proof", () => {
   });
 
   assert.ok(duplicateSlice.remainder.some((entry) => entry.includes("same-flow functional slice is linked more than once")));
+  assert.equal(duplicateSlice.outcome, "actionable remainder");
 
   const duplicateEvidence = proof.evaluateConvergence({
     records: completeRecords(),
@@ -107,6 +108,7 @@ test("finalization relies on executable functional convergence proof", () => {
   });
 
   assert.ok(duplicateEvidence.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")));
+  assert.equal(duplicateEvidence.outcome, "actionable remainder");
 });
 
 test("keeps routine ProjectV2 guidance out of GraphQL", async () => {

@@ -23,7 +23,10 @@ export const REQUIRED_REVIEW_LENSES = [
 export const PROOF_SCENARIOS = ["passing", "incomplete", "ordinary"];
 
 function evidenceValues(value) {
-  if (typeof value === "string") return value.trim() ? [value] : [];
+  if (typeof value === "string") {
+    const evidence = value.trim();
+    return evidence ? [evidence] : [];
+  }
   if (Array.isArray(value)) return value.flatMap(evidenceValues);
   return [];
 }
@@ -219,7 +222,13 @@ export function evaluateConvergence({
           addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
         } else {
           const evidenceOwner = normalizedTaskIds.get(ownerTask) === owner ? owner : normalizedIdentifier(ownerTask.child);
-          referenceEvidence({ owner: evidenceOwner, value: lens.evidence, section: "Functional decomposition", evidenceOwners, addRemainder });
+          referenceEvidence({
+            owner: evidenceOwner,
+            value: lens.evidence,
+            section: "Functional decomposition",
+            evidenceOwners,
+            addRemainder,
+          });
         }
       }
     }
@@ -236,7 +245,13 @@ export function evaluateConvergence({
     } else if (evidenceValues(criterion.evidence).length === 0) {
       addRemainder("Acceptance and verification", `${criterionId} needs fresh evidence`);
     } else {
-      declareEvidence({ owner: criterionId, value: criterion.evidence, section: "Acceptance and verification", evidenceOwners, addRemainder });
+      declareEvidence({
+        owner: criterionId,
+        value: criterion.evidence,
+        section: "Acceptance and verification",
+        evidenceOwners,
+        addRemainder,
+      });
     }
   }
   const matrixValidation = validateAcceptanceMatrix({

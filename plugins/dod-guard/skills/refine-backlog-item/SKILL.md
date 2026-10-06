@@ -282,7 +282,9 @@ an owning child or parent-level task plus mapped observable acceptance or
 verification evidence. Pass the complete task, slice, owner, and evidence mapping
 through the same executable convergence proof used by `next-ticket` before moving
 the parent to `Todo`; stop on any actionable remainder. Do not require a fixed
-child count or create category placeholders.
+child count or create category placeholders. When no linked child represents
+cross-cutting parent work, record an explicit parent-level task with
+`parentLevel: "convergence"` so that ownership remains visible and verifiable.
 If an edit fails or readback disagrees, stop before the status change and
 report the actual partial state. Do not claim the PBI is ready.
 

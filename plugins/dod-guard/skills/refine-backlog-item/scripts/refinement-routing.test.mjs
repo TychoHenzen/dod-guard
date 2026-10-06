@@ -12,6 +12,29 @@ const githubDiscipline = await readFile(
   "utf8",
 );
 const completeRecords = () => proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {});
+const validConvergenceInput = () => ({
+  records: completeRecords(),
+  tasks: [{
+    id: "task-1",
+    child: "search-flow",
+    evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+  }],
+  children: [{ id: "search-flow", evidence: "slice-proof" }],
+  reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
+  acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+  acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
+    id: `AC-1-${index + 1}`,
+    contract: "AC-1",
+    path,
+    proof: `matrix-proof-${index + 1}`,
+    expected: "pass",
+    observed: "pass",
+    status: "pass",
+    evidence: `matrix-evidence-${index + 1}`,
+    headSha: "proof-head",
+  })),
+  headSha: "proof-head",
+});
 
 test("requires explicit Project item types and safe recovery", () => {
   assert.match(
@@ -114,29 +137,7 @@ test("uses functional decomposition with cross-cutting review lenses", () => {
 
 test("routes functional decomposition through executable convergence proof", () => {
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
-  const passing = proof.evaluateConvergence({
-    records: completeRecords(),
-    tasks: [{
-      id: "task-1",
-      child: "search-flow",
-      evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
-    }],
-    children: [{ id: "search-flow", evidence: "slice-proof" }],
-    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
-    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
-    acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
-      id: `AC-1-${index + 1}`,
-      contract: "AC-1",
-      path,
-      proof: `matrix-proof-${index + 1}`,
-      expected: "pass",
-      observed: "pass",
-      status: "pass",
-      evidence: `matrix-evidence-${index + 1}`,
-      headSha: "proof-head",
-    })),
-    headSha: "proof-head",
-  });
+  const passing = proof.evaluateConvergence(validConvergenceInput());
   assert.equal(passing.outcome, "verified");
   const result = proof.evaluateConvergence({
     records: completeRecords(),
