@@ -264,7 +264,6 @@ export function evaluateConvergence({
       addRemainder("Acceptance and verification", `acceptance criterion ${index + 1} needs a non-empty id`);
     } else if (seenAcceptanceIds.has(criterionId)) {
       addRemainder("Acceptance and verification", `${criterionId} acceptance criterion is declared more than once`);
-      seenAcceptanceIds.add(criterionId);
     } else {
       seenAcceptanceIds.add(criterionId);
       if (evidenceValues(criterion.evidence).length === 0) {
