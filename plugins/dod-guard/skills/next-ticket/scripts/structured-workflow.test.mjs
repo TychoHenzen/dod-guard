@@ -337,6 +337,14 @@ test("functional convergence reports malformed collection entries", () => {
 });
 
 test("functional convergence rejects missing acceptance identifiers", () => {
+  const result = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", parentLevel: "convergence", evidence: "commit" }],
+    acceptance: [{ evidence: "proof" }],
+  });
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("acceptance criterion 1 needs a non-empty id")));
 });
 
 test("functional convergence rejects a task without an identifier", () => {
@@ -361,10 +369,11 @@ test("functional convergence rejects conflicting child slice identifiers", () =>
 
 test("normalizes task identifiers before matching owners", () => {
   const result = proof.evaluateConvergence({
+    headSha: "normalization-head",
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
     tasks: [{ id: " task-1 ", child: "search-flow", evidence: [" commit ", " lens-implementation "] }],
     children: [{ id: "search-flow", evidence: "slice-proof" }],
-    reviewLenses: [{ id: " implementation ", owner: "task-1", evidence: " lens-implementation " }],
+    reviewLenses: [{ id: " implementation ", owner: "task-1", evidence: " lens-implementation ", headSha: "normalization-head" }],
   });
 
   assert.ok(!result.remainder.some((entry) => entry.includes("implementation review lens")));
@@ -407,6 +416,16 @@ test("structured convergence rejects a matrix tied to a different head", () => {
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("expected new-head")));
+});
+
+test("structured convergence requires an exact pushed head", () => {
+  const result = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", parentLevel: "convergence", evidence: "commit" }],
+    acceptance: [{ id: "AC-1", evidence: "proof" }],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("needs an exact pushed head")));
 });
 
 test("structured proof CLI separates known paths and rejects unknown scenarios", () => {

@@ -120,6 +120,10 @@ export function evaluateConvergence({
     sections[section].push(message);
     remainder.push(message);
   };
+  const expectedHeadSha = normalizedIdentifier(headSha);
+  if (!expectedHeadSha) {
+    addRemainder("Acceptance and verification", "structured convergence needs an exact pushed head");
+  }
 
   const taskList = normalizeEntries(tasks, "task", "Plan and tasks", addRemainder);
   const childList = normalizeEntries(children, "child", "Functional decomposition", addRemainder);
@@ -236,8 +240,8 @@ export function evaluateConvergence({
       const lensHeadSha = normalizedIdentifier(lens.headSha ?? lens.head);
       if (!lens.owner || evidenceValues(lens.evidence).length === 0) {
         addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
-      } else if (headSha && lensHeadSha !== headSha) {
-        addRemainder("Functional decomposition", `${id} review lens evidence is bound to ${lensHeadSha ?? "no head"}, expected ${headSha}`);
+      } else if (lensHeadSha !== expectedHeadSha) {
+        addRemainder("Functional decomposition", `${id} review lens evidence is bound to ${lensHeadSha ?? "no head"}, expected ${expectedHeadSha ?? "an exact pushed head"}`);
       } else {
         const owner = normalizedIdentifier(lens.owner);
         const taskIdOwners = taskList.filter((task) => normalizedTaskIds.get(task) === owner);
@@ -291,7 +295,7 @@ export function evaluateConvergence({
   }
   const matrixValidation = validateAcceptanceMatrix({
     matrix: acceptanceMatrix,
-    headSha,
+    headSha: expectedHeadSha,
     requiredContracts: acceptanceList,
     requiredPaths: ACCEPTANCE_MATRIX_PATHS,
   });

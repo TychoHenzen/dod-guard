@@ -27,11 +27,13 @@ const validConvergenceInput = () => ({
     { id: "search-flow", evidence: "slice-proof" },
     { id: "settings-flow", evidence: "settings-slice-proof" },
   ],
-  reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+  reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
     id,
     owner: "task-1",
     evidence: `lens-${id}`,
     headSha: "proof-head",
+    acceptanceEvidence: `matrix-evidence-${index + 1}`,
+    verificationEvidence: `matrix-proof-${index + 1}`,
   })),
   acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
   acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
@@ -81,64 +83,35 @@ test("finalization relies on executable functional convergence proof", () => {
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
   const passing = proof.evaluateConvergence(validConvergenceInput());
   assert.equal(passing.outcome, "verified");
-  const result = proof.evaluateConvergence({
-    records: completeRecords(),
-    tasks: [{
-      id: "task-1",
-      child: "missing-flow",
-      evidence: ["commit", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
-    }],
-    children: [{ id: "implemented-flow", evidence: "mapped" }],
-    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({
-      id,
-      owner: "task-1",
-      evidence: `lens-${id}`,
-      headSha: "proof-head",
-    })),
-  });
+  const resultInput = validConvergenceInput();
+  resultInput.tasks[0].child = "missing-flow";
+  resultInput.children[0].id = "implemented-flow";
+  const result = proof.evaluateConvergence(resultInput);
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
   assert.ok(result.remainder.some((entry) => entry.includes("implemented-flow slice needs an owning task")));
   assert.ok(!result.remainder.some((entry) => entry.includes("review lens")));
 
-  const missingLens = proof.evaluateConvergence({
-    records: completeRecords(),
-    tasks: [{ id: "task-1", child: "search-flow", evidence: "commit-proof" }],
-    children: [{ id: "search-flow", evidence: "slice-proof" }],
-    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "commit-proof" }],
-  });
+  const missingLensInput = validConvergenceInput();
+  missingLensInput.reviewLenses = missingLensInput.reviewLenses.slice(0, 1);
+  const missingLens = proof.evaluateConvergence(missingLensInput);
   assert.equal(missingLens.outcome, "actionable remainder");
   assert.ok(missingLens.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")));
 
-  const duplicateSlice = proof.evaluateConvergence({
-    records: completeRecords(),
-    tasks: [
-      { id: "task-1", child: "same-flow", evidence: "same-proof" },
-      { id: "task-2", child: "same-flow", evidence: "other-proof" },
-    ],
-    children: [
-      { id: "same-flow", evidence: "slice-proof" },
-      { id: "other-flow", evidence: "other-evidence" },
-    ],
-  });
+  const duplicateSliceInput = validConvergenceInput();
+  duplicateSliceInput.tasks[1].child = "search-flow";
+  duplicateSliceInput.tasks[1].evidence = "other-proof";
+  const duplicateSlice = proof.evaluateConvergence(duplicateSliceInput);
 
-  assert.ok(duplicateSlice.remainder.some((entry) => entry.includes("same-flow slice has more than one owning task")));
+  assert.ok(duplicateSlice.remainder.some((entry) => entry.includes("search-flow slice has more than one owning task")));
   assert.equal(duplicateSlice.outcome, "actionable remainder");
 
-  const duplicateEvidence = proof.evaluateConvergence({
-    records: completeRecords(),
-    tasks: [
-      { id: "task-1", child: "first-flow", evidence: "same-proof" },
-      { id: "task-2", child: "second-flow", evidence: "same-proof" },
-    ],
-    children: [
-      { id: "first-flow", evidence: "first-slice-proof" },
-      { id: "second-flow", evidence: "second-slice-proof" },
-    ],
-  });
+  const duplicateEvidenceInput = validConvergenceInput();
+  duplicateEvidenceInput.tasks[1].evidence = duplicateEvidenceInput.tasks[0].evidence;
+  const duplicateEvidence = proof.evaluateConvergence(duplicateEvidenceInput);
 
-  assert.ok(duplicateEvidence.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")));
+  assert.ok(duplicateEvidence.remainder.some((entry) => entry.includes("evidence commit-proof is mapped more than once")));
   assert.equal(duplicateEvidence.outcome, "actionable remainder");
 });
 
@@ -150,13 +123,13 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   missingUserPath.acceptanceMatrix = missingUserPath.acceptanceMatrix.filter((row) => row.path !== "browser/e2e");
   const missingUserPathResult = evaluateStructuredFinalization(missingUserPath);
   assert.equal(missingUserPathResult.nextStep, "stop");
-  assert.ok(missingUserPathResult.convergence.remainder.some((entry) => entry.includes("browser/e2e")));
+  assert.ok(missingUserPathResult.remainder.some((entry) => entry.includes("browser/e2e")));
 
   const staleEvidence = validConvergenceInput();
   staleEvidence.acceptanceMatrix = staleEvidence.acceptanceMatrix.map((row) => ({ ...row, headSha: "old-head" }));
   const staleEvidenceResult = evaluateStructuredFinalization(staleEvidence);
   assert.equal(staleEvidenceResult.nextStep, "stop");
-  assert.ok(staleEvidenceResult.convergence.remainder.some((entry) => entry.includes("expected proof-head")));
+  assert.ok(staleEvidenceResult.remainder.some((entry) => entry.includes("expected proof-head")));
 
   const unmappedUserPath = validConvergenceInput();
   unmappedUserPath.reviewLenses = unmappedUserPath.reviewLenses.map((lens) =>
@@ -165,8 +138,18 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   const unmappedUserPathResult = evaluateStructuredFinalization(unmappedUserPath);
   assert.equal(unmappedUserPathResult.nextStep, "stop");
   assert.ok(
-    unmappedUserPathResult.convergence.remainder.some((entry) =>
+    unmappedUserPathResult.remainder.some((entry) =>
       entry.includes("references undeclared evidence missing-user-path-proof"),
+    ),
+  );
+
+  const missingLensMatrixEvidence = validConvergenceInput();
+  delete missingLensMatrixEvidence.reviewLenses[0].acceptanceEvidence;
+  const missingLensMatrixEvidenceResult = evaluateStructuredFinalization(missingLensMatrixEvidence);
+  assert.equal(missingLensMatrixEvidenceResult.nextStep, "stop");
+  assert.ok(
+    missingLensMatrixEvidenceResult.remainder.some((entry) =>
+      entry.includes("implementation review lens needs acceptance-matrix acceptance evidence"),
     ),
   );
 });

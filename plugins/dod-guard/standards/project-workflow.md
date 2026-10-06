@@ -61,7 +61,9 @@ implementation evidence they request.
 The executable proof at `skills/next-ticket/scripts/structured-workflow-proof.mjs`
 and its focused tests enforce the canonical lens IDs `implementation`,
 `wiring/usability`, `quality`, and `reliability`; prose may expand those IDs
-to the corresponding user-facing concern.
+to the corresponding user-facing concern. Each lens entry records its owner,
+observable evidence, `headSha`, and the acceptance-matrix `acceptanceEvidence`
+and `verificationEvidence` that prove the lens before Project finalization.
 
 Task-list records use `parentLevel: "convergence"` on a task that owns
 cross-cutting parent work without a linked child; for example,
@@ -134,7 +136,9 @@ slice, task, and linked functional-slice child is mapped exactly once by the
 implementation handoff. Each canonical review lens appears exactly once and
 resolves to one task or slice owner; its evidence must be declared by that
 owner and bound to the accepted head. Every declared evidence identifier is
-unique, and every evidence reference resolves to its owner. Every acceptance
+unique; reuse the underlying commit or check with a distinct owner-specific
+identifier rather than redeclaring one token. Every evidence reference resolves
+to its owner. Every acceptance
 criterion and matrix row has fresh evidence at the exact head. No item is
 contradicted or unresolved. The
 required-context and base/mergeability

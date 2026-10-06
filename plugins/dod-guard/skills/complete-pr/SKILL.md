@@ -146,8 +146,10 @@ Before finalizing a structured parent, consume the current handoff through
 `evaluateConvergence` API from `next-ticket/scripts/structured-workflow-proof.mjs`,
 and stop on any actionable remainder. Load its `records`, `tasks`, `children`,
 `reviewLenses`, `acceptance`, `acceptanceMatrix`, and exact pushed `headSha`,
-then require `outcome: "verified"`; any other outcome stops finalization. Direct
-Project readback does not replace this convergence proof.
+then require `outcome: "verified"`; each lens must also resolve its
+`acceptanceEvidence` and `verificationEvidence` through the exact-head matrix.
+Any other outcome stops finalization. Direct Project readback does not replace
+this convergence proof.
 Require every parent-level task that owns one of those review lenses to carry
 explicit acceptance and verification evidence in the durable handoff and read
 it back before finalizing the Project item, even when it has no linked child

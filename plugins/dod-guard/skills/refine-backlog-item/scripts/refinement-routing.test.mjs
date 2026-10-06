@@ -151,11 +151,14 @@ test("uses functional decomposition with cross-cutting review lenses", () => {
   assert.doesNotMatch(skill, /four mandatory child categories are linked exactly once/);
 });
 
-test("routes functional decomposition through executable convergence proof", () => {
+test("routes a valid functional decomposition through executable convergence proof", () => {
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
   const passing = proof.evaluateConvergence(validConvergenceInput());
   assert.equal(passing.outcome, "verified");
   assert.ok(!passing.remainder.some((entry) => entry.includes("review lens")));
+});
+
+test("allows an explicitly parent-level convergence task", () => {
   const parentLevel = validConvergenceInput();
   parentLevel.tasks = [{
     id: "task-1",
@@ -166,6 +169,9 @@ test("routes functional decomposition through executable convergence proof", () 
   const parentLevelResult = proof.evaluateConvergence(parentLevel);
   assert.equal(parentLevelResult.outcome, "verified");
   assert.ok(!parentLevelResult.remainder.some((entry) => entry.includes("acceptance")));
+});
+
+test("rejects missing and unmapped functional slices", () => {
   const result = proof.evaluateConvergence({
     records: completeRecords(),
     tasks: [{ id: "task-1", child: "missing-flow", evidence: "commit" }],
@@ -175,7 +181,9 @@ test("routes functional decomposition through executable convergence proof", () 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
   assert.ok(result.remainder.some((entry) => entry.includes("slice needs an owning task")));
+});
 
+test("rejects duplicate functional slices and evidence", () => {
   const duplicate = proof.evaluateConvergence({
     records: completeRecords(),
     tasks: [
@@ -194,7 +202,9 @@ test("routes functional decomposition through executable convergence proof", () 
   assert.ok(
     duplicate.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")),
   );
+});
 
+test("rejects review-lens evidence that is not mapped", () => {
   const unmappedEvidence = proof.evaluateConvergence({
     records: completeRecords(),
     tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
@@ -213,7 +223,9 @@ test("routes functional decomposition through executable convergence proof", () 
     ),
   );
   assert.ok(
-    unmappedEvidence.remainder.some((entry) => entry.includes("wiring/usability review lens needs an owning task")),
+    unmappedEvidence.remainder.some((entry) =>
+      entry.includes("wiring/usability review lens needs an owning task"),
+    ),
   );
 });
 
