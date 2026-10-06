@@ -177,7 +177,7 @@ export function evaluateConvergence({
   records = {},
   tasks = [],
   children = [],
-  reviewLenses = [],
+  reviewLenses = null,
   acceptance = [],
   acceptanceMatrix = null,
   headSha = null,
@@ -211,7 +211,12 @@ export function evaluateConvergence({
 
   const taskList = normalizeEntries(tasks, "task", "Plan and tasks", addRemainder);
   const childList = normalizeEntries(children, "child", "Functional decomposition", addRemainder);
-  const lensList = normalizeEntries(reviewLenses, "review lens", "Functional decomposition", addRemainder);
+  const lensList = normalizeEntries(
+    reviewLenses ?? recordMap["lens-ownership"] ?? [],
+    "review lens",
+    "Functional decomposition",
+    addRemainder,
+  );
   const acceptanceList = normalizeEntries(acceptance, "acceptance criterion", "Acceptance and verification", addRemainder);
 
   for (const record of REQUIRED_RECORDS) {
@@ -325,8 +330,6 @@ export function evaluateConvergence({
       .map((row) => normalizedIdentifier(row?.proof))
       .filter(Boolean),
   );
-  const referencedMatrixEvidence = new Set();
-  const referencedMatrixProofs = new Set();
   validateLensOwnershipRecord(
     recordMap["lens-ownership"],
     lensList,
@@ -365,7 +368,6 @@ export function evaluateConvergence({
           const evidenceOwner = normalizedTaskIds.get(ownerTask) === owner ? owner : normalizedIdentifier(ownerTask.child);
           if (postPushValidation) {
             for (const evidence of evidenceValues(lens.acceptanceEvidence)) {
-              referencedMatrixEvidence.add(evidence);
               if (!matrixEvidence.has(evidence)) {
                 addRemainder("Functional decomposition", `${id} review lens references undeclared acceptance evidence ${evidence}`);
               }
@@ -374,7 +376,6 @@ export function evaluateConvergence({
               }
             }
             for (const evidence of evidenceValues(lens.verificationEvidence)) {
-              referencedMatrixProofs.add(evidence);
               if (!matrixProofs.has(evidence)) {
                 addRemainder("Functional decomposition", `${id} review lens references undeclared verification evidence ${evidence}`);
               }
@@ -425,12 +426,6 @@ export function evaluateConvergence({
         addRemainder("Acceptance and verification", `acceptance matrix proof ${proof} is declared more than once`);
       } else if (proof) {
         seenMatrixProofs.add(proof);
-      }
-      if (evidence && !referencedMatrixEvidence.has(evidence)) {
-        addRemainder("Acceptance and verification", `acceptance matrix evidence ${evidence} is not mapped to a review lens`);
-      }
-      if (proof && !referencedMatrixProofs.has(proof)) {
-        addRemainder("Acceptance and verification", `acceptance matrix proof ${proof} is not mapped to a review lens`);
       }
     }
   }

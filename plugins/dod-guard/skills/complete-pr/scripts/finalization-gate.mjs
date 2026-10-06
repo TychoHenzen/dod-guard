@@ -23,7 +23,12 @@ function lensEvidenceRemainder(handoff) {
       return { error: `${label} is not mapped in the acceptance matrix`, rows: [] };
     }
     const rows = [];
+    const seenReferences = new Set();
     for (const reference of values(value)) {
+      if (seenReferences.has(reference)) {
+        return { error: `${label} references ${reference} more than once`, rows };
+      }
+      seenReferences.add(reference);
       const matches = matrix.filter((row) => text(row?.[field]) === reference);
       if (matches.length === 0) {
         return { error: `${label} ${reference} is not mapped in the acceptance matrix`, rows };
