@@ -262,16 +262,7 @@ export function evaluateConvergence({
   }
   const childIds = new Set();
   for (const child of childList) {
-    const sliceIdentifiers = [child.id, child.slice, child.name].map(normalizedIdentifier).filter(Boolean);
-    const distinctSliceIdentifiers = [...new Set(sliceIdentifiers)];
-    if (distinctSliceIdentifiers.length > 1) {
-      addRemainder(
-        "Functional decomposition",
-        `functional slice identifiers disagree (${distinctSliceIdentifiers.join(", ")})`,
-      );
-      continue;
-    }
-    const slice = distinctSliceIdentifiers[0] ?? null;
+    const slice = normalizedIdentifier(child.slice ?? child.name ?? child.id);
     if (!slice) {
       addRemainder("Functional decomposition", "linked child needs a functional slice id");
     } else if (childIds.has(slice)) {
@@ -536,8 +527,12 @@ export function scenarioResult(scenario = "passing") {
       owner: "task-1",
       evidence: `lens-${id}`,
       headSha: PROOF_HANDOFF.headSha,
-      acceptanceEvidence: index === 1 ? ["evidence-2", "evidence-5"] : `evidence-${index + 1}`,
-      verificationEvidence: index === 1 ? ["proof-2", "proof-5"] : `proof-${index + 1}`,
+      acceptanceEvidence: id === "wiring/usability"
+        ? ["evidence-2", "evidence-3"]
+        : id === "reliability" ? ["evidence-4", "evidence-5"] : `evidence-${index + 1}`,
+      verificationEvidence: id === "wiring/usability"
+        ? ["proof-2", "proof-3"]
+        : id === "reliability" ? ["proof-4", "proof-5"] : `proof-${index + 1}`,
     }));
     return evaluateConvergence({
       records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [

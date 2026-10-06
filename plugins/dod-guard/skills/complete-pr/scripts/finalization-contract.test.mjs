@@ -17,8 +17,14 @@ const createReviewLenses = () => proof.REQUIRED_REVIEW_LENSES.map((id, index) =>
   owner: "task-1",
   evidence: `lens-${id}`,
   headSha: "proof-head",
-  acceptanceEvidence: id === "wiring/usability" ? ["matrix-evidence-2", "matrix-evidence-5"] : `matrix-evidence-${index + 1}`,
-  verificationEvidence: id === "wiring/usability" ? ["matrix-proof-2", "matrix-proof-5"] : `matrix-proof-${index + 1}`,
+  acceptanceEvidence: id === "wiring/usability"
+    ? ["matrix-evidence-2", "matrix-evidence-3"]
+    : id === "reliability" ? ["matrix-evidence-4", "matrix-evidence-5"] : id === "quality"
+      ? "matrix-evidence-6" : `matrix-evidence-${index + 1}`,
+  verificationEvidence: id === "wiring/usability"
+    ? ["matrix-proof-2", "matrix-proof-3"]
+    : id === "reliability" ? ["matrix-proof-4", "matrix-proof-5"] : id === "quality"
+      ? "matrix-proof-6" : `matrix-proof-${index + 1}`,
 }));
 const validConvergenceInput = () => {
   const reviewLenses = createReviewLenses();
@@ -31,8 +37,8 @@ const validConvergenceInput = () => {
         "commit-proof",
         ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
       ],
-      acceptanceEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-evidence-${index + 1}`),
-      verificationEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-proof-${index + 1}`),
+      acceptanceEvidence: Array.from({ length: 6 }, (_, index) => `matrix-evidence-${index + 1}`),
+      verificationEvidence: Array.from({ length: 6 }, (_, index) => `matrix-proof-${index + 1}`),
     }, {
       id: "task-2",
       child: "settings-flow",
@@ -44,7 +50,7 @@ const validConvergenceInput = () => {
     ],
     reviewLenses,
     acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
-    acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
+    acceptanceMatrix: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((path, index) => ({
       id: `AC-1-${index + 1}`,
       contract: "AC-1",
       path,
@@ -258,6 +264,26 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   const unmappedSliceResult = evaluateStructuredFinalization(unmappedSlice);
   assert.equal(unmappedSliceResult.nextStep, "stop");
   assert.ok(unmappedSliceResult.remainder.some((entry) => entry.includes("references missing functional slice missing-flow")));
+});
+
+test("finalization gate binds cross-cutting lenses to their user paths", () => {
+  const wrongWiringPath = validConvergenceInput();
+  wrongWiringPath.reviewLenses = wrongWiringPath.reviewLenses.map((lens) =>
+    lens.id === "wiring/usability"
+      ? { ...lens, acceptanceEvidence: "matrix-evidence-1", verificationEvidence: "matrix-proof-1" }
+      : lens,
+  );
+  const wrongWiringResult = evaluateStructuredFinalization(wrongWiringPath);
+  assert.ok(wrongWiringResult.remainder.some((entry) => entry.includes("wiring/usability review lens must cover required path(s)")));
+
+  const reusedRow = validConvergenceInput();
+  reusedRow.reviewLenses = reusedRow.reviewLenses.map((lens) =>
+    lens.id === "reliability"
+      ? { ...lens, acceptanceEvidence: "matrix-evidence-6", verificationEvidence: "matrix-proof-6" }
+      : lens,
+  );
+  const reusedRowResult = evaluateStructuredFinalization(reusedRow);
+  assert.ok(reusedRowResult.remainder.some((entry) => entry.includes("reliability review lens reuses acceptance-matrix row")));
 });
 
 test("keeps routine ProjectV2 guidance out of GraphQL", async () => {

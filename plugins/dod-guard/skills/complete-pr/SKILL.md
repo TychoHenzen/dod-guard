@@ -164,7 +164,9 @@ explicit acceptance and verification evidence in the durable handoff and read
 it back before finalizing the Project item, even when it has no linked child
 commit. The evidence must resolve through the handoff's acceptance matrix, whose
 mandatory user-path rows prove wiring/usability and failure/recovery behavior at
-the exact pushed head.
+the exact pushed head. The finalization gate binds `wiring/usability` to
+`interactive-control` and `browser/e2e`, and `reliability` to `data/error` and
+`recovery`; one passing row cannot stand in for multiple lenses.
 Use the shared status-write runner with the child item IDs first and the parent item ID last:
 
 ```text

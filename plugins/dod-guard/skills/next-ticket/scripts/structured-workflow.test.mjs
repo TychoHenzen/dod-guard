@@ -48,6 +48,12 @@ const proofScript = path.join(
   "plugins/dod-guard/skills/next-ticket/scripts/structured-workflow-proof.mjs",
 );
 
+function lensEvidence(id, index, prefix) {
+  if (id === "wiring/usability") return [`${prefix}-2`, `${prefix}-3`];
+  if (id === "reliability") return [`${prefix}-4`, `${prefix}-5`];
+  return `${prefix}-${index + 1}`;
+}
+
 function acceptanceMatrix(headSha, contract = "AC-1") {
   return ACCEPTANCE_MATRIX_PATHS.map((pathName, index) => ({
     id: `${contract}-${index + 1}`,
@@ -210,8 +216,8 @@ test("structured proof produces passing and actionable outcomes", () => {
     owner: index === 0 ? "search-flow" : "task-1",
     evidence: `lens-${id}`,
     headSha: "abc1234",
-    acceptanceEvidence: id === "wiring/usability" ? ["evidence-2", "evidence-5"] : `evidence-${index + 1}`,
-    verificationEvidence: id === "wiring/usability" ? ["proof-2", "proof-5"] : `proof-${index + 1}`,
+    acceptanceEvidence: lensEvidence(id, index, "evidence"),
+    verificationEvidence: lensEvidence(id, index, "proof"),
   }));
   const complete = proof.evaluateConvergence({
     headSha: "abc1234",
@@ -414,14 +420,15 @@ test("functional convergence rejects a task without an identifier", () => {
   assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 needs a non-empty id")));
 });
 
-test("functional convergence rejects conflicting child slice identifiers", () => {
+test("functional convergence keeps provider child ids separate from slice ids", () => {
   const result = proof.evaluateConvergence({
     records: recordsWithRequiredKeys([]),
     tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
-    children: [{ id: "search-flow", slice: "other-flow", evidence: "proof" }],
+    children: [{ id: "issue-42", slice: "search-flow", evidence: "proof" }],
   });
 
-  assert.ok(result.remainder.some((entry) => entry.includes("functional slice identifiers disagree")));
+  assert.ok(!result.remainder.some((entry) => entry.includes("functional slice identifiers disagree")));
+  assert.ok(!result.remainder.some((entry) => entry.includes("missing functional slice search-flow")));
 });
 
 test("normalizes task identifiers before matching owners", () => {

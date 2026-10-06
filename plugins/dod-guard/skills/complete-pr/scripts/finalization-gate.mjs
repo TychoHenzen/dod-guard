@@ -14,6 +14,11 @@ function values(value) {
   return result ? [result] : [];
 }
 
+const REQUIRED_LENS_PATHS = Object.freeze({
+  "wiring/usability": ["interactive-control", "browser/e2e"],
+  reliability: ["data/error", "recovery"],
+});
+
 function lensEvidenceRemainder(handoff) {
   const matrix = Array.isArray(handoff.acceptanceMatrix) ? handoff.acceptanceMatrix : [];
   const expectedHead = text(handoff.headSha);
@@ -59,6 +64,7 @@ function lensEvidenceRemainder(handoff) {
     requiredPaths: ACCEPTANCE_MATRIX_PATHS,
   });
   const remainder = matrixValidation.errors.map((error) => `acceptance matrix: ${error}`);
+  const claimedRows = new Map();
   for (const lens of Array.isArray(handoff.reviewLenses) ? handoff.reviewLenses : []) {
     const id = text(lens?.id ?? lens?.name) ?? "review lens";
     if (text(lens?.headSha ?? lens?.head) !== expectedHead) {
@@ -110,6 +116,24 @@ function lensEvidenceRemainder(handoff) {
       )
     ) {
       remainder.push(`${id} review lens acceptance and verification evidence must share one acceptance-matrix row`);
+    } else if (!verificationRemainder.error && !acceptanceRemainder.error) {
+      const rows = acceptanceRemainder.rows;
+      const requiredPaths = REQUIRED_LENS_PATHS[id] ?? [];
+      const missingPaths = requiredPaths.filter((requiredPath) =>
+        !rows.some((row) => text(row?.path)?.toLowerCase().includes(requiredPath)),
+      );
+      if (missingPaths.length > 0) {
+        remainder.push(`${id} review lens must cover required path(s): ${missingPaths.join(", ")}`);
+      }
+      for (const row of rows) {
+        const rowKey = text(row?.id) ?? String(row?.index);
+        const previousLens = claimedRows.get(rowKey);
+        if (previousLens && previousLens !== id) {
+          remainder.push(`${id} review lens reuses acceptance-matrix row ${rowKey} already owned by ${previousLens}`);
+        } else {
+          claimedRows.set(rowKey, id);
+        }
+      }
     }
   }
   return remainder;

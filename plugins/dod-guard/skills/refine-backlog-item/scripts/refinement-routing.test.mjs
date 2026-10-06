@@ -5,6 +5,12 @@ import { ACCEPTANCE_MATRIX_PATHS } from "../../goal-sdlc/scripts/lib/acceptance-
 
 const proof = await import("../../next-ticket/scripts/structured-workflow-proof.mjs");
 
+function lensEvidence(id, index, prefix) {
+  if (id === "wiring/usability") return [`${prefix}-2`, `${prefix}-3`];
+  if (id === "reliability") return [`${prefix}-4`, `${prefix}-5`];
+  return `${prefix}-${index + 1}`;
+}
+
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const fixtures = await readFile(new URL("../fixtures.md", import.meta.url), "utf8");
 const githubDiscipline = await readFile(
@@ -22,8 +28,8 @@ const validConvergenceInput = () => {
     owner: "task-1",
     evidence: `lens-${id}`,
     headSha: "proof-head",
-    acceptanceEvidence: id === "wiring/usability" ? ["matrix-evidence-2", "matrix-evidence-5"] : `matrix-evidence-${index + 1}`,
-    verificationEvidence: id === "wiring/usability" ? ["matrix-proof-2", "matrix-proof-5"] : `matrix-proof-${index + 1}`,
+    acceptanceEvidence: lensEvidence(id, index, "matrix-evidence"),
+    verificationEvidence: lensEvidence(id, index, "matrix-proof"),
   }));
   return {
     records: completeRecords(reviewLenses),
