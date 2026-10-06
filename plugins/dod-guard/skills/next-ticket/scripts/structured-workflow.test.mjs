@@ -223,6 +223,8 @@ test("structured proof produces passing and actionable outcomes", () => {
         "commit abc123; test passed",
         ...proof.REQUIRED_REVIEW_LENSES.filter((id) => id !== "implementation").map((id) => `lens-${id}`),
       ],
+      acceptanceEvidence: proof.REQUIRED_REVIEW_LENSES.map((_, index) => `evidence-${index + 1}`),
+      verificationEvidence: proof.REQUIRED_REVIEW_LENSES.map((_, index) => `proof-${index + 1}`),
     }],
     children: [{ id: "search-flow", evidence: ["mapped", "lens-implementation"] }],
     reviewLenses,
@@ -380,8 +382,8 @@ test("normalizes task identifiers before matching owners", () => {
     owner: "task-1",
     evidence: " lens-implementation ",
     headSha: "normalization-head",
-    acceptanceEvidence: "acceptance-proof",
-    verificationEvidence: "verification-proof",
+    acceptanceEvidence: "evidence-1",
+    verificationEvidence: "proof-1",
   }];
   const result = proof.evaluateConvergence({
     headSha: "normalization-head",
@@ -390,9 +392,13 @@ test("normalizes task identifiers before matching owners", () => {
       id: " task-1 ",
       child: "search-flow",
       evidence: [" commit ", " lens-implementation "],
+      acceptanceEvidence: ["evidence-1"],
+      verificationEvidence: ["proof-1"],
     }],
     children: [{ id: "search-flow", evidence: "slice-proof" }],
     reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "proof" }],
+    acceptanceMatrix: acceptanceMatrix("normalization-head"),
   });
 
   assert.ok(!result.remainder.some((entry) => entry.includes("implementation review lens")));

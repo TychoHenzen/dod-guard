@@ -100,6 +100,24 @@ function validateLensOwnershipRecord(record, reviewLenses, section, addRemainder
   }
 }
 
+function validateTaskMapping({ task, taskId, childIds, addRemainder }) {
+  const slice = normalizedIdentifier(task.child);
+  if (task.child !== undefined && !slice) {
+    addRemainder("Functional decomposition", `${taskId ?? "task"} needs a functional slice id`);
+  } else if (task.parentLevel !== undefined && task.parentLevel !== "convergence") {
+    addRemainder("Functional decomposition", `${taskId ?? "task"} uses an unknown parent-level marker`);
+  } else if (slice && task.parentLevel === "convergence") {
+    addRemainder("Functional decomposition", `${taskId ?? "task"} cannot combine a functional slice with the parent-level convergence marker`);
+  } else if (slice && !childIds.has(slice)) {
+    addRemainder("Functional decomposition", `${taskId ?? "task"} references missing functional slice ${slice}`);
+  } else if (!slice && task.parentLevel !== "convergence") {
+    addRemainder(
+      "Functional decomposition",
+      `${taskId ?? "task"} needs a functional slice or parent-level convergence marker`,
+    );
+  }
+}
+
 function declareEvidence({ owner, value, section, evidenceOwners, addRemainder }) {
   for (const evidence of evidenceValues(value)) {
     if (evidenceOwners.has(evidence)) {
@@ -247,22 +265,12 @@ export function evaluateConvergence({
     }
   }
   for (const task of taskList) {
-    const taskId = normalizedTaskIds.get(task);
-    const slice = normalizedIdentifier(task.child);
-    if (task.child !== undefined && !slice) {
-      addRemainder("Functional decomposition", `${taskId ?? "task"} needs a functional slice id`);
-    } else if (task.parentLevel !== undefined && task.parentLevel !== "convergence") {
-      addRemainder("Functional decomposition", `${taskId ?? "task"} uses an unknown parent-level marker`);
-    } else if (slice && task.parentLevel === "convergence") {
-      addRemainder("Functional decomposition", `${taskId ?? "task"} cannot combine a functional slice with the parent-level convergence marker`);
-    } else if (slice && !childIds.has(slice)) {
-      addRemainder("Functional decomposition", `${taskId ?? "task"} references missing functional slice ${slice}`);
-    } else if (!slice && task.parentLevel !== "convergence") {
-      addRemainder(
-        "Functional decomposition",
-        `${taskId ?? "task"} needs a functional slice or parent-level convergence marker`,
-      );
-    }
+    validateTaskMapping({
+      task,
+      taskId: normalizedTaskIds.get(task),
+      childIds,
+      addRemainder,
+    });
   }
   const taskOwners = new Set();
   for (const task of taskList) {
@@ -284,6 +292,16 @@ export function evaluateConvergence({
     }
   }
   const seenLenses = new Set();
+  const matrixEvidence = new Set(
+    (Array.isArray(acceptanceMatrix) ? acceptanceMatrix : [])
+      .map((row) => normalizedIdentifier(row?.evidence))
+      .filter(Boolean),
+  );
+  const matrixProofs = new Set(
+    (Array.isArray(acceptanceMatrix) ? acceptanceMatrix : [])
+      .map((row) => normalizedIdentifier(row?.proof))
+      .filter(Boolean),
+  );
   validateLensOwnershipRecord(
     records["lens-ownership"],
     lensList,
@@ -322,6 +340,24 @@ export function evaluateConvergence({
         } else {
           const [ownerTask] = ownerTasks;
           const evidenceOwner = normalizedTaskIds.get(ownerTask) === owner ? owner : normalizedIdentifier(ownerTask.child);
+          if (postPushValidation) {
+            for (const evidence of evidenceValues(lens.acceptanceEvidence)) {
+              if (!matrixEvidence.has(evidence)) {
+                addRemainder("Functional decomposition", `${id} review lens references undeclared acceptance evidence ${evidence}`);
+              }
+              if (!evidenceValues(ownerTask.acceptanceEvidence).includes(evidence)) {
+                addRemainder("Functional decomposition", `${id} owner task does not declare acceptance evidence ${evidence}`);
+              }
+            }
+            for (const evidence of evidenceValues(lens.verificationEvidence)) {
+              if (!matrixProofs.has(evidence)) {
+                addRemainder("Functional decomposition", `${id} review lens references undeclared verification evidence ${evidence}`);
+              }
+              if (!evidenceValues(ownerTask.verificationEvidence).includes(evidence)) {
+                addRemainder("Functional decomposition", `${id} owner task does not declare verification evidence ${evidence}`);
+              }
+            }
+          }
           referenceEvidence({
             owner: evidenceOwner,
             value: lens.evidence,
@@ -439,7 +475,7 @@ export function scenarioResult(scenario = "passing") {
   if (scenario === "passing") {
     const reviewLenses = REQUIRED_REVIEW_LENSES.map((id, index) => ({
       id,
-      owner: index === 0 ? "search-flow" : "task-1",
+      owner: "task-1",
       evidence: `lens-${id}`,
       headSha: PROOF_HANDOFF.headSha,
       acceptanceEvidence: `evidence-${index + 1}`,
@@ -455,10 +491,12 @@ export function scenarioResult(scenario = "passing") {
         child: "search-flow",
         evidence: [
           "commit abc123",
-          ...REQUIRED_REVIEW_LENSES.filter((id) => id !== "implementation").map((id) => `lens-${id}`),
+          ...REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
         ],
+        acceptanceEvidence: REQUIRED_REVIEW_LENSES.map((_, index) => `evidence-${index + 1}`),
+        verificationEvidence: REQUIRED_REVIEW_LENSES.map((_, index) => `proof-${index + 1}`),
       }],
-      children: [{ id: "search-flow", evidence: ["mapped", "lens-implementation"] }],
+      children: [{ id: "search-flow", evidence: "mapped" }],
       reviewLenses,
       acceptance: [{ id: "AC-1", evidence: "proof" }],
       acceptanceMatrix: PROOF_ACCEPTANCE_MATRIX,

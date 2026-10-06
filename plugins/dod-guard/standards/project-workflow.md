@@ -114,8 +114,9 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
 - `implementation-plan`: affected owners, approach, and verification approach.
 - `task-list`: ordered tasks with a clear dependency and an `independent`
   marker only when a task can be committed and closed separately.
-- `lens-ownership`: an array containing exactly one implementation,
-  wiring/usability, quality, and failure/recovery entry. Each entry repeats its
+- `lens-ownership`: an array containing exactly one `implementation`,
+  `wiring/usability`, `quality`, and `reliability` (failure/recovery) entry.
+  Each entry repeats its
   review-lens id, owner, observable evidence, accepted head, and any acceptance
   or verification evidence; the executable handoff proof compares this record
   with the review-lens input instead of treating record presence as proof.

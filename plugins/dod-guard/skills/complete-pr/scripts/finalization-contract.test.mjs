@@ -208,6 +208,19 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
     ),
   );
 
+  const unmappedLensAcceptance = validConvergenceInput();
+  unmappedLensAcceptance.reviewLenses[0] = {
+    ...unmappedLensAcceptance.reviewLenses[0],
+    acceptanceEvidence: "unmapped-acceptance-proof",
+  };
+  const unmappedLensAcceptanceResult = evaluateStructuredFinalization(unmappedLensAcceptance);
+  assert.equal(unmappedLensAcceptanceResult.nextStep, "stop");
+  assert.ok(
+    unmappedLensAcceptanceResult.remainder.some((entry) =>
+      entry.includes("references undeclared acceptance evidence unmapped-acceptance-proof"),
+    ),
+  );
+
   const missingOwnerEvidence = validConvergenceInput();
   delete missingOwnerEvidence.tasks[0].verificationEvidence;
   const missingOwnerEvidenceResult = evaluateStructuredFinalization(missingOwnerEvidence);

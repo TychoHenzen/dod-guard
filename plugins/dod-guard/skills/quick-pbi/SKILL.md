@@ -37,7 +37,9 @@ referenced skill from the active plugin root before invoking it.
   supported user-facing surface; `quality` for refactoring and code quality,
   including cleanup; and `reliability` for failure/recovery beyond the happy
   path. Attach each concern to the slice or parent task that owns it
-  instead of manufacturing category children.
+  instead of manufacturing category children. Linked child PBIs remain
+  checklist work delivered through the parent's single branch, commit series,
+  and draft PR.
 - Do not pause for ceremonial confirmation before issue, Project, branch,
   commit, push, or draft-PR actions already covered by this skill. Ask only the
   batched refinement questions for material constraints, or a real external

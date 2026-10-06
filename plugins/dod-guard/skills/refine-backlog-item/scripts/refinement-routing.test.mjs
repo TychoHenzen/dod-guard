@@ -34,6 +34,8 @@ const validConvergenceInput = () => {
         "commit-proof",
         ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
       ],
+      acceptanceEvidence: proof.REQUIRED_REVIEW_LENSES.map((_, index) => `matrix-evidence-${index + 1}`),
+      verificationEvidence: proof.REQUIRED_REVIEW_LENSES.map((_, index) => `matrix-proof-${index + 1}`),
     }, {
       id: "task-2",
       child: "settings-flow",
@@ -172,6 +174,8 @@ test("allows an explicitly parent-level convergence task", () => {
     id: "task-1",
     parentLevel: "convergence",
     evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
+    acceptanceEvidence: proof.REQUIRED_REVIEW_LENSES.map((_, index) => `matrix-evidence-${index + 1}`),
+    verificationEvidence: proof.REQUIRED_REVIEW_LENSES.map((_, index) => `matrix-proof-${index + 1}`),
   }];
   parentLevel.children = [];
   const parentLevelResult = proof.evaluateConvergence(parentLevel);
@@ -192,11 +196,10 @@ test("rejects missing and duplicate review lenses", () => {
 });
 
 test("rejects missing and unmapped functional slices", () => {
-  const result = proof.evaluateConvergence({
-    records: completeRecords(),
-    tasks: [{ id: "task-1", child: "missing-flow", evidence: "commit" }],
-    children: [{ id: "implemented-flow", evidence: "mapped" }],
-  });
+  const input = validConvergenceInput();
+  input.tasks[0].child = "missing-flow";
+  input.children[0].id = "implemented-flow";
+  const result = proof.evaluateConvergence(input);
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
