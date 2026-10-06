@@ -64,7 +64,7 @@ test("README and usage expose every structured stage contract", () => {
     ["Requirements", "`/refine-backlog-item`", "Issue `Outcome`, `Scope`, and checked `Acceptance criteria`", "Clarify gaps, then plan."],
     ["Clarification", "`/refine-backlog-item`", "`Implementation notes` with decisions and discovery evidence", "Only resolved requirements enter the plan."],
     ["Plan", "`/refine-backlog-item`", "`implementation-plan` record in the issue", "Break the plan into actionable tasks."],
-    ["Tasks", "`/refine-backlog-item`", "`task-list` record and four mandatory linked child PBIs for structured work", "`Todo` PBI hands every child evidence to implementation on one branch and PR."],
+    ["Tasks", "`/refine-backlog-item`", "`task-list` record and functional-slice child PBIs when independent delivery warrants them", "`Todo` PBI hands every slice and parent task evidence to implementation on one branch and PR."],
     ["Implementation handoff", "`/next-ticket`", "Issue task list, issue branch, commits, and verification evidence", "A pushed branch can enter draft-PR convergence."],
     ["Convergence", "`/submit-draft-pr`", "Draft PR `## Convergence` section and any actionable issue remainder", "Review and acceptance remain separate."],
   ];
@@ -126,13 +126,15 @@ test("convergence blocks incomplete work and leaves the small-fix bypass", () =>
   assert.match(standard, /After a failed or ambiguous write, read back\s+that resource before retrying/);
 });
 
-test("structured parents require one evidenced child in every delivery category", () => {
-  assert.match(nextTicket, /no linked sub-issues is\s+valid only when it is a small, clear implementation slice/);
-  assert.match(nextTicket, /exactly one\s+linked child for implementation; wiring and end-to-end\s+usability; refactoring\s+and quality; and fixing and reliability/);
-  assert.match(nextTicket, /Each mandatory\s+child must be actionable and `Todo` before execution starts/);
-  assert.match(nextTicket, /pushed\s+implementation evidence before a commit or PR handoff, not before execution/);
-  assert.match(nextTicket, /map\s+every mandatory child to its owning task, changed files or verified remote\s+state, commit, and fresh verification/);
-  assert.match(submit, /exactly one actionable child for implementation; wiring and\s+end-to-end usability; refactoring and quality; and fixing and reliability/);
+test("structured parents require evidenced functional slices without a fixed child count", () => {
+  assert.match(nextTicket, /no linked sub-issues is\s+valid when it is one coherent implementation slice/);
+  assert.match(nextTicket, /functional decomposition/);
+  assert.match(nextTicket, /every linked child,?\s+if any, is actionable and `Todo`/);
+  assert.match(nextTicket, /Do not require a fixed child count\s+or category set/);
+  assert.match(nextTicket, /pushed\s+implementation evidence before a\s+commit or PR handoff, not before execution/);
+  assert.match(nextTicket, /map\s+every linked child to its owning task, changed files or verified remote\s+state, commit, and fresh verification/);
+  assert.match(submit, /task list's functional decomposition/);
+  assert.match(submit, /There is no fixed child\s+count or category set/);
   assert.match(submit, /- Handoff: <link to the ## Implementation handoff comment> \(head <sha>\)/);
   assert.doesNotMatch(submit, /Mandatory child categories: each mapped/);
 });
@@ -199,8 +201,8 @@ test("structured proof produces passing and actionable outcomes", () => {
   const complete = proof.evaluateConvergence({
     headSha: "abc1234",
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
-    tasks: [{ id: "task-1", child: "implementation", evidence: "commit abc123; test passed" }],
-    children: proof.REQUIRED_CHILD_CATEGORIES.map((category) => ({ category, evidence: "mapped" })),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: "commit abc123; test passed" }],
+    children: [{ id: "search-flow", evidence: "mapped" }],
     acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
     acceptanceMatrix: acceptanceMatrix("abc1234"),
     contradictions: [],
@@ -210,28 +212,29 @@ test("structured proof produces passing and actionable outcomes", () => {
   assert.deepEqual(complete.sections, {
     "Requirements and clarifications": [],
     "Plan and tasks": [],
-    "Mandatory child categories": [],
+    "Functional decomposition": [],
     "Acceptance and verification": [],
   });
 
   const incomplete = proof.evaluateConvergence({
     records: { requirements: true, clarifications: true, "implementation-plan": true },
     tasks: [{ id: "task-2", child: "wiring", evidence: "" }],
-    children: [{ category: "implementation", evidence: "mapped" }],
+    children: [{ id: "implementation", evidence: "mapped" }],
     acceptance: [{ id: "AC-2", evidence: "" }],
     contradictions: ["user path not exercised"],
   });
   assert.equal(incomplete.outcome, "actionable remainder");
   assert.ok(incomplete.remainder.length > 0);
+  assert.ok(incomplete.remainder.some((entry) => entry.includes("implementation slice needs an owning task")));
   const rendered = proof.renderConvergence(incomplete);
   assert.match(rendered, /Plan and tasks: actionable/);
-  assert.match(rendered, /Mandatory child categories: actionable/);
+  assert.match(rendered, /Functional decomposition: actionable/);
   assert.match(rendered, /Acceptance and verification: actionable/);
   assert.match(rendered, /Next task: task-2; owner: wiring/);
   assert.match(rendered, /Remainder: /);
   assert.doesNotMatch(
     rendered,
-    /^- (?:Requirements and clarifications|Plan and tasks|Mandatory child categories|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
+    /^- (?:Requirements and clarifications|Plan and tasks|Functional decomposition|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
   );
   assert.doesNotMatch(rendered, /Outcome: verified/);
 });
@@ -248,7 +251,7 @@ test("structured convergence rejects a matrix tied to a different head", () => {
     headSha: "new-head",
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
     tasks: [{ id: "task-1", child: "implementation", evidence: "commit new-head" }],
-    children: proof.REQUIRED_CHILD_CATEGORIES.map((category) => ({ category, evidence: "mapped" })),
+    children: [{ id: "search-flow", evidence: "mapped" }],
     acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
     acceptanceMatrix: acceptanceMatrix("old-head"),
   });
@@ -270,7 +273,7 @@ test("structured proof CLI separates known paths and rejects unknown scenarios",
   assert.match(incomplete.stdout, /Next task: task-2; owner: wiring/);
   assert.doesNotMatch(
     incomplete.stdout,
-    /^- (?:Requirements and clarifications|Plan and tasks|Mandatory child categories|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
+    /^- (?:Requirements and clarifications|Plan and tasks|Functional decomposition|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
   );
 
   const ordinary = run("ordinary");

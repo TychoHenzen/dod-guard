@@ -248,9 +248,13 @@ Assume the primary model is `gpt-5.6-luna` with `max` reasoning, this is also th
 Hard invariants:
 
 - The checkout and execution policy above holds throughout: one parent at a time, sequentially, in the current checkout.
-- Each refined parent has one non-duplicated set of mandatory child PBIs.
-- All child implementation happens on one branch and one PR.
-- Do not create or publish a PR until every mandatory child is implementation-complete.
+- Each refined parent has a non-duplicated functional decomposition and only
+  the linked child PBIs that independently deliver and verify a functional
+  slice.
+- All linked child and parent-level implementation happens on one branch and
+  one PR.
+- Do not create or publish a PR until every linked child and parent-level task
+  is implementation-complete.
 - Use Codex's built-in checks for ordinary PR/code-review validation, and handle
   externally supplied findings as described in section 6.
 - After merge, mark every child and its parent complete and read the statuses back.
@@ -258,9 +262,9 @@ Hard invariants:
 
 Definitions:
 
-- `implementation-complete`: all mandatory child work is implemented and verified enough to enter the PR lifecycle.
-- `Project Done`: the parent and all children are marked complete after the PR is merged and final remote checks pass.
-- The parent is implementation-complete when all mandatory children are implementation-complete, but Project Done is finalized with the children after merge.
+- `implementation-complete`: all linked slice work and parent-level tasks are implemented and verified enough to enter the PR lifecycle.
+- `Project Done`: the parent and all linked children are marked complete after the PR is merged and final remote checks pass.
+- The parent is implementation-complete when every linked slice and parent-level task is implementation-complete, but Project Done is finalized with the children after merge.
 - “Pre-existing” is not a deferral reason for a failure in a touched path, required suite, user-facing flow, or required gate.
 
 ### Continuous queue loop
@@ -420,30 +424,40 @@ Never select a new unrelated parent while the current parent can still be advanc
 
 Refinement happens once per parent delivery unit.
 
-Use the snapshot's existing children first. Read missing children only when the snapshot is invalidated. Create missing children, but never duplicate children or recreate a completed refinement set.
+Use the snapshot's existing children first. Read missing children only when the
+snapshot is invalidated. Create missing children only when functional
+decomposition identifies an independently deliverable and verifiable slice;
+never duplicate children or recreate a completed refinement set.
 
-Every refined parent must have at least these four independently actionable child PBIs, linked back to the parent:
+Every refined parent uses functional decomposition. Start from the user actions
+and split the outcome into a small set of coherent functional units. Decompose
+each unit only to a useful level that can be independently implemented, tested,
+and verified; avoid tiny administrative subtasks. Create one linked child per
+useful unit only when independent tracking is useful, and keep dependent steps
+in the parent checklist. Do not create children to fill a fixed category list. Explicitly assess implementation,
+wiring and end-to-end usability, refactoring and code quality, and
+fixing/failure and recovery reliability; attach each concern to its owning
+slice or parent-level task.
 
-Create a separate child only for a functional slice that can be independently
-delivered and verified; keep atomic implementation steps as a checklist, not
-tickets.
+#### Review lenses
 
-#### A. Implementation
+##### A. Implementation
 
 - Implement the requested behavior using existing repository patterns.
 - Include precise acceptance criteria and verification.
 
-- The refinement performs functional decomposition to split the implementation into atomic steps and creates one subtask with minimal details for each.
+- The refinement records the functional slices and creates one subtask with
+  minimal details only for each independently deliverable slice.
 
-#### B. Wiring and end-to-end usability
+##### B. Wiring and end-to-end usability
 
 - Trace the real user path through the existing UI or supported user-facing surface.
 - Create missing entry points, configuration, controls, feedback, error states, and recovery paths.
 - Verify the feature is discoverable, invokable, understandable, and usable.
 - Exercise the path end to end.
-- If live UI automation is unavailable, use the closest available integration path and document the missing evidence; do not silently mark the child complete.
+- If live UI automation is unavailable, use the closest available integration path and document the missing evidence; do not silently mark the slice complete.
 
-#### C. Refactoring and quality
+##### C. Refactoring and quality
 
 - Inspect both new code and nearby code.
 - Remove accidental complexity, duplication, dead code, unnecessary abstractions, and spaghetti control flow.
@@ -452,20 +466,20 @@ tickets.
   evidence; diagnostics are not correctness gates.
 - Keep cleanup bounded to the selected feature and directly adjacent code.
 - When adjacent cleanup is relevant, keep it bounded and record why no cleanup is safe when applicable.
-- The child must either make a justified cleanup or record evidence that no safe cleanup exists.
+- The owning slice or parent-level task must either make a justified cleanup or record evidence that no safe cleanup exists.
 
-#### D. Fixing and reliability
+##### D. Fixing and reliability
 
 - Fix errors found in the touched paths, required suites, integration path, or lint/type checks, and act on Quality Guard findings when they identify an in-scope problem.
 - Do not label relevant failures “pre-existing” to defer them.
 - Truly unrelated failures require evidence and a recovery decision, not silent dismissal.
 
-Each child must contain minimal parent context, scope, acceptance criteria, and verification instructions.
+Each linked child must contain minimal parent context, scope, acceptance criteria, and verification instructions.
 
 After refinement:
 
 - Verify the parent is Todo.
-- Verify every mandatory child exists, is linked, and is Todo.
+- Verify every linked child exists, is linked, matches one functional slice, and is Todo.
 - If the parent remains Backlog, repair the status and read it back before implementation.
 - Do not create additional children during implementation unless a genuinely independent acceptance requirement appears; update an existing child whenever possible.
 - If the refinement skill cannot satisfy this contract, repair the skill minimally in the plugin cache and record the long-term dod-guard change in today's friction log instead of proceeding with an incomplete plan.
@@ -478,9 +492,9 @@ For a newly selected Todo parent, use:
 
 For an already-started parent, resume its existing checkpoint and skip completed work.
 
-- Implement every mandatory child in the current checkout on one branch.
+- Implement every linked functional slice and parent-level task in the current checkout on one branch.
 - Keep implementation, UI wiring, E2E work, refactoring, and fixes in that branch and checkout.
-- Make one or more new commits for each subtask.
+- Make one or more new commits for each functional slice or parent-level convergence task.
 - Do not create a second branch or PR for the same parent delivery unit.
 - Keep the diff bounded by the acceptance criteria.
 - Prefer existing helpers, dependencies, patterns, and deletion.
@@ -527,11 +541,11 @@ At the end of basic work:
 - If the complete suite is resource-limited, run its equivalent partitions sequentially or with reduced parallelism before escalating; keep the environment limitation distinct from a code or quality failure.
 - Before claiming the complete suite is green, verify every newly added test or fixture is included by the configured test glob. For generated-artifact drift, record the producer's required working directory and compare exact hashes from that invocation before dispatching another audit; treat a root-cwd mismatch as an environment or procedure issue, not a code failure.
 
-A child is not implementation-complete merely because code compiles. Record acceptance evidence for every child.
+A linked child or parent-level task is not implementation-complete merely because code compiles. Record acceptance evidence for every slice and task.
 
 ### 6. PR completion
 
-When all mandatory children are implementation-complete, use:
+When all linked functional slices and parent-level tasks are implementation-complete, use:
 
   [$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md)
 

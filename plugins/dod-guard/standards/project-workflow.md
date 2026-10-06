@@ -38,20 +38,24 @@ and pull request as the source of truth.
 | Requirements | `refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
 | Clarification | `refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
 | Plan | `refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
-| Tasks | `refine-backlog-item` | `task-list` record and four mandatory linked child PBIs for structured work | `Todo` PBI hands every child evidence to implementation on one branch and PR. |
+| Tasks | `refine-backlog-item` | `task-list` record and functional-slice child PBIs when independent delivery warrants them | `Todo` PBI hands every slice and parent task evidence to implementation on one branch and PR. |
 | Implementation handoff | `next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
 | Convergence | `submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
 ## Structured handoff contract
 
-A structured PBI is implementation-ready only when the issue contains the four
-named records and the four mandatory child categories exactly once. The branch
-does not replace those records: it supplies the implementation evidence that
+A structured PBI is implementation-ready when the issue contains the four named
+records, decomposes the work into coherent user-action-centered functional slices, and maps every
+linked child to one independently deliverable and verifiable slice. The
+implementation, wiring and end-to-end usability, code quality, and
+failure/recovery concerns must each be covered by an owning slice or
+parent-level task. There is no fixed child count or category set. The branch
+does not replace these records: it supplies the implementation evidence that
 the records request.
 
 `next-ticket` writes one durable `## Implementation handoff` issue comment (or
 updates the existing one) after pushing the branch. That comment maps every
-ordered task and mandatory child to its commit or verified remote-state
+ordered task and linked functional-slice child to its commit or verified remote-state
 evidence, the checks that prove it, and the current user-path result. It is the
 handoff from refinement to draft-PR convergence; it is not a local planning
 file.
@@ -108,7 +112,7 @@ links it instead of restating it:
 ```
 
 Convergence is passing only when every named record exists, every task and
-mandatory child is mapped by the implementation handoff, every acceptance
+linked functional-slice child is mapped by the implementation handoff, every acceptance
 criterion has fresh evidence at the exact head; every matrix row does too, and
 no item is contradicted or unresolved. The required-context and base/mergeability
 checkpoint must also be stable at that exact head. Codex's built-in Review

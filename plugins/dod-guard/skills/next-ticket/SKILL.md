@@ -58,13 +58,15 @@ Before reporting a ticket as ready, read its body and require:
 
 For an ordinary parent, require every linked sub-issue to be open or closed
 with pushed implementation evidence. A parent PBI with no linked sub-issues is
-valid only when it is a small, clear implementation slice. For a structured
-PBI, require exactly one linked child for implementation; wiring and end-to-end
-usability; refactoring and quality; and fixing and reliability. Each mandatory
-child must be actionable and `Todo` before execution starts; require pushed
-implementation evidence before a commit or PR handoff, not before execution.
-Stop before implementation when a mandatory category is absent, duplicated, or
-not actionable.
+valid when it is one coherent implementation slice. For a structured PBI,
+require the task list's functional decomposition and verify every linked child,
+if any, is actionable and `Todo`, maps to exactly one independently deliverable
+slice, and has an owning task. Require pushed implementation evidence before a
+commit or PR handoff, not before execution. Do not require a fixed child count
+or category set; stop before implementation when a child is duplicated,
+mis-mapped, or not actionable, or when the implementation, wiring and
+end-to-end usability, code quality, or failure/recovery concern has no owning
+slice or parent-level task.
 
 Stop and name the missing section when the issue is incomplete. Do not invent
 requirements.
@@ -189,9 +191,9 @@ interactive-control, browser/E2E, data/error, and recovery rows when those
 paths apply, and record why each does not apply otherwise. Validate every row
 against the checked-out and pushed head before committing or handing off.
 
-map every mandatory child to its owning task, changed files or verified remote
+map every linked child to its owning task, changed files or verified remote
 state, commit, and fresh verification. Stop before committing or PR handoff
-when a matrix row, criterion, mandatory child, required check, or
+when a matrix row, criterion, linked child, required check, or
 required proof is missing, failed, unverified, blocked, or head-mismatched.
 State the exact failed command or actionable remainder.
 
@@ -221,7 +223,7 @@ branch to its existing upstream. Do not force-push or rewrite existing commits.
 
 After the verified implementation commit is pushed, create or update one
 parent-issue comment headed `## Implementation handoff` with one entry per
-ordered task and mandatory child category, followed by the single
+ordered task and linked functional-slice child, followed by the single
 `## Acceptance matrix` and, when the PR exists, the single `## Preflight
 checkpoint`. Each entry names the commit or verified remote-state
 evidence, changed files or artifact, and the fresh check or user-path result.

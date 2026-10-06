@@ -87,15 +87,16 @@ test("requires durable discovery records and selective re-refinement", () => {
   assert.match(skill, /Do not create duplicate linked sub-issues or scale labels/);
 });
 
-test("requires one reusable mandatory child for every structured parent category", () => {
-  assert.match(skill, /require exactly one linked child for each category/);
-  assert.match(skill, /implementation; wiring and end-to-end\s+usability; refactoring and quality; fixing and reliability/);
-  assert.match(skill, /Reuse an existing\s+child/);
-  assert.match(skill, /never duplicate a category/);
-  assert.match(skill, /structured-parent exception to the ordinary\s+independence rule/);
-  assert.match(skill, /checklist work[\s\S]*not authorize child branches or pull requests/);
-  assert.match(skill, /four mandatory child categories are linked exactly once/);
-  assert.match(skill, /every child is\s+actionable and `Todo` before moving the parent to `Todo`/);
+test("uses functional decomposition with cross-cutting review lenses", () => {
+  assert.match(skill, /use functional decomposition/);
+  assert.match(skill, /independently\s+implemented, tested, and verified/);
+  assert.match(skill, /no\s+child is required merely to fill a fixed\s+category list/);
+  assert.match(skill, /implementation, wiring and[\s\S]*end-to-end usability[\s\S]*refactoring and code quality[\s\S]*failure\/recovery reliability/);
+  assert.match(skill, /these are review lenses, not mandatory child categories/);
+  assert.match(skill, /map every task to its functional slice/);
+  assert.match(skill, /every\s+linked child matches one independently deliverable functional slice/);
+  assert.doesNotMatch(skill, /require exactly one linked child for each category/);
+  assert.doesNotMatch(skill, /four mandatory child categories are linked exactly once/);
 });
 
 test("manual fixtures include each route and its record markers", () => {
@@ -113,8 +114,8 @@ test("manual fixtures include each route and its record markers", () => {
     ["Newly discovered gap", ["Return to the matching interview or research route.", "Do not turn the gap into an assumption."]],
     ["Unavailable workflow", ["Record what is unclear, the unavailable workflow or fallback, the impact, and the next decision or evidence.", "Move to `Todo` only when the PBI remains coherent"]],
     ["Re-refinement", ["Reuse current summaries, repeat only the stale or new phase, update notes in place, and create no duplicate sub-issues or scale labels."]],
-    ["Structured parent", ["Create exactly one actionable Todo child for implementation, wiring/usability, quality, and reliability before moving the parent to Todo."]],
-    ["Partial structured parent", ["Reuse those two children, add only wiring/usability and reliability, and do not create child branches or PRs."]],
+    ["Structured parent", ["Create one actionable Todo child per functional slice, keep dependent steps in the parent checklist, and assess wiring/usability, quality, and reliability across the owning slices."]],
+    ["Partial structured parent", ["Reuse that child, add only independently deliverable missing slices, and do not create category placeholders, child branches, or PRs."]],
   ]) {
     const row = fixtures.split("\n").find((line) => line.startsWith(`| ${fixture} |`));
     assert.ok(row, `missing fixture row: ${fixture}`);

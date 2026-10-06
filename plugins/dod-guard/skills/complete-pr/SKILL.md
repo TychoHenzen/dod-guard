@@ -135,8 +135,11 @@ whose SHA differs from the merged pull request head.
 
 Only after the helper returns a verified merge result, read the linked parent
 PBI, its linked child issues, and their one shared Project. For a structured
-parent, require exactly one child for implementation; wiring and end-to-end
-usability; refactoring and quality; and fixing and reliability. Resolve the
+parent, require each linked child to match one independently delivered and
+verified functional slice recorded in the task list. There is no fixed child
+count or category set; finalize every linked child and every parent-level task
+that owns implementation, wiring and end-to-end usability, code quality, or
+failure/recovery work. Resolve the
 shared Project number, REST item IDs, Status-field ID, and `Done` option ID once.
 Use the shared status-write runner with the child item IDs first and the parent item ID last:
 

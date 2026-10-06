@@ -9,7 +9,8 @@ test("finalizes each structured parent child only after the guarded merge", () =
   const finalization = skill.slice(skill.indexOf("## Finalize the parent unit"));
 
   assert.match(finalization, /Only after the helper returns a verified merge result/);
-  assert.match(finalization, /exactly one child for implementation; wiring and end-to-end\s+usability; refactoring and quality; and fixing and reliability/);
+  assert.match(finalization, /each linked child to match one independently delivered and\s+verified functional slice/);
+  assert.match(finalization, /There is no fixed child\s+count or category set/);
   assert.match(finalization, /Resolve the\s+shared Project number, REST item IDs, Status-field ID, and `Done` option ID once/);
   assert.match(finalization, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> \.\.\. <parent-item-id>/);
   assert.match(finalization, /child item IDs first and the parent\s+item ID last/);

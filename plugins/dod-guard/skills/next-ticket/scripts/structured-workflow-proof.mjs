@@ -12,13 +12,6 @@ export const REQUIRED_RECORDS = [
   "task-list",
 ];
 
-export const REQUIRED_CHILD_CATEGORIES = [
-  "implementation",
-  "wiring",
-  "refactoring",
-  "fixing",
-];
-
 export const PROOF_SCENARIOS = ["passing", "incomplete", "ordinary"];
 
 const PROOF_HANDOFF = {
@@ -55,7 +48,7 @@ export function evaluateConvergence({
   const sections = {
     "Requirements and clarifications": [],
     "Plan and tasks": [],
-    "Mandatory child categories": [],
+    "Functional decomposition": [],
     "Acceptance and verification": [],
   };
   const remainder = [];
@@ -77,12 +70,26 @@ export function evaluateConvergence({
   for (const task of tasks) {
     if (!task.evidence) addRemainder("Plan and tasks", `${task.id} needs implementation evidence`);
   }
-  for (const category of REQUIRED_CHILD_CATEGORIES) {
-    const matches = children.filter((child) => child.category === category);
-    if (matches.length !== 1) {
-      addRemainder("Mandatory child categories", `${category} child must be linked exactly once`);
-    } else if (!matches[0].evidence) {
-      addRemainder("Mandatory child categories", `${category} child needs evidence`);
+  const childIds = new Set();
+  for (const child of children) {
+    const slice = child.id ?? child.slice ?? child.name;
+    if (!slice) {
+      addRemainder("Functional decomposition", "linked child needs a functional slice id");
+    } else if (childIds.has(slice)) {
+      addRemainder("Functional decomposition", `${slice} functional slice is linked more than once`);
+    } else {
+      childIds.add(slice);
+      if (!child.evidence) addRemainder("Functional decomposition", `${slice} slice needs evidence`);
+    }
+  }
+  for (const task of tasks) {
+    if (task.child && !childIds.has(task.child)) {
+      addRemainder("Functional decomposition", `${task.id} references missing functional slice ${task.child}`);
+    }
+  }
+  for (const slice of childIds) {
+    if (!tasks.some((task) => task.child === slice)) {
+      addRemainder("Functional decomposition", `${slice} slice needs an owning task`);
     }
   }
   for (const criterion of acceptance) {
@@ -145,7 +152,7 @@ export function renderConvergence(result, handoff) {
     `- Outcome: ${result.outcome}`,
     `- Requirements and clarifications: ${sectionStatus("Requirements and clarifications")}`,
     `- Plan and tasks: ${sectionStatus("Plan and tasks")}`,
-    `- Mandatory child categories: ${sectionStatus("Mandatory child categories")}`,
+    `- Functional decomposition: ${sectionStatus("Functional decomposition")}`,
     `- Acceptance and verification: ${sectionStatus("Acceptance and verification")}`,
     `- Next task: ${nextAction}`,
     `- Remainder: ${remainder}`,
@@ -158,7 +165,7 @@ export function scenarioResult(scenario = "passing") {
     return evaluateConvergence({
       records: { requirements: true, clarifications: true, "implementation-plan": true },
       tasks: [{ id: "task-2", child: "wiring", evidence: "" }],
-      children: [{ category: "implementation", evidence: "mapped" }],
+      children: [{ id: "implementation", evidence: "mapped" }],
       acceptance: [{ id: "AC-2", evidence: "" }],
       contradictions: ["user path not exercised"],
     });
@@ -166,8 +173,8 @@ export function scenarioResult(scenario = "passing") {
   if (scenario === "passing") {
     return evaluateConvergence({
       records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [record, true])),
-      tasks: [{ id: "task-1", child: "implementation", evidence: "commit abc123" }],
-      children: REQUIRED_CHILD_CATEGORIES.map((category) => ({ category, evidence: "mapped" })),
+      tasks: [{ id: "task-1", child: "search-flow", evidence: "commit abc123" }],
+      children: [{ id: "search-flow", evidence: "mapped" }],
       acceptance: [{ id: "AC-1", evidence: "proof" }],
       acceptanceMatrix: PROOF_ACCEPTANCE_MATRIX,
       headSha: PROOF_HANDOFF.headSha,
