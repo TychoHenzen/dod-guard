@@ -154,6 +154,7 @@ test("routes functional decomposition through executable convergence proof", () 
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
   const passing = proof.evaluateConvergence(validConvergenceInput());
   assert.equal(passing.outcome, "verified");
+  assert.ok(!passing.remainder.some((entry) => entry.includes("review lens")));
   const parentLevel = validConvergenceInput();
   parentLevel.tasks = [{
     id: "task-1",
@@ -161,7 +162,9 @@ test("routes functional decomposition through executable convergence proof", () 
     evidence: ["commit-proof", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
   }];
   parentLevel.children = [];
-  assert.equal(proof.evaluateConvergence(parentLevel).outcome, "verified");
+  const parentLevelResult = proof.evaluateConvergence(parentLevel);
+  assert.equal(parentLevelResult.outcome, "verified");
+  assert.ok(!parentLevelResult.remainder.some((entry) => entry.includes("acceptance")));
   const result = proof.evaluateConvergence({
     records: completeRecords(),
     tasks: [{ id: "task-1", child: "missing-flow", evidence: "commit" }],
