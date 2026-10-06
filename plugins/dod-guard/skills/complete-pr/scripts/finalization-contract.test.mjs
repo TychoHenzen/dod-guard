@@ -244,3 +244,11 @@ test("keeps routine ProjectV2 guidance out of GraphQL", async () => {
     assert.doesNotMatch(text, /(?:projectsV2|ProjectV2)[^\n]*(?:GraphQL|updateProjectV2Field|gh project item-edit)/i);
   }
 });
+
+test("finalization gate returns an actionable remainder for malformed handoff input", () => {
+  const result = evaluateStructuredFinalization(null);
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.deepEqual(result.remainder, ["finalization handoff must be an object"]);
+  assert.equal(result.nextStep, "stop");
+});

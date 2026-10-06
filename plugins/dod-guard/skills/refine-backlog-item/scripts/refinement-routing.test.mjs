@@ -232,13 +232,9 @@ test("rejects review-lens evidence that is not mapped", () => {
   unmappedInput.tasks[0].evidence = unmappedInput.tasks[0].evidence.filter(
     (evidence) => evidence !== "lens-implementation",
   );
-  unmappedInput.reviewLenses[0].evidence = "missing-proof";
+  unmappedInput.children[0].evidence = "lens-implementation";
   const unmappedEvidence = proof.evaluateConvergence(unmappedInput);
-  assert.ok(
-    unmappedEvidence.remainder.some((entry) =>
-      entry.includes("references undeclared evidence missing-proof"),
-    ),
-  );
+  assert.ok(unmappedEvidence.remainder.some((entry) => entry.includes("references evidence owned by search-flow")));
   assert.ok(!unmappedEvidence.remainder.some((entry) => entry.includes("needs an owning task")));
 });
 

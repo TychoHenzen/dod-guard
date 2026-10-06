@@ -505,6 +505,17 @@ test("structured convergence requires an exact pushed head", () => {
   assert.ok(result.remainder.some((entry) => entry.includes("needs an exact pushed head")));
 });
 
+test("structured convergence requires an acceptance matrix after the head is known", () => {
+  const result = proof.evaluateConvergence({
+    headSha: "new-head",
+    records: recordsWithRequiredKeys([]),
+    tasks: [{ id: "task-1", parentLevel: "convergence", evidence: "commit" }],
+    acceptance: [{ id: "AC-1", evidence: "proof" }],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("needs an acceptance matrix")));
+});
+
 test("structured proof CLI separates known paths and rejects unknown scenarios", () => {
   const run = (scenario) =>
     spawnSync(process.execPath, [proofScript, scenario], { encoding: "utf8" });

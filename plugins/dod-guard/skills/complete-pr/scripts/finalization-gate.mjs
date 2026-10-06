@@ -71,6 +71,15 @@ function lensEvidenceRemainder(handoff) {
 }
 
 export function evaluateStructuredFinalization(handoff) {
+  if (!handoff || typeof handoff !== "object" || Array.isArray(handoff)) {
+    return {
+      outcome: "actionable remainder",
+      remainder: ["finalization handoff must be an object"],
+      sections: {},
+      nextAction: null,
+      nextStep: "stop",
+    };
+  }
   const convergence = evaluateConvergence(handoff);
   const lensRemainder = lensEvidenceRemainder(handoff);
   const finalRemainder = [...convergence.remainder, ...lensRemainder];

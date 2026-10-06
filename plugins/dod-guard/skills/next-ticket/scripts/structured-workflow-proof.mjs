@@ -192,6 +192,9 @@ export function evaluateConvergence({
   if (postPushValidation && !expectedHeadSha) {
     addRemainder("Acceptance and verification", "structured convergence needs an exact pushed head");
   }
+  if (postPushValidation && acceptanceMatrix === null) {
+    addRemainder("Acceptance and verification", "structured convergence needs an acceptance matrix");
+  }
 
   const taskList = normalizeEntries(tasks, "task", "Plan and tasks", addRemainder);
   const childList = normalizeEntries(children, "child", "Functional decomposition", addRemainder);
@@ -413,7 +416,10 @@ export function evaluateConvergence({
 
   const missingTask = taskList.find((task) => evidenceValues(task.evidence).length === 0);
   const nextAction = missingTask
-    ? { task: normalizedTaskIds.get(missingTask) ?? missingTask.id, owner: missingTask.child ?? "implementation" }
+    ? {
+      task: normalizedTaskIds.get(missingTask) ?? missingTask.id,
+      owner: normalizedIdentifier(missingTask.child) ?? "implementation",
+    }
     : remainder.length > 0
       ? { task: remainder[0], owner: "delivery owner" }
       : null;

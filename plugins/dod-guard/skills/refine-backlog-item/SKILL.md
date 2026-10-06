@@ -280,8 +280,9 @@ linked child matches one independently deliverable functional slice (each is sep
 in the task list, is actionable, and is `Todo`; and the four review lenses each have
 an owning child or parent-level task plus mapped observable acceptance or
 verification evidence. Pass the complete task, slice, owner, and evidence mapping
-through the same executable convergence proof used by `next-ticket` before moving
-the parent to `Todo`; stop on any actionable remainder. Do not require a fixed
+through the same executable convergence proof used by `next-ticket`; the resulting
+handoff is consumed by `submit-draft-pr` and `complete-pr` before moving the parent
+to `Todo`; stop on any actionable remainder. Do not require a fixed
 child count or create category placeholders. When no linked child represents
 cross-cutting parent work, record an explicit parent-level task with
 `parentLevel: "convergence"` so that ownership remains visible and verifiable.
