@@ -44,8 +44,8 @@ function normalizeEntries(value, label, section, addRemainder) {
 
 function declareEvidence({ owner, value, section, evidenceOwners, addRemainder }) {
   for (const evidence of evidenceValues(value)) {
-    const previousOwner = evidenceOwners.get(evidence);
-    if (previousOwner) {
+    if (evidenceOwners.has(evidence)) {
+      const previousOwner = evidenceOwners.get(evidence);
       addRemainder(section, `evidence ${evidence} is mapped more than once (${previousOwner}, ${owner})`);
     } else {
       evidenceOwners.set(evidence, owner);
@@ -55,10 +55,10 @@ function declareEvidence({ owner, value, section, evidenceOwners, addRemainder }
 
 function referenceEvidence({ owner, value, section, evidenceOwners, addRemainder }) {
   for (const evidence of evidenceValues(value)) {
-    const declaredOwner = evidenceOwners.get(evidence);
-    if (!declaredOwner) {
+    if (!evidenceOwners.has(evidence)) {
       addRemainder(section, `${owner} references undeclared evidence ${evidence}`);
-    } else if (declaredOwner !== owner) {
+    } else if (evidenceOwners.get(evidence) !== owner) {
+      const declaredOwner = evidenceOwners.get(evidence);
       addRemainder(section, `${owner} references evidence owned by ${declaredOwner}`);
     }
   }
@@ -123,12 +123,24 @@ export function evaluateConvergence({
       );
     }
   }
-  for (const task of taskList) {
+  const validTaskIds = new Set();
+  for (const [index, task] of taskList.entries()) {
+    if (typeof task.id !== "string" || !task.id.trim()) {
+      addRemainder("Plan and tasks", `task entry ${index + 1} needs a non-empty id`);
+      continue;
+    }
+    if (validTaskIds.has(task.id)) {
+      addRemainder("Plan and tasks", `${task.id} task id is declared more than once`);
+    } else {
+      validTaskIds.add(task.id);
+    }
     if (evidenceValues(task.evidence).length === 0) addRemainder("Plan and tasks", `${task.id} needs implementation evidence`);
   }
   const evidenceOwners = new Map();
   for (const task of taskList) {
-    declareEvidence({ owner: task.id, value: task.evidence, section: "Plan and tasks", evidenceOwners, addRemainder });
+    if (validTaskIds.has(task.id)) {
+      declareEvidence({ owner: task.id, value: task.evidence, section: "Plan and tasks", evidenceOwners, addRemainder });
+    }
   }
   const childIds = new Set();
   for (const child of childList) {
@@ -175,10 +187,15 @@ export function evaluateConvergence({
       seenLenses.add(id);
       if (!lens.owner || evidenceValues(lens.evidence).length === 0) {
         addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
-      } else if (!taskList.some((task) => task.id === lens.owner || task.child === lens.owner)) {
-        addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
       } else {
-        referenceEvidence({ owner: lens.owner, value: lens.evidence, section: "Functional decomposition", evidenceOwners, addRemainder });
+        const ownerTask = taskList.find(
+          (task) => validTaskIds.has(task.id) && (task.id === lens.owner || task.child === lens.owner),
+        );
+        if (!ownerTask) {
+          addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
+        } else {
+          referenceEvidence({ owner: ownerTask.id, value: lens.evidence, section: "Functional decomposition", evidenceOwners, addRemainder });
+        }
       }
     }
   }

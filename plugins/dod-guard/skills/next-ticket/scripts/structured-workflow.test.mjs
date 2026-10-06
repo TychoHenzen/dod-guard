@@ -207,7 +207,11 @@ test("structured proof produces passing and actionable outcomes", () => {
       evidence: ["commit abc123; test passed", ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`)],
     }],
     children: [{ id: "search-flow", evidence: "mapped" }],
-    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
+    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+      id,
+      owner: index === 0 ? "search-flow" : "task-1",
+      evidence: `lens-${id}`,
+    })),
     acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
     acceptanceMatrix: acceptanceMatrix("abc1234"),
     contradictions: [],
@@ -291,7 +295,7 @@ test("functional convergence rejects evidence reused across owners", () => {
 test("functional convergence reports malformed collection entries", () => {
   const result = proof.evaluateConvergence({
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
-    tasks: [null],
+    tasks: [null, { evidence: "orphan" }],
     children: ["not a child"],
     reviewLenses: [null],
     acceptance: [42],
@@ -299,6 +303,7 @@ test("functional convergence reports malformed collection entries", () => {
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 must be an object")));
+  assert.ok(result.remainder.some((entry) => entry.includes("task entry 1 needs a non-empty id")));
   assert.ok(result.remainder.some((entry) => entry.includes("child entry 1 must be an object")));
   assert.ok(result.remainder.some((entry) => entry.includes("review lens entry 1 must be an object")));
   assert.ok(result.remainder.some((entry) => entry.includes("acceptance criterion entry 1 must be an object")));

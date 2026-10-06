@@ -41,6 +41,7 @@ test("finalization relies on executable functional convergence proof", () => {
 
   assert.equal(result.outcome, "actionable remainder");
   assert.ok(result.remainder.some((entry) => entry.includes("missing functional slice")));
+  assert.ok(result.remainder.some((entry) => entry.includes("implemented-flow slice needs an owning task")));
   assert.ok(result.remainder.some((entry) => entry.includes("review lens needs an owning task")));
 
   const duplicate = proof.evaluateConvergence({

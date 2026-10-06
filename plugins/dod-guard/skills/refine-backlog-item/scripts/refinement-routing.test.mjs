@@ -152,7 +152,7 @@ test("manual fixtures include each route and its record markers", () => {
     ["Newly discovered gap", ["Return to the matching interview or research route.", "Do not turn the gap into an assumption."]],
     ["Unavailable workflow", ["Record what is unclear, the unavailable workflow or fallback, the impact, and the next decision or evidence.", "Move to `Todo` only when the PBI remains coherent"]],
     ["Re-refinement", ["Reuse current summaries, repeat only the stale or new phase, update notes in place, and create no duplicate sub-issues or scale labels."]],
-    ["Structured parent", ["Create one actionable Todo child per functional slice, keep dependent steps in the parent checklist, and assess wiring/usability, quality, and reliability across the owning slices."]],
+    ["Structured parent", ["Create one actionable Todo child per functional slice, keep dependent steps in the parent checklist, and assess implementation, wiring/usability, quality, and reliability across the owning slices with observable evidence."]],
     ["Partial structured parent", ["Reuse that child, add only independently deliverable missing slices, and do not create category placeholders, child branches, or PRs."]],
   ]) {
     const row = fixtures.split("\n").find((line) => line.startsWith(`| ${fixture} |`));
