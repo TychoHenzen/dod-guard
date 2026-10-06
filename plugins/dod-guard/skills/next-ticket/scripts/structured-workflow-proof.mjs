@@ -321,6 +321,12 @@ export function evaluateConvergence({
       .map((row) => normalizedIdentifier(row?.proof))
       .filter(Boolean),
   );
+  const declaredAcceptanceReferences = new Set(taskList.flatMap((task) => evidenceValues(task.acceptanceEvidence)));
+  const declaredVerificationReferences = new Set(taskList.flatMap((task) => evidenceValues(task.verificationEvidence)));
+  for (const lens of lensList) {
+    for (const evidence of evidenceValues(lens.acceptanceEvidence)) declaredAcceptanceReferences.add(evidence);
+    for (const proof of evidenceValues(lens.verificationEvidence)) declaredVerificationReferences.add(proof);
+  }
   validateLensOwnershipRecord(
     recordMap["lens-ownership"],
     lensList,
@@ -419,6 +425,12 @@ export function evaluateConvergence({
         addRemainder("Acceptance and verification", `acceptance matrix proof ${proof} is declared more than once`);
       } else if (proof) {
         seenMatrixProofs.add(proof);
+      }
+      if (evidence && !declaredAcceptanceReferences.has(evidence)) {
+        addRemainder("Acceptance and verification", `acceptance matrix evidence ${evidence} is not owned by a task or review lens`);
+      }
+      if (proof && !declaredVerificationReferences.has(proof)) {
+        addRemainder("Acceptance and verification", `acceptance matrix proof ${proof} is not owned by a task or review lens`);
       }
     }
   }

@@ -342,3 +342,23 @@ test("finalization gate rejects the ordinary delivery bypass", () => {
   assert.equal(result.nextStep, "stop");
   assert.ok(result.remainder.some((entry) => entry.includes("ordinary delivery path")));
 });
+
+test("convergence rejects orphaned acceptance-matrix evidence", () => {
+  const orphaned = validConvergenceInput();
+  orphaned.acceptanceMatrix.push({
+    id: "AC-1-orphan",
+    contract: "AC-1",
+    path: "quality-extra",
+    proof: "matrix-proof-orphan",
+    expected: "pass",
+    observed: "pass",
+    status: "pass",
+    evidence: "matrix-evidence-orphan",
+    headSha: "proof-head",
+  });
+  const result = proof.evaluateConvergence(orphaned);
+
+  assert.equal(result.outcome, "actionable remainder");
+  assert.ok(result.remainder.some((entry) => entry.includes("matrix-evidence-orphan is not owned")));
+  assert.ok(result.remainder.some((entry) => entry.includes("matrix-proof-orphan is not owned")));
+});

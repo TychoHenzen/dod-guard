@@ -251,8 +251,8 @@ Hard invariants:
 - Each refined parent has a non-duplicated functional decomposition and only
   the linked child PBIs that independently deliver and verify a functional
   slice.
-- All linked child and parent-level implementation happens on one branch and
-  one PR.
+- All implementation for linked child PBIs and parent-level tasks happens on
+  one branch and one PR.
 - Do not create or publish a PR until every linked child and parent-level task
   is implementation-complete.
 - Use Codex's built-in checks for ordinary PR/code-review validation, and handle
