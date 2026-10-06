@@ -120,7 +120,7 @@ function lensEvidenceRemainder(handoff) {
       const rows = acceptanceRemainder.rows;
       const requiredPaths = REQUIRED_LENS_PATHS[id] ?? [];
       const missingPaths = requiredPaths.filter((requiredPath) =>
-        !rows.some((row) => text(row?.path)?.toLowerCase().includes(requiredPath)),
+        !rows.some((row) => text(row?.path)?.toLowerCase() === requiredPath),
       );
       if (missingPaths.length > 0) {
         remainder.push(`${id} review lens must cover required path(s): ${missingPaths.join(", ")}`);

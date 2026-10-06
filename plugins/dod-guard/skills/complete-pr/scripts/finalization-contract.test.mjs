@@ -28,6 +28,17 @@ const createReviewLenses = () => proof.REQUIRED_REVIEW_LENSES.map((id, index) =>
 }));
 const validConvergenceInput = () => {
   const reviewLenses = createReviewLenses();
+  const acceptanceMatrix = [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((path, index) => ({
+    id: `AC-1-${index + 1}`,
+    contract: "AC-1",
+    path,
+    proof: `matrix-proof-${index + 1}`,
+    expected: "pass",
+    observed: "pass",
+    status: "pass",
+    evidence: `matrix-evidence-${index + 1}`,
+    headSha: "proof-head",
+  }));
   return {
     records: completeRecords(reviewLenses),
     tasks: [{
@@ -37,8 +48,8 @@ const validConvergenceInput = () => {
         "commit-proof",
         ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
       ],
-      acceptanceEvidence: Array.from({ length: 6 }, (_, index) => `matrix-evidence-${index + 1}`),
-      verificationEvidence: Array.from({ length: 6 }, (_, index) => `matrix-proof-${index + 1}`),
+      acceptanceEvidence: acceptanceMatrix.map((row) => row.evidence),
+      verificationEvidence: acceptanceMatrix.map((row) => row.proof),
     }, {
       id: "task-2",
       child: "settings-flow",
@@ -50,17 +61,7 @@ const validConvergenceInput = () => {
     ],
     reviewLenses,
     acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
-    acceptanceMatrix: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((path, index) => ({
-      id: `AC-1-${index + 1}`,
-      contract: "AC-1",
-      path,
-      proof: `matrix-proof-${index + 1}`,
-      expected: "pass",
-      observed: "pass",
-      status: "pass",
-      evidence: `matrix-evidence-${index + 1}`,
-      headSha: "proof-head",
-    })),
+    acceptanceMatrix,
     headSha: "proof-head",
   };
 };
@@ -275,6 +276,11 @@ test("finalization gate binds cross-cutting lenses to their user paths", () => {
   );
   const wrongWiringResult = evaluateStructuredFinalization(wrongWiringPath);
   assert.ok(wrongWiringResult.remainder.some((entry) => entry.includes("wiring/usability review lens must cover required path(s)")));
+
+  const nearMatchPath = validConvergenceInput();
+  nearMatchPath.acceptanceMatrix[2] = { ...nearMatchPath.acceptanceMatrix[2], path: "browser/e2e-fake" };
+  const nearMatchResult = evaluateStructuredFinalization(nearMatchPath);
+  assert.ok(nearMatchResult.remainder.some((entry) => entry.includes("wiring/usability review lens must cover required path(s)")));
 
   const reusedRow = validConvergenceInput();
   reusedRow.reviewLenses = reusedRow.reviewLenses.map((lens) =>

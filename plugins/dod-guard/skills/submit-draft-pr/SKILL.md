@@ -103,10 +103,9 @@ count or category set. The implementation, wiring and end-to-end usability,
 refactoring and code quality, and failure/recovery concerns must still each have
 an owning slice or parent-level task with observable evidence:
 
-- `implementation`;
-- `wiring/usability` (wiring and end-to-end usability);
-- `quality` (refactoring and code quality);
-- `reliability` (failure/recovery).
+Use the canonical lens IDs `implementation`, `wiring/usability`, `quality`, and
+`reliability` only as ownership labels; they do not define the functional
+slices.
 
 For a code-backed sub-issue, map changed files and commits and require its pushed
 implementation.
