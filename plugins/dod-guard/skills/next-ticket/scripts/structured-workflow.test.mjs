@@ -37,7 +37,16 @@ const githubSkills = [
 ];
 const directGithubRequestPattern =
   /\bgh(?:\.exe)?\s+\S+|https?:\/\/api\.github\.com\b|\bmcp__github__[a-z][\w-]*|\bGitHub\s+(?:MCP|REST|API)\b/i;
-const proof = await import("./structured-workflow-proof.mjs");
+const proofModule = await import("./structured-workflow-proof.mjs");
+const proof = {
+  ...proofModule,
+  evaluateConvergence(input) {
+    const records = input.records?.["lens-ownership"] === true
+      ? { ...input.records, "lens-ownership": input.reviewLenses }
+      : input.records;
+    return proofModule.evaluateConvergence({ ...input, records });
+  },
+};
 const proofScript = path.join(
   root,
   "plugins/dod-guard/skills/next-ticket/scripts/structured-workflow-proof.mjs",
@@ -333,7 +342,6 @@ test("functional convergence reports malformed collection entries", () => {
   assert.ok(result.remainder.some((entry) => entry.includes("linked child needs a functional slice id")));
   assert.ok(result.remainder.some((entry) => entry.includes("review lens entry 1 must be an object")));
   assert.ok(result.remainder.some((entry) => entry.includes("acceptance criterion entry 1 must be an object")));
-
 });
 
 test("functional convergence rejects missing acceptance identifiers", () => {
@@ -380,7 +388,7 @@ test("normalizes task identifiers before matching owners", () => {
   assert.ok(!result.remainder.some((entry) => entry.includes("missing owner task-1")));
 });
 
-test("review-lens owner IDs take precedence over slice IDs", () => {
+test("review-lens owner IDs cannot collide with slice IDs", () => {
   const result = proof.evaluateConvergence({
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
     tasks: [
@@ -394,7 +402,18 @@ test("review-lens owner IDs take precedence over slice IDs", () => {
     reviewLenses: [{ id: "implementation", owner: "slice-a", evidence: "owner-proof" }],
   });
 
-  assert.ok(!result.remainder.some((entry) => entry.includes("ambiguous owner slice-a")));
+  assert.ok(result.remainder.some((entry) => entry.includes("both a task id and a functional slice id")));
+});
+
+test("structured convergence rejects a placeholder lens-ownership record", () => {
+  const result = proofModule.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({ id, owner: "task-1", evidence: `lens-${id}` })),
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("lens-ownership record must be an array")));
 });
 
 test("ordinary fixes bypass structured records", () => {

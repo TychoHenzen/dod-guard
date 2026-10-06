@@ -51,6 +51,54 @@ function normalizeEntries(value, label, section, addRemainder) {
   });
 }
 
+function lensSignature(lens) {
+  return JSON.stringify({
+    id: normalizedIdentifier(lens.id ?? lens.name),
+    owner: normalizedIdentifier(lens.owner),
+    evidence: evidenceValues(lens.evidence),
+    headSha: normalizedIdentifier(lens.headSha ?? lens.head),
+    acceptanceEvidence: evidenceValues(lens.acceptanceEvidence),
+    verificationEvidence: evidenceValues(lens.verificationEvidence),
+  });
+}
+
+function validateLensOwnershipRecord(record, reviewLenses, section, addRemainder) {
+  if (!Array.isArray(record)) {
+    addRemainder(section, "lens-ownership record must be an array of review lenses");
+    return;
+  }
+  const recordById = new Map();
+  for (const [index, lens] of record.entries()) {
+    const id = normalizedIdentifier(lens?.id ?? lens?.name);
+    if (!id) {
+      addRemainder(section, `lens-ownership entry ${index + 1} needs a non-empty id`);
+    } else if (recordById.has(id)) {
+      addRemainder(section, `${id} lens-ownership entry is declared more than once`);
+    } else {
+      recordById.set(id, lens);
+    }
+  }
+  const reviewById = new Map();
+  for (const lens of reviewLenses) {
+    const id = normalizedIdentifier(lens.id ?? lens.name);
+    if (id) reviewById.set(id, lens);
+  }
+  for (const requiredLens of REQUIRED_REVIEW_LENSES) {
+    const recordLens = recordById.get(requiredLens);
+    const reviewLens = reviewById.get(requiredLens);
+    if (!recordLens) {
+      addRemainder(section, `${requiredLens} lens-ownership record is missing`);
+    } else if (!reviewLens || lensSignature(recordLens) !== lensSignature(reviewLens)) {
+      addRemainder(section, `${requiredLens} lens-ownership record does not match review-lens evidence`);
+    }
+  }
+  for (const id of recordById.keys()) {
+    if (!REQUIRED_REVIEW_LENSES.includes(id)) {
+      addRemainder(section, `${id} lens-ownership record uses an unknown lens`);
+    }
+  }
+}
+
 function declareEvidence({ owner, value, section, evidenceOwners, addRemainder }) {
   for (const evidence of evidenceValues(value)) {
     if (evidenceOwners.has(evidence)) {
@@ -229,7 +277,18 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${slice} slice needs an owning task`);
     }
   }
+  for (const taskId of seenTaskIds) {
+    if (childIds.has(taskId)) {
+      addRemainder("Functional decomposition", `${taskId} is both a task id and a functional slice id`);
+    }
+  }
   const seenLenses = new Set();
+  validateLensOwnershipRecord(
+    records["lens-ownership"],
+    lensList,
+    "Functional decomposition",
+    addRemainder,
+  );
   for (const lens of lensList) {
     const id = normalizedIdentifier(lens.id ?? lens.name);
     if (!id || !REQUIRED_REVIEW_LENSES.includes(id)) {
@@ -371,8 +430,17 @@ export function scenarioResult(scenario = "passing") {
     });
   }
   if (scenario === "passing") {
+    const reviewLenses = REQUIRED_REVIEW_LENSES.map((id, index) => ({
+      id,
+      owner: index === 0 ? "search-flow" : "task-1",
+      evidence: `lens-${id}`,
+      headSha: PROOF_HANDOFF.headSha,
+    }));
     return evaluateConvergence({
-      records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [record, true])),
+      records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [
+        record,
+        record === "lens-ownership" ? reviewLenses : true,
+      ])),
       tasks: [{
         id: "task-1",
         child: "search-flow",
@@ -382,12 +450,7 @@ export function scenarioResult(scenario = "passing") {
         ],
       }],
       children: [{ id: "search-flow", evidence: ["mapped", "lens-implementation"] }],
-      reviewLenses: REQUIRED_REVIEW_LENSES.map((id, index) => ({
-        id,
-        owner: index === 0 ? "search-flow" : "task-1",
-        evidence: `lens-${id}`,
-        headSha: PROOF_HANDOFF.headSha,
-      })),
+      reviewLenses,
       acceptance: [{ id: "AC-1", evidence: "proof" }],
       acceptanceMatrix: PROOF_ACCEPTANCE_MATRIX,
       headSha: PROOF_HANDOFF.headSha,

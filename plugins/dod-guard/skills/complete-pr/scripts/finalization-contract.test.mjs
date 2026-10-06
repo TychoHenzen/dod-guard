@@ -7,10 +7,13 @@ import { evaluateStructuredFinalization } from "./finalization-gate.mjs";
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const standard = await readFile(new URL("../../../standards/github-request-discipline.md", import.meta.url), "utf8");
 const proof = await import("../../next-ticket/scripts/structured-workflow-proof.mjs");
-const completeRecords = () =>
-  proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {});
+const completeRecords = (lensOwnership) =>
+  proof.REQUIRED_RECORDS.reduce(
+    (records, name) => ({ ...records, [name]: name === "lens-ownership" ? lensOwnership : true }),
+    {},
+  );
 const validConvergenceInput = () => ({
-  records: completeRecords(),
+  records: completeRecords(reviewLenses),
   tasks: [{
     id: "task-1",
     child: "search-flow",
@@ -18,8 +21,8 @@ const validConvergenceInput = () => ({
       "commit-proof",
       ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
     ],
-      acceptanceEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-evidence-${index + 1}`),
-      verificationEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-proof-${index + 1}`),
+    acceptanceEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-evidence-${index + 1}`),
+    verificationEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `matrix-proof-${index + 1}`),
   }, {
     id: "task-2",
     child: "settings-flow",
@@ -29,14 +32,7 @@ const validConvergenceInput = () => ({
     { id: "search-flow", evidence: "slice-proof" },
     { id: "settings-flow", evidence: "settings-slice-proof" },
   ],
-  reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
-    id,
-    owner: "task-1",
-    evidence: `lens-${id}`,
-    headSha: "proof-head",
-    acceptanceEvidence: `matrix-evidence-${index + 1}`,
-    verificationEvidence: `matrix-proof-${index + 1}`,
-  })),
+  reviewLenses,
   acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
   acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
     id: `AC-1-${index + 1}`,
@@ -51,6 +47,15 @@ const validConvergenceInput = () => ({
   })),
   headSha: "proof-head",
 });
+
+const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+  id,
+  owner: "task-1",
+  evidence: `lens-${id}`,
+  headSha: "proof-head",
+  acceptanceEvidence: `matrix-evidence-${index + 1}`,
+  verificationEvidence: `matrix-proof-${index + 1}`,
+}));
 
 test("finalizes each structured parent child only after the guarded merge", () => {
   const finalization = skill.slice(skill.indexOf("## Finalize the parent unit"));
@@ -132,6 +137,12 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   const staleEvidenceResult = evaluateStructuredFinalization(staleEvidence);
   assert.equal(staleEvidenceResult.nextStep, "stop");
   assert.ok(staleEvidenceResult.remainder.some((entry) => entry.includes("expected proof-head")));
+
+  const staleLens = validConvergenceInput();
+  staleLens.reviewLenses[0] = { ...staleLens.reviewLenses[0], headSha: "old-head" };
+  const staleLensResult = evaluateStructuredFinalization(staleLens);
+  assert.equal(staleLensResult.nextStep, "stop");
+  assert.ok(staleLensResult.remainder.some((entry) => entry.includes("not bound to handoff head proof-head")));
 
   const unmappedUserPath = validConvergenceInput();
   unmappedUserPath.reviewLenses = unmappedUserPath.reviewLenses.map((lens) =>

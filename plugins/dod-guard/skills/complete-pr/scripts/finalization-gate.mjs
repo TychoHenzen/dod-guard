@@ -14,10 +14,14 @@ function lensEvidenceRemainder(handoff) {
   const matrix = Array.isArray(handoff.acceptanceMatrix) ? handoff.acceptanceMatrix : [];
   const matrixProofs = new Set(matrix.map((row) => text(row?.proof)).filter(Boolean));
   const matrixEvidence = new Set(matrix.map((row) => text(row?.evidence)).filter(Boolean));
+  const expectedHead = text(handoff.headSha);
   const tasks = Array.isArray(handoff.tasks) ? handoff.tasks : [];
   const remainder = [];
   for (const lens of Array.isArray(handoff.reviewLenses) ? handoff.reviewLenses : []) {
     const id = text(lens?.id ?? lens?.name) ?? "review lens";
+    if (text(lens?.headSha ?? lens?.head) !== expectedHead) {
+      remainder.push(`${id} review lens is not bound to handoff head ${expectedHead ?? "an exact pushed head"}`);
+    }
     const owner = text(lens?.owner);
     const ownerTask = tasks.find((task) => text(task?.id) === owner)
       ?? tasks.find((task) => text(task?.child) === owner);
@@ -41,7 +45,7 @@ function lensEvidenceRemainder(handoff) {
 
 export function evaluateStructuredFinalization(handoff) {
   const convergence = evaluateConvergence(handoff);
-  const lensRemainder = convergence.outcome === "verified" ? lensEvidenceRemainder(handoff) : [];
+  const lensRemainder = lensEvidenceRemainder(handoff);
   const finalRemainder = [...convergence.remainder, ...lensRemainder];
   const finalOutcome = finalRemainder.length === 0 ? "verified" : "actionable remainder";
   let nextStep = "stop";

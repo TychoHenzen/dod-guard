@@ -11,46 +11,52 @@ const githubDiscipline = await readFile(
   new URL("../../../standards/github-request-discipline.md", import.meta.url),
   "utf8",
 );
-const completeRecords = () =>
-  proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {});
-const validConvergenceInput = () => ({
-  records: completeRecords(),
-  tasks: [{
-    id: "task-1",
-    child: "search-flow",
-    evidence: [
-      "commit-proof",
-      ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
-    ],
-  }, {
-    id: "task-2",
-    child: "settings-flow",
-    evidence: "settings-proof",
-  }],
-  children: [
-    { id: "search-flow", evidence: "slice-proof" },
-    { id: "settings-flow", evidence: "settings-slice-proof" },
-  ],
-  reviewLenses: proof.REQUIRED_REVIEW_LENSES.map((id) => ({
+const completeRecords = (lensOwnership) =>
+  proof.REQUIRED_RECORDS.reduce(
+    (records, name) => ({ ...records, [name]: name === "lens-ownership" ? lensOwnership : true }),
+    {},
+  );
+const validConvergenceInput = () => {
+  const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id) => ({
     id,
     owner: "task-1",
     evidence: `lens-${id}`,
     headSha: "proof-head",
-  })),
-  acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
-  acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
-    id: `AC-1-${index + 1}`,
-    contract: "AC-1",
-    path,
-    proof: `matrix-proof-${index + 1}`,
-    expected: "pass",
-    observed: "pass",
-    status: "pass",
-    evidence: `matrix-evidence-${index + 1}`,
+  }));
+  return {
+    records: completeRecords(reviewLenses),
+    tasks: [{
+      id: "task-1",
+      child: "search-flow",
+      evidence: [
+        "commit-proof",
+        ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
+      ],
+    }, {
+      id: "task-2",
+      child: "settings-flow",
+      evidence: "settings-proof",
+    }],
+    children: [
+      { id: "search-flow", evidence: "slice-proof" },
+      { id: "settings-flow", evidence: "settings-slice-proof" },
+    ],
+    reviewLenses,
+    acceptance: [{ id: "AC-1", evidence: "acceptance-proof" }],
+    acceptanceMatrix: ACCEPTANCE_MATRIX_PATHS.map((path, index) => ({
+      id: `AC-1-${index + 1}`,
+      contract: "AC-1",
+      path,
+      proof: `matrix-proof-${index + 1}`,
+      expected: "pass",
+      observed: "pass",
+      status: "pass",
+      evidence: `matrix-evidence-${index + 1}`,
+      headSha: "proof-head",
+    })),
     headSha: "proof-head",
-  })),
-  headSha: "proof-head",
-});
+  };
+};
 
 test("requires explicit Project item types and safe recovery", () => {
   assert.match(

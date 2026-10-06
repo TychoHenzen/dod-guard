@@ -114,9 +114,11 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
 - `implementation-plan`: affected owners, approach, and verification approach.
 - `task-list`: ordered tasks with a clear dependency and an `independent`
   marker only when a task can be committed and closed separately.
-- `lens-ownership`: exactly one implementation, wiring/usability, quality, and
-  failure/recovery owner with observable evidence and the accepted head for
-  each lens.
+- `lens-ownership`: an array containing exactly one implementation,
+  wiring/usability, quality, and failure/recovery entry. Each entry repeats its
+  review-lens id, owner, observable evidence, accepted head, and any acceptance
+  or verification evidence; the executable handoff proof compares this record
+  with the review-lens input instead of treating record presence as proof.
 
 `refine-backlog-item` owns these records. It keeps a material unresolved
 requirement in `Backlog` and moves a coherent PBI to `Todo`. `next-ticket`
