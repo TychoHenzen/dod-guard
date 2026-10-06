@@ -151,7 +151,9 @@ proof.
 Require every parent-level task that owns one of those review lenses to carry
 explicit acceptance and verification evidence in the durable handoff and read
 it back before finalizing the Project item, even when it has no linked child
-commit.
+commit. The evidence must resolve through the handoff's acceptance matrix, whose
+mandatory user-path rows prove wiring/usability and failure/recovery behavior at
+the exact pushed head.
 Use the shared status-write runner with the child item IDs first and the parent item ID last:
 
 ```text

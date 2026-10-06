@@ -103,10 +103,10 @@ count or category set. The implementation, wiring and end-to-end usability,
 refactoring and code quality, and failure/recovery concerns must still each have
 an owning slice or parent-level task with observable evidence:
 
-- implementation;
-- wiring and end-to-end usability;
-- refactoring and code quality;
-- failure/recovery.
+- `implementation`;
+- `wiring/usability` (wiring and end-to-end usability);
+- `quality` (refactoring and code quality);
+- `reliability` (failure/recovery).
 
 For a code-backed sub-issue, map changed files and commits and require its pushed
 implementation.

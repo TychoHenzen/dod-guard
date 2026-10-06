@@ -297,6 +297,17 @@ test("functional convergence rejects evidence reused across owners", () => {
   assert.ok(result.remainder.filter((entry) => entry.includes("evidence same-proof is mapped more than once")).length >= 2);
 });
 
+test("functional convergence rejects repeated evidence references", () => {
+  const result = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: ["commit", "lens-implementation"] }],
+    children: [{ id: "search-flow", evidence: "slice-proof" }],
+    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: ["lens-implementation", "lens-implementation"] }],
+  });
+
+  assert.ok(result.remainder.some((entry) => entry.includes("references evidence lens-implementation more than once")));
+});
+
 test("functional convergence reports malformed collection entries", () => {
   const result = proof.evaluateConvergence({
     records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),

@@ -63,13 +63,17 @@ function declareEvidence({ owner, value, section, evidenceOwners, addRemainder }
 }
 
 function referenceEvidence({ owner, value, section, evidenceOwners, addRemainder }) {
+  const referencedEvidence = new Set();
   for (const evidence of evidenceValues(value)) {
-    if (!evidenceOwners.has(evidence)) {
+    if (referencedEvidence.has(evidence)) {
+      addRemainder(section, `${owner} references evidence ${evidence} more than once`);
+    } else if (!evidenceOwners.has(evidence)) {
       addRemainder(section, `${owner} references undeclared evidence ${evidence}`);
     } else if (evidenceOwners.get(evidence) !== owner) {
       const declaredOwner = evidenceOwners.get(evidence);
       addRemainder(section, `${owner} references evidence owned by ${declaredOwner}`);
     }
+    referencedEvidence.add(evidence);
   }
 }
 
