@@ -62,7 +62,8 @@ The executable proof uses the canonical lens IDs `implementation`,
 to the corresponding user-facing concern.
 
 Task-list records use `parentLevel: "convergence"` on a task that owns
-cross-cutting parent work without a linked child.
+cross-cutting parent work without a linked child; for example,
+`{ "id": "task-1", "parentLevel": "convergence", "evidence": "..." }`.
 
 `next-ticket` writes one durable `## Implementation handoff` issue comment (or
 updates the existing one) after pushing the branch. That comment maps every

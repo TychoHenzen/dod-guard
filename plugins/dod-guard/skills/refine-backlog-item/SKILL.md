@@ -285,6 +285,9 @@ the parent to `Todo`; stop on any actionable remainder. Do not require a fixed
 child count or create category placeholders. When no linked child represents
 cross-cutting parent work, record an explicit parent-level task with
 `parentLevel: "convergence"` so that ownership remains visible and verifiable.
+The executable proof rejects duplicate or missing slice links, unowned slices,
+duplicate evidence, missing or duplicate review lenses, invalid acceptance IDs,
+and incomplete or stale acceptance-matrix rows.
 If an edit fails or readback disagrees, stop before the status change and
 report the actual partial state. Do not claim the PBI is ready.
 
