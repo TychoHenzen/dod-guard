@@ -544,7 +544,8 @@ At the end of basic work:
 - If the complete suite is resource-limited, run its equivalent partitions sequentially or with reduced parallelism before escalating; keep the environment limitation distinct from a code or quality failure.
 - Before claiming the complete suite is green, verify every newly added test or fixture is included by the configured test glob. For generated-artifact drift, record the producer's required working directory and compare exact hashes from that invocation before dispatching another audit; treat a root-cwd mismatch as an environment or procedure issue, not a code failure.
 
-A linked child or parent-level task is not implementation-complete merely because code compiles. Record acceptance evidence for every slice and task.
+A linked child or parent-level task is not implementation-complete merely because
+code compiles. Record acceptance evidence for every slice and task.
 
 ### 6. PR completion
 

@@ -144,11 +144,11 @@ export function evaluateConvergence({
       addRemainder("Plan and tasks", `task entry ${index + 1} needs a non-empty id`);
       continue;
     }
+    normalizedTaskIds.set(task, taskId);
     if (validTaskIds.has(taskId)) {
       addRemainder("Plan and tasks", `${taskId} task id is declared more than once`);
     } else {
       validTaskIds.add(taskId);
-      normalizedTaskIds.set(task, taskId);
     }
     if (evidenceValues(task.evidence).length === 0) {
       addRemainder("Plan and tasks", `${taskId} needs implementation evidence`);
