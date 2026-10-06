@@ -276,8 +276,8 @@ is below 13 before moving that PBI to `Todo` with the shared REST Project status
 writer.
 For a structured PBI, also confirm the named `requirements`, `clarifications`,
 `implementation-plan`, `task-list`, and `lens-ownership` records are present and coherent; every
-linked child matches one independently deliverable functional slice in the
-task list, is actionable, and is `Todo`; and the four review lenses each have
+linked child matches one independently deliverable functional slice (each is separately tracked)
+in the task list, is actionable, and is `Todo`; and the four review lenses each have
 an owning child or parent-level task plus mapped observable acceptance or
 verification evidence before moving the parent to `Todo`. Do not require a
 fixed child count or create category placeholders.

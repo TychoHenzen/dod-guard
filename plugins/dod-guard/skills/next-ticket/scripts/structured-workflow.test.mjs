@@ -130,6 +130,8 @@ test("structured parents require evidenced functional slices without a fixed chi
   assert.match(nextTicket, /no linked sub-issues is\s+valid when it is one coherent implementation slice/);
   assert.match(nextTicket, /functional decomposition/);
   assert.match(nextTicket, /every linked child,?\s+if any, is actionable and `Todo`/);
+  assert.match(nextTicket, /Before implementation, verify the named\s+`lens-ownership` record maps each required lens/);
+  assert.match(nextTicket, /actionable\s+remainder from the executable convergence proof/);
   assert.match(nextTicket, /Do not require a fixed child count\s+or category set/);
   assert.match(nextTicket, /pushed\s+implementation evidence before a\s+commit or PR handoff, not before execution/);
   assert.match(nextTicket, /map\s+every linked child to its owning task, changed files or verified remote\s+state, commit, and fresh verification/);

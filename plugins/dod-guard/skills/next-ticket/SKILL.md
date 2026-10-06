@@ -61,12 +61,15 @@ with pushed implementation evidence. A parent PBI with no linked sub-issues is
 valid when it is one coherent implementation slice. For a structured PBI,
 require the task list's functional decomposition and verify every linked child,
 if any, is actionable and `Todo`, maps to exactly one independently deliverable
-slice, and has an owning task. Require pushed implementation evidence before a
+slice, and has an owning task. Before implementation, verify the named
+`lens-ownership` record maps each required lens to an existing task or slice and
+observable acceptance or verification evidence; stop on any actionable
+remainder from the executable convergence proof. Require pushed implementation evidence before a
 commit or PR handoff, not before execution. Do not require a fixed child count
-or category set; stop before implementation when a child is duplicated,
-mis-mapped, or not actionable, or when the implementation, wiring and
-end-to-end usability, code quality, or failure/recovery concern has no owning
-slice or parent-level task.
+or category set; stop before implementation when a child is
+duplicated, mis-mapped, or not actionable, or when the implementation, wiring
+and end-to-end usability, code quality, or failure/recovery concern has no
+owning slice or parent-level task.
 
 Stop and name the missing section when the issue is incomplete. Do not invent
 requirements.
