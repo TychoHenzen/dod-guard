@@ -116,8 +116,8 @@ test("defines provider-neutral interview and debate contracts", () => {
 
 test("routes non-interactive clarification through one bounded advisor", () => {
   assert.match(skill, /During an active goal or explicitly non-interactive refinement/);
-  assert.match(skill, /exactly\s+one fresh `\$dod-guard:codex-advisor`/);
-  assert.match(skill, /`gpt-5\.6-luna` with `max` reasoning effort/);
+  assert.match(skill, /exactly\s+one fresh `dod-guard:codex-advisor`/);
+  assert.match(skill, /Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5\.6-luna` at\s+`max` reasoning effort/);
   assert.match(skill, /candidate answers and recommended default/);
   assert.match(skill, /Batch every currently independent question into that one advisor brief/);
   assert.match(skill, /Defer a\s+question whose options depend on an advisor answer/);
@@ -256,7 +256,7 @@ test("manual fixtures include each route and its record markers", () => {
   for (const [fixture, markers] of [
     ["No gap", ["discovery-triage: no gap", "Do not invoke interview, external research, or debate."]],
     ["Batched clarification", ["Use ordinary conversation through `/interview`", "record `interview-contract`"]],
-    ["Non-interactive clarification", ["Invoke exactly one fresh `$dod-guard:codex-advisor` with `gpt-5.6-luna` and `max`", "Record `advisor-decision`", "re-run triage"]],
+    ["Non-interactive clarification", ["Invoke exactly one fresh `dod-guard:codex-advisor`", "Record `advisor-decision`", "re-run triage"]],
     ["Batched non-interactive clarification", ["Batch every currently independent question into the one advisor brief", "Defer questions that depend on an advisor answer"]],
     ["Advisor cannot resolve user authority", ["Record `unresolved-decision` with the question, evidence, impact, and next required authority", "Keep the issue in `Backlog`"]],
     ["Advisor invocation failure", ["Record `unresolved-decision` with the question, researched evidence, exact advisor failure, impact, and next required authority", "Keep the issue in `Backlog`"]],

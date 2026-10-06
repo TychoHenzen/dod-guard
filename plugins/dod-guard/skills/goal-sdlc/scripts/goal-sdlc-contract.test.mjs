@@ -740,12 +740,12 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.match(skill, /PBIs completed: N/);
   assert.match(skill, /main thread is the high-level orchestrator/);
   assert.match(skill, /Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up/);
-  assert.match(skill, /\[\$dod-guard:next-ticket\]\(\.\.\/next-ticket\/SKILL\.md\)/);
+  assert.match(skill, /\[dod-guard:next-ticket\]\(\.\.\/next-ticket\/SKILL\.md\)/);
   assert.match(skill, /`\/review-pr` gets Codex's automatic PR review and is the one code review/);
   assert.match(skill, /Leave the PR a draft\. `complete-pr` owns the ready transition/);
   assert.doesNotMatch(skill, /draft=false|published\/non-draft/);
-  assert.match(skill, /\[\$dod-guard:fix-pr-review\]\(\.\.\/fix-pr-review\/SKILL\.md\)/);
-  assert.match(skill, /\[\$dod-guard:review-pr\]\(\.\.\/review-pr\/SKILL\.md\)/);
+  assert.match(skill, /\[dod-guard:fix-pr-review\]\(\.\.\/fix-pr-review\/SKILL\.md\)/);
+  assert.match(skill, /\[dod-guard:review-pr\]\(\.\.\/review-pr\/SKILL\.md\)/);
   assert.doesNotMatch(skill, /Review policy:/);
   assert.doesNotMatch(skill, /completed reviewer recommendation|review slot|reviewer-specific timeout/);
   assert.doesNotMatch(skill, /review-pr-branch/);
@@ -822,15 +822,15 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   );
   assert.match(
     skill,
-    /Do not invoke `\[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)` again after\s+merge; the preceding invocation owns the guarded\s+merge, branch cleanup, and\s+Project finalization pass\./,
+    /Do not invoke `\[dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)` again after\s+merge; the preceding invocation owns the guarded\s+merge, branch cleanup, and\s+Project finalization pass\./,
   );
   assert.match(
     skill,
-    /Then use:\s+\[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)/,
+    /Then use:\s+\[dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)/,
   );
   assert.doesNotMatch(
     skill,
-    /After merge:\s+- Invoke `\[\$dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)` for the guarded/,
+    /After merge:\s+- Invoke `\[dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)` for the guarded/,
   );
 });
 

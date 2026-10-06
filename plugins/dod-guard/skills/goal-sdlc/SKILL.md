@@ -176,7 +176,7 @@ metadata repair, invoke manual review, or edit an external checkout.
 
 ## Review trigger lifecycle
 
-Invoke [$dod-guard:review-pr](../review-pr/SKILL.md) once the exact-head
+Invoke [dod-guard:review-pr](../review-pr/SKILL.md) once the exact-head
 checkpoint passes. It owns the trigger decision: a completed Codex review
 suppresses every later review trigger for that pull request, including after
 remediation commits; a draft gets exactly one `@codex review` trigger at once;
@@ -189,11 +189,11 @@ The pull request and its comments are the durable record.
 
 - Built-in `/goal` owns goal persistence, continuation, and the final stop
   decision.
-- `$dod-guard:next-ticket` owns one PBI's implementation branch, evidence, and
+- `dod-guard:next-ticket` owns one PBI's implementation branch, evidence, and
   pushed handoff.
-- `$dod-guard:submit-draft-pr` owns PR creation and convergence before completion.
-- `$dod-guard:fix-pr-review` owns remediation of externally supplied findings;
-  `$dod-guard:complete-pr` owns the guarded merge gate.
+- `dod-guard:submit-draft-pr` owns PR creation and convergence before completion.
+- `dod-guard:fix-pr-review` owns remediation of externally supplied findings;
+  `dod-guard:complete-pr` owns the guarded merge gate.
 - This skill owns only the queue-level orchestration and bounded delegation
   between those existing owners.
 
@@ -214,11 +214,11 @@ Operate as a continuous delivery worker for the current repository and its linke
 Never copy a cached absolute path or plugin version into a handoff, ledger,
 issue, or progress message; the relative links in this skill are the stable
 source references:
-[$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md),
-[$dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md),
-[$dod-guard:next-ticket](../next-ticket/SKILL.md),
-[$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md),
-[$dod-guard:complete-pr](../complete-pr/SKILL.md).
+[dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md),
+[dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md),
+[dod-guard:next-ticket](../next-ticket/SKILL.md),
+[dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md),
+[dod-guard:complete-pr](../complete-pr/SKILL.md).
 
 target project: the single open GitHub Project explicitly linked to the current repository
 target repo: based on what is in the current working directory
@@ -228,11 +228,11 @@ target repo: based on what is in the current working directory
 - Work only in the current repository checkout. Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up. If a skill or tool requires a worktree, do not use it; choose a same-checkout path or record the incompatibility as a blocker.
 - Process exactly one parent PBI/delivery unit at a time, sequentially. Finish and verify it before selecting the next. Do not implement, mutate, validate, or deliver multiple PBIs in parallel.
 - Treat a dirty current checkout as evidence that a task is probably already in progress, not as a reason to stop or declare the queue empty. Match the changed paths, branch, checkpoint, issue, child PBIs, and PR before choosing a new unit; when they match, preserve the edits and resume that task from its latest safe checkpoint.
-- If dirty work or an in-progress branch cannot be matched to an existing PBI, create one through `[$dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md)` from the observed scope and evidence before continuing. Do not discard, reset, stash, overwrite, or silently absorb those edits into an unrelated PBI; refine the new PBI and resume the same work after it is tracked.
+- If dirty work or an in-progress branch cannot be matched to an existing PBI, create one through `[dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md)` from the observed scope and evidence before continuing. Do not discard, reset, stash, overwrite, or silently absorb those edits into an unrelated PBI; refine the new PBI and resume the same work after it is tracked.
 
 Do not stop after merging one PBI. Continue processing eligible work until the queue is empty, the user explicitly stops the goal, or every remaining item is blocked by an external condition with no safe workaround.
 
-Assume the primary model is `gpt-5.6-luna` with `max` reasoning, this is also the model to be used for all subagents. Luna must follow the explicit state machine below; do not infer a shorter or different workflow.
+In Codex, assume the primary model is `gpt-5.6-luna` with `max` reasoning, and use it for all subagents. In Claude Code, subagents inherit the session model. The model must follow the explicit state machine below; do not infer a shorter or different workflow.
 
 Hard invariants:
 
@@ -401,7 +401,7 @@ D. If no parent is active:
 - Choose one eligible parent from Todo using current Project priority/order.
 - If Todo is empty, choose one eligible Backlog parent and use:
 
-  [$dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md) with the added instructions listed under Refinement contract
+  [dod-guard:refine-backlog-item](../refine-backlog-item/SKILL.md) with the added instructions listed under Refinement contract
 
 - A `Friction log YYYY-MM-DD` issue dated today or later is not eligible yet, because it is still collecting entries. A log from an earlier day is ordinary Backlog work.
 - After refinement, verify the parent and required children are in Todo, then continue implementation.
@@ -488,7 +488,7 @@ After refinement:
 
 For a newly selected Todo parent, use:
 
-  [$dod-guard:next-ticket](../next-ticket/SKILL.md)
+  [dod-guard:next-ticket](../next-ticket/SKILL.md)
 
 For an already-started parent, resume its existing checkpoint and skip completed work.
 
@@ -548,7 +548,7 @@ code compiles. Record acceptance evidence for every slice and task.
 
 When all linked functional slices and parent-level tasks are implementation-complete, use:
 
-  [$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md)
+  [dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md)
 
 After the draft exists, complete the exact-head pre-review checkpoint before
 invoking `/review-pr`. Carry its required-context matrix,
@@ -559,13 +559,13 @@ do not restore stale evidence.
 
 Leave the PR a draft. `complete-pr` owns the ready transition.
 
-Then invoke [$dod-guard:review-pr](../review-pr/SKILL.md) once. If it reports
+Then invoke [dod-guard:review-pr](../review-pr/SKILL.md) once. If it reports
 findings, or other review findings are supplied:
 
 - Inspect each finding against the current PR head and the PBI acceptance
   criteria before changing code.
 - Fix every valid finding with
-  [$dod-guard:fix-pr-review](../fix-pr-review/SKILL.md).
+  [dod-guard:fix-pr-review](../fix-pr-review/SKILL.md).
 - Run focused checks for repaired areas and the complete relevant suite once.
 - Verify the new head SHA, respond to each valid finding, and mark resolved
   finding comments as resolved before `complete-pr`.
@@ -583,7 +583,7 @@ the review does not replace any required correctness gate.
 
 Then use:
 
-  [$dod-guard:complete-pr](../complete-pr/SKILL.md)
+  [dod-guard:complete-pr](../complete-pr/SKILL.md)
 
 Only complete the PR when:
 
@@ -595,7 +595,7 @@ Only complete the PR when:
 
 After merge:
 
-- Do not invoke `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` again after
+- Do not invoke `[dod-guard:complete-pr](../complete-pr/SKILL.md)` again after
   merge; the preceding invocation owns the guarded merge, branch cleanup, and
   Project finalization pass.
 
@@ -653,7 +653,7 @@ update and remote readback, then recompute and attest the exact target once.
 Continue unrelated queue work while reconciliation is blocked; do not stack
 parallel ref updates or repeat attestations against moving refs.
 
-For every confirmed blocker that survives local triage, run the advisor that `standards/working-defaults.md` requires, [$dod-guard:codex-advisor](../codex-advisor/SKILL.md), before asking the user or declaring the workflow blocked. Include repository, parent/child PBI, stage, branch, current head SHA, exact error, attempts, constraints, and recovery options. The advisor is advice-only; implement and verify the chosen solution locally.
+For every confirmed blocker that survives local triage, run the advisor that `standards/working-defaults.md` requires, [dod-guard:codex-advisor](../codex-advisor/SKILL.md), before asking the user or declaring the workflow blocked. Include repository, parent/child PBI, stage, branch, current head SHA, exact error, attempts, constraints, and recovery options. The advisor is advice-only; implement and verify the chosen solution locally.
 
 Do not ask the user to choose a workaround, authorize routine work, or confirm whether to continue until the advisor has supplied its recommendation and the safe local recovery path has been tried. A user question is a last resort for a missing external decision or authorization, not a substitute for blocker triage.
 
@@ -718,7 +718,7 @@ You may cut speculative polish, unrelated cleanup, and unnecessary abstractions.
 
 After every successful merge:
 
-* let `[$dod-guard:complete-pr](../complete-pr/SKILL.md)` delete the local and
+* let `[dod-guard:complete-pr](../complete-pr/SKILL.md)` delete the local and
   remote copy of the exact merged branch after its head and merge state are
   verified; this queue skill never sweeps unrelated refs
 * increment `PBIs completed: N` only after the parent and child Project

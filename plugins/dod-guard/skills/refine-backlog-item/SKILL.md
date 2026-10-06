@@ -74,14 +74,15 @@ note. Wait for the current round's answers before using an answer-dependent
 option.
 
 During an active goal or explicitly non-interactive refinement, invoke exactly
-one fresh `$dod-guard:codex-advisor` instead of asking the user. Use
-`gpt-5.6-luna` with `max` reasoning effort. Give the advisor only the unresolved
+one fresh `dod-guard:codex-advisor` instead of asking the user. It uses
+Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5.6-luna` at
+`max` reasoning effort. Give the advisor only the unresolved
 question, candidate answers and recommended default, repository and PBI context,
 the researched evidence, and the affected acceptance boundary and constraints.
 Batch every currently independent question into that one advisor brief. Defer a
 question whose options depend on an advisor answer until triage runs again.
 The advisor is advice-only and cannot replace user authority. Record an
-`advisor-decision` implementation note with the model, effort, briefing scope,
+`advisor-decision` implementation note with the advisor used, briefing scope,
 advice, and the evidence for accepting or rejecting it. Do not invoke another
 advisor to retry, vote, or refine its answer.
 
@@ -212,7 +213,8 @@ Keep concise discovery evidence in `## Implementation notes`. Include a
 
 - `interview-contract`: the questions asked, options, recommended defaults,
   answers, and deferred dependent questions;
-- `advisor-decision`: the advisor model and effort, bounded briefing scope,
+- `advisor-decision`: the advisor used (Claude advisor tool, or the Codex
+  model and effort), bounded briefing scope,
   advice, and the evidence for accepting or rejecting it;
 - `research-source`: the source, relevant finding, and remaining uncertainty;
 - `debate-synthesis`: the decision, each named expert's lens and why it applies

@@ -104,6 +104,6 @@ contract verbatim passages are removed before scoring.
 
 Allow at most two write/gate cycles. Preserve the checkpoint on a failed or
 ambiguous command, read back remote state, classify the failure, and use
-`[$dod-guard:codex-advisor](../codex-advisor/SKILL.md)` before asking the user
+`[dod-guard:codex-advisor](../codex-advisor/SKILL.md)` before asking the user
 about a confirmed blocker. Never discard unrelated edits, rerun a completed
 review, or hide a missing claim behind an overlap score.

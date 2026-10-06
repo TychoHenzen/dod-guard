@@ -20,8 +20,9 @@ destructive action.
   once. Do not retry a mutation before its readback, loop blindly, or convert a
   security, authority, destructive, provider/head, or missing-evidence stop
   into ordinary recovery. After local triage, a confirmed blocker must use
-  `/codex-advisor` with `gpt-5.6-luna` at `max` effort; its advice never
-  replaces the invoking skill's repair or proof.
+  `/codex-advisor`: Claude's advisor tool in Claude Code, otherwise Codex with
+  `gpt-5.6-luna` at `max` effort. Its advice never replaces the invoking
+  skill's repair or proof.
 - For a skill that commits or pushes, inspect a dirty worktree first. Treat
   ordinary, clearly in-scope pending changes as input to its normal `/commit`
   path. Preserve and report secrets, destructive intent, and unrelated or

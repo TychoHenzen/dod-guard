@@ -402,6 +402,18 @@ test("advisor skill has the Codex invocation contract", () => {
   assert.doesNotMatch(skill, /researched host/);
 });
 
+test("advisor skill uses Claude's advisor tool and falls back to Codex", () => {
+  const choose = skill.indexOf("## Choose the advisor");
+  const claude = skill.indexOf("## Claude Code: the built-in advisor");
+  const codex = skill.indexOf("## Invoke Codex");
+  assert.ok(choose !== -1 && choose < claude && claude < codex);
+  assert.match(skill, /when the `advisor` tool is available, use it and skip the\s+Codex runner/);
+  assert.match(skill, /Otherwise, including every Codex session, use "Invoke Codex"/);
+  assert.match(skill, /Write the brief in this turn[\s\S]*Call `advisor` right after it/);
+  assert.match(skill, /reads the full transcript, not only the brief/);
+  assert.match(skill, /Record the advisor as\s+"Claude advisor tool"/);
+});
+
 test("advisor runner does not impose a wall-clock kill", () => {
   assert.doesNotMatch(runner, /timeoutMs|--timeout-ms|setTimeout/);
 });

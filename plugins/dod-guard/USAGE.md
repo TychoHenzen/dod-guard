@@ -80,8 +80,7 @@ priority, Fibonacci effort, and standard labels from the repository's live
 descriptions. It then triages missing user constraints, external context, and
 genuine tradeoffs. Interactive refinement uses ordinary conversation to batch
 independent `/interview` questions; an active goal or explicitly non-interactive
-run asks one fresh `/codex-advisor` with `gpt-5.6-luna` at `max` effort for
-bounded advice instead. Targeted web or Context7 research resolves external
+run asks one fresh `/codex-advisor` for bounded advice instead. Targeted web or Context7 research resolves external
 facts, and `$debate` runs only after facts and constraints are known. Discovery
 evidence,
 accepted and rejected options, and unresolved decisions stay in the issue's
@@ -197,14 +196,16 @@ when to switch.
 
 ## Ask for a bounded second opinion
 
-Use the Codex advisor when a fix or design needs independent advice before
-implementation:
+Use the advisor when a fix or design needs independent advice before
+implementation. In Claude Code it calls Claude's built-in `advisor` tool after
+writing the brief into the conversation; without that tool, and in Codex, it
+runs a separate Codex process:
 
 ```text
 /dod-guard:codex-advisor
 ```
 
-The skill sends a bounded prompt containing fixed advice-only instructions and
+The Codex path sends a bounded prompt containing fixed advice-only instructions and
 the complete problem description through stdin to a separate `codex exec`
 process. It uses `gpt-5.6-luna` with `max` reasoning by default and accepts an
 optional `--model=<model>` setting. It uses an
