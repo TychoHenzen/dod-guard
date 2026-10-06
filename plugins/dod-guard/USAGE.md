@@ -65,10 +65,8 @@ Run the complete lifecycle without intermediate confirmation:
 `/complete-pr` in order. It asks only the batched clarification questions that
 refinement requires. It fixes every validated actionable review finding and
 uses that completed review's recommendation before the guarded merge; it does
-not invoke another reviewer after fixes. If the reviewer launcher or process
-fails before producing a terminal recommendation, it reconciles the ledger and
-remote review state, repairs the cause, and retries rather than treating the
-execution failure as a review result.
+not invoke another review after fixes. If Codex's review cannot be obtained,
+`/review-pr` stops with its reason and the run stops with that blocker.
 
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:
@@ -241,26 +239,21 @@ evidence is recorded in a comment.
 agent must not approve its pull request, mark it ready, merge it, or close the
 parent issue.
 
-Review the current branch, a named Git ref, or a GitHub pull request without
-checking it out:
+Get the independent review of a GitHub pull request from Codex's automatic PR
+review:
 
 ```text
 /dod-guard:review-pr
-/dod-guard:review-pr origin/codex/42-example
 /dod-guard:review-pr https://github.com/owner/repository/pull/42
 ```
 
-The skill loads the linked PBI and subtasks, then runs feature, design,
-reliability, and hygiene reviewers independently. Local Git findings use the
-active client's inline code comments. GitHub findings become one comment-only
-review on validated changed lines.
-
-Azure DevOps is an additional explicit mode. It writes one Markdown report and
-posts no inline comments:
-
-```text
-/dod-guard:review-pr https://dev.azure.com/owner/project/_git/repository/pullrequest/42 reports/review-42.md
-```
+Codex reviews a ready pull request automatically, but never a draft. The skill
+comments `@codex review` once when a draft has no review, or when a ready pull
+request shows no review after two minutes. It waits for Codex's summary to
+report the code review complete, then lists each finding as `GH-<id>` with its
+`P0`/`P1`/`P2` severity and a recommendation: `BLOCK` for any `P0`,
+`REQUEST_CHANGES` for other findings, `APPROVE` for none. Codex review must be
+enabled for the repository in Codex's GitHub settings.
 
 Fix selected local or GitHub inline findings, or Azure report entries:
 

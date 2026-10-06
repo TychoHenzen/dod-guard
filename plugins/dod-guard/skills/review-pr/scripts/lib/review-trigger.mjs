@@ -25,6 +25,7 @@ function reviewTriggerDecision({
   waitedMs = 0,
   triggerSent = false,
   currentHeadSha = null,
+  draft = false,
 } = {}) {
   const evidence = {
     currentHeadSha,
@@ -45,6 +46,10 @@ function reviewTriggerDecision({
   }
   if (automaticReviewStarted === true) {
     return { ...evidence, action: "wait", reason: "automatic-review-started" };
+  }
+  // Codex reviews a PR automatically only when it is opened for review or marked ready; a draft never starts one.
+  if (draft === true) {
+    return { ...evidence, action: "trigger", command: "@codex review", reason: "draft-has-no-automatic-review" };
   }
   if (automaticReviewStarted !== false) {
     return { ...evidence, action: "wait", reason: "automatic-review-state-unavailable" };

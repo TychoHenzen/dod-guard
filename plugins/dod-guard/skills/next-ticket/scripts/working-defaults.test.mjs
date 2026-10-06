@@ -130,7 +130,7 @@ test("implementation and review repair retain functional-style guidance", () => 
 
 test("local safety exceptions remain explicit", () => {
   assert.match(skills.get("clean-house"), /approval[\s\S]*delete/);
-  assert.match(skills.get("review-pr"), /Never switch branches, edit the target/);
+  assert.match(skills.get("review-pr"), /never writes its own review, approves, marks ready, merges, or\s+closes anything/);
   assert.match(skills.get("codex-migrate"), /Stop until the user answers/);
   assert.match(skills.get("complete-pr"), /explicit acceptance/);
 });

@@ -78,6 +78,23 @@ test("allows exactly one fallback trigger after an unstarted review wait", () =>
   assert.equal(afterTrigger.reason, "review-trigger-already-sent");
 });
 
+test("triggers a draft immediately because Codex never auto-reviews drafts", () => {
+  assert.deepEqual(
+    reviewTriggerDecision({ automaticReviewStarted: false, waitedMs: 0, currentHeadSha: "head-1", draft: true }),
+    {
+      action: "trigger",
+      command: "@codex review",
+      reason: "draft-has-no-automatic-review",
+      currentHeadSha: "head-1",
+      reviewedHeadSha: null,
+    },
+  );
+  assert.equal(
+    reviewTriggerDecision({ automaticReviewStarted: false, triggerSent: true, currentHeadSha: "head-1", draft: true }).reason,
+    "review-trigger-already-sent",
+  );
+});
+
 test("waits when review state is started or unavailable and requires an exact head", () => {
   assert.equal(reviewTriggerDecision({ automaticReviewStarted: true, currentHeadSha: "head-1" }).reason, "automatic-review-started");
   assert.equal(reviewTriggerDecision({ currentHeadSha: "head-1" }).reason, "automatic-review-state-unavailable");

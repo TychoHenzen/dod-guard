@@ -204,9 +204,9 @@ test("loads dod-guard through a disposable OpenCode v2.0.18 project", async () =
       /next-ticket[\\/]SKILL\.md$/,
     );
 
-    const agentResult = await request(baseUrl, headers, "/api/agent/review-pr-feature");
+    const agentResult = await request(baseUrl, headers, "/api/agent/doc-conflict-judge");
     assert.equal(agentResult.response.status, 200, JSON.stringify(agentResult.body));
-    assert.equal(agentResult.body.data.id, "review-pr-feature");
+    assert.equal(agentResult.body.data.id, "doc-conflict-judge");
     assert.equal(agentResult.body.data.mode, "subagent");
 
     const sessionResult = await request(baseUrl, headers, "/api/session", {
@@ -227,14 +227,14 @@ test("loads dod-guard through a disposable OpenCode v2.0.18 project", async () =
     assert.equal(messagesResult.response.status, 200, JSON.stringify(messagesResult.body));
     assert.ok(messagesResult.body.data.some((message) => message.type === "skill" && message.skill === "next-ticket"));
 
-    const promptText = "Use the next-ticket skill with the review-pr-feature agent.";
+    const promptText = "Use the next-ticket skill with the doc-conflict-judge agent.";
     const promptResult = await request(baseUrl, headers, `/api/session/${sessionId}/prompt`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         text: promptText,
         skills: [{ id: "next-ticket" }],
-        agents: [{ name: "review-pr-feature" }],
+        agents: [{ name: "doc-conflict-judge" }],
         resume: false,
       }),
     });
@@ -242,7 +242,7 @@ test("loads dod-guard through a disposable OpenCode v2.0.18 project", async () =
     assert.equal(promptResult.body.data.type, "user", JSON.stringify(promptResult.body));
     assert.equal(promptResult.body.data.payload.text, promptText);
     assert.deepEqual(promptResult.body.data.payload.skills.map((skill) => skill.id), ["next-ticket"]);
-    assert.deepEqual(promptResult.body.data.payload.agents.map((agent) => agent.name), ["review-pr-feature"]);
+    assert.deepEqual(promptResult.body.data.payload.agents.map((agent) => agent.name), ["doc-conflict-judge"]);
   } finally {
     if (server) await stop(server);
     rmSync(fixture.fixture, { recursive: true, force: true });
@@ -316,7 +316,7 @@ test("keeps an installed adapter idempotent across duplicate load, reload, and r
     const initialSkills = await request(baseUrl, headers, "/api/skill");
     assert.equal(initialSkills.response.status, 200, JSON.stringify(initialSkills.body));
     assert.equal(initialSkills.body.data.filter((skill) => skill.id === "next-ticket").length, 1);
-    const initialAgent = await request(baseUrl, headers, "/api/agent/review-pr-feature");
+    const initialAgent = await request(baseUrl, headers, "/api/agent/doc-conflict-judge");
     assert.equal(initialAgent.response.status, 200, JSON.stringify(initialAgent.body));
 
     writeFileSync(
@@ -339,7 +339,7 @@ test("keeps an installed adapter idempotent across duplicate load, reload, and r
     const upgradedSkills = await request(baseUrl, headers, "/api/skill");
     assert.equal(upgradedSkills.response.status, 200, JSON.stringify(upgradedSkills.body));
     assert.equal(upgradedSkills.body.data.filter((skill) => skill.id === "next-ticket").length, 1);
-    const upgradedAgent = await request(baseUrl, headers, "/api/agent/review-pr-feature");
+    const upgradedAgent = await request(baseUrl, headers, "/api/agent/doc-conflict-judge");
     assert.equal(upgradedAgent.response.status, 200, JSON.stringify(upgradedAgent.body));
   } finally {
     if (server) await stop(server);
