@@ -154,7 +154,7 @@ this convergence proof.
 Use the shipped helper as an import-based gate, passing the parsed handoff object
 from the durable issue comment:
 
-```text
+```js
 import { evaluateStructuredFinalization } from "./scripts/finalization-gate.mjs";
 const result = evaluateStructuredFinalization(handoff);
 if (result.nextStep !== "project-status.mjs") stop with result.remainder;

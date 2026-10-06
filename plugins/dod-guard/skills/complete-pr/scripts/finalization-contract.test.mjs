@@ -12,7 +12,17 @@ const completeRecords = (lensOwnership) =>
     (records, name) => ({ ...records, [name]: name === "lens-ownership" ? lensOwnership : true }),
     {},
   );
-const validConvergenceInput = () => ({
+const createReviewLenses = () => proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
+  id,
+  owner: "task-1",
+  evidence: `lens-${id}`,
+  headSha: "proof-head",
+  acceptanceEvidence: `matrix-evidence-${index + 1}`,
+  verificationEvidence: `matrix-proof-${index + 1}`,
+}));
+const validConvergenceInput = () => {
+  const reviewLenses = createReviewLenses();
+  return {
   records: completeRecords(reviewLenses),
   tasks: [{
     id: "task-1",
@@ -46,16 +56,8 @@ const validConvergenceInput = () => ({
     headSha: "proof-head",
   })),
   headSha: "proof-head",
-});
-
-const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
-  id,
-  owner: "task-1",
-  evidence: `lens-${id}`,
-  headSha: "proof-head",
-  acceptanceEvidence: `matrix-evidence-${index + 1}`,
-  verificationEvidence: `matrix-proof-${index + 1}`,
-}));
+  };
+};
 
 test("finalizes each structured parent child only after the guarded merge", () => {
   const finalization = skill.slice(skill.indexOf("## Finalize the parent unit"));
@@ -144,6 +146,12 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   assert.equal(staleLensResult.nextStep, "stop");
   assert.ok(staleLensResult.remainder.some((entry) => entry.includes("not bound to handoff head proof-head")));
 
+  const staleReferencedRow = validConvergenceInput();
+  staleReferencedRow.acceptanceMatrix[0] = { ...staleReferencedRow.acceptanceMatrix[0], headSha: "old-head" };
+  const staleReferencedRowResult = evaluateStructuredFinalization(staleReferencedRow);
+  assert.equal(staleReferencedRowResult.nextStep, "stop");
+  assert.ok(staleReferencedRowResult.remainder.some((entry) => entry.includes("implementation review lens acceptance evidence is bound to old-head")));
+
   const unmappedUserPath = validConvergenceInput();
   unmappedUserPath.reviewLenses = unmappedUserPath.reviewLenses.map((lens) =>
     lens.id === "wiring/usability" ? { ...lens, evidence: "missing-user-path-proof" } : lens,
@@ -162,7 +170,7 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   assert.equal(missingLensMatrixEvidenceResult.nextStep, "stop");
   assert.ok(
     missingLensMatrixEvidenceResult.remainder.some((entry) =>
-      entry.includes("implementation review lens needs acceptance-matrix acceptance evidence"),
+      entry.includes("implementation review lens acceptance evidence is not mapped in the acceptance matrix"),
     ),
   );
 

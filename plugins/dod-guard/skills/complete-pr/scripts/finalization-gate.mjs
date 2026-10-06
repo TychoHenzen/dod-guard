@@ -12,9 +12,21 @@ function values(value) {
 
 function lensEvidenceRemainder(handoff) {
   const matrix = Array.isArray(handoff.acceptanceMatrix) ? handoff.acceptanceMatrix : [];
-  const matrixProofs = new Set(matrix.map((row) => text(row?.proof)).filter(Boolean));
-  const matrixEvidence = new Set(matrix.map((row) => text(row?.evidence)).filter(Boolean));
   const expectedHead = text(handoff.headSha);
+  const matrixReference = (field, value, label) => {
+    const normalizedValue = text(value);
+    const matches = matrix.filter((row) => text(row?.[field]) === normalizedValue);
+    if (!normalizedValue || matches.length === 0) {
+      return `${label} is not mapped in the acceptance matrix`;
+    }
+    if (matches.length > 1) {
+      return `${label} is mapped to multiple acceptance-matrix rows`;
+    }
+    if (text(matches[0]?.headSha) !== expectedHead) {
+      return `${label} is bound to ${text(matches[0]?.headSha) ?? "no head"}, expected ${expectedHead ?? "an exact pushed head"}`;
+    }
+    return null;
+  };
   const tasks = Array.isArray(handoff.tasks) ? handoff.tasks : [];
   const remainder = [];
   for (const lens of Array.isArray(handoff.reviewLenses) ? handoff.reviewLenses : []) {
@@ -33,12 +45,10 @@ function lensEvidenceRemainder(handoff) {
     if (ownerVerification.length === 0 || !ownerVerification.includes(text(lens?.verificationEvidence))) {
       remainder.push(`${id} owner task needs mapped verification evidence`);
     }
-    if (!matrixProofs.has(text(lens?.verificationEvidence))) {
-      remainder.push(`${id} review lens needs acceptance-matrix verification evidence`);
-    }
-    if (!matrixEvidence.has(text(lens?.acceptanceEvidence))) {
-      remainder.push(`${id} review lens needs acceptance-matrix acceptance evidence`);
-    }
+    const verificationRemainder = matrixReference("proof", lens?.verificationEvidence, `${id} review lens verification evidence`);
+    if (verificationRemainder) remainder.push(verificationRemainder);
+    const acceptanceRemainder = matrixReference("evidence", lens?.acceptanceEvidence, `${id} review lens acceptance evidence`);
+    if (acceptanceRemainder) remainder.push(acceptanceRemainder);
   }
   return remainder;
 }
