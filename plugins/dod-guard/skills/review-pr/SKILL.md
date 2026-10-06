@@ -47,7 +47,10 @@ node "<skill-dir>/scripts/codex-review.mjs" --repo=<owner/name> --pr=<number> --
 ```
 
 It reads the PR, its summary comment, reviews, review comments, and
-reactions, and prints one JSON state. Act on its `action`:
+reactions, and prints one JSON state. Pass each flag as its own native
+argument, as the repository's
+[command-composition contract](../../docs/command-composition.md) requires.
+Act on its `action`:
 
 | `action` | Meaning | Do |
 |---|---|---|
