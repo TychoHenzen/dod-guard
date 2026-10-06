@@ -141,6 +141,9 @@ count or category set; finalize every linked child and every parent-level task
 that owns implementation, wiring and end-to-end usability, code quality, or
 failure/recovery work. Resolve the
 shared Project number, REST item IDs, Status-field ID, and `Done` option ID once.
+Before finalizing a structured parent, consume the current handoff through
+`next-ticket/scripts/structured-workflow-proof.mjs` and stop on any actionable
+remainder; direct Project readback does not replace this convergence proof.
 Require every parent-level task that owns one of those review lenses to carry
 explicit acceptance and verification evidence in the durable handoff and read
 it back before finalizing the Project item, even when it has no linked child

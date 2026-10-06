@@ -434,10 +434,11 @@ and split the outcome into a small set of coherent functional units. Decompose
 each unit only to a useful level that can be independently implemented, tested,
 and verified; avoid tiny administrative subtasks. Create one linked child per
 useful unit only when independent tracking is useful, and keep dependent steps
-in the parent checklist. Do not create children to fill a fixed category list. Explicitly assess implementation,
-wiring and end-to-end usability, refactoring and code quality, and
-failure/recovery reliability; attach each concern to its owning
-slice or parent-level task.
+in the parent checklist. Do not create children to fill a fixed category list.
+
+Explicitly assess implementation, wiring and end-to-end usability, refactoring
+and code quality, and failure/recovery reliability. Attach each concern to its
+owning slice or parent-level task.
 
 #### Review lenses
 

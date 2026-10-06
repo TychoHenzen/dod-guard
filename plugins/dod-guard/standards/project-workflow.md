@@ -119,8 +119,9 @@ links it instead of restating it:
 
 Convergence is passing only when every named record exists and every declared
 slice, task, and linked functional-slice child is mapped exactly once by the
-implementation handoff. Every acceptance criterion and matrix row has fresh
-evidence at the exact head. No item is contradicted or unresolved. The
+implementation handoff. Every declared evidence identifier is unique, and every
+evidence reference resolves to its owner. Every acceptance criterion and matrix
+row has fresh evidence at the exact head. No item is contradicted or unresolved. The
 required-context and base/mergeability
 checkpoint must also be stable at that exact head. Codex's built-in Review
 Summary consumes that same matrix and checkpoint; neither is copied into a

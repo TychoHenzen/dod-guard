@@ -136,6 +136,14 @@ test("routes functional decomposition through executable convergence proof", () 
 
   assert.ok(duplicate.remainder.some((entry) => entry.includes("same-flow functional slice is linked more than once")));
   assert.ok(duplicate.remainder.some((entry) => entry.includes("evidence same-proof is mapped more than once")));
+
+  const unmappedEvidence = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", child: "search-flow", evidence: "commit" }],
+    children: [{ id: "search-flow", evidence: "mapped" }],
+    reviewLenses: [{ id: "implementation", owner: "task-1", evidence: "missing-proof" }],
+  });
+  assert.ok(unmappedEvidence.remainder.some((entry) => entry.includes("references undeclared evidence missing-proof")));
 });
 
 test("manual fixtures include each route and its record markers", () => {

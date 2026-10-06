@@ -216,11 +216,14 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${lens} review lens needs an owning task`);
     }
   }
-  for (const criterion of acceptanceList) {
-    if (evidenceValues(criterion.evidence).length === 0) {
-      addRemainder("Acceptance and verification", `${criterion.id} needs fresh evidence`);
+  for (const [index, criterion] of acceptanceList.entries()) {
+    const criterionId = normalizedIdentifier(criterion.id);
+    if (!criterionId) {
+      addRemainder("Acceptance and verification", `acceptance criterion ${index + 1} needs a non-empty id`);
+    } else if (evidenceValues(criterion.evidence).length === 0) {
+      addRemainder("Acceptance and verification", `${criterionId} needs fresh evidence`);
     } else {
-      declareEvidence({ owner: criterion.id, value: criterion.evidence, section: "Acceptance and verification", evidenceOwners, addRemainder });
+      declareEvidence({ owner: criterionId, value: criterion.evidence, section: "Acceptance and verification", evidenceOwners, addRemainder });
     }
   }
   const matrixValidation = validateAcceptanceMatrix({

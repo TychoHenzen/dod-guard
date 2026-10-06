@@ -194,7 +194,7 @@ test("structured handoffs are durable and convergence is evidence-based", () => 
   assert.match(submit, /handoff commit must be identical/);
   assert.match(submit, /branch names must match/);
   assert.match(submit, /treat the\s+handoff as stale/);
-  assert.match(standard, /Every acceptance criterion and matrix row has fresh\s+evidence/);
+  assert.match(standard, /Every acceptance criterion and matrix\s+row has fresh\s+evidence/);
 });
 
 test("structured proof produces passing and actionable outcomes", () => {
@@ -311,6 +311,13 @@ test("functional convergence reports malformed collection entries", () => {
   assert.ok(result.remainder.some((entry) => entry.includes("linked child needs a functional slice id")));
   assert.ok(result.remainder.some((entry) => entry.includes("review lens entry 1 must be an object")));
   assert.ok(result.remainder.some((entry) => entry.includes("acceptance criterion entry 1 must be an object")));
+
+  const missingAcceptanceId = proof.evaluateConvergence({
+    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    tasks: [{ id: "task-1", evidence: "commit" }],
+    acceptance: [{ evidence: "proof" }],
+  });
+  assert.ok(missingAcceptanceId.remainder.some((entry) => entry.includes("acceptance criterion 1 needs a non-empty id")));
 });
 
 test("ordinary fixes bypass structured records", () => {

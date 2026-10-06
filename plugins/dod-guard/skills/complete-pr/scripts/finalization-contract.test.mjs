@@ -12,6 +12,8 @@ test("finalizes each structured parent child only after the guarded merge", () =
   assert.match(finalization, /Only after the helper returns a verified merge result/);
   assert.match(finalization, /each linked child to match one independently delivered and\s+verified functional slice/);
   assert.match(finalization, /There is no fixed child\s+count or category set/);
+  assert.match(finalization, /structured-workflow-proof\.mjs/);
+  assert.match(finalization, /stop on any actionable\s+remainder/);
   assert.match(finalization, /Resolve the\s+shared Project number, REST item IDs, Status-field ID, and `Done` option ID once/);
   assert.match(finalization, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> \.\.\. <parent-item-id>/);
   assert.match(finalization, /child item IDs first and the parent\s+item ID last/);
@@ -32,9 +34,10 @@ test("shares the global ProjectV2 resolution and sequential readback contract", 
 });
 
 test("finalization relies on executable functional convergence proof", () => {
+  const completeRecords = () => proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {});
   assert.equal(proof.scenarioResult("passing").outcome, "verified");
   const result = proof.evaluateConvergence({
-    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    records: completeRecords(),
     tasks: [{
       id: "task-1",
       child: "missing-flow",
@@ -50,7 +53,7 @@ test("finalization relies on executable functional convergence proof", () => {
   assert.ok(!result.remainder.some((entry) => entry.includes("review lens")));
 
   const duplicateSlice = proof.evaluateConvergence({
-    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    records: completeRecords(),
     tasks: [
       { id: "task-1", child: "same-flow", evidence: "same-proof" },
       { id: "task-2", child: "same-flow", evidence: "other-proof" },
@@ -65,7 +68,7 @@ test("finalization relies on executable functional convergence proof", () => {
   assert.ok(duplicateSlice.remainder.some((entry) => entry.includes("same-flow functional slice is linked more than once")));
 
   const duplicateEvidence = proof.evaluateConvergence({
-    records: proof.REQUIRED_RECORDS.reduce((records, name) => ({ ...records, [name]: true }), {}),
+    records: completeRecords(),
     tasks: [
       { id: "task-1", child: "first-flow", evidence: "same-proof" },
       { id: "task-2", child: "second-flow", evidence: "same-proof" },
