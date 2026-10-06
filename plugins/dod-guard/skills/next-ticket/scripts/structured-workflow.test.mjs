@@ -214,7 +214,7 @@ test("structured handoffs are durable and convergence is evidence-based", () => 
 test("structured proof produces passing and actionable outcomes", () => {
   const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
     id,
-    owner: index === 0 ? "search-flow" : "task-1",
+    owner: "task-1",
     evidence: `lens-${id}`,
     headSha: "abc1234",
     acceptanceEvidence: lensEvidence(id, index, "evidence"),
@@ -228,12 +228,12 @@ test("structured proof produces passing and actionable outcomes", () => {
       child: "search-flow",
       evidence: [
         "commit abc123; test passed",
-        ...proof.REQUIRED_REVIEW_LENSES.filter((id) => id !== "implementation").map((id) => `lens-${id}`),
+        ...proof.REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
       ],
       acceptanceEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `evidence-${index + 1}`),
       verificationEvidence: [...ACCEPTANCE_MATRIX_PATHS, "quality"].map((_, index) => `proof-${index + 1}`),
     }],
-    children: [{ id: "search-flow", evidence: ["mapped", "lens-implementation"] }],
+    children: [{ id: "search-flow", evidence: ["mapped"] }],
     reviewLenses,
     acceptance: [{ id: "AC-1", evidence: "structured proof passed" }],
     acceptanceMatrix: acceptanceMatrix("abc1234"),

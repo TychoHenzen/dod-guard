@@ -44,7 +44,7 @@ and pull request as the source of truth.
 
 ## Structured handoff contract
 
-A structured PBI is implementation-ready when the issue contains the six named
+A structured PBI is implementation-ready when the issue contains the five named
 records and decomposes the work into coherent, user-action-first functional
 slices. Every declared slice maps to exactly one verifiable owner. A slice
 intended for independent child delivery must be independently deliverable;
