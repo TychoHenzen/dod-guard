@@ -23,12 +23,20 @@ export const REQUIRED_REVIEW_LENSES = [
 export const PROOF_SCENARIOS = ["passing", "incomplete", "ordinary"];
 
 function evidenceValues(value) {
-  if (typeof value === "string") {
-    const evidence = value.trim();
-    return evidence ? [evidence] : [];
+  const result = [];
+  const pending = [value];
+  const visited = new Set();
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (typeof current === "string") {
+      const evidence = current.trim();
+      if (evidence) result.push(evidence);
+    } else if (Array.isArray(current) && !visited.has(current)) {
+      visited.add(current);
+      pending.push(...current);
+    }
   }
-  if (Array.isArray(value)) return value.flatMap(evidenceValues);
-  return [];
+  return result.reverse();
 }
 
 function normalizedIdentifier(value) {
@@ -319,6 +327,8 @@ export function evaluateConvergence({
       .map((row) => normalizedIdentifier(row?.proof))
       .filter(Boolean),
   );
+  const referencedMatrixEvidence = new Set();
+  const referencedMatrixProofs = new Set();
   validateLensOwnershipRecord(
     recordMap["lens-ownership"],
     lensList,
@@ -357,6 +367,7 @@ export function evaluateConvergence({
           const evidenceOwner = normalizedTaskIds.get(ownerTask) === owner ? owner : normalizedIdentifier(ownerTask.child);
           if (postPushValidation) {
             for (const evidence of evidenceValues(lens.acceptanceEvidence)) {
+              referencedMatrixEvidence.add(evidence);
               if (!matrixEvidence.has(evidence)) {
                 addRemainder("Functional decomposition", `${id} review lens references undeclared acceptance evidence ${evidence}`);
               }
@@ -365,6 +376,7 @@ export function evaluateConvergence({
               }
             }
             for (const evidence of evidenceValues(lens.verificationEvidence)) {
+              referencedMatrixProofs.add(evidence);
               if (!matrixProofs.has(evidence)) {
                 addRemainder("Functional decomposition", `${id} review lens references undeclared verification evidence ${evidence}`);
               }
@@ -414,6 +426,30 @@ export function evaluateConvergence({
   for (const lens of REQUIRED_REVIEW_LENSES) {
     if (!seenLenses.has(lens)) {
       addRemainder("Functional decomposition", `${lens} review lens needs an owning task`);
+    }
+  }
+  if (postPushValidation && Array.isArray(acceptanceMatrix)) {
+    const seenMatrixEvidence = new Set();
+    const seenMatrixProofs = new Set();
+    for (const row of acceptanceMatrix) {
+      const evidence = normalizedIdentifier(row?.evidence);
+      const proof = normalizedIdentifier(row?.proof);
+      if (evidence && seenMatrixEvidence.has(evidence)) {
+        addRemainder("Acceptance and verification", `acceptance matrix evidence ${evidence} is declared more than once`);
+      } else if (evidence) {
+        seenMatrixEvidence.add(evidence);
+      }
+      if (proof && seenMatrixProofs.has(proof)) {
+        addRemainder("Acceptance and verification", `acceptance matrix proof ${proof} is declared more than once`);
+      } else if (proof) {
+        seenMatrixProofs.add(proof);
+      }
+      if (evidence && !referencedMatrixEvidence.has(evidence)) {
+        addRemainder("Acceptance and verification", `acceptance matrix evidence ${evidence} is not mapped to a review lens`);
+      }
+      if (proof && !referencedMatrixProofs.has(proof)) {
+        addRemainder("Acceptance and verification", `acceptance matrix proof ${proof} is not mapped to a review lens`);
+      }
     }
   }
   const seenAcceptanceIds = new Set();
@@ -523,8 +559,8 @@ export function scenarioResult(scenario = "passing") {
       owner: "task-1",
       evidence: `lens-${id}`,
       headSha: PROOF_HANDOFF.headSha,
-      acceptanceEvidence: `evidence-${index + 1}`,
-      verificationEvidence: `proof-${index + 1}`,
+      acceptanceEvidence: index === 1 ? ["evidence-2", "evidence-5"] : `evidence-${index + 1}`,
+      verificationEvidence: index === 1 ? ["proof-2", "proof-5"] : `proof-${index + 1}`,
     }));
     return evaluateConvergence({
       records: Object.fromEntries(REQUIRED_RECORDS.map((record) => [
@@ -538,8 +574,8 @@ export function scenarioResult(scenario = "passing") {
           "commit abc123",
           ...REQUIRED_REVIEW_LENSES.map((id) => `lens-${id}`),
         ],
-        acceptanceEvidence: REQUIRED_REVIEW_LENSES.map((_, index) => `evidence-${index + 1}`),
-        verificationEvidence: REQUIRED_REVIEW_LENSES.map((_, index) => `proof-${index + 1}`),
+        acceptanceEvidence: PROOF_ACCEPTANCE_MATRIX.map((row) => row.evidence),
+        verificationEvidence: PROOF_ACCEPTANCE_MATRIX.map((row) => row.proof),
       }],
       children: [{ id: "search-flow", evidence: "mapped" }],
       reviewLenses,

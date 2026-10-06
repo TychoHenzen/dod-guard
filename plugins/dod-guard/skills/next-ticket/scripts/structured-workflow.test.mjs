@@ -210,8 +210,8 @@ test("structured proof produces passing and actionable outcomes", () => {
     owner: index === 0 ? "search-flow" : "task-1",
     evidence: `lens-${id}`,
     headSha: "abc1234",
-    acceptanceEvidence: `evidence-${index + 1}`,
-    verificationEvidence: `proof-${index + 1}`,
+    acceptanceEvidence: index === 1 ? ["evidence-2", "evidence-5"] : `evidence-${index + 1}`,
+    verificationEvidence: index === 1 ? ["proof-2", "proof-5"] : `proof-${index + 1}`,
   }));
   const complete = proof.evaluateConvergence({
     headSha: "abc1234",
@@ -223,8 +223,8 @@ test("structured proof produces passing and actionable outcomes", () => {
         "commit abc123; test passed",
         ...proof.REQUIRED_REVIEW_LENSES.filter((id) => id !== "implementation").map((id) => `lens-${id}`),
       ],
-      acceptanceEvidence: proof.REQUIRED_REVIEW_LENSES.map((_, index) => `evidence-${index + 1}`),
-      verificationEvidence: proof.REQUIRED_REVIEW_LENSES.map((_, index) => `proof-${index + 1}`),
+      acceptanceEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `evidence-${index + 1}`),
+      verificationEvidence: ACCEPTANCE_MATRIX_PATHS.map((_, index) => `proof-${index + 1}`),
     }],
     children: [{ id: "search-flow", evidence: ["mapped", "lens-implementation"] }],
     reviewLenses,

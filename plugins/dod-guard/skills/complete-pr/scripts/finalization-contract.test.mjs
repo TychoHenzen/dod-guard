@@ -17,8 +17,8 @@ const createReviewLenses = () => proof.REQUIRED_REVIEW_LENSES.map((id, index) =>
   owner: "task-1",
   evidence: `lens-${id}`,
   headSha: "proof-head",
-  acceptanceEvidence: `matrix-evidence-${index + 1}`,
-  verificationEvidence: `matrix-proof-${index + 1}`,
+  acceptanceEvidence: index === 1 ? ["matrix-evidence-2", "matrix-evidence-5"] : `matrix-evidence-${index + 1}`,
+  verificationEvidence: index === 1 ? ["matrix-proof-2", "matrix-proof-5"] : `matrix-proof-${index + 1}`,
 }));
 const validConvergenceInput = () => {
   const reviewLenses = createReviewLenses();
@@ -174,7 +174,7 @@ test("finalization gate blocks stale or unmapped user-path evidence", () => {
   assert.equal(staleReferencedRowResult.nextStep, "stop");
   assert.ok(
     staleReferencedRowResult.remainder.some((entry) =>
-      entry.includes("implementation review lens acceptance evidence is bound to old-head"),
+      entry.includes("implementation review lens acceptance evidence matrix-evidence-1 is bound to old-head"),
     ),
   );
 

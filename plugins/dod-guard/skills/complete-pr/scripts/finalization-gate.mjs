@@ -1,4 +1,8 @@
 import { evaluateConvergence } from "../../next-ticket/scripts/structured-workflow-proof.mjs";
+import {
+  ACCEPTANCE_MATRIX_PATHS,
+  validateAcceptanceMatrix,
+} from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
 
 function text(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -15,32 +19,38 @@ function lensEvidenceRemainder(handoff) {
   const expectedHead = text(handoff.headSha);
   if (!expectedHead) return ["finalization needs an exact pushed head"];
   const matrixReference = (field, value, label) => {
-    const normalizedValue = text(value);
-    const matches = matrix.filter(
-      (row) => text(row?.[field]) === normalizedValue,
-    );
-    if (!normalizedValue || matches.length === 0) {
-      return `${label} is not mapped in the acceptance matrix`;
+    const rows = [];
+    for (const reference of values(value)) {
+      const matches = matrix.filter((row) => text(row?.[field]) === reference);
+      if (matches.length === 0) {
+        return { error: `${label} ${reference} is not mapped in the acceptance matrix`, rows };
+      }
+      if (matches.length > 1) {
+        return { error: `${label} ${reference} is mapped to multiple acceptance-matrix rows`, rows };
+      }
+      if (text(matches[0]?.headSha) !== expectedHead) {
+        return {
+          error: `${label} ${reference} is bound to ${text(matches[0]?.headSha) ?? "no head"}, expected ${expectedHead}`,
+          rows,
+        };
+      }
+      if (text(matches[0]?.status)?.toLowerCase() !== "pass") {
+        return {
+          error: `${label} ${reference} is bound to non-passing status ${text(matches[0]?.status) ?? "no status"}`,
+          rows,
+        };
+      }
+      rows.push(matches[0]);
     }
-    if (matches.length > 1) {
-      return `${label} is mapped to multiple acceptance-matrix rows`;
-    }
-    if (text(matches[0]?.headSha) !== expectedHead) {
-      return `${label} is bound to ${text(matches[0]?.headSha) ?? "no head"}, expected ${expectedHead}`;
-    }
-    if (text(matches[0]?.status)?.toLowerCase() !== "pass") {
-      return `${label} is bound to non-passing status ${text(matches[0]?.status) ?? "no status"}`;
-    }
-    return null;
-  };
-  const matrixRows = (field, value) => {
-    const normalizedValue = text(value);
-    return normalizedValue
-      ? matrix.filter((row) => text(row?.[field]) === normalizedValue)
-      : [];
+    return { error: null, rows };
   };
   const tasks = Array.isArray(handoff.tasks) ? handoff.tasks : [];
-  const remainder = [];
+  const matrixValidation = validateAcceptanceMatrix({
+    matrix,
+    headSha: expectedHead,
+    requiredPaths: ACCEPTANCE_MATRIX_PATHS,
+  });
+  const remainder = matrixValidation.errors.map((error) => `acceptance matrix: ${error}`);
   for (const lens of Array.isArray(handoff.reviewLenses) ? handoff.reviewLenses : []) {
     const id = text(lens?.id ?? lens?.name) ?? "review lens";
     if (text(lens?.headSha ?? lens?.head) !== expectedHead) {
@@ -57,13 +67,13 @@ function lensEvidenceRemainder(handoff) {
     const ownerVerification = values(ownerTask?.verificationEvidence);
     if (
       ownerAcceptance.length === 0
-      || !ownerAcceptance.includes(text(lens?.acceptanceEvidence))
+      || !values(lens?.acceptanceEvidence).every((evidence) => ownerAcceptance.includes(evidence))
     ) {
       remainder.push(`${id} owner task needs mapped acceptance evidence`);
     }
     if (
       ownerVerification.length === 0
-      || !ownerVerification.includes(text(lens?.verificationEvidence))
+      || !values(lens?.verificationEvidence).every((evidence) => ownerVerification.includes(evidence))
     ) {
       remainder.push(`${id} owner task needs mapped verification evidence`);
     }
@@ -72,19 +82,20 @@ function lensEvidenceRemainder(handoff) {
       lens?.verificationEvidence,
       `${id} review lens verification evidence`,
     );
-    if (verificationRemainder) remainder.push(verificationRemainder);
+    if (verificationRemainder.error) remainder.push(verificationRemainder.error);
     const acceptanceRemainder = matrixReference(
       "evidence",
       lens?.acceptanceEvidence,
       `${id} review lens acceptance evidence`,
     );
-    if (acceptanceRemainder) remainder.push(acceptanceRemainder);
-    const acceptanceRows = matrixRows("evidence", lens?.acceptanceEvidence);
-    const verificationRows = matrixRows("proof", lens?.verificationEvidence);
+    if (acceptanceRemainder.error) remainder.push(acceptanceRemainder.error);
     if (
-      !verificationRemainder
-      && !acceptanceRemainder
-      && acceptanceRows[0] !== verificationRows[0]
+      !verificationRemainder.error
+      && !acceptanceRemainder.error
+      && (
+        acceptanceRemainder.rows.length !== verificationRemainder.rows.length
+        || acceptanceRemainder.rows.some((row, index) => row !== verificationRemainder.rows[index])
+      )
     ) {
       remainder.push(`${id} review lens acceptance and verification evidence must share one acceptance-matrix row`);
     }

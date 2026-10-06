@@ -119,7 +119,9 @@ task, and linked functional-slice child to its commit or verified remote-state
 evidence, checks, and user-path result. Each review lens records its canonical
 ID, owning slice or parent-level task, observable evidence, accepted head,
 `acceptanceEvidence`, and `verificationEvidence`; a childless parent task uses
-`parentLevel: "convergence"`.
+`parentLevel: "convergence"`. The proof requires exact-once slice, task, child,
+and lens mappings, unique owner-resolvable evidence, and stops on malformed,
+duplicate, stale, or contradictory evidence.
 followed by one `## Acceptance matrix` with exact-head rows for each acceptance
 criterion and mandatory user-facing path.
 `/submit-draft-pr` compares that handoff with the issue contract and links it

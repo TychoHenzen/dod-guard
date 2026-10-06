@@ -149,7 +149,9 @@ records observable evidence for the `implementation`, `wiring/usability`,
 by one `## Acceptance matrix` with exact-head proof rows for every acceptance
 criterion and mandatory user-facing path. Each lens entry carries its canonical
 ID, owner, observable evidence, accepted head, `acceptanceEvidence`, and
-`verificationEvidence`.
+`verificationEvidence`. Every slice, task, child, lens, and evidence reference
+maps exactly once to an owner; duplicate, ownerless, stale, or contradictory
+evidence remains an actionable remainder.
 `/submit-draft-pr` checks that same matrix against the issue contract, then
 links it from `## Convergence` instead of restating it; missing,
 contradicted, or stale evidence remains an actionable remainder. Small, clear
