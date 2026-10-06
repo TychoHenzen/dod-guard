@@ -242,8 +242,8 @@ ordered task and linked functional-slice child, followed by the single
 `## Acceptance matrix` and, when the PR exists, the single `## Preflight
 checkpoint`. Each entry names the commit or verified remote-state
 evidence, changed files or artifact, and the fresh check or user-path result.
-The matrix is the durable acceptance record consumed by convergence and
-Codex's built-in Review Summary; do not copy it to a local ledger. Include the
+The matrix is the durable acceptance record consumed by `submit-draft-pr`
+convergence and `complete-pr`; do not copy it to a local ledger. Include the
 current remainder explicitly; use `none` only when every task, matrix row,
 acceptance criterion, required user path, and preflight checkpoint are
 evidenced at the same head.

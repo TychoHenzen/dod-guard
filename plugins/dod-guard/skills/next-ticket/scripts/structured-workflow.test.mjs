@@ -105,7 +105,7 @@ test("owners preserve the structured handoffs without a parallel planner", () =>
   assert.match(nextTicket, /records as the implementation handoff/);
   assert.match(nextTicket, /one `## Acceptance matrix` in the handoff/);
   assert.match(submit, /containing the single `## Acceptance matrix`/);
-  assert.match(submit, /same matrix and exact head/);
+  assert.match(submit, /Convergence section must name the same exact head/);
   assert.match(nextTicket, /Do not create a tracked\s+planning file/);
   assert.match(submit, /Converge structured work/);
   assert.match(submit, /Map every task and linked sub-issue to applicable evidence/);
@@ -164,7 +164,7 @@ test("structured handoffs carry one exact-head preflight checkpoint", () => {
   }
   assert.match(standard, /one `## Preflight checkpoint` record/);
   assert.match(nextTicket, /same\s+handoff|same `## Preflight checkpoint`/i);
-  assert.match(submit, /before built-in Review Summary\s+or guarded completion/);
+  assert.match(submit, /before `\/review-pr`\s+or guarded completion/);
   assert.match(completePr, /Before any ready transition, branch update, merge, or/);
   assert.match(submit, /checkpoint remains\s+in the same handoff and Convergence record/);
 });

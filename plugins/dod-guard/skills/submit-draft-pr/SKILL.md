@@ -63,7 +63,7 @@ or call `update-branch` as metadata repair.
 
 ## Early required-context and base checkpoint
 
-After the draft PR is created or updated, and before built-in Review Summary
+After the draft PR is created or updated, and before `/review-pr`
 or guarded completion, consume the one `## Preflight checkpoint` record in the
 implementation handoff. Read the same-repository branch ref, PR API head, and
 `refs/pull/<number>/head` at one exact pushed SHA, then record the base ref and
@@ -126,8 +126,8 @@ stale evidence into Convergence. If
 implementation is incomplete or contradicted, write the actionable remainder to
 the issue and stop without creating or updating the draft PR. Do not call
 passing tests convergence by themselves. When all records agree, link the
-handoff instead of restating its mapping. The linked handoff and the built-in
-Review Summary must consume the same matrix and exact head. Include this
+handoff instead of restating its mapping. The linked handoff and the
+Convergence section must name the same exact head. Include this
 section in the draft PR body:
 
 ```text

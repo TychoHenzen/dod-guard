@@ -155,9 +155,9 @@ to its owner. Every acceptance criterion and matrix row has fresh evidence at
 the exact head. No item is
 contradicted or unresolved. The
 required-context and base/mergeability
-checkpoint must also be stable at that exact head. Codex's built-in Review
-Summary consumes that same matrix and checkpoint; neither is copied into a
-second review ledger.
+checkpoint must also be stable at that exact head. `/review-pr` then gets
+Codex's review of that head; neither record is copied into a second review
+ledger.
 
 An incomplete or contradicted result is not reported as complete. Write the
 actionable remainder, with the next task and owner, to the PBI and stop before

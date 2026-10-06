@@ -60,8 +60,8 @@ and increment it only after one parent PBI is merged and its final Project
 status is read back. Do not count a child, a draft PR, or implementation-
 complete work as a completed PBI.
 
-Codex's built-in checks cover ordinary PR/code-review validation. The main
-thread still owns sequencing, evidence verification, mutation decisions, and
+`/review-pr` gets Codex's automatic PR review and is the one code review. The
+main thread still owns sequencing, evidence verification, mutation decisions, and
 the built-in goal's stop condition. Handle any externally supplied findings
 before `complete-pr` as described in section 6.
 
@@ -127,19 +127,20 @@ evidence location, and the exact pushed branch head SHA.
 The only row statuses are `pass`, `unverified`, `failed`, `blocked`, and
 `inapplicable`. `inapplicable` is valid only with an explicit reason. Missing
 fields, a non-passing status, or a row bound to another head stops PR and
-Review Summary convergence. A later pushed head invalidates every row and
+review convergence. A later pushed head invalidates every row and
 requires fresh evidence.
 
 When applicable, the matrix names identity/authorization, interactive controls
 such as zoom or pan, behavioral browser or end-to-end paths, data/error
 boundaries, and recovery behavior. Each category still gets an explicit
 inapplicable row when the PBI does not expose that path. The same matrix is
-carried from the handoff into `submit-draft-pr` convergence and Codex's
-built-in Review Summary; it is not a local ledger or a numeric quality gate.
+carried from the handoff into `submit-draft-pr` convergence; it is
+not a local ledger or a numeric quality gate. Codex's review reads the code,
+not this matrix.
 
 ## Exact-head pre-review checkpoint
 
-Before Codex's built-in Review Summary or guarded completion, run one
+Before `/review-pr` or guarded completion, run one
 read-before-write checkpoint for the selected pull request. The checkpoint is
 part of the existing implementation handoff and never becomes a second ledger.
 
@@ -175,26 +176,14 @@ metadata repair, invoke manual review, or edit an external checkout.
 
 ## Review trigger lifecycle
 
-Codex's built-in Review Summary is the only review authority. Read the pull
-request's current review state and exact head before deciding whether a review
-trigger is allowed; the GitHub pull request and its comments are the durable
-record.
-
-- A completed Review Summary suppresses every later review trigger for that
-  pull request, including after follow-up remediation commits. Carry the
-  reviewed head, current head, findings, and resolved-finding evidence through
-  `fix-pr-review` instead of starting another review.
-- If no Review Summary exists and the automatic review has not started after
-  the required two-minute wait, emit exactly one `@codex review` trigger for
-  that pull request and exact head. Record that the fallback was sent; never
-  emit a second trigger for the same PR.
-- If the automatic review is started, its state is unavailable, the wait is
-  incomplete, or the current head is missing, wait or stop with the named
-  evidence. Do not guess that a quiet operation failed and do not trigger a
-  duplicate review.
-- The pure decision boundary is
-  `skills/goal-sdlc/scripts/lib/review-trigger.mjs`; it has no timer, provider
-  mutation, or local review ledger.
+Invoke [$dod-guard:review-pr](../review-pr/SKILL.md) once the exact-head
+checkpoint passes. It owns the trigger decision: a completed Codex review
+suppresses every later review trigger for that pull request, including after
+remediation commits; a draft gets exactly one `@codex review` trigger at once;
+a ready pull request gets it only after the required two-minute wait. It never
+emits a second trigger for the same PR. Carry the reviewed commit, current
+head, and findings through `fix-pr-review` instead of starting another review.
+The pull request and its comments are the durable record.
 
 ## Contract ownership
 
@@ -255,8 +244,8 @@ Hard invariants:
   one branch and one PR.
 - Do not create or publish a PR until every linked child and parent-level task
   is implementation-complete.
-- Use Codex's built-in checks for ordinary PR/code-review validation, and handle
-  externally supplied findings as described in section 6.
+- Use `/review-pr` for the one code review, and handle its findings as
+  described in section 6.
 - After merge, mark every child and its parent complete and read the statuses back.
 - Do not routinely ask the user to resolve problems. Make conservative, reversible, repository-consistent choices and continue.
 
@@ -562,16 +551,16 @@ When all linked functional slices and parent-level tasks are implementation-comp
   [$dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md)
 
 After the draft exists, complete the exact-head pre-review checkpoint before
-allowing built-in Review Summary to run. Carry its required-context matrix,
+invoking `/review-pr`. Carry its required-context matrix,
 dispatch readback, base/mergeability evidence, and any recovery remainder in
 the same implementation handoff and Convergence record. A later branch or
 base change invalidates the matrix and requires fresh proof; passing tests alone
 do not restore stale evidence.
 
-The resulting PR must be published/non-draft (`draft=false`). If the skill creates a draft, publish it using the supported repository operation and verify the remote state.
+Leave the PR a draft. `complete-pr` owns the ready transition.
 
-Codex's built-in checks cover ordinary PR/code-review validation; do not add a
-separate reviewer phase. If external review findings are supplied:
+Then invoke [$dod-guard:review-pr](../review-pr/SKILL.md) once. If it reports
+findings, or other review findings are supplied:
 
 - Inspect each finding against the current PR head and the PBI acceptance
   criteria before changing code.
@@ -590,7 +579,7 @@ local review ledger or any other untracked administration file.
 
 The complete relevant validation includes repository-required CI,
 static-analysis, security, integration/E2E, and Quality Guard diagnostics;
-built-in checks do not replace any required correctness gate.
+the review does not replace any required correctness gate.
 
 Then use:
 

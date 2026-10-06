@@ -644,7 +644,7 @@ test("goal-sdlc defines one exact-head pre-review checkpoint", async () => {
   ]) {
     assert.ok(skill.includes(marker), `missing pre-review checkpoint marker: ${marker}`);
   }
-  assert.match(skill, /Before Codex's built-in Review Summary or guarded completion/);
+  assert.match(skill, /Before `\/review-pr` or guarded completion/);
   assert.match(skill, /submit-draft-pr` owns draft creation and read-only convergence/);
   assert.match(skill, /`complete-pr`\s+retains the existing provider dispatch/);
   assert.match(skill, /never becomes a second ledger/);
@@ -654,10 +654,10 @@ test("goal-sdlc suppresses duplicate review triggers and publishes one Project c
   const skill = await readSkill();
   for (const marker of [
     "## Review trigger lifecycle",
-    "completed Review Summary suppresses every later review trigger",
+    "completed Codex review\nsuppresses every later review trigger",
     "required two-minute wait",
-    "exactly one `@codex review` trigger",
-    "emit a second trigger",
+    "draft gets exactly one `@codex review` trigger",
+    "emits a second trigger",
     "raw items, parent items, child items",
     "parent items with `Done`",
     "child items with `Done`",
@@ -741,9 +741,11 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.match(skill, /main thread is the high-level orchestrator/);
   assert.match(skill, /Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up/);
   assert.match(skill, /\[\$dod-guard:next-ticket\]\(\.\.\/next-ticket\/SKILL\.md\)/);
-  assert.match(skill, /Codex's built-in checks cover ordinary PR\/code-review validation/);
+  assert.match(skill, /`\/review-pr` gets Codex's automatic PR review and is the one code review/);
+  assert.match(skill, /Leave the PR a draft\. `complete-pr` owns the ready transition/);
+  assert.doesNotMatch(skill, /draft=false|published\/non-draft/);
   assert.match(skill, /\[\$dod-guard:fix-pr-review\]\(\.\.\/fix-pr-review\/SKILL\.md\)/);
-  assert.doesNotMatch(skill, /\[\$dod-guard:review-pr\]/);
+  assert.match(skill, /\[\$dod-guard:review-pr\]\(\.\.\/review-pr\/SKILL\.md\)/);
   assert.doesNotMatch(skill, /Review policy:/);
   assert.doesNotMatch(skill, /completed reviewer recommendation|review slot|reviewer-specific timeout/);
   assert.doesNotMatch(skill, /review-pr-branch/);
@@ -860,7 +862,7 @@ test("goal-sdlc bounds workspace-loader recovery and separates acceptance eviden
 test("goal-sdlc keeps external findings conditional and reconciles moving refs", async () => {
   const skill = await readSkill();
   for (const marker of [
-    "If external review findings are supplied",
+    "If it reports\nfindings, or other review findings are supplied",
     "Inspect each finding against the current PR head",
     "Fix every valid finding with",
     "respond to each valid finding",
