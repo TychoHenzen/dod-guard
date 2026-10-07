@@ -55,14 +55,21 @@ test("consumes review-pr's recommendation without a local ledger", () => {
   assert.match(reviewSkill, /any `BLOCKER` is `BLOCK`, any\s+other finding is `REQUEST_CHANGES`, none is `APPROVE`/);
   assert.match(reviewSkill, /never post a second review/);
   assert.match(reviewSkill, /Never edit files, approve, mark ready, merge,\s+or close anything/);
-  assert.match(skill, /Read the\s+recommendation and reviewed commit back from the remote PR; no local ledger\s+is needed/);
+  assert.match(
+    skill,
+    /Read the\s+recommendation and reviewed commit back from the remote PR; no local ledger\s+is needed/,
+  );
   assert.match(skill, /stops without posting a review[\s\S]*durable blocker and stop/);
   assert.doesNotMatch(skill, /durable ledger|read back the ledger|reconcile the ledger/);
   assert.doesNotMatch(usage, /reconciles the ledger/);
 });
 
 test("resolves findings without a second review", () => {
-  assertInOrder(skill, [/rerun affected checks/, /respond to and resolve each finding/, /Do not invoke another review after those fixes/]);
+  assertInOrder(skill, [
+    /rerun affected checks/,
+    /respond to and resolve each finding/,
+    /Do not invoke another review after those fixes/,
+  ]);
   assert.match(skill, /every finding is fixed and\s+resolved, or recorded as not actionable with evidence/);
   assert.match(usage, /uses that completed review's recommendation[\s\S]*does\s+not invoke another review after fixes/);
   assert.doesNotMatch(usage, /repeats review before the guarded merge/);

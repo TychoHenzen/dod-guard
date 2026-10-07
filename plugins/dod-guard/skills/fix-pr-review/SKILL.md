@@ -51,31 +51,37 @@ Require the user or caller to name the selected `GH-<id>` findings when more
 than one unresolved finding exists. Never silently replace the selection with
 all findings.
 
-For GitHub review-thread metadata, try the typed connector first. If its
-thread operation is unavailable, use the REST review-comment endpoints before
-considering GraphQL: list
-`GET /repos/{owner}/{repo}/pulls/{pull_number}/comments?per_page=100&page=N`
-and follow pagination until every selected root comment is present. Keep the
-request log and provider response status. A missing connector operation or an
-explicit unsupported REST response (404/405) is a capability gap; an
-authentication failure, rate limit (403/429), timeout, malformed response, or
-other provider error is not permission to try GraphQL. Stop with the exact
-redacted status, endpoint, and reset or retry-after evidence.
+For GitHub review-thread metadata, use the first of these that works:
 
-REST comments carry no thread ID or resolution state, so they are enough to
-revalidate and reply but cannot show which findings are already resolved.
-Without a connector thread operation, use the field-limited `reviewThreads`
-read described under "Update proven findings" here instead, so resolved
-selections are skipped and each finding carries its thread ID. With `gh api`, pass
-`--paginate --slurp` so every page arrives as one JSON array. Redact
-credentials, save the response outside the repository, then run:
+1. The typed connector's review-thread operation.
+2. The explicit GraphQL exception: one paginated read of the pull request's
+   `reviewThreads` limited to `id`, `isResolved`, `isOutdated`, `path`,
+   `line`, `originalLine`, and the first comment's `databaseId`, `url`, `body`,
+   and `commit.oid`. REST has no review-thread endpoint, so this read is the
+   only way to see which findings are resolved and to get the thread IDs that
+   resolution needs. Do not request the unsupported
+   `PullRequestReviewComment.inReplyTo` field.
+3. When that read returns an explicit unsupported response (404/405), the REST
+   review-comment endpoints: list
+   `GET /repos/{owner}/{repo}/pulls/{pull_number}/comments?per_page=100&page=N`
+   and follow pagination until every selected root comment is present. REST
+   comments carry no thread ID or resolution state, so they support
+   revalidating and replying, but not skipping resolved findings or resolving
+   threads.
+
+Keep the request log and provider response status. An authentication failure,
+rate limit (403/429), timeout, malformed response, or other provider error is
+not a capability gap; stop with the exact redacted status, endpoint, and reset
+or retry-after evidence. With `gh api`, pass `--paginate --slurp` so every
+page arrives as one JSON array. Redact credentials, save the response outside
+the repository, then run:
 
 ```text
 node "<skill-dir>/scripts/fix-support.mjs" normalize-github-comments --input=<response.json> --selected=<comma-separated GH IDs>
 ```
 
-It accepts connector threads, REST review comments, or the GraphQL thread
-read below, and skips replies so each finding is one root comment. Stop when a
+It accepts connector threads, the GraphQL thread read, or REST review
+comments, and skips replies so each finding is one root comment. Stop when a
 selected ID is absent. Mark resolved selections as stale and skip them with
 evidence. Treat outdated selections as still eligible for revalidation.
 
@@ -164,13 +170,8 @@ new inline review comment, use the same endpoint with `body`, `commit_id`,
 `path`, and the diff `position`; do not send `line` or `subject_type` in that
 request.
 
-REST cannot resolve a thread or name its ID. Without a connector thread
-operation, the explicit GraphQL exception allows one paginated read of the
-pull request's `reviewThreads` limited to `id`, `isResolved`, `isOutdated`,
-`path`, `line`, `originalLine`, and the first comment's `databaseId`, `url`,
-`body`, and `commit.oid`. Normalize it with `normalize-github-comments` to map
-each selected `GH-<id>` to its `threadId`. Do not request the unsupported
-`PullRequestReviewComment.inReplyTo` field.
+REST cannot resolve a thread. Each selected finding's `threadId` comes from the
+thread metadata read under "Resolve the input".
 
 Read back the exact review thread and verify the reply belongs to the selected
 root comment and pushed head before resolving it. Then issue exactly one

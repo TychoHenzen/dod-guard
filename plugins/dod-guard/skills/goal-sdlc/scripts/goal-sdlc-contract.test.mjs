@@ -650,12 +650,12 @@ test("goal-sdlc defines one exact-head pre-review checkpoint", async () => {
   assert.match(skill, /never becomes a second ledger/);
 });
 
-test("goal-sdlc suppresses duplicate review triggers and publishes one Project count snapshot", async () => {
+test("goal-sdlc runs one review per PR and publishes one Project count snapshot", async () => {
   const skill = await readSkill();
   for (const marker of [
-    "## Review trigger lifecycle",
-    "completed review\nsuppresses every later review",
-    "never posts a second review for the same PR",
+    "## Single review",
+    "posts one review per pull request",
+    "completed\nreview suppresses every later review",
     "raw items, parent items, child items",
     "parent items with `Done`",
     "child items with `Done`",
@@ -821,7 +821,13 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   );
   assert.match(
     skill,
-    /Do not invoke `\[dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)` again after\s+merge; the preceding invocation owns the guarded\s+merge, branch cleanup, and\s+Project finalization pass\./,
+    new RegExp(
+      [
+        String.raw`Do not invoke \`\[dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)\``,
+        String.raw`again after\s+merge; the preceding invocation owns the guarded\s+merge,`,
+        String.raw`branch cleanup, and\s+Project finalization pass\.`,
+      ].join(String.raw`\s+`),
+    ),
   );
   assert.match(
     skill,
@@ -923,7 +929,8 @@ test("goal-sdlc records friction in one daily log instead of one issue per incid
   assert.match(skill, /what happened \(exact error, tool, stage, PBI, and SHA\); the workaround used; the durable fix/);
   assert.match(skill, /source-repository fix\s+as an entry in today's friction log/);
   assert.match(skill, /Never edit an installed plugin cache/);
-  assert.doesNotMatch(skill, /repair the skill minimally in the plugin cache|If a cached skill or script must be edited/);
+  assert.doesNotMatch(skill, /repair the skill minimally in the plugin cache/);
+  assert.doesNotMatch(skill, /If a cached skill or script must be edited/);
   assert.doesNotMatch(skill, /if no matching PBI exists, create one through `add-backlog-idea`/);
   assert.doesNotMatch(skill, /to track the long-term dod-guard repository fix/);
 });

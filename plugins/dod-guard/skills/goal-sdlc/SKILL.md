@@ -175,14 +175,14 @@ merge, and cleanup safeguards. This checkpoint orchestrates their evidence
 early; it does not force-push, write generated refs, call `update-branch` as
 metadata repair, invoke manual review, or edit an external checkout.
 
-## Review trigger lifecycle
+## Single review
 
 Invoke [dod-guard:review-pr](../review-pr/SKILL.md) once the exact-head
-checkpoint passes. It posts one review per pull request: a completed review
-suppresses every later review for that pull request, including after
-remediation commits, and it never posts a second review for the same PR. Carry the reviewed commit, current
-head, and findings through `fix-pr-review` instead of starting another review.
-The pull request and its comments are the durable record.
+checkpoint passes. It posts one review per pull request, and a completed
+review suppresses every later review for that pull request, including after
+remediation commits. Carry the reviewed commit, current head, and findings
+through `fix-pr-review` instead of starting another review. The pull request
+and its comments are the durable record.
 
 ## Contract ownership
 

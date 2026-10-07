@@ -1,4 +1,5 @@
-// Git writes a path containing non-ASCII bytes, quotes, or control characters as
+// Git writes a path containing non-ASCII bytes, quotes, or control characters
+// as
 // a C-style quoted string ("b/docs/\303\274.md"), and ends `---`/`+++` lines
 // with a TAB when the path contains a space. parseChangedLines must decode both
 // forms, or such a file loses its changed lines and its findings.
@@ -20,7 +21,8 @@ const SIDE_LINE_PREFIX_LENGTH = 4;
 const HUNK_HEADER = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/u;
 const NEWLINE = /\r?\n/u;
 
-// Octal escapes are raw bytes of one UTF-8 sequence, so decode bytes, not characters.
+// Octal escapes are raw bytes of one UTF-8 sequence, so decode bytes, not
+// characters.
 function quotedTokenBytes([, octal, escaped, literal]) {
   if (octal) {
     return Buffer.of(Number.parseInt(octal, OCTAL_RADIX));
@@ -33,7 +35,9 @@ function decodeQuotedPath(value) {
     return value;
   }
   const body = value.slice(1, -1);
-  return Buffer.concat([...body.matchAll(QUOTED_TOKEN)].map(quotedTokenBytes)).toString("utf8");
+  return Buffer.concat(
+    [...body.matchAll(QUOTED_TOKEN)].map(quotedTokenBytes),
+  ).toString("utf8");
 }
 
 // Returns the repository path for one side of a diff, or null for /dev/null.
@@ -41,6 +45,13 @@ function unquoteDiffPath(raw) {
   const decoded = decodeQuotedPath(raw.replace(TRAILING_TERMINATOR, ""));
   if (decoded === "/dev/null") {
     return null;
+  }
+  // diff.mnemonicPrefix or diff.noprefix would otherwise leave a path that
+  // matches no repository file.
+  if (!SIDE_PREFIX.test(decoded)) {
+    throw new Error(
+      `Diff path ${decoded} lacks the a/ or b/ prefix; rerun git diff with --src-prefix=a/ --dst-prefix=b/`,
+    );
   }
   return decoded.replace(SIDE_PREFIX, "");
 }
@@ -50,7 +61,8 @@ function sideLinePath(line) {
   return unquoteDiffPath(line.slice(SIDE_LINE_PREFIX_LENGTH));
 }
 
-// A deleted file's `+++ /dev/null` side has no final state, so it records nothing.
+// A deleted file's `+++ /dev/null` side has no final state, so it records
+// nothing.
 function selectDiffFile(line, changed) {
   const file = sideLinePath(line);
   if (file === null) {
@@ -68,7 +80,8 @@ function startHunk(state, hunk) {
   state.newLeft = Number(hunk[3] ?? 1);
 }
 
-// Inside a hunk only the first character classifies a line, so an added `++i;` is content, not a header.
+// Inside a hunk only the first character classifies a line, so an added `++i;`
+// is content, not a header.
 function recordHunkLine(state, line, changed) {
   const marker = line[0];
   if (marker === "+" || marker === " ") {
@@ -91,7 +104,9 @@ function recordDiffLine(state, line, changed) {
   const hunk = line.match(HUNK_HEADER);
   if (hunk) {
     startHunk(state, hunk);
-  } else if (line.startsWith("+++ ")) {
+    return;
+  }
+  if (line.startsWith("+++ ")) {
     state.file = selectDiffFile(line, changed);
   }
 }
@@ -106,4 +121,4 @@ function parseChangedLines(diff) {
   return changed;
 }
 
-export { parseChangedLines, sideLinePath };
+export { parseChangedLines };

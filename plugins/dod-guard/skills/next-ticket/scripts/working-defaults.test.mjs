@@ -77,7 +77,8 @@ test("policy fixtures cover decisive choices, dirty state, stale tests, and safe
     /preserve the original checkpoint/,
     /Retry an identical transient failure at most\s+once/,
     /Read back remote state\s+after an uncertain write/,
-    /confirmed blocker must use\s+`\/codex-advisor`: Claude's advisor tool in Claude Code, otherwise Codex with\s+`gpt-5\.6-luna` at `max` effort/,
+    /confirmed blocker must use\s+`\/codex-advisor`: Claude's advisor tool in Claude Code/,
+    /otherwise Codex with\s+`gpt-5\.6-luna` at `max` effort/,
   ]) {
     assert.match(defaults, signal);
   }
@@ -95,9 +96,14 @@ test("delivery skills inspect pending state before their mutations", () => {
   ]) {
     assert.match(skills.get(name), /dirty|pending/i, name);
   }
-  for (const name of ["complete-pr", "fix-pr-review", "next-ticket", "submit-draft-pr"]) {
+  for (const [name, staging] of [
+    ["complete-pr", /stage only those reviewed paths, commit them on this verified branch/],
+    ["fix-pr-review", /Stage only\s+reviewed files, create a concise commit/],
+    ["next-ticket", /stage and commit them there with the ticket's other reviewed\s+changes/],
+    ["submit-draft-pr", /stage only those\s+reviewed paths, commit them on the verified PBI branch/],
+  ]) {
     assert.doesNotMatch(skills.get(name), /`\/commit`/, name);
-    assert.match(skills.get(name), /stage\s+(?:only\s+)?(?:those\s+)?reviewed|stage and commit them|Commit only after/i, name);
+    assert.match(skills.get(name), staging, name);
   }
 });
 
@@ -105,7 +111,8 @@ test("branching and local mutation exceptions are explicit", () => {
   assert.match(defaults, /keep those changes[\s\S]*target branch/);
   assert.match(defaults, /Before selecting a delivery checkout, run `git worktree list --porcelain`/);
   assert.match(defaults, /first worktree as the main checkout/);
-  assert.match(defaults, /stop and report\s+the reason, affected checkout, and recovery path\. Never create, switch to, or\s+remove a Git worktree/);
+  assert.match(defaults, /stop and report\s+the reason, affected checkout, and recovery path\./);
+  assert.match(defaults, /Never create, switch to, or\s+remove a Git worktree/);
   assert.doesNotMatch(defaults, /isolated worktree/);
   assert.doesNotMatch(skills.get("next-ticket"), /use one isolated worktree/);
   assert.match(defaults, /maintenance-only\s+`\/publish` route stays in the existing primary checkout/);
@@ -120,7 +127,10 @@ test("branching and local mutation exceptions are explicit", () => {
 test("main checkout exceptions preserve user work and release isolation", () => {
   assert.match(defaults, /Never\s+reset,\s+stash, overwrite, move, or silently include user-owned changes/);
   assert.match(defaults, /maintenance-only\s+`\/publish` route stays in the existing primary checkout[\s\S]*Stop and preserve/);
-  assert.match(skills.get("next-ticket"), /locked, unavailable, active, or unsafe\s+user-owned main checkout, stop and report/);
+  assert.match(
+    skills.get("next-ticket"),
+    /locked, unavailable, active, or unsafe\s+user-owned main checkout, stop and report/,
+  );
   assert.match(skills.get("next-ticket"), /Never reset, stash, overwrite,\s+move, or silently include user-owned changes/);
 });
 
@@ -144,7 +154,9 @@ test("shipped guidance names only skills and agents that ship", async () => {
   const standards = await Promise.all(
     (await readdir(join(pluginRoot, "standards"))).map((file) => readFile(join(pluginRoot, "standards", file), "utf8")),
   );
-  const agents = await Promise.all([...agentNames].map((name) => readFile(join(pluginRoot, "agents", `${name}.md`), "utf8")));
+  const agents = await Promise.all(
+    [...agentNames].map((name) => readFile(join(pluginRoot, "agents", `${name}.md`), "utf8")),
+  );
   for (const text of [...skills.values(), ...standards, ...agents]) {
     assert.doesNotMatch(text, /`\/commit`|\/interview\b|\$debate|adversarial-workflow|\$dod-guard:/u);
     for (const [, name] of text.matchAll(/dod-guard:([a-z0-9-]+)/gu)) {

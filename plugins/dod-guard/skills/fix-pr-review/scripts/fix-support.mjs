@@ -4,7 +4,11 @@ import { readFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This skill helper runs under Node.js.
 import process from "node:process";
 import { parseArgs } from "../../../lib/args.mjs";
-import { normalizeGitHubHierarchy, normalizeGitHubReviewThreads, redactSecrets } from "./lib/fix-support.mjs";
+import {
+  normalizeGitHubHierarchy,
+  normalizeGitHubReviewThreads,
+  redactSecrets,
+} from "./lib/fix-support.mjs";
 
 const SELECTION_SEPARATOR = /[\s,]+/;
 const USAGE = [
@@ -26,8 +30,13 @@ function selectedIds(value = "") {
 }
 
 const COMMANDS = {
-  "normalize-github-comments": (args) => normalizeGitHubReviewThreads(readJson(args.input), selectedIds(args.selected)),
-  "normalize-github-hierarchy": (args) => normalizeGitHubHierarchy(readJson(args.input)),
+  "normalize-github-comments": (args) =>
+    normalizeGitHubReviewThreads(
+      readJson(args.input),
+      selectedIds(args.selected),
+    ),
+  "normalize-github-hierarchy": (args) =>
+    normalizeGitHubHierarchy(readJson(args.input)),
   "redact-context": (args) => redactSecrets(readJson(args.input)),
 };
 

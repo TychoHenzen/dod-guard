@@ -28,8 +28,10 @@ Resolve the repository as described under "Resolve the repository and Project"
 in `standards/github-request-discipline.md`. Accept a PR URL or number; without
 one, use the open PR whose head is the current branch. Stop when no PR exists.
 
-Require local `HEAD` to equal the PR head SHA. If it differs, stop and name both
-SHAs; do not switch branches or create a worktree.
+Require local `HEAD` to equal the PR head SHA, and `git status --porcelain` to
+be empty, because the scanner and reviewers read the working tree. If either
+fails, stop and name the SHAs or the pending paths; do not switch branches,
+stash, or create a worktree.
 
 Load the parent PBI from the PR's closing issue or the `codex/<issue>-<slug>`
 branch segment, with its acceptance criteria and linked sub-issues. Stop and
@@ -50,7 +52,9 @@ not start another review unless the user asks for one.
 ## 3. Diff
 
 Find the merge base with the PR base branch and save
-`git diff --unified=0 <merge-base> HEAD` as the diff file. The build step reads
+`git diff --unified=0 --no-ext-diff --no-color --src-prefix=a/ --dst-prefix=b/ <merge-base> HEAD`
+as the diff file. The explicit prefixes override a user's `diff.mnemonicPrefix`
+or `diff.noprefix` setting. The build step reads
 the changed files and their added lines from this diff, decoding Git's quoted
 paths, so no separate file list is needed.
 
@@ -91,12 +95,14 @@ acceptance criteria and sub-issues verbatim, and the governing `AGENTS.md` and
 Each returns one JSON object with `reviewer`, `coverage`, and `findings`. Save
 the four objects as one JSON array. When an agent returns malformed JSON, send
 it one correction request for the same review in the exact format. If it fails
-again, leave it out and name it in the report.
+again, stop without posting and name the reviewer: a review is posted once per
+PR, so a missing angle cannot be filled in later. The build step refuses
+results that lack any of the four reviewers.
 
 ## 6. Build and post
 
 ```text
-node "<skill-dir>/scripts/review-findings.mjs" build --head=<head-sha> --scan=<scan.json> --diff=<unified0.diff> --results=<results.json> --out=<payload.json>
+node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --results=<results.json> --out=<payload.json>
 ```
 
 It groups scanner findings into one comment per changed file, dedupes reviewer
@@ -129,4 +135,4 @@ node "<skill-dir>/scripts/review-findings.mjs" report --review-id=<posted id> --
 
 Report the PR, head SHA, PBI, `Recommendation`, the review URL, and each
 finding as `GH-<id>`, severity, and `file:line`. Callers pass the `GH-` IDs to
-`/fix-pr-review`. Name any reviewer agent that was left out.
+`/fix-pr-review`.

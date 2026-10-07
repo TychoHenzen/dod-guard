@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { parseChangedLines, sideLinePath } from "./unified-diff.mjs";
+import { parseChangedLines } from "./unified-diff.mjs";
 
 // Captured from `git diff --unified=0` with Git's default core.quotePath=true.
 const SPECIAL_PATH_DIFF = [
@@ -37,10 +37,19 @@ const SPECIAL_PATH_DIFF = [
 ].join("\n");
 
 test("decodes Git's quoted and TAB-terminated diff paths", () => {
-  assert.equal(sideLinePath('+++ "b/docs x/p & \\303\\274.md"\t'), "docs x/p & ü.md");
-  assert.equal(sideLinePath('+++ "b/quote\\"d\\\\back.md"'), 'quote"d\\back.md');
-  assert.equal(sideLinePath("+++ b/sp ace.md\t"), "sp ace.md");
-  assert.equal(sideLinePath("+++ /dev/null"), null);
+  const sides = [
+    '+++ "b/docs x/p & \\303\\274.md"\t',
+    '+++ "b/quote\\"d\\\\back.md"',
+    "+++ b/sp ace.md\t",
+    "+++ /dev/null",
+  ];
+  const diff = sides
+    .flatMap((side) => [side, "@@ -0,0 +1 @@", "+x"])
+    .join("\n");
+  assert.deepEqual(
+    [...parseChangedLines(diff).keys()],
+    ["docs x/p & ü.md", 'quote"d\\back.md', "sp ace.md"],
+  );
 });
 
 test("treats added lines that start with ++ as content, not as a header", () => {
