@@ -50,7 +50,7 @@ export function assertSupportedOpenCode() {
     version.status,
     0,
     version.error
-      ? `OpenCode CLI not found: ${OPENCODE}. Install OpenCode v2.0.18 and add 'opencode' to PATH, ` +
+      ? `OpenCode CLI not found: ${OPENCODE}. Run 'npm install --global @opencode/cli@2.0.18', ` +
           `or set OPENCODE_BIN to its executable path. ${version.error.message}`
       : version.stderr,
   );
