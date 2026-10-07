@@ -157,7 +157,11 @@ test("advisor runner fails closed on a matching model-metadata fallback event", 
   try {
     const result = await runFixture(fixture, "fallback", { model: "gpt-test-model" });
     assert.equal(result.ok, false);
-    assert.equal(result.error, "Model metadata for gpt-test-model not found. Defaulting to fallback metadata; this can degrade performance and cause issues.");
+    assert.equal(
+      result.error,
+      "Model metadata for gpt-test-model not found. Defaulting to fallback metadata; " +
+        "this can degrade performance and cause issues.",
+    );
     assert.equal(result.execution.status, "incomplete");
     assert.equal(result.execution.stage, "reviewer-process");
     assert.equal(result.execution.exitCode, 0);
@@ -181,7 +185,10 @@ test("advisor runner reports an unavailable Windows installation before spawning
   const packageRoot = join(fixture.root, "node_modules", "@openai", "codex");
   try {
     await mkdir(join(packageRoot, "bin"), { recursive: true });
-    await writeFile(join(fixture.root, "codex.cmd"), '@ECHO off\r\nnode "%dp0%\\node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n');
+    await writeFile(
+      join(fixture.root, "codex.cmd"),
+      '@ECHO off\r\nnode "%dp0%\\node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n',
+    );
     await writeFile(join(packageRoot, "package.json"), JSON.stringify({ name: "@openai/codex" }));
     await writeFile(join(packageRoot, "bin", "codex.js"), "");
     const result = await runAdvisor({
@@ -252,7 +259,9 @@ test("repairs a failed launch and retries with complete evidence without changin
   }
 });
 
-test("advisor runner rejects shell metacharacters before a Windows executable starts", { skip: process.platform !== "win32" }, async () => {
+test("advisor runner rejects shell metacharacters before a Windows executable starts", {
+  skip: process.platform !== "win32",
+}, async () => {
   const fixture = await createFixture();
   const marker = join(fixture.root, "injected.txt");
   try {

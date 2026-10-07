@@ -1,17 +1,14 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
-import { runPowerShell } from "./maintenance-harness.mjs";
+import { parsePowerShellFile } from "./maintenance-harness.mjs";
 import { releaseVerificationPath, runReleaseVerification } from "./release-harness.mjs";
 
 test("release verification parses and proves the complete read-only evidence boundary", {
   skip: process.platform !== "win32",
 }, async () => {
   const helper = await readFile(releaseVerificationPath, "utf8");
-  const parse = runPowerShell(
-    "$tokens = $null; $errors = $null; [System.Management.Automation.Language.Parser]::ParseFile($env:DOD_GUARD_RELEASE_VERIFICATION, [ref]$tokens, [ref]$errors) | Out-Null; if ($errors.Count -gt 0) { $errors | ForEach-Object { $_.Message }; exit 1 }",
-    { DOD_GUARD_RELEASE_VERIFICATION: releaseVerificationPath },
-  );
+  const parse = parsePowerShellFile(releaseVerificationPath);
   assert.equal(parse.status, 0, `${parse.stdout}\n${parse.stderr}`);
   assert.doesNotMatch(helper, /\|\s*ForEach-Object[^\r\n]*-join/);
 

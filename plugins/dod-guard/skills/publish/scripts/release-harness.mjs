@@ -3,18 +3,21 @@ import { fileURLToPath } from "node:url";
 import { runPowerShell } from "./maintenance-harness.mjs";
 
 // PowerShell harness for release-verification.ps1; DOD_GUARD_FAILURE_STAGE picks the
-// evidence a test corrupts.
+// evidence a test corrupts. String.raw keeps the Windows paths' backslashes.
 export const releaseVerificationPath = fileURLToPath(new URL("./release-verification.ps1", import.meta.url));
 
-const RELEASE_1 = `
+const RELEASE_1 = String.raw`
 $ErrorActionPreference = 'Stop'
 . $env:DOD_GUARD_RELEASE_VERIFICATION
+$fixtureStage = $env:DOD_GUARD_FAILURE_STAGE
 $publishedSha = 'fedcba9876543210fedcba9876543210fedcba98'
 $parentSha = '0123456789abcdef0123456789abcdef01234567'
+$otherSha = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 $version = '5.4.56'
 $protectionEndpoint = 'repos/TychoHenzen/dod-guard/branches/master/protection'
 $adminEndpoint = $protectionEndpoint + '/enforce_admins'
-$checksEndpoint = $protectionEndpoint.Replace('/branches/master/protection', '/commits/' + $publishedSha + '/check-runs?per_page=100')
+$checksPath = '/commits/' + $publishedSha + '/check-runs?per_page=100'
+$checksEndpoint = $protectionEndpoint.Replace('/branches/master/protection', $checksPath)
 $requiredChecks = @('build-test', 'plugin-config', 'static-analysis', 'package-integrity')
 $protection = [pscustomobject]@{
   url = 'https://api.github.com/repos/TychoHenzen/dod-guard/branches/master/protection'
@@ -32,96 +35,140 @@ $protection = [pscustomobject]@{
 }
 `;
 
-const RELEASE_2 = `$checkRuns = @(
-  foreach ($name in $requiredChecks) {
-    [pscustomobject]@{ name = $name; head_sha = $publishedSha; status = 'completed'; conclusion = 'success' }
+const RELEASE_2 = String.raw`function New-FixtureCheckRun([string]$Name, [string]$Conclusion) {
+  [pscustomobject]@{
+    name = $Name
+    head_sha = $publishedSha
+    status = 'completed'
+    conclusion = $Conclusion
   }
-)
-if ($env:DOD_GUARD_FAILURE_STAGE -eq 'checks') { $checkRuns = @($checkRuns | Select-Object -First 3) }
-if ($env:DOD_GUARD_FAILURE_STAGE -eq 'duplicate-check') {
+}
+function New-FixtureHttpOutput([string]$Body) {
+  $nl = [string][char]10
+  'HTTP/2.0 200 OK' + $nl + 'Content-Type: application/json' + $nl + $nl + $Body
+}
+$checkRuns = @(foreach ($name in $requiredChecks) { New-FixtureCheckRun $name 'success' })
+if ($fixtureStage -eq 'checks') { $checkRuns = @($checkRuns | Select-Object -First 3) }
+if ($fixtureStage -eq 'duplicate-check') {
   $checkRuns = @(
-    [pscustomobject]@{ name = 'build-test'; head_sha = $publishedSha; status = 'completed'; conclusion = 'success' }
-    [pscustomobject]@{ name = 'build-test'; head_sha = $publishedSha; status = 'completed'; conclusion = 'failure' }
+    New-FixtureCheckRun 'build-test' 'success'
+    New-FixtureCheckRun 'build-test' 'failure'
     $checkRuns | Where-Object { $_.name -ne 'build-test' }
   )
 }
-$codexRegistry = @{ installed = @([pscustomobject]@{ pluginId = 'dod-guard@dod-guard-monorepo'; name = 'dod-guard'; marketplaceName = 'dod-guard-monorepo'; version = $version; enabled = $true; installed = $true }) } | ConvertTo-Json -Depth 10 -Compress
-$claudeRegistry = @([pscustomobject]@{ id = 'dod-guard@dod-guard'; version = $version; enabled = $true }) | ConvertTo-Json -Depth 10 -Compress
+$codexPlugin = [pscustomobject]@{
+  pluginId = 'dod-guard@dod-guard-monorepo'
+  name = 'dod-guard'
+  marketplaceName = 'dod-guard-monorepo'
+  version = $version
+  enabled = $true
+  installed = $true
+}
+$codexRegistry = @{ installed = @($codexPlugin) } | ConvertTo-Json -Depth 10 -Compress
+$claudePlugin = [pscustomobject]@{ id = 'dod-guard@dod-guard'; version = $version; enabled = $true }
+$claudeRegistry = @($claudePlugin) | ConvertTo-Json -Depth 10 -Compress
 `;
 
-const RELEASE_3 = `$invokeCommand = {
+const RELEASE_3 = String.raw`$invokeCommand = {
   param([string]$Executable, [string[]]$Arguments, [AllowNull()][string]$InputText)
   $key = $Executable + ' ' + ($Arguments -join ' ')
-  if ($env:DOD_GUARD_FAILURE_STAGE -eq 'command' -and $key -eq 'git rev-parse HEAD') {
+  if ($fixtureStage -eq 'command' -and $key -eq 'git rev-parse HEAD') {
     return [pscustomobject]@{ ExitCode = 7; Output = '' }
   }
-  if ($Executable -eq 'git' -and $Arguments[0] -eq 'rev-parse' -and $Arguments[1] -eq 'HEAD') {
-    $head = if ($env:DOD_GUARD_FAILURE_STAGE -eq 'head') { 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } else { $publishedSha }
+  $revParse = $Executable -eq 'git' -and $Arguments[0] -eq 'rev-parse'
+  if ($revParse -and $Arguments[1] -eq 'HEAD') {
+    $head = if ($fixtureStage -eq 'head') { $otherSha } else { $publishedSha }
     return [pscustomobject]@{ ExitCode = 0; Output = $head }
   }
-  if ($Executable -eq 'git' -and $Arguments[0] -eq 'rev-parse' -and $Arguments[1] -eq 'HEAD^') {
-    $parent = if ($env:DOD_GUARD_FAILURE_STAGE -eq 'parent') { 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' } else { $parentSha }
+  if ($revParse -and $Arguments[1] -eq 'HEAD^') {
+    $parent = if ($fixtureStage -eq 'parent') { 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' } else { $parentSha }
     return [pscustomobject]@{ ExitCode = 0; Output = $parent }
   }
   if ($Executable -eq 'git' -and $Arguments[0] -eq 'ls-remote') {
-    $remoteSha = if ($env:DOD_GUARD_FAILURE_STAGE -eq 'remote') { 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } else { $publishedSha }
+    $remoteSha = if ($fixtureStage -eq 'remote') { $otherSha } else { $publishedSha }
     return [pscustomobject]@{ ExitCode = 0; Output = ($remoteSha + [char]9 + 'refs/heads/master') }
   }
-`;
-
-const RELEASE_4 = `  if ($Executable -eq 'gh') {
-    if ($Arguments[3] -eq $protectionEndpoint) {
-      $body = if ($env:DOD_GUARD_FAILURE_STAGE -eq 'malformed') { '{' } else { $protection | ConvertTo-Json -Depth 10 -Compress }
-      return [pscustomobject]@{ ExitCode = 0; Output = ('HTTP/2.0 200 OK' + [char]10 + 'Content-Type: application/json' + [char]10 + [char]10 + $body) }
-    }
-    if ($Arguments[3] -eq $adminEndpoint) {
-      return [pscustomobject]@{ ExitCode = 0; Output = ('HTTP/2.0 200 OK' + [char]10 + 'Content-Type: application/json' + [char]10 + [char]10 + '{"enabled":true}') }
-    }
-    if ($Arguments[3] -eq $checksEndpoint) {
-      $body = [pscustomobject]@{ total_count = $checkRuns.Count; check_runs = $checkRuns } | ConvertTo-Json -Depth 10 -Compress
-      return [pscustomobject]@{ ExitCode = 0; Output = ('HTTP/2.0 200 OK' + [char]10 + 'Content-Type: application/json' + [char]10 + [char]10 + $body) }
-    }
-    throw ('unexpected gh endpoint: ' + $Arguments[3])
-  }
-`;
-
-const RELEASE_5 = `  if ($Executable -eq 'codex' -and $Arguments[0] -eq 'plugin') {
+  if ($Executable -eq 'gh') { return (& $answerGh $Arguments) }
+  if ($Executable -eq 'codex' -and $Arguments[0] -eq 'plugin') {
     return [pscustomobject]@{ ExitCode = 0; Output = $codexRegistry }
   }
   if ($Executable -eq 'claude' -and $Arguments[0] -eq 'plugin') {
-    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'inventory') { return [pscustomobject]@{ ExitCode = 9; Output = '' } }
+    if ($fixtureStage -eq 'inventory') { return [pscustomobject]@{ ExitCode = 9; Output = '' } }
     return [pscustomobject]@{ ExitCode = 0; Output = $claudeRegistry }
   }
-  if ($Executable -eq 'node') {
-    $client = $Arguments[1]
-    if ($env:DOD_GUARD_FAILURE_STAGE -eq 'preflight-malformed' -and $client -eq 'codex') {
-      return [pscustomobject]@{ ExitCode = 0; Output = '{' }
-    }
-    if ($client -eq 'codex') {
-      $preflightVersion = if ($env:DOD_GUARD_FAILURE_STAGE -eq 'version') { '5.4.55' } else { $version }
-      $identity = if ($env:DOD_GUARD_FAILURE_STAGE -eq 'identity') {
-        [pscustomobject]@{ pluginId = 'other@marketplace'; name = 'other-plugin'; marketplaceName = 'other-marketplace' }
-      } else {
-        [pscustomobject]@{ pluginId = 'dod-guard@dod-guard-monorepo'; name = 'dod-guard'; marketplaceName = 'dod-guard-monorepo' }
-      }
-      $preflight = [pscustomobject]@{ ok = $true; client = $client; version = $preflightVersion; pluginRoot = 'C:\plugin'; skillPath = 'C:\plugin\skills\publish\SKILL.md'; pluginIdentity = $identity }
-    } else {
-      $preflight = [pscustomobject]@{ ok = $true; client = $client; version = $version; pluginRoot = 'C:\plugin'; skillPath = 'C:\plugin\skills\publish\SKILL.md'; pluginIdentity = [pscustomobject]@{ id = 'dod-guard@dod-guard' } }
-    }
-    return [pscustomobject]@{ ExitCode = 0; Output = ($preflight | ConvertTo-Json -Depth 10 -Compress) }
-  }
+  if ($Executable -eq 'node') { return (& $answerPreflight $Arguments[1]) }
   throw ('unexpected command: ' + $key)
 }
-$result = Invoke-ReleaseVerification -Owner 'TychoHenzen' -Repo 'dod-guard' -PublishedSha $publishedSha -ExpectedParentSha $parentSha -ExpectedVersion $version -InvokeCommand $invokeCommand
+`;
+
+const RELEASE_4 = String.raw`$answerGh = {
+  param([string[]]$Arguments)
+  if ($Arguments[3] -eq $protectionEndpoint) {
+    $body = if ($fixtureStage -eq 'malformed') {
+      '{'
+    } else {
+      $protection | ConvertTo-Json -Depth 10 -Compress
+    }
+    return [pscustomobject]@{ ExitCode = 0; Output = (New-FixtureHttpOutput $body) }
+  }
+  if ($Arguments[3] -eq $adminEndpoint) {
+    return [pscustomobject]@{ ExitCode = 0; Output = (New-FixtureHttpOutput '{"enabled":true}') }
+  }
+  if ($Arguments[3] -eq $checksEndpoint) {
+    $checks = [pscustomobject]@{ total_count = $checkRuns.Count; check_runs = $checkRuns }
+    $body = $checks | ConvertTo-Json -Depth 10 -Compress
+    return [pscustomobject]@{ ExitCode = 0; Output = (New-FixtureHttpOutput $body) }
+  }
+  throw ('unexpected gh endpoint: ' + $Arguments[3])
+}
+`;
+
+const RELEASE_5 = String.raw`$answerPreflight = {
+  param([string]$Client)
+  if ($fixtureStage -eq 'preflight-malformed' -and $Client -eq 'codex') {
+    return [pscustomobject]@{ ExitCode = 0; Output = '{' }
+  }
+  $preflight = [pscustomobject]@{
+    ok = $true
+    client = $Client
+    version = $version
+    pluginRoot = 'C:\plugin'
+    skillPath = 'C:\plugin\skills\publish\SKILL.md'
+    pluginIdentity = [pscustomobject]@{ id = 'dod-guard@dod-guard' }
+  }
+  if ($Client -eq 'codex') {
+    if ($fixtureStage -eq 'version') { $preflight.version = '5.4.55' }
+    $preflight.pluginIdentity = if ($fixtureStage -eq 'identity') {
+      [pscustomobject]@{
+        pluginId = 'other@marketplace'
+        name = 'other-plugin'
+        marketplaceName = 'other-marketplace'
+      }
+    } else {
+      [pscustomobject]@{
+        pluginId = 'dod-guard@dod-guard-monorepo'
+        name = 'dod-guard'
+        marketplaceName = 'dod-guard-monorepo'
+      }
+    }
+  }
+  return [pscustomobject]@{ ExitCode = 0; Output = ($preflight | ConvertTo-Json -Depth 10 -Compress) }
+}
+$verificationArguments = @{
+  Owner = 'TychoHenzen'
+  Repo = 'dod-guard'
+  PublishedSha = $publishedSha
+  ExpectedParentSha = $parentSha
+  ExpectedVersion = $version
+  InvokeCommand = $invokeCommand
+}
+$result = Invoke-ReleaseVerification @verificationArguments
 $result | ConvertTo-Json -Depth 20 -Compress
 `;
 
-function releaseVerificationHarness() {
-  return [RELEASE_1, RELEASE_2, RELEASE_3, RELEASE_4, RELEASE_5].join("");
-}
-
 export function runReleaseVerification(failureStage = "") {
-  const result = runPowerShell(releaseVerificationHarness(failureStage), {
+  const harness = [RELEASE_1, RELEASE_2, RELEASE_3, RELEASE_4, RELEASE_5].join("");
+  const result = runPowerShell(harness, {
     DOD_GUARD_RELEASE_VERIFICATION: releaseVerificationPath,
     DOD_GUARD_FAILURE_STAGE: failureStage,
   });

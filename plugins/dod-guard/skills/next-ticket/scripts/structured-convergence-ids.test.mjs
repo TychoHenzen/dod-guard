@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { acceptanceMatrix, lensEvidence, proof, recordsWithRequiredKeys } from "./structured-workflow-fixtures.mjs";
+import {
+  acceptanceMatrix,
+  lensEvidence,
+  PASSING_SECTION_LINE,
+  proof,
+  recordsWithRequiredKeys,
+} from "./structured-workflow-fixtures.mjs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -191,10 +197,7 @@ test("structured proof CLI separates known paths and rejects unknown scenarios",
   assert.equal(incomplete.status, 0);
   assert.match(incomplete.stdout, /Outcome: actionable remainder/);
   assert.match(incomplete.stdout, /Next task: task-2; owner: wiring/);
-  assert.doesNotMatch(
-    incomplete.stdout,
-    /^- (?:Requirements and clarifications|Plan and tasks|Functional decomposition|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
-  );
+  assert.doesNotMatch(incomplete.stdout, PASSING_SECTION_LINE);
 
   const ordinary = run("ordinary");
   assert.equal(ordinary.status, 0);

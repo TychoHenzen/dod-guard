@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { prose } from "../../../lib/skill-text.mjs";
 
 const skillPath = join(dirname(fileURLToPath(import.meta.url)), "..", "SKILL.md");
 
@@ -135,7 +136,11 @@ test("goal-sdlc bounds workspace-loader recovery and separates acceptance eviden
   }
   assert.match(
     skill,
-    /Before broad validation gates[\s\S]*cheap workspace-loader preflight[\s\S]*at most one fresh bounded validator retry/,
+    prose(
+      "Before broad validation gates",
+      "cheap workspace-loader preflight",
+      "at most one fresh bounded validator retry",
+    ),
   );
   assert.match(
     skill,
@@ -206,7 +211,11 @@ test("goal-sdlc records friction in one daily log instead of one issue per incid
   assert.match(skill, /Do not create a separate backlog issue per incident/);
   assert.match(
     skill,
-    /today's log already has an entry for the same friction[\s\S]*open non-log PBI that already owns the durable fix[\s\S]*Otherwise append a new entry/,
+    prose(
+      "today's log already has an entry for the same friction",
+      "open non-log PBI that already owns the durable fix",
+      "Otherwise append a new entry",
+    ),
   );
   assert.match(skill, /what happened \(exact error, tool, stage, PBI, and SHA\); the workaround used; the durable fix/);
   assert.match(skill, /source-repository fix\s+as an entry in today's friction log/);

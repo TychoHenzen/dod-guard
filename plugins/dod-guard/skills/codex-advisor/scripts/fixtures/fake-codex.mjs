@@ -14,7 +14,9 @@ const input = await new Promise((resolve) => {
 });
 
 function fallbackEvent(model) {
-  const message = `Model metadata for ${model} not found. Defaulting to fallback metadata; this can degrade performance and cause issues.`;
+  const message =
+    `Model metadata for ${model} not found. Defaulting to fallback metadata; ` +
+    "this can degrade performance and cause issues.";
   return `${JSON.stringify({ type: "item.completed", item: { type: "error", message } })}\n`;
 }
 

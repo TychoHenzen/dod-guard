@@ -3,6 +3,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { prose } from "../../../lib/skill-text.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../../");
 
@@ -139,7 +140,10 @@ test("structured parents require evidenced functional slices without a fixed chi
   assert.match(nextTicket, /pushed\s+implementation evidence before a\s+commit or PR handoff, not before execution/);
   assert.match(
     nextTicket,
-    /map\s+every linked child to its owning task, changed files or verified remote\s+state, commit, and fresh verification/,
+    prose(
+      "map every linked child to its owning task, changed files or verified remote state, " +
+        "commit, and fresh verification",
+    ),
   );
   assert.match(submit, /task list's functional decomposition/);
   assert.match(submit, /There is no fixed child\s+count or category set/);
@@ -269,7 +273,10 @@ test("delivery recovery resumes only from observed checkpoints", () => {
 test("ticket-start and completion status writes share the global ProjectV2 runner", () => {
   assert.match(
     nextTicket,
-    /project-status\.mjs <owner> <project-number> <status-field-node-id> <in-progress-option-id> "In Progress" <item-node-id>/,
+    prose(
+      "project-status.mjs <owner> <project-number> <status-field-node-id> " +
+        '<in-progress-option-id> "In Progress" <item-node-id>',
+    ),
   );
   assert.match(nextTicket, /uses the numeric project number as the REST path identifier/);
   assert.match(nextTicket, /reads the\s+item back before the ticket-start sequence can continue/);

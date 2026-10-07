@@ -2,19 +2,18 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   maintenanceWrapperPath,
+  parsePowerShellFile,
   realAdminEndpoint,
   realProtectionEndpoint,
   runMaintenanceWrapper,
   runPowerShell,
+  savedSha,
 } from "./maintenance-harness.mjs";
 
 test("maintenance wrapper parses and owns the exact protected push boundary", {
   skip: process.platform !== "win32",
 }, () => {
-  const parse = runPowerShell(
-    "$tokens = $null; $errors = $null; [System.Management.Automation.Language.Parser]::ParseFile($env:DOD_GUARD_MAINTENANCE_WRAPPER, [ref]$tokens, [ref]$errors) | Out-Null; if ($errors.Count -gt 0) { $errors | ForEach-Object { $_.Message }; exit 1 }",
-    { DOD_GUARD_MAINTENANCE_WRAPPER: maintenanceWrapperPath },
-  );
+  const parse = parsePowerShellFile(maintenanceWrapperPath);
   assert.equal(parse.status, 0, `${parse.stdout}\n${parse.stderr}`);
 
   const outcome = runMaintenanceWrapper();
@@ -23,11 +22,8 @@ test("maintenance wrapper parses and owns the exact protected push boundary", {
   assert.equal(outcome.Result.RestoreAttempts, 1);
   assert.ok(outcome.Events.includes("DELETE repos/TychoHenzen/dod-guard/branches/master/protection/enforce_admins"));
   assert.ok(outcome.Events.includes("POST repos/TychoHenzen/dod-guard/branches/master/protection/enforce_admins"));
-  assert.ok(
-    outcome.Events.includes(
-      "git push --force-with-lease=refs/heads/master:0123456789abcdef0123456789abcdef01234567 origin HEAD:refs/heads/master",
-    ),
-  );
+  const lease = `--force-with-lease=refs/heads/master:${savedSha}`;
+  assert.ok(outcome.Events.includes(`git push ${lease} origin HEAD:refs/heads/master`));
   assert.equal(
     outcome.Events.some((event) => event.includes("worktree")),
     false,
@@ -104,10 +100,13 @@ test("maintenance wrapper preserves an initially disabled admin state", { skip: 
 });
 
 test("maintenance wrapper does not leak strict mode when dot-sourced", { skip: process.platform !== "win32" }, () => {
-  const result = runPowerShell(
-    "$ErrorActionPreference = 'Stop'; . $env:DOD_GUARD_MAINTENANCE_WRAPPER; $undefinedMaintenanceVariable; Write-Output 'ok'",
-    { DOD_GUARD_MAINTENANCE_WRAPPER: maintenanceWrapperPath },
-  );
+  const command = [
+    "$ErrorActionPreference = 'Stop'",
+    ". $env:DOD_GUARD_MAINTENANCE_WRAPPER",
+    "$undefinedMaintenanceVariable",
+    "Write-Output 'ok'",
+  ].join("; ");
+  const result = runPowerShell(command, { DOD_GUARD_MAINTENANCE_WRAPPER: maintenanceWrapperPath });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   assert.match(result.stdout, /ok/);
 });
@@ -160,6 +159,18 @@ test("maintenance wrapper reads admin state after a failed protection read and d
   assert.deepEqual(
     outcome.Events.slice(firstRestoreIndex + 1).filter((event) => event.startsWith("GET ")),
     [`GET ${realProtectionEndpoint}`, `GET ${realAdminEndpoint}`],
+  );
+});
+
+test("maintenance wrapper refuses a linked worktree before any protection call", {
+  skip: process.platform !== "win32",
+}, () => {
+  const outcome = runMaintenanceWrapper("linked-worktree");
+  assert.equal(outcome.Result.Success, false);
+  assert.match(outcome.Result.Error, /requires the primary checkout/);
+  assert.equal(
+    outcome.Events.some((event) => /^(GET|DELETE|POST) /.test(event)),
+    false,
   );
 });
 

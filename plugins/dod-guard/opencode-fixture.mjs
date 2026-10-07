@@ -50,7 +50,8 @@ export function assertSupportedOpenCode() {
     version.status,
     0,
     version.error
-      ? `OpenCode CLI not found: ${OPENCODE}. Install OpenCode v2.0.18 and add \'opencode\' to PATH, or set OPENCODE_BIN to its executable path. ${version.error.message}`
+      ? `OpenCode CLI not found: ${OPENCODE}. Install OpenCode v2.0.18 and add 'opencode' to PATH, ` +
+          `or set OPENCODE_BIN to its executable path. ${version.error.message}`
       : version.stderr,
   );
   assert.match(version.stdout, /^opencode v2\.0\.18\s*$/);

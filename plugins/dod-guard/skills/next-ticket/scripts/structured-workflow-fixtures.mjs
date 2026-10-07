@@ -4,6 +4,16 @@ import * as proof from "./structured-workflow-proof.mjs";
 // Builders shared by the structured-convergence tests.
 export { proof };
 
+const SECTIONS = [
+  "Requirements and clarifications",
+  "Plan and tasks",
+  "Functional decomposition",
+  "Acceptance and verification",
+];
+
+// A rendered convergence line reporting one section as passing.
+export const PASSING_SECTION_LINE = new RegExp(`^- (?:${SECTIONS.join("|")}): verified$`, "m");
+
 export const recordsWithRequiredKeys = (lensOwnership) =>
   proof.REQUIRED_RECORDS.reduce(
     (records, name) => ({ ...records, [name]: name === "lens-ownership" ? lensOwnership : true }),

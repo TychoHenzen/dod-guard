@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ACCEPTANCE_MATRIX_PATHS } from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
-import { acceptanceMatrix, lensEvidence, proof, recordsWithRequiredKeys } from "./structured-workflow-fixtures.mjs";
+import {
+  acceptanceMatrix,
+  lensEvidence,
+  PASSING_SECTION_LINE,
+  proof,
+  recordsWithRequiredKeys,
+} from "./structured-workflow-fixtures.mjs";
 
 test("structured proof produces passing and actionable outcomes", () => {
   const reviewLenses = proof.REQUIRED_REVIEW_LENSES.map((id, index) => ({
@@ -35,6 +41,8 @@ test("structured proof produces passing and actionable outcomes", () => {
   });
   assert.equal(complete.outcome, "verified");
   assert.deepEqual(complete.remainder, []);
+  const oneCleanSection = { outcome: "actionable remainder", remainder: ["x"], sections: { "Plan and tasks": [] } };
+  assert.match(proof.renderConvergence(oneCleanSection), PASSING_SECTION_LINE);
   assert.deepEqual(complete.sections, {
     "Requirements and clarifications": [],
     "Plan and tasks": [],
@@ -59,10 +67,7 @@ test("structured proof produces passing and actionable outcomes", () => {
   assert.match(rendered, /Acceptance and verification: actionable/);
   assert.match(rendered, /Next task: task-2; owner: wiring/);
   assert.match(rendered, /Remainder: /);
-  assert.doesNotMatch(
-    rendered,
-    /^- (?:Requirements and clarifications|Plan and tasks|Functional decomposition|Acceptance and verification): (?:mapped to evidence|exercised)$/m,
-  );
+  assert.doesNotMatch(rendered, PASSING_SECTION_LINE);
   assert.doesNotMatch(rendered, /Outcome: verified/);
 });
 

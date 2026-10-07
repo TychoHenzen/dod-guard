@@ -11,34 +11,28 @@ const skillNames = (await readdir(skillsRoot, { withFileTypes: true }))
   .map((entry) => entry.name)
   .sort();
 const skills = new Map(
-  await Promise.all(
-    skillNames.map(async (name) => [
-      name,
-      await readFile(join(skillsRoot, name, "SKILL.md"), "utf8"),
-    ]),
-  ),
+  await Promise.all(skillNames.map(async (name) => [name, await readFile(join(skillsRoot, name, "SKILL.md"), "utf8")])),
 );
 const defaults = await readFile(join(pluginRoot, "standards", "working-defaults.md"), "utf8");
 
 const exceptionRules = new Map([
-  ["clean-house", [
-    /local deletion exception/i,
-    /exact items the user approves/i,
-    /unrelated dirty changes/i,
-  ]],
-  ["publish", [
-    /credential-like(?: files)?/i,
-    /unrelated,?\s+or indistinguishable/i,
-    /Stop when `credentialFindings` is non-empty/i,
-  ]],
-  ["skill-migrate", [
-    /only step that blocks on user input/i,
-    /Proceed only\s+after the user responds/i,
-  ]],
-  ["doc-reconcile", [
-    /Exclude uncommitted files from automatic dating and\s+deletion/i,
-    /Do not commit, stash, reset, or overwrite user work/i,
-  ]],
+  ["clean-house", [/local deletion exception/i, /exact items the user approves/i, /unrelated dirty changes/i]],
+  [
+    "publish",
+    [
+      /credential-like(?: files)?/i,
+      /unrelated,?\s+or indistinguishable/i,
+      /Stop when `credentialFindings` is non-empty/i,
+    ],
+  ],
+  ["skill-migrate", [/only step that blocks on user input/i, /Proceed only\s+after the user responds/i]],
+  [
+    "doc-reconcile",
+    [
+      /Exclude uncommitted files from automatic dating and\s+deletion/i,
+      /Do not commit, stash, reset, or overwrite user work/i,
+    ],
+  ],
 ]);
 
 test("every shipped skill applies the shared working defaults", () => {
@@ -50,8 +44,18 @@ test("every shipped skill applies the shared working defaults", () => {
 
 test("skills load the shared standards in one line instead of a preamble section", () => {
   const githubFacing = new Set([
-    "add-backlog-idea", "blind-rewrite", "complete-pr", "fix-pr-review", "goal-sdlc", "next-ticket",
-    "publish", "quick-pbi", "refine-backlog-item", "review-pr", "setup-repository", "submit-draft-pr",
+    "add-backlog-idea",
+    "blind-rewrite",
+    "complete-pr",
+    "fix-pr-review",
+    "goal-sdlc",
+    "next-ticket",
+    "publish",
+    "quick-pbi",
+    "refine-backlog-item",
+    "review-pr",
+    "setup-repository",
+    "submit-draft-pr",
   ]);
   for (const [name, skill] of skills) {
     assert.doesNotMatch(skill, /^## Shared working defaults$|Before GitHub calls, read/m, name);
@@ -61,7 +65,11 @@ test("skills load the shared standards in one line instead of a preamble section
 
 test("delivery skills defer repository and Project resolution to the GitHub standard", () => {
   for (const name of ["add-backlog-idea", "refine-backlog-item", "next-ticket", "submit-draft-pr"]) {
-    assert.match(skills.get(name), /"Resolve the repository and\s+Project" in\s+`standards\/github-request-discipline\.md`/, name);
+    assert.match(
+      skills.get(name),
+      /"Resolve the repository and\s+Project" in\s+`standards\/github-request-discipline\.md`/,
+      name,
+    );
     assert.doesNotMatch(skills.get(name), /Do not pick\s+one by name|administrator must link/, name);
   }
 });
@@ -126,12 +134,18 @@ test("branching and local mutation exceptions are explicit", () => {
 
 test("main checkout exceptions preserve user work and release isolation", () => {
   assert.match(defaults, /Never\s+reset,\s+stash, overwrite, move, or silently include user-owned changes/);
-  assert.match(defaults, /maintenance-only\s+`\/publish` route stays in the existing primary checkout[\s\S]*Stop and preserve/);
+  assert.match(
+    defaults,
+    /maintenance-only\s+`\/publish` route stays in the existing primary checkout[\s\S]*Stop and preserve/,
+  );
   assert.match(
     skills.get("next-ticket"),
     /locked, unavailable, active, or unsafe\s+user-owned main checkout, stop and report/,
   );
-  assert.match(skills.get("next-ticket"), /Never reset, stash, overwrite,\s+move, or silently include user-owned changes/);
+  assert.match(
+    skills.get("next-ticket"),
+    /Never reset, stash, overwrite,\s+move, or silently include user-owned changes/,
+  );
 });
 
 test("implementation and review repair retain functional-style guidance", () => {
