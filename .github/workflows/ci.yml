@@ -59,6 +59,11 @@ jobs:
         run: node --test scripts/ci/command-composition.test.mjs
       - name: Run the Windows advisor contract
         run: node --test plugins/dod-guard/skills/codex-advisor/scripts/advisor-contract.test.mjs
+      - name: Run the publish PowerShell helpers
+        run: >-
+          node --test
+          plugins/dod-guard/skills/publish/scripts/maintenance-wrapper.test.mjs
+          plugins/dod-guard/skills/publish/scripts/release-verification.test.mjs
 
   plugin-config:
     needs: build-test
