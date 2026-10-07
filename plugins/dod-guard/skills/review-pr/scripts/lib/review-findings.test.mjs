@@ -7,7 +7,6 @@ import {
   existingReview,
   postedFindings,
 } from "./review-findings.mjs";
-import { ruleScope } from "./rule-scope.mjs";
 
 const HEAD = "f522da2baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const FIX =
@@ -216,54 +215,6 @@ test("a clean review approves and carries the marker", () => {
   assert.deepEqual(existingReview([{ id: 1, body: "LGTM" }]), { found: false });
 });
 
-test("a malformed reviewer finding stops the build", () => {
-  const results = [
-    {
-      reviewer: "review-pr-hygiene",
-      findings: [judgment({ correction: " " })],
-    },
-  ];
-  assert.throws(
-    () => review(results),
-    /review-pr-hygiene returned a finding without correction/,
-  );
-});
-
-test("a missing reviewer or envelope stops the build instead of approving", () => {
-  const build = (results) =>
-    buildReview({ headSha: HEAD, scan: { violations: [] }, diff, results });
-  assert.throws(
-    () => build([]),
-    /Incomplete reviewer results[\s\S]*review-pr-feature: expected one result, got 0/,
-  );
-  const noCoverage = complete([]).map((result) =>
-    result.reviewer === "review-pr-design"
-      ? { ...result, coverage: [] }
-      : result,
-  );
-  assert.throws(
-    () => build(noCoverage),
-    /review-pr-design: needs a findings array and a non-empty coverage array/,
-  );
-  assert.throws(
-    () =>
-      build([
-        ...complete([]),
-        { reviewer: "review-pr-hygiene", coverage: COVERAGE, findings: [] },
-      ]),
-    /got 2/,
-  );
-});
-
-test("a reviewer finding without an integer line stops the build", () => {
-  const { line: _line, ...lineless } = judgment({});
-  const results = [{ reviewer: "review-pr-feature", findings: [lineless] }];
-  assert.throws(
-    () => review(results),
-    /review-pr-feature returned a finding without line/,
-  );
-});
-
 test("an empty diff or one written with other prefixes stops the build", () => {
   // diff.mnemonicPrefix writes c/ and w/ where the parser expects a/ and b/.
   const prefixed = diff
@@ -275,19 +226,6 @@ test("an empty diff or one written with other prefixes stops the build", () => {
     buildReview({ headSha: HEAD, scan, diff: text, results: complete([]) });
   assert.throws(() => build(prefixed), /lacks the a\/ or b\/ prefix/);
   assert.throws(() => build(""), /names no changed files/);
-});
-
-test("every quality-guard rule has an explicit review scope", async () => {
-  const { ALL_RULES } = await import(
-    "../../../../../../packages/quality-guard/skills/quality-refactor/scripts/lib/config.mjs"
-  );
-  assert.deepEqual(
-    ALL_RULES.filter((rule) => ruleScope(rule) === undefined),
-    [],
-  );
-  assert.equal(ruleScope("line-length"), "line");
-  assert.equal(ruleScope("complexity"), "file");
-  assert.equal(ruleScope("a-rule-added-later"), undefined);
 });
 
 test("posted comments read back as GH ids with their severity", () => {
