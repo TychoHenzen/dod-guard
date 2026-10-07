@@ -4,18 +4,22 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildReview, existingReview, postedFindings } from "./review-findings.mjs";
 
-const HEAD = "d4cc4e05aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const HEAD = "f522da2baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const FIX = "plugins/dod-guard/skills/fix-pr-review/scripts/lib/fix-support.mjs";
 const OTHER = "packages/unrelated/src/index.ts";
+const UNICODE = "docs/ü.md";
 
-// Violation shapes copied from a whole-repository quality_scan of this branch (Windows separators included).
+// Violation shapes copied from a whole-repository quality_scan of PR #826 (Windows separators included).
 const scan = {
   violations: [
-    { file: FIX.replaceAll("/", "\\"), line: 68, rule: "line-length", severity: "error", message: "line is 132 chars" },
+    { file: FIX.replaceAll("/", "\\"), line: 72, rule: "line-length", severity: "error", message: "line is 132 chars" },
+    { file: FIX, line: 5, rule: "line-length", severity: "warn", message: "line is 85 chars" },
     { file: FIX, line: 58, rule: "complexity", severity: "warn", message: "reviewThreadNodes() cyclomatic complexity 10" },
     { file: OTHER, line: 3, rule: "dead-export", severity: "error", message: "x is exported but never referenced anywhere" },
+    { file: UNICODE, line: 1, rule: "file-length", severity: "warn", message: "file is 600 lines" },
   ],
 };
+// The second file arrives the way Git writes it with core.quotePath=true.
 const diff = [
   `diff --git a/${FIX} b/${FIX}`,
   `--- a/${FIX}`,
@@ -24,6 +28,12 @@ const diff = [
   "+a",
   "+b",
   "+c",
+  'diff --git "a/docs/\\303\\274.md" "b/docs/\\303\\274.md"',
+  '--- "a/docs/\\303\\274.md"',
+  '+++ "b/docs/\\303\\274.md"',
+  "@@ -1 +1 @@",
+  "-old",
+  "+new",
 ].join("\n");
 
 function judgment(overrides) {
@@ -41,38 +51,61 @@ function judgment(overrides) {
   };
 }
 
-test("scanner findings in changed files become one comment per file on its first changed line", () => {
-  const { payload, recommendation } = buildReview({ headSha: HEAD, scan, changedFiles: [FIX], diff, results: [] });
-  assert.equal(recommendation, "REQUEST_CHANGES");
-  assert.equal(payload.comments.length, 1);
-  const [comment] = payload.comments;
-  assert.deepEqual([comment.path, comment.line, comment.side], [FIX, 71, "RIGHT"]);
-  assert.match(comment.body, /^\*\*MAJOR\*\* quality-guard structural findings \(2\)/);
-  assert.ok(comment.body.indexOf("line 58") < comment.body.indexOf("line 68"));
-  assert.doesNotMatch(payload.body + comment.body, /dead-export/);
+function review(results, scanInput = { violations: [] }) {
+  return buildReview({ headSha: HEAD, scan: scanInput, diff, results });
+}
+
+test("structural rules cover the whole touched file and line rules only the changed lines", () => {
+  const { payload } = review([], scan);
+  const fix = payload.comments.find((comment) => comment.path === FIX);
+  assert.match(fix.body, /^\*\*MAJOR\*\* quality-guard structural findings \(2\)/);
+  assert.match(fix.body, /`complexity` line 58[\s\S]*`line-length` line 72/);
+  assert.doesNotMatch(fix.body, /line 5:/);
+  assert.equal(fix.line, 71);
+  assert.doesNotMatch(JSON.stringify(payload), /dead-export/);
 });
 
-test("judgment findings dedupe by root cause and keep the highest severity", () => {
+test("a changed file Git quotes in the diff still gets its scanner findings", () => {
+  const { payload } = review([], scan);
+  const unicode = payload.comments.find((comment) => comment.path === UNICODE);
+  assert.deepEqual([unicode.line, unicode.body.split("\n")[0]], [1, "**MINOR** quality-guard structural findings (1)"]);
+});
+
+test("the same root cause dedupes within a file but stays separate across files", () => {
   const results = [
     { reviewer: "review-pr-feature", findings: [judgment({ severity: "MINOR" })] },
     { reviewer: "review-pr-reliability", findings: [judgment({ severity: "BLOCKER", rootCause: "outdated  treated as STALE" })] },
+    { reviewer: "review-pr-design", findings: [judgment({ file: UNICODE, line: 1 })] },
   ];
-  const { payload, recommendation, counts } = buildReview({ headSha: HEAD, scan: { violations: [] }, changedFiles: [FIX], diff, results });
+  const { payload, recommendation, counts } = review(results);
   assert.equal(recommendation, "BLOCK");
-  assert.deepEqual(counts, { BLOCKER: 1, MAJOR: 0, MINOR: 0 });
-  assert.equal(payload.comments.length, 1);
+  assert.deepEqual(counts, { BLOCKER: 1, MAJOR: 1, MINOR: 0 });
   assert.match(payload.comments[0].body, /^\*\*BLOCKER\*\* Outdated threads are skipped[\s\S]*\(review-pr-reliability\)/);
+  assert.equal(payload.comments[1].path, UNICODE);
 });
 
-test("a finding off the changed lines moves into the review body", () => {
-  const results = [{ reviewer: "review-pr-design", findings: [judgment({ line: 5 })] }];
-  const { payload } = buildReview({ headSha: HEAD, scan: { violations: [] }, changedFiles: [FIX], diff, results });
-  assert.equal(payload.comments.length, 0);
-  assert.match(payload.body, /### `plugins\/dod-guard\/skills\/fix-pr-review\/scripts\/lib\/fix-support\.mjs`\n\*\*MAJOR\*\*/);
+test("every finding stays an inline comment so it gets a GH id", () => {
+  const results = [
+    {
+      reviewer: "review-pr-design",
+      findings: [judgment({ line: 5 }), judgment({ file: "README.md", line: 92, rootCause: "stale readme" })],
+    },
+  ];
+  const { payload } = review(results);
+  assert.deepEqual(
+    payload.comments.map((comment) => [comment.path, comment.line]),
+    [
+      [FIX, 71],
+      [FIX, 71],
+    ],
+  );
+  assert.match(payload.comments[0].body, /Cited location: `plugins\/dod-guard\/skills\/fix-pr-review\/scripts\/lib\/fix-support\.mjs:5`/);
+  assert.match(payload.comments[1].body, /Cited location: `README\.md:92`/);
+  assert.doesNotMatch(payload.body, /no added line/);
 });
 
 test("a clean review approves and carries the marker", () => {
-  const { payload, recommendation } = buildReview({ headSha: HEAD, scan: { violations: [] }, changedFiles: [FIX], diff, results: [] });
+  const { payload, recommendation } = review([]);
   assert.equal(recommendation, "APPROVE");
   assert.deepEqual([payload.event, payload.commit_id, payload.comments], ["COMMENT", HEAD, []]);
   assert.deepEqual(existingReview([{ id: 9, body: payload.body, html_url: "u" }]), {
@@ -87,10 +120,7 @@ test("a clean review approves and carries the marker", () => {
 
 test("a malformed reviewer finding stops the build", () => {
   const results = [{ reviewer: "review-pr-hygiene", findings: [judgment({ correction: " " })] }];
-  assert.throws(
-    () => buildReview({ headSha: HEAD, scan: { violations: [] }, changedFiles: [FIX], diff, results }),
-    /review-pr-hygiene returned a finding without correction/,
-  );
+  assert.throws(() => review(results), /review-pr-hygiene returned a finding without correction/);
 });
 
 test("posted comments read back as GH ids with their severity", () => {

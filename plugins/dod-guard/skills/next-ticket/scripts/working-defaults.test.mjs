@@ -137,3 +137,24 @@ test("local safety exceptions remain explicit", () => {
   assert.match(skills.get("codex-migrate"), /Stop until the user answers/);
   assert.match(skills.get("complete-pr"), /explicit acceptance/);
 });
+
+// Retired workflows and deleted agents vanished once before while skills still named them.
+test("shipped guidance names only skills and agents that ship", async () => {
+  const agentNames = new Set((await readdir(join(pluginRoot, "agents"))).map((file) => file.replace(/\.md$/u, "")));
+  const standards = await Promise.all(
+    (await readdir(join(pluginRoot, "standards"))).map((file) => readFile(join(pluginRoot, "standards", file), "utf8")),
+  );
+  const agents = await Promise.all([...agentNames].map((name) => readFile(join(pluginRoot, "agents", `${name}.md`), "utf8")));
+  for (const text of [...skills.values(), ...standards, ...agents]) {
+    assert.doesNotMatch(text, /`\/commit`|\/interview\b|\$debate|adversarial-workflow|\$dod-guard:/u);
+    for (const [, name] of text.matchAll(/dod-guard:([a-z0-9-]+)/gu)) {
+      assert.ok(skills.has(name) || agentNames.has(name), `dod-guard:${name} names no shipped skill or agent`);
+    }
+  }
+});
+
+test("the project's Codex agent registry matches the shipped agents", async () => {
+  const { checkAgentOutputs } = await import("../../codex-migrate/scripts/convert-claude-agents.mjs");
+  const repositoryRoot = join(pluginRoot, "..", "..");
+  assert.deepEqual(await checkAgentOutputs(join(pluginRoot, "agents"), join(repositoryRoot, ".codex", "agents")), []);
+});

@@ -89,8 +89,9 @@ correctness authority.
 
 `/add-backlog-idea` splits a brain dump into independently deliverable Backlog
 issues. `/refine-backlog-item` researches one, triages missing user constraints
-and external context, uses interview for interactive refinement or one fresh
-`/codex-advisor` call for an active goal or explicitly
+and external context, asks batched clarification questions in ordinary
+conversation for interactive refinement or one fresh `/codex-advisor` call for
+an active goal or explicitly
 non-interactive run, and uses targeted research or debate only when their
 prerequisites are known. It then assigns justified priority, Fibonacci effort,
 and standard labels before moving a coherent,

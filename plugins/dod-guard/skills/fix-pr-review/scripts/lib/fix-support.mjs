@@ -1,7 +1,7 @@
 const AUTHORIZATION_SECRET = /\b(Authorization\s*:\s*(?:Bearer|Basic)\s+)[^\s"']+/gi;
 const GITHUB_SECRET = /\b(gh[pousr]_)[A-Za-z0-9_]{8,}\b/g;
 const QUERY_SECRET = /([?&](?:access_token|api[_-]?key|pat|sig|token)=)[^&#\s]+/gi;
-const ENVIRONMENT_SECRET = /\b((?:AZURE_DEVOPS_EXT_PAT|AZURE_DEVOPS_PAT|GITHUB_TOKEN)\s*=\s*)[^\s"']+/gi;
+const ENVIRONMENT_SECRET = /\b((?:GITHUB_TOKEN|GH_TOKEN)\s*=\s*)[^\s"']+/gi;
 const REGEX_META = /[.*+?^${}()|[\]\\]/g;
 
 function section(body, heading) {

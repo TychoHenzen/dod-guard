@@ -56,8 +56,8 @@ Flags: `--skill`, `--days` (default 30), `--limit`, `--projects`. Exit 0 printed
 a list of runs. Exit 4 found nothing inside the window, so raise `--days` and run
 it again before you conclude anything. Exit 3 is a usage error.
 
-`--skill` takes the bare name or the plugin-qualified one. `tighten` and
-`dod-guard:tighten` reach the same runs.
+`--skill` takes the bare name or the plugin-qualified one. `next-ticket` and
+`dod-guard:next-ticket` reach the same runs.
 
 Turn one run into a trace:
 

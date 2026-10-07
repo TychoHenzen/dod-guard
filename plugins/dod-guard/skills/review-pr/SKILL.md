@@ -47,11 +47,12 @@ When it reports `found: true`, report that review's recommendation, head, and
 URL, and stop. Commits pushed after it, such as `/fix-pr-review` remediation, do
 not start another review unless the user asks for one.
 
-## 3. Changed files and diff
+## 3. Diff
 
-Find the merge base with the PR base branch. Save
-`git diff --name-only --diff-filter=d <merge-base> HEAD` as a JSON array of
-paths, and `git diff --unified=0 <merge-base> HEAD` as the diff file.
+Find the merge base with the PR base branch and save
+`git diff --unified=0 <merge-base> HEAD` as the diff file. The build step reads
+the changed files and their added lines from this diff, decoding Git's quoted
+paths, so no separate file list is needed.
 
 ## 4. Scan
 
@@ -67,8 +68,10 @@ whole repository. A scan of only the changed files would report every export
 as dead, because their importers sit outside the scan. Stop when quality-guard
 is not installed or the scan fails; never guess a cache path.
 
-Every scanner finding in a changed file is reported, including ones the file
-had before this PR. A touched file is in scope.
+Structural rules such as complexity, length, duplication, nesting, parameters,
+and dead or test-only exports cover each whole changed file, including what it
+had before this PR: a touched file's design debt is in scope. Line-level rules
+such as `line-length` and the comment rules cover only the lines this PR adds.
 
 ## 5. Reviewer agents
 
@@ -80,7 +83,8 @@ acceptance criteria and sub-issues verbatim, and the governing `AGENTS.md` and
 - In Claude Code, use the Agent tool with `dod-guard:review-pr-feature`,
   `dod-guard:review-pr-design`, `dod-guard:review-pr-reliability`, and
   `dod-guard:review-pr-hygiene`.
-- In Codex, use the registered `dod_guard_review_pr_*` agents, or spawn an
+- In Codex, use the `dod_guard_review_pr_*` agents when the project registers
+  them in `.codex/agents/` (as this repository does); otherwise spawn an
   explorer with the full agent definition from `<plugin-root>/agents/` in its
   message.
 
@@ -92,12 +96,13 @@ again, leave it out and name it in the report.
 ## 6. Build and post
 
 ```text
-node "<skill-dir>/scripts/review-findings.mjs" build --head=<head-sha> --scan=<scan.json> --changed=<files.json> --diff=<unified0.diff> --results=<results.json> --out=<payload.json>
+node "<skill-dir>/scripts/review-findings.mjs" build --head=<head-sha> --scan=<scan.json> --diff=<unified0.diff> --results=<results.json> --out=<payload.json>
 ```
 
-It groups scanner findings into one comment per changed file on its first
-changed line, keeps reviewer findings on their changed line, dedupes them by
-root cause, and moves anything without a changed line into the review body.
+It groups scanner findings into one comment per changed file, dedupes reviewer
+findings by file and root cause, and posts every finding as an inline comment
+so each gets a `GH-<id>`. A finding whose cited line this PR did not add moves
+to the nearest added line, and its body names the cited location.
 Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given, scanner `error` as
 `MAJOR` and `warn` as `MINOR`. Recommendation: any `BLOCKER` is `BLOCK`, any
 other finding is `REQUEST_CHANGES`, none is `APPROVE`.

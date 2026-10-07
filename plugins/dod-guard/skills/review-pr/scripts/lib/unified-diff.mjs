@@ -1,7 +1,7 @@
 // Git writes a path containing non-ASCII bytes, quotes, or control characters as
 // a C-style quoted string ("b/docs/\303\274.md"), and ends `---`/`+++` lines
-// with a TAB when the path contains a space. Every reader of a unified diff
-// must decode both forms, or such a file loses its diff and its findings.
+// with a TAB when the path contains a space. parseChangedLines must decode both
+// forms, or such a file loses its changed lines and its findings.
 const SIMPLE_ESCAPES = new Map([
   ["a", "\u0007"],
   ["b", "\b"],
@@ -17,7 +17,7 @@ const OCTAL_RADIX = 8;
 const SIDE_PREFIX = /^[ab]\//u;
 const TRAILING_TERMINATOR = /\t?\r?$/u;
 const SIDE_LINE_PREFIX_LENGTH = 4;
-const HUNK_HEADER = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/u;
+const HUNK_HEADER = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/u;
 const NEWLINE = /\r?\n/u;
 
 // Octal escapes are raw bytes of one UTF-8 sequence, so decode bytes, not characters.
@@ -50,7 +50,7 @@ function sideLinePath(line) {
   return unquoteDiffPath(line.slice(SIDE_LINE_PREFIX_LENGTH));
 }
 
-// Maps each post-image path to the final-state line numbers the diff adds.
+// A deleted file's `+++ /dev/null` side has no final state, so it records nothing.
 function selectDiffFile(line, changed) {
   const file = sideLinePath(line);
   if (file === null) {
@@ -62,27 +62,44 @@ function selectDiffFile(line, changed) {
   return file;
 }
 
-function recordDiffLine(state, line, changed) {
-  if (line.startsWith("+++ ")) {
-    state.file = selectDiffFile(line, changed);
-  } else {
-    const hunk = line.match(HUNK_HEADER);
-    if (hunk) {
-      state.finalLine = Number(hunk[1]);
-    } else if (state.file && !line.startsWith("--- ")) {
-      if (line.startsWith("+") && !line.startsWith("+++")) {
-        changed.get(state.file).add(state.finalLine);
-        state.finalLine += 1;
-      } else if (!(line.startsWith("-") || line.startsWith("\\"))) {
-        state.finalLine += 1;
-      }
+function startHunk(state, hunk) {
+  state.oldLeft = Number(hunk[1] ?? 1);
+  state.finalLine = Number(hunk[2]);
+  state.newLeft = Number(hunk[3] ?? 1);
+}
+
+// Inside a hunk only the first character classifies a line, so an added `++i;` is content, not a header.
+function recordHunkLine(state, line, changed) {
+  const marker = line[0];
+  if (marker === "+" || marker === " ") {
+    if (marker === "+" && state.file) {
+      changed.get(state.file).add(state.finalLine);
     }
+    state.finalLine += 1;
+    state.newLeft -= 1;
+  }
+  if (marker === "-" || marker === " ") {
+    state.oldLeft -= 1;
   }
 }
 
+function recordDiffLine(state, line, changed) {
+  if (state.oldLeft > 0 || state.newLeft > 0) {
+    recordHunkLine(state, line, changed);
+    return;
+  }
+  const hunk = line.match(HUNK_HEADER);
+  if (hunk) {
+    startHunk(state, hunk);
+  } else if (line.startsWith("+++ ")) {
+    state.file = selectDiffFile(line, changed);
+  }
+}
+
+// Maps each post-image path to the final-state line numbers the diff adds.
 function parseChangedLines(diff) {
   const changed = new Map();
-  const state = { file: undefined, finalLine: 0 };
+  const state = { file: undefined, finalLine: 0, oldLeft: 0, newLeft: 0 };
   for (const line of diff.split(NEWLINE)) {
     recordDiffLine(state, line, changed);
   }

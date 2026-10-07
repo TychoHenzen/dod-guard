@@ -43,6 +43,27 @@ test("decodes Git's quoted and TAB-terminated diff paths", () => {
   assert.equal(sideLinePath("+++ /dev/null"), null);
 });
 
+test("treats added lines that start with ++ as content, not as a header", () => {
+  const diff = [
+    "diff --git a/x.js b/x.js",
+    "--- a/x.js",
+    "+++ b/x.js",
+    "@@ -1,0 +2,4 @@",
+    "+a",
+    "+++i;",
+    "+++ b",
+    "+c",
+    "@@ -9,2 +11,1 @@",
+    "----x",
+    "-y",
+    "+z",
+  ].join("\n");
+
+  const changed = parseChangedLines(diff);
+  assert.deepEqual([...changed.keys()], ["x.js"]);
+  assert.deepEqual([...changed.get("x.js")], [2, 3, 4, 5, 11]);
+});
+
 test("records final-state lines for special-character paths", () => {
   const changed = parseChangedLines(SPECIAL_PATH_DIFF);
 

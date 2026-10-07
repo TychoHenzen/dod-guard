@@ -13,7 +13,7 @@ const USAGE = [
   "Usage:",
   "  review-findings.mjs scan --client=claude|codex --registry=<plugin-list.json> --root=<repo> --out=<scan.json>",
   "  review-findings.mjs existing --reviews=<reviews.json>",
-  "  review-findings.mjs build --head=<sha> --scan=<scan.json> --changed=<files.json> --diff=<unified0.diff> --results=<results.json> --out=<payload.json>",
+  "  review-findings.mjs build --head=<sha> --scan=<scan.json> --diff=<unified0.diff> --results=<results.json> --out=<payload.json>",
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
 ].join("\n");
 
@@ -52,7 +52,6 @@ const COMMANDS = {
     const review = buildReview({
       headSha: args.head,
       scan: json(args.scan),
-      changedFiles: json(args.changed),
       diff: readFileSync(args.diff, "utf8"),
       results: json(args.results),
     });

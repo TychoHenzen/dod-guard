@@ -71,7 +71,7 @@ selections are skipped and each finding carries its thread ID. With `gh api`, pa
 credentials, save the response outside the repository, then run:
 
 ```text
-node "<skill-dir>/scripts/fix-support.mjs" normalize-github-comments --input "<response.json>" --selected "<comma-separated GH IDs>"
+node "<skill-dir>/scripts/fix-support.mjs" normalize-github-comments --input=<response.json> --selected=<comma-separated GH IDs>
 ```
 
 It accepts connector threads, REST review comments, or the GraphQL thread
@@ -98,7 +98,7 @@ resolved.
 Normalize GitHub issue JSON with:
 
 ```text
-node "<skill-dir>/scripts/fix-support.mjs" normalize-github-hierarchy --input "<issue.json>"
+node "<skill-dir>/scripts/fix-support.mjs" normalize-github-hierarchy --input=<issue.json>
 ```
 
 Build one temporary context containing the reviewed head, selected findings,

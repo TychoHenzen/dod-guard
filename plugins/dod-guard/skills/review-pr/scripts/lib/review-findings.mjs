@@ -2,6 +2,18 @@ import { parseChangedLines } from "./unified-diff.mjs";
 
 const SEVERITY_RANK = Object.freeze({ BLOCKER: 3, MAJOR: 2, MINOR: 1 });
 const JUDGMENT_FIELDS = Object.freeze(["severity", "file", "problem", "impact", "correction", "rootCause", "evidence"]);
+// Line-level rules judge only the lines this PR wrote; every other rule covers the whole touched file.
+const LINE_RULES = new Set([
+  "line-length",
+  "comment-bloat",
+  "commented-out-code",
+  "comment-restates-code",
+  "comment-metadata",
+  "comment-placeholder",
+  "comment-missing-reference",
+  "todo-marker",
+  "naming-encoding",
+]);
 const MARKER = /<!-- dod-guard:review-pr head=([0-9a-f]{7,40}) recommendation=(APPROVE|REQUEST_CHANGES|BLOCK) -->/;
 const SEVERITY_PREFIX = /^\*\*(BLOCKER|MAJOR|MINOR)\*\*/;
 const NON_ALPHANUMERIC = /[^a-z0-9]+/g;
@@ -24,35 +36,34 @@ function recommendationFor(severities) {
   return "APPROVE";
 }
 
-function firstChangedLine(changedLines, file) {
-  const lines = [...(changedLines.get(file) ?? [])];
-  if (lines.length === 0) {
-    return null;
+function inScope(violation, changedLines) {
+  const lines = changedLines.get(slashPath(violation.file));
+  if (!lines) {
+    return false;
   }
-  return Math.min(...lines);
+  return !LINE_RULES.has(violation.rule) || lines.has(violation.line);
 }
 
-// Cross-file rules only hold on a whole-repository scan, so the scan covers everything and this keeps changed files.
-function scannerGroups(scan, changedFiles) {
-  const wanted = new Set(changedFiles.map(slashPath));
+// Cross-file rules only hold on a whole-repository scan, so the scan covers everything and this keeps the PR's share.
+function scannerGroups(scan, changedLines) {
   const groups = new Map();
   for (const violation of scan.violations ?? []) {
-    const file = slashPath(violation.file);
-    if (wanted.has(file)) {
+    if (inScope(violation, changedLines)) {
+      const file = slashPath(violation.file);
       groups.set(file, [...(groups.get(file) ?? []), violation]);
     }
   }
   return groups;
 }
 
-function scannerFinding(file, violations, changedLines) {
+function scannerFinding(file, violations) {
   const sorted = [...violations].sort((left, right) => left.line - right.line || left.rule.localeCompare(right.rule));
   const severity = sorted.some((violation) => violation.severity === "error") ? "MAJOR" : "MINOR";
   const items = sorted.map((violation) => `- \`${violation.rule}\` line ${violation.line}: ${violation.message}`);
   return {
     severity,
     file,
-    line: firstChangedLine(changedLines, file),
+    line: sorted[0].line,
     body: [`**${severity}** quality-guard structural findings (${sorted.length})`, "", ...items].join("\n"),
   };
 }
@@ -64,52 +75,70 @@ function requireJudgment(finding, reviewer) {
   }
 }
 
-function rootCauseKey(finding) {
-  return finding.rootCause.toLowerCase().replace(NON_ALPHANUMERIC, " ").trim();
+// Same cause in two files is two places to fix, so the file is part of the identity.
+function judgmentKey(finding) {
+  return `${slashPath(finding.file)}\n${finding.rootCause.toLowerCase().replace(NON_ALPHANUMERIC, " ").trim()}`;
 }
 
 function dedupeJudgments(results) {
-  const byRootCause = new Map();
+  const byKey = new Map();
   for (const result of results) {
     for (const finding of result.findings ?? []) {
       requireJudgment(finding, result.reviewer);
-      const key = rootCauseKey(finding);
-      const kept = byRootCause.get(key);
+      const key = judgmentKey(finding);
+      const kept = byKey.get(key);
       if (!kept || SEVERITY_RANK[finding.severity] > SEVERITY_RANK[kept.severity]) {
-        byRootCause.set(key, { ...finding, file: slashPath(finding.file), reviewer: result.reviewer });
+        byKey.set(key, { ...finding, file: slashPath(finding.file), reviewer: result.reviewer });
       }
     }
   }
-  return [...byRootCause.values()];
+  return [...byKey.values()];
 }
 
-function judgmentBody(finding) {
-  return [
-    `**${finding.severity}** ${finding.problem}`,
-    "",
-    `Impact: ${finding.impact}`,
-    `Correction: ${finding.correction}`,
-    `Evidence: ${finding.evidence}`,
-    `Requirement: ${finding.requirement ?? "repository rule"} (${finding.reviewer})`,
-  ].join("\n");
+function judgmentFinding(finding) {
+  return {
+    severity: finding.severity,
+    file: finding.file,
+    line: Number(finding.line),
+    body: [
+      `**${finding.severity}** ${finding.problem}`,
+      "",
+      `Impact: ${finding.impact}`,
+      `Correction: ${finding.correction}`,
+      `Evidence: ${finding.evidence}`,
+      `Requirement: ${finding.requirement ?? "repository rule"} (${finding.reviewer})`,
+    ].join("\n"),
+  };
 }
 
-// GitHub only accepts an inline comment on a line the diff adds, so anything else goes in the review body.
-function anchoredLine(finding, changedLines) {
-  const line = Number(finding.line);
-  if (changedLines.get(finding.file)?.has(line)) {
-    return line;
+function nearestLine(lines, wanted) {
+  return [...lines].reduce((best, line) => (Math.abs(line - wanted) < Math.abs(best - wanted) ? line : best));
+}
+
+function firstAnchor(changedLines) {
+  for (const [file, lines] of changedLines) {
+    if (lines.size > 0) {
+      return { file, line: Math.min(...lines) };
+    }
   }
   return null;
 }
 
-function reviewBody(headSha, recommendation, unanchored, counts) {
-  const lines = [marker(headSha, recommendation), "## dod-guard review", "", `Recommendation: **${recommendation}**`];
-  lines.push(`Findings: ${counts.BLOCKER} BLOCKER, ${counts.MAJOR} MAJOR, ${counts.MINOR} MINOR.`);
-  for (const finding of unanchored) {
-    lines.push("", `### \`${finding.file}\``, finding.body);
+// GitHub only accepts an inline comment on a line the diff adds. Moving a finding to the nearest such line keeps
+// it a review comment with its own GH-<id>, which /fix-pr-review needs to select it.
+function anchor(finding, changedLines, fallback) {
+  const lines = changedLines.get(finding.file);
+  if (lines?.has(finding.line)) {
+    return { ...finding, anchored: { path: finding.file, line: finding.line } };
   }
-  return lines.join("\n");
+  const cited = `\n\nCited location: \`${finding.file}:${finding.line}\`, which this PR does not change.`;
+  if (lines?.size > 0) {
+    return { ...finding, anchored: { path: finding.file, line: nearestLine(lines, finding.line) }, body: finding.body + cited };
+  }
+  if (fallback) {
+    return { ...finding, anchored: { path: fallback.file, line: fallback.line }, body: finding.body + cited };
+  }
+  return { ...finding, anchored: null };
 }
 
 function countSeverities(findings) {
@@ -120,28 +149,34 @@ function countSeverities(findings) {
   return counts;
 }
 
-function buildReview({ headSha, scan, changedFiles, diff, results }) {
+function reviewBody(headSha, recommendation, counts, unanchored) {
+  const lines = [marker(headSha, recommendation), "## dod-guard review", "", `Recommendation: **${recommendation}**`];
+  lines.push(`Findings: ${counts.BLOCKER} BLOCKER, ${counts.MAJOR} MAJOR, ${counts.MINOR} MINOR.`);
+  for (const finding of unanchored) {
+    lines.push("", `### \`${finding.file}:${finding.line}\` (no added line in this PR to anchor on)`, finding.body);
+  }
+  return lines.join("\n");
+}
+
+function buildReview({ headSha, scan, diff, results }) {
   const changedLines = parseChangedLines(diff);
-  const scanner = [...scannerGroups(scan, changedFiles)].map(([file, group]) => scannerFinding(file, group, changedLines));
-  const judgments = dedupeJudgments(results).map((finding) => ({
-    severity: finding.severity,
-    file: finding.file,
-    line: anchoredLine(finding, changedLines),
-    body: judgmentBody(finding),
-  }));
-  const findings = [...judgments, ...scanner];
+  const fallback = firstAnchor(changedLines);
+  const raw = [
+    ...dedupeJudgments(results).map(judgmentFinding),
+    ...[...scannerGroups(scan, changedLines)].map(([file, group]) => scannerFinding(file, group)),
+  ];
+  const findings = raw.map((finding) => anchor(finding, changedLines, fallback));
   const recommendation = recommendationFor(findings.map((finding) => finding.severity));
   const counts = countSeverities(findings);
-  const anchored = findings.filter((finding) => finding.line !== null);
-  const unanchored = findings.filter((finding) => finding.line === null);
+  const inline = findings.filter((finding) => finding.anchored);
   return {
     recommendation,
     counts,
     payload: {
       commit_id: headSha,
       event: "COMMENT",
-      body: reviewBody(headSha, recommendation, unanchored, counts),
-      comments: anchored.map(({ file, line, body }) => ({ path: file, line, side: "RIGHT", body })),
+      body: reviewBody(headSha, recommendation, counts, findings.filter((finding) => !finding.anchored)),
+      comments: inline.map(({ anchored, body }) => ({ path: anchored.path, line: anchored.line, side: "RIGHT", body })),
     },
   };
 }
