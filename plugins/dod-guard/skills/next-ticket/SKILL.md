@@ -8,9 +8,9 @@ description: Execute a refined GitHub Project PBI through implementation, verifi
 Use the repository's main checkout as the source of truth for ordinary ticket
 work. Before selection, run `git worktree list --porcelain`; its first worktree
 is the main checkout. When it can safely create the selected branch from the
-fetched default, run there. Otherwise use one isolated worktree only for a
-locked, unavailable, active, or unsafe user-owned main checkout, and record the
-reason, affected checkout, and recovery path. Never reset, stash, overwrite,
+fetched default, run there. For a locked, unavailable, active, or unsafe
+user-owned main checkout, stop and report the reason, affected checkout, and
+recovery path; never create a worktree. Never reset, stash, overwrite,
 move, or silently include user-owned changes. Never choose a project by title
 similarity or from a remembered owner.
 
@@ -28,7 +28,8 @@ boundaries in this skill win.
 2. Read `git status --short --branch` and classify every pending path. A dirty
    worktree is not a blocker by itself. If ordinary pending changes clearly
    belong to the requested work, keep them uncommitted until the ticket branch
-   exists, then carry them through the normal `/commit` path on that branch.
+   exists, then stage and commit them there with the ticket's other reviewed
+   changes.
    Do not commit them on the current or default branch to clear status.
    Preserve and report secrets, destructive intent, unrelated changes, or work
    that cannot be separated safely.
@@ -242,8 +243,8 @@ ordered task and linked functional-slice child, followed by the single
 `## Acceptance matrix` and, when the PR exists, the single `## Preflight
 checkpoint`. Each entry names the commit or verified remote-state
 evidence, changed files or artifact, and the fresh check or user-path result.
-The matrix is the durable acceptance record consumed by convergence and
-Codex's built-in Review Summary; do not copy it to a local ledger. Include the
+The matrix is the durable acceptance record consumed by `submit-draft-pr`
+convergence and `complete-pr`; do not copy it to a local ledger. Include the
 current remainder explicitly; use `none` only when every task, matrix row,
 acceptance criterion, required user path, and preflight checkpoint are
 evidenced at the same head.

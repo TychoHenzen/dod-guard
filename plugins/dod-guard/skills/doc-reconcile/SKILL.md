@@ -38,9 +38,13 @@ Scope: this skill deletes and points, and it stops there. Rewriting a claim into
 prose, editing code, and reconciling anything the scanner did not report all sit
 outside it. Every deletion traces to one agent verdict and one dating result.
 
-## Codex agent lifecycle
+## Agent lifecycle
 
-Before dispatching, inspect the active agent list. Reuse a related agent for later
+In Claude Code, dispatch each pair to the `dod-guard:doc-conflict-judge` agent
+through the Agent tool. Each call starts a fresh agent that ends when it
+answers, so nothing needs closing.
+
+In Codex, before dispatching, inspect the active agent list. Reuse a related agent for later
 pairs when practical. Limit each parallel wave to the free slots.
 
 After recording a verdict, close the completed agent with the runtime's close action

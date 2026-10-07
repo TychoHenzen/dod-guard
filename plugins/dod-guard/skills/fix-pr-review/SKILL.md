@@ -1,14 +1,15 @@
 ---
 name: fix-pr-review
-description: Use when selected findings from a dod-guard PR review need the smallest verified fixes. Supports Git and GitHub inline comments plus Azure DevOps review reports, and updates only findings proven fixed.
-argument-hint: [GitHub PR URL or #number, current Git branch, or Azure report path] [finding IDs]
+description: Use when selected findings from a GitHub pull request review need the smallest verified fixes. Revalidates each finding against the current head, fixes it, and replies to and resolves only findings proven fixed.
+argument-hint: [GitHub PR URL or #number] [GH-<id> finding IDs]
 ---
 
 # Fix pull request review findings
 
-Fix selected findings produced by `/dod-guard:review-pr`. Revalidate each
-finding against the current head before editing. Keep stale, unsupported, and
-unresolved findings visible.
+Fix selected findings from a GitHub pull request review, usually the `GH-<id>`
+findings that `/dod-guard:review-pr` posted. Revalidate
+each finding against the current head before editing. Keep stale, unsupported,
+and unresolved findings visible.
 
 Read and apply `standards/working-defaults.md` and
 `standards/github-request-discipline.md` from the plugin root. Stricter
@@ -18,82 +19,74 @@ boundaries in this skill win.
 
 - Work only on the reviewed branch. A dirty checkout is not a blocker by
   itself. Classify pending paths without mutation and preserve clearly in-scope
-  ordinary changes until the provider input, reviewed head, parent PBI, and
+  ordinary changes until the pull request, reviewed head, parent PBI, and
   selected findings are validated. Stop for a different head, secrets,
   destructive intent, unrelated changes, or work that cannot be separated
-  safely. Invoke `/commit` only after the selected fixes and their checks pass.
+  safely. Commit only after the selected fixes and their checks pass.
 - Load the parent PBI, its acceptance criteria, and linked sub-issues before editing.
 - Treat a review comment as a claim to verify, not as authority to change behavior.
 - Fix one coherent batch at the code boundary that owns the behavior.
 - Do not add compatibility paths, speculative abstractions, or unrelated cleanup.
 - Do not approve, mark ready, merge, or close the parent PBI.
-- Reply to or resolve a provider finding only after its fix commit is pushed.
+- Reply to or resolve a finding only after its fix commit is pushed.
 
-In Claude Code, the skill directory is
-`${CLAUDE_PLUGIN_ROOT}/skills/fix-pr-review`. In Codex, use the directory
-containing this loaded `SKILL.md`.
+The skill directory is `${CLAUDE_PLUGIN_ROOT}/skills/fix-pr-review` in Claude
+Code and the directory containing this `SKILL.md` in Codex.
 
 ## Resolve the input
 
 Confirm the current directory is a Git worktree. Record `git status --short`,
 the current branch, its upstream, and `git rev-parse HEAD`. Classify pending
-paths before editing, then require the selected non-default feature branch and
-the reviewed head to match.
+paths before editing.
 
-Accept one of these sources:
-
-- A GitHub PR URL or `#number`: resolve the PR with the narrow GitHub MCP pull
-  request metadata operation when available. Otherwise use:
-
-  ```text
-  gh api "repos/{owner}/{repo}/pulls/{number}"
-  ```
-
-  Require its same-repository head branch to be checked out.
-- The current or named Git branch: use the active client's inline review
-  findings. Require the user to identify the selected finding IDs when more
-  than one unresolved finding exists.
-- An Azure Markdown report from `/review-pr`: parse its `ADO-<pr>-<number>`
-  entries and require the report's recorded head to match the checked-out
-  branch history.
-
-For GitHub review-thread metadata, try the typed connector first. If its
-thread operation is unavailable, use the REST review-comment endpoints before
-considering GraphQL: list
-`GET /repos/{owner}/{repo}/pulls/{pull_number}/comments?per_page=100&page=N`
-and follow pagination until every selected root comment is present. Keep the
-request log and provider response status. A missing connector operation or an
-explicit unsupported REST response (404/405) is a capability gap; an
-authentication failure, rate limit (403/429), timeout, malformed response, or
-other provider error is not permission to try GraphQL. Stop with the exact
-redacted status, endpoint, and reset or retry-after evidence.
-
-If neither connector nor REST can provide the selected thread metadata, the
-explicit fallback may issue one narrow GraphQL `node(id: $threadId)` query for
-the selected thread only. Request only `id`, `isResolved`, `isOutdated`,
-`path`, `line`, and the root comment's `databaseId`, `url`, `body`, and
-`commit.oid`; never query the pull request's complete `reviewThreads` list.
-Do not request the unsupported `PullRequestReviewComment.inReplyTo` field. The
-selected thread ID must already be known, and credentials or provider context
-must be redacted before saving the response outside the repository. Then run:
+Resolve the PR from its URL or number with the narrow GitHub MCP pull request
+metadata operation when available. Otherwise use:
 
 ```text
-node "<skill-dir>/scripts/fix-support.mjs" normalize-github-comments --input "<response.json>" --selected "<comma-separated GH IDs>"
+gh api "repos/{owner}/{repo}/pulls/{number}"
 ```
 
-For Azure, run:
+Require its same-repository head branch to be checked out at the PR head.
+Require the user or caller to name the selected `GH-<id>` findings when more
+than one unresolved finding exists. Never silently replace the selection with
+all findings.
+
+For GitHub review-thread metadata, use the first of these that works:
+
+1. The typed connector's review-thread operation.
+2. The explicit GraphQL exception: one paginated read of the pull request's
+   `reviewThreads` limited to `id`, `isResolved`, `isOutdated`, `path`,
+   `line`, `originalLine`, and the first comment's `databaseId`, `url`, `body`,
+   and `commit.oid`. REST has no review-thread endpoint, so this read is the
+   only way to see which findings are resolved and to get the thread IDs that
+   resolution needs. Do not request the unsupported
+   `PullRequestReviewComment.inReplyTo` field.
+3. When that read returns an explicit unsupported response (404/405), the REST
+   review-comment endpoints: list
+   `GET /repos/{owner}/{repo}/pulls/{pull_number}/comments?per_page=100&page=N`
+   and follow pagination until every selected root comment is present. REST
+   comments carry no thread ID or resolution state, so they support
+   revalidating and replying, but not skipping resolved findings or resolving
+   threads.
+
+Keep the request log and provider response status. An authentication failure,
+rate limit (403/429), timeout, malformed response, or other provider error is
+not a capability gap; stop with the exact redacted status, endpoint, and reset
+or retry-after evidence. With `gh api`, pass `--paginate --slurp` so every
+page arrives as one JSON array. Redact credentials, save the response outside
+the repository, then run:
 
 ```text
-node "<skill-dir>/scripts/fix-support.mjs" parse-azure-report --input "<report.md>" --selected "<comma-separated ADO IDs>"
+node "<skill-dir>/scripts/fix-support.mjs" normalize-github-comments --input=<response.json> --selected=<comma-separated GH IDs>
 ```
 
-Stop when a selected ID is absent or belongs to another provider. Mark resolved
-selections as stale and skip them with evidence. Treat outdated selections as
-still eligible for revalidation. Never silently replace the user's selection
-with all findings.
+It accepts connector threads, the GraphQL thread read, or REST review
+comments, and skips replies so each finding is one root comment. Stop when a
+selected ID is absent. Mark resolved selections as stale and skip them with
+evidence. Treat outdated selections as still eligible for revalidation.
 
-For GitHub, `isOutdated` only means that at least one commit was made after the
-inline comment was placed, so its original file position or diff anchor may no
+`isOutdated` only means that at least one commit was made after the inline
+comment was placed, so its original file position or diff anchor may no
 longer match the current head. It does not mean that the comment is invalid,
 that the issue was fixed, or that the finding no longer needs work. Re-check an
 outdated finding against the current code and fix it when the claim remains
@@ -104,15 +97,14 @@ valid.
 Resolve the parent PBI from the pull request's closing issue, its linked issue,
 or the unambiguous `codex/<issue>-<slug>` branch segment. Use the narrow GitHub
 MCP issue operation for the issue body and state. Query GitHub `subIssues` only
-when the connector does not provide that relationship, or use Azure
-hierarchy-forward child work items. Include each item's
+when the connector does not provide that relationship. Include each item's
 title, body, state, URL, and acceptance text. Stop if no parent PBI can be
 resolved.
 
 Normalize GitHub issue JSON with:
 
 ```text
-node "<skill-dir>/scripts/fix-support.mjs" normalize-github-hierarchy --input "<issue.json>"
+node "<skill-dir>/scripts/fix-support.mjs" normalize-github-hierarchy --input=<issue.json>
 ```
 
 Build one temporary context containing the reviewed head, selected findings,
@@ -156,7 +148,7 @@ existing upstream. Never force-push or rewrite commits.
 ## Update proven findings
 
 After a successful push, record its commit SHA and run bounded, read-only
-head convergence before replying to or resolving any provider finding. Read
+head convergence before replying to or resolving any finding. Read
 the same-repository source branch ref, PR API head, and
 `refs/pull/<number>/head` until all three equal that pushed SHA. If
 `refs/pull/<number>/merge` exists, read its commit parents and require the
@@ -167,38 +159,35 @@ provider read failure, merge-parent mismatch, or timeout. Do not push again,
 write `refs/pull/*`, call `update-branch`, resolve a review thread, or make any
 other provider mutation while convergence is unresolved.
 
-- GitHub: use the connector's reply and exact-thread resolution operations when
-  available. Otherwise reply through
-  `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments` with a JSON body
-  containing `body`, `commit_id`, and `in_reply_to` set to the selected root
-  comment's database ID. Include the commit SHA and verification command. Do
-  not use the legacy `POST
-  /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies` endpoint. For a
-  new inline review comment, use the same endpoint with `body`, `commit_id`,
-  `path`, and the diff `position`; do not send `line` or `subject_type` in that
-  request. Read back the exact review thread and verify the reply belongs to
-  the selected root comment and pushed head before resolving it. If REST cannot
-  resolve a thread and the connector has no exact resolver, the explicit
-  exception may issue exactly one GraphQL
-  `resolveReviewThread(input: {threadId: $threadId})` mutation for that
-  selected thread. Read back that same thread and commit after the mutation
-  (through the connector, or with one more narrow `node(id: $threadId)` query)
-  before reporting success. The fallback budget is one selected-thread query,
-  at most one resolution mutation, and one selected-thread readback; do not
-  batch unrelated threads or ProjectV2 data. If a write fails or is ambiguous,
-  read back before retrying; never issue a blind duplicate reply. A rate limit,
-  authentication error, malformed response, missing thread, mismatched head,
-  or unresolved readback stops the workflow with actionable evidence and no
-  resolution claim. Leave every other thread unchanged.
-- Local Git: report the fixed inline finding IDs with commit and check evidence.
-  No external comment state exists to mutate.
-- Azure: run `update-azure-report` with a JSON resolution map. It changes only
-  selected entries to `Fixed` and adds their commit and verification evidence.
-  Commit and push the report update when the report is tracked. Leave every
-  unresolved entry byte-for-byte unchanged.
+Use the connector's reply and exact-thread resolution operations when
+available. Otherwise reply through
+`POST /repos/{owner}/{repo}/pulls/{pull_number}/comments` with a JSON body
+containing `body`, `commit_id`, and `in_reply_to` set to the selected root
+comment's database ID. Include the commit SHA and verification command. Do
+not use the legacy `POST
+/repos/{owner}/{repo}/pulls/comments/{comment_id}/replies` endpoint. For a
+new inline review comment, use the same endpoint with `body`, `commit_id`,
+`path`, and the diff `position`; do not send `line` or `subject_type` in that
+request.
+
+REST cannot resolve a thread. Each selected finding's `threadId` comes from the
+thread metadata read under "Resolve the input".
+
+Read back the exact review thread and verify the reply belongs to the selected
+root comment and pushed head before resolving it. Then issue exactly one
+GraphQL `resolveReviewThread(input: {threadId: $threadId})` mutation for that
+selected thread, and read back that same thread with one narrow
+`node(id: $threadId)` query before reporting success. The fallback budget is
+the one thread read, at most one resolution mutation per selected thread, and
+one selected-thread readback each; do not batch unrelated threads or ProjectV2
+data. If a write fails or is ambiguous, read back before retrying; never issue
+a blind duplicate reply. A rate limit, authentication error, malformed
+response, missing thread, mismatched head, or unresolved readback stops the
+workflow with actionable evidence and no resolution claim. Leave every other
+thread unchanged.
 
 If a provider update fails, keep the pushed fix and report the exact remaining
-comment or report entry. Do not roll back verified code.
+comment. Do not roll back verified code.
 
 Report the PBI, original and pushed heads, fixed finding IDs, skipped IDs with
 reasons, changed files, commit, checks, and provider updates. Confirm the parent

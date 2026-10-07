@@ -11,6 +11,9 @@
 #   static-analysis   advisory quality diagnostics plus Biome, then rejects generated-file drift
 #   package-integrity whether the built bundle actually speaks MCP
 #
+# advisor-windows and opencode also run on every pull request but are not
+# required checks: they need a Windows host or a pinned OpenCode CLI.
+#
 # Quality metrics remain visible as advisory diagnostics. They do not decide
 # acceptance or write repository state.
 
@@ -59,6 +62,31 @@ jobs:
         run: node --test scripts/ci/command-composition.test.mjs
       - name: Run the Windows advisor contract
         run: node --test plugins/dod-guard/skills/codex-advisor/scripts/advisor-contract.test.mjs
+      - name: Run the publish PowerShell helpers
+        run: >-
+          node --test
+          plugins/dod-guard/skills/publish/scripts/maintenance-wrapper.test.mjs
+          plugins/dod-guard/skills/publish/scripts/release-verification.test.mjs
+
+  # Not a required check: these tests start a real OpenCode server, pinned to
+  # the CLI version the plugin's @opencode/plugin dependency targets.
+  opencode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install OpenCode 2.0.18
+        run: npm install --global @opencode/cli@2.0.18
+      - name: Check the OpenCode version
+        run: opencode --version
+      - name: Run the OpenCode discovery and reload tests
+        run: >-
+          node --test
+          plugins/dod-guard/opencode-discovery.test.mjs
+          plugins/dod-guard/opencode-reload.test.mjs
 
   plugin-config:
     needs: build-test

@@ -59,7 +59,7 @@ is missing.
 
 The test creates a temporary project and isolated config/data directories,
 checks `opencode v2.0.18`, verifies plugin list/check output, activates the
-`next-ticket` skill, and confirms the `review-pr-feature` agent. It removes the
+`next-ticket` skill, and confirms the `doc-conflict-judge` agent. It removes the
 fixture afterward and does not edit `PATH` or the user's OpenCode config.
 
 Every skill applies the shared working defaults in
@@ -89,8 +89,9 @@ correctness authority.
 
 `/add-backlog-idea` splits a brain dump into independently deliverable Backlog
 issues. `/refine-backlog-item` researches one, triages missing user constraints
-and external context, uses interview for interactive refinement or one fresh
-`gpt-5.6-luna` advisor at max reasoning effort for an active goal or explicitly
+and external context, asks batched clarification questions in ordinary
+conversation for interactive refinement or one fresh `/codex-advisor` call for
+an active goal or explicitly
 non-interactive run, and uses targeted research or debate only when their
 prerequisites are known. It then assigns justified priority, Fibonacci effort,
 and standard labels before moving a coherent,
@@ -99,9 +100,9 @@ the issue in Backlog. Epics stay there until split into independently
 deliverable PBIs. `/next-ticket`
 implements that PBI, maps every acceptance criterion to fresh evidence, and
 commits and pushes. `/submit-draft-pr` submits its verified draft pull
-request. `/review-pr` is the one independent review: it splits the change
-into units, reviews each at medium effort with 1-4 angles chosen by the kind
-of code, and runs one PR-level feature pass. After review, `/complete-pr` treats its invocation as
+request. `/review-pr` is the one independent review: it scans the changed
+files with quality-guard, runs four reviewer agents, and posts one comment-only
+review with a recommendation. After review, `/complete-pr` treats its invocation as
 acceptance of the current head and completes the guarded merge.
 `/fix-pr-review` revalidates and fixes selected review findings before that
 acceptance. Each delivery skill resolves the current repository and requires
@@ -178,8 +179,8 @@ GitHub-backed skills share the request policy in
 | `/teach-back` | Explain a repository concept while a curious student tests the explanation. |
 | `/step-by-step` | Run one explicit ordered plan through fresh bounded subagents. |
 | `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
-| `/review-pr` | Review Git or GitHub inline with four agents, or produce one Azure DevOps report. |
-| `/fix-pr-review` | Revalidate and fix selected GitHub, local Git, or Azure review findings. |
+| `/review-pr` | Scan a GitHub pull request's changed files and review them with four agents into one comment-only review. |
+| `/fix-pr-review` | Revalidate and fix selected GitHub review findings. |
 | `/complete-pr` | Complete an explicitly accepted draft through guarded REST merge and branch deletion. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
@@ -191,7 +192,4 @@ GitHub-backed skills share the request policy in
 | `/wiring-audit` | Check whether a feature reaches its intended user through the repository's real surfaces. |
 | `/usability-review` | Review user-facing workflows for usability, accessibility, and AI trust cues. |
 
-`review-pr-feature`, `review-pr-design`, `review-pr-reliability`, and
-`review-pr-hygiene` provide the independent review angles. The coordinator
-validates final-state lines and removes duplicate root causes before publishing
-comments. The plugin has no MCP server or runtime bundle.
+The plugin has no MCP server or runtime bundle.

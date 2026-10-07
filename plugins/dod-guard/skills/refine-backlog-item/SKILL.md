@@ -63,10 +63,9 @@ the web, or Context7 can establish. When the result is `no gap`, continue
 without invoking a discovery workflow.
 
 When user constraints or priorities are missing, choose the route from the
-current run mode. In ordinary interactive refinement, use the existing
-`/interview` workflow's research-first contract through ordinary conversation.
-This skill intentionally overrides its one-question-at-a-time interaction rule.
-Ask every currently independent clarification question in one round, give each
+current run mode. In ordinary interactive refinement, ask the user through
+ordinary conversation, after research: never ask what the repository, the web,
+or Context7 can answer. Ask every currently independent clarification question in one round, give each
 question multiple concrete options, and mark the recommended default. Defer
 questions whose options depend on an earlier answer to a later round. Record
 the resulting behavioral contract in an `interview-contract` implementation
@@ -74,14 +73,15 @@ note. Wait for the current round's answers before using an answer-dependent
 option.
 
 During an active goal or explicitly non-interactive refinement, invoke exactly
-one fresh `$dod-guard:codex-advisor` instead of asking the user. Use
-`gpt-5.6-luna` with `max` reasoning effort. Give the advisor only the unresolved
+one fresh `dod-guard:codex-advisor` instead of asking the user. It uses
+Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5.6-luna` at
+`max` reasoning effort. Give the advisor only the unresolved
 question, candidate answers and recommended default, repository and PBI context,
 the researched evidence, and the affected acceptance boundary and constraints.
 Batch every currently independent question into that one advisor brief. Defer a
 question whose options depend on an advisor answer until triage runs again.
 The advisor is advice-only and cannot replace user authority. Record an
-`advisor-decision` implementation note with the model, effort, briefing scope,
+`advisor-decision` implementation note with the advisor used, briefing scope,
 advice, and the evidence for accepting or rejecting it. Do not invoke another
 advisor to retry, vote, or refine its answer.
 
@@ -93,11 +93,8 @@ question, evidence, impact, and next required authority, then keep the issue in
 an `unresolved-decision` with the question, researched evidence, exact advisor
 failure, impact, and next required authority, then keep the issue in `Backlog`.
 
-Do not require a provider-specific `AskUserQuestion` tool. If `/interview` is
-unavailable, preserve its contract through ordinary conversation when possible.
-Otherwise record the unavailable workflow, the fallback, its impact, and the
-next decision or evidence needed. Keep the issue in Backlog when a material
-requirement cannot be stated without inventing it.
+Do not require a provider-specific `AskUserQuestion` tool. Keep the issue in
+Backlog when a material requirement cannot be stated without inventing it.
 
 When external facts or context are missing, perform targeted research. Inspect
 the code, callers, tests, and current architecture first. Use the web or
@@ -106,14 +103,16 @@ external evidence. Record each source and its relevant finding in a
 `research-source` implementation note. Do not ask the user for a fact that this
 research can answer.
 
-When a genuine tradeoff remains, frame one concrete decision and invoke the
-existing `$debate` protocol only after the required facts and user constraints
+When a genuine tradeoff remains, frame one concrete decision and debate it
+only after the required facts and user constraints
 are available. Select three to five named real experts whose documented
-positions match the competing concerns. Record each expert's name, lens,
+positions match the competing concerns. Run at least two rounds: each expert
+states a position from their lens, then challenges the strongest opposing
+position. Then synthesize. Record each expert's name, lens,
 competing concern, and why that lens applies, plus the challenges, acknowledged
 uncertainty, synthesis, accepted option, and rejected options in
 `debate-synthesis`, `accepted-option`, and `rejected-option` implementation
-notes. Follow the existing multi-round protocol, keep raw debate scratch files
+notes. Keep raw debate scratch files
 outside the repository, and do not turn expert speculation into a requirement.
 
 After each interview, research, or debate round, run the triage again. If new
@@ -186,9 +185,9 @@ criteria already own the unit. Never duplicate a unit, and give every created
 child minimal parent context, scope, acceptance criteria, and verification.
 
 For every structured PBI, explicitly assess implementation, wiring and
-end-to-end usability—including proof that the feature is reachable from its
-intended UI or supported user-facing surface—refactoring and code quality, and
-failure/recovery reliability beyond the happy path. Attach each concern to the
+end-to-end usability (including proof that the feature is reachable from its
+intended UI or supported user-facing surface), refactoring and code quality,
+and failure/recovery reliability beyond the happy path. Attach each concern to the
 functional child or parent-level task that owns it, with observable acceptance and verification;
 these are review lenses, not mandatory child categories. Linked children are
 checklist work within the parent's one branch and one PR; they do not
@@ -212,7 +211,8 @@ Keep concise discovery evidence in `## Implementation notes`. Include a
 
 - `interview-contract`: the questions asked, options, recommended defaults,
   answers, and deferred dependent questions;
-- `advisor-decision`: the advisor model and effort, bounded briefing scope,
+- `advisor-decision`: the advisor used (Claude advisor tool, or the Codex
+  model and effort), bounded briefing scope,
   advice, and the evidence for accepting or rejecting it;
 - `research-source`: the source, relevant finding, and remaining uncertainty;
 - `debate-synthesis`: the decision, each named expert's lens and why it applies

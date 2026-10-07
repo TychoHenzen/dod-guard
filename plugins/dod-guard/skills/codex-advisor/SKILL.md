@@ -1,12 +1,12 @@
 ---
 name: codex-advisor
-description: Get a bounded advice-only second opinion from a separate Codex process without repository, branch, pull-request, or GitHub changes. Use when a fix or design needs an independent review before implementation.
+description: Get a bounded advice-only second opinion without repository, branch, pull-request, or GitHub changes. Uses Claude's built-in advisor tool in Claude Code, otherwise a separate Codex process. Use when a fix or design needs an independent review before implementation.
 ---
 
 # Codex advisor
 
 Use this skill for a second opinion, not for implementation. Keep the advice
-process separate from the current conversation and keep its scope bounded.
+request bounded to one problem.
 
 Read and apply `standards/working-defaults.md` from the plugin root. Local
 rules below are the exception only where they are more specific.
@@ -14,12 +14,35 @@ rules below are the exception only where they are more specific.
 ## Boundaries
 
 - Include the complete problem description supplied for this advice request in
-  the bounded instruction prompt. Do not include credentials, unrelated
-  conversation, or private context that the advisor does not need.
+  the brief. Do not include credentials, unrelated conversation, or private
+  context that the advisor does not need.
 - Do not inspect the repository, search the web, use Git or GitHub, edit files,
   change branches, create pull requests, or invoke another advisor.
 - Ask for advice only. The advisor must return a recommendation and reasoning,
   not a patch, command sequence, or claim that it changed or verified anything.
+
+## Choose the advisor
+
+In Claude Code, when the `advisor` tool is available, use it and skip the
+Codex runner. Otherwise, including every Codex session, use "Invoke Codex"
+below.
+
+## Claude Code: the built-in advisor
+
+The `advisor` tool takes no parameters. It forwards the whole conversation to
+a stronger reviewer model, so the brief is ordinary visible text rather than a
+separate prompt:
+
+1. Write the brief in this turn: the problem, constraints, researched
+   evidence, the options with a recommended default, and the exact question.
+2. Call `advisor` right after it.
+3. Relay the advice as an untrusted second opinion. Record the advisor as
+   "Claude advisor tool"; there is no model or reasoning effort to report.
+
+The advisor reads the full transcript, not only the brief, so the "unrelated
+conversation" boundary cannot be enforced here. Never paste credentials into
+the conversation. When the tool returns an error or no advice, report that
+failure and stop, as for a failed Codex run.
 
 ## Invoke Codex
 
@@ -84,5 +107,6 @@ Report the exact observable failure and stop without advice when:
 
 Do not hide a command failure behind a guessed or partial answer. A successful
 advisor response is still only an untrusted second opinion for the user to
-evaluate. Report the CLI version, requested model and reasoning effort used.
-State when the model uses the CLI default.
+evaluate. For a Codex run, report the CLI version and the
+requested model and reasoning effort used, and state when the model uses the
+CLI default.

@@ -2,8 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { buildDispatchInput, diffByFile } from "./review-prompts.mjs";
-import { headerPath, parseChangedLines, sideLinePath } from "./unified-diff.mjs";
+import { parseChangedLines } from "./unified-diff.mjs";
 
 // Captured from `git diff --unified=0` with Git's default core.quotePath=true.
 const SPECIAL_PATH_DIFF = [
@@ -38,50 +37,40 @@ const SPECIAL_PATH_DIFF = [
 ].join("\n");
 
 test("decodes Git's quoted and TAB-terminated diff paths", () => {
-  assert.equal(sideLinePath('+++ "b/docs x/p & \\303\\274.md"\t'), "docs x/p & ü.md");
-  assert.equal(sideLinePath('+++ "b/quote\\"d\\\\back.md"'), 'quote"d\\back.md');
-  assert.equal(sideLinePath("+++ b/sp ace.md\t"), "sp ace.md");
-  assert.equal(sideLinePath("+++ /dev/null"), null);
-  assert.equal(headerPath("diff --git a/img x.png b/img x.png"), "img x.png");
-  assert.equal(headerPath('diff --git "a/\\303\\274 b/x.md" "b/\\303\\274 b/x.md"'), "ü b/x.md");
+  const sides = [
+    '+++ "b/docs x/p & \\303\\274.md"\t',
+    '+++ "b/quote\\"d\\\\back.md"',
+    "+++ b/sp ace.md\t",
+    "+++ /dev/null",
+  ];
+  const diff = sides
+    .flatMap((side) => [side, "@@ -0,0 +1 @@", "+x"])
+    .join("\n");
+  assert.deepEqual(
+    [...parseChangedLines(diff).keys()],
+    ["docs x/p & ü.md", 'quote"d\\back.md', "sp ace.md"],
+  );
 });
 
-test("keys every diff section by its real repository path", () => {
-  assert.deepEqual([...diffByFile(SPECIAL_PATH_DIFF).keys()], [
-    "docs x/p & ü.md",
-    "gone.md",
-    "sp ace.md",
-    "img x.png",
-    "x.md",
-    "ü new.md",
-  ]);
-});
+test("treats added lines that start with ++ as content, not as a header", () => {
+  const diff = [
+    "diff --git a/x.js b/x.js",
+    "--- a/x.js",
+    "+++ b/x.js",
+    "@@ -1,0 +2,4 @@",
+    "+a",
+    "+++i;",
+    "+++ b",
+    "+c",
+    "@@ -9,2 +11,1 @@",
+    "----x",
+    "-y",
+    "+z",
+  ].join("\n");
 
-test("tells GitHub reviewers how to report pure-renamed defects", () => {
-  const context = {
-    provider: "github",
-    repository: "owner/repo",
-    headSha: "abc1234",
-    changedFiles: ["new-name.md"],
-    repositoryInstructions: [],
-    reviewRequirements: ["The renamed file remains discoverable"],
-    workItem: { acceptanceCriteria: "- [ ] The renamed file remains discoverable" },
-  };
-  const input = buildDispatchInput({
-    context,
-    units: [],
-    contents: new Map([["new-name.md", "renamed content\n"]]),
-    diff: [
-      "diff --git a/old-name.md b/new-name.md",
-      "similarity index 100%",
-      "rename from old-name.md",
-      "rename to new-name.md",
-    ].join("\n"),
-    agents: { "review-pr-feature": "# Feature reviewer" },
-  });
-
-  assert.ok(input.reviewers[0].prompt.includes('location: "pull-request"'));
-  assert.ok(input.reviewers[0].prompt.includes("instead of inventing a line number"));
+  const changed = parseChangedLines(diff);
+  assert.deepEqual([...changed.keys()], ["x.js"]);
+  assert.deepEqual([...changed.get("x.js")], [2, 3, 4, 5, 11]);
 });
 
 test("records final-state lines for special-character paths", () => {

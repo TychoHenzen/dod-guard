@@ -40,18 +40,18 @@ to replace the design, not rename it.
 
 Classify the target before changing it:
 
-- **A — New interior behind a seam.** Keep public names and callers; replace
+- **A - New interior behind a seam.** Keep public names and callers; replace
   only the interior and compare both implementations at the seam.
-- **B — No seam.** Establish the smallest observable boundary and tests first,
+- **B - No seam.** Establish the smallest observable boundary and tests first,
   then apply shape A.
-- **C — Dependency swap.** Census every call site, migrate one bounded site at
+- **C - Dependency swap.** Census every call site, migrate one bounded site at
   a time, and prove the old dependency is absent.
-- **D — Prose without a harness.** Preserve claims, caveats, strength, audience,
+- **D - Prose without a harness.** Preserve claims, caveats, strength, audience,
   and constraints; verify claim coverage and run the prose overlap gate.
 
 ## Phases
 
-1. **Classify and preflight.** Read the target, choose A–D, identify the real
+1. **Classify and preflight.** Read the target, choose A to D, identify the real
    seam, tests, generated copies, build output, bundles, and call sites. Record
    every path that must not leak to the writer.
 2. **Extract the contract.** A bounded subagent writes `.blind/contract.md`
@@ -104,6 +104,6 @@ contract verbatim passages are removed before scoring.
 
 Allow at most two write/gate cycles. Preserve the checkpoint on a failed or
 ambiguous command, read back remote state, classify the failure, and use
-`[$dod-guard:codex-advisor](../codex-advisor/SKILL.md)` before asking the user
+`[dod-guard:codex-advisor](../codex-advisor/SKILL.md)` before asking the user
 about a confirmed blocker. Never discard unrelated edits, rerun a completed
 review, or hide a missing claim behind an overlap score.

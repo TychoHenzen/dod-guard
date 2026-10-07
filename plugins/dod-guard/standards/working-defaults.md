@@ -20,11 +20,13 @@ destructive action.
   once. Do not retry a mutation before its readback, loop blindly, or convert a
   security, authority, destructive, provider/head, or missing-evidence stop
   into ordinary recovery. After local triage, a confirmed blocker must use
-  `/codex-advisor` with `gpt-5.6-luna` at `max` effort; its advice never
-  replaces the invoking skill's repair or proof.
+  `/codex-advisor`: Claude's advisor tool in Claude Code, otherwise Codex with
+  `gpt-5.6-luna` at `max` effort. Its advice never replaces the invoking
+  skill's repair or proof.
 - For a skill that commits or pushes, inspect a dirty worktree first. Treat
-  ordinary, clearly in-scope pending changes as input to its normal `/commit`
-  path. Preserve and report secrets, destructive intent, and unrelated or
+  ordinary, clearly in-scope pending changes as input to its normal commit
+  step: stage only reviewed in-scope paths and commit them on the target
+  branch. Preserve and report secrets, destructive intent, and unrelated or
   indistinguishable changes. Dirty status alone is not a blocker. If the
   skill creates a branch from a fetched default, keep those changes
   uncommitted until the target branch exists, then commit them only there. If
@@ -33,9 +35,10 @@ destructive action.
 - Before selecting a delivery checkout, run `git worktree list --porcelain` and
   treat its first worktree as the main checkout. Run ordinary delivery there
   when it can safely create the selected branch from the fetched default while
-  retaining classified in-scope changes. When it cannot—because it is locked,
-  unavailable, or holds an active or unsafe user-owned branch—create one
-  isolated worktree and record the reason, affected checkout, and recovery path.
+  retaining classified in-scope changes. When it cannot, because it is locked,
+  unavailable, or holds an active or unsafe user-owned branch, stop and report
+  the reason, affected checkout, and recovery path. Never create, switch to, or
+  remove a Git worktree.
   The maintenance-only `/publish` route stays in the existing primary checkout
   and never runs a Git worktree command. Classify every pending path first and
   continue only when all paths are clearly release-scoped. Stop and preserve
