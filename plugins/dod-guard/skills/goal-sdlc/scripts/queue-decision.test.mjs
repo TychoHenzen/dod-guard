@@ -111,11 +111,17 @@ test("each missing piece of merge evidence holds the delivery", () => {
 
 test("relationship changes during the read hold the delivery", () => {
   const stale = [{ kind: "pull-request", number: 540 }];
-  assertHold(completeDelivery({ parent: { staleRelationships: stale } }), "relationship/head evidence changed during read");
+  assertHold(
+    completeDelivery({ parent: { staleRelationships: stale } }),
+    "relationship/head evidence changed during read",
+  );
 });
 
 test("a merged child alone, without its parent record, is an orphan hold", () => {
-  const child = record(536, { parentIssueNumber: 444, pullRequests: [mergedPullRequest({ mergeCommitSha: undefined })] });
+  const child = record(536, {
+    parentIssueNumber: 444,
+    pullRequests: [mergedPullRequest({ mergeCommitSha: undefined })],
+  });
   assertHold([child], "orphaned parent/child relationship", "merge commit is missing");
 });
 
@@ -128,7 +134,10 @@ test("queue selection groups children under their parent and keeps only the Todo
   ];
   const selected = selectQueueItem({ ...CONTEXT, records });
   assert.equal(selected.rootIssueNumber, 517);
-  assert.deepEqual(selected.records.map(({ issueNumber }) => issueNumber), [517]);
+  assert.deepEqual(
+    selected.records.map(({ issueNumber }) => issueNumber),
+    [517],
+  );
 });
 
 test("queue selection skips a group whose statuses drift", () => {
@@ -156,7 +165,12 @@ function adapterProjectItem({ number, status, parentIssue, linkedPullRequests = 
 function adapterProvider() {
   const mutations = [];
   const items = [
-    adapterProjectItem({ number: 444, status: "Done", parentIssue: null, linkedPullRequests: [{ number: 540, repository: "TychoHenzen/dod-guard" }] }),
+    adapterProjectItem({
+      number: 444,
+      status: "Done",
+      parentIssue: null,
+      linkedPullRequests: [{ number: 540, repository: "TychoHenzen/dod-guard" }],
+    }),
     adapterProjectItem({ number: 536, status: "Done", parentIssue: { number: 444 } }),
   ];
   const issues = new Map([
@@ -168,16 +182,16 @@ function adapterProvider() {
     listProjectItems: () => ({ items, pageInfo: { hasNextPage: false } }),
     readIssue: ({ issueNumber }) => issues.get(issueNumber),
     readPullRequest: () => ({
-        number: 540,
-        repository: "TychoHenzen/dod-guard",
-        state: "closed",
-        mergedAt: "2026-09-27T00:00:00Z",
-        trustedHead: true,
-        head: { repository: "TychoHenzen/dod-guard", ref: "codex/444", sha: "head-444" },
-        base: { ref: "master", sha: "base-444" },
-        mergeCommit: { oid: "merge-444" },
-        requiredChecks: [{ name: "build-test", bucket: "pass" }],
-      }),
+      number: 540,
+      repository: "TychoHenzen/dod-guard",
+      state: "closed",
+      mergedAt: "2026-09-27T00:00:00Z",
+      trustedHead: true,
+      head: { repository: "TychoHenzen/dod-guard", ref: "codex/444", sha: "head-444" },
+      base: { ref: "master", sha: "base-444" },
+      mergeCommit: { oid: "merge-444" },
+      requiredChecks: [{ name: "build-test", bucket: "pass" }],
+    }),
     mutate: (...args) => mutations.push(args),
   };
 }
@@ -191,7 +205,10 @@ test("contract control fixture uses the queue readback adapter", async () => {
     defaultBranch: "master",
   });
 
-  assert.deepEqual(snapshot.records.map(({ issueNumber }) => issueNumber), [444, 536]);
+  assert.deepEqual(
+    snapshot.records.map(({ issueNumber }) => issueNumber),
+    [444, 536],
+  );
   assert.equal(snapshot.pullRequests[0].mergeCommitSha, "merge-444");
   assert.deepEqual(defaultQueueDecision(snapshot.records, snapshot), {
     kind: "complete",

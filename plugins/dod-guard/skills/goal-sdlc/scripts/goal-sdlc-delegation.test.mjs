@@ -4,11 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-const skillPath = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "SKILL.md",
-);
+const skillPath = join(dirname(fileURLToPath(import.meta.url)), "..", "SKILL.md");
 
 async function readSkill() {
   return readFile(skillPath, "utf8");
@@ -23,7 +19,10 @@ test("goal-sdlc keeps built-in goal ownership and delegated execution explicit",
   assert.match(skill, /\[HH:MM\]/);
   assert.match(skill, /PBIs completed: N/);
   assert.match(skill, /main thread is the high-level orchestrator/);
-  assert.match(skill, /Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up/);
+  assert.match(
+    skill,
+    /Git worktrees are prohibited: do not create, use, register, switch to, prune, remove, or clean them up/,
+  );
   assert.match(skill, /\[dod-guard:next-ticket\]\(\.\.\/next-ticket\/SKILL\.md\)/);
   assert.match(skill, /`\/review-pr` scans the changed files, runs its reviewer agents, and is the one\s+code review/);
   assert.doesNotMatch(skill, /@codex review|Codex's automatic/);
@@ -101,10 +100,7 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
   ]) {
     assert.ok(skill.includes(marker), `missing reliability marker: ${marker}`);
   }
-  assert.doesNotMatch(
-    skill,
-    /delete both the local and the remote copy of both the merged branch as well as/,
-  );
+  assert.doesNotMatch(skill, /delete both the local and the remote copy of both the merged branch as well as/);
   assert.match(
     skill,
     new RegExp(
@@ -115,10 +111,7 @@ test("goal-sdlc retains failure checkpoints and completion gates", async () => {
       ].join(String.raw`\s+`),
     ),
   );
-  assert.match(
-    skill,
-    /Then use:\s+\[dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)/,
-  );
+  assert.match(skill, /Then use:\s+\[dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)/);
   assert.doesNotMatch(
     skill,
     /After merge:\s+- Invoke `\[dod-guard:complete-pr\]\(\.\.\/complete-pr\/SKILL\.md\)` for the guarded/,
@@ -191,7 +184,10 @@ test("goal-sdlc does not promote arbitrary project documents to workflow authori
   const skill = await readSkill();
   assert.match(skill, /Do not infer workflow authority from files merely present in the repository/);
   assert.match(skill, /Read a project-local process document only when the user explicitly names it/);
-  assert.match(skill, /resolve the skill by name\s+under the active plugin root instead of substituting a local process document/);
+  assert.match(
+    skill,
+    /resolve the skill by name\s+under the active plugin root instead of substituting a local process document/,
+  );
   assert.doesNotMatch(skill, /Automation\.md|review-checkpoints|\.beehaiive/);
 });
 

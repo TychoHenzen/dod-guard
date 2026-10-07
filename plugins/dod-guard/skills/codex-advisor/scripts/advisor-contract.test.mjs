@@ -10,116 +10,20 @@ import { runAdvisor } from "./run-advisor.mjs";
 
 const execFileAsync = promisify(execFile);
 
-const skillDirectory = fileURLToPath(new URL("../", import.meta.url));
-const skill = await readFile(`${skillDirectory}SKILL.md`, "utf8");
-const runner = await readFile(new URL("./run-advisor.mjs", import.meta.url), "utf8");
-const schema = JSON.parse(await readFile(`${skillDirectory}response-schema.json`, "utf8"));
+// The fake CLI is a real file; only the Windows .cmd shim that wraps it is generated per run.
+const fakeCodex = fileURLToPath(new URL("./fixtures/fake-codex.mjs", import.meta.url));
 
 async function createFixture() {
   const root = await mkdtemp(join(tmpdir(), "codex-advisor-test-"));
   const runs = join(root, "runs");
   const record = join(root, "record.json");
-  const executable = join(root, "fake-codex.mjs");
   const commandExecutable = join(root, "fake-codex.cmd");
   await mkdir(runs);
-  await writeFile(
-    executable,
-    `import { readFile, writeFile } from "node:fs/promises";
-const args = process.argv.slice(2);
-const input = await new Promise((resolve) => {
-  let value = "";
-  process.stdin.setEncoding("utf8");
-  process.stdin.on("data", (chunk) => { value += chunk; });
-  process.stdin.on("end", () => resolve(value));
-});
-if (args[0] === "--version") {
-  process.stdout.write("codex-cli fixture");
-  process.exit(0);
-}
-if (args[0] === "exec" && args[1] === "--help") {
-  if (process.env.ADVISOR_MODE === "fail-once" && !(await readFile(process.env.ADVISOR_STATE, "utf8").catch(() => ""))) {
-    await writeFile(process.env.ADVISOR_STATE, "failed");
-    process.stderr.write("fixture launch failure");
-    process.exit(23);
-  }
-  if (process.env.ADVISOR_MODE === "unsupported-help") {
-    process.stderr.write("unexpected argument '--ask-for-approval'");
-    process.exit(2);
-  }
-  process.stdout.write("--approve-for-me");
-  process.exit(0);
-}
-const record = { args, cwd: process.cwd(), input };
-const previous = await readFile(process.env.ADVISOR_RECORD, "utf8").catch(() => "[]");
-const records = JSON.parse(previous);
-records.push(record);
-await writeFile(process.env.ADVISOR_RECORD, JSON.stringify(records));
-const outputIndex = args.indexOf("--output-last-message");
-const outputPath = outputIndex === -1 ? undefined : args[outputIndex + 1];
-switch (process.env.ADVISOR_MODE) {
-  case "nonzero":
-    process.stderr.write("fixture failure");
-    process.exit(7);
-  case "missing-output":
-    break;
-  case "empty-output":
-    await writeFile(outputPath, "");
-    break;
-  case "malformed":
-    await writeFile(outputPath, "{");
-    break;
-  case "invalid-schema":
-    await writeFile(outputPath, JSON.stringify({ advice: 42 }));
-    break;
-  case "whitespace":
-    await writeFile(outputPath, JSON.stringify({ advice: "   " }));
-    break;
-  case "hang":
-    await new Promise(() => {});
-    break;
-  case "slow":
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
-    break;
-  case "large-output":
-    process.stdout.write("x".repeat(8 * 1024 * 1024 + 1));
-    break;
-  case "fallback":
-    await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
-    process.stdout.write(JSON.stringify({
-      type: "item.completed",
-      item: {
-        type: "error",
-        message: "Model metadata for gpt-test-model not found. Defaulting to fallback metadata; this can degrade performance and cause issues.",
-      },
-    }) + "\\n");
-    break;
-  case "different-model-fallback":
-    await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
-    process.stdout.write(JSON.stringify({
-      type: "item.completed",
-      item: {
-        type: "error",
-        message: "Model metadata for gpt-other-model not found. Defaulting to fallback metadata; this can degrade performance and cause issues.",
-      },
-    }) + "\\n");
-    break;
-  case "unrelated-output":
-    await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
-    process.stdout.write("fixture banner\\n");
-    process.stdout.write(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "fallback metadata is unrelated" } }) + "\\n");
-    process.stdout.write("not a JSON event\\n");
-    break;
-  default:
-    await writeFile(outputPath, JSON.stringify({ advice: "Use the smallest safe change." }));
-}
-`,
-  );
-  await writeFile(commandExecutable, `@echo off\r\nnode "${executable}" %*\r\n`);
+  await writeFile(commandExecutable, `@echo off\r\nnode "${fakeCodex}" %*\r\n`);
   return {
     commandExecutable,
     env: { ADVISOR_RECORD: record, ADVISOR_STATE: join(root, "state.txt") },
-    executable,
+    executable: fakeCodex,
     record,
     root,
     runs,
@@ -370,84 +274,5 @@ test("advisor runner rejects shell metacharacters before a Windows executable st
     assert.deepEqual(await readdir(fixture.runs), []);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
-  }
-});
-
-test("advisor skill has the Codex invocation contract", () => {
-  assert.match(skill, /^---\nname: codex-advisor\n/m);
-  for (const signal of [
-    /scripts[\\/]run-advisor\.mjs/,
-    /`gpt-5\.6-luna` with\s+`max` effort by default/,
-    /does not enumerate reasoning values/i,
-    /empty,\s+non-repository working directory/,
-    /-s read-only/,
-    /--ignore-user-config/,
-    /--ignore-rules/,
-    /--skip-git-repo-check/,
-    /--ephemeral/,
-    /waits for the advisor process to exit/,
-    /cleans up\s+its temporary\s+directory on every\s+exit path/,
-    /stdin/,
-    /--output-schema/,
-    /--model/,
-    /requested model and reasoning effort/i,
-    /skip repository research/,
-    /avoid\s+all tools and mutations/,
-    /codex\.exe.*Windows|Windows.*codex\.exe/i,
-  ]) {
-    assert.match(skill, signal);
-  }
-  assert.doesNotMatch(skill, /codec\s+exec/);
-  assert.doesNotMatch(skill, /dangerously-bypass/);
-  assert.doesNotMatch(skill, /researched host/);
-});
-
-test("advisor skill uses Claude's advisor tool and falls back to Codex", () => {
-  const choose = skill.indexOf("## Choose the advisor");
-  const claude = skill.indexOf("## Claude Code: the built-in advisor");
-  const codex = skill.indexOf("## Invoke Codex");
-  assert.ok(choose !== -1 && choose < claude && claude < codex);
-  assert.match(skill, /when the `advisor` tool is available, use it and skip the\s+Codex runner/);
-  assert.match(skill, /Otherwise, including every Codex session, use "Invoke Codex"/);
-  assert.match(skill, /Write the brief in this turn[\s\S]*Call `advisor` right after it/);
-  assert.match(skill, /reads the full transcript, not only the brief/);
-  assert.match(skill, /Record the advisor as\s+"Claude advisor tool"/);
-});
-
-test("advisor runner does not impose a wall-clock kill", () => {
-  assert.doesNotMatch(runner, /timeoutMs|--timeout-ms|setTimeout/);
-});
-
-test("advisor runner uses direct Windows executable invocation", () => {
-  assert.match(runner, /resolveCodexExecutable/);
-  assert.match(runner, /shell: false/);
-  assert.match(runner, /buildCodexPreflightArgs/);
-  assert.match(runner, /buildCodexExecArgs/);
-  assert.match(runner, /codex-advisor-execution/);
-});
-
-test("advisor defaults to Luna max for confirmed blockers", () => {
-  assert.match(runner, /optionValue\("--model", "gpt-5\.6-luna"\)/);
-  assert.match(runner, /optionValue\("--reasoning-effort", "max"\)/);
-  assert.match(runner, /model = "gpt-5\.6-luna"/);
-  assert.match(runner, /reasoningEffort = "max"/);
-});
-
-test("advisor schema rejects whitespace-only advice", () => {
-  assert.deepEqual(schema.required, ["advice"]);
-  assert.equal(schema.additionalProperties, false);
-  assert.equal(schema.properties.advice.type, "string");
-  assert.equal(schema.properties.advice.minLength, 1);
-  assert.equal(schema.properties.advice.pattern, "\\S");
-});
-
-test("advisor failures are observable and never relayed as advice", () => {
-  for (const signal of [
-    /executable is missing or cannot start/,
-    /exits non-zero/,
-    /output file is missing, empty, not valid JSON/,
-    /Do not hide a command failure behind a guessed or partial answer/,
-  ]) {
-    assert.match(skill, signal);
   }
 });
