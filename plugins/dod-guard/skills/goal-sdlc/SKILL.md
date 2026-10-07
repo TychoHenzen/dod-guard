@@ -338,10 +338,11 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
   - treat every reconciliation input as an explicit live observation. An
     omitted, unknown, stale, filtered, or provider-unavailable value is not
     `true`; classify the missing evidence as `hold` and report its exact
-    field. Record provider availability, acceptance evidence, active
-    checkpoints, child grouping, head/base/trust/merge evidence,
-    head-to-PR relationship, required checks, linked issue/child closure,
-    and Project status separately;
+    field. Record provider availability, active checkpoints, child
+    grouping, head/base/trust/merge evidence, head-to-PR relationship,
+    required checks, linked issue/child closure, and Project status
+    separately. Acceptance is not re-checked here: `complete-pr`'s
+    finalization gate verifies it before any merge;
 
   - classify a record with no merged delivery and no active checkpoint as
     eligible for the normal `Todo`/`Backlog` selection rules;
@@ -355,8 +356,8 @@ Before mutating anything, use the current snapshot. If it is invalid or missing:
     `complete-pr` rather than mutating it here;
 
   - classify a merged delivery with any missing check, open issue or child,
-    non-`Done` Project status, unresolved acceptance evidence, provider
-    limitation, or head/relationship mismatch as `hold`; exclude it from
+    non-`Done` Project status, provider limitation, or head/relationship
+    mismatch as `hold`; exclude it from
     queue candidates, report the exact missing evidence, and preserve its
     live issue and Project state; an orphaned child or parent/child status
     drift is also an explicit hold, never a fresh queue candidate;
