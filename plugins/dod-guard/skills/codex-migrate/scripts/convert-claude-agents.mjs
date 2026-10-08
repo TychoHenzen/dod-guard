@@ -46,21 +46,29 @@ function codexName(name) {
   return `dod_guard_${name.replaceAll("-", "_")}`;
 }
 
+// A Claude agent without a tools line inherits every tool, MCP included.
+function toolProfile(tools) {
+  if (!tools) {
+    return { label: "inherited (all tools, including MCP)", writes: true, hasShell: true };
+  }
+  return {
+    label: tools,
+    writes: /(?:^|,\s*)(?:Write|Edit)(?:,|$)/.test(tools),
+    hasShell: /(?:^|,\s*)Bash(?:,|$)/.test(tools),
+  };
+}
+
 function renderAgent(sourceName, parsed) {
   const { values, body } = parsed;
   for (const field of ["name", "description", "model"]) {
     if (!values[field]) throw new Error(`Missing ${field}: ${sourceName}`);
   }
-  // A Claude agent without a tools line inherits every tool, MCP included.
-  const tools = values.tools ?? "";
-  const inherits = tools === "";
 
   const model = MODEL_MAP.get(values.model);
   if (!model) throw new Error(`Unknown Claude model tier '${values.model}': ${sourceName}`);
   if (body.includes("'''")) throw new Error(`Agent body contains unsupported TOML delimiter: ${sourceName}`);
 
-  const writes = inherits || /(?:^|,\s*)(?:Write|Edit)(?:,|$)/.test(tools);
-  const hasShell = inherits || /(?:^|,\s*)Bash(?:,|$)/.test(tools);
+  const { label, writes, hasShell } = toolProfile(values.tools);
   const effort = values.effort || "medium";
   const turnInstruction = values.maxTurns
     ? `Source compatibility: finish within ${values.maxTurns} agent turns.\n\n`
@@ -69,7 +77,7 @@ function renderAgent(sourceName, parsed) {
 
   return [
     `# Generated from agents/${sourceName}. Do not edit by hand.`,
-    `# Source tools: ${inherits ? "inherited (all tools, including MCP)" : tools}`,
+    `# Source tools: ${label}`,
     `name = ${tomlString(codexName(values.name))}`,
     `description = ${tomlString(values.description)}`,
     `model = ${tomlString(model)}`,
