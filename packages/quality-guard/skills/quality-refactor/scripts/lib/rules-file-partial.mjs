@@ -10,12 +10,18 @@ import { readText } from "./walk.mjs";
 /** Compiler and source-generator output that legitimately shares a partial. */
 const GENERATED_PARTIAL = /\.g(?:\.i)?\.cs$/i;
 const PARTIAL_PREFIX = /\bpartial\s+(?:record\s+)?$/;
+const NAMESPACE = /\bnamespace\s+([\w.]+)/;
 
+/** Modifiers may sit on earlier lines, so read back to the previous statement. */
 function partialTypes(code, types) {
   return types.filter((type) => {
-    const lineStart = code.lastIndexOf("\n", type.offset) + 1;
-    return PARTIAL_PREFIX.test(code.slice(lineStart, type.offset));
+    const start = Math.max(...[";", "{", "}"].map((end) => code.lastIndexOf(end, type.offset)));
+    return PARTIAL_PREFIX.test(code.slice(start + 1, type.offset));
   });
+}
+
+function namespaceOf(code) {
+  return NAMESPACE.exec(code)?.[1] ?? null;
 }
 
 function declares(code, name) {
@@ -54,12 +60,16 @@ function siblingSources(path) {
  */
 export function checkPartialTypes({ file, config, code, types, out }) {
   if (file.lang !== "cs" || !file.path) return;
+  if (!isHandwritten(basename(file.path))) return;
   const partials = partialTypes(code, types);
   if (partials.length === 0) return;
-  const siblings = siblingSources(file.path).map((source) => ({
-    code: strip(source, "cs").code,
-    lines: source.split(/\r?\n/).length,
-  }));
+  const namespace = namespaceOf(code);
+  const siblings = siblingSources(file.path)
+    .map((source) => ({
+      code: strip(source, "cs").code,
+      lines: source.split(/\r?\n/).length,
+    }))
+    .filter((sibling) => namespaceOf(sibling.code) === namespace);
   for (const type of partials) {
     const parts = siblings.filter((sibling) => declares(sibling.code, type.name));
     if (parts.length === 0) continue;

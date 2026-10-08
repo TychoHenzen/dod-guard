@@ -259,7 +259,7 @@ does not clear this finding.
 ## `partial-type-length` - 100 preferred, 300 hard, across files
 
 **Detects:** a top-level C# `partial` type whose declarations sit in more than
-one hand-written `.cs` file in the same directory. The metric is the combined
+one hand-written `.cs` file in the same directory and namespace. The metric is the combined
 line count of every declaring file, reported on each of them. Compiler and
 source-generator output (`*.g.cs`, `*.g.i.cs`, `*.Designer.cs`,
 `*.generated.*`) is not counted, and a single `partial` declaration, such as a

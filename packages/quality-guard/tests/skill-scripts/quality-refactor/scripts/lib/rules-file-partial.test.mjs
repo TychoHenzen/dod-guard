@@ -106,3 +106,44 @@ test("partial siblings of a different type are not counted", () => {
     },
   );
 });
+
+test("a partial modifier on its own line still marks the type", () => {
+  const split = partialSource("Board", 190).replace(
+    "public partial class Board",
+    "public partial\nclass Board",
+  );
+  project({ "Board.cs": split, "Board.Moves.cs": split }, (root) => {
+    const [finding] = rulesOf(
+      scanPartial(root, "Board.cs"),
+      "partial-type-length",
+    );
+    assert.equal(finding.severity, "error");
+  });
+});
+
+test("a generated file is not measured as a partial part", () => {
+  project(
+    {
+      "Board.cs": partialSource("Board", 200),
+      "Board.g.cs": partialSource("Board", 200),
+    },
+    (root) => {
+      const violations = scanPartial(root, "Board.g.cs");
+      assert.deepEqual(rulesOf(violations, "partial-type-length"), []);
+    },
+  );
+});
+
+test("namesakes in another namespace are different types", () => {
+  const other = partialSource("Board", 400).replace(
+    "namespace Game;",
+    "namespace Editor;",
+  );
+  project(
+    { "Board.cs": partialSource("Board", 60), "EditorBoard.cs": other },
+    (root) => {
+      const violations = scanPartial(root, "Board.cs");
+      assert.deepEqual(rulesOf(violations, "partial-type-length"), []);
+    },
+  );
+});
