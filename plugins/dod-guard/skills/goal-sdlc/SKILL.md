@@ -8,12 +8,10 @@ description: Work through the linked GitHub Project queue continuously, one pare
 Read and apply `standards/working-defaults.md` and
 `standards/github-request-discipline.md` from the active plugin root.
 
-This skill is a queue loop. It picks the next parent PBI and runs the existing
-lifecycle skills on it, then picks the next one. It does not restate their
-rules: each stage follows its own skill, and when this file and an owning skill
-differ, the owning skill wins. Run it directly, or as the plan for a Codex
-`/goal` run; in Codex the built-in command owns goal persistence and the final
-stop decision.
+This skill is a queue loop: it picks the next parent PBI, runs the existing
+lifecycle skills on it, then picks the next one. Each stage follows its own
+skill; when this file and an owning skill differ, the owning skill wins. As the
+plan for a Codex `/goal` run, the built-in command owns persistence and stop.
 
 ## Owners
 
@@ -54,14 +52,11 @@ Repeat until the stop condition holds:
    eligible group: In Progress parents first (one with an open pull request
    ahead of one without), then Todo, then Backlog, each in Project order. It
    needs each issue's `activeCheckpoint` and each pull request's
-   `trustedHeadSha` to recognize a finished delivery; run it with no
-   arguments for the full snapshot shape. Report each held group's reasons
-   rather than guessing past them.
+   `trustedHeadSha` to recognize a finished delivery; run it with no arguments
+   for the snapshot shape. Report held groups' reasons; never guess past them.
 3. **Run the lifecycle for that parent.** Follow
-   [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6, starting at the
-   step the parent has reached: refine a Backlog parent, then `/next-ticket`,
-   `/submit-draft-pr`, `/review-pr`, `/fix-pr-review` for any findings, and
-   `/complete-pr`. When refinement needs an answer from the user, leave the
+   [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6 from the step the
+   parent has reached. When refinement needs an answer from the user, leave the
    parent in Backlog with the questions recorded and continue with another
    parent instead of waiting.
 4. **Read back and continue.** After `/complete-pr` returns, read the parent
@@ -77,18 +72,21 @@ and one pull request. Never create or use a Git worktree.
 The main thread sequences stages and checks results; bounded subagents do the
 context-heavy work. Each stage runs in one fresh subagent as one step of
 [dod-guard:step-by-step](../step-by-step/SKILL.md), which owns the checkpoint,
-proof, and repair rules, at this tier:
+proof, commit, and repair rules. A stage's split rows are dispatched by its
+owner, as `standards/model-routing.md` says. Each row runs at this tier:
 
 | Stage | Tier | Effort |
 |---|---|---|
 | Queue snapshot read | cheap | `max` |
-| Refinement: plan research questions, then decide classification and criteria | strong | `medium` |
+| Refinement: plan research questions | strong | `medium` |
 | Refinement: investigate code, callers, and tests | cheap | `max` |
+| Refinement: decide classification and criteria | strong | `medium` |
 | `/next-ticket`: implement one task | strong | `medium` |
 | `/next-ticket`: run validations and regenerate artifacts | cheap | `max` |
 | `/submit-draft-pr` | strong | `medium` |
-| `/review-pr`: plan and judge | strong | `medium` |
+| `/review-pr`: plan | strong | `medium` |
 | `/review-pr`: investigate | cheap | `max` |
+| `/review-pr`: judge | strong | `medium` |
 | `/fix-pr-review` | strong | `medium` |
 | `/complete-pr`: guarded merge and Project finalization | strong | `medium` |
 | `/add-backlog-idea`, including the friction log | strong | `medium` |
@@ -96,15 +94,16 @@ proof, and repair rules, at this tier:
 
 Dispatch each row as `standards/model-routing.md` says: pass its model and
 effort to the Agent call in Claude Code, or use the registered tier agent in
-Codex, and name the stage, tier, model, and effort in the progress message. A model or
-effort the user names for a stage wins for that run and is recorded there.
-Verify cheap-tier output before anything relies on it, and read back the
+Codex, and name the stage, tier, model, and effort in the progress message.
+A model or effort the user names for a stage wins for that run and is recorded
+there. Verify cheap-tier output before anything relies on it, and read back the
 commit of any stage that changed tracked files before the next stage starts.
 
 Use the Agent tool in Claude Code and spawned agents in Codex. User-visible
 tasks or threads (`create_thread`, `fork_thread`, `send_message_to_thread`,
 `codex://threads/...`) are not subagents. Retire a subagent before its context
 passes about 100,000 tokens and brief a fresh one with the compact checkpoint.
+
 Before claiming a parent, check for another active goal or agent run on the
 same repository, parent, branch, and stage. When one exists, do not mutate
 anything; wait for it, or fail closed and name it as the owner if its head or
@@ -133,7 +132,7 @@ the incident was recovered:
   none exists, through `/add-backlog-idea`, with entries under `## Entries`.
 - Each entry is a `###` section: what happened (error, tool, stage, PBI, SHA),
   the workaround, the durable fix (files and change), and how to verify it.
-  Re-read the issue before appending, and read it back after writing.
+- Re-read the issue before appending, and read it back after writing.
 
 The queue holds today's log while it collects entries; from the next day it is
 ordinary Backlog work. When a dod-guard skill is wrong, log the defect and its

@@ -77,9 +77,10 @@ model tier from `standards/model-routing.md`: the strong tier (Opus at medium
 effort, `gpt-5.6-sol` in Codex) plans, decides, and judges, and the cheap tier
 (Haiku at max effort, `gpt-5.6-luna` in Codex) applies written plans, runs
 validations, and answers planned questions. The main thread checks cheap-tier
-output before anything relies on it and reads back each stage's commit. Every
-progress message starts with the local `[HH:MM]` time and shows
-`PBIs completed: P parent / C child`.
+output before anything relies on it and reads back each stage's commit. A stage
+whose owner splits its work, such as `/review-pr`, runs on the strong stage
+agent, which dispatches those split rows itself. Every progress message starts
+with the local `[HH:MM]` time and shows `PBIs completed: P parent / C child`.
 
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:

@@ -107,17 +107,21 @@ test("goal-sdlc keeps one daily friction log and a strict stop", () => {
     ),
   );
   assert.match(skill, prose("three", "evidence-backed attempts"));
+  assert.match(skill, /^- Re-read the issue before appending, and read it back after writing\.$/m);
+  assert.match(skill, /checkpoint\.\n\nBefore claiming a parent/);
 });
 
 const ROUTES = [
   ["Queue snapshot read", "cheap"],
-  ["Refinement: plan research questions, then decide classification and criteria", "strong"],
+  ["Refinement: plan research questions", "strong"],
   ["Refinement: investigate code, callers, and tests", "cheap"],
+  ["Refinement: decide classification and criteria", "strong"],
   ["`/next-ticket`: implement one task", "strong"],
   ["`/next-ticket`: run validations and regenerate artifacts", "cheap"],
   ["`/submit-draft-pr`", "strong"],
-  ["`/review-pr`: plan and judge", "strong"],
+  ["`/review-pr`: plan", "strong"],
   ["`/review-pr`: investigate", "cheap"],
+  ["`/review-pr`: judge", "strong"],
   ["`/fix-pr-review`", "strong"],
   ["`/complete-pr`: guarded merge and Project finalization", "strong"],
   ["`/add-backlog-idea`, including the friction log", "strong"],
@@ -144,6 +148,7 @@ test("goal-sdlc routes every stage to one tier with an explicit effort", () => {
     ],
   );
   assert.match(skill, prose("Each stage runs in one fresh subagent as one step of"));
+  assert.match(skill, prose("A stage's split rows are dispatched by its owner"));
   assert.match(skill, prose("Dispatch each row as `standards/model-routing.md` says"));
   assert.match(skill, prose("pass its model and effort to the Agent call in Claude Code"));
   assert.match(skill, prose("or use the registered tier agent in Codex"));

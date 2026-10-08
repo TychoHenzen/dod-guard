@@ -63,6 +63,23 @@ test("the routing standard defines the tiers, runtime rules, and verification on
   }
 });
 
+// Only an owner's thread dispatches: the stage agent that owns a split stage
+// can spawn agents, and every row worker cannot.
+test("only the strong stage agent can dispatch subagents", async () => {
+  for (const agent of TIER_AGENTS) {
+    const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
+    const tools = source.match(/^tools: (.+)$/m)[1].split(", ");
+    assert.equal(tools.includes("Agent"), agent.name === "stage-strong", agent.name);
+  }
+  for (const phrase of [
+    "Only the thread that owns a skill's procedure dispatches its subagents.",
+    "A worker dispatched for one row never dispatches further",
+    "goal-sdlc's main thread runs that owner's procedure itself",
+  ]) {
+    assert.match(standard, prose(phrase), phrase);
+  }
+});
+
 // Tier definitions live in the standard only; delegating skills refer to it.
 test("no skill or other standard restates the tier definitions", async () => {
   const skillsRoot = new URL("skills/", pluginRoot);
