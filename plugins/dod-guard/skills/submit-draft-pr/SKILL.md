@@ -30,8 +30,8 @@ boundaries in this skill win.
 5. Read the PBI and its linked sub-issues. Stop if a required acceptance
    criterion lacks evidence or a code-backed closed sub-issue lacks a pushed
    implementation commit.
-6. If clearly in-scope ordinary changes were pending, invoke `/commit` on the
-   verified PBI branch. Reread the branch head and rerun the required pre-PR
+6. If clearly in-scope ordinary changes were pending, stage only those
+   reviewed paths, commit them on the verified PBI branch, and push. Reread the branch head and rerun the required pre-PR
    checks before creating or updating the draft. Stop on a failed or unavailable
    check.
 
@@ -63,7 +63,7 @@ or call `update-branch` as metadata repair.
 
 ## Early required-context and base checkpoint
 
-After the draft PR is created or updated, and before built-in Review Summary
+After the draft PR is created or updated, and before `/review-pr`
 or guarded completion, consume the one `## Preflight checkpoint` record in the
 implementation handoff. Read the same-repository branch ref, PR API head, and
 `refs/pull/<number>/head` at one exact pushed SHA, then record the base ref and
@@ -92,16 +92,25 @@ Resolve the active dod-guard plugin root from the directory containing this skil
 then read `<plugin-root>/standards/project-workflow.md`. Do not assume the
 target checkout contains the shared standard. For a structured PBI, compare the pushed
 branch with its outcome, `requirements`, `clarifications`,
-`implementation-plan`, `task-list`, acceptance criteria, and verification
+`implementation-plan`, `task-list`, `lens-ownership`, acceptance criteria, and verification
 evidence before creating or updating the draft PR.
 
 Map every task and linked sub-issue to applicable evidence. For a structured
-parent, require exactly one actionable child for implementation; wiring and
-end-to-end usability; refactoring and quality; and fixing and reliability, and
-map each category to the parent branch or verified remote-state evidence. For a
-code-backed sub-issue, map changed files and commits and require its pushed
-implementation. For an administrative sub-issue, map verified remote-state evidence
-instead of branch evidence. Require one durable parent-issue `## Implementation
+parent, require the task list's functional decomposition, map each linked child
+to one independently deliverable slice, and map each slice or parent-level task
+to the parent branch or verified remote-state evidence. There is no fixed child
+count or category set. The implementation, wiring and end-to-end usability,
+refactoring and code quality, and failure/recovery concerns must still each have
+an owning slice or parent-level task with observable evidence:
+
+Use the canonical lens IDs `implementation`, `wiring/usability`, `quality`, and
+`reliability` only as ownership labels; they do not define the functional
+slices.
+
+For a code-backed sub-issue, map changed files and commits and require its pushed
+implementation.
+For an administrative sub-issue, map verified remote-state evidence instead of
+branch evidence. Require one durable parent-issue `## Implementation
 handoff` comment from `next-ticket`, containing the single `## Acceptance matrix`;
 consume its task, child, commit, check, matrix-row, and user-path
 mappings rather than reconstructing them from passing tests. Validate every
@@ -117,8 +126,8 @@ stale evidence into Convergence. If
 implementation is incomplete or contradicted, write the actionable remainder to
 the issue and stop without creating or updating the draft PR. Do not call
 passing tests convergence by themselves. When all records agree, link the
-handoff instead of restating its mapping. The linked handoff and the built-in
-Review Summary must consume the same matrix and exact head. Include this
+handoff instead of restating its mapping. The linked handoff and the
+Convergence section must name the same exact head. Include this
 section in the draft PR body:
 
 ```text
@@ -146,7 +155,17 @@ Keep the body short. Include:
 - `Closes #<issue-number>`.
 
 Leave the Project item `In Progress`. Report the PR URL, head commit, and
-verification evidence. Stop after the draft PR is updated.
+verification evidence. Stop after the draft PR is updated and Codex's review is
+requested.
+
+## Request the Codex review
+
+Codex reviews a draft only when asked. When the repository uses Codex code
+review (an earlier pull request in it has a comment or review from
+`chatgpt-codex-connector[bot]`), post one `@codex review` comment on the draft
+after it reaches the exact pushed head, unless one was already posted after that
+head was pushed. Do not wait for the result: `/complete-pr` finishes the review
+before it merges.
 
 If pull-request creation or update fails, times out, or returns ambiguously,
 read back the branch's open pull request and its head before retrying. Update

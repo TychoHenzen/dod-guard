@@ -1,4 +1,5 @@
 import { DUPLICATE_WINDOW } from "./config.mjs";
+import { suggestionFor } from "./rule-suggestions.mjs";
 
 const TRIVIAL_LINE = /^[\s{}()[\];,]*$/;
 const COMMENT_LINE = /^\s*(\/\/|#|\*|\/\*)/;
@@ -62,6 +63,7 @@ function emitGroup({ hits, config, reported, out }) {
       severity,
       message: `${DUPLICATE_WINDOW}-line block duplicated at ${where}`,
       metric: hits.length,
+      suggestion: suggestionFor("duplicate-block"),
     });
   }
 }

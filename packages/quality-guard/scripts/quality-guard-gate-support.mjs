@@ -74,17 +74,14 @@ export function advisoryFindings(violations) {
         severity,
         rule = "unknown-rule",
         message = "no message",
+        suggestion,
       } = violation;
       const normalized = SEVERITY_ALIASES[severity];
-      return normalized
-        ? `${file}:${line} [${normalized}] ${rule}: ${message} (advisory finding)`
-        : null;
+      if (!normalized) return null;
+      const finding = `${file}:${line} [${normalized}] ${rule}: ${message} (advisory finding)`;
+      return suggestion ? `${finding}\n  Fix: ${suggestion}` : finding;
     })
     .filter((finding) => finding !== null);
-}
-
-export function hardBoundFindings(violations) {
-  return advisoryFindings(violations);
 }
 function unavailableTail(filePath) {
   return (

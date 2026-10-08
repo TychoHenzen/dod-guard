@@ -7,6 +7,7 @@ const RULE_ORDER = [
   "duplicate-block",
   "types-per-file",
   "file-length",
+  "partial-type-length",
   "complexity",
   "function-length",
   "nesting-depth",

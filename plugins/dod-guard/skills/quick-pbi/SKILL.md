@@ -28,8 +28,18 @@ referenced skill from the active plugin root before invoking it.
 - A concrete feature request authorizes the routine lifecycle without a second
   planning or permission round: create or reuse one associated parent PBI,
   move it to `In Progress`, and carry that feature through one branch, its
-  commit series, and one draft PR. Create child PBIs only for genuinely
-  independent deliverables; keep atomic steps in the parent checklist.
+  commit series, and one draft PR. Use functional decomposition during
+  refinement: create child PBIs only for independently deliverable and
+  verifiable functional slices, and keep dependent atomic steps in the parent
+  checklist. Explicitly assess these review lenses:
+  `implementation`; `wiring/usability` for wiring and end-to-end usability,
+  including proof that the feature is reachable from its intended UI or
+  supported user-facing surface; `quality` for refactoring and code quality,
+  including cleanup; and `reliability` for failure/recovery beyond the happy
+  path. Attach each concern to the slice or parent task that owns it
+  instead of manufacturing category children. Linked child PBIs remain
+  checklist work delivered through the parent's single branch, commit series,
+  and draft PR.
 - Do not pause for ceremonial confirmation before issue, Project, branch,
   commit, push, or draft-PR actions already covered by this skill. Ask only the
   batched refinement questions for material constraints, or a real external
@@ -52,39 +62,22 @@ referenced skill from the active plugin root before invoking it.
    as the implementation handoff. Do not select another ticket.
 4. Invoke `/submit-draft-pr <issue-number>` and retain the returned pull
    request and head.
-5. Invoke `/review-pr <pull-request>` on that exact head. A completed
-   `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` recommendation is a successful
-   review and consumes the one-review slot, including when it contains
-   findings. `/review-pr` is the authoritative producer: its terminal report
-   maps accepted `BLOCKER` findings to `BLOCK`, other accepted findings to
-   `REQUEST_CHANGES`, and no accepted findings to `APPROVE`; a GitHub
-   `COMMENT` review is only publication transport. Read that report's
-   recommendation and reviewed head back from the remote PR; no local ledger
-   is needed. A launcher or process
-   failure is incomplete only when it produces no
-   terminal report with a recommendation; validation, coverage, findings, and
-   required-check results in an existing report are completed review evidence,
-    not an incomplete execution. An active command-session handle is
-    authoritative in-progress state: wait or poll that same handle to a terminal
-    result, preserve the exact command and session evidence, and do not treat
-    missing intermediate output as failure or launch a duplicate check or
-    reviewer. Retry only after explicit cancellation or confirmed session
-    failure; terminate only the invocation-owned process or session when
-    required and confirm it stopped first. For an incomplete execution, record the exact
-   failure class and evidence, read back the remote review state,
-   repair the cause, verify the repair, and retry until a completed
-   recommendation exists; do not repeat an unchanged failure blindly. For a
-   timeout or interruption, first confirm the prior reviewer has stopped, then
-   reconcile the remote PR state and consume any late report before
-   retrying. If the cause cannot be repaired, preserve the checkpoint and stop
-   with a durable blocker. For a completed result with actionable findings,
-   invoke `/fix-pr-review <pull-request> <finding-ids>` with every valid
-   unresolved finding, rerun affected checks, and respond to and resolve each
-   finding. Do not invoke another reviewer after those fixes; continue to
-   `/complete-pr` when no actionable findings remain.
-6. Invoke `/complete-pr <pull-request>` only after the final review is clean,
-   all required checks pass, and the pull request head is unchanged. Its
-   guarded merge is the acceptance boundary authorized by this skill.
+5. Invoke `/review-pr <pull-request>`. It scans the changed files, runs its
+   reviewer agents, and posts one comment-only review. A completed
+   `APPROVE`, `REQUEST_CHANGES`, or `BLOCK` recommendation is the one review of
+   this pull request, including when it contains findings. Read the
+   recommendation and reviewed commit back from the remote PR; no local ledger
+   is needed. If `/review-pr` stops without posting a review, record its
+   reason and the PR URL as a durable blocker and stop. For findings, invoke
+   `/fix-pr-review <pull-request> <finding-ids>` with every valid unresolved
+   finding, rerun affected checks, and respond to and resolve each finding.
+   Do not invoke another review after those fixes.
+6. Invoke `/complete-pr <pull-request>` once every finding is fixed and
+   resolved, or recorded as not actionable with evidence, all required checks
+   pass, and the head is the one the fixes pushed. Its guarded merge is the
+   acceptance boundary authorized by this skill. When it stops on
+   `codex-review-findings`, fix those `GH-<id>` findings with
+   `/fix-pr-review` and invoke `/complete-pr` again.
 
 If any stage fails, stop without rollback or duplicate issues. Report completed
 issue, branch, pull request, commit, review, check, Project, and merge state,

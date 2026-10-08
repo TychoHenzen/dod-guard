@@ -1,6 +1,6 @@
 # dod-guard plugin
 
-This directory is a code-free plugin. It ships skills and six supporting agent
+This directory is a code-free plugin. It ships skills and nine supporting agent
 definitions. It has no package workspace, MCP server, or bundle.
 
 ## Delivery contract
@@ -12,22 +12,26 @@ definitions. It has no package workspace, MCP server, or bundle.
   issue per independently deliverable feature in its target repository.
   Backlog items are issues, not drafts. Use `/refine-backlog-item` to create a
   Todo PBI with observable acceptance criteria, ordinary independent sub-issues,
-  and the mandatory structured-parent child set when applicable.
+  and functional-slice children only when independent delivery warrants them.
   Research precedes priority, Fibonacci effort, and standard classification.
   Verify repository labels and their evidence before Todo; split Effort 13 epics.
 - Use one `codex/<issue>-<slug>` branch and one draft pull request per issue.
 - Use `/next-ticket` to execute a ready PBI. It maps every acceptance
   criterion to fresh evidence before commit and push. Use `/submit-draft-pr`
   after verification.
-- Use `/review-pr` as the one independent review: per-unit angles at medium
-  effort plus a PR-level feature pass, as Git or GitHub inline review or an
-  Azure DevOps Markdown report. It never changes the reviewed branch.
+- Use `/review-pr` as the one independent review: it scans the changed files
+  with quality-guard, runs four reviewer agents, and posts one comment-only
+  GitHub review with a recommendation. It never changes the reviewed branch.
 - Use `/fix-pr-review` to revalidate and fix selected review findings. It
   updates provider state only after verified commits are pushed.
 - Use `/complete-pr` as the final acceptance gate after implementation, review,
   remediation, and current-head checks. It owns guarded ready, REST merge,
   issue confirmation, and remote branch deletion; it verifies completion rather
-  than waiting for a separate human-approval step.
+  than waiting for a separate human-approval step. Where the repository uses
+  Codex code review, `/submit-draft-pr` requests it and `/complete-pr` finishes
+  it before merging.
+- Use `/goal-sdlc` to run that lifecycle across the linked Project queue, one
+  parent PBI at a time.
 - Use `/publish` for a completed marketplace release. Functional releases
   require a PBI and draft PR. Maintenance-only releases skip both and push a
   version-bumped fast-forward with `--force-with-lease` pinned to the saved

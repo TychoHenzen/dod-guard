@@ -19,7 +19,7 @@ test("blind-rewrite uses the current PBI and bounded-subagent workflow", async (
     "Run the overlap gate",
     "Gap audit and handoff",
     "Allow at most two write/gate cycles",
-    "[$dod-guard:codex-advisor](../codex-advisor/SKILL.md)",
+    "[dod-guard:codex-advisor](../codex-advisor/SKILL.md)",
   ]) {
     assert.ok(skill.includes(marker), `missing blind-rewrite marker: ${marker}`);
   }

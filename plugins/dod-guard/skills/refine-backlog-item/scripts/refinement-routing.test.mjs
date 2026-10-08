@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { prose } from "../../../lib/skill-text.mjs";
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const fixtures = await readFile(new URL("../fixtures.md", import.meta.url), "utf8");
@@ -12,11 +13,17 @@ const githubDiscipline = await readFile(
 test("requires explicit Project item types and safe recovery", () => {
   assert.match(
     githubDiscipline,
-    /For every `add_project_item` operation, set `item_type` explicitly:\s+`issue` for issue items and `pull_request` for pull requests\./,
+    prose(
+      "For every `add_project_item` operation, set `item_type` explicitly: `issue` for issue items " +
+        "and `pull_request` for pull requests.",
+    ),
   );
   assert.match(
     githubDiscipline,
-    /If the\s+operation returns `missing required parameter: item_type`, read back\s+the\s+Project before retrying once with the matching type\. Do not retry if the item\s+already exists\./,
+    prose(
+      "If the operation returns `missing required parameter: item_type`, read back the Project " +
+        "before retrying once with the matching type. Do not retry if the item already exists.",
+    ),
   );
   assert.match(githubDiscipline, /If the desired state is already\s+present, record the no-op and issue no mutation/);
   assert.match(githubDiscipline, /For create-like writes, read the exact resource or Project membership first/);
@@ -56,8 +63,11 @@ test("defines provider-neutral interview and debate contracts", () => {
 
 test("routes non-interactive clarification through one bounded advisor", () => {
   assert.match(skill, /During an active goal or explicitly non-interactive refinement/);
-  assert.match(skill, /exactly\s+one fresh `\$dod-guard:codex-advisor`/);
-  assert.match(skill, /`gpt-5\.6-luna` with `max` reasoning effort/);
+  assert.match(skill, /exactly\s+one fresh `dod-guard:codex-advisor`/);
+  assert.match(
+    skill,
+    /Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5\.6-luna` at\s+`max` reasoning effort/,
+  );
   assert.match(skill, /candidate answers and recommended default/);
   assert.match(skill, /Batch every currently independent question into that one advisor brief/);
   assert.match(skill, /Defer a\s+question whose options depend on an advisor answer/);
@@ -87,34 +97,127 @@ test("requires durable discovery records and selective re-refinement", () => {
   assert.match(skill, /Do not create duplicate linked sub-issues or scale labels/);
 });
 
-test("requires one reusable mandatory child for every structured parent category", () => {
-  assert.match(skill, /require exactly one linked child for each category/);
-  assert.match(skill, /implementation; wiring and end-to-end\s+usability; refactoring and quality; fixing and reliability/);
-  assert.match(skill, /Reuse an existing\s+child/);
-  assert.match(skill, /never duplicate a category/);
-  assert.match(skill, /structured-parent exception to the ordinary\s+independence rule/);
-  assert.match(skill, /checklist work[\s\S]*not authorize child branches or pull requests/);
-  assert.match(skill, /four mandatory child categories are linked exactly once/);
-  assert.match(skill, /every child is\s+actionable and `Todo` before moving the parent to `Todo`/);
+test("uses functional decomposition with cross-cutting review lenses", () => {
+  const sectionStart = skill.indexOf("For a structured parent PBI");
+  const sectionEnd = skill.indexOf("Apply the same research", sectionStart);
+  assert.ok(sectionStart >= 0);
+  assert.ok(sectionEnd > sectionStart);
+  const structuredParentSection = skill.slice(sectionStart, sectionEnd);
+
+  assert.match(skill, /use functional decomposition/);
+  assert.match(skill, /independently\s+implemented, tested, and verified/);
+  assert.match(skill, /no\s+child is required merely to fill a fixed\s+category list/);
+  assert.match(structuredParentSection, /implementation, wiring and/);
+  assert.match(structuredParentSection, /end-to-end usability/);
+  assert.match(structuredParentSection, /refactoring and code quality/);
+  assert.match(structuredParentSection, /failure\/recovery reliability/);
+  assert.match(structuredParentSection, /these are review lenses, not mandatory child categories/);
+  assert.match(skill, /map every task to its functional slice/);
+  assert.match(skill, /every\s+linked child matches one independently deliverable functional slice/);
+  assert.match(skill, /Decompose by successive refinement/);
+  assert.match(skill, /leaves the system working with its tests\s+green/);
+  assert.match(skill, /can only be named by\s+its position or layer/);
+  assert.match(skill, /introduces the shared boundary that owns those\s+steps/);
+  assert.match(skill, /deletes what it made obsolete/);
+  assert.doesNotMatch(skill, /require exactly one linked child for each category/);
+  assert.doesNotMatch(skill, /four mandatory child categories are linked exactly once/);
 });
 
 test("manual fixtures include each route and its record markers", () => {
   for (const [fixture, markers] of [
     ["No gap", ["discovery-triage: no gap", "Do not invoke interview, external research, or debate."]],
-    ["Batched clarification", ["Use ordinary conversation through `/interview`", "record `interview-contract`"]],
-    ["Non-interactive clarification", ["Invoke exactly one fresh `$dod-guard:codex-advisor` with `gpt-5.6-luna` and `max`", "Record `advisor-decision`", "re-run triage"]],
-    ["Batched non-interactive clarification", ["Batch every currently independent question into the one advisor brief", "Defer questions that depend on an advisor answer"]],
-    ["Advisor cannot resolve user authority", ["Record `unresolved-decision` with the question, evidence, impact, and next required authority", "Keep the issue in `Backlog`"]],
-    ["Advisor invocation failure", ["Record `unresolved-decision` with the question, researched evidence, exact advisor failure, impact, and next required authority", "Keep the issue in `Backlog`"]],
-    ["Unanswered clarification", ["record `unresolved-decision`", "Do not ask the dependent question or move to `Todo`"]],
-    ["Repository context", ["Inspect the code, callers, tests, and current architecture.", "Record `research-source` findings"]],
-    ["External context", ["Use targeted web or Context7 research.", "Record the source, relevant finding, and uncertainty in `research-source`."]],
-    ["Debate after constraints", ["Use the existing multi-round `$debate` protocol", "Record each expert's lens", "`debate-synthesis`", "`accepted-option`", "`rejected-option`"]],
-    ["Newly discovered gap", ["Return to the matching interview or research route.", "Do not turn the gap into an assumption."]],
-    ["Unavailable workflow", ["Record what is unclear, the unavailable workflow or fallback, the impact, and the next decision or evidence.", "Move to `Todo` only when the PBI remains coherent"]],
-    ["Re-refinement", ["Reuse current summaries, repeat only the stale or new phase, update notes in place, and create no duplicate sub-issues or scale labels."]],
-    ["Structured parent", ["Create exactly one actionable Todo child for implementation, wiring/usability, quality, and reliability before moving the parent to Todo."]],
-    ["Partial structured parent", ["Reuse those two children, add only wiring/usability and reliability, and do not create child branches or PRs."]],
+    ["Batched clarification", ["Use ordinary conversation. Ask both", "record `interview-contract`"]],
+    [
+      "Non-interactive clarification",
+      ["Invoke exactly one fresh `dod-guard:codex-advisor`", "Record `advisor-decision`", "re-run triage"],
+    ],
+    [
+      "Batched non-interactive clarification",
+      [
+        "Batch every currently independent question into the one advisor brief",
+        "Defer questions that depend on an advisor answer",
+      ],
+    ],
+    [
+      "Advisor cannot resolve user authority",
+      [
+        "Record `unresolved-decision` with the question, evidence, impact, and next required authority",
+        "Keep the issue in `Backlog`",
+      ],
+    ],
+    [
+      "Advisor invocation failure",
+      [
+        "Record `unresolved-decision` with the question, researched evidence, exact advisor failure, " +
+          "impact, and next required authority",
+        "Keep the issue in `Backlog`",
+      ],
+    ],
+    [
+      "Unanswered clarification",
+      ["record `unresolved-decision`", "Do not ask the dependent question or move to `Todo`"],
+    ],
+    [
+      "Repository context",
+      ["Inspect the code, callers, tests, and current architecture.", "Record `research-source` findings"],
+    ],
+    [
+      "External context",
+      [
+        "Use targeted web or Context7 research.",
+        "Record the source, relevant finding, and uncertainty in `research-source`.",
+      ],
+    ],
+    [
+      "Debate after constraints",
+      [
+        "Run at least two debate rounds",
+        "Record each expert's lens",
+        "`debate-synthesis`",
+        "`accepted-option`",
+        "`rejected-option`",
+      ],
+    ],
+    [
+      "Newly discovered gap",
+      ["Return to the matching interview or research route.", "Do not turn the gap into an assumption."],
+    ],
+    [
+      "Unavailable workflow",
+      [
+        "Record what is unclear, the unavailable workflow or fallback, the impact, and the next decision or evidence.",
+        "Move to `Todo` only when the PBI remains coherent",
+      ],
+    ],
+    [
+      "Re-refinement",
+      [
+        "Reuse current summaries, repeat only the stale or new phase, update notes in place, " +
+          "and create no duplicate sub-issues or scale labels.",
+      ],
+    ],
+    [
+      "Structured parent",
+      [
+        "Create one actionable Todo child per functional slice, keep dependent steps in the parent " +
+          "checklist, and assess implementation, wiring/usability, quality, and reliability across " +
+          "the owning slices with observable evidence.",
+      ],
+    ],
+    [
+      "Partial structured parent",
+      [
+        "Reuse that child, add only independently deliverable missing slices, and do not create " +
+          "category placeholders, child branches, or PRs.",
+      ],
+    ],
+    [
+      "Repeated variant shape",
+      [
+        "Make the first slice introduce the shared format boundary and move one existing format behind it",
+        "Each slice keeps the system working and deletes the structure it replaces.",
+      ],
+    ],
   ]) {
     const row = fixtures.split("\n").find((line) => line.startsWith(`| ${fixture} |`));
     assert.ok(row, `missing fixture row: ${fixture}`);

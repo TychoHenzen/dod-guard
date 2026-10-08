@@ -63,10 +63,9 @@ the web, or Context7 can establish. When the result is `no gap`, continue
 without invoking a discovery workflow.
 
 When user constraints or priorities are missing, choose the route from the
-current run mode. In ordinary interactive refinement, use the existing
-`/interview` workflow's research-first contract through ordinary conversation.
-This skill intentionally overrides its one-question-at-a-time interaction rule.
-Ask every currently independent clarification question in one round, give each
+current run mode. In ordinary interactive refinement, ask the user through
+ordinary conversation, after research: never ask what the repository, the web,
+or Context7 can answer. Ask every currently independent clarification question in one round, give each
 question multiple concrete options, and mark the recommended default. Defer
 questions whose options depend on an earlier answer to a later round. Record
 the resulting behavioral contract in an `interview-contract` implementation
@@ -74,14 +73,15 @@ note. Wait for the current round's answers before using an answer-dependent
 option.
 
 During an active goal or explicitly non-interactive refinement, invoke exactly
-one fresh `$dod-guard:codex-advisor` instead of asking the user. Use
-`gpt-5.6-luna` with `max` reasoning effort. Give the advisor only the unresolved
+one fresh `dod-guard:codex-advisor` instead of asking the user. It uses
+Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5.6-luna` at
+`max` reasoning effort. Give the advisor only the unresolved
 question, candidate answers and recommended default, repository and PBI context,
 the researched evidence, and the affected acceptance boundary and constraints.
 Batch every currently independent question into that one advisor brief. Defer a
 question whose options depend on an advisor answer until triage runs again.
 The advisor is advice-only and cannot replace user authority. Record an
-`advisor-decision` implementation note with the model, effort, briefing scope,
+`advisor-decision` implementation note with the advisor used, briefing scope,
 advice, and the evidence for accepting or rejecting it. Do not invoke another
 advisor to retry, vote, or refine its answer.
 
@@ -93,11 +93,8 @@ question, evidence, impact, and next required authority, then keep the issue in
 an `unresolved-decision` with the question, researched evidence, exact advisor
 failure, impact, and next required authority, then keep the issue in `Backlog`.
 
-Do not require a provider-specific `AskUserQuestion` tool. If `/interview` is
-unavailable, preserve its contract through ordinary conversation when possible.
-Otherwise record the unavailable workflow, the fallback, its impact, and the
-next decision or evidence needed. Keep the issue in Backlog when a material
-requirement cannot be stated without inventing it.
+Do not require a provider-specific `AskUserQuestion` tool. Keep the issue in
+Backlog when a material requirement cannot be stated without inventing it.
 
 When external facts or context are missing, perform targeted research. Inspect
 the code, callers, tests, and current architecture first. Use the web or
@@ -106,14 +103,16 @@ external evidence. Record each source and its relevant finding in a
 `research-source` implementation note. Do not ask the user for a fact that this
 research can answer.
 
-When a genuine tradeoff remains, frame one concrete decision and invoke the
-existing `$debate` protocol only after the required facts and user constraints
+When a genuine tradeoff remains, frame one concrete decision and debate it
+only after the required facts and user constraints
 are available. Select three to five named real experts whose documented
-positions match the competing concerns. Record each expert's name, lens,
+positions match the competing concerns. Run at least two rounds: each expert
+states a position from their lens, then challenges the strongest opposing
+position. Then synthesize. Record each expert's name, lens,
 competing concern, and why that lens applies, plus the challenges, acknowledged
 uncertainty, synthesis, accepted option, and rejected options in
 `debate-synthesis`, `accepted-option`, and `rejected-option` implementation
-notes. Follow the existing multi-round protocol, keep raw debate scratch files
+notes. Keep raw debate scratch files
 outside the repository, and do not turn expert speculation into a requirement.
 
 After each interview, research, or debate round, run the triage again. If new
@@ -174,15 +173,50 @@ its own outcome, implementation notes, acceptance criteria, and verification.
 Keep dependent steps in the parent PBI instead of inventing administrative
 subtasks.
 
-For a structured parent PBI, require exactly one linked child for each category
-below before moving the parent to `Todo`: implementation; wiring and end-to-end
-usability; refactoring and quality; fixing and reliability. Reuse an existing
-child when its outcome and acceptance criteria already own that category. Add
-only missing categories, never duplicate a category, and give every created
+For a structured parent PBI, use functional decomposition: start from the
+user actions and split the outcome into a small set of coherent functional
+slices. Decompose each slice only to a useful level that can be independently
+implemented, tested, and verified; avoid tiny administrative subtasks. Create
+one linked child per useful unit only when it warrants independent tracking;
+keep dependent steps in the parent checklist. A cohesive feature may remain
+one parent-level checklist, and no child is required merely to fill a fixed
+category list. Reuse an existing child when its outcome and acceptance
+criteria already own the unit. Never duplicate a unit, and give every created
 child minimal parent context, scope, acceptance criteria, and verification.
-These mandatory children are the structured-parent exception to the ordinary
-independence rule. They are checklist work within the parent's one branch and
-one PR; they do not authorize child branches or pull requests.
+
+Decompose by successive refinement, not by up-front partitioning:
+
+- Order slices so that each one leaves the system working with its tests
+  green. Make the first slice the thinnest end-to-end path through the
+  supported surface, and let later slices extend that running path rather
+  than build parts that only work once everything lands.
+- Name each slice by the behavior it adds. A slice that can only be named by
+  its position or layer ("part two", "the parsing layer", "backend changes")
+  is cut in the wrong place.
+- Look for a repeated shape before splitting by variant. When every variant
+  (each format, type, provider, or command) needs the same steps in several
+  places, the first slice introduces the shared boundary that owns those
+  steps and converts one existing variant to it. Each remaining variant is
+  then a local slice behind that boundary, not a new branch in every caller.
+- Keep a concept's validation and error behavior with the slice that owns
+  the concept, so the main path stays readable and a failure is reported
+  where its cause is known.
+- When a slice replaces old structure, the same slice migrates the callers
+  and deletes what it made obsolete, such as duplicate maps, forwarding
+  code, or a superseded path. Do not leave the deletion for a later cleanup
+  child.
+- Stop decomposing when each slice is clear enough to implement and verify
+  for the current outcome. Do not invent abstractions or children for
+  speculative future variants.
+
+For every structured PBI, explicitly assess implementation, wiring and
+end-to-end usability (including proof that the feature is reachable from its
+intended UI or supported user-facing surface), refactoring and code quality,
+and failure/recovery reliability beyond the happy path. Attach each concern to the
+functional child or parent-level task that owns it, with observable acceptance and verification;
+these are review lenses, not mandatory child categories. Linked children are
+checklist work within the parent's one branch and one PR; they do not
+authorize child branches or pull requests.
 
 Apply the same research, sections, and label requirements to any sub-issue
 being refined into a PBI. Reuse appropriate existing linked issues.
@@ -202,7 +236,8 @@ Keep concise discovery evidence in `## Implementation notes`. Include a
 
 - `interview-contract`: the questions asked, options, recommended defaults,
   answers, and deferred dependent questions;
-- `advisor-decision`: the advisor model and effort, bounded briefing scope,
+- `advisor-decision`: the advisor used (Claude advisor tool, or the Codex
+  model and effort), bounded briefing scope,
   advice, and the evidence for accepting or rejecting it;
 - `research-source`: the source, relevant finding, and remaining uncertainty;
 - `debate-synthesis`: the decision, each named expert's lens and why it applies
@@ -224,14 +259,15 @@ from the directory containing this skill, then read
 `<plugin-root>/standards/project-workflow.md`. Do not assume the target checkout
 contains the shared standard. Keep these named records in
 `## Implementation notes`: `requirements`, `clarifications`,
-`implementation-plan`, and `task-list`. Use the existing discovery markers as
+`implementation-plan`, `task-list`, and `lens-ownership`. Use the existing discovery markers as
 the evidence inside those records. The task list must identify dependencies and
 mark a task `independent` only when it can be committed and closed separately.
 Write each record as a distinct named subsection, keep the task order stable,
-and map every task to exactly one mandatory child category or explicitly mark
-it as a parent-level convergence task. The four child categories are checklist
-work on the parent's one branch and one pull request, not separate delivery
-units.
+and map every task to its functional slice or explicitly mark it as a
+parent-level convergence task. Record where the implementation, wiring and
+end-to-end usability, code quality, and reliability lenses are covered, or why
+one is not applicable. Functional-slice children are checklist work on the
+parent's one branch and one pull request, not separate delivery units.
 Small, clear fixes may use the ordinary path and do not need these records.
 
 For re-refinement, read the existing discovery notes and compare them with the
@@ -264,9 +300,21 @@ label applies. Confirm unknown priority explains missing evidence and effort
 is below 13 before moving that PBI to `Todo` with the shared REST Project status
 writer.
 For a structured PBI, also confirm the named `requirements`, `clarifications`,
-`implementation-plan`, and `task-list` records are present and coherent; the
-four mandatory child categories are linked exactly once; and every child is
-actionable and `Todo` before moving the parent to `Todo`.
+`implementation-plan`, `task-list`, and `lens-ownership` records are present and coherent; every
+linked child matches one independently deliverable functional slice (each is separately tracked)
+in the task list, is actionable, and is `Todo`; and the four review lenses each have
+an owning child or parent-level task plus mapped observable acceptance or
+verification evidence. Pass the complete task, slice, owner, and evidence mapping
+through the same executable convergence proof used by `next-ticket` before moving
+the parent to `Todo`; `submit-draft-pr` and `complete-pr` consume or revalidate the
+resulting handoff after implementation and PR creation. Stop on any actionable
+remainder. Do not require a fixed
+child count or create category placeholders. When no linked child represents
+cross-cutting parent work, record an explicit parent-level task with
+`parentLevel: "convergence"` so that ownership remains visible and verifiable.
+The executable proof rejects duplicate or missing slice links, unowned slices,
+duplicate evidence, missing or duplicate review lenses, invalid acceptance IDs,
+and incomplete or stale acceptance-matrix rows.
 If an edit fails or readback disagrees, stop before the status change and
 report the actual partial state. Do not claim the PBI is ready.
 

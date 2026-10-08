@@ -59,7 +59,7 @@ is missing.
 
 The test creates a temporary project and isolated config/data directories,
 checks `opencode v2.0.18`, verifies plugin list/check output, activates the
-`next-ticket` skill, and confirms the `review-pr-feature` agent. It removes the
+`next-ticket` skill, and confirms the `doc-conflict-judge` agent. It removes the
 fixture afterward and does not edit `PATH` or the user's OpenCode config.
 
 Every skill applies the shared working defaults in
@@ -89,8 +89,9 @@ correctness authority.
 
 `/add-backlog-idea` splits a brain dump into independently deliverable Backlog
 issues. `/refine-backlog-item` researches one, triages missing user constraints
-and external context, uses interview for interactive refinement or one fresh
-`gpt-5.6-luna` advisor at max reasoning effort for an active goal or explicitly
+and external context, asks batched clarification questions in ordinary
+conversation for interactive refinement or one fresh `/codex-advisor` call for
+an active goal or explicitly
 non-interactive run, and uses targeted research or debate only when their
 prerequisites are known. It then assigns justified priority, Fibonacci effort,
 and standard labels before moving a coherent,
@@ -99,10 +100,13 @@ the issue in Backlog. Epics stay there until split into independently
 deliverable PBIs. `/next-ticket`
 implements that PBI, maps every acceptance criterion to fresh evidence, and
 commits and pushes. `/submit-draft-pr` submits its verified draft pull
-request. `/review-pr` is the one independent review: it splits the change
-into units, reviews each at medium effort with 1-4 angles chosen by the kind
-of code, and runs one PR-level feature pass. After review, `/complete-pr` treats its invocation as
-acceptance of the current head and completes the guarded merge.
+request. `/review-pr` is the one independent review: it scans the changed
+files with quality-guard, runs four reviewer agents, and posts one comment-only
+review with a recommendation. After review, `/complete-pr` treats its invocation as
+acceptance of the current head and completes the guarded merge. In a repository
+that uses Codex code review, `/submit-draft-pr` requests Codex's review and
+`/complete-pr` waits for it to finish before merging, stopping on any finding
+nobody has answered.
 `/fix-pr-review` revalidates and fixes selected review findings before that
 acceptance. Each delivery skill resolves the current repository and requires
 exactly one open GitHub Project explicitly linked to it.
@@ -136,15 +140,22 @@ For feature work or material ambiguity, use the structured path in the
 | Requirements | `/refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
 | Clarification | `/refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
 | Plan | `/refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
-| Tasks | `/refine-backlog-item` | `task-list` record and four mandatory linked child PBIs for structured work | `Todo` PBI hands every child evidence to implementation on one branch and PR. |
+| Tasks | `/refine-backlog-item` | `task-list` record and functional-slice child PBIs when independent delivery warrants them | `Todo` PBI hands every slice and parent task evidence to implementation on one branch and PR. |
 | Implementation handoff | `/next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
 | Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
 For structured work, `/next-ticket` records one `## Implementation handoff`
-comment on the parent issue. It maps each ordered task and mandatory child to
-the pushed commit or verified remote-state evidence, fresh checks, and the
-current user-path result, followed by one `## Acceptance matrix` with exact-head
-proof rows for every acceptance criterion and mandatory user-facing path.
+comment on the parent issue. It maps every declared functional slice, ordered
+task, and linked functional-slice child to the pushed commit or verified
+remote-state evidence, fresh checks, and the current user-path result. It also
+records observable evidence for the `implementation`, `wiring/usability`,
+`quality` (code quality), and `reliability` (failure/recovery) owners, followed
+by one `## Acceptance matrix` with exact-head proof rows for every acceptance
+criterion and mandatory user-facing path. Each lens entry carries its canonical
+ID, owner, observable evidence, accepted head, `acceptanceEvidence`, and
+`verificationEvidence`. Every slice, task, child, lens, and evidence reference
+maps exactly once to an owner; duplicate, ownerless, stale, or contradictory
+evidence remains an actionable remainder.
 `/submit-draft-pr` checks that same matrix against the issue contract, then
 links it from `## Convergence` instead of restating it; missing,
 contradicted, or stale evidence remains an actionable remainder. Small, clear
@@ -165,15 +176,16 @@ GitHub-backed skills share the request policy in
 | `/setup-repository` | Bootstrap a local project into the protected dod-guard GitHub workflow. |
 | `/add-backlog-idea` | Capture each independently deliverable feature as a Backlog issue. |
 | `/quick-pbi` | Run backlog capture through guarded merge without extra prompts outside refinement. |
+| `/goal-sdlc` | Work through the linked Project queue one parent PBI at a time, running the lifecycle skills on each until no eligible work remains. |
 | `/refine-backlog-item` | Deliberatively refine a Backlog issue, moving it to Todo only when its PBI is coherent and independently deliverable. |
 | `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
 | `/learn-repository` | Learn one repository concept at a time from current source evidence. |
 | `/teach-back` | Explain a repository concept while a curious student tests the explanation. |
 | `/step-by-step` | Run one explicit ordered plan through fresh bounded subagents. |
-| `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
-| `/review-pr` | Review Git or GitHub inline with four agents, or produce one Azure DevOps report. |
-| `/fix-pr-review` | Revalidate and fix selected GitHub, local Git, or Azure review findings. |
-| `/complete-pr` | Complete an explicitly accepted draft through guarded REST merge and branch deletion. |
+| `/submit-draft-pr` | Create or update the PBI's verified draft pull request and request Codex's review when the repository uses it. |
+| `/review-pr` | Scan a GitHub pull request's changed files and review them with four agents into one comment-only review. |
+| `/fix-pr-review` | Revalidate and fix selected GitHub review findings. |
+| `/complete-pr` | Complete an explicitly accepted draft through guarded REST merge and branch deletion, after Codex's review of the accepted head finishes without open findings. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
 | `/codex-advisor` | Get a bounded advice-only second opinion from a separate Codex process. |
@@ -184,7 +196,4 @@ GitHub-backed skills share the request policy in
 | `/wiring-audit` | Check whether a feature reaches its intended user through the repository's real surfaces. |
 | `/usability-review` | Review user-facing workflows for usability, accessibility, and AI trust cues. |
 
-`review-pr-feature`, `review-pr-design`, `review-pr-reliability`, and
-`review-pr-hygiene` provide the independent review angles. The coordinator
-validates final-state lines and removes duplicate root causes before publishing
-comments. The plugin has no MCP server or runtime bundle.
+The plugin has no MCP server or runtime bundle.

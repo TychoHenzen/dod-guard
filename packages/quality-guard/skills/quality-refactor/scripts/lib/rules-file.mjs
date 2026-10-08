@@ -7,6 +7,7 @@ import { checkFunction } from "./rules-file-state.mjs";
 import { checkTypes } from "./rules-file-checks.mjs";
 import { checkTuples } from "./rules-file-tuples.mjs";
 import { checkLines } from "./rules-file-line-check.mjs";
+import { checkPartialTypes } from "./rules-file-partial.mjs";
 import { findRustTestRegions, inTestRegion } from "./rules-file-rust-tests.mjs";
 import { strip } from "./strip.mjs";
 
@@ -22,6 +23,7 @@ export function scanFile(file, config) {
   const out = [];
   checkLines(file, config, out);
   checkTypes({ file, config, types, code, starts, spans, out });
+  checkPartialTypes({ file, config, code, types, out });
   checkTuples({ file, config, code, starts, out });
   checkComments({ file, config, comments, codeLines: code.split("\n"), out });
   const context = { starts, spans, code, interpolations };

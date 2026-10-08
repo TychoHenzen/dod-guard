@@ -17,7 +17,7 @@ Backwards compatibility alone never saves a file. Keep it only when
 somebody names a live consumer. Git history is the safety net, so once
 the evidence is in, deletion is the default answer.
 
-Two repositories are out of scope. Skip a published library or SDK. A
+Two cases are out of scope. Skip a published library or SDK. A
 deprecated export there may have consumers you cannot see. Skip a pair
 that turns out to be a facade over an implementation. That is one design,
 not two.
@@ -48,9 +48,10 @@ Those two graph entries are MCP tools. Call them as tools. They are not
 shell commands and they fail in a shell.
 
 Every command below runs on the user's machine, which may be Windows.
-There the shell is cmd.exe, which has no `grep`, `head`, `tail`, `uniq`,
-POSIX `sort`, or `$(...)` substitution. Its `find` searches file contents,
-not names. It has no single-quote grouping, so `'...'` makes it look for a
+There the shell can be PowerShell, Git Bash, or cmd.exe, depending on the
+client and tool. PowerShell and cmd.exe have no `grep`, `head`, `tail`,
+`uniq`, or POSIX `sort`. cmd.exe's `find` searches file contents, not names,
+and cmd.exe has no single-quote grouping, so `'...'` makes it look for a
 program with that name.
 
 So use `rg` for every scan, including scans over file names. Quote with
@@ -190,9 +191,9 @@ newer side's tests. Commit. Only then move to the next one. Porting the
 whole set and deleting before you run anything hides a change that does
 not compile against the new interface. By then the source is gone.
 
-If test cases have to move from the dying file onto its replacement, hand
-that off. Invoke `/dod-guard:adversarial-workflow` and tell it to start at
-phase 2, the test audit, over the merged test file.
+If test cases have to move from the dying file onto its replacement, port
+them one at a time. Break the behavior each one covers and confirm it fails,
+so a moved test still tests something on its new target.
 
 ## Stage 3, prove removal is safe
 
@@ -304,12 +305,17 @@ and would otherwise read as live references that block the removal.
 Remove a dependency whose only consumer just went, using the project's
 package manager (e.g. `npm remove`, `cargo remove`, `pip uninstall`).
 
-If a deletion turns out wrong, bring the file back from the last commit
-that held it.
+If a deletion turns out wrong before it is committed, restore it from
+`HEAD`. After the commit, restore it from the parent of the commit that
+deleted it, which `--diff-filter=D` finds even when later commits followed.
 
 ```
-git checkout HEAD~1 -- src/pricing/shipping-rate.ts
+git checkout HEAD -- src/pricing/shipping-rate.ts
+git log -n 1 --diff-filter=D --format=%h -- src/pricing/shipping-rate.ts
+git checkout <that-hash>~1 -- src/pricing/shipping-rate.ts
 ```
+
+Write `~1`, not `^`: cmd.exe treats `^` as its escape character and drops it.
 
 ## After the delete
 
@@ -318,10 +324,9 @@ full test suite. Run its linter, because a removal leaves imports behind
 that only the linter names. Then sweep the removed names once more with the
 stage 3 command and read the output.
 
-If the work is under a DoD, prove the symbol is gone with command
-`rg shipRate` and predicate `exit_code_not: 0`, because ripgrep exits 1
-when it matches nothing. To prove a name is absent from build or lint
-output instead, run that command and use `output_not_contains`.
+To prove the symbol is gone, run `rg shipRate` and expect exit code 1,
+which is ripgrep's answer for no match. Exit code 0 means a reference
+survived, and exit code 2 means the search itself failed.
 
 Report what you deleted, what you kept and why, what you ported before
 deleting, and every weak pair you left alone. Include any reusable lesson in

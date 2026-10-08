@@ -35,7 +35,8 @@ boundaries in this skill win.
 5. Read the pull request, linked issue, review result, and latest verification
    evidence. Stop if the draft does not represent the reviewed and verified code.
 6. If the classified pending changes are clearly part of the accepted PBI,
-   invoke `/commit` on this verified branch. Reread the pull request head and
+   stage only those reviewed paths, commit them on this verified branch, and
+   push. Reread the pull request head and
    verification evidence. Stop unless the new head has fresh review and
    verification evidence for those changes.
 
@@ -92,6 +93,15 @@ it marks it ready. If it is already ready, it preserves that state. It then:
 - enables repository auto-merge when needed;
 - merges through the REST pull-request endpoint with the expected head SHA;
 - waits for every required check before merging and stops on failure or cancellation;
+- finishes Codex's code review before merging when Codex took part in the pull
+  request: it waits for the review of the accepted head to complete, including
+  the run that the ready transition starts, and stops with
+  `codex-review-findings` and each finding's `GH-<id>` while any Codex finding
+  on that review has no reply from an owner, member, or collaborator. It also
+  stops on `codex-review-failed`,
+  `codex-review-missing-for-head`, or `codex-summary-unrecognized`. Fix the
+  findings with `/fix-pr-review`, which replies to each one, then run this
+  skill again on the new head;
 - if the normal required-check query is empty, reads branch protection and
   verifies check runs and commit statuses from the exact pull-request head,
   including any expected GitHub App provider;
@@ -135,9 +145,38 @@ whose SHA differs from the merged pull request head.
 
 Only after the helper returns a verified merge result, read the linked parent
 PBI, its linked child issues, and their one shared Project. For a structured
-parent, require exactly one child for implementation; wiring and end-to-end
-usability; refactoring and quality; and fixing and reliability. Resolve the
+parent, require each linked child to match one independently delivered and
+verified functional slice recorded in the task list. There is no fixed child
+count or category set; finalize every linked child and every parent-level task
+that owns implementation, wiring and end-to-end usability, code quality, or
+failure/recovery work. Resolve the
 shared Project number, REST item IDs, Status-field ID, and `Done` option ID once.
+Before finalizing a structured parent, consume the current handoff through
+`complete-pr/scripts/finalization-gate.mjs`, which calls the exported
+`evaluateConvergence` API from `next-ticket/scripts/structured-workflow-proof.mjs`,
+and stop on any actionable remainder. Load its `records`, `tasks`, `children`,
+`reviewLenses`, `acceptance`, `acceptanceMatrix`, and exact pushed `headSha`,
+then require `outcome: "verified"`; each lens must also resolve its
+`acceptanceEvidence` and `verificationEvidence` through the exact-head matrix.
+Any other outcome stops finalization. Direct Project readback does not replace
+this convergence proof.
+
+Use the shipped helper as an import-based gate, passing the parsed handoff object
+from the durable issue comment:
+
+```js
+import { evaluateStructuredFinalization } from "./scripts/finalization-gate.mjs";
+const result = evaluateStructuredFinalization(handoff);
+if (result.nextStep !== "project-status.mjs") throw new Error(result.remainder.join("; "));
+```
+Require every parent-level task that owns one of those review lenses to carry
+explicit acceptance and verification evidence in the durable handoff and read
+it back before finalizing the Project item, even when it has no linked child
+commit. The evidence must resolve through the handoff's acceptance matrix, whose
+mandatory user-path rows prove wiring/usability and failure/recovery behavior at
+the exact pushed head. The finalization gate binds `wiring/usability` to
+`interactive-control` and `browser/e2e`, and `reliability` to `data/error` and
+`recovery`; one passing row cannot stand in for multiple lenses.
 Use the shared status-write runner with the child item IDs first and the parent item ID last:
 
 ```text

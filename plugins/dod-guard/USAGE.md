@@ -65,10 +65,14 @@ Run the complete lifecycle without intermediate confirmation:
 `/complete-pr` in order. It asks only the batched clarification questions that
 refinement requires. It fixes every validated actionable review finding and
 uses that completed review's recommendation before the guarded merge; it does
-not invoke another reviewer after fixes. If the reviewer launcher or process
-fails before producing a terminal recommendation, it reconciles the ledger and
-remote review state, repairs the cause, and retries rather than treating the
-execution failure as a review result.
+not invoke another review after fixes. If `/review-pr` cannot post
+its review, the run stops with that blocker.
+
+`goal-sdlc` repeats that lifecycle across the linked Project's queue. It picks
+the next parent PBI with `scripts/select-next.mjs`, runs the `quick-pbi` stages
+from the one that parent has reached, and continues until no eligible work
+remains. A parent that needs a user answer or is externally blocked stays in
+place while the queue moves on.
 
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:
@@ -81,10 +85,10 @@ Refinement reads affected code, callers, tests, and architecture before choosing
 priority, Fibonacci effort, and standard labels from the repository's live
 descriptions. It then triages missing user constraints, external context, and
 genuine tradeoffs. Interactive refinement uses ordinary conversation to batch
-independent `/interview` questions; an active goal or explicitly non-interactive
-run asks one fresh `/codex-advisor` with `gpt-5.6-luna` at `max` effort for
-bounded advice instead. Targeted web or Context7 research resolves external
-facts, and `$debate` runs only after facts and constraints are known. Discovery
+independent clarification questions; an active goal or explicitly
+non-interactive run asks one fresh `/codex-advisor` for bounded advice instead.
+Targeted web or Context7 research resolves external facts, and an expert-lens
+debate runs only after facts and constraints are known. Discovery
 evidence,
 accepted and rejected options, and unresolved decisions stay in the issue's
 implementation notes. Missing scale labels stop refinement. Re-refinement from
@@ -109,13 +113,19 @@ convergence check. The canonical records and handoffs are in
 | Requirements | `/refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
 | Clarification | `/refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
 | Plan | `/refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
-| Tasks | `/refine-backlog-item` | `task-list` record and four mandatory linked child PBIs for structured work | `Todo` PBI hands every child evidence to implementation on one branch and PR. |
+| Tasks | `/refine-backlog-item` | `task-list` record and functional-slice child PBIs when independent delivery warrants them | `Todo` PBI hands every slice and parent task evidence to implementation on one branch and PR. |
 | Implementation handoff | `/next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
 | Convergence | `/submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
 On the structured path, `/next-ticket` leaves one durable `## Implementation
-handoff` comment on the parent issue, mapping every task and mandatory child to
-its commit or verified remote-state evidence, checks, and user-path result,
+handoff` comment on the parent issue, mapping every declared functional slice,
+task, and linked functional-slice child to its commit or verified remote-state
+evidence, checks, and user-path result. Each review lens records its canonical
+ID, owning slice or parent-level task, observable evidence, accepted head,
+`acceptanceEvidence`, and `verificationEvidence`; a childless parent task uses
+`parentLevel: "convergence"`. The proof requires exact-once slice, task, child,
+and lens mappings, unique owner-resolvable evidence, and stops on malformed,
+duplicate, stale, or contradictory evidence.
 followed by one `## Acceptance matrix` with exact-head rows for each acceptance
 criterion and mandatory user-facing path.
 `/submit-draft-pr` compares that handoff with the issue contract and links it
@@ -136,9 +146,10 @@ Cross-shell RTK, native-executable, path, output, and precondition commands
 follow the repository contract in
 [`docs/command-composition.md`](docs/command-composition.md).
 
-Start or continue the Todo PBI from the repository's main checkout. Use an
-isolated worktree only when that checkout cannot safely retain the selected
-branch and user-owned changes, and record the exception and recovery path:
+Start or continue the Todo PBI from the repository's main checkout. When that
+checkout cannot safely retain the selected branch and user-owned changes, the
+skill stops and reports the reason and recovery path; it never creates a Git
+worktree:
 
 ```text
 /dod-guard:next-ticket 42
@@ -193,14 +204,16 @@ when to switch.
 
 ## Ask for a bounded second opinion
 
-Use the Codex advisor when a fix or design needs independent advice before
-implementation:
+Use the advisor when a fix or design needs independent advice before
+implementation. In Claude Code it calls Claude's built-in `advisor` tool after
+writing the brief into the conversation; without that tool, and in Codex, it
+runs a separate Codex process:
 
 ```text
 /dod-guard:codex-advisor
 ```
 
-The skill sends a bounded prompt containing fixed advice-only instructions and
+The Codex path sends a bounded prompt containing fixed advice-only instructions and
 the complete problem description through stdin to a separate `codex exec`
 process. It uses `gpt-5.6-luna` with `max` reasoning by default and accepts an
 optional `--model=<model>` setting. It uses an
@@ -235,39 +248,32 @@ evidence is recorded in a comment.
 agent must not approve its pull request, mark it ready, merge it, or close the
 parent issue.
 
-Review the current branch, a named Git ref, or a GitHub pull request without
-checking it out:
+Review a GitHub pull request's changed files:
 
 ```text
 /dod-guard:review-pr
-/dod-guard:review-pr origin/codex/42-example
 /dod-guard:review-pr https://github.com/owner/repository/pull/42
 ```
 
-The skill loads the linked PBI and subtasks, then runs feature, design,
-reliability, and hygiene reviewers independently. Local Git findings use the
-active client's inline code comments. GitHub findings become one comment-only
-review on validated changed lines.
+The PR head must be checked out. The skill scans the whole repository with the
+installed quality-guard scanner and keeps the findings in changed files, then
+runs the feature, design, reliability, and hygiene reviewer agents against the
+PBI. It posts one comment-only review: one comment per changed file for
+scanner findings, one per reviewer finding, each with a `GH-<id>`, and a
+recommendation of `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES` for other
+findings, or `APPROVE` for none. It posts at most one review per pull request.
+quality-guard must be installed and enabled.
 
-Azure DevOps is an additional explicit mode. It writes one Markdown report and
-posts no inline comments:
-
-```text
-/dod-guard:review-pr https://dev.azure.com/owner/project/_git/repository/pullrequest/42 reports/review-42.md
-```
-
-Fix selected local or GitHub inline findings, or Azure report entries:
+Fix selected GitHub review findings:
 
 ```text
 /dod-guard:fix-pr-review #42 GH-12345
-/dod-guard:fix-pr-review reports/review-42.md ADO-42-1
 ```
 
 The skill reloads the parent PBI and linked subtasks, then rechecks each
-finding against the current head. It skips stale or unsupported findings. It
-pushes the smallest verified fix before replying to or resolving GitHub
-threads. Azure entries change to `Fixed` with commit and check evidence while
-unresolved entries stay unchanged.
+finding against the current head. It skips resolved or unsupported findings,
+and rechecks outdated ones instead of skipping them. It pushes the smallest
+verified fix before replying to or resolving GitHub threads.
 
 After review, explicitly accept and complete the current pull request:
 

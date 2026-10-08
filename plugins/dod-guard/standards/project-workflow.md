@@ -38,20 +38,50 @@ and pull request as the source of truth.
 | Requirements | `refine-backlog-item` | Issue `Outcome`, `Scope`, and checked `Acceptance criteria` | Clarify gaps, then plan. |
 | Clarification | `refine-backlog-item` | `Implementation notes` with decisions and discovery evidence | Only resolved requirements enter the plan. |
 | Plan | `refine-backlog-item` | `implementation-plan` record in the issue | Break the plan into actionable tasks. |
-| Tasks | `refine-backlog-item` | `task-list` record and four mandatory linked child PBIs for structured work | `Todo` PBI hands every child evidence to implementation on one branch and PR. |
+| Tasks | `refine-backlog-item` | `task-list` record and functional-slice child PBIs when independent delivery warrants them | `Todo` PBI hands every slice and parent task evidence to implementation on one branch and PR. |
 | Implementation handoff | `next-ticket` | Issue task list, issue branch, commits, and verification evidence | A pushed branch can enter draft-PR convergence. |
 | Convergence | `submit-draft-pr` | Draft PR `## Convergence` section and any actionable issue remainder | Review and acceptance remain separate. |
 
 ## Structured handoff contract
 
-A structured PBI is implementation-ready only when the issue contains the four
-named records and the four mandatory child categories exactly once. The branch
-does not replace those records: it supplies the implementation evidence that
-the records request.
+A structured PBI is implementation-ready when the issue contains the five named
+records and decomposes the work into coherent, user-action-first functional
+slices. Every declared slice must have a useful independently implementable,
+testable, and verifiable user-facing boundary. Parent-level tasks may own
+explicitly cross-cutting slices without inventing a child; a task without a
+child must carry `parentLevel: "convergence"` to mark that ownership
+explicitly. Every linked child maps back to exactly one declared slice.
+
+Implementation, wiring and end-to-end usability, code quality, and
+failure/recovery each need exactly one owning slice or parent-level task with
+observable evidence bound to the accepted head. There is no fixed child count
+or category set. The branch does not replace these records: it supplies the
+implementation evidence they request.
+The executable proof at `skills/next-ticket/scripts/structured-workflow-proof.mjs`
+and its focused tests enforce the canonical lens IDs `implementation`,
+`wiring/usability`, `quality`, and `reliability`; prose may expand those IDs
+to the corresponding user-facing concern. Each lens entry records its owner,
+observable evidence, `headSha`, and the acceptance-matrix `acceptanceEvidence`
+and `verificationEvidence` that prove the lens before Project finalization.
+
+Task-list records use `parentLevel: "convergence"` on a task that owns
+cross-cutting parent work without a linked child. The following is an
+illustrative fragment; the executable contract and failure cases live in
+`skills/next-ticket/scripts/structured-workflow-proof.mjs` and its focused
+tests:
+```json
+{
+  "id": "task-1",
+  "parentLevel": "convergence",
+  "evidence": "...",
+  "acceptanceEvidence": "matrix-evidence-1",
+  "verificationEvidence": "matrix-proof-1"
+}
+```
 
 `next-ticket` writes one durable `## Implementation handoff` issue comment (or
 updates the existing one) after pushing the branch. That comment maps every
-ordered task and mandatory child to its commit or verified remote-state
+ordered task and linked functional-slice child to its commit or verified remote-state
 evidence, the checks that prove it, and the current user-path result. It is the
 handoff from refinement to draft-PR convergence; it is not a local planning
 file.
@@ -86,6 +116,12 @@ notes`. The exact prose can vary, but the names and meaning stay stable:
 - `implementation-plan`: affected owners, approach, and verification approach.
 - `task-list`: ordered tasks with a clear dependency and an `independent`
   marker only when a task can be committed and closed separately.
+- `lens-ownership`: an array containing exactly one `implementation`,
+  `wiring/usability`, `quality`, and `reliability` (failure/recovery) entry.
+  Each entry repeats its
+  review-lens id, owner, observable evidence, accepted head, and any acceptance
+  or verification evidence; the executable handoff proof compares this record
+  with the review-lens input instead of treating record presence as proof.
 
 `refine-backlog-item` owns these records. It keeps a material unresolved
 requirement in `Backlog` and moves a coherent PBI to `Todo`. `next-ticket`
@@ -96,6 +132,7 @@ files, commits, and checks. It does not create a parallel local plan.
 
 Before a structured PBI gets a draft PR, `submit-draft-pr` compares the
 implementation with the outcome, requirements, clarifications, plan, tasks,
+lens ownership,
 acceptance criteria, and verification evidence in the `## Implementation
 handoff` comment. That comment is the one evidence record. The draft PR body
 links it instead of restating it:
@@ -107,13 +144,20 @@ links it instead of restating it:
 - Remainder: none
 ```
 
-Convergence is passing only when every named record exists, every task and
-mandatory child is mapped by the implementation handoff, every acceptance
-criterion has fresh evidence at the exact head; every matrix row does too, and
-no item is contradicted or unresolved. The required-context and base/mergeability
-checkpoint must also be stable at that exact head. Codex's built-in Review
-Summary consumes that same matrix and checkpoint; neither is copied into a
-second review ledger.
+Convergence is passing only when every named record exists and every declared
+slice, task, and linked functional-slice child is mapped exactly once by the
+implementation handoff. Each canonical review lens appears exactly once and
+resolves to one task or slice owner; its evidence must be declared by that
+owner and bound to the accepted head. Every declared evidence identifier is
+unique; reuse the underlying commit or check with a distinct owner-specific
+identifier rather than redeclaring one token. Every evidence reference resolves
+to its owner. Every acceptance criterion and matrix row has fresh evidence at
+the exact head. No item is
+contradicted or unresolved. The
+required-context and base/mergeability
+checkpoint must also be stable at that exact head. `/review-pr` then reviews
+that head; neither record is copied into a second review
+ledger.
 
 An incomplete or contradicted result is not reported as complete. Write the
 actionable remainder, with the next task and owner, to the PBI and stop before

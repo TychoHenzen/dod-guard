@@ -118,6 +118,10 @@ Work through ready sub-issues in dependency order. For each one:
 4. Commit and push the result on the issue branch.
 5. Comment the commit and checks on the sub-issue, then close it.
 
+Structural findings carry a `suggestion` naming the expected refactoring.
+Treat it as the starting shape of the change, not a mechanical recipe; a C#
+`partial` file split never resolves `file-length` or `partial-type-length`.
+
 Re-scan after every structural wave because deletions and moves invalidate the
 old work-unit ranking. Do not alter source or diagnostic evidence merely to
 improve a score.

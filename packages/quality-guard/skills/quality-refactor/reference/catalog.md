@@ -17,7 +17,7 @@ and "clean up `evaluateProof`" produces a rewrite.
 | Smell | What you see | Refactorings |
 |---|---|---|
 | **Long Method** | Function past 30 lines, does several things | Extract Function · Replace Temp with Query · Introduce Parameter Object · Decompose Conditional · Replace Function with Command |
-| **Large Class** | File past 300 lines, many fields | Extract Class · Extract Superclass · Replace Type Code with Subclasses |
+| **Large Class** | File past 300 lines, many fields, or a C# `partial` class spread over several files | Extract Class · Extract Superclass · Replace Type Code with Subclasses (never Split into Partial Files) |
 | **Primitive Obsession** | `string` for an id, `[a, b]` for a pair, int for an enum | Replace Primitive with Object · Replace Type Code with Subclasses · Introduce Parameter Object · Replace Magic Literal |
 | **Long Parameter List** | 4+ parameters | Introduce Parameter Object · Preserve Whole Object · Replace Parameter with Query · Remove Flag Argument |
 | **Data Clumps** | The same 3 values passed together everywhere | Extract Class · Introduce Parameter Object · Preserve Whole Object |
