@@ -95,9 +95,9 @@ verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
    criterion and linked sub-issue. A changed file that needs no question gets
    an `excluded` entry for one lens whose `question` states why.
 2. **Investigate.** `dod-guard:read-cheap` investigators answer every
-   question, batched by changed-file group with at most eight questions per
-   investigator. Each answer gives the question id, the cited path and line,
-   and the fact found there.
+   question except `excluded` entries, batched by changed-file group with at
+   most eight questions per investigator. Each answer gives the question id,
+   the cited path and line, and the fact found there.
 3. **Verify.** Before judging, the main thread checks every answer under the
    cheap-output rule in that standard, with the reviewed head as the accepted
    head. Send a failed batch back once with the exact gap; if it fails again,
@@ -111,7 +111,9 @@ verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
    brief, its lens's questions, and their verified answers, and judges from
    that evidence instead of re-reading the whole diff. A judge settles each
    `unanswered` question of its lens from the files that question names, or
-   reports the gap as a finding; it never counts one as passing.
+   reports the gap as a finding; it never counts one as passing. A judge also
+   receives its lens's `excluded` entries and reports one as a finding when
+   its reason does not hold for the named files.
 
 - In Claude Code, use the Agent tool with the model and effort of each
   stage's tier: `dod-guard:read-strong` plans, `dod-guard:read-cheap`
