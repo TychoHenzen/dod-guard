@@ -27070,6 +27070,13 @@ function extractFactInventory(files, requiredPaths) {
   };
 }
 
+// skills/quality-refactor/scripts/lib/severity.mjs
+var SEVERITIES = /* @__PURE__ */ new Set(["high", "medium", "low"]);
+function requireSeverity(severity) {
+  if (SEVERITIES.has(severity)) return severity;
+  throw new Error(`unknown quality severity: ${severity}`);
+}
+
 // src/report-summaries.ts
 function summarize(files) {
   const fileCount = files.length;
@@ -27082,8 +27089,6 @@ function summarize(files) {
     high,
     medium,
     low,
-    errors: high,
-    warnings: medium + low,
     averageScore: fileCount === 0 ? null : scores.reduce((sum, score) => sum + score, 0) / fileCount,
     minimumScore: fileCount === 0 ? null : Math.min(...scores)
   };
@@ -27108,15 +27113,8 @@ function scoring() {
     highDeduction: 5,
     mediumDeduction: 1,
     lowDeduction: 0,
-    errorDeduction: 5,
-    warningDeduction: 1,
     minimum: 0
   };
-}
-function normalizeSeverity(severity) {
-  if (severity === "error") return "high";
-  if (severity === "warn") return "medium";
-  return severity;
 }
 function compareFinding(left, right) {
   return left.line - right.line || left.rule.localeCompare(right.rule) || left.message.localeCompare(right.message);
@@ -27131,7 +27129,7 @@ function scoredFiles(scan, byFile) {
   return [...scan.files].sort((left, right) => left.path.localeCompare(right.path)).map((file) => {
     const findings = [...byFile.get(file.path) ?? []].map((finding) => ({
       ...finding,
-      severity: normalizeSeverity(finding.severity)
+      severity: requireSeverity(finding.severity)
     })).sort(compareFinding);
     const high = findings.filter(
       (finding) => finding.severity === "high"
@@ -27148,8 +27146,6 @@ function scoredFiles(scan, byFile) {
       high,
       medium,
       low,
-      errors: high,
-      warnings: medium + low,
       findings
     };
   });
