@@ -173,7 +173,7 @@ function fixture() {
   write(
     root,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs",
-    'process.stdout.write(JSON.stringify({summary:{total:1,errors:1,warnings:0,byRule:{complexity:1},byFile:{"fixture.js":1}},violations:[{rule:"complexity",severity:"error"}]}) + "\\n");\n',
+    'process.stdout.write(JSON.stringify({summary:{total:1,high:1,medium:0,low:0,byRule:{complexity:1},byFile:{"fixture.js":1}},violations:[{rule:"complexity",severity:"high"}]}) + "\\n");\n',
   );
 
   git(root, ["add", "."]);
