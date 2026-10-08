@@ -39,11 +39,14 @@ function filterFile(file, controls) {
   return { ...file, findings, ...severityCounts(findings) };
 }
 
+function matchesProjectText(finding, needle) {
+  return String(finding.file ?? "").toLowerCase().includes(needle) || findingMatches(finding, needle);
+}
+
 function matchesProjectFinding(finding, controls, needle) {
   if (controls.severity !== "all" && finding.severity !== controls.severity) return false;
   if (controls.rule !== "all" && findingRule(finding) !== controls.rule) return false;
-  if (!needle) return true;
-  return String(finding.file ?? "").toLowerCase().includes(needle) || findingMatches(finding, needle);
+  return !needle || matchesProjectText(finding, needle);
 }
 
 function filterProjectFindings(report, controls) {

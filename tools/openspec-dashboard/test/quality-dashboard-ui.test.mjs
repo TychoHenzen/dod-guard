@@ -165,13 +165,17 @@ test("starts from the normal launcher and refreshes the displayed quality report
   }
 });
 
+function ruleName(finding) {
+  return finding.rule ?? finding.kind ?? "finding";
+}
+
+function messageText(finding) {
+  return finding.message ?? finding.reason ?? "";
+}
+
 function projectRow(finding) {
-  return {
-    rule: finding.rule ?? finding.kind ?? "finding",
-    location: finding.line ? `${finding.file}:${finding.line}` : finding.file,
-    message: finding.message ?? finding.reason ?? "",
-    severity: finding.severity,
-  };
+  const location = finding.line ? `${finding.file}:${finding.line}` : finding.file;
+  return { rule: ruleName(finding), location, message: messageText(finding), severity: finding.severity };
 }
 
 function staleReport() {
