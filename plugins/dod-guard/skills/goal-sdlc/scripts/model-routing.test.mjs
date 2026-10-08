@@ -78,3 +78,8 @@ test("no skill or other standard restates the tier definitions", async () => {
     assert.doesNotMatch(text, prose("The cheap tier is for"));
   }
 });
+
+test("goal-sdlc refers to the routing standard", async () => {
+  const goal = await readFile(new URL("skills/goal-sdlc/SKILL.md", pluginRoot), "utf8");
+  assert.ok(goal.includes("`standards/model-routing.md`"));
+});

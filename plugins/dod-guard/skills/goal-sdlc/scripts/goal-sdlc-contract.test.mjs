@@ -16,6 +16,7 @@ const OWNERS = [
   "complete-pr",
   "add-backlog-idea",
   "quick-pbi",
+  "step-by-step",
 ];
 
 test("goal-sdlc links every lifecycle owner by relative path", () => {
@@ -58,6 +59,9 @@ test("goal-sdlc keeps its sections short and its own", () => {
     "Review lenses",
     "pre-review checkpoint",
     "validation cadence",
+    "Record a compact checkpoint",
+    "The strong tier is for",
+    "The cheap tier is for",
   ]) {
     assert.ok(!skill.includes(owned), `restates an owned rule: ${owned}`);
   }
@@ -104,4 +108,51 @@ test("goal-sdlc keeps one daily friction log and a strict stop", () => {
     ),
   );
   assert.match(skill, prose("three", "evidence-backed attempts"));
+});
+
+const ROUTES = [
+  ["Queue snapshot read", "cheap"],
+  ["Refinement: plan research questions, then decide classification and criteria", "strong"],
+  ["Refinement: investigate code, callers, and tests", "cheap"],
+  ["`/next-ticket`: implement one task", "strong"],
+  ["`/next-ticket`: run validations and regenerate artifacts", "cheap"],
+  ["`/submit-draft-pr`", "strong"],
+  ["`/review-pr`: plan and judge", "strong"],
+  ["`/review-pr`: investigate", "cheap"],
+  ["`/fix-pr-review`", "strong"],
+  ["`/complete-pr`: guarded merge and Project finalization", "strong"],
+  ["`/add-backlog-idea`, including the friction log", "strong"],
+];
+const EFFORT = { strong: "`medium`", cheap: "`max`" };
+
+function routingRows(text) {
+  const start = text.indexOf("| Stage | Tier | Effort |");
+  const end = text.indexOf("\n\n", start);
+  return text
+    .slice(start, end)
+    .split("\n")
+    .slice(2)
+    .map((row) => row.split("|").slice(1, -1).map((cell) => cell.trim()));
+}
+
+test("goal-sdlc routes every stage to one tier with an explicit effort", () => {
+  const rows = routingRows(skill);
+  assert.deepEqual(
+    rows,
+    [
+      ...ROUTES.map(([stage, tier]) => [stage, tier, EFFORT[tier]]),
+      ["Merge conflict", "none", "stop and report, as `/complete-pr` says"],
+    ],
+  );
+  assert.match(skill, prose("Each stage runs in one fresh subagent as one step of"));
+  assert.match(skill, prose("Dispatch each row as `standards/model-routing.md` says"));
+  assert.match(skill, prose("pass its model and effort to the Agent call in Claude Code"));
+  assert.match(skill, prose("or use the registered tier agent in Codex"));
+  assert.match(skill, prose("name the stage, tier, model, and effort in the progress message"));
+  assert.match(skill, prose("A model or effort the user names for a stage wins for that run and is recorded there."));
+  assert.match(skill, prose("Verify cheap-tier output before anything relies on it"));
+  assert.match(
+    skill,
+    prose("read back the commit of any stage that changed tracked files before the next stage starts"),
+  );
 });

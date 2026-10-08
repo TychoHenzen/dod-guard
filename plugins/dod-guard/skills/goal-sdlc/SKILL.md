@@ -24,8 +24,7 @@ stop decision.
 - [dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md): the draft pull
   request and its convergence before review.
 - [dod-guard:review-pr](../review-pr/SKILL.md): the one code review.
-- [dod-guard:fix-pr-review](../fix-pr-review/SKILL.md): remediation of review
-  findings.
+- [dod-guard:fix-pr-review](../fix-pr-review/SKILL.md): review remediation.
 - [dod-guard:complete-pr](../complete-pr/SKILL.md): the ready transition,
   guarded merge, Project finalization, and branch cleanup.
 - [dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md): new Backlog
@@ -76,20 +75,36 @@ and one pull request. Never create or use a Git worktree.
 ## Delegation
 
 The main thread sequences stages and checks results; bounded subagents do the
-context-heavy work. For each stage:
+context-heavy work. Each stage runs in one fresh subagent as one step of
+[dod-guard:step-by-step](../step-by-step/SKILL.md), which owns the checkpoint,
+proof, and repair rules, at this tier:
 
-1. Give one fresh subagent the parent and child PBIs, branch and head, the
-   stage it owns, and the evidence it must return. It edits only that scope.
-2. Inspect what it returns, read back any external change, and run the named
-   proof before moving on.
-3. On failure, keep the checkpoint and repair the same stage, or record an
-   external blocker before selecting another parent.
+| Stage | Tier | Effort |
+|---|---|---|
+| Queue snapshot read | cheap | `max` |
+| Refinement: plan research questions, then decide classification and criteria | strong | `medium` |
+| Refinement: investigate code, callers, and tests | cheap | `max` |
+| `/next-ticket`: implement one task | strong | `medium` |
+| `/next-ticket`: run validations and regenerate artifacts | cheap | `max` |
+| `/submit-draft-pr` | strong | `medium` |
+| `/review-pr`: plan and judge | strong | `medium` |
+| `/review-pr`: investigate | cheap | `max` |
+| `/fix-pr-review` | strong | `medium` |
+| `/complete-pr`: guarded merge and Project finalization | strong | `medium` |
+| `/add-backlog-idea`, including the friction log | strong | `medium` |
+| Merge conflict | none | stop and report, as `/complete-pr` says |
+
+Dispatch each row as `standards/model-routing.md` says: pass its model and
+effort to the Agent call in Claude Code, or use the registered tier agent in
+Codex, and name the stage, tier, model, and effort in the progress message. A model or
+effort the user names for a stage wins for that run and is recorded there.
+Verify cheap-tier output before anything relies on it, and read back the
+commit of any stage that changed tracked files before the next stage starts.
 
 Use the Agent tool in Claude Code and spawned agents in Codex. User-visible
 tasks or threads (`create_thread`, `fork_thread`, `send_message_to_thread`,
 `codex://threads/...`) are not subagents. Retire a subagent before its context
 passes about 100,000 tokens and brief a fresh one with the compact checkpoint.
-
 Before claiming a parent, check for another active goal or agent run on the
 same repository, parent, branch, and stage. When one exists, do not mutate
 anything; wait for it, or fail closed and name it as the owner if its head or
@@ -102,10 +117,8 @@ Follow the failure-recovery rule in `standards/working-defaults.md`, including
 `/codex-advisor` for a blocker that survives local triage. A blocked parent is
 not a reason to stop: record what is blocking it, what was tried, and what
 would unblock it on the issue, preserve its branch and checkpoint, and select
-the next eligible parent.
-
-When a provider reports a rate limit, record the reset time, work on other
-parents, and retry the blocked call once after the reset.
+the next eligible parent. When a provider reports a rate limit, record the
+reset time, work on other parents, and retry the blocked call once after it.
 
 ## Friction log
 
@@ -120,7 +133,7 @@ the incident was recovered:
   none exists, through `/add-backlog-idea`, with entries under `## Entries`.
 - Each entry is a `###` section: what happened (error, tool, stage, PBI, SHA),
   the workaround, the durable fix (files and change), and how to verify it.
-- Re-read the issue before appending, and read it back after writing.
+  Re-read the issue before appending, and read it back after writing.
 
 The queue holds today's log while it collects entries; from the next day it is
 ordinary Backlog work. When a dod-guard skill is wrong, log the defect and its
