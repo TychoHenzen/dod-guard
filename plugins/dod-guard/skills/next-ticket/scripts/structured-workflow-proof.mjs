@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import {
   ACCEPTANCE_MATRIX_PATHS,
   validateAcceptanceMatrix,
-} from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
+} from "../../../lib/acceptance-matrix.mjs";
 
 export const REQUIRED_RECORDS = [
   "requirements",

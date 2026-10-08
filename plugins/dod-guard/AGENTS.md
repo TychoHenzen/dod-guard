@@ -27,7 +27,11 @@ definitions. It has no package workspace, MCP server, or bundle.
 - Use `/complete-pr` as the final acceptance gate after implementation, review,
   remediation, and current-head checks. It owns guarded ready, REST merge,
   issue confirmation, and remote branch deletion; it verifies completion rather
-  than waiting for a separate human-approval step.
+  than waiting for a separate human-approval step. Where the repository uses
+  Codex code review, `/submit-draft-pr` requests it and `/complete-pr` finishes
+  it before merging.
+- Use `/goal-sdlc` to run that lifecycle across the linked Project queue, one
+  parent PBI at a time.
 - Use `/publish` for a completed marketplace release. Functional releases
   require a PBI and draft PR. Maintenance-only releases skip both and push a
   version-bumped fast-forward with `--force-with-lease` pinned to the saved

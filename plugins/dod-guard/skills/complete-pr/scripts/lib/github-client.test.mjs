@@ -171,3 +171,19 @@ test("rejects a malformed source branch ref", () => {
     code: "github_response_shape",
   });
 });
+
+test("reads Codex review evidence from the pull request's comments, reactions, and reviews", () => {
+  const endpoints = [];
+  const runner = (args) => {
+    endpoints.push(args.at(-1));
+    return { status: 0, stderr: "", stdout: JSON.stringify([[{ id: endpoints.length }]]) };
+  };
+  const review = new GitHubClient("owner/repo", 24, runner).getCodexReview(24);
+  assert.deepEqual(endpoints, [
+    "repos/owner/repo/issues/24/comments?per_page=100",
+    "repos/owner/repo/issues/24/reactions?per_page=100",
+    "repos/owner/repo/pulls/24/reviews?per_page=100",
+    "repos/owner/repo/pulls/24/comments?per_page=100",
+  ]);
+  assert.deepEqual(review.reviewComments, [{ id: 4 }]);
+});

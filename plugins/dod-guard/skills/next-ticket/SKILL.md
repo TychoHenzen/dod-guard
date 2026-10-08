@@ -189,6 +189,8 @@ outside the repository or be removed before the commit.
 
 Use the repository's documented build, test, lint, and formatting commands.
 Run focused checks while implementing, then run every required pre-PR gate.
+Before calling a suite green, confirm the configured test glob includes every
+new test or fixture. Do not rerun an unchanged full suite for reassurance.
 
 Generate tracked build outputs on the feature branch when the repository
 requires them. Quality diagnostics are report-only evidence; do not generate or

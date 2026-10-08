@@ -302,88 +302,76 @@ function itemComparable(item) {
   });
 }
 
+function pageReadFailure(evidence, request, message, missingEvidence) {
+  const details = failureDetails("listProjectItems", request, new Error(message), 1, 1, missingEvidence);
+  evidence.readAttempts.push(details);
+  evidence.readFailures.push(details);
+  return new QueueReadError(details);
+}
+
+// Keeps the first copy of each item. A later copy that disagrees with the first
+// is a conflict the queue must hold on; an identical copy is only recorded.
+function admitProjectItem(item, repository, seenItems, result, evidence) {
+  const repositoryNameValue = itemRepository(item);
+  if (repositoryNameValue === null) {
+    result.invalidItems.push({ item: itemSummary(item), missingEvidence: missingProjectFields(item) });
+    return;
+  }
+  if (!sameRepository(repositoryNameValue, repository)) return;
+
+  const key = itemKey(item);
+  const comparable = itemComparable(item);
+  const semanticKey = `issue:${repositoryNameValue.toLowerCase()}#${itemIssueNumber(item) ?? "?"}`;
+  const first = seenItems.get(key) ?? seenItems.get(semanticKey);
+  if (first) {
+    const conflict = first.comparable !== comparable;
+    const duplicate = { key, first: first.summary, duplicate: itemSummary(item), conflict };
+    if (conflict) evidence.duplicateConflicts.push(duplicate);
+    evidence.duplicates.push(duplicate);
+    return;
+  }
+
+  const summary = itemSummary(item);
+  seenItems.set(key, { comparable, summary });
+  seenItems.set(semanticKey, { comparable, summary });
+  result.items.push(item);
+  const missing = missingProjectFields(item);
+  if (missing.length > 0) result.invalidItems.push({ item: summary, missingEvidence: missing });
+}
+
 async function readProjectItemsDetailed(provider, { project, repository, query = "is:issue", retryDelayMs = 0 }, evidence) {
-  const items = [];
+  const result = { items: [], invalidItems: [], duplicateConflicts: evidence.duplicateConflicts, error: null };
   const seenItems = new Map();
   const seenCursors = new Set();
-  const invalidItems = [];
   let after;
 
   while (true) {
-    const request = {
-      project,
-      query,
-      fields: PROJECT_FIELDS,
-      perPage: PROJECT_PAGE_SIZE,
-    };
+    const request = { project, query, fields: PROJECT_FIELDS, perPage: PROJECT_PAGE_SIZE };
     if (after !== undefined) request.after = after;
 
     let page;
     try {
       page = await readProvider(provider, "listProjectItems", request, evidence, ["complete Project item pages"]);
     } catch (error) {
-      return { items, invalidItems, duplicateConflicts: evidence.duplicateConflicts, error };
+      return { ...result, error };
     }
     if (!Array.isArray(page?.items) || typeof page?.pageInfo?.hasNextPage !== "boolean") {
-      const details = failureDetails(
-        "listProjectItems",
-        request,
-        new Error("Project readback must include items and pageInfo.hasNextPage."),
-        1,
-        1,
-        ["complete Project item page response"],
-      );
-      evidence.readAttempts.push(details);
-      evidence.readFailures.push(details);
-      return { items, invalidItems, duplicateConflicts: evidence.duplicateConflicts, error: new QueueReadError(details) };
+      const error = pageReadFailure(evidence, request, "Project readback must include items and pageInfo.hasNextPage.", [
+        "complete Project item page response",
+      ]);
+      return { ...result, error };
     }
 
-    for (const item of page.items) {
-      const repositoryNameValue = itemRepository(item);
-      if (repositoryNameValue === null) {
-        invalidItems.push({ item: itemSummary(item), missingEvidence: missingProjectFields(item) });
-        continue;
-      }
-      if (!sameRepository(repositoryNameValue, repository)) continue;
+    for (const item of page.items) admitProjectItem(item, repository, seenItems, result, evidence);
 
-      const key = itemKey(item);
-      const comparable = itemComparable(item);
-      const semanticKey = `issue:${repositoryNameValue.toLowerCase()}#${itemIssueNumber(item) ?? "?"}`;
-      const first = seenItems.get(key) ?? seenItems.get(semanticKey);
-      if (first) {
-        const duplicate = { key, first: first.summary, duplicate: itemSummary(item) };
-        if (first.comparable !== comparable) {
-          duplicate.conflict = true;
-          evidence.duplicateConflicts.push(duplicate);
-        } else {
-          duplicate.conflict = false;
-        }
-        evidence.duplicates.push(duplicate);
-        continue;
-      }
-
-      const missing = missingProjectFields(item);
-      const summary = itemSummary(item);
-      seenItems.set(key, { comparable, summary });
-      seenItems.set(semanticKey, { comparable, summary });
-      items.push(item);
-      if (missing.length > 0) invalidItems.push({ item: summary, missingEvidence: missing });
-    }
-
-    if (!page.pageInfo.hasNextPage) return { items, invalidItems, duplicateConflicts: evidence.duplicateConflicts, error: null };
+    if (!page.pageInfo.hasNextPage) return result;
     const next = page.pageInfo.nextCursor;
     if (typeof next !== "string" || next.length === 0 || seenCursors.has(next)) {
-      const details = failureDetails(
-        "listProjectItems",
-        request,
-        new Error("Project readback reported another page without a stable cursor."),
-        1,
-        1,
-        ["complete Project item pagination", "stable Project page cursor"],
-      );
-      evidence.readAttempts.push(details);
-      evidence.readFailures.push(details);
-      return { items, invalidItems, duplicateConflicts: evidence.duplicateConflicts, error: new QueueReadError(details) };
+      const error = pageReadFailure(evidence, request, "Project readback reported another page without a stable cursor.", [
+        "complete Project item pagination",
+        "stable Project page cursor",
+      ]);
+      return { ...result, error };
     }
     seenCursors.add(next);
     after = next;
@@ -829,46 +817,89 @@ function mergedEvidenceReasons(records, context, mergedPullRequests) {
   return [...new Set(reasons)];
 }
 
-function defaultQueueDecision(records, context = {}) {
-  if (!Array.isArray(records) || records.length === 0) return { kind: "hold", eligible: false, reasons: ["delivery record missing"] };
-  const reasons = [...new Set(records.flatMap((record) => record.missingEvidence ?? []))];
+function pullRequestState(pullRequest) {
+  return String(pullRequest?.state ?? "").toUpperCase();
+}
+
+const OPEN_PULL_REQUEST = "open implementation pull request remains active";
+const ACTIVE_CHECKPOINT = "active implementation checkpoint remains";
+// An In Progress parent whose only holds are its own open pull request or
+// checkpoint is a delivery to resume, not a blocker.
+const RESUMABLE_REASONS = new Set([OPEN_PULL_REQUEST, ACTIVE_CHECKPOINT]);
+
+function recordReasons(records) {
+  const reasons = records.flatMap((record) => record.missingEvidence ?? []);
   const statuses = records.map(({ projectStatus }) => normalizedStatus(projectStatus));
   const uniqueStatuses = [...new Set(statuses.filter(Boolean))];
   if (statuses.some((status) => status === null)) reasons.push("Project status missing");
   if (uniqueStatuses.length > 1) reasons.push(`Project status drift: ${uniqueStatuses.join(", ")}`);
   const recordNumbers = new Set(records.map(({ issueNumber }) => issueNumber));
-  if (records.some((record) => record.parentIssueNumber !== null && (record.orphan || !recordNumbers.has(record.parentIssueNumber)))) {
-    reasons.push("orphaned parent/child relationship");
-  }
+  const orphaned = (record) => record.parentIssueNumber !== null && (record.orphan || !recordNumbers.has(record.parentIssueNumber));
+  if (records.some(orphaned)) reasons.push("orphaned parent/child relationship");
   if (records.some((record) => record.staleRelationships?.length > 0)) reasons.push("relationship/head evidence changed during read");
+  if (records.some((record) => activeCheckpoint(record.issue) === true)) reasons.push(ACTIVE_CHECKPOINT);
+  return { reasons, uniqueStatuses };
+}
 
-  const pullRequests = records.flatMap(({ pullRequests: linked }) => linked ?? []);
-  const merged = pullRequests.filter(mergedPullRequest);
-  const open = pullRequests.filter((pullRequest) => String(pullRequest?.state ?? "").toUpperCase() === "OPEN");
-  if (open.length > 0) reasons.push("open implementation pull request remains active");
+function pullRequestReasons(pullRequests) {
+  const reasons = [];
+  if (pullRequests.some((pullRequest) => pullRequestState(pullRequest) === "OPEN")) {
+    reasons.push(OPEN_PULL_REQUEST);
+  }
   if (pullRequests.some((pullRequest) => !pullRequest?.state)) reasons.push("pull request state missing");
-  if (records.some((record) => activeCheckpoint(record.issue) === true)) reasons.push("active implementation checkpoint remains");
-  if (pullRequests.some((pullRequest) => String(pullRequest?.state ?? "").toUpperCase() === "CLOSED" && !mergedPullRequest(pullRequest))) {
+  const unmerged = pullRequests.filter((pullRequest) => !mergedPullRequest(pullRequest));
+  if (unmerged.some((pullRequest) => pullRequestState(pullRequest) === "CLOSED")) {
     reasons.push("closed pull request is not a verified merge");
   }
-  if (pullRequests.some((pullRequest) => !mergedPullRequest(pullRequest) && String(pullRequest?.state ?? "").toUpperCase() !== "CLOSED")) {
+  const settled = new Set(["CLOSED", "OPEN"]);
+  if (unmerged.some((pullRequest) => !settled.has(pullRequestState(pullRequest)))) {
     reasons.push("pull request outcome is unresolved");
   }
+  return reasons;
+}
 
+// /next-ticket moves only the parent to In Progress; its children stay Todo
+// until /complete-pr finalizes them, so that drift is expected here.
+function resumableDecision(reasons, records) {
+  const statuses = new Set(records.map(({ projectStatus }) => projectStatus));
+  const root = records.find(({ parentIssueNumber }) => parentIssueNumber === null);
+  if (root?.projectStatus !== "In Progress") return null;
+  if (![...statuses].every((status) => ["In Progress", "Todo"].includes(status))) return null;
+  const expected = (reason) => RESUMABLE_REASONS.has(reason) || reason.startsWith("Project status drift: ");
+  if (!reasons.every(expected)) return null;
+  return {
+    kind: "in-progress",
+    eligible: true,
+    status: "In Progress",
+    openPullRequest: reasons.includes(OPEN_PULL_REQUEST),
+    reasons: [],
+  };
+}
+
+function hold(reasons) {
+  return { kind: "hold", eligible: false, reasons: [...new Set(reasons)] };
+}
+
+function defaultQueueDecision(records, context = {}) {
+  if (!Array.isArray(records) || records.length === 0) return hold(["delivery record missing"]);
+  const { reasons, uniqueStatuses } = recordReasons(records);
+  const pullRequests = records.flatMap(({ pullRequests: linked }) => linked ?? []);
+  reasons.push(...pullRequestReasons(pullRequests));
+
+  const merged = pullRequests.filter(mergedPullRequest);
   if (merged.length > 0) {
     reasons.push(...mergedEvidenceReasons(records, context, merged));
-    if (reasons.length > 0) return { kind: "hold", eligible: false, reasons: [...new Set(reasons)] };
-    return { kind: "complete", eligible: false, status: "Done", reasons: [] };
+    return reasons.length > 0 ? hold(reasons) : { kind: "complete", eligible: false, status: "Done", reasons: [] };
   }
 
-  if (reasons.length > 0) return { kind: "hold", eligible: false, reasons: [...new Set(reasons)] };
-  if (collectingFrictionLog(records, context.today)) {
-    return { kind: "hold", eligible: false, reasons: ["friction log still collecting entries"] };
-  }
+  const resumable = resumableDecision(reasons, records);
+  if (resumable) return resumable;
+  if (reasons.length > 0) return hold(reasons);
+  if (collectingFrictionLog(records, context.today)) return hold(["friction log still collecting entries"]);
   if (uniqueStatuses.length !== 1 || !["Todo", "Backlog"].includes(uniqueStatuses[0])) {
-    return { kind: "hold", eligible: false, reasons: ["Project status is not a queue status"] };
+    return hold(["Project status is not a queue status"]);
   }
-  if (records.some((record) => record.issue === null)) return { kind: "hold", eligible: false, reasons: ["issue readback missing"] };
+  if (records.some((record) => record.issue === null)) return hold(["issue readback missing"]);
   return { kind: "eligible", eligible: true, status: uniqueStatuses[0], reasons: [] };
 }
 
@@ -876,9 +907,17 @@ function recordOrphaned(record, records) {
   return record.parentIssueNumber !== null && !records.some(({ issueNumber }) => issueNumber === record.parentIssueNumber);
 }
 
-function selectQueueItem(snapshot, classify = defaultQueueDecision) {
-  if (!snapshot || snapshot.readFailures?.length > 0 || snapshot.evidence?.readFailures?.length > 0) return null;
-  if (snapshot.evidence?.invalidItems?.length > 0 || snapshot.evidence?.duplicateConflicts?.length > 0) return null;
+function snapshotUsable(snapshot) {
+  if (!snapshot) return false;
+  if (snapshot.readFailures?.length > 0 || snapshot.evidence?.readFailures?.length > 0) return false;
+  return !(snapshot.evidence?.invalidItems?.length > 0 || snapshot.evidence?.duplicateConflicts?.length > 0);
+}
+
+// Groups each record under its root issue, so a child is never queued apart
+// from its parent, and classifies every group. Returns [] when the snapshot is
+// incomplete, because no group can be classified safely from partial reads.
+function classifyQueueGroups(snapshot, classify = defaultQueueDecision) {
+  if (!snapshotUsable(snapshot)) return [];
   const records = (snapshot.records ?? []).map((record, index, allRecords) => ({
     ...record,
     orphan: recordOrphaned(record, allRecords),
@@ -892,18 +931,23 @@ function selectQueueItem(snapshot, classify = defaultQueueDecision) {
     group.records.push(record);
     groups.set(root, group);
   }
-  const candidates = [...groups.values()]
-    .map((group) => ({ ...group, decision: classify(group.records, snapshot) }))
+  return [...groups.values()].map((group) => ({ ...group, decision: classify(group.records, snapshot) }));
+}
+
+function selectQueueItem(snapshot, classify = defaultQueueDecision) {
+  // Resume In Progress work first, the furthest along (an open pull request)
+  // ahead of the rest, then start Todo before Backlog.
+  const rank = ({ status, openPullRequest }) =>
+    ({ "In Progress": openPullRequest ? 0 : 1, Todo: 2, Backlog: 3 })[status] ?? 4;
+  const candidates = classifyQueueGroups(snapshot, classify)
     .filter(({ decision }) => decision?.eligible)
-    .sort((left, right) => {
-      const rank = { Todo: 0, Backlog: 1 };
-      return (rank[left.decision.status] ?? 2) - (rank[right.decision.status] ?? 2) || left._queueOrder - right._queueOrder;
-    });
+    .sort((left, right) => rank(left.decision) - rank(right.decision) || left._queueOrder - right._queueOrder);
   return candidates[0] ?? null;
 }
 
 export {
   PROJECT_FIELDS,
+  classifyQueueGroups,
   defaultQueueDecision,
   reconcileProjectCounts,
   readQueueSnapshot,

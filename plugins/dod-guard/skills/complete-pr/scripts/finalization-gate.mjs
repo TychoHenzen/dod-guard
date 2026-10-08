@@ -2,7 +2,7 @@ import { evaluateConvergence } from "../../next-ticket/scripts/structured-workfl
 import {
   ACCEPTANCE_MATRIX_PATHS,
   validateAcceptanceMatrix,
-} from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
+} from "../../../lib/acceptance-matrix.mjs";
 
 function text(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;

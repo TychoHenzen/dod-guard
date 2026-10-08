@@ -149,6 +149,38 @@ test("queue selection skips a group whose statuses drift", () => {
   assertHold(records, "Project status drift: Todo, Backlog");
 });
 
+test("an In Progress parent is resumed, not held, by its own pull request", () => {
+  const openPullRequest = { number: 900, repository: REPOSITORY, state: "OPEN" };
+  const withPull = record(800, { projectStatus: "In Progress", state: "OPEN", pullRequests: [openPullRequest] });
+  const started = record(801, { projectStatus: "In Progress", state: "OPEN", activeCheckpoint: true });
+  assert.deepEqual(decide([withPull]), {
+    kind: "in-progress",
+    eligible: true,
+    status: "In Progress",
+    openPullRequest: true,
+    reasons: [],
+  });
+  assert.equal(decide([started]).openPullRequest, false);
+  assertHold([{ ...withPull, missingEvidence: ["issue #800"] }], "issue #800");
+  const todoChild = record(802, { parentIssueNumber: 801, projectStatus: "Todo", state: "OPEN" });
+  assert.equal(decide([started, todoChild]).kind, "in-progress");
+  const backlogChild = { ...todoChild, projectStatus: "Backlog" };
+  assertHold([started, backlogChild], "Project status drift: In Progress, Backlog");
+});
+
+test("queue selection resumes In Progress work before starting Todo", () => {
+  const records = [
+    record(517, { projectStatus: "Todo", state: "OPEN" }),
+    record(801, { projectStatus: "In Progress", state: "OPEN", activeCheckpoint: true }),
+    record(800, {
+      projectStatus: "In Progress",
+      state: "OPEN",
+      pullRequests: [{ number: 900, repository: REPOSITORY, state: "OPEN" }],
+    }),
+  ];
+  assert.equal(selectQueueItem({ ...CONTEXT, records }).rootIssueNumber, 800);
+});
+
 function adapterProjectItem({ number, status, parentIssue, linkedPullRequests = [] }) {
   return {
     id: `adapter-${number}`,
