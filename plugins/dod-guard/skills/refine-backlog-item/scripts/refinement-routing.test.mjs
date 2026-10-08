@@ -228,9 +228,15 @@ test("manual fixtures include each route and its record markers", () => {
 });
 
 test("plans research on the strong tier, investigates on the cheap tier, and decides on the strong tier", () => {
-  assert.match(skill, prose("Run that research as the plan, investigate, and judge split in `standards/model-routing.md`."));
+  assert.match(
+    skill,
+    prose("Run that research as the plan, investigate, and judge split in `standards/model-routing.md`."),
+  );
   assert.match(skill, prose("A strong planner writes the research questions"));
   assert.match(skill, prose("Cheap investigators read the code, callers, tests, and history"));
-  assert.match(skill, prose("After the main thread verifies", "the strong tier decides the discovery triage, classification,"));
+  assert.match(
+    skill,
+    prose("After the main thread verifies", "the strong tier decides the discovery triage, classification,"),
+  );
   assert.match(skill, prose("the `discovery-triage` and `research-source` records keep their meaning"));
 });
