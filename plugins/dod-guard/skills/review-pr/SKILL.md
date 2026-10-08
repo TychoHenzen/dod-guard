@@ -131,8 +131,8 @@ node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character h
 It groups scanner findings into one comment per changed file, dedupes reviewer
 findings by file and root cause, and posts every finding as an inline comment
 so each gets a `GH-<id>`. It lists the planned questions, with each one's
-status, in a collapsed `<details>` block in the review body. A finding whose cited line this PR did not add moves
-to the nearest added line, and its body names the cited location.
+status, in a collapsed `<details>` block in the review body. A finding whose
+cited line this PR did not add moves to the nearest added line, and its body names the cited location.
 Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A file's scanner
 findings are `MAJOR` when any is `high`, otherwise `MINOR`.
 Recommendation: any `BLOCKER` is `BLOCK`, any

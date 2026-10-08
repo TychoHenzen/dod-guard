@@ -14,19 +14,28 @@ function escapeHtml(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
+function isComplete(entry) {
+  return (
+    REVIEWERS.includes(entry?.lens) &&
+    oneLine(entry?.id) !== "" &&
+    oneLine(entry?.question) !== "" &&
+    STATUSES.includes(entry?.status)
+  );
+}
+
 function requireQuestions(questions) {
   if (!Array.isArray(questions)) {
     throw new Error("The review questions must be a JSON array");
   }
   const ids = new Set();
   for (const entry of questions) {
-    const id = oneLine(entry?.id);
-    if (!(REVIEWERS.includes(entry?.lens) && id && oneLine(entry?.question) && STATUSES.includes(entry?.status))) {
+    if (!isComplete(entry)) {
       throw new Error(
         `Review question ${JSON.stringify(entry?.id ?? null)} needs a reviewer lens, an id, a question, ` +
           `and a status of ${STATUSES.join(", ")}`,
       );
     }
+    const id = oneLine(entry.id);
     if (ids.has(id)) {
       throw new Error(`Review question ${id} appears more than once`);
     }
