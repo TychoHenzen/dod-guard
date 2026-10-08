@@ -57,7 +57,10 @@ test("a partial class split across files is measured as one class", () => {
       assert.equal(finding.severity, "error");
       assert.equal(finding.metric, 2 * 195);
       assert.equal(finding.line, 3);
-      assert.match(finding.message, /partial class Board spans 2 files totaling 390 lines/);
+      assert.match(
+        finding.message,
+        /partial class Board spans 2 files totaling 390 lines/,
+      );
       assert.match(finding.suggestion, /Extract Class/);
       assert.equal(rulesOf(violations, "file-length")[0].severity, "warn");
     },

@@ -75,7 +75,10 @@ test("the file-local scan measures a split partial class as one class", () => {
     );
     assert.equal(finding?.severity, "error");
     const [line] = hardBoundFindings([finding]);
-    assert.match(line, /partial-type-length: partial class Board spans 2 files/);
+    assert.match(
+      line,
+      /partial-type-length: partial class Board spans 2 files/,
+    );
     assert.match(line, /\n {2}Fix: A partial class is still one class/);
   } finally {
     rmSync(root, { recursive: true, force: true });

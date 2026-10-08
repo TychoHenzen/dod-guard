@@ -10,7 +10,10 @@ test("every suggestion belongs to a configured rule", () => {
 });
 
 test("file-length suggestions reject partial classes as a split", () => {
-  assert.match(RULE_SUGGESTIONS["file-length"], /Do not split one class into partial files/);
+  assert.match(
+    RULE_SUGGESTIONS["file-length"],
+    /Do not split one class into partial files/,
+  );
   assert.match(RULE_SUGGESTIONS["partial-type-length"], /still one class/);
 });
 
@@ -27,8 +30,12 @@ test("structural findings carry a suggestion and cosmetic ones do not", () => {
     `const long = "${"x".repeat(130)}";`,
   ].join("\n");
   const violations = scanViolations(tsFile("src/pick.ts", code));
-  const complexity = violations.find((violation) => violation.rule === "complexity");
-  const lineLength = violations.find((violation) => violation.rule === "line-length");
+  const complexity = violations.find(
+    (violation) => violation.rule === "complexity",
+  );
+  const lineLength = violations.find(
+    (violation) => violation.rule === "line-length",
+  );
   assert.match(complexity.suggestion, /Guard Clauses/);
   assert.equal("suggestion" in lineLength, false);
 });
