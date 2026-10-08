@@ -1,6 +1,7 @@
 // Structural rules judge a touched file's design, so they cover the whole file.
 const WHOLE_FILE_RULES = new Set([
   "file-length",
+  "partial-type-length",
   "function-length",
   "complexity",
   "param-count",
