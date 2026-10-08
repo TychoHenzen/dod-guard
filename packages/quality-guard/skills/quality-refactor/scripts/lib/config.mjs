@@ -26,20 +26,10 @@ export const ALL_RULES = [
   ...Object.keys(PRESENCE_SEVERITY),
 ];
 
-export const ACTIVE_PROFILE = "advisory";
-export const PROFILE_ALIASES = [ACTIVE_PROFILE, "default", "strict"];
-
-export function normalizeProfile(profile = ACTIVE_PROFILE) {
-  if (!PROFILE_ALIASES.includes(profile))
-    throw new Error(`unknown quality profile: ${profile}`);
-  return ACTIVE_PROFILE;
-}
-
-export function buildConfig(profile = ACTIVE_PROFILE) {
-  normalizeProfile(profile);
+export function buildConfig() {
   const thresholds = structuredClone(DEFAULT_THRESHOLDS);
   const presence = { ...PRESENCE_SEVERITY };
-  return { profile: ACTIVE_PROFILE, thresholds, presence };
+  return { thresholds, presence };
 }
 
 export function severityFor(config, rule, value) {

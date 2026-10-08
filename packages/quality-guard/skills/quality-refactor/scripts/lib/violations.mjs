@@ -3,8 +3,9 @@
 import { suggestionFor } from "./rule-suggestions.mjs";
 
 /**
- * Append one violation. A `null` severity means the rule is switched off in
- * this profile, so the finding is dropped here rather than at every call site.
+ * Append one violation. A null severity means the measured value is within
+ * the rule's bounds, so the finding is dropped here rather than at every call
+ * site.
  */
 export function push({
   out,

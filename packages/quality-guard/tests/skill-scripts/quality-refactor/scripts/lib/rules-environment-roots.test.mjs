@@ -16,7 +16,7 @@ test("reports every candidate in an ambiguous solution layout", () => {
       "app.csproj": "<Project />\n",
     },
     (root) => {
-      const config = buildConfig("default");
+      const config = buildConfig();
       assert.deepEqual(checkEnvironment(root, config), [
         {
           file: "first.sln",
@@ -55,7 +55,7 @@ test("reports unsupported and directory-shaped roots through the scan", () => {
       assert.equal(resolveEntrypoints(root), null);
       const result = scan(
         { paths: ["."], root, excludes: [], testPaths: [], rules: null },
-        buildConfig("default"),
+        buildConfig(),
       );
       assert.deepEqual(
         result.violations.map(({ file, rule, message }) => ({

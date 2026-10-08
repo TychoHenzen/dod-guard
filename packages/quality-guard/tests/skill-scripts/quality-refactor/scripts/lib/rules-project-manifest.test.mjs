@@ -20,7 +20,7 @@ test("a manifest reference keeps a C# type reachable", () => {
     checkReachability({
       files,
       scans: scansFor(files),
-      config: buildConfig("default"),
+      config: buildConfig(),
       manifests,
     }).length,
     0,
@@ -35,7 +35,7 @@ test("a markdown mention is not manifest evidence", () => {
   const found = checkReachability({
     files,
     scans: scansFor(files),
-    config: buildConfig("default"),
+    config: buildConfig(),
     manifests: [],
   });
   assert.equal(found.length, 1);
@@ -53,7 +53,7 @@ test("an unrelated manifest does not keep a type reachable", () => {
   const found = checkReachability({
     files,
     scans: scansFor(files),
-    config: buildConfig("default"),
+    config: buildConfig(),
     manifests,
   });
   assert.equal(found.length, 1);
@@ -74,7 +74,7 @@ test("a manifest file is never reported as a violation source", () => {
   const found = checkReachability({
     files,
     scans: scansFor(files),
-    config: buildConfig("default"),
+    config: buildConfig(),
     manifests,
   });
   assert.equal(

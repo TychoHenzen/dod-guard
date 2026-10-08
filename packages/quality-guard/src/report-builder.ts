@@ -32,7 +32,6 @@ function fileScore(counts: {
 }
 
 type ScanInput = {
-  profile: "advisory" | "default" | "strict";
   files: Array<{
     path: string;
     language: string;
@@ -125,10 +124,7 @@ export function buildQualityReport(
   return {
     schemaVersion: 1,
     scoring: scoring(),
-    scanner: {
-      profile: "advisory",
-      fileSelection: FILE_SELECTION,
-    },
+    scanner: { fileSelection: FILE_SELECTION },
     summaries: reportSummaries(files, project),
     files,
     projectFindings: project,

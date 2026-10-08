@@ -32,7 +32,7 @@ export function tsFile(rel, code) {
 }
 
 export function scanViolations(file) {
-  return scanFile(file, buildConfig("default")).violations;
+  return scanFile(file, buildConfig()).violations;
 }
 
 export function tupleViolations(file) {
@@ -48,7 +48,7 @@ export function statelessViolations(code) {
 }
 
 export function complexityFor(code) {
-  const config = buildConfig("default");
+  const config = buildConfig();
   config.thresholds = {
     ...config.thresholds,
     complexity: { medium: 0, high: 0 },

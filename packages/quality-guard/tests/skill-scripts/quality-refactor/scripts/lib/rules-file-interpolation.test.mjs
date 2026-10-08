@@ -11,7 +11,7 @@ test("a Rust function read only by an inline format capture is not unused", () =
   ].join("\n");
   const violations = scanFile(
     rustFile("src/lib.rs", code),
-    buildConfig("default"),
+    buildConfig(),
   ).violations;
   assert.equal(
     violations.some(
@@ -33,7 +33,7 @@ test("a C# method reading a field through interpolation is not stateless", () =>
   ].join("\n");
   const violations = scanFile(
     csFile("src/Thing.cs", code),
-    buildConfig("default"),
+    buildConfig(),
   ).violations;
   assert.deepEqual(
     violations.filter((violation) => violation.rule === "stateless-method"),

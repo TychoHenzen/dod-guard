@@ -38,7 +38,6 @@ test("preflight is CI's single source for generated checks, policy, and Biome fl
     '["run", "prepare:test", "--workspaces", "--if-present"]',
     '"format", "--write", "--no-errors-on-unmatched"',
     '"check", "--max-diagnostics=200", "--no-errors-on-unmatched"',
-    '"--profile=strict"',
     '"Quality diagnostics (advisory)"',
     '"scripts/ci/check-tests-present.mjs"',
     '"scripts/ci/check-audit.mjs"',
@@ -54,6 +53,7 @@ test("preflight is CI's single source for generated checks, policy, and Biome fl
     "check-skips",
     "--fail-on=",
     "--write-baseline",
+    "--profile",
   ]) {
     assert.doesNotMatch(PREFLIGHT, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }

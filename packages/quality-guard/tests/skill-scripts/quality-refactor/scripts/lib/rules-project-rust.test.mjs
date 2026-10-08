@@ -5,7 +5,7 @@ import { checkReachability } from "../../../../../skills/quality-refactor/script
 import { rustFile, rustScansFor } from "./rules-project-fixtures.test.mjs";
 
 function reachable(files) {
-  const config = buildConfig("default");
+  const config = buildConfig();
   return checkReachability({
     files,
     scans: rustScansFor(files, config),

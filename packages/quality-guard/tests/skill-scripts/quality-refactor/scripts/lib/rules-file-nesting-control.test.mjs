@@ -29,7 +29,7 @@ test("real nested control flow still reports its nesting metric", () => {
       source,
       lines: source.split("\n"),
     },
-    buildConfig("default"),
+    buildConfig(),
   ).violations.filter((violation) => violation.rule === "nesting-depth");
 
   assert.deepEqual(violations, [

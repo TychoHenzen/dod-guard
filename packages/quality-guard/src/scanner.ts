@@ -3,15 +3,12 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { asyncExecFile, scanFailure } from "./scanner-failure.js";
 
-export type ScanProfile = "advisory" | "default" | "strict";
-
 export interface ScanRequest {
   paths: string[];
   root?: string;
   rules?: string[];
   excludes?: string[];
   testPaths?: string[];
-  profile?: ScanProfile;
 }
 
 const SCAN_TIMEOUT_MS = 120_000;
@@ -33,7 +30,6 @@ function scannerPath(): string {
 function buildArgs(request: ScanRequest): string[] {
   const optional = [
     ["--root", request.root],
-    ["--profile", request.profile],
     ["--rules", request.rules?.length ? request.rules.join(",") : undefined],
   ] as const;
   return [

@@ -58,7 +58,7 @@ test("reports only Python and Rust wildcard imports", () => {
   const found = checkWildcardImports({
     files,
     scans: scansFor(files),
-    config: buildConfig("default"),
+    config: buildConfig(),
   });
   assert.deepEqual(found, [
     {

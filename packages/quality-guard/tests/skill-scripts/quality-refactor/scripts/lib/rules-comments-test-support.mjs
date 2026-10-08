@@ -9,7 +9,7 @@ export function scan(lang, code, rule) {
     source: code,
     lines: code.split("\n"),
   };
-  return scanFile(file, buildConfig("default")).violations.filter(
+  return scanFile(file, buildConfig()).violations.filter(
     (violation) => violation.rule === rule,
   );
 }

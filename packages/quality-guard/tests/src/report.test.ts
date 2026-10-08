@@ -7,7 +7,6 @@ const UNKNOWN_SEVERITY_ERROR = /unknown quality severity: error/;
 test("scores files and excludes architecture from score", () => {
   const report = buildQualityReport(
     {
-      profile: "default",
       files: [
         { path: "src/clean.ts", language: "ts", classification: "production" },
         { path: "tests/noisy.test.ts", language: "ts", classification: "test" },
@@ -46,7 +45,7 @@ test("scores files and excludes architecture from score", () => {
   );
 
   assert.equal(report.schemaVersion, 1);
-  assert.equal(report.scanner.profile, "advisory");
+  assert.equal("profile" in report.scanner, false);
   assert.deepEqual(
     report.files.map((file) => [file.path, file.classification, file.score]),
     [
@@ -105,7 +104,6 @@ test("scores stop at zero and findings have deterministic order", () => {
   }));
   const report = buildQualityReport(
     {
-      profile: "strict",
       files: [
         { path: "src/bad.ts", language: "ts", classification: "production" },
       ],
@@ -121,7 +119,6 @@ test("scores stop at zero and findings have deterministic order", () => {
   );
 
   assert.equal(report.files[0]?.score, 0);
-  assert.equal(report.scanner.profile, "advisory");
   assert.equal(report.files[0]?.high, 21);
   assert.deepEqual(
     report.files[0]?.findings.slice(0, 2).map((finding) => finding.line),
@@ -134,7 +131,6 @@ test("rejects scanner findings outside the high/medium/low vocabulary", () => {
     () =>
       buildQualityReport(
         {
-          profile: "default",
           files: [
             { path: "src/a.ts", language: "ts", classification: "production" },
           ],

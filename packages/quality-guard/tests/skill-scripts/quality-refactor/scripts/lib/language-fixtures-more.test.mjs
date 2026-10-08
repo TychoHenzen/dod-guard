@@ -8,7 +8,7 @@ import { scanFile } from "../../../../../skills/quality-refactor/scripts/lib/rul
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(HERE, "target");
-const STRICT = buildConfig("strict");
+const CONFIG = buildConfig();
 
 function violationSet(name, lang) {
   const source = readFileSync(join(FIXTURES, name), "utf8");
@@ -19,7 +19,7 @@ function violationSet(name, lang) {
     source,
     lines: source.split(/\r?\n/),
   };
-  return scanFile(file, STRICT)
+  return scanFile(file, CONFIG)
     .violations.map((violation) => ({
       file: violation.file,
       line: violation.line,
@@ -63,7 +63,7 @@ test("C++ private fields count as instance state", () => {
     source,
     lines: source.split(/\r?\n/),
   };
-  const { violations } = scanFile(file, STRICT);
+  const { violations } = scanFile(file, CONFIG);
   assert.equal(
     violations.some(
       (v) =>

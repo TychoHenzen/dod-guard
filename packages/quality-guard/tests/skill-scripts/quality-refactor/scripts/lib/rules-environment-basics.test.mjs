@@ -11,7 +11,7 @@ test("reports missing root Node build and test scripts as E1 and E2", () => {
   withProject(
     { "package.json": '{"scripts":{"lint":"biome check ."}}\n' },
     (root) => {
-      const found = checkEnvironment(root, buildConfig("default"));
+      const found = checkEnvironment(root, buildConfig());
       assert.deepEqual(
         found.map((violation) => violation.rule),
         ["build-entrypoint", "test-entrypoint"],
@@ -60,7 +60,7 @@ test("resolves declared and language-standard one-command entry points", () => {
         build,
         test: testCommand,
       });
-      assert.deepEqual(checkEnvironment(root, buildConfig("default")), []);
+      assert.deepEqual(checkEnvironment(root, buildConfig()), []);
     });
 });
 test("uses a root solution as the .NET boundary", () => {
@@ -76,7 +76,7 @@ test("uses a root solution as the .NET boundary", () => {
         build: "dotnet build sample.sln",
         test: "dotnet test sample.sln",
       });
-      assert.deepEqual(checkEnvironment(root, buildConfig("default")), []);
+      assert.deepEqual(checkEnvironment(root, buildConfig()), []);
     },
   );
 });

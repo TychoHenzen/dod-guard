@@ -12,7 +12,7 @@ function nestingViolations(lang, source) {
       source,
       lines: source.split("\n"),
     },
-    buildConfig("default"),
+    buildConfig(),
   ).violations.filter((violation) => violation.rule === "nesting-depth");
 }
 

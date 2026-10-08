@@ -1,5 +1,4 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
 import { runQualityReportAsync } from "./report.js";
 import { requireRepositoryRoot } from "./repository-root.js";
 import { text, toolError } from "./tool-response.js";
@@ -16,14 +15,8 @@ export function registerQualityReport(server: McpServer): void {
       root: ROOT,
       excludes: EXCLUDES,
       testPaths: TEST_PATHS,
-      profile: z
-        .enum(["advisory", "default", "strict"])
-        .optional()
-        .describe(
-          "Advisory profile; default and strict are compatibility aliases",
-        ),
     },
-    async ({ root, excludes, testPaths, profile }) => {
+    async ({ root, excludes, testPaths }) => {
       try {
         return text(
           JSON.stringify(
@@ -31,7 +24,6 @@ export function registerQualityReport(server: McpServer): void {
               root: requireRepositoryRoot(root),
               excludes,
               testPaths,
-              profile,
             }),
             null,
             2,

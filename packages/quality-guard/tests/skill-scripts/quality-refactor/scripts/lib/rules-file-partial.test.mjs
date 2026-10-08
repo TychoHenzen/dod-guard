@@ -32,7 +32,7 @@ function scanPartial(root, rel) {
       source,
       lines: source.split("\n"),
     },
-    buildConfig("advisory"),
+    buildConfig(),
   ).violations;
 }
 

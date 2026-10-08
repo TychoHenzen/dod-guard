@@ -5,9 +5,10 @@ import {
   buildConfig,
   severityFor,
 } from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
+import { parseArgs } from "../../../../../skills/quality-refactor/scripts/quality-scan-options.mjs";
 
 test("severityFor respects medium and high bounds", () => {
-  const config = buildConfig("advisory");
+  const config = buildConfig();
   assert.equal(severityFor(config, "complexity", 5), null);
   assert.equal(severityFor(config, "complexity", 6), "medium");
   assert.equal(severityFor(config, "complexity", 10), "medium");
@@ -15,15 +16,14 @@ test("severityFor respects medium and high bounds", () => {
 });
 
 test("severityFor handles null and missing thresholds", () => {
-  const config = buildConfig("advisory");
+  const config = buildConfig();
   assert.equal(severityFor(config, "types-per-file", 1), null);
   assert.equal(severityFor(config, "types-per-file", 2), "high");
   assert.equal(severityFor(config, "else-branch", 1), null);
 });
 
-test("advisory profile keeps normalized thresholds and presence severities", () => {
-  const config = buildConfig("advisory");
-  assert.equal(config.profile, "advisory");
+test("config keeps normalized thresholds and presence severities", () => {
+  const config = buildConfig();
   assert.deepEqual(config.thresholds["file-length"], {
     medium: 100,
     high: 300,
@@ -40,8 +40,8 @@ test("advisory profile keeps normalized thresholds and presence severities", () 
   assert.equal("assumption-marker" in config.presence, false);
 });
 
-test("legacy default and strict profiles normalize to the same advisory config", () => {
-  const advisory = buildConfig("advisory");
-  assert.deepEqual(buildConfig("default"), advisory);
-  assert.deepEqual(buildConfig("strict"), advisory);
+test("the scanner CLI rejects the removed --profile option", () => {
+  assert.deepEqual(parseArgs(["--profile=strict"]), {
+    error: "unknown option: --profile",
+  });
 });

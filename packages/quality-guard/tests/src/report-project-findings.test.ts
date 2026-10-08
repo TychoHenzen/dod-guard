@@ -9,7 +9,6 @@ const SCORE_WITHOUT_FINDINGS = 100;
 function buildRootEntrypointReport() {
   return buildQualityReport(
     {
-      profile: "default",
       files: [
         { path: "src/a.ts", language: "ts", classification: "production" },
       ],
@@ -91,7 +90,6 @@ test("counts repository-root findings in overall totals only", () => {
 test("reports findings outside the scanned files as project findings", () => {
   const report = buildQualityReport(
     {
-      profile: "default",
       files: [
         { path: "src/a.ts", language: "ts", classification: "production" },
       ],
@@ -125,7 +123,6 @@ test("validates severity on repository-root findings", () => {
     () =>
       buildQualityReport(
         {
-          profile: "default",
           files: [
             { path: "src/a.ts", language: "ts", classification: "production" },
           ],

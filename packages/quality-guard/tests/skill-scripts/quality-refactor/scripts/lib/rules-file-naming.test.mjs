@@ -24,7 +24,7 @@ const encodedMessage = (name) =>
 function scan(lang, rel, source) {
   return scanFile(
     { rel, lang, isTest: false, source, lines: source.split("\n") },
-    buildConfig("default"),
+    buildConfig(),
   ).violations.filter((violation) => violation.rule === "naming-encoding");
 }
 

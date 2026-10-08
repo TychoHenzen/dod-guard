@@ -17,7 +17,7 @@ export function scansFor(files) {
   return scans;
 }
 
-export function rustScansFor(files, config = buildConfig("default")) {
+export function rustScansFor(files, config = buildConfig()) {
   const scans = new Map();
   for (const file of files) scans.set(file.rel, scanFile(file, config));
   return scans;

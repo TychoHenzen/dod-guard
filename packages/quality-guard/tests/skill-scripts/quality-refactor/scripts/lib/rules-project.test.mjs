@@ -12,7 +12,7 @@ test("an export referenced by production code is not dead", () => {
   const found = checkReachability({
     files,
     scans: scansFor(files),
-    config: buildConfig("default"),
+    config: buildConfig(),
   });
   assert.equal(
     found.some((violation) => violation.file === "src/a.ts"),
@@ -25,7 +25,7 @@ test("an export with no in-repo references is dead-export", () => {
     fileWithCode("src/a.ts", "export function unusedFn() {}"),
     fileWithCode("src/b.ts", "console.log('nothing to do with it')"),
   ];
-  const config = buildConfig("default");
+  const config = buildConfig();
   const found = checkReachability({ files, scans: scansFor(files), config });
   assert.equal(found.length, 1);
   assert.equal(found[0].rule, "dead-export");
@@ -38,7 +38,7 @@ test("an export referenced only by a test is test-only-export", () => {
     fileWithCode("src/a.ts", "export function testOnlyFn() {}"),
     fileWithCode("src/b.test.ts", "testOnlyFn();", { isTest: true }),
   ];
-  const config = buildConfig("default");
+  const config = buildConfig();
   const found = checkReachability({ files, scans: scansFor(files), config });
   assert.equal(found.length, 1);
   assert.equal(found[0].rule, "test-only-export");
@@ -54,7 +54,7 @@ test("calling reachability without manifests preserves the default", () => {
   const found = checkReachability({
     files,
     scans: scansFor(files),
-    config: buildConfig("default"),
+    config: buildConfig(),
   });
   assert.equal(found.length, 1);
   assert.equal(found[0].rule, "dead-export");
@@ -69,7 +69,7 @@ test("entry files are skipped by reachability", () => {
     checkReachability({
       files,
       scans: scansFor(files),
-      config: buildConfig("default"),
+      config: buildConfig(),
     }).length,
     0,
   );

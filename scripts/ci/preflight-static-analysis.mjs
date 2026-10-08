@@ -98,7 +98,7 @@ function reportPaths(title, paths) {
 
 function runQualityDiagnostics() {
   const env = { ...process.env, QUALITY_RULES, QUALITY_SCAN };
-  const qualityArgs = [...QUALITY_PATH_ARGS, "--profile=strict", `--rules=${QUALITY_RULES}`];
+  const qualityArgs = [...QUALITY_PATH_ARGS, `--rules=${QUALITY_RULES}`];
   runNode("Quality diagnostics (advisory)", QUALITY_SCAN, qualityArgs, {
     allowFailure: true,
     env,

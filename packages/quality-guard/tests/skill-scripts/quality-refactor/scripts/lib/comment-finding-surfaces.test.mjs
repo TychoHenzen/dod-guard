@@ -31,16 +31,16 @@ test("comment findings keep stable fields through text, JSON, and units", () => 
         testPaths: [],
         rules: ["comment-missing-reference", "comment-placeholder"],
       },
-      buildConfig("default"),
+      buildConfig(),
     );
     const violations = sortViolations(scanned.violations);
     const result = resultFor({
-      options: { profile: "strict" },
+      options: {},
       files: scanned.files,
       sorted: violations,
       summary: summarize(violations),
     });
-    assert.equal(result.profile, "advisory");
+    assert.equal("profile" in result, false);
     const json = JSON.parse(renderJson(result));
     const units = toWorkUnits(violations);
     assert.deepEqual(Object.keys(json.summary).sort(), [

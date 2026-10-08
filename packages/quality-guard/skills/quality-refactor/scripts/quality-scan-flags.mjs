@@ -4,9 +4,6 @@ export const FLAG_HANDLERS = {
   format: (options, value) => {
     options.format = value;
   },
-  profile: (options, value) => {
-    options.profile = value;
-  },
   rules: (options, value) => {
     options.rules = value.split(",").filter(Boolean);
   },

@@ -6,7 +6,6 @@ function defaultOptions() {
   return {
     paths: [],
     format: "text",
-    profile: "advisory",
     rules: null,
     excludes: [],
     testPaths: [],
@@ -38,7 +37,6 @@ export function parseArgs(argv) {
 function invalidChoice(options) {
   const choices = [
     ["format", ["text", "json", "units"]],
-    ["profile", ["advisory", "default", "strict"]],
   ];
   const invalid = choices.find(
     ([key, values]) => !values.includes(options[key]),

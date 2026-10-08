@@ -14,10 +14,9 @@ test("runs the scanner and architecture analysis for a project root", () => {
       path.join(root, "src", "service.ts"),
       'export class Service { run(): string { return "ok"; } }\n',
     );
-    const report = runQualityReport({ root, profile: "default" });
+    const report = runQualityReport({ root });
 
     assert.equal(report.schemaVersion, 1);
-    assert.equal(report.scanner.profile, "advisory");
     assert.deepEqual(
       report.files.map((file) => file.path),
       ["src/service.ts"],

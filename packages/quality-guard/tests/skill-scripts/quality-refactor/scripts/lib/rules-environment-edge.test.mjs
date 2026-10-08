@@ -36,7 +36,7 @@ test("reports blank, unconfigured, and ambiguous supported root manifests", () =
   for (const { files, expected } of cases)
     withProject(files, (root) =>
       assert.deepEqual(
-        checkEnvironment(root, buildConfig("default")).map(
+        checkEnvironment(root, buildConfig()).map(
           (violation) => violation.rule,
         ),
         expected,
@@ -48,7 +48,7 @@ test("routes E1 and E2 findings through the repository scan", () => {
   withProject({ "package.json": "{}\n" }, (root) => {
     const result = scan(
       { paths: ["."], root, excludes: [], testPaths: [], rules: null },
-      buildConfig("default"),
+      buildConfig(),
     );
     assert.deepEqual(
       result.violations.map((violation) => violation.rule),
@@ -60,7 +60,7 @@ test("routes an unconfigured Python root through the repository scan", () => {
   withProject({ "pyproject.toml": '[project]\nname = "sample"\n' }, (root) => {
     const result = scan(
       { paths: ["."], root, excludes: [], testPaths: [], rules: null },
-      buildConfig("default"),
+      buildConfig(),
     );
     assert.deepEqual(
       result.violations.map((violation) => violation.rule),
