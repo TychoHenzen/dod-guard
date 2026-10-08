@@ -1,6 +1,6 @@
 {
   "name": "dod-guard",
-  "version": "5.4.60",
+  "version": "5.4.61",
   "description": "GitHub repository setup, deliberative backlog refinement, quick PBI delivery, ordered step execution, issue delivery with researched priority and effort, user-facing wiring and usability/accessibility reviews, repository learning and teach-back, scanner-and-agent GitHub PR review and finding fixes, guarded completion, maintenance, and marketplace release. Ships 23 skills and 9 agents.",
   "author": {
     "name": "tychohenzen",
