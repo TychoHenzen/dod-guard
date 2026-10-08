@@ -51,6 +51,7 @@ triage and summaries in the disposable issue's `## Implementation notes`.
 | Re-refinement | Existing notes contain current evidence and one stale source or newly triggered question. | Reuse current summaries, repeat only the stale or new phase, update notes in place, and create no duplicate sub-issues or scale labels. |
 | Structured parent | A feature parent decomposes into three independently verifiable user flows. | Create one actionable Todo child per functional slice, keep dependent steps in the parent checklist, and assess implementation, wiring/usability, quality, and reliability across the owning slices with observable evidence. |
 | Partial structured parent | A feature parent already has one child that owns one functional slice. | Reuse that child, add only independently deliverable missing slices, and do not create category placeholders, child branches, or PRs. |
+| Repeated variant shape | A feature parent adds three output formats, and each format needs the same parse, validate, and report steps in several callers. | Make the first slice introduce the shared format boundary and move one existing format behind it, then add one slice per remaining format behind that boundary. Each slice keeps the system working and deletes the structure it replaces. |
 
 ## Classification cases
 

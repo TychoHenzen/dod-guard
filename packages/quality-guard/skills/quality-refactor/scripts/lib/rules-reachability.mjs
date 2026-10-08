@@ -2,6 +2,7 @@ import { isEntryPath } from "./config.mjs";
 import { lineAt } from "./offsets.mjs";
 import { referenceCounts } from "./rules-reachability-evidence.mjs";
 import { EXPORT_PATTERNS } from "./rules-reachability-exports.mjs";
+import { suggestionFor } from "./rule-suggestions.mjs";
 const EXPORT_BLOCK = /export\s*\{([^}]*)\}/g;
 function namesFromBlock(code) {
   const names = [];
@@ -70,6 +71,7 @@ function violationForSymbol({ file, corpus, config, symbol }) {
     severity: config.presence[rule],
     message,
     metric: 1,
+    suggestion: suggestionFor(rule),
   };
 }
 function violationsForFile(file, corpus, config) {

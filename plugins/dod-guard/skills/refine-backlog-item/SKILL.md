@@ -184,6 +184,31 @@ category list. Reuse an existing child when its outcome and acceptance
 criteria already own the unit. Never duplicate a unit, and give every created
 child minimal parent context, scope, acceptance criteria, and verification.
 
+Decompose by successive refinement, not by up-front partitioning:
+
+- Order slices so that each one leaves the system working with its tests
+  green. Make the first slice the thinnest end-to-end path through the
+  supported surface, and let later slices extend that running path rather
+  than build parts that only work once everything lands.
+- Name each slice by the behavior it adds. A slice that can only be named by
+  its position or layer ("part two", "the parsing layer", "backend changes")
+  is cut in the wrong place.
+- Look for a repeated shape before splitting by variant. When every variant
+  (each format, type, provider, or command) needs the same steps in several
+  places, the first slice introduces the shared boundary that owns those
+  steps and converts one existing variant to it. Each remaining variant is
+  then a local slice behind that boundary, not a new branch in every caller.
+- Keep a concept's validation and error behavior with the slice that owns
+  the concept, so the main path stays readable and a failure is reported
+  where its cause is known.
+- When a slice replaces old structure, the same slice migrates the callers
+  and deletes what it made obsolete, such as duplicate maps, forwarding
+  code, or a superseded path. Do not leave the deletion for a later cleanup
+  child.
+- Stop decomposing when each slice is clear enough to implement and verify
+  for the current outcome. Do not invent abstractions or children for
+  speculative future variants.
+
 For every structured PBI, explicitly assess implementation, wiring and
 end-to-end usability (including proof that the feature is reachable from its
 intended UI or supported user-facing surface), refactoring and code quality,

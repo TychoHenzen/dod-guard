@@ -16,6 +16,7 @@ scanner remains advisory when a source pattern cannot prove intent.
 | --- | --- | --- |
 | `line-length` | `formatting/vertical-structure.md`; `emergence/pragmatic-size.md` | 80 preferred / 120 hard diagnostic signals; wrap or rename when it improves intent, not to satisfy a number blindly. |
 | `file-length` | `classes/srp-and-class-size.md`; `emergence/pragmatic-size.md` | 100 preferred / 300 hard diagnostic signals; split at a real responsibility boundary. |
+| `partial-type-length` | `classes/srp-and-class-size.md`; `successive-refinement/polymorphic-parsing-and-errors.md` | 100 preferred / 300 hard combined lines of a C# partial type split across hand-written files; a partial split is not a responsibility boundary. |
 | `function-length` | `functions/small-and-focused.md`; `emergence/pragmatic-size.md` | 30 preferred / 60 hard diagnostic signals; extract a named concept when cohesion or verification suffers. |
 | `complexity` | `functions/small-and-focused.md`; `smells-and-heuristics/structure-and-abstraction.md` | 5 preferred / 10 hard diagnostic signals; simplify paths when the function stops expressing one idea. |
 | `param-count` | `functions/arguments.md` | 3 preferred / 7 hard diagnostic signals; introduce a parameter object or query when arguments form a clump. |
@@ -249,7 +250,31 @@ sequence. If no seam exists, a long cohesive file is better than two files that
 must always change together. Do not introduce partial classes solely to satisfy
 numeric file or line limits. A partial class is appropriate only for a strong,
 documented domain, framework, or ownership reason; otherwise say so and leave a
-cohesive class alone.
+cohesive class alone. The scanner measures a split partial type as one unit
+through `partial-type-length`, so moving members into another `partial` file
+does not clear this finding.
+
+---
+
+## `partial-type-length` - 100 preferred, 300 hard, across files
+
+**Detects:** a top-level C# `partial` type whose declarations sit in more than
+one hand-written `.cs` file in the same directory. The metric is the combined
+line count of every declaring file, reported on each of them. Compiler and
+source-generator output (`*.g.cs`, `*.g.i.cs`, `*.Designer.cs`,
+`*.generated.*`) is not counted, and a single `partial` declaration, such as a
+Godot node script, is never a finding.
+
+**Why this is a diagnostic signal:** a partial type is still one class. Its
+fields, invariants, and reasons to change are shared by every file that
+declares it, so splitting it by member group hides its size from `file-length`
+without reducing what a reader must hold in mind.
+
+**Fix:** treat it as a `file-length` finding on the whole class. Merge the
+parts back, then *Extract Class* for each cohesive group of fields and the
+methods that use them, *Move Function* for operations that belong to another
+owner, or *Split Phase* when the class runs two stages in sequence. Keep a
+split partial only for a documented framework, generator, or ownership reason.
 
 ---
 
