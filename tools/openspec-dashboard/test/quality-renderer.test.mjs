@@ -138,9 +138,7 @@ test("includes unscored project findings in rules, filters, and severity totals"
   const view = buildQualityView(projectReport, controls);
 
   assert.deepEqual(view.projectFindings.map((finding) => finding.rule), ["build-entrypoint"]);
-  assert.equal(view.summary.medium, 4);
-  assert.equal(view.summary.fileCount, 4);
-  assert.equal(view.summary.averageScore, 93.75);
+  assert.deepEqual(view.summary, { fileCount: 4, high: 1, medium: 4, low: 1, averageScore: 93.75 });
   assert.ok(view.rules.includes("build-entrypoint"));
   assert.equal(buildQualityView(projectReport, { ...controls, severity: "high" }).projectFindings.length, 0);
   assert.equal(buildQualityView(projectReport, { ...controls, text: "repository root" }).projectFindings.length, 1);

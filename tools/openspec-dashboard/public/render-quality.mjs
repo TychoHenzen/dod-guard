@@ -49,7 +49,10 @@ function fileSection(file) {
 
 function projectLocation(finding) {
   const file = String(finding.file ?? "");
-  return finding.line ? `${file}:${finding.line}` : file;
+  if (!finding.line) {
+    return file;
+  }
+  return `${file}:${finding.line}`;
 }
 
 function projectFindingRow(finding) {

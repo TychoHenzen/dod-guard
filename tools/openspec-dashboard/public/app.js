@@ -137,7 +137,9 @@ async function openProject(index, refresh = false) {
     const report = await requestReport(index, refresh);
     if (request !== viewRequest) return;
     state.report = report;
-    if (!reportHasRule(report, state.quality.rule)) state.quality.rule = "all";
+    if (!reportHasRule(report, state.quality.rule)) {
+      state.quality.rule = "all";
+    }
     paintLists();
     dom.filter.disabled = false;
   } catch (err) {

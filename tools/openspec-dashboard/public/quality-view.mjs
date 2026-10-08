@@ -44,8 +44,12 @@ function matchesProjectText(finding, needle) {
 }
 
 function matchesProjectFinding(finding, controls, needle) {
-  if (controls.severity !== "all" && finding.severity !== controls.severity) return false;
-  if (controls.rule !== "all" && findingRule(finding) !== controls.rule) return false;
+  if (controls.severity !== "all" && finding.severity !== controls.severity) {
+    return false;
+  }
+  if (controls.rule !== "all" && findingRule(finding) !== controls.rule) {
+    return false;
+  }
   return !needle || matchesProjectText(finding, needle);
 }
 

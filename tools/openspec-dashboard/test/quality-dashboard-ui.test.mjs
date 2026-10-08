@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { chromium } from "@playwright/test";
 import { requestAuthenticatedShutdown } from "../lib/dashboard-ownership.mjs";
+import { fileRow, projectRow } from "./quality-finding-rows.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const STARTUP_TIMEOUT_MS = 30_000;
@@ -93,12 +94,7 @@ test("starts from the normal launcher and refreshes the displayed quality report
       }))),
       [
         ...saved.projectFindings.map(projectRow),
-        ...saved.files.flatMap((file) => file.findings.map((finding) => ({
-          rule: finding.rule ?? finding.kind ?? "finding",
-          location: finding.line ? `:${finding.line}` : "",
-          message: finding.message ?? finding.reason ?? "",
-          severity: finding.severity,
-        }))),
+        ...saved.files.flatMap((file) => file.findings.map(fileRow)),
       ],
     );
 
@@ -164,19 +160,6 @@ test("starts from the normal launcher and refreshes the displayed quality report
     }
   }
 });
-
-function ruleName(finding) {
-  return finding.rule ?? finding.kind ?? "finding";
-}
-
-function messageText(finding) {
-  return finding.message ?? finding.reason ?? "";
-}
-
-function projectRow(finding) {
-  const location = finding.line ? `${finding.file}:${finding.line}` : finding.file;
-  return { rule: ruleName(finding), location, message: messageText(finding), severity: finding.severity };
-}
 
 function staleReport() {
   return {
