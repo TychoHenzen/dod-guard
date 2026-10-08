@@ -82,6 +82,18 @@ test("a rule absent from the next report resets to the displayed All rules optio
   assert.equal(context.renderedOptions.rule, "all");
 });
 
+test("a project-level rule absent from the file list survives the next report", async () => {
+  const { context, pending } = fixture();
+  context.updateQuality({ rule: "build-entrypoint" });
+  const loading = context.openProject(1);
+  pending[0].resolve({
+    files: [{ findings: [{ rule: "line-length" }] }],
+    projectFindings: [{ rule: "build-entrypoint" }],
+  });
+  await loading;
+  assert.equal(context.renderedOptions.rule, "build-entrypoint");
+});
+
 test("returning to a refreshing project waits for its regenerated report", async () => {
   const { context, nodes, pending } = fixture();
   const refreshing = context.openProject(0, true);

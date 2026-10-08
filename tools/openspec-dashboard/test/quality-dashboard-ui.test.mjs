@@ -55,6 +55,8 @@ test("starts from the normal launcher and refreshes the displayed quality report
 
     const saved = JSON.parse(await readFile(join(project, ".quality", "quality-report.json"), "utf8"));
     assert.equal(saved.schemaVersion, 1);
+    assert.ok(saved.projectFindings.some((finding) => finding.file === "<repository root>" && finding.rule === "build-entrypoint"));
+    await dashboard.locator(".quality-project .finding code", { hasText: "<repository root>" }).first().waitFor();
     assert.notEqual(saved.files[0]?.path, "stale/old.js");
     assert.equal(await dashboard.locator(".finding strong", { hasText: "stale-rule" }).count(), 0);
     assert.deepEqual(await dashboard.locator(".metric-value").allTextContents(), [
@@ -89,12 +91,15 @@ test("starts from the normal launcher and refreshes the displayed quality report
         message: row.querySelector("span")?.textContent,
         severity: ["high", "medium", "low"].find((severity) => row.classList.contains(severity)),
       }))),
-      saved.files.flatMap((file) => file.findings.map((finding) => ({
-        rule: finding.rule ?? finding.kind ?? "finding",
-        location: finding.line ? `:${finding.line}` : "",
-        message: finding.message ?? finding.reason ?? "",
-        severity: finding.severity,
-      }))),
+      [
+        ...saved.projectFindings.map(projectRow),
+        ...saved.files.flatMap((file) => file.findings.map((finding) => ({
+          rule: finding.rule ?? finding.kind ?? "finding",
+          location: finding.line ? `:${finding.line}` : "",
+          message: finding.message ?? finding.reason ?? "",
+          severity: finding.severity,
+        }))),
+      ],
     );
 
     const filter = dashboard.locator("#filter");
@@ -111,7 +116,7 @@ test("starts from the normal launcher and refreshes the displayed quality report
     await controls.nth(1).selectOption("dead-export");
     assert.equal(
       await dashboard.locator(".finding").count(),
-      saved.files.flatMap((file) => file.findings).filter((finding) => (finding.rule ?? finding.kind ?? "finding") === "dead-export").length,
+      [...saved.files.flatMap((file) => file.findings), ...saved.projectFindings].filter((finding) => (finding.rule ?? finding.kind ?? "finding") === "dead-export").length,
     );
     await controls.nth(1).selectOption("all");
     assert.equal(await dashboard.locator(".quality-file").count(), saved.files.length);
@@ -159,6 +164,15 @@ test("starts from the normal launcher and refreshes the displayed quality report
     }
   }
 });
+
+function projectRow(finding) {
+  return {
+    rule: finding.rule ?? finding.kind ?? "finding",
+    location: finding.line ? `${finding.file}:${finding.line}` : finding.file,
+    message: finding.message ?? finding.reason ?? "",
+    severity: finding.severity,
+  };
+}
 
 function staleReport() {
   return {

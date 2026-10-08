@@ -19,6 +19,7 @@ Each registered project is a tab. The selected report shows:
 
 - overall score, file count, and high, medium, and low finding counts;
 - expandable files with rule, severity, line, and message;
+- repository-level findings in a "Project findings" section, unscored and counted in the severity totals;
 - architecture findings grouped by category;
 - filtering across paths, rules, and messages.
 

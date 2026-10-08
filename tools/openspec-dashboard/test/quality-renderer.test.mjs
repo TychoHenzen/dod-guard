@@ -127,3 +127,25 @@ test("distinguishes empty reports from filters with no matches", () => {
   assert.equal(buildQualityView({ ...report, files: [] }, controls).emptyState, "No files in this report.");
   assert.equal(buildQualityView(report, { ...controls, text: "missing" }).emptyState, "No files match the active filters.");
 });
+
+test("includes unscored project findings in rules, filters, and severity totals", () => {
+  const projectReport = {
+    ...report,
+    projectFindings: [
+      { file: "<repository root>", line: 1, rule: "build-entrypoint", severity: "medium", message: "E1: no root entry point" },
+    ],
+  };
+  const view = buildQualityView(projectReport, controls);
+
+  assert.deepEqual(view.projectFindings.map((finding) => finding.rule), ["build-entrypoint"]);
+  assert.equal(view.summary.medium, 4);
+  assert.equal(view.summary.fileCount, 4);
+  assert.equal(view.summary.averageScore, 93.75);
+  assert.ok(view.rules.includes("build-entrypoint"));
+  assert.equal(buildQualityView(projectReport, { ...controls, severity: "high" }).projectFindings.length, 0);
+  assert.equal(buildQualityView(projectReport, { ...controls, text: "repository root" }).projectFindings.length, 1);
+  const ruleView = buildQualityView(projectReport, { ...controls, rule: "build-entrypoint" });
+  assert.equal(ruleView.projectFindings.length, 1);
+  assert.equal(ruleView.files.length, 0);
+  assert.deepEqual(buildQualityView(report, controls).projectFindings, []);
+});

@@ -170,6 +170,7 @@ main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .quality-file summary { cursor: pointer; }
 .findings { display: grid; gap: 8px; margin: 8px 0 14px; padding: 0 10px 0 24px; }
 .finding { display: grid; grid-template-columns: minmax(0, 160px) 36px minmax(0, 1fr); gap: 8px; overflow-wrap: anywhere; }
+.quality-project .finding { grid-template-columns: minmax(0, 160px) minmax(0, 260px) minmax(0, 1fr); }
 .architecture-json { white-space: pre-wrap; overflow-wrap: anywhere; }
 .quality-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin: 0 0 22px; }
 .quality-control { display: grid; gap: 4px; color: var(--dim); font-size: 12px; }
@@ -194,6 +195,7 @@ details[open] > .quality-summary::before, .quality-file[open] > summary::before 
   .quality-summary .entry-note, .quality-file summary .entry-note { grid-column: 2; text-align: left; }
   .quality-children { margin-left: 7px; padding-left: 5px; }
   .finding { grid-template-columns: minmax(0, 1fr) 36px; }
+  .quality-project .finding { grid-template-columns: minmax(0, 1fr); }
   .finding > span { grid-column: 1 / -1; }
   header { padding: 8px 14px; }
   .tabs { flex-basis: calc(100% - 80px); }

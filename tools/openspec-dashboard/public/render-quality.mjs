@@ -47,6 +47,29 @@ function fileSection(file) {
   ]);
 }
 
+function projectLocation(finding) {
+  const file = String(finding.file ?? "");
+  return finding.line ? `${file}:${finding.line}` : file;
+}
+
+function projectFindingRow(finding) {
+  return el("li", { class: `finding ${finding.severity}` }, [
+    el("strong", {}, finding.rule ?? finding.kind ?? "finding"),
+    el("code", {}, projectLocation(finding)),
+    el("span", {}, finding.message ?? finding.reason ?? ""),
+  ]);
+}
+
+function projectSection(report, view) {
+  if ((report.projectFindings ?? []).length === 0) {
+    return el("p", { class: "empty" }, "No project findings.");
+  }
+  if (view.projectFindings.length === 0) {
+    return el("p", { class: "empty" }, "No project findings match the active filters.");
+  }
+  return el("ul", { class: "findings quality-project" }, view.projectFindings.map(projectFindingRow));
+}
+
 function renderTreeNode(node, callbacks) {
   if (node.kind === "folder") {
     return folderSection(node, callbacks);
@@ -131,6 +154,8 @@ export function renderQuality(report, options = {}, suppliedCallbacks = {}) {
       card("low", count(view.summary.low), "low"),
     ]),
     controlsSection(view, callbacks),
+    el("h2", {}, `Project findings (${view.projectFindings.length})`),
+    projectSection(report, view),
     el("h2", {}, `Files (${view.files.length})`),
     fileTree,
     el("h2", {}, "Architecture"),

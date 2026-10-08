@@ -117,6 +117,14 @@ async function show(build) {
   }
 }
 
+function reportFindings(report) {
+  return [...(report.files ?? []).flatMap((file) => file.findings ?? []), ...(report.projectFindings ?? [])];
+}
+
+function reportHasRule(report, rule) {
+  return reportFindings(report).some((finding) => (finding.rule ?? finding.kind ?? "finding") === rule);
+}
+
 async function openProject(index, refresh = false) {
   const request = ++viewRequest;
   state.active = index;
@@ -129,9 +137,7 @@ async function openProject(index, refresh = false) {
     const report = await requestReport(index, refresh);
     if (request !== viewRequest) return;
     state.report = report;
-    const hasRule = report.files?.some((file) =>
-      file.findings?.some((finding) => (finding.rule ?? finding.kind ?? "finding") === state.quality.rule));
-    if (!hasRule) state.quality.rule = "all";
+    if (!reportHasRule(report, state.quality.rule)) state.quality.rule = "all";
     paintLists();
     dom.filter.disabled = false;
   } catch (err) {
