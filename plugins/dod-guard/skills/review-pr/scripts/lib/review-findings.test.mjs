@@ -15,8 +15,7 @@ const OTHER = "packages/unrelated/src/index.ts";
 const UNICODE = "docs/ü.md";
 
 // Violation shapes copied from a whole-repository quality_scan of PR #826
-// (Windows separators included), with severities relabeled to the #820
-// high/medium/low vocabulary.
+// (Windows separators included).
 const scan = {
   violations: [
     {
@@ -157,6 +156,24 @@ test("a scanner group whose findings are all low is MINOR", () => {
   assert.equal(
     unicode.body.split("\n")[0],
     "**MINOR** quality-guard structural findings (1)",
+  );
+});
+
+test("a scanner severity outside high/medium/low fails the review build", () => {
+  const legacy = {
+    violations: [
+      {
+        file: FIX,
+        line: 5,
+        rule: "line-length",
+        severity: "error",
+        message: "line is 85 chars",
+      },
+    ],
+  };
+  assert.throws(
+    () => review([], legacy),
+    /unknown severity "error".*update the installed quality-guard plugin/,
   );
 });
 
