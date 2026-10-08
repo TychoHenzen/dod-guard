@@ -57,19 +57,21 @@ export function absoluteTail(repoRoot) {
     `directly for more detail. The write continues for ${repoRoot}.`
   );
 }
-export function advisoryFindings(violations) {
-  return violations.map((violation) => {
-    const {
-      file = "unknown-file",
-      line = "?",
-      severity,
-      rule = "unknown-rule",
-      message = "no message",
-      suggestion,
-    } = violation;
-    const finding = `${file}:${line} [${severity}] ${rule}: ${message} (advisory finding)`;
-    return suggestion ? `${finding}\n  Fix: ${suggestion}` : finding;
-  });
+export function highFindings(violations) {
+  return violations
+    .filter((violation) => violation.severity === "high")
+    .map((violation) => {
+      const {
+        file = "unknown-file",
+        line = "?",
+        severity,
+        rule = "unknown-rule",
+        message = "no message",
+        suggestion,
+      } = violation;
+      const finding = `${file}:${line} [${severity}] ${rule}: ${message} (advisory finding)`;
+      return suggestion ? `${finding}\n  Fix: ${suggestion}` : finding;
+    });
 }
 function unavailableTail(filePath) {
   return (

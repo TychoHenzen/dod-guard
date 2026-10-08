@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { gate } from "../../scripts/quality-guard-gate.mjs";
-import { advisoryFindings } from "../../scripts/quality-guard-gate-support.mjs";
+import { highFindings } from "../../scripts/quality-guard-gate-support.mjs";
 import {
   FILE_RULES,
   runScanner,
@@ -35,9 +35,9 @@ function gateWith(filePath, calls, scan) {
   );
 }
 
-test("hook findings use normalized advisory severities", () => {
+test("the hook reports only high findings", () => {
   assert.deepEqual(
-    advisoryFindings([
+    highFindings([
       {
         file: "src/high.ts",
         line: 1,
@@ -60,11 +60,7 @@ test("hook findings use normalized advisory severities", () => {
         message: "low",
       },
     ]),
-    [
-      "src/high.ts:1 [high] complexity: high (advisory finding)",
-      "src/medium.ts:2 [medium] else-branch: medium (advisory finding)",
-      "src/low.ts:3 [low] style: low (advisory finding)",
-    ],
+    ["src/high.ts:1 [high] complexity: high (advisory finding)"],
   );
 });
 
@@ -119,7 +115,7 @@ test("the file-local scan measures a split partial class as one class", () => {
       (violation) => violation.rule === "partial-type-length",
     );
     assert.equal(finding?.severity, "high");
-    const [line] = advisoryFindings([finding]);
+    const [line] = highFindings([finding]);
     assert.match(
       line,
       /partial-type-length: partial class Board spans 2 files/,

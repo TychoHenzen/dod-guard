@@ -122,8 +122,10 @@ command.
 
 The shipped PostToolUse hook is optional file-local feedback for compatible
 agent runtimes. It is fail-open: internal failures and unavailable optional
-providers do not block a write. A repository may wire its own correctness
-checks separately; build, test, workflow, lockfile, generated-file,
+providers do not block a write. It reports only high-severity findings for
+the written file; medium and low findings stay in `quality_scan` and
+`quality_report` output. A repository may wire its own correctness checks
+separately; build, test, workflow, lockfile, generated-file,
 bundle/package-integrity, and Biome-error checks remain authoritative.
 
 The server exposes three advisory tools: `quality_scan`, `quality_report`,
