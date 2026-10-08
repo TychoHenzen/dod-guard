@@ -129,8 +129,11 @@ bundle/package-integrity, and Biome-error checks remain authoritative.
 The server exposes three advisory tools: `quality_scan`, `quality_report`,
 and `quality_test_quality`. `quality_report` scores supported source files
 under the repository root and adds an unscored current-state architecture
-audit. Use `quality_test_quality` when an MCP client has a test-evidence
-manifest.
+audit. Findings that belong to the repository rather than a scanned source
+file, such as a missing root build or test entry point, are listed unscored
+under `projectFindings` and counted in `summaries.overall` and
+`summaries.project`. Use `quality_test_quality` when an MCP client has a
+test-evidence manifest.
 
 The shipped `.mcp.json` points at the host-managed loopback endpoint
 `http://127.0.0.1:21720/servers/quality-guard/mcp`. Start the matching PM2

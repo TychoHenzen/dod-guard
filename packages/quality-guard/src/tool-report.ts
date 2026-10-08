@@ -8,9 +8,10 @@ import { EXCLUDES, ROOT, TEST_PATHS } from "./tool-schemas.js";
 export function registerQualityReport(server: McpServer): void {
   server.tool(
     "quality_report",
-    "Score every supported source file under the repository root and return " +
-      "a current-state architecture appendix. Read-only and not a gate " +
-      "verdict.",
+    "Score every supported source file under the repository root, list " +
+      "unscored project-level findings (such as a missing root build entry " +
+      "point) under projectFindings, and return a current-state " +
+      "architecture appendix. Read-only and not a gate verdict.",
     {
       root: ROOT,
       excludes: EXCLUDES,
