@@ -63,7 +63,7 @@ test("does not resolve a nonexistent executable from an incomplete npm codex.cmd
 
 test("builds read-only advisor and write-capable review arguments without stale flags", () => {
   const shared = {
-    model: "gpt-5.6-luna",
+    model: "gpt-5.6-sol",
     reasoningEffort: "max",
     schemaPath: "schema.json",
     outputPath: "output.json",

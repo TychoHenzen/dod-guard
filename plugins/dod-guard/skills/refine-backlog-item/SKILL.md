@@ -82,7 +82,7 @@ option.
 
 During an active goal or explicitly non-interactive refinement, invoke exactly
 one fresh `dod-guard:codex-advisor` instead of asking the user. It uses
-Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5.6-luna` at
+Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5.6-sol` at
 `max` reasoning effort. Give the advisor only the unresolved
 question, candidate answers and recommended default, repository and PBI context,
 the researched evidence, and the affected acceptance boundary and constraints.

@@ -222,8 +222,13 @@ runs a separate Codex process:
 
 The Codex path sends a bounded prompt containing fixed advice-only instructions and
 the complete problem description through stdin to a separate `codex exec`
-process. It uses `gpt-5.6-luna` with `max` reasoning by default and accepts an
-optional `--model=<model>` setting. It uses an
+process. It uses `gpt-5.6-sol` with `max` reasoning by default and accepts an
+optional `--model=<model>` setting. Like the built-in tool, it runs exactly one
+turn, read-only, and returns advice only; because it sees nothing but its
+prompt, the caller supplies the task, the evidence so far, relevant diffs, and
+the candidate decision with its recommended default and the exact question. A
+JSONL stream with a tool item, more than one turn, or other than one agent
+message fails the run. It uses an
 empty non-repository working directory, read-only restrictions, and an
 ephemeral session, and tells the advisor to skip repository research and
 mutations. It probes the direct executable's version and help before launch;

@@ -285,3 +285,30 @@ test("advisor runner rejects shell metacharacters before a Windows executable st
     await rm(fixture.root, { recursive: true, force: true });
   }
 });
+
+test("one turn, one answer, and no tool use, in one codex exec invocation", async () => {
+  const fixture = await createFixture();
+  try {
+    const cases = [
+      ["tool-use", /used a tool \(command_execution\); its advice is not used/],
+      ["two-turns", /ran 2 turns; exactly one is allowed/],
+    ];
+    for (const [mode, expected] of cases) {
+      await rm(fixture.record, { force: true });
+      const result = await runFixture(fixture, mode);
+      assert.equal(result.ok, false, mode);
+      assert.match(result.error, expected);
+      assert.equal(result.advice, undefined, mode);
+      assert.equal(result.execution.status, "incomplete");
+      assert.equal(result.execution.stage, "reviewer-process");
+      const records = JSON.parse(await readFile(fixture.record, "utf8"));
+      assert.equal(records.length, 1, `${mode} must not retry`);
+      assert.equal(records[0].args.includes("resume"), false);
+    }
+    const thinking = await runFixture(fixture, "reasoning");
+    assert.equal(thinking.ok, true);
+    assert.equal(thinking.advice, "Use the smallest safe change.");
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});

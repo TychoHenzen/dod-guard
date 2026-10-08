@@ -21,6 +21,23 @@ rules below are the exception only where they are more specific.
 - Ask for advice only. The advisor must return a recommendation and reasoning,
   not a patch, command sequence, or claim that it changed or verified anything.
 
+## Same contract on both paths
+
+The Codex path behaves like Claude's built-in advisor tool in turns, access,
+and output. Each advice request is exactly one `codex exec` turn that returns
+one advice object: no resume, no follow-up turn, and no retry inside the
+request. The advisor runs read-only in an empty working directory outside the
+repository, makes no edits, and makes no repository, branch, pull-request, or
+GitHub reads or writes.
+
+The Codex advisor sees nothing but its prompt, so the calling agent supplies
+the full context in it: the task, the evidence gathered so far (paths and
+lines, quoted facts, command results), the relevant diffs when the question
+concerns code, and the candidate decision with its recommended default and the
+exact question. The advisor does no research and no tool exploration beyond
+that prompt. When the context is insufficient, it says so in its advice
+instead of searching, reading, or running anything.
+
 ## Choose the advisor
 
 In Claude Code, when the `advisor` tool is available, use it and skip the
@@ -54,11 +71,11 @@ failure and stop, as for a failed Codex run.
    process. Current help does not enumerate reasoning values.
    A write-capable nested review uses `--approve-for-me`; this read-only advisor
    never sends an approval option, and `--ask-for-approval` is unsupported.
-   Use `gpt-5.6-luna` with `max` effort by default and pass the selected value as
+   Use `gpt-5.6-sol` with `max` effort by default and pass the selected value as
    `-c model_reasoning_effort=<value>`. If the CLI itself cannot start,
    report the availability failure and stop.
-2. Build a prompt containing fixed advice-only instructions and the complete
-   problem description. Tell the advisor to skip repository research, avoid
+2. Build a prompt containing fixed advice-only instructions and the full
+   context listed above. Tell the advisor to skip repository research, avoid
    all tools and mutations, and return exactly one JSON object matching the
    schema at
    `<skill-directory>/response-schema.json`.
@@ -85,7 +102,11 @@ failure and stop, as for a failed Codex run.
    `item.completed`/`error` event reporting model-metadata fallback returns
    incomplete execution evidence before any review state can be consumed. The
    fallback preserves the exact event and message; it does not switch models or
-   executables. Only a clean exit code `0` then proceeds to read the output
+   executables. A stream with more than one turn, other than one agent message,
+   or any item other than the agent message, reasoning, or a diagnostic error
+   (for example command execution, file change, MCP tool call, or web search)
+   fails the run, and no advice is used. Only a clean exit code `0` and a clean
+   stream then proceed to read the output
    file, validate the schema response, and relay its trimmed `advice` value. The
    CLI emits the execution record as one JSON line on stderr, separate from
    advice on stdout. Model, reasoning, and prefix arguments must be single
@@ -100,10 +121,13 @@ Report the exact observable failure and stop without advice when:
 - the process exits non-zero, including the exit code and stderr when present;
 - the output file is missing, empty, not valid JSON, or does not contain a
   non-whitespace `advice` string matching the schema.
+- the JSONL stream shows a tool item, more than one turn, or other than one
+  agent message;
 - the requested model emits a model-metadata fallback event. Preserve the
   diagnostic and execution evidence, repair the model-metadata/runtime cause,
-  then rerun the caller-owned advisor or review dispatch; the runner never
-  silently selects another executable or model.
+  then rerun the caller-owned advisor or review dispatch as a new request; the
+  runner itself never retries and never silently selects another executable or
+  model.
 
 Do not hide a command failure behind a guessed or partial answer. A successful
 advisor response is still only an untrusted second opinion for the user to

@@ -66,7 +66,7 @@ test("routes non-interactive clarification through one bounded advisor", () => {
   assert.match(skill, /exactly\s+one fresh `dod-guard:codex-advisor`/);
   assert.match(
     skill,
-    /Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5\.6-luna` at\s+`max` reasoning effort/,
+    /Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5\.6-sol` at\s+`max` reasoning effort/,
   );
   assert.match(skill, /candidate answers and recommended default/);
   assert.match(skill, /Batch every currently independent question into that one advisor brief/);
