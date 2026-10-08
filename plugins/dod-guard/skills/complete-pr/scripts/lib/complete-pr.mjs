@@ -1,5 +1,6 @@
 import { CompletionError, stop } from "./completion-error.mjs";
 import { normalizeCheckRun } from "./check-normalization.mjs";
+import { codexReviewGate } from "./codex-review.mjs";
 import { cleanupTrustedBranch } from "./trusted-cleanup.mjs";
 
 const CI_WORKFLOW_PATH = ".github/workflows/ci.yml";
@@ -644,6 +645,18 @@ async function recoverMergedPullRequest(client, overrides = {}) {
   };
 }
 
+// Codex's findings reach the merge as a stop for /fix-pr-review, never as a
+// comment that arrives after the pull request has merged.
+function codexReviewAllowsMerge(client, completion, codexWaitedMs) {
+  const { acceptedHead, pullNumber, readyAt } = completion;
+  const review = codexReviewGate({ ...client.getCodexReview(pullNumber), acceptedHead, readyAt, waitedMs: codexWaitedMs });
+  if (review.action === "stop") {
+    const findings = (review.findings ?? []).map(({ id, severity, title, url }) => `${id} ${severity} ${title} ${url}`);
+    stop(review.reason, [`Codex review blocks the merge of #${pullNumber} (${review.reason}).`, ...findings].join("\n"));
+  }
+  return review.action === "pass";
+}
+
 async function waitForMerge(client, completion) {
   const {
     acceptedHead,
@@ -654,6 +667,7 @@ async function waitForMerge(client, completion) {
     repository,
   } = completion;
   let trustedHead = acceptedHead;
+  let codexWaitedMs = 0;
   for (let attempt = 0; attempt < options.pollLimit; attempt += 1) {
     // biome-ignore lint/performance/noAwaitInLoops: Merge completion requires ordered polling and guarded mutations.
     let pullRequest = await client.getPullRequest(pullNumber);
@@ -705,9 +719,10 @@ async function waitForMerge(client, completion) {
         repository,
       });
       trustedHead = pullRequest.headSha;
-    } else if (checksPassed) {
+    } else if (checksPassed && codexReviewAllowsMerge(client, completion, codexWaitedMs)) {
       await client.mergePullRequest(pullNumber, trustedHead);
     } else {
+      if (checksPassed) codexWaitedMs += options.pollMs;
       await client.wait(options.pollMs);
     }
   }
@@ -723,6 +738,7 @@ async function completePullRequest(client, overrides = {}) {
     pollLimit: 180,
     pollMs: 10_000,
     updatePollLimit: 12,
+    now: Date.now,
     ...overrides,
   };
   const repository = await client.getRepository();
@@ -738,7 +754,9 @@ async function completePullRequest(client, overrides = {}) {
 
   const acceptedHead = pullRequest.headSha;
   const pullNumber = pullRequest.number;
+  let readyAt;
   if (pullRequest.isDraft) {
+    readyAt = options.now();
     await client.markReady(pullNumber);
     pullRequest = await client.getPullRequest(pullNumber);
     requireTrustedHead(pullRequest, acceptedHead);
@@ -766,6 +784,7 @@ async function completePullRequest(client, overrides = {}) {
     defaultBranch: repository.defaultBranch,
     options,
     pullNumber,
+    readyAt,
     repository,
   });
 }
