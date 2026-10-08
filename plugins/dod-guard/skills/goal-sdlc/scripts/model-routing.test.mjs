@@ -41,8 +41,8 @@ test("the routing standard defines the tiers, runtime rules, and verification on
   for (const phrase of [
     "The strong tier is for judgement with modest reasoning effort",
     "The cheap tier is for mechanical, high-volume work with high reasoning effort",
-    "`model: opus`, `effort: medium`",
-    "`model: haiku`, `effort: max`",
+    "| strong | `opus`, `medium` |",
+    "| cheap | `haiku`, `max` |",
     "`gpt-5.6-sol`, `medium`",
     "`gpt-5.6-luna`, `max`",
     "the Agent call's `model` and `effort` override the agent's frontmatter",
@@ -67,7 +67,9 @@ test("the routing standard defines the tiers, runtime rules, and verification on
 test("no skill or other standard restates the tier definitions", async () => {
   const skillsRoot = new URL("skills/", pluginRoot);
   const names = (await readdir(skillsRoot, { withFileTypes: true })).filter((entry) => entry.isDirectory());
-  const texts = await Promise.all(names.map((entry) => readFile(new URL(`${entry.name}/SKILL.md`, skillsRoot), "utf8")));
+  const texts = await Promise.all(
+    names.map((entry) => readFile(new URL(`${entry.name}/SKILL.md`, skillsRoot), "utf8")),
+  );
   for (const file of ["working-defaults.md", "project-workflow.md", "github-request-discipline.md"]) {
     texts.push(await readFile(new URL(`standards/${file}`, pluginRoot), "utf8"));
   }

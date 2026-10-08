@@ -15,10 +15,10 @@ The cheap tier is for mechanical, high-volume work with high reasoning effort:
 applying a written plan, running validations, regenerating artifacts, and
 reading files to answer planned questions.
 
-| Tier | Claude Code Agent call | Codex agent file | Write-capable agent | Read-only agent |
+| Tier | Claude Code `model`, `effort` | Codex agent file | Write-capable agent | Read-only agent |
 |---|---|---|---|---|
-| strong | `model: opus`, `effort: medium` | `gpt-5.6-sol`, `medium` | `dod-guard:stage-strong` | `dod-guard:read-strong` |
-| cheap | `model: haiku`, `effort: max` | `gpt-5.6-luna`, `max` | `dod-guard:stage-cheap` | `dod-guard:read-cheap` |
+| strong | `opus`, `medium` | `gpt-5.6-sol`, `medium` | `dod-guard:stage-strong` | `dod-guard:read-strong` |
+| cheap | `haiku`, `max` | `gpt-5.6-luna`, `max` | `dod-guard:stage-cheap` | `dod-guard:read-cheap` |
 
 A stage that changes files uses the write-capable agent. A stage that only
 plans, reads, or judges uses the read-only agent, or the stage owner's own
