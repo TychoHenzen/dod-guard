@@ -79,7 +79,9 @@ test("no skill or other standard restates the tier definitions", async () => {
   }
 });
 
-test("goal-sdlc refers to the routing standard", async () => {
-  const goal = await readFile(new URL("skills/goal-sdlc/SKILL.md", pluginRoot), "utf8");
-  assert.ok(goal.includes("`standards/model-routing.md`"));
+test("delegating skills refer to the routing standard", async () => {
+  for (const name of ["goal-sdlc", "refine-backlog-item"]) {
+    const text = await readFile(new URL(`skills/${name}/SKILL.md`, pluginRoot), "utf8");
+    assert.ok(text.includes("`standards/model-routing.md`"), name);
+  }
 });
