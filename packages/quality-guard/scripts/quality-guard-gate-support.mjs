@@ -67,8 +67,10 @@ export function hardBoundFindings(violations) {
         severity = "unknown",
         rule = "unknown-rule",
         message = "no message",
+        suggestion,
       } = violation;
-      return `${file}:${line} [${severity}] ${rule}: ${message} (file-local hard bound)`;
+      const finding = `${file}:${line} [${severity}] ${rule}: ${message} (file-local hard bound)`;
+      return suggestion ? `${finding}\n  Fix: ${suggestion}` : finding;
     });
 }
 function unavailableTail(filePath) {

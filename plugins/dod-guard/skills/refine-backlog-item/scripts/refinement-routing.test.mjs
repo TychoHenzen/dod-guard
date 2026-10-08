@@ -114,6 +114,11 @@ test("uses functional decomposition with cross-cutting review lenses", () => {
   assert.match(structuredParentSection, /these are review lenses, not mandatory child categories/);
   assert.match(skill, /map every task to its functional slice/);
   assert.match(skill, /every\s+linked child matches one independently deliverable functional slice/);
+  assert.match(skill, /Decompose by successive refinement/);
+  assert.match(skill, /leaves the system working with its tests\s+green/);
+  assert.match(skill, /can only be named by\s+its position or layer/);
+  assert.match(skill, /introduces the shared boundary that owns those\s+steps/);
+  assert.match(skill, /deletes what it made obsolete/);
   assert.doesNotMatch(skill, /require exactly one linked child for each category/);
   assert.doesNotMatch(skill, /four mandatory child categories are linked exactly once/);
 });
@@ -204,6 +209,13 @@ test("manual fixtures include each route and its record markers", () => {
       [
         "Reuse that child, add only independently deliverable missing slices, and do not create " +
           "category placeholders, child branches, or PRs.",
+      ],
+    ],
+    [
+      "Repeated variant shape",
+      [
+        "Make the first slice introduce the shared format boundary and move one existing format behind it",
+        "Each slice keeps the system working and deletes the structure it replaces.",
       ],
     ],
   ]) {

@@ -108,6 +108,11 @@ already applies to rules the repository turned on as errors.
   file. A blanked line is whitespace exactly where a comment was, which is how
   a standalone comment is told from a trailing one and how a block's subject
   is found. Hand it the raw source and every comment reads as code.
+- `partial-type-length` is file-local but reads the scanned file's directory.
+  A C# `partial` type split across hand-written siblings is measured as one
+  class, so the per-write hook still sees a long class after its members are
+  moved into another `partial` file. Generated `*.g.cs` and designer files
+  are not counted.
 - Point `--root` at the repository, not at the target directory. Manifest
   files such as Godot scenes are collected from the root, and a scene that
   wires a class usually sits above the scanned subdirectory.

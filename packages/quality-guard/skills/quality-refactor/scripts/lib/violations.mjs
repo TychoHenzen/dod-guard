@@ -1,5 +1,7 @@
 // The one place a rule appends a finding.
 
+import { suggestionFor } from "./rule-suggestions.mjs";
+
 /**
  * Append one violation. A `null` severity means the rule is switched off in
  * this profile, so the finding is dropped here rather than at every call site.
@@ -15,6 +17,7 @@ export function push({
   suggestion,
 }) {
   if (severity === null) return;
+  const fix = suggestion ?? suggestionFor(rule);
   out.push({
     file: file.rel,
     line,
@@ -22,6 +25,6 @@ export function push({
     severity,
     message,
     metric,
-    ...(suggestion === undefined ? {} : { suggestion }),
+    ...(fix === undefined ? {} : { suggestion: fix }),
   });
 }

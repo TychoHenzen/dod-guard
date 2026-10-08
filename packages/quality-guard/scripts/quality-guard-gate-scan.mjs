@@ -13,7 +13,7 @@ export const SCANNER = join(
   "quality-scan.mjs",
 );
 export const FILE_RULES =
-  "file-length,function-length,complexity,param-count," +
+  "file-length,partial-type-length,function-length,complexity,param-count," +
   "nesting-depth,types-per-file,else-branch,unnamed-tuple," +
   "unused-local,commented-out-code,todo-marker,stateless-method," +
   "comment-bloat,comment-restates-code,comment-metadata,comment-placeholder," +

@@ -23,6 +23,7 @@ export const LANG_BY_EXT = {
 export const DEFAULT_THRESHOLDS = {
   "line-length": { warn: 80, error: 120 },
   "file-length": { warn: 100, error: 300 },
+  "partial-type-length": { warn: 100, error: 300 },
   "function-length": { warn: 30, error: 60 },
   complexity: { warn: 5, error: 10 },
   "param-count": { warn: 3, error: 7 },

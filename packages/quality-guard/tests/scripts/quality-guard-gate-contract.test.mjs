@@ -8,6 +8,7 @@ import {
   FILE_RULES,
   runScanner,
 } from "../../scripts/quality-guard-gate-scan.mjs";
+import { hardBoundFindings } from "../../scripts/quality-guard-gate-support.mjs";
 import {
   fakeInput,
   gateDeps,
@@ -52,6 +53,33 @@ test("the file-local scanner reports Python wildcard imports", () => {
         (violation) => violation.rule === "wildcard-import",
       ),
     );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function partialClass(lines) {
+  const body = "    public int Value() => 1;\n".repeat(lines);
+  return `public partial class Board\n{\n${body}}\n`;
+}
+
+test("the file-local scan measures a split partial class as one class", () => {
+  const root = tempRepo();
+  const filePath = join(root, "Board.cs");
+  writeFileSync(filePath, partialClass(200));
+  writeFileSync(join(root, "Board.Moves.cs"), partialClass(200));
+  try {
+    const scan = runScanner(filePath, root);
+    const finding = scan?.violations.find(
+      (violation) => violation.rule === "partial-type-length",
+    );
+    assert.equal(finding?.severity, "error");
+    const [line] = hardBoundFindings([finding]);
+    assert.match(
+      line,
+      /partial-type-length: partial class Board spans 2 files/,
+    );
+    assert.match(line, /\n {2}Fix: A partial class is still one class/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
