@@ -70,8 +70,9 @@ function findingsByFile(
   findings: ScanInput["violations"],
 ): Map<string, ScanInput["violations"]> {
   const byFile = new Map<string, ScanInput["violations"]>();
-  for (const finding of findings)
+  for (const finding of findings) {
     byFile.set(finding.file, [...(byFile.get(finding.file) ?? []), finding]);
+  }
   return byFile;
 }
 

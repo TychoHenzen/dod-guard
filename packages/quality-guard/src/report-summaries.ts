@@ -1,14 +1,4 @@
-import type { Severity } from "#quality-guard-severity";
-
-export function severityCounts(
-  findings: ReadonlyArray<{ severity: Severity }>,
-) {
-  return {
-    high: findings.filter((finding) => finding.severity === "high").length,
-    medium: findings.filter((finding) => finding.severity === "medium").length,
-    low: findings.filter((finding) => finding.severity === "low").length,
-  };
-}
+import type { requireSeverity } from "#quality-guard-severity";
 
 type ScoredFile = {
   high: number;
@@ -39,7 +29,9 @@ function summarize(files: ScoredFile[]) {
 
 export function reportSummaries(
   files: ScoredFile[],
-  projectFindings: ReadonlyArray<{ severity: Severity }>,
+  projectFindings: ReadonlyArray<{
+    severity: ReturnType<typeof requireSeverity>;
+  }>,
 ) {
   const production = files.filter(
     (file) => file.classification === "production",
@@ -57,5 +49,15 @@ export function reportSummaries(
     production: summarize(production),
     test: summarize(tests),
     project: { findingCount: projectFindings.length, ...project },
+  };
+}
+
+export function severityCounts(
+  findings: ReadonlyArray<{ severity: ReturnType<typeof requireSeverity> }>,
+) {
+  return {
+    high: findings.filter((finding) => finding.severity === "high").length,
+    medium: findings.filter((finding) => finding.severity === "medium").length,
+    low: findings.filter((finding) => finding.severity === "low").length,
   };
 }

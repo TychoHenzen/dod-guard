@@ -27080,13 +27080,6 @@ function requireSeverity(severity) {
 }
 
 // src/report-summaries.ts
-function severityCounts(findings) {
-  return {
-    high: findings.filter((finding) => finding.severity === "high").length,
-    medium: findings.filter((finding) => finding.severity === "medium").length,
-    low: findings.filter((finding) => finding.severity === "low").length
-  };
-}
 function summarize(files) {
   const fileCount = files.length;
   const high = files.reduce((sum, file) => sum + file.high, 0);
@@ -27121,6 +27114,13 @@ function reportSummaries(files, projectFindings2) {
     project: { findingCount: projectFindings2.length, ...project }
   };
 }
+function severityCounts(findings) {
+  return {
+    high: findings.filter((finding) => finding.severity === "high").length,
+    medium: findings.filter((finding) => finding.severity === "medium").length,
+    low: findings.filter((finding) => finding.severity === "low").length
+  };
+}
 
 // src/report-builder.ts
 var FILE_SELECTION = "supported handwritten source; generated, dependency, build, binary, unreadable, and symlinked files excluded";
@@ -27151,8 +27151,9 @@ function normalizedFindings(scan) {
 }
 function findingsByFile(findings) {
   const byFile = /* @__PURE__ */ new Map();
-  for (const finding of findings)
+  for (const finding of findings) {
     byFile.set(finding.file, [...byFile.get(finding.file) ?? [], finding]);
+  }
   return byFile;
 }
 function scoredFiles(scan, byFile) {
