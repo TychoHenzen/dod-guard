@@ -27179,12 +27179,9 @@ function buildQualityReport(scan, architecture) {
   const files = scoredFiles(scan, findingsByFile(findings));
   const project = projectFindings(scan, findings);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     scoring: scoring(),
-    scanner: {
-      profile: "advisory",
-      fileSelection: FILE_SELECTION
-    },
+    scanner: { fileSelection: FILE_SELECTION },
     summaries: reportSummaries(files, project),
     files,
     projectFindings: project,
@@ -27244,7 +27241,6 @@ function scannerPath() {
 function buildArgs(request) {
   const optional2 = [
     ["--root", request.root],
-    ["--profile", request.profile],
     ["--rules", request.rules?.length ? request.rules.join(",") : void 0]
   ];
   return [
@@ -27317,7 +27313,7 @@ function architectureFor(root2, scan) {
 }
 function asReportScan(report) {
   const candidate = report;
-  if (!(Array.isArray(candidate.files) && Array.isArray(candidate.violations) && candidate.profile)) {
+  if (!(Array.isArray(candidate.files) && Array.isArray(candidate.violations))) {
     throw new Error("quality scanner returned an invalid report");
   }
   return candidate;
@@ -27451,20 +27447,16 @@ function registerQualityReport(server) {
     {
       root: ROOT,
       excludes: EXCLUDES,
-      testPaths: TEST_PATHS,
-      profile: external_exports.enum(["advisory", "default", "strict"]).optional().describe(
-        "Advisory profile; default and strict are compatibility aliases"
-      )
+      testPaths: TEST_PATHS
     },
-    async ({ root: root2, excludes, testPaths, profile }) => {
+    async ({ root: root2, excludes, testPaths }) => {
       try {
         return text2(
           JSON.stringify(
             await runQualityReportAsync({
               root: requireRepositoryRoot(root2),
               excludes,
-              testPaths,
-              profile
+              testPaths
             }),
             null,
             2
@@ -27492,8 +27484,7 @@ var QUALITY_SCAN_INPUT = {
   root: ROOT,
   rules: external_exports.array(external_exports.string()).optional().describe("Only run these rules"),
   excludes: EXCLUDES,
-  testPaths: TEST_PATHS,
-  profile: external_exports.enum(["advisory", "default", "strict"]).optional().describe("Advisory profile; default and strict are compatibility aliases")
+  testPaths: TEST_PATHS
 };
 async function qualityScan(input) {
   try {
