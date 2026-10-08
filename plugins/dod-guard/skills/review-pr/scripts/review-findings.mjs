@@ -24,7 +24,7 @@ const USAGE = [
   "  review-findings.mjs scan --client=claude|codex --registry=<plugin-list.json> --root=<repo> --out=<scan.json>",
   "  review-findings.mjs existing --reviews=<reviews.json>",
   "  review-findings.mjs build --head=<sha> --scan=<scan.json>",
-  "    --diff=<unified0.diff> --results=<results.json> --out=<payload.json>",
+  "    --diff=<unified0.diff> --results=<results.json> --questions=<questions.json> --out=<payload.json>",
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
 ].join("\n");
 
@@ -77,6 +77,7 @@ const COMMANDS = {
       scan: json(args.scan),
       diff: readFileSync(args.diff, "utf8"),
       results: json(args.results),
+      questions: json(args.questions),
     });
     writeFileSync(args.out, JSON.stringify(review.payload));
     return {
@@ -93,7 +94,7 @@ const COMMANDS = {
 const REQUIRED = {
   scan: ["client", "registry", "root", "out"],
   existing: ["reviews"],
-  build: ["head", "scan", "diff", "results", "out"],
+  build: ["head", "scan", "diff", "results", "questions", "out"],
   report: ["review-id", "comments"],
 };
 const FULL_SHA = /^[0-9a-f]{40}$/;

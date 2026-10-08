@@ -97,6 +97,13 @@ const COVERAGE = [
   { requirement: "AC 1", status: "VERIFIED", evidence: "checked" },
 ];
 
+const QUESTIONS = REVIEWERS.map((lens, index) => ({
+  lens,
+  id: `Q${index + 1}`,
+  question: `Does ${lens} hold at the reviewed head?`,
+  status: "verified",
+}));
+
 // Fills in the reviewers a test does not care about, each with a clean,
 // complete envelope.
 function complete(results) {
@@ -114,6 +121,7 @@ function review(results, scanInput = { violations: [] }) {
     scan: scanInput,
     diff,
     results: complete(results),
+    questions: QUESTIONS,
   });
 }
 
@@ -261,7 +269,7 @@ test("an empty diff or one written with other prefixes stops the build", () => {
     .replaceAll('"a/', '"c/')
     .replaceAll('"b/', '"w/');
   const build = (text) =>
-    buildReview({ headSha: HEAD, scan, diff: text, results: complete([]) });
+    buildReview({ headSha: HEAD, scan, diff: text, results: complete([]), questions: QUESTIONS });
   assert.throws(() => build(prefixed), /lacks the a\/ or b\/ prefix/);
   assert.throws(() => build(""), /names no changed files/);
 });
@@ -310,4 +318,24 @@ test("posted comments read back as GH ids with their severity", () => {
       ["GH-42", "BLOCKER"],
     ],
   );
+});
+
+test("the review body keeps the marker first and lists the planned questions in a collapsed block", () => {
+  const questions = [
+    ...QUESTIONS,
+    { lens: "review-pr-hygiene", id: "Q5", question: "Is <details> text\nescaped?", status: "unanswered" },
+  ];
+  const { payload } = buildReview({ headSha: HEAD, scan, diff, results: complete([]), questions });
+  const lines = payload.body.split("\n");
+  assert.match(lines[0], /^<!-- dod-guard:review-pr head=/);
+  assert.equal(payload.event, "COMMENT");
+  assert.ok(lines.includes("<details>"));
+  assert.ok(lines.includes("<summary>Planned review questions (5)</summary>"));
+  assert.ok(lines.includes("</details>"));
+  for (const lens of REVIEWERS) {
+    assert.ok(lines.includes(`**${lens}**`), lens);
+  }
+  assert.ok(lines.includes("- Q1 (verified): Does review-pr-feature hold at the reviewed head?"));
+  assert.ok(lines.includes("- Q5 (unanswered): Is &lt;details&gt; text escaped?"));
+  assert.ok(lines.indexOf("<details>") > lines.findIndex((line) => line.startsWith("Findings:")));
 });

@@ -263,10 +263,14 @@ Review a GitHub pull request's changed files:
 ```
 
 The PR head must be checked out. The skill scans the whole repository with the
-installed quality-guard scanner and keeps the findings in changed files, then
-runs the feature, design, reliability, and hygiene reviewer agents against the
-PBI. It posts one comment-only review: one comment per changed file for
-scanner findings, one per reviewer finding, each with a `GH-<id>`, and a
+installed quality-guard scanner and keeps the findings in changed files. A
+strong planner then writes questions for the feature, design, reliability, and
+hygiene lenses, cheap investigators answer each one with a cited path and line,
+and after the main thread verifies those answers, the four reviewer agents
+judge them on the strong tier against the PBI. It posts one comment-only
+review, with the planned questions in a collapsed block, and one comment per
+changed file for scanner findings, one per reviewer finding, each with a
+`GH-<id>`, and a
 recommendation of `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES` for other
 findings, or `APPROVE` for none. It posts at most one review per pull request.
 quality-guard must be installed and enabled.
