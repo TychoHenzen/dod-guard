@@ -858,9 +858,15 @@ function pullRequestReasons(pullRequests) {
   return reasons;
 }
 
-function resumableDecision(reasons, uniqueStatuses) {
-  if (uniqueStatuses.length !== 1 || uniqueStatuses[0] !== "In Progress") return null;
-  if (!reasons.every((reason) => RESUMABLE_REASONS.has(reason))) return null;
+// /next-ticket moves only the parent to In Progress; its children stay Todo
+// until /complete-pr finalizes them, so that drift is expected here.
+function resumableDecision(reasons, records) {
+  const statuses = new Set(records.map(({ projectStatus }) => projectStatus));
+  const root = records.find(({ parentIssueNumber }) => parentIssueNumber === null);
+  if (root?.projectStatus !== "In Progress") return null;
+  if (![...statuses].every((status) => ["In Progress", "Todo"].includes(status))) return null;
+  const expected = (reason) => RESUMABLE_REASONS.has(reason) || reason.startsWith("Project status drift: ");
+  if (!reasons.every(expected)) return null;
   return {
     kind: "in-progress",
     eligible: true,
@@ -886,7 +892,7 @@ function defaultQueueDecision(records, context = {}) {
     return reasons.length > 0 ? hold(reasons) : { kind: "complete", eligible: false, status: "Done", reasons: [] };
   }
 
-  const resumable = resumableDecision(reasons, uniqueStatuses);
+  const resumable = resumableDecision(reasons, records);
   if (resumable) return resumable;
   if (reasons.length > 0) return hold(reasons);
   if (collectingFrictionLog(records, context.today)) return hold(["friction log still collecting entries"]);

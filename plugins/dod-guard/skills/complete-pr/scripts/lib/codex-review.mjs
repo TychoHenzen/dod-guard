@@ -66,8 +66,20 @@ function finding(comment) {
   };
 }
 
-// A finding stays open until someone other than Codex answers it, which is
-// how /fix-pr-review records a fix or a reasoned rejection.
+// Only someone with write access to the repository can answer a finding, so
+// an outside commenter cannot clear the gate.
+const TRUSTED_ASSOCIATIONS = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
+
+function trustedReply(comment) {
+  return (
+    Boolean(comment.in_reply_to_id) &&
+    !byCodex(comment) &&
+    TRUSTED_ASSOCIATIONS.has(comment.author_association)
+  );
+}
+
+// A finding stays open until a trusted person answers it, which is how
+// /fix-pr-review records a fix or a reasoned rejection.
 function openFindings(commit, { reviews, reviewComments }) {
   const reviewIds = new Set(
     reviews
@@ -77,7 +89,7 @@ function openFindings(commit, { reviews, reviewComments }) {
   );
   const answered = new Set(
     reviewComments
-      .filter((comment) => comment.in_reply_to_id && !byCodex(comment))
+      .filter(trustedReply)
       .map((comment) => comment.in_reply_to_id),
   );
   return reviewComments

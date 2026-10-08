@@ -97,7 +97,8 @@ it marks it ready. If it is already ready, it preserves that state. It then:
   request: it waits for the review of the accepted head to complete, including
   the run that the ready transition starts, and stops with
   `codex-review-findings` and each finding's `GH-<id>` while any Codex finding
-  on that review has no reply. It also stops on `codex-review-failed`,
+  on that review has no reply from an owner, member, or collaborator. It also
+  stops on `codex-review-failed`,
   `codex-review-missing-for-head`, or `codex-summary-unrecognized`. Fix the
   findings with `/fix-pr-review`, which replies to each one, then run this
   skill again on the new head;

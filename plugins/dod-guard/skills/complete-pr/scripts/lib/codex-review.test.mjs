@@ -29,7 +29,10 @@ function codexSummary(
   };
 }
 
-function codexFinding(id, { reviewId = 1, replyFrom } = {}) {
+function codexFinding(
+  id,
+  { reviewId = 1, replyFrom, association = "OWNER" } = {},
+) {
   const comments = [
     {
       id,
@@ -48,6 +51,7 @@ function codexFinding(id, { reviewId = 1, replyFrom } = {}) {
     comments.push({
       id: id + 1,
       user: replyFrom,
+      author_association: association,
       in_reply_to_id: id,
       body: "Fixed in abc.",
     });
@@ -90,6 +94,19 @@ test("stops on an unanswered finding on the accepted head", () => {
     result.findings.map(({ id, severity, title }) => [id, severity, title]),
     [["GH-10", "P1", "Guard the empty list"]],
   );
+});
+
+test("keeps a finding open when only an outside commenter replied", () => {
+  const outsider = { login: "drive-by" };
+  for (const association of ["CONTRIBUTOR", "NONE", null]) {
+    const result = codexReviewGate({
+      acceptedHead: HEAD,
+      issueComments: [codexSummary("Completed")],
+      reviews: [codexReviewOf()],
+      reviewComments: codexFinding(10, { replyFrom: outsider, association }),
+    });
+    assert.equal(result.reason, "codex-review-findings", String(association));
+  }
 });
 
 test("waits for Codex, including the run the ready transition starts", () => {

@@ -162,6 +162,10 @@ test("an In Progress parent is resumed, not held, by its own pull request", () =
   });
   assert.equal(decide([started]).openPullRequest, false);
   assertHold([{ ...withPull, missingEvidence: ["issue #800"] }], "issue #800");
+  const todoChild = record(802, { parentIssueNumber: 801, projectStatus: "Todo", state: "OPEN" });
+  assert.equal(decide([started, todoChild]).kind, "in-progress");
+  const backlogChild = { ...todoChild, projectStatus: "Backlog" };
+  assertHold([started, backlogChild], "Project status drift: In Progress, Backlog");
 });
 
 test("queue selection resumes In Progress work before starting Todo", () => {
