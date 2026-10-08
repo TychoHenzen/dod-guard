@@ -5,7 +5,11 @@
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
-import { classifyQueueGroups, readQueueSnapshot, selectQueueItem } from "./lib/queue-readback.mjs";
+import {
+  classifyQueueGroups,
+  readQueueSnapshot,
+  selectQueueItem,
+} from "./lib/queue-readback.mjs";
 
 const USAGE = `usage: select-next.mjs --snapshot=<file.json>
 
@@ -21,20 +25,34 @@ The snapshot is one JSON object:
                   head {repository, ref, sha}, base {ref, sha}, mergeCommit,
                   and requiredChecks`;
 
-function snapshotProvider(snapshot) {
-  const issues = new Map((snapshot.issues ?? []).map((issue) => [Number(issue.number), issue]));
-  const pullRequests = new Map((snapshot.pullRequests ?? []).map((pull) => [Number(pull.number), pull]));
+const EMPTY_SNAPSHOT = { project: {}, items: [], issues: [], pullRequests: [] };
+
+function byNumber(records) {
+  return new Map(records.map((record) => [Number(record.number), record]));
+}
+
+function snapshotProvider({ items, issues, pullRequests }) {
+  const issuesByNumber = byNumber(issues);
+  const pullsByNumber = byNumber(pullRequests);
+  const page = { items, pageInfo: { hasNextPage: false } };
   return {
-    listProjectItems: async () => ({ items: snapshot.items ?? [], pageInfo: { hasNextPage: false } }),
-    readIssue: async ({ issueNumber }) => issues.get(Number(issueNumber)) ?? null,
-    readPullRequest: async ({ pullNumber }) => pullRequests.get(Number(pullNumber)) ?? null,
+    listProjectItems: async () => page,
+    readIssue: async ({ issueNumber }) =>
+      issuesByNumber.get(Number(issueNumber)) ?? null,
+    readPullRequest: async ({ pullNumber }) =>
+      pullsByNumber.get(Number(pullNumber)) ?? null,
   };
 }
 
-export async function selectNext(snapshot) {
+function groupSummary({ rootIssueNumber, decision }) {
+  return { rootIssueNumber, kind: decision.kind, reasons: decision.reasons };
+}
+
+async function selectNext(input) {
+  const snapshot = { ...EMPTY_SNAPSHOT, ...input };
   const read = await readQueueSnapshot({
     provider: snapshotProvider(snapshot),
-    project: snapshot.project ?? {},
+    project: snapshot.project,
     repository: snapshot.repository,
     defaultBranch: snapshot.defaultBranch,
   });
@@ -46,11 +64,7 @@ export async function selectNext(snapshot) {
       status: selected.decision.status,
       issueNumbers: selected.records.map(({ issueNumber }) => issueNumber),
     },
-    groups: classifyQueueGroups(context).map(({ rootIssueNumber, decision }) => ({
-      rootIssueNumber,
-      kind: decision.kind,
-      reasons: decision.reasons,
-    })),
+    groups: classifyQueueGroups(context).map(groupSummary),
     counts: read.counts,
     missingEvidence: read.missingEvidence,
   };
@@ -64,7 +78,9 @@ async function main() {
     return;
   }
   const snapshot = JSON.parse(await readFile(args.snapshot, "utf8"));
-  process.stdout.write(`${JSON.stringify(await selectNext(snapshot), null, 2)}\n`);
+  const result = await selectNext(snapshot);
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();
+const invoked = process.argv[1] && pathToFileURL(process.argv[1]).href;
+if (import.meta.url === invoked) await main();

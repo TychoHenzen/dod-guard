@@ -645,16 +645,20 @@ async function recoverMergedPullRequest(client, overrides = {}) {
   };
 }
 
+function readCodexReview(client, completion, waitedMs) {
+  const { acceptedHead, pullNumber, readyAt } = completion;
+  const evidence = client.getCodexReview(pullNumber);
+  return codexReviewGate({ ...evidence, acceptedHead, readyAt, waitedMs });
+}
+
 // Codex's findings reach the merge as a stop for /fix-pr-review, never as a
 // comment that arrives after the pull request has merged.
-function codexReviewAllowsMerge(client, completion, codexWaitedMs) {
-  const { acceptedHead, pullNumber, readyAt } = completion;
-  const review = codexReviewGate({ ...client.getCodexReview(pullNumber), acceptedHead, readyAt, waitedMs: codexWaitedMs });
-  if (review.action === "stop") {
-    const findings = (review.findings ?? []).map(({ id, severity, title, url }) => `${id} ${severity} ${title} ${url}`);
-    stop(review.reason, [`Codex review blocks the merge of #${pullNumber} (${review.reason}).`, ...findings].join("\n"));
-  }
-  return review.action === "pass";
+function stopForCodexReview(review, pullNumber) {
+  const findings = (review.findings ?? []).map(
+    ({ id, severity, title, url }) => `${id} ${severity} ${title} ${url}`,
+  );
+  const summary = `Codex review blocks the merge of #${pullNumber} (${review.reason}).`;
+  stop(review.reason, [summary, ...findings].join("\n"));
 }
 
 async function waitForMerge(client, completion) {
@@ -719,10 +723,16 @@ async function waitForMerge(client, completion) {
         repository,
       });
       trustedHead = pullRequest.headSha;
-    } else if (checksPassed && codexReviewAllowsMerge(client, completion, codexWaitedMs)) {
-      await client.mergePullRequest(pullNumber, trustedHead);
+    } else if (checksPassed) {
+      const review = readCodexReview(client, completion, codexWaitedMs);
+      if (review.action === "stop") stopForCodexReview(review, pullNumber);
+      if (review.action === "pass") {
+        await client.mergePullRequest(pullNumber, trustedHead);
+      } else {
+        codexWaitedMs += options.pollMs;
+        await client.wait(options.pollMs);
+      }
     } else {
-      if (checksPassed) codexWaitedMs += options.pollMs;
       await client.wait(options.pollMs);
     }
   }
