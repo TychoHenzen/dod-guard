@@ -221,7 +221,9 @@ function summarizeFiles(files) {
 function sortedFiles(files, sort) {
   return [...files].sort((left, right) => {
     if (sort === "score") return left.score - right.score || left.path.localeCompare(right.path);
-    if (["high", "medium", "low"].includes(sort)) return right[sort] - left[sort] || left.path.localeCompare(right.path);
+    if (["high", "medium", "low"].includes(sort)) {
+      return right[sort] - left[sort] || left.path.localeCompare(right.path);
+    }
     return left.path.localeCompare(right.path);
   });
 }

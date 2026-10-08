@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { requireSeverity } from "../../../../../skills/quality-refactor/scripts/lib/severity.mjs";
 
+const UNKNOWN_ERROR = /unknown quality severity: error/;
+const UNKNOWN_WARN = /unknown quality severity: warn/;
+const UNKNOWN_UNDEFINED = /unknown quality severity: undefined/;
+
 test("requireSeverity keeps the high, medium, and low vocabulary", () => {
   assert.equal(requireSeverity("high"), "high");
   assert.equal(requireSeverity("medium"), "medium");
@@ -9,16 +13,7 @@ test("requireSeverity keeps the high, medium, and low vocabulary", () => {
 });
 
 test("requireSeverity rejects every other severity", () => {
-  assert.throws(
-    () => requireSeverity("error"),
-    /unknown quality severity: error/,
-  );
-  assert.throws(
-    () => requireSeverity("warn"),
-    /unknown quality severity: warn/,
-  );
-  assert.throws(
-    () => requireSeverity(undefined),
-    /unknown quality severity: undefined/,
-  );
+  assert.throws(() => requireSeverity("error"), UNKNOWN_ERROR);
+  assert.throws(() => requireSeverity("warn"), UNKNOWN_WARN);
+  assert.throws(() => requireSeverity(undefined), UNKNOWN_UNDEFINED);
 });

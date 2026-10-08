@@ -27073,7 +27073,9 @@ function extractFactInventory(files, requiredPaths) {
 // skills/quality-refactor/scripts/lib/severity.mjs
 var SEVERITIES = /* @__PURE__ */ new Set(["high", "medium", "low"]);
 function requireSeverity(severity) {
-  if (SEVERITIES.has(severity)) return severity;
+  if (SEVERITIES.has(severity)) {
+    return severity;
+  }
   throw new Error(`unknown quality severity: ${severity}`);
 }
 

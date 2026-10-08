@@ -60,8 +60,9 @@ export function scanFile({ filePath, repoRoot, scanner, rules = FILE_RULES }) {
     const scan = scanner(filePath, repoRoot, rules);
     if (!scan || !Array.isArray(scan.violations))
       return { error: "scanner did not return a readable report." };
-    for (const violation of scan.violations)
+    for (const violation of scan.violations) {
       requireSeverity(violation.severity);
+    }
     return { scan };
   } catch (error) {
     return { error: `scanner failed: ${errorMessage(error)}` };

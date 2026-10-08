@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildQualityReport } from "../../src/report-builder.js";
 
+const UNKNOWN_SEVERITY_ERROR = /unknown quality severity: error/;
+
 test("scores files and excludes architecture from score", () => {
   const report = buildQualityReport(
     {
@@ -147,6 +149,6 @@ test("rejects scanner findings outside the high/medium/low vocabulary", () => {
           errors: [],
         },
       ),
-    /unknown quality severity: error/,
+    UNKNOWN_SEVERITY_ERROR,
   );
 });
