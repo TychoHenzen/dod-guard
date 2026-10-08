@@ -86,7 +86,7 @@ test("policy fixtures cover decisive choices, dirty state, stale tests, and safe
     /Retry an identical transient failure at most\s+once/,
     /Read back remote state\s+after an uncertain write/,
     /confirmed blocker must use\s+`\/codex-advisor`: Claude's advisor tool in Claude Code/,
-    /otherwise Codex with\s+`gpt-5\.6-luna` at `max` effort/,
+    /otherwise Codex with\s+`gpt-5\.6-sol` at `max` effort/,
   ]) {
     assert.match(defaults, signal);
   }

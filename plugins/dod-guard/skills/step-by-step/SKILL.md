@@ -13,10 +13,13 @@ one bounded active step and never chooses the next step.
 
 ## Inputs
 
-Accept either:
+Accept one of:
 
-- an explicit numbered plan in the user request; or
-- one repository plan file that the user names explicitly.
+- an explicit numbered plan in the user request;
+- one repository plan file that the user names explicitly; or
+- an ordered plan that a calling skill passes, such as the stage rows of
+  `dod-guard:goal-sdlc` or the task list of `dod-guard:next-ticket`, with a
+  proof for each step and whether each verified step is committed.
 
 Do not search for plan files, infer a plan from a directory, invent missing
 steps, revive chunking/workflow machinery, or create a branch, pull request, or
@@ -42,7 +45,11 @@ For each step, in order:
    pull requests, worktrees, or unrelated edits.
 3. Read the subagent result and inspect the changed state. Run the step's named
    proof before marking it complete.
-4. Record the result, evidence, and next step in the main-thread checkpoint.
+4. When the plan asks for a commit per step and the step changed tracked
+   files, the main thread commits the verified changes and reads the commit
+   back before the next step starts. A step that changes no tracked file
+   records its evidence instead of a commit.
+5. Record the result, evidence, and next step in the main-thread checkpoint.
 
 Do not reuse a worker for an unrelated later step. Do not dispatch a second
 step while the active step lacks a terminal result or its command-session

@@ -187,28 +187,60 @@ function parseAdvice(raw) {
   return { value: { advice: response.advice.trim() } };
 }
 
-function modelMetadataFallback(stdout, stderr, model) {
-  if (typeof model !== "string") return undefined;
-  const prefix = `Model metadata for ${model} not found.`;
-  for (const output of [stdout, stderr]) {
+function jsonEvents(...outputs) {
+  const events = [];
+  for (const output of outputs) {
     for (const line of output.split(/\r?\n/u)) {
-      let event;
       try {
-        event = JSON.parse(line);
+        events.push(JSON.parse(line));
       } catch {
-        continue;
-      }
-      const message = event?.item?.message;
-      if (
-        event?.type === "item.completed" &&
-        event.item?.type === "error" &&
-        typeof message === "string" &&
-        message.startsWith(prefix) &&
-        message.includes("Defaulting to fallback metadata")
-      ) {
-        return { event, message };
+        // Banners and hook diagnostics share these streams; they are not events.
       }
     }
+  }
+  return events;
+}
+
+function modelMetadataFallback(events, model) {
+  if (typeof model !== "string") return undefined;
+  const prefix = `Model metadata for ${model} not found.`;
+  for (const event of events) {
+    const message = event?.item?.message;
+    if (
+      event?.type === "item.completed" &&
+      event.item?.type === "error" &&
+      typeof message === "string" &&
+      message.startsWith(prefix) &&
+      message.includes("Defaulting to fallback metadata")
+    ) {
+      return { event, message };
+    }
+  }
+  return undefined;
+}
+
+// The Codex advisor must behave like Claude's built-in advisor tool: one turn,
+// one answer, and no tool use. Reasoning and diagnostic error items are not
+// tool use; any other item type, known or not, fails the run.
+const ADVICE_ITEM_TYPES = new Set(["agent_message", "reasoning", "error"]);
+
+function oneTurnViolation(events) {
+  const turns = events.filter((event) => event?.type === "turn.started").length;
+  if (turns !== 1) {
+    return `Codex advisor ran ${turns} turns; exactly one is allowed`;
+  }
+  const tool = events.find(
+    (event) =>
+      typeof event?.type === "string" && event.type.startsWith("item.") && !ADVICE_ITEM_TYPES.has(event.item?.type),
+  );
+  if (tool) {
+    return `Codex advisor used a tool (${tool.item?.type ?? "unknown item"}); its advice is not used`;
+  }
+  const answers = events.filter(
+    (event) => event?.type === "item.completed" && event.item?.type === "agent_message",
+  ).length;
+  if (answers !== 1) {
+    return `Codex advisor returned ${answers} agent messages; exactly one is allowed`;
   }
   return undefined;
 }
@@ -217,7 +249,7 @@ export async function runAdvisor({
   prompt,
   executable,
   prefixArgs = [],
-  model = "gpt-5.6-luna",
+  model = "gpt-5.6-sol",
   reasoningEffort = "max",
   schemaPath = defaultSchemaPath,
   tempRoot = tmpdir(),
@@ -313,7 +345,8 @@ export async function runAdvisor({
     if (result.cancelled) {
       return failure("Codex advisor cancelled by operator", result, executable, args, "reviewer-process", prefixArgs);
     }
-    const fallback = modelMetadataFallback(result.stdout, result.stderr, model);
+    const events = jsonEvents(result.stdout, result.stderr);
+    const fallback = modelMetadataFallback(events, model);
     if (fallback) {
       const failed = failure(fallback.message, result, executable, args, "reviewer-process", prefixArgs);
       failed.execution.fallbackEvent = fallback.event;
@@ -321,6 +354,10 @@ export async function runAdvisor({
     }
     if (result.code !== 0) {
       return failure(`Codex advisor exits non-zero with code ${result.code}`, result, executable, args, "reviewer-process", prefixArgs);
+    }
+    const violation = oneTurnViolation(events);
+    if (violation) {
+      return failure(violation, result, executable, args, "reviewer-process", prefixArgs);
     }
 
     let raw;
@@ -383,7 +420,7 @@ async function main() {
   const result = await runAdvisor({
     prefixArgs,
     prompt: await readStdin(),
-    model: optionValue("--model", "gpt-5.6-luna"),
+    model: optionValue("--model", "gpt-5.6-sol"),
     reasoningEffort: optionValue("--reasoning-effort", "max"),
   });
   if (result.execution) {

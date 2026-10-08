@@ -8,12 +8,10 @@ description: Work through the linked GitHub Project queue continuously, one pare
 Read and apply `standards/working-defaults.md` and
 `standards/github-request-discipline.md` from the active plugin root.
 
-This skill is a queue loop. It picks the next parent PBI and runs the existing
-lifecycle skills on it, then picks the next one. It does not restate their
-rules: each stage follows its own skill, and when this file and an owning skill
-differ, the owning skill wins. Run it directly, or as the plan for a Codex
-`/goal` run; in Codex the built-in command owns goal persistence and the final
-stop decision.
+This skill is a queue loop: it picks the next parent PBI, runs the existing
+lifecycle skills on it, then picks the next one. Each stage follows its own
+skill; when this file and an owning skill differ, the owning skill wins. As the
+plan for a Codex `/goal` run, the built-in command owns persistence and stop.
 
 ## Owners
 
@@ -24,8 +22,7 @@ stop decision.
 - [dod-guard:submit-draft-pr](../submit-draft-pr/SKILL.md): the draft pull
   request and its convergence before review.
 - [dod-guard:review-pr](../review-pr/SKILL.md): the one code review.
-- [dod-guard:fix-pr-review](../fix-pr-review/SKILL.md): remediation of review
-  findings.
+- [dod-guard:fix-pr-review](../fix-pr-review/SKILL.md): review remediation.
 - [dod-guard:complete-pr](../complete-pr/SKILL.md): the ready transition,
   guarded merge, Project finalization, and branch cleanup.
 - [dod-guard:add-backlog-idea](../add-backlog-idea/SKILL.md): new Backlog
@@ -55,20 +52,17 @@ Repeat until the stop condition holds:
    eligible group: In Progress parents first (one with an open pull request
    ahead of one without), then Todo, then Backlog, each in Project order. It
    needs each issue's `activeCheckpoint` and each pull request's
-   `trustedHeadSha` to recognize a finished delivery; run it with no
-   arguments for the full snapshot shape. Report each held group's reasons
-   rather than guessing past them.
+   `trustedHeadSha` to recognize a finished delivery; run it with no arguments
+   for the snapshot shape. Report held groups' reasons; never guess past them.
 3. **Run the lifecycle for that parent.** Follow
-   [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6, starting at the
-   step the parent has reached: refine a Backlog parent, then `/next-ticket`,
-   `/submit-draft-pr`, `/review-pr`, `/fix-pr-review` for any findings, and
-   `/complete-pr`. When refinement needs an answer from the user, leave the
+   [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6 from the step the
+   parent has reached. When refinement needs an answer from the user, leave the
    parent in Backlog with the questions recorded and continue with another
    parent instead of waiting.
 4. **Read back and continue.** After `/complete-pr` returns, read the parent
    and child statuses. When any is not Done, return to the completion owner
-   before selecting again. Otherwise increment `PBIs completed: N` and go back
-   to step 1.
+   before selecting again. Otherwise update `PBIs completed: P parent / C
+   child` and go back to step 1.
 
 Process exactly one parent at a time, in the current checkout, on one branch
 and one pull request. Never create or use a Git worktree.
@@ -76,14 +70,34 @@ and one pull request. Never create or use a Git worktree.
 ## Delegation
 
 The main thread sequences stages and checks results; bounded subagents do the
-context-heavy work. For each stage:
+context-heavy work. Each stage runs in one fresh subagent as one step of
+[dod-guard:step-by-step](../step-by-step/SKILL.md), which owns the checkpoint,
+proof, commit, and repair rules. A stage's split rows are dispatched by its
+owner, as `standards/model-routing.md` says. Each row runs at this tier:
 
-1. Give one fresh subagent the parent and child PBIs, branch and head, the
-   stage it owns, and the evidence it must return. It edits only that scope.
-2. Inspect what it returns, read back any external change, and run the named
-   proof before moving on.
-3. On failure, keep the checkpoint and repair the same stage, or record an
-   external blocker before selecting another parent.
+| Stage | Tier | Effort |
+|---|---|---|
+| Queue snapshot read | cheap | `max` |
+| Refinement: plan research questions | strong | `medium` |
+| Refinement: investigate code, callers, and tests | cheap | `max` |
+| Refinement: decide classification and criteria | strong | `medium` |
+| `/next-ticket`: implement one task | strong | `medium` |
+| `/next-ticket`: run validations and regenerate artifacts | cheap | `max` |
+| `/submit-draft-pr` | strong | `medium` |
+| `/review-pr`: plan | strong | `medium` |
+| `/review-pr`: investigate | cheap | `max` |
+| `/review-pr`: judge | strong | `medium` |
+| `/fix-pr-review` | strong | `medium` |
+| `/complete-pr`: guarded merge and Project finalization | strong | `medium` |
+| `/add-backlog-idea`, including the friction log | strong | `medium` |
+| Merge conflict | none | stop and report, as `/complete-pr` says |
+
+Dispatch each row as `standards/model-routing.md` says: pass its model and
+effort to the Agent call in Claude Code, or use the registered tier agent in
+Codex, and name the stage, tier, model, and effort in the progress message. A
+user's model or effort override is applied and recorded as that standard says.
+Verify cheap-tier output before anything relies on it, and read back the
+commit of any stage that changed tracked files before the next stage starts.
 
 Use the Agent tool in Claude Code and spawned agents in Codex. User-visible
 tasks or threads (`create_thread`, `fork_thread`, `send_message_to_thread`,
@@ -102,10 +116,8 @@ Follow the failure-recovery rule in `standards/working-defaults.md`, including
 `/codex-advisor` for a blocker that survives local triage. A blocked parent is
 not a reason to stop: record what is blocking it, what was tried, and what
 would unblock it on the issue, preserve its branch and checkpoint, and select
-the next eligible parent.
-
-When a provider reports a rate limit, record the reset time, work on other
-parents, and retry the blocked call once after the reset.
+the next eligible parent. When a provider reports a rate limit, record the
+reset time, work on other parents, and retry the blocked call once after it.
 
 ## Friction log
 
@@ -128,14 +140,14 @@ source-repository fix here and continue with the workaround.
 
 ## Reporting
 
-Prefix progress messages with the local `[HH:MM]` time and carry
-`PBIs completed: N`, counting only parents merged with their Project status
-read back as Done.
+Start every progress message with the local `[HH:MM]` time from the clock.
+Every progress message and the final report carry `PBIs completed: P parent /
+C child`, counting parent and child PBIs whose Project status reads Done.
 
 When every remaining parent is blocked, send one short message that starts
-with `Blocked:` and assumes no prior context: the repository, PBI number and
-title, what blocks it, the evidence, what was tried, and the one decision or
-action needed. Use plain words instead of workflow terms.
+with `[HH:MM] Blocked:` and assumes no prior context: the repository, PBI
+number and title, what blocks it, the evidence, what was tried, and the one
+decision or action needed. Use plain words instead of workflow terms.
 
 ## Stop condition
 

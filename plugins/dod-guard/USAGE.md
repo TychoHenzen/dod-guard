@@ -72,7 +72,15 @@ its review, the run stops with that blocker.
 the next parent PBI with `scripts/select-next.mjs`, runs the `quick-pbi` stages
 from the one that parent has reached, and continues until no eligible work
 remains. A parent that needs a user answer or is externally blocked stays in
-place while the queue moves on.
+place while the queue moves on. Each stage runs in one fresh subagent on a
+model tier from `standards/model-routing.md`: the strong tier (Opus at medium
+effort, `gpt-5.6-sol` in Codex) plans, decides, and judges, and the cheap tier
+(Haiku at max effort, `gpt-5.6-luna` in Codex) applies written plans, runs
+validations, and answers planned questions. The main thread checks cheap-tier
+output before anything relies on it and reads back each stage's commit. A stage
+whose owner splits its work, such as `/review-pr`, runs on the strong stage
+agent, which dispatches those split rows itself. Every progress message starts
+with the local `[HH:MM]` time and shows `PBIs completed: P parent / C child`.
 
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:
@@ -178,6 +186,7 @@ independent review of the pushed work.
 ## Execute an explicit plan
 
 Use `/step-by-step` with a numbered plan, or name one repository plan file.
+Skills such as `next-ticket` also pass it a task list, committing each step.
 The main thread keeps the checkpoint and verifies every result; each fresh
 subagent receives only one bounded step. It does not discover plans, create a
 branch or pull request, skip failed steps, or restart completed work.
@@ -215,8 +224,13 @@ runs a separate Codex process:
 
 The Codex path sends a bounded prompt containing fixed advice-only instructions and
 the complete problem description through stdin to a separate `codex exec`
-process. It uses `gpt-5.6-luna` with `max` reasoning by default and accepts an
-optional `--model=<model>` setting. It uses an
+process. It uses `gpt-5.6-sol` with `max` reasoning by default and accepts an
+optional `--model=<model>` setting. Like the built-in tool, it runs exactly one
+turn, read-only, and returns advice only; because it sees nothing but its
+prompt, the caller supplies the task, the evidence so far, relevant diffs, and
+the candidate decision with its recommended default and the exact question. A
+JSONL stream with a tool item, more than one turn, or other than one agent
+message fails the run. It uses an
 empty non-repository working directory, read-only restrictions, and an
 ephemeral session, and tells the advisor to skip repository research and
 mutations. It probes the direct executable's version and help before launch;
@@ -256,10 +270,14 @@ Review a GitHub pull request's changed files:
 ```
 
 The PR head must be checked out. The skill scans the whole repository with the
-installed quality-guard scanner and keeps the findings in changed files, then
-runs the feature, design, reliability, and hygiene reviewer agents against the
-PBI. It posts one comment-only review: one comment per changed file for
-scanner findings, one per reviewer finding, each with a `GH-<id>`, and a
+installed quality-guard scanner and keeps the findings in changed files. A
+strong planner then writes questions for the feature, design, reliability, and
+hygiene lenses, cheap investigators answer each one with a cited path and line,
+and after the main thread verifies those answers, the four reviewer agents
+judge them on the strong tier against the PBI. It posts one comment-only
+review, with the planned questions in a collapsed block, and one comment per
+changed file for scanner findings, one per reviewer finding, each with a
+`GH-<id>`, and a
 recommendation of `BLOCK` for any `BLOCKER`, `REQUEST_CHANGES` for other
 findings, or `APPROVE` for none. It posts at most one review per pull request.
 quality-guard must be installed and enabled.

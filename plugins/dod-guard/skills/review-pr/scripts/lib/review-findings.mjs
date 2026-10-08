@@ -1,4 +1,5 @@
 import { judgmentFindings } from "./reviewer-results.mjs";
+import { questionsBlock, requirePlanCoverage } from "./review-questions.mjs";
 import { ruleScope } from "./rule-scope.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
@@ -131,13 +132,15 @@ function countSeverities(findings) {
   return counts;
 }
 
-function reviewBody({ headSha, recommendation, counts, unanchored }) {
+function reviewBody({ headSha, recommendation, counts, questions, unanchored }) {
   const lines = [
     marker(headSha, recommendation),
     "## dod-guard review",
     "",
     `Recommendation: **${recommendation}**`,
     `Findings: ${counts.BLOCKER} BLOCKER, ${counts.MAJOR} MAJOR, ${counts.MINOR} MINOR.`,
+    "",
+    questionsBlock(questions),
   ];
   for (const finding of unanchored) {
     const heading = `### \`${finding.file}:${finding.line}\` (no added line to anchor on)`;
@@ -146,12 +149,13 @@ function reviewBody({ headSha, recommendation, counts, unanchored }) {
   return lines.join("\n");
 }
 
-function buildReview({ headSha, scan, diff, results }) {
+function buildReview({ headSha, scan, diff, results, questions }) {
   const changedLines = parseChangedLines(diff);
   // Approving a review that saw no changed file would be false.
   if (changedLines.size === 0) {
     throw new Error("The diff names no changed files");
   }
+  requirePlanCoverage(questions, [...changedLines.keys()]);
   const fallback = firstAnchor(changedLines);
   const raw = [
     ...judgmentFindings(results),
@@ -174,7 +178,7 @@ function buildReview({ headSha, scan, diff, results }) {
     payload: {
       commit_id: headSha,
       event: "COMMENT",
-      body: reviewBody({ headSha, recommendation, counts, unanchored }),
+      body: reviewBody({ headSha, recommendation, counts, questions, unanchored }),
       comments: inline.map(({ anchored, body }) => ({
         path: anchored.path,
         line: anchored.line,

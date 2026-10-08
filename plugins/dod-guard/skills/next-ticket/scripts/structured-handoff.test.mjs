@@ -283,3 +283,14 @@ test("ticket-start and completion status writes share the global ProjectV2 runne
   assert.match(completePr, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done/);
   assert.match(completePr, /child item IDs first and the parent item ID last/);
 });
+
+test("next-ticket lands one verified commit per task-list task", () => {
+  assert.match(nextTicket, prose("When the task list has more than one task, run each task in order as one step"));
+  assert.ok(nextTicket.includes("[dod-guard:step-by-step](../step-by-step/SKILL.md)"));
+  assert.match(nextTicket, prose("one fresh subagent per task"));
+  assert.match(nextTicket, prose("Implementing the task uses the strong tier"));
+  assert.match(nextTicket, prose("regenerating artifacts uses the cheap tier, as `standards/model-routing.md`"));
+  assert.match(nextTicket, prose("passing the task list as a calling-skill plan with a commit per step"));
+  assert.match(nextTicket, prose("step-by-step's per-step commit makes every verified task a durable checkpoint"));
+  assert.match(nextTicket, prose("with more than one task, each task already has its own verified commit"));
+});

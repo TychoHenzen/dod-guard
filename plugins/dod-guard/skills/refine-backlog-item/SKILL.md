@@ -46,6 +46,14 @@ priority, effort, or implementation direction. For documentation or skill
 work, read the affected instructions, their entry points, and existing
 validation. Record absent code or test coverage instead of assuming it exists.
 
+Run that research as the plan, investigate, and judge split in
+`standards/model-routing.md`. A strong planner writes the research questions
+from the issue. Cheap investigators read the code, callers, tests, and history
+and answer each question with cited evidence. After the main thread verifies
+those answers, the strong tier decides the discovery triage, classification,
+and acceptance criteria. Verified citations become `research-source` entries;
+the `discovery-triage` and `research-source` records keep their meaning.
+
 After that repository and issue research, state a discovery triage in the
 implementation notes. Classify each unresolved point as one of these:
 
@@ -74,7 +82,7 @@ option.
 
 During an active goal or explicitly non-interactive refinement, invoke exactly
 one fresh `dod-guard:codex-advisor` instead of asking the user. It uses
-Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5.6-luna` at
+Claude's advisor tool in Claude Code, otherwise Codex with `gpt-5.6-sol` at
 `max` reasoning effort. Give the advisor only the unresolved
 question, candidate answers and recommended default, repository and PBI context,
 the researched evidence, and the affected acceptance boundary and constraints.

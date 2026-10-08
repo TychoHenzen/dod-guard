@@ -77,20 +77,52 @@ and dead or test-only exports cover each whole changed file, including what it
 had before this PR: a touched file's design debt is in scope. Line-level rules
 such as `line-length` and the comment rules cover only the lines this PR adds.
 
-## 5. Reviewer agents
+## 5. Plan, investigate, judge
 
-Dispatch all four reviewers at once, each with the same brief: PR number and
-URL, base and head SHAs, the changed-file list, the diff file path, the PBI
-acceptance criteria and sub-issues verbatim, and the governing `AGENTS.md` and
-`CLAUDE.md` paths.
+Run the review as the plan, investigate, and judge split in
+`standards/model-routing.md`. Every stage gets one shared brief: PR number and
+URL, base and head SHAs, the changed-file list, the diff file path, the scanner
+results for the changed files, the PBI acceptance criteria and sub-issues
+verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
 
-- In Claude Code, use the Agent tool with `dod-guard:review-pr-feature`,
-  `dod-guard:review-pr-design`, `dod-guard:review-pr-reliability`, and
-  `dod-guard:review-pr-hygiene`.
-- In Codex, use the `dod_guard_review_pr_*` agents when the project registers
+1. **Plan.** One `dod-guard:read-strong` planner returns JSON questions for
+   the four lenses, at least one per lens: `review-pr-feature`,
+   `review-pr-design`, `review-pr-reliability`, and `review-pr-hygiene`. Each
+   question has an `id`, its `lens`, the `question`, the files to read, and
+   the risk it targets. Ids are unique across all four lenses, for example
+   with the lens prefixes `F`, `D`, `R`, and `H`. Together the questions name
+   every changed file in their `files` lists and ask about every acceptance
+   criterion and linked sub-issue. A changed file that needs no question gets
+   an `excluded` entry for one lens whose `question` states why.
+2. **Investigate.** `dod-guard:read-cheap` investigators answer every
+   question except `excluded` entries, batched by changed-file group with at
+   most eight questions per investigator. Each answer gives the question id,
+   the cited path and line, and the fact found there.
+3. **Verify.** Before judging, the main thread checks every answer under the
+   cheap-output rule in that standard, with the reviewed head as the accepted
+   head. Send a failed batch back once with the exact gap; if it fails again,
+   stop without posting and name the batch. Save a questions JSON array of
+   `{ "lens", "id", "question", "files", "status" }` objects, where `status`
+   is `verified`, `repaired` (verified after that one repair), `unanswered`
+   (the investigator reported that the repository does not answer it), or
+   `excluded` (a planned exclusion that nobody investigates). The build
+   refuses a plan that leaves a changed file unnamed.
+4. **Judge.** Dispatch the four reviewers at once. Each receives the shared
+   brief, its lens's questions, and their verified answers, and judges from
+   that evidence instead of re-reading the whole diff. A judge settles each
+   `unanswered` question of its lens from the files that question names, or
+   reports the gap as a finding; it never counts one as passing. A judge also
+   receives its lens's `excluded` entries and reports one as a finding when
+   its reason does not hold for the named files.
+
+- In Claude Code, use the Agent tool with the model and effort of each
+  stage's tier: `dod-guard:read-strong` plans, `dod-guard:read-cheap`
+  investigates, and `dod-guard:review-pr-feature`, `dod-guard:review-pr-design`,
+  `dod-guard:review-pr-reliability`, and `dod-guard:review-pr-hygiene` judge.
+- In Codex, use the matching `dod_guard_*` agents when the project registers
   them in `.codex/agents/` (as this repository does); otherwise spawn an
   explorer with the full agent definition from `<plugin-root>/agents/` in its
-  message.
+  message, and record the stage as "requested, not pinned".
 
 Each returns one JSON object with `reviewer`, `coverage`, and `findings`. Save
 the four objects as one JSON array. When an agent returns malformed JSON, send
@@ -102,13 +134,14 @@ results that lack any of the four reviewers.
 ## 6. Build and post
 
 ```text
-node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --results=<results.json> --out=<payload.json>
+node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --results=<results.json> --questions=<questions.json> --out=<payload.json>
 ```
 
 It groups scanner findings into one comment per changed file, dedupes reviewer
 findings by file and root cause, and posts every finding as an inline comment
-so each gets a `GH-<id>`. A finding whose cited line this PR did not add moves
-to the nearest added line, and its body names the cited location.
+so each gets a `GH-<id>`. It lists the planned questions, with each one's
+status, in a collapsed `<details>` block in the review body. A finding whose
+cited line this PR did not add moves to the nearest added line, and its body names the cited location.
 Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A file's scanner
 findings are `MAJOR` when any is `high`, otherwise `MINOR`.
 Recommendation: any `BLOCKER` is `BLOCK`, any

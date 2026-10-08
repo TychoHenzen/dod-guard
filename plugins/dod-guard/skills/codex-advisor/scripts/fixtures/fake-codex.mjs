@@ -13,6 +13,18 @@ const input = await new Promise((resolve) => {
   process.stdin.on("end", () => resolve(value));
 });
 
+function event(value) {
+  process.stdout.write(`${JSON.stringify(value)}\n`);
+}
+
+// The JSONL stream a real one-turn, tool-free advisor run prints.
+function oneTurn(text = ADVICE) {
+  event({ type: "thread.started", thread_id: "fixture-thread" });
+  event({ type: "turn.started" });
+  event({ type: "item.completed", item: { id: "item_0", type: "agent_message", text } });
+  event({ type: "turn.completed", usage: { input_tokens: 1, output_tokens: 1 } });
+}
+
 function fallbackEvent(model) {
   const message =
     `Model metadata for ${model} not found. Defaulting to fallback metadata; ` +
@@ -41,6 +53,10 @@ async function recordInvocation() {
   records.push({ args, cwd: process.cwd(), input });
   await writeFile(process.env.ADVISOR_RECORD, JSON.stringify(records));
 }
+
+// Modes listed here print their own event stream; every other mode prints the
+// stream of one clean turn first.
+const OWN_STREAM = new Set(["unrelated-output", "tool-use", "two-turns", "reasoning"]);
 
 const MODES = {
   nonzero: () => {
@@ -71,12 +87,29 @@ const MODES = {
   "unrelated-output": async (outputPath) => {
     await writeFile(outputPath, ADVICE);
     process.stdout.write("fixture banner\n");
-    const unrelated = {
-      type: "item.completed",
-      item: { type: "agent_message", text: "fallback metadata is unrelated" },
-    };
-    process.stdout.write(`${JSON.stringify(unrelated)}\n`);
+    event({ type: "turn.started" });
+    event({ type: "item.completed", item: { type: "agent_message", text: "fallback metadata is unrelated" } });
     process.stdout.write("not a JSON event\n");
+  },
+  "tool-use": async (outputPath) => {
+    await writeFile(outputPath, ADVICE);
+    event({ type: "turn.started" });
+    event({ type: "item.started", item: { id: "item_0", type: "command_execution", command: "git status" } });
+    event({ type: "item.completed", item: { id: "item_0", type: "command_execution", command: "git status" } });
+    event({ type: "item.completed", item: { id: "item_1", type: "agent_message", text: ADVICE } });
+  },
+  "two-turns": async (outputPath) => {
+    await writeFile(outputPath, ADVICE);
+    event({ type: "turn.started" });
+    event({ type: "item.completed", item: { type: "agent_message", text: "first" } });
+    event({ type: "turn.started" });
+    event({ type: "item.completed", item: { type: "agent_message", text: ADVICE } });
+  },
+  reasoning: async (outputPath) => {
+    await writeFile(outputPath, ADVICE);
+    event({ type: "turn.started" });
+    event({ type: "item.completed", item: { type: "reasoning", text: "weighing the options" } });
+    event({ type: "item.completed", item: { type: "agent_message", text: ADVICE } });
   },
 };
 
@@ -90,5 +123,6 @@ if (args[0] === "exec" && args[1] === "--help") {
 await recordInvocation();
 const outputIndex = args.indexOf("--output-last-message");
 const outputPath = outputIndex === -1 ? undefined : args[outputIndex + 1];
+if (!OWN_STREAM.has(process.env.ADVISOR_MODE)) oneTurn();
 const mode = MODES[process.env.ADVISOR_MODE] ?? ((path) => writeFile(path, ADVICE));
 await mode(outputPath);

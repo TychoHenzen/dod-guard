@@ -109,4 +109,4 @@ function judgmentFindings(results) {
   return dedupeJudgments(results).map(judgmentFinding);
 }
 
-export { judgmentFindings };
+export { judgmentFindings, REVIEWERS };
