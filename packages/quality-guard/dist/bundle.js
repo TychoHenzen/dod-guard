@@ -27080,6 +27080,13 @@ function requireSeverity(severity) {
 }
 
 // src/report-summaries.ts
+function severityCounts(findings) {
+  return {
+    high: findings.filter((finding) => finding.severity === "high").length,
+    medium: findings.filter((finding) => finding.severity === "medium").length,
+    low: findings.filter((finding) => finding.severity === "low").length
+  };
+}
 function summarize(files) {
   const fileCount = files.length;
   const high = files.reduce((sum, file) => sum + file.high, 0);
@@ -27095,65 +27102,81 @@ function summarize(files) {
     minimumScore: fileCount === 0 ? null : Math.min(...scores)
   };
 }
-function reportSummaries(files) {
+function reportSummaries(files, projectFindings2) {
   const production = files.filter(
     (file) => file.classification === "production"
   );
   const tests = files.filter((file) => file.classification === "test");
+  const project = severityCounts(projectFindings2);
+  const overall = summarize(files);
   return {
-    overall: summarize(files),
+    overall: {
+      ...overall,
+      high: overall.high + project.high,
+      medium: overall.medium + project.medium,
+      low: overall.low + project.low
+    },
     production: summarize(production),
-    test: summarize(tests)
+    test: summarize(tests),
+    project: { findingCount: projectFindings2.length, ...project }
   };
 }
 
 // src/report-builder.ts
 var FILE_SELECTION = "supported handwritten source; generated, dependency, build, binary, unreadable, and symlinked files excluded";
+var SCORING = {
+  initial: 100,
+  highDeduction: 5,
+  mediumDeduction: 1,
+  lowDeduction: 0,
+  minimum: 0
+};
 function scoring() {
-  return {
-    initial: 100,
-    highDeduction: 5,
-    mediumDeduction: 1,
-    lowDeduction: 0,
-    minimum: 0
-  };
+  return { ...SCORING };
+}
+function fileScore(counts) {
+  return Math.max(
+    SCORING.minimum,
+    SCORING.initial - counts.high * SCORING.highDeduction - counts.medium * SCORING.mediumDeduction - counts.low * SCORING.lowDeduction
+  );
 }
 function compareFinding(left, right) {
   return left.line - right.line || left.rule.localeCompare(right.rule) || left.message.localeCompare(right.message);
 }
-function findingsByFile(scan) {
+function normalizedFindings(scan) {
+  return scan.violations.map((finding) => ({
+    ...finding,
+    severity: requireSeverity(finding.severity)
+  }));
+}
+function findingsByFile(findings) {
   const byFile = /* @__PURE__ */ new Map();
-  for (const finding of scan.violations)
+  for (const finding of findings)
     byFile.set(finding.file, [...byFile.get(finding.file) ?? [], finding]);
   return byFile;
 }
 function scoredFiles(scan, byFile) {
   return [...scan.files].sort((left, right) => left.path.localeCompare(right.path)).map((file) => {
-    const findings = [...byFile.get(file.path) ?? []].map((finding) => ({
-      ...finding,
-      severity: requireSeverity(finding.severity)
-    })).sort(compareFinding);
-    const high = findings.filter(
-      (finding) => finding.severity === "high"
-    ).length;
-    const medium = findings.filter(
-      (finding) => finding.severity === "medium"
-    ).length;
-    const low = findings.filter(
-      (finding) => finding.severity === "low"
-    ).length;
+    const findings = [...byFile.get(file.path) ?? []].sort(compareFinding);
+    const counts = severityCounts(findings);
     return {
       ...file,
-      score: Math.max(0, 100 - high * 5 - medium),
-      high,
-      medium,
-      low,
+      score: fileScore(counts),
+      ...counts,
       findings
     };
   });
 }
+function projectFindings(scan, findings) {
+  const scanned = new Set(scan.files.map((file) => file.path));
+  return findings.filter((finding) => !scanned.has(finding.file)).sort(
+    (left, right) => left.file.localeCompare(right.file) || compareFinding(left, right)
+  );
+}
 function buildQualityReport(scan, architecture) {
-  const files = scoredFiles(scan, findingsByFile(scan));
+  const findings = normalizedFindings(scan);
+  const files = scoredFiles(scan, findingsByFile(findings));
+  const project = projectFindings(scan, findings);
   return {
     schemaVersion: 1,
     scoring: scoring(),
@@ -27161,8 +27184,9 @@ function buildQualityReport(scan, architecture) {
       profile: "advisory",
       fileSelection: FILE_SELECTION
     },
-    summaries: reportSummaries(files),
+    summaries: reportSummaries(files, project),
     files,
+    projectFindings: project,
     architecture
   };
 }
@@ -27422,7 +27446,7 @@ var TEST_PATHS = external_exports.array(external_exports.string()).optional().de
 function registerQualityReport(server) {
   server.tool(
     "quality_report",
-    "Score every supported source file under the repository root and return a current-state architecture appendix. Read-only and not a gate verdict.",
+    "Score every supported source file under the repository root, list unscored project-level findings (such as a missing root build entry point) under projectFindings, and return a current-state architecture appendix. Read-only and not a gate verdict.",
     {
       root: ROOT,
       excludes: EXCLUDES,
