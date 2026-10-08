@@ -55,7 +55,7 @@ test("starts from the normal launcher and refreshes the displayed quality report
     await dashboard.locator(".finding strong", { hasText: "dead-export" }).waitFor();
 
     const saved = JSON.parse(await readFile(join(project, ".quality", "quality-report.json"), "utf8"));
-    assert.equal(saved.schemaVersion, 1);
+    assert.equal(saved.schemaVersion, 2);
     assert.ok(saved.projectFindings.some((finding) => finding.file === "<repository root>" && finding.rule === "build-entrypoint"));
     await dashboard.locator(".quality-project .finding code", { hasText: "<repository root>" }).first().waitFor();
     assert.notEqual(saved.files[0]?.path, "stale/old.js");
@@ -163,7 +163,7 @@ test("starts from the normal launcher and refreshes the displayed quality report
 
 function staleReport() {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     summaries: {
       overall: { fileCount: 1, high: 1, medium: 0, low: 0, averageScore: 95 },
       production: { fileCount: 1, high: 1, medium: 0, low: 0, averageScore: 95 },

@@ -23,6 +23,9 @@ Each registered project is a tab. The selected report shows:
 - architecture findings grouped by category;
 - filtering across paths, rules, and messages.
 
+A report saved by an older quality-guard (schemaVersion 1) is not rendered;
+the tab asks you to press Refresh to regenerate it.
+
 Refresh regenerates the report with the repository's quality-guard scanner,
 writes it to the project's ignored `.quality/` directory, and displays it.
 `Code Explorer` runs inside the dashboard process for the selected readable

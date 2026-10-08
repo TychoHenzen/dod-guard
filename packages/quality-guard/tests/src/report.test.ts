@@ -44,7 +44,7 @@ test("scores files and excludes architecture from score", () => {
     },
   );
 
-  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.schemaVersion, 2);
   assert.equal("profile" in report.scanner, false);
   assert.deepEqual(
     report.files.map((file) => [file.path, file.classification, file.score]),

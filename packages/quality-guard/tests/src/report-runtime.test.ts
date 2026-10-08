@@ -16,7 +16,7 @@ test("runs the scanner and architecture analysis for a project root", () => {
     );
     const report = runQualityReport({ root });
 
-    assert.equal(report.schemaVersion, 1);
+    assert.equal(report.schemaVersion, 2);
     assert.deepEqual(
       report.files.map((file) => file.path),
       ["src/service.ts"],
@@ -38,7 +38,7 @@ test("runs the asynchronous report scanner with the default root", async () => {
     );
     process.chdir(root);
     const report = await runQualityReportAsync({});
-    assert.equal(report.schemaVersion, 1);
+    assert.equal(report.schemaVersion, 2);
   } finally {
     process.chdir(previousRoot);
     fs.rmSync(root, { recursive: true, force: true });

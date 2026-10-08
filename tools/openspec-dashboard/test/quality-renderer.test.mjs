@@ -3,7 +3,7 @@ import test from "node:test";
 import { buildQualityView } from "../public/quality-view.mjs";
 
 const report = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   summaries: { overall: { fileCount: 4, high: 1, medium: 3, low: 1, averageScore: 93.75 } },
   files: [
     {

@@ -9,7 +9,7 @@ import { createQualityReportRefresher, readQualityReport } from "../lib/quality-
 test("reads the saved quality report without running a scanner", async () => {
   const root = await mkdtemp(join(tmpdir(), "quality-dashboard-"));
   await mkdir(join(root, ".quality"));
-  const expected = { schemaVersion: 1, summaries: { overall: { fileCount: 1 } }, files: [] };
+  const expected = { schemaVersion: 2, summaries: { overall: { fileCount: 1 } }, files: [] };
   await writeFile(join(root, ".quality", "quality-report.json"), JSON.stringify(expected));
   assert.deepEqual(await readQualityReport(root), expected);
 });
@@ -23,7 +23,7 @@ test("rejects an unsupported report shape", async () => {
 
 test("refreshes the current project through the quality-guard report command", async () => {
   const root = await mkdtemp(join(tmpdir(), "quality-dashboard-"));
-  const expected = { schemaVersion: 1, summaries: { overall: { fileCount: 2 } }, files: [], architecture: {} };
+  const expected = { schemaVersion: 2, summaries: { overall: { fileCount: 2 } }, files: [], architecture: {} };
   let command;
   const refresh = createQualityReportRefresher({
     bundlePath: "quality-guard-bundle.js",
@@ -41,19 +41,31 @@ test("refreshes the current project through the quality-guard report command", a
 test("routes a project refresh through the API method boundary", async () => {
   const root = await mkdtemp(join(tmpdir(), "quality-dashboard-api-"));
   await mkdir(join(root, ".quality"));
-  await writeFile(join(root, ".quality", "quality-report.json"), JSON.stringify({ schemaVersion: 1, summaries: {}, files: [] }));
+  await writeFile(join(root, ".quality", "quality-report.json"), JSON.stringify({ schemaVersion: 2, summaries: {}, files: [] }));
   const calls = [];
   const handle = createApi({
     store: { get: () => ({ roots: [], projects: [{ name: "project", path: root }] }) },
     refreshQualityReport: async (path) => {
       calls.push(path);
-      return { schemaVersion: 1, summaries: {}, files: [] };
+      return { schemaVersion: 2, summaries: {}, files: [] };
     },
   });
   assert.deepEqual(await handle("POST", "/api/project/0/quality/refresh", new URLSearchParams(), {}), {
-    schemaVersion: 1,
+    schemaVersion: 2,
     summaries: {},
     files: [],
   });
   assert.deepEqual(calls, [root]);
+});
+
+test("asks for Refresh when the saved report predates schema version 2", async () => {
+  const root = await mkdtemp(join(tmpdir(), "quality-dashboard-"));
+  await mkdir(join(root, ".quality"));
+  const legacy = { schemaVersion: 1, summaries: { overall: {} }, files: [] };
+  await writeFile(join(root, ".quality", "quality-report.json"), JSON.stringify(legacy));
+  const handle = createApi({ store: { get: () => ({ roots: [], projects: [{ name: "project", path: root }] }) } });
+  await assert.rejects(
+    handle("GET", "/api/project/0/quality", new URLSearchParams(), {}),
+    (error) => error.status === 409 && /press Refresh/.test(error.message),
+  );
 });

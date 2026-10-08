@@ -122,7 +122,7 @@ export function buildQualityReport(
   const files = scoredFiles(scan, findingsByFile(findings));
   const project = projectFindings(scan, findings);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     scoring: scoring(),
     scanner: { fileSelection: FILE_SELECTION },
     summaries: reportSummaries(files, project),

@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { join } from "node:path";
+import { HttpError } from "./http-error.mjs";
 
 const runFile = promisify(execFile);
 const MAX_BUFFER = 64 * 1024 * 1024;
@@ -25,8 +26,13 @@ export function createQualityReportRefresher({ bundlePath, run = runFile }) {
   };
 }
 
+const SCHEMA_VERSION = 2;
+const STALE_REPORT =
+  "quality-report.json was saved by an older quality-guard (schemaVersion 1); press Refresh to regenerate it";
+
 function validateQualityReport(report) {
-  if (report?.schemaVersion !== 1 || !report.summaries?.overall || !Array.isArray(report.files)) {
+  if (report?.schemaVersion === 1) throw new HttpError(409, STALE_REPORT);
+  if (report?.schemaVersion !== SCHEMA_VERSION || !report.summaries?.overall || !Array.isArray(report.files)) {
     throw new Error("quality-report.json has an unsupported shape");
   }
   return report;
