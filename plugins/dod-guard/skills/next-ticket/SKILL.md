@@ -168,6 +168,13 @@ For a structured PBI, map each task to the changed files, commit, and fresh
 verification evidence in the completion report. Do not report a task complete
 when its requirement is contradicted or its evidence is missing.
 
+When the task list has more than one task, run each task in order as one step
+of [dod-guard:step-by-step](../step-by-step/SKILL.md): one fresh subagent per
+task, on the tiers that `standards/model-routing.md` assigns to implementation
+and to validation. After the main thread verifies a task, commit it before the
+next task starts, so every verified task is a durable checkpoint. A task that
+changes no tracked file records its evidence instead of a commit.
+
 For code shape, prefer small pure functions with explicit inputs and outputs,
 keep external I/O at boundaries, and use ordinary loops or mutation when that
 is clearer. Do not require a functional language or dense composition.
@@ -236,8 +243,9 @@ Inspect `git status`, the complete diff, and the staged diff. Preserve unrelated
 files and never use a blanket staging command. Stage only reviewed files that
 belong to the issue.
 
-Create a concise commit that names the implemented outcome. Push the current
-branch to its existing upstream. Do not force-push or rewrite existing commits.
+Create a concise commit that names the implemented outcome; with more than one
+task, each task already has its own verified commit. Push the current branch
+to its existing upstream. Do not force-push or rewrite existing commits.
 
 After the verified implementation commit is pushed, create or update one
 parent-issue comment headed `## Implementation handoff` with one entry per
