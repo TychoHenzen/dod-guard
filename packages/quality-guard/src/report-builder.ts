@@ -1,4 +1,4 @@
-import { requireSeverity } from "#quality-guard-severity";
+import { requireSeverity, type Severity } from "#quality-guard-severity";
 import { reportSummaries, severityCounts } from "./report-summaries.js";
 
 const FILE_SELECTION =
@@ -41,7 +41,7 @@ type ScanInput = {
     file: string;
     line: number;
     rule: string;
-    severity: ReturnType<typeof requireSeverity>;
+    severity: Severity;
     message: string;
     [key: string]: unknown;
   }>;

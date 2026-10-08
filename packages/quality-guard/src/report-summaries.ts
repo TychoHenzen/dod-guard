@@ -1,4 +1,4 @@
-import type { requireSeverity } from "#quality-guard-severity";
+import type { Severity } from "#quality-guard-severity";
 
 type ScoredFile = {
   high: number;
@@ -30,7 +30,7 @@ function summarize(files: ScoredFile[]) {
 export function reportSummaries(
   files: ScoredFile[],
   projectFindings: ReadonlyArray<{
-    severity: ReturnType<typeof requireSeverity>;
+    severity: Severity;
   }>,
 ) {
   const production = files.filter(
@@ -53,7 +53,7 @@ export function reportSummaries(
 }
 
 export function severityCounts(
-  findings: ReadonlyArray<{ severity: ReturnType<typeof requireSeverity> }>,
+  findings: ReadonlyArray<{ severity: Severity }>,
 ) {
   return {
     high: findings.filter((finding) => finding.severity === "high").length,
