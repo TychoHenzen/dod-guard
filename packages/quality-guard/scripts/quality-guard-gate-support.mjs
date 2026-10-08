@@ -58,19 +58,18 @@ export function absoluteTail(repoRoot) {
   );
 }
 export function advisoryFindings(violations) {
-  return violations
-    .map((violation) => {
-      const {
-        file = "unknown-file",
-        line = "?",
-        severity,
-        rule = "unknown-rule",
-        message = "no message",
-        suggestion,
-      } = violation;
-      const finding = `${file}:${line} [${severity}] ${rule}: ${message} (advisory finding)`;
-      return suggestion ? `${finding}\n  Fix: ${suggestion}` : finding;
-    });
+  return violations.map((violation) => {
+    const {
+      file = "unknown-file",
+      line = "?",
+      severity,
+      rule = "unknown-rule",
+      message = "no message",
+      suggestion,
+    } = violation;
+    const finding = `${file}:${line} [${severity}] ${rule}: ${message} (advisory finding)`;
+    return suggestion ? `${finding}\n  Fix: ${suggestion}` : finding;
+  });
 }
 function unavailableTail(filePath) {
   return (

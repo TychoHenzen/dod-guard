@@ -9,7 +9,16 @@ test("requireSeverity keeps the high, medium, and low vocabulary", () => {
 });
 
 test("requireSeverity rejects every other severity", () => {
-  assert.throws(() => requireSeverity("error"), /unknown quality severity: error/);
-  assert.throws(() => requireSeverity("warn"), /unknown quality severity: warn/);
-  assert.throws(() => requireSeverity(undefined), /unknown quality severity: undefined/);
+  assert.throws(
+    () => requireSeverity("error"),
+    /unknown quality severity: error/,
+  );
+  assert.throws(
+    () => requireSeverity("warn"),
+    /unknown quality severity: warn/,
+  );
+  assert.throws(
+    () => requireSeverity(undefined),
+    /unknown quality severity: undefined/,
+  );
 });
