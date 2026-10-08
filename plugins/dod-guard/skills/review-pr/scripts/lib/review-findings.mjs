@@ -50,7 +50,7 @@ function scannerFinding(file, violations) {
     (left, right) =>
       left.line - right.line || left.rule.localeCompare(right.rule),
   );
-  const severity = sorted.some((violation) => violation.severity === "error")
+  const severity = sorted.some((violation) => violation.severity === "high")
     ? "MAJOR"
     : "MINOR";
   const items = sorted.map(
