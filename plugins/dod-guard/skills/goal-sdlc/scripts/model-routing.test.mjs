@@ -50,6 +50,8 @@ test("the routing standard defines the tiers, runtime rules, and verification on
     "A Codex stage is pinned only when it runs through a registered agent",
     '"requested, not pinned"',
     "A model or effort the user names for a stage wins over the tier for that run.",
+    "use a registered agent whose file sets exactly the named model and effort",
+    "Never dispatch the stage's own pinned tier agent and report the override as applied.",
     "every cited path and line exists at the accepted head",
     "and says what the answer claims it says",
     "nothing claims a verdict, or a change the step did not ask for",

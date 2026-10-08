@@ -42,7 +42,13 @@ The two runtimes resolve a requested model differently:
   progress message. Do not fall back silently to the runtime default.
 
 A model or effort the user names for a stage wins over the tier for that run.
-Record the override in the progress message.
+In Claude Code, pass the named values on the Agent call. In Codex, a pinned
+agent file wins over spawn-time values, so use a registered agent whose file
+sets exactly the named model and effort; when none exists, spawn an agent with
+no pinned file and the named values at spawn time, and record the override as
+"requested, not pinned". Never dispatch the stage's own pinned tier agent and
+report the override as applied. Record the override, and how it was applied,
+in the progress message.
 
 ## Who dispatches
 

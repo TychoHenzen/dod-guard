@@ -94,9 +94,9 @@ owner, as `standards/model-routing.md` says. Each row runs at this tier:
 
 Dispatch each row as `standards/model-routing.md` says: pass its model and
 effort to the Agent call in Claude Code, or use the registered tier agent in
-Codex, and name the stage, tier, model, and effort in the progress message.
-A model or effort the user names for a stage wins for that run and is recorded
-there. Verify cheap-tier output before anything relies on it, and read back the
+Codex, and name the stage, tier, model, and effort in the progress message. A
+user's model or effort override is applied and recorded as that standard says.
+Verify cheap-tier output before anything relies on it, and read back the
 commit of any stage that changed tracked files before the next stage starts.
 
 Use the Agent tool in Claude Code and spawned agents in Codex. User-visible

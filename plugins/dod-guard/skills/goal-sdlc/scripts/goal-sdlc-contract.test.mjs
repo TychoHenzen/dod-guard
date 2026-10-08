@@ -153,7 +153,7 @@ test("goal-sdlc routes every stage to one tier with an explicit effort", () => {
   assert.match(skill, prose("pass its model and effort to the Agent call in Claude Code"));
   assert.match(skill, prose("or use the registered tier agent in Codex"));
   assert.match(skill, prose("name the stage, tier, model, and effort in the progress message"));
-  assert.match(skill, prose("A model or effort the user names for a stage wins for that run and is recorded there."));
+  assert.match(skill, prose("user's model or effort override is applied and recorded as that standard says."));
   assert.match(skill, prose("Verify cheap-tier output before anything relies on it"));
   assert.match(
     skill,
