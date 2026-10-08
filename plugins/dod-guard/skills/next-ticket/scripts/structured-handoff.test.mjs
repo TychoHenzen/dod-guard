@@ -288,7 +288,8 @@ test("next-ticket lands one verified commit per task-list task", () => {
   assert.match(nextTicket, prose("When the task list has more than one task, run each task in order as one step"));
   assert.ok(nextTicket.includes("[dod-guard:step-by-step](../step-by-step/SKILL.md)"));
   assert.match(nextTicket, prose("one fresh subagent per task"));
-  assert.match(nextTicket, prose("`standards/model-routing.md`"));
+  assert.match(nextTicket, prose("Implementing the task uses the strong tier"));
+  assert.match(nextTicket, prose("regenerating artifacts uses the cheap tier, as `standards/model-routing.md`"));
   assert.match(nextTicket, prose("After the main thread verifies a task, commit it before the next task starts"));
   assert.match(nextTicket, prose("A task that changes no tracked file records its evidence instead of a commit."));
   assert.match(nextTicket, prose("with more than one task, each task already has its own verified commit"));

@@ -170,8 +170,9 @@ when its requirement is contradicted or its evidence is missing.
 
 When the task list has more than one task, run each task in order as one step
 of [dod-guard:step-by-step](../step-by-step/SKILL.md): one fresh subagent per
-task, on the tiers that `standards/model-routing.md` assigns to implementation
-and to validation. After the main thread verifies a task, commit it before the
+task. Implementing the task uses the strong tier, and running its validations
+or regenerating artifacts uses the cheap tier, as `standards/model-routing.md`
+defines them. After the main thread verifies a task, commit it before the
 next task starts, so every verified task is a durable checkpoint. A task that
 changes no tracked file records its evidence instead of a commit.
 
