@@ -307,7 +307,7 @@ test("starts the dashboard and uses the same listener for the real Code Explorer
   await writeFile(
     join(project, ".quality", "quality-report.json"),
     JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
       summaries: { overall: { score: 1 } },
       files: [{ path: "src/main.ts", score: 1, findings: [] }],
     }),

@@ -109,8 +109,9 @@ It groups scanner findings into one comment per changed file, dedupes reviewer
 findings by file and root cause, and posts every finding as an inline comment
 so each gets a `GH-<id>`. A finding whose cited line this PR did not add moves
 to the nearest added line, and its body names the cited location.
-Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given, scanner `error` as
-`MAJOR` and `warn` as `MINOR`. Recommendation: any `BLOCKER` is `BLOCK`, any
+Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A file's scanner
+findings are `MAJOR` when any is `high`, otherwise `MINOR`.
+Recommendation: any `BLOCKER` is `BLOCK`, any
 other finding is `REQUEST_CHANGES`, none is `APPROVE`.
 
 It writes the review payload to `--out` and prints the recommendation and

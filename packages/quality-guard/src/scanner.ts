@@ -9,7 +9,6 @@ export interface ScanRequest {
   rules?: string[];
   excludes?: string[];
   testPaths?: string[];
-  profile?: "default" | "strict";
 }
 
 const SCAN_TIMEOUT_MS = 120_000;
@@ -31,7 +30,6 @@ function scannerPath(): string {
 function buildArgs(request: ScanRequest): string[] {
   const optional = [
     ["--root", request.root],
-    ["--profile", request.profile],
     ["--rules", request.rules?.length ? request.rules.join(",") : undefined],
   ] as const;
   return [
@@ -50,9 +48,9 @@ function list<T>(values: T[] | undefined): T[] {
 }
 
 /**
- * Run the scanner. A non-zero exit is a gate verdict, not a crash, so the exit
- * code is returned rather than thrown. Exit 3 means the scanner rejected the
- * request itself.
+ * Run the scanner. A non-zero exit is diagnostic process evidence, not an
+ * acceptance verdict, so the exit code is returned rather than thrown. Exit 3
+ * means the scanner rejected the request itself.
  */
 export function runScan(request: ScanRequest, run = execFileSync) {
   const args = [scannerPath(), ...buildArgs(request)];

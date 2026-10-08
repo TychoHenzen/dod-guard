@@ -9,7 +9,7 @@ test("a comment that only renames the declaration is flagged", () => {
     "comment-restates-code",
   );
   assert.equal(found.length, 1);
-  assert.equal(found[0].severity, "warn");
+  assert.equal(found[0].severity, "medium");
 });
 
 test("a comment that adds a reason is not flagged as restatement", () => {

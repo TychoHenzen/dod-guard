@@ -1,8 +1,7 @@
 import { renderJson, renderText, toWorkUnits } from "./lib/report.mjs";
 
-export function resultFor({ options, files, sorted, summary }) {
+export function resultFor({ files, sorted, summary }) {
   return {
-    profile: options.profile,
     fileCount: files.length,
     files: files
       .map((file) => ({

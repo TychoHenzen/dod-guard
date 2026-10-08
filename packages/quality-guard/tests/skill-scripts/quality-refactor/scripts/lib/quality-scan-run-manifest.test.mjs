@@ -21,7 +21,7 @@ test("a narrowed scan still reads manifests from the repository root", () => {
       testPaths: [],
       rules: ["dead-export"],
     };
-    const withoutManifest = scan(options, buildConfig("default"));
+    const withoutManifest = scan(options, buildConfig());
     assert.equal(
       withoutManifest.violations.some(
         (violation) => violation.rule === "dead-export",
@@ -30,7 +30,7 @@ test("a narrowed scan still reads manifests from the repository root", () => {
     );
 
     writeFileSync(join(root, "Root.tscn"), '[node type="TerminalDisplay"]\n');
-    const withManifest = scan(options, buildConfig("default"));
+    const withManifest = scan(options, buildConfig());
     assert.equal(
       withManifest.violations.some(
         (violation) => violation.rule === "dead-export",

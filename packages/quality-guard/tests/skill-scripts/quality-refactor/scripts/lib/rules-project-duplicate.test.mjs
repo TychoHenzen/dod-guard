@@ -17,7 +17,7 @@ test("identical six-line blocks in two files are reported", () => {
     { rel: "src/c.ts", lines: [...block] },
     { rel: "src/d.ts", lines: [...block] },
   ];
-  const found = checkDuplication(files, buildConfig("default"));
+  const found = checkDuplication(files, buildConfig());
   assert.equal(found.length, 2);
   assert.deepEqual(found.map((violation) => violation.file).sort(), [
     "src/c.ts",
@@ -25,7 +25,7 @@ test("identical six-line blocks in two files are reported", () => {
   ]);
   for (const violation of found) {
     assert.equal(violation.rule, "duplicate-block");
-    assert.equal(violation.severity, "warn");
+    assert.equal(violation.severity, "medium");
     assert.equal(violation.metric, 2);
     assert.equal(violation.line, 1);
   }
@@ -46,7 +46,7 @@ test("files with no shared block are not reported", () => {
       ],
     },
   ];
-  assert.equal(checkDuplication(files, buildConfig("default")).length, 0);
+  assert.equal(checkDuplication(files, buildConfig()).length, 0);
 });
 
 test("a shared import block is ignored", () => {
@@ -62,7 +62,7 @@ test("a shared import block is ignored", () => {
     { rel: "src/c.ts", lines: [...imports, "const one = 1;"] },
     { rel: "src/d.ts", lines: [...imports, "const two = 2;"] },
   ];
-  assert.equal(checkDuplication(files, buildConfig("default")).length, 0);
+  assert.equal(checkDuplication(files, buildConfig()).length, 0);
 });
 
 test("shared code under shared imports is still reported", () => {
@@ -79,5 +79,5 @@ test("shared code under shared imports is still reported", () => {
     { rel: "src/c.ts", lines: [...shared] },
     { rel: "src/d.ts", lines: [...shared] },
   ];
-  assert.equal(checkDuplication(files, buildConfig("default")).length, 2);
+  assert.equal(checkDuplication(files, buildConfig()).length, 2);
 });

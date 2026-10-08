@@ -58,14 +58,14 @@ test("reports only Python and Rust wildcard imports", () => {
   const found = checkWildcardImports({
     files,
     scans: scansFor(files),
-    config: buildConfig("default"),
+    config: buildConfig(),
   });
   assert.deepEqual(found, [
     {
       file: "src/wild.py",
       line: 1,
       rule: "wildcard-import",
-      severity: "warn",
+      severity: "medium",
       message:
         "package wildcard import obscures its imported API; import explicit names instead",
       suggestion: "Import explicit names from package.",
@@ -75,7 +75,7 @@ test("reports only Python and Rust wildcard imports", () => {
       file: "src/wild.rs",
       line: 1,
       rule: "wildcard-import",
-      severity: "warn",
+      severity: "medium",
       message:
         "crate::items wildcard import obscures its imported API; import explicit names instead",
       suggestion: "Import explicit names from crate::items.",

@@ -43,11 +43,7 @@ function asReportScan(
 ): Parameters<typeof buildQualityReport>[0] {
   const candidate = report as Partial<Parameters<typeof buildQualityReport>[0]>;
   if (
-    !(
-      Array.isArray(candidate.files) &&
-      Array.isArray(candidate.violations) &&
-      candidate.profile
-    )
+    !(Array.isArray(candidate.files) && Array.isArray(candidate.violations))
   ) {
     throw new Error("quality scanner returned an invalid report");
   }

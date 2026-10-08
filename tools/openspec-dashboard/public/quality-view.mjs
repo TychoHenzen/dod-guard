@@ -1,5 +1,11 @@
 const pathCompare = (left, right) => left.path.localeCompare(right.path);
 const PATH_SEPARATOR = /[/\\]+/;
+const SEVERITIES = ["high", "medium", "low"];
+
+function severityCounts(findings) {
+  const countOf = (severity) => findings.filter((finding) => finding.severity === severity).length;
+  return Object.fromEntries(SEVERITIES.map((severity) => [severity, countOf(severity)]));
+}
 
 function findingRule(finding) {
   return finding.rule ?? finding.kind ?? "finding";
@@ -31,36 +37,47 @@ function filterFile(file, controls) {
   if (!visible) {
     return null;
   }
-  return {
-    ...file,
-    findings,
-    errors: findings.filter((finding) => finding.severity === "error").length,
-    warnings: findings.filter((finding) => finding.severity !== "error").length,
-  };
+  return { ...file, findings, ...severityCounts(findings) };
+}
+
+function matchesProjectText(finding, needle) {
+  return String(finding.file ?? "").toLowerCase().includes(needle) || findingMatches(finding, needle);
+}
+
+function matchesProjectFinding(finding, controls, needle) {
+  if (controls.severity !== "all" && finding.severity !== controls.severity) {
+    return false;
+  }
+  if (controls.rule !== "all" && findingRule(finding) !== controls.rule) {
+    return false;
+  }
+  return !needle || matchesProjectText(finding, needle);
+}
+
+function filterProjectFindings(report, controls) {
+  const needle = controls.text.trim().toLowerCase();
+  return (report.projectFindings ?? []).filter((finding) => matchesProjectFinding(finding, controls, needle));
 }
 
 function compareFiles(sort) {
   if (sort === "score") {
     return (left, right) => left.score - right.score || pathCompare(left, right);
   }
-  if (sort === "errors") {
-    return (left, right) => right.errors - left.errors || pathCompare(left, right);
-  }
-  if (sort === "warnings") {
-    return (left, right) => right.warnings - left.warnings || pathCompare(left, right);
+  if (SEVERITIES.includes(sort)) {
+    return (left, right) => right[sort] - left[sort] || pathCompare(left, right);
   }
   return pathCompare;
 }
 
 function summarize(files) {
   const fileCount = files.length;
-  const errors = files.reduce((total, file) => total + file.errors, 0);
-  const warnings = files.reduce((total, file) => total + file.warnings, 0);
+  const countOf = (severity) => files.reduce((total, file) => total + file[severity], 0);
+  const counts = Object.fromEntries(SEVERITIES.map((severity) => [severity, countOf(severity)]));
   let averageScore = null;
   if (fileCount > 0) {
     averageScore = files.reduce((total, file) => total + Number(file.score ?? 0), 0) / fileCount;
   }
-  return { fileCount, errors, warnings, averageScore };
+  return { fileCount, ...counts, averageScore };
 }
 
 function folderNode(name, path, controls) {
@@ -119,11 +136,8 @@ function compareNodes(sort) {
   if (sort === "score") {
     return (left, right) => left.summary.averageScore - right.summary.averageScore || pathCompare(left, right);
   }
-  if (sort === "errors") {
-    return (left, right) => right.summary.errors - left.summary.errors || pathCompare(left, right);
-  }
-  if (sort === "warnings") {
-    return (left, right) => right.summary.warnings - left.summary.warnings || pathCompare(left, right);
+  if (SEVERITIES.includes(sort)) {
+    return (left, right) => right.summary[sort] - left.summary[sort] || pathCompare(left, right);
   }
   return pathCompare;
 }
@@ -147,16 +161,34 @@ function emptyState(report, files) {
   return "No files in this report.";
 }
 
-function buildQualityView(report, options = {}) {
-  const controls = {
-    text: options.text ?? "",
-    severity: options.severity ?? "all",
-    rule: options.rule ?? "all",
-    sort: options.sort ?? "path",
-    expanded: options.expanded ?? true,
-    folderState: options.folderState,
+function reportRules(report) {
+  const findings = [...report.files.flatMap((file) => file.findings ?? []), ...(report.projectFindings ?? [])];
+  return [...new Set(findings.map(findingRule))].sort();
+}
+
+function withProjectCounts(fileSummary, projectFindings) {
+  const counts = severityCounts(projectFindings);
+  return {
+    ...fileSummary,
+    high: fileSummary.high + counts.high,
+    medium: fileSummary.medium + counts.medium,
+    low: fileSummary.low + counts.low,
   };
-  const rules = [...new Set(report.files.flatMap((file) => (file.findings ?? []).map(findingRule)))].sort();
+}
+
+const VIEW_DEFAULTS = { text: "", severity: "all", rule: "all", sort: "path", expanded: true };
+
+function viewControls(options) {
+  const controls = { ...VIEW_DEFAULTS, folderState: options.folderState };
+  for (const [name, fallback] of Object.entries(VIEW_DEFAULTS)) {
+    controls[name] = options[name] ?? fallback;
+  }
+  return controls;
+}
+
+function buildQualityView(report, options = {}) {
+  const controls = viewControls(options);
+  const rules = reportRules(report);
   const files = [];
   for (const file of report.files) {
     const filtered = filterFile(file, controls);
@@ -171,12 +203,14 @@ function buildQualityView(report, options = {}) {
   }
   summarizeTree(tree);
   sortTree(tree, controls.sort);
+  const projectFindings = filterProjectFindings(report, controls);
   return {
     controls,
     rules,
     files,
     tree,
-    summary: summarize(files),
+    projectFindings,
+    summary: withProjectCounts(summarize(files), projectFindings),
     emptyState: emptyState(report, files),
   };
 }

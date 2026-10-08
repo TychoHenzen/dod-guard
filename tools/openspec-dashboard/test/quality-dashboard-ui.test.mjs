@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { chromium } from "@playwright/test";
 import { requestAuthenticatedShutdown } from "../lib/dashboard-ownership.mjs";
+import { fileRow, projectRow } from "./quality-finding-rows.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const STARTUP_TIMEOUT_MS = 30_000;
@@ -54,14 +55,18 @@ test("starts from the normal launcher and refreshes the displayed quality report
     await dashboard.locator(".finding strong", { hasText: "dead-export" }).waitFor();
 
     const saved = JSON.parse(await readFile(join(project, ".quality", "quality-report.json"), "utf8"));
-    assert.equal(saved.schemaVersion, 1);
+    assert.equal(saved.schemaVersion, 2);
+    const rootEntrypoint = (finding) => finding.file === "<repository root>" && finding.rule === "build-entrypoint";
+    assert.ok(saved.projectFindings.some(rootEntrypoint));
+    await dashboard.locator(".quality-project .finding code", { hasText: "<repository root>" }).first().waitFor();
     assert.notEqual(saved.files[0]?.path, "stale/old.js");
     assert.equal(await dashboard.locator(".finding strong", { hasText: "stale-rule" }).count(), 0);
     assert.deepEqual(await dashboard.locator(".metric-value").allTextContents(), [
       Number(saved.summaries.overall.averageScore).toFixed(1),
       String(saved.summaries.overall.fileCount),
-      String(saved.summaries.overall.errors),
-      String(saved.summaries.overall.warnings),
+      String(saved.summaries.overall.high),
+      String(saved.summaries.overall.medium),
+      String(saved.summaries.overall.low),
     ]);
     assert.deepEqual(
       (await dashboard.locator(".quality-file > summary code").allTextContents()).sort(),
@@ -86,14 +91,12 @@ test("starts from the normal launcher and refreshes the displayed quality report
         rule: row.querySelector("strong")?.textContent,
         location: row.querySelector("code")?.textContent,
         message: row.querySelector("span")?.textContent,
-        severity: row.classList.contains("error") ? "error" : "warn",
+        severity: ["high", "medium", "low"].find((severity) => row.classList.contains(severity)),
       }))),
-      saved.files.flatMap((file) => file.findings.map((finding) => ({
-        rule: finding.rule ?? finding.kind ?? "finding",
-        location: finding.line ? `:${finding.line}` : "",
-        message: finding.message ?? finding.reason ?? "",
-        severity: finding.severity ?? "warn",
-      }))),
+      [
+        ...saved.projectFindings.map(projectRow),
+        ...saved.files.flatMap((file) => file.findings.map(fileRow)),
+      ],
     );
 
     const filter = dashboard.locator("#filter");
@@ -104,19 +107,18 @@ test("starts from the normal launcher and refreshes the displayed quality report
     await filter.fill("");
     await dashboard.locator(".quality-file > summary code", { hasText: "clean.js" }).waitFor();
     const controls = dashboard.locator(".quality-control select");
-    await controls.nth(0).selectOption("error");
-    assert.equal(await dashboard.locator(".finding").count(), saved.summaries.overall.errors);
+    await controls.nth(0).selectOption("high");
+    assert.equal(await dashboard.locator(".finding").count(), saved.summaries.overall.high);
     await controls.nth(0).selectOption("all");
     await controls.nth(1).selectOption("dead-export");
-    assert.equal(
-      await dashboard.locator(".finding").count(),
-      saved.files.flatMap((file) => file.findings).filter((finding) => (finding.rule ?? finding.kind ?? "finding") === "dead-export").length,
-    );
+    const deadExports = [...saved.files.flatMap((file) => file.findings), ...saved.projectFindings]
+      .filter((finding) => (finding.rule ?? finding.kind ?? "finding") === "dead-export");
+    assert.equal(await dashboard.locator(".finding").count(), deadExports.length);
     await controls.nth(1).selectOption("all");
     assert.equal(await dashboard.locator(".quality-file").count(), saved.files.length);
     const directFiles = dashboard.locator(".quality-folder").first().locator(":scope > .quality-children > .quality-file");
     const directReports = saved.files.filter((file) => file.path.split(/[\\/]/).length === 2);
-    for (const sort of ["score", "errors", "warnings", "path"]) {
+    for (const sort of ["score", "high", "medium", "low", "path"]) {
       await controls.nth(2).selectOption(sort);
       assert.deepEqual(
         await directFiles.locator("> summary code").allTextContents(),
@@ -161,20 +163,21 @@ test("starts from the normal launcher and refreshes the displayed quality report
 
 function staleReport() {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     summaries: {
-      overall: { fileCount: 1, errors: 1, warnings: 0, averageScore: 95 },
-      production: { fileCount: 1, errors: 1, warnings: 0, averageScore: 95 },
-      test: { fileCount: 0, errors: 0, warnings: 0, averageScore: null },
+      overall: { fileCount: 1, high: 1, medium: 0, low: 0, averageScore: 95 },
+      production: { fileCount: 1, high: 1, medium: 0, low: 0, averageScore: 95 },
+      test: { fileCount: 0, high: 0, medium: 0, low: 0, averageScore: null },
     },
     files: [{
       path: "stale/old.js",
       language: "ts",
       classification: "production",
       score: 95,
-      errors: 1,
-      warnings: 0,
-      findings: [{ rule: "stale-rule", severity: "error", line: 1, message: "stale report" }],
+      high: 1,
+      medium: 0,
+      low: 0,
+      findings: [{ rule: "stale-rule", severity: "high", line: 1, message: "stale report" }],
     }],
     architecture: {},
   };
@@ -182,11 +185,12 @@ function staleReport() {
 
 function summaryText(summary) {
   const fileLabel = summary.fileCount === 1 ? "file" : "files";
-  return `${summary.fileCount} ${fileLabel} | score ${Number(summary.averageScore).toFixed(1)} | ${summary.errors} errors | ${summary.warnings} warnings`;
+  const counts = `${summary.high} high | ${summary.medium} medium | ${summary.low} low`;
+  return `${summary.fileCount} ${fileLabel} | score ${Number(summary.averageScore).toFixed(1)} | ${counts}`;
 }
 
 function fileSummary(file) {
-  return { fileCount: 1, averageScore: file.score, errors: file.errors, warnings: file.warnings };
+  return { fileCount: 1, averageScore: file.score, high: file.high, medium: file.medium, low: file.low };
 }
 
 function folderSummaries(files) {
@@ -210,16 +214,18 @@ function summarizeFiles(files) {
   return {
     fileCount: files.length,
     averageScore: files.reduce((total, file) => total + Number(file.score ?? 0), 0) / files.length,
-    errors: files.reduce((total, file) => total + Number(file.errors ?? 0), 0),
-    warnings: files.reduce((total, file) => total + Number(file.warnings ?? 0), 0),
+    high: files.reduce((total, file) => total + Number(file.high ?? 0), 0),
+    medium: files.reduce((total, file) => total + Number(file.medium ?? 0), 0),
+    low: files.reduce((total, file) => total + Number(file.low ?? 0), 0),
   };
 }
 
 function sortedFiles(files, sort) {
   return [...files].sort((left, right) => {
     if (sort === "score") return left.score - right.score || left.path.localeCompare(right.path);
-    if (sort === "errors") return right.errors - left.errors || left.path.localeCompare(right.path);
-    if (sort === "warnings") return right.warnings - left.warnings || left.path.localeCompare(right.path);
+    if (["high", "medium", "low"].includes(sort)) {
+      return right[sort] - left[sort] || left.path.localeCompare(right.path);
+    }
     return left.path.localeCompare(right.path);
   });
 }
@@ -229,7 +235,7 @@ function spawnLauncher({ dashboardHome, port }) {
   const windows = process.platform === "win32";
   return spawn(
     windows ? "cmd.exe" : process.execPath,
-    windows ? ["/d", "/s", "/c", "quality-dashboard.cmd"] : [serve],
+    windows ? ["/d", "/s", "/c", join(repositoryRoot, "quality-dashboard.cmd")] : [serve],
     {
       env: {
         ...process.env,

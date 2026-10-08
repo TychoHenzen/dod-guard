@@ -38,7 +38,6 @@ test("preflight is CI's single source for generated checks, policy, and Biome fl
     '["run", "prepare:test", "--workspaces", "--if-present"]',
     '"format", "--write", "--no-errors-on-unmatched"',
     '"check", "--max-diagnostics=200", "--no-errors-on-unmatched"',
-    '"--profile=strict"',
     '"Quality diagnostics (advisory)"',
     '"scripts/ci/check-tests-present.mjs"',
     '"scripts/ci/check-audit.mjs"',
@@ -54,6 +53,7 @@ test("preflight is CI's single source for generated checks, policy, and Biome fl
     "check-skips",
     "--fail-on=",
     "--write-baseline",
+    "--profile",
   ]) {
     assert.doesNotMatch(PREFLIGHT, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
@@ -170,10 +170,14 @@ function fixture() {
     'import test from "node:test"; test("fixture", () => {});\n',
   );
   write(root, "packages/quality-guard/dist/bundle.js", "");
+  const scannerReport = {
+    summary: { total: 1, high: 1, medium: 0, low: 0, byRule: { complexity: 1 }, byFile: { "fixture.js": 1 } },
+    violations: [{ rule: "complexity", severity: "high" }],
+  };
   write(
     root,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs",
-    'process.stdout.write(JSON.stringify({summary:{total:1,errors:1,warnings:0,byRule:{complexity:1},byFile:{"fixture.js":1}},violations:[{rule:"complexity",severity:"error"}]}) + "\\n");\n',
+    `process.stdout.write(${JSON.stringify(JSON.stringify(scannerReport))} + "\\n");\n`,
   );
 
   git(root, ["add", "."]);

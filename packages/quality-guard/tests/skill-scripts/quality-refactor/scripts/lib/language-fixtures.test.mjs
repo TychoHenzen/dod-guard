@@ -8,7 +8,7 @@ import { scanFile } from "../../../../../skills/quality-refactor/scripts/lib/rul
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(HERE, "target");
-const STRICT = buildConfig("strict");
+const CONFIG = buildConfig();
 
 function loadFixture(name, lang) {
   const source = readFileSync(join(FIXTURES, name), "utf8");
@@ -22,7 +22,7 @@ function loadFixture(name, lang) {
 }
 
 function violationSet(name, lang) {
-  const { violations } = scanFile(loadFixture(name, lang), STRICT);
+  const { violations } = scanFile(loadFixture(name, lang), CONFIG);
   return violations
     .map((violation) => ({
       file: violation.file,
@@ -50,7 +50,7 @@ test("Rust fixture reports its exact violation set", () => {
 test("Rust plain-string captures do not invent unused-local violations", () => {
   const { violations, interpolations } = scanFile(
     loadFixture("sample.rs", "rs"),
-    STRICT,
+    CONFIG,
   );
   assert.equal(
     interpolations.some((id) => id.name === "phantom"),
@@ -73,7 +73,7 @@ test("C# fixture reports its exact violation set", () => {
 });
 
 test("C# auto-properties count as fields", () => {
-  const { violations } = scanFile(loadFixture("Sample.cs", "cs"), STRICT);
+  const { violations } = scanFile(loadFixture("Sample.cs", "cs"), CONFIG);
   assert.equal(
     violations.some(
       (v) =>

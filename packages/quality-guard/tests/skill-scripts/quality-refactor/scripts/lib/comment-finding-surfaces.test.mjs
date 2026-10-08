@@ -10,6 +10,7 @@ import {
   summarize,
   toWorkUnits,
 } from "../../../../../skills/quality-refactor/scripts/lib/report.mjs";
+import { resultFor } from "../../../../../skills/quality-refactor/scripts/quality-scan-output.mjs";
 import { scan } from "../../../../../skills/quality-refactor/scripts/quality-scan-run.mjs";
 
 test("comment findings keep stable fields through text, JSON, and units", () => {
@@ -30,19 +31,34 @@ test("comment findings keep stable fields through text, JSON, and units", () => 
         testPaths: [],
         rules: ["comment-missing-reference", "comment-placeholder"],
       },
-      buildConfig("default"),
+      buildConfig(),
     );
     const violations = sortViolations(scanned.violations);
-    const result = {
-      profile: "default",
-      fileCount: scanned.files.length,
+    const result = resultFor({
+      options: {},
       files: scanned.files,
+      sorted: violations,
       summary: summarize(violations),
-      violations,
-      comparison: null,
-    };
+    });
+    assert.equal("profile" in result, false);
     const json = JSON.parse(renderJson(result));
     const units = toWorkUnits(violations);
+    assert.deepEqual(Object.keys(json.summary).sort(), [
+      "byFile",
+      "byRule",
+      "high",
+      "low",
+      "medium",
+      "total",
+    ]);
+    assert.deepEqual(Object.keys(units[0]).sort(), [
+      "file",
+      "high",
+      "items",
+      "low",
+      "medium",
+      "rules",
+    ]);
     assert.equal(violations.length, 2);
     assert.deepEqual(
       json.violations.map(

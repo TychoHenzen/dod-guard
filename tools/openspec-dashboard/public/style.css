@@ -163,12 +163,14 @@ main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 16px 0 24px; }
 .metric { display: flex; flex-direction: column; padding: 14px; border: 1px solid var(--line); border-radius: 8px; }
 .metric-value { font-size: 1.8rem; font-weight: 700; }
-.metric.error .metric-value, .finding.error strong { color: #d45d5d; }
-.metric.warn .metric-value, .finding.warn strong { color: #c99836; }
+.metric.high .metric-value, .finding.high strong { color: #d45d5d; }
+.metric.medium .metric-value, .finding.medium strong { color: #c99836; }
+.metric.low .metric-value, .finding.low strong { color: var(--dim); }
 .quality-file { min-width: 0; border-bottom: 1px solid var(--line); }
 .quality-file summary { cursor: pointer; }
 .findings { display: grid; gap: 8px; margin: 8px 0 14px; padding: 0 10px 0 24px; }
 .finding { display: grid; grid-template-columns: minmax(0, 160px) 36px minmax(0, 1fr); gap: 8px; overflow-wrap: anywhere; }
+.quality-project .finding { grid-template-columns: minmax(0, 160px) minmax(0, 260px) minmax(0, 1fr); }
 .architecture-json { white-space: pre-wrap; overflow-wrap: anywhere; }
 .quality-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin: 0 0 22px; }
 .quality-control { display: grid; gap: 4px; color: var(--dim); font-size: 12px; }
@@ -193,6 +195,7 @@ details[open] > .quality-summary::before, .quality-file[open] > summary::before 
   .quality-summary .entry-note, .quality-file summary .entry-note { grid-column: 2; text-align: left; }
   .quality-children { margin-left: 7px; padding-left: 5px; }
   .finding { grid-template-columns: minmax(0, 1fr) 36px; }
+  .quality-project .finding { grid-template-columns: minmax(0, 1fr); }
   .finding > span { grid-column: 1 / -1; }
   header { padding: 8px 14px; }
   .tabs { flex-basis: calc(100% - 80px); }

@@ -26,24 +26,17 @@ export const ALL_RULES = [
   ...Object.keys(PRESENCE_SEVERITY),
 ];
 
-export function buildConfig(profile) {
+export function buildConfig() {
   const thresholds = structuredClone(DEFAULT_THRESHOLDS);
   const presence = { ...PRESENCE_SEVERITY };
-  if (profile === "strict") {
-    for (const rule of Object.keys(thresholds)) {
-      const { warn } = thresholds[rule];
-      if (warn !== null) thresholds[rule] = { warn: null, error: warn };
-    }
-    for (const rule of Object.keys(presence)) presence[rule] = "error";
-  }
-  return { profile, thresholds, presence };
+  return { thresholds, presence };
 }
 
 export function severityFor(config, rule, value) {
   const bounds = config.thresholds[rule];
   if (!bounds) return null;
-  if (above(bounds.error, value)) return "error";
-  if (above(bounds.warn, value)) return "warn";
+  if (above(bounds.high, value)) return "high";
+  if (above(bounds.medium, value)) return "medium";
   return null;
 }
 

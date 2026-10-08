@@ -143,7 +143,7 @@ one from a test file.
 comes with tests that make it look alive. The tests pass, the coverage number
 is good, and none of it runs in production.
 
-**Why this one only warns:** two different things look identical here. One is a
+**Why this remains medium:** two different things look identical here. One is a
 production symbol that only tests call. The other is a test-support symbol that
 only tests are ever supposed to call. A fixture builder, a fake, or a scenario
 harness has exactly the same reference graph as real dead code. When the rule

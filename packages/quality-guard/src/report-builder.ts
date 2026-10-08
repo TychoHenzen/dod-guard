@@ -1,20 +1,37 @@
-import { reportSummaries } from "./report-summaries.js";
+import { requireSeverity, type Severity } from "#quality-guard-severity";
+import { reportSummaries, severityCounts } from "./report-summaries.js";
 
 const FILE_SELECTION =
   "supported handwritten source; generated, dependency, build, binary, " +
   "unreadable, and symlinked files excluded";
 
+const SCORING = {
+  initial: 100,
+  highDeduction: 5,
+  mediumDeduction: 1,
+  lowDeduction: 0,
+  minimum: 0,
+} as const;
+
 function scoring() {
-  return {
-    initial: 100,
-    errorDeduction: 5,
-    warningDeduction: 1,
-    minimum: 0,
-  };
+  return { ...SCORING };
+}
+
+function fileScore(counts: {
+  high: number;
+  medium: number;
+  low: number;
+}): number {
+  return Math.max(
+    SCORING.minimum,
+    SCORING.initial -
+      counts.high * SCORING.highDeduction -
+      counts.medium * SCORING.mediumDeduction -
+      counts.low * SCORING.lowDeduction,
+  );
 }
 
 type ScanInput = {
-  profile: "default" | "strict";
   files: Array<{
     path: string;
     language: string;
@@ -24,7 +41,7 @@ type ScanInput = {
     file: string;
     line: number;
     rule: string;
-    severity: "error" | "warn";
+    severity: Severity;
     message: string;
     [key: string]: unknown;
   }>;
@@ -41,10 +58,20 @@ function compareFinding(
   );
 }
 
-function findingsByFile(scan: ScanInput): Map<string, ScanInput["violations"]> {
+function normalizedFindings(scan: ScanInput): ScanInput["violations"] {
+  return scan.violations.map((finding) => ({
+    ...finding,
+    severity: requireSeverity(finding.severity),
+  }));
+}
+
+function findingsByFile(
+  findings: ScanInput["violations"],
+): Map<string, ScanInput["violations"]> {
   const byFile = new Map<string, ScanInput["violations"]>();
-  for (const finding of scan.violations)
+  for (const finding of findings) {
     byFile.set(finding.file, [...(byFile.get(finding.file) ?? []), finding]);
+  }
   return byFile;
 }
 
@@ -56,18 +83,27 @@ function scoredFiles(
     .sort((left, right) => left.path.localeCompare(right.path))
     .map((file) => {
       const findings = [...(byFile.get(file.path) ?? [])].sort(compareFinding);
-      const errors = findings.filter(
-        (finding) => finding.severity === "error",
-      ).length;
-      const warnings = findings.length - errors;
+      const counts = severityCounts(findings);
       return {
         ...file,
-        score: Math.max(0, 100 - errors * 5 - warnings),
-        errors,
-        warnings,
+        score: fileScore(counts),
+        ...counts,
         findings,
       };
     });
+}
+
+function projectFindings(
+  scan: ScanInput,
+  findings: ScanInput["violations"],
+): ScanInput["violations"] {
+  const scanned = new Set(scan.files.map((file) => file.path));
+  return findings
+    .filter((finding) => !scanned.has(finding.file))
+    .sort(
+      (left, right) =>
+        left.file.localeCompare(right.file) || compareFinding(left, right),
+    );
 }
 
 export function buildQualityReport(
@@ -82,16 +118,16 @@ export function buildQualityReport(
     errors: Array<{ code: string; target: string; message: string }>;
   },
 ) {
-  const files = scoredFiles(scan, findingsByFile(scan));
+  const findings = normalizedFindings(scan);
+  const files = scoredFiles(scan, findingsByFile(findings));
+  const project = projectFindings(scan, findings);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     scoring: scoring(),
-    scanner: {
-      profile: scan.profile,
-      fileSelection: FILE_SELECTION,
-    },
-    summaries: reportSummaries(files),
+    scanner: { fileSelection: FILE_SELECTION },
+    summaries: reportSummaries(files, project),
     files,
+    projectFindings: project,
     architecture,
   };
 }

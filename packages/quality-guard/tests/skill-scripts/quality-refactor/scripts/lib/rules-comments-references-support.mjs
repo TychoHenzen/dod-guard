@@ -20,7 +20,7 @@ export function run(source, files = {}, extension = ".ts") {
         testPaths: [],
         rules: ["comment-missing-reference"],
       },
-      buildConfig("default"),
+      buildConfig(),
     ).violations;
   } finally {
     rmSync(root, { recursive: true, force: true });

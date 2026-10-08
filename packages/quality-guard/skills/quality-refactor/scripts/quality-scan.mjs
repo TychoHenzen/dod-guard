@@ -15,7 +15,7 @@ function main(argv) {
     process.stderr.write(`${problem}\n\n${USAGE}\n`);
     return 3;
   }
-  return run(options, buildConfig(options.profile));
+  return run(options, buildConfig());
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url))

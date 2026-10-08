@@ -1,5 +1,6 @@
 import { renderJson, renderText } from "./report-render.mjs";
-const SEVERITY_ORDER = { error: 0, warn: 1 };
+import { requireSeverity } from "./severity.mjs";
+const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 };
 const RULE_ORDER = [
   "dead-export",
   "test-only-export",
@@ -50,23 +51,27 @@ function increment(counts, key) {
 }
 
 function recordSummary(summary, violation) {
+  const severity = requireSeverity(violation.severity);
   increment(summary.byRule, violation.rule);
   increment(summary.byFile, violation.file);
-  summary.errors += violation.severity === "error";
+  summary[severity] += 1;
 }
 
 export function summarize(violations) {
   const summary = {
     total: violations.length,
-    errors: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
     byRule: {},
     byFile: {},
   };
   for (const violation of violations) recordSummary(summary, violation);
   return {
     total: summary.total,
-    errors: summary.errors,
-    warnings: summary.total - summary.errors,
+    high: summary.high,
+    medium: summary.medium,
+    low: summary.low,
     byRule: summary.byRule,
     byFile: summary.byFile,
   };
@@ -75,15 +80,16 @@ export function summarize(violations) {
 function addToWorkUnit(byFile, violation) {
   const unit = byFile.get(violation.file) ?? {
     file: violation.file,
-    errors: 0,
-    warnings: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
     rules: {},
     items: [],
   };
+  const severity = requireSeverity(violation.severity);
   unit.items.push(violation);
   increment(unit.rules, violation.rule);
-  unit.errors += violation.severity === "error";
-  unit.warnings += violation.severity !== "error";
+  unit[severity] += 1;
   byFile.set(violation.file, unit);
 }
 
@@ -92,7 +98,8 @@ export function toWorkUnits(violations) {
   for (const violation of sortViolations(violations))
     addToWorkUnit(byFile, violation);
   return [...byFile.values()].sort(
-    (a, b) => b.errors - a.errors || b.warnings - a.warnings,
+    (a, b) =>
+      b.high - a.high || b.medium - a.medium || b.low - a.low,
   );
 }
 export { renderJson, renderText };

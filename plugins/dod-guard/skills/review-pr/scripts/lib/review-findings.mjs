@@ -32,11 +32,23 @@ function inScope(violation, changedLines) {
   return ruleScope(violation.rule) === "file" || lines.has(violation.line);
 }
 
+const SCANNER_SEVERITIES = new Set(["high", "medium", "low"]);
+
+function requireScannerSeverity(violation) {
+  if (!SCANNER_SEVERITIES.has(violation.severity)) {
+    throw new Error(
+      `quality-guard reported unknown severity "${violation.severity}" for ${violation.file}:${violation.line} ` +
+        `(${violation.rule}); update the installed quality-guard plugin`,
+    );
+  }
+}
+
 // Cross-file rules only hold on a whole-repository scan, so the scan covers
 // everything and this keeps the PR's share.
 function scannerGroups(scan, changedLines) {
   const groups = new Map();
   for (const violation of scan.violations ?? []) {
+    requireScannerSeverity(violation);
     if (inScope(violation, changedLines)) {
       const file = slashPath(violation.file);
       groups.set(file, [...(groups.get(file) ?? []), violation]);
@@ -50,7 +62,7 @@ function scannerFinding(file, violations) {
     (left, right) =>
       left.line - right.line || left.rule.localeCompare(right.rule),
   );
-  const severity = sorted.some((violation) => violation.severity === "error")
+  const severity = sorted.some((violation) => violation.severity === "high")
     ? "MAJOR"
     : "MINOR";
   const items = sorted.map(

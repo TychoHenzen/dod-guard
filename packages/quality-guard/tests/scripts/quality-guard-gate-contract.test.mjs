@@ -4,11 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { gate } from "../../scripts/quality-guard-gate.mjs";
+import { highFindings } from "../../scripts/quality-guard-gate-support.mjs";
 import {
   FILE_RULES,
   runScanner,
+  scanFile,
 } from "../../scripts/quality-guard-gate-scan.mjs";
-import { hardBoundFindings } from "../../scripts/quality-guard-gate-support.mjs";
 import {
   fakeInput,
   gateDeps,
@@ -33,6 +34,46 @@ function gateWith(filePath, calls, scan) {
     }),
   );
 }
+
+test("the hook reports only high findings", () => {
+  assert.deepEqual(
+    highFindings([
+      {
+        file: "src/high.ts",
+        line: 1,
+        rule: "complexity",
+        severity: "high",
+        message: "high",
+      },
+      {
+        file: "src/medium.ts",
+        line: 2,
+        rule: "else-branch",
+        severity: "medium",
+        message: "medium",
+      },
+      {
+        file: "src/low.ts",
+        line: 3,
+        rule: "style",
+        severity: "low",
+        message: "low",
+      },
+    ]),
+    ["src/high.ts:1 [high] complexity: high (advisory finding)"],
+  );
+});
+
+test("the hook surfaces scanner findings with unknown severities as unavailable", () => {
+  assert.deepEqual(
+    scanFile({
+      filePath: "x.ts",
+      repoRoot: ".",
+      scanner: () => ({ violations: [{ severity: "error" }] }),
+    }),
+    { error: "scanner failed: unknown quality severity: error" },
+  );
+});
 
 test("the file-local rule set excludes project reachability rules", () => {
   assert.match(FILE_RULES, /file-length/);
@@ -73,8 +114,8 @@ test("the file-local scan measures a split partial class as one class", () => {
     const finding = scan?.violations.find(
       (violation) => violation.rule === "partial-type-length",
     );
-    assert.equal(finding?.severity, "error");
-    const [line] = hardBoundFindings([finding]);
+    assert.equal(finding?.severity, "high");
+    const [line] = highFindings([finding]);
     assert.match(
       line,
       /partial-type-length: partial class Board spans 2 files/,

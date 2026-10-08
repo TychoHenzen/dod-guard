@@ -1,5 +1,5 @@
-// Characterization tests for config.mjs. Covers thresholds, profiles, and
-// path classification. These describe CURRENT behavior.
+// Characterization tests for config.mjs. Covers thresholds and path
+// classification. These describe CURRENT behavior.
 // They must not change it.
 
 import { test } from "node:test";

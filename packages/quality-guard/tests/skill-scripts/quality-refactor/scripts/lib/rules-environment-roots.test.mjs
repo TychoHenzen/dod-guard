@@ -16,13 +16,13 @@ test("reports every candidate in an ambiguous solution layout", () => {
       "app.csproj": "<Project />\n",
     },
     (root) => {
-      const config = buildConfig("default");
+      const config = buildConfig();
       assert.deepEqual(checkEnvironment(root, config), [
         {
           file: "first.sln",
           line: 1,
           rule: "build-entrypoint",
-          severity: "warn",
+          severity: "medium",
           message:
             "E1: multiple root .NET solution files (first.sln, second.sln) — " +
             "add one root build entry point",
@@ -32,7 +32,7 @@ test("reports every candidate in an ambiguous solution layout", () => {
           file: "first.sln",
           line: 1,
           rule: "test-entrypoint",
-          severity: "warn",
+          severity: "medium",
           message:
             "E2: multiple root .NET solution files (first.sln, second.sln) — " +
             "add one root test entry point",
@@ -55,7 +55,7 @@ test("reports unsupported and directory-shaped roots through the scan", () => {
       assert.equal(resolveEntrypoints(root), null);
       const result = scan(
         { paths: ["."], root, excludes: [], testPaths: [], rules: null },
-        buildConfig("default"),
+        buildConfig(),
       );
       assert.deepEqual(
         result.violations.map(({ file, rule, message }) => ({

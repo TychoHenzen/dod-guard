@@ -29,7 +29,7 @@ test("real nested control flow still reports its nesting metric", () => {
       source,
       lines: source.split("\n"),
     },
-    buildConfig("default"),
+    buildConfig(),
   ).violations.filter((violation) => violation.rule === "nesting-depth");
 
   assert.deepEqual(violations, [
@@ -37,7 +37,7 @@ test("real nested control flow still reports its nesting metric", () => {
       file: "src/lib.rs",
       line: 1,
       rule: "nesting-depth",
-      severity: "error",
+      severity: "high",
       message: "deeply_nested() nests 6 levels deep",
       metric: 6,
       suggestion: suggestionFor("nesting-depth"),

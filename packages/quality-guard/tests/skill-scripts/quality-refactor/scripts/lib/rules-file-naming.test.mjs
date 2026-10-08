@@ -24,7 +24,7 @@ const encodedMessage = (name) =>
 function scan(lang, rel, source) {
   return scanFile(
     { rel, lang, isTest: false, source, lines: source.split("\n") },
-    buildConfig("default"),
+    buildConfig(),
   ).violations.filter((violation) => violation.rule === "naming-encoding");
 }
 
@@ -32,7 +32,7 @@ function assertEncoded(lang, source, name) {
   const findings = scan(lang, `src/ledger.${lang}`, source);
   assert.equal(findings.length, 1, lang);
   assert.equal(findings[0].message, encodedMessage(name));
-  assert.equal(findings[0].severity, "warn");
+  assert.equal(findings[0].severity, "medium");
 }
 
 test("reports encoded member prefixes across supported languages", () => {
@@ -88,7 +88,17 @@ test("prints actionable naming evidence without becoming a gate", () => {
       const report = JSON.parse(result.stdout);
       assert.equal(
         JSON.stringify(report.violations),
-        '[{"file":"src/ledger.ts","line":1,"rule":"naming-encoding","severity":"warn","message":"f_total uses a type or scope encoding; rename it without the m_/f_ prefix","metric":1}]',
+        JSON.stringify([
+          {
+            file: "src/ledger.ts",
+            line: 1,
+            rule: "naming-encoding",
+            severity: "medium",
+            message:
+              "f_total uses a type or scope encoding; rename it without the m_/f_ prefix",
+            metric: 1,
+          },
+        ]),
       );
     },
   );

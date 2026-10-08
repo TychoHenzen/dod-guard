@@ -33,7 +33,7 @@ test("quality-refactor documents defaults and evidence", () => {
     [
       "repository-relative scope",
       "repository root",
-      "default` profile",
+      "no profile selection",
       "node <quality-scan.mjs> . --root=<repository> --top=20",
       "node <quality-scan.mjs> . --root=<repository> --format=units > .quality/units.json",
       "quality-guard report --root=<repository> > .quality/quality-report.json",

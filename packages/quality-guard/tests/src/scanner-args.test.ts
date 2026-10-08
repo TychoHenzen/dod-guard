@@ -49,18 +49,16 @@ test("buildArgs repeats excludes and test paths", () => {
   ]);
 });
 
-test("buildArgs passes advisory scan options through", () => {
+test("buildArgs passes scan options through", () => {
   const args = captureArgs({
     paths: ["packages"],
     root: "/repo",
-    profile: "strict",
     rules: ["complexity", "file-length"],
   }).slice(1);
   assert.deepEqual(args, [
     "packages",
     "--format=json",
     "--root=/repo",
-    "--profile=strict",
     "--rules=complexity,file-length",
   ]);
 });

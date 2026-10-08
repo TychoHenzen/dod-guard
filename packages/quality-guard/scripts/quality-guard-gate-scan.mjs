@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireSeverity } from "../skills/quality-refactor/scripts/lib/severity.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SCANNER = join(
@@ -59,6 +60,9 @@ export function scanFile({ filePath, repoRoot, scanner, rules = FILE_RULES }) {
     const scan = scanner(filePath, repoRoot, rules);
     if (!scan || !Array.isArray(scan.violations))
       return { error: "scanner did not return a readable report." };
+    for (const violation of scan.violations) {
+      requireSeverity(violation.severity);
+    }
     return { scan };
   } catch (error) {
     return { error: `scanner failed: ${errorMessage(error)}` };

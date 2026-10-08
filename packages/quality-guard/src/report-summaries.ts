@@ -1,19 +1,24 @@
+import type { Severity } from "#quality-guard-severity";
+
 type ScoredFile = {
-  errors: number;
-  warnings: number;
+  high: number;
+  medium: number;
+  low: number;
   score: number;
   classification: "production" | "test";
 };
 
 function summarize(files: ScoredFile[]) {
   const fileCount = files.length;
-  const errors = files.reduce((sum, file) => sum + file.errors, 0);
-  const warnings = files.reduce((sum, file) => sum + file.warnings, 0);
+  const high = files.reduce((sum, file) => sum + file.high, 0);
+  const medium = files.reduce((sum, file) => sum + file.medium, 0);
+  const low = files.reduce((sum, file) => sum + file.low, 0);
   const scores = files.map((file) => file.score);
   return {
     fileCount,
-    errors,
-    warnings,
+    high,
+    medium,
+    low,
     averageScore:
       fileCount === 0
         ? null
@@ -22,14 +27,37 @@ function summarize(files: ScoredFile[]) {
   };
 }
 
-export function reportSummaries(files: ScoredFile[]) {
+export function reportSummaries(
+  files: ScoredFile[],
+  projectFindings: ReadonlyArray<{
+    severity: Severity;
+  }>,
+) {
   const production = files.filter(
     (file) => file.classification === "production",
   );
   const tests = files.filter((file) => file.classification === "test");
+  const project = severityCounts(projectFindings);
+  const overall = summarize(files);
   return {
-    overall: summarize(files),
+    overall: {
+      ...overall,
+      high: overall.high + project.high,
+      medium: overall.medium + project.medium,
+      low: overall.low + project.low,
+    },
     production: summarize(production),
     test: summarize(tests),
+    project: { findingCount: projectFindings.length, ...project },
+  };
+}
+
+export function severityCounts(
+  findings: ReadonlyArray<{ severity: Severity }>,
+) {
+  return {
+    high: findings.filter((finding) => finding.severity === "high").length,
+    medium: findings.filter((finding) => finding.severity === "medium").length,
+    low: findings.filter((finding) => finding.severity === "low").length,
   };
 }

@@ -27070,78 +27070,121 @@ function extractFactInventory(files, requiredPaths) {
   };
 }
 
+// skills/quality-refactor/scripts/lib/severity.mjs
+var SEVERITIES = /* @__PURE__ */ new Set(["high", "medium", "low"]);
+function requireSeverity(severity) {
+  if (SEVERITIES.has(severity)) {
+    return severity;
+  }
+  throw new Error(`unknown quality severity: ${severity}`);
+}
+
 // src/report-summaries.ts
 function summarize(files) {
   const fileCount = files.length;
-  const errors = files.reduce((sum, file) => sum + file.errors, 0);
-  const warnings = files.reduce((sum, file) => sum + file.warnings, 0);
+  const high = files.reduce((sum, file) => sum + file.high, 0);
+  const medium = files.reduce((sum, file) => sum + file.medium, 0);
+  const low = files.reduce((sum, file) => sum + file.low, 0);
   const scores = files.map((file) => file.score);
   return {
     fileCount,
-    errors,
-    warnings,
+    high,
+    medium,
+    low,
     averageScore: fileCount === 0 ? null : scores.reduce((sum, score) => sum + score, 0) / fileCount,
     minimumScore: fileCount === 0 ? null : Math.min(...scores)
   };
 }
-function reportSummaries(files) {
+function reportSummaries(files, projectFindings2) {
   const production = files.filter(
     (file) => file.classification === "production"
   );
   const tests = files.filter((file) => file.classification === "test");
+  const project = severityCounts(projectFindings2);
+  const overall = summarize(files);
   return {
-    overall: summarize(files),
+    overall: {
+      ...overall,
+      high: overall.high + project.high,
+      medium: overall.medium + project.medium,
+      low: overall.low + project.low
+    },
     production: summarize(production),
-    test: summarize(tests)
+    test: summarize(tests),
+    project: { findingCount: projectFindings2.length, ...project }
+  };
+}
+function severityCounts(findings) {
+  return {
+    high: findings.filter((finding) => finding.severity === "high").length,
+    medium: findings.filter((finding) => finding.severity === "medium").length,
+    low: findings.filter((finding) => finding.severity === "low").length
   };
 }
 
 // src/report-builder.ts
 var FILE_SELECTION = "supported handwritten source; generated, dependency, build, binary, unreadable, and symlinked files excluded";
+var SCORING = {
+  initial: 100,
+  highDeduction: 5,
+  mediumDeduction: 1,
+  lowDeduction: 0,
+  minimum: 0
+};
 function scoring() {
-  return {
-    initial: 100,
-    errorDeduction: 5,
-    warningDeduction: 1,
-    minimum: 0
-  };
+  return { ...SCORING };
+}
+function fileScore(counts) {
+  return Math.max(
+    SCORING.minimum,
+    SCORING.initial - counts.high * SCORING.highDeduction - counts.medium * SCORING.mediumDeduction - counts.low * SCORING.lowDeduction
+  );
 }
 function compareFinding(left, right) {
   return left.line - right.line || left.rule.localeCompare(right.rule) || left.message.localeCompare(right.message);
 }
-function findingsByFile(scan) {
+function normalizedFindings(scan) {
+  return scan.violations.map((finding) => ({
+    ...finding,
+    severity: requireSeverity(finding.severity)
+  }));
+}
+function findingsByFile(findings) {
   const byFile = /* @__PURE__ */ new Map();
-  for (const finding of scan.violations)
+  for (const finding of findings) {
     byFile.set(finding.file, [...byFile.get(finding.file) ?? [], finding]);
+  }
   return byFile;
 }
 function scoredFiles(scan, byFile) {
   return [...scan.files].sort((left, right) => left.path.localeCompare(right.path)).map((file) => {
     const findings = [...byFile.get(file.path) ?? []].sort(compareFinding);
-    const errors = findings.filter(
-      (finding) => finding.severity === "error"
-    ).length;
-    const warnings = findings.length - errors;
+    const counts = severityCounts(findings);
     return {
       ...file,
-      score: Math.max(0, 100 - errors * 5 - warnings),
-      errors,
-      warnings,
+      score: fileScore(counts),
+      ...counts,
       findings
     };
   });
 }
+function projectFindings(scan, findings) {
+  const scanned = new Set(scan.files.map((file) => file.path));
+  return findings.filter((finding) => !scanned.has(finding.file)).sort(
+    (left, right) => left.file.localeCompare(right.file) || compareFinding(left, right)
+  );
+}
 function buildQualityReport(scan, architecture) {
-  const files = scoredFiles(scan, findingsByFile(scan));
+  const findings = normalizedFindings(scan);
+  const files = scoredFiles(scan, findingsByFile(findings));
+  const project = projectFindings(scan, findings);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     scoring: scoring(),
-    scanner: {
-      profile: scan.profile,
-      fileSelection: FILE_SELECTION
-    },
-    summaries: reportSummaries(files),
+    scanner: { fileSelection: FILE_SELECTION },
+    summaries: reportSummaries(files, project),
     files,
+    projectFindings: project,
     architecture
   };
 }
@@ -27198,7 +27241,6 @@ function scannerPath() {
 function buildArgs(request) {
   const optional2 = [
     ["--root", request.root],
-    ["--profile", request.profile],
     ["--rules", request.rules?.length ? request.rules.join(",") : void 0]
   ];
   return [
@@ -27271,7 +27313,7 @@ function architectureFor(root2, scan) {
 }
 function asReportScan(report) {
   const candidate = report;
-  if (!(Array.isArray(candidate.files) && Array.isArray(candidate.violations) && candidate.profile)) {
+  if (!(Array.isArray(candidate.files) && Array.isArray(candidate.violations))) {
     throw new Error("quality scanner returned an invalid report");
   }
   return candidate;
@@ -27401,22 +27443,20 @@ var TEST_PATHS = external_exports.array(external_exports.string()).optional().de
 function registerQualityReport(server) {
   server.tool(
     "quality_report",
-    "Score every supported source file under the repository root and return a current-state architecture appendix. Read-only and not a gate verdict.",
+    "Score every supported source file under the repository root, list unscored project-level findings (such as a missing root build entry point) under projectFindings, and return a current-state architecture appendix. Read-only and not a gate verdict.",
     {
       root: ROOT,
       excludes: EXCLUDES,
-      testPaths: TEST_PATHS,
-      profile: external_exports.enum(["default", "strict"]).optional()
+      testPaths: TEST_PATHS
     },
-    async ({ root: root2, excludes, testPaths, profile }) => {
+    async ({ root: root2, excludes, testPaths }) => {
       try {
         return text2(
           JSON.stringify(
             await runQualityReportAsync({
               root: requireRepositoryRoot(root2),
               excludes,
-              testPaths,
-              profile
+              testPaths
             }),
             null,
             2
@@ -27444,8 +27484,7 @@ var QUALITY_SCAN_INPUT = {
   root: ROOT,
   rules: external_exports.array(external_exports.string()).optional().describe("Only run these rules"),
   excludes: EXCLUDES,
-  testPaths: TEST_PATHS,
-  profile: external_exports.enum(["default", "strict"]).optional()
+  testPaths: TEST_PATHS
 };
 async function qualityScan(input) {
   try {

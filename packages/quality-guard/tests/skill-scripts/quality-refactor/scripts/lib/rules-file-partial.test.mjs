@@ -32,7 +32,7 @@ function scanPartial(root, rel) {
       source,
       lines: source.split("\n"),
     },
-    buildConfig("default"),
+    buildConfig(),
   ).violations;
 }
 
@@ -54,7 +54,7 @@ test("a partial class split across files is measured as one class", () => {
     (root) => {
       const violations = scanPartial(root, "Board.cs");
       const [finding] = rulesOf(violations, "partial-type-length");
-      assert.equal(finding.severity, "error");
+      assert.equal(finding.severity, "high");
       assert.equal(finding.metric, 2 * 195);
       assert.equal(finding.line, 3);
       assert.match(
@@ -62,7 +62,7 @@ test("a partial class split across files is measured as one class", () => {
         /partial class Board spans 2 files totaling 390 lines/,
       );
       assert.match(finding.suggestion, /Extract Class/);
-      assert.equal(rulesOf(violations, "file-length")[0].severity, "warn");
+      assert.equal(rulesOf(violations, "file-length")[0].severity, "medium");
     },
   );
 });
@@ -71,7 +71,7 @@ test("a single partial declaration is not a finding", () => {
   project({ "Player.cs": partialSource("Player", 400) }, (root) => {
     const violations = scanPartial(root, "Player.cs");
     assert.deepEqual(rulesOf(violations, "partial-type-length"), []);
-    assert.equal(rulesOf(violations, "file-length")[0].severity, "error");
+    assert.equal(rulesOf(violations, "file-length")[0].severity, "high");
   });
 });
 
@@ -102,7 +102,7 @@ test("partial siblings of a different type are not counted", () => {
         "partial-type-length",
       );
       assert.equal(finding.metric, 2 * 65);
-      assert.equal(finding.severity, "warn");
+      assert.equal(finding.severity, "medium");
     },
   );
 });
@@ -117,7 +117,7 @@ test("a partial modifier on its own line still marks the type", () => {
       scanPartial(root, "Board.cs"),
       "partial-type-length",
     );
-    assert.equal(finding.severity, "error");
+    assert.equal(finding.severity, "high");
   });
 });
 

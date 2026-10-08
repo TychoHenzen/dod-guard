@@ -23,7 +23,6 @@ const QUALITY_SCAN_INPUT = {
   rules: z.array(z.string()).optional().describe("Only run these rules"),
   excludes: EXCLUDES,
   testPaths: TEST_PATHS,
-  profile: z.enum(["default", "strict"]).optional(),
 };
 
 async function qualityScan(input: ScanRequest) {

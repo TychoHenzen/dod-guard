@@ -22,35 +22,35 @@ const scan = {
       file: FIX.replaceAll("/", "\\"),
       line: 72,
       rule: "line-length",
-      severity: "error",
+      severity: "high",
       message: "line is 132 chars",
     },
     {
       file: FIX,
       line: 5,
       rule: "line-length",
-      severity: "warn",
+      severity: "medium",
       message: "line is 85 chars",
     },
     {
       file: FIX,
       line: 58,
       rule: "complexity",
-      severity: "warn",
+      severity: "medium",
       message: "reviewThreadNodes() cyclomatic complexity 10",
     },
     {
       file: OTHER,
       line: 3,
       rule: "dead-export",
-      severity: "error",
+      severity: "high",
       message: "x is exported but never referenced anywhere",
     },
     {
       file: UNICODE,
       line: 1,
       rule: "file-length",
-      severity: "warn",
+      severity: "medium",
       message: "file is 600 lines",
     },
   ],
@@ -136,6 +136,44 @@ test("a changed file Git quotes in the diff still gets its scanner findings", ()
   assert.deepEqual(
     [unicode.line, unicode.body.split("\n")[0]],
     [1, "**MINOR** quality-guard structural findings (1)"],
+  );
+});
+
+test("a scanner group whose findings are all low is MINOR", () => {
+  const lowOnly = {
+    violations: [
+      {
+        file: UNICODE,
+        line: 1,
+        rule: "file-length",
+        severity: "low",
+        message: "file is 600 lines",
+      },
+    ],
+  };
+  const { payload } = review([], lowOnly);
+  const unicode = payload.comments.find((comment) => comment.path === UNICODE);
+  assert.equal(
+    unicode.body.split("\n")[0],
+    "**MINOR** quality-guard structural findings (1)",
+  );
+});
+
+test("a scanner severity outside high/medium/low fails the review build", () => {
+  const legacy = {
+    violations: [
+      {
+        file: FIX,
+        line: 5,
+        rule: "line-length",
+        severity: "error",
+        message: "line is 85 chars",
+      },
+    ],
+  };
+  assert.throws(
+    () => review([], legacy),
+    /unknown severity "error".*update the installed quality-guard plugin/,
   );
 });
 
