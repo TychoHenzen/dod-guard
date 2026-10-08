@@ -1,0 +1,83 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import test from "node:test";
+import { selectNext } from "./select-next.mjs";
+
+const REPOSITORY = "TychoHenzen/dod-guard";
+const SCRIPT = fileURLToPath(new URL("./select-next.mjs", import.meta.url));
+
+function item(number, status, parentIssue = null) {
+  return {
+    id: String(number),
+    content: { number, repository: REPOSITORY },
+    fields: [
+      { name: "Status", value: { name: status } },
+      { name: "Repository", value: REPOSITORY },
+      { name: "Parent issue", value: parentIssue },
+      { name: "Linked pull requests", value: [] },
+    ],
+  };
+}
+
+function issue(number, overrides = {}) {
+  return { number, state: "open", title: `Issue ${number}`, parent: null, children: [], ...overrides };
+}
+
+function snapshot() {
+  return {
+    repository: REPOSITORY,
+    defaultBranch: "master",
+    today: "2026-10-08",
+    items: [item(31, "Backlog"), item(517, "Todo"), item(518, "Todo", { number: 517 })],
+    issues: [
+      issue(31),
+      issue(517, { children: [{ number: 518 }] }),
+      issue(518, { parent: { number: 517 } }),
+    ],
+    pullRequests: [],
+  };
+}
+
+test("selects the Todo parent with its child ahead of Backlog work", async () => {
+  const result = await selectNext(snapshot());
+  assert.deepEqual(result.selected, { rootIssueNumber: 517, status: "Todo", issueNumbers: [517, 518] });
+  assert.deepEqual(
+    result.groups.map(({ rootIssueNumber, kind }) => [rootIssueNumber, kind]),
+    [[31, "eligible"], [517, "eligible"]],
+  );
+  assert.equal(result.counts.balanced, true);
+});
+
+test("holds a group whose issue was not supplied instead of selecting it", async () => {
+  const input = snapshot();
+  input.issues = input.issues.filter(({ number }) => number !== 518);
+  const result = await selectNext(input);
+  assert.equal(result.selected, null);
+  assert.ok(result.missingEvidence.includes("issue #518"), result.missingEvidence.join("; "));
+});
+
+test("holds today's friction log while it collects entries", async () => {
+  const input = snapshot();
+  input.items = [item(900, "Backlog")];
+  input.issues = [issue(900, { title: "Friction log 2026-10-08" })];
+  const result = await selectNext(input);
+  assert.equal(result.selected, null);
+  assert.deepEqual(result.groups[0].reasons, ["friction log still collecting entries"]);
+});
+
+test("the command prints the selection and rejects a missing snapshot flag", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "select-next-"));
+  const file = join(directory, "snapshot.json");
+  await writeFile(file, JSON.stringify(snapshot()));
+  const run = spawnSync(process.execPath, [SCRIPT, `--snapshot=${file}`], { encoding: "utf8" });
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(JSON.parse(run.stdout).selected.rootIssueNumber, 517);
+
+  const usage = spawnSync(process.execPath, [SCRIPT], { encoding: "utf8" });
+  assert.equal(usage.status, 2);
+  assert.match(usage.stderr, /usage: select-next\.mjs --snapshot=<file\.json>/);
+});
