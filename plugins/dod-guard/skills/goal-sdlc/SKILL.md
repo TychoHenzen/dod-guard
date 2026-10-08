@@ -66,8 +66,8 @@ Repeat until the stop condition holds:
    parent instead of waiting.
 4. **Read back and continue.** After `/complete-pr` returns, read the parent
    and child statuses. When any is not Done, return to the completion owner
-   before selecting again. Otherwise increment `PBIs completed: N` and go back
-   to step 1.
+   before selecting again. Otherwise update `PBIs completed: P parent / C
+   child` and go back to step 1.
 
 Process exactly one parent at a time, in the current checkout, on one branch
 and one pull request. Never create or use a Git worktree.
@@ -141,14 +141,14 @@ source-repository fix here and continue with the workaround.
 
 ## Reporting
 
-Prefix progress messages with the local `[HH:MM]` time and carry
-`PBIs completed: N`, counting only parents merged with their Project status
-read back as Done.
+Start every progress message with the local `[HH:MM]` time from the clock.
+Every progress message and the final report carry `PBIs completed: P parent /
+C child`, counting parent and child PBIs whose Project status reads Done.
 
 When every remaining parent is blocked, send one short message that starts
-with `Blocked:` and assumes no prior context: the repository, PBI number and
-title, what blocks it, the evidence, what was tried, and the one decision or
-action needed. Use plain words instead of workflow terms.
+with `[HH:MM] Blocked:` and assumes no prior context: the repository, PBI
+number and title, what blocks it, the evidence, what was tried, and the one
+decision or action needed. Use plain words instead of workflow terms.
 
 ## Stop condition
 
