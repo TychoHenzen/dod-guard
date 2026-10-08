@@ -170,10 +170,14 @@ function fixture() {
     'import test from "node:test"; test("fixture", () => {});\n',
   );
   write(root, "packages/quality-guard/dist/bundle.js", "");
+  const scannerReport = {
+    summary: { total: 1, high: 1, medium: 0, low: 0, byRule: { complexity: 1 }, byFile: { "fixture.js": 1 } },
+    violations: [{ rule: "complexity", severity: "high" }],
+  };
   write(
     root,
     "packages/quality-guard/skills/quality-refactor/scripts/quality-scan.mjs",
-    'process.stdout.write(JSON.stringify({summary:{total:1,high:1,medium:0,low:0,byRule:{complexity:1},byFile:{"fixture.js":1}},violations:[{rule:"complexity",severity:"high"}]}) + "\\n");\n',
+    `process.stdout.write(${JSON.stringify(JSON.stringify(scannerReport))} + "\\n");\n`,
   );
 
   git(root, ["add", "."]);

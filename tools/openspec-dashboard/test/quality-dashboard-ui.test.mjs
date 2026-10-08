@@ -56,7 +56,8 @@ test("starts from the normal launcher and refreshes the displayed quality report
 
     const saved = JSON.parse(await readFile(join(project, ".quality", "quality-report.json"), "utf8"));
     assert.equal(saved.schemaVersion, 2);
-    assert.ok(saved.projectFindings.some((finding) => finding.file === "<repository root>" && finding.rule === "build-entrypoint"));
+    const rootEntrypoint = (finding) => finding.file === "<repository root>" && finding.rule === "build-entrypoint";
+    assert.ok(saved.projectFindings.some(rootEntrypoint));
     await dashboard.locator(".quality-project .finding code", { hasText: "<repository root>" }).first().waitFor();
     assert.notEqual(saved.files[0]?.path, "stale/old.js");
     assert.equal(await dashboard.locator(".finding strong", { hasText: "stale-rule" }).count(), 0);
@@ -110,10 +111,9 @@ test("starts from the normal launcher and refreshes the displayed quality report
     assert.equal(await dashboard.locator(".finding").count(), saved.summaries.overall.high);
     await controls.nth(0).selectOption("all");
     await controls.nth(1).selectOption("dead-export");
-    assert.equal(
-      await dashboard.locator(".finding").count(),
-      [...saved.files.flatMap((file) => file.findings), ...saved.projectFindings].filter((finding) => (finding.rule ?? finding.kind ?? "finding") === "dead-export").length,
-    );
+    const deadExports = [...saved.files.flatMap((file) => file.findings), ...saved.projectFindings]
+      .filter((finding) => (finding.rule ?? finding.kind ?? "finding") === "dead-export");
+    assert.equal(await dashboard.locator(".finding").count(), deadExports.length);
     await controls.nth(1).selectOption("all");
     assert.equal(await dashboard.locator(".quality-file").count(), saved.files.length);
     const directFiles = dashboard.locator(".quality-folder").first().locator(":scope > .quality-children > .quality-file");
@@ -185,7 +185,8 @@ function staleReport() {
 
 function summaryText(summary) {
   const fileLabel = summary.fileCount === 1 ? "file" : "files";
-  return `${summary.fileCount} ${fileLabel} | score ${Number(summary.averageScore).toFixed(1)} | ${summary.high} high | ${summary.medium} medium | ${summary.low} low`;
+  const counts = `${summary.high} high | ${summary.medium} medium | ${summary.low} low`;
+  return `${summary.fileCount} ${fileLabel} | score ${Number(summary.averageScore).toFixed(1)} | ${counts}`;
 }
 
 function fileSummary(file) {

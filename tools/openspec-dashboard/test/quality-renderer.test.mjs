@@ -132,7 +132,13 @@ test("includes unscored project findings in rules, filters, and severity totals"
   const projectReport = {
     ...report,
     projectFindings: [
-      { file: "<repository root>", line: 1, rule: "build-entrypoint", severity: "medium", message: "E1: no root entry point" },
+      {
+        file: "<repository root>",
+        line: 1,
+        rule: "build-entrypoint",
+        severity: "medium",
+        message: "E1: no root entry point",
+      },
     ],
   };
   const view = buildQualityView(projectReport, controls);

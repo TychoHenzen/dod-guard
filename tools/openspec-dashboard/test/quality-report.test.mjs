@@ -41,7 +41,10 @@ test("refreshes the current project through the quality-guard report command", a
 test("routes a project refresh through the API method boundary", async () => {
   const root = await mkdtemp(join(tmpdir(), "quality-dashboard-api-"));
   await mkdir(join(root, ".quality"));
-  await writeFile(join(root, ".quality", "quality-report.json"), JSON.stringify({ schemaVersion: 2, summaries: {}, files: [] }));
+  await writeFile(
+    join(root, ".quality", "quality-report.json"),
+    JSON.stringify({ schemaVersion: 2, summaries: {}, files: [] }),
+  );
   const calls = [];
   const handle = createApi({
     store: { get: () => ({ roots: [], projects: [{ name: "project", path: root }] }) },

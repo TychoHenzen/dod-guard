@@ -3,7 +3,8 @@ const PATH_SEPARATOR = /[/\\]+/;
 const SEVERITIES = ["high", "medium", "low"];
 
 function severityCounts(findings) {
-  return Object.fromEntries(SEVERITIES.map((severity) => [severity, findings.filter((finding) => finding.severity === severity).length]));
+  const countOf = (severity) => findings.filter((finding) => finding.severity === severity).length;
+  return Object.fromEntries(SEVERITIES.map((severity) => [severity, countOf(severity)]));
 }
 
 function findingRule(finding) {
@@ -70,7 +71,8 @@ function compareFiles(sort) {
 
 function summarize(files) {
   const fileCount = files.length;
-  const counts = Object.fromEntries(SEVERITIES.map((severity) => [severity, files.reduce((total, file) => total + file[severity], 0)]));
+  const countOf = (severity) => files.reduce((total, file) => total + file[severity], 0);
+  const counts = Object.fromEntries(SEVERITIES.map((severity) => [severity, countOf(severity)]));
   let averageScore = null;
   if (fileCount > 0) {
     averageScore = files.reduce((total, file) => total + Number(file.score ?? 0), 0) / fileCount;

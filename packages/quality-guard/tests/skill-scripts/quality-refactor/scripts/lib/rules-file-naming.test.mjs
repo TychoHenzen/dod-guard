@@ -88,7 +88,16 @@ test("prints actionable naming evidence without becoming a gate", () => {
       const report = JSON.parse(result.stdout);
       assert.equal(
         JSON.stringify(report.violations),
-        '[{"file":"src/ledger.ts","line":1,"rule":"naming-encoding","severity":"medium","message":"f_total uses a type or scope encoding; rename it without the m_/f_ prefix","metric":1}]',
+        JSON.stringify([
+          {
+            file: "src/ledger.ts",
+            line: 1,
+            rule: "naming-encoding",
+            severity: "medium",
+            message: "f_total uses a type or scope encoding; rename it without the m_/f_ prefix",
+            metric: 1,
+          },
+        ]),
       );
     },
   );

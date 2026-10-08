@@ -1,6 +1,20 @@
 import { el } from "./dom.mjs";
 import { buildQualityView } from "./quality-view.mjs";
 
+const SEVERITY_OPTIONS = [
+  ["all", "All severities"],
+  ["high", "High"],
+  ["medium", "Medium"],
+  ["low", "Low"],
+];
+const SORT_OPTIONS = [
+  ["path", "Path"],
+  ["score", "Lowest score"],
+  ["high", "Most high"],
+  ["medium", "Most medium"],
+  ["low", "Most low"],
+];
+
 const count = (value) => Number(value ?? 0).toLocaleString();
 function score(value) {
   if (value === null || value === undefined) {
@@ -18,7 +32,8 @@ function summaryText(summary) {
   if (summary.fileCount === 1) {
     fileLabel = "file";
   }
-  return `${count(summary.fileCount)} ${fileLabel} | score ${score(summary.averageScore)} | ${count(summary.high)} high | ${count(summary.medium)} medium | ${count(summary.low)} low`;
+  const counts = `${count(summary.high)} high | ${count(summary.medium)} medium | ${count(summary.low)} low`;
+  return `${count(summary.fileCount)} ${fileLabel} | score ${score(summary.averageScore)} | ${counts}`;
 }
 
 function findingRow(finding) {
@@ -105,9 +120,9 @@ function selectControl(label, value, values, onchange) {
 function controlsSection(view, callbacks) {
   const rules = [["all", "All rules"], ...view.rules.map((rule) => [rule, rule])];
   return el("div", { class: "quality-controls" }, [
-    selectControl("Severity", view.controls.severity, [["all", "All severities"], ["high", "High"], ["medium", "Medium"], ["low", "Low"]], callbacks.onSeverity),
+    selectControl("Severity", view.controls.severity, SEVERITY_OPTIONS, callbacks.onSeverity),
     selectControl("Rule", view.controls.rule, rules, callbacks.onRule),
-    selectControl("Sort", view.controls.sort, [["path", "Path"], ["score", "Lowest score"], ["high", "Most high"], ["medium", "Most medium"], ["low", "Most low"]], callbacks.onSort),
+    selectControl("Sort", view.controls.sort, SORT_OPTIONS, callbacks.onSort),
     el("div", { class: "quality-expansion" }, [
       el("button", { type: "button", onclick: () => callbacks.onExpand(true) }, "Expand all"),
       el("button", { type: "button", onclick: () => callbacks.onExpand(false) }, "Collapse all"),
