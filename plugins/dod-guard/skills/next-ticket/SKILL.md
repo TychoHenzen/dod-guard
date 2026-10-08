@@ -169,12 +169,12 @@ verification evidence in the completion report. Do not report a task complete
 when its requirement is contradicted or its evidence is missing.
 
 When the task list has more than one task, run each task in order as one step
-of [dod-guard:step-by-step](../step-by-step/SKILL.md): one fresh subagent per
-task. Implementing the task uses the strong tier, and running its validations
-or regenerating artifacts uses the cheap tier, as `standards/model-routing.md`
-defines them. After the main thread verifies a task, commit it before the
-next task starts, so every verified task is a durable checkpoint. A task that
-changes no tracked file records its evidence instead of a commit.
+of [dod-guard:step-by-step](../step-by-step/SKILL.md), passing the task list
+as a calling-skill plan with a commit per step: one fresh subagent per task.
+Implementing the task uses the strong tier, and running its validations or
+regenerating artifacts uses the cheap tier, as `standards/model-routing.md`
+defines them. step-by-step's per-step commit makes every verified task a
+durable checkpoint before the next task starts.
 
 For code shape, prefer small pure functions with explicit inputs and outputs,
 keep external I/O at boundaries, and use ordinary loops or mutation when that

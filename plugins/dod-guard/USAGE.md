@@ -186,6 +186,7 @@ independent review of the pushed work.
 ## Execute an explicit plan
 
 Use `/step-by-step` with a numbered plan, or name one repository plan file.
+Skills such as `next-ticket` also pass it a task list, committing each step.
 The main thread keeps the checkpoint and verifies every result; each fresh
 subagent receives only one bounded step. It does not discover plans, create a
 branch or pull request, skip failed steps, or restart completed work.
