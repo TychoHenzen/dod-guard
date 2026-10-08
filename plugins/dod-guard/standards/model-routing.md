@@ -49,13 +49,14 @@ Record the override in the progress message.
 Only the thread that owns a skill's procedure dispatches its subagents. When
 `dod-guard:goal-sdlc` reaches a stage whose owner splits its work into routed
 rows (refinement research, `/next-ticket` tasks, or `/review-pr`), it runs that
-stage on `dod-guard:stage-strong`, the only tier agent with the Agent tool.
-That stage worker is the owner's main thread: it dispatches each row at its
-tier and runs the verification below. A worker dispatched for one row never
-dispatches further, even on `dod-guard:stage-strong`. In Codex, when a spawned
-agent cannot spawn agents of its own, goal-sdlc's main thread runs that owner's
-procedure itself and dispatches each row directly. In this standard, "main
-thread" means the thread that dispatched the work.
+stage on `dod-guard:stage-strong`, the only tier agent that inherits every
+tool, including Agent and MCP connectors. That stage worker is the owner's main
+thread: it dispatches each row at its tier and runs the verification below. A
+worker dispatched for one row never dispatches further, even on
+`dod-guard:stage-strong`. In Codex, when a spawned agent cannot spawn agents of
+its own, goal-sdlc's main thread runs that owner's procedure itself and
+dispatches each row directly. In this standard, "main thread" means the thread
+that dispatched the work.
 
 ## Plan, investigate, judge
 

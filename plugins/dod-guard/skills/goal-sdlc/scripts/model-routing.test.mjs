@@ -66,11 +66,17 @@ test("the routing standard defines the tiers, runtime rules, and verification on
 
 // Only an owner's thread dispatches: the stage agent that owns a split stage
 // can spawn agents, and every row worker cannot.
-test("only the strong stage agent can dispatch subagents", async () => {
+test("only the strong stage agent can dispatch subagents or use MCP connectors", async () => {
+  // stage-strong has no tools allowlist, so it inherits Agent and MCP tools;
+  // every other tier agent keeps an allowlist without Agent.
   for (const agent of TIER_AGENTS) {
     const source = await readFile(new URL(`agents/${agent.name}.md`, pluginRoot), "utf8");
-    const tools = source.match(/^tools: (.+)$/m)[1].split(", ");
-    assert.equal(tools.includes("Agent"), agent.name === "stage-strong", agent.name);
+    const tools = source.match(/^tools: (.+)$/m)?.[1].split(", ");
+    if (agent.name === "stage-strong") {
+      assert.equal(tools, undefined, "stage-strong must inherit every tool");
+    } else {
+      assert.ok(tools && !tools.includes("Agent"), agent.name);
+    }
   }
   for (const phrase of [
     "Only the thread that owns a skill's procedure dispatches its subagents.",

@@ -57,3 +57,27 @@ Change one file.
   await writeFile(path.join(output, "dod_guard_patch_writer.toml"), "stale\n");
   assert.deepEqual(await checkAgentOutputs(source, output), ["stale dod_guard_patch_writer.toml"]);
 });
+
+test("an agent without a tools line inherits every tool and writes", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "codex-agents-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const source = path.join(root, "agents");
+  const output = path.join(root, ".codex", "agents");
+  await mkdir(source, { recursive: true });
+  await writeFile(path.join(source, "owner.md"), `---
+name: stage-owner
+description: Own one stage.
+model: opus
+---
+
+# Stage owner
+
+Own the stage.
+`);
+
+  assert.equal(await writeAgentOutputs(source, output), 1);
+  const owner = await readFile(path.join(output, "dod_guard_stage_owner.toml"), "utf8");
+  assert.match(owner, /^# Source tools: inherited \(all tools, including MCP\)$/m);
+  assert.match(owner, /sandbox_mode = "workspace-write"/);
+  assert.doesNotMatch(owner, /Do not run shell commands\./);
+});
