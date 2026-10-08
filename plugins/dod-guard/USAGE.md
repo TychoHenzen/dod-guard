@@ -68,6 +68,12 @@ uses that completed review's recommendation before the guarded merge; it does
 not invoke another review after fixes. If `/review-pr` cannot post
 its review, the run stops with that blocker.
 
+`goal-sdlc` repeats that lifecycle across the linked Project's queue. It picks
+the next parent PBI with `scripts/select-next.mjs`, runs the `quick-pbi` stages
+from the one that parent has reached, and continues until no eligible work
+remains. A parent that needs a user answer or is externally blocked stays in
+place while the queue moves on.
+
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:
 

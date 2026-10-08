@@ -45,6 +45,12 @@ destructive action.
   the complete tree if unrelated or indistinguishable work exists, or if Git
   cannot retain the release paths during the same-checkout transition. Never
   reset, stash, overwrite, move, or silently include user-owned changes.
+- A failure in a touched path, required suite, user-facing flow, or required
+  gate is not deferred as "pre-existing". Fix it, or record evidence that it
+  is unrelated together with a recovery decision.
+- Never edit an installed plugin cache, such as `~/.claude/plugins/` or a
+  Codex plugin install; an update overwrites it. Fix a defective dod-guard
+  skill in its source repository.
 - When a clear contract and a test disagree, update the stale expectation and
   rerun it. Fix the implementation when it violates the contract. Never
   weaken or delete a test only to make it pass.

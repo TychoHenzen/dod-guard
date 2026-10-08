@@ -103,7 +103,10 @@ commits and pushes. `/submit-draft-pr` submits its verified draft pull
 request. `/review-pr` is the one independent review: it scans the changed
 files with quality-guard, runs four reviewer agents, and posts one comment-only
 review with a recommendation. After review, `/complete-pr` treats its invocation as
-acceptance of the current head and completes the guarded merge.
+acceptance of the current head and completes the guarded merge. In a repository
+that uses Codex code review, `/submit-draft-pr` requests Codex's review and
+`/complete-pr` waits for it to finish before merging, stopping on any finding
+nobody has answered.
 `/fix-pr-review` revalidates and fixes selected review findings before that
 acceptance. Each delivery skill resolves the current repository and requires
 exactly one open GitHub Project explicitly linked to it.
@@ -173,15 +176,16 @@ GitHub-backed skills share the request policy in
 | `/setup-repository` | Bootstrap a local project into the protected dod-guard GitHub workflow. |
 | `/add-backlog-idea` | Capture each independently deliverable feature as a Backlog issue. |
 | `/quick-pbi` | Run backlog capture through guarded merge without extra prompts outside refinement. |
+| `/goal-sdlc` | Work through the linked Project queue one parent PBI at a time, running the lifecycle skills on each until no eligible work remains. |
 | `/refine-backlog-item` | Deliberatively refine a Backlog issue, moving it to Todo only when its PBI is coherent and independently deliverable. |
 | `/next-ticket` | Execute a Todo PBI through verified, pushed commits. |
 | `/learn-repository` | Learn one repository concept at a time from current source evidence. |
 | `/teach-back` | Explain a repository concept while a curious student tests the explanation. |
 | `/step-by-step` | Run one explicit ordered plan through fresh bounded subagents. |
-| `/submit-draft-pr` | Create or update the PBI's verified draft pull request. |
+| `/submit-draft-pr` | Create or update the PBI's verified draft pull request and request Codex's review when the repository uses it. |
 | `/review-pr` | Scan a GitHub pull request's changed files and review them with four agents into one comment-only review. |
 | `/fix-pr-review` | Revalidate and fix selected GitHub review findings. |
-| `/complete-pr` | Complete an explicitly accepted draft through guarded REST merge and branch deletion. |
+| `/complete-pr` | Complete an explicitly accepted draft through guarded REST merge and branch deletion, after Codex's review of the accepted head finishes without open findings. |
 | `/publish` | Release a changed marketplace plugin through merge, CI, and cache refresh. |
 | `/clean-house` | Find and remove obsolete or duplicate implementations. |
 | `/codex-advisor` | Get a bounded advice-only second opinion from a separate Codex process. |

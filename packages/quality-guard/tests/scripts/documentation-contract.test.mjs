@@ -17,7 +17,6 @@ const paths = [
   "packages/quality-guard/skills/quality-refactor/SKILL.md",
   "packages/quality-guard/skills/quality-refactor/reference/rules.md",
   "plugins/dod-guard/skills/next-ticket/SKILL.md",
-  "plugins/dod-guard/skills/goal-sdlc/SKILL.md",
   "plugins/dod-guard/skills/setup-repository/SKILL.md",
 ];
 
@@ -52,10 +51,6 @@ test("active quality documentation describes advisory report-only behavior", () 
   assert.match(
     documents.get("plugins/dod-guard/skills/next-ticket/SKILL.md"),
     /report-only evidence/,
-  );
-  assert.match(
-    documents.get("plugins/dod-guard/skills/goal-sdlc/SKILL.md"),
-    /Quality Guard output is advisory diagnostic evidence/,
   );
   assert.match(
     documents.get("plugins/dod-guard/skills/setup-repository/SKILL.md"),

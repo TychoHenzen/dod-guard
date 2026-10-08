@@ -1,4 +1,4 @@
-import { ACCEPTANCE_MATRIX_PATHS } from "../../goal-sdlc/scripts/lib/acceptance-matrix.mjs";
+import { ACCEPTANCE_MATRIX_PATHS } from "../../../lib/acceptance-matrix.mjs";
 import * as proof from "./structured-workflow-proof.mjs";
 
 // Builders shared by the structured-convergence tests.
