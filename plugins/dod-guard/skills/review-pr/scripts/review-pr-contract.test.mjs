@@ -21,7 +21,10 @@ test("review-pr plans, investigates, verifies, then judges in that order", () =>
   assert.ok(order.every((index) => index >= 0), `missing step: ${order}`);
   assert.deepEqual([...order].sort((left, right) => left - right), order);
   assert.match(skill, prose("the plan, investigate, and judge split in `standards/model-routing.md`"));
-  assert.match(skill, prose("every cited path and line exists at the reviewed head"));
+  assert.match(skill, prose("cheap-output rule in that standard, with the reviewed head as the accepted head"));
+  assert.doesNotMatch(skill, prose("every cited path and line exists"));
+  assert.match(skill, prose("Ids are unique across all four lenses"));
+  assert.match(skill, prose("reports the gap as a finding; it never counts one as passing"));
   assert.match(skill, prose("Send a failed batch back once with the exact gap"));
   assert.match(skill, prose("judges from that evidence instead of re-reading the whole diff"));
   assert.match(skill, prose('record the stage as "requested, not pinned"'));

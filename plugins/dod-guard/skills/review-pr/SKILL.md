@@ -89,22 +89,24 @@ verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
    the four lenses, at least one per lens: `review-pr-feature`,
    `review-pr-design`, `review-pr-reliability`, and `review-pr-hygiene`. Each
    question has an `id`, its `lens`, the `question`, the files to read, and
-   the risk it targets.
+   the risk it targets. Ids are unique across all four lenses, for example
+   with the lens prefixes `F`, `D`, `R`, and `H`.
 2. **Investigate.** `dod-guard:read-cheap` investigators answer every
    question, batched by changed-file group with at most eight questions per
    investigator. Each answer gives the question id, the cited path and line,
    and the fact found there.
 3. **Verify.** Before judging, the main thread checks every answer under the
-   cheap-output rule in that standard: it maps to a planned question, every
-   cited path and line exists at the reviewed head, and it claims no verdict or
-   change. Send a failed batch back once with the exact gap; if it fails again,
+   cheap-output rule in that standard, with the reviewed head as the accepted
+   head. Send a failed batch back once with the exact gap; if it fails again,
    stop without posting and name the batch. Save a questions JSON array of
    `{ "lens", "id", "question", "status" }` objects, where `status` is
    `verified`, `repaired` (verified after that one repair), or `unanswered`
    (the investigator reported that the repository does not answer it).
 4. **Judge.** Dispatch the four reviewers at once. Each receives the shared
    brief, its lens's questions, and their verified answers, and judges from
-   that evidence instead of re-reading the whole diff.
+   that evidence instead of re-reading the whole diff. A judge settles each
+   `unanswered` question of its lens from the files that question names, or
+   reports the gap as a finding; it never counts one as passing.
 
 - In Claude Code, use the Agent tool with the model and effort of each
   stage's tier: `dod-guard:read-strong` plans, `dod-guard:read-cheap`

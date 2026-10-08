@@ -51,6 +51,7 @@ test("the routing standard defines the tiers, runtime rules, and verification on
     '"requested, not pinned"',
     "A model or effort the user names for a stage wins over the tier for that run.",
     "every cited path and line exists at the accepted head",
+    "and says what the answer claims it says",
     "nothing claims a verdict, or a change the step did not ask for",
     "A failed check sends the same stage back once",
     "The run does not advance on unverified output.",

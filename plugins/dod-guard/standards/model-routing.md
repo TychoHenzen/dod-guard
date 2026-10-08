@@ -74,7 +74,8 @@ Before any strong-tier judgement or later stage relies on cheap-tier output,
 the main thread checks that:
 
 - every answer maps to a planned question or plan step;
-- every cited path and line exists at the accepted head;
+- every cited path and line exists at the accepted head and says what the
+  answer claims it says;
 - nothing claims a verdict, or a change the step did not ask for;
 - every claimed commit exists and matches the described diff, and at least
   one named proof passes when the main thread reruns it.
