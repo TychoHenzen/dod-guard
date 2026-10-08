@@ -8,6 +8,7 @@ import { advisoryFindings } from "../../scripts/quality-guard-gate-support.mjs";
 import {
   FILE_RULES,
   runScanner,
+  scanFile,
 } from "../../scripts/quality-guard-gate-scan.mjs";
 import {
   fakeInput,
@@ -41,14 +42,14 @@ test("hook findings use normalized advisory severities", () => {
         file: "src/high.ts",
         line: 1,
         rule: "complexity",
-        severity: "error",
+        severity: "high",
         message: "high",
       },
       {
         file: "src/medium.ts",
         line: 2,
         rule: "else-branch",
-        severity: "warn",
+        severity: "medium",
         message: "medium",
       },
       {
@@ -64,6 +65,17 @@ test("hook findings use normalized advisory severities", () => {
       "src/medium.ts:2 [medium] else-branch: medium (advisory finding)",
       "src/low.ts:3 [low] style: low (advisory finding)",
     ],
+  );
+});
+
+test("the hook surfaces scanner findings with unknown severities as unavailable", () => {
+  assert.deepEqual(
+    scanFile({
+      filePath: "x.ts",
+      repoRoot: ".",
+      scanner: () => ({ violations: [{ severity: "error" }] }),
+    }),
+    { error: "scanner failed: unknown quality severity: error" },
   );
 });
 

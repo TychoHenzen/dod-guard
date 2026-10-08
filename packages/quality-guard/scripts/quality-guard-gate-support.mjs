@@ -57,14 +57,6 @@ export function absoluteTail(repoRoot) {
     `directly for more detail. The write continues for ${repoRoot}.`
   );
 }
-const SEVERITY_ALIASES = {
-  error: "high",
-  warn: "medium",
-  high: "high",
-  medium: "medium",
-  low: "low",
-};
-
 export function advisoryFindings(violations) {
   return violations
     .map((violation) => {
@@ -76,12 +68,9 @@ export function advisoryFindings(violations) {
         message = "no message",
         suggestion,
       } = violation;
-      const normalized = SEVERITY_ALIASES[severity];
-      if (!normalized) return null;
-      const finding = `${file}:${line} [${normalized}] ${rule}: ${message} (advisory finding)`;
+      const finding = `${file}:${line} [${severity}] ${rule}: ${message} (advisory finding)`;
       return suggestion ? `${finding}\n  Fix: ${suggestion}` : finding;
-    })
-    .filter((finding) => finding !== null);
+    });
 }
 function unavailableTail(filePath) {
   return (

@@ -1,3 +1,4 @@
+import { requireSeverity, type Severity } from "#quality-guard-severity";
 import { reportSummaries } from "./report-summaries.js";
 
 const FILE_SELECTION =
@@ -14,9 +15,6 @@ function scoring() {
   };
 }
 
-export type Severity = "high" | "medium" | "low";
-type LegacySeverity = "error" | "warn";
-
 type ScanInput = {
   profile: "advisory" | "default" | "strict";
   files: Array<{
@@ -28,19 +26,11 @@ type ScanInput = {
     file: string;
     line: number;
     rule: string;
-    severity: Severity | LegacySeverity;
+    severity: Severity;
     message: string;
     [key: string]: unknown;
   }>;
 };
-
-export function normalizeSeverity(
-  severity: Severity | LegacySeverity,
-): Severity {
-  if (severity === "error") return "high";
-  if (severity === "warn") return "medium";
-  return severity;
-}
 
 function compareFinding(
   left: ScanInput["violations"][number],
@@ -70,7 +60,7 @@ function scoredFiles(
       const findings = [...(byFile.get(file.path) ?? [])]
         .map((finding) => ({
           ...finding,
-          severity: normalizeSeverity(finding.severity),
+          severity: requireSeverity(finding.severity),
         }))
         .sort(compareFinding);
       const high = findings.filter(

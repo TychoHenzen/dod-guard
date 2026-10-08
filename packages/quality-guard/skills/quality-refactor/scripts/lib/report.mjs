@@ -1,4 +1,5 @@
 import { renderJson, renderText } from "./report-render.mjs";
+import { requireSeverity } from "./severity.mjs";
 const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 };
 const RULE_ORDER = [
   "dead-export",
@@ -49,16 +50,8 @@ function increment(counts, key) {
   counts[key] = (counts[key] ?? 0) + 1;
 }
 
-export function normalizeSeverity(severity) {
-  if (severity === "error") return "high";
-  if (severity === "warn") return "medium";
-  if (severity === "high" || severity === "medium" || severity === "low")
-    return severity;
-  throw new Error(`unknown quality severity: ${severity}`);
-}
-
 function recordSummary(summary, violation) {
-  const severity = normalizeSeverity(violation.severity);
+  const severity = requireSeverity(violation.severity);
   increment(summary.byRule, violation.rule);
   increment(summary.byFile, violation.file);
   summary[severity] += 1;
@@ -93,7 +86,7 @@ function addToWorkUnit(byFile, violation) {
     rules: {},
     items: [],
   };
-  const severity = normalizeSeverity(violation.severity);
+  const severity = requireSeverity(violation.severity);
   unit.items.push(violation);
   increment(unit.rules, violation.rule);
   unit[severity] += 1;

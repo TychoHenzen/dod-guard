@@ -119,3 +119,34 @@ test("scores stop at zero and findings have deterministic order", () => {
     [1, 2],
   );
 });
+
+test("rejects scanner findings outside the high/medium/low vocabulary", () => {
+  assert.throws(
+    () =>
+      buildQualityReport(
+        {
+          profile: "default",
+          files: [
+            { path: "src/a.ts", language: "ts", classification: "production" },
+          ],
+          violations: [
+            {
+              file: "src/a.ts",
+              line: 1,
+              rule: "complexity",
+              severity: "error" as never,
+              message: "legacy",
+            },
+          ],
+        },
+        {
+          placement: [],
+          dependencies: [],
+          cycles: [],
+          encapsulation: [],
+          errors: [],
+        },
+      ),
+    /unknown quality severity: error/,
+  );
+});

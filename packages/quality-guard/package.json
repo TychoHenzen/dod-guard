@@ -4,7 +4,8 @@
   "description": "Advisory structural code diagnostics with fail-open file-local feedback, current-state reports, plaintext readability checks, test-quality evidence, and an MCP server. Ships 1 skill: /quality-refactor.",
   "type": "module",
   "imports": {
-    "#quality-guard-architecture-facts": "./skills/quality-refactor/scripts/lib/architecture-facts.mjs"
+    "#quality-guard-architecture-facts": "./skills/quality-refactor/scripts/lib/architecture-facts.mjs",
+    "#quality-guard-severity": "./skills/quality-refactor/scripts/lib/severity.mjs"
   },
   "main": "dist/bundle.js",
   "bin": {
