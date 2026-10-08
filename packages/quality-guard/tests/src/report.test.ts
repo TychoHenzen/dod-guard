@@ -15,21 +15,21 @@ test("scores files and excludes architecture from score", () => {
           file: "tests/noisy.test.ts",
           line: 4,
           rule: "complexity",
-          severity: "error",
+          severity: "high",
           message: "12 > 10",
         },
         {
           file: "tests/noisy.test.ts",
           line: 8,
           rule: "else-branch",
-          severity: "warn",
+          severity: "medium",
           message: "prefer guard",
         },
         {
           file: "tests/noisy.test.ts",
           line: 9,
           rule: "todo-marker",
-          severity: "warn",
+          severity: "medium",
           message: "TODO",
         },
       ],
@@ -61,14 +61,29 @@ test("scores files and excludes architecture from score", () => {
     high: 1,
     medium: 2,
     low: 0,
-    errors: 1,
-    warnings: 2,
     averageScore: 93,
     minimumScore: 93,
   });
   assert.equal(report.summaries.production.minimumScore, 100);
   assert.equal(report.summaries.test.averageScore, 93);
   assert.equal(report.architecture.placement.length, 1);
+  assert.deepEqual(report.scoring, {
+    initial: 100,
+    highDeduction: 5,
+    mediumDeduction: 1,
+    lowDeduction: 0,
+    minimum: 0,
+  });
+  assert.deepEqual(Object.keys(report.files[1] ?? {}).sort(), [
+    "classification",
+    "findings",
+    "high",
+    "language",
+    "low",
+    "medium",
+    "path",
+    "score",
+  ]);
 });
 
 test("scores stop at zero and findings have deterministic order", () => {
@@ -76,7 +91,7 @@ test("scores stop at zero and findings have deterministic order", () => {
     file: "src/bad.ts",
     line: 21 - index,
     rule: "complexity",
-    severity: "error" as const,
+    severity: "high" as const,
     message: "too complex",
   }));
   const report = buildQualityReport(

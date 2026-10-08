@@ -79,8 +79,6 @@ export function summarize(violations) {
     high: summary.high,
     medium: summary.medium,
     low: summary.low,
-    errors: summary.high,
-    warnings: summary.medium + summary.low,
     byRule: summary.byRule,
     byFile: summary.byFile,
   };
@@ -92,8 +90,6 @@ function addToWorkUnit(byFile, violation) {
     high: 0,
     medium: 0,
     low: 0,
-    errors: 0,
-    warnings: 0,
     rules: {},
     items: [],
   };
@@ -101,8 +97,6 @@ function addToWorkUnit(byFile, violation) {
   unit.items.push(violation);
   increment(unit.rules, violation.rule);
   unit[severity] += 1;
-  unit.errors = unit.high;
-  unit.warnings = unit.medium + unit.low;
   byFile.set(violation.file, unit);
 }
 

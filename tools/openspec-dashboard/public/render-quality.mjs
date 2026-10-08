@@ -18,7 +18,7 @@ function summaryText(summary) {
   if (summary.fileCount === 1) {
     fileLabel = "file";
   }
-  return `${count(summary.fileCount)} ${fileLabel} | score ${score(summary.averageScore)} | ${count(summary.errors)} errors | ${count(summary.warnings)} warnings`;
+  return `${count(summary.fileCount)} ${fileLabel} | score ${score(summary.averageScore)} | ${count(summary.high)} high | ${count(summary.medium)} medium | ${count(summary.low)} low`;
 }
 
 function findingRow(finding) {
@@ -26,7 +26,7 @@ function findingRow(finding) {
   if (finding.line) {
     location = `:${finding.line}`;
   }
-  return el("li", { class: `finding ${finding.severity ?? "warn"}` }, [
+  return el("li", { class: `finding ${finding.severity}` }, [
     el("strong", {}, finding.rule ?? finding.kind ?? "finding"),
     el("code", {}, location),
     el("span", {}, finding.message ?? finding.reason ?? ""),
@@ -38,7 +38,7 @@ function fileSection(file) {
   if (file.findings.length > 0) {
     findings = el("ul", { class: "findings" }, file.findings.map(findingRow));
   }
-  return el("details", { class: "quality-file", open: file.errors > 0 || undefined }, [
+  return el("details", { class: "quality-file", open: file.high > 0 || undefined }, [
     el("summary", {}, [
       el("code", {}, file.name),
       el("span", { class: "entry-note" }, summaryText(file.summary)),
@@ -79,9 +79,9 @@ function selectControl(label, value, values, onchange) {
 function controlsSection(view, callbacks) {
   const rules = [["all", "All rules"], ...view.rules.map((rule) => [rule, rule])];
   return el("div", { class: "quality-controls" }, [
-    selectControl("Severity", view.controls.severity, [["all", "All severities"], ["error", "Errors"], ["warn", "Warnings"]], callbacks.onSeverity),
+    selectControl("Severity", view.controls.severity, [["all", "All severities"], ["high", "High"], ["medium", "Medium"], ["low", "Low"]], callbacks.onSeverity),
     selectControl("Rule", view.controls.rule, rules, callbacks.onRule),
-    selectControl("Sort", view.controls.sort, [["path", "Path"], ["score", "Lowest score"], ["errors", "Most errors"], ["warnings", "Most warnings"]], callbacks.onSort),
+    selectControl("Sort", view.controls.sort, [["path", "Path"], ["score", "Lowest score"], ["high", "Most high"], ["medium", "Most medium"], ["low", "Most low"]], callbacks.onSort),
     el("div", { class: "quality-expansion" }, [
       el("button", { type: "button", onclick: () => callbacks.onExpand(true) }, "Expand all"),
       el("button", { type: "button", onclick: () => callbacks.onExpand(false) }, "Collapse all"),
@@ -126,8 +126,9 @@ export function renderQuality(report, options = {}, suppliedCallbacks = {}) {
     el("div", { class: "metrics" }, [
       card("average score", score(view.summary.averageScore)),
       card("visible files", count(view.summary.fileCount)),
-      card("errors", count(view.summary.errors), "error"),
-      card("warnings", count(view.summary.warnings), "warn"),
+      card("high", count(view.summary.high), "high"),
+      card("medium", count(view.summary.medium), "medium"),
+      card("low", count(view.summary.low), "low"),
     ]),
     controlsSection(view, callbacks),
     el("h2", {}, `Files (${view.files.length})`),

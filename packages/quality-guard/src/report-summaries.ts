@@ -2,8 +2,6 @@ type ScoredFile = {
   high: number;
   medium: number;
   low: number;
-  errors: number;
-  warnings: number;
   score: number;
   classification: "production" | "test";
 };
@@ -19,8 +17,6 @@ function summarize(files: ScoredFile[]) {
     high,
     medium,
     low,
-    errors: high,
-    warnings: medium + low,
     averageScore:
       fileCount === 0
         ? null

@@ -163,8 +163,9 @@ main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 16px 0 24px; }
 .metric { display: flex; flex-direction: column; padding: 14px; border: 1px solid var(--line); border-radius: 8px; }
 .metric-value { font-size: 1.8rem; font-weight: 700; }
-.metric.error .metric-value, .finding.error strong { color: #d45d5d; }
-.metric.warn .metric-value, .finding.warn strong { color: #c99836; }
+.metric.high .metric-value, .finding.high strong { color: #d45d5d; }
+.metric.medium .metric-value, .finding.medium strong { color: #c99836; }
+.metric.low .metric-value, .finding.low strong { color: var(--dim); }
 .quality-file { min-width: 0; border-bottom: 1px solid var(--line); }
 .quality-file summary { cursor: pointer; }
 .findings { display: grid; gap: 8px; margin: 8px 0 14px; padding: 0 10px 0 24px; }

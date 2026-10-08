@@ -4,39 +4,43 @@ import { buildQualityView } from "../public/quality-view.mjs";
 
 const report = {
   schemaVersion: 1,
-  summaries: { overall: { fileCount: 4, errors: 1, warnings: 3, averageScore: 93.75 } },
+  summaries: { overall: { fileCount: 4, high: 1, medium: 3, low: 1, averageScore: 93.75 } },
   files: [
     {
       path: "README.md",
       score: 100,
-      errors: 0,
-      warnings: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
       findings: [],
     },
     {
       path: "src/app.js",
       score: 80,
-      errors: 1,
-      warnings: 2,
+      high: 1,
+      medium: 2,
+      low: 0,
       findings: [
-        { severity: "error", rule: "no-eval", message: "Avoid eval" },
-        { severity: "warn", rule: "complexity", message: "Function is complex" },
-        { severity: "warn", rule: "no-console", message: "Avoid console" },
+        { severity: "high", rule: "no-eval", message: "Avoid eval" },
+        { severity: "medium", rule: "complexity", message: "Function is complex" },
+        { severity: "medium", rule: "no-console", message: "Avoid console" },
       ],
     },
     {
       path: "src/lib/util.js",
       score: 95,
-      errors: 0,
-      warnings: 1,
-      findings: [{ severity: "warn", rule: "complexity", message: "Helper is complex" }],
+      high: 0,
+      medium: 1,
+      low: 0,
+      findings: [{ severity: "medium", rule: "complexity", message: "Helper is complex" }],
     },
     {
       path: "test/app.test.js",
       score: 100,
-      errors: 0,
-      warnings: 0,
-      findings: [],
+      high: 0,
+      medium: 0,
+      low: 1,
+      findings: [{ severity: "low", rule: "todo-marker", message: "Resolve TODO" }],
     },
   ],
 };
@@ -58,21 +62,28 @@ test("groups nested paths and aggregates visible summaries", () => {
   const view = buildQualityView(report, controls);
   const src = folder(view, "src");
 
-  assert.deepEqual(view.summary, { fileCount: 4, errors: 1, warnings: 3, averageScore: 93.75 });
-  assert.deepEqual(src.summary, { fileCount: 2, errors: 1, warnings: 3, averageScore: 87.5 });
+  assert.deepEqual(view.summary, { fileCount: 4, high: 1, medium: 3, low: 1, averageScore: 93.75 });
+  assert.deepEqual(src.summary, { fileCount: 2, high: 1, medium: 3, low: 0, averageScore: 87.5 });
   assert.equal(folder(view, "src/lib").children[0].path, "src/lib/util.js");
-  assert.deepEqual(view.rules, ["complexity", "no-console", "no-eval"]);
+  assert.deepEqual(view.rules, ["complexity", "no-console", "no-eval", "todo-marker"]);
 });
 
 test("combines text, severity, and rule filters", () => {
-  const view = buildQualityView(report, { ...controls, text: "helper", severity: "warn", rule: "complexity" });
+  const view = buildQualityView(report, { ...controls, text: "helper", severity: "medium", rule: "complexity" });
 
   assert.deepEqual(view.files.map((file) => file.path), ["src/lib/util.js"]);
-  assert.deepEqual(view.summary, { fileCount: 1, errors: 0, warnings: 1, averageScore: 95 });
+  assert.deepEqual(view.summary, { fileCount: 1, high: 0, medium: 1, low: 0, averageScore: 95 });
   assert.equal(view.files[0].findings.length, 1);
 });
 
-test("sorts visible files by path, score, errors, or warnings", () => {
+test("filters low findings separately", () => {
+  const view = buildQualityView(report, { ...controls, severity: "low" });
+
+  assert.deepEqual(view.files.map((file) => file.path), ["test/app.test.js"]);
+  assert.deepEqual(view.summary, { fileCount: 1, high: 0, medium: 0, low: 1, averageScore: 100 });
+});
+
+test("sorts visible files by path, score, or severity count", () => {
   const pathView = buildQualityView(report, controls);
   assert.deepEqual(pathView.files.map((file) => file.path), [
     "README.md",
@@ -91,16 +102,20 @@ test("sorts visible files by path, score, errors, or warnings", () => {
   ]);
   assert.equal(scoreView.tree[0].path, "src");
 
-  const errorView = buildQualityView(report, { ...controls, sort: "errors" });
-  assert.equal(errorView.files[0].path, "src/app.js");
-  assert.equal(errorView.tree[0].path, "src");
+  const highView = buildQualityView(report, { ...controls, sort: "high" });
+  assert.equal(highView.files[0].path, "src/app.js");
+  assert.equal(highView.tree[0].path, "src");
 
-  const warningView = buildQualityView(report, { ...controls, sort: "warnings" });
-  assert.deepEqual(warningView.files.slice(0, 2).map((file) => file.path), [
+  const mediumView = buildQualityView(report, { ...controls, sort: "medium" });
+  assert.deepEqual(mediumView.files.slice(0, 2).map((file) => file.path), [
     "src/app.js",
     "src/lib/util.js",
   ]);
-  assert.equal(warningView.tree[0].path, "src");
+  assert.equal(mediumView.tree[0].path, "src");
+
+  const lowView = buildQualityView(report, { ...controls, sort: "low" });
+  assert.equal(lowView.files[0].path, "test/app.test.js");
+  assert.equal(lowView.tree[0].path, "test");
 });
 
 test("applies expand and collapse controls to visible folders", () => {

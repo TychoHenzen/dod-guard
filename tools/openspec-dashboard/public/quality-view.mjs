@@ -1,5 +1,10 @@
 const pathCompare = (left, right) => left.path.localeCompare(right.path);
 const PATH_SEPARATOR = /[/\\]+/;
+const SEVERITIES = ["high", "medium", "low"];
+
+function severityCounts(findings) {
+  return Object.fromEntries(SEVERITIES.map((severity) => [severity, findings.filter((finding) => finding.severity === severity).length]));
+}
 
 function findingRule(finding) {
   return finding.rule ?? finding.kind ?? "finding";
@@ -31,36 +36,27 @@ function filterFile(file, controls) {
   if (!visible) {
     return null;
   }
-  return {
-    ...file,
-    findings,
-    errors: findings.filter((finding) => finding.severity === "error").length,
-    warnings: findings.filter((finding) => finding.severity !== "error").length,
-  };
+  return { ...file, findings, ...severityCounts(findings) };
 }
 
 function compareFiles(sort) {
   if (sort === "score") {
     return (left, right) => left.score - right.score || pathCompare(left, right);
   }
-  if (sort === "errors") {
-    return (left, right) => right.errors - left.errors || pathCompare(left, right);
-  }
-  if (sort === "warnings") {
-    return (left, right) => right.warnings - left.warnings || pathCompare(left, right);
+  if (SEVERITIES.includes(sort)) {
+    return (left, right) => right[sort] - left[sort] || pathCompare(left, right);
   }
   return pathCompare;
 }
 
 function summarize(files) {
   const fileCount = files.length;
-  const errors = files.reduce((total, file) => total + file.errors, 0);
-  const warnings = files.reduce((total, file) => total + file.warnings, 0);
+  const counts = Object.fromEntries(SEVERITIES.map((severity) => [severity, files.reduce((total, file) => total + file[severity], 0)]));
   let averageScore = null;
   if (fileCount > 0) {
     averageScore = files.reduce((total, file) => total + Number(file.score ?? 0), 0) / fileCount;
   }
-  return { fileCount, errors, warnings, averageScore };
+  return { fileCount, ...counts, averageScore };
 }
 
 function folderNode(name, path, controls) {
@@ -119,11 +115,8 @@ function compareNodes(sort) {
   if (sort === "score") {
     return (left, right) => left.summary.averageScore - right.summary.averageScore || pathCompare(left, right);
   }
-  if (sort === "errors") {
-    return (left, right) => right.summary.errors - left.summary.errors || pathCompare(left, right);
-  }
-  if (sort === "warnings") {
-    return (left, right) => right.summary.warnings - left.summary.warnings || pathCompare(left, right);
+  if (SEVERITIES.includes(sort)) {
+    return (left, right) => right.summary[sort] - left.summary[sort] || pathCompare(left, right);
   }
   return pathCompare;
 }

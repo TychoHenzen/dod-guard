@@ -43,6 +43,22 @@ test("comment findings keep stable fields through text, JSON, and units", () => 
     assert.equal(result.profile, "advisory");
     const json = JSON.parse(renderJson(result));
     const units = toWorkUnits(violations);
+    assert.deepEqual(Object.keys(json.summary).sort(), [
+      "byFile",
+      "byRule",
+      "high",
+      "low",
+      "medium",
+      "total",
+    ]);
+    assert.deepEqual(Object.keys(units[0]).sort(), [
+      "file",
+      "high",
+      "items",
+      "low",
+      "medium",
+      "rules",
+    ]);
     assert.equal(violations.length, 2);
     assert.deepEqual(
       json.violations.map(

@@ -10,8 +10,6 @@ function scoring() {
     highDeduction: 5,
     mediumDeduction: 1,
     lowDeduction: 0,
-    errorDeduction: 5,
-    warningDeduction: 1,
     minimum: 0,
   };
 }
@@ -90,8 +88,6 @@ function scoredFiles(
         high,
         medium,
         low,
-        errors: high,
-        warnings: medium + low,
         findings,
       };
     });

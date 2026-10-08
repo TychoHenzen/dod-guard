@@ -17,7 +17,7 @@ to loopback and takes the next available port when needed.
 
 Each registered project is a tab. The selected report shows:
 
-- overall score, file count, errors, and warnings;
+- overall score, file count, and high, medium, and low finding counts;
 - expandable files with rule, severity, line, and message;
 - architecture findings grouped by category;
 - filtering across paths, rules, and messages.
