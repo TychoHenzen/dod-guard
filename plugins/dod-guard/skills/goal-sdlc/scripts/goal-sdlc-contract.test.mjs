@@ -65,7 +65,8 @@ test("goal-sdlc keeps its sections short and its own", () => {
 
 test("goal-sdlc selects through the read-only queue selector", () => {
   assert.match(skill, prose("node scripts/select-next.mjs --snapshot=<file>"));
-  assert.match(skill, prose("Todo before Backlog, then Project order"));
+  assert.match(skill, prose("In Progress parents first"));
+  assert.match(skill, prose("then Todo, then Backlog, each in Project order"));
   assert.match(
     skill,
     prose("Process exactly one parent at a time, in the current checkout"),

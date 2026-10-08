@@ -52,10 +52,12 @@ Repeat until the stop condition holds:
    directory. It is read-only. It groups children under their parent, holds
    any group with missing, stale, or conflicting evidence, excludes verified
    merged deliveries, holds today's friction log, and returns the first
-   eligible group: Todo before Backlog, then Project order. Report each held
-   group's reasons rather than guessing past them. When several parents are
-   already In Progress, prefer the one with a pull request furthest along,
-   then the one on the current branch, then Project order.
+   eligible group: In Progress parents first (one with an open pull request
+   ahead of one without), then Todo, then Backlog, each in Project order. It
+   needs each issue's `activeCheckpoint` and each pull request's
+   `trustedHeadSha` to recognize a finished delivery; run it with no
+   arguments for the full snapshot shape. Report each held group's reasons
+   rather than guessing past them.
 3. **Run the lifecycle for that parent.** Follow
    [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6, starting at the
    step the parent has reached: refine a Backlog parent, then `/next-ticket`,

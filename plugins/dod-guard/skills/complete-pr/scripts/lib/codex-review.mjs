@@ -5,6 +5,7 @@
 // findings as one review pinned to that commit.
 const CODEX_BOT = "chatgpt-codex-connector[bot]";
 const SUMMARY_MARKER = "<!-- codex-pull-request-review-summary -->";
+const CODE_REVIEW_LABEL = "**Code Review**";
 const CODE_REVIEW_ROW =
   /\*\*Code Review\*\*\s*\|([^|]*)\|\s*`([0-9a-f]{7,40})`\s*\|([^|]*)\|/i;
 const SEVERITY_BADGE = /!\[(P\d) Badge\]/;
@@ -33,6 +34,9 @@ function isSummary(comment) {
 function codeReviewRow(issueComments) {
   const summary = issueComments.filter(isSummary).at(-1);
   if (!summary) return null;
+  // Codex can post the summary with its Security Review row a few seconds
+  // before it adds the Code Review row; treat that as no review yet.
+  if (!summary.body.includes(CODE_REVIEW_LABEL)) return { status: "absent" };
   const match = summary.body.match(CODE_REVIEW_ROW);
   if (!match) return { status: "unrecognized" };
   const [, cell, commit] = match;
@@ -89,11 +93,10 @@ function codexRunning(reactions) {
   );
 }
 
-// The ready transition starts a fresh review of the same head. A result from
-// before it counts only once Codex has had time to start that run and has not.
-function settledResult(row, { readyAt, running, waitedMs }) {
-  if (readyAt === undefined || row.updatedAt >= readyAt) return true;
-  return !running && waitedMs >= CODEX_ACKNOWLEDGE_MS;
+// The ready transition starts a fresh review of the same head, so a result
+// from before it never counts: the gate waits for the new run, or stops.
+function settledResult(row, { readyAt }) {
+  return readyAt === undefined || row.updatedAt >= readyAt;
 }
 
 function finishedReview(row, input) {

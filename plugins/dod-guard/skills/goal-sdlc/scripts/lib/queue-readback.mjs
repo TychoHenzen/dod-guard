@@ -821,6 +821,12 @@ function pullRequestState(pullRequest) {
   return String(pullRequest?.state ?? "").toUpperCase();
 }
 
+const OPEN_PULL_REQUEST = "open implementation pull request remains active";
+const ACTIVE_CHECKPOINT = "active implementation checkpoint remains";
+// An In Progress parent whose only holds are its own open pull request or
+// checkpoint is a delivery to resume, not a blocker.
+const RESUMABLE_REASONS = new Set([OPEN_PULL_REQUEST, ACTIVE_CHECKPOINT]);
+
 function recordReasons(records) {
   const reasons = records.flatMap((record) => record.missingEvidence ?? []);
   const statuses = records.map(({ projectStatus }) => normalizedStatus(projectStatus));
@@ -831,24 +837,37 @@ function recordReasons(records) {
   const orphaned = (record) => record.parentIssueNumber !== null && (record.orphan || !recordNumbers.has(record.parentIssueNumber));
   if (records.some(orphaned)) reasons.push("orphaned parent/child relationship");
   if (records.some((record) => record.staleRelationships?.length > 0)) reasons.push("relationship/head evidence changed during read");
-  if (records.some((record) => activeCheckpoint(record.issue) === true)) reasons.push("active implementation checkpoint remains");
+  if (records.some((record) => activeCheckpoint(record.issue) === true)) reasons.push(ACTIVE_CHECKPOINT);
   return { reasons, uniqueStatuses };
 }
 
 function pullRequestReasons(pullRequests) {
   const reasons = [];
   if (pullRequests.some((pullRequest) => pullRequestState(pullRequest) === "OPEN")) {
-    reasons.push("open implementation pull request remains active");
+    reasons.push(OPEN_PULL_REQUEST);
   }
   if (pullRequests.some((pullRequest) => !pullRequest?.state)) reasons.push("pull request state missing");
   const unmerged = pullRequests.filter((pullRequest) => !mergedPullRequest(pullRequest));
   if (unmerged.some((pullRequest) => pullRequestState(pullRequest) === "CLOSED")) {
     reasons.push("closed pull request is not a verified merge");
   }
-  if (unmerged.some((pullRequest) => pullRequestState(pullRequest) !== "CLOSED")) {
+  const settled = new Set(["CLOSED", "OPEN"]);
+  if (unmerged.some((pullRequest) => !settled.has(pullRequestState(pullRequest)))) {
     reasons.push("pull request outcome is unresolved");
   }
   return reasons;
+}
+
+function resumableDecision(reasons, uniqueStatuses) {
+  if (uniqueStatuses.length !== 1 || uniqueStatuses[0] !== "In Progress") return null;
+  if (!reasons.every((reason) => RESUMABLE_REASONS.has(reason))) return null;
+  return {
+    kind: "in-progress",
+    eligible: true,
+    status: "In Progress",
+    openPullRequest: reasons.includes(OPEN_PULL_REQUEST),
+    reasons: [],
+  };
 }
 
 function hold(reasons) {
@@ -867,6 +886,8 @@ function defaultQueueDecision(records, context = {}) {
     return reasons.length > 0 ? hold(reasons) : { kind: "complete", eligible: false, status: "Done", reasons: [] };
   }
 
+  const resumable = resumableDecision(reasons, uniqueStatuses);
+  if (resumable) return resumable;
   if (reasons.length > 0) return hold(reasons);
   if (collectingFrictionLog(records, context.today)) return hold(["friction log still collecting entries"]);
   if (uniqueStatuses.length !== 1 || !["Todo", "Backlog"].includes(uniqueStatuses[0])) {
@@ -908,12 +929,13 @@ function classifyQueueGroups(snapshot, classify = defaultQueueDecision) {
 }
 
 function selectQueueItem(snapshot, classify = defaultQueueDecision) {
-  const rank = { Todo: 0, Backlog: 1 };
+  // Resume In Progress work first, the furthest along (an open pull request)
+  // ahead of the rest, then start Todo before Backlog.
+  const rank = ({ status, openPullRequest }) =>
+    ({ "In Progress": openPullRequest ? 0 : 1, Todo: 2, Backlog: 3 })[status] ?? 4;
   const candidates = classifyQueueGroups(snapshot, classify)
     .filter(({ decision }) => decision?.eligible)
-    .sort((left, right) => {
-      return (rank[left.decision.status] ?? 2) - (rank[right.decision.status] ?? 2) || left._queueOrder - right._queueOrder;
-    });
+    .sort((left, right) => rank(left.decision) - rank(right.decision) || left._queueOrder - right._queueOrder);
   return candidates[0] ?? null;
 }
 

@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const REPOSITORY = "TychoHenzen/dod-guard";
 const SCRIPT = fileURLToPath(new URL("./select-next.mjs", import.meta.url));
 
-function item(number, status, parentIssue = null) {
+function item(number, status, parentIssue = null, linked = []) {
   return {
     id: String(number),
     content: { number, repository: REPOSITORY },
@@ -17,7 +17,7 @@ function item(number, status, parentIssue = null) {
       { name: "Status", value: { name: status } },
       { name: "Repository", value: REPOSITORY },
       { name: "Parent issue", value: parentIssue },
-      { name: "Linked pull requests", value: [] },
+      { name: "Linked pull requests", value: linked },
     ],
   };
 }
@@ -98,6 +98,27 @@ test("holds today's friction log while it collects entries", async () => {
   assert.deepEqual(result.groups[0].reasons, [
     "friction log still collecting entries",
   ]);
+});
+
+test("excludes a merged delivery that carries its completion evidence", async () => {
+  const input = snapshot();
+  const pull = { number: 540, repository: REPOSITORY };
+  input.items.push(item(444, "Done", null, [pull]));
+  input.issues.push(issue(444, { state: "closed", activeCheckpoint: false }));
+  input.pullRequests.push({
+    ...pull,
+    state: "closed",
+    mergedAt: "2026-10-01T00:00:00Z",
+    head: { repository: REPOSITORY, ref: "codex/444-done", sha: "head-444" },
+    base: { ref: "master", sha: "base-444" },
+    mergeCommit: { oid: "merge-444" },
+    requiredChecks: [{ name: "build-test", bucket: "pass" }],
+    trustedHeadSha: "head-444",
+  });
+  const result = await selectNext(input);
+  const done = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 444);
+  assert.deepEqual(done, { rootIssueNumber: 444, kind: "complete", reasons: [] });
+  assert.equal(result.selected.rootIssueNumber, 517);
 });
 
 test("the command rejects a missing snapshot flag", () => {

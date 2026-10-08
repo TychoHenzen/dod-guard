@@ -19,11 +19,17 @@ The snapshot is one JSON object:
   today           optional local date (YYYY-MM-DD) for friction-log holds
   items           every Project item from every page, each with fields
                   Status, Repository, Parent issue, and Linked pull requests
-  issues          every listed issue, with number, state, title, parent, and
-                  children (an empty array when it has none)
+  issues          every listed issue, with number, state, title, parent,
+                  children (an empty array when it has none), and
+                  activeCheckpoint (true while its delivery checkpoint is
+                  open, false once it is finished)
   pullRequests    every linked pull request, with number, state, mergedAt,
                   head {repository, ref, sha}, base {ref, sha}, mergeCommit,
-                  and requiredChecks`;
+                  requiredChecks, and trustedHeadSha (the head SHA its
+                  /complete-pr run verified)
+
+A merged delivery counts as complete only with activeCheckpoint false on
+every issue and trustedHeadSha equal to head.sha; otherwise it is held.`;
 
 const EMPTY_SNAPSHOT = { project: {}, items: [], issues: [], pullRequests: [] };
 

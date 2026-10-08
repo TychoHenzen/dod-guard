@@ -645,10 +645,12 @@ async function recoverMergedPullRequest(client, overrides = {}) {
   };
 }
 
-function readCodexReview(client, completion, waitedMs) {
-  const { acceptedHead, pullNumber, readyAt } = completion;
+// Reads Codex's review of `head`, the trusted head this loop is about to merge,
+// which differs from the accepted head after a guarded branch update.
+function readCodexReview(client, completion, head, waitedMs) {
+  const { pullNumber, readyAt } = completion;
   const evidence = client.getCodexReview(pullNumber);
-  return codexReviewGate({ ...evidence, acceptedHead, readyAt, waitedMs });
+  return codexReviewGate({ ...evidence, acceptedHead: head, readyAt, waitedMs });
 }
 
 // Codex's findings reach the merge as a stop for /fix-pr-review, never as a
@@ -723,8 +725,14 @@ async function waitForMerge(client, completion) {
         repository,
       });
       trustedHead = pullRequest.headSha;
+      codexWaitedMs = 0;
     } else if (checksPassed) {
-      const review = readCodexReview(client, completion, codexWaitedMs);
+      const review = readCodexReview(
+        client,
+        completion,
+        trustedHead,
+        codexWaitedMs,
+      );
       if (review.action === "stop") stopForCodexReview(review, pullNumber);
       if (review.action === "pass") {
         await client.mergePullRequest(pullNumber, trustedHead);

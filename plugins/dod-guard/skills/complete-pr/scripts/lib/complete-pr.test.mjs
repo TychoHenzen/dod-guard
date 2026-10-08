@@ -1731,10 +1731,10 @@ test("rejects an update commit that is not the observed head and base merge", as
 
 const CODEX_HEAD = "abc1234def5678abc1234def5678abc1234def56";
 
-function codexSummaryComment(status) {
+function codexSummaryComment(status, commit = "abc1234") {
   return {
     user: { login: "chatgpt-codex-connector[bot]" },
-    body: `<!-- codex-pull-request-review-summary -->\n| **Code Review** | **${status}** <relative-time datetime="2099-01-01T00:00:00Z"></relative-time> | \`abc1234\` | auto |`,
+    body: `<!-- codex-pull-request-review-summary -->\n| **Code Review** | **${status}** <relative-time datetime="2099-01-01T00:00:00Z"></relative-time> | \`${commit}\` | auto |`,
   };
 }
 
@@ -1779,4 +1779,35 @@ test("stops before merging when Codex leaves an unanswered finding", async () =>
     (error) => error.code === "codex-review-findings" && /GH-70 P1 Guard the empty list/.test(error.message),
   );
   assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
+});
+
+test("checks Codex against the trusted head after a guarded base update", async () => {
+  const updatedHead = "def5678abc1234def5678abc1234def5678abc12";
+  const open = (overrides) => pull({ headSha: CODEX_HEAD, isDraft: false, ...overrides });
+  const client = new FixtureClient({
+    codexReview: [
+      { issueComments: [codexSummaryComment("Completed", "abc1234")] },
+      { issueComments: [codexSummaryComment("Completed", "def5678")] },
+    ],
+    commits: { [updatedHead]: { parents: [CODEX_HEAD, "base-1"], sha: updatedHead } },
+    pulls: [
+      open(),
+      open(),
+      open({ mergeState: "BEHIND" }),
+      open({ headSha: updatedHead }),
+      open({ headSha: updatedHead }),
+      open({ headSha: updatedHead }),
+      open({ headSha: updatedHead, mergeCommitSha: "merge-1", state: "MERGED" }),
+    ],
+    refs: [{ sha: updatedHead }, null],
+  });
+
+  await completePullRequest(client, immediateOptions);
+
+  const names = client.calls.map(([name]) => name);
+  const update = names.indexOf("updateBranch");
+  const merge = names.indexOf("mergePullRequest");
+  // The review of the pre-update head never authorizes merging the new head.
+  assert.ok(names.slice(update, merge).includes("wait"), names.join(", "));
+  assert.deepEqual(client.calls[merge], ["mergePullRequest", 24, updatedHead]);
 });

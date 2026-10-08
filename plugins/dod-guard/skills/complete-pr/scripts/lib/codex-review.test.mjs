@@ -114,10 +114,10 @@ test("waits for Codex, including the run the ready transition starts", () => {
     }).action,
     "wait",
   );
-  // Codex never started a new run, so the draft's review of the head stands.
+  // Codex never started a new run, so the draft's review cannot stand in.
   assert.equal(
     codexReviewGate({ ...beforeReady, waitedMs: CODEX_ACKNOWLEDGE_MS }).reason,
-    "codex-review-clean",
+    "codex-review-missing-for-head",
   );
 });
 
@@ -152,9 +152,29 @@ test("stops when Codex fails, or never reviews the accepted head", () => {
     issueComments: [
       {
         user: CODEX,
-        body: "<!-- codex-pull-request-review-summary -->\nnew layout",
+        body: [
+          "<!-- codex-pull-request-review-summary -->",
+          "**Code Review** in a new layout",
+        ].join("\n"),
       },
     ],
   };
   assert.equal(codexReviewGate(unknown).reason, "codex-summary-unrecognized");
+});
+
+test("treats a summary with only a Security Review row as no review", () => {
+  const securityOnly = {
+    user: CODEX,
+    body: [
+      "<!-- codex-pull-request-review-summary -->",
+      "| Review | Status | Commit | Review trigger |",
+      "| **Security Review** | **Running** | `abc1234` | Draft marked ready |",
+    ].join("\n"),
+  };
+  const input = { acceptedHead: HEAD, issueComments: [securityOnly] };
+  assert.equal(codexReviewGate(input).action, "wait");
+  assert.equal(
+    codexReviewGate({ ...input, waitedMs: CODEX_ACKNOWLEDGE_MS }).reason,
+    "codex-review-missing-for-head",
+  );
 });
