@@ -3,7 +3,7 @@
 // finding alone knows the expected shape of the change. Cosmetic findings whose
 // fix is obvious from the message carry no suggestion.
 
-export const RULE_SUGGESTIONS = {
+const RULE_SUGGESTIONS = {
   "file-length":
     "Split along a real seam: Extract Class for each group of fields and the " +
     "methods that use them, Move Function for operations owned elsewhere, or " +

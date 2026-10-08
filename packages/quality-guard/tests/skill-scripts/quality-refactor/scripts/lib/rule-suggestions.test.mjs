@@ -1,20 +1,31 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ALL_RULES } from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
-import { RULE_SUGGESTIONS } from "../../../../../skills/quality-refactor/scripts/lib/rule-suggestions.mjs";
+import { suggestionFor } from "../../../../../skills/quality-refactor/scripts/lib/rule-suggestions.mjs";
 import { scanViolations, tsFile } from "./rules-file-fixtures.test.mjs";
 
-test("every suggestion belongs to a configured rule", () => {
-  for (const rule of Object.keys(RULE_SUGGESTIONS))
+test("every design-level rule has a suggestion", () => {
+  for (const rule of [
+    "file-length",
+    "partial-type-length",
+    "function-length",
+    "complexity",
+    "nesting-depth",
+    "param-count",
+    "types-per-file",
+    "duplicate-block",
+  ]) {
     assert.ok(ALL_RULES.includes(rule), `${rule} is not a configured rule`);
+    assert.ok(suggestionFor(rule), `${rule} needs a suggestion`);
+  }
 });
 
 test("file-length suggestions reject partial classes as a split", () => {
   assert.match(
-    RULE_SUGGESTIONS["file-length"],
+    suggestionFor("file-length"),
     /Do not split one class into partial files/,
   );
-  assert.match(RULE_SUGGESTIONS["partial-type-length"], /still one class/);
+  assert.match(suggestionFor("partial-type-length"), /still one class/);
 });
 
 test("structural findings carry a suggestion and cosmetic ones do not", () => {

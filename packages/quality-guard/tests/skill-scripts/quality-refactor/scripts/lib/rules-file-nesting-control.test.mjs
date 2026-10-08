@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildConfig } from "../../../../../skills/quality-refactor/scripts/lib/config.mjs";
-import { RULE_SUGGESTIONS } from "../../../../../skills/quality-refactor/scripts/lib/rule-suggestions.mjs";
+import { suggestionFor } from "../../../../../skills/quality-refactor/scripts/lib/rule-suggestions.mjs";
 import { scanFile } from "../../../../../skills/quality-refactor/scripts/lib/rules-file.mjs";
 
 test("real nested control flow still reports its nesting metric", () => {
@@ -40,7 +40,7 @@ test("real nested control flow still reports its nesting metric", () => {
       severity: "error",
       message: "deeply_nested() nests 6 levels deep",
       metric: 6,
-      suggestion: RULE_SUGGESTIONS["nesting-depth"],
+      suggestion: suggestionFor("nesting-depth"),
     },
   ]);
 });
