@@ -1,6 +1,6 @@
 # dod-guard plugin
 
-This directory is a code-free plugin. It ships skills and nine supporting agent
+This directory is a code-free plugin. It ships skills and thirteen supporting agent
 definitions. It has no package workspace, MCP server, or bundle.
 
 ## Delivery contract
