@@ -1,5 +1,5 @@
 import { judgmentFindings } from "./reviewer-results.mjs";
-import { questionsBlock } from "./review-questions.mjs";
+import { questionsBlock, requirePlanCoverage } from "./review-questions.mjs";
 import { ruleScope } from "./rule-scope.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
@@ -155,6 +155,7 @@ function buildReview({ headSha, scan, diff, results, questions }) {
   if (changedLines.size === 0) {
     throw new Error("The diff names no changed files");
   }
+  requirePlanCoverage(questions, [...changedLines.keys()]);
   const fallback = firstAnchor(changedLines);
   const raw = [
     ...judgmentFindings(results),

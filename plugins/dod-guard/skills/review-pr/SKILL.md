@@ -90,7 +90,10 @@ verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
    `review-pr-design`, `review-pr-reliability`, and `review-pr-hygiene`. Each
    question has an `id`, its `lens`, the `question`, the files to read, and
    the risk it targets. Ids are unique across all four lenses, for example
-   with the lens prefixes `F`, `D`, `R`, and `H`.
+   with the lens prefixes `F`, `D`, `R`, and `H`. Together the questions name
+   every changed file in their `files` lists and ask about every acceptance
+   criterion and linked sub-issue. A changed file that needs no question gets
+   an `excluded` entry for one lens whose `question` states why.
 2. **Investigate.** `dod-guard:read-cheap` investigators answer every
    question, batched by changed-file group with at most eight questions per
    investigator. Each answer gives the question id, the cited path and line,
@@ -99,9 +102,11 @@ verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
    cheap-output rule in that standard, with the reviewed head as the accepted
    head. Send a failed batch back once with the exact gap; if it fails again,
    stop without posting and name the batch. Save a questions JSON array of
-   `{ "lens", "id", "question", "status" }` objects, where `status` is
-   `verified`, `repaired` (verified after that one repair), or `unanswered`
-   (the investigator reported that the repository does not answer it).
+   `{ "lens", "id", "question", "files", "status" }` objects, where `status`
+   is `verified`, `repaired` (verified after that one repair), `unanswered`
+   (the investigator reported that the repository does not answer it), or
+   `excluded` (a planned exclusion that nobody investigates). The build
+   refuses a plan that leaves a changed file unnamed.
 4. **Judge.** Dispatch the four reviewers at once. Each receives the shared
    brief, its lens's questions, and their verified answers, and judges from
    that evidence instead of re-reading the whole diff. A judge settles each

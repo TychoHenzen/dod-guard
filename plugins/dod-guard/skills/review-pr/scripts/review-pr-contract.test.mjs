@@ -24,6 +24,8 @@ test("review-pr plans, investigates, verifies, then judges in that order", () =>
   assert.match(skill, prose("cheap-output rule in that standard, with the reviewed head as the accepted head"));
   assert.doesNotMatch(skill, prose("every cited path and line exists"));
   assert.match(skill, prose("Ids are unique across all four lenses"));
+  assert.match(skill, prose("Together the questions name every changed file in their `files` lists"));
+  assert.match(skill, prose("The build refuses a plan that leaves a changed file unnamed."));
   assert.match(skill, prose("reports the gap as a finding; it never counts one as passing"));
   assert.match(skill, prose("Send a failed batch back once with the exact gap"));
   assert.match(skill, prose("judges from that evidence instead of re-reading the whole diff"));

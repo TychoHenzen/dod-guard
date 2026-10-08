@@ -101,6 +101,7 @@ const QUESTIONS = REVIEWERS.map((lens, index) => ({
   lens,
   id: `Q${index + 1}`,
   question: `Does ${lens} hold at the reviewed head?`,
+  files: [FIX, UNICODE],
   status: "verified",
 }));
 
@@ -323,7 +324,13 @@ test("posted comments read back as GH ids with their severity", () => {
 test("the review body keeps the marker first and lists the planned questions in a collapsed block", () => {
   const questions = [
     ...QUESTIONS,
-    { lens: "review-pr-hygiene", id: "Q5", question: "Is <details> text\nescaped?", status: "unanswered" },
+    {
+      lens: "review-pr-hygiene",
+      id: "Q5",
+      question: "Is <details> text\nescaped?",
+      files: [FIX],
+      status: "unanswered",
+    },
   ];
   const { payload } = buildReview({ headSha: HEAD, scan, diff, results: complete([]), questions });
   const lines = payload.body.split("\n");
@@ -338,4 +345,12 @@ test("the review body keeps the marker first and lists the planned questions in 
   assert.ok(lines.includes("- Q1 (verified): Does review-pr-feature hold at the reviewed head?"));
   assert.ok(lines.includes("- Q5 (unanswered): Is &lt;details&gt; text escaped?"));
   assert.ok(lines.indexOf("<details>") > lines.findIndex((line) => line.startsWith("Findings:")));
+});
+
+test("the build refuses a plan that leaves a changed file unnamed", () => {
+  const narrow = QUESTIONS.map((entry) => ({ ...entry, files: [FIX] }));
+  assert.throws(
+    () => buildReview({ headSha: HEAD, scan, diff, results: complete([]), questions: narrow }),
+    /No planned review question or exclusion names docs\/\u00fc\.md/,
+  );
 });
