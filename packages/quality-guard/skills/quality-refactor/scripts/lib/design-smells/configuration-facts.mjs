@@ -71,7 +71,12 @@ function defaultFact(parameter, fn, lang) {
 export function configurationDefaults(source, lang) {
   if (lang === "rs") return [];
   const searchable = strip(source, lang).code;
-  const functions = findFunctions(searchable, lang, lineIndex(searchable));
+  const functions = findFunctions(
+    searchable,
+    lang,
+    lineIndex(searchable),
+    source,
+  );
   return functions.flatMap((fn) =>
     parameterText(source, fn).flatMap((parameter) =>
       defaultFact(parameter, fn, lang),

@@ -15,11 +15,11 @@ function bodyEnd(code, body) {
     : findExpressionEnd(code, body.offset);
 }
 
-function extractAt({ code, starts, name, openParen, headerStart }) {
+function extractAt({ code, starts, name, openParen, headerStart, options }) {
   if (!isCallable(name)) return null;
   const closeParen = matchBracket(code, openParen, "()");
   if (closeParen === -1) return null;
-  const body = bodyStart(code, closeParen + 1);
+  const body = bodyStart(code, closeParen + 1, options);
   if (body === null) return null;
   const end = bodyEnd(code, body);
   if (end === -1) return null;
@@ -34,7 +34,7 @@ function extractAt({ code, starts, name, openParen, headerStart }) {
   };
 }
 
-function scanHeaders({ code, starts, pattern, found }) {
+function scanHeaders({ code, starts, pattern, found, options }) {
   pattern.lastIndex = 0;
   let match = pattern.exec(code);
   while (match !== null) {
@@ -45,6 +45,7 @@ function scanHeaders({ code, starts, pattern, found }) {
       name: match[1],
       openParen,
       headerStart: match.index,
+      options,
     });
     if (fn !== null) {
       found.set(fn.start, fn);
@@ -54,14 +55,23 @@ function scanHeaders({ code, starts, pattern, found }) {
   }
 }
 
-function scanLanguage(code, starts, patterns) {
+function scanLanguage(code, starts, patterns, options) {
   const found = new Map();
-  for (const pattern of patterns) scanHeaders({ code, starts, pattern, found });
+  for (const pattern of patterns) {
+    scanHeaders({ code, starts, pattern, found, options });
+  }
   return [...found.values()].sort((left, right) => left.start - right.start);
 }
 
 export function braceLanguageFunctions(code, starts) {
   return scanLanguage(code, starts, [HEADER_ASSIGNED, HEADER_DIRECT]);
+}
+
+// `source` is the raw text behind `code`, needed to see the quoted literals
+// that strip blanked out of the code.
+export function tsFunctions(code, starts, source) {
+  const options = { returnTypeAnnotation: true, source };
+  return scanLanguage(code, starts, [HEADER_ASSIGNED, HEADER_DIRECT], options);
 }
 
 export function rustFunctions(code, starts) {

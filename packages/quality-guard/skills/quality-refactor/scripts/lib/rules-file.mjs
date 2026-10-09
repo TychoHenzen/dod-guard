@@ -16,7 +16,7 @@ export { inTestRegion };
 export function scanFile(file, config) {
   const { code, comments, interpolations } = strip(file.source, file.lang);
   const starts = lineIndex(code);
-  const functions = findFunctions(code, file.lang, starts);
+  const functions = findFunctions(code, file.lang, starts, file.source);
   const types = findTypes(code, file.lang, starts);
   const spans = file.lang === "py" ? [] : classSpans(code, types, file.lang);
   const testRegions = file.lang === "rs" ? findRustTestRegions(code) : [];
