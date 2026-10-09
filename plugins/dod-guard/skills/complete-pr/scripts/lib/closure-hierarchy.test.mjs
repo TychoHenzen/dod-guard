@@ -128,6 +128,24 @@ test("a close this helper made stays verified on the next run", () => {
   assert.deepEqual(rerun.reports, []);
 });
 
+// The documented /complete-pr scope is the whole Project, so a later run sees the siblings
+// already closed with their own evidence and only the last root's completion record is new.
+test("the parent closes when its last root merges after the siblings closed", () => {
+  const first = recordedSnapshot({ record: { 841: null } });
+  const github = fakeGitHub(first);
+  assert.deepEqual(applyClosures(first, { runner: github.runner }).applied, [775, 776, 777]);
+
+  const later = snapshotAfter(first, github);
+  later.issues.find(({ number }) => number === 841).comments.push(completionComment(841));
+  const plan = planClosures(later);
+  assert.deepEqual(plan.closes.map(({ issue, rule }) => [issue, rule]), [
+    [778, "replaced-original"],
+    [683, "parent"],
+  ]);
+  assert.deepEqual(plan.holds, []);
+  assert.deepEqual(plan.reports, []);
+});
+
 test("holds a parent whose sub-issue list was not read", () => {
   const snapshot = recordedSnapshot();
   const parent = snapshot.issues.find(({ number }) => number === 683);
