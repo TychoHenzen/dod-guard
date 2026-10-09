@@ -17,12 +17,46 @@ const PROJECT = Object.freeze({
 });
 
 const DELIVERIES = Object.freeze({
-  818: { pull: 819, ref: "codex/818-align-scanner-rules-clean-code", head: "c10d2a15af8c9158d392d42348d7f0e107d98efa", merge: "2e1af2c3cb6270197077320c9252fb5150d0304a", replaces: 775 },
-  820: { pull: 835, ref: "codex/820-normalize-quality-guard-severity-profile-contracts", head: "444bd4e285f69e06a59e04cb12af665dd58f2c70", merge: "acf083ab18eb6056ba611584a1bbc1edcf677ec0", replaces: 776 },
-  840: { pull: 901, ref: "codex/840-quiet-false-positives", head: "8400000000000000000000000000000000000840", merge: "8400000000000000000000000000000000000901", replaces: 777 },
-  841: { pull: 902, ref: "codex/841-prove-severity-migration", head: "8410000000000000000000000000000000000841", merge: "8410000000000000000000000000000000000902", replaces: 778 },
-  831: { pull: 836, ref: "codex/831-route-goal-sdlc-stages-by-intelligence-vs-effort", head: "e783f4269c5627f4ad10efdb97dfc12a9918da83", merge: "8f7b04b0c735453e1487ca1fd0b7a308ccb39fee" },
-  833: { pull: 839, ref: "codex/833-add-automated-merge-conflict-triage-to-the-delivery", head: "1c54e77441ea83b644f0e034f21071372cabd113", merge: "29a028ba2b0be18ce89625555576786269821239" },
+  818: {
+    pull: 819,
+    ref: "codex/818-align-scanner-rules-clean-code",
+    head: "c10d2a15af8c9158d392d42348d7f0e107d98efa",
+    merge: "2e1af2c3cb6270197077320c9252fb5150d0304a",
+    replaces: 775,
+  },
+  820: {
+    pull: 835,
+    ref: "codex/820-normalize-quality-guard-severity-profile-contracts",
+    head: "444bd4e285f69e06a59e04cb12af665dd58f2c70",
+    merge: "acf083ab18eb6056ba611584a1bbc1edcf677ec0",
+    replaces: 776,
+  },
+  840: {
+    pull: 901,
+    ref: "codex/840-quiet-false-positives",
+    head: "8400000000000000000000000000000000000840",
+    merge: "8400000000000000000000000000000000000901",
+    replaces: 777,
+  },
+  841: {
+    pull: 902,
+    ref: "codex/841-prove-severity-migration",
+    head: "8410000000000000000000000000000000000841",
+    merge: "8410000000000000000000000000000000000902",
+    replaces: 778,
+  },
+  831: {
+    pull: 836,
+    ref: "codex/831-route-goal-sdlc-stages-by-intelligence-vs-effort",
+    head: "e783f4269c5627f4ad10efdb97dfc12a9918da83",
+    merge: "8f7b04b0c735453e1487ca1fd0b7a308ccb39fee",
+  },
+  833: {
+    pull: 839,
+    ref: "codex/833-add-automated-merge-conflict-triage-to-the-delivery",
+    head: "1c54e77441ea83b644f0e034f21071372cabd113",
+    merge: "29a028ba2b0be18ce89625555576786269821239",
+  },
 });
 
 function item(number, status, { parent = null, linked = [] } = {}) {
@@ -77,7 +111,20 @@ function completionComment(root, overrides = {}) {
 }
 
 function supersedesBody(numbers) {
-  return ["## Outcome", "", "Delivery root.", "", "## Implementation notes", "", "### supersedes", "", "```json", JSON.stringify(numbers), "```", ""].join("\n");
+  return [
+    "## Outcome",
+    "",
+    "Delivery root.",
+    "",
+    "## Implementation notes",
+    "",
+    "### supersedes",
+    "",
+    "```json",
+    JSON.stringify(numbers),
+    "```",
+    "",
+  ].join("\n");
 }
 
 function epicBody({ uncheckedOwn = false } = {}) {
@@ -88,7 +135,16 @@ function epicBody({ uncheckedOwn = false } = {}) {
     "- [ ] Migration proven across reports (#778)",
   ];
   if (uncheckedOwn) criteria.push("- [ ] Publish the migration note");
-  return ["## Outcome", "", "Clean Code is the authority.", "", "## Acceptance criteria", "", ...criteria, ""].join("\n");
+  return [
+    "## Outcome",
+    "",
+    "Clean Code is the authority.",
+    "",
+    "## Acceptance criteria",
+    "",
+    ...criteria,
+    "",
+  ].join("\n");
 }
 
 // options.roots limits which roots carry their supersedes record;
@@ -155,7 +211,9 @@ function chainSnapshot(depth) {
     const parent = 2000 + level;
     snapshot.issues.find(({ number }) => number === child).parent = { number: parent };
     snapshot.items.push(item(parent, "Backlog"));
-    snapshot.issues.push(issue(parent, { children: [child], body: `## Acceptance criteria\n\n- [ ] Done by #${child}\n` }));
+    snapshot.issues.push(
+      issue(parent, { children: [child], body: `## Acceptance criteria\n\n- [ ] Done by #${child}\n` }),
+    );
     child = parent;
   }
   return snapshot;
@@ -173,7 +231,10 @@ function projectReply(state, args, endpoint) {
   const base = `users/${PROJECT.owner}/projectsV2/${PROJECT.number}`;
   if (endpoint === base) return ok({ node_id: "PVT_fixture" });
   if (endpoint.startsWith(`${base}/fields`)) {
-    const options = [{ id: PROJECT.doneOptionId, name: { raw: "Done" } }, { id: "option-backlog", name: { raw: "Backlog" } }];
+    const options = [
+      { id: PROJECT.doneOptionId, name: { raw: "Done" } },
+      { id: "option-backlog", name: { raw: "Backlog" } },
+    ];
     return ok([[{ id: 1, node_id: PROJECT.statusFieldId, name: "Status", data_type: "single_select", options }]]);
   }
   if (endpoint.startsWith(`${base}/items?`)) {

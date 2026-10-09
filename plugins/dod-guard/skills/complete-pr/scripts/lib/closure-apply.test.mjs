@@ -31,7 +31,11 @@ test("apply comments, closes, reads back, and sets Done for a replaced original"
 });
 
 test("apply makes no mutating call when every close is held", () => {
-  for (const options of [{ record: { 840: null } }, { record: { 840: { pendingRows: ["AC-11"] } } }, { pull: { 840: { checks: "fail" } } }]) {
+  for (const options of [
+    { record: { 840: null } },
+    { record: { 840: { pendingRows: ["AC-11"] } } },
+    { pull: { 840: { checks: "fail" } } },
+  ]) {
     const snapshot = recordedSnapshot({ roots: [840], ...options });
     const github = fakeGitHub(snapshot);
     const result = applyClosures(snapshot, { runner: github.runner });
@@ -43,7 +47,8 @@ test("apply makes no mutating call when every close is held", () => {
 test("apply stops before writing when the root no longer verifies live", () => {
   const snapshot = recordedSnapshot({ roots: [840] });
   const github = fakeGitHub(snapshot);
-  github.state.issues.get(840).comments[0].body = github.state.issues.get(840).comments[0].body.replace("[]", '["AC-11"]');
+  github.state.issues.get(840).comments[0].body =
+    github.state.issues.get(840).comments[0].body.replace("[]", '["AC-11"]');
   assert.throws(() => applyClosures(snapshot, { runner: github.runner }), /root #840 no longer verifies/);
   assert.deepEqual(github.calls.filter(mutating), []);
 });
@@ -144,7 +149,9 @@ test("record posts one completion record per closing issue and child, then updat
   const matrix = [{ id: "AC-01", status: "pass" }, { id: "AC-11", status: "unverified" }];
   const first = recordCompletion({ repository: REPOSITORY, result, matrix, children: [777], runner: github.runner });
   assert.deepEqual(first.records, [{ issue: 683, action: "posted" }, { issue: 777, action: "posted" }]);
-  const marked = github.state.issues.get(683).comments.filter(({ body }) => body.includes("dod-guard-completion-evidence"));
+  const marked = github.state.issues.get(683).comments.filter(
+    ({ body }) => body.includes("dod-guard-completion-evidence"),
+  );
   assert.equal(marked.length, 1);
   assert.match(marked[0].body, /"pendingRows": \[\n {4}"AC-11"\n {2}\]/);
   const settled = [{ id: "AC-01", status: "pass" }, { id: "AC-11", status: "pass" }];
@@ -158,6 +165,9 @@ test("record posts one completion record per closing issue and child, then updat
 test("record rejects an incomplete merge result before any call", () => {
   const github = fakeGitHub(recordedSnapshot());
   const result = { pullNumber: 901, trustedHead: "abc", mergeCommitSha: DELIVERIES[840].merge, linkedIssues: [] };
-  assert.throws(() => recordCompletion({ repository: REPOSITORY, result, matrix: [], runner: github.runner }), /merge result needs/);
+  assert.throws(
+    () => recordCompletion({ repository: REPOSITORY, result, matrix: [], runner: github.runner }),
+    /merge result needs/,
+  );
   assert.deepEqual(github.calls, []);
 });

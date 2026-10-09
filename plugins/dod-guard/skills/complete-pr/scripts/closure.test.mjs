@@ -55,7 +55,11 @@ test("apply and record run through the injected gh runner", async () => {
   const github = fakeGitHub(snapshot);
   const applyIo = capture();
   const snapshotFile = await saved("snapshot.json", snapshot);
-  assert.equal(runCli(["apply", `--snapshot=${snapshotFile}`], { runner: github.runner, ...applyIo }), 0, applyIo.text.err);
+  assert.equal(
+    runCli(["apply", `--snapshot=${snapshotFile}`], { runner: github.runner, ...applyIo }),
+    0,
+    applyIo.text.err,
+  );
   assert.deepEqual(JSON.parse(applyIo.text.out).applied, [777]);
 
   const result = {
@@ -137,8 +141,19 @@ test("end to end: plan and apply on the #683 hierarchy", async () => {
   const io = capture();
   assert.equal(runCli(["apply", `--snapshot=${file}`], { runner: github.runner, ...io }), 0, io.text.err);
   assert.deepEqual(JSON.parse(io.text.out).applied, [775, 776, 777, 778, 683]);
-  const firstClose = github.calls.slice(0, github.calls.findIndex((args) => args.includes("PATCH") && String(args[3]).startsWith("users/")) + 2);
-  assert.deepEqual(callKinds(firstClose), ["read", "comment", "close", "read", "project-read", "project-status", "project-read"]);
+  const firstClose = github.calls.slice(
+    0,
+    github.calls.findIndex((args) => args.includes("PATCH") && String(args[3]).startsWith("users/")) + 2,
+  );
+  assert.deepEqual(callKinds(firstClose), [
+    "read",
+    "comment",
+    "close",
+    "read",
+    "project-read",
+    "project-status",
+    "project-read",
+  ]);
   for (const number of [775, 776, 777, 778, 683]) {
     assert.equal(github.state.issues.get(number).state, "closed");
     assert.equal(github.state.statuses.get(number), "Done");
@@ -164,7 +179,10 @@ test("a stop reports its partial state and exits 1", async () => {
   const snapshot = recordedSnapshot({ roots: [840] });
   const github = fakeGitHub(snapshot, { ignoreClose: true });
   const io = capture();
-  assert.equal(runCli(["apply", `--snapshot=${await saved("snapshot.json", snapshot)}`], { runner: github.runner, ...io }), 1);
+  assert.equal(
+    runCli(["apply", `--snapshot=${await saved("snapshot.json", snapshot)}`], { runner: github.runner, ...io }),
+    1,
+  );
   assert.match(io.text.err, /closure apply failed: issue #777 readback disagrees with the planned close/);
   assert.match(io.text.err, /"state":"open"/);
 });

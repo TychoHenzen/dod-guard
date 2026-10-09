@@ -17,7 +17,10 @@ test("closes the original a verified root supersedes", () => {
   assert.equal(close.mergeCommit, DELIVERIES[840].merge);
   assert.equal(close.itemId, "PVTI_777");
   assert.match(close.comment, /<!-- dod-guard-closure-evidence -->/);
-  assert.match(close.comment, new RegExp(`Superseded by #840, delivered by pull request #901 at merge commit ${DELIVERIES[840].merge}`));
+  assert.match(
+    close.comment,
+    new RegExp(`Superseded by #840, delivered by pull request #901 at merge commit ${DELIVERIES[840].merge}`),
+  );
   assert.equal(holdOf(plan, 777), undefined);
   assert.deepEqual(plan.deliveries, [
     { root: 840, status: "verified", pullRequest: 901, mergeCommit: DELIVERIES[840].merge, reasons: [] },
@@ -28,8 +31,14 @@ test("never closes on missing, pending, or mismatched evidence", () => {
   const cases = [
     [{ record: { 840: null } }, "root #840 unverified: completion evidence missing"],
     [{ record: { 840: { pendingRows: ["AC-11"] } } }, "root #840 merged-pending: acceptance rows pending: AC-11"],
-    [{ record: { 840: { trustedHeadSha: "f".repeat(40) } } }, "root #840 unverified: trusted head differs from live readback"],
-    [{ record: { 840: { mergeCommit: "e".repeat(40) } } }, "root #840 unverified: merge commit differs from live readback"],
+    [
+      { record: { 840: { trustedHeadSha: "f".repeat(40) } } },
+      "root #840 unverified: trusted head differs from live readback",
+    ],
+    [
+      { record: { 840: { mergeCommit: "e".repeat(40) } } },
+      "root #840 unverified: merge commit differs from live readback",
+    ],
     [{ pull: { 840: { checks: "pending" } } }, "root #840 unverified: required checks are incomplete or failed"],
     [{ pull: { 840: { base: "develop" } } }, "root #840 unverified: pull request base is not the default branch"],
   ];

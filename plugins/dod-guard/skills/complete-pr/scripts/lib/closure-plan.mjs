@@ -1,8 +1,15 @@
 // Plans which issues to close from a queue snapshot the caller already read.
-// Pure: it reads no provider and writes nothing. A close is planned only for a
-// delivery that verifies against live readback and the queue's own merged
-// predicate, so cleanup and selection can never disagree.
-import { defaultQueueDecision } from "../../../goal-sdlc/scripts/lib/queue-readback.mjs";
+// Pure: it reads no provider and writes nothing. The close rules (originals, parents,
+// hierarchy records, walk, reports, repairs) apply the verdicts from closure-delivery.mjs.
+import {
+  childNumbers,
+  indexSnapshot,
+  isOpen,
+  itemPullNumbers,
+  itemStatus,
+  judgeDelivery,
+  numberOf,
+} from "./closure-delivery.mjs";
 import {
   CLOSURE_MARKER,
   markdownSection,
@@ -11,121 +18,6 @@ import {
   parseSupersedes,
   renderClosureEvidence,
 } from "./closure-records.mjs";
-
-function numberOf(value) {
-  const number = Number(value?.number ?? value);
-  return Number.isInteger(number) && number > 0 ? number : null;
-}
-
-function fieldValue(item, name) {
-  return (Array.isArray(item?.fields) ? item.fields : []).find((field) => field?.name === name)?.value;
-}
-
-function itemStatus(item) {
-  const value = fieldValue(item, "Status");
-  return typeof value === "string" ? value : value?.name ?? null;
-}
-
-function itemPullNumbers(item) {
-  const value = fieldValue(item, "Linked pull requests");
-  return (Array.isArray(value) ? value : []).map(numberOf).filter((number) => number !== null);
-}
-
-function indexSnapshot(snapshot) {
-  const byNumber = (records) => new Map((records ?? []).map((record) => [numberOf(record), record]));
-  return {
-    repository: snapshot?.repository ?? null,
-    defaultBranch: snapshot?.defaultBranch ?? null,
-    items: new Map((snapshot?.items ?? []).map((item) => [numberOf(item?.content), item])),
-    issues: byNumber(snapshot?.issues),
-    pulls: byNumber(snapshot?.pullRequests),
-    order: (snapshot?.issues ?? []).map(numberOf).filter((number) => number !== null),
-  };
-}
-
-// Null means the sub-issue list was never read. No rule may then treat the issue
-// as childless, or as having only the children that point back at it.
-function childNumbers(index, number) {
-  const children = index.issues.get(number)?.children;
-  if (!Array.isArray(children)) return null;
-  const listed = children.map(numberOf);
-  const pointing = index.order.filter((child) => numberOf(index.issues.get(child)?.parent) === number);
-  return [...new Set([...listed, ...pointing].filter((child) => child !== null))];
-}
-
-function queuePull(pull, record) {
-  return {
-    number: numberOf(pull),
-    state: pull.state,
-    mergedAt: pull.mergedAt ?? null,
-    headRepository: pull.head?.repository ?? null,
-    headRef: pull.head?.ref ?? null,
-    headSha: pull.head?.sha ?? null,
-    baseRef: pull.base?.ref ?? null,
-    mergeCommitSha: pull.mergeCommit?.oid ?? null,
-    requiredChecks: pull.requiredChecks,
-    // The trusted head comes from the completion record only, never from the
-    // readback it is compared against.
-    trustedHeadSha: numberOf(pull) === record.pullRequest ? record.trustedHeadSha : null,
-  };
-}
-
-// An issue's checkpoint is finished only when its own completion record names
-// the same delivery and leaves no acceptance row pending.
-function checkpointFinished(issue, record) {
-  const own = parseCompletionRecord(issue?.comments).record;
-  return Boolean(own && own.pullRequest === record.pullRequest && own.pendingRows.length === 0);
-}
-
-function queueRecord(index, number, parentNumber, record) {
-  const issue = index.issues.get(number) ?? null;
-  const item = index.items.get(number);
-  const pullNumbers = itemPullNumbers(item);
-  const pulls = pullNumbers.map((pull) => index.pulls.get(pull)).filter(Boolean);
-  const missing = pullNumbers.filter((pull) => !index.pulls.has(pull)).map((pull) => `pull request #${pull}`);
-  return {
-    issueNumber: number,
-    parentIssueNumber: parentNumber,
-    issue: issue && { state: issue.state, ...(checkpointFinished(issue, record) ? { activeCheckpoint: false } : {}) },
-    projectStatus: itemStatus(item),
-    pullRequests: pulls.map((pull) => queuePull(pull, record)),
-    missingEvidence: item ? missing : [...missing, `Project item #${number}`],
-    staleRelationships: [],
-  };
-}
-
-function liveMismatches(index, record) {
-  const pull = index.pulls.get(record.pullRequest);
-  if (!pull) return [`pull request #${record.pullRequest} readback missing`];
-  const reasons = [];
-  if (pull.mergeCommit?.oid !== record.mergeCommit) reasons.push("merge commit differs from live readback");
-  if (pull.head?.sha !== record.trustedHeadSha) reasons.push("trusted head differs from live readback");
-  if (pull.base?.ref !== index.defaultBranch) reasons.push("pull request base is not the default branch");
-  if (record.requiredChecks !== "pass") reasons.push(`completion record checks are ${record.requiredChecks}`);
-  return reasons;
-}
-
-// Judges the delivery whose group root is `number`: the root and its children,
-// as the queue groups them.
-function judgeDelivery(index, number) {
-  const parsed = parseCompletionRecord(index.issues.get(number)?.comments);
-  if (parsed.error) return { status: "unverified", reasons: [parsed.error] };
-  if (!parsed.record) return { status: "unverified", reasons: ["completion evidence missing"] };
-  const { record } = parsed;
-  const mismatches = liveMismatches(index, record);
-  if (record.pendingRows.length > 0) {
-    return { status: "merged-pending", record, reasons: [`acceptance rows pending: ${record.pendingRows.join(", ")}`, ...mismatches] };
-  }
-  if (mismatches.length > 0) return { status: "unverified", record, reasons: mismatches };
-  const children = childNumbers(index, number);
-  if (children === null) return { status: "unverified", record, reasons: ["sub-issue list missing"] };
-  const records = [number, ...children].map((issue) =>
-    queueRecord(index, issue, issue === number ? null : number, record),
-  );
-  const decision = defaultQueueDecision(records, { repository: index.repository, defaultBranch: index.defaultBranch });
-  if (decision.kind === "complete") return { status: "verified", record, reasons: [] };
-  return { status: "unverified", record, reasons: decision.reasons };
-}
 
 function createContext(snapshot) {
   const index = indexSnapshot(snapshot);
@@ -145,10 +37,6 @@ function createContext(snapshot) {
   return { index, delivery, roots, rootErrors, rootsOf, closes: [], holds: [...rootErrors] };
 }
 
-function isOpen(issue) {
-  return String(issue?.state ?? "").toLowerCase() === "open";
-}
-
 function originalHold(context, original) {
   const issue = context.index.issues.get(original);
   if (!issue) return [`issue #${original} readback missing`];
@@ -156,7 +44,9 @@ function originalHold(context, original) {
   const roots = context.rootsOf(original);
   if (roots.length > 1) return [`superseded by more than one root: ${roots.map((root) => `#${root}`).join(", ")}`];
   const judged = context.delivery(roots[0]);
-  if (judged.status !== "verified") return judged.reasons.map((reason) => `root #${roots[0]} ${judged.status}: ${reason}`);
+  if (judged.status !== "verified") {
+    return judged.reasons.map((reason) => `root #${roots[0]} ${judged.status}: ${reason}`);
+  }
   if (!context.index.items.get(original)?.id) return [`Project item #${original} missing`];
   return [];
 }
@@ -173,7 +63,8 @@ function planReplacedOriginal(context, root, original) {
   const { record } = context.delivery(root);
   const evidence = [
     `Superseded by #${root}, delivered by pull request #${record.pullRequest} at merge commit ${record.mergeCommit}.`,
-    `The completion evidence on #${root} matches the live pull request readback, and the queue decision for #${root} is complete.`,
+    `The completion evidence on #${root} matches the live pull request readback, and the queue ` +
+      `decision for #${root} is complete.`,
   ];
   context.closes.push({
     issue: original,
@@ -213,7 +104,8 @@ function prefixed(judged) {
 // when the parent recorded the same pull request, otherwise its own.
 function recordGroup(context, number, record) {
   const parent = numberOf(context.index.issues.get(number)?.parent);
-  const parentRecord = parent === null ? null : parseCompletionRecord(context.index.issues.get(parent)?.comments).record;
+  const parentRecord =
+    parent === null ? null : parseCompletionRecord(context.index.issues.get(parent)?.comments).record;
   return parentRecord?.pullRequest === record.pullRequest ? parent : number;
 }
 
@@ -235,7 +127,10 @@ function closureEvidence(context, number, { seen = new Set(), purpose = "justifi
   if (roots.length > 0) {
     const judged = roots.map((root) => [root, context.delivery(root)]);
     if (roots.length === 1 && judged[0][1].status === "verified") return { verified: true };
-    return { verified: false, missing: judged.flatMap(([root, value]) => prefixed(value).map((reason) => `root #${root} ${reason}`)) };
+    return {
+      verified: false,
+      missing: judged.flatMap(([root, value]) => prefixed(value).map((reason) => `root #${root} ${reason}`)),
+    };
   }
   const issue = context.index.issues.get(number);
   const own = parseCompletionRecord(issue?.comments);
@@ -284,7 +179,11 @@ function parentReasons(context, number, seen = new Set([number])) {
   if (!base.children) return base.reasons;
   const reasons = base.children.map((child) => childReason(context, child, new Set(seen))).filter(Boolean);
   const pulls = itemPullNumbers(context.index.items.get(number));
-  reasons.push(...pulls.filter((pull) => isOpen(context.index.pulls.get(pull))).map((pull) => `open linked pull request #${pull}`));
+  reasons.push(
+    ...pulls
+      .filter((pull) => isOpen(context.index.pulls.get(pull)))
+      .map((pull) => `open linked pull request #${pull}`),
+  );
   reasons.push(...base.reasons);
   return reasons;
 }
@@ -317,7 +216,9 @@ function planHierarchy(context, number) {
   const moved = children.flatMap((child) => context.rootsOf(child).map((root) => `#${root} (for #${child})`));
   const evidence = [
     "Pure hierarchy record: no linked pull request and no unchecked acceptance criterion outside a sub-issue.",
-    moved.length > 0 ? `Delivery moved to replacement roots: ${moved.join(", ")}.` : "Every sub-issue is closed with verified evidence.",
+    moved.length > 0
+      ? `Delivery moved to replacement roots: ${moved.join(", ")}.`
+      : "Every sub-issue is closed with verified evidence.",
   ];
   context.closes.push({
     issue: number,
@@ -332,7 +233,8 @@ function planHierarchy(context, number) {
 function parentClose(context, parent) {
   const children = childNumbers(context.index, parent);
   const evidence = [
-    `Every sub-issue is closed with verified evidence or superseded by a verified root: ${children.map((child) => `#${child}`).join(", ")}.`,
+    "Every sub-issue is closed with verified evidence or superseded by a verified root: " +
+      `${children.map((child) => `#${child}`).join(", ")}.`,
     "No open linked pull request and no unchecked acceptance criterion outside a sub-issue remain.",
   ];
   return {
@@ -451,7 +353,13 @@ function statusRepairs(context) {
 function deliverySummaries(context) {
   return [...context.roots.keys()].map((root) => {
     const { status, record, reasons } = context.delivery(root);
-    return { root, status, pullRequest: record?.pullRequest ?? null, mergeCommit: record?.mergeCommit ?? null, reasons };
+    return {
+      root,
+      status,
+      pullRequest: record?.pullRequest ?? null,
+      mergeCommit: record?.mergeCommit ?? null,
+      reasons,
+    };
   });
 }
 
@@ -474,29 +382,4 @@ function planClosures(snapshot, { hierarchy = null } = {}) {
   };
 }
 
-// Returns a copy of a select-next snapshot whose `activeCheckpoint` and
-// `trustedHeadSha` come from the completion records: an issue whose record
-// leaves no row pending gets `activeCheckpoint: false`, a merged-pending one
-// loses any stale value, and the recorded pull request gets the trusted head.
-// Two records that disagree on one pull request's head leave it untrusted.
-function annotateSnapshot(snapshot) {
-  const copy = structuredClone(snapshot);
-  const heads = new Map();
-  for (const issue of copy.issues ?? []) {
-    const { record } = parseCompletionRecord(issue.comments);
-    if (!record) continue;
-    if (record.pendingRows.length === 0) issue.activeCheckpoint = false;
-    else delete issue.activeCheckpoint;
-    const known = heads.get(record.pullRequest);
-    heads.set(record.pullRequest, known === undefined || known === record.trustedHeadSha ? record.trustedHeadSha : null);
-  }
-  for (const pull of copy.pullRequests ?? []) {
-    if (!heads.has(numberOf(pull))) continue;
-    const head = heads.get(numberOf(pull));
-    if (head) pull.trustedHeadSha = head;
-    else delete pull.trustedHeadSha;
-  }
-  return copy;
-}
-
-export { annotateSnapshot, planClosures };
+export { planClosures };

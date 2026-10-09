@@ -36,7 +36,12 @@ function readIssue(runner, repository, number) {
 }
 
 function readComments(runner, repository, number) {
-  const pages = gh(runner, ["api", "--paginate", "--slurp", `repos/${repository}/issues/${number}/comments?per_page=100`]);
+  const pages = gh(runner, [
+    "api",
+    "--paginate",
+    "--slurp",
+    `repos/${repository}/issues/${number}/comments?per_page=100`,
+  ]);
   return (pages ?? []).flat();
 }
 
@@ -63,7 +68,12 @@ function closeIssue(runner, repository, number, stateReason) {
 
 function requireProject(project) {
   const complete = project && ["owner", "number", "statusFieldId", "doneOptionId"].every((key) => project[key]);
-  if (!complete) throw new ClosureStop("snapshot.project needs owner, number, statusFieldId, and doneOptionId", { applied: [] });
+  if (!complete) {
+    throw new ClosureStop(
+      "snapshot.project needs owner, number, statusFieldId, and doneOptionId",
+      { applied: [] },
+    );
+  }
   return project;
 }
 
@@ -75,7 +85,8 @@ function confirmRoot(runner, repository, close) {
   const pull = gh(runner, ["api", `repos/${repository}/pulls/${close.pullRequest}`]);
   const same = record && record.pullRequest === close.pullRequest && record.mergeCommit === close.mergeCommit &&
     record.trustedHeadSha === close.trustedHeadSha && record.pendingRows.length === 0;
-  const live = pull?.merged_at && pull.merge_commit_sha === close.mergeCommit && pull.head?.sha === close.trustedHeadSha;
+  const live = pull?.merged_at && pull.merge_commit_sha === close.mergeCommit &&
+    pull.head?.sha === close.trustedHeadSha;
   if (!(same && live)) {
     throw new ClosureStop(`root #${close.root} no longer verifies (${error ?? "record or pull request changed"})`, {
       issue: close.issue,
@@ -96,7 +107,9 @@ function writeClose(runner, repository, close, steps) {
   const before = issueState(readIssue(runner, repository, close.issue), readComments(runner, repository, close.issue));
   if (close.rule === "replaced-original") confirmRoot(runner, repository, close);
   steps.push({ issue: close.issue, step: "read" });
-  if (before.evidenceComments > 1) throw new ClosureStop(`issue #${close.issue} has duplicate closure evidence`, before);
+  if (before.evidenceComments > 1) {
+    throw new ClosureStop(`issue #${close.issue} has duplicate closure evidence`, before);
+  }
   if (before.state === "closed" && before.evidenceComments === 0) {
     throw new ClosureStop(`issue #${close.issue} was closed outside this plan`, before);
   }
@@ -191,7 +204,10 @@ function upsertRecord(runner, repository, number, body) {
   }
   const readback = markedComments(readComments(runner, repository, number), COMPLETION_MARKER);
   if (readback.length !== 1 || readback[0].body.trim() !== body) {
-    throw new ClosureStop(`issue #${number} completion evidence readback disagrees`, { issue: number, records: readback.length });
+    throw new ClosureStop(`issue #${number} completion evidence readback disagrees`, {
+      issue: number,
+      records: readback.length,
+    });
   }
   return { issue: number, action };
 }

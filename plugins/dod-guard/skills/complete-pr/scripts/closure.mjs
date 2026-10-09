@@ -11,7 +11,8 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
 import { applyClosures, recordCompletion } from "./lib/closure-apply.mjs";
-import { annotateSnapshot, planClosures } from "./lib/closure-plan.mjs";
+import { annotateSnapshot } from "./lib/closure-delivery.mjs";
+import { planClosures } from "./lib/closure-plan.mjs";
 import { runGh } from "./project-status.mjs";
 
 const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issue>]

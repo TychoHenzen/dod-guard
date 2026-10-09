@@ -118,7 +118,9 @@ function parseCompletionRecord(comments) {
   const problem = completionFieldsError(block.value);
   if (problem) return { error: `completion evidence record ${problem}` };
   const { pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows } = block.value;
-  return { record: { commentId: marked[0].id ?? null, pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows } };
+  return {
+    record: { commentId: marked[0].id ?? null, pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows },
+  };
 }
 
 function pendingMatrixRows(matrix) {

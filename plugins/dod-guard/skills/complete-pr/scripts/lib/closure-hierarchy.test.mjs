@@ -39,7 +39,10 @@ test("closes #683 once every sub-issue is superseded by a verified root", () => 
 test("keeps #683 open with the reason when a sub-issue is not settled", () => {
   const cases = [
     [{ roots: [818, 820, 840] }, "child #778 is open"],
-    [{ record: { 841: { pendingRows: ["AC-11"] } } }, "child #778 held: root #841 merged-pending: acceptance rows pending: AC-11"],
+    [
+      { record: { 841: { pendingRows: ["AC-11"] } } },
+      "child #778 held: root #841 merged-pending: acceptance rows pending: AC-11",
+    ],
     [{ uncheckedOwn: true }, "unchecked acceptance criterion not mapped to a sub-issue: Publish the migration note"],
   ];
   for (const [options, reason] of cases) {

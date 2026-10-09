@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { annotateSnapshot } from "./closure-plan.mjs";
+import { annotateSnapshot } from "./closure-delivery.mjs";
 import { DELIVERIES, completionComment, recordedSnapshot } from "./closure.test-support.mjs";
 
 function issueOf(snapshot, number) {

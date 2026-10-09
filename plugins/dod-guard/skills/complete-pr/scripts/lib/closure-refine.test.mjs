@@ -17,7 +17,10 @@ test("refinement closes #683 as a pure hierarchy record while undelivered origin
     [776, "replaced-original", "completed"],
     [683, "hierarchy", "not_planned"],
   ]);
-  assert.match(plan.closes.at(-1).comment, /Delivery moved to replacement roots: #818 \(for #775\), #820 \(for #776\), #840 \(for #777\), #841 \(for #778\)\./);
+  assert.match(
+    plan.closes.at(-1).comment,
+    /Delivery moved to replacement roots: #818 \(for #775\), #820 \(for #776\), #840 \(for #777\), #841 \(for #778\)\./,
+  );
   assert.deepEqual(holdOf(plan, 777).reasons, ["root #840 unverified: completion evidence missing"]);
   assert.deepEqual(holdOf(plan, 778).reasons, ["root #841 unverified: completion evidence missing"]);
 });
