@@ -11,11 +11,10 @@ import {
   numberOf,
 } from "./closure-delivery.mjs";
 import {
-  CLOSURE_MARKER,
   markdownSection,
-  markedComments,
   parseCompletionRecord,
   parseSupersedes,
+  recordComments,
   renderClosureEvidence,
 } from "./closure-records.mjs";
 
@@ -110,7 +109,7 @@ function recordGroup(context, number, record) {
 }
 
 function hasClosureEvidence(issue) {
-  return markedComments(issue?.comments, CLOSURE_MARKER).length > 0;
+  return recordComments(issue?.comments, "closure").length > 0;
 }
 
 // Whether an issue's close is backed by evidence the helper can verify now: a
@@ -343,7 +342,7 @@ function statusRepairs(context) {
     if (!issue || isOpen(issue) || planned(context, number) || !item?.id) continue;
     const status = itemStatus(item);
     if (status === "Done") continue;
-    if (markedComments(issue.comments, CLOSURE_MARKER).length !== 1) continue;
+    if (recordComments(issue.comments, "closure").length !== 1) continue;
     if (!closureEvidence(context, number).verified) continue;
     repairs.push({ issue: number, itemId: item.id, status });
   }

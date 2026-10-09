@@ -110,6 +110,38 @@ function completionComment(root, overrides = {}) {
   return { id: Number(`${root}01`), body: renderCompletionRecord(fields) };
 }
 
+const QUOTED_RECORDS = Object.freeze({
+  completion: { heading: "## Completion evidence", marker: "<!-- dod-guard-completion-evidence -->" },
+  closure: { heading: "## Closure evidence", marker: "<!-- dod-guard-closure-evidence -->" },
+});
+
+// A handoff comment that quotes record markers mid-text in each form a handoff or
+// review uses: inline code, a fenced copy, and the heading and marker on their own
+// lines under another heading. It is never a record of either kind.
+function quotingComment(id, kinds = ["completion", "closure"]) {
+  const body = ["## Implementation handoff", "", "Task T1 changed the closure helper.", ""];
+  for (const kind of kinds) {
+    const { heading, marker } = QUOTED_RECORDS[kind];
+    body.push(
+      `The helper writes \`${marker}\` under \`${heading}\`.`,
+      "",
+      "```text",
+      heading,
+      "",
+      marker,
+      "```",
+      "",
+      "### Quoted record",
+      "",
+      heading,
+      "",
+      marker,
+      "",
+    );
+  }
+  return { id, body: body.join("\n") };
+}
+
 function supersedesBody(numbers) {
   return [
     "## Outcome",
@@ -372,6 +404,7 @@ export {
   item,
   mutating,
   pull,
+  quotingComment,
   recordedSnapshot,
   setField,
   snapshotAfter,

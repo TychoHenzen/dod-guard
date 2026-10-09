@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { planClosures } from "./closure-plan.mjs";
-import { DELIVERIES, holdOf, recordedSnapshot, setField } from "./closure.test-support.mjs";
+import { DELIVERIES, holdOf, issue, item, quotingComment, recordedSnapshot, setField } from "./closure.test-support.mjs";
 
 function closeOf(plan, issue) {
   return plan.closes.find((close) => close.issue === issue);
@@ -71,4 +71,27 @@ test("status repair leaves issues this helper did not close to complete-pr", () 
   const snapshot = recordedSnapshot({ roots: [818] });
   setField(snapshot, 818, "Status", { name: "In Progress" });
   assert.deepEqual(planClosures(snapshot).statusRepairs, []);
+});
+
+test("a comment quoting the closure marker is not closure evidence", () => {
+  const snapshot = recordedSnapshot();
+  const epic = snapshot.issues.find(({ number }) => number === 683);
+  Object.assign(epic, {
+    state: "closed",
+    state_reason: "completed",
+    comments: [quotingComment(7001, ["closure"])],
+    parent: { number: 684 },
+  });
+  snapshot.items.push(item(684, "Backlog"));
+  snapshot.issues.push(issue(684, { children: [683], body: "## Acceptance criteria\n\n- [ ] Done by #683\n" }));
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.statusRepairs, []);
+  assert.equal(closeOf(plan, 684), undefined);
+  assert.deepEqual(holdOf(plan, 684).reasons, [
+    "child #683 closed without verified evidence: completion evidence missing",
+  ]);
+  assert.deepEqual(
+    plan.reports.find((report) => report.issue === 683),
+    { issue: 683, kind: "unverified-closed", missing: ["completion evidence missing"] },
+  );
 });
