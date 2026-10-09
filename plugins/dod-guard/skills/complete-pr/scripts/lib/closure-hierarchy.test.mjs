@@ -7,13 +7,16 @@ import {
   DELIVERIES,
   chainSnapshot,
   closedWithoutEvidence,
+  completionComment,
   fakeGitHub,
   holdOf,
   issue,
   item,
   mutating,
+  pull,
   recordedSnapshot,
   snapshotAfter,
+  supersedesBody,
 } from "./closure.test-support.mjs";
 
 test("closes #683 once every sub-issue is superseded by a verified root", () => {
@@ -51,6 +54,47 @@ test("the parent walk stops after five levels", () => {
   assert.deepEqual(plan.closes.map(({ issue }) => issue), [777, 2001, 2002, 2003, 2004, 2005]);
   assert.deepEqual(holdOf(plan, 2006).reasons, ["parent walk stopped after 5 levels"]);
   assert.equal(holdOf(plan, 2007), undefined);
+});
+
+// The shape: open parents 777 -> 2001 -> 2002 -> 2003 -> 2004 -> 2005 -> 2006, and 2006 also
+// parents 2099. Root 840 supersedes 777 and root 841 supersedes 2099, both verified. Seed 777
+// reaches 2006 at level 6, past the limit, while seed 2099 reaches it at level 1 and can settle it.
+function nestedChain() {
+  const snapshot = recordedSnapshot();
+  snapshot.items = [];
+  snapshot.issues = [];
+  snapshot.pullRequests = [pull(840), pull(841)];
+  const open = (number, parent, children = []) => {
+    snapshot.issues.push(issue(number, { parent, children }));
+    snapshot.items.push(item(number, "Backlog", { parent }));
+  };
+  open(777, 2001);
+  open(2001, 2002, [777]);
+  open(2002, 2003, [2001]);
+  open(2003, 2004, [2002]);
+  open(2004, 2005, [2003]);
+  open(2005, 2006, [2004]);
+  open(2006, null, [2005, 2099]);
+  open(2099, 2006);
+  for (const [root, original] of [[840, 777], [841, 2099]]) {
+    const body = supersedesBody([original]);
+    snapshot.issues.push(issue(root, { state: "closed", body, comments: [completionComment(root)] }));
+    snapshot.items.push(item(root, "Done", { linked: [DELIVERIES[root].pull] }));
+  }
+  return snapshot;
+}
+
+test("a walk past the level limit does not block a shallower walk", () => {
+  const built = nestedChain();
+  const reversed = structuredClone(built);
+  reversed.issues.reverse();
+  for (const snapshot of [built, reversed]) {
+    const plan = planClosures(snapshot);
+    assert.equal(plan.closes.find(({ issue }) => issue === 2006)?.rule, "parent");
+    assert.equal(holdOf(plan, 2006), undefined);
+    const closed = new Set(plan.closes.map(({ issue }) => issue));
+    assert.deepEqual(plan.holds.filter(({ issue }) => closed.has(issue)), []);
+  }
 });
 
 test("reports closed and Done records without verified evidence and plans no write for them", () => {

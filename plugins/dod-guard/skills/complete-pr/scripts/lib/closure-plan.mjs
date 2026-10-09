@@ -365,14 +365,18 @@ function walkParents(context) {
 }
 
 // One walk from each seed. Holds are returned, not recorded, because a later pass may
-// close the parent a hold names, so only the last pass's holds survive. A planned
-// parent is stepped through and still counts toward the level limit, which bounds the
-// walk even around a parent cycle.
+// close the parent a hold names, so only the last pass's holds survive. A planned parent
+// is stepped through while the walk is within the level limit. Past the limit it ends the
+// walk with no hold, since the parent is closing anyway, and the limit still bounds a
+// parent cycle. Only a reason hold stops later seeds: a walk that runs out of levels says
+// nothing about whether a shallower walk can settle the parent. A level-limit hold is
+// returned only when the parent is neither closed nor reason-held by the end of the pass.
 function walkPass(context, seeds) {
   const holds = [];
-  const held = new Set();
+  const reasonHeld = new Set();
+  const limitHolds = new Map();
   const hold = (parent, reasons) => {
-    held.add(parent);
+    reasonHeld.add(parent);
     holds.push({ issue: parent, reasons });
   };
   for (const seed of seeds) {
@@ -382,15 +386,18 @@ function walkPass(context, seeds) {
       if (parent === null) break;
       const issue = context.index.issues.get(parent);
       if (issue && !isOpen(issue)) break;
-      if (level > PARENT_WALK_LIMIT) {
-        if (!held.has(parent)) hold(parent, [`parent walk stopped after ${PARENT_WALK_LIMIT} levels`]);
-        break;
-      }
       if (planned(context, parent)) {
+        if (level > PARENT_WALK_LIMIT) break;
         current = parent;
         continue;
       }
-      if (held.has(parent)) break;
+      if (reasonHeld.has(parent)) break;
+      if (level > PARENT_WALK_LIMIT) {
+        if (!limitHolds.has(parent)) {
+          limitHolds.set(parent, [`parent walk stopped after ${PARENT_WALK_LIMIT} levels`]);
+        }
+        break;
+      }
       const reasons = parentReasons(context, parent);
       if (issue && !context.index.items.get(parent)?.id) reasons.push(`Project item #${parent} missing`);
       if (reasons.length > 0) {
@@ -401,7 +408,8 @@ function walkPass(context, seeds) {
       current = parent;
     }
   }
-  return holds;
+  const limitOnly = [...limitHolds].filter(([parent]) => !planned(context, parent) && !reasonHeld.has(parent));
+  return [...holds, ...limitOnly.map(([issue, reasons]) => ({ issue, reasons }))];
 }
 
 // Closed or Done records whose close has no verified evidence are reported
