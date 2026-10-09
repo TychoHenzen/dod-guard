@@ -4,11 +4,9 @@
 import { writeProjectStatuses } from "../project-status.mjs";
 import { planClosures } from "./closure-plan.mjs";
 import {
-  CLOSURE_MARKER,
-  COMPLETION_MARKER,
-  markedComments,
   parseCompletionRecord,
   pendingMatrixRows,
+  recordComments,
   renderCompletionRecord,
 } from "./closure-records.mjs";
 
@@ -99,7 +97,7 @@ function issueState(issue, comments) {
   return {
     state: issue?.state ?? null,
     stateReason: issue?.state_reason ?? null,
-    evidenceComments: markedComments(comments, CLOSURE_MARKER).length,
+    evidenceComments: recordComments(comments, "closure").length,
   };
 }
 
@@ -192,7 +190,7 @@ function requireMergeResult(result) {
 }
 
 function upsertRecord(runner, repository, number, body) {
-  const marked = markedComments(readComments(runner, repository, number), COMPLETION_MARKER);
+  const marked = recordComments(readComments(runner, repository, number), "completion");
   if (marked.length > 1) throw new ClosureStop(`issue #${number} has duplicate completion evidence`, { issue: number });
   let action = "unchanged";
   if (marked.length === 0) {
@@ -202,7 +200,7 @@ function upsertRecord(runner, repository, number, body) {
     editComment(runner, repository, marked[0].id, body);
     action = "updated";
   }
-  const readback = markedComments(readComments(runner, repository, number), COMPLETION_MARKER);
+  const readback = recordComments(readComments(runner, repository, number), "completion");
   if (readback.length !== 1 || readback[0].body.trim() !== body) {
     throw new ClosureStop(`issue #${number} completion evidence readback disagrees`, {
       issue: number,

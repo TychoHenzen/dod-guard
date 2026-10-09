@@ -7,6 +7,19 @@ const COMPLETION_HEADING = "## Completion evidence";
 const COMPLETION_MARKER = "<!-- dod-guard-completion-evidence -->";
 const CLOSURE_HEADING = "## Closure evidence";
 const CLOSURE_MARKER = "<!-- dod-guard-closure-evidence -->";
+// The two comment records this module renders. A record's identity is its
+// rendered prefix, so the renderers and isRecord read the same table.
+const RECORD_KINDS = Object.freeze({
+  completion: Object.freeze({ heading: COMPLETION_HEADING, marker: COMPLETION_MARKER }),
+  closure: Object.freeze({ heading: CLOSURE_HEADING, marker: CLOSURE_MARKER }),
+});
+
+function recordPrefix(kind) {
+  const record = Object.hasOwn(RECORD_KINDS, kind) ? RECORD_KINDS[kind] : null;
+  if (!record) throw new TypeError(`unknown closure record kind: ${kind}`);
+  return `${record.heading}\n\n${record.marker}`;
+}
+
 const FULL_SHA = /^[0-9a-f]{40}$/;
 const CHECK_OUTCOMES = new Set(["pass", "fail", "pending"]);
 const ISSUE_REFERENCE = /^([\w.-]+\/[\w.-]+)#\d+$/;
@@ -89,8 +102,21 @@ function parseSupersedes(body, repository) {
   return { numbers: block.value };
 }
 
-function markedComments(comments, marker) {
-  return (Array.isArray(comments) ? comments : []).filter((comment) => lines(comment?.body).includes(marker));
+// A comment is a record only when its body, with CRLF normalized to LF first,
+// begins with the heading line, a blank line, and the marker line, followed by
+// a line break or the end of the body: the shape the renderers write. A comment
+// that quotes a marker anywhere else (a handoff, a review) is not a record, so
+// no caller edits, counts, or parses it.
+function isRecord(comment, kind) {
+  const prefix = recordPrefix(kind);
+  const body = lines(comment?.body);
+  if (!body.startsWith(prefix)) return false;
+  const rest = body.slice(prefix.length);
+  return rest === "" || rest.startsWith("\n");
+}
+
+function recordComments(comments, kind) {
+  return (Array.isArray(comments) ? comments : []).filter((comment) => isRecord(comment, kind));
 }
 
 function completionFieldsError(value) {
@@ -105,14 +131,13 @@ function completionFieldsError(value) {
   return null;
 }
 
-// Returns { record: null } when no comment carries the marker, { record } for
+// Returns { record: null } when no comment is a completion record, { record } for
 // one valid record, and { error } for a duplicate or malformed one.
 function parseCompletionRecord(comments) {
-  const marked = markedComments(comments, COMPLETION_MARKER);
+  const marked = recordComments(comments, "completion");
   if (marked.length === 0) return { record: null };
   if (marked.length > 1) return { error: "duplicate completion evidence record" };
   const body = lines(marked[0].body);
-  if (!body.startsWith(COMPLETION_HEADING)) return { error: "completion evidence record lacks its heading" };
   const block = jsonBlock(body);
   if (block.error) return { error: `completion evidence record ${block.error}` };
   const problem = completionFieldsError(block.value);
@@ -133,14 +158,12 @@ function pendingMatrixRows(matrix) {
 
 function renderCompletionRecord({ pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows }) {
   const fields = { pullRequest, mergeCommit, trustedHeadSha, requiredChecks, pendingRows };
-  return [COMPLETION_HEADING, "", COMPLETION_MARKER, "", "```json", JSON.stringify(fields, null, 2), "```"].join("\n");
+  return [recordPrefix("completion"), "", "```json", JSON.stringify(fields, null, 2), "```"].join("\n");
 }
 
 function renderClosureEvidence({ issue, stateReason, evidence }) {
   return [
-    CLOSURE_HEADING,
-    "",
-    CLOSURE_MARKER,
+    recordPrefix("closure"),
     "",
     `Closed #${issue} as \`${stateReason}\`.`,
     "",
@@ -149,13 +172,13 @@ function renderClosureEvidence({ issue, stateReason, evidence }) {
 }
 
 export {
-  CLOSURE_MARKER,
-  COMPLETION_MARKER,
+  RECORD_KINDS,
+  isRecord,
   markdownSection,
-  markedComments,
   parseCompletionRecord,
   parseSupersedes,
   pendingMatrixRows,
+  recordComments,
   renderClosureEvidence,
   renderCompletionRecord,
 };

@@ -6,7 +6,15 @@ import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./closure.mjs";
-import { DELIVERIES, REPOSITORY, fakeGitHub, recordedSnapshot } from "./lib/closure.test-support.mjs";
+import {
+  DELIVERIES,
+  REPOSITORY,
+  fakeGitHub,
+  mergeResult,
+  patchesTo,
+  quotingComment,
+  recordedSnapshot,
+} from "./lib/closure.test-support.mjs";
 
 const SCRIPT = fileURLToPath(new URL("./closure.mjs", import.meta.url));
 
@@ -62,12 +70,7 @@ test("apply and record run through the injected gh runner", async () => {
   );
   assert.deepEqual(JSON.parse(applyIo.text.out).applied, [777]);
 
-  const result = {
-    pullNumber: DELIVERIES[840].pull,
-    trustedHead: DELIVERIES[840].head,
-    mergeCommitSha: DELIVERIES[840].merge,
-    linkedIssues: [{ number: 840, state: "CLOSED" }],
-  };
+  const result = mergeResult([840]);
   const recordIo = capture();
   const argv = [
     "record",
@@ -77,6 +80,33 @@ test("apply and record run through the injected gh runner", async () => {
   ];
   assert.equal(runCli(argv, { runner: github.runner, ...recordIo }), 0, recordIo.text.err);
   assert.deepEqual(JSON.parse(recordIo.text.out).records, [{ issue: 840, action: "unchanged" }]);
+});
+
+test("the shipped record command posts its own record and leaves a quoting handoff unchanged", async () => {
+  const snapshot = recordedSnapshot({ roots: [840] });
+  snapshot.issues.find(({ number }) => number === 840).comments = [quotingComment(7001)];
+  const github = fakeGitHub(snapshot);
+  const handoff = github.state.issues.get(840).comments[0].body;
+  const result = mergeResult([840]);
+  const argv = [
+    "record",
+    `--repository=${REPOSITORY}`,
+    `--result=${await saved("result.json", result)}`,
+    `--matrix=${await saved("matrix.json", [{ id: "AC-01", status: "pass" }])}`,
+  ];
+
+  const first = capture();
+  assert.equal(runCli(argv, { runner: github.runner, ...first }), 0, first.text.err);
+  assert.deepEqual(JSON.parse(first.text.out).records, [{ issue: 840, action: "posted" }]);
+  assert.equal(github.state.issues.get(840).comments[0].body, handoff);
+  assert.deepEqual(patchesTo(github, 7001), []);
+
+  const second = capture();
+  assert.equal(runCli(argv, { runner: github.runner, ...second }), 0, second.text.err);
+  assert.deepEqual(JSON.parse(second.text.out).records, [{ issue: 840, action: "unchanged" }]);
+  assert.equal(github.state.issues.get(840).comments[0].body, handoff);
+  assert.deepEqual(patchesTo(github, 7001), []);
+  assert.equal(github.state.issues.get(840).comments.length, 2);
 });
 
 test("record rejects a malformed --children list before any call", async () => {

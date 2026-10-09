@@ -6,7 +6,7 @@
 // #683 open. #840 and #841 have not merged; their pull requests #901 and #902
 // and those SHAs are synthetic. #831 (PR #836, child #832) and #833 (PR #839)
 // are the closed-and-Done deliveries that carry no completion record.
-import { renderCompletionRecord } from "./closure-records.mjs";
+import { RECORD_KINDS, renderCompletionRecord } from "./closure-records.mjs";
 
 const REPOSITORY = "TychoHenzen/dod-guard";
 const PROJECT = Object.freeze({
@@ -108,6 +108,33 @@ function completionComment(root, overrides = {}) {
     ...overrides,
   };
   return { id: Number(`${root}01`), body: renderCompletionRecord(fields) };
+}
+
+// A handoff comment that quotes record markers mid-text in each form a handoff or
+// review uses: inline code, a fenced copy, and the heading and marker on their own
+// lines under another heading. It is never a record of either kind.
+function quotingComment(id, kinds = ["completion", "closure"]) {
+  const body = ["## Implementation handoff", "", "Task T1 changed the closure helper.", ""];
+  for (const kind of kinds) {
+    const { heading, marker } = RECORD_KINDS[kind];
+    body.push(
+      `The helper writes \`${marker}\` under \`${heading}\`.`,
+      "",
+      "```text",
+      heading,
+      "",
+      marker,
+      "```",
+      "",
+      "### Quoted record",
+      "",
+      heading,
+      "",
+      marker,
+      "",
+    );
+  }
+  return { id, body: body.join("\n") };
 }
 
 function supersedesBody(numbers) {
@@ -334,6 +361,22 @@ function mutating(args) {
   return args.includes("--method") && args[args.indexOf("--method") + 1] !== "GET";
 }
 
+function mergeResult(linked) {
+  return {
+    pullNumber: DELIVERIES[840].pull,
+    trustedHead: DELIVERIES[840].head,
+    mergeCommitSha: DELIVERIES[840].merge,
+    linkedIssues: linked.map((number) => ({ number, state: "CLOSED" })),
+  };
+}
+
+// Returns the mutating gh calls aimed at one issue comment, so a test can show which comment was edited.
+function patchesTo(github, commentId) {
+  return github.calls.filter(
+    (args) => mutating(args) && args.some((value) => String(value).endsWith(`/issues/comments/${commentId}`)),
+  );
+}
+
 function holdOf(plan, number) {
   return plan.holds.find((hold) => hold.issue === number);
 }
@@ -370,8 +413,11 @@ export {
   holdOf,
   issue,
   item,
+  mergeResult,
   mutating,
+  patchesTo,
   pull,
+  quotingComment,
   recordedSnapshot,
   setField,
   snapshotAfter,
