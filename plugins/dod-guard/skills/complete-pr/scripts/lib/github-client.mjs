@@ -690,17 +690,6 @@ export class GitHubClient {
     this.#commandRunner(["api", "--method", "DELETE", `repos/${this.repository}/git/refs/heads/${encodedBranch}`]);
   }
 
-  getCodexReview(pullNumber) {
-    const issueEndpoint = `repos/${this.repository}/issues/${pullNumber}`;
-    const pullEndpoint = `repos/${this.repository}/pulls/${pullNumber}`;
-    return {
-      issueComments: ghJsonArrayPages(`${issueEndpoint}/comments?per_page=100`, this.#commandRunner),
-      reactions: ghJsonArrayPages(`${issueEndpoint}/reactions?per_page=100`, this.#commandRunner),
-      reviews: ghJsonArrayPages(`${pullEndpoint}/reviews?per_page=100`, this.#commandRunner),
-      reviewComments: ghJsonArrayPages(`${pullEndpoint}/comments?per_page=100`, this.#commandRunner),
-    };
-  }
-
   async wait(milliseconds) {
     await new Promise((resolve) => setTimeout(resolve, milliseconds));
   }
