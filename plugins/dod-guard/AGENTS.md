@@ -27,9 +27,9 @@ agent definitions. It has no package workspace, MCP server, or bundle.
 - Use `/complete-pr` as the final acceptance gate after implementation, review,
   remediation, and current-head checks. It owns guarded ready, REST merge,
   issue confirmation, and remote branch deletion; it verifies completion rather
-  than waiting for a separate human-approval step. Where the repository uses
-  Codex code review, `/submit-draft-pr` requests it and `/complete-pr` finishes
-  it before merging.
+  than waiting for a separate human-approval step. `/complete-pr` stops on any
+  unresolved review thread before it marks the pull request ready, turns on
+  auto-merge, or merges.
 - Use `/goal-sdlc` to run that lifecycle across the linked Project queue, one
   parent PBI at a time.
 - Use `/publish` for a completed marketplace release. Functional releases

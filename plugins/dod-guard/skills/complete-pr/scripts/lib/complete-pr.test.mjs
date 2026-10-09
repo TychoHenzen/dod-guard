@@ -14,6 +14,7 @@ const workflowRunsField = "workflow_runs";
 const workflowRunsPattern = /workflow_runs/;
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
 const PROJECT_STATUS_FIELD_ID = 407;
+const codexMethodPattern = /codex/i;
 
 function linkedProjectItem(id, number = 24, repository = "owner/repo") {
   return {
@@ -1772,7 +1773,7 @@ test("merges a draft with green checks and no unresolved thread without any Code
   const threadReads = client.calls.filter(([name]) => name === "getUnresolvedReviewThreads");
   assert.equal(threadReads.length, 2);
   assert.ok(client.calls.indexOf(threadReads[0]) < client.calls.findIndex(([name]) => name === "markReady"));
-  assert.equal(GitHubClient.prototype.getCodexReview, undefined);
+  assert.deepEqual(Object.getOwnPropertyNames(GitHubClient.prototype).filter((name) => codexMethodPattern.test(name)), []);
 });
 
 for (const [label, pullRequest] of [["draft", pull()], ["ready", pull({ isDraft: false })]]) {

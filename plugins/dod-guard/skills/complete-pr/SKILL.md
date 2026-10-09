@@ -80,8 +80,16 @@ proof is mandatory at the final head after synchronization.
 Normal completion requires the exact pushed head SHA already verified by the
 calling workflow; the helper never adopts a mutable provider head as its first
 acceptance signal. Merged-recovery mode uses the recorded merged head instead
-and keeps its existing `--recover-merged [--dry-run]` invocation. If the pull request is a draft,
-it marks it ready. If it is already ready, it preserves that state. It then:
+and keeps its existing `--recover-merged [--dry-run]` invocation. In normal
+completion, after head convergence and before any mutation, the helper reads
+every review thread. Every unresolved thread counts regardless of its author
+or whether it is outdated, and resolved threads never count. An unresolved
+thread stops with `unresolved-review-threads`, naming each thread's URL and
+path. A failed, malformed, or incompletely paginated read stops with
+`review-threads-unavailable` before it marks ready, enables auto-merge,
+dispatches CI, or merges. The remedy is `/fix-pr-review` or resolving the
+thread, then running this skill again. If the pull request is a draft, it marks
+it ready. If it is already ready, it preserves that state. It then:
 
 - checks for a `.github/workflows/ci.yml` run on the accepted head SHA; if none
   exists, it verifies that the same-repository branch still points to that SHA,
@@ -94,15 +102,8 @@ it marks it ready. If it is already ready, it preserves that state. It then:
 - enables repository auto-merge when needed;
 - merges through the REST pull-request endpoint with the expected head SHA;
 - waits for every required check before merging and stops on failure or cancellation;
-- finishes Codex's code review before merging when Codex took part in the pull
-  request: it waits for the review of the accepted head to complete, including
-  the run that the ready transition starts, and stops with
-  `codex-review-findings` and each finding's `GH-<id>` while any Codex finding
-  on that review has no reply from an owner, member, or collaborator. It also
-  stops on `codex-review-failed`,
-  `codex-review-missing-for-head`, or `codex-summary-unrecognized`. Fix the
-  findings with `/fix-pr-review`, which replies to each one, then run this
-  skill again on the new head;
+- reads the review threads again immediately before each merge request and
+  stops the same way;
 - if the normal required-check query is empty, reads branch protection and
   verifies check runs and commit statuses from the exact pull-request head,
   including any expected GitHub App provider;

@@ -158,17 +158,7 @@ Keep the body short. Include:
 - `Closes #<issue-number>`.
 
 Leave the Project item `In Progress`. Report the PR URL, head commit, and
-verification evidence. Stop after the draft PR is updated and Codex's review is
-requested.
-
-## Request the Codex review
-
-Codex reviews a draft only when asked. When the repository uses Codex code
-review (an earlier pull request in it has a comment or review from
-`chatgpt-codex-connector[bot]`), post one `@codex review` comment on the draft
-after it reaches the exact pushed head, unless one was already posted after that
-head was pushed. Do not wait for the result: `/complete-pr` finishes the review
-before it merges.
+verification evidence. Stop after the draft PR is updated.
 
 If pull-request creation or update fails, times out, or returns ambiguously,
 read back the branch's open pull request and its head before retrying. Update
