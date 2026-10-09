@@ -79,7 +79,11 @@ test("merges the recorded base and pushes a judged conflict as one two-parent co
     assert.deepEqual(verifyResolution(scenario.git, state), { ok: true, problems: [] });
     const mergeSha = commitMerge(scenario.git, { ...state, message: "Merge master into the PBI branch" });
     assert.deepEqual(verifyResolution(scenario.git, state), { ok: true, problems: [] });
-    const pushed = await pushMerge(scenario.git, { ...state, branch: BRANCH, readPullRequest: () => scenario.pullRequest });
+    const pushed = await pushMerge(scenario.git, {
+      ...state,
+      branch: BRANCH,
+      readPullRequest: () => scenario.pullRequest,
+    });
     assert.equal(pushed.mergeSha, mergeSha);
     assert.equal(pushed.remoteHead, mergeSha);
     assert.equal(originHead(scenario), mergeSha);
@@ -323,7 +327,8 @@ test("stops without retrying when the remote refuses a non-fast-forward push", a
     const started = startTriage(scenario.git, scenario.input);
     resolveCombined(scenario);
     commitMerge(scenario.git, { ...started, message: "merge" });
-    const race = sh(scenario.work, ["commit-tree", `${scenario.trustedHead}^{tree}`, "-p", scenario.trustedHead, "-m", "race"]);
+    const raceTree = `${scenario.trustedHead}^{tree}`;
+    const race = sh(scenario.work, ["commit-tree", raceTree, "-p", scenario.trustedHead, "-m", "race"]);
     sh(scenario.work, ["push", "-q", "origin", `${race}:refs/heads/${BRANCH}`]);
     const pushes = [];
     const recording = (args, codes) => {
@@ -384,7 +389,11 @@ test("reads back an uncertain push and retries it once", async () => {
     const { mergeSha, scenario, started } = committedScenario();
     try {
       const { pushes, runner } = flakyRunner(scenario, plans);
-      const pushed = await pushMerge(runner, { ...started, branch: BRANCH, readPullRequest: () => scenario.pullRequest });
+      const pushed = await pushMerge(runner, {
+        ...started,
+        branch: BRANCH,
+        readPullRequest: () => scenario.pullRequest,
+      });
       assert.equal(pushed.remoteHead, mergeSha, name);
       assert.equal(pushes.length, expectedPushes, name);
       assert.equal(originHead(scenario), mergeSha, name);
@@ -473,7 +482,8 @@ test("aborts only a merge of the recorded base", () => {
   const scenario = textScenario();
   try {
     assert.equal(abortOwnMerge(scenario.git, scenario.baseSha), "none");
-    const other = sh(scenario.work, ["commit-tree", `${scenario.baseSha}^{tree}`, "-p", scenario.baseSha, "-m", "other"]);
+    const otherTree = `${scenario.baseSha}^{tree}`;
+    const other = sh(scenario.work, ["commit-tree", otherTree, "-p", scenario.baseSha, "-m", "other"]);
     spawnSync("git", ["merge", "--no-ff", "--no-commit", other], { cwd: scenario.work });
     assert.equal(abortOwnMerge(scenario.git, scenario.baseSha), "not-owned");
     assert.equal(mergeHead(scenario), other);

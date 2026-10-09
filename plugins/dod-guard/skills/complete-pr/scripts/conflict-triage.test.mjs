@@ -149,7 +149,10 @@ test("runs start, verify, commit, and push through the command with an injected 
 
     writeFiles(scenario.work, { "src/value.txt": "branch\nmaster\n" });
     sh(scenario.work, ["add", "src/value.txt"]);
-    writeFileSync(decisions, JSON.stringify([{ basis: "AC-1 keeps both", decision: "combine", path: "src/value.txt" }]));
+    writeFileSync(
+      decisions,
+      JSON.stringify([{ basis: "AC-1 keeps both", decision: "combine", path: "src/value.txt" }]),
+    );
     assert.deepEqual(await runCommand("verify", git, { decisions, state }), { ok: true, problems: [] });
     const { mergeSha } = await runCommand("commit", git, { message: "Merge master", state });
     assert.equal(JSON.parse(readFileSync(state, "utf8")).mergeSha, mergeSha);

@@ -97,7 +97,8 @@ test("no skill or other standard restates the tier definitions", async () => {
   const texts = await Promise.all(
     names.map((entry) => readFile(new URL(`${entry.name}/SKILL.md`, skillsRoot), "utf8")),
   );
-  for (const file of ["working-defaults.md", "project-workflow.md", "github-request-discipline.md", "conflict-triage.md"]) {
+  const files = ["working-defaults.md", "project-workflow.md", "github-request-discipline.md", "conflict-triage.md"];
+  for (const file of files) {
     texts.push(await readFile(new URL(`standards/${file}`, pluginRoot), "utf8"));
   }
   for (const text of texts) {

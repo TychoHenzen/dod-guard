@@ -127,7 +127,9 @@ function parseStatus(output) {
 }
 
 function pendingPaths(git) {
-  return parseStatus(git(["status", "--porcelain=v1", "-z", "--untracked-files=all"]).stdout).map((entry) => entry.path);
+  return parseStatus(git(["status", "--porcelain=v1", "-z", "--untracked-files=all"]).stdout).map(
+    (entry) => entry.path,
+  );
 }
 
 function readHead(git) {
@@ -531,7 +533,9 @@ export function commitMerge(git, { trustedHead, recordedBase, message = "", amen
     git(["commit", "--amend", "--no-edit"]);
   } else {
     if (readMergeHead(git) !== recordedBase) {
-      throw new TriageStop("merge_not_owned", "The checkout does not hold this run's merge.", { expected: recordedBase });
+      throw new TriageStop("merge_not_owned", "The checkout does not hold this run's merge.", {
+        expected: recordedBase,
+      });
     }
     if (listConflicts(git).length > 0) {
       throw new TriageStop("unmerged_paths", "Unmerged paths remain.", {
