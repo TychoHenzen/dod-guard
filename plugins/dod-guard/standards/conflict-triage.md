@@ -22,6 +22,7 @@ scratch directory, outside the repository:
 ```text
 node <complete-pr-dir>/scripts/conflict-triage.mjs start --state <file> --repository <owner/repository> --pull <number> --trusted-head <sha> [--generators <file>]
 node <complete-pr-dir>/scripts/conflict-triage.mjs verify --state <file> --decisions <file>
+node <complete-pr-dir>/scripts/conflict-triage.mjs regen-check --state <file> [--expect-clean]
 node <complete-pr-dir>/scripts/conflict-triage.mjs commit --state <file> (--message <text> | --amend)
 node <complete-pr-dir>/scripts/conflict-triage.mjs push --state <file>
 node <complete-pr-dir>/scripts/conflict-triage.mjs abort --state <file>
@@ -41,6 +42,16 @@ the default branch once before `start` so the base commit is local. `start`
 records the pull request base SHA as this run's base. During the run, never
 fetch the default branch again, rebase, or force-push. Before claiming the
 triage, check that no other run holds the same pull request, branch, or stage.
+
+## Generated paths
+
+A path is generated only when the target repository's instructions declare its
+generator. Read the declarations from the repository's `AGENTS.md` or
+`CLAUDE.md` and pass them to `start` as a JSON list of
+`{"paths": ["<glob>"], "command": "<generator command>"}`. Never infer a
+generator from a path name. A conflicted generated path is never hand-merged:
+its decision is `regenerate`. A conflicted path that announces it is generated
+but matches no declared generator stops the run.
 
 ## Stages
 
@@ -67,6 +78,10 @@ the run before any stage below.
    source, test, and documentation paths, then stage them. A test expectation
    changes only when the decision cites a clear contract that shows it is
    stale, under the stale-test rule in `standards/working-defaults.md`.
+   After the judged paths are staged, run each declared generator whose paths
+   conflicted, then run `regen-check`: every change must be a declared output.
+   Stage the outputs, run the generator again, and run `regen-check
+   --expect-clean`: the second run must change nothing.
 5. **Verify** (the owning thread). Run `verify` with the decisions file. It
    checks that no path is unmerged, no conflict marker remains, `git diff
    --check` is clean, and every decision is visible in the staged result.

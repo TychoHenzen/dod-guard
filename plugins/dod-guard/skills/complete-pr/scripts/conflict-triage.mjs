@@ -7,6 +7,7 @@ import { isAbsolute, relative, resolve } from "node:path";
 import process from "node:process";
 import {
   abortOwnMerge,
+  checkRegeneration,
   commitMerge,
   createGitRunner,
   pushMerge,
@@ -20,6 +21,7 @@ import { GitHubClient } from "./lib/github-client.mjs";
 const USAGE = `Usage: node conflict-triage.mjs <command> --state <file> [options]
   start   --state <file> --repository <owner/repository> --pull <number> --trusted-head <sha> [--generators <file>]
   verify  --state <file> --decisions <file>
+  regen-check --state <file> [--expect-clean]
   commit  --state <file> (--message <text> | --amend)
   push    --state <file>
   abort   --state <file>
@@ -36,8 +38,8 @@ function parseFlags(argv) {
     if (!name.startsWith("--")) {
       throw new UsageError(`Unexpected argument: ${name}`);
     }
-    if (name === "--amend") {
-      flags.amend = true;
+    if (name === "--amend" || name === "--expect-clean") {
+      flags[name.slice(2)] = true;
     } else if (index + 1 < argv.length) {
       flags[name.slice(2)] = argv[index + 1];
       index += 1;
@@ -114,6 +116,8 @@ async function runCommand(command, git, flags) {
   switch (command) {
     case "verify":
       return verifyResolution(git, { ...state, decisions: readJson(outsideRepository(git, required(flags, "decisions"))) });
+    case "regen-check":
+      return checkRegeneration(git, { expectClean: flags["expect-clean"] === true, generators: state.generators ?? [] });
     case "commit":
       return { mergeSha: commitMerge(git, { ...state, amend: flags.amend === true, message: flags.message ?? "" }) };
     case "push": {

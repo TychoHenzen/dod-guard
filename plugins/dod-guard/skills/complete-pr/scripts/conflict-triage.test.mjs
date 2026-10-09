@@ -70,6 +70,30 @@ test("aborts nothing and renders the record from an outside state file", () => {
   }
 });
 
+test("checks regeneration against the declared generators in the state file", () => {
+  const workspace = createWorkspace();
+  try {
+    const state = join(workspace.scratch, "triage.json");
+    writeFileSync(state, JSON.stringify({ generators: [{ command: "node build.mjs", paths: ["dist/*.js"] }] }));
+    mkdirSync(join(workspace.work, "dist"));
+    writeFileSync(join(workspace.work, "dist", "out.js"), "// rebuilt\n");
+    const declared = run(workspace.work, ["regen-check", "--state", state]);
+    assert.equal(declared.status, 0, declared.stderr);
+    assert.deepEqual(JSON.parse(declared.stdout), { generatedPaths: ["dist/out.js"], ok: true, problems: [] });
+    const drift = run(workspace.work, ["regen-check", "--state", state, "--expect-clean"]);
+    assert.equal(drift.status, 1);
+    assert.equal(JSON.parse(drift.stdout).ok, false);
+    writeFileSync(join(workspace.work, "notes.txt"), "stray\n");
+    const stray = run(workspace.work, ["regen-check", "--state", state]);
+    assert.equal(stray.status, 1);
+    assert.deepEqual(JSON.parse(stray.stdout).problems, [
+      { path: "notes.txt", problem: "the generator changed a path it does not declare" },
+    ]);
+  } finally {
+    workspace.cleanup();
+  }
+});
+
 test("rejects an unknown command", () => {
   const workspace = createWorkspace();
   try {

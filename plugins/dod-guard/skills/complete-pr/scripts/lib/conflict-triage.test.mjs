@@ -13,6 +13,7 @@ import test from "node:test";
 import {
   abortOwnMerge,
   assertAllowedGitCommand,
+  checkRegeneration,
   commitMerge,
   createGitRunner,
   pushMerge,
@@ -229,6 +230,64 @@ test("classifies a declared generated path and stops on an undeclared one", () =
     assert.equal(stop.details.merge, "aborted");
   } finally {
     undeclared.cleanup();
+  }
+});
+
+test("regenerates a declared generated path and accepts only its declared outputs", () => {
+  const files = (side) => ({ "dist/out.js": `// @generated\nconsole.log("${side}");\n`, "src/value.txt": `${side}\n` });
+  const scenario = createScenario({ base: files("base"), branch: files("branch"), master: files("master") });
+  const generators = [{ command: "node build.mjs", paths: ["dist/*.js"] }];
+  const rebuilt = '// @generated\nconsole.log("branch master");\n';
+  try {
+    const started = startTriage(scenario.git, { ...scenario.input, generators });
+    assert.deepEqual(
+      started.conflicts.map((conflict) => conflict.class),
+      ["generated", "source"],
+    );
+    writeFiles(scenario.work, { "src/value.txt": "branch\nmaster\n" });
+    sh(scenario.work, ["add", "src/value.txt"]);
+    // The declared generator rewrites its output from the resolved sources.
+    writeFiles(scenario.work, { "dist/out.js": rebuilt });
+    assert.deepEqual(checkRegeneration(scenario.git, { generators }), {
+      generatedPaths: ["dist/out.js"],
+      ok: true,
+      problems: [],
+    });
+    sh(scenario.work, ["add", "dist/out.js"]);
+    assert.deepEqual(checkRegeneration(scenario.git, { expectClean: true, generators }), {
+      generatedPaths: [],
+      ok: true,
+      problems: [],
+    });
+
+    writeFiles(scenario.work, { "src/stray.txt": "stray\n" });
+    assert.deepEqual(checkRegeneration(scenario.git, { generators }).problems, [
+      { path: "src/stray.txt", problem: "the generator changed a path it does not declare" },
+    ]);
+    rmSync(join(scenario.work, "src/stray.txt"));
+    writeFiles(scenario.work, { "dist/out.js": `${rebuilt}// again\n` });
+    assert.deepEqual(checkRegeneration(scenario.git, { expectClean: true, generators }).problems, [
+      { path: "dist/out.js", problem: "the generator changed this path again (drift)" },
+    ]);
+    writeFiles(scenario.work, { "dist/out.js": rebuilt });
+
+    const decisions = [
+      { basis: "the declared generator rebuilt it", decision: "regenerate", path: "dist/out.js" },
+      { basis: "AC-1 keeps both values", decision: "combine", path: "src/value.txt" },
+    ];
+    const misjudged = [decisions[0], { ...decisions[1], decision: "regenerate" }];
+    assert.deepEqual(verifyResolution(scenario.git, { ...started, decisions: misjudged, generators }).problems, [
+      { path: "src/value.txt", problem: "decision regenerate is not visible in the resolution" },
+    ]);
+    assert.deepEqual(verifyResolution(scenario.git, { ...started, decisions, generators }), { ok: true, problems: [] });
+    const mergeSha = commitMerge(scenario.git, { ...started, message: "merge" });
+    assert.equal(
+      sh(scenario.work, ["rev-list", "--parents", "-n", "1", mergeSha]),
+      `${mergeSha} ${scenario.trustedHead} ${scenario.baseSha}`,
+    );
+    assert.equal(`${sh(scenario.work, ["show", `${mergeSha}:dist/out.js`])}\n`, rebuilt);
+  } finally {
+    scenario.cleanup();
   }
 });
 

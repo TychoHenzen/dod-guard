@@ -68,3 +68,14 @@ test("the triage proves provenance, records the run, and re-enters review", () =
     "The triage posts no review request to Codex",
   ]);
 });
+
+test("the triage regenerates generated paths from declared generators only", () => {
+  assertPhrases(standard, [
+    "A path is generated only when the target repository's instructions declare its generator.",
+    "Never infer a generator from a path name.",
+    "A conflicted generated path is never hand-merged: its decision is `regenerate`.",
+    "announces it is generated but matches no declared generator stops the run",
+    "then run `regen-check`: every change must be a declared output",
+    "run `regen-check --expect-clean`: the second run must change nothing",
+  ]);
+});

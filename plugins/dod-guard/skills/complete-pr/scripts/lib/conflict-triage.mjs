@@ -298,6 +298,24 @@ export function classifyConflicts(git, conflicts, generators = []) {
   }));
 }
 
+// After a declared generator runs, every change it leaves must be one of its
+// declared outputs. A second run that still changes anything is drift.
+export function checkRegeneration(git, { generators = [], expectClean = false }) {
+  validateGenerators(generators);
+  const changed = parseStatus(git(["status", "--porcelain=v1", "-z", "--untracked-files=all"]).stdout)
+    .filter((entry) => entry.code[1] !== " ")
+    .map((entry) => entry.path);
+  const problems = [];
+  for (const path of changed) {
+    if (expectClean) {
+      problems.push({ path, problem: "the generator changed this path again (drift)" });
+    } else if (!findGenerator(path, generators)) {
+      problems.push({ path, problem: "the generator changed a path it does not declare" });
+    }
+  }
+  return { generatedPaths: changed, ok: problems.length === 0, problems };
+}
+
 export function abortOwnMerge(git, recordedBase) {
   const mergeHead = readMergeHead(git);
   if (mergeHead === null) {
