@@ -35,6 +35,13 @@ POSIX shell follow [`docs/command-composition.md`](docs/command-composition.md).
 Tracked bundles live at `packages/*/dist/bundle.js`. Regenerate and commit them
 on the feature branch. CI reproduces generated files and fails on drift.
 
+Declared generated paths and their generators. Never hand-merge these files;
+regenerate them:
+
+- `packages/*/dist/bundle.js`: `npm run bundle`
+- `.codex/agents/*.toml`: `node plugins/dod-guard/skills/codex-migrate/scripts/convert-claude-agents.mjs --source=plugins/dod-guard/agents --output=.codex/agents`
+  (add `--check` to report drift)
+
 `npm run preflight:static-analysis` reproduces the static-analysis generation,
 report-only diagnostics, formatting, and strict Biome check. It requires a clean checkout and
 leaves changes unstaged. If it reports changed paths, review each one, keep

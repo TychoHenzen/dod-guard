@@ -103,7 +103,9 @@ evidence is not acceptance evidence. A draft-skipped workflow may be dispatched
 once only after readiness is read back for the same repository, ref, and head;
 the dispatch and resulting run are recorded in this record. Base drift
 invalidates the acceptance matrix and routes one bounded synchronization through
-`complete-pr`; conflicts or unexpected branch movement stop the workflow.
+`complete-pr`. A merge conflict on the PBI head goes to the triage in
+`standards/conflict-triage.md`; an unresolvable conflict or unexpected branch
+movement stops the workflow.
 
 ## Structured handoff records
 

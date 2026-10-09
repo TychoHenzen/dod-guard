@@ -70,11 +70,12 @@ If a draft-skipped workflow needs recovery, verify draft readiness at the same
 repository ref and exact head, dispatch it once through the existing guarded
 workflow owner, and read back the run, workflow, ref, and head before waiting
 for required checks. A base advance invalidates the handoff and acceptance
-matrix; the bounded branch synchronization below is the only recovery path.
-Conflicts, unexpected branch movement, failed readback, or a second dispatch
-stop before review resolution, merge, cleanup, force-push, or generated-ref
-mutation. Fresh acceptance and required-check proof is mandatory at the final
-head after synchronization.
+matrix; the bounded branch synchronization below is the only recovery path,
+and a merge conflict on the PBI head goes to the triage under "Triage a merge
+conflict". An unresolvable conflict, unexpected branch movement, failed
+readback, or a second dispatch stops before review resolution, merge, cleanup,
+force-push, or generated-ref mutation. Fresh acceptance and required-check
+proof is mandatory at the final head after synchronization.
 
 Normal completion requires the exact pushed head SHA already verified by the
 calling workflow; the helper never adopts a mutable provider head as its first
@@ -114,7 +115,8 @@ it marks it ready. If it is already ready, it preserves that state. It then:
 - accepts an update commit only when its parents are the prior trusted head and
   the observed base head;
 - repeats guarded updates if the base advances again;
-- stops on conflicts, unexpected pushes, permission failures, or bounded waits;
+- stops with `merge_conflict` on conflicts, which the triage below handles,
+  and stops on unexpected pushes, permission failures, or bounded waits;
 - confirms the merge commit and linked closing issue state;
 - verifies the same-repository remote branch still points to the merged head,
   deletes it, and confirms it is absent;
@@ -140,6 +142,17 @@ checks without deleting a remote ref or local ref, or switching branches.
 
 Never use `--admin`, force-push, weaken repository protections, or delete a ref
 whose SHA differs from the merged pull request head.
+
+## Triage a merge conflict
+
+When the helper stops with `merge_conflict` on a pull request whose head is
+the trusted PBI head, triage the conflict as `standards/conflict-triage.md`
+says instead of ending the run. That standard owns the preconditions, stages,
+stop rules, push provenance, and record. After a verified push, end with
+`conflict-triaged` and do not merge: the new head needs `/submit-draft-pr`
+convergence and `/review-pr` before this skill runs again. When the triage
+stops, report the stop and leave the pull request head unchanged. Every other
+helper stop ends the run as described above.
 
 ## Finalize the parent unit
 
@@ -195,5 +208,6 @@ before the helper's merge result, and never alter unrelated Project items.
 
 Report the pull request, accepted head, final trusted head, merge commit, linked
 issue state, remote branch deletion, and parent/child Project finalization
-readback. Stop after the helper succeeds or returns a specific failure code.
-Publishing and plugin-cache refresh remain separate workflows.
+readback. Stop after the helper succeeds or returns a specific failure code,
+or the conflict triage ends with `conflict-triaged` or a stop. Publishing and
+plugin-cache refresh remain separate workflows.

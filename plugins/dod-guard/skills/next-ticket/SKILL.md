@@ -231,7 +231,9 @@ the provider, workflow, run ID, ref, head SHA, and one of `present`, `pending`,
 `failed`, `skipped`, or `unavailable`. A draft-skipped workflow is dispatched
 only after readiness is read back and only once for the same repository, ref,
 workflow, and head; record the run and resulting head readback. The handoff
-must record base drift, conflict, unexpected movement, provider failure, or
+must record base drift, a merge conflict and its triage (the `## Conflict
+triage` section that `standards/conflict-triage.md` defines) or its
+unresolvable stop, unexpected movement, provider failure, or
 bounded-recovery remainder explicitly rather than treating the acceptance
 matrix as still current. This is one evidence record, not a local review ledger.
 
