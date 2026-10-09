@@ -58,7 +58,10 @@ but matches no declared generator stops the run.
 `start` merges the recorded base with `git merge --no-ff --no-commit` and
 classifies each conflicted path as `source`, `test`, or `generated`. A
 `binary`, `modify-delete`, `unclassified`, or `undeclared-generated` path stops
-the run before any stage below.
+the run before any stage below. A path is `unclassified` when its conflict is
+neither a content conflict nor a modify-delete conflict, for example when both
+sides deleted or renamed it, or when it is a symlink or submodule entry, which
+holds no text to merge.
 
 1. **Plan** (strong tier, `dod-guard:read-strong`). For each conflicted path,
    write questions to a scratch file outside the repository. Each question has

@@ -283,7 +283,13 @@ test("regenerates a declared generated path and accepts only its declared output
     ];
     const misjudged = [decisions[0], { ...decisions[1], decision: "regenerate" }];
     assert.deepEqual(verifyResolution(scenario.git, { ...started, decisions: misjudged, generators }).problems, [
-      { path: "src/value.txt", problem: "decision regenerate is not visible in the resolution" },
+      { path: "src/value.txt", problem: "only a declared generated path can be regenerated" },
+    ]);
+    // The resolved bundle differs from both sides, so only the generated-path
+    // rule can catch a hand-picked decision on it.
+    const handPicked = [{ ...decisions[0], decision: "take-branch" }, decisions[1]];
+    assert.deepEqual(verifyResolution(scenario.git, { ...started, decisions: handPicked, generators }).problems, [
+      { path: "dist/out.js", problem: "a declared generated path must be regenerated" },
     ]);
     assert.deepEqual(verifyResolution(scenario.git, { ...started, decisions, generators }), { ok: true, problems: [] });
     const mergeSha = commitMerge(scenario.git, { ...started, message: "merge" });

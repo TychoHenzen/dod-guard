@@ -21,7 +21,7 @@ export const TRIAGE_GIT_SUBCOMMANDS = Object.freeze([
   "status",
 ]);
 
-export const STOP_CLASSES = Object.freeze(["binary", "modify-delete", "unclassified", "undeclared-generated"]);
+const STOP_CLASSES = Object.freeze(["binary", "modify-delete", "unclassified", "undeclared-generated"]);
 
 const SHA = /^[0-9a-f]{40}$/;
 const PUSH_REFSPEC = /^[0-9a-f]{40}:refs\/heads\/[^+:\s]+$/;
@@ -41,7 +41,9 @@ const FORBIDDEN_ARGUMENTS = new Set([
 const UNMERGED_CODES = new Set(["DD", "AU", "UD", "UA", "DU", "AA", "UU"]);
 const CONTENT_CONFLICT_CODES = new Set(["UU", "AA"]);
 const MODIFY_DELETE_CODES = new Set(["UD", "DU"]);
-const SPECIAL_MODES = new Set(["120000", "160000"]);
+// ASSUMPTION: symlink (120000) and gitlink (160000) entries hold no text to
+// merge, so a conflict on either stops the run as unclassified.
+const NON_TEXT_MODES = new Set(["120000", "160000"]);
 // ASSUMPTION: test files live under a test directory or carry a .test or
 // .spec suffix; the class only tells the applier the stale-test rule applies.
 const TEST_PATH = /(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[^/]+$/i;
@@ -57,7 +59,8 @@ const CONFLICT_MARKER = /^(?:<{7}|>{7}|\|{7})(?: |$)|^={7}$/m;
 const DECISIONS = new Set(["take-branch", "take-base", "combine", "regenerate"]);
 
 const ALLOWED_FORMS = {
-  commit: (rest) => (rest.length === 2 && rest[0] === "-m") || (rest.length === 2 && rest[0] === "--amend" && rest[1] === "--no-edit"),
+  commit: (rest) =>
+    (rest.length === 2 && rest[0] === "-m") || (rest.length === 2 && rest[0] === "--amend" && rest[1] === "--no-edit"),
   merge: (rest) =>
     (rest.length === 3 && rest[0] === "--no-ff" && rest[1] === "--no-commit" && SHA.test(rest[2])) ||
     (rest.length === 1 && rest[0] === "--abort"),
@@ -179,7 +182,7 @@ const PRECONDITIONS = [
   ["base_unknown", "The pull request base SHA is unknown.", (input) => SHA.test(input.pullRequest.baseSha ?? "")],
 ];
 
-export function checkPreconditions(git, input) {
+function checkPreconditions(git, input) {
   for (const [code, reason, holds] of PRECONDITIONS) {
     if (!holds(input)) {
       throw new TriageStop(code, reason, { pullRequest: input.pullRequest, trustedHead: input.trustedHead });
@@ -211,9 +214,11 @@ export function checkPreconditions(git, input) {
     throw new TriageStop("worktree_dirty", "The worktree has pending changes.", { paths: pending });
   }
   if (git(["cat-file", "-e", `${pullRequest.baseSha}^{commit}`], [0, 1, 128]).status !== 0) {
-    throw new TriageStop("base_not_local", "The recorded base commit is not in this clone. Fetch the default branch before the run.", {
-      expected: pullRequest.baseSha,
-    });
+    throw new TriageStop(
+      "base_not_local",
+      "The recorded base commit is not in this clone. Fetch the default branch before the run.",
+      { expected: pullRequest.baseSha },
+    );
   }
   return { recordedBase: pullRequest.baseSha, trustedHead };
 }
@@ -228,7 +233,7 @@ function readStages(git, path) {
     });
 }
 
-export function listConflicts(git) {
+function listConflicts(git) {
   return parseStatus(git(["status", "--porcelain=v1", "-z", "--untracked-files=no"]).stdout)
     .filter((entry) => UNMERGED_CODES.has(entry.code))
     .map(({ code, path }) => ({ code, path, stages: readStages(git, path) }));
@@ -255,7 +260,7 @@ function globToRegExp(glob) {
   return new RegExp(`^${source}$`);
 }
 
-export function validateGenerators(generators) {
+function validateGenerators(generators) {
   const valid =
     Array.isArray(generators) &&
     generators.every(
@@ -272,7 +277,7 @@ export function validateGenerators(generators) {
   return generators;
 }
 
-export function findGenerator(path, generators) {
+function findGenerator(path, generators) {
   return generators.find((generator) => generator.paths.some((glob) => globToRegExp(glob).test(path))) ?? null;
 }
 
@@ -280,7 +285,7 @@ function classifyConflict(git, conflict, generators) {
   if (!CONTENT_CONFLICT_CODES.has(conflict.code)) {
     return MODIFY_DELETE_CODES.has(conflict.code) ? "modify-delete" : "unclassified";
   }
-  if (conflict.stages.some((stage) => SPECIAL_MODES.has(stage.mode))) {
+  if (conflict.stages.some((stage) => NON_TEXT_MODES.has(stage.mode))) {
     return "unclassified";
   }
   if (findGenerator(conflict.path, generators)) {
@@ -296,7 +301,7 @@ function classifyConflict(git, conflict, generators) {
   return TEST_PATH.test(conflict.path) ? "test" : "source";
 }
 
-export function classifyConflicts(git, conflicts, generators = []) {
+function classifyConflicts(git, conflicts, generators = []) {
   return conflicts.map(({ code, path, stages }) => ({
     class: classifyConflict(git, { code, path, stages }, generators),
     code,
@@ -382,17 +387,63 @@ function unbasedConflicts(conflicts, decisionByPath) {
   });
 }
 
-function decisionVisible(decision, ids, path, generators) {
+function decisionVisible(decision, ids) {
   switch (decision) {
     case "take-branch":
       return ids.resolved === ids.branch;
     case "take-base":
       return ids.resolved === ids.base;
-    case "combine":
-      return ids.resolved !== null && ids.resolved !== ids.branch && ids.resolved !== ids.base;
     default:
-      return findGenerator(path, generators) !== null;
+      return ids.resolved !== null && ids.resolved !== ids.branch && ids.resolved !== ids.base;
   }
+}
+
+function unstagedPaths(git, source) {
+  return source === "" ? git(["diff", "--name-only", "-z"]).stdout.split("\0").filter(Boolean) : pendingPaths(git);
+}
+
+// The check is limited by path: paths outside the conflict set, and generated
+// paths that regen-check owns, are not judged, because tracked bundles
+// legitimately carry trailing whitespace. Inside a hand-resolved path the whole
+// diff against the trusted head is checked, base-side lines included.
+function whitespaceProblems(git, { conflicts, generators, source, trustedHead }) {
+  const resolvedPaths = conflicts
+    .filter((conflict) => findGenerator(conflict.path, generators) === null)
+    .map((conflict) => conflict.path);
+  if (resolvedPaths.length === 0) {
+    return [];
+  }
+  const range = source === "" ? ["--cached"] : [trustedHead, "HEAD"];
+  const check = git(["diff", "--check", ...range, "--", ...resolvedPaths], [0, 2]).stdout.trim();
+  return check ? [{ path: null, problem: `git diff --check: ${check}` }] : [];
+}
+
+// A declared generated path is rebuilt by its generator, so `regenerate` is the
+// only decision it takes, and no other path may claim `regenerate`.
+function pathProblems(git, conflict, decision, { generators, recordedBase, source, trustedHead }) {
+  const { path } = conflict;
+  const problems = [];
+  const resolved = objectId(git, `${source}:${path}`);
+  if (resolved !== null && CONFLICT_MARKER.test(readBlob(git, `${source}:${path}`))) {
+    problems.push({ path, problem: "conflict markers remain" });
+  }
+  const generated = findGenerator(path, generators) !== null;
+  if (generated !== (decision === "regenerate")) {
+    const problem = generated
+      ? "a declared generated path must be regenerated"
+      : "only a declared generated path can be regenerated";
+    problems.push({ path, problem });
+    return problems;
+  }
+  const ids = {
+    base: objectId(git, `${recordedBase}:${path}`),
+    branch: objectId(git, `${trustedHead}:${path}`),
+    resolved,
+  };
+  if (!generated && !decisionVisible(decision, ids)) {
+    problems.push({ path, problem: `decision ${decision} is not visible in the resolution` });
+  }
+  return problems;
 }
 
 export function verifyResolution(git, { trustedHead, recordedBase, conflicts, decisions = [], generators = [] }) {
@@ -405,51 +456,26 @@ export function verifyResolution(git, { trustedHead, recordedBase, conflicts, de
       paths: unbased.map((conflict) => conflict.path),
     });
   }
-  const problems = [];
-  for (const conflict of listConflicts(git)) {
-    problems.push({ path: conflict.path, problem: "still unmerged" });
-  }
-  const unstaged =
-    source === "" ? git(["diff", "--name-only", "-z"]).stdout.split("\0").filter(Boolean) : pendingPaths(git);
-  for (const path of unstaged) {
-    problems.push({ path, problem: "change is not in the resolution" });
-  }
-  // Only the hand-resolved paths are the triage's own text. Lines the base
-  // brings in unchanged, and generated output that regen-check owns, are not
-  // judged here; tracked bundles legitimately carry trailing whitespace.
-  const resolvedPaths = conflicts
-    .filter((conflict) => findGenerator(conflict.path, generators) === null)
-    .map((conflict) => conflict.path);
-  const checkRange = source === "" ? ["--cached"] : [trustedHead, "HEAD"];
-  const check =
-    resolvedPaths.length === 0 ? "" : git(["diff", "--check", ...checkRange, "--", ...resolvedPaths], [0, 2]).stdout.trim();
-  if (check) {
-    problems.push({ path: null, problem: `git diff --check: ${check}` });
-  }
-  for (const conflict of conflicts) {
-    const { decision } = decisionByPath.get(conflict.path);
-    const ids = {
-      base: objectId(git, `${recordedBase}:${conflict.path}`),
-      branch: objectId(git, `${trustedHead}:${conflict.path}`),
-      resolved: objectId(git, `${source}:${conflict.path}`),
-    };
-    if (ids.resolved !== null && CONFLICT_MARKER.test(readBlob(git, `${source}:${conflict.path}`))) {
-      problems.push({ path: conflict.path, problem: "conflict markers remain" });
-    }
-    if (!decisionVisible(decision, ids, conflict.path, generators)) {
-      problems.push({ path: conflict.path, problem: `decision ${decision} is not visible in the resolution` });
-    }
-  }
+  const context = { conflicts, generators, recordedBase, source, trustedHead };
+  const problems = [
+    ...listConflicts(git).map((conflict) => ({ path: conflict.path, problem: "still unmerged" })),
+    ...unstagedPaths(git, source).map((path) => ({ path, problem: "change is not in the resolution" })),
+    ...whitespaceProblems(git, context),
+    ...conflicts.flatMap((conflict) =>
+      pathProblems(git, conflict, decisionByPath.get(conflict.path).decision, context),
+    ),
+  ];
   return { ok: problems.length === 0, problems };
 }
 
-export function checkProvenance(git, { trustedHead, recordedBase }) {
+function checkProvenance(git, { trustedHead, recordedBase }) {
   const parents = headParents(git);
   if (!parentsMatch(parents, trustedHead, recordedBase)) {
-    throw new TriageStop("provenance_mismatch", "The merge commit must have exactly the trusted head and the recorded base as parents.", {
-      expected: [trustedHead, recordedBase],
-      observed: parents,
-    });
+    throw new TriageStop(
+      "provenance_mismatch",
+      "The merge commit must have exactly the trusted head and the recorded base as parents.",
+      { expected: [trustedHead, recordedBase], observed: parents },
+    );
   }
   return readHead(git);
 }
@@ -568,9 +594,14 @@ export function renderTriageRecord({
   for (const conflict of conflicts) {
     const decision = decisionByPath.get(conflict.path) ?? {};
     const questions = (decision.questionIds ?? []).join(", ") || "none";
-    lines.push(
-      `| \`${cell(conflict.path)}\` | ${cell(conflict.class)} | ${cell(decision.decision ?? "none")} | ${cell(decision.basis ?? "none")} | ${cell(questions)} |`,
-    );
+    const cells = [
+      `\`${cell(conflict.path)}\``,
+      cell(conflict.class),
+      cell(decision.decision ?? "none"),
+      cell(decision.basis ?? "none"),
+      cell(questions),
+    ];
+    lines.push(`| ${cells.join(" | ")} |`);
   }
   lines.push("", "Investigator answers used:");
   lines.push(...listOrNone(answers, (answer) => `- ${answer.id}: ${cell(answer.fact)} (${cell(answer.citation)})`));
