@@ -66,3 +66,55 @@ test("documents authority source resolution and dynamic unused-local limits", ()
   assert.match(unusedLocal, /Review these cases before deleting/);
   assert.match(unusedLocal, /runtime name lookup/);
 });
+
+const WHITESPACE = /\s+/g;
+
+test("documents the else-branch, wildcard-import, and stateless-method boundaries", () => {
+  assert.ok(rules.includes("## `else-branch` - review guard clauses"));
+  const sections = [
+    [
+      "## `wildcard-import`",
+      "## `naming-encoding`",
+      [
+        // biome-ignore lint/security/noSecrets: Rust attribute text, not a credential
+        "inside a `#[cfg(test)]` region",
+        "matching how per-function rules skip Rust test regions",
+        "stays reported",
+      ],
+    ],
+    [
+      "## `else-branch`",
+      "## `stateless-method`",
+      [
+        "closes an `if` branch",
+        "including `else if`",
+        "Rust let-else guards",
+        "Python `for`, `while`, and `try` `else` clauses",
+        "inside comments or strings",
+        "`a if c else b` is still counted",
+        "Known limit",
+        "options to review",
+      ],
+    ],
+    [
+      "## `stateless-method`",
+      "## `configurable-data`",
+      [
+        "TypeScript and JavaScript method signatures without a body",
+        "are never reported",
+        "A return-type annotation is never taken as the body",
+        "Python is unsupported",
+      ],
+    ],
+  ];
+  for (const [start, end, signals] of sections) {
+    const from = rules.indexOf(start);
+    const to = rules.indexOf(end, from);
+    assert.notEqual(from, -1, `${start} heading is required`);
+    assert.notEqual(to, -1, `${end} heading is required`);
+    const section = rules.slice(from, to).replace(WHITESPACE, " ");
+    for (const signal of signals) {
+      assert.ok(section.includes(signal), `${start} must contain ${signal}`);
+    }
+  }
+});

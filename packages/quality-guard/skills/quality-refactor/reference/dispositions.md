@@ -18,7 +18,10 @@ Rust `use path::*`, where the scanner can identify the wildcard syntax itself.
 Keep C# namespace `using`, TypeScript namespace imports and `export *`,
 inherited or static constants, and enum-like declarations quiet. Those forms
 do not prove the same dependency-hiding boundary without language-specific
-semantic analysis.
+semantic analysis. A Rust `use path::*` inside a `#[cfg(test)]` region, such as
+`use super::*;` in a test module, is quiet for the same reason per-function
+rules skip Rust test regions: test modules glob-import their parent by
+convention.
 
 ## Else branches — review signal, not blanket ban
 
@@ -29,8 +32,10 @@ legitimate alternatives to design judgment.
 **Disposition:** Retain `else-branch` as a syntax-only preferred review signal.
 Do not treat every `else` as a defect: a genuine two-way branch with equally
 normal outcomes is legitimate. Guard clauses and polymorphism are remediation
-options, not mandatory rewrites. Conflict fixtures and cross-language
-dispositions are owned by the separate integration work.
+options, not mandatory rewrites. Only else branches that close an if are
+counted. Rust let-else and Python loop or try else clauses are quiet, because
+they are not if branches. The cross-language fixtures live with the scanner
+tests.
 
 ## Stateless methods — syntax-only candidate
 
@@ -43,7 +48,9 @@ for moving behavior to a free function. The scanner may inspect direct
 receiver and declared-field use, but it must not infer ownership intent,
 inheritance, framework callbacks, property semantics, or domain boundaries.
 An apparently stateless method can be the correct API surface; review the
-actual type contract before moving it.
+actual type contract before moving it. Bodiless TypeScript signatures
+(interface, type-literal, abstract, overload, and declare members) are not
+methods with a body and are quiet.
 
 ## Assumption markers — retired from generic scanning
 
