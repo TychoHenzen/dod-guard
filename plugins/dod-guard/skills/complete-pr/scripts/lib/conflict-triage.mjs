@@ -182,7 +182,36 @@ const PRECONDITIONS = [
   ["base_unknown", "The pull request base SHA is unknown.", (input) => SHA.test(input.pullRequest.baseSha ?? "")],
 ];
 
+// A stop after commit leaves the merge commit on the branch, because the
+// triage never moves a branch back. A rerun recognizes that commit from git
+// alone, as a two-parent commit on the trusted head with no merge in progress,
+// and names the safe next step instead of failing on local_head_mismatch.
+function detectPendingMerge(git, trustedHead) {
+  if (!SHA.test(trustedHead ?? "")) {
+    return;
+  }
+  const head = readHead(git);
+  if (head === trustedHead || readMergeHead(git) !== null) {
+    return;
+  }
+  const parents = headParents(git);
+  if (parents.length !== 2 || parents[0] !== trustedHead) {
+    return;
+  }
+  throw new TriageStop("own_merge_pending", "The checkout holds an unpushed triage merge commit.", {
+    decisionNeeded:
+      `If the pull request head and base are unchanged and the full validation set passes on ${head}, ` +
+      "run push with the same state file. Otherwise the repository owner returns the branch to the trusted " +
+      `head with \`git reset --keep ${trustedHead}\`; the triage never runs it.`,
+    mergeSha: head,
+    parents,
+    recordedBase: parents[1],
+    trustedHead,
+  });
+}
+
 function checkPreconditions(git, input) {
+  detectPendingMerge(git, input.trustedHead);
   for (const [code, reason, holds] of PRECONDITIONS) {
     if (!holds(input)) {
       throw new TriageStop(code, reason, { pullRequest: input.pullRequest, trustedHead: input.trustedHead });

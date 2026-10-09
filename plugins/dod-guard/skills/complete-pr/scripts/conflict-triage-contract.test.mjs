@@ -53,6 +53,7 @@ test("the triage verifies before any push and stops without one", () => {
     "Never run `git reset`, `git stash`, `git checkout --`, or a push to undo work.",
     "Report the paths, the reason, and the decision needed.",
     "The remote pull request head stays unchanged.",
+    "the next `start` on that checkout stops with `own_merge_pending`, naming the merge commit and its parents",
   ]);
 });
 

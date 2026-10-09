@@ -106,6 +106,9 @@ function start(git, flags, { createClient, statePath }) {
   // The generator list is required so that "none declared" is an explicit []:
   // a missing list would let a generated path be classified as source.
   const generators = readJson(outsideRepository(git, required(flags, "generators")));
+  if (!Array.isArray(generators)) {
+    throw new UsageError("--generators must name a JSON list; pass [] when the repository declares none.");
+  }
   const client = createClient(repository, pullNumber);
   const pullRequest = client.getPullRequest();
   const input = {

@@ -425,6 +425,34 @@ test("stops with both SHAs when an uncertain push fails twice or the readback is
   }
 });
 
+test("a rerun after a post-commit stop names the pending merge, and push can resume it", async () => {
+  const { mergeSha, scenario, started } = committedScenario();
+  try {
+    const moved = { ...scenario.pullRequest, baseSha: "e".repeat(40) };
+    const pushStop = await asyncStopOf(() =>
+      pushMerge(scenario.git, { ...started, branch: BRANCH, readPullRequest: () => moved }),
+    );
+    assert.equal(pushStop.code, "base_moved");
+    const stop = stopOf(() => startTriage(scenario.git, scenario.input));
+    assert.equal(stop.code, "own_merge_pending");
+    assert.equal(stop.details.mergeSha, mergeSha);
+    assert.deepEqual(stop.details.parents, [scenario.trustedHead, scenario.baseSha]);
+    assert.equal(stop.details.recordedBase, scenario.baseSha);
+    assert.ok(stop.details.decisionNeeded.includes(`git reset --keep ${scenario.trustedHead}`));
+    assert.equal(originHead(scenario), scenario.trustedHead);
+    const resumed = await pushMerge(scenario.git, {
+      branch: BRANCH,
+      readPullRequest: () => scenario.pullRequest,
+      recordedBase: stop.details.recordedBase,
+      trustedHead: scenario.trustedHead,
+    });
+    assert.equal(resumed.remoteHead, mergeSha);
+    assert.equal(originHead(scenario), mergeSha);
+  } finally {
+    scenario.cleanup();
+  }
+});
+
 test("refuses a commit whose parents are not the trusted head and the recorded base", async () => {
   const scenario = textScenario();
   try {

@@ -116,9 +116,16 @@ Stop without a push when:
 
 On a stop, run `abort`. It runs `git merge --abort` only when `MERGE_HEAD` is
 this run's recorded base. Never run `git reset`, `git stash`, `git checkout --`,
-or a push to undo work. A local merge commit that `commit` created stays for
-diagnosis. Report the paths, the reason, and the decision needed. The remote
-pull request head stays unchanged.
+or a push to undo work. Report the paths, the reason, and the decision needed.
+The remote pull request head stays unchanged.
+
+A stop after `commit` leaves the merge commit on the local branch, and `abort`
+cannot undo it. The commit stays, and the next `start` on that checkout stops
+with `own_merge_pending`, naming the merge commit and its parents. The decision
+needed: when the pull request head and base are unchanged and the full
+validation set passes on that commit, run `push` with the same state file;
+otherwise the repository owner returns the branch to the trusted head with
+`git reset --keep <trusted head>`, which the triage itself never runs.
 
 ## Push provenance
 

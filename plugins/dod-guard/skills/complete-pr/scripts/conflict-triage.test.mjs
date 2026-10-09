@@ -247,3 +247,14 @@ test("a stopped start keeps the recorded base so abort undoes the earlier merge"
     scenario.cleanup();
   }
 });
+
+test("refuses a generator file that is not a JSON list", async () => {
+  const { createClient, flags, git, scenario, scratch } = commandScenario();
+  try {
+    writeFileSync(flags("unused").generators, "null");
+    await assert.rejects(runCommand("start", git, flags(join(scratch, "state.json")), { createClient }), /JSON list/);
+    assert.equal(mergeInProgress(scenario.work), false);
+  } finally {
+    scenario.cleanup();
+  }
+});
