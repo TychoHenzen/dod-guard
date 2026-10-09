@@ -2,16 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { applyClosures } from "./closure-apply.mjs";
 import { planClosures } from "./closure-plan.mjs";
-import { fakeGitHub, recordedSnapshot } from "./closure.test-support.mjs";
+import { fakeGitHub, holdOf, recordedSnapshot, setField, snapshotAfter } from "./closure.test-support.mjs";
 
 // At refinement time #840 and #841 had not merged, so they carry no
 // completion record yet.
 function atRefinement(options = {}) {
   return recordedSnapshot({ record: { 840: null, 841: null }, ...options });
-}
-
-function holdOf(plan, issue) {
-  return plan.holds.find((hold) => hold.issue === issue);
 }
 
 test("refinement closes #683 as a pure hierarchy record while undelivered originals stay open", () => {
@@ -36,7 +32,7 @@ test("refinement keeps an issue that still owns delivery scope open", () => {
     "unchecked acceptance criterion not mapped to a sub-issue: Publish the migration note",
   ]);
   const linked = atRefinement();
-  linked.items[0].fields[3].value = [{ number: 999, repository: linked.repository }];
+  setField(linked, 683, "Linked pull requests", [{ number: 999, repository: linked.repository }]);
   assert.deepEqual(holdOf(planClosures(linked, { hierarchy: 683 }), 683).reasons, ["linked pull request #999"]);
 });
 
@@ -51,12 +47,7 @@ test("a hierarchy close stays verified on the next run", () => {
   const github = fakeGitHub(snapshot);
   assert.deepEqual(applyClosures(snapshot, { runner: github.runner, hierarchy: 683 }).applied, [775, 776, 683]);
   assert.equal(github.state.issues.get(683).state_reason, "not_planned");
-  const after = structuredClone(snapshot);
-  for (const issue of after.issues) {
-    const live = github.state.issues.get(issue.number);
-    Object.assign(issue, { state: live.state, state_reason: live.state_reason, comments: live.comments });
-  }
-  for (const item of after.items) item.fields[0].value = { name: github.state.statuses.get(item.content.number) };
+  const after = snapshotAfter(snapshot, github);
   const rerun = planClosures(after);
   assert.deepEqual(rerun.closes, []);
   assert.equal(rerun.reports.find(({ issue }) => issue === 683), undefined);

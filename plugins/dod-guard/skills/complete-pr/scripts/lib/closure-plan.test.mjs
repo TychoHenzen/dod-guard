@@ -1,14 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { planClosures } from "./closure-plan.mjs";
-import { DELIVERIES, recordedSnapshot } from "./closure.test-support.mjs";
+import { DELIVERIES, holdOf, recordedSnapshot } from "./closure.test-support.mjs";
 
 function closeOf(plan, issue) {
   return plan.closes.find((close) => close.issue === issue);
-}
-
-function holdOf(plan, issue) {
-  return plan.holds.find((hold) => hold.issue === issue);
 }
 
 test("closes the original a verified root supersedes", () => {

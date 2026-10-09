@@ -75,6 +75,28 @@ test("apply and record run through the injected gh runner", async () => {
   assert.deepEqual(JSON.parse(recordIo.text.out).records, [{ issue: 840, action: "unchanged" }]);
 });
 
+test("record rejects a malformed --children list before any call", async () => {
+  const result = await saved("result.json", {
+    pullNumber: DELIVERIES[840].pull,
+    trustedHead: DELIVERIES[840].head,
+    mergeCommitSha: DELIVERIES[840].merge,
+    linkedIssues: [{ number: 840 }],
+  });
+  const matrix = await saved("matrix.json", [{ id: "AC-01", status: "pass" }]);
+  for (const flag of ["--children=12,abc", "--children=12,", "--children=0", "--children=-3", "--children"]) {
+    const calls = [];
+    const runner = (args) => {
+      calls.push(args);
+      return { status: 0, stdout: "", stderr: "" };
+    };
+    const io = capture();
+    const argv = ["record", `--repository=${REPOSITORY}`, `--result=${result}`, `--matrix=${matrix}`, flag];
+    assert.equal(runCli(argv, { runner, ...io }), 2, flag);
+    assert.match(io.text.err, /usage: closure\.mjs plan --snapshot=<file\.json>/, flag);
+    assert.deepEqual(calls, [], flag);
+  }
+});
+
 // Names each gh call by what it does, folding runs of the same kind, so the
 // order of one close reads as a sentence.
 function callKinds(calls) {

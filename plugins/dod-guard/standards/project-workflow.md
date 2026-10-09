@@ -133,8 +133,10 @@ files, commits, and checks. It does not create a parallel local plan.
 ## Closure records
 
 Two records let delivered and superseded issues close without a person. They
-are defined here once; `skills/complete-pr/scripts/closure.mjs` parses and
-writes them, and no prose comment is parsed in their place.
+are defined here once; `skills/complete-pr/scripts/lib/closure-records.mjs`
+parses and renders them, `skills/complete-pr/scripts/closure.mjs` is the
+command that records and applies them, and no prose comment is parsed in
+their place.
 
 - `supersedes`: a replacement delivery root carries one `### supersedes` record
   under its `## Implementation notes`, a JSON block holding a non-empty array of

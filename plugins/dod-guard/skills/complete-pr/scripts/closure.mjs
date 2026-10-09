@@ -36,9 +36,15 @@ function given(value) {
   return typeof value === "string" && value !== "true" && value.length > 0;
 }
 
+// --children=<n,...> lists the issues a completion record also covers. A typo must stop
+// before the first write, so one entry that is not a positive integer makes the whole
+// list false, and the record command reports that as a usage error.
 function childList(value) {
-  if (!given(value)) return [];
-  return value.split(",").map((entry) => Number(entry.trim()));
+  if (value === undefined) return [];
+  if (!given(value)) return false;
+  const numbers = value.split(",").map((entry) => Number(entry.trim()));
+  if (!numbers.every((number) => Number.isInteger(number) && number > 0)) return false;
+  return numbers;
 }
 
 // --hierarchy=<issue> is the refinement request to close that issue as a pure
@@ -64,15 +70,18 @@ const COMMANDS = {
     return options && applyClosures(readJson(args.snapshot), { runner, ...options });
   },
   annotate: (args) => given(args.snapshot) && annotateSnapshot(readJson(args.snapshot)),
-  record: (args, runner) =>
-    given(args.repository) && given(args.result) && given(args.matrix) &&
-    recordCompletion({
-      repository: args.repository,
-      result: readJson(args.result),
-      matrix: readJson(args.matrix),
-      children: childList(args.children),
-      runner,
-    }),
+  record: (args, runner) => {
+    const children = childList(args.children);
+    if (children === false) return false;
+    return given(args.repository) && given(args.result) && given(args.matrix) &&
+      recordCompletion({
+        repository: args.repository,
+        result: readJson(args.result),
+        matrix: readJson(args.matrix),
+        children,
+        runner,
+      });
+  },
 };
 
 function runCli(argv, { runner = runGh, stdout = process.stdout, stderr = process.stderr } = {}) {

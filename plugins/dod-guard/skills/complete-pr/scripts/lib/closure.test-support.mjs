@@ -229,6 +229,18 @@ function pullReply(state, endpoint) {
   });
 }
 
+// Edits and reads fields by name, so a renamed field fails the test loudly instead of
+// reading or writing whichever field happens to sit at the old index.
+function fieldOf(entry, name) {
+  const field = entry.fields.find((candidate) => candidate.name === name);
+  if (!field) throw new Error(`no "${name}" field on project item #${entry.content.number}`);
+  return field;
+}
+
+function statusName(entry) {
+  return fieldOf(entry, "Status").value.name;
+}
+
 // An in-memory GitHub that answers the REST calls closure apply and record
 // make, records every call in order, and can fail the first call a predicate
 // matches or accept a close without performing it.
@@ -236,7 +248,7 @@ function fakeGitHub(snapshot, { failOnce = null, ignoreClose = false } = {}) {
   const state = {
     issues: new Map(snapshot.issues.map((entry) => [entry.number, structuredClone(entry)])),
     pulls: new Map(snapshot.pullRequests.map((entry) => [entry.number, entry])),
-    statuses: new Map(snapshot.items.map((entry) => [entry.content.number, entry.fields[0].value.name])),
+    statuses: new Map(snapshot.items.map((entry) => [entry.content.number, statusName(entry)])),
     nextComment: 9000,
     ignoreClose,
   };
@@ -261,18 +273,46 @@ function mutating(args) {
   return args.includes("--method") && args[args.indexOf("--method") + 1] !== "GET";
 }
 
+function holdOf(plan, number) {
+  return plan.holds.find((hold) => hold.issue === number);
+}
+
+// Edits a project field by name on the item for one issue. A missing item or field
+// throws with both named, so a renamed field stops the test instead of editing a neighbour.
+function setField(snapshot, number, name, value) {
+  const entry = snapshot.items.find(({ content }) => content.number === number);
+  if (!entry) throw new Error(`no project item for #${number}, so no "${name}" field to set`);
+  fieldOf(entry, name).value = value;
+}
+
+// A later run starts from what GitHub now holds, so a rerun on this snapshot checks that
+// the writes verify on their own.
+function snapshotAfter(snapshot, github) {
+  const after = structuredClone(snapshot);
+  for (const entry of after.issues) {
+    const live = github.state.issues.get(entry.number);
+    Object.assign(entry, { state: live.state, state_reason: live.state_reason, comments: live.comments });
+  }
+  for (const entry of after.items) {
+    setField(after, entry.content.number, "Status", { name: github.state.statuses.get(entry.content.number) });
+  }
+  return after;
+}
+
 export {
   DELIVERIES,
-  PROJECT,
   REPOSITORY,
   chainSnapshot,
   closedWithoutEvidence,
   completionComment,
   fakeGitHub,
+  holdOf,
   issue,
   item,
   mutating,
   pull,
   recordedSnapshot,
+  setField,
+  snapshotAfter,
   supersedesBody,
 };

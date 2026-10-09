@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { applyClosures } from "./closure-apply.mjs";
 import { planClosures } from "./closure-plan.mjs";
-import { chainSnapshot, closedWithoutEvidence, fakeGitHub, mutating, recordedSnapshot } from "./closure.test-support.mjs";
-
-function holdOf(plan, issue) {
-  return plan.holds.find((hold) => hold.issue === issue);
-}
+import {
+  chainSnapshot,
+  closedWithoutEvidence,
+  fakeGitHub,
+  holdOf,
+  mutating,
+  recordedSnapshot,
+  snapshotAfter,
+} from "./closure.test-support.mjs";
 
 test("closes #683 once every sub-issue is superseded by a verified root", () => {
   const plan = planClosures(recordedSnapshot());
@@ -66,12 +70,7 @@ test("a close this helper made stays verified on the next run", () => {
   const snapshot = recordedSnapshot();
   const github = fakeGitHub(snapshot);
   applyClosures(snapshot, { runner: github.runner });
-  const after = structuredClone(snapshot);
-  for (const issue of after.issues) {
-    const live = github.state.issues.get(issue.number);
-    Object.assign(issue, { state: live.state, comments: live.comments });
-  }
-  for (const item of after.items) item.fields[0].value = { name: github.state.statuses.get(item.content.number) };
+  const after = snapshotAfter(snapshot, github);
   const rerun = planClosures(after);
   assert.deepEqual(rerun.closes, []);
   assert.deepEqual(rerun.holds, []);

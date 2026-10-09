@@ -8,6 +8,7 @@ const standard = await readFile(new URL("../../../standards/project-workflow.md"
 
 test("the standard defines both closure records once", () => {
   assert.equal(standard.match(/^## Closure records$/gm)?.length, 1);
+  assert.match(standard, prose("`skills/complete-pr/scripts/lib/closure-records.mjs` parses and renders them"));
   assert.match(standard, prose("carries one `### supersedes` record", "under its `## Implementation notes`"));
   assert.match(standard, prose("The record lives only on the root; the original carries no reverse link."));
   assert.match(standard, prose("posts one comment with this heading on each linked closing issue and each finalized child"));
