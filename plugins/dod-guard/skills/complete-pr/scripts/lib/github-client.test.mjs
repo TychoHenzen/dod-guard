@@ -48,6 +48,9 @@ function threadRunner(responses) {
   const queue = [...responses];
   const runner = (args) => {
     calls.push(args);
+    if (queue.length === 0) {
+      throw new Error(`Unexpected command: ${args.join(" ")}`);
+    }
     const next = queue.shift();
     if (next instanceof Error) {
       throw next;
@@ -277,4 +280,19 @@ test("fails closed with review-threads-unavailable on every unreadable thread pa
       name,
     );
   }
+});
+
+test("fails closed when a thread cursor repeats on a later page", () => {
+  const responses = [
+    okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
+    okResponse(threadPageStdout([], { endCursor: "c2", hasNextPage: true })),
+    okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
+  ];
+  const { calls, runner } = threadRunner(responses);
+
+  assert.throws(
+    () => new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24),
+    { code: "review-threads-unavailable" },
+  );
+  assert.equal(calls.length, responses.length);
 });

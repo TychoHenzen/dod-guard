@@ -148,9 +148,11 @@ from an earlier run.
 Scripts that cannot call MCP use narrow `gh api` REST endpoints. Keep GraphQL
 only for a capability with no connector or REST equivalent, limited to the
 documented exceptions: draft-to-ready via
-`markPullRequestReadyForReview` when REST has no supported draft field, and
+`markPullRequestReadyForReview` when REST has no supported draft field,
 selected review-thread operations after connector/REST review-comment
-operations have been attempted and the selected thread has been read back. Do
-not use either exception for rate limits or other transport stops, and do not
-use `gh pr view --json` for repeated metadata reads when the REST endpoint
-provides the required fields.
+operations have been attempted and the selected thread has been read back, and
+complete-pr's unresolved-review-thread check (a field-limited,
+cursor-paginated, read-only `reviewThreads` read, because REST exposes no
+thread resolution state). Do not use any of these exceptions for rate limits
+or other transport stops, and do not use `gh pr view --json` for repeated
+metadata reads when the REST endpoint provides the required fields.

@@ -608,6 +608,7 @@ export class GitHubClient {
     try {
       const [owner, name] = this.repository.split("/");
       const threads = [];
+      const usedCursors = new Set();
       let cursor = null;
       let hasNextPage = true;
       while (hasNextPage) {
@@ -631,9 +632,10 @@ export class GitHubClient {
         threads.push(...pageThreads);
         hasNextPage = morePages;
         if (hasNextPage) {
-          if (typeof endCursor !== "string" || endCursor.length === 0 || endCursor === cursor) {
+          if (typeof endCursor !== "string" || endCursor.length === 0 || usedCursors.has(endCursor)) {
             throw new Error("pagination is incomplete: hasNextPage is true without a new endCursor");
           }
+          usedCursors.add(endCursor);
           cursor = endCursor;
         }
       }
