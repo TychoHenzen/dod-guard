@@ -75,6 +75,69 @@ test("apply and record run through the injected gh runner", async () => {
   assert.deepEqual(JSON.parse(recordIo.text.out).records, [{ issue: 840, action: "unchanged" }]);
 });
 
+// Names each gh call by what it does, folding runs of the same kind, so the
+// order of one close reads as a sentence.
+function callKinds(calls) {
+  const kinds = calls.map((args) => {
+    const method = args.includes("--method") ? args[args.indexOf("--method") + 1] : "GET";
+    const project = args.some((value) => String(value).startsWith("users/"));
+    if (project) return method === "GET" ? "project-read" : "project-status";
+    if (method === "POST") return "comment";
+    if (method === "PATCH") return "close";
+    return "read";
+  });
+  return kinds.filter((kind, index) => kind !== kinds[index - 1]);
+}
+
+test("end to end: plan and apply on the #683 hierarchy", async () => {
+  const snapshot = recordedSnapshot();
+  const file = await saved("snapshot.json", snapshot);
+  const run = spawnSync(process.execPath, [SCRIPT, "plan", `--snapshot=${file}`], { encoding: "utf8" });
+  assert.equal(run.status, 0, run.stderr);
+  const plan = JSON.parse(run.stdout);
+  assert.deepEqual(plan.closes.map(({ issue, rule, stateReason }) => [issue, rule, stateReason]), [
+    [775, "replaced-original", "completed"],
+    [776, "replaced-original", "completed"],
+    [777, "replaced-original", "completed"],
+    [778, "replaced-original", "completed"],
+    [683, "parent", "completed"],
+  ]);
+  assert.deepEqual(plan.holds, []);
+  assert.deepEqual(plan.reports, []);
+  assert.deepEqual(plan.deliveries.map(({ root, status }) => [root, status]), [
+    [818, "verified"],
+    [820, "verified"],
+    [840, "verified"],
+    [841, "verified"],
+  ]);
+
+  const github = fakeGitHub(snapshot);
+  const io = capture();
+  assert.equal(runCli(["apply", `--snapshot=${file}`], { runner: github.runner, ...io }), 0, io.text.err);
+  assert.deepEqual(JSON.parse(io.text.out).applied, [775, 776, 777, 778, 683]);
+  const firstClose = github.calls.slice(0, github.calls.findIndex((args) => args.includes("PATCH") && String(args[3]).startsWith("users/")) + 2);
+  assert.deepEqual(callKinds(firstClose), ["read", "comment", "close", "read", "project-read", "project-status", "project-read"]);
+  for (const number of [775, 776, 777, 778, 683]) {
+    assert.equal(github.state.issues.get(number).state, "closed");
+    assert.equal(github.state.statuses.get(number), "Done");
+  }
+});
+
+test("end to end: the recorded state with #840 and #841 unmerged holds and reports", async () => {
+  const snapshot = recordedSnapshot({ record: { 840: null, 841: null } });
+  const run = spawnSync(process.execPath, [SCRIPT, "plan", `--snapshot=${await saved("snapshot.json", snapshot)}`], {
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 0, run.stderr);
+  const plan = JSON.parse(run.stdout);
+  assert.deepEqual(plan.closes.map(({ issue }) => issue), [775, 776]);
+  assert.deepEqual(plan.holds.map(({ issue }) => issue), [777, 778, 683]);
+  assert.deepEqual(plan.reports.map(({ issue, kind }) => [issue, kind]), [
+    [840, "unverified-closed"],
+    [841, "unverified-closed"],
+  ]);
+});
+
 test("a stop reports its partial state and exits 1", async () => {
   const snapshot = recordedSnapshot({ roots: [840] });
   const github = fakeGitHub(snapshot, { ignoreClose: true });
