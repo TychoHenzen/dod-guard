@@ -1,13 +1,11 @@
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import assert from "node:assert/strict";
-// biome-ignore lint/correctness/noNodejsModules: The fixtures drive a real Git CLI.
+// biome-ignore lint/correctness/noNodejsModules: The tests inspect a real Git CLI.
 import { spawnSync } from "node:child_process";
-// biome-ignore lint/correctness/noNodejsModules: The fixtures write temporary repositories.
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-// biome-ignore lint/correctness/noNodejsModules: The fixtures write temporary repositories.
-import { tmpdir } from "node:os";
-// biome-ignore lint/correctness/noNodejsModules: The fixtures write temporary repositories.
-import { dirname, join } from "node:path";
+// biome-ignore lint/correctness/noNodejsModules: The tests read the module source and remove fixture files.
+import { readFileSync, rmSync } from "node:fs";
+// biome-ignore lint/correctness/noNodejsModules: The tests address fixture files.
+import { join } from "node:path";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import {
@@ -15,7 +13,6 @@ import {
   assertAllowedGitCommand,
   checkRegeneration,
   commitMerge,
-  createGitRunner,
   pushMerge,
   renderTriageRecord,
   startTriage,
@@ -23,97 +20,15 @@ import {
   TriageStop,
   verifyResolution,
 } from "./conflict-triage.mjs";
-
-const REPOSITORY = "owner/repo";
-const BRANCH = "codex/1-triage";
-
-// Fixture commands run outside the module under test, so they use a plain
-// runner that the triage allowlist does not restrict.
-function sh(cwd, args) {
-  const result = spawnSync("git", args, { cwd, encoding: "utf8", windowsHide: true });
-  if (result.status !== 0) {
-    throw new Error(`git ${args.join(" ")}: ${result.stderr}`);
-  }
-  return result.stdout.trim();
-}
-
-function writeFiles(work, files) {
-  for (const [path, content] of Object.entries(files)) {
-    const target = join(work, path);
-    if (content === null) {
-      rmSync(target);
-    } else {
-      mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, content);
-    }
-  }
-}
-
-function commit(work, files, message) {
-  writeFiles(work, files);
-  sh(work, ["add", "-A"]);
-  sh(work, ["commit", "-q", "-m", message]);
-  return sh(work, ["rev-parse", "HEAD"]);
-}
-
-// Builds a bare origin and a clone whose PBI branch and master both changed the
-// given paths since their common base. The clone ends on the PBI branch.
-function createScenario({ base, branch, master }) {
-  const root = mkdtempSync(join(tmpdir(), "conflict-triage-"));
-  const origin = join(root, "origin.git");
-  const work = join(root, "work");
-  sh(root, ["init", "-q", "--bare", "-b", "master", origin]);
-  sh(root, ["init", "-q", "-b", "master", work]);
-  for (const [key, value] of [
-    ["user.name", "Triage Test"],
-    ["user.email", "triage@example.invalid"],
-    ["core.autocrlf", "false"],
-    ["core.longpaths", "true"],
-    ["commit.gpgsign", "false"],
-  ]) {
-    sh(work, ["config", key, value]);
-  }
-  sh(work, ["remote", "add", "origin", origin]);
-  commit(work, base, "base");
-  sh(work, ["push", "-q", "origin", "master"]);
-  sh(work, ["switch", "-q", "-c", BRANCH]);
-  const trustedHead = commit(work, branch, "branch change");
-  sh(work, ["push", "-q", "origin", BRANCH]);
-  sh(work, ["switch", "-q", "master"]);
-  const baseSha = commit(work, master, "master change");
-  sh(work, ["push", "-q", "origin", "master"]);
-  sh(work, ["switch", "-q", BRANCH]);
-  const pullRequest = {
-    baseBranch: "master",
-    baseSha,
-    headBranch: BRANCH,
-    headRepository: REPOSITORY,
-    headSha: trustedHead,
-    state: "OPEN",
-  };
-  return {
-    baseSha,
-    cleanup: () => rmSync(root, { force: true, recursive: true }),
-    git: createGitRunner(work),
-    input: { defaultBranch: "master", pullRequest, repository: REPOSITORY, trustedHead },
-    origin,
-    pullRequest,
-    trustedHead,
-    work,
-  };
-}
-
-function textScenario() {
-  return createScenario({
-    base: { "src/value.txt": "one\n", "test/value.test.js": "expect(1);\n" },
-    branch: { "src/value.txt": "branch\n", "test/value.test.js": "expect(2);\n" },
-    master: { "src/value.txt": "master\n", "test/value.test.js": "expect(3);\n" },
-  });
-}
-
-function originHead(scenario) {
-  return sh(scenario.origin, ["rev-parse", `refs/heads/${BRANCH}`]);
-}
+import {
+  BRANCH,
+  commit,
+  createScenario,
+  originHead,
+  sh,
+  textScenario,
+  writeFiles,
+} from "./conflict-triage.test-support.mjs";
 
 function mergeHead(scenario) {
   return spawnSync("git", ["rev-parse", "-q", "--verify", "MERGE_HEAD"], { cwd: scenario.work, encoding: "utf8" })

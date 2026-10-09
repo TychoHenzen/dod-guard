@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: The test runs the shipped command.
 import { spawnSync } from "node:child_process";
 // biome-ignore lint/correctness/noNodejsModules: The test writes a temporary repository.
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: The test writes a temporary repository.
 import { tmpdir } from "node:os";
 // biome-ignore lint/correctness/noNodejsModules: The test writes a temporary repository.
@@ -12,6 +12,9 @@ import { join } from "node:path";
 import test from "node:test";
 // biome-ignore lint/correctness/noNodejsModules: The test resolves the shipped command.
 import { fileURLToPath } from "node:url";
+import { createGitRunner } from "./lib/conflict-triage.mjs";
+import { runCommand } from "./lib/conflict-triage-command.mjs";
+import { BRANCH, createScenario, originHead, sh, writeFiles } from "./lib/conflict-triage.test-support.mjs";
 
 const COMMAND = fileURLToPath(new URL("./conflict-triage.mjs", import.meta.url));
 
@@ -43,6 +46,17 @@ test("refuses a state file inside the repository", () => {
   const workspace = createWorkspace();
   try {
     const result = run(workspace.work, ["abort", "--state", join(workspace.work, "triage.json")]);
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /outside the repository/);
+  } finally {
+    workspace.cleanup();
+  }
+});
+
+test("refuses a state file whose name only starts with two dots", () => {
+  const workspace = createWorkspace();
+  try {
+    const result = run(workspace.work, ["abort", "--state", "..state.json"]);
     assert.equal(result.status, 2);
     assert.match(result.stderr, /outside the repository/);
   } finally {
@@ -104,5 +118,46 @@ test("rejects an unknown command", () => {
     assert.match(result.stderr, /Unknown command: rebase/);
   } finally {
     workspace.cleanup();
+  }
+});
+
+test("runs start, verify, commit, and push through the command with an injected client", async () => {
+  const scenario = createScenario({
+    base: { "src/value.txt": "one\n" },
+    branch: { "src/value.txt": "branch\n" },
+    master: { "src/value.txt": "master\n" },
+  });
+  try {
+    const scratch = join(scenario.root, "scratch");
+    mkdirSync(scratch);
+    const state = join(scratch, "state.json");
+    const decisions = join(scratch, "decisions.json");
+    const git = createGitRunner(scenario.work);
+    const createClient = () => ({
+      getPullRequest: () => scenario.pullRequest,
+      getRepository: () => ({ defaultBranch: "master" }),
+    });
+    const startFlags = { pull: "1", repository: "owner/repo", state, "trusted-head": scenario.trustedHead };
+    const started = await runCommand("start", git, startFlags, { createClient });
+    assert.deepEqual(started.conflicts, [{ class: "source", code: "UU", path: "src/value.txt" }]);
+    const saved = JSON.parse(readFileSync(state, "utf8"));
+    assert.equal(saved.branch, BRANCH);
+    assert.equal(saved.recordedBase, scenario.baseSha);
+    assert.equal(saved.pullNumber, 1);
+
+    writeFiles(scenario.work, { "src/value.txt": "branch\nmaster\n" });
+    sh(scenario.work, ["add", "src/value.txt"]);
+    writeFileSync(decisions, JSON.stringify([{ basis: "AC-1 keeps both", decision: "combine", path: "src/value.txt" }]));
+    assert.deepEqual(await runCommand("verify", git, { decisions, state }), { ok: true, problems: [] });
+    const { mergeSha } = await runCommand("commit", git, { message: "Merge master", state });
+    const pushed = await runCommand("push", git, { state }, { createClient });
+    assert.equal(pushed.remoteHead, mergeSha);
+    assert.equal(originHead(scenario), mergeSha);
+    assert.equal(
+      sh(scenario.work, ["rev-list", "--parents", "-n", "1", mergeSha]),
+      `${mergeSha} ${scenario.trustedHead} ${scenario.baseSha}`,
+    );
+  } finally {
+    scenario.cleanup();
   }
 });
