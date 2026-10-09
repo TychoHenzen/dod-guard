@@ -141,6 +141,17 @@ checks without deleting a remote ref or local ref, or switching branches.
 Never use `--admin`, force-push, weaken repository protections, or delete a ref
 whose SHA differs from the merged pull request head.
 
+## Triage a merge conflict
+
+When the helper stops with `merge_conflict` on a pull request whose head is
+the trusted PBI head, triage the conflict as `standards/conflict-triage.md`
+says instead of ending the run. That standard owns the preconditions, stages,
+stop rules, push provenance, and record. After a verified push, end with
+`conflict-triaged` and do not merge: the new head needs `/submit-draft-pr`
+convergence and `/review-pr` before this skill runs again. When the triage
+stops, report the stop and leave the pull request head unchanged. Every other
+helper stop ends the run as described above.
+
 ## Finalize the parent unit
 
 Only after the helper returns a verified merge result, read the linked parent
@@ -195,5 +206,6 @@ before the helper's merge result, and never alter unrelated Project items.
 
 Report the pull request, accepted head, final trusted head, merge commit, linked
 issue state, remote branch deletion, and parent/child Project finalization
-readback. Stop after the helper succeeds or returns a specific failure code.
-Publishing and plugin-cache refresh remain separate workflows.
+readback. Stop after the helper succeeds or returns a specific failure code,
+or the conflict triage ends with `conflict-triaged` or a stop. Publishing and
+plugin-cache refresh remain separate workflows.

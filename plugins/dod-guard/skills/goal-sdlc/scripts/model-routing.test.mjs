@@ -84,6 +84,7 @@ test("only the strong stage agent can dispatch subagents or use MCP connectors",
     "Only the thread that owns a skill's procedure dispatches its subagents.",
     "A worker dispatched for one row never dispatches further",
     "goal-sdlc's main thread runs that owner's procedure itself",
+    "`/review-pr`, or the conflict triage in `standards/conflict-triage.md`), it runs that stage on `dod-guard:stage-strong`",
   ]) {
     assert.match(standard, prose(phrase), phrase);
   }
@@ -96,13 +97,22 @@ test("no skill or other standard restates the tier definitions", async () => {
   const texts = await Promise.all(
     names.map((entry) => readFile(new URL(`${entry.name}/SKILL.md`, skillsRoot), "utf8")),
   );
-  for (const file of ["working-defaults.md", "project-workflow.md", "github-request-discipline.md"]) {
+  for (const file of ["working-defaults.md", "project-workflow.md", "github-request-discipline.md", "conflict-triage.md"]) {
     texts.push(await readFile(new URL(`standards/${file}`, pluginRoot), "utf8"));
   }
   for (const text of texts) {
     assert.doesNotMatch(text, prose("The strong tier is for"));
     assert.doesNotMatch(text, prose("The cheap tier is for"));
   }
+});
+
+// The triage standard names tiers and tier agents but never a value, so a
+// tier change lands in the routing standard alone.
+test("the conflict triage standard names no model or effort value", async () => {
+  const triage = await readFile(new URL("standards/conflict-triage.md", pluginRoot), "utf8");
+  assert.doesNotMatch(triage, /\b(opus|sonnet|haiku|fable)\b|gpt-\d/i);
+  assert.doesNotMatch(triage, /`(low|medium|high|xhigh|max)`|\b(low|medium|high|xhigh|max) effort\b/i);
+  assert.ok(triage.includes("`standards/model-routing.md`"));
 });
 
 test("delegating skills refer to the routing standard", async () => {

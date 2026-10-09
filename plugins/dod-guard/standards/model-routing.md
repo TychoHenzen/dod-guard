@@ -54,8 +54,9 @@ in the progress message.
 
 Only the thread that owns a skill's procedure dispatches its subagents. When
 `dod-guard:goal-sdlc` reaches a stage whose owner splits its work into routed
-rows (refinement research, `/next-ticket` tasks, or `/review-pr`), it runs that
-stage on `dod-guard:stage-strong`, the only tier agent that inherits every
+rows (refinement research, `/next-ticket` tasks, `/review-pr`, or the conflict
+triage in `standards/conflict-triage.md`), it runs that stage on
+`dod-guard:stage-strong`, the only tier agent that inherits every
 tool, including Agent and MCP connectors. That stage worker is the owner's main
 thread: it dispatches each row at its tier and runs the verification below. A
 worker dispatched for one row never dispatches further, even on
