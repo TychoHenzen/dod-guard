@@ -59,10 +59,11 @@ Repeat until the stop condition holds:
    parent has reached. When refinement needs an answer from the user, leave the
    parent in Backlog with the questions recorded and continue with another
    parent instead of waiting.
-4. **Read back and continue.** After `/complete-pr` returns, read the parent
-   and child statuses. When any is not Done, return to the completion owner
-   before selecting again. Otherwise update `PBIs completed: P parent / C
-   child` and go back to step 1.
+4. **Read back and continue.** When `/complete-pr` returns `conflict-triaged`,
+   go to `/submit-draft-pr` for the new head, not to the completion owner.
+   Otherwise read the parent and child statuses. When any is not Done, return
+   to the completion owner before selecting again. Otherwise update `PBIs
+   completed: P parent / C child` and go back to step 1.
 
 Process exactly one parent at a time, in the current checkout, on one branch
 and one pull request. Never create or use a Git worktree.
@@ -90,7 +91,7 @@ owner, as `standards/model-routing.md` says. Each row runs at this tier:
 | `/fix-pr-review` | strong | `medium` |
 | `/complete-pr`: guarded merge and Project finalization | strong | `medium` |
 | `/add-backlog-idea`, including the friction log | strong | `medium` |
-| Merge conflict | none | stop and report, as `/complete-pr` says |
+| Merge conflict on a PBI head | per `standards/conflict-triage.md` | per `standards/conflict-triage.md`; unresolvable conflicts stop and report, and a verified push re-enters at `/submit-draft-pr` |
 
 Dispatch each row as `standards/model-routing.md` says: pass its model and
 effort to the Agent call in Claude Code, or use the registered tier agent in

@@ -82,8 +82,11 @@ stops without review, merge, cleanup, or generated-ref mutation.
 Compare the recorded base and head with the current PR before trusting the
 acceptance matrix. Base advancement invalidates earlier acceptance and routes
 one bounded synchronization through `complete-pr`, followed by fresh checks and
-proof at the final head. Conflicts, unexpected branch movement, or an exhausted
-bound stop with the expected and observed ref/SHA values. The checkpoint remains
+proof at the final head. A merge conflict on the PBI head goes to the triage in
+`standards/conflict-triage.md`, and a verified triage push returns here for
+convergence on the new head. An unresolvable conflict, unexpected branch
+movement, or an exhausted bound stops with the expected and observed ref/SHA
+values. The checkpoint remains
 in the same handoff and Convergence record; do not create a local ledger.
 
 ## Converge structured work

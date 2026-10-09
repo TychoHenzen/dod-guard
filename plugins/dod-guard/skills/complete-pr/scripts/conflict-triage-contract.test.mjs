@@ -79,3 +79,38 @@ test("the triage regenerates generated paths from declared generators only", () 
     "run `regen-check --expect-clean`: the second run must change nothing",
   ]);
 });
+
+// Every delivery document that used to stop on any conflict now sends a
+// conflict on the PBI head to the triage and stops only when it cannot.
+const CONFLICT_WORDING = {
+  "standards/project-workflow.md": [
+    "A merge conflict on the PBI head goes to the triage in `standards/conflict-triage.md`; an unresolvable conflict or unexpected branch movement stops the workflow.",
+  ],
+  "skills/submit-draft-pr/SKILL.md": [
+    "A merge conflict on the PBI head goes to the triage in `standards/conflict-triage.md`, and a verified triage push returns here",
+    "An unresolvable conflict, unexpected branch movement, or an exhausted bound stops",
+  ],
+  "skills/next-ticket/SKILL.md": [
+    "a merge conflict and its triage (the `## Conflict triage` section that `standards/conflict-triage.md` defines) or its unresolvable stop",
+  ],
+  "skills/complete-pr/SKILL.md": [
+    'a merge conflict on the PBI head goes to the triage under "Triage a merge conflict"',
+    "An unresolvable conflict, unexpected branch movement, failed readback, or a second dispatch stops",
+    "- stops with `merge_conflict` on conflicts, which the triage below handles,",
+  ],
+  "USAGE.md": [
+    "A merge conflict on the PBI head is triaged as `standards/conflict-triage.md` says",
+    "the command ends with `conflict-triaged`, so the new head goes back through `/submit-draft-pr` and `/review-pr`",
+    "Unresolvable conflicts, failed checks, permission errors, unexpected pushes, and changed branch refs stop the command.",
+  ],
+};
+const UNQUALIFIED_CONFLICT_STOP =
+  /Conflicts,\s+(unexpected|failed)|conflicts\s+or\s+unexpected\s+branch\s+movement\s+stop|stops\s+on\s+conflicts,\s+unexpected/;
+
+test("delivery documents triage a conflict and stop only when it is unresolvable", async () => {
+  for (const [path, phrases] of Object.entries(CONFLICT_WORDING)) {
+    const text = await readFile(new URL(path, pluginRoot), "utf8");
+    assertPhrases(text, phrases);
+    assert.doesNotMatch(text, UNQUALIFIED_CONFLICT_STOP, path);
+  }
+});

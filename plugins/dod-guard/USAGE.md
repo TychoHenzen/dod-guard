@@ -303,8 +303,11 @@ After review, explicitly accept and complete the current pull request:
 accepted head first and marks a draft ready only when needed. It then enables
 guarded REST merge, updates a stale base only from the accepted head, waits for
 required checks, confirms the merge and linked issue state, and deletes the
-unchanged remote head branch. Conflicts, failed checks, permission errors,
-unexpected pushes, and changed branch refs stop the command.
+unchanged remote head branch. A merge conflict on the PBI head is triaged as
+`standards/conflict-triage.md` says: a verified merge commit is pushed and the
+command ends with `conflict-triaged`, so the new head goes back through
+`/submit-draft-pr` and `/review-pr`. Unresolvable conflicts, failed checks,
+permission errors, unexpected pushes, and changed branch refs stop the command.
 
 ## Release a marketplace change
 

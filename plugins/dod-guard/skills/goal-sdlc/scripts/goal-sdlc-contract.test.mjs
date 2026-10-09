@@ -144,7 +144,11 @@ test("goal-sdlc routes every stage to one tier with an explicit effort", () => {
     rows,
     [
       ...ROUTES.map(([stage, tier]) => [stage, tier, EFFORT[tier]]),
-      ["Merge conflict", "none", "stop and report, as `/complete-pr` says"],
+      [
+        "Merge conflict on a PBI head",
+        "per `standards/conflict-triage.md`",
+        "per `standards/conflict-triage.md`; unresolvable conflicts stop and report, and a verified push re-enters at `/submit-draft-pr`",
+      ],
     ],
   );
   assert.match(skill, prose("Each stage runs in one fresh subagent as one step of"));
@@ -168,6 +172,13 @@ test("goal-sdlc reports the time and parent and child completions", () => {
   assert.match(skill, prose("Every progress message and the final report carry `PBIs completed: P parent / C child`"));
   assert.match(skill, prose("counting parent and child PBIs whose Project status reads Done"));
   assert.match(skill, prose("Otherwise update `PBIs completed: P parent / C child`"));
+  assert.match(
+    skill,
+    prose(
+      "When `/complete-pr` returns `conflict-triaged`,",
+      "go to `/submit-draft-pr` for the new head, not to the completion owner.",
+    ),
+  );
   assert.doesNotMatch(skill, /PBIs completed: N/);
   for (const phrase of [
     "on a model tier from `standards/model-routing.md`",

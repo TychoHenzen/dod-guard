@@ -70,11 +70,12 @@ If a draft-skipped workflow needs recovery, verify draft readiness at the same
 repository ref and exact head, dispatch it once through the existing guarded
 workflow owner, and read back the run, workflow, ref, and head before waiting
 for required checks. A base advance invalidates the handoff and acceptance
-matrix; the bounded branch synchronization below is the only recovery path.
-Conflicts, unexpected branch movement, failed readback, or a second dispatch
-stop before review resolution, merge, cleanup, force-push, or generated-ref
-mutation. Fresh acceptance and required-check proof is mandatory at the final
-head after synchronization.
+matrix; the bounded branch synchronization below is the only recovery path,
+and a merge conflict on the PBI head goes to the triage under "Triage a merge
+conflict". An unresolvable conflict, unexpected branch movement, failed
+readback, or a second dispatch stops before review resolution, merge, cleanup,
+force-push, or generated-ref mutation. Fresh acceptance and required-check
+proof is mandatory at the final head after synchronization.
 
 Normal completion requires the exact pushed head SHA already verified by the
 calling workflow; the helper never adopts a mutable provider head as its first
@@ -114,7 +115,8 @@ it marks it ready. If it is already ready, it preserves that state. It then:
 - accepts an update commit only when its parents are the prior trusted head and
   the observed base head;
 - repeats guarded updates if the base advances again;
-- stops on conflicts, unexpected pushes, permission failures, or bounded waits;
+- stops with `merge_conflict` on conflicts, which the triage below handles,
+  and stops on unexpected pushes, permission failures, or bounded waits;
 - confirms the merge commit and linked closing issue state;
 - verifies the same-repository remote branch still points to the merged head,
   deletes it, and confirms it is absent;
