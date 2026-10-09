@@ -644,6 +644,39 @@ async function recoverMergedPullRequest(client, overrides = {}) {
   };
 }
 
+// Stop before mutating a pull request that branch protection will refuse to merge while review threads are open.
+async function requireNoUnresolvedThreads(client, pullNumber) {
+  let threads;
+  try {
+    threads = await client.getUnresolvedReviewThreads(pullNumber);
+  } catch (error) {
+    if (error instanceof CompletionError && error.code === "review-threads-unavailable") {
+      throw error;
+    }
+    const reason = error?.message ?? String(error);
+    stop(
+      "review-threads-unavailable",
+      `Review threads for pull request #${pullNumber} could not be read: ${reason}`,
+    );
+  }
+  if (!Array.isArray(threads)) {
+    stop(
+      "review-threads-unavailable",
+      `Review threads for pull request #${pullNumber} could not be read: the reader returned a non-array value.`,
+    );
+  }
+  if (threads.length > 0) {
+    const lines = threads.map((thread) => `- ${thread.url} ${thread.path}`);
+    stop(
+      "unresolved-review-threads",
+      [
+        `Pull request #${pullNumber} has ${threads.length} unresolved review thread(s), and each must be fixed with /fix-pr-review or resolved before rerunning /complete-pr.`,
+        ...lines,
+      ].join("\n"),
+    );
+  }
+}
+
 async function waitForMerge(client, completion) {
   const {
     acceptedHead,
@@ -706,6 +739,7 @@ async function waitForMerge(client, completion) {
       });
       trustedHead = pullRequest.headSha;
     } else if (checksPassed) {
+      await requireNoUnresolvedThreads(client, pullNumber);
       await client.mergePullRequest(pullNumber, trustedHead);
     } else {
       await client.wait(options.pollMs);
@@ -735,6 +769,7 @@ async function completePullRequest(client, overrides = {}) {
     repository,
   });
   const ciRecovery = createCiRecovery(options);
+  await requireNoUnresolvedThreads(client, pullRequest.number);
 
   const acceptedHead = pullRequest.headSha;
   const pullNumber = pullRequest.number;

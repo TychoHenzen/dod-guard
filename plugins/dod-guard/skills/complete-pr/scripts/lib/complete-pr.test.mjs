@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { completePullRequest, recoverMergedPullRequest, waitForHeadConvergence } from "./complete-pr.mjs";
+import { CompletionError } from "./completion-error.mjs";
 import { GitHubClient, normalizePullRequest } from "./github-client.mjs";
 
 const pendingChecks = [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }];
@@ -132,6 +133,21 @@ function workflowRun(headSha, overrides = {}) {
   };
 }
 
+function unresolvedThread(overrides = {}) {
+  return {
+    author: "pr-author",
+    id: "thread-1",
+    outdated: false,
+    path: "src/a.mjs",
+    url: "https://github.com/owner/repo/pull/24#discussion_r1",
+    ...overrides,
+  };
+}
+
+const mutationCallNames = ["markReady", "enableRepositoryAutoMerge", "dispatch", "mergePullRequest"];
+const discussionUrlPattern = /https:\/\/github\.com\/owner\/repo\/pull\/24#discussion_r1/;
+const sourcePathPattern = /src\/a\.mjs/;
+
 function nextValue(values) {
   if (values.length > 1) {
     return values.shift();
@@ -164,6 +180,7 @@ class FixtureClient {
     this.deleteBranchError = options.deleteBranchError;
     this.requiredChecksError = options.requiredChecksError;
     this.projectStatusReader = options.projectStatusReader;
+    this.reviewThreads = [...(options.reviewThreads ?? [[]])];
     this.calls = [];
   }
 
@@ -253,6 +270,15 @@ class FixtureClient {
     return this.pullRefs
       ? nextValue(this.pullRefs)
       : [{ kind: "head", ref: `refs/pull/${number}/head`, sha: this.lastPullHeadSha }];
+  }
+
+  getUnresolvedReviewThreads(number) {
+    this.calls.push(["getUnresolvedReviewThreads", number]);
+    const value = nextValue(this.reviewThreads);
+    if (value instanceof Error) {
+      throw value;
+    }
+    return value;
   }
 
   deleteBranchRef(branchName) {
@@ -1722,4 +1748,97 @@ test("rejects an update commit that is not the observed head and base merge", as
   });
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "untrusted_base_update" });
+});
+
+test("merges a draft with green checks and no unresolved thread without any Codex read or wait", async () => {
+  const localGit = createFixtureLocalGit();
+  const mergedState = "MERGED";
+  const client = new FixtureClient({
+    pulls: [
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: mergedState }),
+    ],
+  });
+
+  const result = await completePullRequest(client, { ...immediateOptions, localGit });
+
+  assert.equal(result.trustedHead, "head-1");
+  assert.deepEqual(client.calls.filter(([name]) => name === "markReady"), [["markReady", 24]]);
+  assert.deepEqual(client.calls.filter(([name]) => name === "mergePullRequest"), [["mergePullRequest", 24, "head-1"]]);
+  assert.equal(client.calls.some(([name]) => name === "wait"), false);
+  const threadReads = client.calls.filter(([name]) => name === "getUnresolvedReviewThreads");
+  assert.equal(threadReads.length, 2);
+  assert.ok(client.calls.indexOf(threadReads[0]) < client.calls.findIndex(([name]) => name === "markReady"));
+  assert.equal(GitHubClient.prototype.getCodexReview, undefined);
+});
+
+for (const [label, pullRequest] of [["draft", pull()], ["ready", pull({ isDraft: false })]]) {
+  test(`stops a ${label} pull request with an unresolved review thread before any mutation`, async () => {
+    const client = new FixtureClient({
+      pulls: [pullRequest],
+      reviewThreads: [[unresolvedThread()]],
+      workflowRuns: [[]],
+    });
+
+    const failure = await completePullRequest(client, immediateOptions).catch((error) => error);
+
+    assert.equal(failure.code, "unresolved-review-threads");
+    assert.match(failure.message, discussionUrlPattern);
+    assert.match(failure.message, sourcePathPattern);
+    assert.deepEqual(client.calls.filter(([name]) => mutationCallNames.includes(name)), []);
+  });
+}
+
+test("a thread opened during the required-check wait stops before the merge, and a rerun after it is resolved merges once", async () => {
+  const mergedState = "MERGED";
+  const firstRun = new FixtureClient({
+    checks: [pendingChecks, passingChecks],
+    pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
+    reviewThreads: [[], [unresolvedThread()]],
+  });
+
+  await assert.rejects(completePullRequest(firstRun, immediateOptions), { code: "unresolved-review-threads" });
+  assert.equal(firstRun.calls.some(([name]) => name === "wait"), true);
+  assert.equal(firstRun.calls.some(([name]) => name === "mergePullRequest"), false);
+
+  const rerun = new FixtureClient({
+    pulls: [
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: mergedState }),
+    ],
+  });
+
+  const result = await completePullRequest(rerun, { ...immediateOptions, localGit: createFixtureLocalGit() });
+
+  assert.deepEqual(rerun.calls.filter(([name]) => name === "mergePullRequest"), [["mergePullRequest", 24, "head-1"]]);
+  assert.equal(result.trustedHead, "head-1");
+});
+
+test("a thread read that throws stops with review-threads-unavailable before any mutation", async () => {
+  const client = new FixtureClient({
+    pulls: [pull()],
+    reviewThreads: [new Error("GraphQL request timed out")],
+    workflowRuns: [[]],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "review-threads-unavailable" });
+  assert.deepEqual(client.calls.filter(([name]) => mutationCallNames.includes(name)), []);
+});
+
+test("a reader-reported review-threads-unavailable error stops before any mutation", async () => {
+  const client = new FixtureClient({
+    pulls: [pull()],
+    reviewThreads: [
+      new CompletionError("review-threads-unavailable", "Review threads for pull request #24 could not be read."),
+    ],
+    workflowRuns: [[]],
+  });
+
+  await assert.rejects(completePullRequest(client, immediateOptions), { code: "review-threads-unavailable" });
+  assert.deepEqual(client.calls.filter(([name]) => mutationCallNames.includes(name)), []);
 });
