@@ -6,7 +6,7 @@
 // #683 open. #840 and #841 have not merged; their pull requests #901 and #902
 // and those SHAs are synthetic. #831 (PR #836, child #832) and #833 (PR #839)
 // are the closed-and-Done deliveries that carry no completion record.
-import { renderCompletionRecord } from "./closure-records.mjs";
+import { RECORD_KINDS, renderCompletionRecord } from "./closure-records.mjs";
 
 const REPOSITORY = "TychoHenzen/dod-guard";
 const PROJECT = Object.freeze({
@@ -110,18 +110,13 @@ function completionComment(root, overrides = {}) {
   return { id: Number(`${root}01`), body: renderCompletionRecord(fields) };
 }
 
-const QUOTED_RECORDS = Object.freeze({
-  completion: { heading: "## Completion evidence", marker: "<!-- dod-guard-completion-evidence -->" },
-  closure: { heading: "## Closure evidence", marker: "<!-- dod-guard-closure-evidence -->" },
-});
-
 // A handoff comment that quotes record markers mid-text in each form a handoff or
 // review uses: inline code, a fenced copy, and the heading and marker on their own
 // lines under another heading. It is never a record of either kind.
 function quotingComment(id, kinds = ["completion", "closure"]) {
   const body = ["## Implementation handoff", "", "Task T1 changed the closure helper.", ""];
   for (const kind of kinds) {
-    const { heading, marker } = QUOTED_RECORDS[kind];
+    const { heading, marker } = RECORD_KINDS[kind];
     body.push(
       `The helper writes \`${marker}\` under \`${heading}\`.`,
       "",

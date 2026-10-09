@@ -171,6 +171,7 @@ function renderClosureEvidence({ issue, stateReason, evidence }) {
 }
 
 export {
+  RECORD_KINDS,
   isRecord,
   markdownSection,
   parseCompletionRecord,
