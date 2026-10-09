@@ -252,7 +252,8 @@ node <plugin-root>/skills/complete-pr/scripts/closure.mjs plan --snapshot=<file>
 node <plugin-root>/skills/complete-pr/scripts/closure.mjs apply --snapshot=<file> --hierarchy=<issue>
 ```
 
-The snapshot covers the original, its sub-issues, and their replacement roots.
+The snapshot is the closure snapshot that `standards/project-workflow.md`
+defines, read after the replacement roots carry their `supersedes` records.
 Report any hold with its reasons instead of closing by hand.
 
 ## Record discovery and re-refinement state

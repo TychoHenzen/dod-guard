@@ -48,3 +48,22 @@ test("complete-pr records completion and closes replaced issues after finalizati
   );
   assert.match(section, prose("Closing keywords and the helper's", "linked-issue confirmation are unchanged."));
 });
+
+test("every caller saves the one closure snapshot the standard defines", async () => {
+  const goalSdlc = await readFile(new URL("../../goal-sdlc/SKILL.md", import.meta.url), "utf8");
+  const refineBacklog = await readFile(new URL("../../refine-backlog-item/SKILL.md", import.meta.url), "utf8");
+  assert.match(standard, prose("closure snapshot"));
+  for (const field of ["children", "body", "state_reason", "comments", "statusFieldId", "doneOptionId"]) {
+    assert.ok(standard.includes("`" + field + "`"), field);
+  }
+  assert.match(standard, prose("sub-issue list missing"));
+  for (const text of [skill, goalSdlc, refineBacklog]) {
+    assert.match(text, prose("closure snapshot that `standards/project-workflow.md` defines"));
+  }
+  assert.doesNotMatch(skill, prose("in the shape that `closure.mjs`"));
+  assert.match(skill, /^## Close delivered issues for goal-sdlc$/m);
+  const start = skill.indexOf("## Close delivered issues for goal-sdlc");
+  const section = skill.slice(start, skill.indexOf("## Result", start));
+  assert.match(section, prose("closure.mjs apply --snapshot=<file>"));
+  assert.match(section, prose("resolve no pull request"));
+});

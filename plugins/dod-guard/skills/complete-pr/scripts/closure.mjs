@@ -20,8 +20,9 @@ const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issu
                           --matrix=<rows.json> [--children=<n,...>]
        closure.mjs annotate --snapshot=<file.json>
 
-The snapshot is the select-next.mjs snapshot plus, on every issue, its body,
-state_reason, and comments ([{id, body}]), and for apply a project object
+The snapshot is the closure snapshot that standards/project-workflow.md defines:
+the select-next.mjs snapshot of the whole Project plus, on every issue, its
+body, state_reason, and comments ([{id, body}]), and for apply a project object
 {owner, number, statusFieldId, doneOptionId}. plan prints the closes, status
 repairs, holds, unverified-closed reports, and deliveries; apply performs each
 close as read, comment, close, readback, Project Done, and it also sets Done on

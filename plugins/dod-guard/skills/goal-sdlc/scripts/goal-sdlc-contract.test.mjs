@@ -42,7 +42,14 @@ test("goal-sdlc links every lifecycle owner by relative path", () => {
 test("goal-sdlc cleans up through the closure helper and has no write path of its own", () => {
   assert.match(skill, prose("**Clean up, then select one parent.**"));
   assert.match(skill, prose("run `node closure.mjs plan", "--snapshot=<file>`, report each close, hold, and `unverified-closed` entry"));
-  assert.match(skill, prose("delegate planned closes to its `apply` as a `/complete-pr`", "stage"));
+  assert.match(
+    skill,
+    prose(
+      "delegate planned closes and status repairs to",
+      "Close delivered issues for goal-sdlc",
+      "as one write-capable stage",
+    ),
+  );
   assert.match(skill, prose("Run `closure.mjs annotate` on the snapshot, which takes", "`activeCheckpoint` and `trustedHeadSha` from the completion records"));
   assert.ok(skill.indexOf("closure.mjs plan") < skill.indexOf("scripts/select-next.mjs"), "cleanup runs before selection");
   for (const write of [/gh (issue|pr|project) (close|edit|item-edit)/, /--method (POST|PATCH)/, /project-status\.mjs/, /state=closed/]) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -167,4 +167,33 @@ test("a stop reports its partial state and exits 1", async () => {
   assert.equal(runCli(["apply", `--snapshot=${await saved("snapshot.json", snapshot)}`], { runner: github.runner, ...io }), 1);
   assert.match(io.text.err, /closure apply failed: issue #777 readback disagrees with the planned close/);
   assert.match(io.text.err, /"state":"open"/);
+});
+
+test("apply runs on a snapshot built to the documented closure snapshot shape", async () => {
+  const TOP_KEYS = ["repository", "defaultBranch", "project", "items", "issues", "pullRequests"];
+  const PROJECT_KEYS = ["owner", "number", "statusFieldId", "doneOptionId"];
+  const ITEM_KEYS = ["id", "content", "fields"];
+  const ISSUE_KEYS = ["number", "state", "title", "parent", "children", "body", "state_reason", "comments"];
+  const PULL_KEYS = ["number", "state", "mergedAt", "head", "base", "mergeCommit", "requiredChecks"];
+  const ADDED_BY_STANDARD = ["children", "body", "state_reason", "comments", "statusFieldId", "doneOptionId"];
+  const pick = (record, keys) =>
+    Object.fromEntries(keys.filter((key) => key in record).map((key) => [key, record[key]]));
+  const standard = await readFile(new URL("../../../standards/project-workflow.md", import.meta.url), "utf8");
+  for (const key of [...ISSUE_KEYS, ...PROJECT_KEYS].filter((name) => ADDED_BY_STANDARD.includes(name))) {
+    assert.ok(standard.includes("`" + key + "`"), key);
+  }
+  const snapshot = recordedSnapshot();
+  const documented = pick(snapshot, TOP_KEYS);
+  documented.project = pick(snapshot.project, PROJECT_KEYS);
+  documented.items = snapshot.items.map((entry) => pick(entry, ITEM_KEYS));
+  documented.issues = snapshot.issues.map((entry) => pick(entry, ISSUE_KEYS));
+  documented.pullRequests = snapshot.pullRequests.map((entry) => pick(entry, PULL_KEYS));
+  const github = fakeGitHub(documented);
+  const io = capture();
+  const file = await saved("snapshot.json", documented);
+  assert.equal(runCli(["apply", `--snapshot=${file}`], { runner: github.runner, ...io }), 0, io.text.err);
+  assert.deepEqual(JSON.parse(io.text.out).applied, [775, 776, 777, 778, 683]);
+  for (const number of [775, 776, 777, 778, 683]) {
+    assert.equal(github.state.statuses.get(number), "Done");
+  }
 });

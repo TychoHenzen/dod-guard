@@ -94,6 +94,22 @@ test("a rerun after a stopped Done write sets Done without another comment or cl
   assert.equal(evidenceCount(github, 777), 1);
 });
 
+test("a status repair stops when the issue was reopened", () => {
+  const snapshot = recordedSnapshot({ roots: [840] });
+  const failDone = (args) => mutating(args) && args.some((value) => String(value).startsWith("users/"));
+  const github = fakeGitHub(snapshot, { failOnce: failDone });
+  assert.throws(() => applyClosures(snapshot, { runner: github.runner }), (error) => {
+    assert.equal(error.code, "closure_stop");
+    assert.deepEqual(error.state.steps.map(({ step }) => step), ["read", "comment", "close", "readback"]);
+    return true;
+  });
+  const after = snapshotAfter(snapshot, github);
+  github.state.issues.get(777).state = "open";
+  const mark = github.calls.length;
+  assert.throws(() => applyClosures(after, { runner: github.runner }), /issue #777 is no longer closed/);
+  assert.deepEqual(github.calls.slice(mark).filter(mutating), []);
+});
+
 test("a readback that disagrees stops with the actual state and no further mutation", () => {
   const snapshot = recordedSnapshot({ roots: [840] });
   const github = fakeGitHub(snapshot, { ignoreClose: true });

@@ -237,6 +237,7 @@ test("records replacement roots and closes only a pure hierarchy record", () => 
   assert.match(skill, prose("close it now through the closure helper as `not_planned` with its evidence comment"));
   assert.match(skill, prose("closure.mjs plan --snapshot=<file> --hierarchy=<issue>"));
   assert.match(skill, prose("closure.mjs apply --snapshot=<file> --hierarchy=<issue>"));
+  assert.match(skill, prose("closure snapshot that `standards/project-workflow.md` defines"));
   for (const [fixture, marker] of [
     ["Epic is split into replacement roots", "Each root carries a `supersedes` record naming the originals it replaces."],
     ["Epic is split into replacement roots", "The epic closes as `not_planned` through the closure helper"],

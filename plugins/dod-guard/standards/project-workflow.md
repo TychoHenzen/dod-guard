@@ -151,6 +151,23 @@ their place.
   `inapplicable`. A record with pending rows is `merged-pending`, not verified.
   Recording again updates the same comment in place.
 
+Each caller of `closure.mjs plan`, `apply`, or `annotate` saves one closure
+snapshot as JSON and passes it with `--snapshot`. The closure snapshot is the
+whole linked Project, read the way goal-sdlc's select-next snapshot is:
+`repository`, `defaultBranch`, every item from every page, every listed issue,
+and every linked pull request. On every issue it also carries `children` (an
+empty array when it has none), `body`, `state_reason`, and `comments` as
+`[{id, body}]`. It carries a `project` object with `owner`, `number`,
+`statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
+Status field node ID and Done option ID from the Project fields read, the same
+values `/complete-pr` passes to `project-status.mjs`. The whole Project is read
+because a `supersedes` record lives only on its root, and a parent closes only
+after every sub-issue is checked, so a narrower read misses roots and siblings.
+An issue whose `children` list is missing is held with "sub-issue list missing",
+never treated as childless. Any caller's run may therefore also close other
+verified originals and parents, and report older `unverified-closed` records,
+because the helper is the single closing authority.
+
 A delivery is verified only when its completion record matches the live pull
 request readback (merge commit, trusted head, default base, passing checks) and
 the goal-sdlc queue decision classifies its group as `complete` with

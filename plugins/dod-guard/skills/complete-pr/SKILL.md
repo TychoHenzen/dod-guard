@@ -218,9 +218,8 @@ node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --re
 The `## Completion evidence` record is defined in
 `standards/project-workflow.md`. The record step reads before it writes,
 updates an existing record in place, and reads it back, so a stopped run reruns
-it safely. Then save a snapshot of the delivered root, every issue its
-`supersedes` record names, and their parents in the shape that `closure.mjs`
-prints when run without arguments, and run:
+it safely. Then save the closure snapshot that `standards/project-workflow.md`
+defines, read after the record step, and run:
 
 ```text
 node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
@@ -234,6 +233,20 @@ disagrees, and a rerun completes the remaining steps without a second comment;
 it also sets Done on an issue it already closed whose Project status write
 stopped. Report every hold with its reason. Closing keywords and the helper's
 linked-issue confirmation are unchanged.
+
+## Close delivered issues for goal-sdlc
+
+When `/goal-sdlc` delegates its start-of-run cleanup, run only this section:
+resolve no pull request, merge nothing, take the closure snapshot that
+`/goal-sdlc` saved, and run:
+
+```text
+node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
+node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
+```
+
+Report the applied closes, status repairs, holds, `unverified-closed` reports,
+and any stop with its observed state. Make no other issue or Project write.
 
 ## Result
 
