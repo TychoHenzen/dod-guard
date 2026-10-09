@@ -235,7 +235,26 @@ explicitly linked replacement issues. Research and estimate each resulting
 PBI separately before it can move to `Todo`. Merely adding dependent subtasks
 does not clear the block. The original issue can move to `Todo` only if its
 remaining scope is independently deliverable and evidence supports a lower
-effort label. Do not close the original issue as part of refinement.
+effort label.
+
+Every replacement delivery root records the issues it replaces in one
+`supersedes` record under its `## Implementation notes`, as
+`standards/project-workflow.md` defines. An original that still owns delivery
+scope stays open; `/complete-pr` closes it once its root's delivery is
+verified. When the split leaves the original as a pure hierarchy record, with
+no linked pull request, no unchecked criterion outside its sub-issues, and
+every sub-issue settled or named by a replacement root's `supersedes` record,
+close it now through the closure helper as `not_planned` with its evidence
+comment:
+
+```text
+node <plugin-root>/skills/complete-pr/scripts/closure.mjs plan --snapshot=<file> --hierarchy=<issue>
+node <plugin-root>/skills/complete-pr/scripts/closure.mjs apply --snapshot=<file> --hierarchy=<issue>
+```
+
+The snapshot is the closure snapshot that `standards/project-workflow.md`
+defines, read after the replacement roots carry their `supersedes` records.
+Report any hold with its reasons instead of closing by hand.
 
 ## Record discovery and re-refinement state
 

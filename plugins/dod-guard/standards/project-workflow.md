@@ -130,6 +130,73 @@ requirement in `Backlog` and moves a coherent PBI to `Todo`. `next-ticket`
 uses the records as its implementation handoff and maps tasks to changed
 files, commits, and checks. It does not create a parallel local plan.
 
+## Closure records
+
+Two records let delivered and superseded issues close without a person. They
+are defined here once; `skills/complete-pr/scripts/lib/closure-records.mjs`
+parses and renders them, `skills/complete-pr/scripts/closure.mjs` is the
+command that records and applies them, and no prose comment is parsed in
+their place.
+
+- `supersedes`: a replacement delivery root carries one `### supersedes` record
+  under its `## Implementation notes`, a JSON block holding a non-empty array of
+  issue numbers in the same repository that the root replaces. The record lives
+  only on the root; the original carries no reverse link.
+- `## Completion evidence`: after a verified merge, `complete-pr` posts one
+  comment with this heading on each linked closing issue and each finalized
+  child. It carries the marker `<!-- dod-guard-completion-evidence -->` and a
+  JSON block with `pullRequest`, `mergeCommit`, `trustedHeadSha` (the head the
+  merge helper trusted, which moves after a base update), `requiredChecks`, and
+  `pendingRows`: every acceptance-matrix row whose status is neither `pass` nor
+  `inapplicable`. A record with pending rows is `merged-pending`, not verified.
+  Recording again updates the same comment in place.
+
+Each caller of `closure.mjs plan`, `apply`, or `annotate` saves one closure
+snapshot as JSON and passes it with `--snapshot`. The closure snapshot is the
+whole linked Project, read the way goal-sdlc's select-next snapshot is:
+`repository`, `defaultBranch`, every item from every page, every listed issue,
+and every linked pull request. On every issue it also carries `children` (an
+empty array when it has none), `body`, `state_reason`, and `comments` as
+`[{id, body}]`. It carries a `project` object with `owner`, `number`,
+`statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
+Status field node ID and Done option ID from the Project fields read, the same
+values `/complete-pr` passes to `project-status.mjs`. The whole Project is read
+because a `supersedes` record lives only on its root, and a parent closes only
+after every sub-issue is checked, so a narrower read misses roots and siblings.
+An issue whose `children` list is missing is held with "sub-issue list missing",
+never treated as childless. Any caller's run may therefore also close other
+verified originals and parents, and report older `unverified-closed` records,
+because the helper is the single closing authority.
+
+A delivery is verified only when its completion record matches the live pull
+request readback (merge commit, trusted head, default base, passing checks) and
+the goal-sdlc queue decision classifies its group as `complete` with
+`trustedHeadSha` and a finished checkpoint taken from the records. Comment text
+alone is never trusted. When a root's delivery is verified, each open issue its
+`supersedes` record names closes as `completed`. A malformed, cross-repository,
+or duplicate record, or a delivery that is not verified, is a hold with a named
+reason and no write. Every close posts one `## Closure evidence` comment
+(marker `<!-- dod-guard-closure-evidence -->`) before the issue closes, so a
+rerun never posts a second one.
+
+An issue this helper closed whose Project status is not Done is planned as a
+status repair, so a rerun finishes a stopped Done write without a second
+comment or close.
+
+After any close, the helper walks to the closed issue's parent and closes it as
+`completed` when every sub-issue is closed with verified evidence or superseded
+by a verified root, no linked pull request is open, and no unchecked acceptance
+criterion outside a sub-issue remains. The walk stops at the first parent that
+does not qualify, or after five levels. A record that is already closed or Done
+without verified evidence is reported as `unverified-closed` and is never
+reopened or edited.
+
+`refine-backlog-item` closes a pure hierarchy record as `not_planned`: an issue
+with no linked pull request, no unchecked criterion outside its sub-issues, and
+every sub-issue either settled or named by an existing root's `supersedes`
+record. An original that still owns delivery scope stays open until its root's
+delivery is verified.
+
 ## Convergence record
 
 Before a structured PBI gets a draft PR, `submit-draft-pr` compares the

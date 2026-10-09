@@ -227,6 +227,30 @@ test("manual fixtures include each route and its record markers", () => {
   }
 });
 
+test("records replacement roots and closes only a pure hierarchy record", () => {
+  assert.doesNotMatch(skill, prose("Do not close the original issue as part of refinement"));
+  assert.match(
+    skill,
+    prose("Every replacement delivery root records the issues it replaces in one", "`supersedes` record"),
+  );
+  assert.match(skill, prose("An original that still owns delivery scope stays open"));
+  assert.match(skill, prose("close it now through the closure helper as `not_planned` with its evidence comment"));
+  assert.match(skill, prose("closure.mjs plan --snapshot=<file> --hierarchy=<issue>"));
+  assert.match(skill, prose("closure.mjs apply --snapshot=<file> --hierarchy=<issue>"));
+  assert.match(skill, prose("closure snapshot that `standards/project-workflow.md` defines"));
+  for (const [fixture, marker] of [
+    [
+      "Epic is split into replacement roots",
+      "Each root carries a `supersedes` record naming the originals it replaces.",
+    ],
+    ["Epic is split into replacement roots", "The epic closes as `not_planned` through the closure helper"],
+    ["One sub-issue keeps scope", "It stays open; the epic is not a pure hierarchy record"],
+  ]) {
+    const row = fixtures.split("\n").find((line) => line.startsWith(`| ${fixture}`));
+    assert.ok(row?.includes(marker), `fixture ${fixture} is missing: ${marker}`);
+  }
+});
+
 test("plans research on the strong tier, investigates on the cheap tier, and decides on the strong tier", () => {
   assert.match(
     skill,
