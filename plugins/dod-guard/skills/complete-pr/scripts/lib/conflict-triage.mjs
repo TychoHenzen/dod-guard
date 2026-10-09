@@ -25,6 +25,8 @@ export const STOP_CLASSES = Object.freeze(["binary", "modify-delete", "unclassif
 
 const SHA = /^[0-9a-f]{40}$/;
 const PUSH_REFSPEC = /^[0-9a-f]{40}:refs\/heads\/[^+:\s]+$/;
+// ASSUMPTION: git reports a refused push with one of these phrases; any other
+// push failure is treated as uncertain, read back, and retried once.
 const PUSH_REJECTED = /\[rejected\]|\[remote rejected\]|non-fast-forward|fetch first|stale info/i;
 const FORBIDDEN_ARGUMENTS = new Set([
   "--force",
@@ -40,9 +42,13 @@ const UNMERGED_CODES = new Set(["DD", "AU", "UD", "UA", "DU", "AA", "UU"]);
 const CONTENT_CONFLICT_CODES = new Set(["UU", "AA"]);
 const MODIFY_DELETE_CODES = new Set(["UD", "DU"]);
 const SPECIAL_MODES = new Set(["120000", "160000"]);
+// ASSUMPTION: test files live under a test directory or carry a .test or
+// .spec suffix; the class only tells the applier the stale-test rule applies.
 const TEST_PATH = /(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[^/]+$/i;
 // A file that announces it is generated, but matches no generator the target
 // repository declares, must not be hand-merged.
+// ASSUMPTION: generated files announce themselves with one of these markers
+// in their first lines; the rule rejects inferring generators from names.
 const GENERATED_MARKER = /@generated|do not edit/i;
 const GENERATED_PROBE_LINES = 5;
 // Git treats a NUL byte in the first 8000 bytes as binary content.
@@ -408,8 +414,15 @@ export function verifyResolution(git, { trustedHead, recordedBase, conflicts, de
   for (const path of unstaged) {
     problems.push({ path, problem: "change is not in the resolution" });
   }
-  const checkArgs = source === "" ? ["diff", "--cached", "--check"] : ["diff", "--check", trustedHead, "HEAD"];
-  const check = git(checkArgs, [0, 2]).stdout.trim();
+  // Only the hand-resolved paths are the triage's own text. Lines the base
+  // brings in unchanged, and generated output that regen-check owns, are not
+  // judged here; tracked bundles legitimately carry trailing whitespace.
+  const resolvedPaths = conflicts
+    .filter((conflict) => findGenerator(conflict.path, generators) === null)
+    .map((conflict) => conflict.path);
+  const checkRange = source === "" ? ["--cached"] : [trustedHead, "HEAD"];
+  const check =
+    resolvedPaths.length === 0 ? "" : git(["diff", "--check", ...checkRange, "--", ...resolvedPaths], [0, 2]).stdout.trim();
   if (check) {
     problems.push({ path: null, problem: `git diff --check: ${check}` });
   }

@@ -235,9 +235,15 @@ test("classifies a declared generated path and stops on an undeclared one", () =
 
 test("regenerates a declared generated path and accepts only its declared outputs", () => {
   const files = (side) => ({ "dist/out.js": `// @generated\nconsole.log("${side}");\n`, "src/value.txt": `${side}\n` });
-  const scenario = createScenario({ base: files("base"), branch: files("branch"), master: files("master") });
+  // Trailing whitespace that master brings in unchanged, or that the generator
+  // writes, is not the triage's text, so it must not fail verification.
+  const scenario = createScenario({
+    base: files("base"),
+    branch: files("branch"),
+    master: { ...files("master"), "docs/notes.txt": "master note \n" },
+  });
   const generators = [{ command: "node build.mjs", paths: ["dist/*.js"] }];
-  const rebuilt = '// @generated\nconsole.log("branch master");\n';
+  const rebuilt = '// @generated\nconsole.log("branch master"); \n';
   try {
     const started = startTriage(scenario.git, { ...scenario.input, generators });
     assert.deepEqual(
@@ -285,7 +291,7 @@ test("regenerates a declared generated path and accepts only its declared output
       sh(scenario.work, ["rev-list", "--parents", "-n", "1", mergeSha]),
       `${mergeSha} ${scenario.trustedHead} ${scenario.baseSha}`,
     );
-    assert.equal(`${sh(scenario.work, ["show", `${mergeSha}:dist/out.js`])}\n`, rebuilt);
+    assert.equal(sh(scenario.work, ["show", `${mergeSha}:dist/out.js`]), rebuilt.trim());
   } finally {
     scenario.cleanup();
   }
