@@ -18,11 +18,18 @@ function lines(text) {
   return String(text ?? "").replace(/\r\n/g, "\n");
 }
 
-function implementationNotes(body) {
+// Returns the text under one level-two heading, up to the next level-two heading.
+// The heading is data, so its regex specials are escaped before the match.
+function markdownSection(body, heading) {
   const text = lines(body);
-  const start = text.search(/^## Implementation notes[ \t]*$/m);
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const start = text.search(new RegExp(`^## ${escaped}[ \\t]*$`, "m"));
   if (start < 0) return "";
-  const rest = text.slice(text.indexOf("\n", start) + 1);
+  const newline = text.indexOf("\n", start);
+  // With no line break after the heading there is no section text. Without this
+  // guard the slice would restart at index 0 and return the text above the heading.
+  if (newline < 0) return "";
+  const rest = text.slice(newline + 1);
   const end = rest.search(/^## /m);
   return end < 0 ? rest : rest.slice(0, end);
 }
@@ -64,7 +71,7 @@ function supersedesEntryError(entry, repository) {
 // Returns { numbers: [] } when the body has no record, { numbers } for a valid
 // record, and { error } naming why the record cannot be used.
 function parseSupersedes(body, repository) {
-  const records = subsections(implementationNotes(body), "supersedes");
+  const records = subsections(markdownSection(body, "Implementation notes"), "supersedes");
   if (records.length === 0) return { numbers: [] };
   if (records.length > 1) return { error: "duplicate supersedes record" };
   const block = jsonBlock(records[0]);
@@ -142,6 +149,7 @@ function renderClosureEvidence({ issue, stateReason, evidence }) {
 export {
   CLOSURE_MARKER,
   COMPLETION_MARKER,
+  markdownSection,
   markedComments,
   parseCompletionRecord,
   parseSupersedes,

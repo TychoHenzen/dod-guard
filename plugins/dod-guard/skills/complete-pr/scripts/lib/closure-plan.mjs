@@ -5,6 +5,7 @@
 import { defaultQueueDecision } from "../../../goal-sdlc/scripts/lib/queue-readback.mjs";
 import {
   CLOSURE_MARKER,
+  markdownSection,
   markedComments,
   parseCompletionRecord,
   parseSupersedes,
@@ -42,8 +43,12 @@ function indexSnapshot(snapshot) {
   };
 }
 
+// Null means the sub-issue list was never read. No rule may then treat the issue
+// as childless, or as having only the children that point back at it.
 function childNumbers(index, number) {
-  const listed = (index.issues.get(number)?.children ?? []).map(numberOf);
+  const children = index.issues.get(number)?.children;
+  if (!Array.isArray(children)) return null;
+  const listed = children.map(numberOf);
   const pointing = index.order.filter((child) => numberOf(index.issues.get(child)?.parent) === number);
   return [...new Set([...listed, ...pointing].filter((child) => child !== null))];
 }
@@ -112,7 +117,9 @@ function judgeDelivery(index, number) {
     return { status: "merged-pending", record, reasons: [`acceptance rows pending: ${record.pendingRows.join(", ")}`, ...mismatches] };
   }
   if (mismatches.length > 0) return { status: "unverified", record, reasons: mismatches };
-  const records = [number, ...childNumbers(index, number)].map((issue) =>
+  const children = childNumbers(index, number);
+  if (children === null) return { status: "unverified", record, reasons: ["sub-issue list missing"] };
+  const records = [number, ...children].map((issue) =>
     queueRecord(index, issue, issue === number ? null : number, record),
   );
   const decision = defaultQueueDecision(records, { repository: index.repository, defaultBranch: index.defaultBranch });
@@ -183,20 +190,12 @@ function planReplacedOriginal(context, root, original) {
 
 const PARENT_WALK_LIMIT = 5;
 
-function sectionLines(body, heading) {
-  const text = String(body ?? "").replace(/\r\n/g, "\n");
-  const start = text.search(new RegExp(`^## ${heading}[ \\t]*$`, "m"));
-  if (start < 0) return [];
-  const rest = text.slice(text.indexOf("\n", start) + 1);
-  const end = rest.search(/^## /m);
-  return (end < 0 ? rest : rest.slice(0, end)).split("\n");
-}
-
 // ASSUMPTION: an unchecked criterion that names one of the issue's own
 // sub-issues as #N belongs to that sub-issue's delivery, so it does not hold
 // the parent; any other unchecked criterion is the parent's own scope.
 function unmappedCriteria(issue, children) {
-  return sectionLines(issue?.body, "Acceptance criteria")
+  return markdownSection(issue?.body, "Acceptance criteria")
+    .split("\n")
     .filter((line) => /^\s*- \[ \]/.test(line))
     .filter((line) => !children.some((child) => new RegExp(`#${child}\\b`).test(line)))
     .map((line) => line.replace(/^\s*- \[ \]\s*/, "").trim());
@@ -260,15 +259,28 @@ function childReason(context, child, seen) {
   return evidence.verified ? null : `child #${child} closed without verified evidence: ${evidence.missing.join("; ")}`;
 }
 
-function parentReasons(context, number, seen = new Set([number])) {
+// The preconditions both kinds of parent close share, kept in one place so a rule
+// added for one kind cannot silently miss the other. A result without `children`
+// carries only the reasons the parent cannot be judged.
+function recordBase(context, number) {
   const issue = context.index.issues.get(number);
-  if (!issue) return [`issue #${number} readback missing`];
+  if (!issue) return { reasons: [`issue #${number} readback missing`] };
   const children = childNumbers(context.index, number);
-  if (children.length === 0) return ["has no sub-issues"];
-  const reasons = children.map((child) => childReason(context, child, new Set(seen))).filter(Boolean);
+  if (children === null) return { reasons: ["sub-issue list missing"] };
+  if (children.length === 0) return { reasons: ["has no sub-issues"] };
+  const reasons = unmappedCriteria(issue, children).map(
+    (text) => `unchecked acceptance criterion not mapped to a sub-issue: ${text}`,
+  );
+  return { issue, children, reasons };
+}
+
+function parentReasons(context, number, seen = new Set([number])) {
+  const base = recordBase(context, number);
+  if (!base.children) return base.reasons;
+  const reasons = base.children.map((child) => childReason(context, child, new Set(seen))).filter(Boolean);
   const pulls = itemPullNumbers(context.index.items.get(number));
   reasons.push(...pulls.filter((pull) => isOpen(context.index.pulls.get(pull))).map((pull) => `open linked pull request #${pull}`));
-  reasons.push(...unmappedCriteria(issue, children).map((text) => `unchecked acceptance criterion not mapped to a sub-issue: ${text}`));
+  reasons.push(...base.reasons);
   return reasons;
 }
 
@@ -276,13 +288,11 @@ function parentReasons(context, number, seen = new Set([number])) {
 // no unchecked criterion outside its sub-issues, and every sub-issue either
 // settled or named by an existing replacement root's supersedes record.
 function hierarchyReasons(context, number, seen = new Set([number])) {
-  const issue = context.index.issues.get(number);
-  if (!issue) return [`issue #${number} readback missing`];
-  const children = childNumbers(context.index, number);
-  if (children.length === 0) return ["has no sub-issues"];
+  const base = recordBase(context, number);
+  if (!base.children) return base.reasons;
   const reasons = itemPullNumbers(context.index.items.get(number)).map((pull) => `linked pull request #${pull}`);
-  reasons.push(...unmappedCriteria(issue, children).map((text) => `unchecked acceptance criterion not mapped to a sub-issue: ${text}`));
-  for (const child of children) {
+  reasons.push(...base.reasons);
+  for (const child of base.children) {
     if (context.rootsOf(child).length > 0) continue;
     const reason = childReason(context, child, new Set(seen));
     if (reason) reasons.push(`${reason}, and no replacement root supersedes it`);

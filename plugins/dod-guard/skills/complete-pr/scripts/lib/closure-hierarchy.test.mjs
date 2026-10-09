@@ -76,3 +76,26 @@ test("a close this helper made stays verified on the next run", () => {
   assert.deepEqual(rerun.holds, []);
   assert.deepEqual(rerun.reports, []);
 });
+
+test("holds a parent whose sub-issue list was not read", () => {
+  const snapshot = recordedSnapshot();
+  const parent = snapshot.issues.find(({ number }) => number === 683);
+  delete parent.children;
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.closes.map(({ issue, rule }) => [issue, rule]), [
+    [775, "replaced-original"],
+    [776, "replaced-original"],
+    [777, "replaced-original"],
+    [778, "replaced-original"],
+  ]);
+  assert.deepEqual(holdOf(plan, 683).reasons, ["sub-issue list missing"]);
+});
+
+test("a root without its sub-issue list does not verify", () => {
+  const snapshot = recordedSnapshot({ roots: [840] });
+  const root = snapshot.issues.find(({ number }) => number === 840);
+  delete root.children;
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.closes, []);
+  assert.deepEqual(holdOf(plan, 777).reasons, ["root #840 unverified: sub-issue list missing"]);
+});

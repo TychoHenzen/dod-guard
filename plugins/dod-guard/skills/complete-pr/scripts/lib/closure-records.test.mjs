@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  markdownSection,
   parseCompletionRecord,
   parseSupersedes,
   pendingMatrixRows,
@@ -74,4 +75,28 @@ test("counts every matrix row that is neither pass nor inapplicable as pending",
     pendingRows: pendingMatrixRows(rows),
   });
   assert.deepEqual(parseCompletionRecord([{ id: 5, body: record }]).record.pendingRows, ["AC-03", "AC-04"]);
+});
+
+test("markdownSection returns one heading's text and matches the heading literally", () => {
+  const body = [
+    "## Notes draft",
+    "",
+    "Decoy section.",
+    "",
+    "## Notes (draft)",
+    "",
+    "First line.",
+    "### sub",
+    "Second line.",
+    "",
+    "## Last",
+    "",
+    "Tail.",
+    "",
+  ].join("\n");
+  assert.equal(markdownSection(body, "Notes (draft)"), "\nFirst line.\n### sub\nSecond line.\n\n");
+  assert.equal(markdownSection(body, "Last"), "\nTail.\n");
+  assert.equal(markdownSection(body, "Missing"), "");
+  assert.equal(markdownSection("## Last\r\n\r\nTail.\r\n", "Last"), "\nTail.\n");
+  assert.equal(markdownSection("Preamble\n## Last", "Last"), "");
 });
