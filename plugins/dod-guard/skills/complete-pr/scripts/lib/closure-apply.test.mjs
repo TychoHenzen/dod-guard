@@ -143,12 +143,7 @@ test("apply refuses to write without the Project identity", () => {
 test("record posts one completion record per closing issue and child, then updates it in place", () => {
   const snapshot = recordedSnapshot();
   const github = fakeGitHub(snapshot);
-  const result = {
-    pullNumber: DELIVERIES[840].pull,
-    trustedHead: DELIVERIES[840].head,
-    mergeCommitSha: DELIVERIES[840].merge,
-    linkedIssues: [{ number: 683, state: "CLOSED" }],
-  };
+  const result = mergeResult([683]);
   const matrix = [{ id: "AC-01", status: "pass" }, { id: "AC-11", status: "unverified" }];
   const first = recordCompletion({ repository: REPOSITORY, result, matrix, children: [777], runner: github.runner });
   assert.deepEqual(first.records, [{ issue: 683, action: "posted" }, { issue: 777, action: "posted" }]);
@@ -251,7 +246,9 @@ test("apply posts real closure evidence when the only marker text is a quote", (
   assert.equal(evidenceCount(github, 777), 1);
   assert.equal(closed.comments.length, 2);
   assert.equal(closed.comments.find(({ id }) => id === 7001).body, quote);
-  assert.ok(github.calls.some((args) => args.includes("POST") && args.includes(`repos/${REPOSITORY}/issues/777/comments`)));
+  assert.ok(
+    github.calls.some((args) => args.includes("POST") && args.includes(`repos/${REPOSITORY}/issues/777/comments`)),
+  );
 });
 
 test("apply is not stopped as duplicate by a quote beside real closure evidence", () => {
@@ -264,7 +261,9 @@ test("apply is not stopped as duplicate by a quote beside real closure evidence"
   assert.deepEqual(result.applied, [777]);
   assert.deepEqual(result.steps.map(({ step }) => step), ["read", "close", "readback", "project-status"]);
   assert.equal(evidenceCount(github, 777), 1);
-  const posts = github.calls.filter((args) => args.includes("POST") && args.includes(`repos/${REPOSITORY}/issues/777/comments`));
+  const posts = github.calls.filter(
+    (args) => args.includes("POST") && args.includes(`repos/${REPOSITORY}/issues/777/comments`),
+  );
   assert.deepEqual(posts, []);
   assert.equal(github.state.issues.get(777).comments[1].body, quote);
 });

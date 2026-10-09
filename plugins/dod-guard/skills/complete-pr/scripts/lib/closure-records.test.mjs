@@ -70,8 +70,14 @@ test("a comment is a record only when it begins with the heading, a blank line, 
   assert.equal(isRecord({ body: "## Closure evidence\n\n<!-- dod-guard-closure-evidence -->\n" }, "closure"), true);
   const notRecords = [
     ["marker inline mid-text", "See `<!-- dod-guard-completion-evidence -->` in the record."],
-    ["marker in a fenced block", "Example:\n\n```text\n## Completion evidence\n\n<!-- dod-guard-completion-evidence -->\n```\n"],
-    ["heading and marker under another heading", "## Implementation handoff\n\n## Completion evidence\n\n<!-- dod-guard-completion-evidence -->\n"],
+    [
+      "marker in a fenced block",
+      "Example:\n\n```text\n## Completion evidence\n\n<!-- dod-guard-completion-evidence -->\n```\n",
+    ],
+    [
+      "heading and marker under another heading",
+      "## Implementation handoff\n\n## Completion evidence\n\n<!-- dod-guard-completion-evidence -->\n",
+    ],
     ["headless marker", completion.replace("## Completion evidence\n\n", "")],
     ["renamed heading", completion.replace("## Completion evidence", "Completion")],
     ["leading blank line", `\n${completion}`],
