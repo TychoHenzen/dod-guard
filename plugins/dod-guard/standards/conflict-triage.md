@@ -151,5 +151,4 @@ After a verified push, `/complete-pr` ends with `conflict-triaged` and does not
 merge. The merge commit holds code no reviewer has seen, and the acceptance
 matrix is not current at the new head. The PBI re-enters `/submit-draft-pr`
 convergence on the new head, then `/review-pr`, and only then `/complete-pr`.
-The triage posts no review request to Codex and does not repeat the ready
-transition's request.
+The triage posts no review request to Codex.

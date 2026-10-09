@@ -75,8 +75,8 @@ referenced skill from the active plugin root before invoking it.
 6. Invoke `/complete-pr <pull-request>` once every finding is fixed and
    resolved, or recorded as not actionable with evidence, all required checks
    pass, and the head is the one the fixes pushed. Its guarded merge is the
-   acceptance boundary authorized by this skill. When it stops on
-   `codex-review-findings`, fix those `GH-<id>` findings with
+   acceptance boundary authorized by this skill. When `/complete-pr` stops on
+   `unresolved-review-threads`, fix or resolve the named threads with
    `/fix-pr-review` and invoke `/complete-pr` again.
 
 If any stage fails, stop without rollback or duplicate issues. Report completed

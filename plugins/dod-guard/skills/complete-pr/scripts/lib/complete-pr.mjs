@@ -1,6 +1,5 @@
 import { CompletionError, stop } from "./completion-error.mjs";
 import { normalizeCheckRun } from "./check-normalization.mjs";
-import { codexReviewGate } from "./codex-review.mjs";
 import { cleanupTrustedBranch } from "./trusted-cleanup.mjs";
 
 const CI_WORKFLOW_PATH = ".github/workflows/ci.yml";
@@ -645,22 +644,20 @@ async function recoverMergedPullRequest(client, overrides = {}) {
   };
 }
 
-// Reads Codex's review of `head`, the trusted head this loop is about to merge,
-// which differs from the accepted head after a guarded branch update.
-function readCodexReview(client, completion, head, waitedMs) {
-  const { pullNumber, readyAt } = completion;
-  const evidence = client.getCodexReview(pullNumber);
-  return codexReviewGate({ ...evidence, acceptedHead: head, readyAt, waitedMs });
-}
-
-// Codex's findings reach the merge as a stop for /fix-pr-review, never as a
-// comment that arrives after the pull request has merged.
-function stopForCodexReview(review, pullNumber) {
-  const findings = (review.findings ?? []).map(
-    ({ id, severity, title, url }) => `${id} ${severity} ${title} ${url}`,
-  );
-  const summary = `Codex review blocks the merge of #${pullNumber} (${review.reason}).`;
-  stop(review.reason, [summary, ...findings].join("\n"));
+// Stop before mutating a pull request that branch protection will refuse to merge while review threads are open.
+async function requireNoUnresolvedThreads(client, pullNumber) {
+  const threads = await client.getUnresolvedReviewThreads(pullNumber);
+  if (threads.length > 0) {
+    const lines = threads.map((thread) => `- ${thread.url} ${thread.path}`);
+    stop(
+      "unresolved-review-threads",
+      [
+        `Pull request #${pullNumber} has ${threads.length} unresolved review thread(s), ` +
+          "and each must be fixed with /fix-pr-review or resolved before rerunning /complete-pr.",
+        ...lines,
+      ].join("\n"),
+    );
+  }
 }
 
 async function waitForMerge(client, completion) {
@@ -673,7 +670,6 @@ async function waitForMerge(client, completion) {
     repository,
   } = completion;
   let trustedHead = acceptedHead;
-  let codexWaitedMs = 0;
   for (let attempt = 0; attempt < options.pollLimit; attempt += 1) {
     // biome-ignore lint/performance/noAwaitInLoops: Merge completion requires ordered polling and guarded mutations.
     let pullRequest = await client.getPullRequest(pullNumber);
@@ -725,21 +721,9 @@ async function waitForMerge(client, completion) {
         repository,
       });
       trustedHead = pullRequest.headSha;
-      codexWaitedMs = 0;
     } else if (checksPassed) {
-      const review = readCodexReview(
-        client,
-        completion,
-        trustedHead,
-        codexWaitedMs,
-      );
-      if (review.action === "stop") stopForCodexReview(review, pullNumber);
-      if (review.action === "pass") {
-        await client.mergePullRequest(pullNumber, trustedHead);
-      } else {
-        codexWaitedMs += options.pollMs;
-        await client.wait(options.pollMs);
-      }
+      await requireNoUnresolvedThreads(client, pullNumber);
+      await client.mergePullRequest(pullNumber, trustedHead);
     } else {
       await client.wait(options.pollMs);
     }
@@ -756,7 +740,6 @@ async function completePullRequest(client, overrides = {}) {
     pollLimit: 180,
     pollMs: 10_000,
     updatePollLimit: 12,
-    now: Date.now,
     ...overrides,
   };
   const repository = await client.getRepository();
@@ -769,12 +752,11 @@ async function completePullRequest(client, overrides = {}) {
     repository,
   });
   const ciRecovery = createCiRecovery(options);
+  await requireNoUnresolvedThreads(client, pullRequest.number);
 
   const acceptedHead = pullRequest.headSha;
   const pullNumber = pullRequest.number;
-  let readyAt;
   if (pullRequest.isDraft) {
-    readyAt = options.now();
     await client.markReady(pullNumber);
     pullRequest = await client.getPullRequest(pullNumber);
     requireTrustedHead(pullRequest, acceptedHead);
@@ -802,7 +784,6 @@ async function completePullRequest(client, overrides = {}) {
     defaultBranch: repository.defaultBranch,
     options,
     pullNumber,
-    readyAt,
     repository,
   });
 }

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { completePullRequest, recoverMergedPullRequest, waitForHeadConvergence } from "./complete-pr.mjs";
+import { CompletionError } from "./completion-error.mjs";
 import { GitHubClient, normalizePullRequest } from "./github-client.mjs";
 
 const pendingChecks = [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }];
@@ -13,6 +14,7 @@ const workflowRunsField = "workflow_runs";
 const workflowRunsPattern = /workflow_runs/;
 const PERMISSION_ERROR = /HTTP 403: auto-merge requires administration permission/;
 const PROJECT_STATUS_FIELD_ID = 407;
+const codexMethodPattern = /codex/i;
 
 function linkedProjectItem(id, number = 24, repository = "owner/repo") {
   return {
@@ -132,6 +134,21 @@ function workflowRun(headSha, overrides = {}) {
   };
 }
 
+function unresolvedThread(overrides = {}) {
+  return {
+    author: "pr-author",
+    id: "thread-1",
+    outdated: false,
+    path: "src/a.mjs",
+    url: "https://github.com/owner/repo/pull/24#discussion_r1",
+    ...overrides,
+  };
+}
+
+const mutationCallNames = ["markReady", "enableRepositoryAutoMerge", "dispatch", "mergePullRequest"];
+const discussionUrlPattern = /https:\/\/github\.com\/owner\/repo\/pull\/24#discussion_r1/;
+const sourcePathPattern = /src\/a\.mjs/;
+
 function nextValue(values) {
   if (values.length > 1) {
     return values.shift();
@@ -164,7 +181,7 @@ class FixtureClient {
     this.deleteBranchError = options.deleteBranchError;
     this.requiredChecksError = options.requiredChecksError;
     this.projectStatusReader = options.projectStatusReader;
-    this.codexReview = options.codexReview ? [...options.codexReview] : null;
+    this.reviewThreads = [...(options.reviewThreads ?? [[]])];
     this.calls = [];
   }
 
@@ -192,10 +209,6 @@ class FixtureClient {
 
   mergePullRequest(number, headSha) {
     this.calls.push(["mergePullRequest", number, headSha]);
-  }
-
-  getCodexReview() {
-    return this.codexReview ? nextValue(this.codexReview) : {};
   }
 
   getRequiredChecks() {
@@ -258,6 +271,15 @@ class FixtureClient {
     return this.pullRefs
       ? nextValue(this.pullRefs)
       : [{ kind: "head", ref: `refs/pull/${number}/head`, sha: this.lastPullHeadSha }];
+  }
+
+  getUnresolvedReviewThreads(number) {
+    this.calls.push(["getUnresolvedReviewThreads", number]);
+    const value = nextValue(this.reviewThreads);
+    if (value instanceof Error) {
+      throw value;
+    }
+    return value;
   }
 
   deleteBranchRef(branchName) {
@@ -1729,85 +1751,98 @@ test("rejects an update commit that is not the observed head and base merge", as
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "untrusted_base_update" });
 });
 
-const CODEX_HEAD = "abc1234def5678abc1234def5678abc1234def56";
-
-function codexSummaryComment(status, commit = "abc1234") {
-  return {
-    user: { login: "chatgpt-codex-connector[bot]" },
-    body: `<!-- codex-pull-request-review-summary -->\n| **Code Review** | **${status}** <relative-time datetime="2099-01-01T00:00:00Z"></relative-time> | \`${commit}\` | auto |`,
-  };
-}
-
-function codexClient(codexReview) {
-  const open = pull({ headSha: CODEX_HEAD, isDraft: false });
-  return new FixtureClient({
-    codexReview,
-    pulls: [open, open, open, open, open, pull({ headSha: CODEX_HEAD, isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
-    refs: [{ sha: CODEX_HEAD }, null],
-    sourceRefs: [{ sha: CODEX_HEAD }],
-    pullRefs: [[{ kind: "head", ref: "refs/pull/24/head", sha: CODEX_HEAD }]],
-  });
-}
-
-test("waits for Codex to finish reviewing the accepted head before merging", async () => {
-  const client = codexClient([
-    { issueComments: [codexSummaryComment("Pending")] },
-    { issueComments: [codexSummaryComment("Completed")] },
-  ]);
-  const result = await completePullRequest(client, { ...immediateOptions, pushedHead: CODEX_HEAD });
-  assert.equal(result.mergeCommitSha, "merge-1");
-  const names = client.calls.map(([name]) => name);
-  assert.ok(names.indexOf("wait") !== -1 && names.indexOf("wait") < names.indexOf("mergePullRequest"), names.join(", "));
-});
-
-test("stops before merging when Codex leaves an unanswered finding", async () => {
-  const client = codexClient([{
-    issueComments: [codexSummaryComment("Completed")],
-    reviews: [{ id: 7, user: { login: "chatgpt-codex-connector[bot]" }, commit_id: CODEX_HEAD }],
-    reviewComments: [{
-      id: 70,
-      user: { login: "chatgpt-codex-connector[bot]" },
-      pull_request_review_id: 7,
-      path: "a.mjs",
-      line: 1,
-      body: "**<sub><sub>![P1 Badge](x)</sub></sub>  Guard the empty list**",
-      html_url: "https://github.com/owner/repo/pull/24#discussion_r70",
-    }],
-  }]);
-  await assert.rejects(
-    completePullRequest(client, { ...immediateOptions, pushedHead: CODEX_HEAD }),
-    (error) => error.code === "codex-review-findings" && /GH-70 P1 Guard the empty list/.test(error.message),
-  );
-  assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);
-});
-
-test("checks Codex against the trusted head after a guarded base update", async () => {
-  const updatedHead = "def5678abc1234def5678abc1234def5678abc12";
-  const open = (overrides) => pull({ headSha: CODEX_HEAD, isDraft: false, ...overrides });
+test("merges a draft with green checks and no unresolved thread without any Codex read or wait", async () => {
+  const localGit = createFixtureLocalGit();
+  const mergedState = "MERGED";
   const client = new FixtureClient({
-    codexReview: [
-      { issueComments: [codexSummaryComment("Completed", "abc1234")] },
-      { issueComments: [codexSummaryComment("Completed", "def5678")] },
-    ],
-    commits: { [updatedHead]: { parents: [CODEX_HEAD, "base-1"], sha: updatedHead } },
     pulls: [
-      open(),
-      open(),
-      open({ mergeState: "BEHIND" }),
-      open({ headSha: updatedHead }),
-      open({ headSha: updatedHead }),
-      open({ headSha: updatedHead }),
-      open({ headSha: updatedHead, mergeCommitSha: "merge-1", state: "MERGED" }),
+      pull(),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false }),
+      pull({ isDraft: false, mergeCommitSha: "merge-1", state: mergedState }),
     ],
-    refs: [{ sha: updatedHead }, null],
   });
 
-  await completePullRequest(client, immediateOptions);
+  const result = await completePullRequest(client, { ...immediateOptions, localGit });
 
-  const names = client.calls.map(([name]) => name);
-  const update = names.indexOf("updateBranch");
-  const merge = names.indexOf("mergePullRequest");
-  // The review of the pre-update head never authorizes merging the new head.
-  assert.ok(names.slice(update, merge).includes("wait"), names.join(", "));
-  assert.deepEqual(client.calls[merge], ["mergePullRequest", 24, updatedHead]);
+  assert.equal(result.trustedHead, "head-1");
+  assert.deepEqual(client.calls.filter(([name]) => name === "markReady"), [["markReady", 24]]);
+  assert.deepEqual(client.calls.filter(([name]) => name === "mergePullRequest"), [["mergePullRequest", 24, "head-1"]]);
+  assert.equal(client.calls.some(([name]) => name === "wait"), false);
+  const threadReads = client.calls.filter(([name]) => name === "getUnresolvedReviewThreads");
+  assert.equal(threadReads.length, 2);
+  assert.ok(client.calls.indexOf(threadReads[0]) < client.calls.findIndex(([name]) => name === "markReady"));
+  assert.deepEqual(
+    Object.getOwnPropertyNames(GitHubClient.prototype).filter((name) => codexMethodPattern.test(name)),
+    [],
+  );
+});
+
+for (const [label, pullRequest] of [["draft", pull()], ["ready", pull({ isDraft: false })]]) {
+  test(`stops a ${label} pull request with an unresolved review thread before any mutation`, async () => {
+    const client = new FixtureClient({
+      pulls: [pullRequest],
+      reviewThreads: [[unresolvedThread()]],
+      workflowRuns: [[]],
+    });
+
+    const failure = await completePullRequest(client, immediateOptions).catch((error) => error);
+
+    assert.equal(failure.code, "unresolved-review-threads");
+    assert.match(failure.message, discussionUrlPattern);
+    assert.match(failure.message, sourcePathPattern);
+    assert.deepEqual(client.calls.filter(([name]) => mutationCallNames.includes(name)), []);
+  });
+}
+
+test(
+  "a thread opened during the required-check wait stops before the merge, and a rerun after it is resolved merges once",
+  async () => {
+    const mergedState = "MERGED";
+    const firstRun = new FixtureClient({
+      checks: [pendingChecks, passingChecks],
+      pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
+      reviewThreads: [[], [unresolvedThread()]],
+    });
+
+    await assert.rejects(completePullRequest(firstRun, immediateOptions), { code: "unresolved-review-threads" });
+    assert.equal(firstRun.calls.some(([name]) => name === "wait"), true);
+    assert.equal(firstRun.calls.some(([name]) => name === "mergePullRequest"), false);
+
+    const rerun = new FixtureClient({
+      pulls: [
+        pull({ isDraft: false }),
+        pull({ isDraft: false }),
+        pull({ isDraft: false }),
+        pull({ isDraft: false, mergeCommitSha: "merge-1", state: mergedState }),
+      ],
+    });
+
+    const result = await completePullRequest(rerun, { ...immediateOptions, localGit: createFixtureLocalGit() });
+
+    assert.deepEqual(rerun.calls.filter(([name]) => name === "mergePullRequest"), [["mergePullRequest", 24, "head-1"]]);
+    assert.equal(result.trustedHead, "head-1");
+  },
+);
+
+test("a review-threads-unavailable error from the reader stops before any mutation with its cause kept", async () => {
+  const cause = new Error("GraphQL request timed out");
+  const readerError = new CompletionError(
+    "review-threads-unavailable",
+    "Review threads for pull request #24 could not be read: GraphQL request timed out",
+    { cause },
+  );
+  const client = new FixtureClient({
+    pulls: [pull()],
+    reviewThreads: [readerError],
+    workflowRuns: [[]],
+  });
+
+  const failure = await completePullRequest(client, immediateOptions).catch((error) => error);
+
+  assert.equal(failure, readerError);
+  assert.equal(failure.code, "review-threads-unavailable");
+  assert.equal(failure.cause, cause);
+  assert.deepEqual(client.calls.filter(([name]) => mutationCallNames.includes(name)), []);
 });

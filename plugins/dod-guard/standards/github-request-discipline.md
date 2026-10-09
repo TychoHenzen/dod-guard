@@ -32,9 +32,14 @@ only alternate-transport decisions are:
   explicit REST/connector 404/405 and selected-thread readback. REST exposes no
   review-thread IDs, so without a connector thread operation one field-limited,
   paginated `reviewThreads` read may map selected comments to their threads,
-  as `fix-pr-review` defines. Both exceptions
-  preserve redacted transport evidence, stop on failure or ambiguity, and never
-  serve as quota fallbacks.
+  as `fix-pr-review` defines. complete-pr's unresolved-review-thread check is a
+  third exception: one field-limited, cursor-paginated, read-only
+  `reviewThreads` read of the pull request, because REST exposes no thread
+  resolution state. It runs before any ready, auto-merge, CI dispatch, or merge
+  mutation and again before each merge request, and it stops with
+  `review-threads-unavailable` on a failed, malformed, or incompletely paginated
+  read. All three exceptions preserve redacted transport evidence, stop on
+  failure or ambiguity, and never serve as quota fallbacks.
 
 The executable boundary is `<plugin-root>/lib/transport-policy.mjs`: call the
 primary once, provide one named REST handler only for a supported operation, and
@@ -143,9 +148,11 @@ from an earlier run.
 Scripts that cannot call MCP use narrow `gh api` REST endpoints. Keep GraphQL
 only for a capability with no connector or REST equivalent, limited to the
 documented exceptions: draft-to-ready via
-`markPullRequestReadyForReview` when REST has no supported draft field, and
+`markPullRequestReadyForReview` when REST has no supported draft field,
 selected review-thread operations after connector/REST review-comment
-operations have been attempted and the selected thread has been read back. Do
-not use either exception for rate limits or other transport stops, and do not
-use `gh pr view --json` for repeated metadata reads when the REST endpoint
-provides the required fields.
+operations have been attempted and the selected thread has been read back, and
+complete-pr's unresolved-review-thread check (a field-limited,
+cursor-paginated, read-only `reviewThreads` read, because REST exposes no
+thread resolution state). Do not use any of these exceptions for rate limits
+or other transport stops, and do not use `gh pr view --json` for repeated
+metadata reads when the REST endpoint provides the required fields.
