@@ -16,7 +16,7 @@ import { GitHubClient } from "./github-client.mjs";
 
 export const USAGE = `Usage: node conflict-triage.mjs <command> --state <file> [options]
   start   --state <file> --repository <owner/repository> --pull <number> --trusted-head <sha>
-          [--generators <file>]
+          --generators <file>
   verify  --state <file> --decisions <file>
   regen-check --state <file> [--expect-clean]
   commit  --state <file> (--message <text> | --amend)
@@ -76,36 +76,70 @@ function readJson(path) {
   return path ? JSON.parse(readFileSync(path, "utf8")) : undefined;
 }
 
+function saveState(path, state) {
+  writeFileSync(path, `${JSON.stringify(state, null, 2)}\n`);
+}
+
+function readState(path) {
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+// A rerun for the same pull request and trusted head keeps the earlier run's
+// recorded base and classification, so a stop before this run merges never
+// erases what abort and record need from the earlier run.
+function carriedState(statePath, pullNumber, trustedHead) {
+  const previous = readState(statePath);
+  if (previous?.pullNumber !== pullNumber || previous?.trustedHead !== trustedHead) {
+    return { conflicts: [], recordedBase: null };
+  }
+  return { conflicts: previous.conflicts ?? [], recordedBase: previous.recordedBase ?? null };
+}
+
 function start(git, flags, { createClient, statePath }) {
   const repository = required(flags, "repository");
   const pullNumber = Number.parseInt(required(flags, "pull"), 10);
+  const trustedHead = required(flags, "trusted-head");
+  // The generator list is required so that "none declared" is an explicit []:
+  // a missing list would let a generated path be classified as source.
+  const generators = readJson(outsideRepository(git, required(flags, "generators")));
   const client = createClient(repository, pullNumber);
+  const pullRequest = client.getPullRequest();
   const input = {
     defaultBranch: client.getRepository().defaultBranch,
-    generators: readJson(flags.generators) ?? [],
-    pullRequest: client.getPullRequest(),
+    generators,
+    pullRequest,
     repository,
-    trustedHead: required(flags, "trusted-head"),
+    trustedHead,
   };
-  const save = (result) => {
-    const state = {
-      branch: input.pullRequest.headBranch,
-      conflicts: result.conflicts ?? [],
-      generators: input.generators,
-      pullNumber,
-      recordedBase: result.recordedBase ?? null,
-      repository,
-      trustedHead: input.trustedHead,
-    };
-    writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+  const state = {
+    branch: pullRequest.headBranch,
+    ...carriedState(statePath, pullNumber, trustedHead),
+    generators,
+    pullNumber,
+    repository,
+    stop: null,
+    trustedHead,
+  };
+  const beforeMerge = ({ recordedBase }) => {
+    state.conflicts = [];
+    state.recordedBase = recordedBase;
+    saveState(statePath, state);
   };
   try {
-    const result = startTriage(git, input);
-    save(result);
+    const result = startTriage(git, input, { beforeMerge });
+    state.conflicts = result.conflicts;
+    saveState(statePath, state);
     return result;
   } catch (error) {
-    if (error instanceof TriageStop && error.details.recordedBase) {
-      save(error.details);
+    if (error instanceof TriageStop) {
+      state.conflicts = error.details.conflicts ?? state.conflicts;
+      state.recordedBase = error.details.recordedBase ?? state.recordedBase;
+      state.stop = error.toJSON();
+      saveState(statePath, state);
     }
     throw error;
   }
@@ -113,9 +147,11 @@ function start(git, flags, { createClient, statePath }) {
 
 const COMMANDS = {
   abort: (git, _flags, { state }) => ({ merge: abortOwnMerge(git, state.recordedBase) }),
-  commit: (git, flags, { state }) => ({
-    mergeSha: commitMerge(git, { ...state, amend: flags.amend === true, message: flags.message ?? "" }),
-  }),
+  commit: (git, flags, { state, statePath }) => {
+    const mergeSha = commitMerge(git, { ...state, amend: flags.amend === true, message: flags.message ?? "" });
+    saveState(statePath, { ...state, mergeSha });
+    return { mergeSha };
+  },
   push: (git, _flags, { createClient, state }) => {
     const client = createClient(state.repository, state.pullNumber);
     return pushMerge(git, { ...state, readPullRequest: () => client.getPullRequest() });
@@ -125,8 +161,8 @@ const COMMANDS = {
       ...state,
       answers: readJson(flags.answers) ?? [],
       decisions: readJson(flags.decisions) ?? [],
-      mergeSha: flags.merge ?? null,
-      stop: readJson(flags.stop) ?? null,
+      mergeSha: flags.merge ?? state.mergeSha ?? null,
+      stop: readJson(flags.stop) ?? state.stop ?? null,
       verification: readJson(flags.verification) ?? [],
     }),
   "regen-check": (git, flags, { state }) =>

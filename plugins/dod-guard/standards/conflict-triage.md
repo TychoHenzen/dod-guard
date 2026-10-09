@@ -20,7 +20,7 @@ skill directory. Keep its state file and every input file in the caller's
 scratch directory, outside the repository:
 
 ```text
-node <complete-pr-dir>/scripts/conflict-triage.mjs start --state <file> --repository <owner/repository> --pull <number> --trusted-head <sha> [--generators <file>]
+node <complete-pr-dir>/scripts/conflict-triage.mjs start --state <file> --repository <owner/repository> --pull <number> --trusted-head <sha> --generators <file>
 node <complete-pr-dir>/scripts/conflict-triage.mjs verify --state <file> --decisions <file>
 node <complete-pr-dir>/scripts/conflict-triage.mjs regen-check --state <file> [--expect-clean]
 node <complete-pr-dir>/scripts/conflict-triage.mjs commit --state <file> (--message <text> | --amend)
@@ -29,7 +29,10 @@ node <complete-pr-dir>/scripts/conflict-triage.mjs abort --state <file>
 node <complete-pr-dir>/scripts/conflict-triage.mjs record --state <file> [--decisions <file>] [--answers <file>] [--verification <file>] [--merge <sha>] [--stop <file>]
 ```
 
-A result with a `stop` field is a stop under "Stop rules" below.
+A result with a `stop` field is a stop under "Stop rules" below. `start`
+writes the state file before it merges and saves its own stop there, so
+`abort` and `record` work after any `start` stop. `record` takes the stop and
+the merge SHA from the state file unless `--stop` or `--merge` names them.
 
 ## Preconditions
 
@@ -48,7 +51,8 @@ triage, check that no other run holds the same pull request, branch, or stage.
 A path is generated only when the target repository's instructions declare its
 generator. Read the declarations from the repository's `AGENTS.md` or
 `CLAUDE.md` and pass them to `start` as a JSON list of
-`{"paths": ["<glob>"], "command": "<generator command>"}`. Never infer a
+`{"paths": ["<glob>"], "command": "<generator command>"}`. `start` requires
+the list; pass `[]` when the repository declares no generator. Never infer a
 generator from a path name. A conflicted generated path is never hand-merged:
 its decision is `regenerate`. A conflicted path that announces it is generated
 but matches no declared generator stops the run.

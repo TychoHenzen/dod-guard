@@ -128,6 +128,24 @@ test("stops on a path modified on one side and deleted on the other", () => {
   }
 });
 
+test("aborts its own merge when a git read fails after the merge starts", () => {
+  const scenario = textScenario();
+  try {
+    const failing = (args, codes) => {
+      if (args[0] === "ls-files") {
+        throw new Error("simulated read failure");
+      }
+      return scenario.git(args, codes);
+    };
+    assert.throws(() => startTriage(failing, scenario.input), /simulated read failure/);
+    assert.equal(mergeHead(scenario), "");
+    assert.equal(sh(scenario.work, ["rev-parse", "HEAD"]), scenario.trustedHead);
+    assert.equal(sh(scenario.work, ["status", "--porcelain"]), "");
+  } finally {
+    scenario.cleanup();
+  }
+});
+
 test("classifies a declared generated path and stops on an undeclared one", () => {
   const files = (side) => ({ "dist/out.js": `// @generated\nconsole.log("${side}");\n` });
   const declared = createScenario({ base: files("base"), branch: files("branch"), master: files("master") });

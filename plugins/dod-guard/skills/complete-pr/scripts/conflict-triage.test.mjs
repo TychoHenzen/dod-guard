@@ -132,12 +132,14 @@ test("runs start, verify, commit, and push through the command with an injected 
     mkdirSync(scratch);
     const state = join(scratch, "state.json");
     const decisions = join(scratch, "decisions.json");
+    const generators = join(scratch, "generators.json");
+    writeFileSync(generators, "[]");
     const git = createGitRunner(scenario.work);
     const createClient = () => ({
       getPullRequest: () => scenario.pullRequest,
       getRepository: () => ({ defaultBranch: "master" }),
     });
-    const startFlags = { pull: "1", repository: "owner/repo", state, "trusted-head": scenario.trustedHead };
+    const startFlags = { generators, pull: "1", repository: "owner/repo", state, "trusted-head": scenario.trustedHead };
     const started = await runCommand("start", git, startFlags, { createClient });
     assert.deepEqual(started.conflicts, [{ class: "source", code: "UU", path: "src/value.txt" }]);
     const saved = JSON.parse(readFileSync(state, "utf8"));
@@ -150,6 +152,7 @@ test("runs start, verify, commit, and push through the command with an injected 
     writeFileSync(decisions, JSON.stringify([{ basis: "AC-1 keeps both", decision: "combine", path: "src/value.txt" }]));
     assert.deepEqual(await runCommand("verify", git, { decisions, state }), { ok: true, problems: [] });
     const { mergeSha } = await runCommand("commit", git, { message: "Merge master", state });
+    assert.equal(JSON.parse(readFileSync(state, "utf8")).mergeSha, mergeSha);
     const pushed = await runCommand("push", git, { state }, { createClient });
     assert.equal(pushed.remoteHead, mergeSha);
     assert.equal(originHead(scenario), mergeSha);
@@ -157,6 +160,89 @@ test("runs start, verify, commit, and push through the command with an injected 
       sh(scenario.work, ["rev-list", "--parents", "-n", "1", mergeSha]),
       `${mergeSha} ${scenario.trustedHead} ${scenario.baseSha}`,
     );
+  } finally {
+    scenario.cleanup();
+  }
+});
+
+test("refuses start without the declared generator list", () => {
+  const workspace = createWorkspace();
+  try {
+    const state = join(workspace.scratch, "triage.json");
+    const args = ["start", "--state", state, "--repository", "owner/repo", "--pull", "1"];
+    const result = run(workspace.work, [...args, "--trusted-head", "a".repeat(40)]);
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /Missing --generators/);
+  } finally {
+    workspace.cleanup();
+  }
+});
+
+// A command-level scenario whose start has its inputs outside the repository.
+function commandScenario() {
+  const scenario = createScenario({
+    base: { "src/value.txt": "one\n" },
+    branch: { "src/value.txt": "branch\n" },
+    master: { "src/value.txt": "master\n" },
+  });
+  const scratch = join(scenario.root, "scratch");
+  mkdirSync(scratch);
+  const generators = join(scratch, "generators.json");
+  writeFileSync(generators, "[]");
+  const createClient = () => ({
+    getPullRequest: () => scenario.pullRequest,
+    getRepository: () => ({ defaultBranch: "master" }),
+  });
+  const flags = (state) => ({
+    generators,
+    pull: "1",
+    repository: "owner/repo",
+    state,
+    "trusted-head": scenario.trustedHead,
+  });
+  return { createClient, flags, git: createGitRunner(scenario.work), scenario, scratch };
+}
+
+function mergeInProgress(work) {
+  return spawnSync("git", ["rev-parse", "-q", "--verify", "MERGE_HEAD"], { cwd: work }).status === 0;
+}
+
+test("records a precondition stop in the state file so record can render it", async () => {
+  const { createClient, flags, git, scenario, scratch } = commandScenario();
+  try {
+    const state = join(scratch, "state.json");
+    writeFiles(scenario.work, { "notes.txt": "pending\n" });
+    await assert.rejects(runCommand("start", git, flags(state), { createClient }), { code: "worktree_dirty" });
+    assert.equal(JSON.parse(readFileSync(state, "utf8")).stop.stop, "worktree_dirty");
+    const record = await runCommand("record", git, { state });
+    assert.match(record, /- Stop: worktree_dirty: The worktree has pending changes\./);
+    assert.equal(mergeInProgress(scenario.work), false);
+  } finally {
+    scenario.cleanup();
+  }
+});
+
+test("merges nothing when the state file cannot be written", async () => {
+  const { createClient, flags, git, scenario, scratch } = commandScenario();
+  try {
+    const state = join(scratch, "missing", "state.json");
+    await assert.rejects(runCommand("start", git, flags(state), { createClient }), /ENOENT/);
+    assert.equal(mergeInProgress(scenario.work), false);
+    assert.equal(sh(scenario.work, ["rev-parse", "HEAD"]), scenario.trustedHead);
+  } finally {
+    scenario.cleanup();
+  }
+});
+
+test("a stopped start keeps the recorded base so abort undoes the earlier merge", async () => {
+  const { createClient, flags, git, scenario, scratch } = commandScenario();
+  try {
+    const state = join(scratch, "state.json");
+    await runCommand("start", git, flags(state), { createClient });
+    await assert.rejects(runCommand("start", git, flags(state), { createClient }), { code: "merge_in_progress" });
+    assert.equal(JSON.parse(readFileSync(state, "utf8")).recordedBase, scenario.baseSha);
+    assert.deepEqual(await runCommand("abort", git, { state }), { merge: "aborted" });
+    assert.equal(mergeInProgress(scenario.work), false);
   } finally {
     scenario.cleanup();
   }

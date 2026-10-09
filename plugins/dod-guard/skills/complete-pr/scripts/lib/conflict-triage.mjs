@@ -339,10 +339,7 @@ export function abortOwnMerge(git, recordedBase) {
   return "aborted";
 }
 
-export function startTriage(git, input) {
-  const generators = validateGenerators(input.generators ?? []);
-  const { recordedBase, trustedHead } = checkPreconditions(git, input);
-  git(["merge", "--no-ff", "--no-commit", recordedBase], [0, 1]);
+function classifyStartedMerge(git, { generators, recordedBase, trustedHead }) {
   const mergeHead = readMergeHead(git);
   if (mergeHead !== recordedBase) {
     throw new TriageStop("merge_not_started", "Git did not start a merge with the recorded base.", {
@@ -364,6 +361,25 @@ export function startTriage(git, input) {
     });
   }
   return { conflicts, recordedBase, trustedHead };
+}
+
+// beforeMerge runs once every precondition holds and before git merges, so the
+// caller can persist the recorded base that abort needs; if it throws, nothing
+// has changed. After the merge starts, a stop aborts it itself, and an
+// unexpected git failure aborts it here, so no run leaves a merge behind.
+export function startTriage(git, input, { beforeMerge = () => undefined } = {}) {
+  const generators = validateGenerators(input.generators ?? []);
+  const { recordedBase, trustedHead } = checkPreconditions(git, input);
+  beforeMerge({ recordedBase, trustedHead });
+  try {
+    git(["merge", "--no-ff", "--no-commit", recordedBase], [0, 1]);
+    return classifyStartedMerge(git, { generators, recordedBase, trustedHead });
+  } catch (error) {
+    if (!(error instanceof TriageStop)) {
+      abortOwnMerge(git, recordedBase);
+    }
+    throw error;
+  }
 }
 
 function resolutionSource(git, trustedHead, recordedBase) {
