@@ -8,10 +8,9 @@ description: Work through the linked GitHub Project queue continuously, one pare
 Read and apply `standards/working-defaults.md` and
 `standards/github-request-discipline.md` from the active plugin root.
 
-This skill is a queue loop: it picks the next parent PBI, runs the existing
-lifecycle skills on it, then picks the next one. Each stage follows its own
-skill; when this file and an owning skill differ, the owning skill wins. As the
-plan for a Codex `/goal` run, the built-in command owns persistence and stop.
+This skill is a queue loop over the existing lifecycle skills. Each stage
+follows its own skill; when this file and an owning skill differ, the owning
+skill wins. For a Codex `/goal` run, that command owns persistence and stop.
 
 ## Owners
 
@@ -30,35 +29,36 @@ plan for a Codex `/goal` run, the built-in command owns persistence and stop.
 
 This skill owns only queue selection, sequencing, delegation, the friction log,
 and the stop decision. It never writes issue, Project, branch, or pull request
-state itself.
+state itself: closures run through the closure helper's `apply`.
 
 ## Loop
 
 Repeat until the stop condition holds:
 
-1. **Resume before selecting.** Check the current checkout first. A dirty tree
-   or in-progress branch usually means a delivery is already underway: match
-   its paths, branch, issue, children, and pull request, and resume that
-   delivery at its latest checkpoint. When nothing matches, capture the work
-   with `/add-backlog-idea`, refine it, and resume it. Never discard, stash, or
-   fold it into an unrelated PBI.
-2. **Select one parent.** Read every Project page for this repository with the
-   GitHub connector, together with each listed issue (with its parent and
-   children) and each linked pull request. Save them as JSON and run
-   `node scripts/select-next.mjs --snapshot=<file>` from this skill's
-   directory. It is read-only. It groups children under their parent, holds
-   any group with missing, stale, or conflicting evidence, excludes verified
-   merged deliveries, holds today's friction log, and returns the first
-   eligible group: In Progress parents first (one with an open pull request
-   ahead of one without), then Todo, then Backlog, each in Project order. It
-   needs each issue's `activeCheckpoint` and each pull request's
-   `trustedHeadSha` to recognize a finished delivery; run it with no arguments
-   for the snapshot shape. Report held groups' reasons; never guess past them.
+1. **Resume before selecting.** A dirty tree or in-progress branch usually means
+   a delivery is underway: match its paths, branch, issue, children, and pull
+   request, and resume it at its latest checkpoint. When nothing matches,
+   capture the work with `/add-backlog-idea`, refine it, and resume it. Never
+   discard, stash, or fold it into an unrelated PBI.
+2. **Clean up, then select one parent.** Read every Project page for this
+   repository with the GitHub connector, with each listed issue (parent,
+   children, body, `state_reason`, comments) and linked pull request, and save
+   them as JSON. In `../complete-pr/scripts`, run `node closure.mjs plan
+   --snapshot=<file>`, report each close, hold, and `unverified-closed` entry
+   with its reasons, delegate planned closes to its `apply` as a `/complete-pr`
+   stage, and reread. Run `closure.mjs annotate` on the snapshot, which takes
+   `activeCheckpoint` and `trustedHeadSha` from the completion records, and
+   pass its output to `node scripts/select-next.mjs --snapshot=<file>` in this
+   skill's directory. Both are read-only. It groups children under their
+   parent, holds any group with missing, stale, or conflicting evidence,
+   excludes verified merged deliveries, holds today's friction log, and returns
+   the first eligible group: In Progress parents first (one with an open pull
+   request ahead of one without), then Todo, then Backlog, each in Project
+   order. Report held groups' reasons; never guess past them.
 3. **Run the lifecycle for that parent.** Follow
    [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6 from the step the
-   parent has reached. When refinement needs an answer from the user, leave the
-   parent in Backlog with the questions recorded and continue with another
-   parent instead of waiting.
+   parent has reached. When refinement needs a user answer, leave the parent in
+   Backlog with the questions recorded and move on to another parent.
 4. **Read back and continue.** When `/complete-pr` returns `conflict-triaged`,
    go to `/submit-draft-pr` for the new head, not to the completion owner.
    Otherwise read the parent and child statuses. When any is not Done, return

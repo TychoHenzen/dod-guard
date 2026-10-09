@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { renderCompletionRecord } from "../../complete-pr/scripts/lib/closure-records.mjs";
 
 const REPOSITORY = "TychoHenzen/dod-guard";
 const SCRIPT = fileURLToPath(new URL("./select-next.mjs", import.meta.url));
@@ -119,6 +120,64 @@ test("excludes a merged delivery that carries its completion evidence", async ()
   const done = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 444);
   assert.deepEqual(done, { rootIssueNumber: 444, kind: "complete", reasons: [] });
   assert.equal(result.selected.rootIssueNumber, 517);
+});
+
+const CLOSURE = fileURLToPath(new URL("../../complete-pr/scripts/closure.mjs", import.meta.url));
+const HEAD_831 = "e783f4269c5627f4ad10efdb97dfc12a9918da83";
+
+// #831 (PR #836) with child #832, as /complete-pr leaves it: both closed and
+// Done, each carrying the completion record, and the snapshot itself carrying
+// no activeCheckpoint or trustedHeadSha.
+function recordedDelivery(pendingRows = []) {
+  const record = renderCompletionRecord({
+    pullRequest: 836,
+    mergeCommit: "8f7b04b0c735453e1487ca1fd0b7a308ccb39fee",
+    trustedHeadSha: HEAD_831,
+    requiredChecks: "pass",
+    pendingRows,
+  });
+  const pull = { number: 836, repository: REPOSITORY };
+  const input = snapshot();
+  input.items.push(item(831, "Done", null, [pull]), item(832, "Done", { number: 831 }));
+  input.issues.push(
+    issue(831, { state: "closed", children: [{ number: 832 }], comments: [{ id: 1, body: record }] }),
+    issue(832, { state: "closed", parent: { number: 831 }, comments: [{ id: 2, body: record }] }),
+  );
+  input.pullRequests.push({
+    ...pull,
+    state: "closed",
+    mergedAt: "2026-10-08T21:59:22Z",
+    head: { repository: REPOSITORY, ref: "codex/831-route-goal-sdlc-stages", sha: HEAD_831 },
+    base: { ref: "master", sha: "base-831" },
+    mergeCommit: { oid: "8f7b04b0c735453e1487ca1fd0b7a308ccb39fee" },
+    requiredChecks: [{ name: "build-test", bucket: "pass" }],
+  });
+  return input;
+}
+
+async function annotated(input) {
+  const directory = await mkdtemp(join(tmpdir(), "annotate-"));
+  const file = join(directory, "snapshot.json");
+  await writeFile(file, JSON.stringify(input));
+  const run = spawnSync(process.execPath, [CLOSURE, "annotate", `--snapshot=${file}`], { encoding: "utf8" });
+  assert.equal(run.status, 0, run.stderr);
+  return JSON.parse(run.stdout);
+}
+
+test("a snapshot annotated from completion records classifies the delivery complete", async () => {
+  const bare = await selectNext(recordedDelivery());
+  assert.equal(bare.groups.find(({ rootIssueNumber }) => rootIssueNumber === 831).kind, "hold");
+  const result = await selectNext(await annotated(recordedDelivery()));
+  const done = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 831);
+  assert.deepEqual(done, { rootIssueNumber: 831, kind: "complete", reasons: [] });
+  assert.equal(result.selected.rootIssueNumber, 517);
+});
+
+test("a merged-pending completion record keeps the delivery held", async () => {
+  const result = await selectNext(await annotated(recordedDelivery(["AC-15"])));
+  const held = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 831);
+  assert.equal(held.kind, "hold");
+  assert.ok(held.reasons.includes("active checkpoint for issue #831 is not explicitly false"));
 });
 
 test("the command rejects a missing snapshot flag", () => {

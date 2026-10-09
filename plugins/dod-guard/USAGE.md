@@ -71,7 +71,10 @@ its review, the run stops with that blocker.
 `goal-sdlc` repeats that lifecycle across the linked Project's queue. It picks
 the next parent PBI with `scripts/select-next.mjs`, runs the `quick-pbi` stages
 from the one that parent has reached, and continues until no eligible work
-remains. A parent that needs a user answer or is externally blocked stays in
+remains. Each pass starts with a cleanup report from `closure.mjs plan`: the
+delivered and superseded issues it closes through `apply`, every hold, and every
+closed or Done record without verified evidence, which it reports and never
+reopens. A parent that needs a user answer or is externally blocked stays in
 place while the queue moves on. Each stage runs in one fresh subagent on a
 model tier from `standards/model-routing.md`: the strong tier (Opus at medium
 effort, `gpt-5.6-sol` in Codex) plans, decides, and judges, and the cheap tier
@@ -308,9 +311,6 @@ unchanged remote head branch. A merge conflict on the PBI head is triaged as
 command ends with `conflict-triaged`, so the new head goes back through
 `/submit-draft-pr` and `/review-pr`. Unresolvable conflicts, failed checks,
 permission errors, unexpected pushes, and changed branch refs stop the command.
-After the merge it records `## Completion evidence` on each delivered issue and
-runs `scripts/closure.mjs` to close the originals that delivery replaces.
-Missing, pending, or mismatched evidence is reported as a hold, never closed.
 After the merge it records `## Completion evidence` on each delivered issue and
 runs `scripts/closure.mjs` to close the originals that delivery replaces.
 Missing, pending, or mismatched evidence is reported as a hold, never closed.

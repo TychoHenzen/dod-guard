@@ -402,4 +402,29 @@ function planClosures(snapshot, { hierarchy = null } = {}) {
   };
 }
 
-export { planClosures };
+// Returns a copy of a select-next snapshot whose `activeCheckpoint` and
+// `trustedHeadSha` come from the completion records: an issue whose record
+// leaves no row pending gets `activeCheckpoint: false`, a merged-pending one
+// loses any stale value, and the recorded pull request gets the trusted head.
+// Two records that disagree on one pull request's head leave it untrusted.
+function annotateSnapshot(snapshot) {
+  const copy = structuredClone(snapshot);
+  const heads = new Map();
+  for (const issue of copy.issues ?? []) {
+    const { record } = parseCompletionRecord(issue.comments);
+    if (!record) continue;
+    if (record.pendingRows.length === 0) issue.activeCheckpoint = false;
+    else delete issue.activeCheckpoint;
+    const known = heads.get(record.pullRequest);
+    heads.set(record.pullRequest, known === undefined || known === record.trustedHeadSha ? record.trustedHeadSha : null);
+  }
+  for (const pull of copy.pullRequests ?? []) {
+    if (!heads.has(numberOf(pull))) continue;
+    const head = heads.get(numberOf(pull));
+    if (head) pull.trustedHeadSha = head;
+    else delete pull.trustedHeadSha;
+  }
+  return copy;
+}
+
+export { annotateSnapshot, planClosures };
