@@ -646,31 +646,14 @@ async function recoverMergedPullRequest(client, overrides = {}) {
 
 // Stop before mutating a pull request that branch protection will refuse to merge while review threads are open.
 async function requireNoUnresolvedThreads(client, pullNumber) {
-  let threads;
-  try {
-    threads = await client.getUnresolvedReviewThreads(pullNumber);
-  } catch (error) {
-    if (error instanceof CompletionError && error.code === "review-threads-unavailable") {
-      throw error;
-    }
-    const reason = error?.message ?? String(error);
-    stop(
-      "review-threads-unavailable",
-      `Review threads for pull request #${pullNumber} could not be read: ${reason}`,
-    );
-  }
-  if (!Array.isArray(threads)) {
-    stop(
-      "review-threads-unavailable",
-      `Review threads for pull request #${pullNumber} could not be read: the reader returned a non-array value.`,
-    );
-  }
+  const threads = await client.getUnresolvedReviewThreads(pullNumber);
   if (threads.length > 0) {
     const lines = threads.map((thread) => `- ${thread.url} ${thread.path}`);
     stop(
       "unresolved-review-threads",
       [
-        `Pull request #${pullNumber} has ${threads.length} unresolved review thread(s), and each must be fixed with /fix-pr-review or resolved before rerunning /complete-pr.`,
+        `Pull request #${pullNumber} has ${threads.length} unresolved review thread(s), ` +
+          "and each must be fixed with /fix-pr-review or resolved before rerunning /complete-pr.",
         ...lines,
       ].join("\n"),
     );

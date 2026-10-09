@@ -43,7 +43,8 @@ function unresolvedReviewThread(node) {
   return {
     author: firstComment.author?.login ?? null,
     id: node.id,
-    // ASSUMPTION: a missing isOutdated is reported as false; the requirement names no fallback and the merge gate never reads this field.
+    // ASSUMPTION: a missing isOutdated is reported as false; the requirement names no fallback and
+    // the merge gate never reads this field.
     outdated: node.isOutdated === true,
     path: node.path,
     url: firstComment.url,
@@ -55,7 +56,10 @@ function reviewThreadConnection(data) {
     throw new Error(`GraphQL response carried errors: ${JSON.stringify(data.errors)}`);
   }
   const reviewThreads = data?.data?.repository?.pullRequest?.reviewThreads;
-  const hasConnection = isPlainObject(reviewThreads) && Array.isArray(reviewThreads.nodes) && isPlainObject(reviewThreads.pageInfo);
+  const hasConnection =
+    isPlainObject(reviewThreads) &&
+    Array.isArray(reviewThreads.nodes) &&
+    isPlainObject(reviewThreads.pageInfo);
   if (!hasConnection) {
     throw new Error("GraphQL response has no reviewThreads object with nodes and pageInfo");
   }
@@ -78,11 +82,53 @@ function unresolvedReviewThreads(nodes) {
 function readReviewThreadsPage(data) {
   const { nodes, pageInfo } = reviewThreadConnection(data);
   const { endCursor, hasNextPage } = pageInfo;
-  // ASSUMPTION: a non-boolean hasNextPage is malformed, because "read until hasNextPage is false" does not cover a missing value and reading it as the last page would fail open.
+  // ASSUMPTION: a non-boolean hasNextPage is malformed, because "read until hasNextPage is false" does not
+  // cover a missing value and reading it as the last page would fail open.
   if (typeof hasNextPage !== "boolean") {
     throw new Error("GraphQL response pageInfo.hasNextPage is not a boolean");
   }
   return { endCursor, hasNextPage, threads: unresolvedReviewThreads(nodes) };
+}
+
+function reviewThreadsArgs(repository, pullNumber, cursor) {
+  const [owner, name] = repository.split("/");
+  const args = [
+    "api",
+    "graphql",
+    "-f",
+    `query=${REVIEW_THREADS_QUERY}`,
+    "-f",
+    `owner=${owner}`,
+    "-f",
+    `name=${name}`,
+    "-F",
+    `number=${pullNumber}`,
+  ];
+  if (cursor !== null) {
+    args.push("-f", `cursor=${cursor}`);
+  }
+  return args;
+}
+
+function readUnresolvedReviewThreads(commandRunner, repository, pullNumber) {
+  const threads = [];
+  const usedCursors = new Set();
+  let cursor = null;
+  let hasNextPage = true;
+  while (hasNextPage) {
+    const { data } = ghJson(reviewThreadsArgs(repository, pullNumber, cursor), [0], commandRunner);
+    const { endCursor, hasNextPage: morePages, threads: pageThreads } = readReviewThreadsPage(data);
+    threads.push(...pageThreads);
+    hasNextPage = morePages;
+    if (hasNextPage) {
+      if (typeof endCursor !== "string" || endCursor.length === 0 || usedCursors.has(endCursor)) {
+        throw new Error("pagination is incomplete: hasNextPage is true without a new endCursor");
+      }
+      usedCursors.add(endCursor);
+      cursor = endCursor;
+    }
+  }
+  return threads;
 }
 
 function githubResponseError(endpoint, field) {
@@ -606,40 +652,7 @@ export class GitHubClient {
 
   getUnresolvedReviewThreads(pullNumber = this.pullNumber) {
     try {
-      const [owner, name] = this.repository.split("/");
-      const threads = [];
-      const usedCursors = new Set();
-      let cursor = null;
-      let hasNextPage = true;
-      while (hasNextPage) {
-        const args = [
-          "api",
-          "graphql",
-          "-f",
-          `query=${REVIEW_THREADS_QUERY}`,
-          "-f",
-          `owner=${owner}`,
-          "-f",
-          `name=${name}`,
-          "-F",
-          `number=${pullNumber}`,
-        ];
-        if (cursor !== null) {
-          args.push("-f", `cursor=${cursor}`);
-        }
-        const { data } = ghJson(args, [0], this.#commandRunner);
-        const { endCursor, hasNextPage: morePages, threads: pageThreads } = readReviewThreadsPage(data);
-        threads.push(...pageThreads);
-        hasNextPage = morePages;
-        if (hasNextPage) {
-          if (typeof endCursor !== "string" || endCursor.length === 0 || usedCursors.has(endCursor)) {
-            throw new Error("pagination is incomplete: hasNextPage is true without a new endCursor");
-          }
-          usedCursors.add(endCursor);
-          cursor = endCursor;
-        }
-      }
-      return threads;
+      return readUnresolvedReviewThreads(this.#commandRunner, this.repository, pullNumber);
     } catch (error) {
       if (error instanceof CompletionError && error.code === "review-threads-unavailable") {
         throw error;

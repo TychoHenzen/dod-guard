@@ -1773,7 +1773,10 @@ test("merges a draft with green checks and no unresolved thread without any Code
   const threadReads = client.calls.filter(([name]) => name === "getUnresolvedReviewThreads");
   assert.equal(threadReads.length, 2);
   assert.ok(client.calls.indexOf(threadReads[0]) < client.calls.findIndex(([name]) => name === "markReady"));
-  assert.deepEqual(Object.getOwnPropertyNames(GitHubClient.prototype).filter((name) => codexMethodPattern.test(name)), []);
+  assert.deepEqual(
+    Object.getOwnPropertyNames(GitHubClient.prototype).filter((name) => codexMethodPattern.test(name)),
+    [],
+  );
 });
 
 for (const [label, pullRequest] of [["draft", pull()], ["ready", pull({ isDraft: false })]]) {
@@ -1793,53 +1796,53 @@ for (const [label, pullRequest] of [["draft", pull()], ["ready", pull({ isDraft:
   });
 }
 
-test("a thread opened during the required-check wait stops before the merge, and a rerun after it is resolved merges once", async () => {
-  const mergedState = "MERGED";
-  const firstRun = new FixtureClient({
-    checks: [pendingChecks, passingChecks],
-    pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
-    reviewThreads: [[], [unresolvedThread()]],
-  });
+test(
+  "a thread opened during the required-check wait stops before the merge, and a rerun after it is resolved merges once",
+  async () => {
+    const mergedState = "MERGED";
+    const firstRun = new FixtureClient({
+      checks: [pendingChecks, passingChecks],
+      pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
+      reviewThreads: [[], [unresolvedThread()]],
+    });
 
-  await assert.rejects(completePullRequest(firstRun, immediateOptions), { code: "unresolved-review-threads" });
-  assert.equal(firstRun.calls.some(([name]) => name === "wait"), true);
-  assert.equal(firstRun.calls.some(([name]) => name === "mergePullRequest"), false);
+    await assert.rejects(completePullRequest(firstRun, immediateOptions), { code: "unresolved-review-threads" });
+    assert.equal(firstRun.calls.some(([name]) => name === "wait"), true);
+    assert.equal(firstRun.calls.some(([name]) => name === "mergePullRequest"), false);
 
-  const rerun = new FixtureClient({
-    pulls: [
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-      pull({ isDraft: false }),
-      pull({ isDraft: false, mergeCommitSha: "merge-1", state: mergedState }),
-    ],
-  });
+    const rerun = new FixtureClient({
+      pulls: [
+        pull({ isDraft: false }),
+        pull({ isDraft: false }),
+        pull({ isDraft: false }),
+        pull({ isDraft: false, mergeCommitSha: "merge-1", state: mergedState }),
+      ],
+    });
 
-  const result = await completePullRequest(rerun, { ...immediateOptions, localGit: createFixtureLocalGit() });
+    const result = await completePullRequest(rerun, { ...immediateOptions, localGit: createFixtureLocalGit() });
 
-  assert.deepEqual(rerun.calls.filter(([name]) => name === "mergePullRequest"), [["mergePullRequest", 24, "head-1"]]);
-  assert.equal(result.trustedHead, "head-1");
-});
+    assert.deepEqual(rerun.calls.filter(([name]) => name === "mergePullRequest"), [["mergePullRequest", 24, "head-1"]]);
+    assert.equal(result.trustedHead, "head-1");
+  },
+);
 
-test("a thread read that throws stops with review-threads-unavailable before any mutation", async () => {
+test("a review-threads-unavailable error from the reader stops before any mutation with its cause kept", async () => {
+  const cause = new Error("GraphQL request timed out");
+  const readerError = new CompletionError(
+    "review-threads-unavailable",
+    "Review threads for pull request #24 could not be read: GraphQL request timed out",
+    { cause },
+  );
   const client = new FixtureClient({
     pulls: [pull()],
-    reviewThreads: [new Error("GraphQL request timed out")],
+    reviewThreads: [readerError],
     workflowRuns: [[]],
   });
 
-  await assert.rejects(completePullRequest(client, immediateOptions), { code: "review-threads-unavailable" });
-  assert.deepEqual(client.calls.filter(([name]) => mutationCallNames.includes(name)), []);
-});
+  const failure = await completePullRequest(client, immediateOptions).catch((error) => error);
 
-test("a reader-reported review-threads-unavailable error stops before any mutation", async () => {
-  const client = new FixtureClient({
-    pulls: [pull()],
-    reviewThreads: [
-      new CompletionError("review-threads-unavailable", "Review threads for pull request #24 could not be read."),
-    ],
-    workflowRuns: [[]],
-  });
-
-  await assert.rejects(completePullRequest(client, immediateOptions), { code: "review-threads-unavailable" });
+  assert.equal(failure, readerError);
+  assert.equal(failure.code, "review-threads-unavailable");
+  assert.equal(failure.cause, cause);
   assert.deepEqual(client.calls.filter(([name]) => mutationCallNames.includes(name)), []);
 });

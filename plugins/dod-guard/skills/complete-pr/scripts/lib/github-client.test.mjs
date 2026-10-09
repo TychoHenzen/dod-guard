@@ -65,6 +65,10 @@ function threadPageStdout(nodes, { endCursor = null, hasNextPage = false } = {})
   return JSON.stringify({ data: { repository: { pullRequest: { reviewThreads } } } });
 }
 
+function rawThreadPage(reviewThreads) {
+  return okResponse(JSON.stringify({ data: { repository: { pullRequest: { reviewThreads } } } }));
+}
+
 function threadNode({ id, isResolved, isOutdated, path, url, login }) {
   return {
     id,
@@ -215,19 +219,67 @@ test("rejects a malformed source branch ref", () => {
 test("returns every unresolved review thread regardless of author or outdated state", () => {
   const { calls, runner } = threadRunner([
     okResponse(threadPageStdout([
-      threadNode({ id: "t1", isResolved: false, isOutdated: false, path: "src/a.mjs", url: discussionUrl("bot-open"), login: "chatgpt-codex-connector[bot]" }),
-      threadNode({ id: "t2", isResolved: true, isOutdated: false, path: "src/b.mjs", url: discussionUrl("bot-resolved"), login: "chatgpt-codex-connector[bot]" }),
-      threadNode({ id: "t3", isResolved: false, isOutdated: true, path: "src/c.mjs", url: discussionUrl("human-open"), login: "human-reviewer" }),
-      threadNode({ id: "t4", isResolved: true, isOutdated: true, path: "src/d.mjs", url: discussionUrl("human-resolved"), login: "human-reviewer" }),
-      threadNode({ id: "t5", isResolved: false, isOutdated: false, path: "src/e.mjs", url: discussionUrl("author-open"), login: "pr-author" }),
-      threadNode({ id: "t6", isResolved: true, isOutdated: false, path: "src/f.mjs", url: discussionUrl("author-resolved"), login: "pr-author" }),
+      threadNode({
+        id: "t1",
+        isResolved: false,
+        isOutdated: false,
+        path: "src/a.mjs",
+        url: discussionUrl("bot-open"),
+        login: "chatgpt-codex-connector[bot]",
+      }),
+      threadNode({
+        id: "t2",
+        isResolved: true,
+        isOutdated: false,
+        path: "src/b.mjs",
+        url: discussionUrl("bot-resolved"),
+        login: "chatgpt-codex-connector[bot]",
+      }),
+      threadNode({
+        id: "t3",
+        isResolved: false,
+        isOutdated: true,
+        path: "src/c.mjs",
+        url: discussionUrl("human-open"),
+        login: "human-reviewer",
+      }),
+      threadNode({
+        id: "t4",
+        isResolved: true,
+        isOutdated: true,
+        path: "src/d.mjs",
+        url: discussionUrl("human-resolved"),
+        login: "human-reviewer",
+      }),
+      threadNode({
+        id: "t5",
+        isResolved: false,
+        isOutdated: false,
+        path: "src/e.mjs",
+        url: discussionUrl("author-open"),
+        login: "pr-author",
+      }),
+      threadNode({
+        id: "t6",
+        isResolved: true,
+        isOutdated: false,
+        path: "src/f.mjs",
+        url: discussionUrl("author-resolved"),
+        login: "pr-author",
+      }),
     ])),
   ]);
 
   const threads = new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24);
 
   assert.deepEqual(threads, [
-    { author: "chatgpt-codex-connector[bot]", id: "t1", outdated: false, path: "src/a.mjs", url: discussionUrl("bot-open") },
+    {
+      author: "chatgpt-codex-connector[bot]",
+      id: "t1",
+      outdated: false,
+      path: "src/a.mjs",
+      url: discussionUrl("bot-open"),
+    },
     { author: "human-reviewer", id: "t3", outdated: true, path: "src/c.mjs", url: discussionUrl("human-open") },
     { author: "pr-author", id: "t5", outdated: false, path: "src/e.mjs", url: discussionUrl("author-open") },
   ]);
@@ -241,11 +293,25 @@ test("returns every unresolved review thread regardless of author or outdated st
 test("reads a two-page thread list in full", () => {
   const { calls, runner } = threadRunner([
     okResponse(threadPageStdout(
-      [threadNode({ id: "t1", isResolved: false, isOutdated: false, path: "src/a.mjs", url: discussionUrl("page-one"), login: "reviewer" })],
+      [threadNode({
+        id: "t1",
+        isResolved: false,
+        isOutdated: false,
+        path: "src/a.mjs",
+        url: discussionUrl("page-one"),
+        login: "reviewer",
+      })],
       { endCursor: "c1", hasNextPage: true },
     )),
     okResponse(threadPageStdout(
-      [threadNode({ id: "t2", isResolved: false, isOutdated: false, path: "src/b.mjs", url: discussionUrl("page-two"), login: "reviewer" })],
+      [threadNode({
+        id: "t2",
+        isResolved: false,
+        isOutdated: false,
+        path: "src/b.mjs",
+        url: discussionUrl("page-two"),
+        login: "reviewer",
+      })],
       { endCursor: "c2", hasNextPage: false },
     )),
   ]);
@@ -259,6 +325,10 @@ test("reads a two-page thread list in full", () => {
   assert.ok(cursorIndex > 0 && calls[1][cursorIndex - 1] === "-f");
 });
 
+const noReviewThreadsObject = /no reviewThreads object/;
+const pageInfoNotBoolean = /hasNextPage is not a boolean/;
+const nodeWithoutBooleanIsResolved = /without a boolean isResolved/;
+
 test("fails closed with review-threads-unavailable on every unreadable thread page", () => {
   const cases = [
     ["a non-zero gh exit", [{ stderr: "HTTP 502: Bad Gateway", status: 1, stdout: "" }]],
@@ -271,15 +341,64 @@ test("fails closed with review-threads-unavailable on every unreadable thread pa
       okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
       okResponse(threadPageStdout([], { endCursor: "c1", hasNextPage: true })),
     ]],
+    [
+      "a pull request without reviewThreads",
+      [okResponse(JSON.stringify({ data: { repository: { pullRequest: {} } } }))],
+      noReviewThreadsObject,
+    ],
+    ["reviewThreads without pageInfo", [rawThreadPage({ nodes: [] })], noReviewThreadsObject],
+    [
+      "nodes that are not an array",
+      [rawThreadPage({ nodes: null, pageInfo: { endCursor: null, hasNextPage: false } })],
+      noReviewThreadsObject,
+    ],
+    ["a missing hasNextPage", [rawThreadPage({ nodes: [], pageInfo: { endCursor: null } })], pageInfoNotBoolean],
+    [
+      "a string hasNextPage",
+      [rawThreadPage({ nodes: [], pageInfo: { endCursor: null, hasNextPage: "false" } })],
+      pageInfoNotBoolean,
+    ],
+    [
+      "a non-object node",
+      [rawThreadPage({ nodes: [null], pageInfo: { endCursor: null, hasNextPage: false } })],
+      nodeWithoutBooleanIsResolved,
+    ],
+    [
+      "a node without isResolved",
+      [
+        rawThreadPage({
+          nodes: [{ id: "t1", path: "src/a.mjs", comments: { nodes: [{ url: discussionUrl("no-state") }] } }],
+          pageInfo: { endCursor: null, hasNextPage: false },
+        }),
+      ],
+      nodeWithoutBooleanIsResolved,
+    ],
   ];
-  for (const [name, responses] of cases) {
+  for (const [name, responses, messagePattern] of cases) {
     const { runner } = threadRunner(responses);
+    let thrown = null;
     assert.throws(
       () => new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24),
-      { code: "review-threads-unavailable" },
+      (error) => {
+        thrown = error;
+        return error.code === "review-threads-unavailable";
+      },
       name,
     );
+    if (messagePattern) {
+      assert.match(thrown.message, messagePattern, name);
+    }
   }
+});
+
+test("keeps the thrown read failure as the cause of review-threads-unavailable", () => {
+  const runnerError = new Error("spawn gh ENOENT");
+  const { runner } = threadRunner([runnerError]);
+
+  assert.throws(
+    () => new GitHubClient("owner/repo", 24, runner).getUnresolvedReviewThreads(24),
+    (error) => error.code === "review-threads-unavailable" && error.cause === runnerError,
+  );
 });
 
 test("fails closed when a thread cursor repeats on a later page", () => {
