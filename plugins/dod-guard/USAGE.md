@@ -308,6 +308,12 @@ unchanged remote head branch. A merge conflict on the PBI head is triaged as
 command ends with `conflict-triaged`, so the new head goes back through
 `/submit-draft-pr` and `/review-pr`. Unresolvable conflicts, failed checks,
 permission errors, unexpected pushes, and changed branch refs stop the command.
+After the merge it records `## Completion evidence` on each delivered issue and
+runs `scripts/closure.mjs` to close the originals that delivery replaces.
+Missing, pending, or mismatched evidence is reported as a hold, never closed.
+After the merge it records `## Completion evidence` on each delivered issue and
+runs `scripts/closure.mjs` to close the originals that delivery replaces.
+Missing, pending, or mismatched evidence is reported as a hold, never closed.
 
 ## Release a marketplace change
 

@@ -1,0 +1,75 @@
+#!/usr/bin/env node
+// The one closing authority for delivered and superseded issues. `plan` reads a
+// saved snapshot and writes nothing; `apply` re-plans the same snapshot and
+// performs the planned closes; `record` writes the completion evidence a later
+// plan verifies. standards/project-workflow.md defines both records.
+// biome-ignore lint/correctness/noNodejsModules: This shipped command reads snapshot files.
+import { readFileSync } from "node:fs";
+// biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
+import process from "node:process";
+// biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
+import { pathToFileURL } from "node:url";
+import { parseArgs } from "../../../lib/args.mjs";
+import { applyClosures, recordCompletion } from "./lib/closure-apply.mjs";
+import { planClosures } from "./lib/closure-plan.mjs";
+import { runGh } from "./project-status.mjs";
+
+const USAGE = `usage: closure.mjs plan --snapshot=<file.json>
+       closure.mjs apply --snapshot=<file.json>
+       closure.mjs record --repository=<owner/name> --result=<complete-pr.json> --matrix=<rows.json> [--children=<n,...>]
+
+The snapshot is the select-next.mjs snapshot plus, on every issue, its body
+and comments ([{id, body}]), and for apply a project object {owner, number,
+statusFieldId, doneOptionId}. plan prints the closes, holds, and deliveries;
+apply performs each close as read, comment, close, readback, Project Done.`;
+
+function readJson(path) {
+  return JSON.parse(readFileSync(path, "utf8"));
+}
+
+function given(value) {
+  return typeof value === "string" && value !== "true" && value.length > 0;
+}
+
+function childList(value) {
+  if (!given(value)) return [];
+  return value.split(",").map((entry) => Number(entry.trim()));
+}
+
+const COMMANDS = {
+  plan: (args) => given(args.snapshot) && planClosures(readJson(args.snapshot)),
+  apply: (args, runner) => given(args.snapshot) && applyClosures(readJson(args.snapshot), { runner }),
+  record: (args, runner) =>
+    given(args.repository) && given(args.result) && given(args.matrix) &&
+    recordCompletion({
+      repository: args.repository,
+      result: readJson(args.result),
+      matrix: readJson(args.matrix),
+      children: childList(args.children),
+      runner,
+    }),
+};
+
+function runCli(argv, { runner = runGh, stdout = process.stdout, stderr = process.stderr } = {}) {
+  const [command, ...rest] = argv;
+  const args = parseArgs(rest);
+  const run = COMMANDS[command];
+  try {
+    const output = run && args ? run(args, runner) : false;
+    if (!output) {
+      stderr.write(`${USAGE}\n`);
+      return 2;
+    }
+    stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+    return 0;
+  } catch (error) {
+    const state = error.state ? ` ${JSON.stringify(error.state)}` : "";
+    stderr.write(`closure ${command} failed: ${error.message}${state}\n`);
+    return 1;
+  }
+}
+
+const invoked = process.argv[1] && pathToFileURL(process.argv[1]).href;
+if (import.meta.url === invoked) process.exitCode = runCli(process.argv.slice(2));
+
+export { runCli };

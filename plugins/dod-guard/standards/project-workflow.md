@@ -130,6 +130,36 @@ requirement in `Backlog` and moves a coherent PBI to `Todo`. `next-ticket`
 uses the records as its implementation handoff and maps tasks to changed
 files, commits, and checks. It does not create a parallel local plan.
 
+## Closure records
+
+Two records let delivered and superseded issues close without a person. They
+are defined here once; `skills/complete-pr/scripts/closure.mjs` parses and
+writes them, and no prose comment is parsed in their place.
+
+- `supersedes`: a replacement delivery root carries one `### supersedes` record
+  under its `## Implementation notes`, a JSON block holding a non-empty array of
+  issue numbers in the same repository that the root replaces. The record lives
+  only on the root; the original carries no reverse link.
+- `## Completion evidence`: after a verified merge, `complete-pr` posts one
+  comment with this heading on each linked closing issue and each finalized
+  child. It carries the marker `<!-- dod-guard-completion-evidence -->` and a
+  JSON block with `pullRequest`, `mergeCommit`, `trustedHeadSha` (the head the
+  merge helper trusted, which moves after a base update), `requiredChecks`, and
+  `pendingRows`: every acceptance-matrix row whose status is neither `pass` nor
+  `inapplicable`. A record with pending rows is `merged-pending`, not verified.
+  Recording again updates the same comment in place.
+
+A delivery is verified only when its completion record matches the live pull
+request readback (merge commit, trusted head, default base, passing checks) and
+the goal-sdlc queue decision classifies its group as `complete` with
+`trustedHeadSha` and a finished checkpoint taken from the records. Comment text
+alone is never trusted. When a root's delivery is verified, each open issue its
+`supersedes` record names closes as `completed`. A malformed, cross-repository,
+or duplicate record, or a delivery that is not verified, is a hold with a named
+reason and no write. Every close posts one `## Closure evidence` comment
+(marker `<!-- dod-guard-closure-evidence -->`) before the issue closes, so a
+rerun never posts a second one.
+
 ## Convergence record
 
 Before a structured PBI gets a draft PR, `submit-draft-pr` compares the

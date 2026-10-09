@@ -204,10 +204,40 @@ is still Backlog, Todo, or In Progress after the pass, repair that item and
 read it back before reporting completion. Never finalize a parent or child
 before the helper's merge result, and never alter unrelated Project items.
 
+## Record completion and close replaced issues
+
+After the finalization readback shows the delivered issues Done, save the
+helper's JSON result and the handoff's acceptance-matrix rows as files, then
+record completion evidence on each linked closing issue and each finalized
+child:
+
+```text
+node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --result=<helper-result.json> --matrix=<matrix-rows.json> --children=<child-number>,...
+```
+
+The `## Completion evidence` record is defined in
+`standards/project-workflow.md`. The record step reads before it writes,
+updates an existing record in place, and reads it back, so a stopped run reruns
+it safely. Then save a snapshot of the delivered root, every issue its
+`supersedes` record names, and their parents in the shape that `closure.mjs`
+prints when run without arguments, and run:
+
+```text
+node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
+node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
+```
+
+`plan` is read-only. `apply` re-plans the same snapshot and closes each planned
+issue as read, evidence comment, close with its `state_reason`, readback, and
+Project Done; it stops with the observed partial state when a readback
+disagrees, and a rerun completes the remaining steps without a second comment.
+Report every hold with its reason. Closing keywords and the helper's
+linked-issue confirmation are unchanged.
+
 ## Result
 
 Report the pull request, accepted head, final trusted head, merge commit, linked
-issue state, remote branch deletion, and parent/child Project finalization
-readback. Stop after the helper succeeds or returns a specific failure code,
+issue state, remote branch deletion, parent/child Project finalization
+readback, completion records, and closure closes and holds. Stop after the helper succeeds or returns a specific failure code,
 or the conflict triage ends with `conflict-triaged` or a stop. Publishing and
 plugin-cache refresh remain separate workflows.
