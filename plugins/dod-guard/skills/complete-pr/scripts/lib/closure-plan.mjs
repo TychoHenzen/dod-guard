@@ -221,10 +221,14 @@ function hasClosureEvidence(issue) {
   return markedComments(issue?.comments, CLOSURE_MARKER).length > 0;
 }
 
-// Whether an issue's close is backed by evidence the helper can verify now:
-// a verified root that supersedes it, its own verified delivery, or a closure
-// evidence comment whose rule still holds.
-function closureEvidence(context, number, seen = new Set()) {
+// Whether an issue's close is backed by evidence the helper can verify now: a
+// verified root that supersedes it, its own verified delivery, or a closure
+// evidence comment whose rule still holds. Purpose "justified" asks whether the
+// close itself stands: a refinement may close a not_planned hierarchy record
+// before its moved delivery lands. Purpose "delivered" asks whether a parent may
+// count the issue as settled for its own completed close, which must wait for
+// that delivery.
+function closureEvidence(context, number, { seen = new Set(), purpose = "justified" } = {}) {
   if (seen.has(number)) return { verified: false, missing: ["sub-issue relationship cycle"] };
   seen.add(number);
   const roots = context.rootsOf(number);
@@ -241,7 +245,8 @@ function closureEvidence(context, number, seen = new Set()) {
     return judged.status === "verified" ? { verified: true } : { verified: false, missing: prefixed(judged) };
   }
   if (hasClosureEvidence(issue)) {
-    const rule = issue.state_reason === "not_planned" ? hierarchyReasons : parentReasons;
+    const hierarchy = issue.state_reason === "not_planned" && purpose === "justified";
+    const rule = hierarchy ? hierarchyReasons : parentReasons;
     const missing = rule(context, number, seen);
     return { verified: missing.length === 0, missing };
   }
@@ -255,7 +260,7 @@ function childReason(context, child, seen) {
   const issue = context.index.issues.get(child);
   if (!issue) return `child #${child} readback missing`;
   if (isOpen(issue)) return `child #${child} is open`;
-  const evidence = closureEvidence(context, child, seen);
+  const evidence = closureEvidence(context, child, { seen, purpose: "delivered" });
   return evidence.verified ? null : `child #${child} closed without verified evidence: ${evidence.missing.join("; ")}`;
 }
 
@@ -340,37 +345,63 @@ function parentClose(context, parent) {
   };
 }
 
-// Walks upward from every planned close and every closed issue, closing each
-// open parent whose sub-issues are all settled, and stops at the first parent
-// that does not qualify or after PARENT_WALK_LIMIT levels.
+// Walks upward from every planned close and every closed issue, closing each open
+// parent whose sub-issues are all settled. A walk stops at the first parent that
+// does not qualify, or after PARENT_WALK_LIMIT levels. Passes repeat until one adds
+// no close: a close that a later seed finds can settle a parent an earlier seed held.
 function walkParents(context) {
   const seeds = [
     ...context.closes.map(({ issue }) => issue),
     ...context.index.order.filter((number) => !isOpen(context.index.issues.get(number))),
   ];
-  const visited = new Set();
+  let holds = [];
+  let added = true;
+  while (added) {
+    const before = context.closes.length;
+    holds = walkPass(context, seeds);
+    added = context.closes.length > before;
+  }
+  context.holds.push(...holds);
+}
+
+// One walk from each seed. Holds are returned, not recorded, because a later pass may
+// close the parent a hold names, so only the last pass's holds survive. A planned
+// parent is stepped through and still counts toward the level limit, which bounds the
+// walk even around a parent cycle.
+function walkPass(context, seeds) {
+  const holds = [];
+  const held = new Set();
+  const hold = (parent, reasons) => {
+    held.add(parent);
+    holds.push({ issue: parent, reasons });
+  };
   for (const seed of seeds) {
-    let child = seed;
+    let current = seed;
     for (let level = 1; ; level += 1) {
-      const parent = numberOf(context.index.issues.get(child)?.parent);
-      if (parent === null || visited.has(parent) || planned(context, parent)) break;
-      visited.add(parent);
+      const parent = numberOf(context.index.issues.get(current)?.parent);
+      if (parent === null) break;
       const issue = context.index.issues.get(parent);
       if (issue && !isOpen(issue)) break;
       if (level > PARENT_WALK_LIMIT) {
-        context.holds.push({ issue: parent, reasons: [`parent walk stopped after ${PARENT_WALK_LIMIT} levels`] });
+        if (!held.has(parent)) hold(parent, [`parent walk stopped after ${PARENT_WALK_LIMIT} levels`]);
         break;
       }
+      if (planned(context, parent)) {
+        current = parent;
+        continue;
+      }
+      if (held.has(parent)) break;
       const reasons = parentReasons(context, parent);
       if (issue && !context.index.items.get(parent)?.id) reasons.push(`Project item #${parent} missing`);
       if (reasons.length > 0) {
-        context.holds.push({ issue: parent, reasons });
+        hold(parent, reasons);
         break;
       }
       context.closes.push(parentClose(context, parent));
-      child = parent;
+      current = parent;
     }
   }
+  return holds;
 }
 
 // Closed or Done records whose close has no verified evidence are reported
