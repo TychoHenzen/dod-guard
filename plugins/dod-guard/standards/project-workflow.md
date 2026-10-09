@@ -179,6 +179,11 @@ reason and no write. Every close posts one `## Closure evidence` comment
 (marker `<!-- dod-guard-closure-evidence -->`) before the issue closes, so a
 rerun never posts a second one.
 
+A comment is a record only when its body begins with the record heading, a
+blank line, and the marker line, which is the shape the helper writes. A
+comment that quotes a marker anywhere else, such as a handoff or a review, is
+never edited, counted, or parsed as a record.
+
 An issue this helper closed whose Project status is not Done is planned as a
 status repair, so a rerun finishes a stopped Done write without a second
 comment or close.

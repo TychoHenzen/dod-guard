@@ -21,6 +21,14 @@ test("the standard defines both closure records once", () => {
   }
   assert.match(standard, prose("A record with pending rows is `merged-pending`, not verified."));
   assert.match(standard, prose("Comment text alone is never trusted."));
+  assert.match(
+    standard,
+    prose("A comment is a record only when its body begins with the record heading, a blank line, and the marker line"),
+  );
+  assert.match(
+    standard,
+    prose("A comment that quotes a marker anywhere else", "is never edited, counted, or parsed as a record."),
+  );
   assert.match(standard, prose("is a hold with a named reason and no write"));
   assert.match(
     standard,
