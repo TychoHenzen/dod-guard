@@ -87,6 +87,8 @@ The emergency case deliberately has tiny effort: urgency must not inflate size.
 | Epic has only dependent administrative subtasks. | Parent remains Backlog; subtasks do not clear the epic block. |
 | Epic is split into two independently deliverable issues. | Each child needs its own researched sections and labels. Parent remains Backlog while effort is 13. |
 | Original epic is reduced to an independently deliverable remainder with justified Effort 3. | Replace Effort 13 and rationale; verify split links and sections before Todo. |
+| Epic is split into replacement roots that carry every sub-issue's scope. | Each root carries a `supersedes` record naming the originals it replaces. The originals stay open until their root's delivery is verified. The epic closes as `not_planned` through the closure helper with an evidence comment listing its replacement roots. |
+| One sub-issue keeps scope that no replacement root carries. | It stays open; the epic is not a pure hierarchy record, and the helper reports the hold with its reason instead of closing it. |
 | Label edit fails, a linked issue is absent, or readback shows two effort labels. | Stop before Todo and report the actual partial state. |
 | Title suggests a quick fix, but callers and tests show cross-module work. | Research precedes the final estimate and implementation direction. Use observed scope. |
 

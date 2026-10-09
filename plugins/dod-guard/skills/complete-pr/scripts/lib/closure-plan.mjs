@@ -242,7 +242,8 @@ function closureEvidence(context, number, seen = new Set()) {
     return judged.status === "verified" ? { verified: true } : { verified: false, missing: prefixed(judged) };
   }
   if (hasClosureEvidence(issue)) {
-    const missing = parentReasons(context, number, seen);
+    const rule = issue.state_reason === "not_planned" ? hierarchyReasons : parentReasons;
+    const missing = rule(context, number, seen);
     return { verified: missing.length === 0, missing };
   }
   return { verified: false, missing: ["completion evidence missing"] };
@@ -269,6 +270,48 @@ function parentReasons(context, number, seen = new Set([number])) {
   reasons.push(...pulls.filter((pull) => isOpen(context.index.pulls.get(pull))).map((pull) => `open linked pull request #${pull}`));
   reasons.push(...unmappedCriteria(issue, children).map((text) => `unchecked acceptance criterion not mapped to a sub-issue: ${text}`));
   return reasons;
+}
+
+// A pure hierarchy record owns no delivery of its own: no linked pull request,
+// no unchecked criterion outside its sub-issues, and every sub-issue either
+// settled or named by an existing replacement root's supersedes record.
+function hierarchyReasons(context, number, seen = new Set([number])) {
+  const issue = context.index.issues.get(number);
+  if (!issue) return [`issue #${number} readback missing`];
+  const children = childNumbers(context.index, number);
+  if (children.length === 0) return ["has no sub-issues"];
+  const reasons = itemPullNumbers(context.index.items.get(number)).map((pull) => `linked pull request #${pull}`);
+  reasons.push(...unmappedCriteria(issue, children).map((text) => `unchecked acceptance criterion not mapped to a sub-issue: ${text}`));
+  for (const child of children) {
+    if (context.rootsOf(child).length > 0) continue;
+    const reason = childReason(context, child, new Set(seen));
+    if (reason) reasons.push(`${reason}, and no replacement root supersedes it`);
+  }
+  return reasons;
+}
+
+function planHierarchy(context, number) {
+  const issue = context.index.issues.get(number);
+  const reasons = issue && !isOpen(issue) ? ["issue is already closed"] : hierarchyReasons(context, number);
+  if (issue && !context.index.items.get(number)?.id) reasons.push(`Project item #${number} missing`);
+  if (reasons.length > 0) {
+    context.holds.push({ issue: number, reasons });
+    return;
+  }
+  const children = childNumbers(context.index, number);
+  const moved = children.flatMap((child) => context.rootsOf(child).map((root) => `#${root} (for #${child})`));
+  const evidence = [
+    "Pure hierarchy record: no linked pull request and no unchecked acceptance criterion outside a sub-issue.",
+    moved.length > 0 ? `Delivery moved to replacement roots: ${moved.join(", ")}.` : "Every sub-issue is closed with verified evidence.",
+  ];
+  context.closes.push({
+    issue: number,
+    itemId: context.index.items.get(number).id,
+    stateReason: "not_planned",
+    rule: "hierarchy",
+    children,
+    comment: renderClosureEvidence({ issue: number, stateReason: "not_planned", evidence }),
+  });
 }
 
 function parentClose(context, parent) {
@@ -341,11 +384,14 @@ function deliverySummaries(context) {
   });
 }
 
-function planClosures(snapshot) {
+// options.hierarchy names one issue that refinement asks to close as a pure
+// hierarchy record; without it the plan never closes an issue as not_planned.
+function planClosures(snapshot, { hierarchy = null } = {}) {
   const context = createContext(snapshot);
   for (const [root, originals] of context.roots) {
     for (const original of originals) planReplacedOriginal(context, root, original);
   }
+  if (hierarchy !== null && !planned(context, hierarchy)) planHierarchy(context, hierarchy);
   walkParents(context);
   return {
     repository: context.index.repository,

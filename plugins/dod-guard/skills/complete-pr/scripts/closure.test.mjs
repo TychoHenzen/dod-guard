@@ -35,7 +35,15 @@ test("the shipped plan command prints the planned close for a verified root", as
 });
 
 test("the command rejects an unknown command or a missing flag", () => {
-  for (const argv of [[], ["close"], ["plan"], ["plan", "snapshot.json"], ["record", "--repository=a/b"]]) {
+  const invalid = [
+    [],
+    ["close"],
+    ["plan"],
+    ["plan", "snapshot.json"],
+    ["record", "--repository=a/b"],
+    ["plan", "--snapshot=snapshot.json", "--hierarchy=epic"],
+  ];
+  for (const argv of invalid) {
     const io = capture();
     assert.equal(runCli(argv, io), 2, argv.join(" "));
     assert.match(io.text.err, /usage: closure\.mjs plan --snapshot=<file\.json>/);

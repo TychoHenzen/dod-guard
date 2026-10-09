@@ -14,15 +14,16 @@ import { applyClosures, recordCompletion } from "./lib/closure-apply.mjs";
 import { planClosures } from "./lib/closure-plan.mjs";
 import { runGh } from "./project-status.mjs";
 
-const USAGE = `usage: closure.mjs plan --snapshot=<file.json>
-       closure.mjs apply --snapshot=<file.json>
+const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issue>]
+       closure.mjs apply --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs record --repository=<owner/name> --result=<complete-pr.json> --matrix=<rows.json> [--children=<n,...>]
 
-The snapshot is the select-next.mjs snapshot plus, on every issue, its body
-and comments ([{id, body}]), and for apply a project object {owner, number,
-statusFieldId, doneOptionId}. plan prints the closes, holds, unverified-closed
-reports, and deliveries; apply performs each close as read, comment, close,
-readback, Project Done.`;
+The snapshot is the select-next.mjs snapshot plus, on every issue, its body,
+state_reason, and comments ([{id, body}]), and for apply a project object
+{owner, number, statusFieldId, doneOptionId}. plan prints the closes, holds,
+unverified-closed reports, and deliveries; apply performs each close as read,
+comment, close, readback, Project Done. --hierarchy asks to close that issue
+as a pure hierarchy record (not_planned).`;
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -37,9 +38,28 @@ function childList(value) {
   return value.split(",").map((entry) => Number(entry.trim()));
 }
 
+// --hierarchy=<issue> is the refinement request to close that issue as a pure
+// hierarchy record; false marks a value that is not an issue number.
+function hierarchyOption(value) {
+  if (value === undefined) return null;
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0 ? number : false;
+}
+
+function snapshotOptions(args) {
+  const hierarchy = hierarchyOption(args.hierarchy);
+  return given(args.snapshot) && hierarchy !== false && { hierarchy };
+}
+
 const COMMANDS = {
-  plan: (args) => given(args.snapshot) && planClosures(readJson(args.snapshot)),
-  apply: (args, runner) => given(args.snapshot) && applyClosures(readJson(args.snapshot), { runner }),
+  plan: (args) => {
+    const options = snapshotOptions(args);
+    return options && planClosures(readJson(args.snapshot), options);
+  },
+  apply: (args, runner) => {
+    const options = snapshotOptions(args);
+    return options && applyClosures(readJson(args.snapshot), { runner, ...options });
+  },
   record: (args, runner) =>
     given(args.repository) && given(args.result) && given(args.matrix) &&
     recordCompletion({

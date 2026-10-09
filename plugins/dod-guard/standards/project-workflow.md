@@ -168,6 +168,12 @@ does not qualify, or after five levels. A record that is already closed or Done
 without verified evidence is reported as `unverified-closed` and is never
 reopened or edited.
 
+`refine-backlog-item` closes a pure hierarchy record as `not_planned`: an issue
+with no linked pull request, no unchecked criterion outside its sub-issues, and
+every sub-issue either settled or named by an existing root's `supersedes`
+record. An original that still owns delivery scope stays open until its root's
+delivery is verified.
+
 ## Convergence record
 
 Before a structured PBI gets a draft PR, `submit-draft-pr` compares the
