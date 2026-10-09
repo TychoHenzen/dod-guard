@@ -23,7 +23,11 @@ test("the standard defines both closure records once", () => {
   assert.match(standard, prose("Comment text alone is never trusted."));
   assert.match(
     standard,
-    prose("A comment is a record only when its body begins with the record heading, a blank line, and the marker line"),
+    prose(
+      "A comment is a completion or closure evidence record only when its body begins with the record heading,",
+      "a blank line, and the marker line, followed by a line break or the end of the body;",
+      "CRLF line endings are normalized to LF before this check.",
+    ),
   );
   assert.match(
     standard,
@@ -37,6 +41,8 @@ test("the standard defines both closure records once", () => {
       "so a rerun finishes a stopped Done write without a second comment or close.",
     ),
   );
+  assert.match(standard, prose("An issue that is already closed or Done without verified evidence"));
+  assert.doesNotMatch(standard, prose("A record that is already closed or Done"));
 });
 
 test("complete-pr records completion and closes replaced issues after finalization", () => {

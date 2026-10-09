@@ -102,8 +102,9 @@ function parseSupersedes(body, repository) {
   return { numbers: block.value };
 }
 
-// A comment is a record only when its body begins with the heading line, a
-// blank line, and the marker line, the shape the renderers write. A comment
+// A comment is a record only when its body, with CRLF normalized to LF first,
+// begins with the heading line, a blank line, and the marker line, followed by
+// a line break or the end of the body: the shape the renderers write. A comment
 // that quotes a marker anywhere else (a handoff, a review) is not a record, so
 // no caller edits, counts, or parses it.
 function isRecord(comment, kind) {

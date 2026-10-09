@@ -165,7 +165,7 @@ because a `supersedes` record lives only on its root, and a parent closes only
 after every sub-issue is checked, so a narrower read misses roots and siblings.
 An issue whose `children` list is missing is held with "sub-issue list missing",
 never treated as childless. Any caller's run may therefore also close other
-verified originals and parents, and report older `unverified-closed` records,
+verified originals and parents, and report older `unverified-closed` issues,
 because the helper is the single closing authority.
 
 A delivery is verified only when its completion record matches the live pull
@@ -179,10 +179,11 @@ reason and no write. Every close posts one `## Closure evidence` comment
 (marker `<!-- dod-guard-closure-evidence -->`) before the issue closes, so a
 rerun never posts a second one.
 
-A comment is a record only when its body begins with the record heading, a
-blank line, and the marker line, which is the shape the helper writes. A
-comment that quotes a marker anywhere else, such as a handoff or a review, is
-never edited, counted, or parsed as a record.
+A comment is a completion or closure evidence record only when its body begins
+with the record heading, a blank line, and the marker line, followed by a line
+break or the end of the body; CRLF line endings are normalized to LF before
+this check. A comment that quotes a marker anywhere else, such as a handoff or
+a review, is never edited, counted, or parsed as a record.
 
 An issue this helper closed whose Project status is not Done is planned as a
 status repair, so a rerun finishes a stopped Done write without a second
@@ -192,7 +193,7 @@ After any close, the helper walks to the closed issue's parent and closes it as
 `completed` when every sub-issue is closed with verified evidence or superseded
 by a verified root, no linked pull request is open, and no unchecked acceptance
 criterion outside a sub-issue remains. The walk stops at the first parent that
-does not qualify, or after five levels. A record that is already closed or Done
+does not qualify, or after five levels. An issue that is already closed or Done
 without verified evidence is reported as `unverified-closed` and is never
 reopened or edited.
 
