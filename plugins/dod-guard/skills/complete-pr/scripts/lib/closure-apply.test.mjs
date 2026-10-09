@@ -8,7 +8,9 @@ import {
   REPOSITORY,
   completionComment,
   fakeGitHub,
+  mergeResult,
   mutating,
+  patchesTo,
   quotingComment,
   recordedSnapshot,
   snapshotAfter,
@@ -170,21 +172,6 @@ test("record rejects an incomplete merge result before any call", () => {
   );
   assert.deepEqual(github.calls, []);
 });
-
-function mergeResult(linked) {
-  return {
-    pullNumber: DELIVERIES[840].pull,
-    trustedHead: DELIVERIES[840].head,
-    mergeCommitSha: DELIVERIES[840].merge,
-    linkedIssues: linked.map((number) => ({ number, state: "CLOSED" })),
-  };
-}
-
-function patchesTo(github, commentId) {
-  return github.calls.filter(
-    (args) => mutating(args) && args.some((value) => String(value).endsWith(`/issues/comments/${commentId}`)),
-  );
-}
 
 test("record posts its own record and never edits a comment that quotes the markers", () => {
   const snapshot = recordedSnapshot();

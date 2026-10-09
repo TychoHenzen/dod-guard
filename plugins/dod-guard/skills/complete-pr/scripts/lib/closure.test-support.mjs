@@ -361,6 +361,22 @@ function mutating(args) {
   return args.includes("--method") && args[args.indexOf("--method") + 1] !== "GET";
 }
 
+function mergeResult(linked) {
+  return {
+    pullNumber: DELIVERIES[840].pull,
+    trustedHead: DELIVERIES[840].head,
+    mergeCommitSha: DELIVERIES[840].merge,
+    linkedIssues: linked.map((number) => ({ number, state: "CLOSED" })),
+  };
+}
+
+// Returns the mutating gh calls aimed at one issue comment, so a test can show which comment was edited.
+function patchesTo(github, commentId) {
+  return github.calls.filter(
+    (args) => mutating(args) && args.some((value) => String(value).endsWith(`/issues/comments/${commentId}`)),
+  );
+}
+
 function holdOf(plan, number) {
   return plan.holds.find((hold) => hold.issue === number);
 }
@@ -397,7 +413,9 @@ export {
   holdOf,
   issue,
   item,
+  mergeResult,
   mutating,
+  patchesTo,
   pull,
   quotingComment,
   recordedSnapshot,
