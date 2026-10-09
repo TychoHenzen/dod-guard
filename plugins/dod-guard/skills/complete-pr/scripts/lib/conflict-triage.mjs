@@ -46,7 +46,13 @@ const MODIFY_DELETE_CODES = new Set(["UD", "DU"]);
 const NON_TEXT_MODES = new Set(["120000", "160000"]);
 // ASSUMPTION: test files live under a test directory or carry a .test or
 // .spec suffix; the class only tells the applier the stale-test rule applies.
-const TEST_PATH = /(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[^/]+$/i;
+const TEST_DIRS = new Set(["test", "tests", "__tests__"]);
+const TEST_FILE = /\.(?:test|spec)\.[^/]+$/i;
+// The last segment is the file name, so a file called test is not a test directory.
+function isTestPath(path) {
+  const segments = path.split("/");
+  return segments.slice(0, -1).some((segment) => TEST_DIRS.has(segment.toLowerCase())) || TEST_FILE.test(path);
+}
 // A file that announces it is generated, but matches no generator the target
 // repository declares, must not be hand-merged.
 // ASSUMPTION: generated files announce themselves with one of these markers
@@ -329,7 +335,7 @@ function classifyConflict(git, conflict, generators) {
   if (sides.some((text) => GENERATED_MARKER.test(text.split("\n", GENERATED_PROBE_LINES).join("\n")))) {
     return "undeclared-generated";
   }
-  return TEST_PATH.test(conflict.path) ? "test" : "source";
+  return isTestPath(conflict.path) ? "test" : "source";
 }
 
 function classifyConflicts(git, conflicts, generators = []) {

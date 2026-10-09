@@ -96,6 +96,35 @@ test("merges the recorded base and pushes a judged conflict as one two-parent co
   }
 });
 
+test("classifies a path as a test by a directory segment or a file suffix, not by a substring", () => {
+  const paths = [
+    "tests/a.mjs",
+    "src/__tests__/a.js",
+    "a.test.mjs",
+    "pkg/Test/x.js",
+    "src/testing/a.js",
+    "src/latest/a.js",
+    "test",
+  ];
+  const side = (label) => Object.fromEntries(paths.map((path) => [path, `${label}\n`]));
+  const scenario = createScenario({ base: side("base"), branch: side("branch"), master: side("master") });
+  try {
+    const started = startTriage(scenario.git, scenario.input);
+    const classes = Object.fromEntries(started.conflicts.map((conflict) => [conflict.path, conflict.class]));
+    assert.deepEqual(classes, {
+      "a.test.mjs": "test",
+      "pkg/Test/x.js": "test",
+      "src/__tests__/a.js": "test",
+      "src/latest/a.js": "source",
+      "src/testing/a.js": "source",
+      test: "source",
+      "tests/a.mjs": "test",
+    });
+  } finally {
+    scenario.cleanup();
+  }
+});
+
 test("stops on a binary conflict and aborts only its own merge", () => {
   const scenario = createScenario({
     base: { "assets/icon.bin": "a\0base" },
