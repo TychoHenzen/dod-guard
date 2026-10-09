@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { planClosures } from "./closure-plan.mjs";
-import { DELIVERIES, holdOf, issue, item, quotingComment, recordedSnapshot, setField } from "./closure.test-support.mjs";
+import { renderClosureEvidence } from "./closure-records.mjs";
+import {
+  DELIVERIES,
+  holdOf,
+  issue,
+  item,
+  quotingComment,
+  recordedSnapshot,
+  setField,
+} from "./closure.test-support.mjs";
 
 function closeOf(plan, issue) {
   return plan.closes.find((close) => close.issue === issue);
@@ -94,4 +103,23 @@ test("a comment quoting the closure marker is not closure evidence", () => {
     plan.reports.find((report) => report.issue === 683),
     { issue: 683, kind: "unverified-closed", missing: ["completion evidence missing"] },
   );
+});
+
+test("status repair counts only real closure evidence beside a quoting comment", () => {
+  const snapshot = recordedSnapshot({ roots: [840] });
+  const original = snapshot.issues.find(({ number }) => number === 777);
+  Object.assign(original, {
+    state: "closed",
+    state_reason: "completed",
+    comments: [
+      {
+        id: 7002,
+        body: renderClosureEvidence({ issue: 777, stateReason: "completed", evidence: ["Superseded by #840."] }),
+      },
+      quotingComment(7001, ["closure"]),
+    ],
+  });
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.statusRepairs, [{ issue: 777, itemId: "PVTI_777", status: "Backlog" }]);
+  assert.equal(closeOf(plan, 777), undefined);
 });
