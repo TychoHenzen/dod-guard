@@ -285,9 +285,9 @@ test("regenerates a declared generated path and accepts only its declared output
     assert.deepEqual(verifyResolution(scenario.git, { ...started, decisions: misjudged, generators }).problems, [
       { path: "src/value.txt", problem: "only a declared generated path can be regenerated" },
     ]);
-    // The resolved bundle differs from both sides, so only the generated-path
-    // rule can catch a hand-picked decision on it.
-    const handPicked = [{ ...decisions[0], decision: "take-branch" }, decisions[1]];
+    // The rebuilt bundle differs from both sides, so a combine decision would
+    // look visible; only the generated-path rule catches it.
+    const handPicked = [{ ...decisions[0], decision: "combine" }, decisions[1]];
     assert.deepEqual(verifyResolution(scenario.git, { ...started, decisions: handPicked, generators }).problems, [
       { path: "dist/out.js", problem: "a declared generated path must be regenerated" },
     ]);
@@ -407,6 +407,88 @@ test("stops without retrying when the remote refuses a non-fast-forward push", a
     assert.equal(originHead(scenario), race);
   } finally {
     scenario.cleanup();
+  }
+});
+
+// Starts a triage, resolves it, and records the merge commit, so a test can
+// drive only the push.
+function committedScenario() {
+  const scenario = textScenario();
+  const started = startTriage(scenario.git, scenario.input);
+  resolveCombined(scenario);
+  const mergeSha = commitMerge(scenario.git, { ...started, message: "merge" });
+  return { mergeSha, scenario, started };
+}
+
+// Wraps the real runner so chosen git calls fail the way a dropped connection
+// does: "fail" fails before git runs, "fail-after" fails after it ran.
+function flakyRunner(scenario, plans) {
+  const pushes = [];
+  const runner = (args, codes) => {
+    if (args[0] === "push") {
+      pushes.push(args);
+    }
+    const plan = plans[args[0]]?.shift();
+    if (plan === "fail") {
+      throw new Error("fatal: unable to access origin: Could not resolve host");
+    }
+    const result = scenario.git(args, codes);
+    if (plan === "fail-after") {
+      throw new Error("fatal: the remote end hung up unexpectedly");
+    }
+    return result;
+  };
+  return { pushes, runner };
+}
+
+test("reads back an uncertain push and retries it once", async () => {
+  const cases = [
+    { expectedPushes: 2, name: "retry succeeds", plans: { push: ["fail"] } },
+    { expectedPushes: 1, name: "push landed before the error", plans: { push: ["fail-after"] } },
+    { expectedPushes: 2, name: "ls-remote fails, retry succeeds", plans: { "ls-remote": ["fail"], push: ["fail"] } },
+  ];
+  for (const { expectedPushes, name, plans } of cases) {
+    const { mergeSha, scenario, started } = committedScenario();
+    try {
+      const { pushes, runner } = flakyRunner(scenario, plans);
+      const pushed = await pushMerge(runner, { ...started, branch: BRANCH, readPullRequest: () => scenario.pullRequest });
+      assert.equal(pushed.remoteHead, mergeSha, name);
+      assert.equal(pushes.length, expectedPushes, name);
+      assert.equal(originHead(scenario), mergeSha, name);
+    } finally {
+      scenario.cleanup();
+    }
+  }
+});
+
+test("stops with both SHAs when an uncertain push fails twice or the readback is unknown", async () => {
+  const failing = committedScenario();
+  try {
+    const { pushes, runner } = flakyRunner(failing.scenario, {
+      "ls-remote": ["fail", "fail"],
+      push: ["fail", "fail"],
+    });
+    const stop = await asyncStopOf(() =>
+      pushMerge(runner, { ...failing.started, branch: BRANCH, readPullRequest: () => failing.scenario.pullRequest }),
+    );
+    assert.equal(stop.code, "push_failed");
+    assert.equal(stop.details.expected, failing.mergeSha);
+    assert.equal(stop.details.observed, "unknown");
+    assert.equal(pushes.length, 2);
+    assert.equal(originHead(failing.scenario), failing.scenario.trustedHead);
+  } finally {
+    failing.scenario.cleanup();
+  }
+  const unread = committedScenario();
+  try {
+    const { runner } = flakyRunner(unread.scenario, { "ls-remote": ["fail"] });
+    const stop = await asyncStopOf(() =>
+      pushMerge(runner, { ...unread.started, branch: BRANCH, readPullRequest: () => unread.scenario.pullRequest }),
+    );
+    assert.equal(stop.code, "readback_mismatch");
+    assert.deepEqual([stop.details.expected, stop.details.observed], [unread.mergeSha, "unknown"]);
+  } finally {
+    unread.scenario.cleanup();
   }
 });
 

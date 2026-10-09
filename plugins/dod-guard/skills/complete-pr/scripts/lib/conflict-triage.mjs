@@ -510,18 +510,41 @@ function tryPush(git, args) {
   }
 }
 
+// A failed ls-remote leaves the remote head unknown instead of ending the run,
+// so a network failure still reaches the retry and the stop with both SHAs.
+const REMOTE_UNKNOWN = "unknown";
+
 function readRemoteHead(git, remote, branch) {
-  const line = git(["ls-remote", remote, `refs/heads/${branch}`]).stdout.trim();
-  return line ? line.split(/\s+/)[0] : null;
+  try {
+    const line = git(["ls-remote", remote, `refs/heads/${branch}`]).stdout.trim();
+    return line ? line.split(/\s+/)[0] : null;
+  } catch {
+    return REMOTE_UNKNOWN;
+  }
 }
 
-export async function pushMerge(git, { remote = "origin", branch, trustedHead, recordedBase, readPullRequest }) {
-  const mergeSha = checkProvenance(git, { recordedBase, trustedHead });
-  const pending = pendingPaths(git);
-  if (pending.length > 0) {
-    throw new TriageStop("worktree_dirty", "The worktree has changes outside the merge commit.", { paths: pending });
+// Git can report an error after the remote ref already moved, so an uncertain
+// failure whose readback shows the merge commit means the push landed. Any
+// other uncertain failure gets one identical retry; a rejection never does.
+function pushWithOneRetry(git, args, readBack, mergeSha) {
+  const failure = tryPush(git, args);
+  if (failure === null) {
+    return null;
   }
-  const pullRequest = await readPullRequest();
+  if (PUSH_REJECTED.test(failure)) {
+    return { code: "push_rejected", failure };
+  }
+  if (readBack() === mergeSha) {
+    return null;
+  }
+  const retry = tryPush(git, args);
+  if (retry === null) {
+    return null;
+  }
+  return { code: PUSH_REJECTED.test(retry) ? "push_rejected" : "push_failed", failure: retry };
+}
+
+function assertPullRequestUnchanged(pullRequest, { trustedHead, recordedBase }) {
   if (pullRequest.headSha !== trustedHead) {
     throw new TriageStop("head_moved", "The pull request head changed during the run.", {
       expected: trustedHead,
@@ -534,21 +557,21 @@ export async function pushMerge(git, { remote = "origin", branch, trustedHead, r
       observed: pullRequest.baseSha,
     });
   }
-  const args = ["push", remote, `${mergeSha}:refs/heads/${branch}`];
-  let failure = tryPush(git, args);
-  // Read back an uncertain push before retrying the identical command once.
-  if (failure && !PUSH_REJECTED.test(failure) && readRemoteHead(git, remote, branch) !== mergeSha) {
-    failure = tryPush(git, args);
-  } else if (failure && !PUSH_REJECTED.test(failure)) {
-    failure = null;
+}
+
+export async function pushMerge(git, { remote = "origin", branch, trustedHead, recordedBase, readPullRequest }) {
+  const mergeSha = checkProvenance(git, { recordedBase, trustedHead });
+  const pending = pendingPaths(git);
+  if (pending.length > 0) {
+    throw new TriageStop("worktree_dirty", "The worktree has changes outside the merge commit.", { paths: pending });
   }
-  if (failure) {
-    throw new TriageStop(PUSH_REJECTED.test(failure) ? "push_rejected" : "push_failed", failure, {
-      expected: trustedHead,
-      mergeSha,
-    });
+  assertPullRequestUnchanged(await readPullRequest(), { recordedBase, trustedHead });
+  const readBack = () => readRemoteHead(git, remote, branch);
+  const failed = pushWithOneRetry(git, ["push", remote, `${mergeSha}:refs/heads/${branch}`], readBack, mergeSha);
+  if (failed) {
+    throw new TriageStop(failed.code, failed.failure, { expected: mergeSha, observed: readBack(), trustedHead });
   }
-  const remoteHead = readRemoteHead(git, remote, branch);
+  const remoteHead = readBack();
   if (remoteHead !== mergeSha) {
     throw new TriageStop("readback_mismatch", "The remote head does not read back as the merge commit.", {
       expected: mergeSha,
