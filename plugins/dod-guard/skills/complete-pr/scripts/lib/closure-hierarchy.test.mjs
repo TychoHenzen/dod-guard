@@ -222,3 +222,18 @@ test("the parent walk settles a grandparent whatever the root order", () => {
     assert.equal(plan.closes.find(({ issue }) => issue === 700).rule, "parent");
   }
 });
+
+test("an issue held before the walk is not closed as a parent", () => {
+  const snapshot = chainSnapshot(1);
+  const root = snapshot.issues.find(({ number }) => number === 840);
+  root.body = supersedesBody([777, 2001]);
+  const secondRoot = issue(841, { state: "closed", body: supersedesBody([2001]), comments: [completionComment(841)] });
+  snapshot.issues.push(secondRoot);
+  snapshot.items.push(item(841, "Done", { linked: [DELIVERIES[841].pull] }));
+  snapshot.pullRequests.push(pull(841));
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.closes.map(({ issue, rule }) => [issue, rule]), [[777, "replaced-original"]]);
+  assert.deepEqual(holdOf(plan, 2001).reasons, ["superseded by more than one root: #840, #841"]);
+  const closed = new Set(plan.closes.map(({ issue }) => issue));
+  assert.deepEqual(plan.holds.filter(({ issue }) => closed.has(issue)), []);
+});

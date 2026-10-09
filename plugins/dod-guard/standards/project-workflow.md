@@ -162,6 +162,10 @@ reason and no write. Every close posts one `## Closure evidence` comment
 (marker `<!-- dod-guard-closure-evidence -->`) before the issue closes, so a
 rerun never posts a second one.
 
+An issue this helper closed whose Project status is not Done is planned as a
+status repair, so a rerun finishes a stopped Done write without a second
+comment or close.
+
 After any close, the helper walks to the closed issue's parent and closes it as
 `completed` when every sub-issue is closed with verified evidence or superseded
 by a verified root, no linked pull request is open, and no unchecked acceptance

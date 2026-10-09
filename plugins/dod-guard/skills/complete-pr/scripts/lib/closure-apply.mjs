@@ -128,23 +128,47 @@ function writeDone(runner, project, close, steps) {
   steps.push({ issue: close.issue, step: "project-status" });
 }
 
+// The stop carries the failed write's state and what this run already finished, so the
+// caller sees where a rerun resumes.
+function stopWithProgress(error, issue, progress) {
+  return new ClosureStop(error.message, { ...(error.state ?? { issue }), ...progress });
+}
+
 function applyClosures(snapshot, { runner, ...options }) {
   const plan = planClosures(snapshot, options);
   const steps = [];
   const applied = [];
-  if (plan.closes.length === 0) return { plan, applied, steps };
+  const repaired = [];
+  if (plan.closes.length === 0 && plan.statusRepairs.length === 0) {
+    return { plan, applied, repaired, steps };
+  }
   const project = requireProject(snapshot.project);
+  const progress = { applied, repaired, steps };
   for (const close of plan.closes) {
     try {
       writeClose(runner, plan.repository, close, steps);
       writeDone(runner, project, close, steps);
     } catch (error) {
-      const state = { ...(error.state ?? { issue: close.issue }), applied, steps };
-      throw new ClosureStop(error.message, state);
+      throw stopWithProgress(error, close.issue, progress);
     }
     applied.push(close.issue);
   }
-  return { plan, applied, steps };
+  for (const repair of plan.statusRepairs) {
+    try {
+      // The snapshot may be stale, so Done is written only onto an issue that is still closed.
+      const live = readIssue(runner, plan.repository, repair.issue);
+      steps.push({ issue: repair.issue, step: "read" });
+      if (live?.state !== "closed") {
+        const state = { issue: repair.issue, state: live?.state ?? null };
+        throw new ClosureStop(`issue #${repair.issue} is no longer closed`, state);
+      }
+      writeDone(runner, project, repair, steps);
+    } catch (error) {
+      throw stopWithProgress(error, repair.issue, progress);
+    }
+    repaired.push(repair.issue);
+  }
+  return { plan, applied, repaired, steps };
 }
 
 function requireMergeResult(result) {

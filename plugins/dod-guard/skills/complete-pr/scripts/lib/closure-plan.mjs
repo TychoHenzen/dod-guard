@@ -391,7 +391,9 @@ function walkPass(context, seeds) {
         current = parent;
         continue;
       }
-      if (reasonHeld.has(parent)) break;
+      // A hold made before the walk is unresolved evidence about this very issue, so the walk
+      // never closes it as a parent. The hold stays as recorded and no second hold is added.
+      if (reasonHeld.has(parent) || context.holds.some((hold) => hold.issue === parent)) break;
       if (level > PARENT_WALK_LIMIT) {
         if (!limitHolds.has(parent)) {
           limitHolds.set(parent, [`parent walk stopped after ${PARENT_WALK_LIMIT} levels`]);
@@ -426,6 +428,26 @@ function unverifiedClosed(context) {
   return reports;
 }
 
+// A close posts its evidence comment, closes the issue, and then sets Project Done. A run
+// that stops after the close but before Done leaves a closed issue that no plan closes again,
+// so a fresh snapshot must surface it here for apply to finish the Done write. The evidence
+// comment is the proof that this helper made the close; without it the close came from a
+// completion record or by hand, and complete-pr finalization owns it.
+function statusRepairs(context) {
+  const repairs = [];
+  for (const number of context.index.order) {
+    const issue = context.index.issues.get(number);
+    const item = context.index.items.get(number);
+    if (!issue || isOpen(issue) || planned(context, number) || !item?.id) continue;
+    const status = itemStatus(item);
+    if (status === "Done") continue;
+    if (markedComments(issue.comments, CLOSURE_MARKER).length !== 1) continue;
+    if (!closureEvidence(context, number).verified) continue;
+    repairs.push({ issue: number, itemId: item.id, status });
+  }
+  return repairs;
+}
+
 function deliverySummaries(context) {
   return [...context.roots.keys()].map((root) => {
     const { status, record, reasons } = context.delivery(root);
@@ -445,6 +467,7 @@ function planClosures(snapshot, { hierarchy = null } = {}) {
   return {
     repository: context.index.repository,
     closes: context.closes,
+    statusRepairs: statusRepairs(context),
     holds: context.holds,
     reports: unverifiedClosed(context),
     deliveries: deliverySummaries(context),

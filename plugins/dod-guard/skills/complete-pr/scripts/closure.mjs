@@ -16,17 +16,18 @@ import { runGh } from "./project-status.mjs";
 
 const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs apply --snapshot=<file.json> [--hierarchy=<issue>]
-       closure.mjs record --repository=<owner/name> --result=<complete-pr.json> --matrix=<rows.json> [--children=<n,...>]
+       closure.mjs record --repository=<owner/name> --result=<complete-pr.json>
+                          --matrix=<rows.json> [--children=<n,...>]
        closure.mjs annotate --snapshot=<file.json>
 
 The snapshot is the select-next.mjs snapshot plus, on every issue, its body,
 state_reason, and comments ([{id, body}]), and for apply a project object
-{owner, number, statusFieldId, doneOptionId}. plan prints the closes, holds,
-unverified-closed reports, and deliveries; apply performs each close as read,
-comment, close, readback, Project Done. --hierarchy asks to close that issue
-as a pure hierarchy record (not_planned). annotate prints the snapshot with
-activeCheckpoint and trustedHeadSha taken from the completion records, ready
-for select-next.mjs.`;
+{owner, number, statusFieldId, doneOptionId}. plan prints the closes, status
+repairs, holds, unverified-closed reports, and deliveries; apply performs each
+close as read, comment, close, readback, Project Done, and it also sets Done on
+each status repair. --hierarchy asks to close that issue as a pure hierarchy
+record (not_planned). annotate prints the snapshot with activeCheckpoint and
+trustedHeadSha taken from the completion records, ready for select-next.mjs.`;
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));

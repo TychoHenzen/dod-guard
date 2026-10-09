@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { planClosures } from "./closure-plan.mjs";
-import { DELIVERIES, holdOf, recordedSnapshot } from "./closure.test-support.mjs";
+import { DELIVERIES, holdOf, recordedSnapshot, setField } from "./closure.test-support.mjs";
 
 function closeOf(plan, issue) {
   return plan.closes.find((close) => close.issue === issue);
@@ -56,4 +56,10 @@ test("holds an original that two roots supersede", () => {
   const plan = planClosures(snapshot);
   assert.equal(closeOf(plan, 777), undefined);
   assert.deepEqual(holdOf(plan, 777).reasons, ["superseded by more than one root: #840, #841"]);
+});
+
+test("status repair leaves issues this helper did not close to complete-pr", () => {
+  const snapshot = recordedSnapshot({ roots: [818] });
+  setField(snapshot, 818, "Status", { name: "In Progress" });
+  assert.deepEqual(planClosures(snapshot).statusRepairs, []);
 });

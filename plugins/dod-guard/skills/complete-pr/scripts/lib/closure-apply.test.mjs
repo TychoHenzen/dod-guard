@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { applyClosures, recordCompletion } from "./closure-apply.mjs";
-import { DELIVERIES, REPOSITORY, fakeGitHub, mutating, recordedSnapshot } from "./closure.test-support.mjs";
+import { planClosures } from "./closure-plan.mjs";
+import {
+  DELIVERIES,
+  REPOSITORY,
+  fakeGitHub,
+  mutating,
+  recordedSnapshot,
+  snapshotAfter,
+} from "./closure.test-support.mjs";
 
 const EVIDENCE = "<!-- dod-guard-closure-evidence -->";
 
@@ -56,6 +64,34 @@ test("a rerun after a failed close posts no second comment and finishes the clos
   assert.equal(evidenceCount(github, 777), 1);
   assert.equal(github.state.issues.get(777).state, "closed");
   assert.equal(github.state.statuses.get(777), "Done");
+});
+
+test("a rerun after a stopped Done write sets Done without another comment or close", () => {
+  const snapshot = recordedSnapshot({ roots: [840] });
+  const failDone = (args) => mutating(args) && args.some((value) => String(value).startsWith("users/"));
+  const github = fakeGitHub(snapshot, { failOnce: failDone });
+  assert.throws(() => applyClosures(snapshot, { runner: github.runner }), (error) => {
+    assert.equal(error.code, "closure_stop");
+    assert.deepEqual(error.state.steps.map(({ step }) => step), ["read", "comment", "close", "readback"]);
+    return true;
+  });
+  assert.equal(github.state.issues.get(777).state, "closed");
+  assert.equal(github.state.statuses.get(777), "Backlog");
+
+  const after = snapshotAfter(snapshot, github);
+  const replanned = planClosures(after);
+  assert.deepEqual(replanned.closes, []);
+  assert.deepEqual(replanned.statusRepairs, [{ issue: 777, itemId: "PVTI_777", status: "Backlog" }]);
+
+  const mark = github.calls.length;
+  const rerun = applyClosures(after, { runner: github.runner });
+  assert.deepEqual(rerun.repaired, [777]);
+  assert.deepEqual(rerun.applied, []);
+  const writes = github.calls.slice(mark).filter(mutating);
+  assert.equal(writes.length, 1);
+  assert.ok(writes[0].some((value) => String(value).startsWith("users/")));
+  assert.equal(github.state.statuses.get(777), "Done");
+  assert.equal(evidenceCount(github, 777), 1);
 });
 
 test("a readback that disagrees stops with the actual state and no further mutation", () => {

@@ -230,8 +230,9 @@ node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 `plan` is read-only. `apply` re-plans the same snapshot and closes each planned
 issue as read, evidence comment, close with its `state_reason`, readback, and
 Project Done; it stops with the observed partial state when a readback
-disagrees, and a rerun completes the remaining steps without a second comment.
-Report every hold with its reason. Closing keywords and the helper's
+disagrees, and a rerun completes the remaining steps without a second comment;
+it also sets Done on an issue it already closed whose Project status write
+stopped. Report every hold with its reason. Closing keywords and the helper's
 linked-issue confirmation are unchanged.
 
 ## Result

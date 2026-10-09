@@ -19,6 +19,13 @@ test("the standard defines both closure records once", () => {
   assert.match(standard, prose("A record with pending rows is `merged-pending`, not verified."));
   assert.match(standard, prose("Comment text alone is never trusted."));
   assert.match(standard, prose("is a hold with a named reason and no write"));
+  assert.match(
+    standard,
+    prose(
+      "is planned as a status repair,",
+      "so a rerun finishes a stopped Done write without a second comment or close.",
+    ),
+  );
 });
 
 test("complete-pr records completion and closes replaced issues after finalization", () => {
@@ -32,5 +39,12 @@ test("complete-pr records completion and closes replaced issues after finalizati
   assert.match(section, prose("closure.mjs plan --snapshot=<file>"));
   assert.match(section, prose("closure.mjs apply --snapshot=<file>"));
   assert.match(section, prose("read, evidence comment, close with its `state_reason`, readback, and", "Project Done"));
+  assert.match(
+    section,
+    prose(
+      "a rerun completes the remaining steps without a second comment;",
+      "it also sets Done on an issue it already closed whose Project status write stopped",
+    ),
+  );
   assert.match(section, prose("Closing keywords and the helper's", "linked-issue confirmation are unchanged."));
 });
