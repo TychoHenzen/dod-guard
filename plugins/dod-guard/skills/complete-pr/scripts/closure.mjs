@@ -20,8 +20,9 @@ const USAGE = `usage: closure.mjs plan --snapshot=<file.json>
 
 The snapshot is the select-next.mjs snapshot plus, on every issue, its body
 and comments ([{id, body}]), and for apply a project object {owner, number,
-statusFieldId, doneOptionId}. plan prints the closes, holds, and deliveries;
-apply performs each close as read, comment, close, readback, Project Done.`;
+statusFieldId, doneOptionId}. plan prints the closes, holds, unverified-closed
+reports, and deliveries; apply performs each close as read, comment, close,
+readback, Project Done.`;
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));

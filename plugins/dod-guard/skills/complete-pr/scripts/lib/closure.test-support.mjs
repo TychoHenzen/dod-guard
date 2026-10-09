@@ -120,6 +120,47 @@ function recordedSnapshot(options = {}) {
   return snapshot;
 }
 
+// #831 with child #832, and #833: merged, closed by closing keywords, and set
+// Done while live rows were pending, with no completion record on any of them.
+// options.record833 gives #833 a completion record with those overrides.
+function closedWithoutEvidence(options = {}) {
+  const comments833 = options.record833 ? [completionComment(833, options.record833)] : [];
+  return {
+    repository: REPOSITORY,
+    defaultBranch: "master",
+    project: { ...PROJECT },
+    items: [
+      item(831, "Done", { linked: [DELIVERIES[831].pull] }),
+      item(832, "Done", { parent: 831 }),
+      item(833, "Done", { linked: [DELIVERIES[833].pull] }),
+    ],
+    issues: [
+      issue(831, { state: "closed", children: [832] }),
+      issue(832, { state: "closed", parent: 831 }),
+      issue(833, { state: "closed", comments: comments833 }),
+    ],
+    pullRequests: [pull(831), pull(833)],
+  };
+}
+
+// A chain of open parents above one replaced original: #777 under #2001,
+// #2001 under #2002, and so on up to #2000 + depth.
+function chainSnapshot(depth) {
+  const snapshot = recordedSnapshot({ roots: [840] });
+  snapshot.items = snapshot.items.filter(({ content }) => [777, 840].includes(content.number));
+  snapshot.issues = snapshot.issues.filter(({ number }) => [777, 840].includes(number));
+  snapshot.pullRequests = [pull(840)];
+  let child = 777;
+  for (let level = 1; level <= depth; level += 1) {
+    const parent = 2000 + level;
+    snapshot.issues.find(({ number }) => number === child).parent = { number: parent };
+    snapshot.items.push(item(parent, "Backlog"));
+    snapshot.issues.push(issue(parent, { children: [child], body: `## Acceptance criteria\n\n- [ ] Done by #${child}\n` }));
+    child = parent;
+  }
+  return snapshot;
+}
+
 function ok(value) {
   return { status: 0, stderr: "", stdout: value === undefined ? "" : JSON.stringify(value) };
 }
@@ -224,6 +265,8 @@ export {
   DELIVERIES,
   PROJECT,
   REPOSITORY,
+  chainSnapshot,
+  closedWithoutEvidence,
   completionComment,
   fakeGitHub,
   issue,

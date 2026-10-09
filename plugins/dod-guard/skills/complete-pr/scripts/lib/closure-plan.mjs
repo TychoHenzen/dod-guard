@@ -3,7 +3,13 @@
 // delivery that verifies against live readback and the queue's own merged
 // predicate, so cleanup and selection can never disagree.
 import { defaultQueueDecision } from "../../../goal-sdlc/scripts/lib/queue-readback.mjs";
-import { parseCompletionRecord, parseSupersedes, renderClosureEvidence } from "./closure-records.mjs";
+import {
+  CLOSURE_MARKER,
+  markedComments,
+  parseCompletionRecord,
+  parseSupersedes,
+  renderClosureEvidence,
+} from "./closure-records.mjs";
 
 function numberOf(value) {
   const number = Number(value?.number ?? value);
@@ -175,6 +181,159 @@ function planReplacedOriginal(context, root, original) {
   });
 }
 
+const PARENT_WALK_LIMIT = 5;
+
+function sectionLines(body, heading) {
+  const text = String(body ?? "").replace(/\r\n/g, "\n");
+  const start = text.search(new RegExp(`^## ${heading}[ \\t]*$`, "m"));
+  if (start < 0) return [];
+  const rest = text.slice(text.indexOf("\n", start) + 1);
+  const end = rest.search(/^## /m);
+  return (end < 0 ? rest : rest.slice(0, end)).split("\n");
+}
+
+// ASSUMPTION: an unchecked criterion that names one of the issue's own
+// sub-issues as #N belongs to that sub-issue's delivery, so it does not hold
+// the parent; any other unchecked criterion is the parent's own scope.
+function unmappedCriteria(issue, children) {
+  return sectionLines(issue?.body, "Acceptance criteria")
+    .filter((line) => /^\s*- \[ \]/.test(line))
+    .filter((line) => !children.some((child) => new RegExp(`#${child}\\b`).test(line)))
+    .map((line) => line.replace(/^\s*- \[ \]\s*/, "").trim());
+}
+
+function planned(context, number) {
+  return context.closes.some((close) => close.issue === number);
+}
+
+function prefixed(judged) {
+  return judged.reasons.map((reason) => `${judged.status}: ${reason}`);
+}
+
+// The delivery group an issue's own completion record belongs to: its parent's
+// when the parent recorded the same pull request, otherwise its own.
+function recordGroup(context, number, record) {
+  const parent = numberOf(context.index.issues.get(number)?.parent);
+  const parentRecord = parent === null ? null : parseCompletionRecord(context.index.issues.get(parent)?.comments).record;
+  return parentRecord?.pullRequest === record.pullRequest ? parent : number;
+}
+
+function hasClosureEvidence(issue) {
+  return markedComments(issue?.comments, CLOSURE_MARKER).length > 0;
+}
+
+// Whether an issue's close is backed by evidence the helper can verify now:
+// a verified root that supersedes it, its own verified delivery, or a closure
+// evidence comment whose rule still holds.
+function closureEvidence(context, number, seen = new Set()) {
+  if (seen.has(number)) return { verified: false, missing: ["sub-issue relationship cycle"] };
+  seen.add(number);
+  const roots = context.rootsOf(number);
+  if (roots.length > 0) {
+    const judged = roots.map((root) => [root, context.delivery(root)]);
+    if (roots.length === 1 && judged[0][1].status === "verified") return { verified: true };
+    return { verified: false, missing: judged.flatMap(([root, value]) => prefixed(value).map((reason) => `root #${root} ${reason}`)) };
+  }
+  const issue = context.index.issues.get(number);
+  const own = parseCompletionRecord(issue?.comments);
+  if (own.error) return { verified: false, missing: [own.error] };
+  if (own.record) {
+    const judged = context.delivery(recordGroup(context, number, own.record));
+    return judged.status === "verified" ? { verified: true } : { verified: false, missing: prefixed(judged) };
+  }
+  if (hasClosureEvidence(issue)) {
+    const missing = parentReasons(context, number, seen);
+    return { verified: missing.length === 0, missing };
+  }
+  return { verified: false, missing: ["completion evidence missing"] };
+}
+
+function childReason(context, child, seen) {
+  if (planned(context, child)) return null;
+  const hold = context.holds.find((entry) => entry.issue === child);
+  if (hold) return `child #${child} held: ${hold.reasons.join("; ")}`;
+  const issue = context.index.issues.get(child);
+  if (!issue) return `child #${child} readback missing`;
+  if (isOpen(issue)) return `child #${child} is open`;
+  const evidence = closureEvidence(context, child, seen);
+  return evidence.verified ? null : `child #${child} closed without verified evidence: ${evidence.missing.join("; ")}`;
+}
+
+function parentReasons(context, number, seen = new Set([number])) {
+  const issue = context.index.issues.get(number);
+  if (!issue) return [`issue #${number} readback missing`];
+  const children = childNumbers(context.index, number);
+  if (children.length === 0) return ["has no sub-issues"];
+  const reasons = children.map((child) => childReason(context, child, new Set(seen))).filter(Boolean);
+  const pulls = itemPullNumbers(context.index.items.get(number));
+  reasons.push(...pulls.filter((pull) => isOpen(context.index.pulls.get(pull))).map((pull) => `open linked pull request #${pull}`));
+  reasons.push(...unmappedCriteria(issue, children).map((text) => `unchecked acceptance criterion not mapped to a sub-issue: ${text}`));
+  return reasons;
+}
+
+function parentClose(context, parent) {
+  const children = childNumbers(context.index, parent);
+  const evidence = [
+    `Every sub-issue is closed with verified evidence or superseded by a verified root: ${children.map((child) => `#${child}`).join(", ")}.`,
+    "No open linked pull request and no unchecked acceptance criterion outside a sub-issue remain.",
+  ];
+  return {
+    issue: parent,
+    itemId: context.index.items.get(parent).id,
+    stateReason: "completed",
+    rule: "parent",
+    children,
+    comment: renderClosureEvidence({ issue: parent, stateReason: "completed", evidence }),
+  };
+}
+
+// Walks upward from every planned close and every closed issue, closing each
+// open parent whose sub-issues are all settled, and stops at the first parent
+// that does not qualify or after PARENT_WALK_LIMIT levels.
+function walkParents(context) {
+  const seeds = [
+    ...context.closes.map(({ issue }) => issue),
+    ...context.index.order.filter((number) => !isOpen(context.index.issues.get(number))),
+  ];
+  const visited = new Set();
+  for (const seed of seeds) {
+    let child = seed;
+    for (let level = 1; ; level += 1) {
+      const parent = numberOf(context.index.issues.get(child)?.parent);
+      if (parent === null || visited.has(parent) || planned(context, parent)) break;
+      visited.add(parent);
+      const issue = context.index.issues.get(parent);
+      if (issue && !isOpen(issue)) break;
+      if (level > PARENT_WALK_LIMIT) {
+        context.holds.push({ issue: parent, reasons: [`parent walk stopped after ${PARENT_WALK_LIMIT} levels`] });
+        break;
+      }
+      const reasons = parentReasons(context, parent);
+      if (issue && !context.index.items.get(parent)?.id) reasons.push(`Project item #${parent} missing`);
+      if (reasons.length > 0) {
+        context.holds.push({ issue: parent, reasons });
+        break;
+      }
+      context.closes.push(parentClose(context, parent));
+      child = parent;
+    }
+  }
+}
+
+// Closed or Done records whose close has no verified evidence are reported
+// only: reopening or editing them would override an owner's decision.
+function unverifiedClosed(context) {
+  const reports = [];
+  for (const number of context.index.order) {
+    if (planned(context, number)) continue;
+    const done = itemStatus(context.index.items.get(number)) === "Done";
+    if (isOpen(context.index.issues.get(number)) && !done) continue;
+    const evidence = closureEvidence(context, number);
+    if (!evidence.verified) reports.push({ issue: number, kind: "unverified-closed", missing: evidence.missing });
+  }
+  return reports;
+}
+
 function deliverySummaries(context) {
   return [...context.roots.keys()].map((root) => {
     const { status, record, reasons } = context.delivery(root);
@@ -187,10 +346,12 @@ function planClosures(snapshot) {
   for (const [root, originals] of context.roots) {
     for (const original of originals) planReplacedOriginal(context, root, original);
   }
+  walkParents(context);
   return {
     repository: context.index.repository,
     closes: context.closes,
     holds: context.holds,
+    reports: unverifiedClosed(context),
     deliveries: deliverySummaries(context),
   };
 }

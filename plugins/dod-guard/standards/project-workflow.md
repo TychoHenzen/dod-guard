@@ -160,6 +160,14 @@ reason and no write. Every close posts one `## Closure evidence` comment
 (marker `<!-- dod-guard-closure-evidence -->`) before the issue closes, so a
 rerun never posts a second one.
 
+After any close, the helper walks to the closed issue's parent and closes it as
+`completed` when every sub-issue is closed with verified evidence or superseded
+by a verified root, no linked pull request is open, and no unchecked acceptance
+criterion outside a sub-issue remains. The walk stops at the first parent that
+does not qualify, or after five levels. A record that is already closed or Done
+without verified evidence is reported as `unverified-closed` and is never
+reopened or edited.
+
 ## Convergence record
 
 Before a structured PBI gets a draft PR, `submit-draft-pr` compares the
