@@ -26702,7 +26702,10 @@ function groupEnd(code, open) {
   }
   return matchBracket(code, open, pair);
 }
-function opensParameterList(code, open) {
+function opensParameterList(code, source, open) {
+  if (nextToken(code, source, open + 1).quote !== void 0) {
+    return false;
+  }
   const i = skipSpace(code, open + 1);
   if (code[i] === ")" || code[i] === "{" || code[i] === "[" || code.startsWith("...", i)) {
     return true;
@@ -26864,7 +26867,7 @@ function groupOperand(ctx, state, i) {
     return -1;
   }
   const after = skipSpace(code, close + 1);
-  if (code[i] === "(" && code.startsWith("=>", after) && opensParameterList(code, i)) {
+  if (code[i] === "(" && code.startsWith("=>", after) && opensParameterList(code, ctx.source, i)) {
     return expectAt(state, after + 2);
   }
   return completeOperand(state, close + 1, false);
