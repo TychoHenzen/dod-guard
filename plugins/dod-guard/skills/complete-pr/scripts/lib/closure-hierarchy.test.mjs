@@ -5,6 +5,8 @@ import { planClosures } from "./closure-plan.mjs";
 import { renderClosureEvidence } from "./closure-records.mjs";
 import {
   DELIVERIES,
+  FOREIGN_REPOSITORY,
+  REPOSITORY,
   chainSnapshot,
   closedWithoutEvidence,
   completionComment,
@@ -178,7 +180,7 @@ function hierarchyChain(options = {}) {
   snapshot.items = snapshot.items.filter(({ content }) => [775, 818].includes(content.number));
   snapshot.issues = snapshot.issues.filter(({ number }) => [775, 818].includes(number));
   snapshot.pullRequests = snapshot.pullRequests.filter(({ number }) => number === DELIVERIES[818].pull);
-  snapshot.issues.find(({ number }) => number === 775).parent = { number: 901 };
+  snapshot.issues.find(({ number }) => number === 775).parent = { repository: REPOSITORY, number: 901 };
   const body = renderClosureEvidence({
     issue: 901,
     stateReason: "not_planned",
@@ -211,8 +213,8 @@ test("an open parent above a not_planned hierarchy record waits for the moved de
 // #702 the parent of #776, and roots #818 and #820 verify both replacements.
 function grandparentChain() {
   const snapshot = recordedSnapshot({ roots: [818, 820] });
-  snapshot.issues.find(({ number }) => number === 775).parent = { number: 701 };
-  snapshot.issues.find(({ number }) => number === 776).parent = { number: 702 };
+  snapshot.issues.find(({ number }) => number === 775).parent = { repository: REPOSITORY, number: 701 };
+  snapshot.issues.find(({ number }) => number === 776).parent = { repository: REPOSITORY, number: 702 };
   const kept = [775, 776, 818, 820];
   const pulls = [DELIVERIES[818].pull, DELIVERIES[820].pull];
   snapshot.items = snapshot.items.filter(({ content }) => kept.includes(content.number));
@@ -254,7 +256,68 @@ test("an issue held before the walk is not closed as a parent", () => {
   snapshot.pullRequests.push(pull(841));
   const plan = planClosures(snapshot);
   assert.deepEqual(plan.closes.map(({ issue, rule }) => [issue, rule]), [[777, "replaced-original"]]);
-  assert.deepEqual(holdOf(plan, 2001).reasons, ["superseded by more than one root: #840, #841"]);
+  assert.deepEqual(holdOf(plan, 2001).reasons, [
+    "superseded by more than one root: #840, #841",
+    "parent close refused: issue is held",
+  ]);
   const closed = new Set(plan.closes.map(({ issue }) => issue));
   assert.deepEqual(plan.holds.filter(({ issue }) => closed.has(issue)), []);
 });
+
+// A cross-repository sub-issue holds #683 before any rule runs. Asking for the hierarchy close of
+// #683 must be refused, and no issue may be both closed and held.
+test("a hierarchy close is refused on an issue held for a cross-repository sub-issue", () => {
+  const snapshot = recordedSnapshot();
+  const epic = snapshot.issues.find(({ number }) => number === 683);
+  epic.children.push({ repository: FOREIGN_REPOSITORY, number: 12 });
+  const plan = planClosures(snapshot, { hierarchy: 683 });
+  assert.equal(plan.closes.some(({ issue }) => issue === 683), false, JSON.stringify(plan.closes));
+  const { reasons } = holdOf(plan, 683);
+  assert.ok(reasons.includes("cross-repository sub-issue TychoHenzen/DeepSeekCustom#12"), JSON.stringify(plan.holds));
+  assert.ok(reasons.includes("hierarchy close refused: issue is held"), JSON.stringify(plan.holds));
+  const closed = new Set(plan.closes.map(({ issue }) => issue));
+  assert.deepEqual(plan.holds.filter(({ issue }) => closed.has(issue)), []);
+});
+
+// A held #683 under an open parent #2001. Each variant asks for the hierarchy close of #683 or does
+// not. Neither #683 nor #2001 may close or receive a write, and #683's hold names its cross-repository
+// sub-issue and the refused close. #2001 gets no hold of its own: the walk stops at the refused #683.
+function heldUnderOpenParent() {
+  const snapshot = recordedSnapshot();
+  const epic = snapshot.issues.find(({ number }) => number === 683);
+  epic.children.push({ repository: FOREIGN_REPOSITORY, number: 12 });
+  epic.parent = { repository: REPOSITORY, number: 2001 };
+  snapshot.items.push(item(2001, "Backlog"));
+  snapshot.issues.push(issue(2001, { children: [683] }));
+  return snapshot;
+}
+
+const WRITE_TO_HELD_OR_PARENT = /\/issues\/(683|2001)(\/|$)/;
+
+const VARIANTS = [
+  { options: { hierarchy: 683 }, refusal: "hierarchy close refused: issue is held" },
+  { options: {}, refusal: "parent close refused: issue is held" },
+];
+
+for (const { options, refusal } of VARIANTS) {
+  test(`an open parent above a held #683 stays open with options ${JSON.stringify(options)}`, () => {
+    const snapshot = heldUnderOpenParent();
+    const plan = planClosures(snapshot, options);
+    assert.equal(plan.closes.some(({ issue }) => issue === 2001), false, JSON.stringify(plan.closes));
+    assert.equal(plan.closes.some(({ issue }) => issue === 683), false, JSON.stringify(plan.closes));
+    const reasons = holdOf(plan, 683)?.reasons ?? [];
+    assert.ok(reasons.includes("cross-repository sub-issue TychoHenzen/DeepSeekCustom#12"), JSON.stringify(plan.holds));
+    assert.ok(reasons.includes(refusal), JSON.stringify(plan.holds));
+
+    const github = fakeGitHub(snapshot);
+    applyClosures(snapshot, { runner: github.runner, ...options });
+    const writes = github.calls.filter(mutating);
+    const issueWrites = writes.filter((args) => args.some((value) => WRITE_TO_HELD_OR_PARENT.test(String(value))));
+    assert.deepEqual(issueWrites, []);
+    const itemIds = ["PVTI_683", "PVTI_2001"].map((id) => String(github.state.items.get(id).numericId));
+    const itemWrites = writes.filter((args) =>
+      args.some((value) => String(value).startsWith("users/") && itemIds.includes(String(value).split("/").pop())),
+    );
+    assert.deepEqual(itemWrites, []);
+  });
+}

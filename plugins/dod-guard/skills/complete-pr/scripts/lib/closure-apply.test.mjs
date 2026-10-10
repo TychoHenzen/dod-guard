@@ -30,7 +30,7 @@ test("apply comments, closes, reads back, and sets Done for a replaced original"
   assert.equal(closed.state, "closed");
   assert.equal(closed.state_reason, "completed");
   assert.match(closed.comments[0].body, /Superseded by #840, delivered by pull request #901/);
-  assert.equal(github.state.statuses.get(777), "Done");
+  assert.equal(github.state.statuses.get("PVTI_777"), "Done");
 });
 
 test("apply makes no mutating call when every close is held", () => {
@@ -71,7 +71,7 @@ test("a rerun after a failed close posts no second comment and finishes the clos
   assert.deepEqual(rerun.steps.map(({ step }) => step), ["read", "close", "readback", "project-status"]);
   assert.equal(evidenceCount(github, 777), 1);
   assert.equal(github.state.issues.get(777).state, "closed");
-  assert.equal(github.state.statuses.get(777), "Done");
+  assert.equal(github.state.statuses.get("PVTI_777"), "Done");
 });
 
 test("a rerun after a stopped Done write sets Done without another comment or close", () => {
@@ -84,7 +84,7 @@ test("a rerun after a stopped Done write sets Done without another comment or cl
     return true;
   });
   assert.equal(github.state.issues.get(777).state, "closed");
-  assert.equal(github.state.statuses.get(777), "Backlog");
+  assert.equal(github.state.statuses.get("PVTI_777"), "Backlog");
 
   const after = snapshotAfter(snapshot, github);
   const replanned = planClosures(after);
@@ -98,7 +98,7 @@ test("a rerun after a stopped Done write sets Done without another comment or cl
   const writes = github.calls.slice(mark).filter(mutating);
   assert.equal(writes.length, 1);
   assert.ok(writes[0].some((value) => String(value).startsWith("users/")));
-  assert.equal(github.state.statuses.get(777), "Done");
+  assert.equal(github.state.statuses.get("PVTI_777"), "Done");
   assert.equal(evidenceCount(github, 777), 1);
 });
 
@@ -129,7 +129,7 @@ test("a readback that disagrees stops with the actual state and no further mutat
   });
   const lastMutation = github.calls.filter(mutating).at(-1);
   assert.ok(lastMutation.includes("state=closed"));
-  assert.equal(github.state.statuses.get(777), "Backlog");
+  assert.equal(github.state.statuses.get("PVTI_777"), "Backlog");
 });
 
 test("apply refuses to write without the Project identity", () => {

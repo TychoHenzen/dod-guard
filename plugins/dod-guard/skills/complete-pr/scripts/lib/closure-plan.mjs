@@ -1,15 +1,19 @@
 // Plans which issues to close from a queue snapshot the caller already read.
 // Pure: it reads no provider and writes nothing. The close rules (originals, parents,
 // hierarchy records, walk, reports, repairs) apply the verdicts from closure-delivery.mjs.
+import { isOpen, judgeDelivery } from "./closure-delivery.mjs";
 import {
   childNumbers,
   indexSnapshot,
-  isOpen,
+  issueFor,
+  itemFor,
   itemPullNumbers,
   itemStatus,
-  judgeDelivery,
-  numberOf,
-} from "./closure-delivery.mjs";
+  parentNumberOf,
+  preflightHolds,
+  pullFor,
+  statusUnreadable,
+} from "./closure-index.mjs";
 import {
   markdownSection,
   parseCompletionRecord,
@@ -17,6 +21,64 @@ import {
   recordComments,
   renderClosureEvidence,
 } from "./closure-records.mjs";
+
+// One hold per issue, so the reasons found for an issue read as one entry. A hold that names no
+// issue stays on its own, because it names no target issue to merge into.
+function mergeHolds(holds) {
+  const merged = [];
+  const byIssue = new Map();
+  for (const hold of holds) {
+    if (hold.issue === null) {
+      merged.push(hold);
+      continue;
+    }
+    if (!byIssue.has(hold.issue)) {
+      const entry = { issue: hold.issue, reasons: [] };
+      byIssue.set(hold.issue, entry);
+      merged.push(entry);
+    }
+    const entry = byIssue.get(hold.issue);
+    for (const reason of hold.reasons) {
+      if (!entry.reasons.includes(reason)) entry.reasons.push(reason);
+    }
+  }
+  return merged;
+}
+
+// Records reasons against an issue's hold in place, so the reasons for an issue stay in one entry
+// with no reason repeated. A hold that names no issue is always its own entry: it has no issue to
+// merge into.
+function addHold(context, issue, reasons) {
+  const entry = context.holds.find((hold) => hold.issue !== null && hold.issue === issue);
+  if (entry === undefined) {
+    context.holds.push({ issue, reasons: [...new Set(reasons)] });
+    return;
+  }
+  for (const reason of reasons) {
+    if (!entry.reasons.includes(reason)) {
+      entry.reasons.push(reason);
+    }
+  }
+}
+
+// The one place that decides whether an issue is held for a write. Every close and every Project
+// Done repair passes through it. A held issue is refused, and the refusal joins that issue's hold.
+function admitWrite(context, issue, refusal) {
+  if (context.holds.some((hold) => hold.issue === issue)) {
+    addHold(context, issue, [refusal]);
+    return false;
+  }
+  return true;
+}
+
+// The only code that appends to context.closes.
+function admitClose(context, close) {
+  if (!admitWrite(context, close.issue, `${close.rule} close refused: issue is held`)) {
+    return false;
+  }
+  context.closes.push(close);
+  return true;
+}
 
 function createContext(snapshot) {
   const index = indexSnapshot(snapshot);
@@ -28,16 +90,19 @@ function createContext(snapshot) {
   const roots = new Map();
   const rootErrors = [];
   for (const number of index.order) {
-    const parsed = parseSupersedes(index.issues.get(number)?.body, index.repository);
+    const parsed = parseSupersedes(issueFor(index, number)?.body, index.repository);
     if (parsed.error) rootErrors.push({ issue: number, reasons: [parsed.error] });
     else if (parsed.numbers.length > 0) roots.set(number, parsed.numbers);
   }
   const rootsOf = (original) => [...roots].filter(([, numbers]) => numbers.includes(original)).map(([root]) => root);
-  return { index, delivery, roots, rootErrors, rootsOf, closes: [], holds: [...rootErrors] };
+  // Indexing problems and unsafe relations are holds before any rule runs. A held issue is never
+  // closed or set Done because admitClose and admitWrite refuse it, so no rule checks holds itself.
+  const holds = mergeHolds([...index.problems, ...rootErrors, ...preflightHolds(index)]);
+  return { index, delivery, roots, rootsOf, closes: [], holds };
 }
 
 function originalHold(context, original) {
-  const issue = context.index.issues.get(original);
+  const issue = issueFor(context.index, original);
   if (!issue) return [`issue #${original} readback missing`];
   if (!isOpen(issue)) return null;
   const roots = context.rootsOf(original);
@@ -46,17 +111,16 @@ function originalHold(context, original) {
   if (judged.status !== "verified") {
     return judged.reasons.map((reason) => `root #${roots[0]} ${judged.status}: ${reason}`);
   }
-  if (!context.index.items.get(original)?.id) return [`Project item #${original} missing`];
+  if (!itemFor(context.index, original)?.id) return [`Project item #${original} missing`];
   return [];
 }
 
 function planReplacedOriginal(context, root, original) {
   if (context.closes.some((close) => close.issue === original)) return;
-  if (context.holds.some((hold) => hold.issue === original)) return;
   const reasons = originalHold(context, original);
   if (reasons === null) return;
   if (reasons.length > 0) {
-    context.holds.push({ issue: original, reasons });
+    addHold(context, original, reasons);
     return;
   }
   const { record } = context.delivery(root);
@@ -65,9 +129,9 @@ function planReplacedOriginal(context, root, original) {
     `The completion evidence on #${root} matches the live pull request readback, and the queue ` +
       `decision for #${root} is complete.`,
   ];
-  context.closes.push({
+  admitClose(context, {
     issue: original,
-    itemId: context.index.items.get(original).id,
+    itemId: itemFor(context.index, original).id,
     stateReason: "completed",
     rule: "replaced-original",
     root,
@@ -102,9 +166,9 @@ function prefixed(judged) {
 // The delivery group an issue's own completion record belongs to: its parent's
 // when the parent recorded the same pull request, otherwise its own.
 function recordGroup(context, number, record) {
-  const parent = numberOf(context.index.issues.get(number)?.parent);
+  const parent = parentNumberOf(context.index, number);
   const parentRecord =
-    parent === null ? null : parseCompletionRecord(context.index.issues.get(parent)?.comments).record;
+    parent === null ? null : parseCompletionRecord(issueFor(context.index, parent)?.comments).record;
   return parentRecord?.pullRequest === record.pullRequest ? parent : number;
 }
 
@@ -131,7 +195,7 @@ function closureEvidence(context, number, { seen = new Set(), purpose = "justifi
       missing: judged.flatMap(([root, value]) => prefixed(value).map((reason) => `root #${root} ${reason}`)),
     };
   }
-  const issue = context.index.issues.get(number);
+  const issue = issueFor(context.index, number);
   const own = parseCompletionRecord(issue?.comments);
   if (own.error) return { verified: false, missing: [own.error] };
   if (own.record) {
@@ -151,7 +215,7 @@ function childReason(context, child, seen) {
   if (planned(context, child)) return null;
   const hold = context.holds.find((entry) => entry.issue === child);
   if (hold) return `child #${child} held: ${hold.reasons.join("; ")}`;
-  const issue = context.index.issues.get(child);
+  const issue = issueFor(context.index, child);
   if (!issue) return `child #${child} readback missing`;
   if (isOpen(issue)) return `child #${child} is open`;
   const evidence = closureEvidence(context, child, { seen, purpose: "delivered" });
@@ -162,7 +226,7 @@ function childReason(context, child, seen) {
 // added for one kind cannot silently miss the other. A result without `children`
 // carries only the reasons the parent cannot be judged.
 function recordBase(context, number) {
-  const issue = context.index.issues.get(number);
+  const issue = issueFor(context.index, number);
   if (!issue) return { reasons: [`issue #${number} readback missing`] };
   const children = childNumbers(context.index, number);
   if (children === null) return { reasons: ["sub-issue list missing"] };
@@ -177,10 +241,10 @@ function parentReasons(context, number, seen = new Set([number])) {
   const base = recordBase(context, number);
   if (!base.children) return base.reasons;
   const reasons = base.children.map((child) => childReason(context, child, new Set(seen))).filter(Boolean);
-  const pulls = itemPullNumbers(context.index.items.get(number));
+  const pulls = itemPullNumbers(context.index, itemFor(context.index, number));
   reasons.push(
     ...pulls
-      .filter((pull) => isOpen(context.index.pulls.get(pull)))
+      .filter((pull) => isOpen(pullFor(context.index, pull)))
       .map((pull) => `open linked pull request #${pull}`),
   );
   reasons.push(...base.reasons);
@@ -193,7 +257,8 @@ function parentReasons(context, number, seen = new Set([number])) {
 function hierarchyReasons(context, number, seen = new Set([number])) {
   const base = recordBase(context, number);
   if (!base.children) return base.reasons;
-  const reasons = itemPullNumbers(context.index.items.get(number)).map((pull) => `linked pull request #${pull}`);
+  const pulls = itemPullNumbers(context.index, itemFor(context.index, number));
+  const reasons = pulls.map((pull) => `linked pull request #${pull}`);
   reasons.push(...base.reasons);
   for (const child of base.children) {
     if (context.rootsOf(child).length > 0) continue;
@@ -204,11 +269,11 @@ function hierarchyReasons(context, number, seen = new Set([number])) {
 }
 
 function planHierarchy(context, number) {
-  const issue = context.index.issues.get(number);
+  const issue = issueFor(context.index, number);
   const reasons = issue && !isOpen(issue) ? ["issue is already closed"] : hierarchyReasons(context, number);
-  if (issue && !context.index.items.get(number)?.id) reasons.push(`Project item #${number} missing`);
+  if (issue && !itemFor(context.index, number)?.id) reasons.push(`Project item #${number} missing`);
   if (reasons.length > 0) {
-    context.holds.push({ issue: number, reasons });
+    addHold(context, number, reasons);
     return;
   }
   const children = childNumbers(context.index, number);
@@ -219,9 +284,9 @@ function planHierarchy(context, number) {
       ? `Delivery moved to replacement roots: ${moved.join(", ")}.`
       : "Every sub-issue is closed with verified evidence.",
   ];
-  context.closes.push({
+  admitClose(context, {
     issue: number,
-    itemId: context.index.items.get(number).id,
+    itemId: itemFor(context.index, number).id,
     stateReason: "not_planned",
     rule: "hierarchy",
     children,
@@ -238,7 +303,7 @@ function parentClose(context, parent) {
   ];
   return {
     issue: parent,
-    itemId: context.index.items.get(parent).id,
+    itemId: itemFor(context.index, parent).id,
     stateReason: "completed",
     rule: "parent",
     children,
@@ -253,7 +318,7 @@ function parentClose(context, parent) {
 function walkParents(context) {
   const seeds = [
     ...context.closes.map(({ issue }) => issue),
-    ...context.index.order.filter((number) => !isOpen(context.index.issues.get(number))),
+    ...context.index.order.filter((number) => !isOpen(issueFor(context.index, number))),
   ];
   let holds = [];
   let added = true;
@@ -262,14 +327,16 @@ function walkParents(context) {
     holds = walkPass(context, seeds);
     added = context.closes.length > before;
   }
-  context.holds.push(...holds);
+  for (const hold of holds) {
+    addHold(context, hold.issue, hold.reasons);
+  }
 }
 
 // One walk from each seed. Holds are returned, not recorded, because a later pass may
 // close the parent a hold names, so only the last pass's holds survive. A planned parent
 // is stepped through while the walk is within the level limit. Past the limit it ends the
 // walk with no hold, since the parent is closing anyway, and the limit still bounds a
-// parent cycle. Only a reason hold stops later seeds: a walk that runs out of levels says
+// parent cycle. Only a reason hold or a refused close stops later seeds: a walk that runs out of levels says
 // nothing about whether a shallower walk can settle the parent. A level-limit hold is
 // returned only when the parent is neither closed nor reason-held by the end of the pass.
 function walkPass(context, seeds) {
@@ -283,18 +350,18 @@ function walkPass(context, seeds) {
   for (const seed of seeds) {
     let current = seed;
     for (let level = 1; ; level += 1) {
-      const parent = numberOf(context.index.issues.get(current)?.parent);
+      const parent = parentNumberOf(context.index, current);
       if (parent === null) break;
-      const issue = context.index.issues.get(parent);
+      const issue = issueFor(context.index, parent);
       if (issue && !isOpen(issue)) break;
       if (planned(context, parent)) {
         if (level > PARENT_WALK_LIMIT) break;
         current = parent;
         continue;
       }
-      // A hold made before the walk is unresolved evidence about this very issue, so the walk
-      // never closes it as a parent. The hold stays as recorded and no second hold is added.
-      if (reasonHeld.has(parent) || context.holds.some((hold) => hold.issue === parent)) break;
+      if (reasonHeld.has(parent)) {
+        break;
+      }
       if (level > PARENT_WALK_LIMIT) {
         if (!limitHolds.has(parent)) {
           limitHolds.set(parent, [`parent walk stopped after ${PARENT_WALK_LIMIT} levels`]);
@@ -302,12 +369,15 @@ function walkPass(context, seeds) {
         break;
       }
       const reasons = parentReasons(context, parent);
-      if (issue && !context.index.items.get(parent)?.id) reasons.push(`Project item #${parent} missing`);
+      if (issue && !itemFor(context.index, parent)?.id) reasons.push(`Project item #${parent} missing`);
       if (reasons.length > 0) {
         hold(parent, reasons);
         break;
       }
-      context.closes.push(parentClose(context, parent));
+      if (!admitClose(context, parentClose(context, parent))) {
+        reasonHeld.add(parent);
+        break;
+      }
       current = parent;
     }
   }
@@ -321,8 +391,8 @@ function unverifiedClosed(context) {
   const reports = [];
   for (const number of context.index.order) {
     if (planned(context, number)) continue;
-    const done = itemStatus(context.index.items.get(number)) === "Done";
-    if (isOpen(context.index.issues.get(number)) && !done) continue;
+    const done = itemStatus(itemFor(context.index, number)) === "Done";
+    if (isOpen(issueFor(context.index, number)) && !done) continue;
     const evidence = closureEvidence(context, number);
     if (!evidence.verified) reports.push({ issue: number, kind: "unverified-closed", missing: evidence.missing });
   }
@@ -337,14 +407,17 @@ function unverifiedClosed(context) {
 function statusRepairs(context) {
   const repairs = [];
   for (const number of context.index.order) {
-    const issue = context.index.issues.get(number);
-    const item = context.index.items.get(number);
+    const issue = issueFor(context.index, number);
+    const item = itemFor(context.index, number);
     if (!issue || isOpen(issue) || planned(context, number) || !item?.id) continue;
+    if (statusUnreadable(item)) continue;
     const status = itemStatus(item);
     if (status === "Done") continue;
     if (recordComments(issue.comments, "closure").length !== 1) continue;
     if (!closureEvidence(context, number).verified) continue;
-    repairs.push({ issue: number, itemId: item.id, status });
+    if (admitWrite(context, number, "Project Done repair refused: issue is held")) {
+      repairs.push({ issue: number, itemId: item.id, status });
+    }
   }
   return repairs;
 }

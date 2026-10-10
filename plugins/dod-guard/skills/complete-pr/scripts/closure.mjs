@@ -3,8 +3,8 @@
 // saved snapshot and writes nothing; `apply` re-plans the same snapshot and
 // performs the planned closes; `record` writes the completion evidence a later
 // plan verifies. standards/project-workflow.md defines both records.
-// biome-ignore lint/correctness/noNodejsModules: This shipped command reads snapshot files.
-import { readFileSync } from "node:fs";
+// biome-ignore lint/correctness/noNodejsModules: This shipped command reads snapshot files and removes an earlier one.
+import { readFileSync, rmSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
 import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
@@ -13,6 +13,9 @@ import { parseArgs } from "../../../lib/args.mjs";
 import { applyClosures, recordCompletion } from "./lib/closure-apply.mjs";
 import { annotateSnapshot } from "./lib/closure-delivery.mjs";
 import { planClosures } from "./lib/closure-plan.mjs";
+import { buildClosureSnapshot, writeClosureSnapshot } from "./lib/closure-snapshot.mjs";
+import { runGh as runGhClient } from "./lib/github-client.mjs";
+import { REPOSITORY_NAME } from "./lib/repository-identity.mjs";
 import { runGh } from "./project-status.mjs";
 
 const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issue>]
@@ -20,16 +23,22 @@ const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issu
        closure.mjs record --repository=<owner/name> --result=<complete-pr.json>
                           --matrix=<rows.json> [--children=<n,...>]
        closure.mjs annotate --snapshot=<file.json>
+       closure.mjs snapshot --repository=<owner/name> --output=<file.json>
 
-The snapshot is the closure snapshot that standards/project-workflow.md defines:
-the select-next.mjs snapshot of the whole Project plus, on every issue, its
-body, state_reason, and comments ([{id, body}]), and for apply a project object
-{owner, number, statusFieldId, doneOptionId}. plan prints the closes, status
+The snapshot is the closure snapshot that standards/project-workflow.md defines,
+built by the snapshot subcommand. Records are matched by repository and number,
+so a record from another repository never takes part in a decision. On every
+issue it carries children, parent, body, state_reason, and comments
+([{id, body}]), and for apply a project object {owner, number, statusFieldId,
+doneOptionId}. plan prints the closes, status
 repairs, holds, unverified-closed reports, and deliveries; apply performs each
 close as read, comment, close, readback, Project Done, and it also sets Done on
 each status repair. --hierarchy asks to close that issue as a pure hierarchy
 record (not_planned). annotate prints the snapshot with activeCheckpoint and
-trustedHeadSha taken from the completion records, ready for select-next.mjs.`;
+trustedHeadSha taken from the completion records, ready for select-next.mjs.
+snapshot builds that closure snapshot for one repository from GitHub REST GET requests only. The
+command removes any earlier output first and writes the new one in one step, so a failed read
+leaves no file at that path.`;
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -68,12 +77,31 @@ const COMMANDS = {
     const options = snapshotOptions(args);
     return options && planClosures(readJson(args.snapshot), options);
   },
-  apply: (args, runner) => {
+  apply: (args, runner = runGh) => {
     const options = snapshotOptions(args);
     return options && applyClosures(readJson(args.snapshot), { runner, ...options });
   },
   annotate: (args) => given(args.snapshot) && annotateSnapshot(readJson(args.snapshot)),
-  record: (args, runner) => {
+  // The snapshot reads through github-client's runGh, which takes the accepted exit codes per call.
+  // The project-status runGh throws on any non-zero exit and cannot serve these reads.
+  snapshot: (args, runner = runGhClient) => {
+    if (!given(args.output) || !REPOSITORY_NAME.test(args.repository ?? "")) {
+      return false;
+    }
+    // A failed build must never leave an earlier snapshot for plan or apply to read, so the old file goes first.
+    rmSync(args.output, { force: true });
+    const snapshot = buildClosureSnapshot({ repository: args.repository, runner });
+    writeClosureSnapshot(args.output, snapshot);
+    return {
+      output: args.output,
+      repository: snapshot.repository,
+      projectNumber: snapshot.project.number,
+      items: snapshot.items.length,
+      issues: snapshot.issues.length,
+      pullRequests: snapshot.pullRequests.length,
+    };
+  },
+  record: (args, runner = runGh) => {
     const children = childList(args.children);
     if (children === false) return false;
     return given(args.repository) && given(args.result) && given(args.matrix) &&
@@ -87,7 +115,7 @@ const COMMANDS = {
   },
 };
 
-function runCli(argv, { runner = runGh, stdout = process.stdout, stderr = process.stderr } = {}) {
+function runCli(argv, { runner, stdout = process.stdout, stderr = process.stderr } = {}) {
   const [command, ...rest] = argv;
   const args = parseArgs(rest);
   const run = COMMANDS[command];

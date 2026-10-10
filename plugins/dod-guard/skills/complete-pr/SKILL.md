@@ -219,13 +219,17 @@ node <skill-dir>/scripts/closure.mjs record --repository=<owner/repository> --re
 The `## Completion evidence` record is defined in
 `standards/project-workflow.md`. The record step reads before it writes,
 updates an existing record in place, and reads it back, so a stopped run reruns
-it safely. Then save the closure snapshot that `standards/project-workflow.md`
-defines, read after the record step, and run:
+it safely. Then build the closure snapshot that `standards/project-workflow.md`
+defines after the record step, and run:
 
 ```text
+node <skill-dir>/scripts/closure.mjs snapshot --repository=<owner/repository> --output=<file>
 node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
 node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 ```
+
+If snapshot exits non-zero, stop and report its error; never plan or apply on
+an older file.
 
 `plan` is read-only. `apply` re-plans the same snapshot and closes each planned
 issue as read, evidence comment, close with its `state_reason`, readback, and
@@ -239,12 +243,17 @@ linked-issue confirmation are unchanged.
 
 When `/goal-sdlc` delegates its start-of-run cleanup, run only this section:
 resolve no pull request, merge nothing, take the closure snapshot that
-`/goal-sdlc` saved, and run:
+`/goal-sdlc` built with `closure.mjs snapshot --repository=<owner/repository>
+--output=<file>`, or build one with that command itself when none was passed,
+and run:
 
 ```text
 node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
 node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 ```
+
+If snapshot exits non-zero, stop and report its error: when that build failed,
+never plan or apply on an older file.
 
 Report the applied closes, status repairs, holds, `unverified-closed` reports,
 and any stop with its observed state. Make no other issue or Project write.

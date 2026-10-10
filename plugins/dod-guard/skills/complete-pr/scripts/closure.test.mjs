@@ -8,13 +8,29 @@ import { fileURLToPath } from "node:url";
 import { runCli } from "./closure.mjs";
 import {
   DELIVERIES,
+  FOREIGN_REPOSITORY,
   REPOSITORY,
+  completionComment,
   fakeGitHub,
+  holdOf,
   mergeResult,
   patchesTo,
   quotingComment,
   recordedSnapshot,
+  supersedesBody,
 } from "./lib/closure.test-support.mjs";
+import {
+  ENDPOINT,
+  OWNER,
+  checkRunsReply,
+  commitStatusReply,
+  fakeRest,
+  fieldPages,
+  issueContent,
+  ok,
+  projectItem,
+  pull,
+} from "./lib/closure-snapshot.test-support.mjs";
 
 const SCRIPT = fileURLToPath(new URL("./closure.mjs", import.meta.url));
 
@@ -186,7 +202,7 @@ test("end to end: plan and apply on the #683 hierarchy", async () => {
   ]);
   for (const number of [775, 776, 777, 778, 683]) {
     assert.equal(github.state.issues.get(number).state, "closed");
-    assert.equal(github.state.statuses.get(number), "Done");
+    assert.equal(github.state.statuses.get(`PVTI_${number}`), "Done");
   }
 });
 
@@ -221,8 +237,18 @@ test("apply runs on a snapshot built to the documented closure snapshot shape", 
   const TOP_KEYS = ["repository", "defaultBranch", "project", "items", "issues", "pullRequests"];
   const PROJECT_KEYS = ["owner", "number", "statusFieldId", "doneOptionId"];
   const ITEM_KEYS = ["id", "content", "fields"];
-  const ISSUE_KEYS = ["number", "state", "title", "parent", "children", "body", "state_reason", "comments"];
-  const PULL_KEYS = ["number", "state", "mergedAt", "head", "base", "mergeCommit", "requiredChecks"];
+  const ISSUE_KEYS = [
+    "number",
+    "repository",
+    "state",
+    "title",
+    "parent",
+    "children",
+    "body",
+    "state_reason",
+    "comments",
+  ];
+  const PULL_KEYS = ["number", "repository", "state", "mergedAt", "head", "base", "mergeCommit", "requiredChecks"];
   const ADDED_BY_STANDARD = ["children", "body", "state_reason", "comments", "statusFieldId", "doneOptionId"];
   const pick = (record, keys) =>
     Object.fromEntries(keys.filter((key) => key in record).map((key) => [key, record[key]]));
@@ -242,6 +268,267 @@ test("apply runs on a snapshot built to the documented closure snapshot shape", 
   assert.equal(runCli(["apply", `--snapshot=${file}`], { runner: github.runner, ...io }), 0, io.text.err);
   assert.deepEqual(JSON.parse(io.text.out).applied, [775, 776, 777, 778, 683]);
   for (const number of [775, 776, 777, 778, 683]) {
-    assert.equal(github.state.statuses.get(number), "Done");
+    assert.equal(github.state.statuses.get(`PVTI_${number}`), "Done");
   }
+});
+
+// The round trip: a snapshot the real builder makes from REST reads feeds plan, apply, annotate, and
+// select-next unchanged. Each fixture is what GitHub would answer for one linked Project.
+const ROOT = 840;
+const ORIGINAL = DELIVERIES[ROOT].replaces;
+const BEEHAIVE = "TychoHenzen/BeeHAIve";
+const ONE_OPEN_PROJECT = [[{ number: 2, state: "open" }]];
+const STATUS_OPTIONS = fieldPages()[0][0].options;
+const SELECT_NEXT = fileURLToPath(new URL("../../goal-sdlc/scripts/select-next.mjs", import.meta.url));
+const ENDPOINT_PATH = /^(repos|users)\//;
+const ISSUE_PATH = /\/issues\/(\d+)/;
+
+// Writes the snapshot through runCli(["snapshot"]) and reads the file back, so every later stage
+// receives exactly what the builder wrote.
+async function builtSnapshot(routes) {
+  const directory = await mkdtemp(join(tmpdir(), "closure-round-trip-"));
+  const file = join(directory, "snapshot.json");
+  const io = capture();
+  const code = runCli(["snapshot", `--repository=${REPOSITORY}`, `--output=${file}`], {
+    runner: fakeRest(routes).runner,
+    ...io,
+  });
+  if (code !== 0) {
+    throw new Error(`closure snapshot failed: ${io.text.err}`);
+  }
+  return { file, snapshot: JSON.parse(await readFile(file, "utf8")) };
+}
+
+function closureJson(argv, runner) {
+  const io = capture();
+  if (runCli(argv, { runner, ...io }) !== 0) {
+    throw new Error(`closure ${argv[0]} failed: ${io.text.err}`);
+  }
+  return JSON.parse(io.text.out);
+}
+
+async function selectNextOf(snapshot) {
+  const file = await saved("annotated.json", snapshot);
+  const run = spawnSync(process.execPath, [SELECT_NEXT, `--snapshot=${file}`], { encoding: "utf8" });
+  if (run.status !== 0) {
+    throw new Error(`select-next failed: ${run.stderr}`);
+  }
+  return JSON.parse(run.stdout);
+}
+
+function argValue(args, prefix) {
+  return args.find((value) => String(value).startsWith(prefix))?.slice(prefix.length);
+}
+
+// The base routes of a linked-Project fixture: the repository, the one open Project, and the
+// membership, fields, and values reads of that Project over the given item pages.
+function projectRoutes(pages) {
+  return {
+    [ENDPOINT.repository]: ok({ full_name: REPOSITORY, default_branch: "master" }),
+    [ENDPOINT.projects]: ok(ONE_OPEN_PROJECT),
+    [ENDPOINT.membership(2)]: ok(pages),
+    [ENDPOINT.fields(2)]: ok(fieldPages()),
+    [ENDPOINT.values(2)]: ok(pages),
+  };
+}
+
+// A verified delivery: merged root #840 (PR #901) supersedes open original #777, and its completion
+// record matches the live pull request. Plan has exactly one close to make.
+function deliveredFixture() {
+  const root = DELIVERIES[ROOT];
+  const rootPull = pull(root.pull, { sha: root.head, mergeCommit: root.merge });
+  const rootComment = completionComment(ROOT);
+  const rootIssue = issueContent(ROOT, {
+    state: "closed",
+    stateReason: "completed",
+    body: supersedesBody([ORIGINAL]),
+    comments: 1,
+  });
+  const pages = [
+    [
+      projectItem(`PVTI_${ORIGINAL}`, 7771, issueContent(ORIGINAL), { status: "Backlog" }),
+      projectItem(`PVTI_${ROOT}`, 8401, rootIssue, { status: "Done", linked: [rootPull] }),
+    ],
+  ];
+  return {
+    pages,
+    pulls: [rootPull],
+    issues: [
+      { number: ORIGINAL, state: "open", state_reason: null, comments: [] },
+      { number: ROOT, state: "closed", state_reason: "completed", comments: [rootComment] },
+    ],
+    routes: {
+      ...projectRoutes(pages),
+      [ENDPOINT.comments(ROOT)]: ok([[rootComment]]),
+      [ENDPOINT.protection]: ok({ contexts: ["build-test"] }),
+      [ENDPOINT.checkRuns(root.head)]: checkRunsReply(root.head),
+      [ENDPOINT.statuses(root.head)]: commitStatusReply(root.head),
+    },
+  };
+}
+
+// A cross-repository delivery group: #20 has sub-issue DeepSeekCustom#21, and target #21 exists, so a
+// join by bare number is possible. #32 has parent BeeHAIve#31, and target #31 exists.
+function crossRepositoryFixture() {
+  const pages = [
+    [
+      projectItem("PVTI_20", 2020, issueContent(20, { subIssues: 1 }), { status: "Backlog" }),
+      projectItem("PVTI_21", 2021, issueContent(21), { status: "Todo" }),
+      projectItem("PVTI_31", 3131, issueContent(31), { status: "Backlog" }),
+      projectItem("PVTI_32", 3232, issueContent(32, { parent: 31, parentRepo: BEEHAIVE }), {
+        status: "Backlog",
+        parent: 31,
+        parentRepo: BEEHAIVE,
+      }),
+    ],
+  ];
+  const foreignSubIssue = { number: 21, repository_url: `https://api.github.com/repos/${FOREIGN_REPOSITORY}` };
+  return {
+    routes: {
+      ...projectRoutes(pages),
+      [ENDPOINT.subIssues(20)]: ok([[foreignSubIssue]]),
+    },
+  };
+}
+
+// Answers the closure writes and the Project reads that project-status.mjs makes, from the fixture the
+// builder read. A Project item PATCH changes that item's Status, so a later readback sees the change.
+function appliedGitHub({ pages, issues, pulls }) {
+  const state = {
+    items: pages.flat(),
+    issues: new Map(issues.map((issue) => [issue.number, structuredClone(issue)])),
+    pulls: new Map(pulls.map((record) => [record.number, record])),
+    nextComment: 9000,
+  };
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    const endpoint = String(args.find((value) => ENDPOINT_PATH.test(String(value))));
+    if (endpoint.startsWith("users/")) {
+      return projectReply(state, args, endpoint);
+    }
+    if (endpoint.includes("/pulls/")) {
+      return ok(state.pulls.get(Number(endpoint.split("/").pop())));
+    }
+    return issueReply(state, args, endpoint);
+  };
+  return { runner, calls, items: state.items, issues: state.issues };
+}
+
+// The Project reads, and the Status write, that project-status.mjs makes.
+function projectReply(state, args, endpoint) {
+  const project = `users/${OWNER}/projectsV2/2`;
+  if (endpoint === project) {
+    return ok({ node_id: "PVT_round" });
+  }
+  if (endpoint.startsWith(`${project}/fields`)) {
+    return ok(fieldPages());
+  }
+  if (endpoint.startsWith(`${project}/items?`)) {
+    return ok([state.items]);
+  }
+  const item = state.items.find(({ id }) => String(id) === endpoint.slice(`${project}/items/`.length));
+  const option = STATUS_OPTIONS.find(({ id }) => id === argValue(args, "fields[][value]="));
+  if (item === undefined || option === undefined) {
+    return { status: 1, stdout: "", stderr: `no Project item or option in ${endpoint}` };
+  }
+  item.fields.find(({ id }) => id === 101).value = { id: option.id, name: option.name };
+  return ok({});
+}
+
+// The closure reads and writes on one issue: its record, its comments, and its close.
+function issueReply(state, args, endpoint) {
+  const method = args.includes("--method") ? args[args.indexOf("--method") + 1] : "GET";
+  const issue = state.issues.get(Number(ISSUE_PATH.exec(endpoint)?.[1]));
+  if (!issue) {
+    return { status: 1, stdout: "", stderr: `no issue in ${endpoint}` };
+  }
+  if (method === "POST") {
+    issue.comments.push({ id: state.nextComment, body: argValue(args, "body=") });
+    state.nextComment += 1;
+    return ok({});
+  }
+  if (endpoint.includes("/comments")) {
+    return ok([issue.comments]);
+  }
+  if (method === "PATCH") {
+    issue.state = argValue(args, "state=");
+    issue.state_reason = argValue(args, "state_reason=");
+    return ok({});
+  }
+  return ok({ number: issue.number, state: issue.state, state_reason: issue.state_reason });
+}
+
+test("AC-07: a built snapshot plans one verified close, applies it, and sets the original Done", async () => {
+  const fixture = deliveredFixture();
+  const { file } = await builtSnapshot(fixture.routes);
+
+  const plan = closureJson(["plan", `--snapshot=${file}`]);
+  assert.deepEqual(
+    plan.closes.map(({ issue, rule, root, pullRequest, stateReason }) => [issue, rule, root, pullRequest, stateReason]),
+    [[ORIGINAL, "replaced-original", ROOT, DELIVERIES[ROOT].pull, "completed"]],
+  );
+  assert.deepEqual([plan.holds, plan.reports, plan.statusRepairs], [[], [], []]);
+
+  const github = appliedGitHub(fixture);
+  const applied = closureJson(["apply", `--snapshot=${file}`], github.runner);
+  assert.deepEqual(applied.applied, [ORIGINAL]);
+  const projectWrites = github.calls.filter(
+    (args) =>
+      args.includes("PATCH") && args.some((value) => String(value).startsWith(`users/${OWNER}/projectsV2/2/items/`)),
+  );
+  assert.deepEqual(projectWrites, [
+    [
+      "api",
+      "--method",
+      "PATCH",
+      `users/${OWNER}/projectsV2/2/items/7771`,
+      "-F",
+      "fields[][id]=101",
+      "-f",
+      "fields[][value]=opt-done",
+    ],
+  ]);
+  assert.equal(github.issues.get(ORIGINAL).state, "closed");
+  assert.equal(github.issues.get(ORIGINAL).state_reason, "completed");
+  assert.equal(github.issues.get(ORIGINAL).comments.length, 1);
+  const status = github.items.find(({ node_id }) => node_id === `PVTI_${ORIGINAL}`).fields.find(({ id }) => id === 101);
+  assert.equal(status.value.name.raw, "Done");
+});
+
+test("AC-03: a built delivery annotates to a complete group, and select-next reports no missing evidence", async () => {
+  const { file } = await builtSnapshot(deliveredFixture().routes);
+  const result = await selectNextOf(closureJson(["annotate", `--snapshot=${file}`]));
+  assert.deepEqual(result.missingEvidence, []);
+  assert.deepEqual(result.counts.missingEvidence, []);
+  assert.equal(result.counts.balanced, true);
+  assert.deepEqual(result.groups.find(({ rootIssueNumber }) => rootIssueNumber === ROOT), {
+    rootIssueNumber: ROOT,
+    kind: "complete",
+    reasons: [],
+  });
+  assert.deepEqual(result.selected.issueNumbers, [ORIGINAL]);
+});
+
+test("AC-03: cross-repository relations hold #20 and #32; select-next holds the group rooted at bare #31", async () => {
+  const { file, snapshot } = await builtSnapshot(crossRepositoryFixture().routes);
+  assert.deepEqual(snapshot.issues.find(({ number }) => number === 20).children, [
+    { repository: FOREIGN_REPOSITORY, number: 21 },
+  ]);
+  assert.deepEqual(snapshot.issues.find(({ number }) => number === 32).parent, { repository: BEEHAIVE, number: 31 });
+
+  const plan = closureJson(["plan", `--snapshot=${file}`]);
+  assert.deepEqual(plan.closes, []);
+  assert.deepEqual(holdOf(plan, 20).reasons, ["cross-repository sub-issue TychoHenzen/DeepSeekCustom#21"]);
+  assert.deepEqual(holdOf(plan, 32).reasons, ["cross-repository parent TychoHenzen/BeeHAIve#31"]);
+
+  const result = await selectNextOf(closureJson(["annotate", `--snapshot=${file}`]));
+  const group = (root) => result.groups.find(({ rootIssueNumber }) => rootIssueNumber === root);
+  assert.equal(group(20).kind, "hold");
+  assert.ok(group(20).reasons.includes("issue #20 child relationship"));
+  assert.equal(group(31).kind, "hold");
+  assert.ok(group(31).reasons.includes("relationship/head evidence changed during read"));
+  // #32 has no group of its own: select-next joins it to bare #31 by bare-number grouping, which #856 removes.
+  assert.equal(group(32), undefined, "the foreign-parented issue has no group of its own");
+  assert.deepEqual(result.selected.issueNumbers, [21]);
 });
