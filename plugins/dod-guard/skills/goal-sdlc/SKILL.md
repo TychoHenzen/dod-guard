@@ -8,9 +8,8 @@ description: Work through the linked GitHub Project queue continuously, one pare
 Read and apply `standards/working-defaults.md` and
 `standards/github-request-discipline.md` from the active plugin root.
 
-This skill is a queue loop over the existing lifecycle skills. Each stage
-follows its own skill; when this file and an owning skill differ, the owning
-skill wins. For a Codex `/goal` run, that command owns persistence and stop.
+Each stage follows its own skill; when this file and an owning skill differ, the
+owning skill wins. For a Codex `/goal` run, `/goal` owns persistence and stop.
 
 ## Owners
 
@@ -44,17 +43,18 @@ Repeat until the stop condition holds:
    closure snapshot that `standards/project-workflow.md` defines with
    `node closure.mjs snapshot --repository=<owner/name> --output=<file>`. If
    snapshot exits non-zero, stop and report its error; never plan on an older
-   file. Otherwise, run `node closure.mjs plan --snapshot=<file>`, report each
-   close, hold, and `unverified-closed` entry with its reasons, delegate planned
-   closes and status repairs to `/complete-pr`'s "Close delivered issues for
-   goal-sdlc" section, as one write-capable stage, and reread. Run
-   `closure.mjs annotate` on the snapshot, which takes `activeCheckpoint` and
-   `trustedHeadSha` from the completion records, and pass its output to
-   `node scripts/select-next.mjs --snapshot=<file>` in this skill's directory.
-   It holds any group with missing, stale, or conflicting evidence, and returns
-   the first eligible group: In Progress parents first (one with an open pull
-   request ahead of one without), then Todo, then Backlog, each in Project
-   order. Report held groups' reasons; never guess past them.
+   file. Then run `node closure.mjs plan --snapshot=<file>`, report each close,
+   hold, and `unverified-closed` entry with reasons, delegate planned closes and
+   status repairs to `/complete-pr`'s "Close delivered issues for goal-sdlc"
+   section, as one write-capable stage, and reread. Run `closure.mjs annotate`
+   on the snapshot, which takes `activeCheckpoint` and `trustedHeadSha` from the
+   completion records, then in this skill's directory pass its output to
+   `node scripts/select-next.mjs --snapshot=<file>`. Keyed by
+   `owner/name#number`, it holds any group with missing, stale, conflicting, or
+   cross-repository evidence, selects nothing when the snapshot cannot be
+   classified, and returns the first eligible group: In Progress parents first
+   (one with an open pull request ahead of one without), then Todo, then
+   Backlog, each in Project order. Report held reasons; never guess past them.
 3. **Run the lifecycle for that parent.** Follow
    [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6 from the step the
    parent has reached. When refinement needs a user answer, leave the parent in

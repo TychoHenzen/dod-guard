@@ -148,6 +148,10 @@ test("AC-08: the standard documents the repository-qualified snapshot shape", ()
   assert.match(shape, prose("`owner/name#number`"));
   assert.match(shape, prose("repository identity missing"));
   assert.match(shape, prose("is held with a reason that names it as `owner/name#N`"));
+  assert.match(shape, prose("lib/queue-classifier.mjs"));
+  assert.match(shape, prose("leaves every relation as read"));
+  assert.match(shape, prose("A snapshot that cannot be classified selects nothing"));
+  assert.match(standard, prose("an overlay taken from the root's completion record only"));
 });
 
 // The stop rule every snapshot place carries: a non-zero exit from snapshot stops that step, so the

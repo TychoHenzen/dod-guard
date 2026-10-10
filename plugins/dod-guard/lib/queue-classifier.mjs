@@ -307,7 +307,14 @@ function classifyDelivery(records, rootNumber, context) {
   const children = records
     .filter(({ parentIssueNumber }) => parentIssueNumber === rootNumber)
     .map((record) => ({ ...record, orphan: false }));
-  const members = [{ ...root, parentIssueNumber: null }, ...children];
+  // The judgement never reads the root's parent, so that parent's missing Project item cannot hold it.
+  const parentEntry = root.parentIssueNumber === null ? null : `parent issue #${root.parentIssueNumber} Project item`;
+  const judgedRoot = {
+    ...root,
+    parentIssueNumber: null,
+    missingEvidence: (root.missingEvidence ?? []).filter((entry) => entry !== parentEntry),
+  };
+  const members = [judgedRoot, ...children];
   return { rootIssueNumber: rootNumber, records: members, decision: decideGroup(members, context) };
 }
 

@@ -113,7 +113,8 @@ test("goal-sdlc keeps its sections short and its own", () => {
   }
 });
 
-test("goal-sdlc selects through the read-only queue selector", () => {
+test("goal-sdlc selects through the read-only queue selector", async () => {
+  const usageText = await readFile(new URL("../../../USAGE.md", import.meta.url), "utf8");
   assert.match(skill, prose("node scripts/select-next.mjs --snapshot=<file>"));
   assert.match(skill, prose("In Progress parents first"));
   assert.match(skill, prose("then Todo, then Backlog, each in Project order"));
@@ -122,6 +123,10 @@ test("goal-sdlc selects through the read-only queue selector", () => {
     prose("Process exactly one parent at a time, in the current checkout"),
   );
   assert.match(skill, prose("Never create or use a Git worktree."));
+  assert.match(skill, prose("Keyed by `owner/name#number`"));
+  assert.match(skill, prose("cross-repository evidence"));
+  assert.match(skill, prose("selects nothing when the snapshot cannot be classified"));
+  assert.match(usageText, prose("classifies the annotated closure snapshot by `owner/name#number`"));
 });
 
 test("goal-sdlc delegates to subagents, not user-visible threads", () => {

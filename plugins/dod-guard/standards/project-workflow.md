@@ -191,16 +191,28 @@ that names "repository identity missing" and is never defaulted to the target
 repository. A target issue whose sub-issue, parent, or linked pull request
 belongs to another repository is held with a reason that names it as
 `owner/name#N`. A Project Status that is present but cannot be read as a name
-is a hold. `annotate` changes only target-repository records. It removes an
-issue's whole child list when any entry belongs to another repository, and it
-removes a cross-repository parent when the Project Parent issue field carries
-one, so select-next holds that group and never selects it.
+is a hold. Both select-next and the closure judgement classify through one pure
+classifier, `lib/queue-classifier.mjs`, keyed the same way. A target issue with
+a cross-repository relation therefore forms its own held group. It never joins a
+same-numbered target group, and it holds no other group. A snapshot that cannot
+be classified selects nothing and names its cause in `missingEvidence`. The
+causes are a missing target repository identity, a record without repository
+identity, a duplicated record, an item whose issue is missing, and a linked pull
+request missing from `pullRequests`. `annotate` changes only target-repository
+records, and only their `activeCheckpoint` and `trustedHeadSha`. It leaves every
+relation as read, so select-next holds such a group and never selects it.
 
 A delivery is verified only when its completion record matches the live pull
 request readback (merge commit, trusted head, default base, passing checks) and
 the goal-sdlc queue decision classifies its group as `complete` with
-`trustedHeadSha` and a finished checkpoint taken from the records. Comment text
-alone is never trusted. When a root's delivery is verified, each open issue its
+`trustedHeadSha` and a finished checkpoint taken from the records. The closure
+judgement classifies the root and its direct sub-issues with that same
+classifier, even when the root has a parent of its own. It applies an overlay
+taken from the root's completion record only: a sub-issue's checkpoint finishes
+only when its own record names the same pull request with no pending row, and
+only that pull request's head is trusted; values the snapshot itself carries
+for `activeCheckpoint` and `trustedHeadSha` do not count. Comment text alone is
+never trusted. When a root's delivery is verified, each open issue its
 `supersedes` record names closes as `completed`. A malformed, cross-repository,
 or duplicate record, or a delivery that is not verified, is a hold with a named
 reason and no write. Every close posts one `## Closure evidence` comment

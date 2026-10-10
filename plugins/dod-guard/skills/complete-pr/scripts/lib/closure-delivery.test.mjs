@@ -87,3 +87,16 @@ test("a child that records its own delivery verifies, while the queue groups it 
   const group = queue.groups.find(({ rootIssueNumber }) => rootIssueNumber === 840);
   assert.ok(group.records.some(({ issueNumber }) => issueNumber === 841));
 });
+
+test("a delivery root whose parent has no Project item verifies, and the queue still holds that group", () => {
+  const snapshot = recordedBothWays();
+  setField(snapshot, 831, "Parent issue", { repository: REPOSITORY, number: 830 });
+  issueOf(snapshot, 831).parent = { repository: REPOSITORY, number: 830 };
+  const judged = judgeDelivery(indexSnapshot(snapshot), 831);
+  assert.equal(judged.status, "verified", judged.reasons.join("; "));
+  const queue = classifyQueue(snapshot, { today: "2026-10-10" });
+  const group = queue.groups.find(({ rootIssueNumber }) => rootIssueNumber === 830);
+  assert.ok(group.records.some(({ issueNumber }) => issueNumber === 831));
+  assert.equal(group.decision.kind, "hold");
+  assert.ok(group.decision.reasons.includes("parent issue #830 Project item"), group.decision.reasons.join("; "));
+});
