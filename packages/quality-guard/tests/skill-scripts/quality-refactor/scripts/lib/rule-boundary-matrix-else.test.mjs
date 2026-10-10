@@ -33,8 +33,11 @@ const CASES = [
   [
     "src/Pick.cs",
     csFile,
-    "class Calc\n{\n    public int pick(int v)\n    {\n        if (v > 0)\n        {\n            return 1;\n        }\n        else\n        {\n            return 2;\n        }\n    }\n}",
-    "class Calc\n{\n    public int pick(int v)\n    {\n        if (v <= 0)\n        {\n            return 2;\n        }\n        return 1;\n    }\n}",
+    "class Calc\n{\n    public int pick(int v)\n    {\n        if (v > 0)\n        {\n" +
+      "            return 1;\n        }\n        else\n        {\n            return 2;\n" +
+      "        }\n    }\n}",
+    "class Calc\n{\n    public int pick(int v)\n    {\n        if (v <= 0)\n        {\n" +
+      "            return 2;\n        }\n        return 1;\n    }\n}",
   ],
   [
     "src/pick.rs",
@@ -57,8 +60,10 @@ const CASES = [
   [
     "src/Calc.java",
     fileOf("java"),
-    "class Calc {\n    int pick(int v) {\n        if (v > 0) {\n            return 1;\n        } else {\n            return 2;\n        }\n    }\n}",
-    "class Calc {\n    int pick(int v) {\n        if (v <= 0) {\n            return 2;\n        }\n        return 1;\n    }\n}",
+    "class Calc {\n    int pick(int v) {\n        if (v > 0) {\n            return 1;\n" +
+      "        } else {\n            return 2;\n        }\n    }\n}",
+    "class Calc {\n    int pick(int v) {\n        if (v <= 0) {\n            return 2;\n" +
+      "        }\n        return 1;\n    }\n}",
   ],
   [
     "src/pick.cpp",

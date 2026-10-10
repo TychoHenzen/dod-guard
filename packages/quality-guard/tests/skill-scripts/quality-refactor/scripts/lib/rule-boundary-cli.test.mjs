@@ -29,13 +29,15 @@ const A_TS = src(
   "interface Ctx { getOptions(): { getScratchDir(): { getAbsolutePath(): string } } }",
   "abstract class Base { abstract m(): { a: string }; }",
   "class Box { private readonly x = 1; n(): { a: string } { return { a: String(this.x) }; } }",
-  'class Greeter {\n  private readonly prefix = "hi";\n  greet(name: string): string {\n    return name.trim();\n  }\n}',
+  'class Greeter {\n  private readonly prefix = "hi";\n  greet(name: string): string {\n' +
+    "    return name.trim();\n  }\n}",
   "function pick(v: number): number {\n  if (v > 0) {\n    return 1;\n  } else {\n    return 2;\n  }\n}",
 );
 const B_PY = src(
   "from os.path import *",
   "def first(items):\n    for x in items:\n        return x\n    else:\n        return None",
-  "def parse(text):\n    try:\n        value = int(text)\n    except ValueError:\n        return None\n    else:\n        return value",
+  "def parse(text):\n    try:\n        value = int(text)\n" +
+    "    except ValueError:\n        return None\n    else:\n        return value",
 );
 const C_RS = src(
   "use crate::items::*;",

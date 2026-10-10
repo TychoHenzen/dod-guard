@@ -18,7 +18,8 @@ function functionsIn(source, lang = "ts") {
 
 test("annotation-only members are not functions", () => {
   const members =
-    "interface I { a(): { x: string }; b(): () => void; c(): Promise<() => void>; d(): string; e(): A | { y: number }[]; }";
+    "interface I { a(): { x: string }; b(): () => void; c(): Promise<() => void>; " +
+    "d(): string; e(): A | { y: number }[]; }";
   assert.deepEqual(functionsIn(members), []);
   assert.deepEqual(functionsIn("interface I {\n  tag(): 'a' | 'b';\n}"), []);
 });

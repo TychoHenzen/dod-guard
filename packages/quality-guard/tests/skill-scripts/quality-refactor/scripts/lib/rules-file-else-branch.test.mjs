@@ -90,7 +90,10 @@ test("a TypeScript two-way branch reports the reviewed message", () => {
         "pick() has 1 if/else branch(es); review whether a guard clause or polymorphism reads better",
       metric: 1,
       suggestion:
-        "Options to review: handle the exceptional case first and return early (Replace Nested Conditional with Guard Clauses), or Replace Conditional with Polymorphism for a type switch. Keep a genuine two-way branch whose outcomes are equally normal.",
+        "Options to review: handle the exceptional case first and return early " +
+        "(Replace Nested Conditional with Guard Clauses), or Replace Conditional with " +
+        "Polymorphism for a type switch. Keep a genuine two-way branch whose outcomes " +
+        "are equally normal.",
     },
   ]);
 });

@@ -34,13 +34,17 @@ const NEVER_TOUCHES = /^greet\(\) never touches instance state/;
 const TS =
   'class Greeter {\n  private readonly prefix = "hi";\n  greet(name: string): string {\n    return BODY;\n  }\n}';
 const CS =
-  'class Greeter\n{\n    private string prefix = "hi";\n    public string greet(string name)\n    {\n        return BODY;\n    }\n}';
+  'class Greeter\n{\n    private string prefix = "hi";\n    public string greet(string name)\n' +
+  "    {\n        return BODY;\n    }\n}";
 const RS =
-  "pub struct Greeter {\n    prefix: String,\n}\nimpl Greeter {\n    pub fn greet(&self, name: &str) -> String {\n        BODY\n    }\n}";
+  "pub struct Greeter {\n    prefix: String,\n}\nimpl Greeter {\n" +
+  "    pub fn greet(&self, name: &str) -> String {\n        BODY\n    }\n}";
 const JAVA =
-  'class Greeter {\n    private String prefix = "hi";\n    public String greet(String name) {\n        return BODY;\n    }\n}';
+  'class Greeter {\n    private String prefix = "hi";\n    public String greet(String name) {\n' +
+  "        return BODY;\n    }\n}";
 const CPP =
-  'class Greeter {\n    std::string prefix = "hi";\npublic:\n    std::string greet(const std::string& name) {\n        return BODY;\n    }\n};';
+  'class Greeter {\n    std::string prefix = "hi";\npublic:\n' +
+  "    std::string greet(const std::string& name) {\n        return BODY;\n    }\n};";
 
 // [file, builder, template, a body that never reads state, a body that reads the field]
 const METHODS = [
