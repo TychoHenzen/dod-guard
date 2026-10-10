@@ -26670,9 +26670,6 @@ function angleEnd(code, open) {
   return -1;
 }
 function quoteAt(source, i) {
-  if (typeof source !== "string") {
-    return false;
-  }
   const ch = source[i];
   return ch === "'" || ch === '"' || ch === "`";
 }
@@ -26704,6 +26701,18 @@ function groupEnd(code, open) {
     return -1;
   }
   return matchBracket(code, open, pair);
+}
+function opensParameterList(code, open) {
+  const i = skipSpace(code, open + 1);
+  if (code[i] === ")" || code[i] === "{" || code[i] === "[" || code.startsWith("...", i)) {
+    return true;
+  }
+  const word = wordAt(code, i);
+  if (word === "") {
+    return false;
+  }
+  const next = code[skipSpace(code, i + word.length)];
+  return next !== void 0 && [":", "?", ",", "=", ")"].includes(next);
 }
 function nameTail(code, from) {
   let end = from;
@@ -26855,7 +26864,7 @@ function groupOperand(ctx, state, i) {
     return -1;
   }
   const after = skipSpace(code, close + 1);
-  if (code[i] === "(" && code.startsWith("=>", after)) {
+  if (code[i] === "(" && code.startsWith("=>", after) && opensParameterList(code, i)) {
     return expectAt(state, after + 2);
   }
   return completeOperand(state, close + 1, false);
@@ -26934,20 +26943,12 @@ function skipReturnType(code, from, source) {
 }
 
 // skills/quality-refactor/scripts/lib/parse-body.mjs
-var SPACE2 = /\s/;
 var CALL_OPERATORS = /\?\?|\?\.|&&|\|\||(?:^|[^=!<>])=(?:[^>=]|$)/;
 function isCallGap(gap) {
   return CALL_OPERATORS.test(gap) || gap.trimEnd().endsWith("?");
 }
-function skipSpace2(code, from) {
-  let i = from;
-  while (i < code.length && SPACE2.test(code[i])) {
-    i += 1;
-  }
-  return i;
-}
 function arrowBody(code, from) {
-  const i = skipSpace2(code, from);
+  const i = skipSpace(code, from);
   if (i >= code.length) return null;
   return code[i] === "{" ? { offset: i, kind: "block" } : { offset: i, kind: "expression" };
 }
@@ -26998,7 +26999,7 @@ function annotatedBodyStart(code, afterParams, source) {
   if (end === afterParams) {
     return plainBodyStart(code, afterParams);
   }
-  const i = skipSpace2(code, end);
+  const i = skipSpace(code, end);
   if (code[i] === "{") {
     return { offset: i, kind: "block" };
   }
@@ -27128,14 +27129,28 @@ var HEADER_DIRECT = /([A-Za-z_$][\w$]*)\s*(?:<[^<>()]*>)?\s*\(/g;
 var HEADER_ASSIGNED = /([A-Za-z_$][\w$]*)\s*(?::[^=;{}()]*)?=\s*(?:async\s+)?(?:function\s*)?\(/g;
 var HEADER_RUST = /\bfn\s+([A-Za-z_]\w*)\s*(?:<[^<>()]*>)?\s*\(/g;
 var HEADER_GO = /\bfunc\s+(?:\([^()]*\)\s+)?([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*\(/g;
+var SPACE2 = /\s/;
 function bodyEnd(code, body) {
   return body.kind === "block" ? matchBracket(code, body.offset, "{}") : findExpressionEnd(code, body.offset);
+}
+function precededByTernary(code, headerStart) {
+  let i = headerStart - 1;
+  while (i >= 0 && SPACE2.test(code[i])) {
+    i -= 1;
+  }
+  return i >= 0 && code[i] === "?";
+}
+function bodyOptions(code, headerStart, options) {
+  if (options?.returnTypeAnnotation && precededByTernary(code, headerStart)) {
+    return {};
+  }
+  return options;
 }
 function extractAt({ code, starts, name, openParen, headerStart, options }) {
   if (!isCallable(name)) return null;
   const closeParen = matchBracket(code, openParen, "()");
   if (closeParen === -1) return null;
-  const body = bodyStart(code, closeParen + 1, options);
+  const body = bodyStart(code, closeParen + 1, bodyOptions(code, headerStart, options));
   if (body === null) return null;
   const end = bodyEnd(code, body);
   if (end === -1) return null;
@@ -27191,10 +27206,6 @@ function goFunctions(code, starts) {
 }
 
 // skills/quality-refactor/scripts/lib/parse-python.mjs
-function indentOf(line) {
-  const match = /^[ \t]*/.exec(line);
-  return match[0].replace(/\t/g, "    ").length;
-}
 function bodyLastLine(lines, first, baseIndent) {
   let last = first;
   for (let j = first + 1; j < lines.length; j += 1) {
@@ -27203,6 +27214,10 @@ function bodyLastLine(lines, first, baseIndent) {
     last = j;
   }
   return last;
+}
+function indentOf(line) {
+  const match = /^[ \t]*/.exec(line);
+  return match[0].replace(/\t/g, "    ").length;
 }
 function pythonFunctions(code, starts) {
   const lines = code.split("\n");
@@ -27234,6 +27249,9 @@ function pythonFunctions(code, starts) {
 
 // skills/quality-refactor/scripts/lib/parse.mjs
 function findFunctions(code, lang, starts, source) {
+  if (typeof source !== "string") {
+    throw new TypeError("findFunctions requires the raw source string");
+  }
   if (lang === "py") {
     return pythonFunctions(code, starts);
   }
