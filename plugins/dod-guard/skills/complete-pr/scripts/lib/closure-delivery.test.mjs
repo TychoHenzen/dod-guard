@@ -100,3 +100,14 @@ test("a delivery root whose parent has no Project item verifies, and the queue s
   assert.equal(group.decision.kind, "hold");
   assert.ok(group.decision.reasons.includes("parent issue #830 Project item"), group.decision.reasons.join("; "));
 });
+
+test("a root whose item links no pull request is held for that, not for a date", () => {
+  const snapshot = recordedBothWays();
+  const root = 831;
+  assert.equal(judgeDelivery(indexSnapshot(snapshot), root).status, "verified");
+  setField(snapshot, root, "Linked pull requests", []);
+  const judged = judgeDelivery(indexSnapshot(snapshot), root);
+  assert.equal(judged.status, "unverified");
+  assert.ok(judged.reasons.includes("no merged pull request linked to the delivery"), judged.reasons.join("; "));
+  assert.equal(judged.reasons.includes("local date missing"), false, judged.reasons.join("; "));
+});

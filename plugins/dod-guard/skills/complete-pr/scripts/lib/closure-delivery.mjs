@@ -23,6 +23,17 @@ function checkpointFinished(issue, record) {
   return Boolean(own && own.pullRequest === record.pullRequest && own.pendingRows.length === 0);
 }
 
+// The overlay is the root's own record alone: a checkpoint is finished only where a sub-issue's own
+// record names this pull request, and only that pull request takes the trusted head.
+function deliveryOverlay(index, record) {
+  const checkpoints = new Map();
+  for (const n of index.itemOrder) {
+    if (checkpointFinished(issueFor(index, n), record)) checkpoints.set(n, false);
+  }
+  const trustedHeads = new Map([[record.pullRequest, record.trustedHeadSha]]);
+  return { checkpoints, trustedHeads };
+}
+
 function liveMismatches(index, record) {
   const pull = pullFor(index, record.pullRequest);
   if (!pull) return [`pull request #${record.pullRequest} readback missing`];
@@ -56,19 +67,10 @@ function judgeDelivery(index, number) {
   }
   if (mismatches.length > 0) return { status: "unverified", record, reasons: mismatches };
   if (listed === null) return { status: "unverified", record, reasons: ["sub-issue list missing"] };
-  // The overlay is the root's own record alone: a checkpoint is finished only where a sub-issue's own
-  // record names this pull request, and only that pull request takes the trusted head.
-  const checkpoints = new Map();
-  for (const n of index.itemOrder) {
-    if (checkpointFinished(issueFor(index, n), record)) checkpoints.set(n, false);
-  }
-  const trustedHeads = new Map([[record.pullRequest, record.trustedHeadSha]]);
-  const records = buildQueueRecords(index, { overlay: { checkpoints, trustedHeads } });
-  // The closure has no local date. A merged delivery never reaches the friction-log hold, so none is needed.
+  const records = buildQueueRecords(index, { overlay: deliveryOverlay(index, record) });
   const group = classifyDelivery(records, number, {
     repository: index.repository,
     defaultBranch: index.defaultBranch,
-    today: null,
   });
   if (!group) return { status: "unverified", record, reasons: ["delivery record missing"] };
   // A listed sub-issue must be judged with this root, or its own verdict would never reach this delivery.
