@@ -1,7 +1,13 @@
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
+import { spawnSync } from "node:child_process";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
+import process from "node:process";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
+// biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
+import { fileURLToPath } from "node:url";
 import {
   buildProjectItemEditCommand,
   writeProjectStatuses,
@@ -18,6 +24,16 @@ const ITEM_NUMERIC_IDS = new Map(ITEM_IDS.map((itemId, index) => [itemId, 256202
 const NUMERIC_PROJECT_ID_ERROR = /global ProjectV2 node ID/;
 const STATUS_FIELD_ERROR = /exactly one REST field/;
 const READBACK_ERROR = /PVTI_child-two.*read back Todo/;
+const MISSING_READBACK_ERROR = /missing from readback/;
+const IDENTITY_CHANGE_ERROR = /same numeric and global IDs/;
+const UNAPPLIED_WRITE_ERROR = /status mutation failed.*read back Backlog, expected Done/;
+const CLI_NUMERIC_ID_USAGE = /numeric REST id/;
+const CLI_NODE_ID_USAGE = /PVTI_/;
+const CLI_FAILURE_PREFIX = /project-status failed/;
+const SCRIPT_PATH = fileURLToPath(new URL("./project-status.mjs", import.meta.url));
+const USAGE_EXIT_CODE = 2;
+const IDENTITY_SHIFT = 1000;
+const MISSING_NUMERIC_ID = "999999999";
 
 function projectFields() {
   return [{
@@ -88,6 +104,30 @@ function writeOptions(overrides = {}) {
     expectedStatus: "Done",
     itemIds: ITEM_IDS,
     ...overrides,
+  };
+}
+
+// The first readback keeps the true identity so the identity change shows up only after the PATCH.
+function alterTargetInLaterReads(runner, alterItem) {
+  let itemReads = 0;
+  return (args) => {
+    const result = runner(args);
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("users/"));
+    if (endpoint?.startsWith("users/TychoHenzen/projectsV2/2/items?") !== true) {
+      return result;
+    }
+    itemReads += 1;
+    if (itemReads === 1) {
+      return result;
+    }
+    const [items] = JSON.parse(result.stdout);
+    const alteredItems = items.map((item) => {
+      if (item.node_id !== ITEM_IDS[0]) {
+        return item;
+      }
+      return alterItem(item);
+    });
+    return { ...result, stdout: JSON.stringify([alteredItems]) };
   };
 }
 
@@ -431,4 +471,147 @@ test("routes an interactive status form only after a no-op readback", async () =
   assert.deepEqual(phases, ["before-fallback", "after-fallback"]);
   assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
   assert.deepEqual(result.value.mutations, [{ itemId: ITEM_IDS[0], status: "Done" }]);
+});
+
+test("AC-01 numeric input writes one PATCH to its numeric endpoint and reports the input as given", () => {
+  const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
+  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+
+  const result = writeProjectStatuses({ ...writeOptions({ itemIds: [numericId] }), commandRunner: runner });
+
+  const patches = calls.filter((args) => args.includes("PATCH"));
+  assert.equal(patches.length, 1);
+  assert.equal(patches[0][3].split("/").at(-1), numericId);
+  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done" }]);
+});
+
+test("AC-01 mixed numeric and node inputs PATCH in the given order and report each input as given", () => {
+  const itemIds = [
+    String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0])),
+    String(ITEM_NUMERIC_IDS.get(ITEM_IDS[1])),
+    ITEM_IDS[2],
+  ];
+  const { calls, runner } = createRunner();
+
+  const result = writeProjectStatuses({ ...writeOptions({ itemIds }), commandRunner: runner });
+
+  assert.deepEqual(
+    calls.filter((args) => args.includes("PATCH")).map((args) => args[3].split("/").at(-1)),
+    ITEM_IDS.map((itemId) => String(ITEM_NUMERIC_IDS.get(itemId))),
+  );
+  assert.deepEqual(result.mutations, itemIds.map((itemId) => ({ itemId, status: "Done" })));
+});
+
+test("AC-02 numeric and node spellings of one item stop before any PATCH and name both inputs", () => {
+  const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
+  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+
+  assert.throws(
+    () => writeProjectStatuses({ ...writeOptions({ itemIds: [numericId, ITEM_IDS[0]] }), commandRunner: runner }),
+    new RegExp(`${numericId} and ${ITEM_IDS[0]} resolve to the same Project item`),
+  );
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 0);
+});
+
+test("AC-02 numeric ID matching no readback item stops as missing before any PATCH", () => {
+  const { calls, runner } = createRunner();
+
+  assert.throws(
+    () => writeProjectStatuses({ ...writeOptions({ itemIds: [MISSING_NUMERIC_ID] }), commandRunner: runner }),
+    MISSING_READBACK_ERROR,
+  );
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 0);
+});
+
+test("AC-02 identity change after the write stops for every input form and changed ID", () => {
+  const inputForms = [
+    ["numeric", String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]))],
+    ["node", ITEM_IDS[0]],
+  ];
+  const changes = [
+    ["numeric ID", (item) => ({ ...item, id: item.id + IDENTITY_SHIFT })],
+    ["node ID", (item) => ({ ...item, node_id: "PVTI_replaced" })],
+  ];
+  for (const [inputForm, itemId] of inputForms) {
+    for (const [changedId, alterItem] of changes) {
+      const label = `${inputForm} input, ${changedId} changed`;
+      const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+
+      assert.throws(
+        () => writeProjectStatuses({
+          ...writeOptions({ itemIds: [itemId] }),
+          commandRunner: alterTargetInLaterReads(runner, alterItem),
+        }),
+        IDENTITY_CHANGE_ERROR,
+        label,
+      );
+      assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1, label);
+    }
+  }
+});
+
+test("AC-03 rerun after an identity-change stop makes no PATCH once the item already holds Done", () => {
+  const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
+  const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+  assert.throws(
+    () => writeProjectStatuses({
+      ...writeOptions({ itemIds: [numericId] }),
+      commandRunner: alterTargetInLaterReads(runner, (item) => ({ ...item, id: item.id + IDENTITY_SHIFT })),
+    }),
+    IDENTITY_CHANGE_ERROR,
+  );
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
+
+  const rerun = createRunner({ statuses: new Map([[ITEM_IDS[0], "Done"]]) });
+  const result = writeProjectStatuses({ ...writeOptions({ itemIds: [numericId] }), commandRunner: rerun.runner });
+
+  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done" }]);
+  assert.equal(rerun.calls.filter((args) => args.includes("PATCH")).length, 0);
+});
+
+test("AC-03 rerun after an unapplied ambiguous numeric write makes no PATCH once the item holds Done", () => {
+  const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
+  const statuses = new Map([[ITEM_IDS[0], "Backlog"]]);
+  const { calls, runner } = createRunner({ statuses });
+  const unappliedRunner = (args) => {
+    if (args.includes("PATCH")) {
+      calls.push([...args]);
+      throw new Error("status write timed out");
+    }
+    return runner(args);
+  };
+
+  assert.throws(
+    () => writeProjectStatuses({ ...writeOptions({ itemIds: [numericId] }), commandRunner: unappliedRunner }),
+    UNAPPLIED_WRITE_ERROR,
+  );
+  assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1);
+
+  statuses.set(ITEM_IDS[0], "Done");
+  const rerun = createRunner({ statuses });
+  const result = writeProjectStatuses({ ...writeOptions({ itemIds: [numericId] }), commandRunner: rerun.runner });
+
+  assert.deepEqual(result.mutations, [{ itemId: numericId, status: "Done" }]);
+  assert.equal(rerun.calls.filter((args) => args.includes("PATCH")).length, 0);
+});
+
+test("AC-07 CLI with no item IDs prints both ID forms and exits before any gh call", () => {
+  // Built from scratch without PATH, so a gh call would fail with ENOENT and exit 1 instead of 2.
+  // biome-ignore lint/style/noProcessEnv: only SystemRoot is copied; the host environment is never spread.
+  const systemRoot = process.env.SystemRoot;
+  const env = {};
+  if (systemRoot !== undefined) {
+    env.SystemRoot = systemRoot;
+  }
+
+  const result = spawnSync(
+    process.execPath,
+    [SCRIPT_PATH, "TychoHenzen", "2", STATUS_FIELD_NODE_ID, STATUS_OPTION_ID, "Done"],
+    { encoding: "utf8", env, windowsHide: true },
+  );
+
+  assert.equal(result.status, USAGE_EXIT_CODE);
+  assert.match(result.stderr, CLI_NUMERIC_ID_USAGE);
+  assert.match(result.stderr, CLI_NODE_ID_USAGE);
+  assert.doesNotMatch(result.stderr, CLI_FAILURE_PREFIX);
 });
