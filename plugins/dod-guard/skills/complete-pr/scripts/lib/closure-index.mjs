@@ -3,9 +3,8 @@
 // a number with a target record, so the index keys each kind by "owner/name#N" and no foreign
 // record reaches a decision.
 
-const REPOSITORY_NAME = /^[\w.-]+\/[\w.-]+$/;
-const API_REPOSITORY_URL = /^https:\/\/api\.github\.com\/repos\/([\w.-]+\/[\w.-]+)$/;
-const API_RECORD_URL = /^https:\/\/api\.github\.com\/repos\/([\w.-]+\/[\w.-]+)\/(?:issues|pulls)\/\d+$/;
+import { API_RECORD_URL, API_REPOSITORY_URL, repositoryName, urlRepository } from "./repository-identity.mjs";
+
 const RELATION_LABELS = Object.freeze({
   subIssue: "cross-repository sub-issue",
   parent: "cross-repository parent",
@@ -24,18 +23,6 @@ function numberOf(value) {
 
 function fieldValue(item, name) {
   return (Array.isArray(item?.fields) ? item.fields : []).find((field) => field?.name === name)?.value;
-}
-
-// The owner/name a value names, as spelled, or null. A value that does not parse is no identity
-// at all, so no caller falls back to another source or to the target repository.
-function repositoryName(value) {
-  const name = typeof value === "string" ? value : (value?.full_name ?? value?.nameWithOwner);
-  return typeof name === "string" && REPOSITORY_NAME.test(name) ? name : null;
-}
-
-function urlRepository(url, pattern) {
-  const match = typeof url === "string" ? pattern.exec(url) : null;
-  return match ? match[1] : null;
 }
 
 // The target repository as a lowercase key, or null when the snapshot names none.

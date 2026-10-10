@@ -8,12 +8,17 @@ import { renameSync, rmSync, writeFileSync } from "node:fs";
 import process from "node:process";
 import { statusValueName } from "../project-status.mjs";
 import { listOwnedProjects, readFallbackRequiredChecks } from "./github-client.mjs";
+import {
+  API_ISSUE_URL,
+  API_PULL_URL,
+  API_REPOSITORY_URL,
+  isRepositoryName,
+  urlReference,
+  urlRepository,
+} from "./repository-identity.mjs";
 
 const ENDPOINT = /^(?:repos|users|orgs)\//u;
 const HTTP_NOT_FOUND = /HTTP 404/u;
-const REPOSITORY_URL = /^https:\/\/api\.github\.com\/repos\/([^/\s]+\/[^/\s]+)$/u;
-const ISSUE_URL = /^https:\/\/api\.github\.com\/repos\/([^/\s]+\/[^/\s]+)\/issues\/(\d+)$/u;
-const PULL_URL = /^https:\/\/api\.github\.com\/repos\/([^/\s]+\/[^/\s]+)\/pulls\/(\d+)$/u;
 // The Project fields each item keeps, in the order the snapshot lists them.
 const ITEM_FIELD_NAMES = ["Status", "Repository", "Parent issue", "Linked pull requests"];
 const JSON_INDENT = 2;
@@ -55,6 +60,10 @@ function positiveInteger(value) {
   return Number.isInteger(value) && value > 0;
 }
 
+function present(value) {
+  return value !== undefined && value !== null;
+}
+
 function sameRepository(name, repository) {
   if (typeof name !== "string") {
     return false;
@@ -62,27 +71,10 @@ function sameRepository(name, repository) {
   return name.toLowerCase() === repository.toLowerCase();
 }
 
-function matchUrl(pattern, url) {
-  if (typeof url !== "string") {
-    return null;
-  }
-  return pattern.exec(url);
-}
-
-function repositoryFromUrl(url) {
-  const match = matchUrl(REPOSITORY_URL, url);
-  if (match === null) {
-    return null;
-  }
-  return match[1];
-}
-
-function issueReference(url) {
-  const match = matchUrl(ISSUE_URL, url);
-  if (match === null) {
-    return null;
-  }
-  return { repository: match[1], number: Number(match[2]) };
+// Whether a URL names a repository through one of the two API patterns that carry one: a repository
+// URL, or an issue URL, which names the repository its issue is in.
+function namesRepository(url) {
+  return urlRepository(url, API_REPOSITORY_URL) !== null || urlRepository(url, API_ISSUE_URL) !== null;
 }
 
 function endpointOf(args) {
@@ -180,15 +172,20 @@ function readRepository(read, repository) {
 }
 
 // The owner/name an item's content names, as GitHub spells it, or null for content that names none
-// (a draft issue). A repository URL that does not parse is a failed read, not a missing name.
+// (a draft issue). A name or repository URL that is present and does not parse is a failed read, not a
+// missing name.
 function contentRepository(content, endpoint) {
-  if (nonBlank(content?.repository?.full_name)) {
-    return content.repository.full_name;
+  const fullName = content?.repository?.full_name;
+  if (present(fullName)) {
+    if (!isRepositoryName(fullName)) {
+      throw readFailure(endpoint, "content repository full_name must name a repository");
+    }
+    return fullName;
   }
-  if (content?.repository_url === undefined || content?.repository_url === null) {
+  if (!present(content?.repository_url)) {
     return null;
   }
-  const repository = repositoryFromUrl(content.repository_url);
+  const repository = urlRepository(content.repository_url, API_REPOSITORY_URL);
   if (repository === null) {
     throw readFailure(endpoint, "content repository_url must name a repository");
   }
@@ -322,20 +319,28 @@ function repositoryValue(value, subject, endpoint) {
   if (!nonBlank(name)) {
     throw readFailure(endpoint, `${subject} has a Repository value with no full_name`);
   }
+  if (!isRepositoryName(name)) {
+    throw readFailure(endpoint, `${subject} has a Repository value that names no repository`);
+  }
   return name;
 }
 
 // ASSUMPTION: the Parent issue value names its issue by an issue URL in repository_url or url. When
 // only a repository URL is present, the value's own number names the issue.
+// ASSUMPTION: the Parent issue value's URLs are API URLs, as every other value the snapshot reads is, so a
+// present URL that names no repository fails the read rather than being skipped for the other URL.
 function parentValue(value, subject, endpoint) {
   if (value === null) {
     return null;
   }
-  const issue = issueReference(value?.repository_url) ?? issueReference(value?.url);
+  if (![value?.repository_url, value?.url].filter(present).every(namesRepository)) {
+    throw readFailure(endpoint, `${subject} has a Parent issue URL that names no repository`);
+  }
+  const issue = urlReference(value?.repository_url, API_ISSUE_URL) ?? urlReference(value?.url, API_ISSUE_URL);
   if (issue !== null) {
     return issue;
   }
-  const repository = repositoryFromUrl(value?.repository_url);
+  const repository = urlRepository(value?.repository_url, API_REPOSITORY_URL);
   if (repository !== null && positiveInteger(value?.number)) {
     return { repository, number: value.number };
   }
@@ -352,19 +357,28 @@ function linkedPullValues(value, subject, endpoint) {
   return value;
 }
 
-// A linked pull request's repository comes from its API URL, falling back to its base repository.
-function pullRepository(pull, match) {
-  if (match !== null) {
-    return match[1];
+// A linked pull request's repository is the one its API URL names. Without a URL it is the base
+// repository's. A URL or base repository that is present and names no repository fails the read, so no
+// other name stands in for it.
+function pullRepository(pull, reference, subject, endpoint) {
+  if (reference !== null) {
+    return reference.repository;
   }
-  return pull?.base?.repo?.full_name ?? null;
+  if (present(pull?.url)) {
+    throw readFailure(endpoint, `${subject} has a linked pull request URL that names no pull request`);
+  }
+  const base = pull?.base?.repo?.full_name;
+  if (present(base) && !isRepositoryName(base)) {
+    throw readFailure(endpoint, `${subject} has a linked pull request base repository that names no repository`);
+  }
+  return base ?? null;
 }
 
-function pullNumber(pull, match) {
+function pullNumber(pull, reference) {
   if (positiveInteger(pull?.number)) {
     return pull.number;
   }
-  return Number(match?.[2]);
+  return reference?.number ?? null;
 }
 
 function isPullReference(repository, number) {
@@ -372,9 +386,9 @@ function isPullReference(repository, number) {
 }
 
 function pullReference(pull, subject, endpoint) {
-  const match = matchUrl(PULL_URL, pull?.url);
-  const repository = pullRepository(pull, match);
-  const number = pullNumber(pull, match);
+  const reference = urlReference(pull?.url, API_PULL_URL);
+  const repository = pullRepository(pull, reference, subject, endpoint);
+  const number = pullNumber(pull, reference);
   if (!isPullReference(repository, number)) {
     throw readFailure(endpoint, `${subject} has a linked pull request with no repository or number`);
   }
@@ -420,7 +434,8 @@ function shapeItem(raw, fieldIds, endpoint) {
 }
 
 function isSubIssueEntry(child) {
-  return isObject(child) && repositoryFromUrl(child.repository_url) !== null && positiveInteger(child.number);
+  const repository = urlRepository(child?.repository_url, API_REPOSITORY_URL);
+  return isObject(child) && repository !== null && positiveInteger(child.number);
 }
 
 function readChildren(read, repository, number) {
@@ -429,7 +444,7 @@ function readChildren(read, repository, number) {
     if (!isSubIssueEntry(child)) {
       throw readFailure(endpoint, "every sub-issue must name its repository_url and number");
     }
-    return { repository: repositoryFromUrl(child.repository_url), number: child.number };
+    return { repository: urlRepository(child.repository_url, API_REPOSITORY_URL), number: child.number };
   });
 }
 
@@ -465,7 +480,7 @@ function issueParent(content, endpoint) {
   if (content.parent_issue_url === undefined || content.parent_issue_url === null) {
     return null;
   }
-  const parent = issueReference(content.parent_issue_url);
+  const parent = urlReference(content.parent_issue_url, API_ISSUE_URL);
   if (parent === null) {
     throw readFailure(endpoint, `issue #${number} parent_issue_url must name an issue`);
   }
@@ -511,16 +526,30 @@ function issueRecord(content, repository, read) {
   };
 }
 
+// A pull request is merged once GitHub gives it a merge time. GitHub also fills merge_commit_sha on an
+// open pull request with a test-merge commit, so only the merge time decides whether a merge commit exists.
+function isMerged(pull) {
+  return nonBlank(pull.merged_at);
+}
+
 function mergeCommitOf(pull) {
-  if (!nonBlank(pull.merge_commit_sha)) {
-    return null;
+  if (isMerged(pull) && nonBlank(pull.merge_commit_sha)) {
+    return { oid: pull.merge_commit_sha };
   }
-  return { oid: pull.merge_commit_sha };
+  return null;
+}
+
+// The merge time of a merged pull request, or null, so mergedAt agrees with the merge commit and checks.
+function mergedAtOf(pull) {
+  if (isMerged(pull)) {
+    return pull.merged_at;
+  }
+  return null;
 }
 
 // Only a merged pull request has required checks to read; an open one has none to satisfy yet.
 function requiredChecksOf(pull, { repository, head, base, read }) {
-  if (!pull.merged_at) {
+  if (!isMerged(pull)) {
     return null;
   }
   return atEndpoint(`repos/${repository}/commits/${head.sha}`, () =>
@@ -530,7 +559,11 @@ function requiredChecksOf(pull, { repository, head, base, read }) {
 
 // One target pull request, from the full REST pull request object its Project item links.
 function pullRequestRecord(pull, { repository, number, endpoint, read }) {
-  const head = { repository: pull.head?.repo?.full_name ?? null, ref: pull.head?.ref, sha: pull.head?.sha };
+  const headRepository = pull.head?.repo?.full_name ?? null;
+  if (headRepository !== null && !isRepositoryName(headRepository)) {
+    throw readFailure(endpoint, `pull request #${number} head repository names no repository`);
+  }
+  const head = { repository: headRepository, ref: pull.head?.ref, sha: pull.head?.sha };
   const base = { ref: pull.base?.ref, sha: pull.base?.sha };
   if (![pull.state, head.ref, head.sha, base.ref, base.sha].every(nonBlank)) {
     throw readFailure(endpoint, `pull request #${number} must carry a state, head and base refs, and SHAs`);
@@ -539,7 +572,7 @@ function pullRequestRecord(pull, { repository, number, endpoint, read }) {
     number,
     repository,
     state: pull.state,
-    mergedAt: pull.merged_at || null,
+    mergedAt: mergedAtOf(pull),
     head,
     base,
     mergeCommit: mergeCommitOf(pull),

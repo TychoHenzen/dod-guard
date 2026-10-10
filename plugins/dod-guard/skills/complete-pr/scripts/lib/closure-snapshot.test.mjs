@@ -28,7 +28,9 @@ import {
 } from "./closure-snapshot.test-support.mjs";
 
 const HEAD = { 21: "a1".repeat(20), 22: "a2".repeat(20), 23: "a3".repeat(20) };
-const MERGE = { 21: "b1".repeat(20), 23: "b3".repeat(20) };
+const MERGE = { 21: "b1".repeat(20), 22: "b2".repeat(20), 23: "b3".repeat(20) };
+// A repository name the shared pattern rejects, planted by the departures in fixtureRoutes.
+const DEEP_SEEK = "TychoHenzen/Deep+Seek";
 const EPIC_BODY = "## Acceptance criteria\n\n- [ ] Sub-issue #11 delivers the rule\n- [ ] Sub-issue #12 documents it\n";
 const COMMENT_BODY = "Handoff note that quotes no completion record.";
 const CHECKS = [
@@ -62,7 +64,8 @@ function valuePages() {
         parent: 10,
         linked: [
           pull(23, { sha: HEAD[23], mergeCommit: MERGE[23] }),
-          pull(22, { sha: HEAD[22], state: "open", merged: false }),
+          // An open pull request carries the test-merge commit GitHub reports for it, with merged_at still null.
+          { ...pull(22, { sha: HEAD[22], state: "open", merged: false }), merge_commit_sha: MERGE[22] },
           pull(77, { repo: FOREIGN, sha: "d7".repeat(20), state: "open", merged: false }),
         ],
       }),
@@ -84,6 +87,47 @@ function withoutKey(pages, nodeId, key) {
   delete entry.content[key];
 }
 
+// One Project field of one item in the values pages, so a departure can change that value in place.
+function fieldOf(pages, nodeId, name) {
+  const entry = pages.flat().find((item) => item.node_id === nodeId);
+  return entry.fields.find((field) => field.name === name);
+}
+
+// Each departure plants a name the shared pattern rejects where the builder reads one from GitHub data.
+// A departure that plants it beside a valid name a fallback could read keeps that valid name, so only
+// the rejection itself can fail the build.
+const DEPARTURES = {
+  "item-name": (pages) => {
+    pages.flat().find((item) => item.node_id === "PVTI_f11").content.repository.full_name = DEEP_SEEK;
+  },
+  "repository-field": (pages) => {
+    fieldOf(pages, "PVTI_t11", "Repository").value = { full_name: DEEP_SEEK };
+  },
+  "parent-url": (pages) => {
+    fieldOf(pages, "PVTI_t12", "Parent issue").value = {
+      repository_url: REPO_URL,
+      url: `https://api.github.com/repos/${DEEP_SEEK}/issues/10`,
+      number: 10,
+    };
+  },
+  "linked-pull-url": (pages) => {
+    const rejected = pull(78, { repo: DEEP_SEEK, sha: "d8".repeat(20), state: "open", merged: false });
+    rejected.base.repo.full_name = FOREIGN;
+    fieldOf(pages, "PVTI_t12", "Linked pull requests").value.push(rejected);
+  },
+  "linked-pull-base": (pages) => {
+    const rejected = pull(79, { repo: FOREIGN, sha: "d9".repeat(20), state: "open", merged: false });
+    // ok() drops an undefined url when it serializes the page, so the builder reads the url as absent.
+    rejected.url = undefined;
+    rejected.base.repo.full_name = DEEP_SEEK;
+    fieldOf(pages, "PVTI_t12", "Linked pull requests").value.push(rejected);
+  },
+  "head-repository": (pages) => {
+    fieldOf(pages, "PVTI_t12", "Linked pull requests").value[0].head.repo.full_name = DEEP_SEEK;
+  },
+};
+const REJECTED_NAMES = Object.keys(DEPARTURES);
+
 // The healthy fixture, or one deliberate departure named by variant.
 function fixtureRoutes(variant = "healthy") {
   const pages = valuePages();
@@ -99,6 +143,9 @@ function fixtureRoutes(variant = "healthy") {
   }
   if (variant === "missing-body") {
     withoutKey(pages, "PVTI_t11", "body");
+  }
+  if (Object.hasOwn(DEPARTURES, variant)) {
+    DEPARTURES[variant](pages);
   }
   const routes = {
     [ENDPOINT.repository]: ok({ full_name: REPO, default_branch: "master" }),
@@ -385,6 +432,23 @@ test("AC-05: pull requests list only target records, and a merged one carries it
   ]);
 });
 
+test("AC-05: an open pull request with a test-merge commit has no merge commit and no required checks", () => {
+  const unmerged = build(fixtureRoutes()).pullRequests.find(({ number }) => number === 22);
+  assert.deepEqual(
+    { mergedAt: unmerged.mergedAt, mergeCommit: unmerged.mergeCommit, requiredChecks: unmerged.requiredChecks },
+    { mergedAt: null, mergeCommit: null, requiredChecks: null },
+  );
+});
+
+test("AC-05: a repository name the shared pattern rejects stops the build and names the items endpoint", () => {
+  for (const variant of REJECTED_NAMES) {
+    const error = buildFailure(fixtureRoutes(variant));
+    assert.ok(error, `${variant}: the build should have failed`);
+    assert.match(error.message, ERROR_PREFIX);
+    assert.ok(error.message.includes(ENDPOINT.values(2)), `${variant}: ${error.message}`);
+  }
+});
+
 test("AC-05: every read is a GET, and only the reads the counts require are made", () => {
   const { runner, calls } = fakeRest(fixtureRoutes());
   buildClosureSnapshot({ repository: REPO, runner });
@@ -471,6 +535,7 @@ const FAULTS = [
     ["users/TychoHenzen/projectsV2", "expected exactly one open linked Project, found 2 (#2, #4)"],
   ],
   ["protection-failure", [ENDPOINT.protection]],
+  ...REJECTED_NAMES.map((variant) => [variant, [ENDPOINT.values(2)]]),
 ];
 
 for (const [variant, expected] of FAULTS) {
