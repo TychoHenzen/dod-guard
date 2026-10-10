@@ -108,10 +108,11 @@ function isOpen(issue) {
   return String(issue?.state ?? "").toLowerCase() === "open";
 }
 
-// select-next groups by bare issue number, so a foreign child list, or a foreign parent under a Parent
-// issue value, is removed here: select-next then holds the group instead of joining a same-numbered
-// target issue, and holds a healthy target group as collateral. A null Parent issue field is left alone:
-// removing the parent would make the issue a standalone root. Delete this when #856 keys select-next by repository.
+// select-next (goal-sdlc/scripts/select-next.mjs) groups by bare issue number, so a foreign child list, or a foreign
+// parent under a Parent issue value, is removed here; select-next then holds the group instead of joining a
+// same-numbered target issue, and holds a healthy target group as collateral; a null Parent issue field is left alone
+// because removing the parent would make the issue look like a standalone root; delete this when #856 keys select-next
+// by repository, and #829 splits queue-readback.mjs into a pure classifier.
 function dropForeignRelations(issue, target, item) {
   if (Array.isArray(issue.children) && issue.children.some((child) => !isTargetReference(child, target))) {
     delete issue.children;
