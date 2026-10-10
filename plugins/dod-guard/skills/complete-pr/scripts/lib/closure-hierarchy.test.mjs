@@ -5,6 +5,7 @@ import { planClosures } from "./closure-plan.mjs";
 import { renderClosureEvidence } from "./closure-records.mjs";
 import {
   DELIVERIES,
+  REPOSITORY,
   chainSnapshot,
   closedWithoutEvidence,
   completionComment,
@@ -178,7 +179,7 @@ function hierarchyChain(options = {}) {
   snapshot.items = snapshot.items.filter(({ content }) => [775, 818].includes(content.number));
   snapshot.issues = snapshot.issues.filter(({ number }) => [775, 818].includes(number));
   snapshot.pullRequests = snapshot.pullRequests.filter(({ number }) => number === DELIVERIES[818].pull);
-  snapshot.issues.find(({ number }) => number === 775).parent = { number: 901 };
+  snapshot.issues.find(({ number }) => number === 775).parent = { repository: REPOSITORY, number: 901 };
   const body = renderClosureEvidence({
     issue: 901,
     stateReason: "not_planned",
@@ -211,8 +212,8 @@ test("an open parent above a not_planned hierarchy record waits for the moved de
 // #702 the parent of #776, and roots #818 and #820 verify both replacements.
 function grandparentChain() {
   const snapshot = recordedSnapshot({ roots: [818, 820] });
-  snapshot.issues.find(({ number }) => number === 775).parent = { number: 701 };
-  snapshot.issues.find(({ number }) => number === 776).parent = { number: 702 };
+  snapshot.issues.find(({ number }) => number === 775).parent = { repository: REPOSITORY, number: 701 };
+  snapshot.issues.find(({ number }) => number === 776).parent = { repository: REPOSITORY, number: 702 };
   const kept = [775, 776, 818, 820];
   const pulls = [DELIVERIES[818].pull, DELIVERIES[820].pull];
   snapshot.items = snapshot.items.filter(({ content }) => kept.includes(content.number));

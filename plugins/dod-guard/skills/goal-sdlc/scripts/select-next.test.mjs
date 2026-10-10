@@ -138,10 +138,20 @@ function recordedDelivery(pendingRows = []) {
   });
   const pull = { number: 836, repository: REPOSITORY };
   const input = snapshot();
-  input.items.push(item(831, "Done", null, [pull]), item(832, "Done", { number: 831 }));
+  input.items.push(item(831, "Done", null, [pull]), item(832, "Done", { repository: REPOSITORY, number: 831 }));
   input.issues.push(
-    issue(831, { state: "closed", children: [{ number: 832 }], comments: [{ id: 1, body: record }] }),
-    issue(832, { state: "closed", parent: { number: 831 }, comments: [{ id: 2, body: record }] }),
+    issue(831, {
+      state: "closed",
+      repository: REPOSITORY,
+      children: [{ repository: REPOSITORY, number: 832 }],
+      comments: [{ id: 1, body: record }],
+    }),
+    issue(832, {
+      state: "closed",
+      repository: REPOSITORY,
+      parent: { repository: REPOSITORY, number: 831 },
+      comments: [{ id: 2, body: record }],
+    }),
   );
   input.pullRequests.push({
     ...pull,

@@ -186,7 +186,7 @@ test("end to end: plan and apply on the #683 hierarchy", async () => {
   ]);
   for (const number of [775, 776, 777, 778, 683]) {
     assert.equal(github.state.issues.get(number).state, "closed");
-    assert.equal(github.state.statuses.get(number), "Done");
+    assert.equal(github.state.statuses.get(`PVTI_${number}`), "Done");
   }
 });
 
@@ -221,8 +221,18 @@ test("apply runs on a snapshot built to the documented closure snapshot shape", 
   const TOP_KEYS = ["repository", "defaultBranch", "project", "items", "issues", "pullRequests"];
   const PROJECT_KEYS = ["owner", "number", "statusFieldId", "doneOptionId"];
   const ITEM_KEYS = ["id", "content", "fields"];
-  const ISSUE_KEYS = ["number", "state", "title", "parent", "children", "body", "state_reason", "comments"];
-  const PULL_KEYS = ["number", "state", "mergedAt", "head", "base", "mergeCommit", "requiredChecks"];
+  const ISSUE_KEYS = [
+    "number",
+    "repository",
+    "state",
+    "title",
+    "parent",
+    "children",
+    "body",
+    "state_reason",
+    "comments",
+  ];
+  const PULL_KEYS = ["number", "repository", "state", "mergedAt", "head", "base", "mergeCommit", "requiredChecks"];
   const ADDED_BY_STANDARD = ["children", "body", "state_reason", "comments", "statusFieldId", "doneOptionId"];
   const pick = (record, keys) =>
     Object.fromEntries(keys.filter((key) => key in record).map((key) => [key, record[key]]));
@@ -242,6 +252,6 @@ test("apply runs on a snapshot built to the documented closure snapshot shape", 
   assert.equal(runCli(["apply", `--snapshot=${file}`], { runner: github.runner, ...io }), 0, io.text.err);
   assert.deepEqual(JSON.parse(io.text.out).applied, [775, 776, 777, 778, 683]);
   for (const number of [775, 776, 777, 778, 683]) {
-    assert.equal(github.state.statuses.get(number), "Done");
+    assert.equal(github.state.statuses.get(`PVTI_${number}`), "Done");
   }
 });

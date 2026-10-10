@@ -4,6 +4,7 @@ import { planClosures } from "./closure-plan.mjs";
 import { renderClosureEvidence } from "./closure-records.mjs";
 import {
   DELIVERIES,
+  REPOSITORY,
   holdOf,
   issue,
   item,
@@ -89,7 +90,7 @@ test("a comment quoting the closure marker is not closure evidence", () => {
     state: "closed",
     state_reason: "completed",
     comments: [quotingComment(7001, ["closure"])],
-    parent: { number: 684 },
+    parent: { repository: REPOSITORY, number: 684 },
   });
   snapshot.items.push(item(684, "Backlog"));
   snapshot.issues.push(issue(684, { children: [683], body: "## Acceptance criteria\n\n- [ ] Done by #683\n" }));

@@ -9,6 +9,7 @@
 import { RECORD_KINDS, renderCompletionRecord } from "./closure-records.mjs";
 
 const REPOSITORY = "TychoHenzen/dod-guard";
+const FOREIGN_REPOSITORY = "TychoHenzen/DeepSeekCustom";
 const PROJECT = Object.freeze({
   owner: "TychoHenzen",
   number: 2,
@@ -59,6 +60,8 @@ const DELIVERIES = Object.freeze({
   },
 });
 
+// A Project item of the target repository. Its parent and linked pull requests are
+// references, each naming its repository, as the closure snapshot carries them.
 function item(number, status, { parent = null, linked = [] } = {}) {
   return {
     id: `PVTI_${number}`,
@@ -66,28 +69,50 @@ function item(number, status, { parent = null, linked = [] } = {}) {
     fields: [
       { name: "Status", value: { name: status } },
       { name: "Repository", value: REPOSITORY },
-      { name: "Parent issue", value: parent === null ? null : { number: parent } },
+      { name: "Parent issue", value: parent === null ? null : { repository: REPOSITORY, number: parent } },
       { name: "Linked pull requests", value: linked.map((number) => ({ number, repository: REPOSITORY })) },
     ],
   };
 }
 
-function issue(number, { state = "open", parent = null, children = [], body = "", comments = [] } = {}) {
+// A Project item of another repository whose number may match a target record's. Its id is
+// distinct, so a write that touches it can be traced back to the foreign record.
+function foreignItem(number, status, repository = FOREIGN_REPOSITORY, { parent = null, linked = [] } = {}) {
+  return {
+    id: `PVTI_foreign_${number}`,
+    content: { number, repository },
+    fields: [
+      { name: "Status", value: { name: status } },
+      { name: "Repository", value: repository },
+      { name: "Parent issue", value: parent === null ? null : { repository, number: parent } },
+      { name: "Linked pull requests", value: linked.map((pullNumber) => ({ number: pullNumber, repository })) },
+    ],
+  };
+}
+
+// An issue of the target repository unless `repository` says otherwise. Its parent and children
+// are references naming the target repository.
+function issue(
+  number,
+  { state = "open", repository = REPOSITORY, parent = null, children = [], body = "", comments = [] } = {},
+) {
   return {
     number,
+    repository,
     state,
     title: `Issue ${number}`,
-    parent: parent === null ? null : { number: parent },
-    children: children.map((child) => ({ number: child })),
+    parent: parent === null ? null : { repository: REPOSITORY, number: parent },
+    children: children.map((child) => ({ repository: REPOSITORY, number: child })),
     body,
     comments,
   };
 }
 
-function pull(root, { checks = "pass", base = "master" } = {}) {
+function pull(root, { checks = "pass", base = "master", repository = REPOSITORY } = {}) {
   const delivery = DELIVERIES[root];
   return {
     number: delivery.pull,
+    repository,
     state: "closed",
     mergedAt: "2026-10-08T17:13:52Z",
     head: { repository: REPOSITORY, ref: delivery.ref, sha: delivery.head },
@@ -236,7 +261,7 @@ function chainSnapshot(depth) {
   let child = 777;
   for (let level = 1; level <= depth; level += 1) {
     const parent = 2000 + level;
-    snapshot.issues.find(({ number }) => number === child).parent = { number: parent };
+    snapshot.issues.find(({ number }) => number === child).parent = { repository: REPOSITORY, number: parent };
     snapshot.items.push(item(parent, "Backlog"));
     snapshot.issues.push(
       issue(parent, { children: [child], body: `## Acceptance criteria\n\n- [ ] Done by #${child}\n` }),
@@ -265,16 +290,18 @@ function projectReply(state, args, endpoint) {
     return ok([[{ id: 1, node_id: PROJECT.statusFieldId, name: "Status", data_type: "single_select", options }]]);
   }
   if (endpoint.startsWith(`${base}/items?`)) {
-    const items = [...state.statuses].map(([number, status]) => ({
-      id: number,
-      node_id: `PVTI_${number}`,
-      content: { number, repository: { full_name: REPOSITORY } },
-      fields: [{ id: 1, name: "Status", value: { name: { raw: status } } }],
+    const items = [...state.items].map(([nodeId, entry]) => ({
+      id: entry.numericId,
+      node_id: nodeId,
+      content: { number: entry.number, repository: { full_name: entry.repository } },
+      fields: [{ id: 1, name: "Status", value: { name: { raw: state.statuses.get(nodeId) } } }],
     }));
     return ok([items]);
   }
-  const number = Number(endpoint.slice(`${base}/items/`.length));
-  state.statuses.set(number, argValue(args, "fields[][value]=") === PROJECT.doneOptionId ? "Done" : "Backlog");
+  const numericId = Number(endpoint.slice(`${base}/items/`.length));
+  const nodeId = [...state.items].find(([, entry]) => entry.numericId === numericId)?.[0];
+  if (nodeId === undefined) return { status: 1, stderr: `no Project item ${numericId}`, stdout: "" };
+  state.statuses.set(nodeId, argValue(args, "fields[][value]=") === PROJECT.doneOptionId ? "Done" : "Backlog");
   return ok();
 }
 
@@ -331,12 +358,25 @@ function statusName(entry) {
 
 // An in-memory GitHub that answers the REST calls closure apply and record
 // make, records every call in order, and can fail the first call a predicate
-// matches or accept a close without performing it.
+// matches or accept a close without performing it. Project items are keyed by
+// their global id. Each gets a numeric id from its sorted global id, so the id a
+// write names never depends on the order the snapshot lists its items in.
 function fakeGitHub(snapshot, { failOnce = null, ignoreClose = false } = {}) {
+  const sortedIds = snapshot.items.map((entry) => entry.id).sort();
   const state = {
     issues: new Map(snapshot.issues.map((entry) => [entry.number, structuredClone(entry)])),
     pulls: new Map(snapshot.pullRequests.map((entry) => [entry.number, entry])),
-    statuses: new Map(snapshot.items.map((entry) => [entry.content.number, statusName(entry)])),
+    items: new Map(
+      snapshot.items.map((entry) => [
+        entry.id,
+        {
+          numericId: sortedIds.indexOf(entry.id) + 1,
+          number: entry.content.number,
+          repository: entry.content.repository,
+        },
+      ]),
+    ),
+    statuses: new Map(snapshot.items.map((entry) => [entry.id, statusName(entry)])),
     nextComment: 9000,
     ignoreClose,
   };
@@ -381,16 +421,16 @@ function holdOf(plan, number) {
   return plan.holds.find((hold) => hold.issue === number);
 }
 
-// Edits a project field by name on the item for one issue. A missing item or field
-// throws with both named, so a renamed field stops the test instead of editing a neighbour.
-function setField(snapshot, number, name, value) {
-  const entry = snapshot.items.find(({ content }) => content.number === number);
-  if (!entry) throw new Error(`no project item for #${number}, so no "${name}" field to set`);
+// Edits a project field by name on the item for one issue in one repository. A missing item or
+// field throws with both named, so a renamed field stops the test instead of editing a neighbour.
+function setField(snapshot, number, name, value, repository = REPOSITORY) {
+  const entry = snapshot.items.find(({ content }) => content.number === number && content.repository === repository);
+  if (!entry) throw new Error(`no project item for ${repository}#${number}, so no "${name}" field to set`);
   fieldOf(entry, name).value = value;
 }
 
 // A later run starts from what GitHub now holds, so a rerun on this snapshot checks that
-// the writes verify on their own.
+// the writes verify on their own. Each item is read by its own global id, never by number.
 function snapshotAfter(snapshot, github) {
   const after = structuredClone(snapshot);
   for (const entry of after.issues) {
@@ -398,18 +438,20 @@ function snapshotAfter(snapshot, github) {
     Object.assign(entry, { state: live.state, state_reason: live.state_reason, comments: live.comments });
   }
   for (const entry of after.items) {
-    setField(after, entry.content.number, "Status", { name: github.state.statuses.get(entry.content.number) });
+    fieldOf(entry, "Status").value = { name: github.state.statuses.get(entry.id) };
   }
   return after;
 }
 
 export {
   DELIVERIES,
+  FOREIGN_REPOSITORY,
   REPOSITORY,
   chainSnapshot,
   closedWithoutEvidence,
   completionComment,
   fakeGitHub,
+  foreignItem,
   holdOf,
   issue,
   item,
