@@ -31,8 +31,8 @@ const STALE_REPORT =
   "quality-report.json was saved by an older quality-guard (schemaVersion 1); press Refresh to regenerate it";
 
 function outdatedBundleMessage(bundlePath) {
-  const bundle = `the quality-guard bundle Refresh ran is outdated: ${bundlePath}`;
-  return `${bundle} wrote a schemaVersion 1 report; this dashboard reads schemaVersion ${SCHEMA_VERSION}`;
+  const outdatedClause = `the quality-guard bundle Refresh ran is outdated: ${bundlePath}`;
+  return `${outdatedClause} wrote a schemaVersion 1 report; this dashboard reads schemaVersion ${SCHEMA_VERSION}`;
 }
 
 function validateQualityReport(report, staleMessage) {
