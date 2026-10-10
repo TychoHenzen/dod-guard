@@ -559,13 +559,22 @@ export function normalizePullRequest(data, repository) {
 
 export function readFallbackRequiredChecks(repository, pullRequest, commandRunner) {
   const branch = encodeBranch(pullRequest.baseBranch);
+  const protectionEndpoint = `repos/${repository}/branches/${branch}/protection/required_status_checks`;
   const protectionResponse = ghJson(
-    ["api", `repos/${repository}/branches/${branch}/protection/required_status_checks`],
+    ["api", protectionEndpoint],
     [0, 1],
     commandRunner,
   );
   if (protectionResponse.result.status === 1 && HTTP_NOT_FOUND.test(protectionResponse.result.stderr)) {
     return [];
+  }
+  if (protectionResponse.result.status !== 0) {
+    const { result } = protectionResponse;
+    const detail =
+      result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`;
+    throw new Error(
+      `Failed to read branch protection at ${protectionEndpoint}: ${detail}`,
+    );
   }
   const protection = protectionResponse.data ?? {};
   const checkRuns = readExactHeadCheckRuns(

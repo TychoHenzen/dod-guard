@@ -105,11 +105,9 @@ function failureDetail(result) {
   return `gh exited with ${result?.status}`;
 }
 
-// Memoizes each read by its argument list and never memoizes a failure, so a later read in the same
-// build asks GitHub again. An exit 1 is accepted only as HTTP 404, whatever the runner does: that 404
-// is the "no branch protection" answer readFallbackRequiredChecks relies on, but the same function
-// reads every other exit 1 as no protection too, so a failed protection read would come back as an
-// empty requirement list.
+// Memoizes each read by its arguments and accepted exit codes, and never memoizes a failure, so a later
+// read asks GitHub again. A non-zero exit counts only when the caller accepts it and it is HTTP 404, because
+// every caller here that accepts one reads a 404 as absence; any other failure is a read failure naming its endpoint.
 function guardedRunner(runner) {
   const memo = new Map();
   return (args, acceptedExitCodes = [0]) => {

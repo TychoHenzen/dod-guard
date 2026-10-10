@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { GitHubClient } from "./github-client.mjs";
+import { GitHubClient, readFallbackRequiredChecks } from "./github-client.mjs";
 
 function createFallbackRunner({
   checkRunResponses,
@@ -83,6 +83,30 @@ function discussionUrl(label) {
   return `https://github.com/owner/repo/pull/24#discussion_${label}`;
 }
 
+// Answers the protection read with the given response and gives the check-run and status reads
+// empty success, so a read that wrongly carries on shows up as a returned list rather than a runner error.
+function protectionFailureRunner(protectionResponse) {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    if (args[0] === "pr") {
+      return okResponse("[]");
+    }
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
+    if (endpoint?.includes("required_status_checks")) {
+      return protectionResponse;
+    }
+    if (endpoint?.includes("/check-runs?")) {
+      return checkRunsResponse([]);
+    }
+    if (endpoint?.includes("/status?")) {
+      return okResponse(JSON.stringify({ statuses: [] }));
+    }
+    throw new Error(`Unexpected command: ${args.join(" ")}`);
+  };
+  return { calls, runner };
+}
+
 test("retries one transient exact-head check-runs failure with the identical request", () => {
   const { calls, runner } = createFallbackRunner({
     checkRunResponses: [
@@ -151,6 +175,51 @@ test("does not retry or accept a wrong-provider exact-head check run", () => {
     calls.filter((args) => args.some((value) => value.includes("/check-runs?"))).length,
     1,
   );
+});
+
+const protectionEndpoint = "repos/owner/repo/branches/master/protection/required_status_checks";
+const serverErrorProtection = {
+  stderr: "gh: Server Error (HTTP 502)",
+  status: 1,
+  stdout: JSON.stringify({ message: "Server Error" }),
+};
+
+function namesProtectionFailure(error) {
+  return error.message.includes(protectionEndpoint) && error.message.includes("HTTP 502");
+}
+
+function readsCheckRunsOrStatuses(calls) {
+  return calls.some((args) => args.some((value) => value.includes("/check-runs?") || value.includes("/status?")));
+}
+
+test("fails a non-404 branch-protection read naming the endpoint instead of reading no checks", () => {
+  const { calls, runner } = protectionFailureRunner(serverErrorProtection);
+
+  assert.throws(
+    () => readFallbackRequiredChecks("owner/repo", exactHeadPullRequest(), runner),
+    namesProtectionFailure,
+  );
+  assert.equal(readsCheckRunsOrStatuses(calls), false);
+});
+
+test("getRequiredChecks fails a non-404 branch-protection read instead of returning no checks", () => {
+  const { runner } = protectionFailureRunner(serverErrorProtection);
+
+  assert.throws(
+    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest()),
+    namesProtectionFailure,
+  );
+});
+
+test("reads an absent branch protection (HTTP 404) as no required checks without reading checks", () => {
+  const { calls, runner } = protectionFailureRunner({
+    stderr: "gh: Not Found (HTTP 404)",
+    status: 1,
+    stdout: JSON.stringify({ message: "Branch not protected" }),
+  });
+
+  assert.deepEqual(readFallbackRequiredChecks("owner/repo", exactHeadPullRequest(), runner), []);
+  assert.equal(readsCheckRunsOrStatuses(calls), false);
 });
 
 test("reads temporary pull-request refs with a delimited pull-number prefix", () => {
