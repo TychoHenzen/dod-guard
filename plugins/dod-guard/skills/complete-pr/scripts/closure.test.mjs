@@ -320,6 +320,18 @@ function argValue(args, prefix) {
   return args.find((value) => String(value).startsWith(prefix))?.slice(prefix.length);
 }
 
+// The base routes of a linked-Project fixture: the repository, the one open Project, and the
+// membership, fields, and values reads of that Project over the given item pages.
+function projectRoutes(pages) {
+  return {
+    [ENDPOINT.repository]: ok({ full_name: REPOSITORY, default_branch: "master" }),
+    [ENDPOINT.projects]: ok(ONE_OPEN_PROJECT),
+    [ENDPOINT.membership(2)]: ok(pages),
+    [ENDPOINT.fields(2)]: ok(fieldPages()),
+    [ENDPOINT.values(2)]: ok(pages),
+  };
+}
+
 // A verified delivery: merged root #840 (PR #901) supersedes open original #777, and its completion
 // record matches the live pull request. Plan has exactly one close to make.
 function deliveredFixture() {
@@ -346,11 +358,7 @@ function deliveredFixture() {
       { number: ROOT, state: "closed", state_reason: "completed", comments: [rootComment] },
     ],
     routes: {
-      [ENDPOINT.repository]: ok({ full_name: REPOSITORY, default_branch: "master" }),
-      [ENDPOINT.projects]: ok(ONE_OPEN_PROJECT),
-      [ENDPOINT.membership(2)]: ok(pages),
-      [ENDPOINT.fields(2)]: ok(fieldPages()),
-      [ENDPOINT.values(2)]: ok(pages),
+      ...projectRoutes(pages),
       [ENDPOINT.comments(ROOT)]: ok([[rootComment]]),
       [ENDPOINT.protection]: ok({ contexts: ["build-test"] }),
       [ENDPOINT.checkRuns(root.head)]: checkRunsReply(root.head),
@@ -377,11 +385,7 @@ function crossRepositoryFixture() {
   const foreignSubIssue = { number: 21, repository_url: `https://api.github.com/repos/${FOREIGN_REPOSITORY}` };
   return {
     routes: {
-      [ENDPOINT.repository]: ok({ full_name: REPOSITORY, default_branch: "master" }),
-      [ENDPOINT.projects]: ok(ONE_OPEN_PROJECT),
-      [ENDPOINT.membership(2)]: ok(pages),
-      [ENDPOINT.fields(2)]: ok(fieldPages()),
-      [ENDPOINT.values(2)]: ok(pages),
+      ...projectRoutes(pages),
       [ENDPOINT.subIssues(20)]: ok([[foreignSubIssue]]),
     },
   };
@@ -506,7 +510,7 @@ test("AC-03: a built delivery annotates to a complete group, and select-next rep
   assert.deepEqual(result.selected.issueNumbers, [ORIGINAL]);
 });
 
-test("AC-03: cross-repository relations hold both target issues, and select-next never joins them by number", async () => {
+test("AC-03: cross-repository relations hold #20 and #32; select-next holds the group rooted at bare #31", async () => {
   const { file, snapshot } = await builtSnapshot(crossRepositoryFixture().routes);
   assert.deepEqual(snapshot.issues.find(({ number }) => number === 20).children, [
     { repository: FOREIGN_REPOSITORY, number: 21 },
@@ -524,6 +528,7 @@ test("AC-03: cross-repository relations hold both target issues, and select-next
   assert.ok(group(20).reasons.includes("issue #20 child relationship"));
   assert.equal(group(31).kind, "hold");
   assert.ok(group(31).reasons.includes("relationship/head evidence changed during read"));
+  // #32 has no group of its own: select-next joins it to bare #31 by bare-number grouping, which #856 removes.
   assert.equal(group(32), undefined, "the foreign-parented issue has no group of its own");
   assert.deepEqual(result.selected.issueNumbers, [21]);
 });

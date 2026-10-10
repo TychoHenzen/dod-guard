@@ -110,7 +110,12 @@ test("AC-08: every caller builds its closure snapshot with closure.mjs snapshot 
     }
     return skill.slice(start, skill.indexOf("## Result", start));
   };
-  assertBefore(goalSdlc, BUILDS_SNAPSHOT, prose("node closure.mjs plan --snapshot=<file>"), "goal-sdlc step 2 builds first");
+  assertBefore(
+    goalSdlc,
+    BUILDS_SNAPSHOT,
+    prose("node closure.mjs plan --snapshot=<file>"),
+    "goal-sdlc step 2 builds first",
+  );
   assertBefore(
     sectionOf("## Record completion and close replaced issues"),
     BUILDS_SNAPSHOT,

@@ -154,7 +154,12 @@ function fixtureRoutes(variant = "healthy") {
     [ENDPOINT.membership(4)]: ok([[projectItem("PVTI_f40", 1040, issueContent(40, { repo: FOREIGN }))]]),
     [ENDPOINT.fields(2)]: ok(fieldPages()),
     [ENDPOINT.values(2)]: ok(pages),
-    [ENDPOINT.subIssues(10)]: ok([[{ number: 11, repository_url: REPO_URL }, { number: 12, repository_url: REPO_URL }]]),
+    [ENDPOINT.subIssues(10)]: ok([
+      [
+        { number: 11, repository_url: REPO_URL },
+        { number: 12, repository_url: REPO_URL },
+      ],
+    ]),
     [ENDPOINT.comments(10)]: ok([[{ id: 9001, body: COMMENT_BODY }]]),
     [ENDPOINT.protection]: ok({ contexts: ["build-test", "lint"] }),
     [ENDPOINT.checkRuns(HEAD[21])]: checkRunsReply(HEAD[21]),
@@ -241,7 +246,14 @@ function runSnapshot(dir, variant) {
 
 test("AC-05: the snapshot has the documented top-level keys and the project object", () => {
   const snapshot = build(fixtureRoutes());
-  assert.deepEqual(Object.keys(snapshot), ["repository", "defaultBranch", "project", "items", "issues", "pullRequests"]);
+  assert.deepEqual(Object.keys(snapshot), [
+    "repository",
+    "defaultBranch",
+    "project",
+    "items",
+    "issues",
+    "pullRequests",
+  ]);
   assert.equal(snapshot.repository, REPO);
   assert.equal(snapshot.defaultBranch, "master");
   assert.deepEqual(Object.keys(snapshot.project), ["owner", "number", "statusFieldId", "doneOptionId"]);
@@ -255,7 +267,14 @@ test("AC-05: the snapshot has the documented top-level keys and the project obje
 
 test("AC-05: items hold both pages and both repositories, each with a top-level repository", () => {
   const snapshot = build(fixtureRoutes());
-  assert.deepEqual(Object.keys(snapshot.items[0]), ["id", "databaseId", "contentType", "repository", "content", "fields"]);
+  assert.deepEqual(Object.keys(snapshot.items[0]), [
+    "id",
+    "databaseId",
+    "contentType",
+    "repository",
+    "content",
+    "fields",
+  ]);
   assert.deepEqual(snapshot.items, [
     {
       id: "PVTI_t10",
@@ -449,14 +468,35 @@ test("AC-05: a repository name the shared pattern rejects stops the build and na
   }
 });
 
+// Matches the body and field flags in each spelling: -f or -F with the value joined, --field,
+// --raw-field, and --input, each with or without a following =.
+const BODY_FLAG = /^(?:-[fF]|--(?:raw-)?field(?:=|$)|--input(?:=|$))/u;
+
+// The method each -X VALUE, --method VALUE, -XVALUE, and --method=VALUE argument names.
+function methodsOf(args) {
+  return args.flatMap((arg, index) => {
+    if (arg === "-X" || arg === "--method") {
+      return [args[index + 1]];
+    }
+    if (arg.startsWith("--method=")) {
+      return [arg.slice("--method=".length)];
+    }
+    if (arg.startsWith("-X") && arg.length > 2) {
+      return [arg.slice(2)];
+    }
+    return [];
+  });
+}
+
 test("AC-05: every read is a GET, and only the reads the counts require are made", () => {
   const { runner, calls } = fakeRest(fixtureRoutes());
   buildClosureSnapshot({ repository: REPO, runner });
   for (const args of calls) {
     assert.equal(args[0], "api", args.join(" "));
-    assert.ok(!args.some((arg) => arg === "-f" || arg === "-F"), args.join(" "));
-    if (args.includes("--method")) {
-      assert.equal(args[args.indexOf("--method") + 1], "GET", args.join(" "));
+    assert.notEqual(args[1], "graphql", args.join(" "));
+    assert.ok(!args.some((arg) => BODY_FLAG.test(arg)), args.join(" "));
+    for (const method of methodsOf(args)) {
+      assert.equal(method, "GET", args.join(" "));
     }
   }
   const endpoints = calls.map((args) => args.at(-1));
@@ -524,22 +564,30 @@ test("AC-07: the built snapshot plans with no repository identity hold", () => {
   assert.deepEqual(identityHolds, []);
 });
 
+// The error a failed read leaves: the endpoint it names, then the colon that ends it.
+const failedAt = (endpoint) => `closure snapshot read failed: ${endpoint}:`;
+const PROJECTS_LIST = `users/${OWNER}/projectsV2`;
+
 const FAULTS = [
-  ["repository", [ENDPOINT.repository]],
-  ["items", [ENDPOINT.values(2)]],
-  ["missing-page", [ENDPOINT.values(2), "missing page"]],
-  ["no-parent-field", [ENDPOINT.fields(2), 'must include exactly one "Parent issue" field, found 0']],
-  ["no-linked-project", ["users/TychoHenzen/projectsV2", "expected exactly one open linked Project, found none"]],
+  ["repository", [failedAt(ENDPOINT.repository)]],
+  ["items", [failedAt(ENDPOINT.values(2))]],
+  ["missing-page", [failedAt(ENDPOINT.values(2)), "missing page"]],
+  ["no-parent-field", [failedAt(ENDPOINT.fields(2)), 'must include exactly one "Parent issue" field, found 0']],
+  ["no-linked-project", [failedAt(PROJECTS_LIST), "expected exactly one open linked Project, found none"]],
   [
     "two-linked-projects",
-    ["users/TychoHenzen/projectsV2", "expected exactly one open linked Project, found 2 (#2, #4)"],
+    [failedAt(PROJECTS_LIST), "expected exactly one open linked Project, found 2 (#2, #4)"],
   ],
-  ["protection-failure", [ENDPOINT.protection]],
-  ...REJECTED_NAMES.map((variant) => [variant, [ENDPOINT.values(2)]]),
+  [
+    "protection-failure",
+    [failedAt(ENDPOINT.protection)],
+    "protection-failure (a non-404 protection read is a failure, not an empty requirement list)",
+  ],
+  ...REJECTED_NAMES.map((variant) => [variant, [failedAt(ENDPOINT.values(2))]]),
 ];
 
-for (const [variant, expected] of FAULTS) {
-  test(`AC-11: ${variant} exits 1, names its endpoint, leaves no file, and recovers on rerun`, async () => {
+for (const [variant, expected, label = variant] of FAULTS) {
+  test(`AC-11: ${label} exits 1, names its endpoint, leaves no file, and recovers on rerun`, async () => {
     await withTempDir(async (dir) => {
       const failure = runSnapshot(dir, variant);
       assert.equal(failure.code, 1, failure.stderr);
@@ -564,16 +612,7 @@ for (const [variant, expected] of FAULTS) {
   });
 }
 
-test("AC-11: a non-404 failure of the branch-protection read fails the run, not an empty requirement list", async () => {
-  await withTempDir(async (dir) => {
-    const failure = runSnapshot(dir, "protection-failure");
-    assert.equal(failure.code, 1, failure.stderr);
-    assert.ok(failure.stderr.includes(ENDPOINT.protection), failure.stderr);
-    assert.deepEqual(await readdir(dir), []);
-  });
-});
-
-test("AC-11: a failed rebuild removes the earlier snapshot at its output, so nothing stale is left to read", async () => {
+test("AC-11: a failed rebuild removes the earlier snapshot at its output, so nothing stale is read", async () => {
   await withTempDir(async (dir) => {
     const earlier = join(dir, "snapshot.json");
     await writeFile(earlier, `${JSON.stringify({ ...build(fixtureRoutes()), defaultBranch: "stale" }, null, 2)}\n`);
