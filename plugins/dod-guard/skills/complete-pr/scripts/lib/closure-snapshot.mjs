@@ -17,7 +17,7 @@ const PULL_URL = /^https:\/\/api\.github\.com\/repos\/([^/\s]+\/[^/\s]+)\/pulls\
 // The Project fields each item keeps, in the order the snapshot lists them.
 const ITEM_FIELD_NAMES = ["Status", "Repository", "Parent issue", "Linked pull requests"];
 const JSON_INDENT = 2;
-const ISSUE_KEYS = ["body", "state_reason", "parent_issue_url"];
+const ISSUE_KEYS = ["body", "state_reason"];
 
 class SnapshotReadError extends Error {
   constructor(message, options) {
@@ -450,18 +450,21 @@ function readComments(read, repository, number) {
 }
 
 // ASSUMPTION: the Project item's content carries the issue fields the snapshot keeps, so no per-issue
-// read is made. The three keys below must be present even when null, because the closure rules read
-// the acceptance criteria, supersedes records, and parent link from them; an absent key must never
-// read as "no criteria" or "no parent", since that would let a close go through on a guess.
+// read is made. body and state_reason must be present even when null, because the closure rules read
+// the acceptance criteria and supersedes records from them; an absent key must never read as "no
+// criteria", since that would let a close go through on a guess.
+// ASSUMPTION: REST omits parent_issue_url for an issue that has no parent, so an absent key reads as
+// no parent. A present value must still name an issue, so a malformed link fails the build rather than
+// reading as no parent.
 function issueParent(content, endpoint) {
   const { number } = content;
   if (!ISSUE_KEYS.every((key) => key in content)) {
-    throw readFailure(endpoint, `issue #${number} content must carry body, state_reason, and parent_issue_url`);
+    throw readFailure(endpoint, `issue #${number} content must carry body and state_reason`);
   }
   if (![content.body, content.state_reason].every(isNullOrString)) {
     throw readFailure(endpoint, `issue #${number} body and state_reason must be strings or null`);
   }
-  if (content.parent_issue_url === null) {
+  if (content.parent_issue_url === undefined || content.parent_issue_url === null) {
     return null;
   }
   const parent = issueReference(content.parent_issue_url);

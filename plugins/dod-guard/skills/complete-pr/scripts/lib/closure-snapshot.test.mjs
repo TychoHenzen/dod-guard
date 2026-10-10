@@ -27,6 +27,7 @@ const ERROR_PREFIX = /^closure snapshot read failed: /u;
 const DISAGREE = /disagree/u;
 const BLANK = /blank/u;
 const NOT_A_NAME = /not a name/u;
+const MISSING_BODY = /must carry body/u;
 const USAGE_LINE = /closure\.mjs snapshot --repository=<owner\/name> --output=<file\.json>/u;
 
 const ENDPOINT = {
@@ -214,6 +215,11 @@ function setStatus(pages, nodeId, value) {
   entry.fields.find((field) => field.name === "Status").value = value;
 }
 
+function withoutKey(pages, nodeId, key) {
+  const entry = pages.flat().find((item) => item.node_id === nodeId);
+  delete entry.content[key];
+}
+
 // The healthy fixture, or one deliberate departure named by variant.
 function fixtureRoutes(variant = "healthy") {
   const pages = valuePages();
@@ -222,6 +228,13 @@ function fixtureRoutes(variant = "healthy") {
   }
   if (variant === "blank-status") {
     setStatus(pages, "PVTI_t11", { id: "opt-done", name: { raw: "", html: "" } });
+  }
+  // Mutations must run before the routes below call ok(), which serializes its value at that moment.
+  if (variant === "absent-parent-url") {
+    withoutKey(pages, "PVTI_t10", "parent_issue_url");
+  }
+  if (variant === "missing-body") {
+    withoutKey(pages, "PVTI_t11", "body");
   }
   const routes = {
     [ENDPOINT.repository]: ok({ full_name: REPO, default_branch: "master" }),
@@ -446,6 +459,20 @@ test("AC-05: issues list only target records, with children and parent as reposi
       comments: [],
     },
   ]);
+});
+
+test("AC-05: an issue whose content omits parent_issue_url has no parent", () => {
+  const snapshot = build(fixtureRoutes("absent-parent-url"));
+  assert.equal(snapshot.issues.find((issue) => issue.number === 10).parent, null);
+  assert.deepEqual(snapshot, build(fixtureRoutes()));
+});
+
+test("AC-05: an issue whose content omits body stops the build and names the issue", () => {
+  const error = buildFailure(fixtureRoutes("missing-body"));
+  assert.ok(error, "the build should have failed");
+  assert.match(error.message, ERROR_PREFIX);
+  assert.ok(error.message.includes(`repos/${REPO}/issues/11`), error.message);
+  assert.match(error.message, MISSING_BODY);
 });
 
 test("AC-05: pull requests list only target records, and a merged one carries its required checks", () => {
