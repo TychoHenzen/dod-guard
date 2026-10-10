@@ -15,7 +15,7 @@ import {
   isRepositoryName,
   urlReference,
   urlRepository,
-} from "./repository-identity.mjs";
+} from "../../../../lib/repository-identity.mjs";
 
 const ENDPOINT = /^(?:repos|users|orgs)\//u;
 const HTTP_NOT_FOUND = /HTTP 404/u;

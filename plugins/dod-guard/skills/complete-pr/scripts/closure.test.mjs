@@ -367,8 +367,47 @@ function deliveredFixture() {
   };
 }
 
-// A cross-repository delivery group: #20 has sub-issue DeepSeekCustom#21, and target #21 exists, so a
-// join by bare number is possible. #32 has parent BeeHAIve#31, and target #31 exists.
+// Three parents of the target repository for the round trip: #840 is a verified delivery, #841 is merged
+// with one acceptance row still pending, and #950 is an open Todo parent with no pull request.
+function roundTripFixture() {
+  const verified = DELIVERIES[ROOT];
+  const pending = DELIVERIES[841];
+  const verifiedPull = pull(verified.pull, { sha: verified.head, mergeCommit: verified.merge });
+  const pendingPull = pull(pending.pull, { sha: pending.head, mergeCommit: pending.merge });
+  const pages = [
+    [
+      projectItem(
+        "PVTI_840",
+        8401,
+        issueContent(840, { state: "closed", stateReason: "completed", comments: 1 }),
+        { status: "Done", linked: [verifiedPull] },
+      ),
+      projectItem(
+        "PVTI_841",
+        8411,
+        issueContent(841, { state: "closed", stateReason: "completed", comments: 1 }),
+        { status: "Done", linked: [pendingPull] },
+      ),
+      projectItem("PVTI_950", 9501, issueContent(950), { status: "Todo" }),
+    ],
+  ];
+  return {
+    routes: {
+      ...projectRoutes(pages),
+      [ENDPOINT.comments(840)]: ok([[completionComment(840)]]),
+      [ENDPOINT.comments(841)]: ok([[completionComment(841, { pendingRows: ["AC-1"] })]]),
+      [ENDPOINT.protection]: ok({ contexts: ["build-test"] }),
+      [ENDPOINT.checkRuns(verified.head)]: checkRunsReply(verified.head),
+      [ENDPOINT.statuses(verified.head)]: commitStatusReply(verified.head),
+      [ENDPOINT.checkRuns(pending.head)]: checkRunsReply(pending.head),
+      [ENDPOINT.statuses(pending.head)]: commitStatusReply(pending.head),
+    },
+  };
+}
+
+// A cross-repository delivery group: #20 has sub-issue DeepSeekCustom#21 and #32 has parent BeeHAIve#31,
+// while target issues #21 and #31 exist under the same numbers. A classifier that grouped by bare number
+// would join them, and this test proves it does not.
 function crossRepositoryFixture() {
   const pages = [
     [
@@ -510,7 +549,22 @@ test("AC-03: a built delivery annotates to a complete group, and select-next rep
   assert.deepEqual(result.selected.issueNumbers, [ORIGINAL]);
 });
 
-test("AC-03: cross-repository relations hold #20 and #32; select-next holds the group rooted at bare #31", async () => {
+test("AC-06: snapshot, annotate, and select-next round trip", async () => {
+  const { file } = await builtSnapshot(roundTripFixture().routes);
+  const annotated = closureJson(["annotate", `--snapshot=${file}`]);
+  const result = await selectNextOf(annotated);
+  const group = (root) => result.groups.find(({ rootIssueNumber }) => rootIssueNumber === root);
+  assert.deepEqual(group(840), { rootIssueNumber: 840, kind: "complete", reasons: [] });
+  assert.equal(group(841).kind, "hold");
+  assert.ok(
+    group(841).reasons.includes("active checkpoint for issue #841 is not explicitly false"),
+    group(841).reasons.join("; "),
+  );
+  assert.deepEqual(result.selected, { rootIssueNumber: 950, status: "Todo", issueNumbers: [950] });
+  assert.deepEqual(result.missingEvidence, []);
+});
+
+test("AC-03: select-next holds #20 and #32 in their own groups and leaves #31 eligible", async () => {
   const { file, snapshot } = await builtSnapshot(crossRepositoryFixture().routes);
   assert.deepEqual(snapshot.issues.find(({ number }) => number === 20).children, [
     { repository: FOREIGN_REPOSITORY, number: 21 },
@@ -525,10 +579,9 @@ test("AC-03: cross-repository relations hold #20 and #32; select-next holds the 
   const result = await selectNextOf(closureJson(["annotate", `--snapshot=${file}`]));
   const group = (root) => result.groups.find(({ rootIssueNumber }) => rootIssueNumber === root);
   assert.equal(group(20).kind, "hold");
-  assert.ok(group(20).reasons.includes("issue #20 child relationship"));
-  assert.equal(group(31).kind, "hold");
-  assert.ok(group(31).reasons.includes("relationship/head evidence changed during read"));
-  // #32 has no group of its own: select-next joins it to bare #31 by bare-number grouping, which #856 removes.
-  assert.equal(group(32), undefined, "the foreign-parented issue has no group of its own");
+  assert.ok(group(20).reasons.includes("cross-repository sub-issue TychoHenzen/DeepSeekCustom#21"));
+  assert.equal(group(32).kind, "hold");
+  assert.ok(group(32).reasons.includes("cross-repository parent TychoHenzen/BeeHAIve#31"));
+  assert.deepEqual(group(31), { rootIssueNumber: 31, kind: "eligible", reasons: [] });
   assert.deepEqual(result.selected.issueNumbers, [21]);
 });

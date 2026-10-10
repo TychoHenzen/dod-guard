@@ -1,43 +1,20 @@
-// Owns the judgement of each delivery against the snapshot the caller read, and the snapshot
-// annotation taken from the same completion records. Pure: it reads no provider and writes
-// nothing. A close is planned only for a delivery that verifies against live readback and the
-// queue's own merged predicate, so cleanup and selection can never disagree.
+// Owns the judgement of each delivery against the snapshot the caller read, and the snapshot annotation
+// taken from the same completion records. Pure: it reads no provider and writes nothing. Each delivery's
+// group verdict comes from the shared queue classifier that select-next uses, over the same snapshot
+// shape, so cleanup and selection cannot disagree. The overlay comes from the root's completion record only.
 
-import { defaultQueueDecision } from "../../../goal-sdlc/scripts/lib/queue-readback.mjs";
+import { buildQueueRecords, classifyDelivery } from "../../../../lib/queue-classifier.mjs";
 import { parseCompletionRecord } from "./closure-records.mjs";
 import {
   childNumbers,
-  fieldValue,
   indexSnapshot,
-  isTargetReference,
   isTargetRepository,
   issueFor,
-  itemFor,
-  itemPullNumbers,
-  itemStatus,
   numberOf,
-  present,
   pullFor,
   recordRepository,
   relationReasons,
-} from "./closure-index.mjs";
-
-function queuePull(pull, record) {
-  return {
-    number: numberOf(pull),
-    state: pull.state,
-    mergedAt: pull.mergedAt ?? null,
-    headRepository: pull.head?.repository ?? null,
-    headRef: pull.head?.ref ?? null,
-    headSha: pull.head?.sha ?? null,
-    baseRef: pull.base?.ref ?? null,
-    mergeCommitSha: pull.mergeCommit?.oid ?? null,
-    requiredChecks: pull.requiredChecks,
-    // The trusted head comes from the completion record only, never from the
-    // readback it is compared against.
-    trustedHeadSha: numberOf(pull) === record.pullRequest ? record.trustedHeadSha : null,
-  };
-}
+} from "../../../../lib/closure-index.mjs";
 
 // An issue's checkpoint is finished only when its own completion record names
 // the same delivery and leaves no acceptance row pending.
@@ -46,21 +23,15 @@ function checkpointFinished(issue, record) {
   return Boolean(own && own.pullRequest === record.pullRequest && own.pendingRows.length === 0);
 }
 
-function queueRecord(index, number, parentNumber, record) {
-  const issue = issueFor(index, number);
-  const item = itemFor(index, number);
-  const pullNumbers = itemPullNumbers(index, item);
-  const pulls = pullNumbers.map((pull) => pullFor(index, pull)).filter(Boolean);
-  const missing = pullNumbers.filter((pull) => pullFor(index, pull) === null).map((pull) => `pull request #${pull}`);
-  return {
-    issueNumber: number,
-    parentIssueNumber: parentNumber,
-    issue: issue && { state: issue.state, ...(checkpointFinished(issue, record) ? { activeCheckpoint: false } : {}) },
-    projectStatus: itemStatus(item),
-    pullRequests: pulls.map((pull) => queuePull(pull, record)),
-    missingEvidence: item ? missing : [...missing, `Project item #${number}`],
-    staleRelationships: [],
-  };
+// The overlay is the root's own record alone: a checkpoint is finished only where a sub-issue's own
+// record names this pull request, and only that pull request takes the trusted head.
+function deliveryOverlay(index, record) {
+  const checkpoints = new Map();
+  for (const n of index.itemOrder) {
+    if (checkpointFinished(issueFor(index, n), record)) checkpoints.set(n, false);
+  }
+  const trustedHeads = new Map([[record.pullRequest, record.trustedHeadSha]]);
+  return { checkpoints, trustedHeads };
 }
 
 function liveMismatches(index, record) {
@@ -74,8 +45,8 @@ function liveMismatches(index, record) {
   return reasons;
 }
 
-// Judges the delivery whose group root is `number`: the root and its children,
-// as the queue groups them.
+// Judges the delivery rooted at `number`: the root and its direct children, whatever the root's own
+// parent is.
 function judgeDelivery(index, number) {
   const parsed = parseCompletionRecord(issueFor(index, number)?.comments);
   if (parsed.error) return { status: "unverified", reasons: [parsed.error] };
@@ -96,43 +67,38 @@ function judgeDelivery(index, number) {
   }
   if (mismatches.length > 0) return { status: "unverified", record, reasons: mismatches };
   if (listed === null) return { status: "unverified", record, reasons: ["sub-issue list missing"] };
-  const records = [number, ...listed].map((issue) =>
-    queueRecord(index, issue, issue === number ? null : number, record),
-  );
-  const decision = defaultQueueDecision(records, { repository: index.repository, defaultBranch: index.defaultBranch });
-  if (decision.kind === "complete") return { status: "verified", record, reasons: [] };
-  return { status: "unverified", record, reasons: decision.reasons };
+  const records = buildQueueRecords(index, { overlay: deliveryOverlay(index, record) });
+  const group = classifyDelivery(records, number, {
+    repository: index.repository,
+    defaultBranch: index.defaultBranch,
+  });
+  if (!group) return { status: "unverified", record, reasons: ["delivery record missing"] };
+  // A listed sub-issue must be judged with this root, or its own verdict would never reach this delivery.
+  const grouped = new Set(group.records.map(({ issueNumber }) => issueNumber));
+  const ungrouped = listed.filter((child) => !grouped.has(child));
+  if (ungrouped.length > 0) {
+    return {
+      status: "unverified",
+      record,
+      reasons: ungrouped.map((child) => `sub-issue #${child} is not grouped under #${number}`),
+    };
+  }
+  if (group.decision.kind === "complete") return { status: "verified", record, reasons: [] };
+  return { status: "unverified", record, reasons: group.decision.reasons };
 }
 
 function isOpen(issue) {
   return String(issue?.state ?? "").toLowerCase() === "open";
 }
 
-// select-next (goal-sdlc/scripts/select-next.mjs) groups by bare issue number, so a foreign child list, or a foreign
-// parent under a Parent issue value, is removed here; select-next then holds the group instead of joining a
-// same-numbered target issue, and holds a healthy target group as collateral; a null Parent issue field is left alone
-// because removing the parent would make the issue look like a standalone root; delete this when #856 keys select-next
-// by repository, and #829 splits queue-readback.mjs into a pure classifier.
-function dropForeignRelations(issue, target, item) {
-  if (Array.isArray(issue.children) && issue.children.some((child) => !isTargetReference(child, target))) {
-    delete issue.children;
-  }
-  const fieldSet = item !== null && present(fieldValue(item, "Parent issue"));
-  if (fieldSet && present(issue.parent) && !isTargetReference(issue.parent, target)) delete issue.parent;
-}
-
-// Returns a copy of a select-next snapshot whose `activeCheckpoint` and
-// `trustedHeadSha` come from the completion records of the target repository: an issue whose
-// record leaves no row pending gets `activeCheckpoint: false`, a merged-pending one
-// loses any stale value, and the recorded pull request gets the trusted head.
-// Two records that disagree on one pull request's head leave it untrusted. Target issues also
-// lose a child list naming a foreign issue, and lose a foreign parent when their Project item
-// carries a Parent issue value (see dropForeignRelations). Records from another repository, or
-// with no repository, are copied unchanged.
+// The annotate command copies the snapshot and sets `activeCheckpoint` and `trustedHeadSha` from
+// the target repository's completion records: an issue whose record leaves no row pending gets
+// `activeCheckpoint: false`, a merged-pending one loses any stale value, and the recorded pull
+// request gets the trusted head. Two records that disagree on one pull request's head leave it
+// untrusted. It leaves every relation as read, because the queue classifier holds a cross-repository
+// relation itself. Records from another repository, or with no repository, are copied unchanged.
 function annotateSnapshot(snapshot) {
   const copy = structuredClone(snapshot);
-  // Items are never edited here, so the index built from the copy finds each issue's Project item
-  // as the caller sent it.
   const index = indexSnapshot(copy);
   const target = index.target;
   const heads = new Map();
@@ -148,7 +114,6 @@ function annotateSnapshot(snapshot) {
         known === undefined || known === record.trustedHeadSha ? record.trustedHeadSha : null,
       );
     }
-    dropForeignRelations(issue, target, itemFor(index, numberOf(issue)));
   }
   for (const pull of copy.pullRequests ?? []) {
     if (!isTargetRepository(recordRepository(pull), target) || !heads.has(numberOf(pull))) continue;

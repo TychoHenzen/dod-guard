@@ -1,65 +1,104 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { defaultQueueDecision, readQueueSnapshot, selectQueueItem } from "./lib/queue-readback.mjs";
+import { classifyQueue } from "../../../lib/queue-classifier.mjs";
 
-// Records use the shape readQueueSnapshot builds, so these tests exercise the
-// production classifier rather than a model of it.
+// Each case builds a closure-shaped snapshot and classifies it through classifyQueue, so the cases
+// exercise the classifier that select-next and the closure judgement share.
 const REPOSITORY = "TychoHenzen/dod-guard";
-const CONTEXT = { repository: REPOSITORY, defaultBranch: "master" };
+const TODAY = "2026-10-10";
+const CHILDREN = [536, 537, 538, 539];
 
-function mergedPullRequest(overrides = {}) {
+// A reference names its repository, as every relation in a snapshot does.
+function ref(number, repository = REPOSITORY) {
+  return { repository, number };
+}
+
+// A Project item whose fields name the repository. parentField false omits the Parent issue field,
+// as a Project item that never recorded its parent does.
+function item(number, status, { parent = null, linked = [], parentField = true } = {}) {
+  const fields = [
+    { name: "Status", value: { name: status } },
+    { name: "Repository", value: REPOSITORY },
+  ];
+  if (parentField) fields.push({ name: "Parent issue", value: parent === null ? null : ref(parent) });
+  fields.push({ name: "Linked pull requests", value: linked.map((pull) => ref(pull)) });
+  return { id: `PVTI_${number}`, content: { number, repository: REPOSITORY }, fields };
+}
+
+// An issue of the repository. Its checkpoint is explicitly false unless a case changes it.
+function issue(number, { state = "closed", parent = null, children = [], activeCheckpoint = false } = {}) {
   return {
-    number: 540,
+    number,
+    repository: REPOSITORY,
+    state,
+    title: `Issue ${number}`,
+    parent: parent === null ? null : ref(parent),
+    children: children.map((child) => ref(child)),
+    activeCheckpoint,
+  };
+}
+
+// A merged pull request whose head is the trusted head and whose required checks pass. A case overrides
+// one piece of that evidence to show the hold it causes.
+function pullRequest(number, overrides = {}) {
+  return {
+    number,
     repository: REPOSITORY,
     state: "CLOSED",
     mergedAt: "2026-09-27T00:00:00Z",
-    headRepository: REPOSITORY,
-    headRef: "codex/444",
-    headSha: "head-444",
-    trustedHead: true,
-    baseRef: "master",
-    mergeCommitSha: "merge-444",
+    head: { repository: REPOSITORY, ref: `codex/${number}`, sha: `head-${number}` },
+    base: { ref: "master", sha: `base-${number}` },
+    mergeCommit: { oid: `merge-${number}` },
     requiredChecks: [{ name: "build-test", bucket: "pass" }],
+    trustedHeadSha: `head-${number}`,
     ...overrides,
   };
 }
 
-function record(issueNumber, overrides = {}) {
-  const { state = "CLOSED", activeCheckpoint = false, ...fields } = overrides;
-  return {
-    issueNumber,
-    parentIssueNumber: null,
-    projectStatus: "Done",
-    issue: { number: issueNumber, state, activeCheckpoint },
-    pullRequests: [],
-    staleRelationships: [],
-    missingEvidence: [],
-    ...fields,
-  };
+function snapshot({ items = [], issues = [], pullRequests = [] } = {}) {
+  return { repository: REPOSITORY, defaultBranch: "master", items, issues, pullRequests };
 }
 
-// #444 with children #536-#539, merged through PR #540.
-function completeDelivery({ parent = {}, child = {}, pullRequest = {} } = {}) {
-  return [
-    record(444, { pullRequests: [mergedPullRequest(pullRequest)], ...parent }),
-    ...[536, 537, 538, 539].map((number) => record(number, { parentIssueNumber: 444, ...child })),
-  ];
+// #444 with children #536-#539, merged through pull request #540, which only #444's item links.
+function deliveryItems() {
+  return [item(444, "Done", { linked: [540] }), ...CHILDREN.map((number) => item(number, "Done", { parent: 444 }))];
 }
 
-function decide(records) {
-  return defaultQueueDecision(records, CONTEXT);
+function deliveryIssues() {
+  return [issue(444, { children: CHILDREN }), ...CHILDREN.map((number) => issue(number, { parent: 444 }))];
 }
 
-function assertHold(records, ...reasons) {
-  const decision = decide(records);
+function completeDelivery() {
+  return snapshot({ items: deliveryItems(), issues: deliveryIssues(), pullRequests: [pullRequest(540)] });
+}
+
+function decisionOf(input, root) {
+  const group = classifyQueue(input, { today: TODAY }).groups.find(({ rootIssueNumber }) => rootIssueNumber === root);
+  return group.decision;
+}
+
+function assertHold(input, root, ...reasons) {
+  const decision = decisionOf(input, root);
   assert.equal(decision.kind, "hold", JSON.stringify(decision));
   for (const reason of reasons) {
-    assert.ok(decision.reasons.includes(reason), `missing reason "${reason}" in ${decision.reasons.join("; ")}`);
+    assert.ok(decision.reasons.includes(reason), `missing "${reason}" in ${decision.reasons.join("; ")}`);
   }
 }
 
+function findIssue(input, number) {
+  return input.issues.find((entry) => entry.number === number);
+}
+
+function findItem(input, number) {
+  return input.items.find(({ content }) => content.number === number);
+}
+
+function setStatus(input, number, name) {
+  findItem(input, number).fields.find((field) => field.name === "Status").value = { name };
+}
+
 test("a fully evidenced merged delivery is complete", () => {
-  assert.deepEqual(decide(completeDelivery()), {
+  assert.deepEqual(decisionOf(completeDelivery(), 444), {
     kind: "complete",
     eligible: false,
     status: "Done",
@@ -68,19 +107,26 @@ test("a fully evidenced merged delivery is complete", () => {
 });
 
 test("Todo and Backlog parents without a delivery are eligible", () => {
-  const todo = record(517, { projectStatus: "Todo", state: "OPEN" });
-  const backlog = record(31, { projectStatus: "Backlog", state: "OPEN" });
-  assert.deepEqual(decide([todo]), { kind: "eligible", eligible: true, status: "Todo", reasons: [] });
-  assert.equal(decide([backlog]).status, "Backlog");
+  const todo = snapshot({ items: [item(517, "Todo")], issues: [issue(517, { state: "open" })] });
+  assert.deepEqual(decisionOf(todo, 517), { kind: "eligible", eligible: true, status: "Todo", reasons: [] });
+  const backlog = snapshot({ items: [item(31, "Backlog")], issues: [issue(31, { state: "open" })] });
+  assert.equal(decisionOf(backlog, 31).status, "Backlog");
 });
 
-test("a provider gap holds even a complete delivery", () => {
-  assertHold(completeDelivery({ parent: { missingEvidence: ["issue #444"] } }), "issue #444");
+test("an evidence gap holds even a complete delivery", () => {
+  const input = completeDelivery();
+  // #444 lists #535 as a sub-issue, but #535 has no Project item to carry its evidence.
+  findIssue(input, 444).children.push(ref(535));
+  assertHold(input, 444, "child issue #535 Project item");
 });
 
-test("open issues, open children, and non-Done statuses hold a merged delivery", () => {
+test("an open child that is not Done holds a merged delivery", () => {
+  const input = completeDelivery();
+  findIssue(input, 536).state = "open";
+  setStatus(input, 536, "In Progress");
   assertHold(
-    completeDelivery({ child: { state: "OPEN", projectStatus: "In Progress" } }),
+    input,
+    444,
     "issue #536 is not closed",
     "Project item #536 is not Done",
     "Project status drift: Done, In Progress",
@@ -88,51 +134,95 @@ test("open issues, open children, and non-Done statuses hold a merged delivery",
 });
 
 test("the active checkpoint must be explicitly false before completion", () => {
-  assertHold(
-    completeDelivery({ parent: { activeCheckpoint: null } }),
-    "active checkpoint for issue #444 is not explicitly false",
-  );
-  const active = record(517, { projectStatus: "Todo", state: "OPEN", activeCheckpoint: true });
-  assertHold([active], "active implementation checkpoint remains");
+  const absent = completeDelivery();
+  delete findIssue(absent, 444).activeCheckpoint;
+  assertHold(absent, 444, "active checkpoint for issue #444 is not explicitly false");
+  const active = snapshot({
+    items: [item(517, "Todo")],
+    issues: [issue(517, { state: "open", activeCheckpoint: true })],
+  });
+  assertHold(active, 517, "active implementation checkpoint remains");
 });
 
 test("each missing piece of merge evidence holds the delivery", () => {
-  for (const [pullRequest, reason] of [
-    [{ headRepository: "someone/fork" }, "pull request head repository is not the target repository"],
-    [{ baseRef: "develop" }, "pull request base is not the default branch"],
-    [{ trustedHead: false }, "trusted pull request head evidence is missing or stale"],
-    [{ mergeCommitSha: undefined }, "merge commit is missing"],
+  const cases = [
+    [
+      { head: { repository: "someone/fork", ref: "codex/540", sha: "head-540" } },
+      "pull request head repository is not the target repository",
+    ],
+    [{ base: { ref: "develop", sha: "base-540" } }, "pull request base is not the default branch"],
+    [{ trustedHeadSha: "stale-540" }, "trusted pull request head evidence is missing or stale"],
+    [{ mergeCommit: null }, "merge commit is missing"],
     [{ requiredChecks: [{ name: "build-test", bucket: "fail" }] }, "required checks are incomplete or failed"],
     [{ requiredChecks: [] }, "required checks missing or empty"],
-  ]) {
-    assertHold(completeDelivery({ pullRequest }), reason);
+  ];
+  for (const [overrides, reason] of cases) {
+    const input = completeDelivery();
+    input.pullRequests[0] = pullRequest(540, overrides);
+    assertHold(input, 444, reason);
   }
 });
 
-test("relationship changes during the read hold the delivery", () => {
-  const stale = [{ kind: "pull-request", number: 540 }];
+test("a contradictory parent holds the delivery", () => {
+  const input = completeDelivery();
+  // #536's Project Parent issue field still names #444, while its issue parent is now null.
+  findIssue(input, 536).parent = null;
+  assertHold(input, 444, "contradictory parent for issue #536");
+});
+
+test("a null Project parent against a set issue parent holds that issue", () => {
+  const child = 536;
+  const parent = 444;
+  const input = snapshot({
+    items: [item(child, "Todo")],
+    issues: [issue(child, { state: "open", parent })],
+    pullRequests: [],
+  });
+  assertHold(input, child, "contradictory parent for issue #536");
+  assert.equal(classifyQueue(input, { today: TODAY }).selected, null);
+  const corrected = snapshot({
+    items: [item(child, "Todo")],
+    issues: [issue(child, { state: "open", parent: null })],
+    pullRequests: [],
+  });
+  const { selected } = classifyQueue(corrected, { today: TODAY });
+  assert.equal(selected.rootIssueNumber, child);
+  assert.equal(selected.decision.status, "Todo");
+});
+
+test("a merged child alone, without its parent's item, is an orphan hold", () => {
+  const input = snapshot({
+    items: [item(536, "Done", { parent: 444, linked: [540] })],
+    issues: [issue(536, { parent: 444 })],
+    pullRequests: [pullRequest(540, { mergeCommit: null })],
+  });
   assertHold(
-    completeDelivery({ parent: { staleRelationships: stale } }),
-    "relationship/head evidence changed during read",
+    input,
+    444,
+    "orphaned parent/child relationship",
+    "parent issue #444 Project item",
+    "merge commit is missing",
   );
 });
 
-test("a merged child alone, without its parent record, is an orphan hold", () => {
-  const child = record(536, {
-    parentIssueNumber: 444,
-    pullRequests: [mergedPullRequest({ mergeCommitSha: undefined })],
-  });
-  assertHold([child], "orphaned parent/child relationship", "merge commit is missing");
-});
-
 test("queue selection groups children under their parent and keeps only the Todo", () => {
-  const records = [
-    record(31, { projectStatus: "Backlog", state: "OPEN", missingEvidence: ["issue #31"] }),
-    ...completeDelivery(),
-    record(517, { projectStatus: "Todo", state: "OPEN" }),
-    record(600, { parentIssueNumber: 599, projectStatus: "Todo", state: "OPEN" }),
-  ];
-  const selected = selectQueueItem({ ...CONTEXT, records });
+  const input = snapshot({
+    items: [
+      item(31, "Backlog", { parentField: false }),
+      ...deliveryItems(),
+      item(517, "Todo"),
+      item(600, "Todo", { parent: 599 }),
+    ],
+    issues: [
+      issue(31, { state: "open" }),
+      ...deliveryIssues(),
+      issue(517, { state: "open" }),
+      issue(600, { state: "open", parent: 599 }),
+    ],
+    pullRequests: [pullRequest(540)],
+  });
+  assert.equal(decisionOf(input, 31).kind, "hold");
+  const { selected } = classifyQueue(input, { today: TODAY });
   assert.equal(selected.rootIssueNumber, 517);
   assert.deepEqual(
     selected.records.map(({ issueNumber }) => issueNumber),
@@ -141,112 +231,70 @@ test("queue selection groups children under their parent and keeps only the Todo
 });
 
 test("queue selection skips a group whose statuses drift", () => {
-  const records = [
-    record(700, { projectStatus: "Todo", state: "OPEN" }),
-    record(701, { parentIssueNumber: 700, projectStatus: "Backlog", state: "OPEN" }),
-  ];
-  assert.equal(selectQueueItem({ ...CONTEXT, records }), null);
-  assertHold(records, "Project status drift: Todo, Backlog");
+  const input = snapshot({
+    items: [item(700, "Todo"), item(701, "Backlog", { parent: 700 })],
+    issues: [issue(700, { state: "open", children: [701] }), issue(701, { state: "open", parent: 700 })],
+  });
+  assert.equal(classifyQueue(input, { today: TODAY }).selected, null);
+  assertHold(input, 700, "Project status drift: Todo, Backlog");
 });
 
 test("an In Progress parent is resumed, not held, by its own pull request", () => {
-  const openPullRequest = { number: 900, repository: REPOSITORY, state: "OPEN" };
-  const withPull = record(800, { projectStatus: "In Progress", state: "OPEN", pullRequests: [openPullRequest] });
-  const started = record(801, { projectStatus: "In Progress", state: "OPEN", activeCheckpoint: true });
-  assert.deepEqual(decide([withPull]), {
+  const openPull = pullRequest(900, { state: "OPEN", mergedAt: null });
+  const resumed = snapshot({
+    items: [item(800, "In Progress", { linked: [900] })],
+    issues: [issue(800, { state: "open" })],
+    pullRequests: [openPull],
+  });
+  assert.deepEqual(decisionOf(resumed, 800), {
     kind: "in-progress",
     eligible: true,
     status: "In Progress",
     openPullRequest: true,
     reasons: [],
   });
-  assert.equal(decide([started]).openPullRequest, false);
-  assertHold([{ ...withPull, missingEvidence: ["issue #800"] }], "issue #800");
-  const todoChild = record(802, { parentIssueNumber: 801, projectStatus: "Todo", state: "OPEN" });
-  assert.equal(decide([started, todoChild]).kind, "in-progress");
-  const backlogChild = { ...todoChild, projectStatus: "Backlog" };
-  assertHold([started, backlogChild], "Project status drift: In Progress, Backlog");
+
+  const checkpointed = snapshot({
+    items: [item(801, "In Progress")],
+    issues: [issue(801, { state: "open", activeCheckpoint: true })],
+  });
+  assert.equal(decisionOf(checkpointed, 801).openPullRequest, false);
+
+  const gap = snapshot({
+    items: [item(800, "In Progress", { linked: [900], parentField: false })],
+    issues: [issue(800, { state: "open" })],
+    pullRequests: [openPull],
+  });
+  assertHold(gap, 800, "Project item #800 Parent issue");
+
+  const todoChild = snapshot({
+    items: [item(801, "In Progress"), item(802, "Todo", { parent: 801 })],
+    issues: [
+      issue(801, { state: "open", children: [802], activeCheckpoint: true }),
+      issue(802, { state: "open", parent: 801 }),
+    ],
+  });
+  assert.equal(decisionOf(todoChild, 801).kind, "in-progress");
+
+  const backlogChild = snapshot({
+    items: [item(801, "In Progress"), item(802, "Backlog", { parent: 801 })],
+    issues: [
+      issue(801, { state: "open", children: [802], activeCheckpoint: true }),
+      issue(802, { state: "open", parent: 801 }),
+    ],
+  });
+  assertHold(backlogChild, 801, "Project status drift: In Progress, Backlog");
 });
 
 test("queue selection resumes In Progress work before starting Todo", () => {
-  const records = [
-    record(517, { projectStatus: "Todo", state: "OPEN" }),
-    record(801, { projectStatus: "In Progress", state: "OPEN", activeCheckpoint: true }),
-    record(800, {
-      projectStatus: "In Progress",
-      state: "OPEN",
-      pullRequests: [{ number: 900, repository: REPOSITORY, state: "OPEN" }],
-    }),
-  ];
-  assert.equal(selectQueueItem({ ...CONTEXT, records }).rootIssueNumber, 800);
-});
-
-function adapterProjectItem({ number, status, parentIssue, linkedPullRequests = [] }) {
-  return {
-    id: `adapter-${number}`,
-    content: { number, repository: "TychoHenzen/dod-guard", state: "closed" },
-    fields: [
-      { name: "Status", value: { name: status } },
-      { name: "Repository", value: "TychoHenzen/dod-guard" },
-      { name: "Parent issue", value: parentIssue },
-      { name: "Linked pull requests", value: linkedPullRequests },
+  const input = snapshot({
+    items: [item(517, "Todo"), item(801, "In Progress"), item(800, "In Progress", { linked: [900] })],
+    issues: [
+      issue(517, { state: "open" }),
+      issue(801, { state: "open", activeCheckpoint: true }),
+      issue(800, { state: "open" }),
     ],
-  };
-}
-
-function adapterProvider() {
-  const mutations = [];
-  const items = [
-    adapterProjectItem({
-      number: 444,
-      status: "Done",
-      parentIssue: null,
-      linkedPullRequests: [{ number: 540, repository: "TychoHenzen/dod-guard" }],
-    }),
-    adapterProjectItem({ number: 536, status: "Done", parentIssue: { number: 444 } }),
-  ];
-  const issues = new Map([
-    [444, { number: 444, state: "closed", children: [{ number: 536, state: "closed" }], activeCheckpoint: false }],
-    [536, { number: 536, state: "closed", parent: { number: 444 }, children: [], activeCheckpoint: false }],
-  ]);
-  return {
-    mutations,
-    listProjectItems: () => ({ items, pageInfo: { hasNextPage: false } }),
-    readIssue: ({ issueNumber }) => issues.get(issueNumber),
-    readPullRequest: () => ({
-      number: 540,
-      repository: "TychoHenzen/dod-guard",
-      state: "closed",
-      mergedAt: "2026-09-27T00:00:00Z",
-      trustedHead: true,
-      head: { repository: "TychoHenzen/dod-guard", ref: "codex/444", sha: "head-444" },
-      base: { ref: "master", sha: "base-444" },
-      mergeCommit: { oid: "merge-444" },
-      requiredChecks: [{ name: "build-test", bucket: "pass" }],
-    }),
-    mutate: (...args) => mutations.push(args),
-  };
-}
-
-test("contract control fixture uses the queue readback adapter", async () => {
-  const provider = adapterProvider();
-  const snapshot = await readQueueSnapshot({
-    provider,
-    project: { owner: "TychoHenzen", number: 2 },
-    repository: "TychoHenzen/dod-guard",
-    defaultBranch: "master",
+    pullRequests: [pullRequest(900, { state: "OPEN", mergedAt: null })],
   });
-
-  assert.deepEqual(
-    snapshot.records.map(({ issueNumber }) => issueNumber),
-    [444, 536],
-  );
-  assert.equal(snapshot.pullRequests[0].mergeCommitSha, "merge-444");
-  assert.deepEqual(defaultQueueDecision(snapshot.records, snapshot), {
-    kind: "complete",
-    eligible: false,
-    status: "Done",
-    reasons: [],
-  });
-  assert.deepEqual(provider.mutations, []);
+  assert.equal(classifyQueue(input, { today: TODAY }).selected.rootIssueNumber, 800);
 });

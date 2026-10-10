@@ -7,7 +7,7 @@ function localDate(now) {
 
 // goal-sdlc appends friction to one log per day; refining it before the day
 // ends would split that day's entries across a PBI and a fresh log.
-function collectingFrictionLog(records, today = localDate(new Date())) {
+function collectingFrictionLog(records, today) {
   return records.some((record) => {
     const logDate = FRICTION_LOG_TITLE.exec(record.issue?.title ?? "")?.[1];
     return logDate !== undefined && logDate >= today;
