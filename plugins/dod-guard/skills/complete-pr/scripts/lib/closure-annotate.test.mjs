@@ -59,18 +59,17 @@ test("annotate leaves a foreign pull request and issue unannotated", () => {
   assert.equal(pullOf(annotated, DELIVERIES[840].pull).trustedHeadSha, DELIVERIES[840].head);
 });
 
-// select-next reads a relation's bare number, so a relation that leaves the target repository must
-// not survive as one: the child list goes whole, and a foreign parent goes so the Project field
-// disagrees with the issue.
-test("annotate removes a child list or parent that leaves the target repository", () => {
+// A relation that leaves the target repository is kept as read. The queue classifier holds the issue
+// for it, so annotate must not hide the relation by removing it.
+test("annotate keeps a child list or parent that leaves the target repository", () => {
   const snapshot = recordedSnapshot();
   issueOf(snapshot, 683).children.push({ repository: FOREIGN_REPOSITORY, number: 12 });
   issueOf(snapshot, 777).parent = { repository: "TychoHenzen/BeeHAIve", number: 5 };
   issueOf(snapshot, 776).parent = { number: 683 };
   const annotated = annotateSnapshot(snapshot);
-  assert.equal(Object.hasOwn(issueOf(annotated, 683), "children"), false);
-  assert.equal(Object.hasOwn(issueOf(annotated, 777), "parent"), false);
-  assert.equal(Object.hasOwn(issueOf(annotated, 776), "parent"), false);
+  assert.deepEqual(issueOf(annotated, 683).children.at(-1), { repository: FOREIGN_REPOSITORY, number: 12 });
+  assert.deepEqual(issueOf(annotated, 777).parent, { repository: "TychoHenzen/BeeHAIve", number: 5 });
+  assert.deepEqual(issueOf(annotated, 776).parent, { number: 683 });
   assert.deepEqual(issueOf(annotated, 778).parent, { repository: REPOSITORY, number: 683 });
 });
 
@@ -105,27 +104,30 @@ function unparentedWithForeignParent() {
   return snapshot;
 }
 
-// With the Project field null, the foreign parent already disagrees with it. Removing the parent is
-// what let select-next select the issue as a standalone root, so nothing may be selected here.
-test("select-next selects nothing when annotate keeps a foreign parent the Project field lacks", async () => {
+// The Project field is null, so the foreign parent on the issue contradicts it. annotate keeps the
+// parent, and the classifier holds the issue rather than selecting it as a standalone root.
+test("select-next holds issue 950 for a foreign parent its Project field lacks", async () => {
   const annotated = annotateSnapshot(unparentedWithForeignParent());
   assert.deepEqual(issueOf(annotated, 950).parent, { repository: FOREIGN_REPOSITORY, number: 12 });
   const result = await selectNext(annotated);
   assert.equal(result.selected, null);
-  assert.equal(result.groups.some(({ kind }) => kind === "eligible"), false);
-  assert.ok(result.missingEvidence.includes("relationship/head evidence changed during read"));
+  const group = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 950);
+  assert.equal(group?.kind, "hold");
+  assert.ok(group.reasons.includes("cross-repository parent TychoHenzen/DeepSeekCustom#12"));
+  assert.ok(group.reasons.includes("contradictory parent for issue #950"));
 });
 
-// The Project field carries the foreign parent, so removing it from the issue makes the two
-// disagree, and select-next holds the group under the root the field names.
-test("select-next holds the group when annotate removes a foreign parent the Project field carries", async () => {
+// The Project field carries the foreign parent, so annotate keeps it on the issue too. The classifier
+// holds issue 950 under its own root, and no group forms under the foreign parent's number.
+test("select-next holds issue 950 for a foreign parent its Project field carries", async () => {
   const snapshot = unparentedWithForeignParent();
   setField(snapshot, 950, "Parent issue", { repository: FOREIGN_REPOSITORY, number: 12 });
   const annotated = annotateSnapshot(snapshot);
-  assert.equal(Object.hasOwn(issueOf(annotated, 950), "parent"), false);
+  assert.deepEqual(issueOf(annotated, 950).parent, { repository: FOREIGN_REPOSITORY, number: 12 });
   const result = await selectNext(annotated);
   assert.equal(result.selected, null);
-  const group = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 12);
+  const group = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 950);
   assert.equal(group?.kind, "hold");
-  assert.ok(group.reasons.includes("relationship/head evidence changed during read"));
+  assert.ok(group.reasons.includes("cross-repository parent TychoHenzen/DeepSeekCustom#12"));
+  assert.equal(result.groups.some(({ rootIssueNumber }) => rootIssueNumber === 12), false);
 });

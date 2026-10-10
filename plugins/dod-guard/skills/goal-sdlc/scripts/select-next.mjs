@@ -1,15 +1,13 @@
 // Picks the next queue item from a Project snapshot the caller already read.
 // The caller fetches with its own GitHub connector (see
 // standards/github-request-discipline.md) and saves the result as JSON; this
-// script only classifies it, so it makes no provider calls and no mutations.
+// script classifies it through the shared queue classifier, so it makes no
+// provider calls and no mutations.
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "../../../lib/args.mjs";
-import {
-  classifyQueueGroups,
-  readQueueSnapshot,
-  selectQueueItem,
-} from "./lib/queue-readback.mjs";
+import { localDate } from "../../../lib/friction-log.mjs";
+import { classifyQueue } from "../../../lib/queue-classifier.mjs";
 
 const USAGE = `usage: select-next.mjs --snapshot=<file.json>
 
@@ -29,50 +27,36 @@ The snapshot is one JSON object:
                   /complete-pr run verified)
 
 A merged delivery counts as complete only with activeCheckpoint false on
-every issue and trustedHeadSha equal to head.sha; otherwise it is held.`;
+every issue and trustedHeadSha equal to head.sha; otherwise it is held.
 
-const EMPTY_SNAPSHOT = { project: {}, items: [], issues: [], pullRequests: [] };
+Every item, issue, pull request, and parent, child, or linked pull request
+reference names its repository as owner/name.
+Records from another repository are ignored.
+A relation that leaves the repository holds its issue, with a reason naming
+owner/name#N.
+A record with no repository, a duplicated record, an item whose issue is
+missing, or a linked pull request that is missing selects nothing and is
+named in missingEvidence.
+today defaults to the local date.`;
 
-function byNumber(records) {
-  return new Map(records.map((record) => [Number(record.number), record]));
-}
-
-function snapshotProvider({ items, issues, pullRequests }) {
-  const issuesByNumber = byNumber(issues);
-  const pullsByNumber = byNumber(pullRequests);
-  const page = { items, pageInfo: { hasNextPage: false } };
-  return {
-    listProjectItems: async () => page,
-    readIssue: async ({ issueNumber }) =>
-      issuesByNumber.get(Number(issueNumber)) ?? null,
-    readPullRequest: async ({ pullNumber }) =>
-      pullsByNumber.get(Number(pullNumber)) ?? null,
-  };
-}
+const EMPTY_SNAPSHOT = { items: [], issues: [], pullRequests: [] };
 
 function groupSummary({ rootIssueNumber, decision }) {
   return { rootIssueNumber, kind: decision.kind, reasons: decision.reasons };
 }
 
-async function selectNext(input) {
+function selectNext(input, today) {
   const snapshot = { ...EMPTY_SNAPSHOT, ...input };
-  const read = await readQueueSnapshot({
-    provider: snapshotProvider(snapshot),
-    project: snapshot.project,
-    repository: snapshot.repository,
-    defaultBranch: snapshot.defaultBranch,
-  });
-  const context = { ...read, today: snapshot.today };
-  const selected = selectQueueItem(context);
+  const { groups, selected, counts, missingEvidence } = classifyQueue(snapshot, { today });
   return {
     selected: selected && {
       rootIssueNumber: selected.rootIssueNumber,
       status: selected.decision.status,
       issueNumbers: selected.records.map(({ issueNumber }) => issueNumber),
     },
-    groups: classifyQueueGroups(context).map(groupSummary),
-    counts: read.counts,
-    missingEvidence: read.missingEvidence,
+    groups: groups.map(groupSummary),
+    counts,
+    missingEvidence,
   };
 }
 
@@ -84,7 +68,9 @@ async function main() {
     return;
   }
   const snapshot = JSON.parse(await readFile(args.snapshot, "utf8"));
-  const result = await selectNext(snapshot);
+  // The only clock read. The classifier takes the date as data, so it stays a pure function.
+  const today = snapshot?.today ?? localDate(new Date());
+  const result = selectNext(snapshot, today);
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 

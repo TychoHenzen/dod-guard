@@ -15,7 +15,7 @@ import { annotateSnapshot } from "./lib/closure-delivery.mjs";
 import { planClosures } from "./lib/closure-plan.mjs";
 import { buildClosureSnapshot, writeClosureSnapshot } from "./lib/closure-snapshot.mjs";
 import { runGh as runGhClient } from "./lib/github-client.mjs";
-import { REPOSITORY_NAME } from "./lib/repository-identity.mjs";
+import { REPOSITORY_NAME } from "../../../lib/repository-identity.mjs";
 import { runGh } from "./project-status.mjs";
 
 const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issue>]

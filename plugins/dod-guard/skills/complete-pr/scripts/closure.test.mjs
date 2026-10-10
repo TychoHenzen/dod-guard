@@ -510,7 +510,7 @@ test("AC-03: a built delivery annotates to a complete group, and select-next rep
   assert.deepEqual(result.selected.issueNumbers, [ORIGINAL]);
 });
 
-test("AC-03: cross-repository relations hold #20 and #32; select-next holds the group rooted at bare #31", async () => {
+test("AC-03: select-next holds #20 and #32 in their own groups and leaves #31 eligible", async () => {
   const { file, snapshot } = await builtSnapshot(crossRepositoryFixture().routes);
   assert.deepEqual(snapshot.issues.find(({ number }) => number === 20).children, [
     { repository: FOREIGN_REPOSITORY, number: 21 },
@@ -525,10 +525,9 @@ test("AC-03: cross-repository relations hold #20 and #32; select-next holds the 
   const result = await selectNextOf(closureJson(["annotate", `--snapshot=${file}`]));
   const group = (root) => result.groups.find(({ rootIssueNumber }) => rootIssueNumber === root);
   assert.equal(group(20).kind, "hold");
-  assert.ok(group(20).reasons.includes("issue #20 child relationship"));
-  assert.equal(group(31).kind, "hold");
-  assert.ok(group(31).reasons.includes("relationship/head evidence changed during read"));
-  // #32 has no group of its own: select-next joins it to bare #31 by bare-number grouping, which #856 removes.
-  assert.equal(group(32), undefined, "the foreign-parented issue has no group of its own");
+  assert.ok(group(20).reasons.includes("cross-repository sub-issue TychoHenzen/DeepSeekCustom#21"));
+  assert.equal(group(32).kind, "hold");
+  assert.ok(group(32).reasons.includes("cross-repository parent TychoHenzen/BeeHAIve#31"));
+  assert.deepEqual(group(31), { rootIssueNumber: 31, kind: "eligible", reasons: [] });
   assert.deepEqual(result.selected.issueNumbers, [21]);
 });

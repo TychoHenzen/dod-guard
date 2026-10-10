@@ -5,9 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { localDate } from "../../../lib/friction-log.mjs";
 import { renderCompletionRecord } from "../../complete-pr/scripts/lib/closure-records.mjs";
 
 const REPOSITORY = "TychoHenzen/dod-guard";
+const FOREIGN_REPOSITORY = "other/repo";
 const SCRIPT = fileURLToPath(new URL("./select-next.mjs", import.meta.url));
 
 function item(number, status, parentIssue = null, linked = []) {
@@ -26,6 +28,7 @@ function item(number, status, parentIssue = null, linked = []) {
 function issue(number, overrides = {}) {
   return {
     number,
+    repository: REPOSITORY,
     state: "open",
     title: `Issue ${number}`,
     parent: null,
@@ -42,18 +45,19 @@ function snapshot() {
     items: [
       item(31, "Backlog"),
       item(517, "Todo"),
-      item(518, "Todo", { number: 517 }),
+      item(518, "Todo", { repository: REPOSITORY, number: 517 }),
     ],
     issues: [
       issue(31),
-      issue(517, { children: [{ number: 518 }] }),
-      issue(518, { parent: { number: 517 } }),
+      issue(517, { children: [{ repository: REPOSITORY, number: 518 }] }),
+      issue(518, { parent: { repository: REPOSITORY, number: 517 } }),
     ],
     pullRequests: [],
   };
 }
 
-async function selectNext(input) {
+// Runs the command on one snapshot and returns its raw stdout, so a test can compare bytes.
+async function stdoutOf(input) {
   const directory = await mkdtemp(join(tmpdir(), "select-next-"));
   const file = join(directory, "snapshot.json");
   await writeFile(file, JSON.stringify(input));
@@ -61,7 +65,26 @@ async function selectNext(input) {
     encoding: "utf8",
   });
   assert.equal(run.status, 0, run.stderr);
-  return JSON.parse(run.stdout);
+  return run.stdout;
+}
+
+async function selectNext(input) {
+  return JSON.parse(await stdoutOf(input));
+}
+
+// An item of another repository. Its number may match a target record's, and its fields name the
+// other repository, so it must never be read as a target item.
+function foreignItem(number, status, parentIssue = null) {
+  return {
+    id: `foreign-${number}`,
+    content: { number, repository: FOREIGN_REPOSITORY },
+    fields: [
+      { name: "Status", value: { name: status } },
+      { name: "Repository", value: FOREIGN_REPOSITORY },
+      { name: "Parent issue", value: parentIssue },
+      { name: "Linked pull requests", value: [] },
+    ],
+  };
 }
 
 test("selects the Todo parent and its child ahead of Backlog", async () => {
@@ -87,7 +110,7 @@ test("holds a group whose issue was not supplied", async () => {
   input.issues = input.issues.filter(({ number }) => number !== 518);
   const result = await selectNext(input);
   assert.equal(result.selected, null);
-  assert.ok(result.missingEvidence.includes("issue #518"));
+  assert.ok(result.missingEvidence.includes("issue missing from issues: TychoHenzen/dod-guard#518"));
 });
 
 test("holds today's friction log while it collects entries", async () => {
@@ -188,6 +211,114 @@ test("a merged-pending completion record keeps the delivery held", async () => {
   const held = result.groups.find(({ rootIssueNumber }) => rootIssueNumber === 831);
   assert.equal(held.kind, "hold");
   assert.ok(held.reasons.includes("active checkpoint for issue #831 is not explicitly false"));
+});
+
+test("AC-02: a foreign item and issue numbered like a target root select the same root in either order", async () => {
+  const target = snapshot();
+  const foreignIssue = issue(517, { repository: FOREIGN_REPOSITORY, state: "closed", title: "Foreign 517" });
+  const foreignFirst = await stdoutOf({
+    ...target,
+    items: [foreignItem(517, "Done"), ...target.items],
+    issues: [foreignIssue, ...target.issues],
+  });
+  const foreignLast = await stdoutOf({
+    ...target,
+    items: [...target.items, foreignItem(517, "Done")],
+    issues: [...target.issues, foreignIssue],
+  });
+  assert.equal(foreignFirst, foreignLast);
+  assert.deepEqual(JSON.parse(foreignFirst).selected, {
+    rootIssueNumber: 517,
+    status: "Todo",
+    issueNumbers: [517, 518],
+  });
+});
+
+test("AC-05: foreign Done items are left out of the parent and child Done counts", async () => {
+  const input = {
+    repository: REPOSITORY,
+    defaultBranch: "master",
+    today: "2026-10-08",
+    items: [
+      item(517, "Todo"),
+      item(518, "Done", { repository: REPOSITORY, number: 517 }),
+      foreignItem(600, "Done"),
+      foreignItem(601, "Done", { repository: FOREIGN_REPOSITORY, number: 600 }),
+    ],
+    issues: [
+      issue(517, { children: [{ repository: REPOSITORY, number: 518 }] }),
+      issue(518, { state: "closed", parent: { repository: REPOSITORY, number: 517 } }),
+    ],
+    pullRequests: [],
+  };
+  const result = await selectNext(input);
+  assert.equal(result.counts.rawItems, 2);
+  assert.equal(result.counts.parentDoneItems, 0);
+  assert.equal(result.counts.childDoneItems, 1);
+});
+
+test("AC-05: with snapshot.today present, it is used", async () => {
+  const input = snapshot();
+  input.today = "2026-10-07";
+  input.items = [item(900, "Backlog")];
+  input.issues = [issue(900, { title: "Friction log 2026-10-08" })];
+  const result = await selectNext(input);
+  assert.deepEqual(result.groups[0].reasons, ["friction log still collecting entries"]);
+});
+
+test("AC-05: without today the CLI reads the local date at its own boundary", async () => {
+  const input = snapshot();
+  delete input.today;
+  input.items = [item(900, "Backlog")];
+  input.issues = [issue(900, { title: `Friction log ${localDate(new Date())}` })];
+  const result = await selectNext(input);
+  assert.deepEqual(result.groups[0].reasons, ["friction log still collecting entries"]);
+});
+
+test("AC-09: an item with no repository selects nothing and is named in missingEvidence", async () => {
+  const input = snapshot();
+  const bare = input.items.find(({ content }) => content.number === 31);
+  delete bare.content.repository;
+  bare.fields = bare.fields.filter(({ name }) => name !== "Repository");
+  const result = await selectNext(input);
+  assert.equal(result.selected, null);
+  assert.ok(result.missingEvidence.includes("repository identity missing: Project item 31"));
+  assert.equal((await selectNext(snapshot())).selected.rootIssueNumber, 517);
+});
+
+test("AC-09: two conflicting items for one issue select nothing and are named in missingEvidence", async () => {
+  const input = snapshot();
+  input.items.push(item(517, "Backlog"));
+  const result = await selectNext(input);
+  assert.equal(result.selected, null);
+  assert.ok(result.missingEvidence.includes("duplicate Project item: TychoHenzen/dod-guard#517"));
+  assert.equal((await selectNext(snapshot())).selected.rootIssueNumber, 517);
+});
+
+test("AC-09: an item whose issue is missing from issues selects nothing and is named in missingEvidence", async () => {
+  const input = snapshot();
+  input.issues = input.issues.filter(({ number }) => number !== 517);
+  const result = await selectNext(input);
+  assert.equal(result.selected, null);
+  assert.ok(result.missingEvidence.includes("issue missing from issues: TychoHenzen/dod-guard#517"));
+  assert.equal((await selectNext(snapshot())).selected.rootIssueNumber, 517);
+});
+
+test("AC-09: a linked pull request missing from pullRequests selects nothing and is named in missingEvidence", async () => {
+  const input = snapshot();
+  const pull = { number: 540, repository: REPOSITORY };
+  input.items.push(item(444, "Done", null, [pull]));
+  input.issues.push(issue(444, { state: "closed", activeCheckpoint: false }));
+  const result = await selectNext(input);
+  assert.equal(result.selected, null);
+  assert.ok(result.missingEvidence.includes("pull request missing from pullRequests: TychoHenzen/dod-guard#540"));
+  input.pullRequests.push({
+    ...pull,
+    state: "open",
+    head: { repository: REPOSITORY, ref: "codex/444-done", sha: "head-444" },
+    base: { ref: "master", sha: "base-444" },
+  });
+  assert.equal((await selectNext(input)).selected.rootIssueNumber, 517);
 });
 
 test("the command rejects a missing snapshot flag", () => {

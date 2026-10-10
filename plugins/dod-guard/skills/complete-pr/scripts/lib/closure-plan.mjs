@@ -13,7 +13,7 @@ import {
   preflightHolds,
   pullFor,
   statusUnreadable,
-} from "./closure-index.mjs";
+} from "../../../../lib/closure-index.mjs";
 import {
   markdownSection,
   parseCompletionRecord,

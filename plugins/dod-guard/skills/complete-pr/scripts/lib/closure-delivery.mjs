@@ -7,20 +7,17 @@ import { defaultQueueDecision } from "../../../goal-sdlc/scripts/lib/queue-readb
 import { parseCompletionRecord } from "./closure-records.mjs";
 import {
   childNumbers,
-  fieldValue,
   indexSnapshot,
-  isTargetReference,
   isTargetRepository,
   issueFor,
   itemFor,
   itemPullNumbers,
   itemStatus,
   numberOf,
-  present,
   pullFor,
   recordRepository,
   relationReasons,
-} from "./closure-index.mjs";
+} from "../../../../lib/closure-index.mjs";
 
 function queuePull(pull, record) {
   return {
@@ -108,31 +105,14 @@ function isOpen(issue) {
   return String(issue?.state ?? "").toLowerCase() === "open";
 }
 
-// select-next (goal-sdlc/scripts/select-next.mjs) groups by bare issue number, so a foreign child list, or a foreign
-// parent under a Parent issue value, is removed here; select-next then holds the group instead of joining a
-// same-numbered target issue, and holds a healthy target group as collateral; a null Parent issue field is left alone
-// because removing the parent would make the issue look like a standalone root; delete this when #856 keys select-next
-// by repository, and #829 splits queue-readback.mjs into a pure classifier.
-function dropForeignRelations(issue, target, item) {
-  if (Array.isArray(issue.children) && issue.children.some((child) => !isTargetReference(child, target))) {
-    delete issue.children;
-  }
-  const fieldSet = item !== null && present(fieldValue(item, "Parent issue"));
-  if (fieldSet && present(issue.parent) && !isTargetReference(issue.parent, target)) delete issue.parent;
-}
-
-// Returns a copy of a select-next snapshot whose `activeCheckpoint` and
-// `trustedHeadSha` come from the completion records of the target repository: an issue whose
-// record leaves no row pending gets `activeCheckpoint: false`, a merged-pending one
-// loses any stale value, and the recorded pull request gets the trusted head.
-// Two records that disagree on one pull request's head leave it untrusted. Target issues also
-// lose a child list naming a foreign issue, and lose a foreign parent when their Project item
-// carries a Parent issue value (see dropForeignRelations). Records from another repository, or
-// with no repository, are copied unchanged.
+// The annotate command copies the snapshot and sets `activeCheckpoint` and `trustedHeadSha` from
+// the target repository's completion records: an issue whose record leaves no row pending gets
+// `activeCheckpoint: false`, a merged-pending one loses any stale value, and the recorded pull
+// request gets the trusted head. Two records that disagree on one pull request's head leave it
+// untrusted. It leaves every relation as read, because the queue classifier holds a cross-repository
+// relation itself. Records from another repository, or with no repository, are copied unchanged.
 function annotateSnapshot(snapshot) {
   const copy = structuredClone(snapshot);
-  // Items are never edited here, so the index built from the copy finds each issue's Project item
-  // as the caller sent it.
   const index = indexSnapshot(copy);
   const target = index.target;
   const heads = new Map();
@@ -148,7 +128,6 @@ function annotateSnapshot(snapshot) {
         known === undefined || known === record.trustedHeadSha ? record.trustedHeadSha : null,
       );
     }
-    dropForeignRelations(issue, target, itemFor(index, numberOf(issue)));
   }
   for (const pull of copy.pullRequests ?? []) {
     if (!isTargetRepository(recordRepository(pull), target) || !heads.has(numberOf(pull))) continue;

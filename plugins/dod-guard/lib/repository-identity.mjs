@@ -1,5 +1,5 @@
-// Repository identity for the closure helper. The snapshot builder and the closure index must agree on
-// what a repository name is, so both read every owner/name and GitHub API URL through this module.
+// Repository identity shared by the closure helper and the queue classifier. The snapshot builder and the closure index
+// must agree on what a repository name is, so both read every owner/name and GitHub API URL through this module.
 
 // The owner/name class: the characters GitHub allows in an owner or repository name.
 const OWNER_AND_NAME = String.raw`[\w.-]+/[\w.-]+`;
