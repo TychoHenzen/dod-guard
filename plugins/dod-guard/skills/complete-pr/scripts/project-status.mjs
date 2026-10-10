@@ -253,7 +253,7 @@ function resolveProjectItemInputs(items, itemIds, statusFieldId) {
   const inputByNodeId = new Map();
   for (const itemId of itemIds) {
     const item = findProjectItem(items, itemId);
-    if (!item || item.id === undefined || item.id === null) {
+    if (!item) {
       throw new Error(`Project item ${itemId} was missing from readback.`);
     }
     const identity = projectItemIdentity(item);
@@ -269,8 +269,8 @@ function resolveProjectItemInputs(items, itemIds, statusFieldId) {
   return resolved;
 }
 
-// Matching on the resolved pair, not the caller's spelling, reports a changed ID as an identity
-// change instead of a missing item.
+// Matching on the resolved pair, not the caller's spelling, reports a change to either ID alone as an
+// identity change; when both IDs change nothing matches, so the readback stops as a missing item.
 function findReadbackProjectItem(items, itemId, identity) {
   const matches = items.filter((candidate) => {
     const { id, nodeId } = projectItemIdentity(candidate);

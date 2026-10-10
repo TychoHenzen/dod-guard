@@ -550,6 +550,31 @@ test("AC-02 identity change after the write stops for every input form and chang
   }
 });
 
+test("AC-02 readback with both IDs changed after the write stops as missing after one PATCH", () => {
+  const inputForms = [
+    ["numeric", String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]))],
+    ["node", ITEM_IDS[0]],
+  ];
+  for (const [inputForm, itemId] of inputForms) {
+    const label = `${inputForm} input, both IDs changed`;
+    const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
+
+    assert.throws(
+      () => writeProjectStatuses({
+        ...writeOptions({ itemIds: [itemId] }),
+        commandRunner: alterTargetInLaterReads(runner, (item) => ({
+          ...item,
+          id: item.id + IDENTITY_SHIFT,
+          node_id: "PVTI_replaced",
+        })),
+      }),
+      MISSING_READBACK_ERROR,
+      label,
+    );
+    assert.equal(calls.filter((args) => args.includes("PATCH")).length, 1, label);
+  }
+});
+
 test("AC-03 rerun after an identity-change stop makes no PATCH once the item already holds Done", () => {
   const numericId = String(ITEM_NUMERIC_IDS.get(ITEM_IDS[0]));
   const { calls, runner } = createRunner({ statuses: new Map([[ITEM_IDS[0], "Backlog"]]) });
