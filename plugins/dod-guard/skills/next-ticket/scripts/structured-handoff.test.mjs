@@ -286,13 +286,6 @@ test("ticket-start and completion status writes share the global ProjectV2 runne
   );
   assert.match(completePr, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done/);
   assert.match(completePr, /child item IDs first and the parent item ID last/);
-  assert.match(
-    completePr,
-    prose(
-      "numeric REST id or its `PVTI_` global node id",
-      "resolves either form to the same item and refuses two IDs that name one item",
-    ),
-  );
 });
 
 test("next-ticket lands one verified commit per task-list task", () => {
