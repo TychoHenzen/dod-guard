@@ -15,7 +15,7 @@ export function createQualityReportRefresher({ bundlePath, run = runFile }) {
       maxBuffer: MAX_BUFFER,
       timeout: TIMEOUT,
     });
-    const report = validateQualityReport(JSON.parse(stdout));
+    const report = validateQualityReport(JSON.parse(stdout), outdatedBundleMessage(bundlePath));
     const directory = join(projectPath, ".quality");
     const file = join(directory, "quality-report.json");
     const temporary = join(directory, "quality-report.json.tmp");
@@ -30,8 +30,13 @@ const SCHEMA_VERSION = 2;
 const STALE_REPORT =
   "quality-report.json was saved by an older quality-guard (schemaVersion 1); press Refresh to regenerate it";
 
-function validateQualityReport(report) {
-  if (report?.schemaVersion === 1) throw new HttpError(409, STALE_REPORT);
+function outdatedBundleMessage(bundlePath) {
+  const outdatedClause = `the quality-guard bundle Refresh ran is outdated: ${bundlePath}`;
+  return `${outdatedClause} wrote a schemaVersion 1 report; this dashboard reads schemaVersion ${SCHEMA_VERSION}`;
+}
+
+function validateQualityReport(report, staleMessage) {
+  if (report?.schemaVersion === 1) throw new HttpError(409, staleMessage);
   if (report?.schemaVersion !== SCHEMA_VERSION || !report.summaries?.overall || !Array.isArray(report.files)) {
     throw new Error("quality-report.json has an unsupported shape");
   }
@@ -40,5 +45,5 @@ function validateQualityReport(report) {
 
 export async function readQualityReport(projectPath) {
   const file = join(projectPath, ".quality", "quality-report.json");
-  return validateQualityReport(JSON.parse(await readFile(file, "utf8")));
+  return validateQualityReport(JSON.parse(await readFile(file, "utf8")), STALE_REPORT);
 }

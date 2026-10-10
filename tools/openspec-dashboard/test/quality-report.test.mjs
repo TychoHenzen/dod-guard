@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -36,6 +36,33 @@ test("refreshes the current project through the quality-guard report command", a
   assert.deepEqual(await refresh(root), expected);
   assert.deepEqual(command[1], ["quality-guard-bundle.js", "report", `--root=${root}`]);
   assert.deepEqual(JSON.parse(await readFile(join(root, ".quality", "quality-report.json"), "utf8")), expected);
+});
+
+test("names the outdated quality-guard bundle when a refresh prints a schemaVersion 1 report", async () => {
+  const root = await mkdtemp(join(tmpdir(), "quality-dashboard-"));
+  const bundlePath = "C:/fixture/qg-schema-v1/dist/bundle.js";
+  const legacy = { schemaVersion: 1, summaries: { overall: {} }, files: [] };
+  const refresh = createQualityReportRefresher({
+    bundlePath,
+    run: async () => ({ stdout: JSON.stringify(legacy) }),
+  });
+  await assert.rejects(refresh(root), (error) => {
+    assert.equal(error.status, 409);
+    assert.ok(error.message.includes(bundlePath));
+    assert.match(error.message, /outdated/);
+    assert.doesNotMatch(error.message, /press Refresh/i);
+    return true;
+  });
+  await assert.rejects(access(join(root, ".quality", "quality-report.json")), { code: "ENOENT" });
+});
+
+test("rejects a refreshed report with an unsupported shape", async () => {
+  const root = await mkdtemp(join(tmpdir(), "quality-dashboard-"));
+  const refresh = createQualityReportRefresher({
+    bundlePath: "quality-guard-bundle.js",
+    run: async () => ({ stdout: JSON.stringify({}) }),
+  });
+  await assert.rejects(refresh(root), /unsupported shape/);
 });
 
 test("routes a project refresh through the API method boundary", async () => {

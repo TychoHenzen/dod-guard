@@ -26,6 +26,11 @@ Each registered project is a tab. The selected report shows:
 A report saved by an older quality-guard (schemaVersion 1) is not rendered;
 the tab asks you to press Refresh to regenerate it.
 
+If the quality-guard bundle that Refresh runs is itself outdated and still
+writes schemaVersion 1, Refresh does not save that report. The message names
+the bundle path Refresh ran and says it is outdated, so pressing Refresh again
+will not help until that bundle is updated.
+
 Refresh regenerates the report with the repository's quality-guard scanner,
 writes it to the project's ignored `.quality/` directory, and displays it.
 `Code Explorer` runs inside the dashboard process for the selected readable

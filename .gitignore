@@ -78,3 +78,5 @@ openspec/changes/archive/
 .task-guard.json
 # openspec-dashboard process lock
 .dashboard.pid
+# MSYS/Git Bash tools (e.g. grep.exe) write a crash dump here when they abort
+*.stackdump
