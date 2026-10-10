@@ -7,12 +7,12 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { QUALITY_GUARD_TOOLS, qualityGuardToolProblems } from "./lib/quality-guard-contract.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const TIMEOUT_MS = 30_000;
 const PROTOCOL_VERSION = "2025-06-18";
 const KNOWLEDGE_BASE_DIR_ENV = "DOD_GUARD_KNOWLEDGE_BASE_DIR";
-const QUALITY_GUARD_TOOLS = ["quality_report", "quality_scan", "quality_test_quality"];
 
 function send(child, message) {
   child.stdin.write(`${JSON.stringify(message)}\n`);
@@ -189,6 +189,21 @@ async function handshake(bundle, pkgName, expectedVersion, cwd = ROOT, envOverri
   }
 }
 
+function reportQualityGuardContract(tools) {
+  const problems = qualityGuardToolProblems(tools);
+  if (problems.length > 0) {
+    process.stdout.write("smoke FAILED for quality-guard tool contract\n");
+    for (const problem of problems) {
+      process.stdout.write(`  ${problem}\n`);
+    }
+    return 1;
+  }
+  process.stdout.write(
+    `  quality-guard tool contract OK: ${QUALITY_GUARD_TOOLS.join(", ")} listed; no profile input\n`,
+  );
+  return 0;
+}
+
 async function main(argv) {
   const pkgName = argv[0];
   if (!pkgName) {
@@ -301,18 +316,8 @@ async function main(argv) {
       process.stdout.write(`  synthetic chapter and entry: ${directResult.chapters[0]} / ${directResult.entryKey}\n`);
     }
 
-    if (pkgName === "quality-guard") {
-      const problems = qualityGuardToolProblems(directResult.toolList);
-      if (problems.length > 0) {
-        process.stdout.write("smoke FAILED for quality-guard tool contract\n");
-        for (const problem of problems) {
-          process.stdout.write(`  ${problem}\n`);
-        }
-        return 1;
-      }
-      process.stdout.write(
-        `  quality-guard tool contract OK: ${QUALITY_GUARD_TOOLS.join(", ")} listed; no profile input\n`,
-      );
+    if (pkgName === "quality-guard" && reportQualityGuardContract(directResult.toolList) === 1) {
+      return 1;
     }
 
     return 0;
@@ -321,25 +326,6 @@ async function main(argv) {
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main(process.argv.slice(2)).then((code) => {
-    process.exitCode = code;
-  });
-}
-
-export function qualityGuardToolProblems(tools) {
-  const problems = [];
-  const byName = new Map(tools.map((tool) => [tool.name, tool]));
-  for (const name of QUALITY_GUARD_TOOLS) {
-    if (!byName.has(name)) {
-      problems.push(`missing required tool ${name}`);
-    }
-  }
-  for (const name of ["quality_report", "quality_scan"]) {
-    const properties = byName.get(name)?.inputSchema?.properties ?? {};
-    if (Object.hasOwn(properties, "profile")) {
-      problems.push(`${name} declares a retired profile input`);
-    }
-  }
-  return problems;
-}
+main(process.argv.slice(2)).then((code) => {
+  process.exitCode = code;
+});
