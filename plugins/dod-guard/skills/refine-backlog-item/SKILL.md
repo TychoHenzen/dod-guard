@@ -254,8 +254,9 @@ node <plugin-root>/skills/complete-pr/scripts/closure.mjs apply --snapshot=<file
 ```
 
 The snapshot is the closure snapshot that `standards/project-workflow.md`
-defines, built after the replacement roots carry their `supersedes` records.
-Report any hold with its reasons instead of closing by hand.
+defines, built after the replacement roots carry their `supersedes` records. If
+snapshot exits non-zero, stop and report its error; never plan or apply on an
+older file. Report any hold with its reasons instead of closing by hand.
 
 ## Record discovery and re-refinement state
 

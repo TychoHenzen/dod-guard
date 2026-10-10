@@ -228,6 +228,9 @@ node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
 node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 ```
 
+If snapshot exits non-zero, stop and report its error; never plan or apply on
+an older file.
+
 `plan` is read-only. `apply` re-plans the same snapshot and closes each planned
 issue as read, evidence comment, close with its `state_reason`, readback, and
 Project Done; it stops with the observed partial state when a readback
@@ -248,6 +251,9 @@ and run:
 node <skill-dir>/scripts/closure.mjs plan --snapshot=<file>
 node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 ```
+
+If snapshot exits non-zero, stop and report its error: when that build failed,
+never plan or apply on an older file.
 
 Report the applied closes, status repairs, holds, `unverified-closed` reports,
 and any stop with its observed state. Make no other issue or Project write.

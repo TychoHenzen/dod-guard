@@ -592,8 +592,8 @@ export function buildClosureSnapshot({ repository, runner }) {
   };
 }
 
-// Writes the snapshot through a sibling partial file that is renamed onto the output, so a failed
-// write leaves neither the output nor a partial file behind.
+// Writes the snapshot through a sibling partial file that is renamed onto the output, and a failed
+// write removes that partial file. The CLI removes any earlier output before the read starts.
 export function writeClosureSnapshot(output, snapshot) {
   const partial = `${output}.partial-${process.pid}`;
   try {

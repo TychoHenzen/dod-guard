@@ -42,16 +42,16 @@ Repeat until the stop condition holds:
    discard, stash, or fold it into an unrelated PBI.
 2. **Clean up, then select one parent.** In `../complete-pr/scripts`, build the
    closure snapshot that `standards/project-workflow.md` defines with
-   `node closure.mjs snapshot --repository=<owner/name> --output=<file>`, then
-   run `node closure.mjs plan --snapshot=<file>`, report each close, hold, and
-   `unverified-closed` entry with its reasons, delegate planned closes and
-   status repairs to `/complete-pr`'s "Close delivered issues for goal-sdlc"
-   section, as one write-capable stage, and reread. Run `closure.mjs annotate`
-   on the snapshot, which takes `activeCheckpoint` and `trustedHeadSha` from the
-   completion records, and pass its output to `node scripts/select-next.mjs
-   --snapshot=<file>` in this skill's directory. It groups children under their
-   parent, holds any group with missing, stale, or conflicting evidence,
-   excludes verified merged deliveries, holds today's friction log, and returns
+   `node closure.mjs snapshot --repository=<owner/name> --output=<file>`. If
+   snapshot exits non-zero, stop and report its error; never plan on an older
+   file. Otherwise, run `node closure.mjs plan --snapshot=<file>`, report each
+   close, hold, and `unverified-closed` entry with its reasons, delegate planned
+   closes and status repairs to `/complete-pr`'s "Close delivered issues for
+   goal-sdlc" section, as one write-capable stage, and reread. Run
+   `closure.mjs annotate` on the snapshot, which takes `activeCheckpoint` and
+   `trustedHeadSha` from the completion records, and pass its output to
+   `node scripts/select-next.mjs --snapshot=<file>` in this skill's directory.
+   It holds any group with missing, stale, or conflicting evidence, and returns
    the first eligible group: In Progress parents first (one with an open pull
    request ahead of one without), then Todo, then Backlog, each in Project
    order. Report held groups' reasons; never guess past them.

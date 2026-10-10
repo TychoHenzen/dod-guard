@@ -153,10 +153,12 @@ their place.
 
 Each caller builds one closure snapshot with
 `node <plugin-root>/skills/complete-pr/scripts/closure.mjs snapshot --repository=<owner/name> --output=<file>`.
-That command makes GitHub REST reads only, writes the file in one step, and on
-any failed or incomplete read exits non-zero, names the endpoint, and leaves no
-file. The caller passes that file with `--snapshot` to `closure.mjs plan`,
-`apply`, or `annotate`.
+That command makes GitHub REST reads only. It removes any earlier file at
+`--output` before the read starts and writes the new snapshot in one step, so a
+failed or incomplete read exits non-zero, names the endpoint, and leaves no file
+at that path. If snapshot exits non-zero, stop and report its error; never plan,
+apply, or annotate on an older file. The caller passes that file with
+`--snapshot` to `closure.mjs plan`, `apply`, or `annotate`.
 
 The closure snapshot is the whole linked Project, read the way goal-sdlc's
 select-next snapshot is: `repository`, `defaultBranch`, `items` holding every

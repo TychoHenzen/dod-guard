@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -505,6 +505,22 @@ test("AC-11: a non-404 failure of the branch-protection read fails the run, not 
     assert.equal(failure.code, 1, failure.stderr);
     assert.ok(failure.stderr.includes(ENDPOINT.protection), failure.stderr);
     assert.deepEqual(await readdir(dir), []);
+  });
+});
+
+test("AC-11: a failed rebuild removes the earlier snapshot at its output, so nothing stale is left to read", async () => {
+  await withTempDir(async (dir) => {
+    const earlier = join(dir, "snapshot.json");
+    await writeFile(earlier, `${JSON.stringify({ ...build(fixtureRoutes()), defaultBranch: "stale" }, null, 2)}\n`);
+    const failure = runSnapshot(dir, "repository");
+    assert.equal(failure.code, 1, failure.stderr);
+    assert.ok(failure.stderr.includes(ENDPOINT.repository), failure.stderr);
+    assert.deepEqual(await readdir(dir), [], "a failed rebuild left the earlier snapshot in place");
+
+    const healthy = runSnapshot(dir, "healthy");
+    assert.equal(healthy.code, 0, healthy.stderr);
+    assert.deepEqual(await readdir(dir), ["snapshot.json"]);
+    assert.deepEqual(JSON.parse(await readFile(earlier, "utf8")), build(fixtureRoutes()));
   });
 });
 

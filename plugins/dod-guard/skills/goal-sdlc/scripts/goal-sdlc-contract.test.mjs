@@ -71,6 +71,8 @@ test("goal-sdlc cleans up through the closure helper and has no write path of it
   const planned = skill.search(prose("run `node closure.mjs plan"));
   assert.ok(built >= 0 && planned >= 0, "step 2 builds the closure snapshot and then runs closure.mjs plan");
   assert.ok(built < planned, "the closure snapshot is built before closure.mjs plan runs");
+  const stops = skill.search(prose("If snapshot exits non-zero, stop"));
+  assert.ok(built < stops && stops < planned, "a failed snapshot build stops step 2 before closure.mjs plan runs");
   assert.match(skill, prose("`node closure.mjs snapshot --repository=<owner/name> --output=<file>`"));
   for (const write of [
     /gh (issue|pr|project) (close|edit|item-edit)/,

@@ -3,8 +3,8 @@
 // saved snapshot and writes nothing; `apply` re-plans the same snapshot and
 // performs the planned closes; `record` writes the completion evidence a later
 // plan verifies. standards/project-workflow.md defines both records.
-// biome-ignore lint/correctness/noNodejsModules: This shipped command reads snapshot files.
-import { readFileSync } from "node:fs";
+// biome-ignore lint/correctness/noNodejsModules: This shipped command reads snapshot files and removes an earlier one.
+import { readFileSync, rmSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
 import process from "node:process";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command runs in Node.
@@ -37,8 +37,9 @@ close as read, comment, close, readback, Project Done, and it also sets Done on
 each status repair. --hierarchy asks to close that issue as a pure hierarchy
 record (not_planned). annotate prints the snapshot with activeCheckpoint and
 trustedHeadSha taken from the completion records, ready for select-next.mjs.
-snapshot builds that closure snapshot for one repository from GitHub REST GET requests only and
-writes it to --output in one step, so a failed read leaves no file behind.`;
+snapshot builds that closure snapshot for one repository from GitHub REST GET requests only. The
+command removes any earlier output first and writes the new one in one step, so a failed read
+leaves no file at that path.`;
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -88,6 +89,8 @@ const COMMANDS = {
     if (!given(args.output) || !REPOSITORY_NAME.test(args.repository ?? "")) {
       return false;
     }
+    // A failed build must never leave an earlier snapshot for plan or apply to read, so the old file goes first.
+    rmSync(args.output, { force: true });
     const snapshot = buildClosureSnapshot({ repository: args.repository, runner });
     writeClosureSnapshot(args.output, snapshot);
     return {

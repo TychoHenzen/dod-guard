@@ -144,3 +144,36 @@ test("AC-08: the standard documents the repository-qualified snapshot shape", ()
   assert.match(shape, prose("repository identity missing"));
   assert.match(shape, prose("is held with a reason that names it as `owner/name#N`"));
 });
+
+// The stop rule every snapshot place carries: a non-zero exit from snapshot stops that step, so the
+// caller never plans, applies, or annotates on an older file.
+const STOPS_ON_FAILURE = prose("If snapshot exits non-zero, stop");
+
+test("AC-08: each place that builds the snapshot stops when the build exits non-zero", async () => {
+  const goalSdlc = await readFile(new URL("../../goal-sdlc/SKILL.md", import.meta.url), "utf8");
+  const refineBacklog = await readFile(new URL("../../refine-backlog-item/SKILL.md", import.meta.url), "utf8");
+  const between = (text, from, to) => {
+    const start = text.indexOf(from);
+    const end = text.indexOf(to, start + from.length);
+    assert.ok(start >= 0 && end > start, `missing section: ${from}`);
+    return text.slice(start, end);
+  };
+  const places = {
+    "goal-sdlc step 2": between(goalSdlc, "**Clean up, then select one parent.**", "3. **Run the lifecycle"),
+    "complete-pr record step": between(
+      skill,
+      "## Record completion and close replaced issues",
+      "## Close delivered issues for goal-sdlc",
+    ),
+    "complete-pr delegated cleanup": between(skill, "## Close delivered issues for goal-sdlc", "## Result"),
+    "refine-backlog-item hierarchy close": between(
+      refineBacklog,
+      "node <plugin-root>/skills/complete-pr/scripts/closure.mjs snapshot",
+      "## Record discovery and re-refinement state",
+    ),
+    "project-workflow standard": between(standard, "Each caller builds one closure snapshot", "never selects it."),
+  };
+  for (const [place, text] of Object.entries(places)) {
+    assertBefore(text, BUILDS_SNAPSHOT, STOPS_ON_FAILURE, `${place} must stop when its snapshot build exits non-zero`);
+  }
+});
