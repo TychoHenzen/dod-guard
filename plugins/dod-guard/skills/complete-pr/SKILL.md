@@ -197,6 +197,10 @@ Use the shared status-write runner with the child item IDs first and the parent 
 node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> ... <parent-item-id>
 ```
 
+Each item ID may be the Project item's numeric REST id or its `PVTI_` global
+node id; the runner resolves either form to the same item and refuses two IDs
+that name one item.
+
 The runner resolves the live REST field and item IDs and reads each item back
 from the shared Project before continuing. For every code-backed child, verify
 its pushed commit is included in the verified merge. Close a

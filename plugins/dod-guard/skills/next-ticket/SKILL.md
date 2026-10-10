@@ -132,16 +132,18 @@ Perform these actions in order:
    unavailable, use `gh issue edit` with `--add-assignee @me`.
 4. Set the issue's project Status to `In Progress` with the shared status-write
    runner, passing the project owner, numeric project number, Status field node
-   id, In Progress option id, expected status name, and the selected item node
-   id in that order:
+   id, In Progress option id, expected status name, and the selected item id in
+   that order:
 
    ```text
-   node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <in-progress-option-id> "In Progress" <item-node-id>
+   node <plugin-root>/skills/complete-pr/scripts/project-status.mjs <owner> <project-number> <status-field-node-id> <in-progress-option-id> "In Progress" <item-id>
    ```
 
    The runner resolves the live REST field and item ids from the linked Project,
    uses the numeric project number as the REST path identifier, and reads the
-   item back before the ticket-start sequence can continue.
+   item back before the ticket-start sequence can continue. The item id may be
+   the Project item's numeric REST id or its `PVTI_` global node id; the runner
+   resolves either form to the same item.
 
 Do not create or switch to an existing branch. Report the exact completed
 actions if a later mutation fails. Keep the successfully created branch and

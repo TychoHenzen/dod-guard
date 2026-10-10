@@ -275,13 +275,24 @@ test("ticket-start and completion status writes share the global ProjectV2 runne
     nextTicket,
     prose(
       "project-status.mjs <owner> <project-number> <status-field-node-id> " +
-        '<in-progress-option-id> "In Progress" <item-node-id>',
+        '<in-progress-option-id> "In Progress" <item-id>',
     ),
   );
   assert.match(nextTicket, /uses the numeric project number as the REST path identifier/);
   assert.match(nextTicket, /reads the\s+item back before the ticket-start sequence can continue/);
+  assert.match(
+    nextTicket,
+    prose("numeric REST id or its `PVTI_` global node id", "resolves either form to the same item"),
+  );
   assert.match(completePr, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done/);
   assert.match(completePr, /child item IDs first and the parent item ID last/);
+  assert.match(
+    completePr,
+    prose(
+      "numeric REST id or its `PVTI_` global node id",
+      "resolves either form to the same item and refuses two IDs that name one item",
+    ),
+  );
 });
 
 test("next-ticket lands one verified commit per task-list task", () => {
