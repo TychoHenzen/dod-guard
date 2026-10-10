@@ -367,8 +367,9 @@ function deliveredFixture() {
   };
 }
 
-// A cross-repository delivery group: #20 has sub-issue DeepSeekCustom#21, and target #21 exists, so a
-// join by bare number is possible. #32 has parent BeeHAIve#31, and target #31 exists.
+// A cross-repository delivery group: #20 has sub-issue DeepSeekCustom#21 and #32 has parent BeeHAIve#31,
+// while target issues #21 and #31 exist under the same numbers. A classifier that grouped by bare number
+// would join them, and this test proves it does not.
 function crossRepositoryFixture() {
   const pages = [
     [

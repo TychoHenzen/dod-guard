@@ -4,7 +4,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { indexSnapshot } from "./closure-index.mjs";
 import { localDate } from "./friction-log.mjs";
-import { buildQueueRecords, classifyQueue, decideGroup } from "./queue-classifier.mjs";
+import { buildQueueRecords, classifyDelivery, classifyGroups, classifyQueue, decideGroup } from "./queue-classifier.mjs";
 
 const REPOSITORY = "TychoHenzen/dod-guard";
 const FOREIGN_REPOSITORY = "other/repo";
@@ -275,4 +275,36 @@ test("an overlay alone sets the checkpoint and trusted head that a decision read
     overlay: { checkpoints: new Map([[444, false]]), trustedHeads: new Map([[540, "head-540"]]) },
   });
   assert.deepEqual(decideGroup(settled, context), { kind: "complete", eligible: false, status: "Done", reasons: [] });
+});
+
+test("a linked pull request absent from pullRequests is missing evidence on its record and holds its group", () => {
+  const input = healthy();
+  input.items[0] = item(31, "Backlog", { linked: [ref(540)] });
+  const records = buildQueueRecords(indexSnapshot(input));
+  const missing = "pull request missing from pullRequests: TychoHenzen/dod-guard#540";
+  assert.ok(records.find(({ issueNumber }) => issueNumber === 31).missingEvidence.includes(missing));
+  const group = classifyGroups(records, { repository: REPOSITORY, defaultBranch: "master", today: TODAY })
+    .find(({ rootIssueNumber }) => rootIssueNumber === 31);
+  assert.equal(group.decision.kind, "hold");
+  assert.ok(group.decision.reasons.includes(missing));
+});
+
+test("classifyDelivery judges a parented root as its own delivery while its queue group sits under the parent", () => {
+  const input = snapshot({
+    items: [item(683, "Backlog"), item(840, "Done", { parent: ref(683), linked: [ref(901)] })],
+    issues: [issue(683, { children: [ref(840)] }), issue(840, { state: "closed", parent: ref(683), activeCheckpoint: false })],
+    pullRequests: [pull(901, { trustedHeadSha: "head-901" })],
+  });
+  const records = buildQueueRecords(indexSnapshot(input));
+  const context = { repository: REPOSITORY, defaultBranch: "master", today: TODAY };
+  const delivery = classifyDelivery(records, 840, context);
+  assert.equal(delivery.decision.kind, "complete");
+  assert.deepEqual(delivery.records.map(({ issueNumber }) => issueNumber), [840]);
+  const queueGroup = classifyGroups(records, context).find(({ rootIssueNumber }) => rootIssueNumber === 683);
+  assert.deepEqual(queueGroup.records.map(({ issueNumber }) => issueNumber), [683, 840]);
+});
+
+test("classifyDelivery returns null for a number no record carries", () => {
+  const records = buildQueueRecords(indexSnapshot(healthy()));
+  assert.equal(classifyDelivery(records, 999, { repository: REPOSITORY, defaultBranch: "master", today: TODAY }), null);
 });

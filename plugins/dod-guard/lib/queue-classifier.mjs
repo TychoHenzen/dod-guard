@@ -232,6 +232,13 @@ function missingEvidenceOf(index, number, item, issue, parentIssueFieldObserved,
   if (Array.isArray(item?.fields) && !fieldPresent(item, "Linked pull requests")) {
     entries.push(`Project item #${number} Linked pull requests`);
   }
+  // The closure judges one group without the whole-snapshot gate, so a linked pull request that
+  // pullRequests lacks must hold its group through the record itself.
+  for (const pull of itemPullNumbers(index, item)) {
+    if (pullFor(index, pull) === null) {
+      entries.push(`pull request missing from pullRequests: ${index.repository}#${pull}`);
+    }
+  }
   if (issue !== null && !Array.isArray(issue.children)) entries.push(`issue #${number} child relationship`);
   if (parentIssueNumber !== null && itemFor(index, parentIssueNumber) === null) {
     entries.push(`parent issue #${parentIssueNumber} Project item`);
@@ -290,6 +297,18 @@ function classifyGroups(records, context) {
     groups.set(rootIssueNumber, group);
   });
   return [...groups.values()].map((group) => ({ ...group, decision: decideGroup(group.records, context) }));
+}
+
+// A queue group is only the top of a delivery. The closure judges the subtree under a root whatever
+// the root's own parent is, so both read one record builder and one decision and differ in the root.
+function classifyDelivery(records, rootNumber, context) {
+  const root = records.find(({ issueNumber }) => issueNumber === rootNumber);
+  if (!root) return null;
+  const children = records
+    .filter(({ parentIssueNumber }) => parentIssueNumber === rootNumber)
+    .map((record) => ({ ...record, orphan: false }));
+  const members = [{ ...root, parentIssueNumber: null }, ...children];
+  return { rootIssueNumber: rootNumber, records: members, decision: decideGroup(members, context) };
 }
 
 // Resume In Progress work first, the furthest along (an open pull request) ahead of the rest, then
@@ -368,6 +387,7 @@ function classifyQueue(snapshot, { today }) {
 
 export {
   buildQueueRecords,
+  classifyDelivery,
   classifyGroups,
   classifyQueue,
   countRecords,

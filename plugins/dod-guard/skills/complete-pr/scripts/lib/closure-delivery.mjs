@@ -1,63 +1,26 @@
-// Owns the judgement of each delivery against the snapshot the caller read, and the snapshot
-// annotation taken from the same completion records. Pure: it reads no provider and writes
-// nothing. A close is planned only for a delivery that verifies against live readback and the
-// queue's own merged predicate, so cleanup and selection can never disagree.
+// Owns the judgement of each delivery against the snapshot the caller read, and the snapshot annotation
+// taken from the same completion records. Pure: it reads no provider and writes nothing. Each delivery's
+// group verdict comes from the shared queue classifier that select-next uses, over the same snapshot
+// shape, so cleanup and selection cannot disagree. The overlay comes from the root's completion record only.
 
-import { defaultQueueDecision } from "../../../goal-sdlc/scripts/lib/queue-readback.mjs";
+import { buildQueueRecords, classifyDelivery } from "../../../../lib/queue-classifier.mjs";
 import { parseCompletionRecord } from "./closure-records.mjs";
 import {
   childNumbers,
   indexSnapshot,
   isTargetRepository,
   issueFor,
-  itemFor,
-  itemPullNumbers,
-  itemStatus,
   numberOf,
   pullFor,
   recordRepository,
   relationReasons,
 } from "../../../../lib/closure-index.mjs";
 
-function queuePull(pull, record) {
-  return {
-    number: numberOf(pull),
-    state: pull.state,
-    mergedAt: pull.mergedAt ?? null,
-    headRepository: pull.head?.repository ?? null,
-    headRef: pull.head?.ref ?? null,
-    headSha: pull.head?.sha ?? null,
-    baseRef: pull.base?.ref ?? null,
-    mergeCommitSha: pull.mergeCommit?.oid ?? null,
-    requiredChecks: pull.requiredChecks,
-    // The trusted head comes from the completion record only, never from the
-    // readback it is compared against.
-    trustedHeadSha: numberOf(pull) === record.pullRequest ? record.trustedHeadSha : null,
-  };
-}
-
 // An issue's checkpoint is finished only when its own completion record names
 // the same delivery and leaves no acceptance row pending.
 function checkpointFinished(issue, record) {
   const own = parseCompletionRecord(issue?.comments).record;
   return Boolean(own && own.pullRequest === record.pullRequest && own.pendingRows.length === 0);
-}
-
-function queueRecord(index, number, parentNumber, record) {
-  const issue = issueFor(index, number);
-  const item = itemFor(index, number);
-  const pullNumbers = itemPullNumbers(index, item);
-  const pulls = pullNumbers.map((pull) => pullFor(index, pull)).filter(Boolean);
-  const missing = pullNumbers.filter((pull) => pullFor(index, pull) === null).map((pull) => `pull request #${pull}`);
-  return {
-    issueNumber: number,
-    parentIssueNumber: parentNumber,
-    issue: issue && { state: issue.state, ...(checkpointFinished(issue, record) ? { activeCheckpoint: false } : {}) },
-    projectStatus: itemStatus(item),
-    pullRequests: pulls.map((pull) => queuePull(pull, record)),
-    missingEvidence: item ? missing : [...missing, `Project item #${number}`],
-    staleRelationships: [],
-  };
 }
 
 function liveMismatches(index, record) {
@@ -71,8 +34,8 @@ function liveMismatches(index, record) {
   return reasons;
 }
 
-// Judges the delivery whose group root is `number`: the root and its children,
-// as the queue groups them.
+// Judges the delivery rooted at `number`: the root and its direct children, whatever the root's own
+// parent is.
 function judgeDelivery(index, number) {
   const parsed = parseCompletionRecord(issueFor(index, number)?.comments);
   if (parsed.error) return { status: "unverified", reasons: [parsed.error] };
@@ -93,12 +56,33 @@ function judgeDelivery(index, number) {
   }
   if (mismatches.length > 0) return { status: "unverified", record, reasons: mismatches };
   if (listed === null) return { status: "unverified", record, reasons: ["sub-issue list missing"] };
-  const records = [number, ...listed].map((issue) =>
-    queueRecord(index, issue, issue === number ? null : number, record),
-  );
-  const decision = defaultQueueDecision(records, { repository: index.repository, defaultBranch: index.defaultBranch });
-  if (decision.kind === "complete") return { status: "verified", record, reasons: [] };
-  return { status: "unverified", record, reasons: decision.reasons };
+  // The overlay is the root's own record alone: a checkpoint is finished only where a sub-issue's own
+  // record names this pull request, and only that pull request takes the trusted head.
+  const checkpoints = new Map();
+  for (const n of index.itemOrder) {
+    if (checkpointFinished(issueFor(index, n), record)) checkpoints.set(n, false);
+  }
+  const trustedHeads = new Map([[record.pullRequest, record.trustedHeadSha]]);
+  const records = buildQueueRecords(index, { overlay: { checkpoints, trustedHeads } });
+  // The closure has no local date. A merged delivery never reaches the friction-log hold, so none is needed.
+  const group = classifyDelivery(records, number, {
+    repository: index.repository,
+    defaultBranch: index.defaultBranch,
+    today: null,
+  });
+  if (!group) return { status: "unverified", record, reasons: ["delivery record missing"] };
+  // A listed sub-issue must be judged with this root, or its own verdict would never reach this delivery.
+  const grouped = new Set(group.records.map(({ issueNumber }) => issueNumber));
+  const ungrouped = listed.filter((child) => !grouped.has(child));
+  if (ungrouped.length > 0) {
+    return {
+      status: "unverified",
+      record,
+      reasons: ungrouped.map((child) => `sub-issue #${child} is not grouped under #${number}`),
+    };
+  }
+  if (group.decision.kind === "complete") return { status: "verified", record, reasons: [] };
+  return { status: "unverified", record, reasons: group.decision.reasons };
 }
 
 function isOpen(issue) {
