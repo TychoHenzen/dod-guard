@@ -46,14 +46,14 @@ Repeat until the stop condition holds:
    file. Then run `node closure.mjs plan --snapshot=<file>`, report each close,
    hold, and `unverified-closed` entry with reasons, delegate planned closes and
    status repairs to `/complete-pr`'s "Close delivered issues for goal-sdlc"
-   section, as one write-capable stage, and reread. Run `closure.mjs annotate`
-   on the snapshot, which takes `activeCheckpoint` and `trustedHeadSha` from the
-   completion records, then in this skill's directory pass its output to
-   `node scripts/select-next.mjs --snapshot=<file>`. Keyed by
-   `owner/name#number`, it holds any group with missing, stale, conflicting, or
-   cross-repository evidence, selects nothing when the snapshot cannot be
-   classified, and returns the first eligible group: In Progress parents first
-   (one with an open pull request ahead of one without), then Todo, then
+   section, as one write-capable stage, and reread. Run `closure.mjs annotate` on
+   the snapshot, which takes `activeCheckpoint` and `trustedHeadSha` from the
+   completion records and leaves every relation as read, then in this skill's
+   directory pass its output to `node scripts/select-next.mjs --snapshot=<file>`.
+   Keyed by `owner/name#number`, it holds any group with missing, stale,
+   conflicting, or cross-repository evidence, selects nothing when the snapshot
+   cannot be classified, and returns the first eligible group: In Progress parents
+   first (one with an open pull request ahead of one without), then Todo, then
    Backlog, each in Project order. Report held reasons; never guess past them.
 3. **Run the lifecycle for that parent.** Follow
    [dod-guard:quick-pbi](../quick-pbi/SKILL.md) steps 2 to 6 from the step the

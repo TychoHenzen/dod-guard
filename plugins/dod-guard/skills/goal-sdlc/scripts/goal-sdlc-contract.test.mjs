@@ -126,7 +126,9 @@ test("goal-sdlc selects through the read-only queue selector", async () => {
   assert.match(skill, prose("Keyed by `owner/name#number`"));
   assert.match(skill, prose("cross-repository evidence"));
   assert.match(skill, prose("selects nothing when the snapshot cannot be classified"));
+  assert.match(skill, prose("leaves every relation as read"));
   assert.match(usageText, prose("classifies the annotated closure snapshot by `owner/name#number`"));
+  assert.match(usageText, prose("leaves every relation as read"));
 });
 
 test("goal-sdlc delegates to subagents, not user-visible threads", () => {

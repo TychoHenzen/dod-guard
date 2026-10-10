@@ -72,12 +72,14 @@ its review, the run stops with that blocker.
 the next parent PBI with `scripts/select-next.mjs` (which classifies the
 annotated closure snapshot by `owner/name#number` through the classifier it
 shares with the closure helper), runs the `quick-pbi` stages from the one that
-parent has reached, and continues until no eligible work remains. Each pass
-starts with a cleanup report from `closure.mjs plan`: the delivered and
-superseded issues it closes through `apply`, every hold, and every closed or
-Done record without verified evidence, which it reports and never reopens. A
-parent that needs a user answer or is externally blocked stays in place while
-the queue moves on. Each stage runs in one fresh subagent on a model tier from
+parent has reached, and continues until no eligible work remains.
+`closure.mjs annotate` only overlays `activeCheckpoint` and `trustedHeadSha`
+from the completion records and leaves every relation as read. Each pass starts
+with a cleanup report from `closure.mjs plan`: the delivered and superseded
+issues it closes through `apply`, every hold, and every closed or Done record
+without verified evidence, which it reports and never reopens. A parent that
+needs a user answer or is externally blocked stays in place while the queue
+moves on. Each stage runs in one fresh subagent on a model tier from
 `standards/model-routing.md`: the strong tier (Opus at medium effort,
 `gpt-5.6-sol` in Codex) plans, decides, and judges, and the cheap tier (Haiku at
 max effort, `gpt-5.6-luna` in Codex) applies written plans, runs validations,

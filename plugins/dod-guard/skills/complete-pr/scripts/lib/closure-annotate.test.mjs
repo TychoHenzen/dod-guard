@@ -78,6 +78,31 @@ test("annotate keeps a child list whose every entry is a target reference", () =
   assert.equal(issueOf(annotated, 683).children.length, 4);
 });
 
+// Removes the two fields annotate may write, so what remains is every other field, relations included.
+function withoutAnnotations(snapshot) {
+  const copy = structuredClone(snapshot);
+  copy.issues = copy.issues.map(({ activeCheckpoint, ...rest }) => rest);
+  copy.pullRequests = copy.pullRequests.map(({ trustedHeadSha, ...rest }) => rest);
+  return copy;
+}
+
+test("annotate changes only activeCheckpoint and trustedHeadSha", () => {
+  const snapshot = recordedSnapshot();
+  const epic = 683;
+  const replaced = 777;
+  const root = 840;
+  const foreignChild = 12;
+  const foreignParent = 5;
+  issueOf(snapshot, epic).children.push({ repository: FOREIGN_REPOSITORY, number: foreignChild });
+  issueOf(snapshot, replaced).parent = { repository: FOREIGN_REPOSITORY, number: foreignParent };
+  const before = structuredClone(snapshot);
+  const annotated = annotateSnapshot(snapshot);
+  assert.equal(issueOf(annotated, root).activeCheckpoint, false);
+  assert.equal(pullOf(annotated, DELIVERIES[root].pull).trustedHeadSha, DELIVERIES[root].head);
+  assert.deepEqual(withoutAnnotations(annotated), withoutAnnotations(snapshot));
+  assert.deepEqual(snapshot, before, "the input is not modified");
+});
+
 const SELECT_NEXT = fileURLToPath(new URL("../../../goal-sdlc/scripts/select-next.mjs", import.meta.url));
 
 // select-next exports no function, so the test runs it as a child process on the annotated snapshot.
