@@ -4,7 +4,7 @@ import { strip } from "../../../../../skills/quality-refactor/scripts/lib/strip.
 
 export function namesIn(source, lang) {
   const { code } = strip(source, lang);
-  return findFunctions(code, lang, lineIndex(code))
+  return findFunctions(code, lang, lineIndex(code), source)
     .map((fn) => fn.name)
     .sort();
 }

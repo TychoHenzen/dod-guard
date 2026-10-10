@@ -38,8 +38,10 @@ const RULE_SUGGESTIONS = {
     "both sites depend on; keep coincidental duplication that would couple " +
     "unrelated concepts.",
   "else-branch":
-    "Handle the exceptional case first and return early so the main path is " +
-    "unindented (Replace Nested Conditional with Guard Clauses).",
+    "Options to review: handle the exceptional case first and return early " +
+    "(Replace Nested Conditional with Guard Clauses), or Replace Conditional " +
+    "with Polymorphism for a type switch. Keep a genuine two-way branch whose " +
+    "outcomes are equally normal.",
   "unnamed-tuple":
     "Replace Primitive with Object: declare a named record or struct whose " +
     "fields name each position.",

@@ -8,6 +8,7 @@ const HEADER_ASSIGNED =
 const HEADER_RUST = /\bfn\s+([A-Za-z_]\w*)\s*(?:<[^<>()]*>)?\s*\(/g;
 const HEADER_GO =
   /\bfunc\s+(?:\([^()]*\)\s+)?([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*\(/g;
+const SPACE = /\s/;
 
 function bodyEnd(code, body) {
   return body.kind === "block"
@@ -15,11 +16,31 @@ function bodyEnd(code, body) {
     : findExpressionEnd(code, body.offset);
 }
 
-function extractAt({ code, starts, name, openParen, headerStart }) {
+// A call in a ternary's true branch is followed by the ternary's ":", not a return type.
+// ASSUMPTION: an untyped optional class property with no semicolon ("x?" on its own line)
+// also puts "?" before the next member's header, so that member takes the plain body path,
+// as master does. Accepted: TypeScript code nearly always types or terminates such a property.
+function precededByTernary(code, headerStart) {
+  let i = headerStart - 1;
+  while (i >= 0 && SPACE.test(code[i])) {
+    i -= 1;
+  }
+  return i >= 0 && code[i] === "?";
+}
+
+// Only the ts path reads return types, so only it can mistake a ternary colon for one.
+function bodyOptions(code, headerStart, options) {
+  if (options?.returnTypeAnnotation && precededByTernary(code, headerStart)) {
+    return {};
+  }
+  return options;
+}
+
+function extractAt({ code, starts, name, openParen, headerStart, options }) {
   if (!isCallable(name)) return null;
   const closeParen = matchBracket(code, openParen, "()");
   if (closeParen === -1) return null;
-  const body = bodyStart(code, closeParen + 1);
+  const body = bodyStart(code, closeParen + 1, bodyOptions(code, headerStart, options));
   if (body === null) return null;
   const end = bodyEnd(code, body);
   if (end === -1) return null;
@@ -34,7 +55,7 @@ function extractAt({ code, starts, name, openParen, headerStart }) {
   };
 }
 
-function scanHeaders({ code, starts, pattern, found }) {
+function scanHeaders({ code, starts, pattern, found, options }) {
   pattern.lastIndex = 0;
   let match = pattern.exec(code);
   while (match !== null) {
@@ -45,6 +66,7 @@ function scanHeaders({ code, starts, pattern, found }) {
       name: match[1],
       openParen,
       headerStart: match.index,
+      options,
     });
     if (fn !== null) {
       found.set(fn.start, fn);
@@ -54,14 +76,23 @@ function scanHeaders({ code, starts, pattern, found }) {
   }
 }
 
-function scanLanguage(code, starts, patterns) {
+function scanLanguage(code, starts, patterns, options) {
   const found = new Map();
-  for (const pattern of patterns) scanHeaders({ code, starts, pattern, found });
+  for (const pattern of patterns) {
+    scanHeaders({ code, starts, pattern, found, options });
+  }
   return [...found.values()].sort((left, right) => left.start - right.start);
 }
 
 export function braceLanguageFunctions(code, starts) {
   return scanLanguage(code, starts, [HEADER_ASSIGNED, HEADER_DIRECT]);
+}
+
+// `source` is the raw text behind `code`, needed to see the quoted literals
+// that strip blanked out of the code.
+export function tsFunctions(code, starts, source) {
+  const options = { returnTypeAnnotation: true, source };
+  return scanLanguage(code, starts, [HEADER_ASSIGNED, HEADER_DIRECT], options);
 }
 
 export function rustFunctions(code, starts) {

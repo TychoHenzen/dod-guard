@@ -1,5 +1,6 @@
 import { severityFor } from "../config.mjs";
 import { push } from "../violations.mjs";
+import { ifElseCount } from "./else-branches.mjs";
 
 export function checkMetrics({ file, config, fn, metrics, out }) {
   const label = `${fn.name}()`;
@@ -20,15 +21,17 @@ export function checkMetrics({ file, config, fn, metrics, out }) {
 }
 
 export function checkGuardStyle({ file, config, fn, out }) {
-  const elses = (fn.body.match(/\belse\b/g) ?? []).length;
-  if (elses === 0) return;
+  const elses = ifElseCount(fn.body, file.lang);
+  if (elses === 0) {
+    return;
+  }
   push({
     out,
     file,
     line: fn.line,
     rule: "else-branch",
     severity: config.presence["else-branch"],
-    message: `${fn.name}() has ${elses} else branch(es) \u2014 prefer guard clauses`,
+    message: `${fn.name}() has ${elses} if/else branch(es); review whether a guard clause or polymorphism reads better`,
     metric: elses,
   });
 }

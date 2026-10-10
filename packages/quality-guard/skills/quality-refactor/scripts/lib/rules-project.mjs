@@ -1,5 +1,6 @@
 import { lineAt } from "./offsets.mjs";
 import { wildcardImportsFor } from "./architecture-imports.mjs";
+import { inTestRegion } from "./rules-file-rust-tests.mjs";
 import { push } from "./violations.mjs";
 import { checkDuplication } from "./rules-duplicate.mjs";
 import { checkCommentReferences } from "./rules-project/comment-references.mjs";
@@ -13,7 +14,13 @@ function checkWildcardImports({ files, scans, config }) {
   const out = [];
   for (const file of files) {
     const scan = scans.get(file.rel);
-    for (const match of wildcardImportsFor(scan?.code ?? "", file.lang))
+    // Rust test modules glob-import their parent by convention (use super::*),
+    // so a wildcard inside a test region is idiomatic, not an obscured API.
+    const testRegions = scan?.testRegions ?? [];
+    const matches = wildcardImportsFor(scan?.code ?? "", file.lang).filter(
+      (match) => !inTestRegion(testRegions, match.offset),
+    );
+    for (const match of matches) {
       push({
         out,
         file,
@@ -26,6 +33,7 @@ function checkWildcardImports({ files, scans, config }) {
         suggestion: `Import explicit names from ${match.target}.`,
         metric: 1,
       });
+    }
   }
   return out;
 }

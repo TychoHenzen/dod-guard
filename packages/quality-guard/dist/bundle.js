@@ -8871,12 +8871,12 @@ ZodString.create = (params) => {
     ...processCreateParams(params)
   });
 };
-function floatSafeRemainder(val, step) {
+function floatSafeRemainder(val, step2) {
   const valDecCount = (val.toString().split(".")[1] || "").length;
-  const stepDecCount = (step.toString().split(".")[1] || "").length;
+  const stepDecCount = (step2.toString().split(".")[1] || "").length;
   const decCount = valDecCount > stepDecCount ? valDecCount : stepDecCount;
   const valInt = Number.parseInt(val.toFixed(decCount).replace(".", ""));
-  const stepInt = Number.parseInt(step.toFixed(decCount).replace(".", ""));
+  const stepInt = Number.parseInt(step2.toFixed(decCount).replace(".", ""));
   return valInt % stepInt / 10 ** decCount;
 }
 var ZodNumber = class _ZodNumber extends ZodType {
@@ -11507,12 +11507,12 @@ function cleanRegex(source) {
   const end = source.endsWith("$") ? source.length - 1 : source.length;
   return source.slice(start, end);
 }
-function floatSafeRemainder2(val, step) {
+function floatSafeRemainder2(val, step2) {
   const valDecCount = (val.toString().split(".")[1] || "").length;
-  const stepDecCount = (step.toString().split(".")[1] || "").length;
+  const stepDecCount = (step2.toString().split(".")[1] || "").length;
   const decCount = valDecCount > stepDecCount ? valDecCount : stepDecCount;
   const valInt = Number.parseInt(val.toFixed(decCount).replace(".", ""));
-  const stepInt = Number.parseInt(step.toFixed(decCount).replace(".", ""));
+  const stepInt = Number.parseInt(step2.toFixed(decCount).replace(".", ""));
   return valInt % stepInt / 10 ** decCount;
 }
 function defineLazy(object3, key2, getter) {
@@ -21719,7 +21719,7 @@ function linkedBehaviorIds(observation) {
 }
 function linkedFailures(evidence, behaviorIds) {
   return (evidence.failures ?? []).filter(
-    (failure) => failure.behaviorId !== void 0 && behaviorIds.includes(failure.behaviorId)
+    (failure2) => failure2.behaviorId !== void 0 && behaviorIds.includes(failure2.behaviorId)
   );
 }
 function coverageFinding2(evidence, observation) {
@@ -21738,7 +21738,7 @@ function coverageFinding2(evidence, observation) {
         sourcePath: observation.sourcePath,
         uncovered: gaps,
         uncoveredBehaviorIds,
-        failureTestIds: [...new Set(failures.map((failure) => failure.testId))]
+        failureTestIds: [...new Set(failures.map((failure2) => failure2.testId))]
       }
     })
   ];
@@ -21779,14 +21779,14 @@ function slowTests(evidence) {
 }
 
 // src/test-quality/findings/runtime-findings.ts
-function failureSource(evidence, failure) {
-  if (failure.sourcePath) return failure.sourcePath;
-  if (failure.behaviorId)
-    return sourceForBehavior(evidence, failure.behaviorId) ?? ".";
+function failureSource(evidence, failure2) {
+  if (failure2.sourcePath) return failure2.sourcePath;
+  if (failure2.behaviorId)
+    return sourceForBehavior(evidence, failure2.behaviorId) ?? ".";
   return ".";
 }
 function clusterFinding(key2, failures) {
-  const testIds = [...new Set(failures.map((failure) => failure.testId))];
+  const testIds = [...new Set(failures.map((failure2) => failure2.testId))];
   if (testIds.length < 2) return [];
   const [path11, signature, inputClass] = key2.split("|");
   return [
@@ -21800,14 +21800,14 @@ function clusterFinding(key2, failures) {
     })
   ];
 }
-function addFailure(clusters, evidence, failure) {
-  const key2 = `${failureSource(evidence, failure)}|${failure.signature}|${failure.inputClass}`;
-  clusters.set(key2, [...clusters.get(key2) ?? [], failure]);
+function addFailure(clusters, evidence, failure2) {
+  const key2 = `${failureSource(evidence, failure2)}|${failure2.signature}|${failure2.inputClass}`;
+  clusters.set(key2, [...clusters.get(key2) ?? [], failure2]);
 }
 function groupedFailures(evidence) {
   const clusters = /* @__PURE__ */ new Map();
-  for (const failure of evidence.failures ?? [])
-    addFailure(clusters, evidence, failure);
+  for (const failure2 of evidence.failures ?? [])
+    addFailure(clusters, evidence, failure2);
   return clusters;
 }
 function failureClusters(evidence) {
@@ -22168,31 +22168,31 @@ function bugErrors(evidence, facts) {
     ...bugs.flatMap((bug) => bugReferenceErrors(bug, facts))
   ];
 }
-function failureTestErrors(failure, statuses) {
-  const status = statuses.get(failure.testId);
-  if (!status) return [`failure references unknown test ${failure.testId}`];
+function failureTestErrors(failure2, statuses) {
+  const status = statuses.get(failure2.testId);
+  if (!status) return [`failure references unknown test ${failure2.testId}`];
   if (status === "failed") return [];
-  return [`failure ${failure.testId} must reference a failed test`];
+  return [`failure ${failure2.testId} must reference a failed test`];
 }
-function failureSourceErrors(failure, facts) {
-  if (!failure.sourcePath || facts.sources.has(failure.sourcePath)) return [];
-  return [`failure references unknown source ${failure.sourcePath}`];
+function failureSourceErrors(failure2, facts) {
+  if (!failure2.sourcePath || facts.sources.has(failure2.sourcePath)) return [];
+  return [`failure references unknown source ${failure2.sourcePath}`];
 }
-function failureBehaviorErrors(failure, facts) {
-  if (!failure.behaviorId) return [];
-  const sourcePath = facts.behaviors.get(failure.behaviorId);
+function failureBehaviorErrors(failure2, facts) {
+  if (!failure2.behaviorId) return [];
+  const sourcePath = facts.behaviors.get(failure2.behaviorId);
   if (sourcePath === void 0)
-    return [`failure references unknown behavior ${failure.behaviorId}`];
-  if (!failure.sourcePath || sourcePath === failure.sourcePath) return [];
+    return [`failure references unknown behavior ${failure2.behaviorId}`];
+  if (!failure2.sourcePath || sourcePath === failure2.sourcePath) return [];
   return [
-    `failure behavior ${failure.behaviorId} is outside ${failure.sourcePath}`
+    `failure behavior ${failure2.behaviorId} is outside ${failure2.sourcePath}`
   ];
 }
-function failureReferenceErrors(failure, statuses, facts) {
+function failureReferenceErrors(failure2, statuses, facts) {
   return [
-    ...failureTestErrors(failure, statuses),
-    ...failureSourceErrors(failure, facts),
-    ...failureBehaviorErrors(failure, facts)
+    ...failureTestErrors(failure2, statuses),
+    ...failureSourceErrors(failure2, facts),
+    ...failureBehaviorErrors(failure2, facts)
   ];
 }
 function failureErrors(evidence, facts) {
@@ -22200,7 +22200,7 @@ function failureErrors(evidence, facts) {
     evidence.tests.map((test) => [test.id, test.status])
   );
   return (evidence.failures ?? []).flatMap(
-    (failure) => failureReferenceErrors(failure, statuses, facts)
+    (failure2) => failureReferenceErrors(failure2, statuses, facts)
   );
 }
 function timingErrors(evidence) {
@@ -26072,13 +26072,13 @@ function readRegex(src, start) {
   let i = start + 1;
   let inClass = false;
   while (i < src.length) {
-    const step = regexStep(src, i, inClass);
-    if (step.end !== void 0) {
-      if (step.end === null) return null;
-      return readFlags(src, step.end);
+    const step2 = regexStep(src, i, inClass);
+    if (step2.end !== void 0) {
+      if (step2.end === null) return null;
+      return readFlags(src, step2.end);
     }
-    i = step.next;
-    inClass = step.inClass;
+    i = step2.next;
+    inClass = step2.inClass;
   }
   return null;
 }
@@ -26630,14 +26630,328 @@ function typeFacts(type, lang) {
   };
 }
 
+// skills/quality-refactor/scripts/lib/parse-type-tokens.mjs
+var GROUP_PAIR = { "{": "{}", "(": "()", "[": "[]" };
+var ANGLE_DELTA = { "<": 1, ">": -1 };
+var STATEMENT_END = ")]};";
+var WORD = /[A-Za-z_$][\w$.]*/y;
+var NUMBER = /-?\d[\w.]*/y;
+var SPACE = /\s/;
+function angleStep(code, i) {
+  if (code.startsWith("=>", i)) {
+    return i + 2;
+  }
+  if (isGroupOpen(code[i])) {
+    const close = groupEnd(code, i);
+    if (close === -1) {
+      return -1;
+    }
+    return close + 1;
+  }
+  if (STATEMENT_END.includes(code[i])) {
+    return -1;
+  }
+  return i + 1;
+}
+function angleEnd(code, open) {
+  let depth = 0;
+  let i = open;
+  while (i < code.length) {
+    const next = angleStep(code, i);
+    if (next === -1) {
+      return -1;
+    }
+    depth += ANGLE_DELTA[code[i]] ?? 0;
+    i = next;
+    if (depth === 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+function quoteAt(source, i) {
+  const ch = source[i];
+  return ch === "'" || ch === '"' || ch === "`";
+}
+function skipSpace(code, from) {
+  let i = from;
+  while (i < code.length && SPACE.test(code[i])) {
+    i += 1;
+  }
+  return i;
+}
+function wordAt(code, i) {
+  WORD.lastIndex = i;
+  return WORD.exec(code)?.[0] ?? "";
+}
+function numberAt(code, i) {
+  NUMBER.lastIndex = i;
+  return NUMBER.exec(code)?.[0] ?? "";
+}
+function isUnion(code, i) {
+  const ch = code[i];
+  return (ch === "|" || ch === "&") && code[i + 1] !== ch;
+}
+function isGroupOpen(ch) {
+  return GROUP_PAIR[ch] !== void 0;
+}
+function groupEnd(code, open) {
+  const pair = GROUP_PAIR[code[open]];
+  if (pair === void 0) {
+    return -1;
+  }
+  return matchBracket(code, open, pair);
+}
+function opensParameterList(code, source, open) {
+  if (nextToken(code, source, open + 1).quote !== void 0) {
+    return false;
+  }
+  const i = skipSpace(code, open + 1);
+  if (code[i] === ")" || code[i] === "{" || code[i] === "[" || code.startsWith("...", i)) {
+    return true;
+  }
+  const word = wordAt(code, i);
+  if (word === "") {
+    return false;
+  }
+  const next = code[skipSpace(code, i + word.length)];
+  return next !== void 0 && [":", "?", ",", "=", ")"].includes(next);
+}
+function nameTail(code, from) {
+  let end = from;
+  const member = wordAt(code, end + 1);
+  if (code[end] === "." && member !== "") {
+    end += 1 + member.length;
+  }
+  const open = skipSpace(code, end);
+  if (code[open] !== "<") {
+    return end;
+  }
+  return angleEnd(code, open);
+}
+function nextToken(code, source, from) {
+  let i = from;
+  while (i < code.length && SPACE.test(code[i])) {
+    if (quoteAt(source, i)) {
+      return { quote: i };
+    }
+    i += 1;
+  }
+  return { at: i };
+}
+function closingQuote(source, open) {
+  const quote = source[open];
+  let i = open + 1;
+  while (i < source.length) {
+    if (source[i] === "\\") {
+      i += 2;
+    } else if (source[i] === quote) {
+      return i;
+    } else {
+      i += 1;
+    }
+  }
+  return -1;
+}
+
+// skills/quality-refactor/scripts/lib/parse-return-type.mjs
+var PREFIX_WORDS = /* @__PURE__ */ new Set([
+  "typeof",
+  "keyof",
+  "readonly",
+  "unique",
+  "infer",
+  "asserts",
+  "new"
+]);
+function readType(code, source, from) {
+  const ctx = { code, source };
+  const state = {
+    i: from,
+    end: from,
+    expecting: true,
+    word: false,
+    frames: []
+  };
+  for (let steps = 0; steps <= code.length; steps += 1) {
+    const done = step(ctx, state);
+    if (done !== void 0) {
+      return done;
+    }
+  }
+  return -1;
+}
+function step(ctx, state) {
+  if (state.expecting) {
+    return expectStep(ctx, state);
+  }
+  return afterStep(ctx, state);
+}
+function expectAt(state, at) {
+  state.i = at;
+  state.expecting = true;
+  state.word = false;
+}
+function completeOperand(state, end, isWord) {
+  state.i = end;
+  state.end = end;
+  state.word = isWord;
+  state.expecting = false;
+}
+function expectStep(ctx, state) {
+  const token = nextToken(ctx.code, ctx.source, state.i);
+  if (token.quote !== void 0) {
+    return literalOperand(ctx, state, token.quote);
+  }
+  if (token.at >= ctx.code.length) {
+    return -1;
+  }
+  return operandAt(ctx, state, token.at);
+}
+function literalOperand(ctx, state, open) {
+  const close = closingQuote(ctx.source, open);
+  if (close === -1) {
+    return -1;
+  }
+  return completeOperand(state, close + 1, false);
+}
+function operandAt(ctx, state, i) {
+  const { code } = ctx;
+  if (isUnion(code, i)) {
+    return expectAt(state, i + 1);
+  }
+  const number3 = numberAt(code, i);
+  if (number3 !== "") {
+    return completeOperand(state, i + number3.length, false);
+  }
+  const word = wordAt(code, i);
+  if (PREFIX_WORDS.has(word)) {
+    return expectAt(state, i + word.length);
+  }
+  if (word !== "") {
+    return identifierOperand(ctx, state, i, word);
+  }
+  if (isGroupOpen(code[i])) {
+    return groupOperand(ctx, state, i);
+  }
+  return failure(state);
+}
+function identifierOperand(ctx, state, i, word) {
+  const { code } = ctx;
+  const start = i + word.length;
+  const open = skipSpace(code, start);
+  if (code[open] === "(") {
+    return queryOperand(state, code, open);
+  }
+  const end = nameTail(code, start);
+  if (end === -1) {
+    return -1;
+  }
+  return completeOperand(state, end, end === start);
+}
+function queryOperand(state, code, open) {
+  const close = groupEnd(code, open);
+  if (close === -1) {
+    return -1;
+  }
+  const end = nameTail(code, close + 1);
+  if (end === -1) {
+    return -1;
+  }
+  return completeOperand(state, end, false);
+}
+function groupOperand(ctx, state, i) {
+  const { code } = ctx;
+  const close = groupEnd(code, i);
+  if (close === -1) {
+    return -1;
+  }
+  const after = skipSpace(code, close + 1);
+  if (code[i] === "(" && code.startsWith("=>", after) && opensParameterList(code, ctx.source, i)) {
+    return expectAt(state, after + 2);
+  }
+  return completeOperand(state, close + 1, false);
+}
+function afterStep(ctx, state) {
+  const { code } = ctx;
+  const i = skipSpace(code, state.i);
+  if (i >= code.length) {
+    return endOfInput(state);
+  }
+  if (code[i] === "[") {
+    return postfixGroup(code, state, i);
+  }
+  if (isUnion(code, i)) {
+    return expectAt(state, i + 1);
+  }
+  const word = wordAt(code, i);
+  if (word === "extends") {
+    return startConditional(state, i, word.length);
+  }
+  if (word === "is" && state.word) {
+    return expectAt(state, i + word.length);
+  }
+  return conditionalToken(state, code[i], i);
+}
+function postfixGroup(code, state, i) {
+  const close = groupEnd(code, i);
+  if (close === -1) {
+    return -1;
+  }
+  return completeOperand(state, close + 1, false);
+}
+function startConditional(state, i, length) {
+  state.frames.push({ phase: "extends", mark: state.end });
+  return expectAt(state, i + length);
+}
+function popCompleteFrames(state) {
+  while (state.frames.at(-1)?.phase === "false") {
+    state.frames.pop();
+  }
+}
+function advanceFrame(state, frame, phase, i) {
+  frame.phase = phase;
+  return expectAt(state, i + 1);
+}
+function conditionalToken(state, ch, i) {
+  popCompleteFrames(state);
+  const top = state.frames.at(-1);
+  if (top?.phase === "extends" && ch === "?") {
+    return advanceFrame(state, top, "true", i);
+  }
+  if (top?.phase === "true" && ch === ":") {
+    return advanceFrame(state, top, "false", i);
+  }
+  return failure(state);
+}
+function endOfInput(state) {
+  popCompleteFrames(state);
+  if (state.frames.length > 0) {
+    return -1;
+  }
+  return state.end;
+}
+function failure(state) {
+  if (state.frames.length > 0) {
+    return state.frames[0].mark;
+  }
+  return state.end;
+}
+function skipReturnType(code, from, source) {
+  const colon = skipSpace(code, from);
+  if (code[colon] !== ":") {
+    return from;
+  }
+  return readType(code, source, colon + 1);
+}
+
 // skills/quality-refactor/scripts/lib/parse-body.mjs
 var CALL_OPERATORS = /\?\?|\?\.|&&|\|\||(?:^|[^=!<>])=(?:[^>=]|$)/;
 function isCallGap(gap) {
   return CALL_OPERATORS.test(gap) || gap.trimEnd().endsWith("?");
 }
 function arrowBody(code, from) {
-  let i = from;
-  while (i < code.length && /\s/.test(code[i])) i += 1;
+  const i = skipSpace(code, from);
   if (i >= code.length) return null;
   return code[i] === "{" ? { offset: i, kind: "block" } : { offset: i, kind: "expression" };
 }
@@ -26668,7 +26982,7 @@ function nextParamDepth(depth, ch) {
   if (")]}>".includes(ch)) return depth - 1;
   return depth;
 }
-function bodyStart(code, afterParams) {
+function plainBodyStart(code, afterParams) {
   const limit = Math.min(code.length, afterParams + 300);
   let state = { angle: 0, depth: 0 };
   let gap = "";
@@ -26679,6 +26993,29 @@ function bodyStart(code, afterParams) {
     gap += code[i];
   }
   return null;
+}
+function annotatedBodyStart(code, afterParams, source) {
+  const end = skipReturnType(code, afterParams, source);
+  if (end === -1) {
+    return null;
+  }
+  if (end === afterParams) {
+    return plainBodyStart(code, afterParams);
+  }
+  const i = skipSpace(code, end);
+  if (code[i] === "{") {
+    return { offset: i, kind: "block" };
+  }
+  if (code.startsWith("=>", i)) {
+    return arrowBody(code, i + 2);
+  }
+  return null;
+}
+function bodyStart(code, afterParams, options = {}) {
+  if (options.returnTypeAnnotation) {
+    return annotatedBodyStart(code, afterParams, options.source);
+  }
+  return plainBodyStart(code, afterParams);
 }
 
 // skills/quality-refactor/scripts/lib/parse-parameters.mjs
@@ -26795,14 +27132,28 @@ var HEADER_DIRECT = /([A-Za-z_$][\w$]*)\s*(?:<[^<>()]*>)?\s*\(/g;
 var HEADER_ASSIGNED = /([A-Za-z_$][\w$]*)\s*(?::[^=;{}()]*)?=\s*(?:async\s+)?(?:function\s*)?\(/g;
 var HEADER_RUST = /\bfn\s+([A-Za-z_]\w*)\s*(?:<[^<>()]*>)?\s*\(/g;
 var HEADER_GO = /\bfunc\s+(?:\([^()]*\)\s+)?([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*\(/g;
+var SPACE2 = /\s/;
 function bodyEnd(code, body) {
   return body.kind === "block" ? matchBracket(code, body.offset, "{}") : findExpressionEnd(code, body.offset);
 }
-function extractAt({ code, starts, name, openParen, headerStart }) {
+function precededByTernary(code, headerStart) {
+  let i = headerStart - 1;
+  while (i >= 0 && SPACE2.test(code[i])) {
+    i -= 1;
+  }
+  return i >= 0 && code[i] === "?";
+}
+function bodyOptions(code, headerStart, options) {
+  if (options?.returnTypeAnnotation && precededByTernary(code, headerStart)) {
+    return {};
+  }
+  return options;
+}
+function extractAt({ code, starts, name, openParen, headerStart, options }) {
   if (!isCallable(name)) return null;
   const closeParen = matchBracket(code, openParen, "()");
   if (closeParen === -1) return null;
-  const body = bodyStart(code, closeParen + 1);
+  const body = bodyStart(code, closeParen + 1, bodyOptions(code, headerStart, options));
   if (body === null) return null;
   const end = bodyEnd(code, body);
   if (end === -1) return null;
@@ -26816,7 +27167,7 @@ function extractAt({ code, starts, name, openParen, headerStart }) {
     body: code.slice(body.offset, end + 1)
   };
 }
-function scanHeaders({ code, starts, pattern, found }) {
+function scanHeaders({ code, starts, pattern, found, options }) {
   pattern.lastIndex = 0;
   let match = pattern.exec(code);
   while (match !== null) {
@@ -26826,7 +27177,8 @@ function scanHeaders({ code, starts, pattern, found }) {
       starts,
       name: match[1],
       openParen,
-      headerStart: match.index
+      headerStart: match.index,
+      options
     });
     if (fn !== null) {
       found.set(fn.start, fn);
@@ -26835,13 +27187,19 @@ function scanHeaders({ code, starts, pattern, found }) {
     match = pattern.exec(code);
   }
 }
-function scanLanguage(code, starts, patterns) {
+function scanLanguage(code, starts, patterns, options) {
   const found = /* @__PURE__ */ new Map();
-  for (const pattern of patterns) scanHeaders({ code, starts, pattern, found });
+  for (const pattern of patterns) {
+    scanHeaders({ code, starts, pattern, found, options });
+  }
   return [...found.values()].sort((left, right) => left.start - right.start);
 }
 function braceLanguageFunctions(code, starts) {
   return scanLanguage(code, starts, [HEADER_ASSIGNED, HEADER_DIRECT]);
+}
+function tsFunctions(code, starts, source) {
+  const options = { returnTypeAnnotation: true, source };
+  return scanLanguage(code, starts, [HEADER_ASSIGNED, HEADER_DIRECT], options);
 }
 function rustFunctions(code, starts) {
   return scanLanguage(code, starts, [HEADER_RUST]);
@@ -26851,10 +27209,6 @@ function goFunctions(code, starts) {
 }
 
 // skills/quality-refactor/scripts/lib/parse-python.mjs
-function indentOf(line) {
-  const match = /^[ \t]*/.exec(line);
-  return match[0].replace(/\t/g, "    ").length;
-}
 function bodyLastLine(lines, first, baseIndent) {
   let last = first;
   for (let j = first + 1; j < lines.length; j += 1) {
@@ -26863,6 +27217,10 @@ function bodyLastLine(lines, first, baseIndent) {
     last = j;
   }
   return last;
+}
+function indentOf(line) {
+  const match = /^[ \t]*/.exec(line);
+  return match[0].replace(/\t/g, "    ").length;
 }
 function pythonFunctions(code, starts) {
   const lines = code.split("\n");
@@ -26893,10 +27251,22 @@ function pythonFunctions(code, starts) {
 }
 
 // skills/quality-refactor/scripts/lib/parse.mjs
-function findFunctions(code, lang, starts) {
-  if (lang === "py") return pythonFunctions(code, starts);
-  if (lang === "rs") return rustFunctions(code, starts);
-  if (lang === "go") return goFunctions(code, starts);
+function findFunctions(code, lang, starts, source) {
+  if (typeof source !== "string") {
+    throw new TypeError("findFunctions requires the raw source string");
+  }
+  if (lang === "py") {
+    return pythonFunctions(code, starts);
+  }
+  if (lang === "rs") {
+    return rustFunctions(code, starts);
+  }
+  if (lang === "go") {
+    return goFunctions(code, starts);
+  }
+  if (lang === "ts") {
+    return tsFunctions(code, starts, source);
+  }
   return braceLanguageFunctions(code, starts);
 }
 
@@ -26952,7 +27322,12 @@ function defaultFact(parameter, fn, lang) {
 function configurationDefaults(source, lang) {
   if (lang === "rs") return [];
   const searchable = strip(source, lang).code;
-  const functions = findFunctions(searchable, lang, lineIndex(searchable));
+  const functions = findFunctions(
+    searchable,
+    lang,
+    lineIndex(searchable),
+    source
+  );
   return functions.flatMap(
     (fn) => parameterText(source, fn).flatMap(
       (parameter) => defaultFact(parameter, fn, lang)
@@ -26965,7 +27340,7 @@ var CHAIN = /\b(?:this|self)(?:\.|->)([A-Za-z_]\w*)((?:(?:\.|->)[A-Za-z_]\w*\(\)
 function transitiveNavigation(source, lang) {
   const searchable = strip(source, lang).code;
   const starts = lineIndex(searchable);
-  const functions = findFunctions(searchable, lang, starts);
+  const functions = findFunctions(searchable, lang, starts, source);
   const seen = /* @__PURE__ */ new Set();
   return functions.flatMap((fn) => {
     const body = searchable.slice(fn.start, fn.end + 1);
@@ -27207,11 +27582,11 @@ var asyncExecFile = (command, args, options) => new Promise((resolve4, reject) =
   });
 });
 function parsedFailure(error2) {
-  const failure = error2;
-  const stdout = failure.stdout;
+  const failure2 = error2;
+  const stdout = failure2.stdout;
   if (typeof stdout !== "string") return void 0;
   if (!stdout.trim()) return void 0;
-  const status = typeof failure.status === "number" ? failure.status : 1;
+  const status = typeof failure2.status === "number" ? failure2.status : 1;
   return { exitCode: status, report: JSON.parse(stdout) };
 }
 function failureMessage(error2) {

@@ -55,3 +55,23 @@ test("records source-backed dispositions for the four edge rules", () => {
     );
   }
 });
+
+const WHITESPACE = /\s+/g;
+
+test("records the else, wildcard, and stateless boundaries", () => {
+  const normalizedDisposition = disposition.replace(WHITESPACE, " ");
+  for (const signal of [
+    "Only else branches that close an if are counted",
+    "Rust let-else and Python loop or try else clauses are quiet",
+    "The cross-language fixtures live with the scanner tests",
+    // biome-ignore lint/security/noSecrets: Rust attribute text, not a credential
+    "A Rust `use path::*` inside a `#[cfg(test)]` region",
+    "Bodiless TypeScript signatures",
+    "are not methods with a body and are quiet",
+  ]) {
+    assert.ok(
+      normalizedDisposition.includes(signal),
+      `disposition must contain ${signal}`,
+    );
+  }
+});

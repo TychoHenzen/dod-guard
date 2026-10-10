@@ -24,7 +24,7 @@ scanner remains advisory when a source pattern cannot prove intent.
 | `types-per-file` | `classes/srp-and-class-size.md`; `emergence/pragmatic-size.md` | More than 1 top-level type is a navigability signal; split only when the resulting ownership is clearer. |
 | `duplicate-block` | `smells-and-heuristics/functions-and-duplication.md`; `emergence/duplication-and-reuse.md` | Six-line windows and two sites are search signals; retain coincidental duplication when sharing would couple unrelated concepts. |
 | `comment-bloat` | `comments/intent-and-limits.md`; `comments/bad-comments.md` | 2x preferred / 4x hard comment-to-code ratios are review signals; retain context a reader cannot derive. |
-| `else-branch` | `functions/polymorphism-and-names.md`; `dispositions.md` | Syntax-only preferred signal; a genuine two-way branch is legitimate and remains reviewable. |
+| `else-branch` | `functions/polymorphism-and-names.md`; `dispositions.md` | Syntax-only preferred signal; a genuine two-way branch is legitimate and remains reviewable. Non-if `else` forms (Rust let-else, Python loop and try else, C/C++/C# `#else`, Kotlin `when` `else ->`) are quiet. |
 | `unnamed-tuple` | `meaningful-names/intent-and-disinformation.md` | Declared tuples are naming signals; local destructuring is not a finding. |
 | `dead-export` | `smells-and-heuristics/functions-and-duplication.md` | Reference-graph evidence; reflection, dependency injection, dynamic imports, and manifests remain explicit review cases. |
 | `unused-local` | `smells-and-heuristics/functions-and-duplication.md` | Static same-file reference evidence; dynamic TypeScript lookups, reflection, and string dispatch can still trigger a false positive and require human review. |
@@ -36,12 +36,12 @@ scanner remains advisory when a source pattern cannot prove intent.
 | `comment-missing-reference` | `comments/intent-and-limits.md` | An incomplete reference is a review signal; the scanner does not infer which external source was intended. |
 | `output-parameter` | `functions/arguments.md` | Explicit output syntax is a design signal; caller-owned mutation or framework contracts may justify it. |
 | `flag-parameter` | `functions/arguments.md` | Explicit boolean behavior switches are review signals; data booleans and one coherent operation may remain. |
-| `wildcard-import` | `smells-and-heuristics/overview.md`; `dispositions.md` | Retain only syntax-proven Python/Rust wildcard findings; quiet language forms without the same proof. |
+| `wildcard-import` | `smells-and-heuristics/overview.md`; `dispositions.md` | Retain only syntax-proven Python/Rust wildcard findings; quiet language forms without the same proof. Rust test-region wildcards are quiet. |
 | `naming-encoding` | `meaningful-names/intent-and-disinformation.md` | Explicit `m_`/`f_` member prefixes are review signals; other naming policy stays language or repository-specific. |
 | `build-entrypoint` | `smells-and-heuristics/comments-and-environment.md` | Missing root build command is a reproducibility signal; the scanner does not invent project commands. |
 | `test-entrypoint` | `smells-and-heuristics/comments-and-environment.md` | Missing root test command is a reproducibility signal; the scanner does not infer a complete test workflow. |
 | `todo-marker` | `comments/good-comments.md`; `comments/bad-comments.md` | Bare deferred-work markers are review signals; linked, current work items may be retained. |
-| `stateless-method` | `classes/srp-and-class-size.md`; `emergence/pragmatic-size.md`; `dispositions.md` | Syntax-only candidate for a free function; ownership, inheritance, and framework intent are not inferred. |
+| `stateless-method` | `classes/srp-and-class-size.md`; `emergence/pragmatic-size.md`; `dispositions.md` | Syntax-only candidate for a free function; ownership, inheritance, and framework intent are not inferred. Bodiless TypeScript signatures are quiet; Python is unsupported. |
 | `assumption-marker` | `comments/good-comments.md`; `comments/intent-and-limits.md` | Retired from generic scanning: `ASSUMPTION` has no source/use contract, so it is quiet rather than a policy finding. |
 | `test-quality` | `smells-and-heuristics/test-strategy.md` | Separate report-only T1-T9 evidence path; manifests and coverage observations are diagnostic, never a commit gate. |
 
@@ -411,7 +411,10 @@ public namespace harder to review. Import explicit names instead.
 **When quiet:** C# namespace `using`, TypeScript namespace imports and
 `export *`, inherited or static constants, and enum-like declarations are not
 reported. Those forms do not prove the corresponding Java-origin smell without
-language-specific semantic evidence.
+language-specific semantic evidence. A Rust `use path::*` inside a
+`#[cfg(test)]` region (for example `use super::*;` in a test module) is quiet,
+matching how per-function rules skip Rust test regions. The same import outside
+a test region stays reported.
 
 ---
 
@@ -451,18 +454,34 @@ not a declared tuple type.
 
 ---
 
-## `else-branch` - prefer guard clauses
+## `else-branch` - review guard clauses
 
-**Detects:** any `else` in a function body, including `else if`.
+**Detects:** an `else` that closes an `if` branch in a function body, including
+`else if`. Each such `else` counts once: a Rust
+`if a {..} else if b {..} else {..}` chain counts 2, while a Python
+`if`/`elif`/`else` chain counts 1, because an `elif` is not counted on its own.
+The Python conditional expression `a if c else b` is still counted, since it is
+an if form.
+
+**When quiet:** Rust let-else guards (`let Some(v) = o else { return 0; };`),
+Python `for`, `while`, and `try` `else` clauses, C/C++/C# preprocessor `#else`,
+Kotlin `when` arms (`else ->`), and the word `else` inside comments or strings
+do not close an `if`, so they are not counted.
+
+**Known limit:** a Python continuation line, either a backslash continuation or
+a line inside brackets, that starts at or left of the indent of its `def` line
+ends the function body early, so an `else` after it is not seen. The function
+extent comes from the Python body parser, not from this rule.
 
 **Why preferred, not hard:** an `else` is not wrong, but it is the single most
 reliable marker of a function that could read top-to-bottom and does not. A
 guard clause states a precondition and leaves; an `else` asks the reader to
 carry both branches to the end of the function.
 
-**Fix:** *Replace Nested Conditional with Guard Clauses*. Handle the exceptional
-case first and return. For an `else if` chain dispatching on a type,
-*Replace Conditional with Polymorphism* or a lookup table.
+**Fix:** options to review, not mandatory rewrites: *Replace Nested Conditional
+with Guard Clauses* handles the exceptional case first and returns. For an
+`else if` chain dispatching on a type, *Replace Conditional with Polymorphism*
+or a lookup table is the other option to review.
 
 **When to keep it:** a genuine two-way branch where both sides are equally
 "normal" and both produce a value. Ternaries and expression-position matches
@@ -482,6 +501,13 @@ type at all, so this rule never fired on Rust code, silently, for every file.
 When a type's `impl` block is in the file but its `struct` is not, field
 access cannot be proven either way, so the method is left unreported rather
 than guessed at.
+
+**When quiet:** TypeScript and JavaScript method signatures without a body
+(interface, type-literal, abstract, overload, and `declare` members) are not
+functions, so they are never reported. A return-type annotation is never taken
+as the body, so per-function metrics measure the real body. Python is
+unsupported: the scanner builds no class spans for Python, so no Python method
+is reported.
 
 **Why preferred:** Meyers' guideline - prefer non-member non-friend functions.
 A free function can only use the type's public surface, so it cannot become a
