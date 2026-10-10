@@ -33,7 +33,8 @@ legitimate alternatives to design judgment.
 Do not treat every `else` as a defect: a genuine two-way branch with equally
 normal outcomes is legitimate. Guard clauses and polymorphism are remediation
 options, not mandatory rewrites. Only else branches that close an if are
-counted. Rust let-else and Python loop or try else clauses are quiet, because
+counted. Rust let-else and Python loop or try else clauses are quiet, and so
+are C/C++/C# preprocessor `#else` and Kotlin `when` arms (`else ->`), because
 they are not if branches. The cross-language fixtures live with the scanner
 tests.
 

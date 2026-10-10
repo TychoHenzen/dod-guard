@@ -24,7 +24,7 @@ scanner remains advisory when a source pattern cannot prove intent.
 | `types-per-file` | `classes/srp-and-class-size.md`; `emergence/pragmatic-size.md` | More than 1 top-level type is a navigability signal; split only when the resulting ownership is clearer. |
 | `duplicate-block` | `smells-and-heuristics/functions-and-duplication.md`; `emergence/duplication-and-reuse.md` | Six-line windows and two sites are search signals; retain coincidental duplication when sharing would couple unrelated concepts. |
 | `comment-bloat` | `comments/intent-and-limits.md`; `comments/bad-comments.md` | 2x preferred / 4x hard comment-to-code ratios are review signals; retain context a reader cannot derive. |
-| `else-branch` | `functions/polymorphism-and-names.md`; `dispositions.md` | Syntax-only preferred signal; a genuine two-way branch is legitimate and remains reviewable. Non-if `else` forms are quiet. |
+| `else-branch` | `functions/polymorphism-and-names.md`; `dispositions.md` | Syntax-only preferred signal; a genuine two-way branch is legitimate and remains reviewable. Non-if `else` forms (Rust let-else, Python loop and try else, C/C++/C# `#else`, Kotlin `when` `else ->`) are quiet. |
 | `unnamed-tuple` | `meaningful-names/intent-and-disinformation.md` | Declared tuples are naming signals; local destructuring is not a finding. |
 | `dead-export` | `smells-and-heuristics/functions-and-duplication.md` | Reference-graph evidence; reflection, dependency injection, dynamic imports, and manifests remain explicit review cases. |
 | `unused-local` | `smells-and-heuristics/functions-and-duplication.md` | Static same-file reference evidence; dynamic TypeScript lookups, reflection, and string dispatch can still trigger a false positive and require human review. |
@@ -464,8 +464,9 @@ The Python conditional expression `a if c else b` is still counted, since it is
 an if form.
 
 **When quiet:** Rust let-else guards (`let Some(v) = o else { return 0; };`),
-Python `for`, `while`, and `try` `else` clauses, and the word `else` inside
-comments or strings do not close an `if`, so they are not counted.
+Python `for`, `while`, and `try` `else` clauses, C/C++/C# preprocessor `#else`,
+Kotlin `when` arms (`else ->`), and the word `else` inside comments or strings
+do not close an `if`, so they are not counted.
 
 **Known limit:** a Python continuation line, either a backslash continuation or
 a line inside brackets, that starts at or left of the indent of its `def` line

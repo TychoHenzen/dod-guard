@@ -1,11 +1,13 @@
 // Counts the "else" tokens in a function body that close an if branch. Rust and
 // Python also spell other constructs with "else" (let-else, loop else, try
-// else), so only those two languages filter. The body is the stripped source,
-// so comments and string contents are already blank.
+// else), so each has its own filter. Every other language skips the
+// preprocessor "#else" and the Kotlin when arm "else ->". The body is the
+// stripped source, so comments and string contents are already blank.
 const ELSE = /\belse\b/g;
 const SPACE = /\s/;
 const LEADING = /^[ \t]*/;
 const IF_HEAD = /^\s*(?:if|elif)\b/;
+const ARM_ARROW = /^[ \t]*->/;
 
 function countRust(body) {
   let count = 0;
@@ -101,8 +103,29 @@ function previousNonSpace(body, index) {
   return body.charAt(at);
 }
 
-// Only Rust and Python need a language-specific filter; every other language
-// counts each else token, as the scanner always has.
+// A "#" before "else" marks a preprocessor directive, and an arrow after it marks
+// a Kotlin when arm. Neither closes an if, and Java and the C family never write
+// "else ->".
+function closesIf(body, index) {
+  if (previousNonSpace(body, index) === "#") {
+    return false;
+  }
+  return !ARM_ARROW.test(body.slice(index + "else".length));
+}
+
+function countGeneric(body) {
+  let count = 0;
+  for (const match of body.matchAll(ELSE)) {
+    if (closesIf(body, match.index)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+// Rust and Python each filter their own non-if else forms. Every other language
+// takes the generic count, which also skips the preprocessor "#else" and the
+// Kotlin when arm "else ->".
 export function ifElseCount(body, lang) {
   if (lang === "rs") {
     return countRust(body);
@@ -110,5 +133,5 @@ export function ifElseCount(body, lang) {
   if (lang === "py") {
     return countPython(body);
   }
-  return [...body.matchAll(ELSE)].length;
+  return countGeneric(body);
 }
