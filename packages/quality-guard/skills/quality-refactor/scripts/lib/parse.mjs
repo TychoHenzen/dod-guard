@@ -6,9 +6,12 @@ import {
 } from "./parse-functions.mjs";
 import { pythonFunctions } from "./parse-python.mjs";
 
-// `source` is the raw text that `code` was stripped from. Only the "ts" path
-// reads it, to recognize quoted literals that the stripper blanked.
+// `source` is the raw text that `code` was stripped from. Every language requires
+// it, because the ts path reads quoted literals from it.
 export function findFunctions(code, lang, starts, source) {
+  if (typeof source !== "string") {
+    throw new TypeError("findFunctions requires the raw source string");
+  }
   if (lang === "py") {
     return pythonFunctions(code, starts);
   }

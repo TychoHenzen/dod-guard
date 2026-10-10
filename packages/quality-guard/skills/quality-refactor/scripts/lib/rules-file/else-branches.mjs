@@ -1,3 +1,5 @@
+import { indentOf } from "../parse-python.mjs";
+
 // Counts the "else" tokens in a function body that close an if branch. Rust and
 // Python also spell other constructs with "else" (let-else, loop else, try
 // else), so each has its own filter. Every other language skips the
@@ -5,7 +7,6 @@
 // stripped source, so comments and string contents are already blank.
 const ELSE = /\belse\b/g;
 const SPACE = /\s/;
-const LEADING = /^[ \t]*/;
 const IF_HEAD = /^\s*(?:if|elif)\b/;
 const ARM_ARROW = /^[ \t]*->/;
 
@@ -86,12 +87,6 @@ function bracketDepths(body) {
   }
   depth[body.length] = open;
   return depth;
-}
-
-// Tabs count as four columns, the width parse-python.mjs uses to find where a
-// function body ends, so both agree on which lines are nested.
-function indentOf(line) {
-  return LEADING.exec(line)[0].replaceAll("\t", "    ").length;
 }
 
 // Returns "" when only whitespace precedes index.

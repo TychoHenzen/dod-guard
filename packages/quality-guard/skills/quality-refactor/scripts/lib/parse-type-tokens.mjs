@@ -52,9 +52,6 @@ function angleEnd(code, open) {
 }
 
 function quoteAt(source, i) {
-  if (typeof source !== "string") {
-    return false;
-  }
   const ch = source[i];
   return ch === "'" || ch === '"' || ch === "`";
 }

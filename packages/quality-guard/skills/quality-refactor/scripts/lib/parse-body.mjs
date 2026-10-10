@@ -1,18 +1,10 @@
 import { skipReturnType } from "./parse-return-type.mjs";
+import { skipSpace } from "./parse-type-tokens.mjs";
 
-const SPACE = /\s/;
 const CALL_OPERATORS = /\?\?|\?\.|&&|\|\||(?:^|[^=!<>])=(?:[^>=]|$)/;
 
 function isCallGap(gap) {
   return CALL_OPERATORS.test(gap) || gap.trimEnd().endsWith("?");
-}
-
-function skipSpace(code, from) {
-  let i = from;
-  while (i < code.length && SPACE.test(code[i])) {
-    i += 1;
-  }
-  return i;
 }
 
 function arrowBody(code, from) {

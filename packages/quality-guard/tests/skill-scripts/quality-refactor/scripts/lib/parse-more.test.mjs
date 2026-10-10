@@ -41,7 +41,7 @@ test("Rust receiver forms do not count as parameters", () => {
     "fn e(&'a self, x: i32) -> i32 { x }",
   ].join("\n");
   const { code } = strip(src, "rs");
-  for (const fn of findFunctions(code, "rs", lineIndex(code))) {
+  for (const fn of findFunctions(code, "rs", lineIndex(code), src)) {
     assert.deepEqual(fn.params, ["x: i32"]);
   }
 });

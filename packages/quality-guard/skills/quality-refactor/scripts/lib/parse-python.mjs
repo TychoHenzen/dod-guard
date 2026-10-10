@@ -1,11 +1,6 @@
 import { matchBracket } from "./offsets.mjs";
 import { splitParams } from "./parse-expressions.mjs";
 
-function indentOf(line) {
-  const match = /^[ \t]*/.exec(line);
-  return match[0].replace(/\t/g, "    ").length;
-}
-
 function bodyLastLine(lines, first, baseIndent) {
   let last = first;
   for (let j = first + 1; j < lines.length; j += 1) {
@@ -14,6 +9,11 @@ function bodyLastLine(lines, first, baseIndent) {
     last = j;
   }
   return last;
+}
+
+export function indentOf(line) {
+  const match = /^[ \t]*/.exec(line);
+  return match[0].replace(/\t/g, "    ").length;
 }
 
 export function pythonFunctions(code, starts) {

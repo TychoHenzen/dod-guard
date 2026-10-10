@@ -6,7 +6,7 @@ import { strip } from "../../../../../skills/quality-refactor/scripts/lib/strip.
 
 function namesIn(source, lang) {
   const { code } = strip(source, lang);
-  return findFunctions(code, lang, lineIndex(code))
+  return findFunctions(code, lang, lineIndex(code), source)
     .map((fn) => fn.name)
     .sort();
 }
@@ -50,4 +50,11 @@ test("Rust match calls do not create phantom definitions", () => {
 test("a plain Rust fn is a definition", () => {
   const src = ["fn add(a: i32, b: i32) -> i32 {", "    a + b", "}"].join("\n");
   assert.deepEqual(namesIn(src, "rs"), ["add"]);
+});
+
+test("findFunctions requires the raw source string for every language", () => {
+  assert.throws(
+    () => findFunctions("function f() {}", "ts", lineIndex("function f() {}")),
+    { name: "TypeError" },
+  );
 });
