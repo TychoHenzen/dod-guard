@@ -108,14 +108,10 @@ function isOpen(issue) {
   return String(issue?.state ?? "").toLowerCase() === "open";
 }
 
-// select-next reads a relation as its bare number. One child outside the target repository would
-// make the whole child list name other issues, so the list is removed and select-next reports the
-// missing relationship instead.
-// select-next compares numbers only, so a foreign parent whose number matches a Project Parent
-// issue would look consistent. It is removed only when the issue's Project item carries a Parent
-// issue value: then the field and the issue disagree, and select-next holds the group. A null field
-// already disagrees with a foreign parent, and removing the parent would make the two agree on no
-// parent, so select-next would select the issue as a standalone root.
+// select-next groups by bare issue number, so a foreign child list, or a foreign parent under a Parent
+// issue value, is removed here: select-next then holds the group instead of joining a same-numbered
+// target issue, and holds a healthy target group as collateral. A null Parent issue field is left alone:
+// removing the parent would make the issue a standalone root. Delete this when #856 keys select-next by repository.
 function dropForeignRelations(issue, target, item) {
   if (Array.isArray(issue.children) && issue.children.some((child) => !isTargetReference(child, target))) {
     delete issue.children;
@@ -128,8 +124,10 @@ function dropForeignRelations(issue, target, item) {
 // `trustedHeadSha` come from the completion records of the target repository: an issue whose
 // record leaves no row pending gets `activeCheckpoint: false`, a merged-pending one
 // loses any stale value, and the recorded pull request gets the trusted head.
-// Two records that disagree on one pull request's head leave it untrusted. Records from
-// another repository, or with no repository, are copied unchanged.
+// Two records that disagree on one pull request's head leave it untrusted. Target issues also
+// lose a child list naming a foreign issue, and lose a foreign parent when their Project item
+// carries a Parent issue value (see dropForeignRelations). Records from another repository, or
+// with no repository, are copied unchanged.
 function annotateSnapshot(snapshot) {
   const copy = structuredClone(snapshot);
   // Items are never edited here, so the index built from the copy finds each issue's Project item

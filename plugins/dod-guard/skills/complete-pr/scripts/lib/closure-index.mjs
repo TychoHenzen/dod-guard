@@ -156,12 +156,12 @@ function linkedPullKeys(item) {
   return linkedPullValues(item).map((pull) => qualifiedKey(referenceRepository(pull), numberOf(pull)));
 }
 
-// ASSUMPTION: a duplicated pull request is named on the target issues whose Project item links it,
-// because that item is the only place a delivery reaches its pull request.
 function duplicatePullHolds(items, duplicated, target) {
   const keys = new Set(duplicated.map(({ key }) => key));
   return (Array.isArray(items) ? items : [])
     .filter((entry) => numberOf(entry?.content) !== null && isTargetRepository(itemRepository(entry), target))
+    // ASSUMPTION: a duplicated pull request is named on the target issues whose Project item links it,
+    // because that item is the only place a delivery reaches its pull request.
     .filter((entry) => linkedPullKeys(entry).some((key) => keys.has(key)))
     .map((entry) => ({ issue: numberOf(entry.content), reasons: ["duplicate pull request record"] }));
 }

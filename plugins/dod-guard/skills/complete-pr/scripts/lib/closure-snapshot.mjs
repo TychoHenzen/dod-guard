@@ -303,14 +303,14 @@ function contentNumber(content, subject, endpoint) {
 }
 
 function bareOrFullName(value) {
+  // ASSUMPTION: the Repository field may also carry the bare owner/name string, which the plan does
+  // not name. Reading it the same way is safer than failing a live build over the spelling.
   if (typeof value === "string") {
     return value;
   }
   return value?.full_name;
 }
 
-// ASSUMPTION: the Repository field may also carry the bare owner/name string, which the plan does not
-// name. Reading it the same way is safer than failing a live build over the spelling.
 function repositoryValue(value, subject, endpoint) {
   if (value === null) {
     return null;
@@ -325,22 +325,22 @@ function repositoryValue(value, subject, endpoint) {
   return name;
 }
 
-// ASSUMPTION: the Parent issue value names its issue by an issue URL in repository_url or url. When
-// only a repository URL is present, the value's own number names the issue.
-// ASSUMPTION: the Parent issue value's URLs are API URLs, as every other value the snapshot reads is, so a
-// present URL that names no repository fails the read rather than being skipped for the other URL.
 function parentValue(value, subject, endpoint) {
   if (value === null) {
     return null;
   }
+  // ASSUMPTION: the Parent issue value's URLs are API URLs, as every other value the snapshot reads is,
+  // so a present URL that names no repository fails the read rather than being skipped for the other URL.
   if (![value?.repository_url, value?.url].filter(present).every(namesRepository)) {
     throw readFailure(endpoint, `${subject} has a Parent issue URL that names no repository`);
   }
+  // ASSUMPTION: the Parent issue value names its issue by an issue URL in repository_url or url.
   const issue = urlReference(value?.repository_url, API_ISSUE_URL) ?? urlReference(value?.url, API_ISSUE_URL);
   if (issue !== null) {
     return issue;
   }
   const repository = urlRepository(value?.repository_url, API_REPOSITORY_URL);
+  // ASSUMPTION: when only a repository URL is present, the value's own number names the issue.
   if (repository !== null && positiveInteger(value?.number)) {
     return { repository, number: value.number };
   }
@@ -462,21 +462,20 @@ function readComments(read, repository, number) {
   });
 }
 
-// ASSUMPTION: the Project item's content carries the issue fields the snapshot keeps, so no per-issue
-// read is made. body and state_reason must be present even when null, because the closure rules read
-// the acceptance criteria and supersedes records from them; an absent key must never read as "no
-// criteria", since that would let a close go through on a guess.
-// ASSUMPTION: REST omits parent_issue_url for an issue that has no parent, so an absent key reads as
-// no parent. A present value must still name an issue, so a malformed link fails the build rather than
-// reading as no parent.
 function issueParent(content, endpoint) {
   const { number } = content;
+  // body and state_reason must be present even when null, because the closure rules read the
+  // acceptance criteria and supersedes records from them; an absent key must never read as "no
+  // criteria", since that would let a close go through on a guess.
   if (!ISSUE_KEYS.every((key) => key in content)) {
     throw readFailure(endpoint, `issue #${number} content must carry body and state_reason`);
   }
   if (![content.body, content.state_reason].every(isNullOrString)) {
     throw readFailure(endpoint, `issue #${number} body and state_reason must be strings or null`);
   }
+  // ASSUMPTION: REST omits parent_issue_url for an issue that has no parent, so an absent key reads as
+  // no parent. A present value must still name an issue, so a malformed link fails the build rather
+  // than reading as no parent.
   if (content.parent_issue_url === undefined || content.parent_issue_url === null) {
     return null;
   }
@@ -609,6 +608,8 @@ export function buildClosureSnapshot({ repository, runner }) {
   const targets = shaped.filter(({ item }) => sameRepository(item.repository, repo.fullName));
   const issues = targets
     .filter(({ item }) => item.contentType === "Issue")
+    // ASSUMPTION: the Project item's content carries the issue fields the snapshot keeps, so no
+    // per-issue read is made.
     .map(({ content }) => issueRecord(content, repo.fullName, read));
   return {
     repository: repo.fullName,

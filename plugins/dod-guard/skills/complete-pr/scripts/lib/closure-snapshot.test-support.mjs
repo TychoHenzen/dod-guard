@@ -1,7 +1,7 @@
-// REST fixtures for the closure snapshot builder: the fake REST runner, the GitHub object shapes the
-// builder reads (Project items, fields, issues, pull requests, check runs), and the endpoint routes.
-// The snapshot builder tests and the closure round-trip tests build from this one vocabulary. The
-// *.test-support.mjs name keeps the test glob from running this file as a test.
+// REST fixtures for the closure snapshot builder: the fake REST runner, the GitHub object shapes
+// the builder reads (Project items, fields, issues, pull requests, check runs), and the ENDPOINT
+// path builders. fakeRest takes its routes as a parameter, and each test file builds its own route
+// table from these. The *.test-support.mjs name keeps the test glob from running it as a test.
 
 const OWNER = "TychoHenzen";
 const REPO = `${OWNER}/dod-guard`;
