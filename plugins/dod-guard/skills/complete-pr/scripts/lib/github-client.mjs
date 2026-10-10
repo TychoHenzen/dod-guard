@@ -4,6 +4,8 @@ import { normalizeRequiredChecks } from "./check-normalization.mjs";
 import { CompletionError } from "./completion-error.mjs";
 
 const GH_CHECKS_PENDING_EXIT = 8;
+// One REST page of Project items reaches about 3.5 MB on the live Project, far past Node's 1 MiB default.
+const GH_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
 const HTTP_NOT_FOUND = /HTTP 404/;
 const HTTP_TRANSIENT_SERVER_ERROR = /HTTP 5\d{2}/;
 const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
@@ -145,8 +147,8 @@ function githubResponseContractError(endpoint, detail) {
   );
 }
 
-function runGh(args, acceptedExitCodes = [0]) {
-  const result = spawnSync("gh", args, { encoding: "utf8", windowsHide: true });
+export function runGh(args, acceptedExitCodes = [0]) {
+  const result = spawnSync("gh", args, { encoding: "utf8", windowsHide: true, maxBuffer: GH_OUTPUT_MAX_BUFFER });
   if (result.error) {
     throw result.error;
   }
@@ -316,7 +318,7 @@ function closingIssueReferences(text, defaultRepository) {
   return [...references.values()];
 }
 
-function listOwnedProjects(owner, commandRunner) {
+export function listOwnedProjects(owner, commandRunner) {
   const userEndpoint = `users/${owner}/projectsV2?per_page=100`;
   const userResponse = ghJson(
     ["api", "--paginate", "--slurp", userEndpoint],
@@ -555,7 +557,7 @@ export function normalizePullRequest(data, repository) {
   };
 }
 
-function readFallbackRequiredChecks(repository, pullRequest, commandRunner) {
+export function readFallbackRequiredChecks(repository, pullRequest, commandRunner) {
   const branch = encodeBranch(pullRequest.baseBranch);
   const protectionResponse = ghJson(
     ["api", `repos/${repository}/branches/${branch}/protection/required_status_checks`],

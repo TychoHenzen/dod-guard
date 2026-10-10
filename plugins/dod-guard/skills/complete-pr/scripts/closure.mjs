@@ -13,13 +13,18 @@ import { parseArgs } from "../../../lib/args.mjs";
 import { applyClosures, recordCompletion } from "./lib/closure-apply.mjs";
 import { annotateSnapshot } from "./lib/closure-delivery.mjs";
 import { planClosures } from "./lib/closure-plan.mjs";
+import { buildClosureSnapshot, writeClosureSnapshot } from "./lib/closure-snapshot.mjs";
+import { runGh as runGhClient } from "./lib/github-client.mjs";
 import { runGh } from "./project-status.mjs";
+
+const REPOSITORY_NAME = /^[\w.-]+\/[\w.-]+$/u;
 
 const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs apply --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs record --repository=<owner/name> --result=<complete-pr.json>
                           --matrix=<rows.json> [--children=<n,...>]
        closure.mjs annotate --snapshot=<file.json>
+       closure.mjs snapshot --repository=<owner/name> --output=<file.json>
 
 The snapshot is the closure snapshot that standards/project-workflow.md defines:
 the select-next.mjs snapshot of the whole Project plus, on every issue, its
@@ -29,7 +34,9 @@ repairs, holds, unverified-closed reports, and deliveries; apply performs each
 close as read, comment, close, readback, Project Done, and it also sets Done on
 each status repair. --hierarchy asks to close that issue as a pure hierarchy
 record (not_planned). annotate prints the snapshot with activeCheckpoint and
-trustedHeadSha taken from the completion records, ready for select-next.mjs.`;
+trustedHeadSha taken from the completion records, ready for select-next.mjs.
+snapshot builds that closure snapshot for one repository from GitHub REST GET requests only and
+writes it to --output in one step, so a failed read leaves no file behind.`;
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -68,12 +75,29 @@ const COMMANDS = {
     const options = snapshotOptions(args);
     return options && planClosures(readJson(args.snapshot), options);
   },
-  apply: (args, runner) => {
+  apply: (args, runner = runGh) => {
     const options = snapshotOptions(args);
     return options && applyClosures(readJson(args.snapshot), { runner, ...options });
   },
   annotate: (args) => given(args.snapshot) && annotateSnapshot(readJson(args.snapshot)),
-  record: (args, runner) => {
+  // The snapshot reads through github-client's runGh, which takes the accepted exit codes per call.
+  // The project-status runGh throws on any non-zero exit and cannot serve these reads.
+  snapshot: (args, runner = runGhClient) => {
+    if (!given(args.output) || !REPOSITORY_NAME.test(args.repository ?? "")) {
+      return false;
+    }
+    const snapshot = buildClosureSnapshot({ repository: args.repository, runner });
+    writeClosureSnapshot(args.output, snapshot);
+    return {
+      output: args.output,
+      repository: snapshot.repository,
+      projectNumber: snapshot.project.number,
+      items: snapshot.items.length,
+      issues: snapshot.issues.length,
+      pullRequests: snapshot.pullRequests.length,
+    };
+  },
+  record: (args, runner = runGh) => {
     const children = childList(args.children);
     if (children === false) return false;
     return given(args.repository) && given(args.result) && given(args.matrix) &&
@@ -87,7 +111,7 @@ const COMMANDS = {
   },
 };
 
-function runCli(argv, { runner = runGh, stdout = process.stdout, stderr = process.stderr } = {}) {
+function runCli(argv, { runner, stdout = process.stdout, stderr = process.stderr } = {}) {
   const [command, ...rest] = argv;
   const args = parseArgs(rest);
   const run = COMMANDS[command];

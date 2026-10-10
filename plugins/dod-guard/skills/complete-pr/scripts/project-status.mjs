@@ -116,18 +116,58 @@ function resolveStatusField(fields, statusFieldId) {
   return field;
 }
 
+// REST spells a Status name as a bare string, as {name: "..."}, or as {name: {raw, html}}, and the
+// spellings must agree or the value says two things at once. An absent value is no name and gives
+// null. A blank, contradictory, or unrecognized value throws, so no caller reads a name it cannot
+// verify.
+const NAME_SPELLINGS = ["raw", "html"];
+
+function nameSpellings(name) {
+  if (typeof name === "string") {
+    return [name];
+  }
+  if (name === null || typeof name !== "object") {
+    return [];
+  }
+  return NAME_SPELLINGS.filter((key) => key in name).map((key) => name[key]);
+}
+
+function valueSpellings(value) {
+  if (typeof value === "string") {
+    return [value];
+  }
+  return nameSpellings(value.name);
+}
+
+function statusValueName(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  const spellings = valueSpellings(value);
+  if (spellings.length === 0) {
+    throw new Error("Status value is not a name.");
+  }
+  if (spellings.some((name) => typeof name !== "string" || name.trim().length === 0)) {
+    throw new Error("Status value has a blank name.");
+  }
+  if (new Set(spellings).size !== 1) {
+    throw new Error("Status value names disagree.");
+  }
+  return spellings[0];
+}
+
+// Each caller keeps its own readback message, so a value the flattener rejects reads as no name.
+function nameOrNull(value) {
+  try {
+    return statusValueName(value);
+  } catch {
+    return null;
+  }
+}
+
 function resolveStatusOption(statusField, statusOptionId, expectedStatus) {
   const option = statusField.options.find((candidate) => String(candidate?.id ?? "") === statusOptionId);
-  const names = [];
-  if (typeof option?.name === "string") {
-    names.push(option.name);
-  } else if (option?.name && typeof option.name === "object") {
-    for (const key of ["raw", "html"]) {
-      if (key in option.name) names.push(option.name[key]);
-    }
-  }
-  if (!option || names.length === 0 || names.some((name) => typeof name !== "string" || name.trim().length === 0) ||
-      new Set(names).size !== 1 || names[0] !== expectedStatus) {
+  if (!option || nameOrNull(option) !== expectedStatus) {
     throw new Error(`Status option ${statusOptionId} must map to ${expectedStatus}.`);
   }
   return option;
@@ -184,22 +224,11 @@ function readProjectItemStatus(item, itemId, statusFieldId) {
   if (statusFields.length !== 1) {
     throw new Error(`Project item ${itemId} readback did not include exactly one Status field/value.`);
   }
-  const value = statusFields[0].value;
-  const names = [];
-  if (typeof value === "string") {
-    names.push(value);
-  } else if (value?.name && typeof value.name === "object") {
-    for (const key of ["raw", "html"]) {
-      if (key in value.name) names.push(value.name[key]);
-    }
-  } else if (value && typeof value.name === "string") {
-    names.push(value.name);
-  }
-  if (names.length === 0 || names.some((name) => typeof name !== "string" || name.trim().length === 0) ||
-      new Set(names).size !== 1) {
+  const name = nameOrNull(statusFields[0].value);
+  if (name === null) {
     throw new Error(`Project item ${itemId} readback did not include one non-contradictory Status field/value.`);
   }
-  return names[0];
+  return name;
 }
 
 function readProjectItems({ owner, projectNumber, statusFieldId, targetItemIds, commandRunner }) {
@@ -390,6 +419,7 @@ export {
   buildProjectViewCommand,
   resolveProjectNodeId,
   runGh,
+  statusValueName,
   writeProjectStatuses,
   writeProjectStatusesWithFallback,
 };
