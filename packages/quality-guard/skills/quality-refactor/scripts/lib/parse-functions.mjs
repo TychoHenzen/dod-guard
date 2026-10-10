@@ -8,6 +8,7 @@ const HEADER_ASSIGNED =
 const HEADER_RUST = /\bfn\s+([A-Za-z_]\w*)\s*(?:<[^<>()]*>)?\s*\(/g;
 const HEADER_GO =
   /\bfunc\s+(?:\([^()]*\)\s+)?([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*\(/g;
+const SPACE = /\s/;
 
 function bodyEnd(code, body) {
   return body.kind === "block"
@@ -15,11 +16,28 @@ function bodyEnd(code, body) {
     : findExpressionEnd(code, body.offset);
 }
 
+// A call in a ternary's true branch is followed by the ternary's ":", not a return type.
+function precededByTernary(code, headerStart) {
+  let i = headerStart - 1;
+  while (i >= 0 && SPACE.test(code[i])) {
+    i -= 1;
+  }
+  return i >= 0 && code[i] === "?";
+}
+
+// Only the ts path reads return types, so only it can mistake a ternary colon for one.
+function bodyOptions(code, headerStart, options) {
+  if (options?.returnTypeAnnotation && precededByTernary(code, headerStart)) {
+    return {};
+  }
+  return options;
+}
+
 function extractAt({ code, starts, name, openParen, headerStart, options }) {
   if (!isCallable(name)) return null;
   const closeParen = matchBracket(code, openParen, "()");
   if (closeParen === -1) return null;
-  const body = bodyStart(code, closeParen + 1, options);
+  const body = bodyStart(code, closeParen + 1, bodyOptions(code, headerStart, options));
   if (body === null) return null;
   const end = bodyEnd(code, body);
   if (end === -1) return null;

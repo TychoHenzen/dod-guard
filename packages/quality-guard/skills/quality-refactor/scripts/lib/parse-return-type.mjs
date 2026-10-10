@@ -6,6 +6,7 @@ import {
   nameTail,
   nextToken,
   numberAt,
+  opensParameterList,
   skipSpace,
   wordAt,
 } from "./parse-type-tokens.mjs";
@@ -140,8 +141,9 @@ function queryOperand(state, code, open) {
   return completeOperand(state, end, false);
 }
 
-// A "{", "[" or "(" group. A "(" group followed by "=>" is a function type, and
-// its return type is the next thing to read.
+// A "{", "[" or "(" group. A "(" group is a function type only when it is followed
+// by "=>" and its contents can start a parameter list. Otherwise it is a
+// parenthesized type, and the "=>" after it belongs to the caller.
 function groupOperand(ctx, state, i) {
   const { code } = ctx;
   const close = groupEnd(code, i);
@@ -149,7 +151,7 @@ function groupOperand(ctx, state, i) {
     return -1;
   }
   const after = skipSpace(code, close + 1);
-  if (code[i] === "(" && code.startsWith("=>", after)) {
+  if (code[i] === "(" && code.startsWith("=>", after) && opensParameterList(code, i)) {
     return expectAt(state, after + 2);
   }
   return completeOperand(state, close + 1, false);

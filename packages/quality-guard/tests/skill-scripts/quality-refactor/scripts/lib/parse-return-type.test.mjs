@@ -97,3 +97,37 @@ test("C++ and C# constructors keep their bodies", () => {
   const cs = "class Foo {\n    public Foo(int x) : base(x) { }\n}";
   assert.deepEqual(functionsIn(cs, "cs"), [{ name: "Foo", body: "{ }" }]);
 });
+
+test("parenthesized return types keep the arrow function that follows them", () => {
+  const h = "const h = (): (() => void) => () => { run(); };";
+  assert.deepEqual(functionsIn(h), [{ name: "h", body: "() => { run(); }" }]);
+  const k =
+    "const k = (): ((a: number) => void) => (a) => { console.log(a); };";
+  assert.deepEqual(functionsIn(k), [
+    { name: "k", body: "(a) => { console.log(a); }" },
+  ]);
+  const s = "const s = (): (string | number) => 1;";
+  assert.deepEqual(functionsIn(s), [{ name: "s", body: "1" }]);
+});
+
+test("a call in a ternary true branch keeps its plain body, not the ternary colon", () => {
+  const w = "const w = c ? g() : () => { side(); };";
+  assert.deepEqual(functionsIn(w), [{ name: "g", body: "{ side(); }" }]);
+});
+
+test("empty and object-typed function types in members are not functions", () => {
+  assert.deepEqual(functionsIn("interface I { n(): () => void; }"), []);
+  assert.deepEqual(
+    functionsIn("interface I { m(): () => { a: string }; }"),
+    [],
+  );
+  assert.deepEqual(
+    functionsIn("type T = { m(): { a: string }, n(): () => void };"),
+    [],
+  );
+});
+
+test("a function type with a named parameter keeps its block body", () => {
+  const source = "class A { m(): (a: number) => void { return; } }";
+  assert.deepEqual(functionsIn(source), [{ name: "m", body: "{ return; }" }]);
+});

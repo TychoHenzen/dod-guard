@@ -96,6 +96,20 @@ export function groupEnd(code, open) {
   return matchBracket(code, open, pair);
 }
 
+// Mirrors TypeScript's function-type lookahead, so "(string | number)" is not read as parameters.
+export function opensParameterList(code, open) {
+  const i = skipSpace(code, open + 1);
+  if (code[i] === ")" || code[i] === "{" || code[i] === "[" || code.startsWith("...", i)) {
+    return true;
+  }
+  const word = wordAt(code, i);
+  if (word === "") {
+    return false;
+  }
+  const next = code[skipSpace(code, i + word.length)];
+  return next !== undefined && [":", "?", ",", "=", ")"].includes(next);
+}
+
 // Offset just after an optional ".member" continuation and optional generic
 // arguments that follow a name, or -1 when the generic list never closes.
 export function nameTail(code, from) {
