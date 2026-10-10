@@ -247,6 +247,46 @@ function runStatusMutation(commandRunner, command) {
   return result;
 }
 
+// Two inputs that name one item would PATCH it twice and report it twice, so refuse before any write.
+function resolveProjectItemInputs(items, itemIds, statusFieldId) {
+  const resolved = new Map();
+  const inputByNodeId = new Map();
+  for (const itemId of itemIds) {
+    const item = findProjectItem(items, itemId);
+    if (!item) {
+      throw new Error(`Project item ${itemId} was missing from readback.`);
+    }
+    const identity = projectItemIdentity(item);
+    const firstInput = inputByNodeId.get(identity.nodeId);
+    if (firstInput !== undefined) {
+      throw new Error(
+        `Project item ${firstInput} and ${itemId} resolve to the same Project item ${identity.nodeId}.`,
+      );
+    }
+    inputByNodeId.set(identity.nodeId, itemId);
+    resolved.set(itemId, { identity, status: readProjectItemStatus(item, itemId, statusFieldId) });
+  }
+  return resolved;
+}
+
+// Matching on the resolved pair, not the caller's spelling, reports a change to either ID alone as an
+// identity change; when both IDs change nothing matches, so the readback stops as a missing item.
+function findReadbackProjectItem(items, itemId, identity) {
+  const matches = items.filter((candidate) => {
+    const { id, nodeId } = projectItemIdentity(candidate);
+    return id === identity.id || nodeId === identity.nodeId;
+  });
+  if (matches.length === 0) {
+    throw new Error(`Project item ${itemId} was missing from readback.`);
+  }
+  const [item] = matches;
+  const readback = projectItemIdentity(item);
+  if (matches.length !== 1 || readback.id !== identity.id || readback.nodeId !== identity.nodeId) {
+    throw new Error(`Project item ${itemId} readback must preserve the same numeric and global IDs.`);
+  }
+  return item;
+}
+
 function writeProjectStatuses({
   owner,
   projectNumber,
@@ -291,24 +331,12 @@ function writeProjectStatuses({
     targetItemIds: itemIds,
     commandRunner,
   });
-  const restItemIds = new Map();
-  const initialStatuses = new Map();
-  for (const itemId of itemIds) {
-    const item = findProjectItem(initialItems.items, itemId);
-    if (!item || item.id === undefined || item.id === null) {
-      throw new Error(`Project item ${itemId} was missing from readback.`);
-    }
-    const identity = projectItemIdentity(item);
-    if (identity.nodeId !== itemId) {
-      throw new Error(`Project item ${itemId} readback must preserve the same numeric and global IDs.`);
-    }
-    restItemIds.set(itemId, identity.id);
-    initialStatuses.set(itemId, readProjectItemStatus(item, itemId, restStatusFieldId));
-  }
+  const resolvedItems = resolveProjectItemInputs(initialItems.items, itemIds, restStatusFieldId);
   const mutations = [];
 
   for (const itemId of itemIds) {
-    if (initialStatuses.get(itemId) === expectedStatus) {
+    const { identity, status: initialStatus } = resolvedItems.get(itemId);
+    if (initialStatus === expectedStatus) {
       mutations.push({ itemId, status: expectedStatus });
       continue;
     }
@@ -320,7 +348,7 @@ function writeProjectStatuses({
         buildProjectItemEditCommand({
           owner,
           projectNumber,
-          itemId: restItemIds.get(itemId),
+          itemId: identity.id,
           statusFieldId: restStatusFieldId,
           statusOptionId,
         }),
@@ -335,14 +363,7 @@ function writeProjectStatuses({
       targetItemIds: itemIds,
       commandRunner,
     });
-    const item = findProjectItem(items.items, itemId);
-    if (!item) {
-      throw new Error(`Project item ${itemId} was missing from readback.`);
-    }
-    const identity = projectItemIdentity(item);
-    if (identity.id !== restItemIds.get(itemId) || identity.nodeId !== itemId) {
-      throw new Error(`Project item ${itemId} readback must preserve the same numeric and global IDs.`);
-    }
+    const item = findReadbackProjectItem(items.items, itemId, identity);
     const status = readProjectItemStatus(item, itemId, restStatusFieldId);
     if (status !== expectedStatus) {
       if (mutationError) {
@@ -381,7 +402,11 @@ async function writeProjectStatusesWithFallback({ primaryMutation, evidence = []
 }
 
 function usage() {
-  return "Usage: node project-status.mjs <owner> <project-number> <status-field-node-id> <status-option-id> <expected-status> <item-id>...";
+  return [
+    "Usage: node project-status.mjs <owner> <project-number> <status-field-node-id> <status-option-id> " +
+      "<expected-status> <item-id>...",
+    "  <item-id> is a Project item's numeric REST id or its PVTI_ global node id.",
+  ].join("\n");
 }
 
 let entrypoint = "";

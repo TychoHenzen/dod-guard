@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { ACCEPTANCE_MATRIX_PATHS } from "../../../lib/acceptance-matrix.mjs";
+import { prose } from "../../../lib/skill-text.mjs";
 import { evaluateStructuredFinalization } from "./finalization-gate.mjs";
 
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
@@ -78,6 +79,10 @@ test("finalizes each structured parent child only after the guarded merge", () =
   assert.match(finalization, /require `outcome: "verified"`/);
   assert.match(finalization, /Resolve the\s+shared Project number, REST item IDs, Status-field ID, and `Done` option ID once/);
   assert.match(finalization, /project-status\.mjs <owner> <project-number> <status-field-node-id> <done-option-id> Done <child-item-id> \.\.\. <parent-item-id>/);
+  assert.match(
+    finalization,
+    prose("numeric REST id or its `PVTI_` global node id", "refuses two IDs that name one item"),
+  );
   assert.match(finalization, /child item IDs first and the parent\s+item ID last/);
   assert.match(finalization, /runner resolves the live REST field and item IDs/);
   assert.match(finalization, /reads\s+each item back\s+from the shared Project before continuing/);
