@@ -26,10 +26,12 @@ const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issu
        closure.mjs annotate --snapshot=<file.json>
        closure.mjs snapshot --repository=<owner/name> --output=<file.json>
 
-The snapshot is the closure snapshot that standards/project-workflow.md defines:
-the select-next.mjs snapshot of the whole Project plus, on every issue, its
-body, state_reason, and comments ([{id, body}]), and for apply a project object
-{owner, number, statusFieldId, doneOptionId}. plan prints the closes, status
+The snapshot is the closure snapshot that standards/project-workflow.md defines,
+built by the snapshot subcommand. Records are matched by repository and number,
+so a record from another repository never takes part in a decision. On every
+issue it carries children, parent, body, state_reason, and comments
+([{id, body}]), and for apply a project object {owner, number, statusFieldId,
+doneOptionId}. plan prints the closes, status
 repairs, holds, unverified-closed reports, and deliveries; apply performs each
 close as read, comment, close, readback, Project Done, and it also sets Done on
 each status repair. --hierarchy asks to close that issue as a pure hierarchy

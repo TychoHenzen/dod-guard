@@ -67,6 +67,11 @@ test("goal-sdlc cleans up through the closure helper and has no write path of it
     skill.indexOf("closure.mjs plan") < skill.indexOf("scripts/select-next.mjs"),
     "cleanup runs before selection",
   );
+  const built = skill.search(prose("build the closure snapshot that `standards/project-workflow.md` defines with"));
+  const planned = skill.search(prose("run `node closure.mjs plan"));
+  assert.ok(built >= 0 && planned >= 0, "step 2 builds the closure snapshot and then runs closure.mjs plan");
+  assert.ok(built < planned, "the closure snapshot is built before closure.mjs plan runs");
+  assert.match(skill, prose("`node closure.mjs snapshot --repository=<owner/name> --output=<file>`"));
   for (const write of [
     /gh (issue|pr|project) (close|edit|item-edit)/,
     /--method (POST|PATCH)/,

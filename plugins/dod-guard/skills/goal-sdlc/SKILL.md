@@ -40,10 +40,10 @@ Repeat until the stop condition holds:
    request, and resume it at its latest checkpoint. When nothing matches,
    capture the work with `/add-backlog-idea`, refine it, and resume it. Never
    discard, stash, or fold it into an unrelated PBI.
-2. **Clean up, then select one parent.** Read the linked Project with the GitHub
-   connector and save it as the closure snapshot that
-   `standards/project-workflow.md` defines. In `../complete-pr/scripts`, run
-   `node closure.mjs plan --snapshot=<file>`, report each close, hold, and
+2. **Clean up, then select one parent.** In `../complete-pr/scripts`, build the
+   closure snapshot that `standards/project-workflow.md` defines with
+   `node closure.mjs snapshot --repository=<owner/name> --output=<file>`, then
+   run `node closure.mjs plan --snapshot=<file>`, report each close, hold, and
    `unverified-closed` entry with its reasons, delegate planned closes and
    status repairs to `/complete-pr`'s "Close delivered issues for goal-sdlc"
    section, as one write-capable stage, and reread. Run `closure.mjs annotate`

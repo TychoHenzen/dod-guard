@@ -248,12 +248,13 @@ close it now through the closure helper as `not_planned` with its evidence
 comment:
 
 ```text
+node <plugin-root>/skills/complete-pr/scripts/closure.mjs snapshot --repository=<owner/name> --output=<file>
 node <plugin-root>/skills/complete-pr/scripts/closure.mjs plan --snapshot=<file> --hierarchy=<issue>
 node <plugin-root>/skills/complete-pr/scripts/closure.mjs apply --snapshot=<file> --hierarchy=<issue>
 ```
 
 The snapshot is the closure snapshot that `standards/project-workflow.md`
-defines, read after the replacement roots carry their `supersedes` records.
+defines, built after the replacement roots carry their `supersedes` records.
 Report any hold with its reasons instead of closing by hand.
 
 ## Record discovery and re-refinement state

@@ -151,13 +151,27 @@ their place.
   `inapplicable`. A record with pending rows is `merged-pending`, not verified.
   Recording again updates the same comment in place.
 
-Each caller of `closure.mjs plan`, `apply`, or `annotate` saves one closure
-snapshot as JSON and passes it with `--snapshot`. The closure snapshot is the
-whole linked Project, read the way goal-sdlc's select-next snapshot is:
-`repository`, `defaultBranch`, every item from every page, every listed issue,
-and every linked pull request. On every issue it also carries `children` (an
-empty array when it has none), `body`, `state_reason`, and `comments` as
-`[{id, body}]`. It carries a `project` object with `owner`, `number`,
+Each caller builds one closure snapshot with
+`node <plugin-root>/skills/complete-pr/scripts/closure.mjs snapshot --repository=<owner/name> --output=<file>`.
+That command makes GitHub REST reads only, writes the file in one step, and on
+any failed or incomplete read exits non-zero, names the endpoint, and leaves no
+file. The caller passes that file with `--snapshot` to `closure.mjs plan`,
+`apply`, or `annotate`.
+
+The closure snapshot is the whole linked Project, read the way goal-sdlc's
+select-next snapshot is: `repository`, `defaultBranch`, `items` holding every
+item from every page of the whole linked Project, from every repository, each
+with a top-level `repository` and the Status (a plain string), Repository,
+Parent issue (`{repository, number}`), and Linked pull requests
+(`[{repository, number}]`) fields. `issues` and `pullRequests` hold only
+target-repository records, each with `repository`. On every issue it also
+carries `children` as `[{repository, number}]` (an empty array when it has
+none), `parent` as `{repository, number}` or null, `body`, `state_reason`, and
+`comments` as `[{id, body}]`. On every pull request it carries its state, merge
+time, head, base, merge commit, and REST-read `requiredChecks`; the merge commit
+and `requiredChecks` are null until the pull request merges.
+
+The snapshot also carries a `project` object with `owner`, `number`,
 `statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
 Status field node ID and Done option ID from the Project fields read, the same
 values `/complete-pr` passes to `project-status.mjs`. The whole Project is read
@@ -167,6 +181,18 @@ An issue whose `children` list is missing is held with "sub-issue list missing",
 never treated as childless. Any caller's run may therefore also close other
 verified originals and parents, and report older `unverified-closed` issues,
 because the helper is the single closing authority.
+
+The helper matches every Project item, issue, and pull request by
+`owner/name#number`, never by number alone. A record from another repository
+never takes part in a decision. A record without repository identity is a hold
+that names "repository identity missing" and is never defaulted to the target
+repository. A target issue whose sub-issue, parent, or linked pull request
+belongs to another repository is held with a reason that names it as
+`owner/name#N`. A Project Status that is present but cannot be read as a name
+is a hold. `annotate` changes only target-repository records. It removes an
+issue's whole child list when any entry belongs to another repository, and it
+removes a cross-repository parent when the Project Parent issue field carries
+one, so select-next holds that group and never selects it.
 
 A delivery is verified only when its completion record matches the live pull
 request readback (merge commit, trusted head, default base, passing checks) and

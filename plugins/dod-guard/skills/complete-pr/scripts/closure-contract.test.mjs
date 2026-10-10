@@ -66,7 +66,7 @@ test("complete-pr records completion and closes replaced issues after finalizati
   assert.match(section, prose("Closing keywords and the helper's", "linked-issue confirmation are unchanged."));
 });
 
-test("every caller saves the one closure snapshot the standard defines", async () => {
+test("every caller builds the one closure snapshot the standard defines", async () => {
   const goalSdlc = await readFile(new URL("../../goal-sdlc/SKILL.md", import.meta.url), "utf8");
   const refineBacklog = await readFile(new URL("../../refine-backlog-item/SKILL.md", import.meta.url), "utf8");
   assert.match(standard, prose("closure snapshot"));
@@ -83,4 +83,64 @@ test("every caller saves the one closure snapshot the standard defines", async (
   const section = skill.slice(start, skill.indexOf("## Result", start));
   assert.match(section, prose("closure.mjs apply --snapshot=<file>"));
   assert.match(section, prose("resolve no pull request"));
+});
+
+const BUILDS_SNAPSHOT = prose("closure.mjs snapshot --repository=");
+const PLANS = prose("closure.mjs plan --snapshot=<file>");
+
+// Both phrases must exist, and the first match of `first` must precede the first match of `second`.
+function assertBefore(text, first, second, message) {
+  const earlier = text.search(first);
+  const later = text.search(second);
+  if (earlier < 0 || later < 0) {
+    throw new Error(`${message}: a phrase is missing`);
+  }
+  if (earlier >= later) {
+    throw new Error(message);
+  }
+}
+
+test("AC-08: every caller builds its closure snapshot with closure.mjs snapshot before it plans", async () => {
+  const goalSdlc = await readFile(new URL("../../goal-sdlc/SKILL.md", import.meta.url), "utf8");
+  const refineBacklog = await readFile(new URL("../../refine-backlog-item/SKILL.md", import.meta.url), "utf8");
+  const sectionOf = (heading) => {
+    const start = skill.indexOf(heading);
+    if (start < 0) {
+      throw new Error(`complete-pr has no "${heading}" section`);
+    }
+    return skill.slice(start, skill.indexOf("## Result", start));
+  };
+  assertBefore(goalSdlc, BUILDS_SNAPSHOT, prose("node closure.mjs plan --snapshot=<file>"), "goal-sdlc step 2 builds first");
+  assertBefore(
+    sectionOf("## Record completion and close replaced issues"),
+    BUILDS_SNAPSHOT,
+    PLANS,
+    "the completion record step builds before it plans",
+  );
+  assertBefore(
+    sectionOf("## Close delivered issues for goal-sdlc"),
+    BUILDS_SNAPSHOT,
+    PLANS,
+    "the delegated cleanup builds before it plans",
+  );
+  assertBefore(
+    refineBacklog,
+    BUILDS_SNAPSHOT,
+    prose("closure.mjs plan --snapshot=<file> --hierarchy=<issue>"),
+    "the hierarchy close builds before it plans",
+  );
+});
+
+test("AC-08: the standard documents the repository-qualified snapshot shape", () => {
+  const start = standard.indexOf("Each caller builds one closure snapshot");
+  const end = standard.indexOf("never selects it.");
+  assert.ok(start >= 0 && end > start, "the standard keeps the closure snapshot paragraphs");
+  const shape = standard.slice(start, end);
+  assert.match(shape, prose("closure.mjs snapshot --repository=<owner/name> --output=<file>"));
+  for (const field of ["repository", "requiredChecks"]) {
+    assert.ok(shape.includes(`\`${field}\``), field);
+  }
+  assert.match(shape, prose("`owner/name#number`"));
+  assert.match(shape, prose("repository identity missing"));
+  assert.match(shape, prose("is held with a reason that names it as `owner/name#N`"));
 });
