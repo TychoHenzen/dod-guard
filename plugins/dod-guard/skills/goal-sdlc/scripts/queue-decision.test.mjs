@@ -170,6 +170,26 @@ test("a contradictory parent holds the delivery", () => {
   assertHold(input, 444, "contradictory parent for issue #536");
 });
 
+test("a null Project parent against a set issue parent holds that issue", () => {
+  const child = 536;
+  const parent = 444;
+  const input = snapshot({
+    items: [item(child, "Todo")],
+    issues: [issue(child, { state: "open", parent })],
+    pullRequests: [],
+  });
+  assertHold(input, child, "contradictory parent for issue #536");
+  assert.equal(classifyQueue(input, { today: TODAY }).selected, null);
+  const corrected = snapshot({
+    items: [item(child, "Todo")],
+    issues: [issue(child, { state: "open", parent: null })],
+    pullRequests: [],
+  });
+  const { selected } = classifyQueue(corrected, { today: TODAY });
+  assert.equal(selected.rootIssueNumber, child);
+  assert.equal(selected.decision.status, "Todo");
+});
+
 test("a merged child alone, without its parent's item, is an orphan hold", () => {
   const input = snapshot({
     items: [item(536, "Done", { parent: 444, linked: [540] })],

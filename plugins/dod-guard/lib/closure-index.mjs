@@ -107,9 +107,9 @@ function itemPullNumbers(index, item) {
     .map(numberOf);
 }
 
-// Groups the records of one kind by qualified key. A record from another repository is dropped,
-// since it cannot be any target record. A record whose repository is unknown might be one, so it
-// is kept aside to become a hold, and is never defaulted to the target repository.
+// Groups the records of one kind by qualified key. A foreign record is dropped, whatever its number. A target
+// record with no number cannot be keyed, so it is held rather than dropped. A record with no repository is
+// held too, and is never defaulted to the target repository.
 function groupRecords(records, { repositoryOf, numberOfRecord, target }) {
   const groups = new Map();
   const unidentified = [];
@@ -117,8 +117,10 @@ function groupRecords(records, { repositoryOf, numberOfRecord, target }) {
     const repository = repositoryOf(record);
     const number = numberOfRecord(record);
     if (repository === null) {
-      unidentified.push({ record, number });
-    } else if (isTargetRepository(repository, target) && number !== null) {
+      unidentified.push({ record, number, reason: "repository identity missing" });
+    } else if (isTargetRepository(repository, target) && number === null) {
+      unidentified.push({ record, number, reason: "issue number missing" });
+    } else if (isTargetRepository(repository, target)) {
       const key = qualifiedKey(repository, number);
       groups.set(key, [...(groups.get(key) ?? []), { record, number }]);
     }
@@ -145,9 +147,9 @@ function keptNumbers(groups, kept) {
 }
 
 function unidentifiedHolds(unidentified, kind) {
-  return unidentified.map(({ record, number }) => ({
+  return unidentified.map(({ record, number, reason }) => ({
     issue: null,
-    reasons: ["repository identity missing"],
+    reasons: [reason],
     record: { kind, number, itemId: kind === "item" ? (record.id ?? null) : null },
   }));
 }

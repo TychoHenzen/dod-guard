@@ -148,8 +148,24 @@ function hold(reasons) {
   return { kind: "hold", eligible: false, reasons: [...new Set(reasons)] };
 }
 
+// A record's entries, with its parent-item gap rendered from its flag at the position the text always
+// had: before the first contradictory-parent or child entry, otherwise last.
+function evidenceOf(record) {
+  const entries = [...(record.missingEvidence ?? [])];
+  if (record.parentItemMissing) {
+    const entry = `parent issue #${record.parentIssueNumber} Project item`;
+    const at = entries.findIndex((text) => text.startsWith("contradictory parent for issue #") || text.startsWith("child issue #"));
+    if (at === -1) {
+      entries.push(entry);
+    } else {
+      entries.splice(at, 0, entry);
+    }
+  }
+  return [...new Set(entries)];
+}
+
 function recordReasons(records) {
-  const reasons = records.flatMap((record) => [...(record.missingEvidence ?? []), ...(record.relationHolds ?? [])]);
+  const reasons = records.flatMap((record) => [...evidenceOf(record), ...(record.relationHolds ?? [])]);
   const statuses = records.map(({ projectStatus }) => normalizedStatus(projectStatus));
   const uniqueStatuses = [...new Set(statuses.filter(Boolean))];
   if (statuses.some((status) => status === null)) reasons.push("Project status missing");
@@ -161,18 +177,30 @@ function recordReasons(records) {
   return { reasons, uniqueStatuses };
 }
 
+function mergedDecision(reasons) {
+  return reasons.length > 0 ? hold(reasons) : { kind: "complete", eligible: false, status: "Done", reasons: [] };
+}
+
+// The evidence every judgement shares. The merged pull requests' own evidence is appended only when one
+// is merged, so the reasons keep the order they have always had.
+function groupEvidence(records, context) {
+  const { reasons, uniqueStatuses } = recordReasons(records);
+  const pullRequests = records.flatMap(({ pullRequests: linked }) => linked ?? []);
+  reasons.push(...pullRequestReasons(pullRequests));
+  const merged = pullRequests.filter(mergedPullRequest);
+  if (merged.length > 0) {
+    reasons.push(...mergedEvidenceReasons(records, context, merged));
+  }
+  return { reasons, uniqueStatuses, merged };
+}
+
 // A merged delivery is judged by its completion evidence alone, so it is either complete or held and
 // is never queued as work.
 function decideGroup(records, context) {
   if (!Array.isArray(records) || records.length === 0) return hold(["delivery record missing"]);
-  const { reasons, uniqueStatuses } = recordReasons(records);
-  const pullRequests = records.flatMap(({ pullRequests: linked }) => linked ?? []);
-  reasons.push(...pullRequestReasons(pullRequests));
-
-  const merged = pullRequests.filter(mergedPullRequest);
+  const { reasons, uniqueStatuses, merged } = groupEvidence(records, context);
   if (merged.length > 0) {
-    reasons.push(...mergedEvidenceReasons(records, context, merged));
-    return reasons.length > 0 ? hold(reasons) : { kind: "complete", eligible: false, status: "Done", reasons: [] };
+    return mergedDecision(reasons);
   }
 
   const resumable = resumableDecision(reasons, records);
@@ -186,6 +214,16 @@ function decideGroup(records, context) {
   }
   if (records.some((record) => record.issue === null)) return hold(["issue readback missing"]);
   return { kind: "eligible", eligible: true, status: uniqueStatuses[0], reasons: [] };
+}
+
+// The closure judges completion evidence only, so it never reads the date, the friction log, or the
+// queue status. A delivery with no merged pull request is held for that alone.
+function decideDelivery(records, context) {
+  const { reasons, merged } = groupEvidence(records, context);
+  if (merged.length === 0) {
+    return hold([...reasons, "no merged pull request linked to the delivery"]);
+  }
+  return mergedDecision(reasons);
 }
 
 function issueRecord(number, issue, overlay) {
@@ -226,7 +264,7 @@ function referenceKey(reference) {
   return present(reference) ? qualifiedKey(referenceRepository(reference), numberOf(reference)) : null;
 }
 
-function missingEvidenceOf(index, number, item, issue, parentIssueFieldObserved, parentIssueNumber) {
+function missingEvidenceOf(index, number, item, issue, parentIssueFieldObserved) {
   const entries = [];
   if (!parentIssueFieldObserved) entries.push(`Project item #${number} Parent issue`);
   if (Array.isArray(item?.fields) && !fieldPresent(item, "Linked pull requests")) {
@@ -240,9 +278,6 @@ function missingEvidenceOf(index, number, item, issue, parentIssueFieldObserved,
     }
   }
   if (issue !== null && !Array.isArray(issue.children)) entries.push(`issue #${number} child relationship`);
-  if (parentIssueNumber !== null && itemFor(index, parentIssueNumber) === null) {
-    entries.push(`parent issue #${parentIssueNumber} Project item`);
-  }
   if (issue !== null && parentIssueFieldObserved && referenceKey(fieldValue(item, "Parent issue")) !== referenceKey(issue.parent)) {
     entries.push(`contradictory parent for issue #${number}`);
   }
@@ -267,11 +302,12 @@ function recordFor(index, number, overlay) {
     issueNumber: number,
     parentIssueFieldObserved,
     parentIssueNumber,
+    parentItemMissing: parentIssueNumber !== null && itemFor(index, parentIssueNumber) === null,
     projectStatus: itemStatus(item),
     issue: issue === null ? null : issueRecord(number, issue, overlay),
     pullRequests: pullRequestRecords(index, item, overlay),
     relationHolds: relationReasons(index, number),
-    missingEvidence: missingEvidenceOf(index, number, item, issue, parentIssueFieldObserved, parentIssueNumber),
+    missingEvidence: missingEvidenceOf(index, number, item, issue, parentIssueFieldObserved),
   };
 }
 
@@ -300,22 +336,18 @@ function classifyGroups(records, context) {
 }
 
 // A queue group is only the top of a delivery. The closure judges the subtree under a root whatever
-// the root's own parent is, so both read one record builder and one decision and differ in the root.
+// the root's own parent is, so both read one record builder and differ in the root. The closure judges
+// completion evidence only: it never applies the queue's date, friction-log, or queue-status checks.
 function classifyDelivery(records, rootNumber, context) {
   const root = records.find(({ issueNumber }) => issueNumber === rootNumber);
   if (!root) return null;
   const children = records
     .filter(({ parentIssueNumber }) => parentIssueNumber === rootNumber)
     .map((record) => ({ ...record, orphan: false }));
-  // The judgement never reads the root's parent, so that parent's missing Project item cannot hold it.
-  const parentEntry = root.parentIssueNumber === null ? null : `parent issue #${root.parentIssueNumber} Project item`;
-  const judgedRoot = {
-    ...root,
-    parentIssueNumber: null,
-    missingEvidence: (root.missingEvidence ?? []).filter((entry) => entry !== parentEntry),
-  };
+  // The judgement never reads the root's parent, so its missing Project item (parentItemMissing) cannot hold it.
+  const judgedRoot = { ...root, parentIssueNumber: null, parentItemMissing: false };
   const members = [judgedRoot, ...children];
-  return { rootIssueNumber: rootNumber, records: members, decision: decideGroup(members, context) };
+  return { rootIssueNumber: rootNumber, records: members, decision: decideDelivery(members, context) };
 }
 
 // Resume In Progress work first, the furthest along (an open pull request) ahead of the rest, then
@@ -387,7 +419,7 @@ function classifyQueue(snapshot, { today }) {
   const groups = causes.length > 0 ? [] : classifyGroups(records, context);
   const selected = selectGroup(groups);
   const missingEvidence = [
-    ...new Set([...causes, ...counts.missingEvidence, ...records.flatMap(({ missingEvidence: entries }) => entries)]),
+    ...new Set([...causes, ...counts.missingEvidence, ...records.flatMap((record) => evidenceOf(record))]),
   ];
   return { groups, selected, counts, missingEvidence };
 }
@@ -395,10 +427,5 @@ function classifyQueue(snapshot, { today }) {
 export {
   buildQueueRecords,
   classifyDelivery,
-  classifyGroups,
   classifyQueue,
-  countRecords,
-  decideGroup,
-  selectGroup,
-  snapshotCauses,
 };

@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 import { indexSnapshot } from "./closure-index.mjs";
 import { localDate } from "./friction-log.mjs";
-import { buildQueueRecords, classifyDelivery, classifyGroups, classifyQueue, decideGroup } from "./queue-classifier.mjs";
+import { buildQueueRecords, classifyDelivery, classifyQueue } from "./queue-classifier.mjs";
 
 const REPOSITORY = "TychoHenzen/dod-guard";
 const FOREIGN_REPOSITORY = "other/repo";
@@ -199,12 +197,39 @@ test("without a date an otherwise eligible group holds as local date missing", (
   assert.deepEqual(groupOf(result, 517).decision.reasons, ["local date missing"]);
 });
 
-test("the classifier and the friction log read no clock", async () => {
-  for (const file of ["queue-classifier.mjs", "friction-log.mjs"]) {
-    const source = await readFile(fileURLToPath(new URL(`./${file}`, import.meta.url)), "utf8");
-    assert.equal(source.includes("new Date"), false, `${file} must not read a date`);
-    assert.equal(source.includes("Date.now"), false, `${file} must not read the clock`);
+test("the classifier reads no clock and no network while it classifies", () => {
+  const originalDate = globalThis.Date;
+  const originalFetch = globalThis.fetch;
+  const originalNow = globalThis.performance.now;
+  function ThrowingDate() {
+    throw new Error("clock read");
   }
+  ThrowingDate.now = () => {
+    throw new Error("clock read");
+  };
+  const frictionLog = 900;
+  const nextRoot = 901;
+  const input = snapshot({
+    items: [item(frictionLog, "Backlog"), item(nextRoot, "Backlog")],
+    issues: [issue(frictionLog, { title: "Friction log 2026-09-05" }), issue(nextRoot)],
+  });
+  let result;
+  try {
+    globalThis.Date = ThrowingDate;
+    globalThis.fetch = () => {
+      throw new Error("network read");
+    };
+    globalThis.performance.now = () => {
+      throw new Error("clock read");
+    };
+    result = classify(input, "2026-09-05");
+  } finally {
+    globalThis.Date = originalDate;
+    globalThis.fetch = originalFetch;
+    globalThis.performance.now = originalNow;
+  }
+  assert.deepEqual(groupOf(result, frictionLog).decision.reasons, ["friction log still collecting entries"]);
+  assert.equal(result.selected.rootIssueNumber, nextRoot);
 });
 
 test("AC-05: foreign Done parent and child items are excluded from the Done counts", () => {
@@ -256,6 +281,23 @@ test("AC-09: a target linked pull request absent from pullRequests selects nothi
   assert.equal(classify(corrected).selected.rootIssueNumber, 517);
 });
 
+test("AC-09: a target item with no content number selects nothing and is named in missingEvidence", () => {
+  const input = healthy();
+  input.items.push(item(null, "Backlog", { id: "PVTI_nonumber" }));
+  const result = classify(input);
+  assert.equal(result.selected, null);
+  assert.deepEqual(result.groups, []);
+  assert.ok(result.missingEvidence.includes("issue number missing: Project item PVTI_nonumber"), result.missingEvidence.join("; "));
+  const healthyRoot = 517;
+  assert.equal(classify(healthy()).selected.rootIssueNumber, healthyRoot);
+});
+
+test("a foreign item with no content number changes nothing", () => {
+  const input = healthy();
+  input.items.push(item(null, "Todo", { id: "PVTI_foreign_nonumber", repository: FOREIGN_REPOSITORY }));
+  assert.deepEqual(classify(input), classify(healthy()));
+});
+
 test("an overlay alone sets the checkpoint and trusted head that a decision reads", () => {
   const input = snapshot({
     items: [item(444, "Done", { linked: [ref(540)] })],
@@ -263,18 +305,19 @@ test("an overlay alone sets the checkpoint and trusted head that a decision read
     pullRequests: [pull(540, { trustedHeadSha: "head-540" })],
   });
   const index = indexSnapshot(input);
-  const context = { repository: REPOSITORY, defaultBranch: "master", today: TODAY };
-  const [unsettled] = buildQueueRecords(index, { overlay: { checkpoints: new Map(), trustedHeads: new Map() } });
-  assert.equal(unsettled.issue.activeCheckpoint, null);
-  assert.equal(unsettled.pullRequests[0].trustedHeadSha, null);
-  assert.deepEqual(decideGroup([unsettled], context).reasons, [
+  const context = { repository: REPOSITORY, defaultBranch: "master" };
+  const deliveryRoot = 444;
+  const unsettled = buildQueueRecords(index, { overlay: { checkpoints: new Map(), trustedHeads: new Map() } });
+  assert.equal(unsettled[0].issue.activeCheckpoint, null);
+  assert.equal(unsettled[0].pullRequests[0].trustedHeadSha, null);
+  assert.deepEqual(classifyDelivery(unsettled, deliveryRoot, context).decision.reasons, [
     "trusted pull request head evidence is missing or stale",
     "active checkpoint for issue #444 is not explicitly false",
   ]);
   const settled = buildQueueRecords(index, {
     overlay: { checkpoints: new Map([[444, false]]), trustedHeads: new Map([[540, "head-540"]]) },
   });
-  assert.deepEqual(decideGroup(settled, context), { kind: "complete", eligible: false, status: "Done", reasons: [] });
+  assert.deepEqual(classifyDelivery(settled, deliveryRoot, context).decision, { kind: "complete", eligible: false, status: "Done", reasons: [] });
 });
 
 test("a linked pull request absent from pullRequests is missing evidence on its record and holds its group", () => {
@@ -283,8 +326,8 @@ test("a linked pull request absent from pullRequests is missing evidence on its 
   const records = buildQueueRecords(indexSnapshot(input));
   const missing = "pull request missing from pullRequests: TychoHenzen/dod-guard#540";
   assert.ok(records.find(({ issueNumber }) => issueNumber === 31).missingEvidence.includes(missing));
-  const group = classifyGroups(records, { repository: REPOSITORY, defaultBranch: "master", today: TODAY })
-    .find(({ rootIssueNumber }) => rootIssueNumber === 31);
+  const backlogRoot = 31;
+  const group = classifyDelivery(records, backlogRoot, { repository: REPOSITORY, defaultBranch: "master" });
   assert.equal(group.decision.kind, "hold");
   assert.ok(group.decision.reasons.includes(missing));
 });
@@ -296,15 +339,16 @@ test("classifyDelivery judges a parented root as its own delivery while its queu
     pullRequests: [pull(901, { trustedHeadSha: "head-901" })],
   });
   const records = buildQueueRecords(indexSnapshot(input));
-  const context = { repository: REPOSITORY, defaultBranch: "master", today: TODAY };
+  const context = { repository: REPOSITORY, defaultBranch: "master" };
   const delivery = classifyDelivery(records, 840, context);
   assert.equal(delivery.decision.kind, "complete");
   assert.deepEqual(delivery.records.map(({ issueNumber }) => issueNumber), [840]);
-  const queueGroup = classifyGroups(records, context).find(({ rootIssueNumber }) => rootIssueNumber === 683);
+  const parentRoot = 683;
+  const queueGroup = classifyQueue(input, { today: TODAY }).groups.find(({ rootIssueNumber }) => rootIssueNumber === parentRoot);
   assert.deepEqual(queueGroup.records.map(({ issueNumber }) => issueNumber), [683, 840]);
 });
 
 test("classifyDelivery returns null for a number no record carries", () => {
   const records = buildQueueRecords(indexSnapshot(healthy()));
-  assert.equal(classifyDelivery(records, 999, { repository: REPOSITORY, defaultBranch: "master", today: TODAY }), null);
+  assert.equal(classifyDelivery(records, 999, { repository: REPOSITORY, defaultBranch: "master" }), null);
 });

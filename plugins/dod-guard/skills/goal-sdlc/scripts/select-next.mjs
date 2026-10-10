@@ -34,9 +34,9 @@ reference names its repository as owner/name.
 Records from another repository are ignored.
 A relation that leaves the repository holds its issue, with a reason naming
 owner/name#N.
-A record with no repository, a duplicated record, an item whose issue is
-missing, or a linked pull request that is missing selects nothing and is
-named in missingEvidence.
+A record with no repository, a record with no number, a duplicated record, an
+item whose issue is missing, or a linked pull request that is missing selects
+nothing and is named in missingEvidence.
 today defaults to the local date.`;
 
 const EMPTY_SNAPSHOT = { items: [], issues: [], pullRequests: [] };
