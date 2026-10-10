@@ -17,6 +17,9 @@ function bodyEnd(code, body) {
 }
 
 // A call in a ternary's true branch is followed by the ternary's ":", not a return type.
+// ASSUMPTION: an untyped optional class property with no semicolon ("x?" on its own line)
+// also puts "?" before the next member's header, so that member takes the plain body path,
+// as master does. Accepted: TypeScript code nearly always types or terminates such a property.
 function precededByTernary(code, headerStart) {
   let i = headerStart - 1;
   while (i >= 0 && SPACE.test(code[i])) {

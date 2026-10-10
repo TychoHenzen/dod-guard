@@ -151,7 +151,7 @@ function groupOperand(ctx, state, i) {
     return -1;
   }
   const after = skipSpace(code, close + 1);
-  if (code[i] === "(" && code.startsWith("=>", after) && opensParameterList(code, i)) {
+  if (code[i] === "(" && code.startsWith("=>", after) && opensParameterList(code, ctx.source, i)) {
     return expectAt(state, after + 2);
   }
   return completeOperand(state, close + 1, false);

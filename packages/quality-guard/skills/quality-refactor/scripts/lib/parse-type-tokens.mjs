@@ -1,9 +1,9 @@
 import { matchBracket } from "./offsets.mjs";
 
 // Lexical helpers for the return-type reader in parse-return-type.mjs. They read
-// the stripped code, whose offsets match the raw source. Only closingQuote and
-// nextToken also take the raw source, because strip blanks quoted literals to
-// whitespace and the quote characters are visible only there.
+// the stripped code, whose offsets match the raw source. Only closingQuote,
+// nextToken and opensParameterList also take the raw source, because strip blanks
+// quoted literals to whitespace and the quote characters are visible only there.
 
 const GROUP_PAIR = { "{": "{}", "(": "()", "[": "[]" };
 const ANGLE_DELTA = { "<": 1, ">": -1 };
@@ -93,8 +93,13 @@ export function groupEnd(code, open) {
   return matchBracket(code, open, pair);
 }
 
-// Mirrors TypeScript's function-type lookahead, so "(string | number)" is not read as parameters.
-export function opensParameterList(code, open) {
+// Mirrors TypeScript's function-type lookahead, so "(string | number)" is not read as
+// parameters. A parameter list never starts with a string literal, so a quote there
+// means a literal type; strip blanks it, so only the raw source shows the quote.
+export function opensParameterList(code, source, open) {
+  if (nextToken(code, source, open + 1).quote !== undefined) {
+    return false;
+  }
   const i = skipSpace(code, open + 1);
   if (code[i] === ")" || code[i] === "{" || code[i] === "[" || code.startsWith("...", i)) {
     return true;

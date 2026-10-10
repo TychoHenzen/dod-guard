@@ -132,3 +132,17 @@ test("a function type with a named parameter keeps its block body", () => {
   const source = "class A { m(): (a: number) => void { return; } }";
   assert.deepEqual(functionsIn(source), [{ name: "m", body: "{ return; }" }]);
 });
+
+test("a parenthesized single literal return type keeps the arrow body", () => {
+  const source = "const s = (): ('a') => 1;";
+  assert.deepEqual(functionsIn(source), [{ name: "s", body: "1" }]);
+});
+
+test("a parenthesized union of double-quoted literals keeps the arrow body", () => {
+  const source = 'const t = (): ("a" | "b") => 2;';
+  assert.deepEqual(functionsIn(source), [{ name: "t", body: "2" }]);
+});
+
+test("a parenthesized literal method return type has no body", () => {
+  assert.deepEqual(functionsIn("interface I { m(): ('a'); }"), []);
+});
