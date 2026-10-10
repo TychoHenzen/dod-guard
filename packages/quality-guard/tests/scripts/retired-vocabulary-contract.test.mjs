@@ -28,7 +28,7 @@ const MIN_SOURCE_FILES = 20;
 const SOURCE_FILE = /\.(?:ts|mjs|js)$/;
 const OPTION_TOKEN = /--(?:profile|fail-on)/g;
 const SEVERITY_ASSIGNMENT =
-  /\bseverity["']?\s*(?:===?|!==?|[:=])\s*(["'])(error|warn|warning)\1/gi;
+  /\bseverity["']?\s*(?:===?|!==?|\?\?|\|\||[:=])[^,;)}\n]*?(["'`])(error|warn|warning)\1/gi;
 const RETIRED_LITERAL = /(["'])(?:error|warn|warning)\1/g;
 const RETIRED_KEY = /(?<=[{,]\s*|^\s*)(?:error|warn|warning)(?=\s*:)/gm;
 
@@ -169,6 +169,36 @@ test("severity set to error in source is flagged", () => {
   ]);
 });
 
+test("severity forms that hide a retired level are flagged and neighbours are not", () => {
+  const flagged = [
+    { probe: "severity = `error`", level: "error" },
+    { probe: 'severity: x ? "error" : "high"', level: "error" },
+    { probe: 'severity: (x ? "warn" : "high")', level: "warn" },
+    { probe: 'severity ?? "warn"', level: "warn" },
+    { probe: 'severity || "warning"', level: "warning" },
+  ];
+  const neighbours = [
+    'severity: "high", level: "error"',
+    'if (x.severity === "high") throw new Error("error")',
+  ];
+  for (const { probe, level } of flagged) {
+    const findings = retiredVocabulary([
+      { path: "src/fake.ts", text: `${probe}\n`, kind: "source" },
+    ]);
+    assert.deepEqual(
+      findings,
+      [{ file: "src/fake.ts", line: 1, token: `severity "${level}"` }],
+      `expected exactly one severity "${level}" finding for: ${probe}`,
+    );
+  }
+  for (const probe of neighbours) {
+    const findings = retiredVocabulary([
+      { path: "src/fake.ts", text: `${probe}\n`, kind: "source" },
+    ]);
+    assert.deepEqual(findings, [], `expected no findings for: ${probe}`);
+  }
+});
+
 test("option tokens in a document are flagged with their line", () => {
   const profile = "# Usage\nquality-guard report --profile strict\n";
   const failOn = "# Usage\nquality-guard report --fail-on high\n";
@@ -240,16 +270,18 @@ test("bundle text is still checked for option tokens", () => {
   ]);
 });
 
-// These read third-party linter levels or Node "error" events, not Quality Guard severities.
-test("external linter and event sources are not flagged", () => {
-  const exempt = [
+// These sources read third-party linter levels or Node "error" events and are expected to
+// stay free of matches; nothing exempts them, so a severity-shaped match added to one of
+// them fails this test and the real-file test.
+test("external linter and event sources stay free of matches", () => {
+  const externalLinterSources = [
     "scripts/csharp-linter.mjs",
     "scripts/rust-linter.mjs",
     "scripts/project-linter-support.mjs",
     "src/http.ts",
   ];
   const findings = retiredVocabulary(
-    exempt.map((path) => ({
+    externalLinterSources.map((path) => ({
       path,
       text: readFileSync(resolve(PACKAGE_ROOT, path), "utf8"),
       kind: "source",
