@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { suggestionFor } from "../../../../../skills/quality-refactor/scripts/lib/rule-suggestions.mjs";
 import { scanViolations, tsFile } from "./rules-file-fixtures.test.mjs";
 
 const BUILD_MESSAGE = /^build\(\) /;
@@ -93,5 +92,9 @@ test("a method that never touches state is reported (AC-03)", () => {
     found[0].message,
     `greet() never touches instance state ${DASH} make it a free function`,
   );
-  assert.equal(found[0].suggestion, suggestionFor("stateless-method"));
+  assert.equal(
+    found[0].suggestion,
+    "Move it out of the class as a free function, extension method, or static " +
+      "helper next to the data it does use.",
+  );
 });

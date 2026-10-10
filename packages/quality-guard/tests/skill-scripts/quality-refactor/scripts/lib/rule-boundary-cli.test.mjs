@@ -33,6 +33,7 @@ const A_TS = src(
   "function pick(v: number): number {\n  if (v > 0) {\n    return 1;\n  } else {\n    return 2;\n  }\n}",
 );
 const B_PY = src(
+  "from os.path import *",
   "def first(items):\n    for x in items:\n        return x\n    else:\n        return None",
   "def parse(text):\n    try:\n        value = int(text)\n    except ValueError:\n        return None\n    else:\n        return value",
 );
@@ -47,14 +48,17 @@ const C_RS = src(
 // positive changes it. The false positives it rules out are the #678 probe
 // names, the abstract signature, the method that reads this, the Python
 // for/else and try/else, the Rust let-else, and the glob in the test module.
+// The retained positives are the TS stateless method and else branch, the Rust
+// crate glob, and the Python star import.
 const lineOf = (text, needle) => text.split("\n").indexOf(needle) + 1;
 const EXPECTED = [
   `a.ts:${lineOf(A_TS, "  greet(name: string): string {")}:stateless-method`,
   `a.ts:${lineOf(A_TS, "function pick(v: number): number {")}:else-branch`,
+  `b.py:${lineOf(B_PY, "from os.path import *")}:wildcard-import`,
   `c.rs:${lineOf(C_RS, "use crate::items::*;")}:wildcard-import`,
 ].sort();
 
-test("the CLI reports exactly the three retained findings, in the finding shape", async () => {
+test("the CLI reports exactly the four retained findings, in the finding shape", async () => {
   const dir = await mkdtemp(join(tmpdir(), "rule-boundary-cli-"));
   try {
     await writeFile(join(dir, "a.ts"), A_TS);
