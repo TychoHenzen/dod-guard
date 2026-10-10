@@ -29,14 +29,22 @@ test("refinement keeps an issue that still owns delivery scope open", () => {
   const unsuperseded = planClosures(atRefinement({ roots: [818, 820, 840] }), { hierarchy: 683 });
   assert.deepEqual(holdOf(unsuperseded, 683).reasons, [
     "child #778 is open, and no replacement root supersedes it",
+    "child #777 held: root #840 unverified: completion evidence missing",
+    "child #778 is open",
   ]);
   const ownScope = planClosures(atRefinement({ uncheckedOwn: true }), { hierarchy: 683 });
   assert.deepEqual(holdOf(ownScope, 683).reasons, [
     "unchecked acceptance criterion not mapped to a sub-issue: Publish the migration note",
+    "child #777 held: root #840 unverified: completion evidence missing",
+    "child #778 held: root #841 unverified: completion evidence missing",
   ]);
   const linked = atRefinement();
   setField(linked, 683, "Linked pull requests", [{ number: 999, repository: linked.repository }]);
-  assert.deepEqual(holdOf(planClosures(linked, { hierarchy: 683 }), 683).reasons, ["linked pull request #999"]);
+  assert.deepEqual(holdOf(planClosures(linked, { hierarchy: 683 }), 683).reasons, [
+    "linked pull request #999",
+    "child #777 held: root #840 unverified: completion evidence missing",
+    "child #778 held: root #841 unverified: completion evidence missing",
+  ]);
 });
 
 test("without the refinement request the plan never closes #683 as not_planned", () => {

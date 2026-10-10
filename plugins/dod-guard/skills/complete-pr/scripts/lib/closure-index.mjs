@@ -151,6 +151,12 @@ function unambiguous(groups) {
   return { kept, duplicated };
 }
 
+// The number of each group whose key unambiguous() kept, in first-seen order. A key that two records
+// share has no record to read, so it is left out here; its duplication is reported through problems.
+function keptNumbers(groups, kept) {
+  return [...groups].filter(([key]) => kept.has(key)).map(([, [first]]) => first.number);
+}
+
 function unidentifiedHolds(unidentified, kind) {
   return unidentified.map(({ record, number }) => ({
     issue: null,
@@ -194,8 +200,8 @@ function indexSnapshot(snapshot) {
   const items = unambiguous(itemGroups.groups);
   const issues = unambiguous(issueGroups.groups);
   const pulls = unambiguous(pullGroups.groups);
-  const order = [...issueGroups.groups.values()].map(([first]) => first.number);
-  const itemNumbers = [...itemGroups.groups.values()].map(([first]) => first.number);
+  const order = keptNumbers(issueGroups.groups, issues.kept);
+  const itemNumbers = keptNumbers(itemGroups.groups, items.kept);
   return {
     repository,
     target,

@@ -124,3 +124,14 @@ test("status repair counts only real closure evidence beside a quoting comment",
   assert.deepEqual(plan.statusRepairs, [{ issue: 777, itemId: "PVTI_777", status: "Backlog" }]);
   assert.equal(closeOf(plan, 777), undefined);
 });
+
+// A target issue listed twice is ambiguous: its one hold names the duplicate, and it is never
+// reported as a closed record without evidence.
+test("a target issue listed twice is held as a duplicate and reported nowhere", () => {
+  const snapshot = recordedSnapshot();
+  snapshot.items.push(item(2001, "Backlog"));
+  snapshot.issues.push(issue(2001), issue(2001));
+  const plan = planClosures(snapshot);
+  assert.deepEqual(holdOf(plan, 2001), { issue: 2001, reasons: ["duplicate issue record"] });
+  assert.equal(plan.reports.find((report) => report.issue === 2001), undefined);
+});

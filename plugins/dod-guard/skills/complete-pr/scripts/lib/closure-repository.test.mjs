@@ -104,8 +104,15 @@ test("AC-03: cross-repository relations hold their issue and leave a delivery un
   const plan = planClosures(snapshot);
 
   assert.deepEqual(plan.closes.map(({ issue }) => issue), [775, 776]);
-  assert.deepEqual(holdOf(plan, 683).reasons, ["cross-repository sub-issue TychoHenzen/DeepSeekCustom#12"]);
-  assert.deepEqual(holdOf(plan, 777).reasons, ["cross-repository parent TychoHenzen/BeeHAIve#5"]);
+  assert.deepEqual(holdOf(plan, 683).reasons, [
+    "cross-repository sub-issue TychoHenzen/DeepSeekCustom#12",
+    "child #777 held: cross-repository parent TychoHenzen/BeeHAIve#5; replaced-original close refused: issue is held",
+    "child #778 held: root #841 unverified: cross-repository linked pull request TychoHenzen/DeepSeekCustom#77",
+  ]);
+  assert.deepEqual(holdOf(plan, 777).reasons, [
+    "cross-repository parent TychoHenzen/BeeHAIve#5",
+    "replaced-original close refused: issue is held",
+  ]);
   assert.deepEqual(holdOf(plan, 778).reasons, [
     "root #841 unverified: cross-repository linked pull request TychoHenzen/DeepSeekCustom#77",
   ]);
@@ -171,4 +178,31 @@ test("AC-06: an object Status is held as unreadable, not read as Done or repaire
   assert.deepEqual(holdOf(plan, 777).reasons, ["Project item Status is not a string"]);
   assert.equal(closeOf(plan, 777), undefined);
   assert.deepEqual(plan.statusRepairs, []);
+});
+
+// A closed original that a verified root supersedes, with one closure evidence comment and a Status
+// other than Done, gets a Done repair. The control plans that repair; the same issue held for a
+// cross-repository parent must not get it, and its hold must name the refused repair.
+test("a Done repair is refused for a closed issue held for a cross-repository parent", () => {
+  const snapshot = recordedSnapshot({ roots: [840] });
+  const original = issueOf(snapshot, 777);
+  Object.assign(original, {
+    state: "closed",
+    state_reason: "completed",
+    comments: [
+      {
+        id: 7002,
+        body: renderClosureEvidence({ issue: 777, stateReason: "completed", evidence: ["Superseded by #840."] }),
+      },
+    ],
+  });
+  assert.deepEqual(planClosures(snapshot).statusRepairs, [{ issue: 777, itemId: "PVTI_777", status: "Backlog" }]);
+
+  original.parent = { repository: "TychoHenzen/BeeHAIve", number: 5 };
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.statusRepairs, []);
+  assert.deepEqual(holdOf(plan, 777), {
+    issue: 777,
+    reasons: ["cross-repository parent TychoHenzen/BeeHAIve#5", "Project Done repair refused: issue is held"],
+  });
 });

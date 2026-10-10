@@ -45,6 +45,41 @@ function mergeHolds(holds) {
   return merged;
 }
 
+// Records reasons against an issue's hold in place, so the reasons for an issue stay in one entry
+// with no reason repeated. A hold that names no issue is always its own entry: it has no issue to
+// merge into.
+function addHold(context, issue, reasons) {
+  const entry = context.holds.find((hold) => hold.issue !== null && hold.issue === issue);
+  if (entry === undefined) {
+    context.holds.push({ issue, reasons: [...new Set(reasons)] });
+    return;
+  }
+  for (const reason of reasons) {
+    if (!entry.reasons.includes(reason)) {
+      entry.reasons.push(reason);
+    }
+  }
+}
+
+// The one place that decides whether an issue is held for a write. Every close and every Project
+// Done repair passes through it. A held issue is refused, and the refusal joins that issue's hold.
+function admitWrite(context, issue, refusal) {
+  if (context.holds.some((hold) => hold.issue === issue)) {
+    addHold(context, issue, [refusal]);
+    return false;
+  }
+  return true;
+}
+
+// The only code that appends to context.closes.
+function admitClose(context, close) {
+  if (!admitWrite(context, close.issue, `${close.rule} close refused: issue is held`)) {
+    return false;
+  }
+  context.closes.push(close);
+  return true;
+}
+
 function createContext(snapshot) {
   const index = indexSnapshot(snapshot);
   const deliveries = new Map();
@@ -60,8 +95,8 @@ function createContext(snapshot) {
     else if (parsed.numbers.length > 0) roots.set(number, parsed.numbers);
   }
   const rootsOf = (original) => [...roots].filter(([, numbers]) => numbers.includes(original)).map(([root]) => root);
-  // Indexing problems and unsafe relations are holds before any rule runs, so no rule can close
-  // an issue that one of them names.
+  // Indexing problems and unsafe relations are holds before any rule runs. A held issue is never
+  // closed or set Done because admitClose and admitWrite refuse it, so no rule checks holds itself.
   const holds = mergeHolds([...index.problems, ...rootErrors, ...preflightHolds(index)]);
   return { index, delivery, roots, rootsOf, closes: [], holds };
 }
@@ -82,11 +117,10 @@ function originalHold(context, original) {
 
 function planReplacedOriginal(context, root, original) {
   if (context.closes.some((close) => close.issue === original)) return;
-  if (context.holds.some((hold) => hold.issue === original)) return;
   const reasons = originalHold(context, original);
   if (reasons === null) return;
   if (reasons.length > 0) {
-    context.holds.push({ issue: original, reasons });
+    addHold(context, original, reasons);
     return;
   }
   const { record } = context.delivery(root);
@@ -95,7 +129,7 @@ function planReplacedOriginal(context, root, original) {
     `The completion evidence on #${root} matches the live pull request readback, and the queue ` +
       `decision for #${root} is complete.`,
   ];
-  context.closes.push({
+  admitClose(context, {
     issue: original,
     itemId: itemFor(context.index, original).id,
     stateReason: "completed",
@@ -239,7 +273,7 @@ function planHierarchy(context, number) {
   const reasons = issue && !isOpen(issue) ? ["issue is already closed"] : hierarchyReasons(context, number);
   if (issue && !itemFor(context.index, number)?.id) reasons.push(`Project item #${number} missing`);
   if (reasons.length > 0) {
-    context.holds.push({ issue: number, reasons });
+    addHold(context, number, reasons);
     return;
   }
   const children = childNumbers(context.index, number);
@@ -250,7 +284,7 @@ function planHierarchy(context, number) {
       ? `Delivery moved to replacement roots: ${moved.join(", ")}.`
       : "Every sub-issue is closed with verified evidence.",
   ];
-  context.closes.push({
+  admitClose(context, {
     issue: number,
     itemId: itemFor(context.index, number).id,
     stateReason: "not_planned",
@@ -293,14 +327,16 @@ function walkParents(context) {
     holds = walkPass(context, seeds);
     added = context.closes.length > before;
   }
-  context.holds.push(...holds);
+  for (const hold of holds) {
+    addHold(context, hold.issue, hold.reasons);
+  }
 }
 
 // One walk from each seed. Holds are returned, not recorded, because a later pass may
 // close the parent a hold names, so only the last pass's holds survive. A planned parent
 // is stepped through while the walk is within the level limit. Past the limit it ends the
 // walk with no hold, since the parent is closing anyway, and the limit still bounds a
-// parent cycle. Only a reason hold stops later seeds: a walk that runs out of levels says
+// parent cycle. Only a reason hold or a refused close stops later seeds: a walk that runs out of levels says
 // nothing about whether a shallower walk can settle the parent. A level-limit hold is
 // returned only when the parent is neither closed nor reason-held by the end of the pass.
 function walkPass(context, seeds) {
@@ -323,9 +359,9 @@ function walkPass(context, seeds) {
         current = parent;
         continue;
       }
-      // A hold made before the walk is unresolved evidence about this very issue, so the walk
-      // never closes it as a parent. The hold stays as recorded and no second hold is added.
-      if (reasonHeld.has(parent) || context.holds.some((hold) => hold.issue === parent)) break;
+      if (reasonHeld.has(parent)) {
+        break;
+      }
       if (level > PARENT_WALK_LIMIT) {
         if (!limitHolds.has(parent)) {
           limitHolds.set(parent, [`parent walk stopped after ${PARENT_WALK_LIMIT} levels`]);
@@ -338,7 +374,10 @@ function walkPass(context, seeds) {
         hold(parent, reasons);
         break;
       }
-      context.closes.push(parentClose(context, parent));
+      if (!admitClose(context, parentClose(context, parent))) {
+        reasonHeld.add(parent);
+        break;
+      }
       current = parent;
     }
   }
@@ -376,7 +415,9 @@ function statusRepairs(context) {
     if (status === "Done") continue;
     if (recordComments(issue.comments, "closure").length !== 1) continue;
     if (!closureEvidence(context, number).verified) continue;
-    repairs.push({ issue: number, itemId: item.id, status });
+    if (admitWrite(context, number, "Project Done repair refused: issue is held")) {
+      repairs.push({ issue: number, itemId: item.id, status });
+    }
   }
   return repairs;
 }
