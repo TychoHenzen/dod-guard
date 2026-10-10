@@ -1,6 +1,6 @@
 {
   "name": "quality-guard",
-  "version": "0.5.17",
+  "version": "0.5.18",
   "description": "Advisory structural diagnostics with an optional plaintext readability boundary. The PostToolUse hook gives fail-open file-local feedback, while reports and test-quality evidence remain read-only. Ships 1 skill: /quality-refactor (systematic refactoring with a zero-dependency scanner).",
   "author": {
     "name": "tychohenzen",
