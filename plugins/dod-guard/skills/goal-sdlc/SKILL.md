@@ -9,7 +9,7 @@ Read and apply `standards/working-defaults.md` and
 `standards/github-request-discipline.md` from the active plugin root.
 
 Each stage follows its own skill; when this file and an owning skill differ, the
-owning skill wins. `/goal` owns persistence and stop (USAGE.md "Stop a `/goal` run").
+owning skill wins. Under `/goal`, also read and apply `standards/goal-stop.md`.
 
 ## Owners
 

@@ -89,36 +89,6 @@ splits its work, such as `/review-pr`, runs on the strong stage agent, which
 dispatches those split rows itself. Every progress message starts with the local
 `[HH:MM]` time and shows `PBIs completed: P parent / C child`.
 
-### Stop a `/goal` run
-
-Under Claude Code `/goal`, a small model grades only the condition text
-against the conversation after every turn. A later "stop" message cannot end
-the run unless the condition allows it, and only the user can run `/goal clear`
-(or `stop`, `off`, `reset`, `none`, `cancel`) to end a goal early. Start a
-goal-sdlc run with a condition that has both exits:
-
-```text
-/goal Run /dod-guard:goal-sdlc on this repository. The goal is met when either holds: (a) the final report says the goal-sdlc stop condition holds, quotes the select-next result that shows it, and git status is clean on the default branch; or (b) the user has told you to stop, and the in-flight parent is merged, or its branch is pushed with its next step written on the issue. Everything after this sentence is a preference, not part of the check: <models, timestamps, counters>.
-```
-
-Keep model, timestamp, and counter preferences in that last sentence, never in
-the check. A rule such as "every task runs on Haiku" is false after one
-exception, and the goal can then never be met.
-
-During a Claude Code `/goal` run, goal-sdlc does three things:
-
-- When the condition has no user-stop exit, it shows this template once at the
-  start of the run.
-- When the user ends the run, its final report says that the user ended the
-  run and where the in-flight parent stands, which is the evidence exit (b)
-  needs.
-- When the goal keeps firing after that, it says once that only `/goal clear`
-  ends it, then starts a background command that plays a sound every five
-  minutes for up to two hours (PowerShell `[console]::beep(880,400)`, macOS
-  `afplay /System/Library/Sounds/Ping.aiff`) and waits on it without starting
-  work. Claude Code skips the goal check while that command runs, so the loop
-  goes quiet until the user returns.
-
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:
 
@@ -143,6 +113,28 @@ and requires independent issues before implementation. Body, labels, links,
 and discovery evidence are verified before Todo. Material unresolved
 requirements, including unavailable or inconclusive advisor advice, keep the
 issue in Backlog until the missing decision or evidence is available.
+
+### Stop a `/goal` run
+
+Under Claude Code `/goal`, a small model grades only the condition text
+against the conversation after every turn. A later "stop" message cannot end
+the run unless the condition allows it, and only the user can run `/goal clear`
+(or `stop`, `off`, `reset`, `none`, `cancel`) to end a goal early. Start a
+goal-sdlc run with a condition that has both exits:
+
+```text
+/goal Run /dod-guard:goal-sdlc on this repository. The goal is met when either holds: (a) the final report says no eligible parent remains and quotes git status showing a clean default branch; or (b) the user, in their own prompt, has told you to stop, and the in-flight parent is merged, or its branch is pushed with its next step written on the issue. Everything after this sentence is a preference, not part of the check: <models, timestamps, counters>.
+```
+
+Keep model, timestamp, and counter preferences in that last sentence, never in
+the check. A rule such as "every task runs on Haiku" is false after one
+exception, and the goal can then never be met.
+
+During the run, goal-sdlc applies `standards/goal-stop.md`. It shows this
+template when the condition has no user-stop exit, and gives the grader the
+evidence each exit needs. When the goal keeps firing after the final report,
+it says once that only `/goal clear` ends it, then waits on a bounded
+background sound command to get your attention.
 
 ## Structured work
 
