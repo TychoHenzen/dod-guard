@@ -236,6 +236,38 @@ function Invoke-MaintenanceGit {
     return (($output | ForEach-Object { [string]$_ }) -join [Environment]::NewLine).Trim()
 }
 
+function Assert-MaintenanceReleaseTree {
+    param(
+        [Parameter(Mandatory = $true)][scriptblock]$InvokeGit,
+        [Parameter(Mandatory = $true)][string]$ReleaseSha,
+        [Parameter(Mandatory = $true)][string]$SavedSha
+    )
+
+    $headAfterPrePush = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD")
+    $parentAfterPrePush = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD^")
+    if ($headAfterPrePush -ne $ReleaseSha) {
+        throw "HEAD changed during pre-push validation from $ReleaseSha to $headAfterPrePush"
+    }
+    if ($parentAfterPrePush -ne $SavedSha) {
+        throw "release commit parent changed during pre-push validation from $SavedSha to $parentAfterPrePush"
+    }
+    $trackedChanges = Invoke-MaintenanceGit $InvokeGit @("status", "--porcelain", "--untracked-files=no")
+    if ($trackedChanges -ne "") {
+        throw "tracked files differ from the release commit before push: $trackedChanges"
+    }
+}
+
+function Get-MaintenanceRemoteMasterSha {
+    param([Parameter(Mandatory = $true)][scriptblock]$InvokeGit)
+
+    $remoteOutput = Invoke-MaintenanceGit $InvokeGit @("ls-remote", "origin", "refs/heads/master")
+    $remoteTokens = @($remoteOutput -split '\s+' | Where-Object { $_ -ne "" })
+    if ($remoteTokens.Count -eq 0) {
+        throw "remote master readback returned no SHA"
+    }
+    return $remoteTokens[0]
+}
+
 function Invoke-MaintenanceAction {
     param(
         [Parameter(Mandatory = $true)][scriptblock]$Action,
@@ -365,18 +397,7 @@ function Invoke-MaintenancePublish {
         Invoke-MaintenanceAction $PrePushAction "pre-push validation"
 
         $result.Stage = "verify-tree"
-        $headAfterPrePush = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD")
-        $parentAfterPrePush = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD^")
-        if ($headAfterPrePush -ne $releaseSha) {
-            throw "HEAD changed during pre-push validation from $releaseSha to $headAfterPrePush"
-        }
-        if ($parentAfterPrePush -ne $SavedSha) {
-            throw "release commit parent changed during pre-push validation from $SavedSha to $parentAfterPrePush"
-        }
-        $trackedChanges = Invoke-MaintenanceGit $InvokeGit @("status", "--porcelain", "--untracked-files=no")
-        if ($trackedChanges -ne "") {
-            throw "tracked files changed during pre-push validation: $trackedChanges"
-        }
+        Assert-MaintenanceReleaseTree $InvokeGit $releaseSha $SavedSha
 
         # Validation runs first so a hung or failing gate never runs while admin enforcement is off.
         $result.Stage = "protection"
@@ -454,12 +475,7 @@ function Invoke-MaintenancePublish {
         $result.Stage = "push"
         [void](Invoke-MaintenanceGit $InvokeGit @("push", $lease, "origin", "HEAD:refs/heads/master"))
         $result.Stage = "readback"
-        $remoteOutput = Invoke-MaintenanceGit $InvokeGit @("ls-remote", "origin", "refs/heads/master")
-        $remoteTokens = @($remoteOutput -split '\s+' | Where-Object { $_ -ne "" })
-        if ($remoteTokens.Count -eq 0) {
-            throw "remote master readback returned no SHA"
-        }
-        $remoteSha = $remoteTokens[0]
+        $remoteSha = Get-MaintenanceRemoteMasterSha $InvokeGit
         if ($remoteSha -ne $releaseSha) {
             throw "remote master $remoteSha does not equal release SHA $releaseSha"
         }
@@ -538,7 +554,7 @@ function Invoke-MaintenancePublish {
         }
     }
 
-    if ($null -ne $releaseError -and $result.Restored -and $result.Error -eq $null) {
+    if ($result.Restored) {
         $result.Error = $releaseError
     }
     if ($result.Success -and -not $result.Restored) {

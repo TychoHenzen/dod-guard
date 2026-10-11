@@ -246,10 +246,14 @@ or relies on a later validator or client-cache readback to recover the release.
      tree is checked, before admin enforcement is disabled. The tree check
      requires `HEAD` to equal the release commit, the release commit's parent
      to equal the saved SHA, and `git status --porcelain --untracked-files=no`
-     to be empty. A commit, validation, or tree-check failure stops with
+     to be empty. Any failure before the DELETE, including preflight failures
+     (a non-primary checkout, or `HEAD` not equal to the saved SHA), commit,
+     validation, tree-check, and protection-snapshot failures (an invalid
+     initial readback, or `allow_force_pushes.enabled` not true), stops with
      protection unchanged, issues no DELETE or POST, and reports
-     `DeleteAttempted` false, so for these failures a `Restored` value of false
-     with `DeleteAttempted` false is not a protection incident.
+     `DeleteAttempted` false. For these pre-DELETE failures, a `Restored` value
+     of false with `DeleteAttempted` false is therefore not a protection
+     incident.
    - A force-push allowance alone does not bypass the PR or check rules. If the
      saved `enforce_admins.enabled` is true, the helper invokes only the
       validated admin endpoint with `gh api --method DELETE <admin_endpoint>
@@ -283,7 +287,8 @@ or relies on a later validator or client-cache readback to recover the release.
       complete readback. If the second readback still differs, it stops and
       reports the exact remaining difference. If admin enforcement was initially
       disabled, it does not call POST; it proves it remains disabled and the
-      complete protection snapshot is unchanged.
+      complete protection snapshot is unchanged, and this run then reports
+      `Restored` true with `RestoreAttempts` 0 and `DeleteAttempted` false.
      Other users remain subject to the branch rules throughout.
 8. For a `functional` release, invoke `/submit-draft-pr` with the parent PBI
    number after the release commit is pushed to the issue branch. Do not create or update

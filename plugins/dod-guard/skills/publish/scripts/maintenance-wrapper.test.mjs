@@ -43,17 +43,20 @@ test("maintenance wrapper parses gh reason phrases and preserves response bodies
 test("maintenance wrapper restores protection after push, remote readback, and admin disable failures", {
   skip: process.platform !== "win32",
 }, () => {
-  for (const failureStage of ["push", "ls-remote-mismatch", "admin-still-enabled"]) {
+  const failures = [
+    ["push", /push failed/],
+    ["ls-remote-mismatch", /does not equal release SHA/],
+    ["admin-still-enabled", /admin disable readback is invalid/],
+  ];
+  for (const [failureStage, pattern] of failures) {
     const outcome = runMaintenanceWrapper(failureStage);
     assert.equal(outcome.Result.Success, false, failureStage);
     assert.equal(outcome.Result.Restored, true, failureStage);
     assert.equal(outcome.Result.RestoreAttempts, 1, failureStage);
     assert.equal(outcome.Result.DeleteAttempted, true, failureStage);
+    assert.match(outcome.Result.Error, pattern, failureStage);
     assert.ok(outcome.Events.includes(`POST ${realAdminEndpoint}`), failureStage);
   }
-
-  const mismatch = runMaintenanceWrapper("ls-remote-mismatch");
-  assert.match(mismatch.Result.Error, /does not equal release SHA/);
 });
 
 test("maintenance wrapper stops before any protection call when a pre-mutation gate fails", {
@@ -65,7 +68,7 @@ test("maintenance wrapper stops before any protection call when a pre-mutation g
     ["pre-push", /pre-push failed/],
     ["head", /changed during pre-push validation/],
     ["parent", /changed during pre-push validation/],
-    ["tracked-change", /tracked files changed during pre-push validation/],
+    ["tracked-change", /tracked files differ from the release commit before push/],
   ];
   for (const [failureStage, pattern] of failures) {
     const outcome = runMaintenanceWrapper(failureStage);
@@ -95,8 +98,11 @@ test("maintenance wrapper disables admin enforcement only after release validati
   const ordered = [
     "commit",
     "pre-push",
+    "git rev-parse HEAD",
+    "git rev-parse HEAD^",
     "git status --porcelain --untracked-files=no",
     `GET ${realProtectionEndpoint}`,
+    `GET ${realAdminEndpoint}`,
     `DELETE ${realAdminEndpoint}`,
     `git push ${lease} origin HEAD:refs/heads/master`,
     "git ls-remote origin refs/heads/master",
@@ -104,7 +110,7 @@ test("maintenance wrapper disables admin enforcement only after release validati
   ];
   let previous = -1;
   for (const event of ordered) {
-    const index = outcome.Events.indexOf(event);
+    const index = outcome.Events.indexOf(event, previous + 1);
     assert.ok(index >= 0, event);
     assert.ok(index > previous, event);
     previous = index;
@@ -194,6 +200,7 @@ test("maintenance wrapper reads after a thrown restore before retrying", { skip:
   assert.equal(outcome.Result.Success, true);
   assert.equal(outcome.Result.Restored, true);
   assert.equal(outcome.Result.RestoreAttempts, 2);
+  assert.equal(outcome.Result.Error, null);
 
   const firstRestoreIndex = outcome.Events.indexOf(`POST ${realAdminEndpoint}`);
   const secondRestoreIndex = outcome.Events.indexOf(`POST ${realAdminEndpoint}`, firstRestoreIndex + 1);
@@ -203,6 +210,17 @@ test("maintenance wrapper reads after a thrown restore before retrying", { skip:
     outcome.Events.slice(firstRestoreIndex + 1, secondRestoreIndex).filter((event) => event.startsWith("GET ")),
     [`GET ${realProtectionEndpoint}`, `GET ${realAdminEndpoint}`],
   );
+});
+
+test("maintenance wrapper keeps the release error after a retried restore succeeds", {
+  skip: process.platform !== "win32",
+}, () => {
+  const outcome = runMaintenanceWrapper("push-post");
+  assert.equal(outcome.Result.Success, false);
+  assert.equal(outcome.Result.Restored, true);
+  assert.equal(outcome.Result.RestoreAttempts, 2);
+  assert.equal(outcome.Result.DeleteAttempted, true);
+  assert.match(outcome.Result.Error, /push failed/);
 });
 
 test("maintenance wrapper reads admin state after a failed protection read and does not blindly retry", {

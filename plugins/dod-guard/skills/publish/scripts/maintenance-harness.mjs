@@ -77,7 +77,7 @@ const MAINTENANCE_2 = String.raw`$invokeGit = {
     if ($fixtureStage -eq 'commit') { throw 'commit failed' }
     return $state.ParentSha
   }
-  if ($Arguments[0] -eq 'push' -and $fixtureStage -eq 'push') { throw 'push failed' }
+  if ($Arguments[0] -eq 'push' -and $fixtureStage -in @('push', 'push-post')) { throw 'push failed' }
   if ($Arguments[0] -eq 'push') {
     $state.RemoteSha = $state.HeadSha
     return ''
@@ -110,7 +110,7 @@ $invokeGhApi = {
   }
   if ($Method -eq 'POST') {
     $state.RestoreCalls++
-    if ($fixtureStage -eq 'post' -and $state.RestoreCalls -eq 1) { throw 'post failed' }
+    if ($fixtureStage -in @('post', 'push-post') -and $state.RestoreCalls -eq 1) { throw 'post failed' }
     return [pscustomobject]@{ Status = 200; Body = $null }
   }
   if ($Endpoint -like '*/protection') { return (& $readProtection) }

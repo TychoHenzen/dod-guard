@@ -108,6 +108,14 @@ test("maintenance releases validate the exact tree before disabling admin enforc
   assert.match(
     maintenance,
     prose(
+      "Any failure before the DELETE, including preflight failures",
+      "commit, validation, tree-check, and protection-snapshot failures",
+      "stops with protection unchanged, issues no DELETE or POST, and reports `DeleteAttempted` false",
+    ),
+  );
+  assert.match(
+    maintenance,
+    prose(
       "a hard kill between the DELETE and the cleanup cannot restore protection, and the exposure " +
         "is limited to the push and its readback",
     ),
@@ -220,6 +228,13 @@ test("maintenance protection restoration compares the complete snapshot and boun
   assert.match(skill, /It never\s+retries an unknown mutation before its\s+complete readback/);
   assert.match(skill, /If the second readback\s+still differs, it stops and\s+reports the exact remaining difference/);
   assert.match(skill, /If\s+admin enforcement was initially\s+disabled, it does not call POST/);
+  assert.match(
+    maintenanceSection(skill),
+    prose(
+      "it proves it remains disabled and the complete protection snapshot is unchanged, and this run " +
+        "then reports `Restored` true with `RestoreAttempts` 0 and `DeleteAttempted` false",
+    ),
+  );
   assert.match(wrapper, /for \(\$attempt = 1; \$attempt -le 2; \$attempt\+\+\)/);
   assert.match(
     wrapper,
