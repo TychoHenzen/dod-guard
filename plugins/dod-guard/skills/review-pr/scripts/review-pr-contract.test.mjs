@@ -38,6 +38,10 @@ test("review-pr plans, investigates, verifies, then judges in that order", () =>
   assert.match(skill, prose("Send a failed batch back once with the exact gap"));
   assert.match(skill, prose("judges from that evidence instead of re-reading the whole diff"));
   assert.match(skill, prose('record the stage as "requested, not pinned"'));
+  assert.match(skill, prose("It returns one ruling for every slot assigned to its lens."));
+  assert.match(skill, prose("Each returns one JSON object with `reviewer`, `rulings`, and `findings`."));
+  assert.match(skill, prose("names the reviewer and slot for a missing, duplicate, or unassigned ruling or an unknown status"));
+  assert.doesNotMatch(skill, /coverage/i);
 });
 
 test("review-pr posts the slot block without changing its boundaries", () => {
@@ -57,6 +61,7 @@ test("the four reviewers judge on the strong tier in Claude Code and Codex", asy
     assert.match(source, /^model: opus$/m, name);
     assert.match(source, /^effort: medium$/m, name);
     assert.match(source, prose("Judge from that evidence instead of re-reading the whole diff."), name);
+    assert.match(source, prose("The brief gives you the slots assigned to this lens"), name);
     const toml = await readFile(
       new URL(`.codex/agents/dod_guard_${name.replaceAll("-", "_")}.toml`, repositoryRoot),
       "utf8",
@@ -64,6 +69,17 @@ test("the four reviewers judge on the strong tier in Claude Code and Codex", asy
     assert.match(toml, /^model = "gpt-5\.6-sol"$/m, name);
     assert.match(toml, /^model_reasoning_effort = "medium"$/m, name);
     assert.match(toml, /^sandbox_mode = "read-only"$/m, name);
+    for (const [label, text] of [
+      ["source", source],
+      ["toml", toml],
+    ]) {
+      assert.match(
+        text,
+        prose('`rulings` holds one `{ "slot", "status", "evidence" }` entry for every slot assigned to this lens and for no other slot.'),
+        `${name} ${label}`,
+      );
+      assert.doesNotMatch(text, /coverage/i, `${name} ${label}`);
+    }
   }
 });
 
@@ -72,4 +88,5 @@ test("USAGE describes the planner, investigators, and judges", () => {
   assert.match(usage, prose("cheap investigators answer each question with a cited path and line"));
   assert.match(usage, prose("the four reviewer agents judge them on the strong tier"));
   assert.match(usage, prose("with every slot and its questions in a collapsed block"));
+  assert.match(usage, prose("ruling on every slot assigned to their lens"));
 });

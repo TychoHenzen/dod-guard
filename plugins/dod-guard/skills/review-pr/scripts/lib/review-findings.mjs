@@ -1,5 +1,5 @@
 import { judgmentFindings } from "./reviewer-results.mjs";
-import { requirePlan, reviewSlots, slotsBlock } from "./review-slots.mjs";
+import { requirePlan, reviewSlots, slotsBlock, slotsByLens } from "./review-slots.mjs";
 import { ruleScope } from "./rule-scope.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
@@ -156,7 +156,7 @@ function buildReview({ headSha, scan, diff, results, plan, pbi, subIssues }) {
   requirePlan(plan, slots);
   const fallback = firstAnchor(changedLines);
   const raw = [
-    ...judgmentFindings(results),
+    ...judgmentFindings(results, slotsByLens(plan)),
     ...[...scannerGroups(scan, changedLines)].map(([file, group]) =>
       scannerFinding(file, group),
     ),

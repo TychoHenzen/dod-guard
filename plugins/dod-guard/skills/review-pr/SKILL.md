@@ -128,7 +128,8 @@ verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
 4. **Judge.** Dispatch the four reviewers at once. Each receives the shared
    brief and the slots assigned to its lens, with their questions and verified
    answers or their exclusions, and judges from that evidence instead of
-   re-reading the whole diff. A slot is assigned to a lens when it has a
+   re-reading the whole diff. It returns one ruling for every slot assigned
+   to its lens. A slot is assigned to a lens when it has a
    question of that lens or an exclusion that names that lens. A judge settles
    each `unanswered` question of its lens from the files that question names,
    or reports the gap as a finding; it never counts one as passing. A judge
@@ -144,12 +145,15 @@ verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
   explorer with the full agent definition from `<plugin-root>/agents/` in its
   message, and record the stage as "requested, not pinned".
 
-Each returns one JSON object with `reviewer`, `coverage`, and `findings`. Save
-the four objects as one JSON array. When an agent returns malformed JSON, send
-it one correction request for the same review in the exact format. If it fails
-again, stop without posting and name the reviewer: a review is posted once per
-PR, so a missing angle cannot be filled in later. The build step refuses
-results that lack any of the four reviewers.
+Each returns one JSON object with `reviewer`, `rulings`, and `findings`.
+`rulings` holds one `{ "slot", "status", "evidence" }` entry for every slot
+assigned to that reviewer's lens, with a `status` of `VERIFIED` or `FINDING`.
+Save the four objects as one JSON array. When an agent returns malformed JSON,
+send it one correction request for the same review in the exact format. If it
+fails again, stop without posting and name the reviewer: a review is posted
+once per PR, so a missing angle cannot be filled in later. The build step
+refuses results that lack any of the four reviewers, and names the reviewer and
+slot for a missing, duplicate, or unassigned ruling or an unknown status.
 
 ## 6. Build and post
 

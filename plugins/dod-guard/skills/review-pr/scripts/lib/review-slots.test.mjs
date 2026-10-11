@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { pbiIssue, requirePlan, reviewSlots, slotsBlock, subIssueList } from "./review-slots.mjs";
+import { pbiIssue, requirePlan, reviewSlots, slotsBlock, slotsByLens, subIssueList } from "./review-slots.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
 const REPO_URL = "https://api.github.com/repos/TychoHenzen/dod-guard";
@@ -272,4 +272,12 @@ test("slotsBlock lists every slot with its questions or exclusion, escaped", () 
     "",
     "</details>",
   ]);
+});
+
+test("slotsByLens assigns an excluded slot to its exclusion's lens and a slot to every lens it asks", () => {
+  const byLens = slotsByLens(PLAN());
+  assert.deepEqual([...byLens.get("review-pr-feature")], ["file:src/a.mjs"]);
+  assert.deepEqual([...byLens.get("review-pr-design")], ["file:src/a.mjs"]);
+  assert.deepEqual([...byLens.get("review-pr-reliability")], ["criterion:1"]);
+  assert.deepEqual([...byLens.get("review-pr-hygiene")], ["sub-issue:o/r#5"]);
 });

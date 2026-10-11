@@ -202,4 +202,16 @@ function slotsBlock(plan, slots) {
   return lines.join("\n");
 }
 
-export { pbiIssue, requirePlan, reviewSlots, slotsBlock, subIssueList };
+// Maps each lens to the slots its judge must rule on: a slot with a question of
+// that lens, or an exclusion that names it. Call only after requirePlan.
+function slotsByLens(plan) {
+  const byLens = new Map(REVIEWERS.map((lens) => [lens, new Set()]));
+  for (const entry of plan) {
+    for (const lens of entryLenses(entry)) {
+      byLens.get(lens).add(entry.slot);
+    }
+  }
+  return byLens;
+}
+
+export { pbiIssue, requirePlan, reviewSlots, slotsBlock, slotsByLens, subIssueList };

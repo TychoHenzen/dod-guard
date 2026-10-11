@@ -133,9 +133,15 @@ test("slots without a required flag prints usage", () => {
 
 const HEAD = "f".repeat(40);
 const LENSES = ["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"];
+const ASSIGNED = {
+  "review-pr-feature": ["file:src/a.mjs"],
+  "review-pr-design": ["file:src/a.mjs"],
+  "review-pr-reliability": ["criterion:1"],
+  "review-pr-hygiene": ["criterion:2"],
+};
 const RESULTS = LENSES.map((reviewer) => ({
   reviewer,
-  coverage: [{ requirement: "AC 1", status: "VERIFIED", evidence: "ok" }],
+  rulings: ASSIGNED[reviewer].map((slot) => ({ slot, status: "VERIFIED", evidence: "ok" })),
   findings: [],
 }));
 const question = (id, lens) => ({ id, lens, question: `Does ${lens} hold?`, files: ["src/a.mjs"], status: "verified" });

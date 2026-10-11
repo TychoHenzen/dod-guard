@@ -93,10 +93,6 @@ const REVIEWERS = [
   "review-pr-reliability",
   "review-pr-hygiene",
 ];
-const COVERAGE = [
-  { requirement: "AC 1", status: "VERIFIED", evidence: "checked" },
-];
-
 const PBI = { repository: "TychoHenzen/dod-guard", number: 837, body: "## Acceptance criteria\n\n- [ ] AC-01 The review posts once\n" };
 const SUB_ISSUES = [{ repository: "TychoHenzen/dod-guard", number: 900, title: "Child" }];
 const SUB_SLOT = "sub-issue:TychoHenzen/dod-guard#900";
@@ -107,6 +103,12 @@ const PLAN = [
   { slot: "criterion:1", questions: [question("F2", "review-pr-feature")] },
   { slot: SUB_SLOT, excluded: { lens: "review-pr-hygiene", reason: "Same work as criterion:1" } },
 ];
+const ASSIGNED = {
+  "review-pr-feature": [`file:${FIX}`, "criterion:1"],
+  "review-pr-design": [`file:${FIX}`],
+  "review-pr-reliability": [`file:${UNICODE}`],
+  "review-pr-hygiene": [SUB_SLOT],
+};
 const inputs = { plan: PLAN, pbi: PBI, subIssues: SUB_ISSUES };
 
 // Fills in the reviewers a test does not care about, each with a clean,
@@ -114,7 +116,7 @@ const inputs = { plan: PLAN, pbi: PBI, subIssues: SUB_ISSUES };
 function complete(results) {
   return REVIEWERS.map((reviewer) => ({
     reviewer,
-    coverage: COVERAGE,
+    rulings: ASSIGNED[reviewer].map((slot) => ({ slot, status: "VERIFIED", evidence: "checked" })),
     findings: [],
     ...results.find((result) => result.reviewer === reviewer),
   }));
@@ -362,5 +364,18 @@ test("a PBI without acceptance criteria stops the build", () => {
   assert.throws(
     () => buildReview({ headSha: HEAD, scan, diff, results: complete([]), ...inputs, pbi: { ...PBI, body: "" } }),
     /PBI TychoHenzen\/dod-guard#837 has no checkbox item under ## Acceptance criteria/,
+  );
+});
+
+test("the build refuses a judge result missing a ruling for an assigned slot", () => {
+  assert.throws(
+    () =>
+      review([
+        {
+          reviewer: "review-pr-feature",
+          rulings: [{ slot: `file:${FIX}`, status: "VERIFIED", evidence: "checked" }],
+        },
+      ]),
+    /review-pr-feature: missing ruling for slot criterion:1/,
   );
 });

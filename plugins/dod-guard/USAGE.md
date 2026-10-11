@@ -306,8 +306,9 @@ sub-issue. A strong planner fills every slot with questions for the feature,
 design, reliability, and hygiene lenses or with an exclusion and its reason,
 cheap investigators answer each question with a cited path and line, and after
 the main thread verifies those answers, the four reviewer agents judge them on
-the strong tier against the PBI. The build refuses a plan that leaves a slot
-empty. It posts one comment-only review, with every slot and its questions in a
+the strong tier against the PBI, ruling on every slot assigned to their lens.
+The build refuses a plan or a set of rulings that leaves a slot empty. It posts
+one comment-only review, with every slot and its questions in a
 collapsed block, and one comment per changed file for scanner findings, one per
 reviewer finding, each with a `GH-<id>`, and a recommendation of `BLOCK` for
 any `BLOCKER`, `REQUEST_CHANGES` for other findings, or `APPROVE` for none. It
