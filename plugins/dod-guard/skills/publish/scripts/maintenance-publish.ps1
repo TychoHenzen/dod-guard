@@ -332,10 +332,12 @@ function Invoke-MaintenancePublish {
         AdminMethod = $adminMethod
         RestoreAttempts = 0
         Restored = $false
+        DeleteAttempted = $false
         ReleaseSha = $null
     }
     $savedProtection = $null
     $initialAdminEnabled = $false
+    $deleteAttempted = $false
     $releaseError = $null
     $releaseSha = $null
 
@@ -351,6 +353,33 @@ function Invoke-MaintenancePublish {
             throw "HEAD $head does not equal saved master SHA $SavedSha"
         }
 
+        $result.Stage = "commit"
+        Invoke-MaintenanceAction $CommitAction "commit"
+        $parentSha = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD^")
+        if ($parentSha -ne $SavedSha) {
+            throw "release commit parent $parentSha does not equal saved master SHA $SavedSha"
+        }
+        $releaseSha = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD")
+
+        $result.Stage = "pre-push"
+        Invoke-MaintenanceAction $PrePushAction "pre-push validation"
+
+        $result.Stage = "verify-tree"
+        $headAfterPrePush = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD")
+        $parentAfterPrePush = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD^")
+        if ($headAfterPrePush -ne $releaseSha) {
+            throw "HEAD changed during pre-push validation from $releaseSha to $headAfterPrePush"
+        }
+        if ($parentAfterPrePush -ne $SavedSha) {
+            throw "release commit parent changed during pre-push validation from $SavedSha to $parentAfterPrePush"
+        }
+        $trackedChanges = Invoke-MaintenanceGit $InvokeGit @("status", "--porcelain", "--untracked-files=no")
+        if ($trackedChanges -ne "") {
+            throw "tracked files changed during pre-push validation: $trackedChanges"
+        }
+
+        # Validation runs first so a hung or failing gate never runs while admin enforcement is off.
+        $result.Stage = "protection"
         $initialState = Get-MaintenanceState $InvokeGhApi $protectionEndpoint $adminEndpoint
         $initialProtectionResponse = $initialState.Protection
         $initialAdminResponse = $initialState.Admin
@@ -385,6 +414,7 @@ function Invoke-MaintenancePublish {
             $deleteResponse = $null
             $deleteError = $null
             try {
+                $deleteAttempted = $true
                 $deleteResponse = & $InvokeGhApi $adminMethod $adminEndpoint
             } catch {
                 $deleteError = $_.Exception
@@ -421,27 +451,19 @@ function Invoke-MaintenancePublish {
             }
         }
 
-        $result.Stage = "commit"
-        Invoke-MaintenanceAction $CommitAction "commit"
-        $parentSha = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD^")
-        if ($parentSha -ne $SavedSha) {
-            throw "release commit parent $parentSha does not equal saved master SHA $SavedSha"
-        }
-        $releaseSha = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD")
-
-        $result.Stage = "pre-push"
-        Invoke-MaintenanceAction $PrePushAction "pre-push validation"
-        $headAfterPrePush = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD")
-        $parentAfterPrePush = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD^")
-        if ($headAfterPrePush -ne $releaseSha) {
-            throw "HEAD changed during pre-push validation from $releaseSha to $headAfterPrePush"
-        }
-        if ($parentAfterPrePush -ne $SavedSha) {
-            throw "release commit parent changed during pre-push validation from $SavedSha to $parentAfterPrePush"
-        }
         $result.Stage = "push"
         [void](Invoke-MaintenanceGit $InvokeGit @("push", $lease, "origin", "HEAD:refs/heads/master"))
-        $result.ReleaseSha = Invoke-MaintenanceGit $InvokeGit @("rev-parse", "HEAD")
+        $result.Stage = "readback"
+        $remoteOutput = Invoke-MaintenanceGit $InvokeGit @("ls-remote", "origin", "refs/heads/master")
+        $remoteTokens = @($remoteOutput -split '\s+' | Where-Object { $_ -ne "" })
+        if ($remoteTokens.Count -eq 0) {
+            throw "remote master readback returned no SHA"
+        }
+        $remoteSha = $remoteTokens[0]
+        if ($remoteSha -ne $releaseSha) {
+            throw "remote master $remoteSha does not equal release SHA $releaseSha"
+        }
+        $result.ReleaseSha = $remoteSha
         $result.Success = $true
         $result.Stage = "complete"
     } catch {
@@ -449,9 +471,10 @@ function Invoke-MaintenancePublish {
         $result.Error = $releaseError
         $result.Success = $false
     } finally {
-        if ($null -ne $savedProtection) {
+        $result.DeleteAttempted = $deleteAttempted
+        if ($deleteAttempted -or ($null -ne $savedProtection -and -not $initialAdminEnabled)) {
             $result.Stage = "restore"
-            if ($initialAdminEnabled) {
+            if ($deleteAttempted) {
                 for ($attempt = 1; $attempt -le 2; $attempt++) {
                     $result.RestoreAttempts = $attempt
                     $restoreResponse = $null

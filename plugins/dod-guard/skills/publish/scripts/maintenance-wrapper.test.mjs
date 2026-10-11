@@ -5,6 +5,7 @@ import {
   parsePowerShellFile,
   realAdminEndpoint,
   realProtectionEndpoint,
+  releaseSha,
   runMaintenanceWrapper,
   runPowerShell,
   savedSha,
@@ -39,34 +40,92 @@ test("maintenance wrapper parses gh reason phrases and preserves response bodies
   assert.equal(outcome.Result.RestoreAttempts, 1);
 });
 
-test("maintenance wrapper restores protection after commit, pre-push, and push failures", {
+test("maintenance wrapper restores protection after push, remote readback, and admin disable failures", {
   skip: process.platform !== "win32",
 }, () => {
-  for (const failureStage of ["commit", "pre-push", "push"]) {
+  for (const failureStage of ["push", "ls-remote-mismatch", "admin-still-enabled"]) {
     const outcome = runMaintenanceWrapper(failureStage);
     assert.equal(outcome.Result.Success, false, failureStage);
     assert.equal(outcome.Result.Restored, true, failureStage);
     assert.equal(outcome.Result.RestoreAttempts, 1, failureStage);
-    assert.ok(
-      outcome.Events.includes("POST repos/TychoHenzen/dod-guard/branches/master/protection/enforce_admins"),
+    assert.equal(outcome.Result.DeleteAttempted, true, failureStage);
+    assert.ok(outcome.Events.includes(`POST ${realAdminEndpoint}`), failureStage);
+  }
+
+  const mismatch = runMaintenanceWrapper("ls-remote-mismatch");
+  assert.match(mismatch.Result.Error, /does not equal release SHA/);
+});
+
+test("maintenance wrapper stops before any protection call when a pre-mutation gate fails", {
+  skip: process.platform !== "win32",
+}, () => {
+  const failures = [
+    ["commit", /commit failed/],
+    ["native", /exit code 7/],
+    ["pre-push", /pre-push failed/],
+    ["head", /changed during pre-push validation/],
+    ["parent", /changed during pre-push validation/],
+    ["tracked-change", /tracked files changed during pre-push validation/],
+  ];
+  for (const [failureStage, pattern] of failures) {
+    const outcome = runMaintenanceWrapper(failureStage);
+    assert.equal(outcome.Result.Success, false, failureStage);
+    assert.equal(outcome.Result.Restored, false, failureStage);
+    assert.equal(outcome.Result.DeleteAttempted, false, failureStage);
+    assert.equal(outcome.Result.RestoreAttempts, 0, failureStage);
+    assert.match(outcome.Result.Error, pattern, failureStage);
+    assert.equal(
+      outcome.Events.some((event) => /^(GET|DELETE|POST) /.test(event)),
+      false,
       failureStage,
     );
   }
 });
 
-test("maintenance wrapper checks native action status and post-hook Git identity", {
+test("maintenance wrapper disables admin enforcement only after release validation", {
   skip: process.platform !== "win32",
 }, () => {
-  for (const failureStage of ["native", "head", "parent"]) {
-    const outcome = runMaintenanceWrapper(failureStage);
-    assert.equal(outcome.Result.Success, false, failureStage);
-    assert.equal(outcome.Result.Restored, true, failureStage);
-    assert.match(
-      outcome.Result.Error,
-      failureStage === "native" ? /exit code 7/ : /changed during pre-push validation/,
-      failureStage,
-    );
+  const outcome = runMaintenanceWrapper();
+  assert.equal(outcome.Result.Success, true);
+  assert.equal(outcome.Result.Restored, true);
+  assert.equal(outcome.Result.DeleteAttempted, true);
+  assert.equal(outcome.Result.ReleaseSha, releaseSha);
+
+  const lease = `--force-with-lease=refs/heads/master:${savedSha}`;
+  const ordered = [
+    "commit",
+    "pre-push",
+    "git status --porcelain --untracked-files=no",
+    `GET ${realProtectionEndpoint}`,
+    `DELETE ${realAdminEndpoint}`,
+    `git push ${lease} origin HEAD:refs/heads/master`,
+    "git ls-remote origin refs/heads/master",
+    `POST ${realAdminEndpoint}`,
+  ];
+  let previous = -1;
+  for (const event of ordered) {
+    const index = outcome.Events.indexOf(event);
+    assert.ok(index >= 0, event);
+    assert.ok(index > previous, event);
+    previous = index;
   }
+});
+
+test("maintenance wrapper keeps the admin-off window to disable readback, push, and remote readback", {
+  skip: process.platform !== "win32",
+}, () => {
+  const outcome = runMaintenanceWrapper();
+  const deleteIndex = outcome.Events.indexOf(`DELETE ${realAdminEndpoint}`);
+  const restoreIndex = outcome.Events.indexOf(`POST ${realAdminEndpoint}`);
+  assert.ok(deleteIndex >= 0);
+  assert.ok(restoreIndex > deleteIndex);
+  const lease = `--force-with-lease=refs/heads/master:${savedSha}`;
+  assert.deepEqual(outcome.Events.slice(deleteIndex + 1, restoreIndex), [
+    `GET ${realProtectionEndpoint}`,
+    `GET ${realAdminEndpoint}`,
+    `git push ${lease} origin HEAD:refs/heads/master`,
+    "git ls-remote origin refs/heads/master",
+  ]);
 });
 
 test("maintenance wrapper rejects malformed protected responses with evidence", {
@@ -93,6 +152,7 @@ test("maintenance wrapper preserves an initially disabled admin state", { skip: 
   assert.equal(outcome.Result.Success, true);
   assert.equal(outcome.Result.Restored, true);
   assert.equal(outcome.Result.RestoreAttempts, 0);
+  assert.equal(outcome.Result.DeleteAttempted, false);
   assert.equal(
     outcome.Events.some((event) => event.startsWith("DELETE ") || event.startsWith("POST ")),
     false,
