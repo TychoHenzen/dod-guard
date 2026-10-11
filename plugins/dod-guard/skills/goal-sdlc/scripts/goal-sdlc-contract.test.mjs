@@ -244,3 +244,55 @@ test("goal-sdlc reports the time and parent and child completions", () => {
     assert.match(usage, prose(phrase), phrase);
   }
 });
+
+// Claude Code /goal grades only its frozen condition, so a later "stop" message
+// cannot end a run unless the condition already allows it.
+const goalStop = await readFile(
+  new URL("../../../standards/goal-stop.md", import.meta.url),
+  "utf8",
+);
+const GOAL_TEMPLATE = [
+  "/goal Run /dod-guard:goal-sdlc on this repository.",
+  "(a) the final report says no eligible parent remains",
+  "and quotes git status showing a clean default branch; or",
+  "(b) the user, in their own prompt, has told you to stop,",
+  "and the in-flight parent is merged, or its branch is pushed",
+  "with its next step written on the issue.",
+  "Everything after this sentence is a preference, not part of the check:",
+];
+
+test("goal-sdlc gives a /goal run a user-stop exit", () => {
+  assert.match(skill, prose("Under `/goal`, also read and apply `standards/goal-stop.md`."));
+  assert.doesNotMatch(skill, /For a Codex `\/goal` run/);
+
+  // The section runs to "## Structured work" with no other heading inside it.
+  assert.match(usage, /^### Stop a `\/goal` run\n(?:[^#\n][^\n]*\n|\n)*## Structured work$/m);
+  assert.match(usage, prose("a small model grades only the condition text"));
+  assert.match(usage, prose("only the user can run `/goal clear`"));
+  const template = usage.split("\n").find((line) => line.startsWith("/goal Run "));
+  assert.ok(template, "USAGE.md has a one-line /goal template");
+  assert.match(template, prose(...GOAL_TEMPLATE));
+  assert.match(usage, prose("goal-sdlc applies `standards/goal-stop.md`"));
+});
+
+test("the goal-stop standard owns the in-run stop behavior", () => {
+  for (const rule of [
+    "When it has no exit for a user stop, show the `USAGE.md` template once",
+    "quotes the `git status --short --branch` output",
+    "A stop counts only when the user's own prompt asks for it",
+    "says where the in-flight parent stands",
+    "Say once that only `/goal clear` ends the goal.",
+    "plays a sound every five minutes for up to two hours",
+    "end the turn without starting work",
+    "an idle check-in still starts a turn after 30 minutes",
+    "When the command finishes before the user returns, do not restart it.",
+    "stop that sound command and confirm it stopped",
+  ]) {
+    assert.match(goalStop, prose(rule), `missing goal-stop rule: ${rule}`);
+  }
+  for (const command of ["Start-Sleep -Seconds 300", "afplay", "paplay"]) {
+    assert.ok(goalStop.includes(command), `missing sound command: ${command}`);
+  }
+  assert.match(goalStop, /1\.\.24 \| ForEach-Object/);
+  assert.match(goalStop, /for i in \$\(seq 24\)/);
+});

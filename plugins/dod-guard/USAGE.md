@@ -114,6 +114,28 @@ and discovery evidence are verified before Todo. Material unresolved
 requirements, including unavailable or inconclusive advisor advice, keep the
 issue in Backlog until the missing decision or evidence is available.
 
+### Stop a `/goal` run
+
+Under Claude Code `/goal`, a small model grades only the condition text
+against the conversation after every turn. A later "stop" message cannot end
+the run unless the condition allows it, and only the user can run `/goal clear`
+(or `stop`, `off`, `reset`, `none`, `cancel`) to end a goal early. Start a
+goal-sdlc run with a condition that has both exits:
+
+```text
+/goal Run /dod-guard:goal-sdlc on this repository. The goal is met when either holds: (a) the final report says no eligible parent remains and quotes git status showing a clean default branch; or (b) the user, in their own prompt, has told you to stop, and the in-flight parent is merged, or its branch is pushed with its next step written on the issue. Everything after this sentence is a preference, not part of the check: <models, timestamps, counters>.
+```
+
+Keep model, timestamp, and counter preferences in that last sentence, never in
+the check. A rule such as "every task runs on Haiku" is false after one
+exception, and the goal can then never be met.
+
+During the run, goal-sdlc applies `standards/goal-stop.md`. It shows this
+template when the condition has no user-stop exit, and gives the grader the
+evidence each exit needs. When the goal keeps firing after the final report,
+it says once that only `/goal clear` ends it, then waits on a bounded
+background sound command to get your attention.
+
 ## Structured work
 
 Use the ordinary path for a small, clear fix. Use the structured path when a
