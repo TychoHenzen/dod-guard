@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
 import { judgmentFindings } from "./reviewer-results.mjs";
+import { judgment as sharedJudgment } from "./review-pr.test-support.mjs";
 
 const REVIEWERS = [
   "review-pr-feature",
@@ -21,18 +22,11 @@ const rulings = (reviewer) =>
   [...ASSIGNED.get(reviewer)].map((slot) => ({ slot, status: "VERIFIED", evidence: "ok" }));
 
 function judgment(overrides) {
-  return {
-    severity: "MAJOR",
+  return sharedJudgment({
     file: FILE,
-    line: 72,
-    problem: "Outdated threads are skipped",
-    impact: "Real findings are never fixed",
-    requirement: "AC 2",
-    correction: "Keep outdated threads open",
-    rootCause: "Outdated treated as stale",
     evidence: "review.js:72 sets stale",
     ...overrides,
-  };
+  });
 }
 
 function complete(results) {

@@ -12,6 +12,7 @@ import { join } from "node:path";
 import test from "node:test";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import { fileURLToPath } from "node:url";
+import { pbiJson } from "./lib/review-pr.test-support.mjs";
 
 const SCRIPT = fileURLToPath(new URL("review-findings.mjs", import.meta.url));
 const run = (args) => spawnSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8", shell: false });
@@ -31,7 +32,6 @@ function write(dir, name, value) {
   return path;
 }
 
-const REPO_URL = "https://api.github.com/repos/TychoHenzen/dod-guard";
 const DIFF = [
   "diff --git a/src/a.mjs b/src/a.mjs",
   "new file mode 100644",
@@ -41,11 +41,7 @@ const DIFF = [
   "+x",
   "",
 ].join("\n");
-const PBI_JSON = {
-  number: 837,
-  repository_url: REPO_URL,
-  body: "## Outcome\n\n- [ ] not a criterion\n\n## Acceptance criteria\n\n- [ ] AC-01 first\n- [x] AC-02 second\n\n## Verification\n\n- [ ] not a criterion\n",
-};
+const PBI_JSON = pbiJson();
 
 function inputs(dir) {
   return {

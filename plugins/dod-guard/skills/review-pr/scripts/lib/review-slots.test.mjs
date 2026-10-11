@@ -4,8 +4,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { pbiIssue, requirePlan, reviewSlots, slotsBlock, slotsByLens, subIssueList } from "./review-slots.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
+import {
+  pbiJson,
+  QUOTED_PATH_HUNK,
+  REPO_URL,
+} from "./review-pr.test-support.mjs";
 
-const REPO_URL = "https://api.github.com/repos/TychoHenzen/dod-guard";
 const DIFF = [
   "diff --git a/src/added.mjs b/src/added.mjs",
   "--- a/src/added.mjs",
@@ -30,19 +34,10 @@ const DIFF = [
   "rename to new.md",
   "diff --git a/img.png b/img.png",
   "Binary files a/img.png and b/img.png differ",
-  'diff --git "a/docs/\\303\\274.md" "b/docs/\\303\\274.md"',
-  '--- "a/docs/\\303\\274.md"',
-  '+++ "b/docs/\\303\\274.md"',
-  "@@ -1 +1 @@",
-  "-old",
-  "+new",
+  ...QUOTED_PATH_HUNK,
   "",
 ].join("\n");
-const PBI_JSON = {
-  number: 837,
-  repository_url: REPO_URL,
-  body: "## Outcome\n\n- [ ] not a criterion\n\n## Acceptance criteria\n\n- [ ] AC-01 first\n- [x] AC-02 second\n\n## Verification\n\n- [ ] not a criterion\n",
-};
+const PBI_JSON = pbiJson();
 const CHILD_ONE = { number: 838, title: "Child one", repository_url: REPO_URL };
 const SUB_JSON = [
   [CHILD_ONE],

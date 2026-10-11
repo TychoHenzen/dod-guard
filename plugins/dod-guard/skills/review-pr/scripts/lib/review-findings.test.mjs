@@ -7,6 +7,10 @@ import {
   existingReview,
   postedFindings,
 } from "./review-findings.mjs";
+import {
+  judgment as sharedJudgment,
+  QUOTED_PATH_HUNK,
+} from "./review-pr.test-support.mjs";
 
 const HEAD = "f522da2baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const FIX =
@@ -64,27 +68,15 @@ const diff = [
   "+a",
   "+b",
   "+c",
-  'diff --git "a/docs/\\303\\274.md" "b/docs/\\303\\274.md"',
-  '--- "a/docs/\\303\\274.md"',
-  '+++ "b/docs/\\303\\274.md"',
-  "@@ -1 +1 @@",
-  "-old",
-  "+new",
+  ...QUOTED_PATH_HUNK,
 ].join("\n");
 
 function judgment(overrides) {
-  return {
-    severity: "MAJOR",
+  return sharedJudgment({
     file: FIX,
-    line: 72,
-    problem: "Outdated threads are skipped",
-    impact: "Real findings are never fixed",
-    requirement: "AC 2",
-    correction: "Keep outdated threads open",
-    rootCause: "Outdated treated as stale",
     evidence: "fix-support.mjs:72 sets stale",
     ...overrides,
-  };
+  });
 }
 
 const REVIEWERS = [
