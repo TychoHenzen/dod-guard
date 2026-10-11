@@ -149,34 +149,60 @@ function reviewBody({ headSha, recommendation, counts, block, unanchored }) {
   return lines.join("\n");
 }
 
+// ASSUMPTION: GitHub rejects a pull request review body over 65536 characters.
+// The review is posted once, so the build refuses before that single attempt.
+const MAX_REVIEW_BODY = 65536;
+
+function requirePostableBody(body, slotCount) {
+  if (body.length > MAX_REVIEW_BODY) {
+    throw new Error(
+      `The review body is ${body.length} characters, over the ` +
+        `${MAX_REVIEW_BODY}-character limit, with ${slotCount} slots. ` +
+        "Nothing was posted; shorten question text in the plan and rebuild.",
+    );
+  }
+  return body;
+}
+
+function anchoredFindings({ scan, changedLines, results, plan }) {
+  const fallback = firstAnchor(changedLines);
+  return [
+    ...judgmentFindings(results, slotsByLens(plan)),
+    ...[...scannerGroups(scan, changedLines)].map(([file, group]) =>
+      scannerFinding(file, group),
+    ),
+  ].map((finding) => anchor(finding, changedLines, fallback));
+}
+
 function buildReview({ headSha, scan, diff, results, plan, pbi, subIssues }) {
   const changedLines = parseChangedLines(diff);
   // The build regenerates the slots instead of trusting a list the planner returns.
   const slots = reviewSlots({ changedLines, pbi, subIssues });
   requirePlan(plan, slots);
-  const fallback = firstAnchor(changedLines);
-  const raw = [
-    ...judgmentFindings(results, slotsByLens(plan)),
-    ...[...scannerGroups(scan, changedLines)].map(([file, group]) =>
-      scannerFinding(file, group),
-    ),
-  ];
-  const findings = raw.map((finding) =>
-    anchor(finding, changedLines, fallback),
-  );
+  const findings = anchoredFindings({ scan, changedLines, results, plan });
   const recommendation = recommendationFor(
     findings.map((finding) => finding.severity),
   );
   const counts = countSeverities(findings);
   const inline = findings.filter((finding) => finding.anchored);
   const unanchored = findings.filter((finding) => !finding.anchored);
+  const body = requirePostableBody(
+    reviewBody({
+      headSha,
+      recommendation,
+      counts,
+      block: slotsBlock(plan, slots),
+      unanchored,
+    }),
+    slots.length,
+  );
   return {
     recommendation,
     counts,
     payload: {
       commit_id: headSha,
       event: "COMMENT",
-      body: reviewBody({ headSha, recommendation, counts, block: slotsBlock(plan, slots), unanchored }),
+      body,
       comments: inline.map(({ anchored, body }) => ({
         path: anchored.path,
         line: anchored.line,

@@ -167,13 +167,15 @@ question id, when a generated slot is missing, a planned slot was not
 generated, a slot has neither questions nor an exclusion or has both, a
 question or exclusion is incomplete, a question id repeats, or a lens has no
 question or exclusion. It groups scanner findings into one comment per changed
-file, dedupes reviewer findings by file and root cause, and posts every finding
-as an inline comment so each gets a `GH-<id>`. It lists every slot with its
-questions and their statuses, or its exclusion lens and reason, in a collapsed
-`<details>` block in the review body. A finding whose
-cited line this PR did not add moves to the nearest added line, and its body names the cited location.
-Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A file's scanner
-findings are `MAJOR` when any is `high`, otherwise `MINOR`.
+file, dedupes reviewer findings by file and root cause, and posts every
+finding as an inline comment so each gets a `GH-<id>`. It lists every slot
+with its questions and their statuses, or its exclusion lens and reason, in a
+collapsed `<details>` block in the review body. When the body would pass
+GitHub's 65536-character limit, the build refuses before anything is posted;
+shorten the question text in the saved plan and rebuild. A finding whose cited
+line this PR did not add moves to the nearest added line, and its body names
+the cited location. Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given.
+A file's scanner findings are `MAJOR` when any is `high`, otherwise `MINOR`.
 Recommendation: any `BLOCKER` is `BLOCK`, any
 other finding is `REQUEST_CHANGES`, none is `APPROVE`.
 

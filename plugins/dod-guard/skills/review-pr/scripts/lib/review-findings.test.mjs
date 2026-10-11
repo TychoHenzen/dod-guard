@@ -379,3 +379,15 @@ test("the build refuses a judge result missing a ruling for an assigned slot", (
     /review-pr-feature: missing ruling for slot criterion:1/,
   );
 });
+
+test("a body over the GitHub limit stops the build before posting", () => {
+  const long = { ...question("F1", "review-pr-feature"), question: "x".repeat(70000) };
+  const plan = [
+    { slot: `file:${FIX}`, questions: [long, question("D1", "review-pr-design")] },
+    ...PLAN.slice(1),
+  ];
+  assert.throws(
+    () => buildReview({ headSha: HEAD, scan, diff, results: complete([]), ...inputs, plan }),
+    /over the 65536-character limit, with 4 slots/,
+  );
+});
