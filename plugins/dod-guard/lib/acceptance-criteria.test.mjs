@@ -50,3 +50,91 @@ test("acceptanceCriteria returns no items without the section or without checkbo
   assert.deepEqual(acceptanceCriteria(null), []);
   assert.deepEqual(acceptanceCriteria(undefined), []);
 });
+
+test("acceptanceCriteria skips a fenced example above the heading", () => {
+  const body = [
+    "## Outcome",
+    "",
+    "```md",
+    "## Acceptance criteria",
+    "- [ ] example only",
+    "```",
+    "",
+    "## Acceptance criteria",
+    "",
+    "- [ ] AC-01 first",
+    "- [x] AC-02 second",
+    "",
+    "## Verification",
+    "",
+    "- [ ] not a criterion",
+  ].join("\n");
+  assert.deepEqual(acceptanceCriteria(body), [
+    { text: "AC-01 first", checked: false },
+    { text: "AC-02 second", checked: true },
+  ]);
+  assert.equal(
+    markdownSection(body, "Acceptance criteria"),
+    "\n- [ ] AC-01 first\n- [x] AC-02 second\n\n",
+  );
+});
+
+test("acceptanceCriteria skips a fenced checkbox inside the section", () => {
+  const body = [
+    "## Acceptance criteria",
+    "",
+    "- [ ] AC-01 first",
+    "",
+    "```text",
+    "- [ ] fenced item",
+    "## Not a heading",
+    "```",
+    "",
+    "- [x] AC-02 second",
+    "",
+    "## Verification",
+    "",
+    "- [ ] not a criterion",
+  ].join("\n");
+  assert.deepEqual(acceptanceCriteria(body), [
+    { text: "AC-01 first", checked: false },
+    { text: "AC-02 second", checked: true },
+  ]);
+});
+
+test("a tilde fence hides its contents until a tilde line closes it", () => {
+  const body = [
+    "~~~",
+    "## Acceptance criteria",
+    "- [ ] tilde example",
+    "~~~",
+    "",
+    "## Acceptance criteria",
+    "",
+    "~~~",
+    "- [ ] tilde fenced",
+    "```",
+    "- [ ] still fenced",
+    "## Not a heading",
+    "~~~",
+    "",
+    "- [ ] AC-01 real",
+  ].join("\n");
+  assert.deepEqual(acceptanceCriteria(body), [
+    { text: "AC-01 real", checked: false },
+  ]);
+});
+
+test("an inline triple-backtick line does not hide the next checkbox", () => {
+  const body = [
+    "## Acceptance criteria",
+    "",
+    "```inline```",
+    "- [ ] AC-01 after inline",
+    "",
+    "## Verification",
+  ].join("\n");
+  assert.deepEqual(acceptanceCriteria(body), [
+    { text: "AC-01 after inline", checked: false },
+  ]);
+});
