@@ -244,3 +244,26 @@ test("goal-sdlc reports the time and parent and child completions", () => {
     assert.match(usage, prose(phrase), phrase);
   }
 });
+
+// Claude Code /goal grades only its frozen condition, so a later "stop" message
+// cannot end a run unless the condition already allows it.
+test("goal-sdlc gives a /goal run a user-stop exit", () => {
+  assert.match(skill, prose("`/goal` owns persistence and stop (USAGE.md \"Stop a `/goal` run\")."));
+  assert.doesNotMatch(skill, /For a Codex `\/goal` run/);
+  assert.match(usage, /^### Stop a `\/goal` run$/m);
+  assert.match(usage, prose("a small model grades only the condition text"));
+  assert.match(
+    usage,
+    /^\/goal Run \/dod-guard:goal-sdlc on this repository\. .*\(a\) .*\(b\) the user has told you to stop, and the in-flight parent is merged, or its branch is pushed with its next step written on the issue\. .*is a preference, not part of the check: .*$/m,
+  );
+  assert.match(usage, prose("only the user can run `/goal clear`"));
+  for (const rule of [
+    "shows this template once at the start of the run",
+    "says that the user ended the run and where the in-flight parent stands",
+    "says once that only `/goal clear` ends it",
+    "starts a background command that plays a sound every five minutes",
+    "Claude Code skips the goal check while that command runs",
+  ]) {
+    assert.match(usage, prose(rule), `missing /goal stop rule: ${rule}`);
+  }
+});
