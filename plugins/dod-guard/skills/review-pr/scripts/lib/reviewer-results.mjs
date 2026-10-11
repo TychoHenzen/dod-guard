@@ -48,6 +48,8 @@ function rulingProblem(name, ruling, assigned, seen) {
   if (!RULING_STATUSES.includes(ruling.status)) {
     return `${name}: unknown status ${JSON.stringify(ruling.status ?? null)} for slot ${slot}`;
   }
+  // ASSUMPTION: a ruling without evidence cannot be checked, so it counts as
+  // missing, the same as the free-text records it replaces.
   if (typeof ruling.evidence !== "string" || ruling.evidence.trim() === "") {
     return `${name}: ruling for slot ${slot} needs evidence`;
   }

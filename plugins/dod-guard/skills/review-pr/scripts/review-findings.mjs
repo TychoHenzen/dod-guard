@@ -129,8 +129,9 @@ const REQUIRED = {
 };
 const FULL_SHA = /^[0-9a-f]{40}$/;
 
-// Every command takes exactly its required flags, so a misspelled or retired
-// flag stops with usage instead of being ignored.
+// ASSUMPTION: no command takes an optional flag, so refusing every flag outside
+// REQUIRED is safe. A misspelled or retired flag then stops with usage instead
+// of being ignored.
 function validArgs(command, args) {
   if (!(args && COMMANDS[command])) {
     return false;

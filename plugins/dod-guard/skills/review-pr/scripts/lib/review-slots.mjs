@@ -34,6 +34,8 @@ function subIssueList(value, source) {
       throw new Error(`${source}: sub-issue ${index + 1} needs a repository_url, a positive integer number, and a title`);
     }
     const reference = `${repository}#${child.number}`;
+    // ASSUMPTION: GitHub lists each sub-issue once, so a repeat means a corrupt
+    // listing; two equal slot ids would make the plan ambiguous.
     if (seen.has(reference)) {
       throw new Error(`${source}: sub-issue ${reference} appears more than once`);
     }
@@ -155,6 +157,8 @@ function requirePlan(plan, slots) {
     if (!generated.has(slot)) {
       throw new Error(`Plan slot ${JSON.stringify(slot ?? null)} was not generated from the diff and the PBI`);
     }
+    // ASSUMPTION: one plan entry per slot; two entries would leave the slot
+    // block and the lens assignment ambiguous.
     if (planned.has(slot)) {
       throw new Error(`Plan slot ${slot} appears more than once`);
     }
