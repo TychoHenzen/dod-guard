@@ -301,19 +301,20 @@ Review a GitHub pull request's changed files:
 The PR head must be checked out. The skill scans the whole repository with the
 installed quality-guard scanner and keeps the findings in changed files. Its
 script then generates fixed review slots from the diff and the PBI: one per
-changed file with added lines, one per acceptance criterion, and one per linked
-sub-issue. A strong planner fills every slot with questions for the feature,
-design, reliability, and hygiene lenses or with an exclusion and its reason,
-cheap investigators answer each question with a cited path and line, and after
-the main thread verifies those answers, the four reviewer agents judge them on
-the strong tier against the PBI, ruling on every slot assigned to their lens.
-The build refuses a plan or a set of rulings that leaves a slot empty. It posts
-one comment-only review, with every slot and its questions in a
-collapsed block, and one comment per changed file for scanner findings, one per
-reviewer finding, each with a `GH-<id>`, and a recommendation of `BLOCK` for
-any `BLOCKER`, `REQUEST_CHANGES` for other findings, or `APPROVE` for none. It
-posts at most one review per pull request. quality-guard must be installed and
-enabled.
+changed file with added lines, one per acceptance criterion, and one per
+linked sub-issue. A strong planner fills every slot with questions for the
+feature, design, reliability, and hygiene lenses or with an exclusion and its
+reason, cheap investigators answer each question with a cited path and line,
+and after the main thread verifies those answers, the four reviewer agents
+judge them on the strong tier against the PBI, ruling on every slot assigned
+to their lens. The build refuses a plan or a set of rulings that leaves a slot
+empty. It posts one comment-only review, with every slot and its questions in
+a collapsed block, one comment per changed file for scanner findings and one
+per reviewer finding, each with a `GH-<id>`, and a recommendation of `BLOCK`
+for any `BLOCKER`, `REQUEST_CHANGES` for other findings, or `APPROVE` for
+none. When the diff adds no line, there is nothing to anchor a comment on, so
+the findings are listed in the review body without a `GH-<id>`. It posts at
+most one review per pull request. quality-guard must be installed and enabled.
 
 Fix selected GitHub review findings:
 

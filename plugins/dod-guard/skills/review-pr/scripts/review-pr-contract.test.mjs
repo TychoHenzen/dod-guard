@@ -41,6 +41,7 @@ test("review-pr plans, investigates, verifies, then judges in that order", () =>
   assert.match(skill, prose("It returns one ruling for every slot assigned to its lens."));
   assert.match(skill, prose("Each returns one JSON object with `reviewer`, `rulings`, and `findings`."));
   assert.match(skill, prose("names the reviewer and slot for a missing, duplicate, or unassigned ruling or an unknown status"));
+  assert.match(skill, prose("a `FINDING` ruling from a reviewer that returned no findings"));
   assert.doesNotMatch(skill, /coverage/i);
 });
 
@@ -53,6 +54,8 @@ test("review-pr posts the slot block without changing its boundaries", () => {
   assert.match(skill, prose("never post a second review"));
   assert.match(skill, prose("Never edit files, approve, mark ready, merge, or close anything."));
   assert.doesNotMatch(skill, /questions\.json/);
+  assert.match(skill, prose("the findings are listed in the review body without a `GH-<id>`"));
+  assert.doesNotMatch(skill, /so each gets a `GH-<id>`/);
 });
 
 test("the four reviewers judge on the strong tier in Claude Code and Codex", async () => {
@@ -78,6 +81,17 @@ test("the four reviewers judge on the strong tier in Claude Code and Codex", asy
         prose('`rulings` holds one `{ "slot", "status", "evidence" }` entry for every slot assigned to this lens and for no other slot.'),
         `${name} ${label}`,
       );
+      assert.match(
+        text,
+        prose("never rule `VERIFIED` on an unanswered question"),
+        `${name} ${label}`,
+      );
+      assert.match(
+        text,
+        prose("Every `FINDING` ruling needs at least one entry in `findings`."),
+        `${name} ${label}`,
+      );
+      assert.doesNotMatch(text, /verified answers/, `${name} ${label}`);
       assert.doesNotMatch(text, /coverage/i, `${name} ${label}`);
     }
   }
@@ -89,4 +103,5 @@ test("USAGE describes the planner, investigators, and judges", () => {
   assert.match(usage, prose("the four reviewer agents judge them on the strong tier"));
   assert.match(usage, prose("with every slot and its questions in a collapsed block"));
   assert.match(usage, prose("ruling on every slot assigned to their lens"));
+  assert.match(usage, prose("the findings are listed in the review body without a `GH-<id>`"));
 });

@@ -126,13 +126,13 @@ verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
    does not answer it). The build regenerates the slots and refuses a plan
    that misses, adds, or leaves empty a slot.
 4. **Judge.** Dispatch the four reviewers at once. Each receives the shared
-   brief and the slots assigned to its lens, with their questions and verified
-   answers or their exclusions, and judges from that evidence instead of
-   re-reading the whole diff. It returns one ruling for every slot assigned
-   to its lens. A slot is assigned to a lens when it has a
-   question of that lens or an exclusion that names that lens. A judge settles
-   each `unanswered` question of its lens from the files that question names,
-   or reports the gap as a finding; it never counts one as passing. A judge
+   brief and the slots assigned to its lens, with their questions, answers,
+   and answer statuses or their exclusions, and judges from that evidence
+   instead of re-reading the whole diff. It returns one ruling for every slot
+   assigned to its lens. A slot is assigned to a lens when it has a question
+   of that lens or an exclusion that names that lens. A judge settles each
+   `unanswered` question of its lens from the files that question names, or
+   reports the gap as a finding; it never counts one as passing. A judge
    reports an exclusion assigned to its lens as a finding when its reason does
    not hold.
 
@@ -154,6 +154,8 @@ fails again, stop without posting and name the reviewer: a review is posted
 once per PR, so a missing angle cannot be filled in later. The build step
 refuses results that lack any of the four reviewers, and names the reviewer and
 slot for a missing, duplicate, or unassigned ruling or an unknown status.
+It also refuses a result whose reviewer is not one of the four, and a
+`FINDING` ruling from a reviewer that returned no findings.
 
 ## 6. Build and post
 
@@ -168,14 +170,16 @@ generated, a slot has neither questions nor an exclusion or has both, a
 question or exclusion is incomplete, a question id repeats, or a lens has no
 question or exclusion. It groups scanner findings into one comment per changed
 file, dedupes reviewer findings by file and root cause, and posts every
-finding as an inline comment so each gets a `GH-<id>`. It lists every slot
-with its questions and their statuses, or its exclusion lens and reason, in a
-collapsed `<details>` block in the review body. When the body would pass
-GitHub's 65536-character limit, the build refuses before anything is posted;
-shorten the question text in the saved plan and rebuild. A finding whose cited
-line this PR did not add moves to the nearest added line, and its body names
-the cited location. Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given.
-A file's scanner findings are `MAJOR` when any is `high`, otherwise `MINOR`.
+finding as an inline comment with its own `GH-<id>`. When the diff adds no
+line, there is nothing to anchor a comment on, so the findings are listed in
+the review body without a `GH-<id>`. It lists every slot with its questions
+and their statuses, or its exclusion lens and reason, in a collapsed
+`<details>` block in the review body. When the body would pass GitHub's
+65536-character limit, the build refuses before anything is posted; shorten
+the question text in the saved plan and rebuild. A finding whose cited line
+this PR did not add moves to the nearest added line, and its body names the
+cited location. Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A
+file's scanner findings are `MAJOR` when any is `high`, otherwise `MINOR`.
 Recommendation: any `BLOCKER` is `BLOCK`, any
 other finding is `REQUEST_CHANGES`, none is `APPROVE`.
 
