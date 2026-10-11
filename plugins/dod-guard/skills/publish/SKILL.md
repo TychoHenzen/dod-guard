@@ -222,7 +222,10 @@ or relies on a later validator or client-cache readback to recover the release.
      hand-picked subset of fields. Require both initial reads to return HTTP
      `200` with non-empty objects, require the broad response to contain an
      `enforce_admins.enabled` boolean and the admin response to contain an
-     `enabled` boolean, and require those values to agree before any mutation.
+     `enabled` boolean, and require those values to agree before any protection
+     mutation. The helper reads this snapshot once, after validation and
+     immediately before any DELETE (or before the push when admin enforcement is
+     already disabled).
    - Use the checked-in `<skill-dir>/scripts/maintenance-publish.ps1` helper as
      the only maintenance mutation boundary. Dot-source it and invoke
      `Invoke-MaintenancePublish` with the owner, repository, saved SHA, and the
@@ -238,6 +241,19 @@ or relies on a later validator or client-cache readback to recover the release.
      invalid endpoint or method, an unavailable `allow_force_pushes.enabled`,
      and any unpinned force-push alternative. It never invokes a Git worktree
      command.
+   - The helper runs `-CommitAction`, then the `-PrePushAction` validation,
+     then checks the exact tree. This order matters: validation runs, and the
+     tree is checked, before admin enforcement is disabled. The tree check
+     requires `HEAD` to equal the release commit, the release commit's parent
+     to equal the saved SHA, and `git status --porcelain --untracked-files=no`
+     to be empty. Any failure before the DELETE, including preflight failures
+     (a non-primary checkout, or `HEAD` not equal to the saved SHA), commit,
+     validation, tree-check, and protection-snapshot failures (an invalid
+     initial readback, or `allow_force_pushes.enabled` not true), stops with
+     protection unchanged, issues no DELETE or POST, and reports
+     `DeleteAttempted` false. For these pre-DELETE failures, a `Restored` value
+     of false with `DeleteAttempted` false is therefore not a protection
+     incident.
    - A force-push allowance alone does not bypass the PR or check rules. If the
      saved `enforce_admins.enabled` is true, the helper invokes only the
       validated admin endpoint with `gh api --method DELETE <admin_endpoint>
@@ -248,9 +264,19 @@ or relies on a later validator or client-cache readback to recover the release.
      `enabled=false`, and equality of every non-admin protection field are
      required before the release can proceed. An invalid response or readback
      stops before the push.
+     Admin enforcement is off from the DELETE until the restoring POST, and the
+     off-window is the push plus its readback. The disable readback that
+     confirms the DELETE is read-only and runs first. Between the DELETE and
+     the restoring POST the helper issues only that disable readback, the leased
+     push, and one `git ls-remote origin refs/heads/master` readback, which
+     must equal the release commit. A mismatch there is a failure that still
+     restores protection.
    - The helper owns the cleanup `finally` scope, so every exit after an
-     attempted DELETE, including commit, push, or pre-push validation failure,
-     restores the saved admin state. If it was initially enabled, it invokes
+     attempted DELETE, including a failed disable readback, a failed push, or a
+     remote readback mismatch, restores the saved admin state. This is an
+     accepted residual risk: a hard kill between the DELETE and the cleanup
+     cannot restore protection, and the exposure is limited to the push and its
+     readback. If it was initially enabled, it invokes
       only the same validated endpoint with `gh api --method POST <admin_endpoint>
       --include`, requires HTTP `200`, and reads the admin endpoint and
       complete protection object back after every POST attempt. If any response,
@@ -261,7 +287,8 @@ or relies on a later validator or client-cache readback to recover the release.
       complete readback. If the second readback still differs, it stops and
       reports the exact remaining difference. If admin enforcement was initially
       disabled, it does not call POST; it proves it remains disabled and the
-      complete protection snapshot is unchanged.
+      complete protection snapshot is unchanged, and this run then reports
+      `Restored` true with `RestoreAttempts` 0 and `DeleteAttempted` false.
      Other users remain subject to the branch rules throughout.
 8. For a `functional` release, invoke `/submit-draft-pr` with the parent PBI
    number after the release commit is pushed to the issue branch. Do not create or update

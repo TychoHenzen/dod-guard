@@ -9,6 +9,7 @@ export const maintenanceWrapperPath = fileURLToPath(new URL("./maintenance-publi
 export const realProtectionEndpoint = "repos/TychoHenzen/dod-guard/branches/master/protection";
 export const realAdminEndpoint = `${realProtectionEndpoint}/enforce_admins`;
 export const savedSha = "0123456789abcdef0123456789abcdef01234567";
+export const releaseSha = "fedcba9876543210fedcba9876543210fedcba98";
 
 export function runPowerShell(command, environment = {}) {
   const result = spawnSync(
@@ -57,7 +58,8 @@ $state = @{
   GhCalls = 0
   HeadSha = $savedSha
   ParentSha = $savedSha
-  ReleaseSha = 'fedcba9876543210fedcba9876543210fedcba98'
+  RemoteSha = $savedSha
+  ReleaseSha = '${releaseSha}'
 }
 `;
 
@@ -75,8 +77,20 @@ const MAINTENANCE_2 = String.raw`$invokeGit = {
     if ($fixtureStage -eq 'commit') { throw 'commit failed' }
     return $state.ParentSha
   }
-  if ($Arguments[0] -eq 'push' -and $fixtureStage -eq 'push') { throw 'push failed' }
-  if ($Arguments[0] -eq 'push') { return '' }
+  if ($Arguments[0] -eq 'push' -and $fixtureStage -in @('push', 'push-post')) { throw 'push failed' }
+  if ($Arguments[0] -eq 'push') {
+    $state.RemoteSha = $state.HeadSha
+    return ''
+  }
+  if ($Arguments[0] -eq 'status' -and $Arguments[1] -eq '--porcelain' -and $Arguments[2] -eq '--untracked-files=no') {
+    if ($fixtureStage -eq 'tracked-change') { return ' M packages/x.js' }
+    return ''
+  }
+  if ($Arguments[0] -eq 'ls-remote' -and $Arguments[1] -eq 'origin' -and $Arguments[2] -eq 'refs/heads/master') {
+    $remoteSha = $state.RemoteSha
+    if ($fixtureStage -eq 'ls-remote-mismatch') { $remoteSha = 'cccccccccccccccccccccccccccccccccccccccc' }
+    return ([string]$remoteSha + [char]9 + 'refs/heads/master')
+  }
   throw ('unexpected git command: ' + ($Arguments -join ' '))
 }
 `;
@@ -96,7 +110,7 @@ $invokeGhApi = {
   }
   if ($Method -eq 'POST') {
     $state.RestoreCalls++
-    if ($fixtureStage -eq 'post' -and $state.RestoreCalls -eq 1) { throw 'post failed' }
+    if ($fixtureStage -in @('post', 'push-post') -and $state.RestoreCalls -eq 1) { throw 'post failed' }
     return [pscustomobject]@{ Status = 200; Body = $null }
   }
   if ($Endpoint -like '*/protection') { return (& $readProtection) }
