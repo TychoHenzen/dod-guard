@@ -184,3 +184,54 @@ test("one root cause in one file keeps the highest severity and its reviewer", (
   );
   assert.match(findings[0].body, /\(review-pr-reliability\)$/);
 });
+
+test("a FINDING ruling with no finding in its result is refused", () => {
+  const results = [
+    {
+      reviewer: "review-pr-design",
+      rulings: [
+        { slot: "file:src/review.js", status: "FINDING", evidence: "ok" },
+      ],
+    },
+  ];
+  assert.throws(
+    () => judgmentFindings(complete(results), ASSIGNED),
+    /Incomplete reviewer results; do not post[\s\S]*review-pr-design: FINDING ruling for slot file:src\/review\.js has no entry in findings/,
+  );
+});
+
+test("a FINDING ruling backed by a finding in its result is kept", () => {
+  const results = [
+    {
+      reviewer: "review-pr-design",
+      rulings: [
+        { slot: "file:src/review.js", status: "FINDING", evidence: "ok" },
+      ],
+      findings: [judgment()],
+    },
+  ];
+  const findings = judgmentFindings(complete(results), ASSIGNED);
+  assert.deepEqual(
+    findings.map((finding) => [finding.file, finding.severity]),
+    [[FILE, "MAJOR"]],
+  );
+});
+
+test("a result from a reviewer outside the four is refused", () => {
+  const extra = {
+    reviewer: "review-pr-extra",
+    rulings: [],
+    findings: [judgment()],
+  };
+  assert.throws(
+    () => judgmentFindings([...complete([]), extra], ASSIGNED),
+    /Incomplete reviewer results; do not post[\s\S]*result 5: unknown reviewer "review-pr-extra"/,
+  );
+});
+
+test("a null result is refused as an unknown reviewer, not a TypeError", () => {
+  assert.throws(
+    () => judgmentFindings([...complete([]), null], ASSIGNED),
+    /Incomplete reviewer results; do not post[\s\S]*result 5: unknown reviewer null/,
+  );
+});
