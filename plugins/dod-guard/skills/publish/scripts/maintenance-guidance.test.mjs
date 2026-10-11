@@ -66,10 +66,12 @@ test("maintenance releases disable and restore admin enforcement through readbac
   assert.match(
     skill,
     prose(
-      "every exit after an attempted DELETE, including commit, push, or pre-push validation " +
-        "failure, restores the saved admin state",
+      "every exit after an attempted DELETE, including a failed disable readback, a failed push, " +
+        "or a remote readback mismatch, restores the saved admin state",
     ),
   );
+  assert.doesNotMatch(skill, prose("including commit, push, or pre-push validation failure"));
+  assert.doesNotMatch(skill, /(?:commit|pre-push\s+validation\s+failure)[^.]*\brestores\b/);
   assert.match(skill, /The helper owns the cleanup `finally` scope[\s\S]+restores the saved admin state/);
   assert.match(skill, /gh api --method POST <admin_endpoint>\s+--include/);
   assert.match(skill, /requires HTTP `200`/);
@@ -84,6 +86,37 @@ test("maintenance releases disable and restore admin enforcement through readbac
     ),
   );
   assert.match(usage, /Missing cleanup or any required evidence is a\s+failure, not a successful release/);
+});
+
+test("maintenance releases validate the exact tree before disabling admin enforcement", async () => {
+  const maintenance = maintenanceSection(await readFile(skillPath, "utf8"));
+  const orderPhrase = prose("validation runs, and the tree is checked, before admin enforcement is disabled");
+  const deleteSentence = prose("It marks restoration required before invoking DELETE");
+
+  assert.match(maintenance, orderPhrase);
+  assert.match(
+    maintenance,
+    prose(
+      "The tree check requires `HEAD` to equal the release commit, the release commit's parent to equal the " +
+        "saved SHA, and `git status --porcelain --untracked-files=no` to be empty",
+    ),
+  );
+  assert.match(maintenance, prose("the off-window is the push plus its readback"));
+  assert.match(maintenance, prose("`git ls-remote origin refs/heads/master` readback"));
+  assert.match(maintenance, prose("`DeleteAttempted` false"));
+  assert.match(maintenance, prose("before any protection mutation"));
+  assert.match(
+    maintenance,
+    prose(
+      "a hard kill between the DELETE and the cleanup cannot restore protection, and the exposure " +
+        "is limited to the push and its readback",
+    ),
+  );
+
+  const orderIndex = maintenance.search(orderPhrase);
+  const deleteIndex = maintenance.search(deleteSentence);
+  assert.ok(orderIndex >= 0 && deleteIndex >= 0, "both anchors must appear in the step-7 slice");
+  assert.ok(orderIndex < deleteIndex, "exact-tree validation must come before the DELETE sentence");
 });
 
 test("maintenance releases classify pending paths before a primary-checkout transition", async () => {
