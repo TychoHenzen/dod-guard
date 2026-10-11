@@ -1,3 +1,4 @@
+import { REVIEWERS } from "./reviewer-results.mjs";
 import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
 import { API_REPOSITORY_URL, urlRepository } from "../../../../lib/repository-identity.mjs";
 
@@ -66,4 +67,139 @@ function reviewSlots({ changedLines, pbi, subIssues }) {
   ];
 }
 
-export { pbiIssue, reviewSlots, subIssueList };
+// After the main thread checks an investigator's answer, a question is
+// verified, verified after the one allowed repair, or reported as not
+// answerable from the repository.
+const STATUSES = Object.freeze(["verified", "repaired", "unanswered"]);
+
+function oneLine(value) {
+  return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+}
+
+// Text that contains HTML could close the details block early.
+function escapeHtml(value) {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+function namesFiles(question) {
+  return (
+    Array.isArray(question?.files) &&
+    question.files.length > 0 &&
+    question.files.every((file) => oneLine(file) !== "")
+  );
+}
+
+function isCompleteQuestion(question) {
+  return (
+    REVIEWERS.includes(question?.lens) &&
+    oneLine(question?.id) !== "" &&
+    oneLine(question?.question) !== "" &&
+    namesFiles(question) &&
+    STATUSES.includes(question?.status)
+  );
+}
+
+function isCompleteExclusion(excluded) {
+  return REVIEWERS.includes(excluded?.lens) && oneLine(excluded?.reason) !== "";
+}
+
+// A slot ends the plan with questions or with one exclusion, never both and
+// never neither.
+function requireEntryShape(entry) {
+  const { slot } = entry;
+  const asked = entry.questions !== undefined;
+  const excluded = entry.excluded !== undefined;
+  if (asked && excluded) {
+    throw new Error(`Slot ${slot} has both questions and an exclusion`);
+  }
+  if (!(asked || excluded)) {
+    throw new Error(`Slot ${slot} has neither questions nor an exclusion`);
+  }
+  if (excluded && !isCompleteExclusion(entry.excluded)) {
+    throw new Error(`The exclusion for slot ${slot} needs a reviewer lens and a reason`);
+  }
+  if (asked && !(Array.isArray(entry.questions) && entry.questions.length > 0)) {
+    throw new Error(`Slot ${slot} needs a non-empty questions array`);
+  }
+}
+
+function requireQuestion(question, slot, ids) {
+  if (!isCompleteQuestion(question)) {
+    throw new Error(
+      `Question ${JSON.stringify(question?.id ?? null)} in slot ${slot} needs an id, a reviewer lens, ` +
+        `a question, a files list, and a status of ${STATUSES.join(", ")}`,
+    );
+  }
+  const id = oneLine(question.id);
+  if (ids.has(id)) {
+    throw new Error(`Question ${id} appears more than once`);
+  }
+  ids.add(id);
+}
+
+function entryLenses(entry) {
+  return entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
+}
+
+// The planner fills the slots the script generated; it cannot add, drop, or
+// rename one.
+function requirePlan(plan, slots) {
+  if (!Array.isArray(plan)) {
+    throw new Error("The review plan must be a JSON array");
+  }
+  const generated = new Set(slots.map((item) => item.slot));
+  const planned = new Set();
+  const ids = new Set();
+  for (const entry of plan) {
+    const slot = entry?.slot;
+    if (!generated.has(slot)) {
+      throw new Error(`Plan slot ${JSON.stringify(slot ?? null)} was not generated from the diff and the PBI`);
+    }
+    if (planned.has(slot)) {
+      throw new Error(`Plan slot ${slot} appears more than once`);
+    }
+    planned.add(slot);
+    requireEntryShape(entry);
+    for (const question of entry.questions ?? []) {
+      requireQuestion(question, slot, ids);
+    }
+  }
+  const missing = slots.map((item) => item.slot).filter((slot) => !planned.has(slot));
+  if (missing.length > 0) {
+    throw new Error(`Slots missing from the plan: ${missing.join(", ")}`);
+  }
+  // Each judge needs at least one assigned slot to rule on.
+  const idle = REVIEWERS.filter((lens) => !plan.some((entry) => entryLenses(entry).includes(lens)));
+  if (idle.length > 0) {
+    throw new Error(`No question or exclusion for ${idle.join(", ")}`);
+  }
+}
+
+function slotHeading(item) {
+  const id = escapeHtml(item.slot);
+  return item.kind === "file" ? `**${id}**` : `**${id}**: ${escapeHtml(oneLine(item.text))}`;
+}
+
+function entryLines(entry) {
+  if (entry.excluded) {
+    return [`- excluded for ${entry.excluded.lens}: ${escapeHtml(oneLine(entry.excluded.reason))}`];
+  }
+  return entry.questions.map(
+    (question) =>
+      `- ${escapeHtml(oneLine(question.id))} ${question.lens} (${question.status}): ${escapeHtml(oneLine(question.question))}`,
+  );
+}
+
+// Lists every slot, in generated order, with its questions and statuses or its
+// exclusion. Call only after requirePlan.
+function slotsBlock(plan, slots) {
+  const bySlot = new Map(plan.map((entry) => [entry.slot, entry]));
+  const lines = ["<details>", `<summary>Review plan slots (${slots.length})</summary>`];
+  for (const item of slots) {
+    lines.push("", slotHeading(item), "", ...entryLines(bySlot.get(item.slot)));
+  }
+  lines.push("", "</details>");
+  return lines.join("\n");
+}
+
+export { pbiIssue, requirePlan, reviewSlots, slotsBlock, subIssueList };

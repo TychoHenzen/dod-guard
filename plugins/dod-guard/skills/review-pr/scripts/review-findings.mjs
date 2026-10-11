@@ -26,8 +26,8 @@ const USAGE = [
   "  review-findings.mjs scan --client=claude|codex --registry=<plugin-list.json> --root=<repo> --out=<scan.json>",
   "  review-findings.mjs existing --reviews=<reviews.json>",
   "  review-findings.mjs slots --diff=<unified0.diff> --pbi=<issue.json> --sub-issues=<sub-issues.json> --out=<slots.json>",
-  "  review-findings.mjs build --head=<sha> --scan=<scan.json>",
-  "    --diff=<unified0.diff> --results=<results.json> --questions=<questions.json> --out=<payload.json>",
+  "  review-findings.mjs build --head=<sha> --scan=<scan.json> --diff=<unified0.diff>",
+  "    --pbi=<issue.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --out=<payload.json>",
   "  review-findings.mjs report --review-id=<id> --comments=<review-comments.json>",
 ].join("\n");
 
@@ -105,7 +105,8 @@ const COMMANDS = {
       scan: json(args.scan),
       diff: readFileSync(args.diff, "utf8"),
       results: json(args.results),
-      questions: json(args.questions),
+      plan: json(args.plan),
+      ...pbiInputs(args),
     });
     writeFileSync(args.out, JSON.stringify(review.payload));
     return {
@@ -123,13 +124,13 @@ const REQUIRED = {
   scan: ["client", "registry", "root", "out"],
   existing: ["reviews"],
   slots: ["diff", "pbi", "sub-issues", "out"],
-  build: ["head", "scan", "diff", "results", "questions", "out"],
+  build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "out"],
   report: ["review-id", "comments"],
 };
 const FULL_SHA = /^[0-9a-f]{40}$/;
 
-// The marker reader only accepts a hex head, so a build with anything else
-// would post an undetectable review.
+// Every command takes exactly its required flags, so a misspelled or retired
+// flag stops with usage instead of being ignored.
 function validArgs(command, args) {
   if (!(args && COMMANDS[command])) {
     return false;
@@ -137,6 +138,11 @@ function validArgs(command, args) {
   if (REQUIRED[command].some((name) => !args[name] || args[name] === "true")) {
     return false;
   }
+  if (!Object.keys(args).every((name) => REQUIRED[command].includes(name))) {
+    return false;
+  }
+  // The marker reader only accepts a hex head, so a build with anything else
+  // would post an undetectable review.
   return command !== "build" || FULL_SHA.test(args.head);
 }
 

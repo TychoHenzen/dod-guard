@@ -130,3 +130,81 @@ test("slots without a required flag prints usage", () => {
     assert.match(result.stderr, /Usage:/);
   });
 });
+
+const HEAD = "f".repeat(40);
+const LENSES = ["review-pr-feature", "review-pr-design", "review-pr-reliability", "review-pr-hygiene"];
+const RESULTS = LENSES.map((reviewer) => ({
+  reviewer,
+  coverage: [{ requirement: "AC 1", status: "VERIFIED", evidence: "ok" }],
+  findings: [],
+}));
+const question = (id, lens) => ({ id, lens, question: `Does ${lens} hold?`, files: ["src/a.mjs"], status: "verified" });
+const PLAN = [
+  { slot: "file:src/a.mjs", questions: [question("F1", "review-pr-feature"), question("D1", "review-pr-design")] },
+  { slot: "criterion:1", questions: [question("R1", "review-pr-reliability")] },
+  { slot: "criterion:2", questions: [question("H1", "review-pr-hygiene")] },
+];
+
+// build takes the slot inputs plus the scan, the reviewer results, the plan, and
+// the head.
+function buildFlags(dir) {
+  return {
+    ...inputs(dir),
+    out: join(dir, "payload.json"),
+    scan: write(dir, "scan.json", { violations: [] }),
+    results: write(dir, "results.json", RESULTS),
+    plan: write(dir, "plan.json", PLAN),
+  };
+}
+
+function buildArgs(paths) {
+  return [
+    `--head=${HEAD}`,
+    `--scan=${paths.scan}`,
+    `--diff=${paths.diff}`,
+    `--pbi=${paths.pbi}`,
+    `--sub-issues=${paths.subs}`,
+    `--plan=${paths.plan}`,
+    `--results=${paths.results}`,
+    `--out=${paths.out}`,
+  ];
+}
+
+test("build writes a COMMENT payload with the slot block", () => {
+  withDir((dir) => {
+    const paths = buildFlags(dir);
+    const result = run(["build", ...buildArgs(paths)]);
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(readFileSync(paths.out, "utf8"));
+    assert.equal(payload.event, "COMMENT");
+    assert.ok(payload.body.includes("<summary>Review plan slots (3)</summary>"), payload.body);
+  });
+});
+
+test("build names a malformed sub-issue file", () => {
+  withDir((dir) => {
+    const paths = buildFlags(dir);
+    const subs = write(dir, "sub-issues.json", "{not json");
+    const result = run(["build", ...buildArgs({ ...paths, subs })]);
+    assert.notEqual(result.status, 0);
+    assert.ok(result.stderr.includes(subs), result.stderr);
+  });
+});
+
+test("build names a missing PBI file", () => {
+  withDir((dir) => {
+    const paths = buildFlags(dir);
+    const missing = join(dir, "missing.json");
+    const result = run(["build", ...buildArgs({ ...paths, pbi: missing })]);
+    assert.notEqual(result.status, 0);
+    assert.ok(result.stderr.includes(missing), result.stderr);
+  });
+});
+
+test("build refuses a flag it does not take", () => {
+  withDir((dir) => {
+    const result = run(["build", ...buildArgs(buildFlags(dir)), "--extra=1"]);
+    assert.equal(result.status, 3);
+    assert.match(result.stderr, /Usage:/);
+  });
+});

@@ -11,6 +11,7 @@ const REVIEWERS = ["review-pr-feature", "review-pr-design", "review-pr-reliabili
 
 test("review-pr plans, investigates, verifies, then judges in that order", () => {
   const order = [
+    "## 3. Diff and slots",
     "## 5. Plan, investigate, judge",
     "One `dod-guard:read-strong` planner",
     "`dod-guard:read-cheap` investigators answer every",
@@ -24,23 +25,30 @@ test("review-pr plans, investigates, verifies, then judges in that order", () =>
   assert.match(skill, prose("cheap-output rule in that standard, with the reviewed head as the accepted head"));
   assert.doesNotMatch(skill, prose("every cited path and line exists"));
   assert.match(skill, prose("Ids are unique across all four lenses"));
-  assert.match(skill, prose("Together the questions name every changed file in their `files` lists"));
-  assert.match(skill, prose("The build refuses a plan that leaves a changed file unnamed."));
-  assert.match(skill, prose("investigators answer every question except `excluded` entries"));
-  assert.match(skill, prose("reports one as a finding when its reason does not hold for the named files"));
+  assert.match(skill, prose("slots --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --out=<slots.json>"));
+  assert.match(skill, prose("Deletion-only files, pure renames, and binary files get no slot."));
+  assert.match(skill, prose("The slots are fixed: the planner cannot add, drop, or rename one."));
+  assert.match(skill, prose("A slot that needs no question gets one exclusion that names the lens that owns it and the reason; a slot never has both."));
+  assert.match(skill, prose("Nobody investigates an exclusion."));
+  assert.match(skill, prose("The build regenerates the slots and refuses a plan that misses, adds, or leaves empty a slot."));
+  assert.match(skill, prose("A slot is assigned to a lens when it has a question of that lens or an exclusion that names that lens."));
+  assert.match(skill, prose("reports an exclusion assigned to its lens as a finding when its reason does not hold"));
+  assert.doesNotMatch(skill, /`excluded` entries|changed file unnamed/);
   assert.match(skill, prose("reports the gap as a finding; it never counts one as passing"));
   assert.match(skill, prose("Send a failed batch back once with the exact gap"));
   assert.match(skill, prose("judges from that evidence instead of re-reading the whole diff"));
   assert.match(skill, prose('record the stage as "requested, not pinned"'));
 });
 
-test("review-pr posts the questions block without changing its boundaries", () => {
-  assert.match(skill, prose("--results=<results.json> --questions=<questions.json> --out=<payload.json>"));
+test("review-pr posts the slot block without changing its boundaries", () => {
+  assert.match(skill, prose("--plan=<plan.json> --results=<results.json> --out=<payload.json>"));
+  assert.match(skill, prose("never from a slot list the planner returns"));
   assert.match(skill, prose("collapsed `<details>` block in the review body"));
   assert.match(skill, prose("The review event is always `COMMENT`"));
   assert.match(skill, prose("`dod-guard:review-pr` marker that step 2 detects"));
   assert.match(skill, prose("never post a second review"));
   assert.match(skill, prose("Never edit files, approve, mark ready, merge, or close anything."));
+  assert.doesNotMatch(skill, /questions\.json/);
 });
 
 test("the four reviewers judge on the strong tier in Claude Code and Codex", async () => {
@@ -60,11 +68,8 @@ test("the four reviewers judge on the strong tier in Claude Code and Codex", asy
 });
 
 test("USAGE describes the planner, investigators, and judges", () => {
-  assert.match(
-    usage,
-    prose("strong planner then writes questions for the feature, design, reliability, and hygiene lenses"),
-  );
-  assert.match(usage, prose("cheap investigators answer each one with a cited path and line"));
+  assert.match(usage, prose("generates fixed review slots from the diff and the PBI"));
+  assert.match(usage, prose("cheap investigators answer each question with a cited path and line"));
   assert.match(usage, prose("the four reviewer agents judge them on the strong tier"));
-  assert.match(usage, prose("with the planned questions in a collapsed block"));
+  assert.match(usage, prose("with every slot and its questions in a collapsed block"));
 });
