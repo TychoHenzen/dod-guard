@@ -2,6 +2,7 @@
 // defines: a replacement root's `supersedes` record and the
 // `## Completion evidence` comment, plus the evidence comment a close posts.
 // Every function is pure; reading and writing GitHub belongs to the callers.
+import { markdownSection } from "../../../../lib/acceptance-criteria.mjs";
 
 const COMPLETION_HEADING = "## Completion evidence";
 const COMPLETION_MARKER = "<!-- dod-guard-completion-evidence -->";
@@ -29,22 +30,6 @@ const SETTLED_ROW_STATUSES = new Set(["pass", "inapplicable"]);
 
 function lines(text) {
   return String(text ?? "").replace(/\r\n/g, "\n");
-}
-
-// Returns the text under one level-two heading, up to the next level-two heading.
-// The heading is data, so its regex specials are escaped before the match.
-function markdownSection(body, heading) {
-  const text = lines(body);
-  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const start = text.search(new RegExp(`^## ${escaped}[ \\t]*$`, "m"));
-  if (start < 0) return "";
-  const newline = text.indexOf("\n", start);
-  // With no line break after the heading there is no section text. Without this
-  // guard the slice would restart at index 0 and return the text above the heading.
-  if (newline < 0) return "";
-  const rest = text.slice(newline + 1);
-  const end = rest.search(/^## /m);
-  return end < 0 ? rest : rest.slice(0, end);
 }
 
 function subsections(notes, name) {
@@ -174,7 +159,6 @@ function renderClosureEvidence({ issue, stateReason, evidence }) {
 export {
   RECORD_KINDS,
   isRecord,
-  markdownSection,
   parseCompletionRecord,
   parseSupersedes,
   pendingMatrixRows,

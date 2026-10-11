@@ -14,8 +14,8 @@ import {
   pullFor,
   statusUnreadable,
 } from "../../../../lib/closure-index.mjs";
+import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
 import {
-  markdownSection,
   parseCompletionRecord,
   parseSupersedes,
   recordComments,
@@ -148,11 +148,10 @@ const PARENT_WALK_LIMIT = 5;
 // sub-issues as #N belongs to that sub-issue's delivery, so it does not hold
 // the parent; any other unchecked criterion is the parent's own scope.
 function unmappedCriteria(issue, children) {
-  return markdownSection(issue?.body, "Acceptance criteria")
-    .split("\n")
-    .filter((line) => /^\s*- \[ \]/.test(line))
-    .filter((line) => !children.some((child) => new RegExp(`#${child}\\b`).test(line)))
-    .map((line) => line.replace(/^\s*- \[ \]\s*/, "").trim());
+  return acceptanceCriteria(issue?.body)
+    .filter((item) => !item.checked)
+    .map((item) => item.text)
+    .filter((text) => !children.some((child) => new RegExp(`#${child}\\b`).test(text)));
 }
 
 function planned(context, number) {
