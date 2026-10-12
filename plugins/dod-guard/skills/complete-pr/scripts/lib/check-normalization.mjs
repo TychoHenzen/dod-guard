@@ -68,20 +68,63 @@ function staleResult(name) {
   return { bucket: "unknown", name, state: "STALE_HEAD" };
 }
 
-function providerRuns(definition, namedRuns, exactRuns) {
+// Orders repeated runs of one check by numeric check-run id. A set with a missing or repeated id
+// cannot be ordered, so it yields null.
+function newestRun(runs) {
+  const ids = runs.map((run) => run.id);
+  if (!ids.every((id) => Number.isSafeInteger(id)) || new Set(ids).size !== ids.length) {
+    return null;
+  }
+  return runs.reduce((newest, run) => (run.id > newest.id ? run : newest));
+}
+
+function sameVerdict(runs, headSha) {
+  const [first, ...rest] = runs.map((run) => normalizeCheckRun(run, headSha));
+  return rest.every((result) => result.bucket === first.bucket && result.state === first.state);
+}
+
+// A check can run more than once on one head, for example from a pull_request event and a
+// workflow_dispatch event. The newest run decides, so an older pass never hides a newer failure
+// or a run that is still in progress. Runs that cannot be ordered count only when they agree.
+function settleRepeatedRuns(name, runs, headSha) {
+  if (runs.length < 2) {
+    return { runs };
+  }
+  const newest = newestRun(runs);
+  if (newest) {
+    return { runs: [newest] };
+  }
+  if (sameVerdict(runs, headSha)) {
+    return { runs: [runs[0]] };
+  }
+  return { result: duplicateResult(name) };
+}
+
+// ASSUMPTION: a run without an app id cannot be shown to share a provider with another run, so
+// repeated runs under a requirement with no expected app collapse only when every run names one app.
+function oneProvider(runs) {
+  const appIds = runs.map((run) => run.app?.id);
+  return appIds.every((id) => id !== undefined && id !== null) && new Set(appIds.map(String)).size === 1;
+}
+
+function providerConflictResult(name) {
+  return { bucket: "unknown", name, state: "PROVIDER_CONFLICT" };
+}
+
+function providerRuns(definition, namedRuns, exactRuns, headSha) {
   if (definition.appId === null || definition.appId === -1) {
-    if (exactRuns.length > 1) {
-      return { result: duplicateResult(definition.name) };
-    }
     if (exactRuns.length === 0 && namedRuns.length > 0) {
       return { result: staleResult(definition.name) };
     }
-    return { runs: exactRuns };
+    if (exactRuns.length > 1 && !oneProvider(exactRuns)) {
+      return { result: providerConflictResult(definition.name) };
+    }
+    return settleRepeatedRuns(definition.name, exactRuns, headSha);
   }
 
   const matches = exactRuns.filter((run) => String(run.app?.id) === String(definition.appId));
   if (matches.length > 0 && exactRuns.length > matches.length) {
-    return { result: { bucket: "unknown", name: definition.name, state: "PROVIDER_CONFLICT" } };
+    return { result: providerConflictResult(definition.name) };
   }
   if (matches.length === 0) {
     if (exactRuns.length > 0) {
@@ -92,10 +135,7 @@ function providerRuns(definition, namedRuns, exactRuns) {
     }
     return { result: { bucket: "unknown", name: definition.name, state: "MISSING" } };
   }
-  if (matches.length > 1) {
-    return { result: duplicateResult(definition.name) };
-  }
-  return { runs: matches };
+  return settleRepeatedRuns(definition.name, matches, headSha);
 }
 
 function statusResults(name, namedStatuses, exactStatuses) {
@@ -132,7 +172,7 @@ function fallbackCheck(definition, checkRuns, statuses, headSha) {
   const exactRuns = namedRuns.filter((run) => run.head_sha === headSha);
   const namedStatuses = statuses.filter((status) => status.context === definition.name);
   const exactStatuses = namedStatuses.filter((status) => status.sha === headSha);
-  const runResult = providerRuns(definition, namedRuns, exactRuns);
+  const runResult = providerRuns(definition, namedRuns, exactRuns, headSha);
   if (runResult.result) {
     return runResult.result;
   }
