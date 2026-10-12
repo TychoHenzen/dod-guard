@@ -64,9 +64,9 @@ export function main(argv, dependencies = {}) {
   try {
     const current = dependencies.measure ? dependencies.measure() : measureAll();
     for (const [pkg, metrics] of Object.entries(current)) stdout.write(`${reportLine(pkg, metrics)}\n`);
-    stdout.write(`coverage advisory — ${Object.keys(current).length} package(s); metrics are report-only\n`);
+    stdout.write(`coverage advisory - ${Object.keys(current).length} package(s); metrics are report-only\n`);
   } catch (error) {
-    stderr.write(`coverage advisory unavailable — ${error instanceof Error ? error.message : String(error)}\n`);
+    stderr.write(`coverage advisory unavailable - ${error instanceof Error ? error.message : String(error)}\n`);
   }
   return 0;
 }

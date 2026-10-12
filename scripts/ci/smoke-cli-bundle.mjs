@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// smoke-cli-bundle — verify the CLI-only fossil workspace without the MCP protocol.
+// smoke-cli-bundle - verify the CLI-only fossil workspace without the MCP protocol.
 
 import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
