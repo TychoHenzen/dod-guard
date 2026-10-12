@@ -19,6 +19,10 @@ export function spawnNativeLspProcess(
     // The policy has already selected an absolute executable and arguments.
     env: { ...environment },
   }) as ChildProcessByStdio<Writable, Readable, null>;
+  // A backend that exits or closes its stdin turns pending writes into EPIPE
+  // (EOF on Windows). The exit listener and request timeouts own failure
+  // handling, so the stream error must not become an uncaught exception.
+  child.stdin.on("error", () => undefined);
   const forget = ownedResources.trackChild(() => {
     child.kill("SIGKILL");
   });

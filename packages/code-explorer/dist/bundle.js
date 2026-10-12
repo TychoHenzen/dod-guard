@@ -14847,6 +14847,7 @@ function spawnNativeLspProcess(executable, arguments_, environment) {
     // The policy has already selected an absolute executable and arguments.
     env: { ...environment }
   });
+  child.stdin.on("error", () => void 0);
   const forget = ownedResources.trackChild(() => {
     child.kill("SIGKILL");
   });
