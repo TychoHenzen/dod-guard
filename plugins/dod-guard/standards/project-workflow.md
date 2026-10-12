@@ -160,13 +160,13 @@ at that path. If snapshot exits non-zero, stop and report its error; never plan,
 apply, or annotate on an older file. The caller passes that file with
 `--snapshot` to `closure.mjs plan`, `apply`, or `annotate`.
 
-The closure snapshot is the whole linked Project, read the way goal-sdlc's
-select-next snapshot is: `repository`, `defaultBranch`, `items` holding every
-item from every page of the whole linked Project, from every repository, each
-with a top-level `repository` and the Status (a plain string), Repository,
-Parent issue (`{repository, number}`), and Linked pull requests
-(`[{repository, number}]`) fields. `issues` and `pullRequests` hold only
-target-repository records, each with `repository`. On every issue it also
+The closure snapshot is every non-archived item of the linked Project, read the
+way goal-sdlc's select-next snapshot is: `repository`, `defaultBranch`, `items`
+holding every non-archived item from every page of the linked Project, from
+every repository, each with a top-level `repository` and the Status (a plain
+string), Repository, Parent issue (`{repository, number}`), and Linked pull
+requests (`[{repository, number}]`) fields. `issues` and `pullRequests` hold
+only target-repository records, each with `repository`. On every issue it also
 carries `children` as `[{repository, number}]` (an empty array when it has
 none), `parent` as `{repository, number}` or null, `body`, `state_reason`, and
 `comments` as `[{id, body}]`. On every pull request it carries its state, merge
@@ -179,13 +179,19 @@ the newest run.
 The snapshot also carries a `project` object with `owner`, `number`,
 `statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
 Status field node ID and Done option ID from the Project fields read, the same
-values `/complete-pr` passes to `project-status.mjs`. The whole Project is read
-because a `supersedes` record lives only on its root, and a parent closes only
-after every sub-issue is checked, so a narrower read misses roots and siblings.
-An issue whose `children` list is missing is held with "sub-issue list missing",
-never treated as childless. Any caller's run may therefore also close other
-verified originals and parents, and report older `unverified-closed` issues,
-because the helper is the single closing authority.
+values `/complete-pr` passes to `project-status.mjs`. Every non-archived item is
+read because a `supersedes` record lives only on its root, and a parent closes
+only after every sub-issue is checked, so a narrower read misses roots and
+siblings. An issue whose `children` list is missing is held with "sub-issue list
+missing", never treated as childless. Any caller's run may therefore also close
+other verified originals and parents, and report older `unverified-closed`
+issues, because the helper is the single closing authority. An item whose
+`archived_at` is set contributes no item, issue, or pull request record; an
+item with `archived_at` null or absent is kept. Evidence on an archived item is
+therefore invisible: a verified root archived before `apply` runs no longer
+closes the originals its `supersedes` record names, so apply a root's closes
+before archiving it. Historical closes also leave the `unverified-closed` report
+once the Project's auto-archive workflow archives them; there is no date cutoff.
 
 The helper matches every Project item, issue, and pull request by
 `owner/name#number`, never by number alone. A record from another repository
@@ -238,7 +244,11 @@ by a verified root, no linked pull request is open, and no unchecked acceptance
 criterion outside a sub-issue remains. The walk stops at the first parent that
 does not qualify, or after five levels. An issue that is already closed or Done
 without verified evidence is reported as `unverified-closed` and is never
-reopened or edited.
+reopened or edited. An owner's hand close as `not_planned` (an abandon or a
+fold) claims no delivery and is not reported when no `supersedes` record names
+the issue and it carries no completion record, valid or malformed, and no
+closure evidence comment. A `completed` hand close without evidence is still
+reported. A parent still waits on such a sub-issue as before.
 
 `refine-backlog-item` closes a pure hierarchy record as `not_planned`: an issue
 with no linked pull request, no unchecked criterion outside its sub-issues, and

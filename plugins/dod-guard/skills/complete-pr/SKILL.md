@@ -244,6 +244,13 @@ node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 If snapshot exits non-zero, stop and report its error; never plan or apply on
 an older file.
 
+The snapshot holds only non-archived Project items, so a verified root archived
+before `apply` runs no longer closes the originals its `supersedes` record
+names. `unverified-closed` leaves out an owner's `not_planned` hand close that
+has no `supersedes` root, completion record, or closure evidence, and still
+reports a `completed` hand close without evidence. Details are in
+`standards/project-workflow.md`.
+
 `plan` is read-only. `apply` re-plans the same snapshot and closes each planned
 issue as read, evidence comment, close with its `state_reason`, readback, and
 Project Done; it stops with the observed partial state when a readback
@@ -268,8 +275,9 @@ node <skill-dir>/scripts/closure.mjs apply --snapshot=<file>
 If snapshot exits non-zero, stop and report its error: when that build failed,
 never plan or apply on an older file.
 
-Report the applied closes, status repairs, holds, `unverified-closed` reports,
-and any stop with its observed state. Make no other issue or Project write.
+Report the applied closes, status repairs, holds, `unverified-closed` reports
+(scoped as described above), and any stop with its observed state. Make no
+other issue or Project write.
 
 ## Result
 
