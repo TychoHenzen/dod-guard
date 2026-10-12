@@ -9,7 +9,9 @@ export function removeServiceTree(path: string): void {
 
 /**
  * Tracks every owned temp root and backend child in this process. Sealing
- * runs on process exit, so no exit path leaves a backend or a root behind.
+ * runs on Node's exit event, so process.exit() and a normal exit leave no
+ * backend or root behind. A hard kill skips the event; the next stdio start
+ * sweeps the roots it orphaned.
  */
 export class OwnedResources {
   readonly #roots = new Set<string>();
