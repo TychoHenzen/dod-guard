@@ -108,6 +108,10 @@ suffix, and `N` is the mirror generation number.
 - At stdio start, the server removes each service root whose owner process no
   longer exists. It also removes each root with no usable `owner.json` whose
   directory was last modified more than 24 hours ago.
+- The start sweep only considers real directories that the current user owns.
+  It skips links and roots owned by another user, and it never changes the
+  permissions of a file a link points to. On Windows, the temporary directory
+  is already per user.
 - Each removal writes one stderr line naming the root and the reason,
   `dead_owner` or `stale_unmarked`. Roots whose owner process still exists
   are kept.
