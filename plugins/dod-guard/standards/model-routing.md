@@ -53,7 +53,8 @@ in the progress message.
 A skill-capable stage runs on `dod-guard:stage-strong` at its own tier's model
 and effort, cheap or strong. A stage is skill-capable when it invokes a skill,
 writes issue, pull request, or Project state, or needs an MCP connector:
-`dod-guard:stage-cheap` and the read-only agents hold none of those tools, so
+`dod-guard:stage-cheap` and the read-only agents have no Skill tool or MCP
+connector, and their own text rules out GitHub writes even through Bash, so
 capability follows the agent and cost follows the model. In Claude Code, pass
 the tier's `model` and `effort` on the Agent call. In Codex, the registered
 stage-strong file pins the strong tier, so spawn a cheap-tier skill-capable
