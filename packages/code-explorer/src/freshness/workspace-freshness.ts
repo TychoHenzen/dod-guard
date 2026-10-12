@@ -10,15 +10,17 @@ import {
   createWatcher,
 } from "./workspace-freshness-support.js";
 import { reconcileWorkspace } from "./workspace-reconciliation.js";
-import { scheduleWorkspaceTimers } from "./workspace-scheduling.js";
+import { schedulePolling } from "./workspace-scheduling.js";
 
 export type { FreshnessCause } from "./freshness-cause.js";
 export type { FreshnessOptions } from "./freshness-options.js";
 export type { FreshnessStatus } from "./freshness-status.js";
+export { isIgnoredWorkspacePath } from "./ignored-paths.js";
 export type { Manifest } from "./manifest.js";
 export type { ReconcileResult } from "./reconcile-result.js";
 export {
   canPublishGeneration,
+  chokidarOptionsFor,
   chokidarWatchOptions,
 } from "./workspace-freshness-support.js";
 export type { WorkspaceWatcher } from "./workspace-watcher.js";
@@ -42,21 +44,14 @@ export class WorkspaceFreshness {
     return this.status();
   }
 
-  async start(activeSessions = 0): Promise<void> {
-    this.#runtime.activeSessions = activeSessions;
+  async start(): Promise<void> {
     const watcher = createWatcher(this.options, () => this.schedule());
     if (watcher) this.#runtime.watcher = watcher;
-    if (!watcher) {
+    else {
       this.#runtime.status = { ...this.#runtime.status, mode: "polling" };
-      this.#scheduleTimers();
+      this.#schedulePolling();
     }
-    this.#scheduleTimers();
     await this.reconcile();
-  }
-
-  setActiveSessions(count: number): void {
-    this.#runtime.activeSessions = count;
-    this.#scheduleTimers();
   }
 
   schedule(): void {
@@ -80,16 +75,17 @@ export class WorkspaceFreshness {
   }
 
   async close(): Promise<void> {
+    this.#runtime.closed = true;
     clearTimers(this.options, this.#runtime);
     await this.#runtime.watcher?.close();
   }
 
-  #scheduleTimers(): void {
-    scheduleWorkspaceTimers({
+  #schedulePolling(): void {
+    schedulePolling({
       runtime: this.#runtime,
       timeout: (callback, delay) => this.timeout(callback, delay),
       reconcile: () => this.reconcile(),
-      schedule: () => this.#scheduleTimers(),
+      reschedule: () => this.#schedulePolling(),
     });
   }
 

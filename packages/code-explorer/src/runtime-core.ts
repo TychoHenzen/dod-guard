@@ -6,8 +6,7 @@ import type {
 import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
 import * as workspaceFreshness from "./freshness/workspace-native.js";
 import {
-  createNativeProjectRoot,
-  createStartedRuntimeAdapters,
+  createRuntimeAdapters,
   type LanguageAdapter,
   loadAdapterSelectionRecord,
   type ProjectRoot,
@@ -62,6 +61,7 @@ function createRuntimeCore(
   return {
     call: (name, arguments_) => server.call(name, arguments_),
     connect: (transport: Transport) => server.mcp.connect(transport),
+    terminate: () => server.close(),
     close: async (signal) => {
       if (signal.aborted) throw new Error("aborted");
       closing ??= cleanup();
@@ -75,18 +75,12 @@ async function startRuntimeCore({
   signal,
 }: Parameters<ExplorerCoreFactory["start"]>[0]): Promise<ExplorerCore> {
   loadAdapterSelectionRecord();
-  let adapters: readonly LanguageAdapter[] = [];
-  try {
-    adapters = await createStartedRuntimeAdapters(projectRoot, signal);
-    if (signal.aborted) throw new Error("aborted");
-    return createRuntimeCore(
-      createRuntimeServer(projectRoot, adapters),
-      adapters,
-    );
-  } catch (error) {
-    await stopAdapters(adapters);
-    throw error;
-  }
+  if (signal.aborted) throw new Error("aborted");
+  const adapters = createRuntimeAdapters(projectRoot);
+  return createRuntimeCore(
+    createRuntimeServer(projectRoot, adapters),
+    adapters,
+  );
 }
 
 export function createRuntimeCoreFactory(): ExplorerCoreFactory {

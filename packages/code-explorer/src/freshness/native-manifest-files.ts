@@ -1,5 +1,6 @@
 import { readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { isIgnoredWorkspacePath } from "./ignored-paths.js";
 
 function withinScanLimits(
   started: number,
@@ -8,10 +9,6 @@ function withinScanLimits(
 ): void {
   if (now() - started > 60_000 || output.length > 50_000)
     throw new Error("scan_limit");
-}
-
-function ignoredDirectory(name: string): boolean {
-  return /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(name);
 }
 
 async function visit(
@@ -26,7 +23,7 @@ async function visit(
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const absolute = join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (!ignoredDirectory(entry.name))
+      if (!isIgnoredWorkspacePath(relative(root, absolute)))
         await visit(root, absolute, supported, started, now, output);
       continue;
     }

@@ -3174,18 +3174,18 @@ var require_utils = __commonJS({
     function compressIPv6ZeroRun(hextets) {
       let bestStart = -1;
       let bestLength = 0;
-      let runStart = -1;
+      let runStart2 = -1;
       let runLength = 0;
       for (let i = 0; i < hextets.length; i++) {
         if (hextets[i] === "0") {
-          if (runStart === -1) runStart = i;
+          if (runStart2 === -1) runStart2 = i;
           runLength++;
           if (runLength > bestLength) {
             bestLength = runLength;
-            bestStart = runStart;
+            bestStart = runStart2;
           }
         } else {
-          runStart = -1;
+          runStart2 = -1;
           runLength = 0;
         }
       }
@@ -3874,49 +3874,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative6, options, skipNormalization) {
+    function resolveComponent(base, relative7, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative6 = parse3(serialize(relative6, options), options);
+        relative7 = parse3(serialize(relative7, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative6.scheme) {
-        target.scheme = relative6.scheme;
-        target.userinfo = relative6.userinfo;
-        target.host = relative6.host;
-        target.port = relative6.port;
-        target.path = removeDotSegments(relative6.path || "");
-        target.query = relative6.query;
+      if (!options.tolerant && relative7.scheme) {
+        target.scheme = relative7.scheme;
+        target.userinfo = relative7.userinfo;
+        target.host = relative7.host;
+        target.port = relative7.port;
+        target.path = removeDotSegments(relative7.path || "");
+        target.query = relative7.query;
       } else {
-        if (relative6.userinfo !== void 0 || relative6.host !== void 0 || relative6.port !== void 0) {
-          target.userinfo = relative6.userinfo;
-          target.host = relative6.host;
-          target.port = relative6.port;
-          target.path = removeDotSegments(relative6.path || "");
-          target.query = relative6.query;
+        if (relative7.userinfo !== void 0 || relative7.host !== void 0 || relative7.port !== void 0) {
+          target.userinfo = relative7.userinfo;
+          target.host = relative7.host;
+          target.port = relative7.port;
+          target.path = removeDotSegments(relative7.path || "");
+          target.query = relative7.query;
         } else {
-          if (!relative6.path) {
+          if (!relative7.path) {
             target.path = base.path;
-            if (relative6.query !== void 0) {
-              target.query = relative6.query;
+            if (relative7.query !== void 0) {
+              target.query = relative7.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative6.path[0] === "/") {
-              target.path = removeDotSegments(relative6.path);
+            if (relative7.path[0] === "/") {
+              target.path = removeDotSegments(relative7.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative6.path;
+                target.path = "/" + relative7.path;
               } else if (!base.path) {
-                target.path = relative6.path;
+                target.path = relative7.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative6.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative7.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative6.query;
+            target.query = relative7.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3924,7 +3924,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative6.fragment;
+      target.fragment = relative7.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -12672,7 +12672,7 @@ var RootAccessGate = class {
 };
 
 // src/semantic/python-mirror/python-mirror-generation.ts
-import { join as join10 } from "node:path";
+import { join as join11 } from "node:path";
 import { pathToFileURL } from "node:url";
 
 // src/semantic/python-mirror/python-mirror-validation.ts
@@ -12802,16 +12802,24 @@ function unsafeMirrorInput(configuration, files, options) {
 }
 
 // src/semantic/python-mirror/python-mirror-filesystem.ts
-import { mkdirSync as mkdirSync2, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync as mkdirSync2 } from "node:fs";
+import { join as join8 } from "node:path";
+
+// src/semantic/workspace/service-root.ts
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join as join7 } from "node:path";
+import { join as join6 } from "node:path";
+
+// src/semantic/workspace/owned-resources.ts
+import { rmSync } from "node:fs";
 
 // src/semantic/python-mirror/python-mirror-permissions.ts
-import { chmodSync, existsSync, readdirSync as readdirSync2 } from "node:fs";
+import { chmodSync, lstatSync as lstatSync2, readdirSync as readdirSync2 } from "node:fs";
 import { join as join5 } from "node:path";
 function makeTreeReadOnly(directory2) {
   for (const entry of readdirSync2(directory2, { withFileTypes: true })) {
     const target = join5(directory2, entry.name);
+    if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) {
       makeTreeReadOnly(target);
       continue;
@@ -12821,9 +12829,10 @@ function makeTreeReadOnly(directory2) {
   chmodSync(directory2, 365);
 }
 function makeTreeWritable(directory2) {
-  if (!existsSync(directory2)) return;
+  if (!lstatSync2(directory2, { throwIfNoEntry: false })?.isDirectory()) return;
   for (const entry of readdirSync2(directory2, { withFileTypes: true })) {
     const target = join5(directory2, entry.name);
+    if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) {
       makeTreeWritable(target);
       continue;
@@ -12831,6 +12840,100 @@ function makeTreeWritable(directory2) {
     chmodSync(target, 420);
   }
   chmodSync(directory2, 493);
+}
+
+// src/semantic/workspace/owned-resources.ts
+function removeServiceTree(path5) {
+  makeTreeWritable(path5);
+  rmSync(path5, { recursive: true, force: true });
+}
+var OwnedResources = class {
+  constructor(host = process) {
+    this.host = host;
+  }
+  host;
+  #roots = /* @__PURE__ */ new Set();
+  #children = /* @__PURE__ */ new Set();
+  #sealed = false;
+  #hooked = false;
+  get sealed() {
+    return this.#sealed;
+  }
+  assertOpen() {
+    if (this.#sealed) throw new Error("backend_unavailable");
+  }
+  /** Returns release(), which removes the root now and stops tracking it. */
+  trackRoot(path5) {
+    this.#hook();
+    if (this.#sealed) {
+      removeQuietly(path5);
+      return () => void 0;
+    }
+    this.#roots.add(path5);
+    return () => {
+      if (this.#roots.delete(path5)) removeServiceTree(path5);
+    };
+  }
+  /** Returns forget(), which stops tracking a child that has already exited. */
+  trackChild(kill) {
+    this.#hook();
+    if (this.#sealed) {
+      killQuietly(kill);
+      return () => void 0;
+    }
+    this.#children.add(kill);
+    return () => {
+      this.#children.delete(kill);
+    };
+  }
+  seal() {
+    this.#sealed = true;
+    for (const kill of this.#children) killQuietly(kill);
+    this.#children.clear();
+    for (const root of this.#roots) removeQuietly(root);
+    this.#roots.clear();
+  }
+  #hook() {
+    if (this.#hooked) return;
+    this.#hooked = true;
+    this.host.once("exit", () => this.seal());
+  }
+};
+function removeQuietly(path5) {
+  try {
+    removeServiceTree(path5);
+  } catch {
+  }
+}
+function killQuietly(kill) {
+  try {
+    kill();
+  } catch {
+  }
+}
+var ownedResources = new OwnedResources();
+
+// src/semantic/workspace/service-root.ts
+var OWNER_MARKER_FILE = "owner.json";
+var SERVICE_ROOT_PREFIXES = [
+  "code-explorer-native-",
+  "code-explorer-pyright-"
+];
+function createOwnedServiceRoot(prefix, resources = ownedResources) {
+  resources.assertOpen();
+  const path5 = mkdtempSync(join6(tmpdir(), prefix));
+  const release = resources.trackRoot(path5);
+  try {
+    writeFileSync(
+      join6(path5, OWNER_MARKER_FILE),
+      `${JSON.stringify({ pid: process.pid })}
+`
+    );
+  } catch (error2) {
+    release();
+    throw error2;
+  }
+  return { path: path5, release };
 }
 
 // src/semantic/python-mirror/python-mirror-typeshed.ts
@@ -12843,15 +12946,15 @@ ${PYI_CLASS}int(object): ...
 });
 
 // src/semantic/python-mirror/python-mirror-writer.ts
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname as dirname3, join as join6 } from "node:path";
+import { mkdirSync, writeFileSync as writeFileSync2 } from "node:fs";
+import { dirname as dirname3, join as join7 } from "node:path";
 function writeMirrorFile(root, relativePath, text) {
-  const target = join6(root, relativePath);
+  const target = join7(root, relativePath);
   mkdirSync(dirname3(target), {
     recursive: true,
     mode: 493
   });
-  writeFileSync(target, text, {
+  writeFileSync2(target, text, {
     encoding: "utf8",
     mode: 292
   });
@@ -12860,8 +12963,8 @@ function writeMirrorFile(root, relativePath, text) {
 // src/semantic/python-mirror/python-mirror-filesystem.ts
 function createMirrorTree(plan) {
   const generation = plan.generation;
-  const serviceRoot = mkdtempSync(join7(tmpdir(), "code-explorer-pyright-"));
-  const mirrorRoot = join7(serviceRoot, `generation-${generation}`);
+  const service = createOwnedServiceRoot("code-explorer-pyright-");
+  const mirrorRoot = join8(service.path, `generation-${generation}`);
   try {
     mkdirSync2(mirrorRoot, { recursive: true, mode: 493 });
     writeMirrorFile(
@@ -12878,23 +12981,19 @@ function createMirrorTree(plan) {
       writeMirrorFile(mirrorRoot, path5, text);
     }
     makeTreeReadOnly(mirrorRoot);
-    return { serviceRoot, mirrorRoot };
+    return { mirrorRoot, release: service.release };
   } catch (error2) {
-    makeTreeWritable(serviceRoot);
-    rmSync(serviceRoot, { recursive: true, force: true });
+    service.release();
     throw error2;
   }
 }
-function createDisposer(serviceRoot) {
+function createDisposer(release) {
   let disposed = false;
   const dispose = () => {
     if (disposed) return;
     disposed = true;
-    process.removeListener("exit", dispose);
-    makeTreeWritable(serviceRoot);
-    rmSync(serviceRoot, { recursive: true, force: true });
+    release();
   };
-  process.once("exit", dispose);
   return { dispose, disposed: () => disposed };
 }
 
@@ -12923,19 +13022,19 @@ function samePath2(left, right) {
 }
 
 // src/semantic/python-mirror/python-mirror-verification.ts
-import { lstatSync as lstatSync3 } from "node:fs";
-import { join as join9 } from "node:path";
+import { lstatSync as lstatSync4 } from "node:fs";
+import { join as join10 } from "node:path";
 
 // src/semantic/python-mirror/python-mirror-tree.ts
 import {
   closeSync as closeSync2,
   fstatSync as fstatSync2,
-  lstatSync as lstatSync2,
+  lstatSync as lstatSync3,
   openSync as openSync2,
   readdirSync as readdirSync3,
   readFileSync as readFileSync4
 } from "node:fs";
-import { join as join8 } from "node:path";
+import { join as join9 } from "node:path";
 function mirrorTreeMatches(root, expected) {
   try {
     const actual = /* @__PURE__ */ new Map();
@@ -12958,9 +13057,9 @@ function collectTree(directory2, relativeDirectory, actual) {
   }
 }
 function collectEntry(input) {
-  const path5 = join8(input.directory, input.entry.name);
+  const path5 = join9(input.directory, input.entry.name);
   const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
-  if (lstatSync2(path5).isSymbolicLink()) throw new Error("link");
+  if (lstatSync3(path5).isSymbolicLink()) throw new Error("link");
   if (input.entry.isDirectory()) {
     collectTree(path5, relativePath, input.actual);
     return;
@@ -13011,8 +13110,8 @@ function verifyMirrorPath(input) {
 }
 function mirrorFilesMatch(input, expected) {
   const original = input.root.protectedRead(input.path).bytes;
-  const mirrorPath = join9(input.mirrorRoot, input.path);
-  if (lstatSync3(mirrorPath).isSymbolicLink()) return false;
+  const mirrorPath = join10(input.mirrorRoot, input.path);
+  if (lstatSync4(mirrorPath).isSymbolicLink()) return false;
   return [
     mirrorTreeMatches(input.mirrorRoot, input.expectedTree),
     sha2562(original) === expected.original_sha256,
@@ -13027,7 +13126,7 @@ function createMirror(root, generation, snapshot) {
     root: context.paths.mirrorRoot,
     generation,
     sourcePaths: () => context.plan.files.map(({ path: path5 }) => path5),
-    uriFor: (path5) => context.verify(path5) ? pathToFileURL(join10(context.paths.mirrorRoot, path5)).href : "",
+    uriFor: (path5) => context.verify(path5) ? pathToFileURL(join11(context.paths.mirrorRoot, path5)).href : "",
     pathForUri: (uri) => {
       const path5 = relativeMirrorPath(uri, context.paths.mirrorRoot);
       return path5 && context.verify(path5) ? path5 : void 0;
@@ -13048,7 +13147,7 @@ function createMirrorContext(root, generation, snapshot) {
   });
   if (plan.status !== "ready") throw new Error("unsafe_backend_mode");
   const paths = createMirrorTree(plan);
-  const dispose = createDisposer(paths.serviceRoot);
+  const dispose = createDisposer(paths.release);
   return {
     plan,
     paths,
@@ -13083,8 +13182,8 @@ function createVerifier(input) {
 }
 
 // src/semantic/python-mirror/python-mirror-config.ts
-import { existsSync as existsSync2, lstatSync as lstatSync4 } from "node:fs";
-import { join as join11 } from "node:path";
+import { existsSync, lstatSync as lstatSync5 } from "node:fs";
+import { join as join12 } from "node:path";
 function readProjectPythonConfiguration(root) {
   const config2 = {};
   const pyright = protectedOptionalRead(root, "pyrightconfig.json");
@@ -13107,9 +13206,9 @@ function parseJson(source) {
   }
 }
 function protectedOptionalRead(root, path5) {
-  const absolute = join11(root.canonicalPath, path5);
-  if (!existsSync2(absolute)) return void 0;
-  if (lstatSync4(absolute).isSymbolicLink())
+  const absolute = join12(root.canonicalPath, path5);
+  if (!existsSync(absolute)) return void 0;
+  if (lstatSync5(absolute).isSymbolicLink())
     throw new Error("unsafe_backend_mode");
   return root.protectedRead(path5).bytes;
 }
@@ -13155,12 +13254,12 @@ function isRecord(value) {
 }
 
 // src/semantic/python-mirror/python-mirror-inputs.ts
-import { lstatSync as lstatSync5, readdirSync as readdirSync5 } from "node:fs";
-import { join as join13 } from "node:path";
+import { lstatSync as lstatSync6, readdirSync as readdirSync5 } from "node:fs";
+import { join as join14 } from "node:path";
 
 // src/discovery/config-path.ts
 import { readdirSync as readdirSync4 } from "node:fs";
-import { join as join12 } from "node:path";
+import { join as join13 } from "node:path";
 import process2 from "node:process";
 var configName = ".code-explorer.json";
 function isClassificationConfigPath(path5, platform = process2.platform) {
@@ -13174,7 +13273,7 @@ function findClassificationConfigPath(projectRoot, platform = process2.platform)
 }
 function classificationConfigPath(projectRoot, platform = process2.platform) {
   const name = findClassificationConfigPath(projectRoot, platform);
-  return name ? join12(projectRoot, name) : void 0;
+  return name ? join13(projectRoot, name) : void 0;
 }
 
 // src/semantic/python-mirror/python-mirror-inputs.ts
@@ -13194,9 +13293,9 @@ function visit(root, directory2, relativeDirectory) {
   );
 }
 function visitEntry2(input) {
-  const absolute = join13(input.directory, input.entry.name);
+  const absolute = join14(input.directory, input.entry.name);
   const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
-  if (lstatSync5(absolute).isSymbolicLink())
+  if (lstatSync6(absolute).isSymbolicLink())
     throw new Error("unsafe_backend_mode");
   if (input.entry.isDirectory())
     return visitDirectory(input.root, absolute, relativePath);
@@ -13345,17 +13444,17 @@ async function disposeManager(active, setActive, shutdown) {
 import { isAbsolute as isAbsolute2 } from "node:path";
 
 // src/semantic/adapters/native-backend-candidate.ts
-import { join as join16 } from "node:path";
+import { join as join17 } from "node:path";
 
 // src/semantic/adapters/native-backend-candidate-details.ts
-import { dirname as dirname4, join as join14 } from "node:path";
+import { dirname as dirname4, join as join15 } from "node:path";
 
 // src/semantic/adapters/native-backend-file.ts
 import { createHash as createHash3 } from "node:crypto";
 import {
   closeSync as closeSync3,
   fstatSync as fstatSync3,
-  lstatSync as lstatSync6,
+  lstatSync as lstatSync7,
   openSync as openSync3,
   readFileSync as readFileSync5,
   realpathSync as realpathSync2
@@ -13363,7 +13462,7 @@ import {
 import { isAbsolute, relative as relative2, resolve as resolve2, sep } from "node:path";
 function inspectNativeFile(candidate, root, projectRoot) {
   try {
-    const link = lstatSync6(candidate);
+    const link = lstatSync7(candidate);
     if (!link.isFile() || link.isSymbolicLink()) return void 0;
     const canonicalPath = realpathSync2.native(candidate);
     if (!safeFilePath(root, canonicalPath, projectRoot)) return void 0;
@@ -13406,7 +13505,7 @@ function findPackageMetadata(input, entrypoints) {
   const entrypoint = entrypoints[0]?.canonical_path;
   const root = entrypoint ? input.roots.find((candidate) => isWithin2(candidate, entrypoint)) : void 0;
   return entrypoint && root ? inspectNativeFile(
-    join14(dirname4(entrypoint), "package.json"),
+    join15(dirname4(entrypoint), "package.json"),
     root,
     input.projectRoot
   ) : void 0;
@@ -13421,7 +13520,7 @@ function candidateIdentity(input, details) {
   };
 }
 function pinnedRoslynExecutable(root, executableBasename) {
-  return join14(
+  return join15(
     root,
     ".store",
     "roslyn-language-server",
@@ -13438,7 +13537,7 @@ function pinnedRoslynExecutable(root, executableBasename) {
 // src/semantic/adapters/native-backend-version.ts
 import { spawnSync } from "node:child_process";
 import { readFileSync as readFileSync6 } from "node:fs";
-import { dirname as dirname5, join as join15 } from "node:path";
+import { dirname as dirname5, join as join16 } from "node:path";
 function probeVersion(language, executable, entrypoints) {
   if (language === "csharp")
     return peFileVersion(executable) ?? commandVersion(executable);
@@ -13468,7 +13567,7 @@ function pyrightPackageVersion(entrypoint) {
   try {
     const parseJson3 = JSON.parse;
     const packageJson = parseJson3(
-      readFileSync6(join15(dirname5(entrypoint), "package.json"), "utf8")
+      readFileSync6(join16(dirname5(entrypoint), "package.json"), "utf8")
     );
     return typeof packageJson.version === "string" && /^\d+\.\d+\.\d+$/.test(packageJson.version) ? packageJson.version : void 0;
   } catch {
@@ -13509,14 +13608,14 @@ function completeCandidate(input, executable, entrypoints) {
   });
 }
 function inspectExecutable(input) {
-  const candidate = input.language === "csharp" ? pinnedRoslynExecutable(input.root, input.executableBasename) : join16(input.root, input.executableBasename);
+  const candidate = input.language === "csharp" ? pinnedRoslynExecutable(input.root, input.executableBasename) : join17(input.root, input.executableBasename);
   return inspectNativeFile(candidate, input.root, input.projectRoot);
 }
 function findEntrypoints(input) {
   return input.entrypointBasenames.map(
     (name) => input.roots.map(
       (entrypointRoot) => inspectNativeFile(
-        join16(entrypointRoot, "node_modules", "pyright", name),
+        join17(entrypointRoot, "node_modules", "pyright", name),
         entrypointRoot,
         input.projectRoot
       )
@@ -13545,19 +13644,9 @@ function createNativeBackendInspector(commandRoots, projectRoot) {
   };
 }
 
-// src/semantic/workspace/filtered-workspace.ts
-import { existsSync as existsSync3, mkdtempSync as mkdtempSync2, rmSync as rmSync2 } from "node:fs";
-import { tmpdir as tmpdir2 } from "node:os";
+// src/semantic/runtime/language-presence.ts
+import { readdir } from "node:fs/promises";
 import { join as join18 } from "node:path";
-
-// src/semantic/workspace/filtered-workspace-copy.ts
-import {
-  lstatSync as lstatSync7,
-  mkdirSync as mkdirSync3,
-  readdirSync as readdirSync6,
-  writeFileSync as writeFileSync2
-} from "node:fs";
-import { dirname as dirname6, join as join17 } from "node:path";
 
 // src/semantic/workspace/filtered-workspace-rules.ts
 function relativePathFor(directory2, name) {
@@ -13578,97 +13667,47 @@ function isBackendSourceFile(path5) {
   return /\.(rs|cs|csx|fs|vb|toml|json|sln|csproj|props|targets)$/iu.test(path5) || /(^|\/)(Cargo\.lock|Cargo\.toml|Directory\.Build\.props)$/iu.test(path5);
 }
 
-// src/semantic/workspace/filtered-workspace-copy.ts
-function copyFilteredDirectory(input) {
-  return readdirSync6(input.absoluteDirectory, {
-    withFileTypes: true
-  }).reduce(
-    (excluded, entry) => excluded + copyFilteredEntry({ ...input, entry }),
-    0
-  );
-}
-function copyFilteredEntry(input) {
-  const relativePath = relativePathFor(
-    input.relativeDirectory,
-    input.entry.name
-  );
-  const reason = skipReason(
-    relativePath,
-    input.absoluteDirectory,
-    input.entry.name
-  );
-  if (reason === "sensitive") return 1;
-  if (reason) return 0;
-  if (input.entry.isDirectory()) return copyDirectory(input, relativePath);
-  copySource(input, relativePath);
-  return 0;
-}
-function copyDirectory(input, relativePath) {
-  const target = join17(input.serviceRoot, relativePath);
-  mkdirSync3(target, { recursive: true });
-  return copyFilteredDirectory({
-    ...input,
-    absoluteDirectory: join17(input.absoluteDirectory, input.entry.name),
-    relativeDirectory: relativePath
-  });
-}
-function copySource(input, relativePath) {
-  if (!(input.entry.isFile() && isBackendSourceFile(relativePath))) return;
-  const target = join17(input.serviceRoot, relativePath);
-  mkdirSync3(dirname6(target), { recursive: true });
-  writeFileSync2(
-    target,
-    input.sourceRoot.protectedRead(relativePath).bytes,
-    "utf8"
-  );
-  input.sourcePaths.push(relativePath);
-}
-function skipReason(relativePath, absoluteDirectory, name) {
-  if (isSensitiveProjectPath(relativePath)) return "sensitive";
-  if (isClassificationConfigPath(relativePath)) return "ignored";
-  if (isBackendIrrelevant(relativePath)) return "ignored";
-  if (lstatSync7(join17(absoluteDirectory, name)).isSymbolicLink())
-    return "ignored";
-  return void 0;
-}
-
-// src/semantic/workspace/filtered-workspace.ts
-function createFilteredWorkspace(sourceRoot) {
-  const serviceRoot = mkdtempSync2(join18(tmpdir2(), "code-explorer-native-"));
-  const sourcePaths = [];
-  try {
-    const excluded = copyFilteredDirectory({
-      absoluteDirectory: sourceRoot.canonicalPath,
-      relativeDirectory: "",
-      serviceRoot,
-      sourceRoot,
-      sourcePaths
-    });
+// src/semantic/runtime/language-presence.ts
+function presenceFilter(language) {
+  if (language === "python")
     return {
-      root: createNativeProjectRoot(serviceRoot),
-      sensitive_paths_excluded: excluded,
-      sourcePaths: () => [...sourcePaths],
-      dispose: () => disposeWorkspace(serviceRoot)
+      skipDirectory: isExcludedPythonDirectory,
+      matchFile: isPythonFile
     };
-  } catch (error2) {
-    disposeWorkspace(serviceRoot);
-    throw error2;
+  const source = language === "rust" ? /\.rs$/iu : /\.(?:cs|csx)$/iu;
+  return {
+    skipDirectory: isNativeExcluded,
+    matchFile: (path5) => source.test(path5) && !isNativeExcluded(path5)
+  };
+}
+function isNativeExcluded(path5) {
+  return isSensitiveProjectPath(path5) || isClassificationConfigPath(path5) || isBackendIrrelevant(path5);
+}
+async function containsMatchingFile(rootPath, filter) {
+  const pending = [""];
+  while (pending.length > 0) {
+    const directory2 = pending.pop() ?? "";
+    for (const entry of await readEntries(join18(rootPath, directory2))) {
+      if (entry.isSymbolicLink()) continue;
+      const relativePath = relativePathFor(directory2, entry.name);
+      if (entry.isDirectory()) {
+        if (!filter.skipDirectory(relativePath)) pending.push(relativePath);
+      } else if (entry.isFile() && filter.matchFile(relativePath)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+async function readEntries(directory2) {
+  try {
+    return await readdir(directory2, { withFileTypes: true });
+  } catch {
+    return [];
   }
 }
-function disposeWorkspace(serviceRoot) {
-  if (existsSync3(serviceRoot))
-    rmSync2(serviceRoot, { recursive: true, force: true });
-}
-
-// src/semantic/runtime/runtime-adapter-metadata.ts
-function runtimeAdapterMetadata(input) {
-  return {
-    backend_name: input.backendName,
-    backend_version: input.prepared.status === "ready" ? input.prepared.version : "unobserved",
-    discovery_source: "server_path",
-    unavailable_failure_code: input.prepared.status === "unavailable" ? input.prepared.code : "backend_unavailable",
-    capabilities: input.capabilities
-  };
+function languagePresent(language, rootPath) {
+  return containsMatchingFile(rootPath, presenceFilter(language));
 }
 
 // src/semantic/adapters/language-adapter-status-fields.ts
@@ -13805,6 +13844,196 @@ function lifecycleMethods(backend) {
     ...backend.start ? { start: backend.start } : {},
     ...backend.shutdown ? { shutdown: backend.shutdown } : {},
     ...backend.refresh ? { refresh: backend.refresh } : {}
+  };
+}
+
+// src/semantic/runtime/runtime-lazy-adapter.ts
+var LANGUAGE_NOT_PRESENT = "language_not_present";
+function createLazyRuntimeAdapter(input) {
+  const state = { absent: false, closed: false };
+  const placeholder = createLanguageAdapter(input.language, {
+    backend: {
+      readiness: () => placeholderReadiness(state),
+      query: rejectUnavailable
+    },
+    compatible: true,
+    backend_name: input.backendName,
+    backend_version: "unobserved",
+    discovery_source: "server_path",
+    capabilities: input.capabilities,
+    ...input.now ? { now: input.now } : {}
+  });
+  const start = () => startLazy(state, input);
+  return {
+    status: () => (state.inner ?? placeholder).status(),
+    request: (request) => requestLazy(state, start, request),
+    start,
+    refresh: () => refreshLazy(state, start),
+    shutdown: () => shutdownLazy(state)
+  };
+}
+function placeholderReadiness(state) {
+  if (state.failure !== void 0)
+    return { state: "failed", failure_code: state.failure };
+  return state.absent ? { state: "unavailable", failure_code: LANGUAGE_NOT_PRESENT } : { state: "initializing" };
+}
+async function rejectUnavailable() {
+  throw new Error("backend_unavailable");
+}
+function startLazy(state, input) {
+  if (state.closed) return Promise.reject(new Error("backend_unavailable"));
+  state.starting ??= runStart(state, input).catch((error2) => {
+    state.starting = void 0;
+    throw error2;
+  });
+  return state.starting;
+}
+async function runStart(state, input) {
+  if (state.closed) throw new Error("backend_unavailable");
+  if (!state.inner) {
+    const present = await input.isPresent();
+    if (state.closed) throw new Error("backend_unavailable");
+    if (!state.inner) {
+      state.absent = !present;
+      if (!present) return;
+      state.inner = buildRecorded(state, input);
+    }
+  }
+  await state.inner?.start?.();
+}
+function buildRecorded(state, input) {
+  state.failure = void 0;
+  try {
+    return input.build();
+  } catch (error2) {
+    state.failure = error2 instanceof Error ? error2.message : "backend_failed";
+    throw error2;
+  }
+}
+async function requestLazy(state, start, request) {
+  await start();
+  if (!state.inner) throw new Error("backend_unavailable");
+  return state.inner.request(request);
+}
+async function refreshLazy(state, start) {
+  if (state.closed) return;
+  if (state.starting) {
+    try {
+      await state.starting;
+    } catch {
+    }
+  }
+  if (state.inner) {
+    await state.inner.refresh?.();
+    return;
+  }
+  state.starting = void 0;
+  await start();
+}
+async function shutdownLazy(state) {
+  state.closed = true;
+  await state.inner?.shutdown?.();
+}
+
+// src/semantic/workspace/filtered-workspace.ts
+import { mkdirSync as mkdirSync4 } from "node:fs";
+import { join as join20 } from "node:path";
+
+// src/semantic/workspace/filtered-workspace-copy.ts
+import {
+  lstatSync as lstatSync8,
+  mkdirSync as mkdirSync3,
+  readdirSync as readdirSync6,
+  writeFileSync as writeFileSync3
+} from "node:fs";
+import { dirname as dirname6, join as join19 } from "node:path";
+function copyFilteredDirectory(input) {
+  return readdirSync6(input.absoluteDirectory, {
+    withFileTypes: true
+  }).reduce(
+    (excluded, entry) => excluded + copyFilteredEntry({ ...input, entry }),
+    0
+  );
+}
+function copyFilteredEntry(input) {
+  const relativePath = relativePathFor(
+    input.relativeDirectory,
+    input.entry.name
+  );
+  const reason = skipReason(
+    relativePath,
+    input.absoluteDirectory,
+    input.entry.name
+  );
+  if (reason === "sensitive") return 1;
+  if (reason) return 0;
+  if (input.entry.isDirectory()) return copyDirectory(input, relativePath);
+  copySource(input, relativePath);
+  return 0;
+}
+function copyDirectory(input, relativePath) {
+  const target = join19(input.serviceRoot, relativePath);
+  mkdirSync3(target, { recursive: true });
+  return copyFilteredDirectory({
+    ...input,
+    absoluteDirectory: join19(input.absoluteDirectory, input.entry.name),
+    relativeDirectory: relativePath
+  });
+}
+function copySource(input, relativePath) {
+  if (!(input.entry.isFile() && isBackendSourceFile(relativePath))) return;
+  const target = join19(input.serviceRoot, relativePath);
+  mkdirSync3(dirname6(target), { recursive: true });
+  writeFileSync3(
+    target,
+    input.sourceRoot.protectedRead(relativePath).bytes,
+    "utf8"
+  );
+  input.sourcePaths.push(relativePath);
+}
+function skipReason(relativePath, absoluteDirectory, name) {
+  if (isSensitiveProjectPath(relativePath)) return "sensitive";
+  if (isClassificationConfigPath(relativePath)) return "ignored";
+  if (isBackendIrrelevant(relativePath)) return "ignored";
+  if (lstatSync8(join19(absoluteDirectory, name)).isSymbolicLink())
+    return "ignored";
+  return void 0;
+}
+
+// src/semantic/workspace/filtered-workspace.ts
+function createFilteredWorkspace(sourceRoot, resources = ownedResources) {
+  const service = createOwnedServiceRoot("code-explorer-native-", resources);
+  const treeRoot = join20(service.path, "tree");
+  const sourcePaths = [];
+  try {
+    mkdirSync4(treeRoot);
+    const excluded = copyFilteredDirectory({
+      absoluteDirectory: sourceRoot.canonicalPath,
+      relativeDirectory: "",
+      serviceRoot: treeRoot,
+      sourceRoot,
+      sourcePaths
+    });
+    return {
+      root: createNativeProjectRoot(treeRoot),
+      sensitive_paths_excluded: excluded,
+      sourcePaths: () => [...sourcePaths],
+      dispose: service.release
+    };
+  } catch (error2) {
+    service.release();
+    throw error2;
+  }
+}
+
+// src/semantic/runtime/runtime-adapter-metadata.ts
+function runtimeAdapterMetadata(input) {
+  return {
+    backend_name: input.backendName,
+    backend_version: input.prepared.status === "ready" ? input.prepared.version : "unobserved",
+    discovery_source: "server_path",
+    unavailable_failure_code: input.prepared.status === "unavailable" ? input.prepared.code : "backend_unavailable",
+    capabilities: input.capabilities
   };
 }
 
@@ -14609,7 +14838,8 @@ var { relationCapabilitiesFromInitialize: relationCapabilitiesFromInitialize2 } 
 
 // src/semantic/adapters/native-lsp-process.ts
 import { spawn } from "node:child_process";
-function spawnNativeLspProcess(executable, arguments_, environment) {
+function spawnNativeLspProcess(executable, arguments_, environment, resources = ownedResources) {
+  resources.assertOpen();
   const child = spawn(executable, arguments_, {
     shell: false,
     stdio: ["pipe", "pipe", "ignore"],
@@ -14617,6 +14847,11 @@ function spawnNativeLspProcess(executable, arguments_, environment) {
     // The policy has already selected an absolute executable and arguments.
     env: { ...environment }
   });
+  child.stdin.on("error", () => void 0);
+  const forget = resources.trackChild(() => {
+    child.kill("SIGKILL");
+  });
+  child.once("exit", forget);
   return createProcessHandlers(child);
 }
 function createProcessHandlers(child) {
@@ -15194,7 +15429,7 @@ async function initializeRuntime(input) {
 }
 function initializeParams(state) {
   return {
-    processId: null,
+    processId: process.pid,
     rootUri: state.options.root_uri,
     capabilities: state.capabilities,
     initializationOptions: state.initializationOptions
@@ -15731,9 +15966,14 @@ function createClient(lifecycle, preparation) {
   });
 }
 function replacementProcess(lifecycle) {
-  if (lifecycle.disposed) return void 0;
+  if (lifecycle.disposed || ownedResources.sealed) return void 0;
   const preparation = lifecycle.options.prepare();
-  return preparation.status === "ready" ? spawnProcess(lifecycle, preparation) : void 0;
+  if (preparation.status !== "ready") return void 0;
+  try {
+    return spawnProcess(lifecycle, preparation);
+  } catch {
+    return void 0;
+  }
 }
 function spawnProcess(lifecycle, preparation) {
   return (lifecycle.options.spawn ?? spawnNativeLspProcess)(
@@ -16099,9 +16339,13 @@ function trustedRoots(record2, platform) {
 }
 function createAdapter(input) {
   const capabilities = backendCapabilities(input.backend.capabilities);
-  return input.backend.language === "python" ? createPythonRuntimeAdapter({ ...input, capabilities }) : createNativeRuntimeAdapter({
-    ...input,
-    capabilities
+  const full = { ...input, capabilities };
+  return createLazyRuntimeAdapter({
+    language: input.backend.language,
+    backendName: input.backend.platform_executables[input.platform],
+    capabilities,
+    isPresent: () => languagePresent(input.backend.language, input.projectRoot.canonicalPath),
+    build: () => input.backend.language === "python" ? createPythonRuntimeAdapter(full) : createNativeRuntimeAdapter(full)
   });
 }
 function backendCapabilities(capabilities) {
@@ -16110,40 +16354,85 @@ function backendCapabilities(capabilities) {
   );
 }
 
-// src/semantic/runtime/runtime-start.ts
-async function createStartedRuntimeAdapters(projectRoot, signal) {
-  const adapters = createRuntimeAdapters(projectRoot);
-  await Promise.allSettled(
-    adapters.map((adapter) => startAdapter(adapter, signal))
-  );
-  if (signal?.aborted) {
-    await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-    throw new Error("aborted");
+// src/semantic/workspace/service-root-sweep.ts
+import { lstatSync as lstatSync9, readdirSync as readdirSync7, readFileSync as readFileSync7 } from "node:fs";
+import { tmpdir as tmpdir2 } from "node:os";
+import { join as join21 } from "node:path";
+var UNMARKED_MAX_AGE_MS = 24 * 60 * 60 * 1e3;
+function isOwnerAlive(pid, kill = process.kill) {
+  try {
+    kill(pid, 0);
+    return true;
+  } catch (error2) {
+    return error2.code !== "ESRCH";
   }
-  return adapters;
 }
-async function startAdapter(adapter, signal) {
-  if (!adapter.start) return;
-  if (!signal) return adapter.start();
-  await startWithAbort(adapter, signal);
+function readOwnerPid(root) {
+  try {
+    const marker = JSON.parse(
+      readFileSync7(join21(root, OWNER_MARKER_FILE), "utf8")
+    );
+    const pid = marker?.pid;
+    return typeof pid === "number" && Number.isInteger(pid) && pid > 0 ? pid : void 0;
+  } catch {
+    return void 0;
+  }
 }
-function startWithAbort(adapter, signal) {
-  let abortHandler;
-  return Promise.race([
-    adapter.start?.(signal) ?? Promise.resolve(),
-    new Promise((_, reject) => {
-      if (signal.aborted) {
-        reject(new Error("aborted"));
-        return;
-      }
-      abortHandler = () => reject(new Error("aborted"));
-      signal.addEventListener("abort", abortHandler, {
-        once: true
-      });
-    })
-  ]).finally(() => {
-    if (abortHandler) signal.removeEventListener("abort", abortHandler);
-  });
+function classifyServiceRoot(root, mtimeMs, deps) {
+  const pid = readOwnerPid(root);
+  if (pid !== void 0)
+    return pid === deps.ownPid || deps.isAlive(pid) ? "keep" : "dead_owner";
+  return deps.now - mtimeMs > UNMARKED_MAX_AGE_MS ? "stale_unmarked" : "keep";
+}
+function sweepStaleServiceRoots(deps) {
+  const removed = [];
+  for (const name of serviceRootNames(deps.directory)) {
+    const path5 = join21(deps.directory, name);
+    const verdict = verdictFor(path5, deps);
+    if (verdict === "keep") continue;
+    try {
+      deps.remove(path5);
+      deps.writeError(
+        `code-explorer: removed stale temp root ${name} (${verdict})`
+      );
+      removed.push(name);
+    } catch {
+    }
+  }
+  return removed;
+}
+function defaultSweepDeps() {
+  return {
+    directory: tmpdir2(),
+    now: Date.now(),
+    ownPid: process.pid,
+    // ASSUMPTION: Windows has no getuid, and its tmpdir() is the per-user
+    // %LOCALAPPDATA%\Temp, so every candidate there belongs to this user.
+    ownUid: process.getuid?.(),
+    isAlive: (pid) => isOwnerAlive(pid),
+    remove: removeServiceTree,
+    writeError: (line) => process.stderr.write(`${line}
+`)
+  };
+}
+function serviceRootNames(directory2) {
+  try {
+    return readdirSync7(directory2, { withFileTypes: true }).filter(
+      (entry) => entry.isDirectory() && SERVICE_ROOT_PREFIXES.some((prefix) => entry.name.startsWith(prefix))
+    ).map((entry) => entry.name);
+  } catch {
+    return [];
+  }
+}
+function verdictFor(path5, deps) {
+  try {
+    const entry = lstatSync9(path5);
+    if (!entry.isDirectory()) return "keep";
+    if (deps.ownUid !== void 0 && entry.uid !== deps.ownUid) return "keep";
+    return classifyServiceRoot(path5, entry.mtimeMs, deps);
+  } catch {
+    return "keep";
+  }
 }
 
 // src/browser-server/browser-server-start-support.ts
@@ -16534,10 +16823,10 @@ function relativeAssetPath(request) {
 function isInsideRoot(root, actual) {
   return actual.startsWith(`${root}${path2.sep}`) || actual === root;
 }
-async function loadAsset(context, request, relative6) {
+async function loadAsset(context, request, relative7) {
   try {
     const root = await realpath(context.options.assetRoot);
-    const candidate = path2.resolve(root, relative6);
+    const candidate = path2.resolve(root, relative7);
     const actual = await realpath(candidate);
     if (!isInsideRoot(root, actual)) return notFound();
     const body = await readAssetFile(actual, request.method === "HEAD");
@@ -16560,9 +16849,9 @@ async function loadAsset(context, request, relative6) {
 async function asset(context, request) {
   if (request.method !== "GET" && request.method !== "HEAD")
     return json(405, browserError("method_not_allowed"));
-  const relative6 = relativeAssetPath(request);
-  if (!relative6) return notFound();
-  return loadAsset(context, request, relative6);
+  const relative7 = relativeAssetPath(request);
+  if (!relative7) return notFound();
+  return loadAsset(context, request, relative7);
 }
 
 // src/browser-server/router-rejection.ts
@@ -16869,25 +17158,51 @@ __export(workspace_native_exports, {
 });
 
 // src/freshness/native-manifest-files.ts
-import { readdir } from "node:fs/promises";
-import { join as join19, relative as relative3 } from "node:path";
+import { readdir as readdir2 } from "node:fs/promises";
+import { join as join22, relative as relative4 } from "node:path";
+
+// src/freshness/ignored-paths.ts
+import { isAbsolute as isAbsolute3, relative as relative3, sep as sep2 } from "node:path";
+var IGNORED_DIRECTORY_NAMES = [
+  "node_modules",
+  ".git",
+  ".hg",
+  ".svn",
+  ".venv",
+  "venv",
+  "__pycache__",
+  "dist",
+  "dist-test",
+  "coverage",
+  "target",
+  "obj"
+];
+var IGNORED = new Set(IGNORED_DIRECTORY_NAMES);
+function isIgnoredWorkspacePath(relativePath) {
+  return relativePath.split(/[\\/]/u).some((segment) => IGNORED.has(segment.toLowerCase()));
+}
+function isIgnoredUnderRoot(root, absolutePath) {
+  const relativePath = relative3(root, absolutePath);
+  if (relativePath === "" || relativePath === ".." || relativePath.startsWith(`..${sep2}`) || isAbsolute3(relativePath))
+    return false;
+  return isIgnoredWorkspacePath(relativePath);
+}
+
+// src/freshness/native-manifest-files.ts
 function withinScanLimits(started, now, output) {
   if (now() - started > 6e4 || output.length > 5e4)
     throw new Error("scan_limit");
 }
-function ignoredDirectory(name) {
-  return /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(name);
-}
 async function visit2(root, directory2, supported, started, now, output) {
   withinScanLimits(started, now, output);
-  for (const entry of await readdir(directory2, { withFileTypes: true })) {
-    const absolute = join19(directory2, entry.name);
+  for (const entry of await readdir2(directory2, { withFileTypes: true })) {
+    const absolute = join22(directory2, entry.name);
     if (entry.isDirectory()) {
-      if (!ignoredDirectory(entry.name))
+      if (!isIgnoredWorkspacePath(relative4(root, absolute)))
         await visit2(root, absolute, supported, started, now, output);
       continue;
     }
-    const path5 = relative3(root, absolute).replaceAll("\\", "/");
+    const path5 = relative4(root, absolute).replaceAll("\\", "/");
     if (supported(path5)) output.push(path5);
   }
 }
@@ -16901,7 +17216,7 @@ async function walkSupportedFiles(root, supported, started, now) {
 // src/freshness/native-manifest-hashing.ts
 import { createHash as createHash4 } from "node:crypto";
 import { open as open3 } from "node:fs/promises";
-import { join as join20 } from "node:path";
+import { join as join23 } from "node:path";
 async function stableHash(path5, now, sleep) {
   const started = now();
   for (; ; ) {
@@ -16930,7 +17245,7 @@ async function stableBatch(options, files) {
       async (file) => [
         file,
         await stableHash(
-          join20(options.root, file),
+          join23(options.root, file),
           options.now ?? Date.now,
           options.sleep ?? delay
         )
@@ -16992,12 +17307,11 @@ var FreshnessRuntime = class {
   };
   manifest = /* @__PURE__ */ new Map();
   watcher;
-  activeSessions = 0;
   coalesceTimer;
   pollTimer;
-  manifestTimer;
   running;
   forceRefresh = false;
+  closed = false;
   nextGeneration = 1;
   reserveGeneration() {
     const generation = this.nextGeneration++;
@@ -17046,12 +17360,12 @@ var FreshnessRuntime = class {
 
 // ../../node_modules/chokidar/esm/index.js
 import { stat as statcb } from "fs";
-import { stat as stat3, readdir as readdir3 } from "fs/promises";
+import { stat as stat3, readdir as readdir4 } from "fs/promises";
 import { EventEmitter } from "events";
 import * as sysPath2 from "path";
 
 // ../../node_modules/readdirp/esm/index.js
-import { stat, lstat, readdir as readdir2, realpath as realpath2 } from "node:fs/promises";
+import { stat, lstat, readdir as readdir3, realpath as realpath2 } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { resolve as presolve, relative as prelative, join as pjoin, sep as psep } from "node:path";
 var EntryTypes = {
@@ -17189,7 +17503,7 @@ var ReaddirpStream = class extends Readable {
   async _exploreDir(path5, depth) {
     let files;
     try {
-      files = await readdir2(path5, this._rdOptions);
+      files = await readdir3(path5, this._rdOptions);
     } catch (error2) {
       this._onError(error2);
     }
@@ -18051,11 +18365,11 @@ function createPattern(matcher) {
       if (matcher.path === string3)
         return true;
       if (matcher.recursive) {
-        const relative6 = sysPath2.relative(matcher.path, string3);
-        if (!relative6) {
+        const relative7 = sysPath2.relative(matcher.path, string3);
+        if (!relative7) {
           return false;
         }
-        return !relative6.startsWith("..") && !sysPath2.isAbsolute(relative6);
+        return !relative7.startsWith("..") && !sysPath2.isAbsolute(relative7);
       }
       return false;
     };
@@ -18158,7 +18472,7 @@ var DirEntry = class {
       return;
     const dir = this.path;
     try {
-      await readdir3(dir);
+      await readdir4(dir);
     } catch (err) {
       if (this._removeWatcher) {
         this._removeWatcher(sysPath2.dirname(dir), sysPath2.basename(dir));
@@ -18751,10 +19065,16 @@ function canPublishGeneration(...args) {
   const [currentGeneration, analyzedGeneration, captured, prepublication] = args;
   return analyzedGeneration > currentGeneration && sameManifest(captured, prepublication);
 }
+function chokidarOptionsFor(roots) {
+  return {
+    ...chokidarWatchOptions,
+    ignored: (path5) => roots.some((root) => isIgnoredUnderRoot(root, path5))
+  };
+}
 function createChokidarWatcher(paths) {
   return esm_default.watch(
     [...paths],
-    chokidarWatchOptions
+    chokidarOptionsFor(paths)
   );
 }
 function createWatcher(options, schedule) {
@@ -18777,11 +19097,7 @@ function clearTimer(options, timer) {
   clear(timer);
 }
 function clearTimers(options, runtime) {
-  for (const timer of [
-    runtime.coalesceTimer,
-    runtime.pollTimer,
-    runtime.manifestTimer
-  ]) {
+  for (const timer of [runtime.coalesceTimer, runtime.pollTimer]) {
     if (timer !== void 0) clearTimer(options, timer);
   }
 }
@@ -18851,30 +19167,15 @@ async function reconcileWorkspace(options, runtime) {
 }
 
 // src/freshness/workspace-scheduling.ts
+var POLL_INTERVAL_MS = 5e3;
 function schedulePolling(options) {
-  const { runtime, timeout, reconcile, schedulePolling: schedulePolling2 } = options;
-  if (runtime.status.mode !== "polling" || runtime.activeSessions === 0 || runtime.pollTimer !== void 0)
+  const { runtime, timeout, reconcile, reschedule } = options;
+  if (runtime.closed || runtime.status.mode !== "polling" || runtime.pollTimer !== void 0)
     return;
   runtime.pollTimer = timeout(() => {
     runtime.pollTimer = void 0;
-    void reconcile().finally(schedulePolling2);
-  }, 5e3);
-}
-function scheduleManifestCheck(options) {
-  const { runtime, timeout, reconcile, scheduleManifestCheck: scheduleManifestCheck2 } = options;
-  if (runtime.activeSessions === 0 || runtime.manifestTimer !== void 0)
-    return;
-  runtime.manifestTimer = timeout(() => {
-    runtime.manifestTimer = void 0;
-    void reconcile().finally(scheduleManifestCheck2);
-  }, 3e4);
-}
-function scheduleWorkspaceTimers(options) {
-  schedulePolling({ ...options, schedulePolling: options.schedule });
-  scheduleManifestCheck({
-    ...options,
-    scheduleManifestCheck: options.schedule
-  });
+    void reconcile().finally(reschedule);
+  }, POLL_INTERVAL_MS);
 }
 
 // src/freshness/workspace-freshness.ts
@@ -18894,20 +19195,14 @@ var WorkspaceFreshness = class {
     this.#runtime.reserveRefresh();
     return this.status();
   }
-  async start(activeSessions = 0) {
-    this.#runtime.activeSessions = activeSessions;
+  async start() {
     const watcher = createWatcher(this.options, () => this.schedule());
     if (watcher) this.#runtime.watcher = watcher;
-    if (!watcher) {
+    else {
       this.#runtime.status = { ...this.#runtime.status, mode: "polling" };
-      this.#scheduleTimers();
+      this.#schedulePolling();
     }
-    this.#scheduleTimers();
     await this.reconcile();
-  }
-  setActiveSessions(count) {
-    this.#runtime.activeSessions = count;
-    this.#scheduleTimers();
   }
   schedule() {
     if (this.#runtime.coalesceTimer !== void 0) return;
@@ -18926,15 +19221,16 @@ var WorkspaceFreshness = class {
     return this.#runtime.running = run;
   }
   async close() {
+    this.#runtime.closed = true;
     clearTimers(this.options, this.#runtime);
     await this.#runtime.watcher?.close();
   }
-  #scheduleTimers() {
-    scheduleWorkspaceTimers({
+  #schedulePolling() {
+    schedulePolling({
       runtime: this.#runtime,
       timeout: (callback, delay2) => this.timeout(callback, delay2),
       reconcile: () => this.reconcile(),
-      schedule: () => this.#scheduleTimers()
+      reschedule: () => this.#schedulePolling()
     });
   }
   timeout(callback, delay2) {
@@ -29044,14 +29340,14 @@ var EMPTY_COMPLETION_RESULT = {
 };
 
 // src/package-info.ts
-import { readFileSync as readFileSync7 } from "node:fs";
-import { dirname as dirname9, join as join23 } from "node:path";
+import { readFileSync as readFileSync8 } from "node:fs";
+import { dirname as dirname9, join as join26 } from "node:path";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 var directory = dirname9(fileURLToPath5(import.meta.url));
 var packageInfo = JSON.parse(
-  readFileSync7(join23(directory, "..", "package.json"), "utf8")
+  readFileSync8(join26(directory, "..", "package.json"), "utf8")
 );
-var browserAssetRoot = join23(directory, "browser");
+var browserAssetRoot = join26(directory, "browser");
 
 // src/discovery/landmarks.ts
 function landmarksNotReady() {
@@ -29059,7 +29355,7 @@ function landmarksNotReady() {
 }
 
 // src/discovery/classification.ts
-import { readFileSync as readFileSync8 } from "node:fs";
+import { readFileSync as readFileSync9 } from "node:fs";
 import process3 from "node:process";
 
 // src/discovery/classification-markers.ts
@@ -29223,7 +29519,7 @@ function loadClassificationConfig(projectRoot, platform = process3.platform) {
         config: emptyConfig,
         status: { classification_config_invalid: false }
       };
-    const parsed = JSON.parse(readFileSync8(configPath, "utf8"));
+    const parsed = JSON.parse(readFileSync9(configPath, "utf8"));
     return {
       config: parseClassificationConfig(parsed),
       status: { classification_config_invalid: false }
@@ -29257,31 +29553,31 @@ function matchesDiscoveryFilters2(...args) {
 }
 
 // src/discovery/source-file-collector.ts
-import { lstatSync as lstatSync8, readdirSync as readdirSync7 } from "node:fs";
-import { join as join24 } from "node:path";
+import { lstatSync as lstatSync10, readdirSync as readdirSync8 } from "node:fs";
+import { join as join27 } from "node:path";
 function collectSourceFiles(root) {
   const found = [];
   visit3(root.canonicalPath, "", found);
   return found;
 }
 function visit3(directory2, prefix, found) {
-  for (const entry of readdirSync7(directory2, { withFileTypes: true })) {
-    const relative6 = prefix ? `${prefix}/${entry.name}` : entry.name;
-    const absolute = join24(directory2, entry.name);
-    visitEntry3({ entry, relative: relative6, absolute, found });
+  for (const entry of readdirSync8(directory2, { withFileTypes: true })) {
+    const relative7 = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const absolute = join27(directory2, entry.name);
+    visitEntry3({ entry, relative: relative7, absolute, found });
   }
 }
 function visitEntry3(options) {
-  const { entry, relative: relative6, absolute, found } = options;
-  if (isExcludedEntry(relative6, absolute)) return;
-  if (entry.isDirectory()) return visitDirectory2(relative6, absolute, found);
-  if (entry.isFile() && languageForPath(relative6)) found.push(relative6);
+  const { entry, relative: relative7, absolute, found } = options;
+  if (isExcludedEntry(relative7, absolute)) return;
+  if (entry.isDirectory()) return visitDirectory2(relative7, absolute, found);
+  if (entry.isFile() && languageForPath(relative7)) found.push(relative7);
 }
-function visitDirectory2(relative6, absolute, found) {
-  if (!isIgnoredDirectory(relative6)) visit3(absolute, relative6, found);
+function visitDirectory2(relative7, absolute, found) {
+  if (!isIgnoredDirectory(relative7)) visit3(absolute, relative7, found);
 }
-function isExcludedEntry(relative6, absolute) {
-  return isSensitiveProjectPath(relative6) || isClassificationConfigPath(relative6) || lstatSync8(absolute).isSymbolicLink();
+function isExcludedEntry(relative7, absolute) {
+  return isSensitiveProjectPath(relative7) || isClassificationConfigPath(relative7) || lstatSync10(absolute).isSymbolicLink();
 }
 function isIgnoredDirectory(path5) {
   return path5.split("/").some(
@@ -31423,6 +31719,12 @@ function hasValidRequestId(value) {
 function ensureFreshness(runtime) {
   return runtime.state.freshnessStarted ??= runtime.freshness.start();
 }
+function startPresentBackends(runtime) {
+  if (runtime.state.backendsStarted) return;
+  runtime.state.backendsStarted = true;
+  for (const adapter of runtime.options.adapters ?? [])
+    void adapter.start?.().catch(() => void 0);
+}
 function sessionRequest(arguments_) {
   const sessionId = stringArgument(arguments_, "session_id");
   const requestId = stringArgument(arguments_, "request_id");
@@ -31444,6 +31746,7 @@ async function performValidatedCall(runtime, name, arguments_) {
   });
 }
 async function executeValidatedCall(runtime, name, arguments_) {
+  startPresentBackends(runtime);
   if (isStartSessionCall(name, arguments_)) return startSession(runtime);
   await ensureFreshness(runtime);
   return performValidatedCall(runtime, name, arguments_);
@@ -31553,6 +31856,7 @@ function createRuntimeCore(server, adapters) {
   return {
     call: (name, arguments_) => server.call(name, arguments_),
     connect: (transport) => server.mcp.connect(transport),
+    terminate: () => server.close(),
     close: async (signal) => {
       if (signal.aborted) throw new Error("aborted");
       closing ??= cleanup();
@@ -31565,18 +31869,12 @@ async function startRuntimeCore({
   signal
 }) {
   loadAdapterSelectionRecord();
-  let adapters = [];
-  try {
-    adapters = await createStartedRuntimeAdapters(projectRoot, signal);
-    if (signal.aborted) throw new Error("aborted");
-    return createRuntimeCore(
-      createRuntimeServer(projectRoot, adapters),
-      adapters
-    );
-  } catch (error2) {
-    await stopAdapters(adapters);
-    throw error2;
-  }
+  if (signal.aborted) throw new Error("aborted");
+  const adapters = createRuntimeAdapters(projectRoot);
+  return createRuntimeCore(
+    createRuntimeServer(projectRoot, adapters),
+    adapters
+  );
 }
 function createRuntimeCoreFactory() {
   return { start: startRuntimeCore };
@@ -31786,6 +32084,53 @@ async function startEmbeddedBrowserRuntime(options) {
   });
 }
 
+// src/stdio-lifecycle.ts
+var STDIO_CLOSE_BUDGET_MS = 1500;
+function createStdioCloseController(deps) {
+  const budgetMs = deps.budgetMs ?? STDIO_CLOSE_BUDGET_MS;
+  let closing = false;
+  let exited = false;
+  let timer;
+  const finish = (code, line) => {
+    if (exited) return;
+    exited = true;
+    if (timer !== void 0) deps.clearTimer(timer);
+    deps.releaseResources();
+    if (line !== void 0) deps.writeError(line);
+    deps.exit(code);
+  };
+  return {
+    get closing() {
+      return closing;
+    },
+    close(reason) {
+      if (closing) {
+        if (reason === "signal") finish(1);
+        return;
+      }
+      closing = true;
+      deps.releaseResources();
+      timer = deps.setTimer(() => finish(1, overrunLine(budgetMs)), budgetMs);
+      deps.closeCore().then(
+        () => finish(0),
+        (error2) => finish(1, failureLine(error2))
+      );
+    }
+  };
+}
+function overrunLine(budgetMs) {
+  return `code-explorer: stdio close exceeded ${budgetMs} ms; backends were force-killed`;
+}
+function failureLine(error2) {
+  const reason = error2 instanceof Error ? error2.message : String(error2);
+  return `code-explorer: stdio close failed: ${reason}`;
+}
+function installStdioCloseTriggers(input) {
+  input.signals.on("SIGINT", () => input.close("signal"));
+  input.signals.on("SIGTERM", () => input.close("signal"));
+  input.stdin.once("end", () => input.close("stdin_end"));
+}
+
 // src/runtime-main.ts
 var { startEmbeddedBrowserRuntime: startEmbeddedBrowserRuntime2 } = embedded_runtime_exports;
 var { StdioServerTransport: StdioServerTransport2 } = stdio_exports;
@@ -31820,27 +32165,44 @@ async function runMain() {
   const projectRoot = createNativeProjectRoot(
     parseProjectRootArgument(arguments_)
   );
+  sweepStaleServiceRoots(defaultSweepDeps());
   const controller = new AbortController();
-  const core = await createRuntimeCoreFactory().start({
-    projectRoot,
-    signal: controller.signal
+  let core;
+  const closer = createProcessCloser(controller, () => core);
+  installStdioCloseTriggers({
+    signals: process5,
+    stdin: process5.stdin,
+    close: closer.close
   });
-  const transport = new StdioServerTransport2();
-  let closing;
-  const close = () => {
-    controller.abort();
-    closing ??= core.close(AbortSignal.timeout(1e4));
-    return closing;
-  };
-  transport.onclose = () => void close();
-  process5.stdin.once("end", () => void close());
   try {
+    core = await createRuntimeCoreFactory().start({
+      projectRoot,
+      signal: controller.signal
+    });
+    if (closer.closing) return;
+    const transport = new StdioServerTransport2();
+    transport.onclose = () => closer.close("transport_close");
     if (!core.connect) throw new Error("runtime_core_transport_unavailable");
     await core.connect(transport);
   } catch (error2) {
-    await close();
+    if (closer.closing) return;
+    ownedResources.seal();
     throw error2;
   }
+}
+function createProcessCloser(controller, getCore) {
+  return createStdioCloseController({
+    closeCore: async () => {
+      controller.abort();
+      await getCore()?.terminate?.();
+    },
+    releaseResources: () => ownedResources.seal(),
+    exit: (code) => process5.exit(code),
+    writeError: (line) => process5.stderr.write(`${line}
+`),
+    setTimer: (callback, ms) => setTimeout(callback, ms),
+    clearTimer: (timer) => clearTimeout(timer)
+  });
 }
 function parseProjectRootArgument(arguments_) {
   if (arguments_.length === 0) return;

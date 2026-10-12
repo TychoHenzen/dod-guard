@@ -1,20 +1,17 @@
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import {
-  makeTreeReadOnly,
-  makeTreeWritable,
-} from "./python-mirror-permissions.js";
+import { createOwnedServiceRoot } from "../workspace/service-root.js";
+import { makeTreeReadOnly } from "./python-mirror-permissions.js";
 import type { PythonMirrorPlan } from "./python-mirror-plan.js";
 import { BUNDLED_TYPESHED } from "./python-mirror-typeshed.js";
 import { writeMirrorFile } from "./python-mirror-writer.js";
 
 export function createMirrorTree(
   plan: Extract<PythonMirrorPlan, { status: "ready" }>,
-): { serviceRoot: string; mirrorRoot: string } {
+): { mirrorRoot: string; release: () => void } {
   const generation = plan.generation;
-  const serviceRoot = mkdtempSync(join(tmpdir(), "code-explorer-pyright-"));
-  const mirrorRoot = join(serviceRoot, `generation-${generation}`);
+  const service = createOwnedServiceRoot("code-explorer-pyright-");
+  const mirrorRoot = join(service.path, `generation-${generation}`);
   try {
     mkdirSync(mirrorRoot, { recursive: true, mode: 0o755 });
     writeMirrorFile(
@@ -30,15 +27,14 @@ export function createMirrorTree(
       writeMirrorFile(mirrorRoot, path, text);
     }
     makeTreeReadOnly(mirrorRoot);
-    return { serviceRoot, mirrorRoot };
+    return { mirrorRoot, release: service.release };
   } catch (error) {
-    makeTreeWritable(serviceRoot);
-    rmSync(serviceRoot, { recursive: true, force: true });
+    service.release();
     throw error;
   }
 }
 
-export function createDisposer(serviceRoot: string): {
+export function createDisposer(release: () => void): {
   dispose(): void;
   disposed(): boolean;
 } {
@@ -46,10 +42,7 @@ export function createDisposer(serviceRoot: string): {
   const dispose = () => {
     if (disposed) return;
     disposed = true;
-    process.removeListener("exit", dispose);
-    makeTreeWritable(serviceRoot);
-    rmSync(serviceRoot, { recursive: true, force: true });
+    release();
   };
-  process.once("exit", dispose);
   return { dispose, disposed: () => disposed };
 }

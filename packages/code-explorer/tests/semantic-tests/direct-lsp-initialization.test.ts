@@ -4,7 +4,6 @@ import { createDirectLspClient } from "../../src/semantic/direct-lsp/direct-lsp.
 import {
   assertPythonConfiguration,
   FakeProcess,
-  ready,
   Scheduler,
 } from "../testing/direct-lsp/direct-lsp-test-support.js";
 
@@ -54,7 +53,7 @@ and safe initialization options", async () => {
   });
   await start;
   assert.deepEqual(process.sent[0].params, {
-    processId: null,
+    processId: globalThis.process.pid,
     rootUri: "file:///frozen",
     capabilities: { workspace: { configuration: true } },
     initializationOptions: {

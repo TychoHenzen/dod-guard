@@ -82,7 +82,11 @@ function runtimeBackend({
     compatible_version: version,
     arguments: ["{entrypoint:0}"],
     endpoint: "stdio",
-    environment: { CODE_EXPLORER_FAKE_COUNTER: counters[language] ?? "" },
+    // Without keep-alive the fake exits on stdin EOF, so a pid-exit check would prove nothing.
+    environment: {
+      CODE_EXPLORER_FAKE_COUNTER: counters[language] ?? "",
+      CODE_EXPLORER_FAKE_KEEPALIVE: "1",
+    },
     safe_initialization_options: safeOptions(language),
     capabilities: {
       definition: "unavailable",

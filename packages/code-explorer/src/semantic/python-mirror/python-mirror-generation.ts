@@ -55,7 +55,7 @@ function createMirrorContext(
   });
   if (plan.status !== "ready") throw new Error("unsafe_backend_mode");
   const paths = createMirrorTree(plan);
-  const dispose = createDisposer(paths.serviceRoot);
+  const dispose = createDisposer(paths.release);
   return {
     plan,
     paths,

@@ -16,6 +16,14 @@ function ensureFreshness(runtime: ServerRuntime): Promise<void> {
   return (runtime.state.freshnessStarted ??= runtime.freshness.start());
 }
 
+/** Not awaited: a slow backend start must not hold up the first answer. */
+function startPresentBackends(runtime: ServerRuntime): void {
+  if (runtime.state.backendsStarted) return;
+  runtime.state.backendsStarted = true;
+  for (const adapter of runtime.options.adapters ?? [])
+    void adapter.start?.().catch(() => undefined);
+}
+
 function sessionRequest(arguments_: Record<string, unknown>) {
   const sessionId = stringArgument(arguments_, "session_id");
   const requestId = stringArgument(arguments_, "request_id");
@@ -47,6 +55,7 @@ export async function executeValidatedCall(
   name: ToolName,
   arguments_: Record<string, unknown>,
 ): Promise<CodeExplorerEnvelope | CodeExplorerError> {
+  startPresentBackends(runtime);
   if (isStartSessionCall(name, arguments_)) return startSession(runtime);
   await ensureFreshness(runtime);
   return performValidatedCall(runtime, name, arguments_);

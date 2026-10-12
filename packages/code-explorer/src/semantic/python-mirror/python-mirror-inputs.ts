@@ -65,7 +65,7 @@ function visitDirectory(
     : visit(root, absolute, relativePath);
 }
 
-function isPythonFile(path: string): boolean {
+export function isPythonFile(path: string): boolean {
   return (
     (path.endsWith(".py") || path.endsWith(".pyi")) &&
     !isSensitiveProjectPath(path) &&
@@ -73,7 +73,7 @@ function isPythonFile(path: string): boolean {
   );
 }
 
-function isExcludedPythonDirectory(path: string): boolean {
+export function isExcludedPythonDirectory(path: string): boolean {
   return (
     isSensitiveProjectPath(path) ||
     path

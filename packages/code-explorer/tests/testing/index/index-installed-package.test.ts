@@ -6,6 +6,7 @@ import { it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import * as stdio from "@modelcontextprotocol/sdk/client/stdio.js";
+import { isolatedDiscoveryEnvironment } from "./index-test-isolated-env.js";
 import { removeTemporaryTree } from "./index-test-standalone-support.js";
 
 const { StdioClientTransport } = stdio;
@@ -98,7 +99,7 @@ it(
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [join(installed, "dist", "bundle.js"), "--project-root", project],
-      env: { PATH: "" },
+      env: { PATH: "", ...isolatedDiscoveryEnvironment(temporary) },
     });
     try {
       await client.connect(transport);
@@ -107,10 +108,10 @@ it(
         backends.map(({ language }) => language),
         ["rust", "python", "csharp"],
       );
-      const csharp = backends.find(({ language }) => language === "csharp");
-      assert.ok(csharp?.state === "ready" || csharp?.state === "unavailable");
-      if (csharp?.state === "unavailable")
-        assert.equal(csharp.failure_code, "backend_unavailable");
+      for (const backend of backends) {
+        assert.equal(backend.state, "unavailable");
+        assert.equal(backend.failure_code, "language_not_present");
+      }
     } finally {
       try {
         await client.close();

@@ -1,6 +1,10 @@
 import { type ChildProcessByStdio, spawn } from "node:child_process";
 import type { Readable, Writable } from "node:stream";
 import type { LspProcess } from "../direct-lsp/direct-lsp.js";
+import {
+  type OwnedResources,
+  ownedResources,
+} from "../workspace/owned-resources.js";
 
 /**
  * Spawns only a prevalidated executable and fixed arguments without a shell.
@@ -9,7 +13,9 @@ export function spawnNativeLspProcess(
   executable: string,
   arguments_: readonly string[],
   environment: Readonly<Record<string, string>>,
+  resources: OwnedResources = ownedResources,
 ): LspProcess {
+  resources.assertOpen();
   const child = spawn(executable, arguments_, {
     shell: false,
     stdio: ["pipe", "pipe", "ignore"],
@@ -17,6 +23,14 @@ export function spawnNativeLspProcess(
     // The policy has already selected an absolute executable and arguments.
     env: { ...environment },
   }) as ChildProcessByStdio<Writable, Readable, null>;
+  // A backend that exits or closes its stdin turns pending writes into EPIPE
+  // (EOF on Windows). The exit listener and request timeouts own failure
+  // handling, so the stream error must not become an uncaught exception.
+  child.stdin.on("error", () => undefined);
+  const forget = resources.trackChild(() => {
+    child.kill("SIGKILL");
+  });
+  child.once("exit", forget);
   return createProcessHandlers(child);
 }
 

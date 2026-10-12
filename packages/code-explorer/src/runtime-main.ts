@@ -2,6 +2,7 @@ import process from "node:process";
 import * as stdio from "@modelcontextprotocol/sdk/server/stdio.js";
 import * as embeddedRuntime from "./browser-server/embedded-runtime.js";
 import {
+  type ExplorerCore,
   nativeBrowserOpener,
   nativePortBinder,
   parseServeArguments,
@@ -11,8 +12,16 @@ import { browserAssetRoot } from "./package-info.js";
 import { createRuntimeCoreFactory } from "./runtime-core.js";
 import {
   createNativeProjectRoot,
+  defaultSweepDeps,
+  ownedResources,
   ProjectPathError,
+  sweepStaleServiceRoots,
 } from "./semantic/api/public-api.js";
+import {
+  createStdioCloseController,
+  installStdioCloseTriggers,
+  type StdioCloseController,
+} from "./stdio-lifecycle.js";
 
 const { startEmbeddedBrowserRuntime } = embeddedRuntime;
 const { StdioServerTransport } = stdio;
@@ -52,27 +61,47 @@ export async function runMain(): Promise<void> {
   const projectRoot = createNativeProjectRoot(
     parseProjectRootArgument(arguments_),
   );
+  sweepStaleServiceRoots(defaultSweepDeps());
   const controller = new AbortController();
-  const core = await createRuntimeCoreFactory().start({
-    projectRoot,
-    signal: controller.signal,
+  let core: ExplorerCore | undefined;
+  const closer = createProcessCloser(controller, () => core);
+  installStdioCloseTriggers({
+    signals: process,
+    stdin: process.stdin,
+    close: closer.close,
   });
-  const transport = new StdioServerTransport();
-  let closing: Promise<void> | undefined;
-  const close = () => {
-    controller.abort();
-    closing ??= core.close(AbortSignal.timeout(10_000));
-    return closing;
-  };
-  transport.onclose = () => void close();
-  process.stdin.once("end", () => void close());
   try {
+    core = await createRuntimeCoreFactory().start({
+      projectRoot,
+      signal: controller.signal,
+    });
+    if (closer.closing) return;
+    const transport = new StdioServerTransport();
+    transport.onclose = () => closer.close("transport_close");
     if (!core.connect) throw new Error("runtime_core_transport_unavailable");
     await core.connect(transport);
   } catch (error) {
-    await close();
+    if (closer.closing) return; // the closer already owns the exit code
+    ownedResources.seal();
     throw error;
   }
+}
+
+function createProcessCloser(
+  controller: AbortController,
+  getCore: () => ExplorerCore | undefined,
+): StdioCloseController {
+  return createStdioCloseController({
+    closeCore: async () => {
+      controller.abort();
+      await getCore()?.terminate?.();
+    },
+    releaseResources: () => ownedResources.seal(),
+    exit: (code) => process.exit(code),
+    writeError: (line) => process.stderr.write(`${line}\n`),
+    setTimer: (callback, ms) => setTimeout(callback, ms),
+    clearTimer: (timer) => clearTimeout(timer as ReturnType<typeof setTimeout>),
+  });
 }
 
 function parseProjectRootArgument(

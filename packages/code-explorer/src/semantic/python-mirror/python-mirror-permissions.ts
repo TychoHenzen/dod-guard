@@ -1,9 +1,12 @@
-import { chmodSync, existsSync, readdirSync } from "node:fs";
+import { chmodSync, lstatSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
+// chmod follows links, so a link entry is skipped instead of changing the
+// file it points to. rmSync later unlinks the link itself.
 export function makeTreeReadOnly(directory: string): void {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const target = join(directory, entry.name);
+    if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) {
       makeTreeReadOnly(target);
       continue;
@@ -14,9 +17,11 @@ export function makeTreeReadOnly(directory: string): void {
 }
 
 export function makeTreeWritable(directory: string): void {
-  if (!existsSync(directory)) return;
+  // lstat, so a root that is itself a link is never followed.
+  if (!lstatSync(directory, { throwIfNoEntry: false })?.isDirectory()) return;
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const target = join(directory, entry.name);
+    if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) {
       makeTreeWritable(target);
       continue;
