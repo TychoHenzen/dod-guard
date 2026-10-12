@@ -1,7 +1,10 @@
 import { type ChildProcessByStdio, spawn } from "node:child_process";
 import type { Readable, Writable } from "node:stream";
 import type { LspProcess } from "../direct-lsp/direct-lsp.js";
-import { type OwnedResources, ownedResources } from "../workspace/owned-resources.js";
+import {
+  type OwnedResources,
+  ownedResources,
+} from "../workspace/owned-resources.js";
 
 /**
  * Spawns only a prevalidated executable and fixed arguments without a shell.

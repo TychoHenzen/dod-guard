@@ -1,34 +1,21 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import process from "node:process";
 import { it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import * as stdio from "@modelcontextprotocol/sdk/client/stdio.js";
 import { createServer, toMcpToolResult } from "../../../src/index.js";
-import { removeTemporaryTree } from "./index-test-fake-backend.js";
-import { isolatedDiscoveryEnvironment } from "./index-test-isolated-env.js";
+import { isolatedServerTransport } from "./index-test-stdio-client.js";
 
-const { StdioClientTransport, getDefaultEnvironment } = stdio;
 const entryPoint = fileURLToPath(
   new URL("../../../src/index.js", import.meta.url),
 );
 
 it("completes initialize and tools/list through compiled process", async () => {
-  const temporary = mkdtempSync(join(tmpdir(), "code-explorer-startup-"));
+  const { transport, dispose } = isolatedServerTransport(
+    "code-explorer-startup-",
+  );
   const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
-  const transport = new StdioClientTransport({
-    command: process.execPath,
-    args: [entryPoint],
-    cwd: process.cwd(),
-    env: {
-      ...getDefaultEnvironment(),
-      ...isolatedDiscoveryEnvironment(temporary),
-    },
-  });
   try {
     await client.connect(transport);
     const tools = await client.listTools();
@@ -40,24 +27,17 @@ it("completes initialize and tools/list through compiled process", async () => {
       "code_status",
     ]);
   } finally {
-    await client.close().finally(() => removeTemporaryTree(temporary));
+    await client.close().finally(dispose);
   }
 });
 
 it("gives each advertised tool its own description", async () => {
-  const temporary = mkdtempSync(join(tmpdir(), "code-explorer-startup-"));
+  const { transport, dispose } = isolatedServerTransport(
+    "code-explorer-startup-",
+  );
   const client = new Client({
     name: "code-explorer-metadata-test",
     version: "1.0.0",
-  });
-  const transport = new StdioClientTransport({
-    command: process.execPath,
-    args: [entryPoint],
-    cwd: process.cwd(),
-    env: {
-      ...getDefaultEnvironment(),
-      ...isolatedDiscoveryEnvironment(temporary),
-    },
   });
   try {
     await client.connect(transport);
@@ -71,7 +51,7 @@ it("gives each advertised tool its own description", async () => {
       ),
     );
   } finally {
-    await client.close().finally(() => removeTemporaryTree(temporary));
+    await client.close().finally(dispose);
   }
 });
 
@@ -95,22 +75,16 @@ it(
   "uses an explicit startup root and redacts invalid root paths in the " +
     "compiled child",
   async () => {
-    const temporary = mkdtempSync(join(tmpdir(), "code-explorer-startup-"));
+    const { transport, dispose } = isolatedServerTransport(
+      "code-explorer-startup-",
+      ["--project-root", process.cwd()],
+    );
     const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
-    const transport = new StdioClientTransport({
-      command: process.execPath,
-      args: [entryPoint, "--project-root", process.cwd()],
-      cwd: process.cwd(),
-      env: {
-        ...getDefaultEnvironment(),
-        ...isolatedDiscoveryEnvironment(temporary),
-      },
-    });
     try {
       await client.connect(transport);
       assert.equal((await client.listTools()).tools.length, 5);
     } finally {
-      await client.close().finally(() => removeTemporaryTree(temporary));
+      await client.close().finally(dispose);
     }
     const invalid = spawnSync(
       process.execPath,
@@ -124,17 +98,10 @@ it(
 );
 
 it("advertises exactly the five read-only navigation tools", async () => {
-  const temporary = mkdtempSync(join(tmpdir(), "code-explorer-startup-"));
+  const { transport, dispose } = isolatedServerTransport(
+    "code-explorer-startup-",
+  );
   const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
-  const transport = new StdioClientTransport({
-    command: process.execPath,
-    args: [entryPoint],
-    cwd: process.cwd(),
-    env: {
-      ...getDefaultEnvironment(),
-      ...isolatedDiscoveryEnvironment(temporary),
-    },
-  });
   try {
     await client.connect(transport);
     const names = (await client.listTools()).tools.map((tool) => tool.name);
@@ -150,6 +117,6 @@ it("advertises exactly the five read-only navigation tools", async () => {
       false,
     );
   } finally {
-    await client.close().finally(() => removeTemporaryTree(temporary));
+    await client.close().finally(dispose);
   }
 });

@@ -4,9 +4,9 @@ import { existsSync } from "node:fs";
 import { dirname } from "node:path";
 import { PassThrough } from "node:stream";
 import { it } from "node:test";
-import type { OwnedResources } from "../../../src/semantic/workspace/owned-resources.js";
 import { createNativeProjectRoot } from "../../../src/semantic/api/public-api.js";
 import { createFilteredWorkspace } from "../../../src/semantic/workspace/filtered-workspace.js";
+import type { OwnedResources } from "../../../src/semantic/workspace/owned-resources.js";
 import { installStdioCloseTriggers } from "../../../src/stdio-lifecycle.js";
 import { FakeTimers } from "../freshness/workspace-freshness/fake-timers.js";
 import {
@@ -78,7 +78,10 @@ it("a close that overruns 1500 ms force-kills the real backend child, removes th
     timers.fire(1500);
     assert.deepEqual(exits, [1]);
     assert.equal(errors.length, 1);
-    assert.match(errors[0] ?? "", /exceeded 1500 ms; backends were force-killed/);
+    assert.match(
+      errors[0] ?? "",
+      /exceeded 1500 ms; backends were force-killed/,
+    );
     assert.equal(existsSync(serviceRoot), false);
     assert.equal(await waitForPidExit(pid), true);
   } finally {

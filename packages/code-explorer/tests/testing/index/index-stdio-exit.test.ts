@@ -32,13 +32,15 @@ async function withBundleProject(
   }
 }
 
-it("exits by itself with code 0 within 2 s after stdin EOF", async () => {
+async function assertExitsZeroWithin2s(
+  trigger: (bundle: ReturnType<typeof spawnBundle>) => void,
+): Promise<void> {
   await withBundleProject(async (project, env) => {
     const bundle = spawnBundle({ project, env });
     try {
       await completeHandshake(bundle.child);
       const t0 = performance.now();
-      bundle.child.stdin.end();
+      trigger(bundle);
       const result = await bundle.exited;
       assert.equal(result.code, 0, bundle.stderr());
       assert.equal(result.signal, null);
@@ -47,27 +49,22 @@ it("exits by itself with code 0 within 2 s after stdin EOF", async () => {
       await stopBundle(bundle);
     }
   });
-});
+}
+
+it("exits by itself with code 0 within 2 s after stdin EOF", () =>
+  assertExitsZeroWithin2s((bundle) => {
+    bundle.child.stdin.end();
+  }));
 
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
-  it(`${signal} exits with code 0 within 2 s`, {
-    skip: process.platform === "win32" ? winSignalSkip : false,
-  }, async () => {
-    await withBundleProject(async (project, env) => {
-      const bundle = spawnBundle({ project, env });
-      try {
-        await completeHandshake(bundle.child);
-        const t0 = performance.now();
+  it(
+    `${signal} exits with code 0 within 2 s`,
+    { skip: process.platform === "win32" ? winSignalSkip : false },
+    () =>
+      assertExitsZeroWithin2s((bundle) => {
         bundle.child.kill(signal);
-        const result = await bundle.exited;
-        assert.equal(result.code, 0, bundle.stderr());
-        assert.equal(result.signal, null);
-        assert.ok(result.at - t0 < 2000, `exit took ${result.at - t0} ms`);
-      } finally {
-        await stopBundle(bundle);
-      }
-    });
-  });
+      }),
+  );
 }
 
 it("importing the bundle installs no signal listener", async () => {

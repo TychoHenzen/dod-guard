@@ -37,23 +37,29 @@ export function createStdioCloseController(deps: StdioCloseDeps): StdioCloseCont
     },
     close(reason) {
       if (closing) {
-        // A second signal is an explicit request to stop now, not to wait out the budget.
+        // A second signal is an explicit request to stop now, not to wait
+        // out the budget.
         if (reason === "signal") finish(1);
         return;
       }
       closing = true;
       deps.releaseResources();
-      timer = deps.setTimer(
-        () => finish(1, `code-explorer: stdio close exceeded ${budgetMs} ms; backends were force-killed`),
-        budgetMs,
-      );
+      timer = deps.setTimer(() => finish(1, overrunLine(budgetMs)), budgetMs);
       deps.closeCore().then(
         () => finish(0),
-        (error: unknown) =>
-          finish(1, `code-explorer: stdio close failed: ${error instanceof Error ? error.message : String(error)}`),
+        (error: unknown) => finish(1, failureLine(error)),
       );
     },
   };
+}
+
+function overrunLine(budgetMs: number): string {
+  return `code-explorer: stdio close exceeded ${budgetMs} ms; backends were force-killed`;
+}
+
+function failureLine(error: unknown): string {
+  const reason = error instanceof Error ? error.message : String(error);
+  return `code-explorer: stdio close failed: ${reason}`;
 }
 
 type Emitter = { on(event: string, listener: () => void): unknown };
