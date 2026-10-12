@@ -4,18 +4,12 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
 
-const bundle = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "..",
-  "dist",
-  "bundle.js",
-);
+const bundle = fileURLToPath(new URL("../../dist/bundle.js", import.meta.url));
 const SEVERITIES = ["high", "medium", "low"];
 const SUMMARY_KEYS = ["overall", "production", "test", "project"];
 // architecture is left out: its errors lists extraction failures, not severity counts.

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { requireSeverity } from "#quality-guard-severity";
 import { analyzeTestQuality } from "../../src/test-quality/analyze.js";
 import { evidenceWithSignals } from "./test-quality-fixtures.js";
 
@@ -92,4 +93,17 @@ test("does not infer T8 from source-level failure and coverage overlap", () => {
     report.findings.some((finding) => finding.heuristic === "T8"),
     false,
   );
+});
+
+test("gives every T1-T9 finding medium severity on the shared scale", () => {
+  const report = analyzeTestQuality(evidenceWithSignals());
+
+  assert.deepEqual(
+    [...new Set(report.findings.map((finding) => finding.heuristic))],
+    ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9"],
+  );
+  for (const finding of report.findings) {
+    assert.equal(finding.severity, "medium");
+    assert.equal(requireSeverity(finding.severity), "medium");
+  }
 });

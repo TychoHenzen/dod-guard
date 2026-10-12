@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { request as httpRequest, type IncomingMessage } from "node:http";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 import { test } from "node:test";
@@ -16,13 +15,7 @@ import {
   startMcpHttpServer,
 } from "../../src/http.js";
 import { startQualityGuardHttpServer } from "../../src/index.js";
-
-function fixture(name: string): string {
-  const root = mkdtempSync(join(tmpdir(), `quality-http-${name}-`));
-  mkdirSync(join(root, "src"));
-  writeFileSync(join(root, "src", `${name}.ts`), `export const ${name} = 1;\n`);
-  return root;
-}
+import { fixture, withClient } from "./http-test-support.js";
 
 async function readRawResponse(
   response: IncomingMessage,
@@ -67,35 +60,6 @@ async function assertHostileLoopbackHeaders(
 ): Promise<void> {
   assert.deepEqual(await forbiddenHeaderStatuses(url), [403, 403]);
   assert.equal(factoryCount(), 0);
-}
-
-async function withClient<Result>(
-  action: (client: Client) => Promise<Result>,
-): Promise<Result> {
-  const server = await startQualityGuardHttpServer({
-    path: "/mcp",
-    healthPath: "/health",
-    port: 0,
-  });
-  const client = new Client({ name: "quality-http-test", version: "1.0.0" });
-  const transport = new StreamableHTTPClientTransport(
-    new URL(`http://127.0.0.1:${server.port}${server.path}`),
-    {
-      reconnectionOptions: {
-        initialReconnectionDelay: 1,
-        maxReconnectionDelay: 1,
-        reconnectionDelayGrowFactor: 1,
-        maxRetries: 0,
-      },
-    },
-  );
-  try {
-    await client.connect(transport);
-    return await action(client);
-  } finally {
-    await client.close();
-    await server.close();
-  }
 }
 
 function createDrainMcpServer(

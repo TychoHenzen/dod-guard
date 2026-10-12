@@ -21571,8 +21571,9 @@ import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 
 // src/test-quality/findings/finding.ts
+var TEST_QUALITY_SEVERITY = "medium";
 function makeFinding(input) {
-  return { ...input, severity: "review", line: 1 };
+  return { ...input, severity: TEST_QUALITY_SEVERITY, line: 1 };
 }
 function activeTests(evidence, behaviorId) {
   return evidence.tests.filter(
