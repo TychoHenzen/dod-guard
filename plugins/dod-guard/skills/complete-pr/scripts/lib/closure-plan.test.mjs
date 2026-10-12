@@ -169,13 +169,12 @@ test("an owner's not_planned hand close is not reported, and a completed one sti
   assert.deepEqual(abandoned.closes, []);
   assert.deepEqual(abandoned.statusRepairs, []);
   assert.deepEqual(abandoned.holds, []);
-  const openParent = planClosures(handClosed("not_planned", { parentOpen: true }));
-  assert.deepEqual(openParent.reports, []);
 
   const completed = planClosures(handClosed("completed"));
+  const missing = ["completion evidence missing"];
   assert.deepEqual(
     completed.reports,
-    HAND_CLOSED.map((number) => ({ issue: number, kind: "unverified-closed", missing: ["completion evidence missing"] })),
+    HAND_CLOSED.map((number) => ({ issue: number, kind: "unverified-closed", missing })),
   );
 });
 
@@ -217,9 +216,30 @@ test("an open issue on Done is judged as before whatever its state_reason", () =
 // report rule does not touch, so an open parent still waits on its abandoned sub-issues.
 test("an open parent of not_planned hand-closed sub-issues is held as before", () => {
   const plan = planClosures(handClosed("not_planned", { parentOpen: true }));
+  assert.deepEqual(plan.reports, []);
   assert.deepEqual(plan.closes, []);
-  assert.deepEqual(
-    holdOf(plan, 684).reasons,
-    [779, 780, 781, 782].map((child) => `child #${child} closed without verified evidence: completion evidence missing`),
-  );
+  const unverified = (child) => `child #${child} closed without verified evidence: completion evidence missing`;
+  assert.deepEqual(holdOf(plan, 684).reasons, [779, 780, 781, 782].map(unverified));
+});
+
+// An archived item contributes no record, while REST still names it as a sub-issue or a parent.
+function archive(snapshot, number) {
+  snapshot.items = snapshot.items.filter((entry) => entry.content.number !== number);
+  snapshot.issues = snapshot.issues.filter((entry) => entry.number !== number);
+}
+
+test("an open parent whose sub-issue is archived is held with that sub-issue's readback missing", () => {
+  const snapshot = handClosed("not_planned", { parentOpen: true });
+  archive(snapshot, 779);
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.closes, []);
+  assert.equal(holdOf(plan, 684).reasons[0], "child #779 readback missing");
+});
+
+test("a closed sub-issue whose parent is archived holds that parent with its readback missing", () => {
+  const snapshot = handClosed("not_planned");
+  archive(snapshot, 684);
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.closes, []);
+  assert.deepEqual(holdOf(plan, 684), { issue: 684, reasons: ["issue #684 readback missing"] });
 });

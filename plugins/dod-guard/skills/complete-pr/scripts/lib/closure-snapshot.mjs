@@ -400,7 +400,8 @@ function pullReference(pull, subject, endpoint) {
   return { repository, number };
 }
 
-// Archived items are out of the closure scope; the REST default that leaves them out is not relied on.
+// Archived items are out of the closure scope. The REST default that already
+// leaves them out is not relied on.
 function isArchivedItem(raw) {
   return isObject(raw) && raw.archived_at !== null && raw.archived_at !== undefined;
 }
