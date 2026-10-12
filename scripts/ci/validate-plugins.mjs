@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// validate-plugins — structural validation of Claude Code plugin configuration.
+// validate-plugins - structural validation of Claude Code plugin configuration.
 //
 // Checks the things npm and tsc cannot: that plugin.json / .mcp.json /
 // marketplace.json agree with each other, with package.json, and with the files
-// that actually exist on disk — plus the repo-wide content rules (every JSON
+// that actually exist on disk - plus the repo-wide content rules (every JSON
 // parses, nothing ships a credential or a developer's home directory, and
 // everything a plugin needs is tracked by git).
 //
@@ -44,10 +44,10 @@ function summarize(packages, standalone, counts) {
 
 function emitResult(scanned) {
   if (violations.length === 0) {
-    process.stdout.write(`plugin configuration OK — ${scanned}\n`);
+    process.stdout.write(`plugin configuration OK - ${scanned}\n`);
     return 0;
   }
-  process.stdout.write(`plugin configuration FAILED — ${violations.length} violation(s) across ${scanned}\n\n`);
+  process.stdout.write(`plugin configuration FAILED - ${violations.length} violation(s) across ${scanned}\n\n`);
   for (const v of violations) process.stdout.write(`  ${v.file}\n    ${v.message}\n`);
   return 1;
 }
