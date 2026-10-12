@@ -171,7 +171,10 @@ carries `children` as `[{repository, number}]` (an empty array when it has
 none), `parent` as `{repository, number}` or null, `body`, `state_reason`, and
 `comments` as `[{id, body}]`. On every pull request it carries its state, merge
 time, head, base, merge commit, and REST-read `requiredChecks`; the merge commit
-and `requiredChecks` are null until the pull request merges.
+and `requiredChecks` are null until the pull request merges. `requiredChecks`
+comes from the same REST reader `/complete-pr` uses, so both reach one verdict
+for one head, and several exact-head runs of one required check are settled by
+the newest run.
 
 The snapshot also carries a `project` object with `owner`, `number`,
 `statusFieldId`, and `doneOptionId`: the Project owner login and number, and the
