@@ -272,7 +272,7 @@ test("covers missing, pending, provider-conflict, duplicate-source, and terminal
   }
 });
 
-test("reads protected exact-head checks when the required-check query is empty", () => {
+test("reads protected exact-head checks through REST only", () => {
   const calls = [];
   const responses = [
     { check_runs: [{ app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" }] },
@@ -281,7 +281,7 @@ test("reads protected exact-head checks when the required-check query is empty",
   const commandRunner = (args) => {
     calls.push(args);
     if (args[0] === "pr") {
-      return { stderr: "", status: 0, stdout: "[]" };
+      throw new Error(`gh pr is not a required-check reader: ${args.join(" ")}`);
     }
     if (args[1].includes("required_status_checks")) {
       return { stderr: "", status: 0, stdout: JSON.stringify({ checks: [{ app_id: 15_368, context: "build-test" }] }) };
@@ -295,7 +295,7 @@ test("reads protected exact-head checks when the required-check query is empty",
   });
 
   assert.deepEqual(checks, [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
-  assert.deepEqual(calls.slice(0, 4).map((args) => args[0]), ["pr", "api", "api", "api"]);
+  assert.deepEqual(calls.map((args) => args[0]), ["api", "api", "api"]);
   const checkRunsCall = calls.find((args) => args.some((arg) => arg.includes("check-runs")));
   const statusesCall = calls.find((args) => args.some((arg) => arg.endsWith("/status?per_page=100")));
   assert.ok(checkRunsCall);
@@ -312,7 +312,7 @@ test("uses the combined-status envelope SHA for status-only requirements", () =>
   ];
   const commandRunner = (args) => {
     if (args[0] === "pr") {
-      return { stderr: "", status: 0, stdout: "[]" };
+      throw new Error(`gh pr is not a required-check reader: ${args.join(" ")}`);
     }
     if (args[1]?.includes("required_status_checks")) {
       return { stderr: "", status: 0, stdout: JSON.stringify({ contexts: ["build-test"] }) };

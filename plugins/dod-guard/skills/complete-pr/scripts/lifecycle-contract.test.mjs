@@ -443,6 +443,7 @@ test("runs every lifecycle boundary once through REST when MCP is rate limited",
   assert.equal(transport.calls.filter((args) => args.includes("POST") && args.some((value) => String(value).includes("/projectsV2/2/items"))).length, ISSUE_NUMBERS.length);
   assert.equal(transport.calls.filter((args) => args.includes("PUT") && args.some((value) => String(value).endsWith("/merge"))).length, 1);
   assert.equal(transport.calls.some((args) => args.some((value) => /graphql/i.test(String(value)))), false);
+  assert.equal(transport.calls.some((args) => args[0] === "pr"), false);
 });
 
 test("fails closed on missing, contradictory, and forbidden lifecycle evidence", async () => {

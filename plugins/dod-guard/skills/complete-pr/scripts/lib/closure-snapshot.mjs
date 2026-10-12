@@ -7,7 +7,7 @@ import { renameSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command reads its process id for the partial file.
 import process from "node:process";
 import { statusValueName } from "../project-status.mjs";
-import { listOwnedProjects, readFallbackRequiredChecks } from "./github-client.mjs";
+import { listOwnedProjects, readRequiredChecks } from "./github-client.mjs";
 import {
   API_ISSUE_URL,
   API_PULL_URL,
@@ -552,7 +552,7 @@ function requiredChecksOf(pull, { repository, head, base, read }) {
     return null;
   }
   return atEndpoint(`repos/${repository}/commits/${head.sha}`, () =>
-    readFallbackRequiredChecks(repository, { baseBranch: base.ref, headSha: head.sha }, read),
+    readRequiredChecks(repository, { baseBranch: base.ref, headSha: head.sha }, read),
   );
 }
 

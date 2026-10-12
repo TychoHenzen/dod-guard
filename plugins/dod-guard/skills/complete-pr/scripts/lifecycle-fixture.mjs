@@ -132,13 +132,6 @@ export function createRecordingTransport({
     if (args.some((value) => /graphql/i.test(String(value)))) {
       throw new Error("Forbidden routine GraphQL request.");
     }
-    if (args[0] === "pr" && args[1] === "checks") {
-      return commandResult([
-        { bucket: "pass", name: "build-test", state: "SUCCESS" },
-        { bucket: "pass", name: "static-analysis", state: "SUCCESS" },
-      ]);
-    }
-
     const endpoint = args.find((value) =>
       typeof value === "string" && (value.startsWith("repos/") || value.startsWith("users/")));
     const methodIndex = args.indexOf("--method");
@@ -150,6 +143,22 @@ export function createRecordingTransport({
 
     if (endpoint === `repos/${REPOSITORY}`) {
       return commandResult({ full_name: REPOSITORY, default_branch: "master", allow_auto_merge: true, permissions: { push: true } });
+    }
+    if (endpoint === `repos/${REPOSITORY}/branches/master/protection/required_status_checks`) {
+      return commandResult({
+        checks: [
+          { app_id: 15_368, context: "build-test" },
+          { app_id: 15_368, context: "static-analysis" },
+        ],
+      });
+    }
+    // build-test ran twice on the head, as a pull_request run and a later workflow_dispatch run.
+    if (endpoint === `repos/${REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100`) {
+      const run = (id, name) => ({ id, app: { id: 15_368 }, conclusion: "success", head_sha: HEAD_SHA, name, status: "completed" });
+      return commandResult({ check_runs: [run(101, "build-test"), run(102, "static-analysis"), run(103, "build-test")] });
+    }
+    if (endpoint === `repos/${REPOSITORY}/commits/${HEAD_SHA}/status?per_page=100`) {
+      return commandResult({ sha: HEAD_SHA, statuses: [] });
     }
     if (endpoint === `${issuesEndpoint}?state=all&per_page=100` && method === "GET") {
       const visibleIssues = [...issues.values()].filter((issue) => issue.number !== unresolvedIssueCreate);

@@ -3,7 +3,6 @@ import { spawnSync } from "node:child_process";
 import { normalizeRequiredChecks } from "./check-normalization.mjs";
 import { CompletionError } from "./completion-error.mjs";
 
-const GH_CHECKS_PENDING_EXIT = 8;
 // One REST page of Project items reaches about 3.5 MB on the live Project, far past Node's 1 MiB default.
 const GH_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
 const HTTP_NOT_FOUND = /HTTP 404/;
@@ -259,15 +258,30 @@ function projectStatusName(item, statusFieldId, endpoint) {
   return names[0];
 }
 
-function readExactHeadCheckRuns(endpoint, commandRunner) {
+// gh reports only the HTTP status of a failed read, so the endpoint is added here. A response-shape
+// error already names its endpoint and keeps its code.
+function readNamed(description, endpoint, read) {
   try {
-    return ghJsonPages(endpoint, "check_runs", commandRunner);
+    return read();
   } catch (error) {
-    if (!HTTP_TRANSIENT_SERVER_ERROR.test(errorMessage(error))) {
+    if (error instanceof CompletionError) {
       throw error;
     }
-    return ghJsonPages(endpoint, "check_runs", commandRunner);
+    throw new Error(`Failed to read ${description} at ${endpoint}: ${errorMessage(error)}`, { cause: error });
   }
+}
+
+function readExactHeadCheckRuns(endpoint, commandRunner) {
+  return readNamed("exact-head check runs", endpoint, () => {
+    try {
+      return ghJsonPages(endpoint, "check_runs", commandRunner);
+    } catch (error) {
+      if (!HTTP_TRANSIENT_SERVER_ERROR.test(errorMessage(error))) {
+        throw error;
+      }
+      return ghJsonPages(endpoint, "check_runs", commandRunner);
+    }
+  });
 }
 
 function errorMessage(error) {
@@ -557,7 +571,7 @@ export function normalizePullRequest(data, repository) {
   };
 }
 
-export function readFallbackRequiredChecks(repository, pullRequest, commandRunner) {
+export function readRequiredChecks(repository, pullRequest, commandRunner) {
   const branch = encodeBranch(pullRequest.baseBranch);
   const protectionEndpoint = `repos/${repository}/branches/${branch}/protection/required_status_checks`;
   const protectionResponse = ghJson(
@@ -581,10 +595,8 @@ export function readFallbackRequiredChecks(repository, pullRequest, commandRunne
     `repos/${repository}/commits/${pullRequest.headSha}/check-runs?per_page=100`,
     commandRunner,
   );
-  const statusPages = ghJsonPagesData(
-    `repos/${repository}/commits/${pullRequest.headSha}/status?per_page=100`,
-    commandRunner,
-  );
+  const statusEndpoint = `repos/${repository}/commits/${pullRequest.headSha}/status?per_page=100`;
+  const statusPages = readNamed("commit statuses", statusEndpoint, () => ghJsonPagesData(statusEndpoint, commandRunner));
   const statusSha = statusPages.map((page) => page?.sha).find(Boolean) ?? null;
   const statuses = statusPages.flatMap((page) =>
     (Array.isArray(page?.statuses) ? page.statuses : []).map((status) => ({
@@ -705,29 +717,7 @@ export class GitHubClient {
   }
 
   getRequiredChecks(pullNumber, pullRequest) {
-    const { data } = ghJson(
-      [
-        "pr",
-        "checks",
-        String(pullNumber),
-        "--repo",
-        this.repository,
-        "--required",
-        "--json",
-        "bucket,name,state",
-      ],
-      [0, GH_CHECKS_PENDING_EXIT],
-      this.#commandRunner,
-    );
-    if (Array.isArray(data) && data.length > 0) {
-      return data;
-    }
-
-    return readFallbackRequiredChecks(
-      this.repository,
-      pullRequest ?? this.getPullRequest(pullNumber),
-      this.#commandRunner,
-    );
+    return readRequiredChecks(this.repository, pullRequest ?? this.getPullRequest(pullNumber), this.#commandRunner);
   }
 
   getCiWorkflowRuns(headSha) {
