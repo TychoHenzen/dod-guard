@@ -68,8 +68,9 @@ sides deleted or renamed it, or when it is a symlink or submodule entry, which
 holds no text to merge.
 
 1. **Plan** (strong tier, `dod-guard:read-strong`). For each conflicted path,
-   write questions to a scratch file outside the repository. Each question has
-   an id, the paths and hunks, the intent sources to read, and a risk note.
+   return questions as text; the owning thread writes them to a scratch file
+   outside the repository. Each question has an id, the paths and hunks, the
+   intent sources to read, and a risk note.
    Intent sources are the PBI acceptance criteria, the pull request body, and
    the commit messages on each side.
 2. **Investigate** (cheap tier, `dod-guard:read-cheap`). Only questions that
@@ -77,10 +78,11 @@ holds no text to merge.
    cites a path and line and gives no verdict. A question the hunks answer
    goes straight to the judge. Verify the answers as
    `standards/model-routing.md` says before the judge reads them.
-3. **Judge** (strong tier, `dod-guard:read-strong`). Write one decision per
-   path to a decisions file: `take-branch`, `take-base`, `combine`,
-   `regenerate`, or `stop`, each with its basis and question ids. A decision
-   with no basis is `stop`.
+3. **Judge** (strong tier, `dod-guard:read-strong`). Return one decision per
+   path: `take-branch`, `take-base`, `combine`, `regenerate`, or `stop`, each
+   with its basis and question ids. A decision with no basis is `stop`. The
+   owning thread writes the decisions to the decisions file that `verify`
+   reads.
 4. **Apply** (cheap tier, `dod-guard:stage-cheap`). Edit only the judged
    source, test, and documentation paths, then stage them. A test expectation
    changes only when the decision cites a clear contract that shows it is

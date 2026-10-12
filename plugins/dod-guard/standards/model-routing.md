@@ -50,6 +50,16 @@ no pinned file and the named values at spawn time, and record the override as
 report the override as applied. Record the override, and how it was applied,
 in the progress message.
 
+A skill-capable stage runs on `dod-guard:stage-strong` at its own tier's model
+and effort, cheap or strong. A stage is skill-capable when it invokes a skill,
+writes issue, pull request, or Project state, or needs an MCP connector:
+`dod-guard:stage-cheap` and the read-only agents hold none of those tools, so
+capability follows the agent and cost follows the model. In Claude Code, pass
+the tier's `model` and `effort` on the Agent call. In Codex, the registered
+stage-strong file pins the strong tier, so spawn a cheap-tier skill-capable
+stage without that file, with `gpt-5.6-luna` and `max` at spawn time, and
+record it as "requested, not pinned".
+
 ## Who dispatches
 
 Only the thread that owns a skill's procedure dispatches its subagents. When
@@ -69,28 +79,40 @@ that dispatched the work.
 
 A judgement step that needs a large read volume runs in three parts:
 
-1. A strong planner (`dod-guard:read-strong`) writes concrete questions, each
+1. A strong planner (`dod-guard:read-strong`) returns concrete questions, each
    with an id, the files or symbols to read, and the risk it targets.
 2. Cheap investigators (`dod-guard:read-cheap`) answer each question with the
    cited path and line and the fact found there, with no verdicts.
 3. After the main thread verifies the answers, a strong judge turns them into
    findings or decisions.
 
+Read-only agents return their output as text. The main thread writes any
+handoff file, such as a questions or decisions file, from that text.
+
 ## Verify cheap-tier output
 
-Before any strong-tier judgement or later stage relies on cheap-tier output,
-the main thread checks that:
+Cheap-output verification applies by model tier, not by agent type: the main
+thread checks a cheap-model `dod-guard:stage-strong` run like any other
+cheap-tier output. Before any strong-tier judgement or later stage relies on
+cheap-tier output, the main thread checks that:
 
 - every answer maps to a planned question or plan step;
 - every cited path and line exists at the accepted head and says what the
   answer claims it says;
 - nothing claims a verdict, or a change the step did not ask for;
-- every claimed commit exists and matches the described diff, and at least
-  one named proof passes when the main thread reruns it.
+- the changed files and staged state match the diff the step describes, and at
+  least one named proof passes when the main thread reruns it;
+- a readback of any issue, pull request, or Project state the step wrote
+  shows the described change.
+
+After every check passes, the dispatching main thread commits the verified
+changes with its own attribution trailer, and pushes when the owning skill
+pushes. Cheap workers never commit or push.
 
 A failed check sends the same stage back once with the exact gap, under the
-failure-recovery rule in `standards/working-defaults.md`. The run does not
-advance on unverified output. A second failure stops that stage as a blocker.
+failure-recovery rule in `standards/working-defaults.md`, with no commit or
+push. The run does not advance on unverified output. A second failure stops
+that stage as a blocker.
 
 ## Advisor
 
