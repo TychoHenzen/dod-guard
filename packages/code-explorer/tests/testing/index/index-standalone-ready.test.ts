@@ -28,6 +28,50 @@ const { StdioClientTransport } = stdio;
 const entryPoint = fileURLToPath(
   new URL("../../../src/index.js", import.meta.url),
 );
+const backendStatusTimeoutMs = 30_000;
+const backendStatusPollMs = 50;
+
+type StandaloneStatus = {
+  data: {
+    backend_status: {
+      backends: Array<{
+        language: string;
+        state: string;
+        backend_version: string;
+        capabilities: Record<string, { state: string }>;
+      }>;
+    };
+  };
+};
+
+async function waitForStandaloneBackends(
+  client: Client,
+): Promise<StandaloneStatus> {
+  const deadline = Date.now() + backendStatusTimeoutMs;
+  for (;;) {
+    const response = (await client.callTool({
+      name: "code_status",
+      arguments: { action: "status" },
+    })) as { content: Array<{ text: string }> };
+    const status = JSON.parse(
+      response.content[0]?.text ?? "",
+    ) as StandaloneStatus;
+    const backends = status.data.backend_status.backends;
+    if (
+      backends.length === 3 &&
+      backends.every(({ state }) => state !== "initializing")
+    )
+      return status;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0)
+      throw new Error(
+        `standalone_backend_status_timeout:${JSON.stringify(backends)}`,
+      );
+    await new Promise((resolve_) =>
+      setTimeout(resolve_, Math.min(backendStatusPollMs, remaining)),
+    );
+  }
+}
 
 it(
   "starts all approved standalone backends from a copied installed package " +
@@ -58,6 +102,13 @@ it(
         "def symbol():\n    return 1\n",
         "utf8",
       );
+      mkdirSync(join(project, "src"));
+      writeFileSync(
+        join(project, "src", "lib.rs"),
+        "pub fn symbol() {}\n",
+        "utf8",
+      );
+      writeFileSync(join(project, "Program.cs"), "class Program {}\n", "utf8");
       for (const counter of Object.values(counters))
         writeFileSync(
           counter,
@@ -122,22 +173,7 @@ it(
       });
       try {
         await client.connect(transport);
-        const response = (await client.callTool({
-          name: "code_status",
-          arguments: { action: "status" },
-        })) as { content: Array<{ text: string }> };
-        const status = JSON.parse(response.content[0]?.text ?? "") as {
-          data: {
-            backend_status: {
-              backends: Array<{
-                language: string;
-                state: string;
-                backend_version: string;
-                capabilities: Record<string, { state: string }>;
-              }>;
-            };
-          };
-        };
+        const status = await waitForStandaloneBackends(client);
         const backends = status.data.backend_status.backends;
         assert.deepEqual(
           backends.map(({ language }) => language),

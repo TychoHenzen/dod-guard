@@ -18,6 +18,7 @@ export type ServerRuntime = {
   state: {
     refreshGeneration: number;
     viewHistory: string[];
+    backendsStarted?: boolean;
     freshnessStarted?: Promise<void>;
     discovery?: DiscoveryPipeline;
     landmarks?: LandmarkDiscovery;

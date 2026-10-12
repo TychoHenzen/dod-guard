@@ -18,7 +18,6 @@ export { createNativePythonMirror } from "../python-mirror/index.js";
 export {
   createManagedPythonBackend,
   createRuntimeAdapters,
-  createStartedRuntimeAdapters,
 } from "../runtime/runtime-bootstrap.js";
 export { ownedResources } from "../workspace/owned-resources.js";
 export {

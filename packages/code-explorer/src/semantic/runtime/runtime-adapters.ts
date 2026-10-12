@@ -7,7 +7,9 @@ import { createNativeBackendInspector } from "../adapters/index.js";
 import type { LanguageAdapter } from "../adapters/language-adapter.js";
 import type { RelationCapabilities } from "../contracts/contract.js";
 import type { ProjectRoot } from "../project-root/project-root.js";
+import { languagePresent } from "./language-presence.js";
 import type * as adapterInput from "./runtime-adapter-record-input.js";
+import { createLazyRuntimeAdapter } from "./runtime-lazy-adapter.js";
 import { createNativeRuntimeAdapter } from "./runtime-native-adapter.js";
 import { createPythonRuntimeAdapter } from "./runtime-python-adapter.js";
 
@@ -50,12 +52,18 @@ function createAdapter(
   input: adapterInput.RuntimeAdapterRecordInput,
 ): LanguageAdapter {
   const capabilities = backendCapabilities(input.backend.capabilities);
-  return input.backend.language === "python"
-    ? createPythonRuntimeAdapter({ ...input, capabilities })
-    : createNativeRuntimeAdapter({
-        ...input,
-        capabilities,
-      });
+  const full = { ...input, capabilities };
+  return createLazyRuntimeAdapter({
+    language: input.backend.language,
+    backendName: input.backend.platform_executables[input.platform],
+    capabilities,
+    isPresent: () =>
+      languagePresent(input.backend.language, input.projectRoot.canonicalPath),
+    build: () =>
+      input.backend.language === "python"
+        ? createPythonRuntimeAdapter(full)
+        : createNativeRuntimeAdapter(full),
+  });
 }
 
 function backendCapabilities(

@@ -108,10 +108,10 @@ it(
         backends.map(({ language }) => language),
         ["rust", "python", "csharp"],
       );
-      const csharp = backends.find(({ language }) => language === "csharp");
-      assert.ok(csharp?.state === "ready" || csharp?.state === "unavailable");
-      if (csharp?.state === "unavailable")
-        assert.equal(csharp.failure_code, "backend_unavailable");
+      for (const backend of backends) {
+        assert.equal(backend.state, "unavailable");
+        assert.equal(backend.failure_code, "language_not_present");
+      }
     } finally {
       try {
         await client.close();

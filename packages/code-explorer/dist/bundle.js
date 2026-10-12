@@ -3174,18 +3174,18 @@ var require_utils = __commonJS({
     function compressIPv6ZeroRun(hextets) {
       let bestStart = -1;
       let bestLength = 0;
-      let runStart = -1;
+      let runStart2 = -1;
       let runLength = 0;
       for (let i = 0; i < hextets.length; i++) {
         if (hextets[i] === "0") {
-          if (runStart === -1) runStart = i;
+          if (runStart2 === -1) runStart2 = i;
           runLength++;
           if (runLength > bestLength) {
             bestLength = runLength;
-            bestStart = runStart;
+            bestStart = runStart2;
           }
         } else {
-          runStart = -1;
+          runStart2 = -1;
           runLength = 0;
         }
       }
@@ -13644,18 +13644,9 @@ function createNativeBackendInspector(commandRoots, projectRoot) {
   };
 }
 
-// src/semantic/workspace/filtered-workspace.ts
-import { mkdirSync as mkdirSync4 } from "node:fs";
-import { join as join19 } from "node:path";
-
-// src/semantic/workspace/filtered-workspace-copy.ts
-import {
-  lstatSync as lstatSync7,
-  mkdirSync as mkdirSync3,
-  readdirSync as readdirSync6,
-  writeFileSync as writeFileSync3
-} from "node:fs";
-import { dirname as dirname6, join as join18 } from "node:path";
+// src/semantic/runtime/language-presence.ts
+import { readdir } from "node:fs/promises";
+import { join as join18 } from "node:path";
 
 // src/semantic/workspace/filtered-workspace-rules.ts
 function relativePathFor(directory2, name) {
@@ -13676,95 +13667,47 @@ function isBackendSourceFile(path5) {
   return /\.(rs|cs|csx|fs|vb|toml|json|sln|csproj|props|targets)$/iu.test(path5) || /(^|\/)(Cargo\.lock|Cargo\.toml|Directory\.Build\.props)$/iu.test(path5);
 }
 
-// src/semantic/workspace/filtered-workspace-copy.ts
-function copyFilteredDirectory(input) {
-  return readdirSync6(input.absoluteDirectory, {
-    withFileTypes: true
-  }).reduce(
-    (excluded, entry) => excluded + copyFilteredEntry({ ...input, entry }),
-    0
-  );
-}
-function copyFilteredEntry(input) {
-  const relativePath = relativePathFor(
-    input.relativeDirectory,
-    input.entry.name
-  );
-  const reason = skipReason(
-    relativePath,
-    input.absoluteDirectory,
-    input.entry.name
-  );
-  if (reason === "sensitive") return 1;
-  if (reason) return 0;
-  if (input.entry.isDirectory()) return copyDirectory(input, relativePath);
-  copySource(input, relativePath);
-  return 0;
-}
-function copyDirectory(input, relativePath) {
-  const target = join18(input.serviceRoot, relativePath);
-  mkdirSync3(target, { recursive: true });
-  return copyFilteredDirectory({
-    ...input,
-    absoluteDirectory: join18(input.absoluteDirectory, input.entry.name),
-    relativeDirectory: relativePath
-  });
-}
-function copySource(input, relativePath) {
-  if (!(input.entry.isFile() && isBackendSourceFile(relativePath))) return;
-  const target = join18(input.serviceRoot, relativePath);
-  mkdirSync3(dirname6(target), { recursive: true });
-  writeFileSync3(
-    target,
-    input.sourceRoot.protectedRead(relativePath).bytes,
-    "utf8"
-  );
-  input.sourcePaths.push(relativePath);
-}
-function skipReason(relativePath, absoluteDirectory, name) {
-  if (isSensitiveProjectPath(relativePath)) return "sensitive";
-  if (isClassificationConfigPath(relativePath)) return "ignored";
-  if (isBackendIrrelevant(relativePath)) return "ignored";
-  if (lstatSync7(join18(absoluteDirectory, name)).isSymbolicLink())
-    return "ignored";
-  return void 0;
-}
-
-// src/semantic/workspace/filtered-workspace.ts
-function createFilteredWorkspace(sourceRoot) {
-  const service = createOwnedServiceRoot("code-explorer-native-");
-  const treeRoot = join19(service.path, "tree");
-  const sourcePaths = [];
-  try {
-    mkdirSync4(treeRoot);
-    const excluded = copyFilteredDirectory({
-      absoluteDirectory: sourceRoot.canonicalPath,
-      relativeDirectory: "",
-      serviceRoot: treeRoot,
-      sourceRoot,
-      sourcePaths
-    });
+// src/semantic/runtime/language-presence.ts
+function presenceFilter(language) {
+  if (language === "python")
     return {
-      root: createNativeProjectRoot(treeRoot),
-      sensitive_paths_excluded: excluded,
-      sourcePaths: () => [...sourcePaths],
-      dispose: service.release
+      skipDirectory: isExcludedPythonDirectory,
+      matchFile: isPythonFile
     };
-  } catch (error2) {
-    service.release();
-    throw error2;
+  const source = language === "rust" ? /\.rs$/iu : /\.(?:cs|csx)$/iu;
+  return {
+    skipDirectory: isNativeExcluded,
+    matchFile: (path5) => source.test(path5) && !isNativeExcluded(path5)
+  };
+}
+function isNativeExcluded(path5) {
+  return isSensitiveProjectPath(path5) || isClassificationConfigPath(path5) || isBackendIrrelevant(path5);
+}
+async function containsMatchingFile(rootPath, filter) {
+  const pending = [""];
+  while (pending.length > 0) {
+    const directory2 = pending.pop() ?? "";
+    for (const entry of await readEntries(join18(rootPath, directory2))) {
+      if (entry.isSymbolicLink()) continue;
+      const relativePath = relativePathFor(directory2, entry.name);
+      if (entry.isDirectory()) {
+        if (!filter.skipDirectory(relativePath)) pending.push(relativePath);
+      } else if (entry.isFile() && filter.matchFile(relativePath)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+async function readEntries(directory2) {
+  try {
+    return await readdir(directory2, { withFileTypes: true });
+  } catch {
+    return [];
   }
 }
-
-// src/semantic/runtime/runtime-adapter-metadata.ts
-function runtimeAdapterMetadata(input) {
-  return {
-    backend_name: input.backendName,
-    backend_version: input.prepared.status === "ready" ? input.prepared.version : "unobserved",
-    discovery_source: "server_path",
-    unavailable_failure_code: input.prepared.status === "unavailable" ? input.prepared.code : "backend_unavailable",
-    capabilities: input.capabilities
-  };
+function languagePresent(language, rootPath) {
+  return containsMatchingFile(rootPath, presenceFilter(language));
 }
 
 // src/semantic/adapters/language-adapter-status-fields.ts
@@ -13901,6 +13844,196 @@ function lifecycleMethods(backend) {
     ...backend.start ? { start: backend.start } : {},
     ...backend.shutdown ? { shutdown: backend.shutdown } : {},
     ...backend.refresh ? { refresh: backend.refresh } : {}
+  };
+}
+
+// src/semantic/runtime/runtime-lazy-adapter.ts
+var LANGUAGE_NOT_PRESENT = "language_not_present";
+function createLazyRuntimeAdapter(input) {
+  const state = { absent: false, closed: false };
+  const placeholder = createLanguageAdapter(input.language, {
+    backend: {
+      readiness: () => placeholderReadiness(state),
+      query: rejectUnavailable
+    },
+    compatible: true,
+    backend_name: input.backendName,
+    backend_version: "unobserved",
+    discovery_source: "server_path",
+    capabilities: input.capabilities,
+    ...input.now ? { now: input.now } : {}
+  });
+  const start = () => startLazy(state, input);
+  return {
+    status: () => (state.inner ?? placeholder).status(),
+    request: (request) => requestLazy(state, start, request),
+    start,
+    refresh: () => refreshLazy(state, start),
+    shutdown: () => shutdownLazy(state)
+  };
+}
+function placeholderReadiness(state) {
+  if (state.failure !== void 0)
+    return { state: "failed", failure_code: state.failure };
+  return state.absent ? { state: "unavailable", failure_code: LANGUAGE_NOT_PRESENT } : { state: "initializing" };
+}
+async function rejectUnavailable() {
+  throw new Error("backend_unavailable");
+}
+function startLazy(state, input) {
+  if (state.closed) return Promise.reject(new Error("backend_unavailable"));
+  state.starting ??= runStart(state, input).catch((error2) => {
+    state.starting = void 0;
+    throw error2;
+  });
+  return state.starting;
+}
+async function runStart(state, input) {
+  if (state.closed) throw new Error("backend_unavailable");
+  if (!state.inner) {
+    const present = await input.isPresent();
+    if (state.closed) throw new Error("backend_unavailable");
+    if (!state.inner) {
+      state.absent = !present;
+      if (!present) return;
+      state.inner = buildRecorded(state, input);
+    }
+  }
+  await state.inner?.start?.();
+}
+function buildRecorded(state, input) {
+  state.failure = void 0;
+  try {
+    return input.build();
+  } catch (error2) {
+    state.failure = error2 instanceof Error ? error2.message : "backend_failed";
+    throw error2;
+  }
+}
+async function requestLazy(state, start, request) {
+  await start();
+  if (!state.inner) throw new Error("backend_unavailable");
+  return state.inner.request(request);
+}
+async function refreshLazy(state, start) {
+  if (state.closed) return;
+  if (state.starting) {
+    try {
+      await state.starting;
+    } catch {
+    }
+  }
+  if (state.inner) {
+    await state.inner.refresh?.();
+    return;
+  }
+  state.starting = void 0;
+  await start();
+}
+async function shutdownLazy(state) {
+  state.closed = true;
+  await state.inner?.shutdown?.();
+}
+
+// src/semantic/workspace/filtered-workspace.ts
+import { mkdirSync as mkdirSync4 } from "node:fs";
+import { join as join20 } from "node:path";
+
+// src/semantic/workspace/filtered-workspace-copy.ts
+import {
+  lstatSync as lstatSync7,
+  mkdirSync as mkdirSync3,
+  readdirSync as readdirSync6,
+  writeFileSync as writeFileSync3
+} from "node:fs";
+import { dirname as dirname6, join as join19 } from "node:path";
+function copyFilteredDirectory(input) {
+  return readdirSync6(input.absoluteDirectory, {
+    withFileTypes: true
+  }).reduce(
+    (excluded, entry) => excluded + copyFilteredEntry({ ...input, entry }),
+    0
+  );
+}
+function copyFilteredEntry(input) {
+  const relativePath = relativePathFor(
+    input.relativeDirectory,
+    input.entry.name
+  );
+  const reason = skipReason(
+    relativePath,
+    input.absoluteDirectory,
+    input.entry.name
+  );
+  if (reason === "sensitive") return 1;
+  if (reason) return 0;
+  if (input.entry.isDirectory()) return copyDirectory(input, relativePath);
+  copySource(input, relativePath);
+  return 0;
+}
+function copyDirectory(input, relativePath) {
+  const target = join19(input.serviceRoot, relativePath);
+  mkdirSync3(target, { recursive: true });
+  return copyFilteredDirectory({
+    ...input,
+    absoluteDirectory: join19(input.absoluteDirectory, input.entry.name),
+    relativeDirectory: relativePath
+  });
+}
+function copySource(input, relativePath) {
+  if (!(input.entry.isFile() && isBackendSourceFile(relativePath))) return;
+  const target = join19(input.serviceRoot, relativePath);
+  mkdirSync3(dirname6(target), { recursive: true });
+  writeFileSync3(
+    target,
+    input.sourceRoot.protectedRead(relativePath).bytes,
+    "utf8"
+  );
+  input.sourcePaths.push(relativePath);
+}
+function skipReason(relativePath, absoluteDirectory, name) {
+  if (isSensitiveProjectPath(relativePath)) return "sensitive";
+  if (isClassificationConfigPath(relativePath)) return "ignored";
+  if (isBackendIrrelevant(relativePath)) return "ignored";
+  if (lstatSync7(join19(absoluteDirectory, name)).isSymbolicLink())
+    return "ignored";
+  return void 0;
+}
+
+// src/semantic/workspace/filtered-workspace.ts
+function createFilteredWorkspace(sourceRoot) {
+  const service = createOwnedServiceRoot("code-explorer-native-");
+  const treeRoot = join20(service.path, "tree");
+  const sourcePaths = [];
+  try {
+    mkdirSync4(treeRoot);
+    const excluded = copyFilteredDirectory({
+      absoluteDirectory: sourceRoot.canonicalPath,
+      relativeDirectory: "",
+      serviceRoot: treeRoot,
+      sourceRoot,
+      sourcePaths
+    });
+    return {
+      root: createNativeProjectRoot(treeRoot),
+      sensitive_paths_excluded: excluded,
+      sourcePaths: () => [...sourcePaths],
+      dispose: service.release
+    };
+  } catch (error2) {
+    service.release();
+    throw error2;
+  }
+}
+
+// src/semantic/runtime/runtime-adapter-metadata.ts
+function runtimeAdapterMetadata(input) {
+  return {
+    backend_name: input.backendName,
+    backend_version: input.prepared.status === "ready" ? input.prepared.version : "unobserved",
+    discovery_source: "server_path",
+    unavailable_failure_code: input.prepared.status === "unavailable" ? input.prepared.code : "backend_unavailable",
+    capabilities: input.capabilities
   };
 }
 
@@ -16205,9 +16338,13 @@ function trustedRoots(record2, platform) {
 }
 function createAdapter(input) {
   const capabilities = backendCapabilities(input.backend.capabilities);
-  return input.backend.language === "python" ? createPythonRuntimeAdapter({ ...input, capabilities }) : createNativeRuntimeAdapter({
-    ...input,
-    capabilities
+  const full = { ...input, capabilities };
+  return createLazyRuntimeAdapter({
+    language: input.backend.language,
+    backendName: input.backend.platform_executables[input.platform],
+    capabilities,
+    isPresent: () => languagePresent(input.backend.language, input.projectRoot.canonicalPath),
+    build: () => input.backend.language === "python" ? createPythonRuntimeAdapter(full) : createNativeRuntimeAdapter(full)
   });
 }
 function backendCapabilities(capabilities) {
@@ -16216,46 +16353,10 @@ function backendCapabilities(capabilities) {
   );
 }
 
-// src/semantic/runtime/runtime-start.ts
-async function createStartedRuntimeAdapters(projectRoot, signal) {
-  const adapters = createRuntimeAdapters(projectRoot);
-  await Promise.allSettled(
-    adapters.map((adapter) => startAdapter(adapter, signal))
-  );
-  if (signal?.aborted) {
-    await Promise.allSettled(adapters.map((adapter) => adapter.shutdown?.()));
-    throw new Error("aborted");
-  }
-  return adapters;
-}
-async function startAdapter(adapter, signal) {
-  if (!adapter.start) return;
-  if (!signal) return adapter.start();
-  await startWithAbort(adapter, signal);
-}
-function startWithAbort(adapter, signal) {
-  let abortHandler;
-  return Promise.race([
-    adapter.start?.(signal) ?? Promise.resolve(),
-    new Promise((_, reject) => {
-      if (signal.aborted) {
-        reject(new Error("aborted"));
-        return;
-      }
-      abortHandler = () => reject(new Error("aborted"));
-      signal.addEventListener("abort", abortHandler, {
-        once: true
-      });
-    })
-  ]).finally(() => {
-    if (abortHandler) signal.removeEventListener("abort", abortHandler);
-  });
-}
-
 // src/semantic/workspace/service-root-sweep.ts
 import { readdirSync as readdirSync7, readFileSync as readFileSync7, statSync as statSync2 } from "node:fs";
 import { tmpdir as tmpdir2 } from "node:os";
-import { join as join20 } from "node:path";
+import { join as join21 } from "node:path";
 var UNMARKED_MAX_AGE_MS = 24 * 60 * 60 * 1e3;
 function isOwnerAlive(pid, kill = process.kill) {
   try {
@@ -16268,7 +16369,7 @@ function isOwnerAlive(pid, kill = process.kill) {
 function readOwnerPid(root) {
   try {
     const marker = JSON.parse(
-      readFileSync7(join20(root, OWNER_MARKER_FILE), "utf8")
+      readFileSync7(join21(root, OWNER_MARKER_FILE), "utf8")
     );
     const pid = marker?.pid;
     return typeof pid === "number" && Number.isInteger(pid) && pid > 0 ? pid : void 0;
@@ -16285,7 +16386,7 @@ function classifyServiceRoot(root, mtimeMs, deps) {
 function sweepStaleServiceRoots(deps) {
   const removed = [];
   for (const name of serviceRootNames(deps.directory)) {
-    const path5 = join20(deps.directory, name);
+    const path5 = join21(deps.directory, name);
     const verdict = verdictFor(path5, deps);
     if (verdict === "keep") continue;
     try {
@@ -17050,8 +17151,8 @@ __export(workspace_native_exports, {
 });
 
 // src/freshness/native-manifest-files.ts
-import { readdir } from "node:fs/promises";
-import { join as join21, relative as relative3 } from "node:path";
+import { readdir as readdir2 } from "node:fs/promises";
+import { join as join22, relative as relative3 } from "node:path";
 function withinScanLimits(started, now, output) {
   if (now() - started > 6e4 || output.length > 5e4)
     throw new Error("scan_limit");
@@ -17061,8 +17162,8 @@ function ignoredDirectory(name) {
 }
 async function visit2(root, directory2, supported, started, now, output) {
   withinScanLimits(started, now, output);
-  for (const entry of await readdir(directory2, { withFileTypes: true })) {
-    const absolute = join21(directory2, entry.name);
+  for (const entry of await readdir2(directory2, { withFileTypes: true })) {
+    const absolute = join22(directory2, entry.name);
     if (entry.isDirectory()) {
       if (!ignoredDirectory(entry.name))
         await visit2(root, absolute, supported, started, now, output);
@@ -17082,7 +17183,7 @@ async function walkSupportedFiles(root, supported, started, now) {
 // src/freshness/native-manifest-hashing.ts
 import { createHash as createHash4 } from "node:crypto";
 import { open as open3 } from "node:fs/promises";
-import { join as join22 } from "node:path";
+import { join as join23 } from "node:path";
 async function stableHash(path5, now, sleep) {
   const started = now();
   for (; ; ) {
@@ -17111,7 +17212,7 @@ async function stableBatch(options, files) {
       async (file) => [
         file,
         await stableHash(
-          join22(options.root, file),
+          join23(options.root, file),
           options.now ?? Date.now,
           options.sleep ?? delay
         )
@@ -17227,12 +17328,12 @@ var FreshnessRuntime = class {
 
 // ../../node_modules/chokidar/esm/index.js
 import { stat as statcb } from "fs";
-import { stat as stat3, readdir as readdir3 } from "fs/promises";
+import { stat as stat3, readdir as readdir4 } from "fs/promises";
 import { EventEmitter } from "events";
 import * as sysPath2 from "path";
 
 // ../../node_modules/readdirp/esm/index.js
-import { stat, lstat, readdir as readdir2, realpath as realpath2 } from "node:fs/promises";
+import { stat, lstat, readdir as readdir3, realpath as realpath2 } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { resolve as presolve, relative as prelative, join as pjoin, sep as psep } from "node:path";
 var EntryTypes = {
@@ -17370,7 +17471,7 @@ var ReaddirpStream = class extends Readable {
   async _exploreDir(path5, depth) {
     let files;
     try {
-      files = await readdir2(path5, this._rdOptions);
+      files = await readdir3(path5, this._rdOptions);
     } catch (error2) {
       this._onError(error2);
     }
@@ -18339,7 +18440,7 @@ var DirEntry = class {
       return;
     const dir = this.path;
     try {
-      await readdir3(dir);
+      await readdir4(dir);
     } catch (err) {
       if (this._removeWatcher) {
         this._removeWatcher(sysPath2.dirname(dir), sysPath2.basename(dir));
@@ -29226,13 +29327,13 @@ var EMPTY_COMPLETION_RESULT = {
 
 // src/package-info.ts
 import { readFileSync as readFileSync8 } from "node:fs";
-import { dirname as dirname9, join as join25 } from "node:path";
+import { dirname as dirname9, join as join26 } from "node:path";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 var directory = dirname9(fileURLToPath5(import.meta.url));
 var packageInfo = JSON.parse(
-  readFileSync8(join25(directory, "..", "package.json"), "utf8")
+  readFileSync8(join26(directory, "..", "package.json"), "utf8")
 );
-var browserAssetRoot = join25(directory, "browser");
+var browserAssetRoot = join26(directory, "browser");
 
 // src/discovery/landmarks.ts
 function landmarksNotReady() {
@@ -29439,7 +29540,7 @@ function matchesDiscoveryFilters2(...args) {
 
 // src/discovery/source-file-collector.ts
 import { lstatSync as lstatSync8, readdirSync as readdirSync8 } from "node:fs";
-import { join as join26 } from "node:path";
+import { join as join27 } from "node:path";
 function collectSourceFiles(root) {
   const found = [];
   visit3(root.canonicalPath, "", found);
@@ -29448,7 +29549,7 @@ function collectSourceFiles(root) {
 function visit3(directory2, prefix, found) {
   for (const entry of readdirSync8(directory2, { withFileTypes: true })) {
     const relative6 = prefix ? `${prefix}/${entry.name}` : entry.name;
-    const absolute = join26(directory2, entry.name);
+    const absolute = join27(directory2, entry.name);
     visitEntry3({ entry, relative: relative6, absolute, found });
   }
 }
@@ -31604,6 +31705,12 @@ function hasValidRequestId(value) {
 function ensureFreshness(runtime) {
   return runtime.state.freshnessStarted ??= runtime.freshness.start();
 }
+function startPresentBackends(runtime) {
+  if (runtime.state.backendsStarted) return;
+  runtime.state.backendsStarted = true;
+  for (const adapter of runtime.options.adapters ?? [])
+    void adapter.start?.().catch(() => void 0);
+}
 function sessionRequest(arguments_) {
   const sessionId = stringArgument(arguments_, "session_id");
   const requestId = stringArgument(arguments_, "request_id");
@@ -31625,6 +31732,7 @@ async function performValidatedCall(runtime, name, arguments_) {
   });
 }
 async function executeValidatedCall(runtime, name, arguments_) {
+  startPresentBackends(runtime);
   if (isStartSessionCall(name, arguments_)) return startSession(runtime);
   await ensureFreshness(runtime);
   return performValidatedCall(runtime, name, arguments_);
@@ -31747,18 +31855,12 @@ async function startRuntimeCore({
   signal
 }) {
   loadAdapterSelectionRecord();
-  let adapters = [];
-  try {
-    adapters = await createStartedRuntimeAdapters(projectRoot, signal);
-    if (signal.aborted) throw new Error("aborted");
-    return createRuntimeCore(
-      createRuntimeServer(projectRoot, adapters),
-      adapters
-    );
-  } catch (error2) {
-    await stopAdapters(adapters);
-    throw error2;
-  }
+  if (signal.aborted) throw new Error("aborted");
+  const adapters = createRuntimeAdapters(projectRoot);
+  return createRuntimeCore(
+    createRuntimeServer(projectRoot, adapters),
+    adapters
+  );
 }
 function createRuntimeCoreFactory() {
   return { start: startRuntimeCore };
