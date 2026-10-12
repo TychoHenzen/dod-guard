@@ -151,7 +151,9 @@ function unmappedCriteria(issue, children) {
   return acceptanceCriteria(issue?.body)
     .filter((item) => !item.checked)
     .map((item) => item.text)
-    .filter((text) => !children.some((child) => new RegExp(`#${child}\\b`).test(text)));
+    .filter((text) =>
+      !children.some((child) => new RegExp(`#${child}\\b`).test(text))
+    );
 }
 
 function planned(context, number) {

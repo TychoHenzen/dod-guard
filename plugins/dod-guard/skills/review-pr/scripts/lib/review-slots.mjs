@@ -10,15 +10,36 @@ function positiveInteger(value) {
   return Number.isInteger(value) && value > 0;
 }
 
+function isPbiShape(value, repository) {
+  return (
+    isObject(value) &&
+    repository !== null &&
+    positiveInteger(value.number) &&
+    (typeof value.body === "string" || value.body === null)
+  );
+}
+
 // The saved `gh api repos/{owner}/{repo}/issues/{n}` response. source names
 // the file in every error.
 function pbiIssue(value, source) {
   const repository = urlRepository(value?.repository_url, API_REPOSITORY_URL);
   const body = value?.body;
-  if (!(isObject(value) && repository !== null && positiveInteger(value.number) && (typeof body === "string" || body === null))) {
-    throw new Error(`${source}: the PBI issue JSON needs a repository_url, a positive integer number, and a string or null body`);
+  if (!isPbiShape(value, repository)) {
+    throw new Error(
+      `${source}: the PBI issue JSON needs a repository_url, ` +
+        "a positive integer number, and a string or null body",
+    );
   }
   return { repository, number: value.number, body: body ?? "" };
+}
+
+function isSubIssueShape(child, repository) {
+  return (
+    repository !== null &&
+    positiveInteger(child?.number) &&
+    typeof child?.title === "string" &&
+    child.title.trim() !== ""
+  );
 }
 
 // The saved `gh api --paginate --slurp .../sub_issues?per_page=100` listing: an
@@ -30,14 +51,19 @@ function subIssueList(value, source) {
   const seen = new Set();
   return value.flat().map((child, index) => {
     const repository = urlRepository(child?.repository_url, API_REPOSITORY_URL);
-    if (!(repository !== null && positiveInteger(child?.number) && typeof child?.title === "string" && child.title.trim() !== "")) {
-      throw new Error(`${source}: sub-issue ${index + 1} needs a repository_url, a positive integer number, and a title`);
+    if (!isSubIssueShape(child, repository)) {
+      throw new Error(
+        `${source}: sub-issue ${index + 1} needs a repository_url, ` +
+          "a positive integer number, and a title",
+      );
     }
     const reference = `${repository}#${child.number}`;
     // ASSUMPTION: GitHub lists each sub-issue once, so a repeat means a corrupt
     // listing; two equal slot ids would make the plan ambiguous.
     if (seen.has(reference)) {
-      throw new Error(`${source}: sub-issue ${reference} appears more than once`);
+      throw new Error(
+        `${source}: sub-issue ${reference} appears more than once`,
+      );
     }
     seen.add(reference);
     return { repository, number: child.number, title: child.title.trim() };
@@ -54,7 +80,10 @@ function reviewSlots({ changedLines, pbi, subIssues }) {
   }
   const criteria = acceptanceCriteria(pbi.body);
   if (criteria.length === 0) {
-    throw new Error(`PBI ${pbi.repository}#${pbi.number} has no checkbox item under ## Acceptance criteria`);
+    throw new Error(
+      `PBI ${pbi.repository}#${pbi.number} has no checkbox item ` +
+        "under ## Acceptance criteria",
+    );
   }
   return [
     ...[...changedLines]
@@ -118,7 +147,9 @@ function requireEntryShape(entry) {
     throw new Error(`Slot ${slot} has neither questions nor an exclusion`);
   }
   if (excluded && !isCompleteExclusion(entry.excluded)) {
-    throw new Error(`The exclusion for slot ${slot} needs a reviewer lens and a reason`);
+    throw new Error(
+      `The exclusion for slot ${slot} needs a reviewer lens and a reason`,
+    );
   }
   if (asked && !(Array.isArray(entry.questions) && entry.questions.length > 0)) {
     throw new Error(`Slot ${slot} needs a non-empty questions array`);
@@ -128,8 +159,9 @@ function requireEntryShape(entry) {
 function requireQuestion(question, slot, ids) {
   if (!isCompleteQuestion(question)) {
     throw new Error(
-      `Question ${JSON.stringify(question?.id ?? null)} in slot ${slot} needs an id, a reviewer lens, ` +
-        `a question, a files list, and a status of ${STATUSES.join(", ")}`,
+      `Question ${JSON.stringify(question?.id ?? null)} in slot ${slot} ` +
+        "needs an id, a reviewer lens, a question, a files list, " +
+        `and a status of ${STATUSES.join(", ")}`,
     );
   }
   const id = oneLine(question.id);
@@ -143,19 +175,16 @@ function entryLenses(entry) {
   return entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
 }
 
-// The planner fills the slots the script generated; it cannot add, drop, or
-// rename one.
-function requirePlan(plan, slots) {
-  if (!Array.isArray(plan)) {
-    throw new Error("The review plan must be a JSON array");
-  }
-  const generated = new Set(slots.map((item) => item.slot));
+function requirePlanEntries(plan, generated) {
   const planned = new Set();
   const ids = new Set();
   for (const entry of plan) {
     const slot = entry?.slot;
     if (!generated.has(slot)) {
-      throw new Error(`Plan slot ${JSON.stringify(slot ?? null)} was not generated from the diff and the PBI`);
+      throw new Error(
+        `Plan slot ${JSON.stringify(slot ?? null)} was not generated ` +
+          "from the diff and the PBI",
+      );
     }
     // ASSUMPTION: one plan entry per slot; two entries would leave the slot
     // block and the lens assignment ambiguous.
@@ -168,15 +197,32 @@ function requirePlan(plan, slots) {
       requireQuestion(question, slot, ids);
     }
   }
-  const missing = slots.map((item) => item.slot).filter((slot) => !planned.has(slot));
-  if (missing.length > 0) {
-    throw new Error(`Slots missing from the plan: ${missing.join(", ")}`);
-  }
+  return planned;
+}
+
+function requireEveryLens(plan) {
   // Each judge needs at least one assigned slot to rule on.
   const idle = REVIEWERS.filter((lens) => !plan.some((entry) => entryLenses(entry).includes(lens)));
   if (idle.length > 0) {
     throw new Error(`No question or exclusion for ${idle.join(", ")}`);
   }
+}
+
+// The planner fills the slots the script generated; it cannot add, drop, or
+// rename one.
+function requirePlan(plan, slots) {
+  if (!Array.isArray(plan)) {
+    throw new Error("The review plan must be a JSON array");
+  }
+  const planned = requirePlanEntries(
+    plan,
+    new Set(slots.map((item) => item.slot)),
+  );
+  const missing = slots.map((item) => item.slot).filter((slot) => !planned.has(slot));
+  if (missing.length > 0) {
+    throw new Error(`Slots missing from the plan: ${missing.join(", ")}`);
+  }
+  requireEveryLens(plan);
 }
 
 function slotHeading(item) {
