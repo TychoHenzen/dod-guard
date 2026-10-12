@@ -19,10 +19,16 @@ test("markdownSection returns one heading's text and matches the heading literal
     "Tail.",
     "",
   ].join("\n");
-  assert.equal(markdownSection(body, "Notes (draft)"), "\nFirst line.\n### sub\nSecond line.\n\n");
+  assert.equal(
+    markdownSection(body, "Notes (draft)"),
+    "\nFirst line.\n### sub\nSecond line.\n\n",
+  );
   assert.equal(markdownSection(body, "Last"), "\nTail.\n");
   assert.equal(markdownSection(body, "Missing"), "");
-  assert.equal(markdownSection("## Last\r\n\r\nTail.\r\n", "Last"), "\nTail.\n");
+  assert.equal(
+    markdownSection("## Last\r\n\r\nTail.\r\n", "Last"),
+    "\nTail.\n",
+  );
   assert.equal(markdownSection("Preamble\n## Last", "Last"), "");
 });
 
@@ -41,12 +47,18 @@ test("acceptanceCriteria returns checked and unchecked items in document order",
 });
 
 test("acceptanceCriteria reads CRLF bodies", () => {
-  assert.deepEqual(acceptanceCriteria(CRITERIA_BODY.replace(/\n/g, "\r\n")), CRITERIA);
+  assert.deepEqual(
+    acceptanceCriteria(CRITERIA_BODY.replace(/\n/g, "\r\n")),
+    CRITERIA,
+  );
 });
 
 test("acceptanceCriteria returns no items without the section or without checkboxes", () => {
   assert.deepEqual(acceptanceCriteria("## Outcome\n\n- [ ] x\n"), []);
-  assert.deepEqual(acceptanceCriteria("## Acceptance criteria\n\n- plain\n"), []);
+  assert.deepEqual(
+    acceptanceCriteria("## Acceptance criteria\n\n- plain\n"),
+    [],
+  );
   assert.deepEqual(acceptanceCriteria(null), []);
   assert.deepEqual(acceptanceCriteria(undefined), []);
 });

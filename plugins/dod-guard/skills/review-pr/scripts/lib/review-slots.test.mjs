@@ -2,7 +2,14 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { pbiIssue, requirePlan, reviewSlots, slotsBlock, slotsByLens, subIssueList } from "./review-slots.mjs";
+import {
+  pbiIssue,
+  requirePlan,
+  reviewSlots,
+  slotsBlock,
+  slotsByLens,
+  subIssueList,
+} from "./review-slots.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 import {
   pbiJson,
@@ -41,7 +48,13 @@ const PBI_JSON = pbiJson();
 const CHILD_ONE = { number: 838, title: "Child one", repository_url: REPO_URL };
 const SUB_JSON = [
   [CHILD_ONE],
-  [{ number: 12, title: "Child two", repository_url: "https://api.github.com/repos/TychoHenzen/other" }],
+  [
+    {
+      number: 12,
+      title: "Child two",
+      repository_url: "https://api.github.com/repos/TychoHenzen/other",
+    },
+  ],
 ];
 
 function slotsFor(diff = DIFF, pbi = PBI_JSON, subs = SUB_JSON) {
@@ -58,8 +71,16 @@ test("one slot per changed file with added lines, criterion, and sub-issue, in o
     { slot: "file:docs/\u00fc.md", kind: "file", text: "docs/\u00fc.md" },
     { slot: "criterion:1", kind: "criterion", text: "AC-01 first" },
     { slot: "criterion:2", kind: "criterion", text: "AC-02 second" },
-    { slot: "sub-issue:TychoHenzen/dod-guard#838", kind: "sub-issue", text: "Child one" },
-    { slot: "sub-issue:TychoHenzen/other#12", kind: "sub-issue", text: "Child two" },
+    {
+      slot: "sub-issue:TychoHenzen/dod-guard#838",
+      kind: "sub-issue",
+      text: "Child one",
+    },
+    {
+      slot: "sub-issue:TychoHenzen/other#12",
+      kind: "sub-issue",
+      text: "Child two",
+    },
   ]);
 });
 
@@ -71,13 +92,21 @@ test("zero sub-issues is valid", () => {
   for (const subs of [[], [[]]]) {
     const slots = slotsFor(DIFF, PBI_JSON, subs);
     assert.equal(slots.length, 4);
-    assert.equal(slots.some((slot) => slot.slot.startsWith("sub-issue:")), false);
+    assert.equal(
+      slots.some((slot) => slot.slot.startsWith("sub-issue:")),
+      false,
+    );
   }
 });
 
 test("a PBI without acceptance-criteria checkbox items fails closed and names the PBI", () => {
-  const message = /PBI TychoHenzen\/dod-guard#837 has no checkbox item under ## Acceptance criteria/;
-  for (const body of ["## Acceptance criteria\n\n- plain bullet\n", "## Outcome\n\n- [ ] x\n", null]) {
+  const message =
+    /PBI TychoHenzen\/dod-guard#837 has no checkbox item under ## Acceptance criteria/;
+  for (const body of [
+    "## Acceptance criteria\n\n- plain bullet\n",
+    "## Outcome\n\n- [ ] x\n",
+    null,
+  ]) {
     assert.throws(() => slotsFor(DIFF, { ...PBI_JSON, body }), message);
   }
 });
@@ -93,7 +122,9 @@ test("a malformed PBI names its file", () => {
   // assert.throws tests a bare RegExp against String(error), which begins with
   // "Error: ", so the anchored pattern has to be matched against message.
   for (const value of malformed) {
-    assert.throws(() => pbiIssue(value, "pbi.json"), { message: /^pbi\.json: the PBI issue JSON needs/ });
+    assert.throws(() => pbiIssue(value, "pbi.json"), {
+      message: /^pbi\.json: the PBI issue JSON needs/,
+    });
   }
 });
 
@@ -126,7 +157,11 @@ test("an empty diff stops slot generation", () => {
 
 const SLOTS = [
   { slot: "file:src/a.mjs", kind: "file", text: "src/a.mjs" },
-  { slot: "criterion:1", kind: "criterion", text: "AC-01 <b>bold</b>\nwrapped" },
+  {
+    slot: "criterion:1",
+    kind: "criterion",
+    text: "AC-01 <b>bold</b>\nwrapped",
+  },
   { slot: "sub-issue:o/r#5", kind: "sub-issue", text: "Child" },
 ];
 const q = (id, lens, extra) => ({
@@ -138,9 +173,15 @@ const q = (id, lens, extra) => ({
   ...extra,
 });
 const PLAN = () => [
-  { slot: "file:src/a.mjs", questions: [q("F1", "review-pr-feature"), q("D1", "review-pr-design")] },
+  {
+    slot: "file:src/a.mjs",
+    questions: [q("F1", "review-pr-feature"), q("D1", "review-pr-design")],
+  },
   { slot: "criterion:1", questions: [q("R1", "review-pr-reliability")] },
-  { slot: "sub-issue:o/r#5", excluded: { lens: "review-pr-hygiene", reason: "Same work as criterion:1" } },
+  {
+    slot: "sub-issue:o/r#5",
+    excluded: { lens: "review-pr-hygiene", reason: "Same work as criterion:1" },
+  },
 ];
 
 test("a complete plan passes, and repaired and unanswered statuses are accepted too", () => {
@@ -152,16 +193,25 @@ test("a complete plan passes, and repaired and unanswered statuses are accepted 
 });
 
 test("a plan that is not an array is refused", () => {
-  assert.throws(() => requirePlan({}, SLOTS), /The review plan must be a JSON array/);
+  assert.throws(
+    () => requirePlan({}, SLOTS),
+    /The review plan must be a JSON array/,
+  );
 });
 
 test("a generated slot missing from the plan is named", () => {
   const plan = PLAN().filter((entry) => entry.slot !== "criterion:1");
-  assert.throws(() => requirePlan(plan, SLOTS), /Slots missing from the plan: criterion:1/);
+  assert.throws(
+    () => requirePlan(plan, SLOTS),
+    /Slots missing from the plan: criterion:1/,
+  );
 });
 
 test("a plan slot that was not generated is refused", () => {
-  const plan = [...PLAN(), { slot: "file:extra.mjs", questions: [q("F9", "review-pr-feature")] }];
+  const plan = [
+    ...PLAN(),
+    { slot: "file:extra.mjs", questions: [q("F9", "review-pr-feature")] },
+  ];
   assert.throws(
     () => requirePlan(plan, SLOTS),
     /Plan slot "file:extra\.mjs" was not generated from the diff and the PBI/,
@@ -169,26 +219,44 @@ test("a plan slot that was not generated is refused", () => {
 });
 
 test("a slot planned twice is refused", () => {
-  const plan = [...PLAN(), { slot: "file:src/a.mjs", questions: [q("F9", "review-pr-feature")] }];
-  assert.throws(() => requirePlan(plan, SLOTS), /Plan slot file:src\/a\.mjs appears more than once/);
+  const plan = [
+    ...PLAN(),
+    { slot: "file:src/a.mjs", questions: [q("F9", "review-pr-feature")] },
+  ];
+  assert.throws(
+    () => requirePlan(plan, SLOTS),
+    /Plan slot file:src\/a\.mjs appears more than once/,
+  );
 });
 
 test("a slot with neither questions nor an exclusion is refused", () => {
   const plan = PLAN();
   plan[1] = { slot: "criterion:1" };
-  assert.throws(() => requirePlan(plan, SLOTS), /Slot criterion:1 has neither questions nor an exclusion/);
+  assert.throws(
+    () => requirePlan(plan, SLOTS),
+    /Slot criterion:1 has neither questions nor an exclusion/,
+  );
 });
 
 test("a slot with an empty questions array is refused", () => {
   const plan = PLAN();
   plan[1] = { slot: "criterion:1", questions: [] };
-  assert.throws(() => requirePlan(plan, SLOTS), /Slot criterion:1 needs a non-empty questions array/);
+  assert.throws(
+    () => requirePlan(plan, SLOTS),
+    /Slot criterion:1 needs a non-empty questions array/,
+  );
 });
 
 test("a slot with both questions and an exclusion is refused", () => {
   const plan = PLAN();
-  plan[1] = { ...plan[1], excluded: { lens: "review-pr-hygiene", reason: "x" } };
-  assert.throws(() => requirePlan(plan, SLOTS), /Slot criterion:1 has both questions and an exclusion/);
+  plan[1] = {
+    ...plan[1],
+    excluded: { lens: "review-pr-hygiene", reason: "x" },
+  };
+  assert.throws(
+    () => requirePlan(plan, SLOTS),
+    /Slot criterion:1 has both questions and an exclusion/,
+  );
 });
 
 test("an incomplete question is refused and names its slot", () => {
@@ -212,7 +280,9 @@ test("an incomplete question is refused and names its slot", () => {
   }
   const plan = PLAN();
   plan[0].questions[0] = q(undefined, "review-pr-feature");
-  assert.throws(() => requirePlan(plan, SLOTS), { message: /^Question null in slot file:src\/a\.mjs/ });
+  assert.throws(() => requirePlan(plan, SLOTS), {
+    message: /^Question null in slot file:src\/a\.mjs/,
+  });
 });
 
 test("an incomplete exclusion is refused and names its slot", () => {
@@ -235,13 +305,19 @@ test("an incomplete exclusion is refused and names its slot", () => {
 test("a question id repeated across slots is refused", () => {
   const plan = PLAN();
   plan[1].questions[0].id = "F1";
-  assert.throws(() => requirePlan(plan, SLOTS), /Question F1 appears more than once/);
+  assert.throws(
+    () => requirePlan(plan, SLOTS),
+    /Question F1 appears more than once/,
+  );
 });
 
 test("a lens with no question or exclusion is refused", () => {
   const plan = PLAN();
   plan[2].excluded.lens = "review-pr-design";
-  assert.throws(() => requirePlan(plan, SLOTS), /No question or exclusion for review-pr-hygiene/);
+  assert.throws(
+    () => requirePlan(plan, SLOTS),
+    /No question or exclusion for review-pr-hygiene/,
+  );
 });
 
 test("slotsBlock lists every slot with its questions or exclusion, escaped", () => {

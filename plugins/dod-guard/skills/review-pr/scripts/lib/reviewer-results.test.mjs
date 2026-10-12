@@ -19,7 +19,11 @@ const ASSIGNED = new Map([
   ["review-pr-hygiene", new Set(["sub-issue:o/r#5"])],
 ]);
 const rulings = (reviewer) =>
-  [...ASSIGNED.get(reviewer)].map((slot) => ({ slot, status: "VERIFIED", evidence: "ok" }));
+  [...ASSIGNED.get(reviewer)].map((slot) => ({
+    slot,
+    status: "VERIFIED",
+    evidence: "ok",
+  }));
 
 function judgment(overrides) {
   return sharedJudgment({
@@ -48,7 +52,9 @@ test("a missing reviewer or envelope fails instead of reading as clean", () => {
     /Incomplete reviewer results[\s\S]*review-pr-feature: expected one result/,
   );
   const noRulings = complete([]).map((result) =>
-    result.reviewer === "review-pr-design" ? { ...result, rulings: undefined } : result,
+    result.reviewer === "review-pr-design"
+      ? { ...result, rulings: undefined }
+      : result,
   );
   assert.throws(
     () => judgmentFindings(noRulings, ASSIGNED),
@@ -56,7 +62,11 @@ test("a missing reviewer or envelope fails instead of reading as clean", () => {
   );
   const twice = [
     ...complete([]),
-    { reviewer: "review-pr-hygiene", rulings: rulings("review-pr-hygiene"), findings: [] },
+    {
+      reviewer: "review-pr-hygiene",
+      rulings: rulings("review-pr-hygiene"),
+      findings: [],
+    },
   ];
   assert.throws(() => judgmentFindings(twice, ASSIGNED), /got 2/);
   assert.throws(() => judgmentFindings({}, ASSIGNED), /must be a JSON array/);
@@ -66,7 +76,9 @@ test("a missing ruling names the reviewer and slot", () => {
   const results = [
     {
       reviewer: "review-pr-feature",
-      rulings: [{ slot: "file:src/review.js", status: "VERIFIED", evidence: "ok" }],
+      rulings: [
+        { slot: "file:src/review.js", status: "VERIFIED", evidence: "ok" },
+      ],
     },
   ];
   assert.throws(
@@ -95,7 +107,10 @@ test("a duplicate ruling is refused", () => {
   const results = [
     {
       reviewer: "review-pr-reliability",
-      rulings: [...rulings("review-pr-reliability"), ...rulings("review-pr-reliability")],
+      rulings: [
+        ...rulings("review-pr-reliability"),
+        ...rulings("review-pr-reliability"),
+      ],
     },
   ];
   assert.throws(
@@ -146,7 +161,12 @@ test("an excluded slot is assigned to the lens its exclusion names", () => {
 });
 
 test("a finding without a required field or an integer line fails", () => {
-  const blank = [{ reviewer: "review-pr-hygiene", findings: [judgment({ correction: " " })] }];
+  const blank = [
+    {
+      reviewer: "review-pr-hygiene",
+      findings: [judgment({ correction: " " })],
+    },
+  ];
   assert.throws(
     () => judgmentFindings(complete(blank), ASSIGNED),
     /review-pr-hygiene returned a finding without correction/,
@@ -161,12 +181,23 @@ test("a finding without a required field or an integer line fails", () => {
 
 test("one root cause in one file keeps the highest severity and its reviewer", () => {
   const results = [
-    { reviewer: "review-pr-feature", findings: [judgment({ severity: "MINOR" })] },
+    {
+      reviewer: "review-pr-feature",
+      findings: [judgment({ severity: "MINOR" })],
+    },
     {
       reviewer: "review-pr-reliability",
-      findings: [judgment({ severity: "BLOCKER", rootCause: "outdated  treated as STALE" })],
+      findings: [
+        judgment({
+          severity: "BLOCKER",
+          rootCause: "outdated  treated as STALE",
+        }),
+      ],
     },
-    { reviewer: "review-pr-design", findings: [judgment({ file: "src/other.js" })] },
+    {
+      reviewer: "review-pr-design",
+      findings: [judgment({ file: "src/other.js" })],
+    },
   ];
   const findings = judgmentFindings(complete(results), ASSIGNED);
   assert.deepEqual(

@@ -1,6 +1,9 @@
 import { REVIEWERS } from "./reviewer-results.mjs";
 import { acceptanceCriteria } from "../../../../lib/acceptance-criteria.mjs";
-import { API_REPOSITORY_URL, urlRepository } from "../../../../lib/repository-identity.mjs";
+import {
+  API_REPOSITORY_URL,
+  urlRepository,
+} from "../../../../lib/repository-identity.mjs";
 
 function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -89,7 +92,11 @@ function reviewSlots({ changedLines, pbi, subIssues }) {
     ...[...changedLines]
       .filter(([, lines]) => lines.size > 0)
       .map(([path]) => ({ slot: `file:${path}`, kind: "file", text: path })),
-    ...criteria.map((item, index) => ({ slot: `criterion:${index + 1}`, kind: "criterion", text: item.text })),
+    ...criteria.map((item, index) => ({
+      slot: `criterion:${index + 1}`,
+      kind: "criterion",
+      text: item.text,
+    })),
     ...subIssues.map((child) => ({
       slot: `sub-issue:${child.repository}#${child.number}`,
       kind: "sub-issue",
@@ -109,7 +116,10 @@ function oneLine(value) {
 
 // Text that contains HTML could close the details block early.
 function escapeHtml(value) {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 function namesFiles(question) {
@@ -151,7 +161,10 @@ function requireEntryShape(entry) {
       `The exclusion for slot ${slot} needs a reviewer lens and a reason`,
     );
   }
-  if (asked && !(Array.isArray(entry.questions) && entry.questions.length > 0)) {
+  if (
+    asked &&
+    !(Array.isArray(entry.questions) && entry.questions.length > 0)
+  ) {
     throw new Error(`Slot ${slot} needs a non-empty questions array`);
   }
 }
@@ -172,7 +185,9 @@ function requireQuestion(question, slot, ids) {
 }
 
 function entryLenses(entry) {
-  return entry.excluded ? [entry.excluded.lens] : entry.questions.map((question) => question.lens);
+  return entry.excluded
+    ? [entry.excluded.lens]
+    : entry.questions.map((question) => question.lens);
 }
 
 function requirePlanEntries(plan, generated) {
@@ -202,7 +217,9 @@ function requirePlanEntries(plan, generated) {
 
 function requireEveryLens(plan) {
   // Each judge needs at least one assigned slot to rule on.
-  const idle = REVIEWERS.filter((lens) => !plan.some((entry) => entryLenses(entry).includes(lens)));
+  const idle = REVIEWERS.filter(
+    (lens) => !plan.some((entry) => entryLenses(entry).includes(lens)),
+  );
   if (idle.length > 0) {
     throw new Error(`No question or exclusion for ${idle.join(", ")}`);
   }
@@ -218,7 +235,9 @@ function requirePlan(plan, slots) {
     plan,
     new Set(slots.map((item) => item.slot)),
   );
-  const missing = slots.map((item) => item.slot).filter((slot) => !planned.has(slot));
+  const missing = slots
+    .map((item) => item.slot)
+    .filter((slot) => !planned.has(slot));
   if (missing.length > 0) {
     throw new Error(`Slots missing from the plan: ${missing.join(", ")}`);
   }
@@ -227,12 +246,16 @@ function requirePlan(plan, slots) {
 
 function slotHeading(item) {
   const id = escapeHtml(item.slot);
-  return item.kind === "file" ? `**${id}**` : `**${id}**: ${escapeHtml(oneLine(item.text))}`;
+  return item.kind === "file"
+    ? `**${id}**`
+    : `**${id}**: ${escapeHtml(oneLine(item.text))}`;
 }
 
 function entryLines(entry) {
   if (entry.excluded) {
-    return [`- excluded for ${entry.excluded.lens}: ${escapeHtml(oneLine(entry.excluded.reason))}`];
+    return [
+      `- excluded for ${entry.excluded.lens}: ${escapeHtml(oneLine(entry.excluded.reason))}`,
+    ];
   }
   return entry.questions.map(
     (question) =>
@@ -244,7 +267,10 @@ function entryLines(entry) {
 // exclusion. Call only after requirePlan.
 function slotsBlock(plan, slots) {
   const bySlot = new Map(plan.map((entry) => [entry.slot, entry]));
-  const lines = ["<details>", `<summary>Review plan slots (${slots.length})</summary>`];
+  const lines = [
+    "<details>",
+    `<summary>Review plan slots (${slots.length})</summary>`,
+  ];
   for (const item of slots) {
     lines.push("", slotHeading(item), "", ...entryLines(bySlot.get(item.slot)));
   }
@@ -264,4 +290,11 @@ function slotsByLens(plan) {
   return byLens;
 }
 
-export { pbiIssue, requirePlan, reviewSlots, slotsBlock, slotsByLens, subIssueList };
+export {
+  pbiIssue,
+  requirePlan,
+  reviewSlots,
+  slotsBlock,
+  slotsByLens,
+  subIssueList,
+};

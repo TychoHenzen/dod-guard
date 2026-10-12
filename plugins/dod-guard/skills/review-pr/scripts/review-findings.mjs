@@ -55,7 +55,11 @@ function pbiInputs(args) {
 
 function slotCounts(slots) {
   const count = (kind) => slots.filter((slot) => slot.kind === kind).length;
-  return { files: count("file"), criteria: count("criterion"), subIssues: count("sub-issue") };
+  return {
+    files: count("file"),
+    criteria: count("criterion"),
+    subIssues: count("sub-issue"),
+  };
 }
 
 // The whole-repository report runs to megabytes, so it goes straight to a file
@@ -124,7 +128,16 @@ const REQUIRED = {
   scan: ["client", "registry", "root", "out"],
   existing: ["reviews"],
   slots: ["diff", "pbi", "sub-issues", "out"],
-  build: ["head", "scan", "diff", "pbi", "sub-issues", "plan", "results", "out"],
+  build: [
+    "head",
+    "scan",
+    "diff",
+    "pbi",
+    "sub-issues",
+    "plan",
+    "results",
+    "out",
+  ],
   report: ["review-id", "comments"],
 };
 const FULL_SHA = /^[0-9a-f]{40}$/;

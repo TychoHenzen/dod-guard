@@ -1,5 +1,10 @@
 import { judgmentFindings } from "./reviewer-results.mjs";
-import { requirePlan, reviewSlots, slotsBlock, slotsByLens } from "./review-slots.mjs";
+import {
+  requirePlan,
+  reviewSlots,
+  slotsBlock,
+  slotsByLens,
+} from "./review-slots.mjs";
 import { ruleScope } from "./rule-scope.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
