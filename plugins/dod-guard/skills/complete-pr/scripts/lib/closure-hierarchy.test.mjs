@@ -321,3 +321,13 @@ for (const { options, refusal } of VARIANTS) {
     assert.deepEqual(itemWrites, []);
   });
 }
+
+test("a helper-made not_planned close is still judged as a hierarchy record", () => {
+  const snapshot = hierarchyChain();
+  snapshot.issues.find(({ number }) => number === 901).body = "## Acceptance criteria\n\n- [ ] Own scope\n";
+  assert.deepEqual(planClosures(snapshot).reports.find((report) => report.issue === 901), {
+    issue: 901,
+    kind: "unverified-closed",
+    missing: ["unchecked acceptance criterion not mapped to a sub-issue: Own scope"],
+  });
+});

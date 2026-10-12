@@ -386,14 +386,28 @@ function walkPass(context, seeds) {
   return [...holds, ...limitOnly.map(([issue, reasons]) => ({ issue, reasons }))];
 }
 
+// An owner's not_planned hand close (an abandon or a fold) claims no delivery, so
+// there is nothing to verify. A helper-made not_planned close carries closure
+// evidence, and a malformed completion record or a supersedes root still claims
+// a delivery, so those are judged as before.
+function ownerAbandoned(context, number) {
+  const issue = issueFor(context.index, number);
+  if (issue?.state !== "closed" || issue.state_reason !== "not_planned") return false;
+  if (context.rootsOf(number).length > 0) return false;
+  const own = parseCompletionRecord(issue.comments);
+  return !(own.record || own.error || hasClosureEvidence(issue));
+}
+
 // Closed or Done records whose close has no verified evidence are reported
-// only: reopening or editing them would override an owner's decision.
+// only: reopening or editing them would override an owner's decision. An
+// owner's not_planned hand close is not reported.
 function unverifiedClosed(context) {
   const reports = [];
   for (const number of context.index.order) {
     if (planned(context, number)) continue;
     const done = itemStatus(itemFor(context.index, number)) === "Done";
     if (isOpen(issueFor(context.index, number)) && !done) continue;
+    if (ownerAbandoned(context, number)) continue;
     const evidence = closureEvidence(context, number);
     if (!evidence.verified) reports.push({ issue: number, kind: "unverified-closed", missing: evidence.missing });
   }
