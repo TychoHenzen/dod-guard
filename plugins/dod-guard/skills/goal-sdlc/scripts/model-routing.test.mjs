@@ -123,7 +123,7 @@ test("delegating skills refer to the routing standard", async () => {
   }
 });
 
-async function agentText(name) {
+function agentText(name) {
   return readFile(new URL(`agents/${name}.md`, pluginRoot), "utf8");
 }
 
@@ -142,7 +142,10 @@ const TOOLS_LINES = {
   "read-strong": "Read, Grep, Glob, Bash",
 };
 
-test("the cheap and read-only agents keep their exact tool allowlists", async () => {
+const ALLOWLIST_TITLE =
+  "the cheap and read-only agents keep their exact tool allowlists";
+
+test(ALLOWLIST_TITLE, async () => {
   for (const [name, tools] of Object.entries(TOOLS_LINES)) {
     assert.match(await agentText(name), line("tools", tools, ": "), name);
   }
@@ -151,96 +154,140 @@ test("the cheap and read-only agents keep their exact tool allowlists", async ()
 // Capability follows the agent and cost follows the model, so a cheap stage
 // that needs a skill, a GitHub write, or MCP runs on stage-strong at the cheap
 // tier and is still verified as cheap output.
+const SKILL_CAPABLE = [
+  "A skill-capable stage runs on `dod-guard:stage-strong` at its own tier's " +
+    "model and effort, cheap or strong.",
+  "invokes a skill, writes issue, pull request, or Project state, or needs " +
+    "an MCP connector",
+  "In Claude Code, pass the tier's `model` and `effort` on the Agent call.",
+  "spawn a cheap-tier skill-capable stage without that file, with " +
+    "`gpt-5.6-luna` and `max` at spawn time, and record it as " +
+    '"requested, not pinned".',
+  "Cheap-output verification applies by model tier, not by agent type",
+  "a readback of any issue, pull request, or Project state the step wrote",
+];
+
 test("a skill-capable stage runs on stage-strong at its own tier", () => {
-  assertPhrases(
-    standard,
-    [
-      "A skill-capable stage runs on `dod-guard:stage-strong` at its own tier's model and effort, cheap or strong.",
-      "invokes a skill, writes issue, pull request, or Project state, or needs an MCP connector",
-      "In Claude Code, pass the tier's `model` and `effort` on the Agent call.",
-      'spawn a cheap-tier skill-capable stage without that file, with `gpt-5.6-luna` and `max` at spawn time, and record it as "requested, not pinned".',
-      "Cheap-output verification applies by model tier, not by agent type",
-      "a readback of any issue, pull request, or Project state the step wrote",
-    ],
-    "model-routing.md",
-  );
+  assertPhrases(standard, SKILL_CAPABLE, "model-routing.md");
 });
 
-// A cheap worker cannot write the main thread's trailer and must not push
-// unverified work, so the dispatching main thread owns commit and push.
-test("the main thread commits and pushes verified cheap-tier changes", async () => {
-  assertPhrases(
-    standard,
-    [
-      "the changed files and staged state match the diff the step describes",
-      "the dispatching main thread commits the verified changes with its own attribution trailer, and pushes when the owning skill pushes.",
-      "Cheap workers never commit or push.",
-      "A failed check sends the same stage back once with the exact gap, under the failure-recovery rule in `standards/working-defaults.md`, with no commit or push.",
-    ],
-    "model-routing.md",
-  );
+// A row worker cannot write the main thread's trailer and must not push
+// unverified work, so the thread that dispatched it owns commit and push. A
+// run that owns a skill's procedure is that skill's main thread on any model.
+const COMMIT_OWNERSHIP = [
+  "the changed files and staged state match the diff the step describes",
+  "the dispatching main thread commits the verified changes with its own " +
+    "attribution trailer, and pushes when the owning skill pushes.",
+  "A worker dispatched for one planned step or row never commits or pushes, " +
+    "whatever its tier or agent; the dispatching main thread does.",
+  "A run that owns a skill's procedure, such as `/complete-pr` or " +
+    "`/fix-pr-review`, is that skill's main thread even on the cheap model, " +
+    "so it commits and pushes as the skill directs",
+  "its dispatcher checks every commit and push it reports by reading them " +
+    "back.",
+  "A failed check sends the same stage back once with the exact gap, under " +
+    "the failure-recovery rule in `standards/working-defaults.md`, with no " +
+    "commit or push.",
+];
+
+const COMMIT_TITLE =
+  "the main thread commits and pushes verified cheap-tier changes";
+
+test(COMMIT_TITLE, async () => {
+  assertPhrases(standard, COMMIT_OWNERSHIP, "model-routing.md");
   assert.doesNotMatch(standard, prose("every claimed commit exists"));
+  assert.doesNotMatch(standard, prose("Cheap workers never commit or push"));
   const stageCheap = await agentText("stage-cheap");
   assertPhrases(
     stageCheap,
-    ["stage them only when the brief says to stage", "so you never commit or push"],
+    [
+      "stage them only when the brief says to stage",
+      "so you never commit or push",
+    ],
     "stage-cheap.md",
   );
   assert.doesNotMatch(stageCheap, prose("Commit only when the brief asks"));
 });
 
+// stage-cheap stops on a step it cannot do, so the standard must say where
+// that step goes instead of letting it fall under the failed-check rule.
+const MISROUTED = [
+  "A `dod-guard:stage-cheap` report that a step is misrouted is not a " +
+    "failed check.",
+  "The main thread redispatches that step once on `dod-guard:stage-strong` " +
+    "at the same tier, as a skill-capable stage, and verifies the result as " +
+    "cheap-tier output.",
+];
+
+test("a misrouted cheap step is redispatched on stage-strong", () => {
+  assertPhrases(standard, MISROUTED, "model-routing.md");
+});
+
 // Read-only agents have no Write tool, so whoever owns the procedure persists
 // their plans, questions, and decisions.
-test("read-only agents return text and the owning thread writes handoff files", async () => {
+const READ_ONLY_RETURN = [
+  "Return your output as text in your final message, and write no file, " +
+    "Bash redirection and heredocs included.",
+  "The main thread writes any handoff file",
+];
+
+const TRIAGE_HANDOFF = [
+  "return questions as text; the owning thread writes them to a scratch " +
+    "file outside the repository",
+  "Return one decision per path:",
+  "The owning thread writes the decisions to the decisions file",
+];
+
+const HANDOFF_TITLE =
+  "read-only agents return text and the owning thread writes handoff files";
+
+test(HANDOFF_TITLE, async () => {
   assertPhrases(
     standard,
-    ["Read-only agents return their output as text.", "The main thread writes any handoff file"],
+    [
+      "Read-only agents return their output as text.",
+      "The main thread writes any handoff file",
+    ],
     "model-routing.md",
   );
   for (const name of ["read-cheap", "read-strong"]) {
-    assertPhrases(
-      await agentText(name),
-      [
-        "Return your output as text in your final message, and write no file, Bash redirection and heredocs included.",
-        "The main thread writes any handoff file",
-      ],
-      name,
-    );
+    assertPhrases(await agentText(name), READ_ONLY_RETURN, name);
   }
-  const triage = await readFile(new URL("standards/conflict-triage.md", pluginRoot), "utf8");
-  assertPhrases(
-    triage,
-    [
-      "return questions as text; the owning thread writes them to a scratch file outside the repository",
-      "Return one decision per path:",
-      "The owning thread writes the decisions to the decisions file",
-    ],
-    "conflict-triage.md",
-  );
+  const triageUrl = new URL("standards/conflict-triage.md", pluginRoot);
+  const triage = await readFile(triageUrl, "utf8");
+  assertPhrases(triage, TRIAGE_HANDOFF, "conflict-triage.md");
 });
 
 // Each workaround answers a tool failure a cheap worker hit in a friction log.
+const STAGE_CHEAP_WORKAROUNDS = [
+  "When the step needs a skill, a GitHub write, or an MCP connector, stop " +
+    "and report it as misrouted",
+  "That step belongs on `dod-guard:stage-strong` at the cheap tier.",
+  "Write file content with the Write tool instead of heredocs or echo " +
+    "redirection",
+  "When Edit cannot match a line that holds a non-ASCII character",
+  "use Write to create a small node script that builds the character from " +
+    "its number with `String.fromCodePoint`, instead of a backslash-u " +
+    "escape typed into the script source",
+  "confirm the result with a byte check",
+  "print the offset and value of every byte above 0x7F",
+  "The check passes when the edited line reads as the plan says and every " +
+    "printed byte belongs to a character the plan keeps or writes.",
+  "Run `gh api --slurp` without `--jq`",
+];
+
+const READ_CHEAP_WORKAROUNDS = [
+  "Scope each search to the files a question names.",
+  "Run Grep in files-with-matches or count mode first",
+  "Run `gh api --slurp` without `--jq`",
+  "filter its output in the same command by piping it into `node` or " +
+    "`grep`, or narrow the request so it needs no filter.",
+];
+
 test("the cheap agents carry the tool-failure workarounds", async () => {
-  assertPhrases(
-    await agentText("stage-cheap"),
-    [
-      "When the step needs a skill, a GitHub write, or an MCP connector, stop and report it as misrouted",
-      "That step belongs on `dod-guard:stage-strong` at the cheap tier.",
-      "Write file content with the Write tool instead of heredocs or echo redirection",
-      "When Edit cannot match a line that holds a non-ASCII character",
-      "`String.fromCodePoint`, instead of a backslash-u escape typed into the script source",
-      "confirm the result with a byte check",
-      "Run `gh api --slurp` without `--jq`",
-    ],
-    "stage-cheap.md",
-  );
-  assertPhrases(
-    await agentText("read-cheap"),
-    [
-      "Scope each search to the files a question names.",
-      "Run Grep in files-with-matches or count mode first",
-      "Run `gh api --slurp` without `--jq`",
-    ],
-    "read-cheap.md",
-  );
+  const stageCheap = await agentText("stage-cheap");
+  assertPhrases(stageCheap, STAGE_CHEAP_WORKAROUNDS, "stage-cheap.md");
+  const readCheap = await agentText("read-cheap");
+  assertPhrases(readCheap, READ_CHEAP_WORKAROUNDS, "read-cheap.md");
+  assert.doesNotMatch(readCheap, prose("filter its output in a separate step"));
 });

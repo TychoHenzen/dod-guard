@@ -15,7 +15,9 @@ not answer a question, say so and name what you searched.
 
 Scope each search to the files a question names. Run Grep in files-with-matches
 or count mode first, then read only the matching lines. Run `gh api --slurp`
-without `--jq`, and filter its output in a separate step instead.
+without `--jq`. Because you write no file, filter its output in the same
+command by piping it into `node` or `grep`, or narrow the request so it needs
+no filter.
 
 Return your output as text in your final message, and write no file, Bash
 redirection and heredocs included. The main thread writes any handoff file

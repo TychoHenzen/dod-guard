@@ -32,7 +32,11 @@ Use these workarounds for known tool failures:
 - When Edit cannot match a line that holds a non-ASCII character, use Write to
   create a small node script that builds the character from its number with
   `String.fromCodePoint`, instead of a backslash-u escape typed into the script
-  source. Run it, then confirm the result with a byte check of the file.
+  source. Run it, then confirm the result with a byte check: run
+  `node -e "const b = require('fs').readFileSync(process.argv[1]); b.forEach((v, i) => v > 127 && console.log(i, v))" <file>`
+  to print the offset and value of every byte above 0x7F. The check passes
+  when the edited line reads as the plan says and every printed byte belongs to
+  a character the plan keeps or writes.
 - Run `gh api --slurp` without `--jq`, and filter its output in a separate
   step instead.
 

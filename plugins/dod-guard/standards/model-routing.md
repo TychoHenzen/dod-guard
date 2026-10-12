@@ -108,12 +108,22 @@ cheap-tier output, the main thread checks that:
 
 After every check passes, the dispatching main thread commits the verified
 changes with its own attribution trailer, and pushes when the owning skill
-pushes. Cheap workers never commit or push.
+pushes. A worker dispatched for one planned step or row never commits or
+pushes, whatever its tier or agent; the dispatching main thread does. A run
+that owns a skill's procedure, such as `/complete-pr` or `/fix-pr-review`, is
+that skill's main thread even on the cheap model, so it commits and pushes as
+the skill directs, and its dispatcher checks every commit and push it reports
+by reading them back.
 
 A failed check sends the same stage back once with the exact gap, under the
 failure-recovery rule in `standards/working-defaults.md`, with no commit or
 push. The run does not advance on unverified output. A second failure stops
 that stage as a blocker.
+
+A `dod-guard:stage-cheap` report that a step is misrouted is not a failed
+check. The main thread redispatches that step once on `dod-guard:stage-strong`
+at the same tier, as a skill-capable stage, and verifies the result as
+cheap-tier output.
 
 ## Advisor
 
