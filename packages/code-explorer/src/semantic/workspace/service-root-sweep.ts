@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { lstatSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { removeServiceTree } from "./owned-resources.js";
@@ -10,12 +10,17 @@ export type SweepDeps = {
   directory: string;
   now: number;
   ownPid: number;
+  /** Undefined where the platform has no uid (Windows). */
+  ownUid: number | undefined;
   isAlive: (pid: number) => boolean;
   remove: (path: string) => void;
   writeError: (line: string) => void;
 };
 
-/** Only ESRCH proves the owner is gone. EPERM means it exists under another user. */
+/**
+ * Only ESRCH proves the owner is gone. EPERM means it exists under another
+ * user.
+ */
 export function isOwnerAlive(
   pid: number,
   kill: (pid: number, signal: 0) => unknown = process.kill,
@@ -77,6 +82,9 @@ export function defaultSweepDeps(): SweepDeps {
     directory: tmpdir(),
     now: Date.now(),
     ownPid: process.pid,
+    // ASSUMPTION: Windows has no getuid, and its tmpdir() is the per-user
+    // %LOCALAPPDATA%\Temp, so every candidate there belongs to this user.
+    ownUid: process.getuid?.(),
     isAlive: (pid) => isOwnerAlive(pid),
     remove: removeServiceTree,
     writeError: (line) => process.stderr.write(`${line}\n`),
@@ -97,9 +105,17 @@ function serviceRootNames(directory: string): string[] {
   }
 }
 
+/**
+ * lstat, not stat: a link named like a root is never followed. A root that
+ * another user owns is never touched, so a shared tmpdir cannot turn the
+ * sweep against that user's files.
+ */
 function verdictFor(path: string, deps: SweepDeps): SweepVerdict {
   try {
-    return classifyServiceRoot(path, statSync(path).mtimeMs, deps);
+    const entry = lstatSync(path);
+    if (!entry.isDirectory()) return "keep";
+    if (deps.ownUid !== undefined && entry.uid !== deps.ownUid) return "keep";
+    return classifyServiceRoot(path, entry.mtimeMs, deps);
   } catch {
     // A root that vanished mid-sweep has nothing left to remove.
     return "keep";

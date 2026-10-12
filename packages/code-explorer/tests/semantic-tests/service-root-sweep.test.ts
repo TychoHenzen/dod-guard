@@ -1,15 +1,20 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+  chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  statSync,
+  symlinkSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import process from "node:process";
 import { it } from "node:test";
 import { createNativePythonMirror } from "../../src/semantic/python-mirror/python-mirror-runtime.js";
 import { makeTreeReadOnly } from "../../src/semantic/python-mirror/python-mirror-permissions.js";
@@ -18,9 +23,16 @@ import { removeServiceTree } from "../../src/semantic/workspace/owned-resources.
 import { OWNER_MARKER_FILE } from "../../src/semantic/workspace/service-root.js";
 import {
   isOwnerAlive,
+  type SweepDeps,
   sweepStaleServiceRoots,
 } from "../../src/semantic/workspace/service-root-sweep.js";
 import { project } from "../testing/runtime/python-mirror-runtime-test-support.js";
+
+const symlinkSkip =
+  process.platform === "win32"
+    ? "creating a symlink needs elevation on Windows"
+    : false;
+const dayAgo = () => new Date(Date.now() - 25 * 60 * 60 * 1000);
 
 it("removes dead-owner and old unmarked roots, logs each, keeps live, own, young and foreign roots", () => {
   const directory = mkdtempSync(join(tmpdir(), "code-explorer-sweep-fixture-"));
@@ -40,21 +52,13 @@ it("removes dead-owner and old unmarked roots, logs each, keeps live, own, young
       pid: process.pid,
     });
     const old = makeRoot(directory, "code-explorer-native-old");
-    const past = new Date(Date.now() - 25 * 60 * 60 * 1000);
-    utimesSync(old, past, past);
+    utimesSync(old, dayAgo(), dayAgo());
     const young = makeRoot(directory, "code-explorer-native-young");
     const foreign = makeRoot(directory, "code-explorer-sensitive-native-x", {
       pid: deadPid,
     });
     const lines: string[] = [];
-    const removed = sweepStaleServiceRoots({
-      directory,
-      now: Date.now(),
-      ownPid: process.pid,
-      isAlive: (pid) => isOwnerAlive(pid),
-      remove: removeServiceTree,
-      writeError: (line) => lines.push(line),
-    });
+    const removed = sweepStaleServiceRoots(sweepDeps(directory, lines));
     assert.deepEqual([...removed].sort(), [
       "code-explorer-native-dead",
       "code-explorer-native-old",
@@ -71,6 +75,76 @@ it("removes dead-owner and old unmarked roots, logs each, keeps live, own, young
     removeServiceTree(directory);
   }
 });
+
+it("keeps dead-owner and old unmarked roots that another user owns", () => {
+  const directory = mkdtempSync(join(tmpdir(), "code-explorer-sweep-fixture-"));
+  try {
+    const deadPid = spawnSync(process.execPath, ["-e", ""]).pid;
+    const dead = makeRoot(directory, "code-explorer-native-dead", {
+      pid: deadPid,
+    });
+    const old = makeRoot(directory, "code-explorer-pyright-old");
+    utimesSync(old, dayAgo(), dayAgo());
+    const otherUid = lstatSync(dead).uid + 1;
+    const removed = sweepStaleServiceRoots({
+      ...sweepDeps(directory),
+      ownUid: otherUid,
+    });
+    assert.deepEqual(removed, []);
+    assert.equal(existsSync(dead), true);
+    assert.equal(existsSync(old), true);
+  } finally {
+    removeServiceTree(directory);
+  }
+});
+
+it(
+  "removes a dead-owner root holding a link without touching its target",
+  { skip: symlinkSkip },
+  () => {
+    const directory = mkdtempSync(join(tmpdir(), "code-explorer-sweep-fixture-"));
+    const outside = mkdtempSync(join(tmpdir(), "code-explorer-sweep-victim-"));
+    try {
+      const victim = join(outside, "secret.txt");
+      writeFileSync(victim, "secret\n");
+      chmodSync(victim, 0o600);
+      const deadPid = spawnSync(process.execPath, ["-e", ""]).pid;
+      const dead = makeRoot(directory, "code-explorer-native-dead", {
+        pid: deadPid,
+      });
+      symlinkSync(victim, join(dead, "link"));
+      const removed = sweepStaleServiceRoots(sweepDeps(directory));
+      assert.deepEqual(removed, ["code-explorer-native-dead"]);
+      assert.equal(existsSync(dead), false);
+      assert.equal(readFileSync(victim, "utf8"), "secret\n");
+      assert.equal(statSync(victim).mode & 0o777, 0o600);
+    } finally {
+      removeServiceTree(directory);
+      removeServiceTree(outside);
+    }
+  },
+);
+
+it(
+  "never follows a link named like a service root",
+  { skip: symlinkSkip },
+  () => {
+    const directory = mkdtempSync(join(tmpdir(), "code-explorer-sweep-fixture-"));
+    const outside = mkdtempSync(join(tmpdir(), "code-explorer-sweep-victim-"));
+    try {
+      const target = join(outside, "code-explorer-native-target");
+      mkdirSync(target);
+      utimesSync(target, dayAgo(), dayAgo());
+      symlinkSync(target, join(directory, "code-explorer-native-link"), "dir");
+      const removed = sweepStaleServiceRoots(sweepDeps(directory));
+      assert.deepEqual(removed, []);
+      assert.equal(existsSync(target), true);
+    } finally {
+      removeServiceTree(directory);
+      removeServiceTree(outside);
+    }
+  },
+);
 
 it("isOwnerAlive treats ESRCH as dead and EPERM as alive", () => {
   const gone = Object.assign(new Error("no such process"), { code: "ESRCH" });
@@ -130,6 +204,18 @@ function makeRoot(
       `${JSON.stringify(marker)}\n`,
     );
   return path;
+}
+
+function sweepDeps(directory: string, lines: string[] = []): SweepDeps {
+  return {
+    directory,
+    now: Date.now(),
+    ownPid: process.pid,
+    ownUid: process.getuid?.(),
+    isAlive: (pid) => isOwnerAlive(pid),
+    remove: removeServiceTree,
+    writeError: (line) => lines.push(line),
+  };
 }
 
 function readOwner(root: string): unknown {
