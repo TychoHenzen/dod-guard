@@ -717,8 +717,9 @@ evidence (T2), missing trivial documentary tests (T3), ambiguity skips (T4),
 missing declared boundary tests (T5), missing tests for linked bug behavior
 (T6), repeated runtime failure clusters (T7), explicitly linked uncovered
 regions overlapping a failure (T8), and tests over an environment-specific
-budget (T9). Findings are
-review evidence with a remediation, never deterministic commit failures.
+budget (T9). Every finding carries severity `medium` on the shared
+high/medium/low scale. Findings are report-only advisory evidence with a
+remediation, never deterministic commit failures.
 
 Coverage is a gap signal. A percentage does not prove behavior quality, and a
 missing provider report is `unavailable`, not zero. The manifest normalizes

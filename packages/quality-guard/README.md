@@ -78,8 +78,10 @@ Smallest useful manifest:
 }
 ```
 
-The report emits review-only T1-T9 findings with remediation and evidence
-payloads. T1 checks declared behavior coverage, T2 checks coverage evidence,
+The report emits T1-T9 findings with remediation and evidence payloads. Every
+finding carries severity `medium` on the shared high/medium/low scale and
+stays report-only advisory evidence.
+T1 checks declared behavior coverage, T2 checks coverage evidence,
 T3 checks trivial documentary tests, T4 checks ambiguity skips, T5 checks
 boundaries, T6 checks linked bug regressions, T7 clusters repeated runtime
 failures, T8 correlates explicitly linked uncovered behavior regions with

@@ -1,4 +1,7 @@
+import type { Severity } from "#quality-guard-severity";
 import type { Evidence } from "../types.js";
+
+const TEST_QUALITY_SEVERITY: Severity = "medium";
 
 export function makeFinding(input: {
   heuristic: string;
@@ -8,7 +11,7 @@ export function makeFinding(input: {
   remediation: string;
   evidence: Record<string, unknown>;
 }) {
-  return { ...input, severity: "review" as const, line: 1 as const };
+  return { ...input, severity: TEST_QUALITY_SEVERITY, line: 1 as const };
 }
 
 export function activeTests(evidence: Evidence, behaviorId: string) {
