@@ -49,14 +49,31 @@ When it reports `found: true`, report that review's recommendation, head, and
 URL, and stop. Commits pushed after it, such as `/fix-pr-review` remediation, do
 not start another review unless the user asks for one.
 
-## 3. Diff
+## 3. Diff and slots
 
 Find the merge base with the PR base branch and save
 `git diff --unified=0 --no-ext-diff --no-color --src-prefix=a/ --dst-prefix=b/ <merge-base> HEAD`
 as the diff file. The explicit prefixes override a user's `diff.mnemonicPrefix`
-or `diff.noprefix` setting. The build step reads
-the changed files and their added lines from this diff, decoding Git's quoted
-paths, so no separate file list is needed.
+or `diff.noprefix` setting. The scripts read the changed files and their added
+lines from this diff, decoding Git's quoted paths, so no separate file list is
+needed.
+
+Save the PBI issue (`gh api "repos/{owner}/{repo}/issues/{n}"`) and its
+sub-issues (`gh api --paginate --slurp "repos/{owner}/{repo}/issues/{n}/sub_issues?per_page=100"`),
+then run:
+
+```text
+node "<skill-dir>/scripts/review-findings.mjs" slots --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --out=<slots.json>
+```
+
+It writes one slot per review target: `file:<path>` for each changed file with
+at least one added line, `criterion:<n>` for each checkbox item under the PBI's
+`## Acceptance criteria`, checked or not, in document order, and
+`sub-issue:<owner/name>#<number>` for each linked sub-issue. Deletion-only
+files, pure renames, and binary files get no slot. It stops and names the PBI
+when the PBI has no checkbox item under `## Acceptance criteria`, and names the
+file when an input is missing or malformed. A PBI without sub-issues is valid.
+The slots are fixed: the planner cannot add, drop, or rename one.
 
 ## 4. Scan
 
@@ -81,39 +98,43 @@ such as `line-length` and the comment rules cover only the lines this PR adds.
 
 Run the review as the plan, investigate, and judge split in
 `standards/model-routing.md`. Every stage gets one shared brief: PR number and
-URL, base and head SHAs, the changed-file list, the diff file path, the scanner
+URL, base and head SHAs, the slots file, the diff file path, the scanner
 results for the changed files, the PBI acceptance criteria and sub-issues
 verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
 
-1. **Plan.** One `dod-guard:read-strong` planner returns JSON questions for
-   the four lenses, at least one per lens: `review-pr-feature`,
-   `review-pr-design`, `review-pr-reliability`, and `review-pr-hygiene`. Each
-   question has an `id`, its `lens`, the `question`, the files to read, and
-   the risk it targets. Ids are unique across all four lenses, for example
-   with the lens prefixes `F`, `D`, `R`, and `H`. Together the questions name
-   every changed file in their `files` lists and ask about every acceptance
-   criterion and linked sub-issue. A changed file that needs no question gets
-   an `excluded` entry for one lens whose `question` states why.
+1. **Plan.** One `dod-guard:read-strong` planner fills every slot in the slots
+   file and returns the plan as a JSON array with one entry per slot, either
+   `{ "slot", "questions" }` or `{ "slot", "excluded": { "lens", "reason" } }`.
+   Each question has an `id`, its `lens`, the `question`, the `files` to read,
+   and the risk it targets. The lenses are `review-pr-feature`,
+   `review-pr-design`, `review-pr-reliability`, and `review-pr-hygiene`, and
+   every lens gets at least one question or exclusion. Ids are unique across
+   all four lenses, for example with the lens prefixes `F`, `D`, `R`, and `H`.
+   A slot that needs no question gets one exclusion that names the lens that
+   owns it and the reason; a slot never has both. The planner copies every
+   slot id exactly and adds none.
 2. **Investigate.** `dod-guard:read-cheap` investigators answer every
-   question except `excluded` entries, batched by changed-file group with at
-   most eight questions per investigator. Each answer gives the question id,
-   the cited path and line, and the fact found there.
+   question, batched by slot with at most eight questions per investigator.
+   Each answer gives the slot, the question id, the cited path and line, and
+   the fact found there. Nobody investigates an exclusion.
 3. **Verify.** Before judging, the main thread checks every answer under the
    cheap-output rule in that standard, with the reviewed head as the accepted
    head. Send a failed batch back once with the exact gap; if it fails again,
-   stop without posting and name the batch. Save a questions JSON array of
-   `{ "lens", "id", "question", "files", "status" }` objects, where `status`
-   is `verified`, `repaired` (verified after that one repair), `unanswered`
-   (the investigator reported that the repository does not answer it), or
-   `excluded` (a planned exclusion that nobody investigates). The build
-   refuses a plan that leaves a changed file unnamed.
+   stop without posting and name the batch. Save the plan JSON with a
+   `status` on each question: `verified`, `repaired` (verified after that one
+   repair), or `unanswered` (the investigator reported that the repository
+   does not answer it). The build regenerates the slots and refuses a plan
+   that misses, adds, or leaves empty a slot.
 4. **Judge.** Dispatch the four reviewers at once. Each receives the shared
-   brief, its lens's questions, and their verified answers, and judges from
-   that evidence instead of re-reading the whole diff. A judge settles each
+   brief and the slots assigned to its lens, with their questions, answers,
+   and answer statuses or their exclusions, and judges from that evidence
+   instead of re-reading the whole diff. It returns one ruling for every slot
+   assigned to its lens. A slot is assigned to a lens when it has a question
+   of that lens or an exclusion that names that lens. A judge settles each
    `unanswered` question of its lens from the files that question names, or
-   reports the gap as a finding; it never counts one as passing. A judge also
-   receives its lens's `excluded` entries and reports one as a finding when
-   its reason does not hold for the named files.
+   reports the gap as a finding; it never counts one as passing. A judge
+   reports an exclusion assigned to its lens as a finding when its reason does
+   not hold.
 
 - In Claude Code, use the Agent tool with the model and effort of each
   stage's tier: `dod-guard:read-strong` plans, `dod-guard:read-cheap`
@@ -124,26 +145,41 @@ verbatim, and the governing `AGENTS.md` and `CLAUDE.md` paths.
   explorer with the full agent definition from `<plugin-root>/agents/` in its
   message, and record the stage as "requested, not pinned".
 
-Each returns one JSON object with `reviewer`, `coverage`, and `findings`. Save
-the four objects as one JSON array. When an agent returns malformed JSON, send
-it one correction request for the same review in the exact format. If it fails
-again, stop without posting and name the reviewer: a review is posted once per
-PR, so a missing angle cannot be filled in later. The build step refuses
-results that lack any of the four reviewers.
+Each returns one JSON object with `reviewer`, `rulings`, and `findings`.
+`rulings` holds one `{ "slot", "status", "evidence" }` entry for every slot
+assigned to that reviewer's lens, with a `status` of `VERIFIED` or `FINDING`.
+Save the four objects as one JSON array. When an agent returns malformed JSON,
+send it one correction request for the same review in the exact format. If it
+fails again, stop without posting and name the reviewer: a review is posted
+once per PR, so a missing angle cannot be filled in later. The build step
+refuses results that lack any of the four reviewers, and names the reviewer and
+slot for a missing, duplicate, or unassigned ruling or an unknown status.
+It also refuses a result whose reviewer is not one of the four, and a
+`FINDING` ruling from a reviewer that returned no findings.
 
 ## 6. Build and post
 
 ```text
-node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --results=<results.json> --questions=<questions.json> --out=<payload.json>
+node "<skill-dir>/scripts/review-findings.mjs" build --head=<full 40-character head SHA> --scan=<scan.json> --diff=<unified0.diff> --pbi=<pbi.json> --sub-issues=<sub-issues.json> --plan=<plan.json> --results=<results.json> --out=<payload.json>
 ```
 
-It groups scanner findings into one comment per changed file, dedupes reviewer
-findings by file and root cause, and posts every finding as an inline comment
-so each gets a `GH-<id>`. It lists the planned questions, with each one's
-status, in a collapsed `<details>` block in the review body. A finding whose
-cited line this PR did not add moves to the nearest added line, and its body names the cited location.
-Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A file's scanner
-findings are `MAJOR` when any is `high`, otherwise `MINOR`.
+It regenerates the slots from `--diff`, `--pbi`, and `--sub-issues`, never
+from a slot list the planner returns. It refuses the plan, naming the slot or
+question id, when a generated slot is missing, a planned slot was not
+generated, a slot has neither questions nor an exclusion or has both, a
+question or exclusion is incomplete, a question id repeats, or a lens has no
+question or exclusion. It groups scanner findings into one comment per changed
+file, dedupes reviewer findings by file and root cause, and posts every
+finding as an inline comment with its own `GH-<id>`. When the diff adds no
+line, there is nothing to anchor a comment on, so the findings are listed in
+the review body without a `GH-<id>`. It lists every slot with its questions
+and their statuses, or its exclusion lens and reason, in a collapsed
+`<details>` block in the review body. When the body would pass GitHub's
+65536-character limit, the build refuses before anything is posted; shorten
+the question text in the saved plan and rebuild. A finding whose cited line
+this PR did not add moves to the nearest added line, and its body names the
+cited location. Severity: reviewer `BLOCKER`/`MAJOR`/`MINOR` as given. A
+file's scanner findings are `MAJOR` when any is `high`, otherwise `MINOR`.
 Recommendation: any `BLOCKER` is `BLOCK`, any
 other finding is `REQUEST_CHANGES`, none is `APPROVE`.
 

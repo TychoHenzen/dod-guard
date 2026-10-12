@@ -1,5 +1,10 @@
 import { judgmentFindings } from "./reviewer-results.mjs";
-import { questionsBlock, requirePlanCoverage } from "./review-questions.mjs";
+import {
+  requirePlan,
+  reviewSlots,
+  slotsBlock,
+  slotsByLens,
+} from "./review-slots.mjs";
 import { ruleScope } from "./rule-scope.mjs";
 import { parseChangedLines } from "./unified-diff.mjs";
 
@@ -132,7 +137,7 @@ function countSeverities(findings) {
   return counts;
 }
 
-function reviewBody({ headSha, recommendation, counts, questions, unanchored }) {
+function reviewBody({ headSha, recommendation, counts, block, unanchored }) {
   const lines = [
     marker(headSha, recommendation),
     "## dod-guard review",
@@ -140,7 +145,7 @@ function reviewBody({ headSha, recommendation, counts, questions, unanchored }) 
     `Recommendation: **${recommendation}**`,
     `Findings: ${counts.BLOCKER} BLOCKER, ${counts.MAJOR} MAJOR, ${counts.MINOR} MINOR.`,
     "",
-    questionsBlock(questions),
+    block,
   ];
   for (const finding of unanchored) {
     const heading = `### \`${finding.file}:${finding.line}\` (no added line to anchor on)`;
@@ -149,36 +154,61 @@ function reviewBody({ headSha, recommendation, counts, questions, unanchored }) 
   return lines.join("\n");
 }
 
-function buildReview({ headSha, scan, diff, results, questions }) {
-  const changedLines = parseChangedLines(diff);
-  // Approving a review that saw no changed file would be false.
-  if (changedLines.size === 0) {
-    throw new Error("The diff names no changed files");
+// ASSUMPTION: GitHub rejects a pull request review body over 65536 characters.
+// The review is posted once, so the build refuses before that single attempt.
+const MAX_REVIEW_BODY = 65536;
+
+function requirePostableBody(body, slotCount) {
+  if (body.length > MAX_REVIEW_BODY) {
+    throw new Error(
+      `The review body is ${body.length} characters, over the ` +
+        `${MAX_REVIEW_BODY}-character limit, with ${slotCount} slots. ` +
+        "Nothing was posted; shorten question text in the plan and rebuild.",
+    );
   }
-  requirePlanCoverage(questions, [...changedLines.keys()]);
+  return body;
+}
+
+function anchoredFindings({ scan, changedLines, results, plan }) {
   const fallback = firstAnchor(changedLines);
-  const raw = [
-    ...judgmentFindings(results),
+  return [
+    ...judgmentFindings(results, slotsByLens(plan)),
     ...[...scannerGroups(scan, changedLines)].map(([file, group]) =>
       scannerFinding(file, group),
     ),
-  ];
-  const findings = raw.map((finding) =>
-    anchor(finding, changedLines, fallback),
-  );
+  ].map((finding) => anchor(finding, changedLines, fallback));
+}
+
+function buildReview({ headSha, scan, diff, results, plan, pbi, subIssues }) {
+  const changedLines = parseChangedLines(diff);
+  // The build regenerates the slots instead of trusting a list the planner
+  // returns.
+  const slots = reviewSlots({ changedLines, pbi, subIssues });
+  requirePlan(plan, slots);
+  const findings = anchoredFindings({ scan, changedLines, results, plan });
   const recommendation = recommendationFor(
     findings.map((finding) => finding.severity),
   );
   const counts = countSeverities(findings);
   const inline = findings.filter((finding) => finding.anchored);
   const unanchored = findings.filter((finding) => !finding.anchored);
+  const body = requirePostableBody(
+    reviewBody({
+      headSha,
+      recommendation,
+      counts,
+      block: slotsBlock(plan, slots),
+      unanchored,
+    }),
+    slots.length,
+  );
   return {
     recommendation,
     counts,
     payload: {
       commit_id: headSha,
       event: "COMMENT",
-      body: reviewBody({ headSha, recommendation, counts, questions, unanchored }),
+      body,
       comments: inline.map(({ anchored, body }) => ({
         path: anchored.path,
         line: anchored.line,
