@@ -143,13 +143,18 @@ function readPages(read, endpoint) {
 }
 
 // github-client's own shape checks name an endpoint only inside their text, so their failures are
-// restated as read failures for the endpoint they came from.
+// restated as read failures for the endpoint they came from. A read failure built here passes through
+// unchanged, also when github-client wrapped it to name its endpoint, so the message names the failed
+// read once.
 function atEndpoint(endpoint, work) {
   try {
     return work();
   } catch (error) {
     if (error instanceof SnapshotReadError) {
       throw error;
+    }
+    if (error?.cause instanceof SnapshotReadError) {
+      throw error.cause;
     }
     throw readFailure(endpoint, messageOf(error), error);
   }

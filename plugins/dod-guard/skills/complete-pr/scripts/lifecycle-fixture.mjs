@@ -17,7 +17,7 @@ export const ITEM_NODE_IDS = [
   "PVTI_parent",
 ];
 export const ITEM_NUMERIC_IDS = new Map(ITEM_NODE_IDS.map((itemId, index) => [itemId, 256_202_820 + index]));
-export const ITEM_NODE_BY_ISSUE = new Map([
+const ITEM_NODE_BY_ISSUE = new Map([
   [665, ITEM_NODE_IDS[0]],
   [666, ITEM_NODE_IDS[1]],
   [667, ITEM_NODE_IDS[2]],
@@ -44,6 +44,10 @@ export function issueMarker(number) {
 
 function commandResult(data, status = 0, stderr = "") {
   return { status, stderr, stdout: data === undefined ? "" : JSON.stringify(data) };
+}
+
+function exactHeadCheckRun(id, name) {
+  return { id, app: { id: 15_368 }, conclusion: "success", head_sha: HEAD_SHA, name, status: "completed" };
 }
 
 function formValues(args, prefix) {
@@ -154,8 +158,13 @@ export function createRecordingTransport({
     }
     // build-test ran twice on the head, as a pull_request run and a later workflow_dispatch run.
     if (endpoint === `repos/${REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100`) {
-      const run = (id, name) => ({ id, app: { id: 15_368 }, conclusion: "success", head_sha: HEAD_SHA, name, status: "completed" });
-      return commandResult({ check_runs: [run(101, "build-test"), run(102, "static-analysis"), run(103, "build-test")] });
+      return commandResult({
+        check_runs: [
+          exactHeadCheckRun(101, "build-test"),
+          exactHeadCheckRun(102, "static-analysis"),
+          exactHeadCheckRun(103, "build-test"),
+        ],
+      });
     }
     if (endpoint === `repos/${REPOSITORY}/commits/${HEAD_SHA}/status?per_page=100`) {
       return commandResult({ sha: HEAD_SHA, statuses: [] });

@@ -167,7 +167,7 @@ function summarizeResults(name, results) {
   return { bucket: "pass", name, state: results[0].state };
 }
 
-function fallbackCheck(definition, checkRuns, statuses, headSha) {
+function requiredCheckResult(definition, checkRuns, statuses, headSha) {
   const namedRuns = checkRuns.filter((run) => run.name === definition.name);
   const exactRuns = namedRuns.filter((run) => run.head_sha === headSha);
   const namedStatuses = statuses.filter((status) => status.context === definition.name);
@@ -191,7 +191,9 @@ function fallbackCheck(definition, checkRuns, statuses, headSha) {
 }
 
 function normalizeRequiredChecks(protection, checkRuns, statuses, headSha) {
-  return requiredCheckDefinitions(protection).map((definition) => fallbackCheck(definition, checkRuns, statuses, headSha));
+  return requiredCheckDefinitions(protection).map((definition) =>
+    requiredCheckResult(definition, checkRuns, statuses, headSha),
+  );
 }
 
 export { normalizeCheckRun, normalizeRequiredChecks };

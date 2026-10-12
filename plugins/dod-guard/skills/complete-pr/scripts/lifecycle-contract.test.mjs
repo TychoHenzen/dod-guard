@@ -328,7 +328,7 @@ async function runDisposableLifecycle(options = {}) {
     operation: "draft-handoff-checks",
     request: { repository: REPOSITORY, pullNumber: PULL_NUMBER, headSha: HEAD_SHA },
     restEndpoint: `GET /repos/${REPOSITORY}/commits/${HEAD_SHA}/check-runs`,
-    rest: () => client.getRequiredChecks(PULL_NUMBER, pullRequest),
+    rest: () => client.getRequiredChecks(pullRequest),
   });
   assert.deepEqual(checks, [
     { bucket: "pass", name: "build-test", state: "SUCCESS" },

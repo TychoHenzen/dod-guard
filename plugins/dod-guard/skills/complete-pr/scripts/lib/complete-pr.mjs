@@ -617,7 +617,7 @@ async function recoverMergedPullRequest(client, overrides = {}) {
     { allowMerged: true, initialPullRequest: pullRequest, options, repository },
   );
 
-  const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(synchronizedPullRequest.number, synchronizedPullRequest));
+  const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(synchronizedPullRequest));
   if (!checksPassed) {
     stop("unverified_merge", "The pull request merged without complete required-check evidence.");
   }
@@ -676,7 +676,7 @@ async function waitForMerge(client, completion) {
     requireTrustedHead(pullRequest, trustedHead);
     requireDefaultBase(pullRequest, defaultBranch);
     await ensureCiWorkflowRun(client, pullRequest, ciRecovery);
-    const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(pullNumber, pullRequest));
+    const checksPassed = inspectRequiredChecks(await client.getRequiredChecks(pullRequest));
 
     if (pullRequest.state === "MERGED") {
       if (!(checksPassed && pullRequest.mergeCommitSha)) {

@@ -109,7 +109,7 @@ test("retries one transient exact-head check-runs failure with the identical req
     ],
   });
 
-  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest());
+  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
 
   const checkRunsCalls = calls.filter((args) => args.some((value) => value.includes("/check-runs?")));
   assert.deepEqual(checks, [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
@@ -126,7 +126,7 @@ test("stops after one transient exact-head check-runs retry", () => {
   });
 
   assert.throws(
-    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest()),
+    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
     (error) =>
       error.message.includes("repos/owner/repo/commits/head-1/check-runs?per_page=100") &&
       error.message.includes("HTTP 502: transient provider failure"),
@@ -147,7 +147,7 @@ for (const [failureName, failureResponse] of [
     const { calls, runner } = createRestChecksRunner({ checkRunResponses: [failureResponse] });
 
     assert.throws(
-      () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest()),
+      () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
     );
 
     assert.equal(
@@ -164,7 +164,7 @@ test("does not retry or accept a wrong-provider exact-head check run", () => {
     ])],
   });
 
-  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest());
+  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
 
   assert.deepEqual(checks, [{ bucket: "unknown", name: "build-test", state: "PROVIDER_MISMATCH" }]);
   assert.equal(
@@ -180,66 +180,55 @@ const serverErrorProtection = {
   stdout: JSON.stringify({ message: "Server Error" }),
 };
 
-function namesProtectionFailure(error) {
-  return error.message.includes(protectionEndpoint) && error.message.includes("HTTP 502");
-}
+const forbiddenProtection = {
+  stderr: "gh: Resource not accessible by personal access token (HTTP 403)",
+  status: 1,
+  stdout: JSON.stringify({ message: "Resource not accessible by personal access token" }),
+};
+// gh can exit with a status other than 0 or 1, which the protection read does not accept.
+const unexpectedExitProtection = { stderr: "gh: unexpected failure", status: 2, stdout: "" };
+const notFoundProtection = {
+  stderr: "gh: Not Found (HTTP 404)",
+  status: 1,
+  stdout: JSON.stringify({ message: "Branch not protected" }),
+};
 
 function readsCheckRunsOrStatuses(calls) {
   return calls.some((args) => args.some((value) => value.includes("/check-runs?") || value.includes("/status?")));
 }
 
-test("fails a non-404 branch-protection read naming the endpoint instead of reading no checks", () => {
-  const { calls, runner } = protectionFailureRunner(serverErrorProtection);
+// readRequiredChecks is the reader the closure snapshot calls; getRequiredChecks is complete-pr's way in.
+const requiredCheckReaders = [
+  ["readRequiredChecks", (runner) => readRequiredChecks("owner/repo", exactHeadPullRequest(), runner)],
+  [
+    "getRequiredChecks",
+    (runner) => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
+  ],
+];
+const protectionFailures = [
+  ["a non-404 (HTTP 502)", serverErrorProtection, "HTTP 502"],
+  ["an HTTP 403", forbiddenProtection, "HTTP 403"],
+  ["an unexpected gh exit status", unexpectedExitProtection, "gh: unexpected failure"],
+];
 
-  assert.throws(
-    () => readRequiredChecks("owner/repo", exactHeadPullRequest(), runner),
-    namesProtectionFailure,
-  );
-  assert.equal(readsCheckRunsOrStatuses(calls), false);
-});
+for (const [reader, read] of requiredCheckReaders) {
+  for (const [failure, response, detail] of protectionFailures) {
+    test(`${reader} stops on ${failure} branch-protection read naming the endpoint, without reading checks`, () => {
+      const { calls, runner } = protectionFailureRunner(response);
 
-test("getRequiredChecks fails a non-404 branch-protection read instead of returning no checks", () => {
-  const { runner } = protectionFailureRunner(serverErrorProtection);
-
-  assert.throws(
-    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest()),
-    namesProtectionFailure,
-  );
-});
-
-test("reads an absent branch protection (HTTP 404) as no required checks without reading checks", () => {
-  const { calls, runner } = protectionFailureRunner({
-    stderr: "gh: Not Found (HTTP 404)",
-    status: 1,
-    stdout: JSON.stringify({ message: "Branch not protected" }),
-  });
-
-  assert.deepEqual(readRequiredChecks("owner/repo", exactHeadPullRequest(), runner), []);
-  assert.equal(readsCheckRunsOrStatuses(calls), false);
-});
-
-test("getRequiredChecks stops on an HTTP 403 branch-protection read naming the endpoint", () => {
-  const { calls, runner } = protectionFailureRunner({
-    stderr: "gh: Resource not accessible by personal access token (HTTP 403)",
-    status: 1,
-    stdout: JSON.stringify({ message: "Resource not accessible by personal access token" }),
-  });
-
-  assert.throws(
-    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest()),
-    (error) => error.message.includes(protectionEndpoint) && error.message.includes("HTTP 403"),
-  );
-  assert.equal(readsCheckRunsOrStatuses(calls), false);
-});
+      assert.throws(
+        () => read(runner),
+        (error) => error.message.includes(protectionEndpoint) && error.message.includes(detail),
+      );
+      assert.equal(readsCheckRunsOrStatuses(calls), false);
+    });
+  }
+}
 
 test("getRequiredChecks reads an absent branch protection (HTTP 404) as no required checks", () => {
-  const { calls, runner } = protectionFailureRunner({
-    stderr: "gh: Not Found (HTTP 404)",
-    status: 1,
-    stdout: JSON.stringify({ message: "Branch not protected" }),
-  });
+  const { calls, runner } = protectionFailureRunner(notFoundProtection);
 
-  assert.deepEqual(new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest()), []);
+  assert.deepEqual(new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()), []);
   assert.equal(readsCheckRunsOrStatuses(calls), false);
 });
 
@@ -261,23 +250,32 @@ test("getRequiredChecks names the commit-status endpoint when that read fails", 
   };
 
   assert.throws(
-    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest()),
+    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
     (error) =>
-      error.message.includes("repos/owner/repo/commits/head-1/status?per_page=100") && error.message.includes("HTTP 502"),
+      error.message.includes("repos/owner/repo/commits/head-1/status?per_page=100") &&
+      error.message.includes("HTTP 502"),
   );
 });
+
+const exactHeadBuildTestRun = {
+  app: { id: 15_368 },
+  conclusion: "success",
+  head_sha: "head-1",
+  name: "build-test",
+  status: "completed",
+};
 
 test("getRequiredChecks reads only REST endpoints and settles two passing runs from two check suites", () => {
   const { calls, runner } = createRestChecksRunner({
     checkRunResponses: [
       checkRunsResponse([
-        { id: 101, app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
-        { id: 102, app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
+        { id: 101, ...exactHeadBuildTestRun },
+        { id: 102, ...exactHeadBuildTestRun },
       ]),
     ],
   });
 
-  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest());
+  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
 
   assert.deepEqual(checks, [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
   assert.deepEqual(calls.map((args) => args[0]), ["api", "api", "api"]);

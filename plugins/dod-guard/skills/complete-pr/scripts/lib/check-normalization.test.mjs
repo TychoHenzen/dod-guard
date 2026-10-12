@@ -163,7 +163,10 @@ test("keeps provider, stale-head, and status verdicts ahead of the newest-run ru
     [{ bucket: "unknown", name: "build-test", state: "PROVIDER_CONFLICT" }],
   );
   assert.deepEqual(
-    settle(expectedApp, [protectedRun(101, "success", "completed", 57_789), protectedRun(102, "success", "completed", 57_789)]),
+    settle(expectedApp, [
+      protectedRun(101, "success", "completed", 57_789),
+      protectedRun(102, "success", "completed", 57_789),
+    ]),
     [{ bucket: "unknown", name: "build-test", state: "PROVIDER_MISMATCH" }],
   );
   assert.deepEqual(
@@ -272,24 +275,40 @@ test("covers missing, pending, provider-conflict, duplicate-source, and terminal
   }
 });
 
+// Answers the three REST required-check reads for head-1 by endpoint and fails any other command,
+// so an unexpected read stops at the call that made it.
+function restRunner(calls, { protection, checkRuns, statuses }) {
+  const responses = new Map([
+    ["repos/owner/repo/branches/master/protection/required_status_checks", protection],
+    ["repos/owner/repo/commits/head-1/check-runs?per_page=100", checkRuns],
+    ["repos/owner/repo/commits/head-1/status?per_page=100", statuses],
+  ]);
+  return (args) => {
+    calls.push(args);
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
+    if (!responses.has(endpoint)) {
+      throw new Error(`Unexpected command: ${args.join(" ")}`);
+    }
+    return { stderr: "", status: 0, stdout: JSON.stringify(responses.get(endpoint)) };
+  };
+}
+
 test("reads protected exact-head checks through REST only", () => {
   const calls = [];
-  const responses = [
-    { check_runs: [{ app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" }] },
-    { statuses: [] },
-  ];
-  const commandRunner = (args) => {
-    calls.push(args);
-    if (args[0] === "pr") {
-      throw new Error(`gh pr is not a required-check reader: ${args.join(" ")}`);
-    }
-    if (args[1].includes("required_status_checks")) {
-      return { stderr: "", status: 0, stdout: JSON.stringify({ checks: [{ app_id: 15_368, context: "build-test" }] }) };
-    }
-    return { stderr: "", status: 0, stdout: JSON.stringify(responses.shift()) };
+  const checkRun = {
+    app: { id: 15_368 },
+    conclusion: "success",
+    head_sha: "head-1",
+    name: "build-test",
+    status: "completed",
   };
+  const commandRunner = restRunner(calls, {
+    protection: { checks: [{ app_id: 15_368, context: "build-test" }] },
+    checkRuns: { check_runs: [checkRun] },
+    statuses: { statuses: [] },
+  });
 
-  const checks = new GitHubClient("owner/repo", 24, commandRunner).getRequiredChecks(24, {
+  const checks = new GitHubClient("owner/repo", 24, commandRunner).getRequiredChecks({
     baseBranch: "master",
     headSha: "head-1",
   });
@@ -306,21 +325,13 @@ test("reads protected exact-head checks through REST only", () => {
 });
 
 test("uses the combined-status envelope SHA for status-only requirements", () => {
-  const responses = [
-    { check_runs: [] },
-    { sha: "head-1", statuses: [{ context: "build-test", state: "success" }] },
-  ];
-  const commandRunner = (args) => {
-    if (args[0] === "pr") {
-      throw new Error(`gh pr is not a required-check reader: ${args.join(" ")}`);
-    }
-    if (args[1]?.includes("required_status_checks")) {
-      return { stderr: "", status: 0, stdout: JSON.stringify({ contexts: ["build-test"] }) };
-    }
-    return { stderr: "", status: 0, stdout: JSON.stringify(responses.shift()) };
-  };
+  const commandRunner = restRunner([], {
+    protection: { contexts: ["build-test"] },
+    checkRuns: { check_runs: [] },
+    statuses: { sha: "head-1", statuses: [{ context: "build-test", state: "success" }] },
+  });
 
-  const checks = new GitHubClient("owner/repo", 24, commandRunner).getRequiredChecks(24, {
+  const checks = new GitHubClient("owner/repo", 24, commandRunner).getRequiredChecks({
     baseBranch: "master",
     headSha: "head-1",
   });

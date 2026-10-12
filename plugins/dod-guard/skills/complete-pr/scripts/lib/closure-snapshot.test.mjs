@@ -188,6 +188,12 @@ function fixtureRoutes(variant = "healthy") {
   if (variant === "protection-failure") {
     routes[ENDPOINT.protection] = SERVER_ERROR;
   }
+  if (variant === "check-runs-failure") {
+    routes[ENDPOINT.checkRuns(HEAD[21])] = SERVER_ERROR;
+  }
+  if (variant === "status-failure") {
+    routes[ENDPOINT.statuses(HEAD[21])] = SERVER_ERROR;
+  }
   if (variant === "no-protection") {
     routes[ENDPOINT.protection] = NOT_FOUND;
   }
@@ -583,8 +589,25 @@ const FAULTS = [
     [failedAt(ENDPOINT.protection)],
     "protection-failure (a non-404 protection read is a failure, not an empty requirement list)",
   ],
+  ["check-runs-failure", [failedAt(ENDPOINT.checkRuns(HEAD[21]))]],
+  ["status-failure", [failedAt(ENDPOINT.statuses(HEAD[21]))]],
   ...REJECTED_NAMES.map((variant) => [variant, [failedAt(ENDPOINT.values(2))]]),
 ];
+
+// A failed required-check read is reported once, at the endpoint that failed, and is not restated
+// at the commit endpoint that requested it.
+for (const [variant, endpoint] of [
+  ["protection-failure", ENDPOINT.protection],
+  ["check-runs-failure", ENDPOINT.checkRuns(HEAD[21])],
+  ["status-failure", ENDPOINT.statuses(HEAD[21])],
+]) {
+  test(`AC-11: ${variant} names the failing endpoint first and only once`, () => {
+    const error = buildFailure(fixtureRoutes(variant));
+    assert.ok(error, `${variant}: the build should have failed`);
+    assert.ok(error.message.startsWith(failedAt(endpoint)), error.message);
+    assert.equal(error.message.split("closure snapshot read failed:").length - 1, 1, error.message);
+  });
+}
 
 for (const [variant, expected, label = variant] of FAULTS) {
   test(`AC-11: ${label} exits 1, names its endpoint, leaves no file, and recovers on rerun`, async () => {

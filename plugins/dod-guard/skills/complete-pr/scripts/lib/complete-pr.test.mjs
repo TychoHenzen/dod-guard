@@ -180,6 +180,7 @@ class FixtureClient {
     this.enableRepositoryError = options.enableRepositoryError;
     this.deleteBranchError = options.deleteBranchError;
     this.requiredChecksError = options.requiredChecksError;
+    this.requiredChecksReader = options.requiredChecksReader;
     this.projectStatusReader = options.projectStatusReader;
     this.reviewThreads = [...(options.reviewThreads ?? [[]])];
     this.calls = [];
@@ -211,10 +212,13 @@ class FixtureClient {
     this.calls.push(["mergePullRequest", number, headSha]);
   }
 
-  getRequiredChecks() {
+  getRequiredChecks(pullRequest) {
     this.calls.push(["getRequiredChecks"]);
     if (this.requiredChecksError) {
       throw this.requiredChecksError;
+    }
+    if (this.requiredChecksReader) {
+      return this.requiredChecksReader(pullRequest);
     }
     return nextValue(this.checks);
   }
@@ -343,17 +347,15 @@ function twoPassingRunsPerCheck() {
   );
 }
 
-// The fixture client with its required-check read sent through the real REST reader.
-class RestChecksClient extends FixtureClient {
-  constructor(options, runner) {
-    super(options);
-    this.reader = new GitHubClient("owner/repo", 24, runner);
-  }
+// Each required check passed on the head, then failed on a later run.
+function newestRunFailsPerCheck() {
+  return twoPassingRunsPerCheck().map((run) => (run.id % 2 === 1 ? { ...run, conclusion: "failure" } : run));
+}
 
-  getRequiredChecks(pullNumber, pullRequest) {
-    this.calls.push(["getRequiredChecks"]);
-    return this.reader.getRequiredChecks(pullNumber, pullRequest);
-  }
+// The real REST required-check reader over restChecksRunner, for FixtureClient's requiredChecksReader option.
+function restChecksReader(responses) {
+  const reader = new GitHubClient("owner/repo", 24, restChecksRunner(responses));
+  return (pullRequest) => reader.getRequiredChecks(pullRequest);
 }
 
 const immediateOptions = {
@@ -966,22 +968,39 @@ test("recovers an already-merged pull request through guarded remote and local c
 
 test("recovers a merged head with two passing runs of every required check through the REST reader", async () => {
   const localGit = createFixtureLocalGit();
-  const client = new RestChecksClient(
-    {
-      pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
-      refs: [{ sha: "head-1" }, null],
-    },
-    restChecksRunner({ protection: protectedRequiredChecks(), checkRuns: twoPassingRunsPerCheck() }),
-  );
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [{ sha: "head-1" }, null],
+    requiredChecksReader: restChecksReader({
+      protection: protectedRequiredChecks(),
+      checkRuns: twoPassingRunsPerCheck(),
+    }),
+  });
 
   const result = await recoverMergedPullRequest(client, { ...immediateOptions, localGit });
 
-  assert.deepEqual(
-    client.reader.getRequiredChecks(24, pull()),
-    requiredCheckNames.map((name) => ({ bucket: "pass", name, state: "SUCCESS" })),
-  );
+  assert.deepEqual(client.calls.filter(([name]) => name === "getRequiredChecks"), [["getRequiredChecks"]]);
   assert.deepEqual(result.linkedIssues.map((issue) => issue.number), [24]);
   assert.equal(result.branch, "deleted");
+});
+
+test("stops recovery when the newest run of every required check failed through the REST reader", async () => {
+  const localGit = createFixtureLocalGit();
+  const client = new FixtureClient({
+    pulls: [pull({ isDraft: false, mergeCommitSha: "merge-1", state: "MERGED" })],
+    refs: [{ sha: "head-1" }, null],
+    requiredChecksReader: restChecksReader({
+      protection: protectedRequiredChecks(),
+      checkRuns: newestRunFailsPerCheck(),
+    }),
+  });
+
+  await assert.rejects(recoverMergedPullRequest(client, { ...immediateOptions, localGit }), {
+    code: "required_check_failed",
+  });
+  assert.deepEqual(client.calls.filter(([name]) => name === "getRequiredChecks"), [["getRequiredChecks"]]);
+  assert.equal(client.calls.some(([name]) => name === "deleteBranchRef"), false);
+  assert.deepEqual(localGit.calls, []);
 });
 
 test("recovers merged cleanup when the remote source branch is already absent", async () => {
@@ -1219,12 +1238,12 @@ test("stops on missing required-check evidence without merge or branch cleanup",
 });
 
 test("stops on an HTTP 403 branch-protection read naming the endpoint and sends no merge request", async () => {
-  const client = new RestChecksClient(
-    { pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })] },
-    restChecksRunner({
+  const client = new FixtureClient({
+    pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
+    requiredChecksReader: restChecksReader({
       protection: { stderr: "gh: Resource not accessible by personal access token (HTTP 403)", status: 1, stdout: "" },
     }),
-  );
+  });
 
   await assert.rejects(
     completePullRequest(client, immediateOptions),
@@ -1235,10 +1254,12 @@ test("stops on an HTTP 403 branch-protection read naming the endpoint and sends 
 });
 
 test("stops with missing_required_checks on an unprotected base and sends no merge request", async () => {
-  const client = new RestChecksClient(
-    { pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })] },
-    restChecksRunner({ protection: { stderr: "gh: Not Found (HTTP 404)", status: 1, stdout: "" } }),
-  );
+  const client = new FixtureClient({
+    pulls: [pull(), pull({ isDraft: false }), pull({ isDraft: false }), pull({ isDraft: false })],
+    requiredChecksReader: restChecksReader({
+      protection: { stderr: "gh: Not Found (HTTP 404)", status: 1, stdout: "" },
+    }),
+  });
 
   await assert.rejects(completePullRequest(client, immediateOptions), { code: "missing_required_checks" });
   assert.equal(client.calls.some(([name]) => name === "mergePullRequest"), false);

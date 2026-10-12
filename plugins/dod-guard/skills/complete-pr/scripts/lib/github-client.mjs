@@ -199,19 +199,6 @@ function ghJsonPages(endpoint, field, commandRunner) {
   });
 }
 
-function ghJsonPagesRequired(endpoint, field, commandRunner) {
-  const pages = ghJsonPagesData(endpoint, commandRunner);
-  if (pages.length === 0) {
-    throw githubResponseError(endpoint, field);
-  }
-  return pages.flatMap((page) => {
-    if (!page || typeof page !== "object" || !Array.isArray(page[field])) {
-      throw githubResponseError(endpoint, field);
-    }
-    return page[field];
-  });
-}
-
 function ghJsonPagesData(endpoint, commandRunner) {
   const { data } = ghJson(["api", "--paginate", "--slurp", endpoint], [0], commandRunner);
   return Array.isArray(data) ? data : [data];
@@ -574,10 +561,8 @@ export function normalizePullRequest(data, repository) {
 export function readRequiredChecks(repository, pullRequest, commandRunner) {
   const branch = encodeBranch(pullRequest.baseBranch);
   const protectionEndpoint = `repos/${repository}/branches/${branch}/protection/required_status_checks`;
-  const protectionResponse = ghJson(
-    ["api", protectionEndpoint],
-    [0, 1],
-    commandRunner,
+  const protectionResponse = readNamed("branch protection", protectionEndpoint, () =>
+    ghJson(["api", protectionEndpoint], [0, 1], commandRunner),
   );
   if (protectionResponse.result.status === 1 && HTTP_NOT_FOUND.test(protectionResponse.result.stderr)) {
     return [];
@@ -596,7 +581,9 @@ export function readRequiredChecks(repository, pullRequest, commandRunner) {
     commandRunner,
   );
   const statusEndpoint = `repos/${repository}/commits/${pullRequest.headSha}/status?per_page=100`;
-  const statusPages = readNamed("commit statuses", statusEndpoint, () => ghJsonPagesData(statusEndpoint, commandRunner));
+  const statusPages = readNamed("commit statuses", statusEndpoint, () =>
+    ghJsonPagesData(statusEndpoint, commandRunner),
+  );
   const statusSha = statusPages.map((page) => page?.sha).find(Boolean) ?? null;
   const statuses = statusPages.flatMap((page) =>
     (Array.isArray(page?.statuses) ? page.statuses : []).map((status) => ({
@@ -716,15 +703,15 @@ export class GitHubClient {
     return data;
   }
 
-  getRequiredChecks(pullNumber, pullRequest) {
-    return readRequiredChecks(this.repository, pullRequest ?? this.getPullRequest(pullNumber), this.#commandRunner);
+  getRequiredChecks(pullRequest) {
+    return readRequiredChecks(this.repository, pullRequest, this.#commandRunner);
   }
 
   getCiWorkflowRuns(headSha) {
     const workflowRunsPath =
       `repos/${this.repository}/actions/` + "workflows/ci.yml/runs";
     const query = `?head_sha=${encodeURIComponent(headSha)}&per_page=100`;
-    return ghJsonPagesRequired(
+    return ghJsonPages(
       `${workflowRunsPath}${query}`,
       "workflow_runs",
       this.#commandRunner,
