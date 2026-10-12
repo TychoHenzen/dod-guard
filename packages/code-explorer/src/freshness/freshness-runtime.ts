@@ -12,12 +12,11 @@ export class FreshnessRuntime {
   };
   manifest: Manifest = new Map();
   watcher: WorkspaceWatcher | undefined;
-  activeSessions = 0;
   coalesceTimer: unknown;
   pollTimer: unknown;
-  manifestTimer: unknown;
   running: Promise<void> | undefined;
   forceRefresh = false;
+  closed = false;
   private nextGeneration = 1;
 
   reserveGeneration(): number {

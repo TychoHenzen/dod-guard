@@ -3874,49 +3874,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved, schemelessOptions);
     }
-    function resolveComponent(base, relative6, options, skipNormalization) {
+    function resolveComponent(base, relative7, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
         base = parse3(serialize(base, options), options);
-        relative6 = parse3(serialize(relative6, options), options);
+        relative7 = parse3(serialize(relative7, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative6.scheme) {
-        target.scheme = relative6.scheme;
-        target.userinfo = relative6.userinfo;
-        target.host = relative6.host;
-        target.port = relative6.port;
-        target.path = removeDotSegments(relative6.path || "");
-        target.query = relative6.query;
+      if (!options.tolerant && relative7.scheme) {
+        target.scheme = relative7.scheme;
+        target.userinfo = relative7.userinfo;
+        target.host = relative7.host;
+        target.port = relative7.port;
+        target.path = removeDotSegments(relative7.path || "");
+        target.query = relative7.query;
       } else {
-        if (relative6.userinfo !== void 0 || relative6.host !== void 0 || relative6.port !== void 0) {
-          target.userinfo = relative6.userinfo;
-          target.host = relative6.host;
-          target.port = relative6.port;
-          target.path = removeDotSegments(relative6.path || "");
-          target.query = relative6.query;
+        if (relative7.userinfo !== void 0 || relative7.host !== void 0 || relative7.port !== void 0) {
+          target.userinfo = relative7.userinfo;
+          target.host = relative7.host;
+          target.port = relative7.port;
+          target.path = removeDotSegments(relative7.path || "");
+          target.query = relative7.query;
         } else {
-          if (!relative6.path) {
+          if (!relative7.path) {
             target.path = base.path;
-            if (relative6.query !== void 0) {
-              target.query = relative6.query;
+            if (relative7.query !== void 0) {
+              target.query = relative7.query;
             } else {
               target.query = base.query;
             }
           } else {
-            if (relative6.path[0] === "/") {
-              target.path = removeDotSegments(relative6.path);
+            if (relative7.path[0] === "/") {
+              target.path = removeDotSegments(relative7.path);
             } else {
               if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) {
-                target.path = "/" + relative6.path;
+                target.path = "/" + relative7.path;
               } else if (!base.path) {
-                target.path = relative6.path;
+                target.path = relative7.path;
               } else {
-                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative6.path;
+                target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative7.path;
               }
               target.path = removeDotSegments(target.path);
             }
-            target.query = relative6.query;
+            target.query = relative7.query;
           }
           target.userinfo = base.userinfo;
           target.host = base.host;
@@ -3924,7 +3924,7 @@ var require_fast_uri = __commonJS({
         }
         target.scheme = base.scheme;
       }
-      target.fragment = relative6.fragment;
+      target.fragment = relative7.fragment;
       return target;
     }
     function equal(uriA, uriB, options) {
@@ -16816,10 +16816,10 @@ function relativeAssetPath(request) {
 function isInsideRoot(root, actual) {
   return actual.startsWith(`${root}${path2.sep}`) || actual === root;
 }
-async function loadAsset(context, request, relative6) {
+async function loadAsset(context, request, relative7) {
   try {
     const root = await realpath(context.options.assetRoot);
-    const candidate = path2.resolve(root, relative6);
+    const candidate = path2.resolve(root, relative7);
     const actual = await realpath(candidate);
     if (!isInsideRoot(root, actual)) return notFound();
     const body = await readAssetFile(actual, request.method === "HEAD");
@@ -16842,9 +16842,9 @@ async function loadAsset(context, request, relative6) {
 async function asset(context, request) {
   if (request.method !== "GET" && request.method !== "HEAD")
     return json(405, browserError("method_not_allowed"));
-  const relative6 = relativeAssetPath(request);
-  if (!relative6) return notFound();
-  return loadAsset(context, request, relative6);
+  const relative7 = relativeAssetPath(request);
+  if (!relative7) return notFound();
+  return loadAsset(context, request, relative7);
 }
 
 // src/browser-server/router-rejection.ts
@@ -17152,24 +17152,50 @@ __export(workspace_native_exports, {
 
 // src/freshness/native-manifest-files.ts
 import { readdir as readdir2 } from "node:fs/promises";
-import { join as join22, relative as relative3 } from "node:path";
+import { join as join22, relative as relative4 } from "node:path";
+
+// src/freshness/ignored-paths.ts
+import { isAbsolute as isAbsolute3, relative as relative3, sep as sep2 } from "node:path";
+var IGNORED_DIRECTORY_NAMES = [
+  "node_modules",
+  ".git",
+  ".hg",
+  ".svn",
+  ".venv",
+  "venv",
+  "__pycache__",
+  "dist",
+  "dist-test",
+  "coverage",
+  "target",
+  "obj"
+];
+var IGNORED = new Set(IGNORED_DIRECTORY_NAMES);
+function isIgnoredWorkspacePath(relativePath) {
+  return relativePath.split(/[\\/]/u).some((segment) => IGNORED.has(segment.toLowerCase()));
+}
+function isIgnoredUnderRoot(root, absolutePath) {
+  const relativePath = relative3(root, absolutePath);
+  if (relativePath === "" || relativePath === ".." || relativePath.startsWith(`..${sep2}`) || isAbsolute3(relativePath))
+    return false;
+  return isIgnoredWorkspacePath(relativePath);
+}
+
+// src/freshness/native-manifest-files.ts
 function withinScanLimits(started, now, output) {
   if (now() - started > 6e4 || output.length > 5e4)
     throw new Error("scan_limit");
-}
-function ignoredDirectory(name) {
-  return /^(node_modules|\.git|\.hg|\.svn|\.venv|venv)$/iu.test(name);
 }
 async function visit2(root, directory2, supported, started, now, output) {
   withinScanLimits(started, now, output);
   for (const entry of await readdir2(directory2, { withFileTypes: true })) {
     const absolute = join22(directory2, entry.name);
     if (entry.isDirectory()) {
-      if (!ignoredDirectory(entry.name))
+      if (!isIgnoredWorkspacePath(relative4(root, absolute)))
         await visit2(root, absolute, supported, started, now, output);
       continue;
     }
-    const path5 = relative3(root, absolute).replaceAll("\\", "/");
+    const path5 = relative4(root, absolute).replaceAll("\\", "/");
     if (supported(path5)) output.push(path5);
   }
 }
@@ -17274,12 +17300,11 @@ var FreshnessRuntime = class {
   };
   manifest = /* @__PURE__ */ new Map();
   watcher;
-  activeSessions = 0;
   coalesceTimer;
   pollTimer;
-  manifestTimer;
   running;
   forceRefresh = false;
+  closed = false;
   nextGeneration = 1;
   reserveGeneration() {
     const generation = this.nextGeneration++;
@@ -18333,11 +18358,11 @@ function createPattern(matcher) {
       if (matcher.path === string3)
         return true;
       if (matcher.recursive) {
-        const relative6 = sysPath2.relative(matcher.path, string3);
-        if (!relative6) {
+        const relative7 = sysPath2.relative(matcher.path, string3);
+        if (!relative7) {
           return false;
         }
-        return !relative6.startsWith("..") && !sysPath2.isAbsolute(relative6);
+        return !relative7.startsWith("..") && !sysPath2.isAbsolute(relative7);
       }
       return false;
     };
@@ -19033,10 +19058,16 @@ function canPublishGeneration(...args) {
   const [currentGeneration, analyzedGeneration, captured, prepublication] = args;
   return analyzedGeneration > currentGeneration && sameManifest(captured, prepublication);
 }
+function chokidarOptionsFor(roots) {
+  return {
+    ...chokidarWatchOptions,
+    ignored: (path5) => roots.some((root) => isIgnoredUnderRoot(root, path5))
+  };
+}
 function createChokidarWatcher(paths) {
   return esm_default.watch(
     [...paths],
-    chokidarWatchOptions
+    chokidarOptionsFor(paths)
   );
 }
 function createWatcher(options, schedule) {
@@ -19059,11 +19090,7 @@ function clearTimer(options, timer) {
   clear(timer);
 }
 function clearTimers(options, runtime) {
-  for (const timer of [
-    runtime.coalesceTimer,
-    runtime.pollTimer,
-    runtime.manifestTimer
-  ]) {
+  for (const timer of [runtime.coalesceTimer, runtime.pollTimer]) {
     if (timer !== void 0) clearTimer(options, timer);
   }
 }
@@ -19133,30 +19160,15 @@ async function reconcileWorkspace(options, runtime) {
 }
 
 // src/freshness/workspace-scheduling.ts
+var POLL_INTERVAL_MS = 5e3;
 function schedulePolling(options) {
-  const { runtime, timeout, reconcile, schedulePolling: schedulePolling2 } = options;
-  if (runtime.status.mode !== "polling" || runtime.activeSessions === 0 || runtime.pollTimer !== void 0)
+  const { runtime, timeout, reconcile, reschedule } = options;
+  if (runtime.closed || runtime.status.mode !== "polling" || runtime.pollTimer !== void 0)
     return;
   runtime.pollTimer = timeout(() => {
     runtime.pollTimer = void 0;
-    void reconcile().finally(schedulePolling2);
-  }, 5e3);
-}
-function scheduleManifestCheck(options) {
-  const { runtime, timeout, reconcile, scheduleManifestCheck: scheduleManifestCheck2 } = options;
-  if (runtime.activeSessions === 0 || runtime.manifestTimer !== void 0)
-    return;
-  runtime.manifestTimer = timeout(() => {
-    runtime.manifestTimer = void 0;
-    void reconcile().finally(scheduleManifestCheck2);
-  }, 3e4);
-}
-function scheduleWorkspaceTimers(options) {
-  schedulePolling({ ...options, schedulePolling: options.schedule });
-  scheduleManifestCheck({
-    ...options,
-    scheduleManifestCheck: options.schedule
-  });
+    void reconcile().finally(reschedule);
+  }, POLL_INTERVAL_MS);
 }
 
 // src/freshness/workspace-freshness.ts
@@ -19176,20 +19188,14 @@ var WorkspaceFreshness = class {
     this.#runtime.reserveRefresh();
     return this.status();
   }
-  async start(activeSessions = 0) {
-    this.#runtime.activeSessions = activeSessions;
+  async start() {
     const watcher = createWatcher(this.options, () => this.schedule());
     if (watcher) this.#runtime.watcher = watcher;
-    if (!watcher) {
+    else {
       this.#runtime.status = { ...this.#runtime.status, mode: "polling" };
-      this.#scheduleTimers();
+      this.#schedulePolling();
     }
-    this.#scheduleTimers();
     await this.reconcile();
-  }
-  setActiveSessions(count) {
-    this.#runtime.activeSessions = count;
-    this.#scheduleTimers();
   }
   schedule() {
     if (this.#runtime.coalesceTimer !== void 0) return;
@@ -19208,15 +19214,16 @@ var WorkspaceFreshness = class {
     return this.#runtime.running = run;
   }
   async close() {
+    this.#runtime.closed = true;
     clearTimers(this.options, this.#runtime);
     await this.#runtime.watcher?.close();
   }
-  #scheduleTimers() {
-    scheduleWorkspaceTimers({
+  #schedulePolling() {
+    schedulePolling({
       runtime: this.#runtime,
       timeout: (callback, delay2) => this.timeout(callback, delay2),
       reconcile: () => this.reconcile(),
-      schedule: () => this.#scheduleTimers()
+      reschedule: () => this.#schedulePolling()
     });
   }
   timeout(callback, delay2) {
@@ -29548,22 +29555,22 @@ function collectSourceFiles(root) {
 }
 function visit3(directory2, prefix, found) {
   for (const entry of readdirSync8(directory2, { withFileTypes: true })) {
-    const relative6 = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const relative7 = prefix ? `${prefix}/${entry.name}` : entry.name;
     const absolute = join27(directory2, entry.name);
-    visitEntry3({ entry, relative: relative6, absolute, found });
+    visitEntry3({ entry, relative: relative7, absolute, found });
   }
 }
 function visitEntry3(options) {
-  const { entry, relative: relative6, absolute, found } = options;
-  if (isExcludedEntry(relative6, absolute)) return;
-  if (entry.isDirectory()) return visitDirectory2(relative6, absolute, found);
-  if (entry.isFile() && languageForPath(relative6)) found.push(relative6);
+  const { entry, relative: relative7, absolute, found } = options;
+  if (isExcludedEntry(relative7, absolute)) return;
+  if (entry.isDirectory()) return visitDirectory2(relative7, absolute, found);
+  if (entry.isFile() && languageForPath(relative7)) found.push(relative7);
 }
-function visitDirectory2(relative6, absolute, found) {
-  if (!isIgnoredDirectory(relative6)) visit3(absolute, relative6, found);
+function visitDirectory2(relative7, absolute, found) {
+  if (!isIgnoredDirectory(relative7)) visit3(absolute, relative7, found);
 }
-function isExcludedEntry(relative6, absolute) {
-  return isSensitiveProjectPath(relative6) || isClassificationConfigPath(relative6) || lstatSync8(absolute).isSymbolicLink();
+function isExcludedEntry(relative7, absolute) {
+  return isSensitiveProjectPath(relative7) || isClassificationConfigPath(relative7) || lstatSync8(absolute).isSymbolicLink();
 }
 function isIgnoredDirectory(path5) {
   return path5.split("/").some(

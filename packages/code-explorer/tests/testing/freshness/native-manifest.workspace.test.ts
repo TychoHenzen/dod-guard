@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
+import { reconcileNativeManifest } from "../../../src/freshness/native-manifest.js";
 import * as native from "../../../src/freshness/workspace-native.js";
 
 it(
@@ -37,6 +38,27 @@ it(
     }
   },
 );
+
+it("excludes dist and other ignored output from the manifest", async () => {
+  const root = mkdtempSync(join(tmpdir(), "code-explorer-freshness-"));
+  try {
+    for (const directory of ["src", "dist", "coverage", "target"])
+      mkdirSync(join(root, directory));
+    writeFileSync(join(root, "src", "a.ts"), "export const a = 1;\n");
+    writeFileSync(join(root, "dist", "x.js"), "built\n");
+    writeFileSync(join(root, "coverage", "c.json"), "{}\n");
+    writeFileSync(join(root, "target", "t.json"), "{}\n");
+    const result = await reconcileNativeManifest({
+      root,
+      supported: (path) => /\.(ts|js|json)$/u.test(path),
+      sleep: () => Promise.resolve(),
+    });
+    assert.ok("manifest" in result);
+    assert.deepEqual([...result.manifest.keys()], ["src/a.ts"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 async function waitForSamples(waiting: Array<() => void>, count: number) {
   for (let attempt = 0; attempt < 1000 && waiting.length < count; attempt += 1)

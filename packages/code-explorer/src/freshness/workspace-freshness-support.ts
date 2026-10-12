@@ -1,6 +1,7 @@
 import chokidar from "chokidar";
 import type { FreshnessOptions } from "./freshness-options.js";
 import type { FreshnessRuntime } from "./freshness-runtime.js";
+import { isIgnoredUnderRoot } from "./ignored-paths.js";
 import type { Manifest } from "./manifest.js";
 import type { WorkspaceWatcher } from "./workspace-watcher.js";
 
@@ -36,10 +37,20 @@ export function canPublishGeneration(
   );
 }
 
+export function chokidarOptionsFor(roots: readonly string[]) {
+  // ASSUMPTION: chokidar 4 passes absolute, forward-slashed paths to function
+  // matchers; path.relative accepts both forms, so nothing is normalized here.
+  return {
+    ...chokidarWatchOptions,
+    ignored: (path: string) =>
+      roots.some((root) => isIgnoredUnderRoot(root, path)),
+  };
+}
+
 function createChokidarWatcher(paths: readonly string[]): WorkspaceWatcher {
   return chokidar.watch(
     [...paths],
-    chokidarWatchOptions,
+    chokidarOptionsFor(paths),
   ) as unknown as WorkspaceWatcher;
 }
 
@@ -78,11 +89,7 @@ export function clearTimers(
   options: FreshnessOptions,
   runtime: FreshnessRuntime,
 ): void {
-  for (const timer of [
-    runtime.coalesceTimer,
-    runtime.pollTimer,
-    runtime.manifestTimer,
-  ]) {
+  for (const timer of [runtime.coalesceTimer, runtime.pollTimer]) {
     if (timer !== undefined) clearTimer(options, timer);
   }
 }
