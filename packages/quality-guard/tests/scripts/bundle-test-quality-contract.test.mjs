@@ -4,18 +4,12 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 import process from "node:process";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-const bundle = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "..",
-  "dist",
-  "bundle.js",
-);
+const bundle = fileURLToPath(new URL("../../dist/bundle.js", import.meta.url));
 
 const FINDINGS_EVIDENCE = {
   schemaVersion: 1,
@@ -29,6 +23,7 @@ const FINDINGS_EVIDENCE = {
   tests: [],
 };
 
+// Invalid for one reason only: a skipped test must carry a skipReason.
 const INVALID_EVIDENCE = {
   schemaVersion: 1,
   sources: [
@@ -43,7 +38,7 @@ const INVALID_EVIDENCE = {
       id: "a.test",
       path: "tests/a_test.py",
       language: "python",
-      covers: ["missing"],
+      covers: ["a"],
       status: "skipped",
     },
   ],
@@ -69,7 +64,18 @@ function runTestQuality(evidence) {
     [bundle, "test-quality", `--root=${root}`, `--evidence=${evidence}`],
     { cwd: root, encoding: "utf8" },
   );
-  return { status: result.status, report: JSON.parse(result.stdout) };
+  if (result.error !== undefined) {
+    throw result.error;
+  }
+  try {
+    return { status: result.status, report: JSON.parse(result.stdout) };
+  } catch (error) {
+    throw new Error(
+      `bundle exited ${result.status} (signal ${result.signal}) ` +
+        `without a JSON report: ${result.stderr}`,
+      { cause: error },
+    );
+  }
 }
 
 test("bundle test-quality findings all carry medium severity", () => {
@@ -81,15 +87,14 @@ test("bundle test-quality findings all carry medium severity", () => {
     [...new Set(report.findings.map((finding) => finding.severity))],
     ["medium"],
   );
-  assert.equal(
-    report.findings.some((finding) => finding.severity === "review"),
-    false,
-  );
 });
 
-test("bundle test-quality still exits 3 with no findings on invalid evidence", () => {
+test("bundle test-quality rejects invalid evidence with exit 3", () => {
   const { status, report } = runTestQuality("invalid.json");
   assert.equal(status, 3);
   assert.equal(report.status, "invalid");
+  assert.deepEqual(report.errors, [
+    "tests.0: skipped tests require skipReason",
+  ]);
   assert.deepEqual(report.findings, []);
 });
