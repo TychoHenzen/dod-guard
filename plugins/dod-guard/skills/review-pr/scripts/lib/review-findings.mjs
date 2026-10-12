@@ -181,7 +181,8 @@ function anchoredFindings({ scan, changedLines, results, plan }) {
 
 function buildReview({ headSha, scan, diff, results, plan, pbi, subIssues }) {
   const changedLines = parseChangedLines(diff);
-  // The build regenerates the slots instead of trusting a list the planner returns.
+  // The build regenerates the slots instead of trusting a list the planner
+  // returns.
   const slots = reviewSlots({ changedLines, pbi, subIssues });
   requirePlan(plan, slots);
   const findings = anchoredFindings({ scan, changedLines, results, plan });

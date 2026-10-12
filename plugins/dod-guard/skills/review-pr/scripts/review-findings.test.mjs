@@ -188,8 +188,8 @@ const PLAN = [
   { slot: "criterion:2", questions: [question("H1", "review-pr-hygiene")] },
 ];
 
-// build takes the slot inputs plus the scan, the reviewer results, the plan, and
-// the head.
+// build takes the slot inputs plus the scan, the reviewer results, the plan,
+// and the head.
 function buildFlags(dir) {
   return {
     ...inputs(dir),

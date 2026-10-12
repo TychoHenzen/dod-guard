@@ -45,7 +45,8 @@ function flatJson(path) {
   return json(path).flat();
 }
 
-// Reads the saved PBI issue and sub-issue listing, naming the file on any fault.
+// Reads the saved PBI issue and sub-issue listing, naming the file on any
+// fault.
 function pbiInputs(args) {
   return {
     pbi: pbiIssue(json(args.pbi), args.pbi),

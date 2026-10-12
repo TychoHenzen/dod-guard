@@ -32,10 +32,24 @@ test("markdownSection returns one heading's text and matches the heading literal
   assert.equal(markdownSection("Preamble\n## Last", "Last"), "");
 });
 
-const CRITERIA_BODY =
-  "## Outcome\n\n- [ ] not a criterion\n\n## Acceptance criteria\n\n- [ ] AC-01 first\n" +
-  "- [x] AC-02 second\n  - [X] nested third\n- plain bullet\n* [ ] star bullet\n\n" +
-  "## Verification\n\n- [ ] not a criterion\n";
+const CRITERIA_BODY = [
+  "## Outcome",
+  "",
+  "- [ ] not a criterion",
+  "",
+  "## Acceptance criteria",
+  "",
+  "- [ ] AC-01 first",
+  "- [x] AC-02 second",
+  "  - [X] nested third",
+  "- plain bullet",
+  "* [ ] star bullet",
+  "",
+  "## Verification",
+  "",
+  "- [ ] not a criterion",
+  "",
+].join("\n");
 const CRITERIA = [
   { text: "AC-01 first", checked: false },
   { text: "AC-02 second", checked: true },

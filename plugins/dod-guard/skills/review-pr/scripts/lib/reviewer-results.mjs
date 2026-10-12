@@ -177,8 +177,8 @@ function judgmentFinding(finding) {
 }
 
 // Validates all four reviewer envelopes and their rulings against the slots
-// assigned to each lens, then returns one finding per file and root cause, ready
-// to anchor.
+// assigned to each lens, then returns one finding per file and root cause,
+// ready to anchor.
 function judgmentFindings(results, assigned) {
   return dedupeJudgments(results, assigned).map(judgmentFinding);
 }

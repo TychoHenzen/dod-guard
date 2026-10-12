@@ -253,14 +253,14 @@ function slotHeading(item) {
 
 function entryLines(entry) {
   if (entry.excluded) {
-    return [
-      `- excluded for ${entry.excluded.lens}: ${escapeHtml(oneLine(entry.excluded.reason))}`,
-    ];
+    const { lens, reason } = entry.excluded;
+    return [`- excluded for ${lens}: ${escapeHtml(oneLine(reason))}`];
   }
-  return entry.questions.map(
-    (question) =>
-      `- ${escapeHtml(oneLine(question.id))} ${question.lens} (${question.status}): ${escapeHtml(oneLine(question.question))}`,
-  );
+  return entry.questions.map((question) => {
+    const id = escapeHtml(oneLine(question.id));
+    const text = escapeHtml(oneLine(question.question));
+    return `- ${id} ${question.lens} (${question.status}): ${text}`;
+  });
 }
 
 // Lists every slot, in generated order, with its questions and statuses or its
