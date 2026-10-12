@@ -12814,11 +12814,12 @@ import { join as join6 } from "node:path";
 import { rmSync } from "node:fs";
 
 // src/semantic/python-mirror/python-mirror-permissions.ts
-import { chmodSync, existsSync, readdirSync as readdirSync2 } from "node:fs";
+import { chmodSync, lstatSync as lstatSync2, readdirSync as readdirSync2 } from "node:fs";
 import { join as join5 } from "node:path";
 function makeTreeReadOnly(directory2) {
   for (const entry of readdirSync2(directory2, { withFileTypes: true })) {
     const target = join5(directory2, entry.name);
+    if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) {
       makeTreeReadOnly(target);
       continue;
@@ -12828,9 +12829,10 @@ function makeTreeReadOnly(directory2) {
   chmodSync(directory2, 365);
 }
 function makeTreeWritable(directory2) {
-  if (!existsSync(directory2)) return;
+  if (!lstatSync2(directory2, { throwIfNoEntry: false })?.isDirectory()) return;
   for (const entry of readdirSync2(directory2, { withFileTypes: true })) {
     const target = join5(directory2, entry.name);
+    if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) {
       makeTreeWritable(target);
       continue;
@@ -12846,12 +12848,10 @@ function removeServiceTree(path5) {
   rmSync(path5, { recursive: true, force: true });
 }
 var OwnedResources = class {
-  constructor(host = process, removeTree = removeServiceTree) {
+  constructor(host = process) {
     this.host = host;
-    this.removeTree = removeTree;
   }
   host;
-  removeTree;
   #roots = /* @__PURE__ */ new Set();
   #children = /* @__PURE__ */ new Set();
   #sealed = false;
@@ -12866,19 +12866,19 @@ var OwnedResources = class {
   trackRoot(path5) {
     this.#hook();
     if (this.#sealed) {
-      this.#removeQuietly(path5);
+      removeQuietly(path5);
       return () => void 0;
     }
     this.#roots.add(path5);
     return () => {
-      if (this.#roots.delete(path5)) this.removeTree(path5);
+      if (this.#roots.delete(path5)) removeServiceTree(path5);
     };
   }
   /** Returns forget(), which stops tracking a child that has already exited. */
   trackChild(kill) {
     this.#hook();
     if (this.#sealed) {
-      this.#killQuietly(kill);
+      killQuietly(kill);
       return () => void 0;
     }
     this.#children.add(kill);
@@ -12888,9 +12888,9 @@ var OwnedResources = class {
   }
   seal() {
     this.#sealed = true;
-    for (const kill of this.#children) this.#killQuietly(kill);
+    for (const kill of this.#children) killQuietly(kill);
     this.#children.clear();
-    for (const root of this.#roots) this.#removeQuietly(root);
+    for (const root of this.#roots) removeQuietly(root);
     this.#roots.clear();
   }
   #hook() {
@@ -12898,19 +12898,19 @@ var OwnedResources = class {
     this.#hooked = true;
     this.host.once("exit", () => this.seal());
   }
-  #removeQuietly(path5) {
-    try {
-      this.removeTree(path5);
-    } catch {
-    }
-  }
-  #killQuietly(kill) {
-    try {
-      kill();
-    } catch {
-    }
-  }
 };
+function removeQuietly(path5) {
+  try {
+    removeServiceTree(path5);
+  } catch {
+  }
+}
+function killQuietly(kill) {
+  try {
+    kill();
+  } catch {
+  }
+}
 var ownedResources = new OwnedResources();
 
 // src/semantic/workspace/service-root.ts
@@ -13022,14 +13022,14 @@ function samePath2(left, right) {
 }
 
 // src/semantic/python-mirror/python-mirror-verification.ts
-import { lstatSync as lstatSync3 } from "node:fs";
+import { lstatSync as lstatSync4 } from "node:fs";
 import { join as join10 } from "node:path";
 
 // src/semantic/python-mirror/python-mirror-tree.ts
 import {
   closeSync as closeSync2,
   fstatSync as fstatSync2,
-  lstatSync as lstatSync2,
+  lstatSync as lstatSync3,
   openSync as openSync2,
   readdirSync as readdirSync3,
   readFileSync as readFileSync4
@@ -13059,7 +13059,7 @@ function collectTree(directory2, relativeDirectory, actual) {
 function collectEntry(input) {
   const path5 = join9(input.directory, input.entry.name);
   const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
-  if (lstatSync2(path5).isSymbolicLink()) throw new Error("link");
+  if (lstatSync3(path5).isSymbolicLink()) throw new Error("link");
   if (input.entry.isDirectory()) {
     collectTree(path5, relativePath, input.actual);
     return;
@@ -13111,7 +13111,7 @@ function verifyMirrorPath(input) {
 function mirrorFilesMatch(input, expected) {
   const original = input.root.protectedRead(input.path).bytes;
   const mirrorPath = join10(input.mirrorRoot, input.path);
-  if (lstatSync3(mirrorPath).isSymbolicLink()) return false;
+  if (lstatSync4(mirrorPath).isSymbolicLink()) return false;
   return [
     mirrorTreeMatches(input.mirrorRoot, input.expectedTree),
     sha2562(original) === expected.original_sha256,
@@ -13182,7 +13182,7 @@ function createVerifier(input) {
 }
 
 // src/semantic/python-mirror/python-mirror-config.ts
-import { existsSync as existsSync2, lstatSync as lstatSync4 } from "node:fs";
+import { existsSync, lstatSync as lstatSync5 } from "node:fs";
 import { join as join12 } from "node:path";
 function readProjectPythonConfiguration(root) {
   const config2 = {};
@@ -13207,8 +13207,8 @@ function parseJson(source) {
 }
 function protectedOptionalRead(root, path5) {
   const absolute = join12(root.canonicalPath, path5);
-  if (!existsSync2(absolute)) return void 0;
-  if (lstatSync4(absolute).isSymbolicLink())
+  if (!existsSync(absolute)) return void 0;
+  if (lstatSync5(absolute).isSymbolicLink())
     throw new Error("unsafe_backend_mode");
   return root.protectedRead(path5).bytes;
 }
@@ -13254,7 +13254,7 @@ function isRecord(value) {
 }
 
 // src/semantic/python-mirror/python-mirror-inputs.ts
-import { lstatSync as lstatSync5, readdirSync as readdirSync5 } from "node:fs";
+import { lstatSync as lstatSync6, readdirSync as readdirSync5 } from "node:fs";
 import { join as join14 } from "node:path";
 
 // src/discovery/config-path.ts
@@ -13295,7 +13295,7 @@ function visit(root, directory2, relativeDirectory) {
 function visitEntry2(input) {
   const absolute = join14(input.directory, input.entry.name);
   const relativePath = input.relativeDirectory ? `${input.relativeDirectory}/${input.entry.name}` : input.entry.name;
-  if (lstatSync5(absolute).isSymbolicLink())
+  if (lstatSync6(absolute).isSymbolicLink())
     throw new Error("unsafe_backend_mode");
   if (input.entry.isDirectory())
     return visitDirectory(input.root, absolute, relativePath);
@@ -13454,7 +13454,7 @@ import { createHash as createHash3 } from "node:crypto";
 import {
   closeSync as closeSync3,
   fstatSync as fstatSync3,
-  lstatSync as lstatSync6,
+  lstatSync as lstatSync7,
   openSync as openSync3,
   readFileSync as readFileSync5,
   realpathSync as realpathSync2
@@ -13462,7 +13462,7 @@ import {
 import { isAbsolute, relative as relative2, resolve as resolve2, sep } from "node:path";
 function inspectNativeFile(candidate, root, projectRoot) {
   try {
-    const link = lstatSync6(candidate);
+    const link = lstatSync7(candidate);
     if (!link.isFile() || link.isSymbolicLink()) return void 0;
     const canonicalPath = realpathSync2.native(candidate);
     if (!safeFilePath(root, canonicalPath, projectRoot)) return void 0;
@@ -13941,7 +13941,7 @@ import { join as join20 } from "node:path";
 
 // src/semantic/workspace/filtered-workspace-copy.ts
 import {
-  lstatSync as lstatSync7,
+  lstatSync as lstatSync8,
   mkdirSync as mkdirSync3,
   readdirSync as readdirSync6,
   writeFileSync as writeFileSync3
@@ -13995,14 +13995,14 @@ function skipReason(relativePath, absoluteDirectory, name) {
   if (isSensitiveProjectPath(relativePath)) return "sensitive";
   if (isClassificationConfigPath(relativePath)) return "ignored";
   if (isBackendIrrelevant(relativePath)) return "ignored";
-  if (lstatSync7(join19(absoluteDirectory, name)).isSymbolicLink())
+  if (lstatSync8(join19(absoluteDirectory, name)).isSymbolicLink())
     return "ignored";
   return void 0;
 }
 
 // src/semantic/workspace/filtered-workspace.ts
-function createFilteredWorkspace(sourceRoot) {
-  const service = createOwnedServiceRoot("code-explorer-native-");
+function createFilteredWorkspace(sourceRoot, resources = ownedResources) {
+  const service = createOwnedServiceRoot("code-explorer-native-", resources);
   const treeRoot = join20(service.path, "tree");
   const sourcePaths = [];
   try {
@@ -14838,8 +14838,8 @@ var { relationCapabilitiesFromInitialize: relationCapabilitiesFromInitialize2 } 
 
 // src/semantic/adapters/native-lsp-process.ts
 import { spawn } from "node:child_process";
-function spawnNativeLspProcess(executable, arguments_, environment) {
-  ownedResources.assertOpen();
+function spawnNativeLspProcess(executable, arguments_, environment, resources = ownedResources) {
+  resources.assertOpen();
   const child = spawn(executable, arguments_, {
     shell: false,
     stdio: ["pipe", "pipe", "ignore"],
@@ -14848,7 +14848,7 @@ function spawnNativeLspProcess(executable, arguments_, environment) {
     env: { ...environment }
   });
   child.stdin.on("error", () => void 0);
-  const forget = ownedResources.trackChild(() => {
+  const forget = resources.trackChild(() => {
     child.kill("SIGKILL");
   });
   child.once("exit", forget);
@@ -16355,7 +16355,7 @@ function backendCapabilities(capabilities) {
 }
 
 // src/semantic/workspace/service-root-sweep.ts
-import { readdirSync as readdirSync7, readFileSync as readFileSync7, statSync as statSync2 } from "node:fs";
+import { lstatSync as lstatSync9, readdirSync as readdirSync7, readFileSync as readFileSync7 } from "node:fs";
 import { tmpdir as tmpdir2 } from "node:os";
 import { join as join21 } from "node:path";
 var UNMARKED_MAX_AGE_MS = 24 * 60 * 60 * 1e3;
@@ -16406,6 +16406,9 @@ function defaultSweepDeps() {
     directory: tmpdir2(),
     now: Date.now(),
     ownPid: process.pid,
+    // ASSUMPTION: Windows has no getuid, and its tmpdir() is the per-user
+    // %LOCALAPPDATA%\Temp, so every candidate there belongs to this user.
+    ownUid: process.getuid?.(),
     isAlive: (pid) => isOwnerAlive(pid),
     remove: removeServiceTree,
     writeError: (line) => process.stderr.write(`${line}
@@ -16423,7 +16426,10 @@ function serviceRootNames(directory2) {
 }
 function verdictFor(path5, deps) {
   try {
-    return classifyServiceRoot(path5, statSync2(path5).mtimeMs, deps);
+    const entry = lstatSync9(path5);
+    if (!entry.isDirectory()) return "keep";
+    if (deps.ownUid !== void 0 && entry.uid !== deps.ownUid) return "keep";
+    return classifyServiceRoot(path5, entry.mtimeMs, deps);
   } catch {
     return "keep";
   }
@@ -29547,7 +29553,7 @@ function matchesDiscoveryFilters2(...args) {
 }
 
 // src/discovery/source-file-collector.ts
-import { lstatSync as lstatSync8, readdirSync as readdirSync8 } from "node:fs";
+import { lstatSync as lstatSync10, readdirSync as readdirSync8 } from "node:fs";
 import { join as join27 } from "node:path";
 function collectSourceFiles(root) {
   const found = [];
@@ -29571,7 +29577,7 @@ function visitDirectory2(relative7, absolute, found) {
   if (!isIgnoredDirectory(relative7)) visit3(absolute, relative7, found);
 }
 function isExcludedEntry(relative7, absolute) {
-  return isSensitiveProjectPath(relative7) || isClassificationConfigPath(relative7) || lstatSync8(absolute).isSymbolicLink();
+  return isSensitiveProjectPath(relative7) || isClassificationConfigPath(relative7) || lstatSync10(absolute).isSymbolicLink();
 }
 function isIgnoredDirectory(path5) {
   return path5.split("/").some(
@@ -32104,16 +32110,20 @@ function createStdioCloseController(deps) {
       }
       closing = true;
       deps.releaseResources();
-      timer = deps.setTimer(
-        () => finish(1, `code-explorer: stdio close exceeded ${budgetMs} ms; backends were force-killed`),
-        budgetMs
-      );
+      timer = deps.setTimer(() => finish(1, overrunLine(budgetMs)), budgetMs);
       deps.closeCore().then(
         () => finish(0),
-        (error2) => finish(1, `code-explorer: stdio close failed: ${error2 instanceof Error ? error2.message : String(error2)}`)
+        (error2) => finish(1, failureLine(error2))
       );
     }
   };
+}
+function overrunLine(budgetMs) {
+  return `code-explorer: stdio close exceeded ${budgetMs} ms; backends were force-killed`;
+}
+function failureLine(error2) {
+  const reason = error2 instanceof Error ? error2.message : String(error2);
+  return `code-explorer: stdio close failed: ${reason}`;
 }
 function installStdioCloseTriggers(input) {
   input.signals.on("SIGINT", () => input.close("signal"));
