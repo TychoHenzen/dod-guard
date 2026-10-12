@@ -328,7 +328,7 @@ async function runDisposableLifecycle(options = {}) {
     operation: "draft-handoff-checks",
     request: { repository: REPOSITORY, pullNumber: PULL_NUMBER, headSha: HEAD_SHA },
     restEndpoint: `GET /repos/${REPOSITORY}/commits/${HEAD_SHA}/check-runs`,
-    rest: () => client.getRequiredChecks(PULL_NUMBER, pullRequest),
+    rest: () => client.getRequiredChecks(pullRequest),
   });
   assert.deepEqual(checks, [
     { bucket: "pass", name: "build-test", state: "SUCCESS" },
@@ -443,6 +443,7 @@ test("runs every lifecycle boundary once through REST when MCP is rate limited",
   assert.equal(transport.calls.filter((args) => args.includes("POST") && args.some((value) => String(value).includes("/projectsV2/2/items"))).length, ISSUE_NUMBERS.length);
   assert.equal(transport.calls.filter((args) => args.includes("PUT") && args.some((value) => String(value).endsWith("/merge"))).length, 1);
   assert.equal(transport.calls.some((args) => args.some((value) => /graphql/i.test(String(value)))), false);
+  assert.equal(transport.calls.some((args) => args[0] === "pr"), false);
 });
 
 test("fails closed on missing, contradictory, and forbidden lifecycle evidence", async () => {

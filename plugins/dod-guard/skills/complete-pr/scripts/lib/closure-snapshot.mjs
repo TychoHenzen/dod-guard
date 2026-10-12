@@ -7,7 +7,7 @@ import { renameSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command reads its process id for the partial file.
 import process from "node:process";
 import { statusValueName } from "../project-status.mjs";
-import { listOwnedProjects, readFallbackRequiredChecks } from "./github-client.mjs";
+import { listOwnedProjects, readRequiredChecks } from "./github-client.mjs";
 import {
   API_ISSUE_URL,
   API_PULL_URL,
@@ -143,13 +143,18 @@ function readPages(read, endpoint) {
 }
 
 // github-client's own shape checks name an endpoint only inside their text, so their failures are
-// restated as read failures for the endpoint they came from.
+// restated as read failures for the endpoint they came from. A read failure built here passes through
+// unchanged, also when github-client wrapped it to name its endpoint, so the message names the failed
+// read once.
 function atEndpoint(endpoint, work) {
   try {
     return work();
   } catch (error) {
     if (error instanceof SnapshotReadError) {
       throw error;
+    }
+    if (error?.cause instanceof SnapshotReadError) {
+      throw error.cause;
     }
     throw readFailure(endpoint, messageOf(error), error);
   }
@@ -552,7 +557,7 @@ function requiredChecksOf(pull, { repository, head, base, read }) {
     return null;
   }
   return atEndpoint(`repos/${repository}/commits/${head.sha}`, () =>
-    readFallbackRequiredChecks(repository, { baseBranch: base.ref, headSha: head.sha }, read),
+    readRequiredChecks(repository, { baseBranch: base.ref, headSha: head.sha }, read),
   );
 }
 

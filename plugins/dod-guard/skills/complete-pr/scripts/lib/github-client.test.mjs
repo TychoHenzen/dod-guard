@@ -2,9 +2,9 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { GitHubClient, readFallbackRequiredChecks } from "./github-client.mjs";
+import { GitHubClient, readRequiredChecks } from "./github-client.mjs";
 
-function createFallbackRunner({
+function createRestChecksRunner({
   checkRunResponses,
   protection = { checks: [{ app_id: 15_368, context: "build-test" }] },
   statusResponse = { statuses: [] },
@@ -13,9 +13,6 @@ function createFallbackRunner({
   const responses = [...checkRunResponses];
   const runner = (args) => {
     calls.push(args);
-    if (args[0] === "pr") {
-      return { stderr: "", status: 0, stdout: "[]" };
-    }
     const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
     if (endpoint?.includes("required_status_checks")) {
       return { stderr: "", status: 0, stdout: JSON.stringify(protection) };
@@ -89,9 +86,6 @@ function protectionFailureRunner(protectionResponse) {
   const calls = [];
   const runner = (args) => {
     calls.push(args);
-    if (args[0] === "pr") {
-      return okResponse("[]");
-    }
     const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
     if (endpoint?.includes("required_status_checks")) {
       return protectionResponse;
@@ -108,14 +102,14 @@ function protectionFailureRunner(protectionResponse) {
 }
 
 test("retries one transient exact-head check-runs failure with the identical request", () => {
-  const { calls, runner } = createFallbackRunner({
+  const { calls, runner } = createRestChecksRunner({
     checkRunResponses: [
       { stderr: "HTTP 503: transient provider failure", status: 1, stdout: "" },
       checkRunsResponse([{ app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" }]),
     ],
   });
 
-  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest());
+  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
 
   const checkRunsCalls = calls.filter((args) => args.some((value) => value.includes("/check-runs?")));
   assert.deepEqual(checks, [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
@@ -124,7 +118,7 @@ test("retries one transient exact-head check-runs failure with the identical req
 });
 
 test("stops after one transient exact-head check-runs retry", () => {
-  const { calls, runner } = createFallbackRunner({
+  const { calls, runner } = createRestChecksRunner({
     checkRunResponses: [
       { stderr: "HTTP 500: transient provider failure", status: 1, stdout: "" },
       { stderr: "HTTP 502: transient provider failure", status: 1, stdout: "" },
@@ -132,8 +126,10 @@ test("stops after one transient exact-head check-runs retry", () => {
   });
 
   assert.throws(
-    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest()),
-    /HTTP 502: transient provider failure/,
+    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
+    (error) =>
+      error.message.includes("repos/owner/repo/commits/head-1/check-runs?per_page=100") &&
+      error.message.includes("HTTP 502: transient provider failure"),
   );
 
   const checkRunsCalls = calls.filter((args) => args.some((value) => value.includes("/check-runs?")));
@@ -148,10 +144,10 @@ for (const [failureName, failureResponse] of [
   ["malformed response", { stderr: "", status: 0, stdout: JSON.stringify({ wrong_field: [] }) }],
 ]) {
   test(`does not retry exact-head check-runs ${failureName}`, () => {
-    const { calls, runner } = createFallbackRunner({ checkRunResponses: [failureResponse] });
+    const { calls, runner } = createRestChecksRunner({ checkRunResponses: [failureResponse] });
 
     assert.throws(
-      () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest()),
+      () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
     );
 
     assert.equal(
@@ -162,13 +158,13 @@ for (const [failureName, failureResponse] of [
 }
 
 test("does not retry or accept a wrong-provider exact-head check run", () => {
-  const { calls, runner } = createFallbackRunner({
+  const { calls, runner } = createRestChecksRunner({
     checkRunResponses: [checkRunsResponse([
       { app: { id: 57_789 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
     ])],
   });
 
-  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest());
+  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
 
   assert.deepEqual(checks, [{ bucket: "unknown", name: "build-test", state: "PROVIDER_MISMATCH" }]);
   assert.equal(
@@ -184,42 +180,105 @@ const serverErrorProtection = {
   stdout: JSON.stringify({ message: "Server Error" }),
 };
 
-function namesProtectionFailure(error) {
-  return error.message.includes(protectionEndpoint) && error.message.includes("HTTP 502");
-}
+const forbiddenProtection = {
+  stderr: "gh: Resource not accessible by personal access token (HTTP 403)",
+  status: 1,
+  stdout: JSON.stringify({ message: "Resource not accessible by personal access token" }),
+};
+// gh can exit with a status other than 0 or 1, which the protection read does not accept.
+const unexpectedExitProtection = { stderr: "gh: unexpected failure", status: 2, stdout: "" };
+const notFoundProtection = {
+  stderr: "gh: Not Found (HTTP 404)",
+  status: 1,
+  stdout: JSON.stringify({ message: "Branch not protected" }),
+};
 
 function readsCheckRunsOrStatuses(calls) {
   return calls.some((args) => args.some((value) => value.includes("/check-runs?") || value.includes("/status?")));
 }
 
-test("fails a non-404 branch-protection read naming the endpoint instead of reading no checks", () => {
-  const { calls, runner } = protectionFailureRunner(serverErrorProtection);
+// readRequiredChecks is the reader the closure snapshot calls; getRequiredChecks is complete-pr's way in.
+const requiredCheckReaders = [
+  ["readRequiredChecks", (runner) => readRequiredChecks("owner/repo", exactHeadPullRequest(), runner)],
+  [
+    "getRequiredChecks",
+    (runner) => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
+  ],
+];
+const protectionFailures = [
+  ["a non-404 (HTTP 502)", serverErrorProtection, "HTTP 502"],
+  ["an HTTP 403", forbiddenProtection, "HTTP 403"],
+  ["an unexpected gh exit status", unexpectedExitProtection, "gh: unexpected failure"],
+];
 
-  assert.throws(
-    () => readFallbackRequiredChecks("owner/repo", exactHeadPullRequest(), runner),
-    namesProtectionFailure,
-  );
+for (const [reader, read] of requiredCheckReaders) {
+  for (const [failure, response, detail] of protectionFailures) {
+    test(`${reader} stops on ${failure} branch-protection read naming the endpoint, without reading checks`, () => {
+      const { calls, runner } = protectionFailureRunner(response);
+
+      assert.throws(
+        () => read(runner),
+        (error) => error.message.includes(protectionEndpoint) && error.message.includes(detail),
+      );
+      assert.equal(readsCheckRunsOrStatuses(calls), false);
+    });
+  }
+}
+
+test("getRequiredChecks reads an absent branch protection (HTTP 404) as no required checks", () => {
+  const { calls, runner } = protectionFailureRunner(notFoundProtection);
+
+  assert.deepEqual(new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()), []);
   assert.equal(readsCheckRunsOrStatuses(calls), false);
 });
 
-test("getRequiredChecks fails a non-404 branch-protection read instead of returning no checks", () => {
-  const { runner } = protectionFailureRunner(serverErrorProtection);
+test("getRequiredChecks names the commit-status endpoint when that read fails", () => {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
+    if (endpoint?.includes("required_status_checks")) {
+      return okResponse(JSON.stringify({ checks: [{ app_id: 15_368, context: "build-test" }] }));
+    }
+    if (endpoint?.includes("/check-runs?")) {
+      return checkRunsResponse([]);
+    }
+    if (endpoint?.includes("/status?")) {
+      return { stderr: "gh: Bad Gateway (HTTP 502)", status: 1, stdout: "" };
+    }
+    throw new Error(`Unexpected command: ${args.join(" ")}`);
+  };
 
   assert.throws(
-    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(24, exactHeadPullRequest()),
-    namesProtectionFailure,
+    () => new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest()),
+    (error) =>
+      error.message.includes("repos/owner/repo/commits/head-1/status?per_page=100") &&
+      error.message.includes("HTTP 502"),
   );
 });
 
-test("reads an absent branch protection (HTTP 404) as no required checks without reading checks", () => {
-  const { calls, runner } = protectionFailureRunner({
-    stderr: "gh: Not Found (HTTP 404)",
-    status: 1,
-    stdout: JSON.stringify({ message: "Branch not protected" }),
+const exactHeadBuildTestRun = {
+  app: { id: 15_368 },
+  conclusion: "success",
+  head_sha: "head-1",
+  name: "build-test",
+  status: "completed",
+};
+
+test("getRequiredChecks reads only REST endpoints and settles two passing runs from two check suites", () => {
+  const { calls, runner } = createRestChecksRunner({
+    checkRunResponses: [
+      checkRunsResponse([
+        { id: 101, ...exactHeadBuildTestRun },
+        { id: 102, ...exactHeadBuildTestRun },
+      ]),
+    ],
   });
 
-  assert.deepEqual(readFallbackRequiredChecks("owner/repo", exactHeadPullRequest(), runner), []);
-  assert.equal(readsCheckRunsOrStatuses(calls), false);
+  const checks = new GitHubClient("owner/repo", 24, runner).getRequiredChecks(exactHeadPullRequest());
+
+  assert.deepEqual(checks, [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
+  assert.deepEqual(calls.map((args) => args[0]), ["api", "api", "api"]);
 });
 
 test("reads temporary pull-request refs with a delimited pull-number prefix", () => {

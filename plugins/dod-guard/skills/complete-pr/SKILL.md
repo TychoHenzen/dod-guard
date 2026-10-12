@@ -104,14 +104,23 @@ it ready. If it is already ready, it preserves that state. It then:
 - waits for every required check before merging and stops on failure or cancellation;
 - reads the review threads again immediately before each merge request and
   stops the same way;
-- if the normal required-check query is empty, reads branch protection and
-  verifies check runs and commit statuses from the exact pull-request head,
-  including any expected GitHub App provider;
+- reads required checks through one REST path, the same reader the closure
+  snapshot uses: branch protection for the base branch, then the check runs
+  and commit statuses of the exact pull-request head, including any expected
+  GitHub App provider. It runs no `gh pr checks` command. The token must be
+  able to read branch protection. A 403 or other non-404 protection read, or a
+  failed check-run or status read, stops with an error naming the endpoint; an
+  unprotected base (404) stops with `missing_required_checks`;
 - requires those exact-SHA required checks and provider evidence after `ci.yml`
   completes; a successful workflow run alone is not acceptance;
+- settles several exact-head runs of one required check from its provider,
+  such as a `pull_request` run and a `workflow_dispatch` run, by the newest
+  run, ordered by numeric check-run id: that run's pass, failure, or pending
+  state decides. Runs that cannot be ordered count only when they agree;
 - treats `success`, `neutral`, and `skipped` as passing, keeps pending results
-  pending, and fails closed for missing, stale, duplicate, mismatched, or
-  unsupported evidence;
+  pending, and fails closed for missing, stale, mismatched or conflicting
+  provider, disagreeing unordered, or unsupported evidence, and for several
+  statuses or a run plus a status for one context;
 - updates a stale branch only with its trusted head SHA;
 - accepts an update commit only when its parents are the prior trusted head and
   the observed base head;

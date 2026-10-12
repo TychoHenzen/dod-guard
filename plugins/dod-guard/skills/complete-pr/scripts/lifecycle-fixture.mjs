@@ -17,7 +17,7 @@ export const ITEM_NODE_IDS = [
   "PVTI_parent",
 ];
 export const ITEM_NUMERIC_IDS = new Map(ITEM_NODE_IDS.map((itemId, index) => [itemId, 256_202_820 + index]));
-export const ITEM_NODE_BY_ISSUE = new Map([
+const ITEM_NODE_BY_ISSUE = new Map([
   [665, ITEM_NODE_IDS[0]],
   [666, ITEM_NODE_IDS[1]],
   [667, ITEM_NODE_IDS[2]],
@@ -44,6 +44,10 @@ export function issueMarker(number) {
 
 function commandResult(data, status = 0, stderr = "") {
   return { status, stderr, stdout: data === undefined ? "" : JSON.stringify(data) };
+}
+
+function exactHeadCheckRun(id, name) {
+  return { id, app: { id: 15_368 }, conclusion: "success", head_sha: HEAD_SHA, name, status: "completed" };
 }
 
 function formValues(args, prefix) {
@@ -132,13 +136,6 @@ export function createRecordingTransport({
     if (args.some((value) => /graphql/i.test(String(value)))) {
       throw new Error("Forbidden routine GraphQL request.");
     }
-    if (args[0] === "pr" && args[1] === "checks") {
-      return commandResult([
-        { bucket: "pass", name: "build-test", state: "SUCCESS" },
-        { bucket: "pass", name: "static-analysis", state: "SUCCESS" },
-      ]);
-    }
-
     const endpoint = args.find((value) =>
       typeof value === "string" && (value.startsWith("repos/") || value.startsWith("users/")));
     const methodIndex = args.indexOf("--method");
@@ -150,6 +147,27 @@ export function createRecordingTransport({
 
     if (endpoint === `repos/${REPOSITORY}`) {
       return commandResult({ full_name: REPOSITORY, default_branch: "master", allow_auto_merge: true, permissions: { push: true } });
+    }
+    if (endpoint === `repos/${REPOSITORY}/branches/master/protection/required_status_checks`) {
+      return commandResult({
+        checks: [
+          { app_id: 15_368, context: "build-test" },
+          { app_id: 15_368, context: "static-analysis" },
+        ],
+      });
+    }
+    // build-test ran twice on the head, as a pull_request run and a later workflow_dispatch run.
+    if (endpoint === `repos/${REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100`) {
+      return commandResult({
+        check_runs: [
+          exactHeadCheckRun(101, "build-test"),
+          exactHeadCheckRun(102, "static-analysis"),
+          exactHeadCheckRun(103, "build-test"),
+        ],
+      });
+    }
+    if (endpoint === `repos/${REPOSITORY}/commits/${HEAD_SHA}/status?per_page=100`) {
+      return commandResult({ sha: HEAD_SHA, statuses: [] });
     }
     if (endpoint === `${issuesEndpoint}?state=all&per_page=100` && method === "GET") {
       const visibleIssues = [...issues.values()].filter((issue) => issue.number !== unresolvedIssueCreate);

@@ -72,7 +72,7 @@ test("normalizes exact-head provider checks and GitHub's passing conclusions", (
   );
 });
 
-test("fails closed for wrong providers, stale heads, duplicate runs, and failed statuses", () => {
+test("fails closed for wrong providers, stale heads, and failed statuses", () => {
   const protection = { checks: [{ context: "build-test", app_id: 15_368 }] };
   assert.deepEqual(
     normalizeRequiredChecks(
@@ -94,24 +94,117 @@ test("fails closed for wrong providers, stale heads, duplicate runs, and failed 
   );
   assert.deepEqual(
     normalizeRequiredChecks(
-      protection,
-      [
-        { app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
-        { app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
-      ],
-      [],
-      "head-1",
-    ),
-    [{ bucket: "unknown", name: "build-test", state: "DUPLICATE" }],
-  );
-  assert.deepEqual(
-    normalizeRequiredChecks(
       { contexts: ["build-test"] },
       [],
       [{ context: "build-test", sha: "head-1", state: "failure" }],
       "head-1",
     ),
     [{ bucket: "fail", name: "build-test", state: "FAILURE" }],
+  );
+});
+
+function protectedRun(id, conclusion, status = "completed", appId = 15_368) {
+  const run = { app: { id: appId }, conclusion, head_sha: "head-1", name: "build-test", status };
+  return id === undefined ? run : { id, ...run };
+}
+
+function settle(protection, runs, statuses = []) {
+  return normalizeRequiredChecks(protection, runs, statuses, "head-1");
+}
+
+test("settles repeated exact-head runs of one required check by the newest check-run id", () => {
+  const expectedApp = { checks: [{ context: "build-test", app_id: 15_368 }] };
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(101, "success"), protectedRun(102, "success")]),
+    [{ bucket: "pass", name: "build-test", state: "SUCCESS" }],
+  );
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(101, "failure"), protectedRun(102, "success")]),
+    [{ bucket: "pass", name: "build-test", state: "SUCCESS" }],
+  );
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(101, "success"), protectedRun(102, "failure")]),
+    [{ bucket: "fail", name: "build-test", state: "FAILURE" }],
+  );
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(101, "success"), protectedRun(102, null, "in_progress")]),
+    [{ bucket: "pending", name: "build-test", state: "IN_PROGRESS" }],
+  );
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(202, "success"), protectedRun(201, "failure")]),
+    [{ bucket: "pass", name: "build-test", state: "SUCCESS" }],
+  );
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(101, "success"), protectedRun(102, "success"), protectedRun(103, "cancelled")]),
+    [{ bucket: "fail", name: "build-test", state: "CANCELLED" }],
+  );
+});
+
+test("settles unordered repeated runs only when they agree", () => {
+  const expectedApp = { checks: [{ context: "build-test", app_id: 15_368 }] };
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(undefined, "success"), protectedRun(undefined, "success")]),
+    [{ bucket: "pass", name: "build-test", state: "SUCCESS" }],
+  );
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(101, "success"), protectedRun(undefined, "failure")]),
+    [{ bucket: "unknown", name: "build-test", state: "DUPLICATE" }],
+  );
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(101, "success"), protectedRun(101, "failure")]),
+    [{ bucket: "unknown", name: "build-test", state: "DUPLICATE" }],
+  );
+});
+
+test("keeps provider, stale-head, and status verdicts ahead of the newest-run rule", () => {
+  const expectedApp = { checks: [{ context: "build-test", app_id: 15_368 }] };
+  assert.deepEqual(
+    settle(expectedApp, [protectedRun(101, "success"), protectedRun(102, "success", "completed", 57_789)]),
+    [{ bucket: "unknown", name: "build-test", state: "PROVIDER_CONFLICT" }],
+  );
+  assert.deepEqual(
+    settle(expectedApp, [
+      protectedRun(101, "success", "completed", 57_789),
+      protectedRun(102, "success", "completed", 57_789),
+    ]),
+    [{ bucket: "unknown", name: "build-test", state: "PROVIDER_MISMATCH" }],
+  );
+  assert.deepEqual(
+    settle(expectedApp, [
+      { ...protectedRun(101, "success"), head_sha: "old-head" },
+      { ...protectedRun(102, "success"), head_sha: "old-head" },
+    ]),
+    [{ bucket: "unknown", name: "build-test", state: "STALE_HEAD" }],
+  );
+  const anyApp = { checks: [{ context: "build-test", app_id: -1 }] };
+  assert.deepEqual(
+    settle(anyApp, [protectedRun(101, "failure"), protectedRun(102, "success")]),
+    [{ bucket: "pass", name: "build-test", state: "SUCCESS" }],
+  );
+  assert.deepEqual(
+    settle(anyApp, [protectedRun(101, "success"), protectedRun(102, "success", "completed", 57_789)]),
+    [{ bucket: "unknown", name: "build-test", state: "PROVIDER_CONFLICT" }],
+  );
+  const contextsOnly = { contexts: ["build-test"] };
+  assert.deepEqual(
+    settle(contextsOnly, [
+      { id: 101, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
+      { id: 102, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" },
+    ]),
+    [{ bucket: "unknown", name: "build-test", state: "PROVIDER_CONFLICT" }],
+  );
+  assert.deepEqual(
+    settle(contextsOnly, [protectedRun(101, "success"), protectedRun(102, "success")], [
+      { context: "build-test", sha: "head-1", state: "success" },
+    ]),
+    [{ bucket: "unknown", name: "build-test", state: "DUPLICATE" }],
+  );
+  assert.deepEqual(
+    settle(contextsOnly, [], [
+      { context: "build-test", sha: "head-1", state: "success" },
+      { context: "build-test", sha: "head-1", state: "success" },
+    ]),
+    [{ bucket: "unknown", name: "build-test", state: "DUPLICATE" }],
   );
 });
 
@@ -182,30 +275,46 @@ test("covers missing, pending, provider-conflict, duplicate-source, and terminal
   }
 });
 
-test("reads protected exact-head checks when the required-check query is empty", () => {
-  const calls = [];
-  const responses = [
-    { check_runs: [{ app: { id: 15_368 }, conclusion: "success", head_sha: "head-1", name: "build-test", status: "completed" }] },
-    { statuses: [] },
-  ];
-  const commandRunner = (args) => {
+// Answers the three REST required-check reads for head-1 by endpoint and fails any other command,
+// so an unexpected read stops at the call that made it.
+function restRunner(calls, { protection, checkRuns, statuses }) {
+  const responses = new Map([
+    ["repos/owner/repo/branches/master/protection/required_status_checks", protection],
+    ["repos/owner/repo/commits/head-1/check-runs?per_page=100", checkRuns],
+    ["repos/owner/repo/commits/head-1/status?per_page=100", statuses],
+  ]);
+  return (args) => {
     calls.push(args);
-    if (args[0] === "pr") {
-      return { stderr: "", status: 0, stdout: "[]" };
+    const endpoint = args.find((value) => typeof value === "string" && value.startsWith("repos/"));
+    if (!responses.has(endpoint)) {
+      throw new Error(`Unexpected command: ${args.join(" ")}`);
     }
-    if (args[1].includes("required_status_checks")) {
-      return { stderr: "", status: 0, stdout: JSON.stringify({ checks: [{ app_id: 15_368, context: "build-test" }] }) };
-    }
-    return { stderr: "", status: 0, stdout: JSON.stringify(responses.shift()) };
+    return { stderr: "", status: 0, stdout: JSON.stringify(responses.get(endpoint)) };
   };
+}
 
-  const checks = new GitHubClient("owner/repo", 24, commandRunner).getRequiredChecks(24, {
+test("reads protected exact-head checks through REST only", () => {
+  const calls = [];
+  const checkRun = {
+    app: { id: 15_368 },
+    conclusion: "success",
+    head_sha: "head-1",
+    name: "build-test",
+    status: "completed",
+  };
+  const commandRunner = restRunner(calls, {
+    protection: { checks: [{ app_id: 15_368, context: "build-test" }] },
+    checkRuns: { check_runs: [checkRun] },
+    statuses: { statuses: [] },
+  });
+
+  const checks = new GitHubClient("owner/repo", 24, commandRunner).getRequiredChecks({
     baseBranch: "master",
     headSha: "head-1",
   });
 
   assert.deepEqual(checks, [{ bucket: "pass", name: "build-test", state: "SUCCESS" }]);
-  assert.deepEqual(calls.slice(0, 4).map((args) => args[0]), ["pr", "api", "api", "api"]);
+  assert.deepEqual(calls.map((args) => args[0]), ["api", "api", "api"]);
   const checkRunsCall = calls.find((args) => args.some((arg) => arg.includes("check-runs")));
   const statusesCall = calls.find((args) => args.some((arg) => arg.endsWith("/status?per_page=100")));
   assert.ok(checkRunsCall);
@@ -216,21 +325,13 @@ test("reads protected exact-head checks when the required-check query is empty",
 });
 
 test("uses the combined-status envelope SHA for status-only requirements", () => {
-  const responses = [
-    { check_runs: [] },
-    { sha: "head-1", statuses: [{ context: "build-test", state: "success" }] },
-  ];
-  const commandRunner = (args) => {
-    if (args[0] === "pr") {
-      return { stderr: "", status: 0, stdout: "[]" };
-    }
-    if (args[1]?.includes("required_status_checks")) {
-      return { stderr: "", status: 0, stdout: JSON.stringify({ contexts: ["build-test"] }) };
-    }
-    return { stderr: "", status: 0, stdout: JSON.stringify(responses.shift()) };
-  };
+  const commandRunner = restRunner([], {
+    protection: { contexts: ["build-test"] },
+    checkRuns: { check_runs: [] },
+    statuses: { sha: "head-1", statuses: [{ context: "build-test", state: "success" }] },
+  });
 
-  const checks = new GitHubClient("owner/repo", 24, commandRunner).getRequiredChecks(24, {
+  const checks = new GitHubClient("owner/repo", 24, commandRunner).getRequiredChecks({
     baseBranch: "master",
     headSha: "head-1",
   });
