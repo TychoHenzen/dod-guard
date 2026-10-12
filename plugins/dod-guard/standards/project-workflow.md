@@ -181,17 +181,22 @@ The snapshot also carries a `project` object with `owner`, `number`,
 Status field node ID and Done option ID from the Project fields read, the same
 values `/complete-pr` passes to `project-status.mjs`. Every non-archived item is
 read because a `supersedes` record lives only on its root, and a parent closes
-only after every sub-issue is checked, so a narrower read misses roots and
-siblings. An issue whose `children` list is missing is held with "sub-issue list
-missing", never treated as childless. Any caller's run may therefore also close
-other verified originals and parents, and report older `unverified-closed`
-issues, because the helper is the single closing authority. An item whose
-`archived_at` is set contributes no item, issue, or pull request record; an
-item with `archived_at` null or absent is kept. Evidence on an archived item is
-therefore invisible: a verified root archived before `apply` runs no longer
-closes the originals its `supersedes` record names, so apply a root's closes
-before archiving it. Historical closes also leave the `unverified-closed` report
-once the Project's auto-archive workflow archives them; there is no date cutoff.
+only after every sub-issue is checked, so reading fewer than the non-archived
+items misses roots and siblings. An issue whose `children` list is missing is
+held with "sub-issue list missing", never treated as childless. Any caller's run
+may therefore also close other verified originals and parents, and report older
+`unverified-closed` issues, because the helper is the single closing authority.
+An item whose `archived_at` is set contributes no item, issue, or pull request
+record; an item with `archived_at` null or absent is kept. Evidence on an
+archived item is therefore invisible: a verified root archived before `apply`
+runs no longer closes the originals its `supersedes` record names, so apply a
+root's closes before archiving it. An archived sub-issue has no record either,
+so its open parent is held with "child #N readback missing", and a closed issue
+whose parent is archived holds that parent with "issue #P readback missing". The
+helper closes neither parent until the archived item is unarchived; an open
+parent can also be closed by hand. Historical closes also leave the
+`unverified-closed` report once the Project's auto-archive workflow archives
+them; there is no date cutoff.
 
 The helper matches every Project item, issue, and pull request by
 `owner/name#number`, never by number alone. A record from another repository
