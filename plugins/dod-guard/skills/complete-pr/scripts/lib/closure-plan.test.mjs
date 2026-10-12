@@ -5,6 +5,7 @@ import { renderClosureEvidence } from "./closure-records.mjs";
 import {
   DELIVERIES,
   REPOSITORY,
+  completionComment,
   holdOf,
   issue,
   item,
@@ -134,4 +135,111 @@ test("a target issue listed twice is held as a duplicate and reported nowhere", 
   const plan = planClosures(snapshot);
   assert.deepEqual(holdOf(plan, 2001), { issue: 2001, reasons: ["duplicate issue record"] });
   assert.equal(plan.reports.find((report) => report.issue === 2001), undefined);
+});
+
+// Owner hand closes shaped like #684 (sub-issues #779-#782) and the childless #875: closed as
+// stateReason with no supersedes root, completion record, or closure comment. options.parentOpen
+// leaves #684 open on Backlog so the parent walk judges its closed sub-issues.
+function handClosed(stateReason, { parentOpen = false } = {}) {
+  const snapshot = recordedSnapshot();
+  const children = [779, 780, 781, 782];
+  const closed = (entry) => Object.assign(entry, { state: "closed", state_reason: stateReason });
+  const parent = issue(684, { children });
+  if (!parentOpen) closed(parent);
+  snapshot.items = [
+    item(684, parentOpen ? "Backlog" : "Done"),
+    ...children.map((child) => item(child, "Done", { parent: 684 })),
+    item(875, "Done"),
+  ];
+  snapshot.issues = [
+    parent,
+    ...children.map((child) => closed(issue(child, { parent: 684 }))),
+    closed(issue(875)),
+  ];
+  snapshot.pullRequests = [];
+  return snapshot;
+}
+
+const HAND_CLOSED = [684, 779, 780, 781, 782, 875];
+const JSON_BLOCK = /```json[\s\S]*```/;
+
+test("an owner's not_planned hand close is not reported, and a completed one still is", () => {
+  const abandoned = planClosures(handClosed("not_planned"));
+  assert.deepEqual(abandoned.reports.filter((report) => HAND_CLOSED.includes(report.issue)), []);
+  assert.deepEqual(abandoned.closes, []);
+  assert.deepEqual(abandoned.statusRepairs, []);
+  assert.deepEqual(abandoned.holds, []);
+
+  const completed = planClosures(handClosed("completed"));
+  const missing = ["completion evidence missing"];
+  assert.deepEqual(
+    completed.reports,
+    HAND_CLOSED.map((number) => ({ issue: number, kind: "unverified-closed", missing })),
+  );
+});
+
+test("a not_planned original named by an unverified root is still reported with the root's reasons", () => {
+  const snapshot = recordedSnapshot({ roots: [840], record: { 840: null } });
+  Object.assign(snapshot.issues.find(({ number }) => number === 777), { state: "closed", state_reason: "not_planned" });
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.reports.find((report) => report.issue === 777), {
+    issue: 777,
+    kind: "unverified-closed",
+    missing: ["root #840 unverified: completion evidence missing"],
+  });
+});
+
+test("a not_planned close with a malformed completion record is still reported", () => {
+  const snapshot = handClosed("not_planned");
+  const malformed = completionComment(840).body.replace(JSON_BLOCK, "```json\n{ not json\n```");
+  snapshot.issues.find(({ number }) => number === 875).comments = [{ id: 87501, body: malformed }];
+  assert.deepEqual(planClosures(snapshot).reports.find((report) => report.issue === 875), {
+    issue: 875,
+    kind: "unverified-closed",
+    missing: ["completion evidence record is not valid JSON"],
+  });
+});
+
+test("an open issue on Done is judged as before whatever its state_reason", () => {
+  for (const stateReason of ["not_planned", null]) {
+    const snapshot = handClosed("not_planned");
+    Object.assign(snapshot.issues.find(({ number }) => number === 875), { state: "open", state_reason: stateReason });
+    assert.deepEqual(
+      planClosures(snapshot).reports.find((report) => report.issue === 875),
+      { issue: 875, kind: "unverified-closed", missing: ["completion evidence missing"] },
+      String(stateReason),
+    );
+  }
+});
+
+// The parent walk judges sub-issues through closureEvidence with purpose "delivered", which the
+// report rule does not touch, so an open parent still waits on its abandoned sub-issues.
+test("an open parent of not_planned hand-closed sub-issues is held as before", () => {
+  const plan = planClosures(handClosed("not_planned", { parentOpen: true }));
+  assert.deepEqual(plan.reports, []);
+  assert.deepEqual(plan.closes, []);
+  const unverified = (child) => `child #${child} closed without verified evidence: completion evidence missing`;
+  assert.deepEqual(holdOf(plan, 684).reasons, [779, 780, 781, 782].map(unverified));
+});
+
+// An archived item contributes no record, while REST still names it as a sub-issue or a parent.
+function archive(snapshot, number) {
+  snapshot.items = snapshot.items.filter((entry) => entry.content.number !== number);
+  snapshot.issues = snapshot.issues.filter((entry) => entry.number !== number);
+}
+
+test("an open parent whose sub-issue is archived is held with that sub-issue's readback missing", () => {
+  const snapshot = handClosed("not_planned", { parentOpen: true });
+  archive(snapshot, 779);
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.closes, []);
+  assert.equal(holdOf(plan, 684).reasons[0], "child #779 readback missing");
+});
+
+test("a closed sub-issue whose parent is archived holds that parent with its readback missing", () => {
+  const snapshot = handClosed("not_planned");
+  archive(snapshot, 684);
+  const plan = planClosures(snapshot);
+  assert.deepEqual(plan.closes, []);
+  assert.deepEqual(holdOf(plan, 684), { issue: 684, reasons: ["issue #684 readback missing"] });
 });

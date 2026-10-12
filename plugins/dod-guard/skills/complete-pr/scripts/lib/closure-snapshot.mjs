@@ -400,6 +400,12 @@ function pullReference(pull, subject, endpoint) {
   return { repository, number };
 }
 
+// Archived items are out of the closure scope. The REST default that already
+// leaves them out is not relied on.
+function isArchivedItem(raw) {
+  return isObject(raw) && raw.archived_at !== null && raw.archived_at !== undefined;
+}
+
 function isItemEntry(raw) {
   return isObject(raw) && nonBlank(raw.node_id) && positiveInteger(raw.id);
 }
@@ -609,7 +615,9 @@ export function buildClosureSnapshot({ repository, runner }) {
   const fields = projectFields(read, basePath, project.number);
   const itemsEndpoint =
     `${basePath}/projectsV2/${project.number}/items?per_page=100&fields=${fields.fieldIds.join(",")}`;
-  const shaped = readPages(read, itemsEndpoint).map((raw) => shapeItem(raw, fields.fieldIds, itemsEndpoint));
+  const shaped = readPages(read, itemsEndpoint)
+    .filter((raw) => !isArchivedItem(raw))
+    .map((raw) => shapeItem(raw, fields.fieldIds, itemsEndpoint));
   const targets = shaped.filter(({ item }) => sameRepository(item.repository, repo.fullName));
   const issues = targets
     .filter(({ item }) => item.contentType === "Issue")

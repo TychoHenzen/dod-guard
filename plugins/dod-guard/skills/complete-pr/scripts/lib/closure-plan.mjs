@@ -183,7 +183,7 @@ function hasClosureEvidence(issue) {
 // close itself stands: a refinement may close a not_planned hierarchy record
 // before its moved delivery lands. Purpose "delivered" asks whether a parent may
 // count the issue as settled for its own completed close, which must wait for
-// that delivery.
+// that delivery. `unclaimed` marks an issue that carries no evidence of any kind.
 function closureEvidence(context, number, { seen = new Set(), purpose = "justified" } = {}) {
   if (seen.has(number)) return { verified: false, missing: ["sub-issue relationship cycle"] };
   seen.add(number);
@@ -209,7 +209,7 @@ function closureEvidence(context, number, { seen = new Set(), purpose = "justifi
     const missing = rule(context, number, seen);
     return { verified: missing.length === 0, missing };
   }
-  return { verified: false, missing: ["completion evidence missing"] };
+  return { verified: false, missing: ["completion evidence missing"], unclaimed: true };
 }
 
 function childReason(context, child, seen) {
@@ -387,15 +387,22 @@ function walkPass(context, seeds) {
 }
 
 // Closed or Done records whose close has no verified evidence are reported
-// only: reopening or editing them would override an owner's decision.
+// only: reopening or editing them would override an owner's decision. An
+// owner's not_planned hand close (an abandon or a fold) claims no delivery, so
+// when it carries no evidence at all there is nothing to verify. A helper-made
+// not_planned close, a malformed completion record, or a supersedes root still
+// claims something, so those are judged as before.
 function unverifiedClosed(context) {
   const reports = [];
   for (const number of context.index.order) {
     if (planned(context, number)) continue;
+    const issue = issueFor(context.index, number);
     const done = itemStatus(itemFor(context.index, number)) === "Done";
-    if (isOpen(issueFor(context.index, number)) && !done) continue;
+    if (isOpen(issue) && !done) continue;
     const evidence = closureEvidence(context, number);
-    if (!evidence.verified) reports.push({ issue: number, kind: "unverified-closed", missing: evidence.missing });
+    if (evidence.verified) continue;
+    const abandoned = evidence.unclaimed && issue?.state === "closed" && issue.state_reason === "not_planned";
+    if (!abandoned) reports.push({ issue: number, kind: "unverified-closed", missing: evidence.missing });
   }
   return reports;
 }
