@@ -43,6 +43,7 @@ const BLANK = /blank/u;
 const NOT_A_NAME = /not a name/u;
 const MISSING_BODY = /must carry body/u;
 const USAGE_LINE = /closure\.mjs snapshot --repository=<owner\/name> --output=<file\.json>/u;
+const ARCHIVED_ISSUE = /#13\b/u;
 
 // Two --slurp pages in Project order. PVTI_f11 is a foreign issue whose number matches target issue
 // #11. PVTI_t12 also links a foreign pull request: the item keeps that link, but the snapshot never
@@ -128,6 +129,25 @@ const DEPARTURES = {
 };
 const REJECTED_NAMES = Object.keys(DEPARTURES);
 
+const ARCHIVED_AT = "2026-10-01T09:30:00Z";
+const ARCHIVED_ISSUE_NUMBER = 13;
+const ARCHIVED_ITEM_ID = 1113;
+const ARCHIVED_PULL_NUMBER = 24;
+const ARCHIVED_HEAD = "e4".repeat(20);
+const ARCHIVED_MERGE = "f4".repeat(20);
+
+// PVTI_t13 is archived and is the only item that references issue #13 and pull request #24. No route
+// answers #24's check reads, so any read made for it fails the build. PVTI_t11 carries an explicit
+// null archived_at, and every other item has no archived_at key at all.
+function archiveItems(pages) {
+  pages.flat().find((item) => item.node_id === "PVTI_t11").archived_at = null;
+  const archived = projectItem("PVTI_t13", ARCHIVED_ITEM_ID, issueContent(ARCHIVED_ISSUE_NUMBER), {
+    status: "Done",
+    linked: [pull(ARCHIVED_PULL_NUMBER, { sha: ARCHIVED_HEAD, mergeCommit: ARCHIVED_MERGE })],
+  });
+  pages.at(-1).push({ ...archived, archived_at: ARCHIVED_AT });
+}
+
 // The healthy fixture, or one deliberate departure named by variant.
 function fixtureRoutes(variant = "healthy") {
   const pages = valuePages();
@@ -146,6 +166,9 @@ function fixtureRoutes(variant = "healthy") {
   }
   if (Object.hasOwn(DEPARTURES, variant)) {
     DEPARTURES[variant](pages);
+  }
+  if (variant === "archived") {
+    archiveItems(pages);
   }
   const routes = {
     [ENDPOINT.repository]: ok({ full_name: REPO, default_branch: "master" }),
@@ -172,6 +195,9 @@ function fixtureRoutes(variant = "healthy") {
   }
   if (variant === "items") {
     routes[ENDPOINT.values(2)] = SERVER_ERROR;
+  }
+  if (variant === "non-object-item") {
+    routes[ENDPOINT.values(2)] = ok([[...pages[0], "not an item"], pages[1]]);
   }
   if (variant === "missing-page") {
     routes[ENDPOINT.values(2)] = ok([pages[0], { message: "Not Found" }]);
@@ -561,6 +587,40 @@ test("AC-06: a blank Status name stops the build and names the item", () => {
   const error = buildFailure(fixtureRoutes("blank-status"));
   assert.ok(error, "the build should have failed");
   assert.ok(error.message.includes("PVTI_t11"), error.message);
+  assert.ok(error.message.includes(ENDPOINT.values(2)), error.message);
+});
+
+test("an archived item is left out of items and issues, and an item with archived_at null is kept", () => {
+  const snapshot = build(fixtureRoutes("archived"));
+  const ids = snapshot.items.map((entry) => entry.id);
+  assert.ok(!ids.includes("PVTI_t13"), ids.join(", "));
+  assert.ok(ids.includes("PVTI_t11"), ids.join(", "));
+  const numbers = snapshot.issues.map((issue) => issue.number);
+  assert.ok(!numbers.includes(ARCHIVED_ISSUE_NUMBER), numbers.join(", "));
+  const kept = snapshot.items.find((entry) => entry.id === "PVTI_t11");
+  assert.ok(numbers.includes(kept.content.number), numbers.join(", "));
+});
+
+test("an item with no archived_at key is kept", () => {
+  const [[raw]] = valuePages();
+  assert.equal(Object.hasOwn(raw, "archived_at"), false);
+  const snapshot = build(fixtureRoutes("archived"));
+  assert.ok(snapshot.items.some((entry) => entry.id === raw.node_id));
+  assert.ok(snapshot.issues.some((issue) => issue.number === raw.content.number));
+});
+
+test("an issue and pull request reached only through an archived item leave no record and no failure", () => {
+  const snapshot = build(fixtureRoutes("archived"));
+  assert.deepEqual(snapshot, build(fixtureRoutes()));
+  assert.ok(!snapshot.pullRequests.some((record) => record.number === ARCHIVED_PULL_NUMBER));
+  const plan = planClosures(snapshot);
+  assert.doesNotMatch(JSON.stringify(plan), ARCHIVED_ISSUE);
+});
+
+test("a non-object entry on an items page still fails item validation", () => {
+  const error = buildFailure(fixtureRoutes("non-object-item"));
+  assert.ok(error, "the build should have failed");
+  assert.ok(error.message.includes("every item must carry a node_id"), error.message);
   assert.ok(error.message.includes(ENDPOINT.values(2)), error.message);
 });
 
