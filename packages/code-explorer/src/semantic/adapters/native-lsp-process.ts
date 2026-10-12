@@ -1,6 +1,7 @@
 import { type ChildProcessByStdio, spawn } from "node:child_process";
 import type { Readable, Writable } from "node:stream";
 import type { LspProcess } from "../direct-lsp/direct-lsp.js";
+import { ownedResources } from "../workspace/owned-resources.js";
 
 /**
  * Spawns only a prevalidated executable and fixed arguments without a shell.
@@ -10,6 +11,7 @@ export function spawnNativeLspProcess(
   arguments_: readonly string[],
   environment: Readonly<Record<string, string>>,
 ): LspProcess {
+  ownedResources.assertOpen();
   const child = spawn(executable, arguments_, {
     shell: false,
     stdio: ["pipe", "pipe", "ignore"],
@@ -17,6 +19,10 @@ export function spawnNativeLspProcess(
     // The policy has already selected an absolute executable and arguments.
     env: { ...environment },
   }) as ChildProcessByStdio<Writable, Readable, null>;
+  const forget = ownedResources.trackChild(() => {
+    child.kill("SIGKILL");
+  });
+  child.once("exit", forget);
   return createProcessHandlers(child);
 }
 

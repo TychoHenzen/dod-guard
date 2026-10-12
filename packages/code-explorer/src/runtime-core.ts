@@ -6,7 +6,6 @@ import type {
 import { countSensitivePathsUnderRoot } from "./discovery/sensitive-paths.js";
 import * as workspaceFreshness from "./freshness/workspace-native.js";
 import {
-  createNativeProjectRoot,
   createStartedRuntimeAdapters,
   type LanguageAdapter,
   loadAdapterSelectionRecord,
@@ -62,6 +61,7 @@ function createRuntimeCore(
   return {
     call: (name, arguments_) => server.call(name, arguments_),
     connect: (transport: Transport) => server.mcp.connect(transport),
+    terminate: () => server.close(),
     close: async (signal) => {
       if (signal.aborted) throw new Error("aborted");
       closing ??= cleanup();

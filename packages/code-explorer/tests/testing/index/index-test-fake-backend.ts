@@ -1,9 +1,10 @@
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
 export type FakeBackendLog = {
   starts: number;
   shutdowns: number;
   exits: number;
+  pid?: number;
   root_uri?: string;
   initialization_options?: unknown;
   configuration_sections: string[];
@@ -13,9 +14,11 @@ const fakeLspServerSource = `import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-const logPath = process.env.CODE_EXPLORER_FAKE_COUNTER;
-const log = () => JSON.parse(readFileSync(logPath, "utf8"));
-const save = (value) => writeFileSync(logPath, JSON.stringify(value));
+if (process.env.CODE_EXPLORER_FAKE_PID_FILE) writeFileSync(process.env.CODE_EXPLORER_FAKE_PID_FILE, String(process.pid));
+if (process.env.CODE_EXPLORER_FAKE_KEEPALIVE === "1") setInterval(() => {}, 1 << 30);
+const counterPath = () => process.env.CODE_EXPLORER_FAKE_COUNTER;
+const log = () => JSON.parse(readFileSync(counterPath(), "utf8"));
+const save = (value) => writeFileSync(counterPath(), JSON.stringify(value));
 const record = (change) => { const value = log(); change(value); save(value); };
 const send = (message) => {
   const body = Buffer.from(JSON.stringify(message));
@@ -29,6 +32,7 @@ const receive = (message) => {
   if (message.method === "initialize") {
     record((value) => {
       value.starts += 1;
+      value.pid = process.pid;
       value.root_uri = message.params.rootUri;
       value.initialization_options = message.params.initializationOptions;
     });
@@ -127,4 +131,34 @@ export async function removeTemporaryTree(path: string): Promise<void> {
 
 export function writeFakeLspServer(path: string): void {
   writeFileSync(path, fakeLspServerSource, "utf8");
+}
+
+export async function waitForPidFile(path: string): Promise<number> {
+  for (let attempt = 0; attempt < 250; attempt += 1) {
+    const pid = existsSync(path) ? Number(readFileSync(path, "utf8")) : 0;
+    if (Number.isInteger(pid) && pid > 0) return pid;
+    await new Promise((resolve_) => setTimeout(resolve_, 20));
+  }
+  throw new Error("fake_backend_pid_timeout");
+}
+
+export async function waitForPidExit(
+  pid: number,
+  timeoutMs = 2000,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (pidExists(pid)) {
+    if (Date.now() >= deadline) return false;
+    await new Promise((resolve_) => setTimeout(resolve_, 20));
+  }
+  return true;
+}
+
+export function pidExists(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code !== "ESRCH";
+  }
 }

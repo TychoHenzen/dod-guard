@@ -8,7 +8,7 @@ const shutdownInitialization = {
   id: 1,
   method: "initialize",
   params: {
-    processId: null,
+    processId: globalThis.process.pid,
     rootUri: "file:///frozen",
     capabilities: { workspace: {} },
     initializationOptions: { safe: true },

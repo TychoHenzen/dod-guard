@@ -6,6 +6,7 @@ import { it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import * as stdio from "@modelcontextprotocol/sdk/client/stdio.js";
+import { isolatedDiscoveryEnvironment } from "./index-test-isolated-env.js";
 import { removeTemporaryTree } from "./index-test-standalone-support.js";
 
 const { StdioClientTransport } = stdio;
@@ -98,7 +99,7 @@ it(
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [join(installed, "dist", "bundle.js"), "--project-root", project],
-      env: { PATH: "" },
+      env: { PATH: "", ...isolatedDiscoveryEnvironment(temporary) },
     });
     try {
       await client.connect(transport);

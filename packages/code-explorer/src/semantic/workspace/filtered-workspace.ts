@@ -1,11 +1,11 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   createNativeProjectRoot,
   type ProjectRoot,
 } from "../project-root/project-root.js";
 import { copyFilteredDirectory } from "./filtered-workspace-copy.js";
+import { createOwnedServiceRoot } from "./service-root.js";
 
 type FilteredWorkspace = {
   root: ProjectRoot<number>;
@@ -18,29 +18,26 @@ type FilteredWorkspace = {
 export function createFilteredWorkspace(
   sourceRoot: ProjectRoot,
 ): FilteredWorkspace {
-  const serviceRoot = mkdtempSync(join(tmpdir(), "code-explorer-native-"));
+  const service = createOwnedServiceRoot("code-explorer-native-");
+  const treeRoot = join(service.path, "tree");
   const sourcePaths: string[] = [];
   try {
+    mkdirSync(treeRoot);
     const excluded = copyFilteredDirectory({
       absoluteDirectory: sourceRoot.canonicalPath,
       relativeDirectory: "",
-      serviceRoot,
+      serviceRoot: treeRoot,
       sourceRoot,
       sourcePaths,
     });
     return {
-      root: createNativeProjectRoot(serviceRoot),
+      root: createNativeProjectRoot(treeRoot),
       sensitive_paths_excluded: excluded,
       sourcePaths: () => [...sourcePaths],
-      dispose: () => disposeWorkspace(serviceRoot),
+      dispose: service.release,
     };
   } catch (error) {
-    disposeWorkspace(serviceRoot);
+    service.release();
     throw error;
   }
-}
-
-function disposeWorkspace(serviceRoot: string): void {
-  if (existsSync(serviceRoot))
-    rmSync(serviceRoot, { recursive: true, force: true });
 }

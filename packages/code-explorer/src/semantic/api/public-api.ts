@@ -20,3 +20,8 @@ export {
   createRuntimeAdapters,
   createStartedRuntimeAdapters,
 } from "../runtime/runtime-bootstrap.js";
+export { ownedResources } from "../workspace/owned-resources.js";
+export {
+  defaultSweepDeps,
+  sweepStaleServiceRoots,
+} from "../workspace/service-root-sweep.js";

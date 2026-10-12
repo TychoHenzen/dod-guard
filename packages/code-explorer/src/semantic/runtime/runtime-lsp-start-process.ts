@@ -3,6 +3,7 @@ import type { BackendLaunchPreparation } from "../backend-launch/types.js";
 import type { SymbolIdentity } from "../contracts/contract.js";
 import { createDirectLspClient } from "../direct-lsp/direct-lsp.js";
 import { createDirectLspSemanticBackend } from "../direct-lsp/semantic.js";
+import { ownedResources } from "../workspace/owned-resources.js";
 import type { RuntimeLspState } from "./runtime-lsp-state.js";
 
 export async function startRuntimeProcess(
@@ -47,11 +48,15 @@ function createClient(
 }
 
 function replacementProcess(lifecycle: RuntimeLspState) {
-  if (lifecycle.disposed) return undefined;
+  if (lifecycle.disposed || ownedResources.sealed) return undefined;
   const preparation = lifecycle.options.prepare();
-  return preparation.status === "ready"
-    ? spawnProcess(lifecycle, preparation)
-    : undefined;
+  if (preparation.status !== "ready") return undefined;
+  // The restart runs from a timer, where a throw would be uncaught.
+  try {
+    return spawnProcess(lifecycle, preparation);
+  } catch {
+    return undefined;
+  }
 }
 
 function spawnProcess(

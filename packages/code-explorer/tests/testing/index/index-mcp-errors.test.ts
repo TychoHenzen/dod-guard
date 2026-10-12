@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import * as stdio from "@modelcontextprotocol/sdk/client/stdio.js";
 import { createServer } from "../../../src/index.js";
+import { removeTemporaryTree } from "./index-test-fake-backend.js";
+import { isolatedDiscoveryEnvironment } from "./index-test-isolated-env.js";
 
-const { StdioClientTransport } = stdio;
+const { StdioClientTransport, getDefaultEnvironment } = stdio;
 const entryPoint = fileURLToPath(
   new URL("../../../src/index.js", import.meta.url),
 );
@@ -23,11 +28,16 @@ it(
       retryable: false,
     });
     assert.deepEqual(server.state(), before);
+    const temporary = mkdtempSync(join(tmpdir(), "code-explorer-errors-"));
     const client = new Client({ name: "code-explorer-test", version: "1.0.0" });
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [entryPoint],
       cwd: process.cwd(),
+      env: {
+        ...getDefaultEnvironment(),
+        ...isolatedDiscoveryEnvironment(temporary),
+      },
     });
     try {
       await client.connect(transport);
@@ -43,7 +53,7 @@ it(
         retryable: false,
       });
     } finally {
-      await client.close();
+      await client.close().finally(() => removeTemporaryTree(temporary));
     }
   },
 );
@@ -52,6 +62,7 @@ it(
   "returns error envelopes through structuredContent and matching JSON " +
     "text",
   async () => {
+    const temporary = mkdtempSync(join(tmpdir(), "code-explorer-errors-"));
     const client = new Client({
       name: "code-explorer-structured-error-test",
       version: "1.0.0",
@@ -60,6 +71,10 @@ it(
       command: process.execPath,
       args: [entryPoint],
       cwd: process.cwd(),
+      env: {
+        ...getDefaultEnvironment(),
+        ...isolatedDiscoveryEnvironment(temporary),
+      },
     });
     try {
       await client.connect(transport);
@@ -77,7 +92,7 @@ it(
         JSON.parse(response.content[0]?.text ?? ""),
       );
     } finally {
-      await client.close();
+      await client.close().finally(() => removeTemporaryTree(temporary));
     }
   },
 );

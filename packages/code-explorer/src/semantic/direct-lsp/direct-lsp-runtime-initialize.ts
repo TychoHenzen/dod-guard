@@ -37,7 +37,7 @@ function initializeParams(
   state: DirectLspRuntimeState,
 ): Record<string, unknown> {
   return {
-    processId: null,
+    processId: process.pid,
     rootUri: state.options.root_uri,
     capabilities: state.capabilities,
     initializationOptions: state.initializationOptions,

@@ -13,6 +13,8 @@ import { it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import * as stdio from "@modelcontextprotocol/sdk/client/stdio.js";
+import { waitForPidExit } from "./index-test-fake-backend.js";
+import { isolatedTempEnvironment } from "./index-test-isolated-env.js";
 import {
   createStandaloneBackendRecord,
   type FakeBackendLog,
@@ -115,6 +117,7 @@ it(
           PATH: "",
           SystemRoot: process.env.SystemRoot ?? "",
           CODE_EXPLORER_BACKENDS_ROOT: backendRoot,
+          ...isolatedTempEnvironment(temporary),
         },
       });
       try {
@@ -169,8 +172,12 @@ it(
           1,
           `${language} launched once after the pre-spawn identity check`,
         );
-        assert.equal(log.shutdowns, 1, `${language} received a clean shutdown`);
-        assert.equal(log.exits, 1, `${language} received exit after shutdown`);
+        assert.ok(typeof log.pid === "number", `${language} recorded its pid`);
+        assert.equal(
+          await waitForPidExit(log.pid),
+          true,
+          `${language} fake exited with the client close`,
+        );
         assert.deepEqual(
           log.configuration_sections,
           language === "python" ? ["[]", "[]", "[]"] : [],
