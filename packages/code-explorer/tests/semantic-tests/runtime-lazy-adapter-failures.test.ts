@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { createLanguageAdapter } from "../../src/semantic/adapters/language-adapter-factory.js";
 import { configuredCapabilities } from "../../src/semantic/adapters/language-adapter-status.js";
-import { createLazyRuntimeAdapter } from "../../src/semantic/runtime/runtime-lazy-adapter.js";
+import { presentRustAdapter } from "./lazy-adapter-test-support.js";
 
 const capabilities = configuredCapabilities(undefined);
 
@@ -24,15 +24,9 @@ function readyRust() {
 
 it("a build failure is reported as failed with its code, not initializing", async () => {
   let builds = 0;
-  const adapter = createLazyRuntimeAdapter({
-    language: "rust",
-    backendName: "rust-analyzer",
-    capabilities,
-    isPresent: async () => true,
-    build: () => {
-      builds += 1;
-      throw new Error("backend_copy_failed");
-    },
+  const adapter = presentRustAdapter(() => {
+    builds += 1;
+    throw new Error("backend_copy_failed");
   });
   await assert.rejects(adapter.start?.() ?? Promise.resolve(), {
     message: "backend_copy_failed",
@@ -45,15 +39,9 @@ it("a build failure is reported as failed with its code, not initializing", asyn
 
 it("a stopped adapter does not start again, like a disposed backend", async () => {
   let builds = 0;
-  const adapter = createLazyRuntimeAdapter({
-    language: "rust",
-    backendName: "rust-analyzer",
-    capabilities,
-    isPresent: async () => true,
-    build: () => {
-      builds += 1;
-      return readyRust();
-    },
+  const adapter = presentRustAdapter(() => {
+    builds += 1;
+    return readyRust();
   });
   await adapter.start?.();
   await adapter.shutdown?.();

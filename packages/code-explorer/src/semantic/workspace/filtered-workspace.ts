@@ -5,6 +5,7 @@ import {
   type ProjectRoot,
 } from "../project-root/project-root.js";
 import { copyFilteredDirectory } from "./filtered-workspace-copy.js";
+import { type OwnedResources, ownedResources } from "./owned-resources.js";
 import { createOwnedServiceRoot } from "./service-root.js";
 
 type FilteredWorkspace = {
@@ -17,8 +18,9 @@ type FilteredWorkspace = {
 /** Produces the sanitized tree a native source-reading backend receives. */
 export function createFilteredWorkspace(
   sourceRoot: ProjectRoot,
+  resources: OwnedResources = ownedResources,
 ): FilteredWorkspace {
-  const service = createOwnedServiceRoot("code-explorer-native-");
+  const service = createOwnedServiceRoot("code-explorer-native-", resources);
   const treeRoot = join(service.path, "tree");
   const sourcePaths: string[] = [];
   try {

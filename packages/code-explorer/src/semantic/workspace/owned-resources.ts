@@ -1,7 +1,10 @@
 import { rmSync } from "node:fs";
 import { makeTreeWritable } from "../python-mirror/python-mirror-permissions.js";
 
-/** Service trees are read-only in places, so the write bit is restored before removal. */
+/**
+ * Service trees are read-only in places, so the write bit is restored before
+ * removal.
+ */
 export function removeServiceTree(path: string): void {
   makeTreeWritable(path);
   rmSync(path, { recursive: true, force: true });
@@ -9,9 +12,10 @@ export function removeServiceTree(path: string): void {
 
 /**
  * Tracks every owned temp root and backend child in this process. Sealing
- * runs on Node's exit event, so process.exit() and a normal exit leave no
+ * runs on the host's exit event, so process.exit() and a normal exit leave no
  * backend or root behind. A hard kill skips the event; the next stdio start
- * sweeps the roots it orphaned.
+ * sweeps the roots it orphaned. Tests pass their own host, so each test seals
+ * a registry it owns.
  */
 export class OwnedResources {
   readonly #roots = new Set<string>();
@@ -23,7 +27,6 @@ export class OwnedResources {
     private readonly host: {
       once(event: "exit", listener: () => void): unknown;
     } = process,
-    private readonly removeTree: (path: string) => void = removeServiceTree,
   ) {}
 
   get sealed(): boolean {
@@ -38,12 +41,12 @@ export class OwnedResources {
   trackRoot(path: string): () => void {
     this.#hook();
     if (this.#sealed) {
-      this.#removeQuietly(path);
+      removeQuietly(path);
       return () => undefined;
     }
     this.#roots.add(path);
     return () => {
-      if (this.#roots.delete(path)) this.removeTree(path);
+      if (this.#roots.delete(path)) removeServiceTree(path);
     };
   }
 
@@ -51,7 +54,7 @@ export class OwnedResources {
   trackChild(kill: () => void): () => void {
     this.#hook();
     if (this.#sealed) {
-      this.#killQuietly(kill);
+      killQuietly(kill);
       return () => undefined;
     }
     this.#children.add(kill);
@@ -62,9 +65,9 @@ export class OwnedResources {
 
   seal(): void {
     this.#sealed = true;
-    for (const kill of this.#children) this.#killQuietly(kill);
+    for (const kill of this.#children) killQuietly(kill);
     this.#children.clear();
-    for (const root of this.#roots) this.#removeQuietly(root);
+    for (const root of this.#roots) removeQuietly(root);
     this.#roots.clear();
   }
 
@@ -73,21 +76,22 @@ export class OwnedResources {
     this.#hooked = true;
     this.host.once("exit", () => this.seal());
   }
+}
 
-  #removeQuietly(path: string): void {
-    try {
-      this.removeTree(path);
-    } catch {
-      // Exit must finish even when one root cannot be removed.
-    }
+function removeQuietly(path: string): void {
+  try {
+    removeServiceTree(path);
+  } catch {
+    // Exit must finish even when one root cannot be removed.
   }
+}
 
-  #killQuietly(kill: () => void): void {
-    try {
-      kill();
-    } catch {
-      // A child that already died cannot be killed again; exit must still finish.
-    }
+function killQuietly(kill: () => void): void {
+  try {
+    kill();
+  } catch {
+    // A child that already died cannot be killed again; exit must still
+    // finish.
   }
 }
 

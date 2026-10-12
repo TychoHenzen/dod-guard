@@ -37,18 +37,22 @@ it("exits 0 after a clean close and releases resources before closing the core",
   assert.deepEqual(errors, []);
 });
 
-it("force-kills, writes one stderr line, and exits 1 when the close step overruns 1500 ms", () => {
+// The kill and the root removal on overrun are proven with a real child and
+// a real root in stdio-close-cleanup.test.ts.
+it("releases at close start and again before exit 1 when the close step overruns 1500 ms", () => {
   const timers = new FakeTimers();
+  const calls: string[] = [];
   const errors: string[] = [];
-  const exits: number[] = [];
-  let releases = 0;
   const closer = createStdioCloseController({
-    closeCore: neverSettles,
+    closeCore: () => {
+      calls.push("closeCore");
+      return neverSettles();
+    },
     releaseResources: () => {
-      releases += 1;
+      calls.push("release");
     },
     exit: (code) => {
-      exits.push(code);
+      calls.push(`exit:${code}`);
     },
     writeError: (line) => {
       errors.push(line);
@@ -58,10 +62,9 @@ it("force-kills, writes one stderr line, and exits 1 when the close step overrun
   });
   closer.close("stdin_end");
   timers.fire(1500);
+  assert.deepEqual(calls, ["release", "closeCore", "release", "exit:1"]);
   assert.equal(errors.length, 1);
   assert.match(errors[0] ?? "", /exceeded 1500 ms/);
-  assert.deepEqual(exits, [1]);
-  assert.ok(releases >= 2, `releases=${releases}`);
 });
 
 it("a second signal exits at once with code 1", () => {
