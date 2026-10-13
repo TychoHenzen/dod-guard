@@ -179,7 +179,7 @@ or relies on a later validator or client-cache readback to recover the release.
    npm test
    npm run bundle
    node scripts/ci/validate-plugins.mjs
-   npx @biomejs/biome check packages/code-explorer/src/ packages/fossil/src/ packages/quality-guard/src/ scripts/ci/ --no-errors-on-unmatched
+   npx @biomejs/biome check packages/code-explorer/src/ packages/fossil/src/ packages/knowledge-base/src/ packages/quality-guard/src/ plugins/dod-guard/ scripts/ci/ --no-errors-on-unmatched
    ```
 
 6. If a gate generates tracked changes, reclassify the complete tree, rerun the
