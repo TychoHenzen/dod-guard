@@ -6,6 +6,10 @@ const ACCEPTANCE_MATRIX_STATUSES = Object.freeze([
   "inapplicable",
 ]);
 
+// Refinement plans each row before any proof runs, so a planned row has no
+// observed result or head yet and is either still to prove or ruled out.
+const ACCEPTANCE_MATRIX_PLANNED_STATUSES = Object.freeze(["pending", "inapplicable"]);
+
 const ACCEPTANCE_MATRIX_PATHS = Object.freeze([
   "identity/authorization",
   "interactive-control",
@@ -112,20 +116,21 @@ function normalizeRow(row, index) {
   return normalized;
 }
 
-function missingFieldErrors(row, label) {
-  return ACCEPTANCE_MATRIX_FIELDS.slice(1)
-    .filter((field) => row[field] === null)
-    .map((field) => `${label} is missing ${field}`);
+function missingFieldErrors(row, label, requiredFields) {
+  return requiredFields.filter((field) => row[field] === null).map((field) => `${label} is missing ${field}`);
 }
 
-function statusErrors(row, label, expectedHeadSha) {
+function staleHeadErrors(row, label, expectedHeadSha) {
+  const stale = row.headSha !== null && expectedHeadSha !== null && row.headSha !== expectedHeadSha;
+  return stale ? [`${label} is bound to head ${row.headSha}, expected ${expectedHeadSha}`] : [];
+}
+
+function observedStatusErrors(row, label, expectedHeadSha) {
   const errors = [];
   if (row.status !== null && !ACCEPTANCE_MATRIX_STATUSES.includes(row.status)) {
     errors.push(`${label} has unsupported status ${row.status}`);
   }
-  if (row.headSha !== null && expectedHeadSha !== null && row.headSha !== expectedHeadSha) {
-    errors.push(`${label} is bound to head ${row.headSha}, expected ${expectedHeadSha}`);
-  }
+  errors.push(...staleHeadErrors(row, label, expectedHeadSha));
   if (row.status === "inapplicable" && row.reason === null) {
     errors.push(`${label} marked inapplicable without an explicit reason`);
   }
@@ -135,7 +140,44 @@ function statusErrors(row, label, expectedHeadSha) {
   return errors;
 }
 
-function rowErrors(row, expectedHeadSha, seenIds) {
+function plannedStatusErrors(row, label) {
+  if (row.status === null || ACCEPTANCE_MATRIX_PLANNED_STATUSES.includes(row.status)) {
+    return row.status === "inapplicable" && row.reason === null
+      ? [`${label} marked inapplicable without an explicit reason`]
+      : [];
+  }
+  if (ACCEPTANCE_MATRIX_STATUSES.includes(row.status)) {
+    return [`${label} has status ${row.status}, which is not a planned status`];
+  }
+  return [`${label} has unsupported status ${row.status}`];
+}
+
+// Observed rows carry proof results bound to a pushed head. Planned rows come
+// from refinement, before any proof or head exists, so they need neither and
+// each criterion needs a row still to prove rather than one already passing.
+const MATRIX_MODES = Object.freeze({
+  observed: Object.freeze({
+    requiredFields: ACCEPTANCE_MATRIX_FIELDS.slice(1),
+    statusErrors: observedStatusErrors,
+    contractStatus: "pass",
+    contractLabel: "passing",
+    needsHead: true,
+  }),
+  planned: Object.freeze({
+    requiredFields: ACCEPTANCE_MATRIX_FIELDS.slice(1).filter((field) => field !== "observed" && field !== "headSha"),
+    statusErrors: plannedStatusErrors,
+    contractStatus: "pending",
+    contractLabel: "pending",
+    needsHead: false,
+  }),
+});
+
+function matrixMode(mode) {
+  if (!Object.hasOwn(MATRIX_MODES, mode)) throw new TypeError(`unknown acceptance matrix mode ${mode}`);
+  return MATRIX_MODES[mode];
+}
+
+function rowErrors(row, expectedHeadSha, seenIds, mode) {
   const errors = [];
   const label = row.id ?? `row ${row.index + 1}`;
   if (row.id === null) {
@@ -147,19 +189,20 @@ function rowErrors(row, expectedHeadSha, seenIds) {
   if (row.id !== null) {
     seenIds.add(row.id);
   }
-  errors.push(...missingFieldErrors(row, label));
-  errors.push(...statusErrors(row, label, expectedHeadSha));
+  errors.push(...missingFieldErrors(row, label, mode.requiredFields));
+  errors.push(...mode.statusErrors(row, label, expectedHeadSha));
   return errors;
 }
 
-function contractErrors(rows, requiredContracts) {
+function contractErrors(rows, requiredContracts, mode) {
   return requiredContracts
     .map(contractName)
     .filter(Boolean)
-    .filter((contract) => !rows.some(
-      (row) => (row.id === contract || row.contract === contract) && row.status === "pass",
-    ))
-    .map((contract) => `missing passing acceptance row for ${contract}`);
+    .filter(
+      (contract) =>
+        !rows.some((row) => (row.id === contract || row.contract === contract) && row.status === mode.contractStatus),
+    )
+    .map((contract) => `missing ${mode.contractLabel} acceptance row for ${contract}`);
 }
 
 function pathErrors(rows, requiredPaths) {
@@ -184,24 +227,28 @@ function pathErrors(rows, requiredPaths) {
     .map((requiredPath) => `missing acceptance row for ${requiredPath}`);
 }
 
-function validateRows(rows, expectedHeadSha) {
+function validateRows(rows, expectedHeadSha, mode) {
   const errors = [];
   const seenIds = new Set();
   for (const row of rows) {
-    errors.push(...rowErrors(row, expectedHeadSha, seenIds));
+    errors.push(...rowErrors(row, expectedHeadSha, seenIds, mode));
   }
   return errors;
 }
 
+// mode "observed" (the default) checks a handoff matrix after push; mode
+// "planned" checks the refinement matrix of the issue body before push.
 function validateAcceptanceMatrix({
   matrix,
   headSha,
   requiredContracts = [],
   requiredPaths = ACCEPTANCE_MATRIX_PATHS,
+  mode: modeName = "observed",
 } = {}) {
+  const mode = matrixMode(modeName);
   const errors = [];
   const rows = matrixRows(matrix);
-  const expectedHeadSha = textValue(headSha);
+  const expectedHeadSha = mode.needsHead ? textValue(headSha) : null;
   const normalizedRows = [];
   if (rows !== null) {
     normalizedRows.push(...rows.map(normalizeRow));
@@ -210,12 +257,12 @@ function validateAcceptanceMatrix({
   if (rows === null || rows.length === 0) {
     errors.push("acceptance matrix needs one row per contract or required user path");
   }
-  if (expectedHeadSha === null) {
+  if (mode.needsHead && expectedHeadSha === null) {
     errors.push("acceptance matrix needs an independently fetched current pushed head SHA");
   }
 
-  errors.push(...validateRows(normalizedRows, expectedHeadSha));
-  errors.push(...contractErrors(normalizedRows, requiredContracts));
+  errors.push(...validateRows(normalizedRows, expectedHeadSha, mode));
+  errors.push(...contractErrors(normalizedRows, requiredContracts, mode));
   errors.push(...pathErrors(normalizedRows, requiredPaths));
 
   return {
@@ -229,6 +276,7 @@ function validateAcceptanceMatrix({
 export {
   ACCEPTANCE_MATRIX_FIELDS,
   ACCEPTANCE_MATRIX_PATHS,
+  ACCEPTANCE_MATRIX_PLANNED_STATUSES,
   ACCEPTANCE_MATRIX_STATUSES,
   validateAcceptanceMatrix,
 };
