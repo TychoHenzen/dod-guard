@@ -276,7 +276,6 @@ function validateAcceptanceMatrix({
 export {
   ACCEPTANCE_MATRIX_FIELDS,
   ACCEPTANCE_MATRIX_PATHS,
-  ACCEPTANCE_MATRIX_PLANNED_STATUSES,
   ACCEPTANCE_MATRIX_STATUSES,
   validateAcceptanceMatrix,
 };

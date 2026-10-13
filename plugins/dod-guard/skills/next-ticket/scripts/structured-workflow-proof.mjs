@@ -155,6 +155,238 @@ function referenceEvidence({ owner, value, section, evidenceOwners, addRemainder
   }
 }
 
+// Returns the one task that owns a lens, or null after naming why the lens
+// cannot be owned yet.
+function lensOwnerTask({ id, lens, taskList, normalizedTaskIds, addRemainder }) {
+  const section = "Functional decomposition";
+  if (!lens.owner || evidenceValues(lens.evidence).length === 0) {
+    addRemainder(section, `${id} review lens needs an owner and evidence`);
+    return null;
+  }
+  if (evidenceValues(lens.acceptanceEvidence).length === 0 || evidenceValues(lens.verificationEvidence).length === 0) {
+    addRemainder(section, `${id} review lens needs acceptance and verification evidence`);
+    return null;
+  }
+  const owner = normalizedIdentifier(lens.owner);
+  const taskIdOwners = taskList.filter((task) => normalizedTaskIds.get(task) === owner);
+  const ownerTasks =
+    taskIdOwners.length > 0 ? taskIdOwners : taskList.filter((task) => normalizedIdentifier(task.child) === owner);
+  if (ownerTasks.length !== 1) {
+    const problem = ownerTasks.length === 0 ? "missing" : "ambiguous";
+    addRemainder(section, `${id} review lens references ${problem} owner ${lens.owner}`);
+    return null;
+  }
+  return ownerTasks[0];
+}
+
+// Returns the lens id the first time a known lens appears, else null after
+// naming the problem.
+function firstLensId(lens, seenLenses, addRemainder) {
+  const id = normalizedIdentifier(lens.id ?? lens.name);
+  if (!id || !REQUIRED_REVIEW_LENSES.includes(id)) {
+    addRemainder("Functional decomposition", "review-lens ownership uses an unknown lens");
+    return null;
+  }
+  if (seenLenses.has(id)) {
+    addRemainder("Functional decomposition", `${id} review lens is declared more than once`);
+    return null;
+  }
+  seenLenses.add(id);
+  return id;
+}
+
+function claimLensEvidence(id, lens, lensEvidenceOwners, addRemainder) {
+  for (const evidence of evidenceValues(lens.evidence)) {
+    const previousLens = lensEvidenceOwners.get(evidence);
+    if (previousLens) {
+      addRemainder(
+        "Functional decomposition",
+        `${id} reuses evidence ${evidence} already assigned to ${previousLens} review lens`,
+      );
+    } else {
+      lensEvidenceOwners.set(evidence, id);
+    }
+  }
+}
+
+// The lens checks that need no acceptance matrix. Returns each owned lens with
+// its owner task for the lens-row phase.
+function validateReviewLenses({ lensList, taskList, normalizedTaskIds, evidenceOwners, addRemainder }) {
+  const section = "Functional decomposition";
+  const seenLenses = new Set();
+  const lensEvidenceOwners = new Map();
+  const ownedLenses = [];
+  for (const lens of lensList) {
+    const id = firstLensId(lens, seenLenses, addRemainder);
+    const ownerTask = id && lensOwnerTask({ id, lens, taskList, normalizedTaskIds, addRemainder });
+    if (!ownerTask) continue;
+    const owner = normalizedIdentifier(lens.owner);
+    const evidenceOwner = normalizedTaskIds.get(ownerTask) === owner ? owner : normalizedIdentifier(ownerTask.child);
+    referenceEvidence({ owner: evidenceOwner, value: lens.evidence, section, evidenceOwners, addRemainder });
+    claimLensEvidence(id, lens, lensEvidenceOwners, addRemainder);
+    ownedLenses.push({ id, lens, ownerTask });
+  }
+  for (const lens of REQUIRED_REVIEW_LENSES) {
+    if (!seenLenses.has(lens)) addRemainder(section, `${lens} review lens needs an owning task`);
+  }
+  return ownedLenses;
+}
+
+// The user paths a lens must prove through rows it owns: wiring/usability is
+// the user's own path through the surface, reliability is failure and recovery.
+const REQUIRED_LENS_PATHS = Object.freeze({
+  "wiring/usability": ["interactive-control", "browser/e2e"],
+  reliability: ["data/error", "recovery"],
+});
+
+// A lens names its rows twice, by evidence and by proof; both must resolve to
+// the same rows.
+const LENS_ROW_KINDS = Object.freeze([
+  Object.freeze({ name: "acceptance", lensField: "acceptanceEvidence", rowField: "evidence" }),
+  Object.freeze({ name: "verification", lensField: "verificationEvidence", rowField: "proof" }),
+]);
+
+function observedRowError(row, label, expectedHeadSha) {
+  if (expectedHeadSha && row.headSha !== expectedHeadSha) {
+    return `${label} is bound to ${row.headSha ?? "no head"}, expected ${expectedHeadSha}`;
+  }
+  if (row.status !== "pass" && !(row.status === "inapplicable" && row.reason)) {
+    return `${label} is bound to non-passing status ${row.status ?? "no status"}`;
+  }
+  return null;
+}
+
+function lensRowError({ id, kind, reference, matches, observed, expectedHeadSha }) {
+  if (matches.length === 0) return `${id} review lens references undeclared ${kind.name} evidence ${reference}`;
+  const label = `${id} review lens ${kind.name} evidence ${reference}`;
+  if (matches.length > 1) return `${label} is mapped to multiple acceptance-matrix rows`;
+  return observed ? observedRowError(matches[0], label, expectedHeadSha) : null;
+}
+
+function resolveLensRows({ id, kind, lens, rows, observed, expectedHeadSha }) {
+  const errors = [];
+  const resolved = [];
+  const seen = new Set();
+  for (const reference of evidenceValues(lens[kind.lensField])) {
+    if (seen.has(reference)) {
+      errors.push(`${id} review lens ${kind.name} evidence references ${reference} more than once`);
+      continue;
+    }
+    seen.add(reference);
+    const matches = rows.filter((row) => row[kind.rowField] === reference);
+    const error = lensRowError({ id, kind, reference, matches, observed, expectedHeadSha });
+    if (error) errors.push(error);
+    else resolved.push(matches[0]);
+  }
+  return { errors, rows: resolved };
+}
+
+function ownerDeclarationErrors(id, kind, lens, ownerTask) {
+  const declared = evidenceValues(ownerTask[kind.lensField]);
+  const missing = evidenceValues(lens[kind.lensField]).filter((reference) => !declared.includes(reference));
+  return missing.length > 0 ? [`${id} owner task needs mapped ${kind.name} evidence ${missing.join(", ")}`] : [];
+}
+
+const rowKey = (row) => row.id ?? `row ${row.index + 1}`;
+
+function sameRows(left, right) {
+  const rightIndexes = new Set(right.map((row) => row.index));
+  return left.length === rightIndexes.size && left.every((row) => rightIndexes.has(row.index));
+}
+
+function lensPathErrors(id, rows) {
+  const missing = (REQUIRED_LENS_PATHS[id] ?? []).filter(
+    (requiredPath) => !rows.some((row) => row.path?.toLowerCase() === requiredPath),
+  );
+  return missing.length > 0 ? [`${id} review lens must cover required path(s): ${missing.join(", ")}`] : [];
+}
+
+function claimRows(id, rows, claimedRows) {
+  const errors = [];
+  for (const row of rows) {
+    const previousLens = claimedRows.get(rowKey(row));
+    if (previousLens && previousLens !== id) {
+      errors.push(`${id} review lens reuses acceptance-matrix row ${rowKey(row)} already owned by ${previousLens}`);
+    } else {
+      claimedRows.set(rowKey(row), id);
+    }
+  }
+  return errors;
+}
+
+// The one lens-row rule set. Every owned lens must cite rows its owner task
+// declares, resolve each reference to exactly one row, use one row for both
+// its acceptance and verification evidence, cover its required user paths,
+// and claim no row another lens owns. Observed rows must also pass at the
+// pushed head; planned rows have no status or head to check yet.
+function lensRowRemainder({ ownedLenses, rows, observed, expectedHeadSha }) {
+  const remainder = [];
+  const claimedRows = new Map();
+  for (const { id, lens, ownerTask } of ownedLenses) {
+    if (observed && expectedHeadSha && normalizedIdentifier(lens.headSha ?? lens.head) !== expectedHeadSha) {
+      remainder.push(`${id} review lens is not bound to handoff head ${expectedHeadSha}`);
+    }
+    const [acceptance, verification] = LENS_ROW_KINDS.map((kind) => {
+      remainder.push(...ownerDeclarationErrors(id, kind, lens, ownerTask));
+      return resolveLensRows({ id, kind, lens, rows, observed, expectedHeadSha });
+    });
+    remainder.push(...acceptance.errors, ...verification.errors);
+    if (acceptance.errors.length > 0 || verification.errors.length > 0) continue;
+    if (!sameRows(acceptance.rows, verification.rows)) {
+      remainder.push(`${id} review lens acceptance and verification evidence must share one acceptance-matrix row`);
+      continue;
+    }
+    remainder.push(...lensPathErrors(id, acceptance.rows), ...claimRows(id, acceptance.rows, claimedRows));
+  }
+  return remainder;
+}
+
+// Every matrix row must be unique and owned by a task or review lens.
+function matrixOwnershipErrors(rows, taskList, lensList) {
+  const owners = [...taskList, ...lensList];
+  const errors = [];
+  for (const kind of LENS_ROW_KINDS) {
+    const declared = new Set(owners.flatMap((owner) => evidenceValues(owner[kind.lensField])));
+    const seen = new Set();
+    const label = kind.name === "acceptance" ? "evidence" : "proof";
+    for (const value of rows.map((row) => row[kind.rowField]).filter(Boolean)) {
+      if (seen.has(value)) errors.push(`acceptance matrix ${label} ${value} is declared more than once`);
+      seen.add(value);
+      if (!declared.has(value)) {
+        errors.push(`acceptance matrix ${label} ${value} is not owned by a task or review lens`);
+      }
+    }
+  }
+  return errors;
+}
+
+function activeMatrix({ postPushValidation, acceptanceMatrix, plannedAcceptanceMatrix }) {
+  if (postPushValidation) return { mode: "observed", matrix: acceptanceMatrix };
+  if (plannedAcceptanceMatrix !== null && plannedAcceptanceMatrix !== undefined) {
+    return { mode: "planned", matrix: plannedAcceptanceMatrix };
+  }
+  return null;
+}
+
+function validateMatrixPhase(phase) {
+  const { active, expectedHeadSha, acceptanceList, taskList, lensList, ownedLenses, addRemainder } = phase;
+  const validation = validateAcceptanceMatrix({
+    matrix: active.matrix,
+    headSha: expectedHeadSha,
+    requiredContracts: acceptanceList,
+    requiredPaths: ACCEPTANCE_MATRIX_PATHS,
+    mode: active.mode,
+  });
+  for (const error of validation.errors) addRemainder("Acceptance and verification", `acceptance matrix: ${error}`);
+  for (const error of matrixOwnershipErrors(validation.rows, taskList, lensList)) {
+    addRemainder("Acceptance and verification", error);
+  }
+  const observed = active.mode === "observed";
+  for (const error of lensRowRemainder({ ownedLenses, rows: validation.rows, observed, expectedHeadSha })) {
+    addRemainder("Functional decomposition", error);
+  }
+}
+
 const PROOF_HANDOFF = {
   url: "https://github.com/owner/repo/issues/1#issuecomment-1",
   headSha: "abc1234",
@@ -180,6 +412,7 @@ export function evaluateConvergence({
   reviewLenses = null,
   acceptance = [],
   acceptanceMatrix = null,
+  plannedAcceptanceMatrix = null,
   headSha = null,
   contradictions = [],
 }) {
@@ -309,131 +542,8 @@ export function evaluateConvergence({
       addRemainder("Functional decomposition", `${taskId} is both a task id and a functional slice id`);
     }
   }
-  const seenLenses = new Set();
-  const lensEvidenceOwners = new Map();
-  const matrixEvidence = new Set(
-    (Array.isArray(acceptanceMatrix) ? acceptanceMatrix : [])
-      .map((row) => normalizedIdentifier(row?.evidence))
-      .filter(Boolean),
-  );
-  const matrixProofs = new Set(
-    (Array.isArray(acceptanceMatrix) ? acceptanceMatrix : [])
-      .map((row) => normalizedIdentifier(row?.proof))
-      .filter(Boolean),
-  );
-  const declaredAcceptanceReferences = new Set(taskList.flatMap((task) => evidenceValues(task.acceptanceEvidence)));
-  const declaredVerificationReferences = new Set(taskList.flatMap((task) => evidenceValues(task.verificationEvidence)));
-  for (const lens of lensList) {
-    for (const evidence of evidenceValues(lens.acceptanceEvidence)) declaredAcceptanceReferences.add(evidence);
-    for (const proof of evidenceValues(lens.verificationEvidence)) declaredVerificationReferences.add(proof);
-  }
-  validateLensOwnershipRecord(
-    recordMap["lens-ownership"],
-    lensList,
-    "Functional decomposition",
-    addRemainder,
-  );
-  for (const lens of lensList) {
-    const id = normalizedIdentifier(lens.id ?? lens.name);
-    if (!id || !REQUIRED_REVIEW_LENSES.includes(id)) {
-      addRemainder("Functional decomposition", "review-lens ownership uses an unknown lens");
-    } else if (seenLenses.has(id)) {
-      addRemainder("Functional decomposition", `${id} review lens is declared more than once`);
-    } else {
-      seenLenses.add(id);
-      const lensHeadSha = normalizedIdentifier(lens.headSha ?? lens.head);
-      const missingAcceptanceEvidence = evidenceValues(lens.acceptanceEvidence).length === 0;
-      const missingVerificationEvidence = evidenceValues(lens.verificationEvidence).length === 0;
-      if (!lens.owner || evidenceValues(lens.evidence).length === 0) {
-        addRemainder("Functional decomposition", `${id} review lens needs an owner and evidence`);
-      } else if (missingAcceptanceEvidence || missingVerificationEvidence) {
-        addRemainder("Functional decomposition", `${id} review lens needs acceptance and verification evidence`);
-      } else if (postPushValidation && lensHeadSha !== expectedHeadSha) {
-        addRemainder("Functional decomposition", `${id} review lens evidence is bound to ${lensHeadSha ?? "no head"}, expected ${expectedHeadSha ?? "an exact pushed head"}`);
-      } else {
-        const owner = normalizedIdentifier(lens.owner);
-        const taskIdOwners = taskList.filter((task) => normalizedTaskIds.get(task) === owner);
-        const ownerTasks = taskIdOwners.length > 0
-          ? taskIdOwners
-          : taskList.filter((task) => normalizedIdentifier(task.child) === owner);
-        if (ownerTasks.length === 0) {
-          addRemainder("Functional decomposition", `${id} review lens references missing owner ${lens.owner}`);
-        } else if (ownerTasks.length > 1) {
-          addRemainder("Functional decomposition", `${id} review lens references ambiguous owner ${lens.owner}`);
-        } else {
-          const [ownerTask] = ownerTasks;
-          const evidenceOwner = normalizedTaskIds.get(ownerTask) === owner
-            ? owner
-            : normalizedIdentifier(ownerTask.child);
-          if (postPushValidation) {
-            for (const evidence of evidenceValues(lens.acceptanceEvidence)) {
-              if (!matrixEvidence.has(evidence)) {
-                addRemainder("Functional decomposition", `${id} review lens references undeclared acceptance evidence ${evidence}`);
-              }
-              if (!evidenceValues(ownerTask.acceptanceEvidence).includes(evidence)) {
-                addRemainder("Functional decomposition", `${id} owner task does not declare acceptance evidence ${evidence}`);
-              }
-            }
-            for (const evidence of evidenceValues(lens.verificationEvidence)) {
-              if (!matrixProofs.has(evidence)) {
-                addRemainder("Functional decomposition", `${id} review lens references undeclared verification evidence ${evidence}`);
-              }
-              if (!evidenceValues(ownerTask.verificationEvidence).includes(evidence)) {
-                addRemainder("Functional decomposition", `${id} owner task does not declare verification evidence ${evidence}`);
-              }
-            }
-          }
-          referenceEvidence({
-            owner: evidenceOwner,
-            value: lens.evidence,
-            section: "Functional decomposition",
-            evidenceOwners,
-            addRemainder,
-          });
-          for (const evidence of evidenceValues(lens.evidence)) {
-            const previousLens = lensEvidenceOwners.get(evidence);
-            if (previousLens) {
-              addRemainder(
-                "Functional decomposition",
-                `${id} reuses evidence ${evidence} already assigned to ${previousLens} review lens`,
-              );
-            } else {
-              lensEvidenceOwners.set(evidence, id);
-            }
-          }
-        }
-      }
-    }
-  }
-  for (const lens of REQUIRED_REVIEW_LENSES) {
-    if (!seenLenses.has(lens)) {
-      addRemainder("Functional decomposition", `${lens} review lens needs an owning task`);
-    }
-  }
-  if (postPushValidation && Array.isArray(acceptanceMatrix)) {
-    const seenMatrixEvidence = new Set();
-    const seenMatrixProofs = new Set();
-    for (const row of acceptanceMatrix) {
-      const evidence = normalizedIdentifier(row?.evidence);
-      const proof = normalizedIdentifier(row?.proof);
-      if (evidence && seenMatrixEvidence.has(evidence)) {
-        addRemainder("Acceptance and verification", `acceptance matrix evidence ${evidence} is declared more than once`);
-      } else if (evidence) {
-        seenMatrixEvidence.add(evidence);
-      }
-      if (proof && seenMatrixProofs.has(proof)) {
-        addRemainder("Acceptance and verification", `acceptance matrix proof ${proof} is declared more than once`);
-      } else if (proof) {
-        seenMatrixProofs.add(proof);
-      }
-      if (evidence && !declaredAcceptanceReferences.has(evidence)) {
-        addRemainder("Acceptance and verification", `acceptance matrix evidence ${evidence} is not owned by a task or review lens`);
-      }
-      if (proof && !declaredVerificationReferences.has(proof)) {
-        addRemainder("Acceptance and verification", `acceptance matrix proof ${proof} is not owned by a task or review lens`);
-      }
-    }
-  }
+  validateLensOwnershipRecord(recordMap["lens-ownership"], lensList, "Functional decomposition", addRemainder);
+  const ownedLenses = validateReviewLenses({ lensList, taskList, normalizedTaskIds, evidenceOwners, addRemainder });
   const seenAcceptanceIds = new Set();
   for (const [index, criterion] of acceptanceList.entries()) {
     const criterionId = normalizedIdentifier(criterion.id);
@@ -456,16 +566,12 @@ export function evaluateConvergence({
       }
     }
   }
-  if (postPushValidation) {
-    const matrixValidation = validateAcceptanceMatrix({
-      matrix: acceptanceMatrix,
-      headSha: expectedHeadSha,
-      requiredContracts: acceptanceList,
-      requiredPaths: ACCEPTANCE_MATRIX_PATHS,
-    });
-    for (const error of matrixValidation.errors) {
-      addRemainder("Acceptance and verification", `acceptance matrix: ${error}`);
-    }
+  // After push the observed matrix is checked at the exact head. Before push a
+  // planned matrix, when supplied, gets the same lens-row rules without the
+  // status and head checks. With neither, the matrix and lens-row checks wait.
+  const active = activeMatrix({ postPushValidation, acceptanceMatrix, plannedAcceptanceMatrix });
+  if (active) {
+    validateMatrixPhase({ active, expectedHeadSha, acceptanceList, taskList, lensList, ownedLenses, addRemainder });
   }
   for (const contradiction of contradictions) {
     addRemainder("Acceptance and verification", contradiction);
