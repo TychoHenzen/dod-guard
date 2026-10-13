@@ -103,8 +103,12 @@ test("failure recovery classifies a missing capability against the PBI before ca
       "requested observable behavior: a capability the PBI itself adds or changes is implementation work, not an " +
       "external blocker.",
     "A genuinely unavailable capability stays a blocker, recorded with the exact call, error, and what was checked.",
-    "On a branch behind the fetched default, reclassify a failure only after complete-pr's bounded branch " +
-      "synchronization brings the branch current, never by rebase or force-push.",
+    "On a branch behind the fetched default, reclassify a failure only after the branch is current.",
+    "Before a pull request exists, merge the fetched default into the branch, and stop with the conflicted paths " +
+      "on a merge conflict.",
+    "Once one exists, use complete-pr's bounded branch synchronization, with merge conflicts going to " +
+      "`standards/conflict-triage.md`.",
+    "Never rebase or force-push.",
   ]) {
     assert.match(recovery, prose(sentence), sentence);
   }

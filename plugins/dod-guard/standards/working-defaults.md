@@ -20,10 +20,13 @@ destructive action.
   behavior: a capability the PBI itself adds or changes is implementation
   work, not an external blocker. A genuinely unavailable capability stays a
   blocker, recorded with the exact call, error, and what was checked. On a
-  branch behind the fetched default, reclassify a failure only after
-  complete-pr's bounded branch synchronization brings the branch current,
-  never by rebase or force-push. Use the smallest reversible repair and its
-  narrow proof, then resume that checkpoint.
+  branch behind the fetched default, reclassify a failure only after the
+  branch is current. Before a pull request exists, merge the fetched default
+  into the branch, and stop with the conflicted paths on a merge conflict.
+  Once one exists, use complete-pr's bounded branch synchronization, with
+  merge conflicts going to `standards/conflict-triage.md`. Never rebase or
+  force-push. Use the smallest reversible repair and its narrow proof, then
+  resume that checkpoint.
   Retry an identical transient failure at most once. Do not retry a mutation
   before its readback, loop blindly, or convert a security, authority,
   destructive, provider/head, or missing-evidence stop into ordinary
