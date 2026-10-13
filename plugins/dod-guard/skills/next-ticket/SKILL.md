@@ -218,6 +218,12 @@ Run focused checks while implementing, then run every required pre-PR gate.
 Before calling a suite green, confirm the configured test glob includes every
 new test or fixture. Do not rerun an unchanged full suite for reassurance.
 
+A suite that consumes a changed fixture is not unchanged. When a change adds
+or modifies a fixture, scene, seed, or other shared test data, search for
+references to it and run every existing suite that consumes it before push.
+When such a suite cannot run locally, require its exact-head CI result before
+PR handoff.
+
 When a proof calls a live product or runtime tool, such as an MCP server for a
 game, an app, or an emulator, follow these rules:
 

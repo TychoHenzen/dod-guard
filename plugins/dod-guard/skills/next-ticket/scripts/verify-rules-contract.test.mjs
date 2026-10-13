@@ -12,6 +12,18 @@ function missingSentences(sentences) {
   return sentences.filter((sentence) => !prose(sentence).test(verify));
 }
 
+// A new collision broke a test only Windows CI ran, and seeded data changed an
+// older count, because no suite consuming the changed data ran first (#824, #859).
+test("every existing suite that consumes a changed fixture runs before push", () => {
+  const missing = missingSentences([
+    "Do not rerun an unchanged full suite for reassurance. A suite that consumes a changed fixture is not unchanged.",
+    "When a change adds or modifies a fixture, scene, seed, or other shared test data, search for references to it " +
+      "and run every existing suite that consumes it before push.",
+    "When such a suite cannot run locally, require its exact-head CI result before PR handoff.",
+  ]);
+  assert.deepEqual(missing, []);
+});
+
 // A proof once sent an undeclared argument to a game's MCP server, called it
 // before the game was live, and retried after a malformed result (#824, #859).
 test("a live proof tool is called only with its declared schema after its readiness signal", () => {
