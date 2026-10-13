@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { runCli } from "../closure.mjs";
-import { statusValueName } from "../project-status.mjs";
+import { statusValueName } from "./project-reads.mjs";
 import { planClosures } from "./closure-plan.mjs";
 import { buildClosureSnapshot } from "./closure-snapshot.mjs";
 import {
@@ -633,6 +633,69 @@ test("AC-07: the built snapshot plans with no repository identity hold", () => {
 // The error a failed read leaves: the endpoint it names, then the colon that ends it.
 const failedAt = (endpoint) => `closure snapshot read failed: ${endpoint}:`;
 const PROJECTS_LIST = `users/${OWNER}/projectsV2`;
+
+function buildFailureWith(overrides) {
+  return buildFailure({ ...fixtureRoutes(), ...overrides });
+}
+
+test("the linked-Project read stops on a Project entry without a positive-integer number or a state", () => {
+  const malformed = [
+    [{ number: 2 }],
+    [{ state: "open" }],
+    [{ number: "2", state: "open" }],
+    [{ number: 2, state: " " }],
+    [{ number: 3, state: "closed" }, { state: "closed" }],
+  ];
+  for (const projects of malformed) {
+    const error = buildFailureWith({ [ENDPOINT.projects]: ok([projects]) });
+    assert.equal(
+      error?.message,
+      `closure snapshot read failed: ${PROJECTS_LIST}: every Project must carry a number and a state`,
+      JSON.stringify(projects),
+    );
+  }
+});
+
+test("the linked-Project read names the listing endpoint once for a listing that fails or is malformed", () => {
+  const serverError = buildFailureWith({ [ENDPOINT.projects]: SERVER_ERROR });
+  assert.equal(serverError?.message, `closure snapshot read failed: ${ENDPOINT.projects}: gh: Server Error (HTTP 500)`);
+
+  const notPages = buildFailureWith({ [ENDPOINT.projects]: ok({ message: "x" }) });
+  assert.equal(
+    notPages?.message,
+    `closure snapshot read failed: ${PROJECTS_LIST}: GitHub response for ${ENDPOINT.projects} must include an array an array response.`,
+  );
+});
+
+test("the linked-Project read falls back to orgs/<owner> after a users/ HTTP 404 and reads its items there", () => {
+  const orgProjects = `orgs/${OWNER}/projectsV2?per_page=100`;
+  const orgItems = `orgs/${OWNER}/projectsV2/2/items?per_page=100`;
+  const error = buildFailureWith({ [ENDPOINT.projects]: NOT_FOUND, [orgProjects]: ok([[{ number: 2, state: "open" }]]) });
+  assert.equal(error?.message, `closure snapshot read failed: ${orgItems}: no fixture for ${orgItems}`);
+});
+
+test("the linked-Project read stops on a malformed membership page and names the membership endpoint", () => {
+  const membership = ENDPOINT.membership(2);
+  const cases = [
+    [{ status: 0, stdout: "not json", stderr: "" }, "did not return JSON"],
+    [ok([[], { message: "Not Found" }]), "missing page: every page must be an array"],
+    [ok([[{ content: { repository_url: "https://example.test/repos/x/y" } }]]), "content repository_url must name a repository"],
+    [ok([[{ content: { repository: { full_name: "not a name" } } }]]), "content repository full_name must name a repository"],
+  ];
+  for (const [reply, detail] of cases) {
+    const error = buildFailureWith({ [membership]: reply });
+    assert.equal(error?.message, `closure snapshot read failed: ${membership}: ${detail}`, detail);
+  }
+});
+
+test("the linked-Project read passes over a membership item with no repository instead of stopping", () => {
+  const routes = fixtureRoutes();
+  const pages = JSON.parse(routes[ENDPOINT.membership(2)].stdout);
+  // First on the first page, because the membership check stops at the first item of the repository.
+  pages[0].unshift({ id: 1999, node_id: "PVTI_draft", content: {} }, { id: 1998, node_id: "PVTI_none" });
+  const snapshot = build({ ...routes, [ENDPOINT.membership(2)]: ok(pages) });
+  assert.equal(snapshot.project.number, 2);
+});
 
 const FAULTS = [
   ["repository", [failedAt(ENDPOINT.repository)]],

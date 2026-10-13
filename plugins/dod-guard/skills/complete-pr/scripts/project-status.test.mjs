@@ -12,7 +12,6 @@ import {
   buildProjectItemEditCommand,
   writeProjectStatuses,
   writeProjectStatusesWithFallback,
-  runGh,
 } from "./project-status.mjs";
 
 const PROJECT_ID = "PVT_projectnode";
@@ -130,18 +129,6 @@ function alterTargetInLaterReads(runner, alterItem) {
     return { ...result, stdout: JSON.stringify([alteredItems]) };
   };
 }
-
-test("allows Project CLI output above Node's default buffer", () => {
-  const oversizedOutput = "x".repeat(1024 * 1024 + 1);
-  let spawnOptions;
-  const result = runGh(["api"], (_command, _args, options) => {
-    spawnOptions = options;
-    return { status: 0, stderr: "", stdout: oversizedOutput };
-  });
-
-  assert.equal(result.stdout, oversizedOutput);
-  assert.ok(spawnOptions.maxBuffer >= Buffer.byteLength(oversizedOutput));
-});
 
 test("writes REST single-select updates in child-before-parent order with readback", () => {
   const { calls, runner } = createRunner({ splitItems: true });

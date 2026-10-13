@@ -1,20 +1,15 @@
 // biome-ignore lint/correctness/noNodejsModules: This read-only proof compares snapshots.
 import assert from "node:assert/strict";
-// biome-ignore lint/correctness/noNodejsModules: This read-only proof invokes the local GitHub CLI.
-import { spawnSync } from "node:child_process";
 // biome-ignore lint/correctness/noNodejsModules: This read-only proof resolves its direct entrypoint.
 import { resolve } from "node:path";
 // biome-ignore lint/correctness/noNodejsModules: This read-only proof resolves its direct entrypoint.
 import { fileURLToPath } from "node:url";
 // biome-ignore lint/correctness/noNodejsModules: This read-only proof exposes a direct CLI.
 import process from "node:process";
+import { runGh } from "./lib/gh-runner.mjs";
+import { statusValueName } from "./lib/project-reads.mjs";
 
 const LINE_BREAK = /\r?\n/;
-
-function runGh(args) {
-  const result = spawnSync("gh", args, { encoding: "utf8", windowsHide: true });
-  return { status: result.status ?? 1, stderr: result.stderr ?? "", stdout: result.stdout ?? "" };
-}
 
 function readJson(commandRunner, args) {
   const result = commandRunner(args);
@@ -36,12 +31,10 @@ function readJsonLines(commandRunner, args) {
   return output.split(LINE_BREAK).map((line) => JSON.parse(line));
 }
 
+// An item without a Status value reads as null; a value the shared flattener cannot verify stops the
+// proof, because two snapshots that agree on an unreadable value prove nothing.
 function statusName(item) {
-  const status = item.fields?.find(({ name }) => name === "Status")?.value?.name;
-  if (typeof status === "string") {
-    return status;
-  }
-  return status?.raw ?? null;
+  return statusValueName(item.fields?.find(({ name }) => name === "Status")?.value);
 }
 
 function projectItemRecord(item) {

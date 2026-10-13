@@ -782,6 +782,81 @@ test("rejects missing, blank, and contradictory Status values", () => {
   }
 });
 
+const PROJECT_ITEM_ENDPOINT = "users/owner/projectsV2/2/items/1701?fields=407";
+const PROJECTS_ENDPOINT = "users/owner/projectsV2";
+
+// The exact stop a Project read raises: a github_response_shape CompletionError naming its endpoint.
+function assertProjectShapeStop(read, endpoint, detail) {
+  assert.throws(read, (error) => {
+    assert.ok(error instanceof CompletionError, String(error));
+    assert.equal(error.code, "github_response_shape");
+    assert.equal(error.message, `GitHub response for ${endpoint} must include ${detail}.`);
+    return true;
+  });
+}
+
+function statusReaderWithFields(fields) {
+  return createProjectStatusReader({
+    itemResponses: new Map([["2/1701", { ...linkedProjectItem(1701), fields }]]),
+  }).reader;
+}
+
+test("pins every Status field/value stop text and code on the item readback", () => {
+  const cases = [
+    [[], "exactly one Status field/value"],
+    [[{ id: 999, name: "Status", value: { name: "Done" } }], "exactly one Status field/value"],
+    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Priority", value: { name: "Done" } }], "exactly one Status field/value"],
+    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status" }], "exactly one non-blank Status field/value"],
+    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: null }], "exactly one non-blank Status field/value"],
+    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { id: "done" } }], "exactly one non-blank Status field/value"],
+    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: " " } } }], "exactly one non-blank Status field/value"],
+    [[{ id: PROJECT_STATUS_FIELD_ID, name: "Status", value: { name: { raw: "Done", html: "Todo" } } }], "one non-contradictory Status field/value"],
+  ];
+  for (const [fields, detail] of cases) {
+    assertProjectShapeStop(() => statusReaderWithFields(fields).getIssueProjectStatuses(24), PROJECT_ITEM_ENDPOINT, detail);
+  }
+});
+
+test("reads a Status spelled as a bare string, as {name}, or as {name: {raw, html}}", () => {
+  const spellings = ["Done", { name: "Done" }, { name: { raw: "Done", html: "Done" } }];
+  for (const value of spellings) {
+    const reader = statusReaderWithFields([{ id: PROJECT_STATUS_FIELD_ID, name: "status", value }]);
+    assert.deepEqual(reader.getIssueProjectStatuses(24), ["Done"]);
+  }
+});
+
+test("stops with the zero-linked-Project text when no open Project holds the issue", () => {
+  // The closed Project has no items, so reading them would still end in this stop and only the
+  // items-read check can catch it.
+  const cases = [
+    [{ projects: [] }, false],
+    [{ itemsByProject: new Map([["2", [linkedProjectItem(1701, 25)]]]) }, true],
+    [{ projects: [{ number: 2, state: "closed" }], itemsByProject: new Map([["2", []]]) }, false],
+  ];
+  for (const [options, readsItems] of cases) {
+    const { reader, calls } = createProjectStatusReader(options);
+    assertProjectShapeStop(() => reader.getIssueProjectStatuses(24), PROJECTS_ENDPOINT, "exactly one open linked Project");
+    const requested = (fragment) => calls.some((args) => args.some((value) => String(value).includes(fragment)));
+    assert.equal(requested("/fields?"), false);
+    assert.equal(requested("/items?"), readsItems);
+  }
+});
+
+test("stops on a listed Project without a number or an explicit state, and accepts a numeric string number", () => {
+  const cases = [
+    [[{ state: "open" }], "an array projects with a number"],
+    [[{ number: 2 }], "projects with an explicit state"],
+    [[{ number: 2, state: " " }], "projects with an explicit state"],
+    [[{ number: 3, state: "closed" }, { state: "closed" }], "an array projects with a number"],
+  ];
+  for (const [projects, detail] of cases) {
+    const { reader } = createProjectStatusReader({ projects });
+    assertProjectShapeStop(() => reader.getIssueProjectStatuses(24), PROJECTS_ENDPOINT, detail);
+  }
+  const { reader } = createProjectStatusReader({ projects: [{ number: "2", state: "OPEN" }] });
+  assert.deepEqual(reader.getIssueProjectStatuses(24), ["Done"]);
+});
+
 test("stops on a Project item rate-limit response", () => {
   const { reader } = createProjectStatusReader({ rateLimitedProjects: new Set(["2"]) });
 
