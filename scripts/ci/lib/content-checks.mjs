@@ -63,7 +63,7 @@ export function checkOrphanPluginContent(root, report) {
     if (!existsSync(manifest))
       report(
         join(root, parent),
-        "holds skills/ or agents/ but no .claude-plugin/plugin.json — that content loads nowhere",
+        "holds skills/ or agents/ but no .claude-plugin/plugin.json - that content loads nowhere",
       );
   }
 }
@@ -71,7 +71,7 @@ export function checkOrphanPluginContent(root, report) {
 function scanLine(line) {
   const home = WINDOWS_HOME.exec(line) ?? UNIX_HOME.exec(line);
   if (home && !GENERIC_USERS.has(home[1].toLowerCase())) {
-    return `machine-specific path "${home[0]}" — use a placeholder or an environment variable`;
+    return `machine-specific path "${home[0]}" - use a placeholder or an environment variable`;
   }
   const secret = SECRET_ASSIGNMENT.exec(line);
   if (secret && !PLACEHOLDER_VALUE.test(secret[2])) {
@@ -124,7 +124,7 @@ export function checkGitTracked(plugins, report, isTracked) {
     shipped.push(join(pkg.dir, ".mcp.json"));
     for (const file of shipped.filter((f) => existsSync(f))) {
       if (!isTracked(file))
-        report(file, "not tracked by git — /plugin installs from the repo, so this file would not ship");
+        report(file, "not tracked by git - /plugin installs from the repo, so this file would not ship");
     }
   }
 }

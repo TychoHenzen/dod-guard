@@ -28,7 +28,7 @@ export function toPosix(root, file) {
   return relative(root, file).split("\\").join("/");
 }
 
-/** Minimal frontmatter reader — top-level scalar keys only, enough for name/description. */
+/** Minimal frontmatter reader - top-level scalar keys only, enough for name/description. */
 export function readFrontmatter(file) {
   const lines = readFileSync(file, "utf8").split(/\r?\n/);
   if (lines[0] !== "---") return null;

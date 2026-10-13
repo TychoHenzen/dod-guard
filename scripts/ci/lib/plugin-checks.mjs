@@ -152,7 +152,7 @@ export function createPluginChecks(report, isTracked) {
 
   function checkMcpConfig(pkg) {
     const file = join(pkg.dir, ".mcp.json");
-    if (!existsSync(file)) return report(file, "missing — Claude Code cannot start the MCP server without it");
+    if (!existsSync(file)) return report(file, "missing - Claude Code cannot start the MCP server without it");
     const config = readJson(file);
     if (!config) return;
     checkEncoding(file, config);
@@ -211,7 +211,7 @@ export function createPluginChecks(report, isTracked) {
   function checkPluginJson(pkg) {
     const file = join(pkg.dir, ".claude-plugin", "plugin.json");
     if (!existsSync(file)) {
-      report(file, "missing — directory is not a loadable Claude Code plugin");
+      report(file, "missing - directory is not a loadable Claude Code plugin");
       return { status: "missing", value: null };
     }
     const source = readJsonSource(file);
@@ -242,7 +242,7 @@ export function createPluginChecks(report, isTracked) {
       else if (fields.name !== skill)
         report(file, `frontmatter name "${fields.name}" does not match directory "${skill}"`);
       else if (!("description" in fields))
-        report(file, "frontmatter has no description — the skill will never be triggered");
+        report(file, "frontmatter has no description - the skill will never be triggered");
     }
   }
 
@@ -257,7 +257,7 @@ export function createPluginChecks(report, isTracked) {
     }
   }
 
-  /** Skills dispatch agents by "<plugin>:<agent>" — that target must exist. */
+  /** Skills dispatch agents by "<plugin>:<agent>" - that target must exist. */
   function checkAgentReferences(pkg, packages) {
     for (const skill of pkg.skills) {
       const file = join(pkg.dir, "skills", skill, "SKILL.md");
@@ -347,7 +347,7 @@ export function createPluginChecks(report, isTracked) {
     }
 
     if (packageSource.status === "missing") {
-      report(packageFile, "missing — the OpenCode adapter package metadata is required");
+      report(packageFile, "missing - the OpenCode adapter package metadata is required");
       return;
     }
     if (packageSource.status === "invalid" || !packageSource.value || typeof packageSource.value !== "object") return;
@@ -384,7 +384,7 @@ export function createPluginChecks(report, isTracked) {
     const entrypointInsidePackage =
       entrypointRelativePath && !entrypointRelativePath.startsWith("..") && !isAbsolute(entrypointRelativePath);
     if (!existsSync(entrypoint))
-      report(entrypoint, "missing — package exports point at the OpenCode adapter entrypoint");
+      report(entrypoint, "missing - package exports point at the OpenCode adapter entrypoint");
     else if (!entrypointInsidePackage) {
       report(
         packageFile,
@@ -392,7 +392,7 @@ export function createPluginChecks(report, isTracked) {
       );
     } else {
       if (isTracked && !isTracked(entrypoint))
-        report(entrypoint, "not tracked by git — the OpenCode adapter entrypoint would not ship");
+        report(entrypoint, "not tracked by git - the OpenCode adapter entrypoint would not ship");
       try {
         const module = await import(pathToFileURL(entrypoint).href);
         const plugin = module.default;
@@ -410,16 +410,16 @@ export function createPluginChecks(report, isTracked) {
       }
     }
     if (isTracked && !isTracked(packageFile))
-      report(packageFile, "not tracked by git — the OpenCode package metadata would not ship");
+      report(packageFile, "not tracked by git - the OpenCode package metadata would not ship");
     if (existsSync(codexFile) && isTracked && !isTracked(codexFile))
-      report(codexFile, "not tracked by git — the Codex manifest would not ship");
+      report(codexFile, "not tracked by git - the Codex manifest would not ship");
   }
 
   /** Run every per-package check for one plugin. */
   function checkPackage(pkg, packages) {
     const packageFile = join(pkg.dir, "package.json");
     if (!existsSync(packageFile)) {
-      report(packageFile, "missing — plugin package metadata is required");
+      report(packageFile, "missing - plugin package metadata is required");
       return;
     }
     const manifest = readJson(packageFile);
@@ -434,7 +434,7 @@ export function createPluginChecks(report, isTracked) {
     const codexSource = readJsonSource(codexFile);
     checkCodexMcpConfig(codexFile, pkg, codexSource.value);
     if (existsSync(codexFile) && isTracked && !isTracked(codexFile))
-      report(codexFile, "not tracked by git — the Codex manifest would not ship");
+      report(codexFile, "not tracked by git - the Codex manifest would not ship");
     const versionDiagnostics = compareVersionSources([
       { file: packageFile, label: "package.json", peerLabel: "plugin metadata", status: "ok", value: manifest },
       { file: claudeFile, label: "plugin metadata", peerLabel: "package.json", ...claudeSource },

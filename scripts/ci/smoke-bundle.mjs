@@ -135,7 +135,7 @@ async function handshake(bundle, pkgName, expectedVersion, cwd = ROOT, envOverri
     const serverVersion = init.result?.serverInfo?.version;
     if (serverVersion !== expectedVersion) {
       throw new Error(
-        `serverInfo.version is ${JSON.stringify(serverVersion)} but package.json says ${JSON.stringify(expectedVersion)} — read it from package.json instead of hardcoding`,
+        `serverInfo.version is ${JSON.stringify(serverVersion)} but package.json says ${JSON.stringify(expectedVersion)} - read it from package.json instead of hardcoding`,
       );
     }
 
@@ -229,7 +229,7 @@ async function main(argv) {
         envOverrides,
       );
       process.stdout.write(
-        `smoke OK — ${directResult.serverName} v${directResult.version} answered initialize and listed ${directResult.tools.length} tools\n`,
+        `smoke OK - ${directResult.serverName} v${directResult.version} answered initialize and listed ${directResult.tools.length} tools\n`,
       );
       process.stdout.write(`  tools: ${directResult.tools.join(", ")}\n`);
     } catch (err) {

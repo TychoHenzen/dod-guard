@@ -52,12 +52,12 @@ export function main(argv, dependencies = {}) {
   const stdout = dependencies.stdout ?? process.stdout;
   try {
     const current = dependencies.advisories ? dependencies.advisories() : advisories(runAudit());
-    stdout.write(`audit advisory — ${current.length} high/critical production advisory(ies)\n`);
+    stdout.write(`audit advisory - ${current.length} high/critical production advisory(ies)\n`);
     for (const item of current) {
       stdout.write(`  ${item.severity} ${item.package}: ${item.title} (advisory ${item.id})\n`);
     }
   } catch (error) {
-    stdout.write(`audit advisory unavailable — ${error instanceof Error ? error.message : String(error)}\n`);
+    stdout.write(`audit advisory unavailable - ${error instanceof Error ? error.message : String(error)}\n`);
   }
   return 0;
 }

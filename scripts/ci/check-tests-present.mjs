@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// check-tests-present — report source files that have no test file.
+// check-tests-present - report source files that have no test file.
 //
 // Coverage percentage hides untested modules behind well-tested ones. This
 // checks the cruder thing coverage cannot: does a test file directly name or
@@ -179,7 +179,7 @@ function main(argv) {
     return 3;
   }
   const current = untestedSources();
-  process.stdout.write(`test presence advisory — ${current.length} source file(s) without matching tests\n`);
+  process.stdout.write(`test presence advisory - ${current.length} source file(s) without matching tests\n`);
   for (const file of current) process.stdout.write(`  ${file} has no ${file.replace(/\.ts$/, ".test.ts")}\n`);
   return 0;
 }
