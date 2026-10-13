@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import process from "node:process";
 import { runTransport } from "../../../lib/transport-policy.mjs";
 import { runGh } from "./lib/gh-runner.mjs";
+import { statusValueName } from "./lib/project-reads.mjs";
 
 const PROJECT_NODE_ID = /^PVT_[A-Za-z0-9]+$/;
 const PROJECT_PAGE_SIZE = 100;
@@ -96,46 +97,6 @@ function resolveStatusField(fields, statusFieldId) {
     throw new Error(`Status field ${statusFieldId} must be a single-select field with options.`);
   }
   return field;
-}
-
-// REST spells a Status name as a bare string, as {name: "..."}, or as {name: {raw, html}}, and the
-// spellings must agree or the value says two things at once. An absent value is no name and gives
-// null. A blank, contradictory, or unrecognized value throws, so no caller reads a name it cannot
-// verify.
-const NAME_SPELLINGS = ["raw", "html"];
-
-function nameSpellings(name) {
-  if (typeof name === "string") {
-    return [name];
-  }
-  if (name === null || typeof name !== "object") {
-    return [];
-  }
-  return NAME_SPELLINGS.filter((key) => key in name).map((key) => name[key]);
-}
-
-function valueSpellings(value) {
-  if (typeof value === "string") {
-    return [value];
-  }
-  return nameSpellings(value.name);
-}
-
-function statusValueName(value) {
-  if (value === undefined || value === null) {
-    return null;
-  }
-  const spellings = valueSpellings(value);
-  if (spellings.length === 0) {
-    throw new Error("Status value is not a name.");
-  }
-  if (spellings.some((name) => typeof name !== "string" || name.trim().length === 0)) {
-    throw new Error("Status value has a blank name.");
-  }
-  if (new Set(spellings).size !== 1) {
-    throw new Error("Status value names disagree.");
-  }
-  return spellings[0];
 }
 
 // Each caller keeps its own readback message, so a value the flattener rejects reads as no name.
@@ -425,7 +386,6 @@ export {
   buildProjectItemListCommand,
   buildProjectViewCommand,
   resolveProjectNodeId,
-  statusValueName,
   writeProjectStatuses,
   writeProjectStatusesWithFallback,
 };

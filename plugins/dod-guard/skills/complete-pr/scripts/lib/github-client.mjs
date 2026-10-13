@@ -1,14 +1,19 @@
 import { normalizeRequiredChecks } from "./check-normalization.mjs";
 import { CompletionError } from "./completion-error.mjs";
-import { runGh } from "./gh-runner.mjs";
+import {
+  ghJson,
+  ghJsonArrayPages,
+  ghJsonPagesData,
+  githubResponseContractError,
+  githubResponseError,
+  runGh,
+} from "./gh-runner.mjs";
+import { readIssueProjectStatuses } from "./project-reads.mjs";
 
 const HTTP_NOT_FOUND = /HTTP 404/;
 const HTTP_TRANSIENT_SERVER_ERROR = /HTTP 5\d{2}/;
 const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
-const JSON_LINE_SEPARATOR = /\r?\n/u;
 const PULL_REQUEST_REF_KINDS = new Set(["head", "merge"]);
-const PROJECT_REPOSITORY_IDENTITY_KEYS = ["full_name", "fullName"];
-const PROJECT_ITEM_IDENTITY_JQ = ".[] | {id: .id, node_id: .node_id, content: {number: .content.number, repository: {full_name: .content.repository.full_name, fullName: .content.repository.fullName}, repository_url: .content.repository_url}}";
 const READY_MUTATION = [
   "mutation($pullRequestId: ID!) {",
   "markPullRequestReadyForReview(input: { pullRequestId: $pullRequestId }) {",
@@ -129,48 +134,6 @@ function readUnresolvedReviewThreads(commandRunner, repository, pullNumber) {
   return threads;
 }
 
-function githubResponseError(endpoint, field) {
-  return new CompletionError(
-    "github_response_shape",
-    `GitHub response for ${endpoint} must include an array ${field}.`,
-  );
-}
-
-function githubResponseContractError(endpoint, detail) {
-  return new CompletionError(
-    "github_response_shape",
-    `GitHub response for ${endpoint} must include ${detail}.`,
-  );
-}
-
-function ghJson(args, acceptedExitCodes = [0], commandRunner = runGh) {
-  const result = commandRunner(args, acceptedExitCodes);
-  if (!acceptedExitCodes.includes(result.status)) {
-    throw new Error(result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`);
-  }
-  let data = null;
-  if (result.stdout.trim()) {
-    data = JSON.parse(result.stdout);
-  }
-  return { data, result };
-}
-
-function ghJsonLines(endpoint, filter, commandRunner) {
-  const result = commandRunner(["api", "--paginate", "--jq", filter, endpoint], [0]);
-  if (result.status !== 0) {
-    throw new Error(result.stderr?.trim() || result.stdout?.trim() || `gh exited with ${result.status}`);
-  }
-  const lines = String(result.stdout ?? "")
-    .split(JSON_LINE_SEPARATOR)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-  try {
-    return lines.map((line) => JSON.parse(line));
-  } catch {
-    throw githubResponseContractError(endpoint, "newline-delimited JSON Project items");
-  }
-}
-
 function ghJsonPages(endpoint, field, commandRunner) {
   const pages = ghJsonPagesData(endpoint, commandRunner);
   if (pages.length === 0) {
@@ -182,52 +145,6 @@ function ghJsonPages(endpoint, field, commandRunner) {
     }
     return page[field];
   });
-}
-
-function ghJsonPagesData(endpoint, commandRunner) {
-  const { data } = ghJson(["api", "--paginate", "--slurp", endpoint], [0], commandRunner);
-  return Array.isArray(data) ? data : [data];
-}
-
-function ghJsonArrayPages(endpoint, commandRunner) {
-  const pages = ghJsonPagesData(endpoint, commandRunner);
-  if (pages.some((page) => !Array.isArray(page))) {
-    throw githubResponseError(endpoint, "an array response");
-  }
-  return pages.flat();
-}
-
-function projectStatusName(item, statusFieldId, endpoint) {
-  if (!Array.isArray(item?.fields) || item.fields.length !== 1) {
-    throw githubResponseContractError(endpoint, "exactly one Status field/value");
-  }
-  const [statusField] = item.fields;
-  if (String(statusField?.id ?? "") !== String(statusFieldId) ||
-      typeof statusField?.name !== "string" || statusField.name.toLowerCase() !== "status") {
-    throw githubResponseContractError(endpoint, "exactly one Status field/value");
-  }
-
-  const value = statusField.value;
-  const names = [];
-  if (typeof value === "string") {
-    names.push(value);
-  } else if (value?.name && typeof value.name === "object") {
-    for (const key of ["raw", "html"]) {
-      if (key in value.name) {
-        names.push(value.name[key]);
-      }
-    }
-  } else if (value && typeof value.name === "string") {
-    names.push(value.name);
-  }
-
-  if (names.length === 0 || names.some((name) => typeof name !== "string" || name.trim().length === 0)) {
-    throw githubResponseContractError(endpoint, "exactly one non-blank Status field/value");
-  }
-  if (new Set(names).size !== 1) {
-    throw githubResponseContractError(endpoint, "one non-contradictory Status field/value");
-  }
-  return names[0];
 }
 
 // gh reports only the HTTP status of a failed read, so the endpoint is added here. A response-shape
@@ -302,190 +219,6 @@ function closingIssueReferences(text, defaultRepository) {
     }
   }
   return [...references.values()];
-}
-
-export function listOwnedProjects(owner, commandRunner) {
-  const userEndpoint = `users/${owner}/projectsV2?per_page=100`;
-  const userResponse = ghJson(
-    ["api", "--paginate", "--slurp", userEndpoint],
-    [0, 1],
-    commandRunner,
-  );
-  if (userResponse.result.status === 0) {
-    const pages = userResponse.data;
-    if (!Array.isArray(pages) || pages.some((page) => !Array.isArray(page))) {
-      throw githubResponseError(userEndpoint, "an array response");
-    }
-    return { basePath: `users/${owner}`, projects: pages.flat() };
-  }
-  if (!HTTP_NOT_FOUND.test(userResponse.result.stderr)) {
-    throw new Error(userResponse.result.stderr.trim() || "Failed to list user-owned Projects.");
-  }
-  const orgEndpoint = `orgs/${owner}/projectsV2?per_page=100`;
-  return {
-    basePath: `orgs/${owner}`,
-    projects: ghJsonArrayPages(orgEndpoint, commandRunner),
-  };
-}
-
-function repositoryName(value) {
-  return typeof value === "string" && value.trim().length > 0 ? value.trim().toLowerCase() : null;
-}
-
-function projectItemRepository(item, endpoint) {
-  const content = item?.content;
-  if (!content || typeof content !== "object" || Array.isArray(content)) {
-    throw githubResponseContractError(endpoint, "Project items with content identity");
-  }
-  const repository = content.repository;
-  if (!repository || typeof repository !== "object" || Array.isArray(repository)) {
-    throw githubResponseContractError(endpoint, "Project items with repository identity");
-  }
-  const url = content.repository_url;
-  const identities = [];
-  for (const key of PROJECT_REPOSITORY_IDENTITY_KEYS) {
-    const fullName = repository[key];
-    if (fullName !== undefined && fullName !== null) {
-      const normalized = repositoryName(fullName);
-      if (normalized === null) {
-        throw githubResponseContractError(endpoint, "a non-blank repository identity");
-      }
-      identities.push(normalized);
-    }
-  }
-  if (url !== undefined && url !== null) {
-    const match = typeof url === "string" && url.match(/^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)$/i);
-    if (!match) {
-      throw githubResponseContractError(endpoint, "a canonical repository URL");
-    }
-    identities.push(repositoryName(match[1]));
-  }
-  if (identities.length === 0) {
-    throw githubResponseContractError(endpoint, "a non-blank repository identity");
-  }
-  if (new Set(identities).size > 1) {
-    throw githubResponseContractError(endpoint, "one non-contradictory repository identity");
-  }
-  return identities[0];
-}
-
-function projectItemIssueNumber(item, endpoint) {
-  const value = item?.content?.number;
-  const number = Number(value);
-  if (value === undefined || value === null || !Number.isInteger(number) || number <= 0) {
-    throw githubResponseContractError(endpoint, "a valid issue number");
-  }
-  return number;
-}
-
-function projectItemId(item, endpoint) {
-  const id = item?.id;
-  if (id === undefined || id === null || String(id).trim().length === 0) {
-    throw githubResponseError(endpoint, "items with IDs");
-  }
-  return String(id);
-}
-
-function projectItemsForRead(endpoint, commandRunner) {
-  const items = ghJsonLines(endpoint, PROJECT_ITEM_IDENTITY_JQ, commandRunner);
-  const seenIds = new Set();
-  const seenNodeIds = new Set();
-  const seenMembership = new Set();
-  for (const item of items) {
-    if (!item || typeof item !== "object") {
-      throw githubResponseContractError(endpoint, "object Project items");
-    }
-    const id = projectItemId(item, endpoint);
-    const nodeId = item.node_id ?? item.nodeId;
-    if (nodeId === undefined || nodeId === null || String(nodeId).trim().length === 0) {
-      throw githubResponseError(endpoint, "items with global IDs");
-    }
-    if (seenIds.has(id) || seenNodeIds.has(String(nodeId))) {
-      throw githubResponseContractError(endpoint, "unique Project items");
-    }
-    seenIds.add(id);
-    seenNodeIds.add(String(nodeId));
-    const itemRepository = projectItemRepository(item, endpoint);
-    const number = projectItemIssueNumber(item, endpoint);
-    const membership = `${itemRepository}#${number}`;
-    if (seenMembership.has(membership)) {
-      throw githubResponseContractError(endpoint, "unique repository issue membership; exactly one matching issue item");
-    }
-    seenMembership.add(membership);
-  }
-  return items;
-}
-
-function projectItemMatchesRepository(item, repository, issueNumber, endpoint) {
-  const number = projectItemIssueNumber(item, endpoint);
-  const itemRepository = projectItemRepository(item, endpoint);
-  return number === issueNumber && itemRepository === repositoryName(repository);
-}
-
-function validateProjectItemReadback(item, expectedItem, repository, issueNumber, endpoint) {
-  const expectedId = projectItemId(expectedItem, endpoint);
-  const actualId = projectItemId(item, endpoint);
-  const expectedNodeId = String(expectedItem.node_id ?? expectedItem.nodeId ?? "");
-  const actualNodeId = String(item?.node_id ?? item?.nodeId ?? "");
-  if (expectedNodeId.length === 0 || actualNodeId.length === 0 || expectedId !== actualId || expectedNodeId !== actualNodeId) {
-    throw githubResponseContractError(endpoint, "the same Project item IDs as the membership read");
-  }
-  if (!projectItemMatchesRepository(item, repository, issueNumber, endpoint)) {
-    throw githubResponseContractError(endpoint, "the same repository and issue identity as the membership read");
-  }
-}
-
-function readIssueProjectStatuses(repository, issueNumber, commandRunner) {
-  const separator = repository.indexOf("/");
-  if (separator <= 0 || separator === repository.length - 1) {
-    throw new Error("Repository must be in owner/name form.");
-  }
-  const owner = repository.slice(0, separator);
-  const { basePath, projects } = listOwnedProjects(owner, commandRunner);
-  const linkedProjects = [];
-
-  for (const project of projects) {
-    if (project?.number === undefined || project?.number === null) {
-      throw githubResponseError(`${basePath}/projectsV2`, "projects with a number");
-    }
-    if (typeof project?.state !== "string" || project.state.trim().length === 0) {
-      throw githubResponseContractError(`${basePath}/projectsV2`, "projects with an explicit state");
-    }
-    if (project.state.trim().toLowerCase() !== "open") {
-      continue;
-    }
-    const projectPath = `${basePath}/projectsV2/${project.number}`;
-    const itemsEndpoint = `${projectPath}/items?per_page=100`;
-    const matchingItems = projectItemsForRead(itemsEndpoint, commandRunner)
-      .filter((item) => projectItemMatchesRepository(item, repository, issueNumber, itemsEndpoint));
-    if (matchingItems.length === 0) {
-      continue;
-    }
-    if (matchingItems.length !== 1) {
-      throw githubResponseContractError(itemsEndpoint, "exactly one matching issue item");
-    }
-    linkedProjects.push({ project, item: matchingItems[0] });
-  }
-
-  if (linkedProjects.length !== 1) {
-    throw githubResponseContractError(`${basePath}/projectsV2`, "exactly one open linked Project");
-  }
-
-  const { project, item } = linkedProjects[0];
-  const projectPath = `${basePath}/projectsV2/${project.number}`;
-  const fieldsEndpoint = `${projectPath}/fields?per_page=100`;
-  const statusFields = ghJsonArrayPages(fieldsEndpoint, commandRunner)
-    .filter((field) => typeof field?.name === "string" && field.name.toLowerCase() === "status");
-  if (statusFields.length !== 1 || statusFields[0].id === undefined || statusFields[0].id === null) {
-    throw githubResponseError(fieldsEndpoint, "exactly one Status field");
-  }
-  const statusFieldId = statusFields[0].id;
-  projectItemId(item, `${projectPath}/items?per_page=100`);
-
-  const itemEndpoint = `${projectPath}/items/${item.id}?fields=${statusFieldId}`;
-  const { data } = ghJson(["api", itemEndpoint], [0], commandRunner);
-  validateProjectItemReadback(data, item, repository, issueNumber, itemEndpoint);
-  return [projectStatusName(data, statusFieldId, itemEndpoint)];
 }
 
 function normalizePullRequestRefs(data, pullNumber, endpoint) {

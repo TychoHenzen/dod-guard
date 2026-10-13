@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { runCli } from "../closure.mjs";
-import { statusValueName } from "../project-status.mjs";
+import { statusValueName } from "./project-reads.mjs";
 import { planClosures } from "./closure-plan.mjs";
 import { buildClosureSnapshot } from "./closure-snapshot.mjs";
 import {

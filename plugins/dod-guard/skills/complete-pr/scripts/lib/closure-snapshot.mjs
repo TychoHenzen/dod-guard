@@ -6,8 +6,15 @@
 import { renameSync, rmSync, writeFileSync } from "node:fs";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command reads its process id for the partial file.
 import process from "node:process";
-import { statusValueName } from "../project-status.mjs";
-import { listOwnedProjects, readRequiredChecks } from "./github-client.mjs";
+import { readRequiredChecks } from "./github-client.mjs";
+import {
+  ProjectReadError,
+  contentRepository,
+  linkedProject,
+  readSlurpedPages,
+  sameRepository,
+  statusValueName,
+} from "./project-reads.mjs";
 import {
   API_ISSUE_URL,
   API_PULL_URL,
@@ -62,13 +69,6 @@ function positiveInteger(value) {
 
 function present(value) {
   return value !== undefined && value !== null;
-}
-
-function sameRepository(name, repository) {
-  if (typeof name !== "string") {
-    return false;
-  }
-  return name.toLowerCase() === repository.toLowerCase();
 }
 
 // Whether a URL names a repository through one of the two API patterns that carry one: a repository
@@ -133,13 +133,25 @@ function readJson(read, endpoint, args) {
   }
 }
 
-// A list that can span pages is read with --paginate --slurp, which returns one array per page.
-function readPages(read, endpoint) {
-  const pages = readJson(read, endpoint, ["api", "--paginate", "--slurp", endpoint]);
-  if (!Array.isArray(pages) || pages.some((page) => !Array.isArray(page))) {
-    throw readFailure(endpoint, "missing page: every page must be an array");
+// project-reads names a failed read by endpoint and detail, so its failures are restated as read
+// failures with the same text. A read failure the runner threw passes through unchanged, also when the
+// listing wrapped it, so the message names the failed read once.
+function projectRead(work) {
+  try {
+    return work();
+  } catch (error) {
+    if (!(error instanceof ProjectReadError)) {
+      throw error;
+    }
+    if (error.cause instanceof SnapshotReadError) {
+      throw error.cause;
+    }
+    throw readFailure(error.endpoint, error.detail, error);
   }
-  return pages.flat();
+}
+
+function readPages(read, endpoint) {
+  return projectRead(() => readSlurpedPages(read, endpoint));
 }
 
 // github-client's own shape checks name an endpoint only inside their text, so their failures are
@@ -174,68 +186,6 @@ function readRepository(read, repository) {
     throw readFailure(endpoint, "must include a non-blank default_branch");
   }
   return { fullName: data.full_name, defaultBranch: data.default_branch };
-}
-
-// The owner/name an item's content names, as GitHub spells it, or null for content that names none
-// (a draft issue). A name or repository URL that is present and does not parse is a failed read, not a
-// missing name.
-function contentRepository(content, endpoint) {
-  const fullName = content?.repository?.full_name;
-  if (present(fullName)) {
-    if (!isRepositoryName(fullName)) {
-      throw readFailure(endpoint, "content repository full_name must name a repository");
-    }
-    return fullName;
-  }
-  if (!present(content?.repository_url)) {
-    return null;
-  }
-  const repository = urlRepository(content.repository_url, API_REPOSITORY_URL);
-  if (repository === null) {
-    throw readFailure(endpoint, "content repository_url must name a repository");
-  }
-  return repository;
-}
-
-function holdsRepository(read, endpoint, repository) {
-  return readPages(read, endpoint).some((item) =>
-    sameRepository(contentRepository(item?.content, endpoint), repository),
-  );
-}
-
-function isProjectEntry(project) {
-  return positiveInteger(project?.number) && nonBlank(project.state);
-}
-
-function describeFound(projects) {
-  if (projects.length === 0) {
-    return "none";
-  }
-  const numbers = projects.map(({ number }) => `#${number}`).join(", ");
-  return `${projects.length} (${numbers})`;
-}
-
-// The open Project that holds an item of the repository, by github-client's membership rule. A Project
-// item with no derivable repository cannot be a member, so it is passed over rather than failing the
-// build. Closed Projects are never read.
-function linkedProject(read, owner, repository) {
-  const { basePath, projects } = atEndpoint(`users/${owner}/projectsV2`, () => listOwnedProjects(owner, read));
-  const linked = [];
-  for (const project of projects) {
-    if (!isProjectEntry(project)) {
-      throw readFailure(`${basePath}/projectsV2`, "every Project must carry a number and a state");
-    }
-    const open = project.state.trim().toLowerCase() === "open";
-    const endpoint = `${basePath}/projectsV2/${project.number}/items?per_page=100`;
-    if (open && holdsRepository(read, endpoint, repository)) {
-      linked.push(project);
-    }
-  }
-  if (linked.length !== 1) {
-    const found = describeFound(linked);
-    throw readFailure(`${basePath}/projectsV2`, `expected exactly one open linked Project, found ${found}`);
-  }
-  return { basePath, project: linked[0] };
 }
 
 // A Status name read from one REST value. A value that is present but unreadable fails the build,
@@ -424,7 +374,7 @@ function shapeItem(raw, fieldIds, endpoint) {
   const [statusId, repositoryId, parentId, linkedId] = fieldIds;
   const field = (id) => fieldValue(raw.fields, id, subject, endpoint);
   const pulls = linkedPullValues(field(linkedId), subject, endpoint);
-  const repository = contentRepository(content, endpoint);
+  const repository = projectRead(() => contentRepository(content, endpoint));
   return {
     item: {
       id: raw.node_id,
@@ -611,7 +561,7 @@ export function buildClosureSnapshot({ repository, runner }) {
   const read = guardedRunner(runner);
   const repo = readRepository(read, repository);
   const [owner] = repo.fullName.split("/");
-  const { basePath, project } = linkedProject(read, owner, repo.fullName);
+  const { basePath, project } = projectRead(() => linkedProject(read, owner, repo.fullName));
   const fields = projectFields(read, basePath, project.number);
   const itemsEndpoint =
     `${basePath}/projectsV2/${project.number}/items?per_page=100&fields=${fields.fieldIds.join(",")}`;
