@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 // biome-ignore lint/correctness/noNodejsModules: This file runs with Node's test runner.
 import test from "node:test";
-import { GitHubClient, readRequiredChecks } from "./github-client.mjs";
+import { GitHubClient, listOwnedProjects, readRequiredChecks } from "./github-client.mjs";
 
 function createRestChecksRunner({
   checkRunResponses,
@@ -542,4 +542,70 @@ test("fails closed when a thread cursor repeats on a later page", () => {
     { code: "review-threads-unavailable" },
   );
   assert.equal(calls.length, responses.length);
+});
+
+// A runner that answers listOwnedProjects from queued replies and records each call with the exit
+// codes it accepted.
+function listingRunner(replies) {
+  const calls = [];
+  const queue = [...replies];
+  const runner = (args, acceptedExitCodes) => {
+    calls.push({ args, acceptedExitCodes });
+    return queue.shift();
+  };
+  return { calls, runner };
+}
+
+test("listOwnedProjects reads the user-owned Projects first and flattens every page", () => {
+  const { calls, runner } = listingRunner([okResponse(JSON.stringify([[{ number: 2 }], [{ number: 5 }]]))]);
+
+  assert.deepEqual(listOwnedProjects("owner", runner), {
+    basePath: "users/owner",
+    projects: [{ number: 2 }, { number: 5 }],
+  });
+  assert.deepEqual(calls, [
+    { args: ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"], acceptedExitCodes: [0, 1] },
+  ]);
+});
+
+test("listOwnedProjects falls back to orgs/<owner> after a users/ HTTP 404", () => {
+  const { calls, runner } = listingRunner([
+    { stderr: "gh: Not Found (HTTP 404)", status: 1, stdout: "" },
+    okResponse(JSON.stringify([[{ number: 7 }]])),
+  ]);
+
+  assert.deepEqual(listOwnedProjects("owner", runner), { basePath: "orgs/owner", projects: [{ number: 7 }] });
+  assert.deepEqual(calls, [
+    { args: ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"], acceptedExitCodes: [0, 1] },
+    { args: ["api", "--paginate", "--slurp", "orgs/owner/projectsV2?per_page=100"], acceptedExitCodes: [0] },
+  ]);
+});
+
+test("listOwnedProjects throws the stderr text of any other failure and never reads orgs/", () => {
+  const { calls, runner } = listingRunner([{ stderr: "gh: Server Error (HTTP 500)\n", status: 1, stdout: "" }]);
+  assert.throws(() => listOwnedProjects("owner", runner), (error) => {
+    assert.equal(error.message, "gh: Server Error (HTTP 500)");
+    return true;
+  });
+  assert.equal(calls.length, 1);
+
+  const { runner: silentRunner } = listingRunner([{ stderr: "", status: 1, stdout: "" }]);
+  assert.throws(() => listOwnedProjects("owner", silentRunner), (error) => {
+    assert.equal(error.message, "Failed to list user-owned Projects.");
+    return true;
+  });
+});
+
+test("listOwnedProjects rejects a user-owned listing that is not an array of pages", () => {
+  for (const stdout of [JSON.stringify({ message: "x" }), JSON.stringify([{ number: 2 }])]) {
+    const { runner } = listingRunner([okResponse(stdout)]);
+    assert.throws(() => listOwnedProjects("owner", runner), (error) => {
+      assert.equal(error.code, "github_response_shape");
+      assert.equal(
+        error.message,
+        "GitHub response for users/owner/projectsV2?per_page=100 must include an array an array response.",
+      );
+      return true;
+    });
+  }
 });
