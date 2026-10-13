@@ -15,11 +15,19 @@ destructive action.
   exact error, stage, PBI, branch or head, and attempts. Read back remote state
   after an uncertain write, then classify the failure as transient/provider,
   stale state or race, code/test/quality, merge conflict, authorization/policy,
-  or skill/runtime. Use the smallest reversible repair and its narrow proof,
-  then resume that checkpoint. Retry an identical transient failure at most
-  once. Do not retry a mutation before its readback, loop blindly, or convert a
-  security, authority, destructive, provider/head, or missing-evidence stop
-  into ordinary recovery. After local triage, a confirmed blocker must use
+  or skill/runtime. Before classifying a missing provider, fixture, or tool
+  capability as a blocker, compare it with the PBI's requested observable
+  behavior: a capability the PBI itself adds or changes is implementation
+  work, not an external blocker. A genuinely unavailable capability stays a
+  blocker, recorded with the exact call, error, and what was checked. On a
+  branch behind the fetched default, reclassify a failure only after
+  complete-pr's bounded branch synchronization brings the branch current,
+  never by rebase or force-push. Use the smallest reversible repair and its
+  narrow proof, then resume that checkpoint.
+  Retry an identical transient failure at most once. Do not retry a mutation
+  before its readback, loop blindly, or convert a security, authority,
+  destructive, provider/head, or missing-evidence stop into ordinary
+  recovery. After local triage, a confirmed blocker must use
   `/codex-advisor`: Claude's advisor tool in Claude Code, otherwise Codex with
   `gpt-5.6-sol` at `max` effort. Its advice never replaces the invoking
   skill's repair or proof.
