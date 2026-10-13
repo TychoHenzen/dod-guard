@@ -34,7 +34,11 @@ test("Codex plugin ships a discoverable PostToolUse hook", () => {
       hooks: [
         {
           type: "command",
-          command: 'node "${PLUGIN_ROOT}/scripts/quality-guard.mjs"',
+          // Claude Code expands ${CLAUDE_PLUGIN_ROOT} and Codex expands
+          // ${PLUGIN_ROOT}. Each runtime leaves the other's name for the shell,
+          // which expands it to empty, so one command serves both.
+          command:
+            'node "${CLAUDE_PLUGIN_ROOT}${PLUGIN_ROOT}/scripts/quality-guard.mjs"',
           commandWindows: '"${PLUGIN_ROOT}\\scripts\\quality-guard-hook.cmd"',
           timeout: 30,
           statusMessage: "quality-guard: checking structure...",

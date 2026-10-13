@@ -34,8 +34,8 @@ test("goal-sdlc reports the time and parent and child completions", () => {
   assert.doesNotMatch(skill, /PBIs completed: N/);
   for (const phrase of [
     "on a model tier from `standards/model-routing.md`",
-    "the strong tier (Opus at medium effort, `gpt-5.6-sol` in Codex) plans, decides, and judges",
-    "the cheap tier (Haiku at max effort, `gpt-5.6-luna` in Codex)",
+    "the strong tier (Opus, `gpt-5.6-sol` in Codex) plans, decides, and judges",
+    "the cheap tier (Haiku, `gpt-5.6-luna` in Codex)",
     "starts with the local `[HH:MM]` time",
     `\`PBIs completed: P parent / C child\`. That figure counts ${SCOPE}`,
   ]) {
