@@ -35,8 +35,9 @@ function failed(stderr) {
 const SERVER_ERROR = failed("gh: Server Error (HTTP 500)");
 const NOT_FOUND = failed("gh: Not Found (HTTP 404)");
 
-// Answers each endpoint from its route and honors acceptedExitCodes the way the shared runGh
-// in gh-runner.mjs does. An endpoint without a route throws, so a read the fixture does not expect fails the test.
+// Answers each endpoint from its route and honors acceptedExitCodes the way the shared runGh in
+// gh-runner.mjs does. An endpoint without a route throws, so a read the fixture does not expect
+// fails the test.
 function fakeRest(routes) {
   const calls = [];
   const runner = (args, acceptedExitCodes = [0]) => {

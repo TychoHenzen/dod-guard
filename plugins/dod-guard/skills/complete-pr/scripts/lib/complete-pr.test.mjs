@@ -826,18 +826,20 @@ test("reads a Status spelled as a bare string, as {name}, or as {name: {raw, htm
 });
 
 test("stops with the zero-linked-Project text when no open Project holds the issue", () => {
+  // The closed Project has no items, so reading them would still end in this stop and only the
+  // items-read check can catch it.
   const cases = [
-    { projects: [] },
-    { itemsByProject: new Map([["2", [linkedProjectItem(1701, 25)]]]) },
-    { projects: [{ number: 2, state: "closed" }] },
+    [{ projects: [] }, false],
+    [{ itemsByProject: new Map([["2", [linkedProjectItem(1701, 25)]]]) }, true],
+    [{ projects: [{ number: 2, state: "closed" }], itemsByProject: new Map([["2", []]]) }, false],
   ];
-  for (const options of cases) {
+  for (const [options, readsItems] of cases) {
     const { reader, calls } = createProjectStatusReader(options);
     assertProjectShapeStop(() => reader.getIssueProjectStatuses(24), PROJECTS_ENDPOINT, "exactly one open linked Project");
-    assert.equal(calls.some((args) => args.some((value) => String(value).includes("/fields?"))), false);
+    const requested = (fragment) => calls.some((args) => args.some((value) => String(value).includes(fragment)));
+    assert.equal(requested("/fields?"), false);
+    assert.equal(requested("/items?"), readsItems);
   }
-  const { calls } = createProjectStatusReader({ projects: [{ number: 2, state: "closed" }] });
-  assert.equal(calls.some((args) => args.some((value) => String(value).includes("/items?"))), false);
 });
 
 test("stops on a listed Project without a number or an explicit state, and accepts a numeric string number", () => {

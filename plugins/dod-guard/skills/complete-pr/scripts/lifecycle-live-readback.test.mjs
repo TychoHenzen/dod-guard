@@ -3,6 +3,15 @@ import test from "node:test";
 import { runGh } from "./lib/gh-runner.mjs";
 import { verifyLiveLifecycleReadback } from "./lifecycle-live-readback.mjs";
 
+function targetItem(value) {
+  return {
+    id: 1,
+    node_id: "PVTI_target",
+    content: { number: 505, repository: { full_name: "owner/repo" } },
+    fields: [{ name: "Status", value }],
+  };
+}
+
 // A runner whose target item carries the given Status value on every read.
 function targetStatusRunner(value) {
   return (args) => {
@@ -11,13 +20,7 @@ function targetStatusRunner(value) {
       return { status: 0, stderr: "", stdout: JSON.stringify([[{ id: 407_767_889, name: "Status" }]]) };
     }
     if (endpoint.includes("/items?")) {
-      const item = {
-        id: 1,
-        node_id: "PVTI_target",
-        content: { number: 505, repository: { full_name: "owner/repo" } },
-        fields: [{ name: "Status", value }],
-      };
-      return { status: 0, stderr: "", stdout: JSON.stringify(item) };
+      return { status: 0, stderr: "", stdout: JSON.stringify(targetItem(value)) };
     }
     return { status: 0, stderr: "", stdout: JSON.stringify({ id: 505, number: 505, state: "closed" }) };
   };

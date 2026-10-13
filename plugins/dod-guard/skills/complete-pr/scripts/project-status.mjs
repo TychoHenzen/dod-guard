@@ -1,8 +1,8 @@
-// biome-ignore lint/correctness/noNodejsModules: This shipped command invokes the local GitHub CLI.
+// biome-ignore lint/correctness/noNodejsModules: This shipped command resolves its direct entrypoint.
 import { resolve } from "node:path";
-// biome-ignore lint/correctness/noNodejsModules: This shipped command invokes the local GitHub CLI.
+// biome-ignore lint/correctness/noNodejsModules: This shipped command resolves its direct entrypoint.
 import { fileURLToPath } from "node:url";
-// biome-ignore lint/correctness/noNodejsModules: This shipped command invokes the local GitHub CLI.
+// biome-ignore lint/correctness/noNodejsModules: This shipped command exposes a direct CLI.
 import process from "node:process";
 import { runTransport } from "../../../lib/transport-policy.mjs";
 import { runGh } from "./lib/gh-runner.mjs";

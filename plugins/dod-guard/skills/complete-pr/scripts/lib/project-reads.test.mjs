@@ -7,8 +7,6 @@ import {
   ProjectReadError,
   contentRepository,
   linkedProject,
-  listOwnedProjects,
-  projectStatusName,
   readIssueProjectStatuses,
   readSlurpedPages,
   sameRepository,
@@ -65,34 +63,62 @@ test("statusValueName keeps its rejection messages", () => {
   assert.throws(() => statusValueName({ name: { raw: "Done", html: "Todo" } }), { message: "Status value names disagree." });
 });
 
-test("projectStatusName maps each flattener rejection to its own github_response_shape stop", () => {
-  const endpoint = "users/owner/projectsV2/2/items/1?fields=7";
-  const item = (value) => ({ fields: [{ id: 7, name: "Status", value }] });
+const ISSUE_ITEM = { id: 1, node_id: "PVTI_1", content: { number: 24, repository: { full_name: "owner/repo" } } };
+const STATUS_FIELDS = "users/owner/projectsV2/2/fields?per_page=100";
+const ITEM_STATUS_READ = "users/owner/projectsV2/2/items/1?fields=7";
+
+// A runner for one open Project holding issue 24, whose readback carries the given fields. statusFieldId
+// is the Status field ID the fields listing reports.
+function issueStatusRunner(fields, statusFieldId = 7) {
+  return tableRunner({
+    [LISTING]: okResponse(JSON.stringify([[{ number: 2, state: "open" }]])),
+    [membership(2)]: okResponse(JSON.stringify(ISSUE_ITEM)),
+    [STATUS_FIELDS]: okResponse(JSON.stringify([[{ id: statusFieldId, name: "Status" }]])),
+    [ITEM_STATUS_READ]: okResponse(JSON.stringify({ ...ISSUE_ITEM, fields })),
+  }).runner;
+}
+
+test("readIssueProjectStatuses maps each flattener rejection to its own github_response_shape stop", () => {
+  const status = (value) => [{ id: 7, name: "Status", value }];
   const cases = [
-    [item(undefined), "exactly one non-blank Status field/value"],
-    [item({ id: "x" }), "exactly one non-blank Status field/value"],
-    [item(""), "exactly one non-blank Status field/value"],
-    [item({ name: { raw: "Done", html: "Todo" } }), "one non-contradictory Status field/value"],
-    [{ fields: [{ id: 8, name: "Status", value: "Done" }] }, "exactly one Status field/value"],
+    [status(undefined), "exactly one non-blank Status field/value"],
+    [status({ id: "x" }), "exactly one non-blank Status field/value"],
+    [status(""), "exactly one non-blank Status field/value"],
+    [status({ name: { raw: "Done", html: "Todo" } }), "one non-contradictory Status field/value"],
+    [[{ id: 8, name: "Status", value: "Done" }], "exactly one Status field/value"],
   ];
-  for (const [value, detail] of cases) {
-    assert.throws(() => projectStatusName(value, 7, endpoint), (error) => {
+  for (const [fields, detail] of cases) {
+    assert.throws(() => readIssueProjectStatuses("owner/repo", 24, issueStatusRunner(fields)), (error) => {
       assert.ok(error instanceof CompletionError);
       assert.equal(error.code, "github_response_shape");
-      assert.equal(error.message, `GitHub response for ${endpoint} must include ${detail}.`);
+      assert.equal(error.message, `GitHub response for ${ITEM_STATUS_READ} must include ${detail}.`);
       return true;
     });
   }
-  assert.equal(projectStatusName(item({ name: { raw: "Done" } }), "7", endpoint), "Done");
+  const read = issueStatusRunner(status({ name: { raw: "Done" } }), "7");
+  assert.deepEqual(readIssueProjectStatuses("owner/repo", 24, read), ["Done"]);
 });
 
 test("readIssueProjectStatuses stops on an item with no repository, where linkedProject passes over it", () => {
-  const items = [JSON.stringify({ id: 1, node_id: "PVTI_1", content: { number: 24 } })].join("\n");
-  const { runner } = tableRunner({
-    [LISTING]: okResponse(JSON.stringify([[{ number: 2, state: "open" }]])),
-    [membership(2)]: okResponse(items),
+  const listing = okResponse(JSON.stringify([[{ number: 2, state: "open" }]]));
+  const rows = [{ id: 1, node_id: "PVTI_1", content: { number: 24 } }, repositoryItem("owner/repo")];
+  // The issue read takes newline-delimited --jq rows; linkedProject takes slurped pages of the same rows.
+  const issueRead = tableRunner({
+    [LISTING]: listing,
+    [membership(2)]: okResponse(rows.map((row) => JSON.stringify(row)).join("\n")),
   });
-  assert.throws(() => readIssueProjectStatuses("owner/repo", 24, runner), { code: "github_response_shape" });
+  assert.throws(() => readIssueProjectStatuses("owner/repo", 24, issueRead.runner), (error) => {
+    assert.ok(error instanceof CompletionError, String(error));
+    assert.equal(error.code, "github_response_shape");
+    assert.equal(error.message, `GitHub response for ${membership(2)} must include Project items with repository identity.`);
+    return true;
+  });
+
+  const repositoryRead = tableRunner({ [LISTING]: listing, [membership(2)]: okResponse(JSON.stringify([rows])) });
+  assert.deepEqual(linkedProject(repositoryRead.runner, "owner", "owner/repo"), {
+    basePath: "users/owner",
+    project: { number: 2, state: "open" },
+  });
 });
 
 test("linkedProject returns the one open Project holding an item of the repository", () => {
@@ -189,8 +215,8 @@ test("sameRepository compares names without case and never matches a missing nam
   assert.equal(sameRepository(null, "owner/repo"), false);
 });
 
-// A runner that answers listOwnedProjects from queued replies and records each call with the exit
-// codes it accepted.
+// A runner that answers the owned-Project listing from queued replies and records each call with the
+// exit codes it accepted.
 function listingRunner(replies) {
   const calls = [];
   const queue = [...replies];
@@ -201,50 +227,55 @@ function listingRunner(replies) {
   return { calls, runner };
 }
 
-test("listOwnedProjects reads the user-owned Projects first and flattens every page", () => {
-  const { calls, runner } = listingRunner([okResponse(JSON.stringify([[{ number: 2 }], [{ number: 5 }]]))]);
+test("readIssueProjectStatuses lists the user-owned Projects first and checks an entry on a later page", () => {
+  const { calls, runner } = listingRunner([
+    okResponse(JSON.stringify([[{ number: 2, state: "closed" }], [{ number: 5 }]])),
+  ]);
 
-  assert.deepEqual(listOwnedProjects("owner", runner), {
-    basePath: "users/owner",
-    projects: [{ number: 2 }, { number: 5 }],
+  assert.throws(() => readIssueProjectStatuses("owner/repo", 24, runner), {
+    code: "github_response_shape",
+    message: "GitHub response for users/owner/projectsV2 must include projects with an explicit state.",
   });
   assert.deepEqual(calls, [
     { args: ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"], acceptedExitCodes: [0, 1] },
   ]);
 });
 
-test("listOwnedProjects falls back to orgs/<owner> after a users/ HTTP 404", () => {
+test("readIssueProjectStatuses falls back to orgs/<owner> after a users/ HTTP 404", () => {
   const { calls, runner } = listingRunner([
     { stderr: "gh: Not Found (HTTP 404)", status: 1, stdout: "" },
-    okResponse(JSON.stringify([[{ number: 7 }]])),
+    okResponse(JSON.stringify([[{ number: 7, state: "closed" }]])),
   ]);
 
-  assert.deepEqual(listOwnedProjects("owner", runner), { basePath: "orgs/owner", projects: [{ number: 7 }] });
+  assert.throws(() => readIssueProjectStatuses("owner/repo", 24, runner), {
+    code: "github_response_shape",
+    message: "GitHub response for orgs/owner/projectsV2 must include exactly one open linked Project.",
+  });
   assert.deepEqual(calls, [
     { args: ["api", "--paginate", "--slurp", "users/owner/projectsV2?per_page=100"], acceptedExitCodes: [0, 1] },
     { args: ["api", "--paginate", "--slurp", "orgs/owner/projectsV2?per_page=100"], acceptedExitCodes: [0] },
   ]);
 });
 
-test("listOwnedProjects throws the stderr text of any other failure and never reads orgs/", () => {
+test("readIssueProjectStatuses throws the stderr text of any other listing failure and never reads orgs/", () => {
   const { calls, runner } = listingRunner([{ stderr: "gh: Server Error (HTTP 500)\n", status: 1, stdout: "" }]);
-  assert.throws(() => listOwnedProjects("owner", runner), (error) => {
+  assert.throws(() => readIssueProjectStatuses("owner/repo", 24, runner), (error) => {
     assert.equal(error.message, "gh: Server Error (HTTP 500)");
     return true;
   });
   assert.equal(calls.length, 1);
 
   const { runner: silentRunner } = listingRunner([{ stderr: "", status: 1, stdout: "" }]);
-  assert.throws(() => listOwnedProjects("owner", silentRunner), (error) => {
+  assert.throws(() => readIssueProjectStatuses("owner/repo", 24, silentRunner), (error) => {
     assert.equal(error.message, "Failed to list user-owned Projects.");
     return true;
   });
 });
 
-test("listOwnedProjects rejects a user-owned listing that is not an array of pages", () => {
+test("readIssueProjectStatuses rejects a user-owned listing that is not an array of pages", () => {
   for (const stdout of [JSON.stringify({ message: "x" }), JSON.stringify([{ number: 2 }])]) {
     const { runner } = listingRunner([okResponse(stdout)]);
-    assert.throws(() => listOwnedProjects("owner", runner), (error) => {
+    assert.throws(() => readIssueProjectStatuses("owner/repo", 24, runner), (error) => {
       assert.equal(error.code, "github_response_shape");
       assert.equal(
         error.message,

@@ -94,7 +94,7 @@ const ITEM_STATUS_STOPS = {
 
 // The Status name of one item read with ?fields=<statusFieldId>. The item must carry exactly that one
 // field, and its value must flatten to one name; an absent value is a stop here, not null.
-export function projectStatusName(item, statusFieldId, endpoint) {
+function projectStatusName(item, statusFieldId, endpoint) {
   if (!Array.isArray(item?.fields) || item.fields.length !== 1) {
     throw githubResponseContractError(endpoint, "exactly one Status field/value");
   }
@@ -120,7 +120,7 @@ export function projectStatusName(item, statusFieldId, endpoint) {
   return name;
 }
 
-export function listOwnedProjects(owner, commandRunner) {
+function listOwnedProjects(owner, commandRunner) {
   const userEndpoint = `users/${owner}/projectsV2?per_page=100`;
   const userResponse = ghJson(
     ["api", "--paginate", "--slurp", userEndpoint],
