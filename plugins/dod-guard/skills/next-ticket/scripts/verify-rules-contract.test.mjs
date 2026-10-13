@@ -1,0 +1,29 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+import { markdownSection } from "../../../lib/acceptance-criteria.mjs";
+import { prose } from "../../../lib/skill-text.mjs";
+
+const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
+const verify = markdownSection(skill, "Verify and prepare generated files");
+
+// An empty section reports every sentence missing, so a renamed heading fails too.
+function missingSentences(sentences) {
+  return sentences.filter((sentence) => !prose(sentence).test(verify));
+}
+
+// A proof once sent an undeclared argument to a game's MCP server, called it
+// before the game was live, and retried after a malformed result (#824, #859).
+test("a live proof tool is called only with its declared schema after its readiness signal", () => {
+  const missing = missingSentences([
+    "When a proof calls a live product or runtime tool, such as an MCP server for a game, an app, or an emulator,",
+    "Before the first proof call, read the tool's current schema (for MCP, its live `tools/list` entry) and send " +
+      "only arguments it declares.",
+    "Wait for the tool's own readiness signal before the proof call.",
+    "After an unsupported-argument rejection or a malformed result, never retry identical arguments.",
+    "Make one schema-corrected call, or switch to the nearest supported proof path and record the switch and the " +
+      "original error in the matrix row.",
+    "GitHub and other provider calls keep the stop in `standards/github-request-discipline.md`.",
+  ]);
+  assert.deepEqual(missing, []);
+});

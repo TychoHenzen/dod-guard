@@ -218,6 +218,19 @@ Run focused checks while implementing, then run every required pre-PR gate.
 Before calling a suite green, confirm the configured test glob includes every
 new test or fixture. Do not rerun an unchanged full suite for reassurance.
 
+When a proof calls a live product or runtime tool, such as an MCP server for a
+game, an app, or an emulator, follow these rules:
+
+- Before the first proof call, read the tool's current schema (for MCP, its
+  live `tools/list` entry) and send only arguments it declares.
+- Wait for the tool's own readiness signal before the proof call.
+- After an unsupported-argument rejection or a malformed result, never retry
+  identical arguments. Make one schema-corrected call, or switch to the
+  nearest supported proof path and record the switch and the original error
+  in the matrix row.
+- GitHub and other provider calls keep the stop in
+  `standards/github-request-discipline.md`.
+
 Generate tracked build outputs on the feature branch when the repository
 requires them. Quality diagnostics are report-only evidence; do not generate or
 persist metric state as part of ticket delivery. Inspect generated changes as
