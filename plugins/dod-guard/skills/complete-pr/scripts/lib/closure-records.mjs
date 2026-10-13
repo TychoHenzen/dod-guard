@@ -3,6 +3,7 @@
 // `## Completion evidence` comment, plus the evidence comment a close posts.
 // Every function is pure; reading and writing GitHub belongs to the callers.
 import { markdownSection } from "../../../../lib/acceptance-criteria.mjs";
+import { jsonBlock, subsections } from "../../../../lib/issue-body-records.mjs";
 
 const COMPLETION_HEADING = "## Completion evidence";
 const COMPLETION_MARKER = "<!-- dod-guard-completion-evidence -->";
@@ -30,31 +31,6 @@ const SETTLED_ROW_STATUSES = new Set(["pass", "inapplicable"]);
 
 function lines(text) {
   return String(text ?? "").replace(/\r\n/g, "\n");
-}
-
-function subsections(notes, name) {
-  const found = [];
-  let current = null;
-  for (const line of notes.split("\n")) {
-    const heading = /^### (.+?)\s*$/.exec(line);
-    if (heading) {
-      current = heading[1] === name ? [] : null;
-      if (current) found.push(current);
-    } else if (current) {
-      current.push(line);
-    }
-  }
-  return found.map((section) => section.join("\n"));
-}
-
-function jsonBlock(text) {
-  const match = /```json\n([\s\S]*?)\n```/.exec(lines(text));
-  if (!match) return { error: "has no JSON block" };
-  try {
-    return { value: JSON.parse(match[1]) };
-  } catch {
-    return { error: "is not valid JSON" };
-  }
 }
 
 function supersedesEntryError(entry, repository) {
