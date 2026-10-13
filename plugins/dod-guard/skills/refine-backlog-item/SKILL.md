@@ -288,8 +288,11 @@ from the directory containing this skill, then read
 `<plugin-root>/standards/project-workflow.md`. Do not assume the target checkout
 contains the shared standard. Keep these named records in
 `## Implementation notes`: `requirements`, `clarifications`,
-`implementation-plan`, `task-list`, and `lens-ownership`. Use the existing discovery markers as
-the evidence inside those records. The task list must identify dependencies and
+`implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, and
+`planned-acceptance-matrix`. Use the existing discovery markers as
+the evidence inside those records. `acceptance-evidence` gives each acceptance
+criterion checkbox id its evidence id, and `planned-acceptance-matrix` plans
+every acceptance-matrix row before any proof runs; the standard defines both. The task list must identify dependencies and
 mark a task `independent` only when it can be committed and closed separately.
 Write each record as a distinct named subsection, keep the task order stable,
 and map every task to its functional slice or explicitly mark it as a
@@ -329,13 +332,27 @@ label applies. Confirm unknown priority explains missing evidence and effort
 is below 13 before moving that PBI to `Todo` with the shared REST Project status
 writer.
 For a structured PBI, also confirm the named `requirements`, `clarifications`,
-`implementation-plan`, `task-list`, and `lens-ownership` records are present and coherent; every
+`implementation-plan`, `task-list`, `lens-ownership`, `acceptance-evidence`, and
+`planned-acceptance-matrix` records are present and coherent; every
 linked child matches one independently deliverable functional slice (each is separately tracked)
 in the task list, is actionable, and is `Todo`; and the four review lenses each have
 an owning child or parent-level task plus mapped observable acceptance or
 verification evidence. Pass the complete task, slice, owner, and evidence mapping
 through the same executable convergence proof used by `next-ticket` before moving
-the parent to `Todo`; `submit-draft-pr` and `complete-pr` consume or revalidate the
+the parent to `Todo`. Save the issue body read back above to a local UTF-8 file and run:
+
+```text
+node <plugin-root>/skills/next-ticket/scripts/handoff-proof.mjs refinement --body-file=<path> [--children=<path>]
+```
+
+Pass `--children` a JSON array of the linked functional-slice children, each
+with its slice id and evidence, when any exist. Move the parent to `Todo` only
+when the command exits 0 with `outcome: "verified"`. Exit 1 names an actionable
+remainder, such as a lens that does not own its required path rows; exit 2
+names the missing or invalid record or argument, including a file that is not
+UTF-8, such as the UTF-16 that a Windows PowerShell 5.1 `>` redirect writes.
+Correct the records and rerun.
+`submit-draft-pr` and `complete-pr` consume or revalidate the
 resulting handoff after implementation and PR creation. Stop on any actionable
 remainder. Do not require a fixed
 child count or create category placeholders. When no linked child represents
@@ -343,7 +360,8 @@ cross-cutting parent work, record an explicit parent-level task with
 `parentLevel: "convergence"` so that ownership remains visible and verifiable.
 The executable proof rejects duplicate or missing slice links, unowned slices,
 duplicate evidence, missing or duplicate review lenses, invalid acceptance IDs,
-and incomplete or stale acceptance-matrix rows.
+lenses that do not own their required path rows, and incomplete or stale
+acceptance-matrix rows.
 If an edit fails or readback disagrees, stop before the status change and
 report the actual partial state. Do not claim the PBI is ready.
 

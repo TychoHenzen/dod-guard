@@ -124,6 +124,74 @@ test("failed and blocked statuses cannot masquerade as acceptance", () => {
   }
 });
 
+// A refinement row: no observed result and no head yet, status pending.
+function plannedRow(path, index, overrides = {}) {
+  const { observed, headSha, ...planned } = row(path, index, { status: "pending" });
+  return { ...planned, ...overrides };
+}
+
+function plannedRows() {
+  return ACCEPTANCE_MATRIX_PATHS.map((path, index) => plannedRow(path, index + 1));
+}
+
+function validatePlanned(matrix, requiredContracts = ["AC-1"]) {
+  return validateAcceptanceMatrix({ matrix, requiredContracts, mode: "planned" });
+}
+
+test("planned mode accepts pending rows with no observed result or head", () => {
+  const matrix = plannedRows().map((entry, index) =>
+    index === 2 ? { ...entry, status: "inapplicable", reason: "No browser surface exists." } : entry,
+  );
+
+  const result = validatePlanned(matrix);
+
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.headSha, null);
+});
+
+test("planned mode rejects every status that is not a planned status", () => {
+  for (const status of ["pass", "failed", "blocked", "unverified"]) {
+    const matrix = plannedRows().map((entry) => (entry.path === "recovery" ? { ...entry, status } : entry));
+
+    assert.deepEqual(validatePlanned(matrix).errors, [`row-5 has status ${status}, which is not a planned status`]);
+  }
+  const unknown = plannedRows().map((entry) => (entry.path === "recovery" ? { ...entry, status: "done" } : entry));
+  assert.deepEqual(validatePlanned(unknown).errors, ["row-5 has unsupported status done"]);
+});
+
+test("planned mode names a missing path, criterion, field, and inapplicable reason", () => {
+  const withoutRecovery = plannedRows().filter((entry) => entry.path !== "recovery");
+  assert.deepEqual(validatePlanned(withoutRecovery).errors, ["missing acceptance row for recovery"]);
+
+  assert.deepEqual(validatePlanned(plannedRows(), ["AC-1", "AC-2"]).errors, [
+    "missing pending acceptance row for AC-2",
+  ]);
+
+  const { proof, ...withoutProof } = plannedRows()[0];
+  assert.deepEqual(validatePlanned([withoutProof, ...plannedRows().slice(1)]).errors, ["row-1 is missing proof"]);
+
+  const noReason = plannedRows().map((entry, index) => (index === 2 ? { ...entry, status: "inapplicable" } : entry));
+  assert.deepEqual(validatePlanned(noReason).errors, ["row-3 marked inapplicable without an explicit reason"]);
+});
+
+test("planned mode needs a pending row for each criterion, not only an inapplicable one", () => {
+  const matrix = plannedRows().map((entry, index) =>
+    index === 0 ? { ...entry, status: "inapplicable", reason: "No identity surface exists." } : entry,
+  );
+
+  assert.deepEqual(validatePlanned(matrix).errors, ["missing pending acceptance row for AC-1"]);
+});
+
+test("observed mode still rejects a pending row and stays the default", () => {
+  const matrix = completeRows().map((entry) => (entry.path === "recovery" ? { ...entry, status: "pending" } : entry));
+  const result = validateAcceptanceMatrix({ matrix, headSha: HEAD_SHA });
+
+  assert.ok(result.errors.includes("row-5 has unsupported status pending"));
+  assert.ok(result.errors.includes("row-5 has non-passing status pending"));
+  assert.throws(() => validateAcceptanceMatrix({ matrix, mode: "draft" }), /unknown acceptance matrix mode draft/);
+});
+
 test("matrix statuses stay behavior-oriented rather than numeric quality gates", () => {
   assert.deepEqual(ACCEPTANCE_MATRIX_STATUSES, [
     "pass",

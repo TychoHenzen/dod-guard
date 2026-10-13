@@ -1,0 +1,292 @@
+{
+  "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Print ASCII OK and FAILED lines from validate-plugins",
+      "parentLevel": "convergence",
+      "independent": false,
+      "dependsOn": [],
+      "evidence": [
+        "ev-t1-change",
+        "ev-lens-implementation"
+      ],
+      "acceptanceEvidence": [
+        "ev-ac1-ok-line",
+        "ev-ac2-failed-line"
+      ],
+      "verificationEvidence": [
+        "proof-ac1-ok-line",
+        "proof-ac2-failed-line"
+      ]
+    },
+    {
+      "id": "T2",
+      "title": "Make every tracked scripts/ci file ASCII",
+      "parentLevel": "convergence",
+      "independent": false,
+      "dependsOn": [],
+      "evidence": [
+        "ev-t2-change",
+        "ev-lens-quality"
+      ],
+      "acceptanceEvidence": [
+        "ev-ac3-scripts-ci"
+      ],
+      "verificationEvidence": [
+        "proof-ac3-scripts-ci"
+      ]
+    },
+    {
+      "id": "T3",
+      "title": "Guard scripts/ci against non-ASCII with a reusable checker",
+      "parentLevel": "convergence",
+      "independent": false,
+      "dependsOn": [
+        "T1",
+        "T2"
+      ],
+      "evidence": [
+        "ev-t3-change",
+        "ev-lens-reliability"
+      ],
+      "acceptanceEvidence": [
+        "ev-ac4-guard",
+        "ev-path-data-error",
+        "ev-path-recovery"
+      ],
+      "verificationEvidence": [
+        "proof-ac4-guard",
+        "proof-path-data-error",
+        "proof-path-recovery"
+      ]
+    },
+    {
+      "id": "T4",
+      "title": "Prove the CLI output and CI wiring, then run the gates",
+      "parentLevel": "convergence",
+      "independent": false,
+      "dependsOn": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "evidence": [
+        "ev-t4-change",
+        "ev-lens-wiring"
+      ],
+      "acceptanceEvidence": [
+        "ev-path-interactive-control",
+        "ev-path-browser-e2e",
+        "ev-path-identity",
+        "ev-ac5-gates"
+      ],
+      "verificationEvidence": [
+        "proof-path-interactive-control",
+        "proof-path-browser-e2e",
+        "proof-path-identity",
+        "proof-ac5-gates"
+      ]
+    }
+  ],
+  "reviewLenses": [
+    {
+      "id": "implementation",
+      "owner": "T1",
+      "evidence": [
+        "ev-lens-implementation"
+      ],
+      "acceptanceEvidence": [
+        "ev-ac1-ok-line",
+        "ev-ac2-failed-line"
+      ],
+      "verificationEvidence": [
+        "proof-ac1-ok-line",
+        "proof-ac2-failed-line"
+      ],
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    },
+    {
+      "id": "wiring/usability",
+      "owner": "T4",
+      "evidence": [
+        "ev-lens-wiring"
+      ],
+      "acceptanceEvidence": [
+        "ev-path-interactive-control",
+        "ev-path-browser-e2e"
+      ],
+      "verificationEvidence": [
+        "proof-path-interactive-control",
+        "proof-path-browser-e2e"
+      ],
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    },
+    {
+      "id": "quality",
+      "owner": "T2",
+      "evidence": [
+        "ev-lens-quality"
+      ],
+      "acceptanceEvidence": [
+        "ev-ac3-scripts-ci"
+      ],
+      "verificationEvidence": [
+        "proof-ac3-scripts-ci"
+      ],
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    },
+    {
+      "id": "reliability",
+      "owner": "T3",
+      "evidence": [
+        "ev-lens-reliability"
+      ],
+      "acceptanceEvidence": [
+        "ev-path-data-error",
+        "ev-path-recovery"
+      ],
+      "verificationEvidence": [
+        "proof-path-data-error",
+        "proof-path-recovery"
+      ],
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    }
+  ],
+  "acceptance": [
+    {
+      "id": "AC-1",
+      "evidence": "ac-1-observed"
+    },
+    {
+      "id": "AC-2",
+      "evidence": "ac-2-observed"
+    },
+    {
+      "id": "AC-3",
+      "evidence": "ac-3-observed"
+    },
+    {
+      "id": "AC-4",
+      "evidence": "ac-4-observed"
+    },
+    {
+      "id": "AC-5",
+      "evidence": "ac-5-observed"
+    }
+  ],
+  "acceptanceMatrix": [
+    {
+      "id": "R1",
+      "contract": "AC-1",
+      "path": "success-line",
+      "proof": "proof-ac1-ok-line",
+      "expected": "validate-plugins.mjs holds no byte above 0x7E; emitResult writes 'plugin configuration OK - ' and 'plugin configuration FAILED - ' with the rest of each message unchanged",
+      "observed": "pass: commit 80dd8b48 changes only the 4 U+2014 lines (2, 6, 47, 50) of scripts/ci/validate-plugins.mjs to ' - '; the file at this head is 3442 bytes with max byte 0x7D; line 47 writes `plugin configuration OK - ${scanned}` and line 50 writes `plugin configuration FAILED - ${violations.length} violation(s) across ${scanned}`, wording otherwise unchanged",
+      "status": "pass",
+      "evidence": "ev-ac1-ok-line",
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    },
+    {
+      "id": "R2",
+      "contract": "AC-2",
+      "path": "failed-line",
+      "proof": "proof-ac2-failed-line",
+      "expected": "with a planted violation, node scripts/ci/validate-plugins.mjs exits 1 and every stdout byte is at most 0x7E apart from LF; the first line starts 'plugin configuration FAILED - '",
+      "observed": "pass: a planted untracked root file zz-plant-904.json holding '{ not json' (checkJsonSyntax parses every root-level .json); node scripts/ci/validate-plugins.mjs exit 1, stdout captured as a Buffer through spawnSync, 246 bytes, max byte except LF 0x7D; first line 'plugin configuration FAILED - 1 violation(s) across 5 plugins, 24 skills, 13 agents, 2 output styles, 100 JSON files, 160 shipped docs', then the file and its 'not valid JSON' message; the plant was removed in a finally block and git status --porcelain --untracked-files=all was empty afterwards",
+      "status": "pass",
+      "evidence": "ev-ac2-failed-line",
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    },
+    {
+      "id": "R3",
+      "contract": "AC-3",
+      "path": "scripts-ci-ascii",
+      "proof": "proof-ac3-scripts-ci",
+      "expected": "no tracked file under scripts/ci holds a byte above 0x7E; git diff -U0 on the touched files shows only em-dash to hyphen replacements; Biome check on scripts/ci/ passes",
+      "observed": "pass: a byte check over all 38 tracked scripts/ci files and the 12 changed files reports 0 non-ASCII bytes; before T1 the same scan found 28 code points, all U+2014, in 9 files; git diff -U0 origin/master: 28 changed lines in the 9 files, each pair differing only in U+2014 to '-' (a pairwise check reported 24 pairs, 0 mismatches for T2, and T1's 4 lines read by hand); Biome check on the 11 touched scripts/ci files exit 0, 0 errors (311 warnings, report-only)",
+      "status": "pass",
+      "evidence": "ev-ac3-scripts-ci",
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    },
+    {
+      "id": "R4",
+      "contract": "AC-4",
+      "path": "ascii-guard",
+      "proof": "proof-ac4-guard",
+      "expected": "scripts/ci/ascii-only.test.mjs is listed in package.json test:ci-scripts; its repository row runs the helper over git ls-files scripts/ci and finds no rows; ci.yml build-test runs npm test, which runs test:ci-scripts",
+      "observed": "pass: package.json:14 test:ci-scripts ends with scripts/ci/ascii-only.test.mjs and package.json:13 test chains npm run test:ci-scripts; .github/workflows/ci.yml:51 '- run: npm test' is in the build-test job (lines 35-52); 'every tracked scripts/ci file is ASCII' ok in npm test's test:ci-scripts block, and it throws when the listing is empty so it cannot pass on an empty list; the listing uses git ls-files -z, and 'a tracked file with a non-ASCII name is read and its row reported' ok (temp repo, tracked scripts/ci/caf<U+00E9>.mjs, row 'scripts/ci/caf<U+00E9>.mjs:1 U+2014'; the pre-fix listing with core.quotePath=true returned the C-quoted path and threw ENOENT)",
+      "status": "pass",
+      "evidence": "ev-ac4-guard",
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    },
+    {
+      "id": "R5",
+      "contract": "AC-4",
+      "path": "data/error",
+      "proof": "proof-path-data-error",
+      "expected": "the helper returns 'x.mjs:2 U+2014', a U+2192 row, and a U+FEFF row for inline fixtures built with String.fromCodePoint, and no rows for ASCII text with tab, LF, and CRLF",
+      "observed": "pass: scripts/ci/ascii-only.test.mjs: 'an em-dash on line 2 is reported with its path, line, and code point' ok (deepEqual ['x.mjs:2 U+2014']); 'an arrow and a leading BOM are each reported' ok (['a.mjs:1 U+2192'], ['b.mjs:1 U+FEFF']); 'an astral character yields exactly one row' ok (['s.mjs:2 U+1F600']); 'ASCII text with tab, LF, and CRLF has no rows' ok; red check: with the threshold raised to 0x10FFFF the three fixture rows failed, and all 5 passed after restoring 0x7E (at 629e8103); at this head the file's 6 tests pass",
+      "status": "pass",
+      "evidence": "ev-path-data-error",
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    },
+    {
+      "id": "R6",
+      "contract": "AC-4",
+      "path": "recovery",
+      "proof": "proof-path-recovery",
+      "expected": "after a non-ASCII character is planted in a tracked scripts/ci file, npm run test:ci-scripts fails and names that path:line and code point; after the plant is reverted, it passes again",
+      "observed": "pass: at this head, U+2014 (built with String.fromCodePoint) appended to line 2 of tracked scripts/ci/lib/fs-utils.mjs; node --test scripts/ci/ascii-only.test.mjs exit 1 naming the row; npm run test:ci-scripts exit 1, pass 38, fail 1, 'not ok 6 - every tracked scripts/ci file is ASCII', output names 'scripts/ci/lib/fs-utils.mjs:2 U+2014'; the original bytes were written back (byte-identical, git status empty, no stash used) and npm run test:ci-scripts exit 0, 39 tests, 39 pass, 0 fail, 0 skipped",
+      "status": "pass",
+      "evidence": "ev-path-recovery",
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    },
+    {
+      "id": "R7",
+      "contract": "AC-1",
+      "path": "interactive-control",
+      "proof": "proof-path-interactive-control",
+      "expected": "on the branch, node scripts/ci/validate-plugins.mjs exits 0 and prints 'plugin configuration OK - <n> plugins, ...' with every stdout byte at most 0x7E apart from LF",
+      "observed": "pass: node scripts/ci/validate-plugins.mjs at this head, stdout captured as a Buffer through spawnSync: exit 0, 108 bytes, max byte except LF 0x79, stderr empty, 'plugin configuration OK - 5 plugins, 24 skills, 13 agents, 2 output styles, 99 JSON files, 160 shipped docs'",
+      "status": "pass",
+      "evidence": "ev-path-interactive-control",
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    },
+    {
+      "id": "R8",
+      "contract": "AC-1",
+      "path": "browser/e2e",
+      "proof": "proof-path-browser-e2e",
+      "expected": "inapplicable",
+      "observed": "inapplicable: validate-plugins.mjs and the guard are command-line CI scripts with no browser or UI surface; the user path is the CLI run proven by the interactive-control row",
+      "status": "inapplicable",
+      "evidence": "ev-path-browser-e2e",
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999",
+      "reason": "validate-plugins.mjs and the guard are command-line CI scripts with no browser or UI surface; the user path is the CLI run proven by the interactive-control row"
+    },
+    {
+      "id": "R9",
+      "contract": "AC-5",
+      "path": "identity/authorization",
+      "proof": "proof-path-identity",
+      "expected": "inapplicable",
+      "observed": "inapplicable: no endpoint, credential, or permission is read or changed; the scripts read local files only",
+      "status": "inapplicable",
+      "evidence": "ev-path-identity",
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999",
+      "reason": "no endpoint, credential, or permission is read or changed; the scripts read local files only"
+    },
+    {
+      "id": "R10",
+      "contract": "AC-5",
+      "path": "gates",
+      "proof": "proof-ac5-gates",
+      "expected": "npm test, npm run test:ci-scripts, node --test scripts/ci/validate-plugins.test.mjs, node scripts/ci/validate-plugins.mjs, the repository Biome check, and npm run preflight:static-analysis pass with no drift; authored files and commit messages hold no byte above 0x7E",
+      "observed": "pass: at this head: npm test exit 0 (2012 tests, 2004 pass, 0 fail, 8 host skips: code-explorer symlink privilege or EPERM (5), code-explorer SIGTERM and SIGINT handlers under TerminateProcess (2), one POSIX permission test in test:dod-guard-skills, all Windows-host limits); npm run test:ci-scripts exit 0 (39 pass); node --test scripts/ci/validate-plugins.test.mjs exit 0 (19 pass); node scripts/ci/validate-plugins.mjs exit 0; repository Biome check exit 0, 0 errors (873 files, warnings report-only); npm run preflight:static-analysis exit 0 on a clean checkout with packages/*/dist-test moved aside and restored, 'Static-analysis preflight passed.', git status and git diff empty afterwards; ASCII check: 12 changed files, 38 tracked scripts/ci files, and 4 branch commit messages hold 0 non-ASCII bytes",
+      "status": "pass",
+      "evidence": "ev-ac5-gates",
+      "headSha": "e7e22c4c54840c7983af67f8d631396cf5484999"
+    }
+  ]
+}
