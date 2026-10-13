@@ -1,5 +1,5 @@
 // The closure snapshot that standards/project-workflow.md defines, built from GitHub REST GET
-// requests only. Every read goes through one injected runner in github-client's convention, so the
+// requests only. Every read goes through one injected runner in gh-runner's convention, so the
 // tests answer the same calls from fixtures. The shaping functions take data already read and return
 // snapshot records; nothing here writes to GitHub.
 // biome-ignore lint/correctness/noNodejsModules: This shipped command writes the snapshot file.

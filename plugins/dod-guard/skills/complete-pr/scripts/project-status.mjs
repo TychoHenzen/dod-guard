@@ -1,32 +1,14 @@
 // biome-ignore lint/correctness/noNodejsModules: This shipped command invokes the local GitHub CLI.
-import { spawnSync } from "node:child_process";
-// biome-ignore lint/correctness/noNodejsModules: This shipped command invokes the local GitHub CLI.
 import { resolve } from "node:path";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command invokes the local GitHub CLI.
 import { fileURLToPath } from "node:url";
 // biome-ignore lint/correctness/noNodejsModules: This shipped command invokes the local GitHub CLI.
 import process from "node:process";
 import { runTransport } from "../../../lib/transport-policy.mjs";
+import { runGh } from "./lib/gh-runner.mjs";
 
 const PROJECT_NODE_ID = /^PVT_[A-Za-z0-9]+$/;
 const PROJECT_PAGE_SIZE = 100;
-const PROJECT_OUTPUT_MAX_BUFFER = 32 * 1024 * 1024;
-
-function runGh(args, spawn = spawnSync) {
-  const result = spawn("gh", args, {
-    encoding: "utf8",
-    windowsHide: true,
-    maxBuffer: PROJECT_OUTPUT_MAX_BUFFER,
-  });
-  if (result.error) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    const detail = result.stderr.trim() || result.stdout.trim() || `gh exited with ${result.status}`;
-    throw new Error(detail);
-  }
-  return result;
-}
 
 function requireText(value, name) {
   if (typeof value !== "string" || value.length === 0) {
@@ -443,7 +425,6 @@ export {
   buildProjectItemListCommand,
   buildProjectViewCommand,
   resolveProjectNodeId,
-  runGh,
   statusValueName,
   writeProjectStatuses,
   writeProjectStatusesWithFallback,

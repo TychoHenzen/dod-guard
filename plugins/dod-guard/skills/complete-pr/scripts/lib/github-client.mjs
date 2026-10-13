@@ -1,10 +1,7 @@
-// biome-ignore lint/correctness/noNodejsModules: This adapter invokes the local GitHub CLI from Node.
-import { spawnSync } from "node:child_process";
 import { normalizeRequiredChecks } from "./check-normalization.mjs";
 import { CompletionError } from "./completion-error.mjs";
+import { runGh } from "./gh-runner.mjs";
 
-// One REST page of Project items reaches about 3.5 MB on the live Project, far past Node's 1 MiB default.
-const GH_OUTPUT_MAX_BUFFER = 64 * 1024 * 1024;
 const HTTP_NOT_FOUND = /HTTP 404/;
 const HTTP_TRANSIENT_SERVER_ERROR = /HTTP 5\d{2}/;
 const CLOSING_REFERENCE = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(?<number>\d+)\b/giu;
@@ -144,18 +141,6 @@ function githubResponseContractError(endpoint, detail) {
     "github_response_shape",
     `GitHub response for ${endpoint} must include ${detail}.`,
   );
-}
-
-export function runGh(args, acceptedExitCodes = [0]) {
-  const result = spawnSync("gh", args, { encoding: "utf8", windowsHide: true, maxBuffer: GH_OUTPUT_MAX_BUFFER });
-  if (result.error) {
-    throw result.error;
-  }
-  if (!acceptedExitCodes.includes(result.status)) {
-    const detail = result.stderr.trim() || result.stdout.trim() || `gh exited with ${result.status}`;
-    throw new Error(detail);
-  }
-  return result;
 }
 
 function ghJson(args, acceptedExitCodes = [0], commandRunner = runGh) {

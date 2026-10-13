@@ -14,9 +14,8 @@ import { applyClosures, recordCompletion } from "./lib/closure-apply.mjs";
 import { annotateSnapshot } from "./lib/closure-delivery.mjs";
 import { planClosures } from "./lib/closure-plan.mjs";
 import { buildClosureSnapshot, writeClosureSnapshot } from "./lib/closure-snapshot.mjs";
-import { runGh as runGhClient } from "./lib/github-client.mjs";
+import { runGh } from "./lib/gh-runner.mjs";
 import { REPOSITORY_NAME } from "../../../lib/repository-identity.mjs";
-import { runGh } from "./project-status.mjs";
 
 const USAGE = `usage: closure.mjs plan --snapshot=<file.json> [--hierarchy=<issue>]
        closure.mjs apply --snapshot=<file.json> [--hierarchy=<issue>]
@@ -82,9 +81,9 @@ const COMMANDS = {
     return options && applyClosures(readJson(args.snapshot), { runner, ...options });
   },
   annotate: (args) => given(args.snapshot) && annotateSnapshot(readJson(args.snapshot)),
-  // The snapshot reads through github-client's runGh, which takes the accepted exit codes per call.
-  // The project-status runGh throws on any non-zero exit and cannot serve these reads.
-  snapshot: (args, runner = runGhClient) => {
+  // The snapshot reads pass the exit codes they can read, such as the 1 of an HTTP 404; apply and
+  // record pass none, so any non-zero exit throws.
+  snapshot: (args, runner = runGh) => {
     if (!given(args.output) || !REPOSITORY_NAME.test(args.repository ?? "")) {
       return false;
     }
