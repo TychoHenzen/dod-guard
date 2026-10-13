@@ -95,7 +95,8 @@ splits its work, such as `/review-pr`, runs on the strong stage agent, which
 dispatches those split rows itself. Every progress message starts with the local
 `[HH:MM]` time and shows `PBIs completed: P parent / C child`. That figure
 counts only the target repository's parent and child PBIs whose Project status
-reads Done, even when the linked Project spans several repositories.
+reads Done, as select-next's `counts` report them, even when the linked Project
+spans several repositories.
 
 Refine one Backlog item into a coherent, independently deliverable Todo PBI,
 with independently completable subtasks when needed:
