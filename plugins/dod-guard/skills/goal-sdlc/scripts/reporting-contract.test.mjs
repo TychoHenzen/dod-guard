@@ -19,7 +19,9 @@ test("goal-sdlc reports the time and parent and child completions", () => {
   assert.match(skill, prose("Start every progress message with the local `[HH:MM]` time from the clock."));
   assert.match(
     reporting,
-    prose(`Every progress message and the final report carry \`PBIs completed: P parent / C child\`, counting ${SCOPE}`),
+    prose(
+      `Every progress message and the final report carry \`PBIs completed: P parent / C child\`, counting ${SCOPE}`,
+    ),
   );
   assert.match(skill, prose("Otherwise update `PBIs completed: P parent / C child`"));
   assert.match(
